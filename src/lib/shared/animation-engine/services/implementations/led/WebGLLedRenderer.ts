@@ -80,6 +80,7 @@ export class WebGLLedRenderer implements ILedOverlayRenderer {
 	private spriteFBO: FBOAttachment | null = null;
 	private trailFBOs: DoubleFBO | null = null;
 	private bloomMips: FBOAttachment[] = [];
+	private bloomMipSizes: Array<{ w: number; h: number }> = [];
 
 	// Display dimensions (physical pixels)
 	private displayWidth = 0;
@@ -140,6 +141,7 @@ export class WebGLLedRenderer implements ILedOverlayRenderer {
 
 		this.createGeometry();
 		this.createFramebuffers();
+		this.clearAllFramebuffers();
 
 		gl.disable(gl.DEPTH_TEST);
 
@@ -163,11 +165,23 @@ export class WebGLLedRenderer implements ILedOverlayRenderer {
 		// Recreate all framebuffers at new size
 		this.destroyFramebuffers();
 		this.createFramebuffers();
+		this.clearAllFramebuffers();
 	}
 
 	renderLeds(input: LedFrameInput, config: LedOverlayConfig): void {
-		if (!this.gl || !this.initialized || input.tips.length === 0) return;
+		if (!this.gl || !this.initialized) return;
 		const gl = this.gl;
+
+		if (input.tips.length === 0) {
+			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+			gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+			gl.clearColor(0, 0, 0, 0);
+			gl.clear(gl.COLOR_BUFFER_BIT);
+			return;
+		}
+
+		// Reset blend state to known baseline before each frame
+		gl.disable(gl.BLEND);
 
 		// 1. Update instance data from tips
 		const tipCount = Math.min(input.tips.length, MAX_LEDS);
@@ -198,6 +212,11 @@ export class WebGLLedRenderer implements ILedOverlayRenderer {
 			this.spriteProgram!.uniforms.get("u_resolution")!,
 			this.displayWidth,
 			this.displayHeight,
+		);
+		gl.uniform2f(
+			this.spriteProgram!.uniforms.get("u_viewboxSize")!,
+			input.canvasWidth,
+			input.canvasHeight,
 		);
 		gl.bindVertexArray(this.spriteVAO);
 		gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, tipCount);
@@ -231,10 +250,9 @@ export class WebGLLedRenderer implements ILedOverlayRenderer {
 		gl.bindVertexArray(this.quadVAO);
 		for (let i = 0; i < this.bloomMips.length; i++) {
 			const mip = this.bloomMips[i]!;
-			const mipW = Math.max(1, Math.floor(srcWidth / 2));
-			const mipH = Math.max(1, Math.floor(srcHeight / 2));
+			const mipSize = this.bloomMipSizes[i]!;
 			gl.bindFramebuffer(gl.FRAMEBUFFER, mip.fbo);
-			gl.viewport(0, 0, mipW, mipH);
+			gl.viewport(0, 0, mipSize.w, mipSize.h);
 			gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_2D, srcTexture);
 			gl.uniform1i(this.bloomDownProgram!.uniforms.get("u_source")!, 0);
@@ -245,8 +263,8 @@ export class WebGLLedRenderer implements ILedOverlayRenderer {
 			);
 			gl.drawArrays(gl.TRIANGLES, 0, 6);
 			srcTexture = mip.texture;
-			srcWidth = mipW;
-			srcHeight = mipH;
+			srcWidth = mipSize.w;
+			srcHeight = mipSize.h;
 		}
 
 		// 5. Bloom upsample (additive)
@@ -256,19 +274,17 @@ export class WebGLLedRenderer implements ILedOverlayRenderer {
 		for (let i = this.bloomMips.length - 1; i > 0; i--) {
 			const target = this.bloomMips[i - 1]!;
 			const source = this.bloomMips[i]!;
-			const targetW = Math.max(1, Math.floor(this.displayWidth / Math.pow(2, i)));
-			const targetH = Math.max(1, Math.floor(this.displayHeight / Math.pow(2, i)));
+			const targetSize = this.bloomMipSizes[i - 1]!;
+			const sourceSize = this.bloomMipSizes[i]!;
 			gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);
-			gl.viewport(0, 0, targetW, targetH);
+			gl.viewport(0, 0, targetSize.w, targetSize.h);
 			gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_2D, source.texture);
 			gl.uniform1i(this.bloomUpProgram!.uniforms.get("u_source")!, 0);
-			const sourceW = Math.max(1, Math.floor(this.displayWidth / Math.pow(2, i + 1)));
-			const sourceH = Math.max(1, Math.floor(this.displayHeight / Math.pow(2, i + 1)));
 			gl.uniform2f(
 				this.bloomUpProgram!.uniforms.get("u_texelSize")!,
-				1.0 / sourceW,
-				1.0 / sourceH,
+				1.0 / sourceSize.w,
+				1.0 / sourceSize.h,
 			);
 			gl.uniform1f(this.bloomUpProgram!.uniforms.get("u_bloomRadius")!, 1.0);
 			gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -279,6 +295,8 @@ export class WebGLLedRenderer implements ILedOverlayRenderer {
 		// 6. Display composite to screen
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 		gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+		gl.clearColor(0, 0, 0, 0);
+		gl.clear(gl.COLOR_BUFFER_BIT);
 		gl.enable(gl.BLEND);
 		gl.blendFuncSeparate(
 			gl.ONE, gl.ONE_MINUS_SRC_ALPHA,
@@ -386,12 +404,14 @@ export class WebGLLedRenderer implements ILedOverlayRenderer {
 
 		// Bloom mip chain: each level is half the previous
 		this.bloomMips = [];
+		this.bloomMipSizes = [];
 		let mipW = w;
 		let mipH = h;
 		for (let i = 0; i < BLOOM_MIP_COUNT; i++) {
 			mipW = Math.max(1, Math.floor(mipW / 2));
 			mipH = Math.max(1, Math.floor(mipH / 2));
 			this.bloomMips.push(this.createFBO(mipW, mipH));
+			this.bloomMipSizes.push({ w: mipW, h: mipH });
 		}
 	}
 
@@ -414,6 +434,22 @@ export class WebGLLedRenderer implements ILedOverlayRenderer {
 		gl.bindTexture(gl.TEXTURE_2D, null);
 
 		return { fbo, texture };
+	}
+
+	private clearAllFramebuffers(): void {
+		const gl = this.gl!;
+		gl.clearColor(0, 0, 0, 0);
+		const targets = [
+			this.spriteFBO!,
+			this.trailFBOs!.read,
+			this.trailFBOs!.write,
+			...this.bloomMips,
+		];
+		for (const target of targets) {
+			gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);
+			gl.clear(gl.COLOR_BUFFER_BIT);
+		}
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 	}
 
 	private swapFBO(fbo: DoubleFBO): void {
@@ -445,6 +481,7 @@ export class WebGLLedRenderer implements ILedOverlayRenderer {
 			destroySingle(mip);
 		}
 		this.bloomMips = [];
+		this.bloomMipSizes = [];
 	}
 
 	// ============================================================
@@ -527,9 +564,11 @@ export class WebGLLedRenderer implements ILedOverlayRenderer {
 		gl.deleteShader(fragShader);
 
 		const uniforms = new Map<string, WebGLUniformLocation>();
-		const loc = gl.getUniformLocation(program, "u_resolution");
-		if (loc !== null) {
-			uniforms.set("u_resolution", loc);
+		for (const name of ["u_resolution", "u_viewboxSize"]) {
+			const loc = gl.getUniformLocation(program, name);
+			if (loc !== null) {
+				uniforms.set(name, loc);
+			}
 		}
 
 		return { program, uniforms };

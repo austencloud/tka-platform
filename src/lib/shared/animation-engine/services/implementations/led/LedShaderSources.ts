@@ -36,7 +36,8 @@ in vec3 a_ledColor;    // RGB [0,1]
 in float a_brightness; // [0,1]
 in float a_glowRadius; // world-space radius
 
-uniform vec2 u_resolution; // canvas size in pixels
+uniform vec2 u_resolution;  // canvas size in physical pixels
+uniform vec2 u_viewboxSize; // viewbox dimensions (e.g. 950x950)
 
 out vec2 v_uv;
 out vec3 v_color;
@@ -47,12 +48,12 @@ void main() {
   v_color = a_ledColor;
   v_brightness = a_brightness;
 
-  // Transform LED position from viewbox coords to clip space
-  vec2 clipPos = (a_ledPos / u_resolution) * 2.0 - 1.0;
+  // Transform from viewbox coords to [0,1] UV, then to clip space
+  vec2 clipPos = (a_ledPos / u_viewboxSize) * 2.0 - 1.0;
   clipPos.y = -clipPos.y; // flip Y (viewbox Y is top-down)
 
-  // Scale quad by glow radius
-  vec2 scaledOffset = a_position * (a_glowRadius / u_resolution);
+  // Scale glow radius from viewbox units to clip space
+  vec2 scaledOffset = a_position * (a_glowRadius / u_viewboxSize) * 2.0;
 
   gl_Position = vec4(clipPos + scaledOffset, 0.0, 1.0);
 }
@@ -138,10 +139,13 @@ void main() {
   vec4 L = texture(u_source, v_uv + u_texelSize * vec2(-1.0,  1.0));
   vec4 M = texture(u_source, v_uv + u_texelSize * vec2( 1.0,  1.0));
 
-  // Energy-preserving weights
-  vec4 d4 = (D + F + I + K) * 0.25;     // Inner diamond
-  vec4 d8 = (A + B + C + G + H + J + L + M) * 0.125; // Outer ring
-  fragColor = d4 * 0.5 + d8 * 0.5;
+  // Energy-preserving weights (LearnOpenGL PBR Bloom 13-tap)
+  // Center: 0.125, Inner diamond: 4×0.125 = 0.5, Edges: 4×0.0625 = 0.25, Corners: 4×0.03125 = 0.125
+  // Total: 0.125 + 0.5 + 0.25 + 0.125 = 1.0
+  fragColor = E * 0.125
+            + (D + F + I + K) * 0.125
+            + (B + G + H + J) * 0.0625
+            + (A + C + L + M) * 0.03125;
 }
 `;
 
