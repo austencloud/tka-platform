@@ -152,6 +152,9 @@ const PROP_TYPE_ENCODE: Record<PropType, string> = {
   [PropType.BIGEIGHTRINGS]: "e",
   // Quiad
   [PropType.QUIAD]: "I",
+  // Torch family
+  [PropType.TORCH]: "O",
+  [PropType.BIGTORCH]: "L",
   // Poi family (momentum-based)
   [PropType.POI]: "P",
 };

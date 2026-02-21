@@ -21,6 +21,7 @@ import type {
 import { MotionColor } from "../../../shared/domain/enums/pictograph-enums";
 import {
   applyMotionColorToSvg,
+  SELECTIVE_COLOR_PROP_TYPES,
   type ThemeMode,
 } from "../../../../utils/svg-color-utils";
 import { getAnimationVisibilityManager } from "../../../../animation-engine/state/animation-visibility-state.svelte";
@@ -138,7 +139,8 @@ export class PropSvgLoader implements IPropSvgLoader {
       const coloredSvgText = this.applyColorToSvg(
         originalSvgText,
         color,
-        themeMode
+        themeMode,
+        propType
       );
 
       // Extract SVG content
@@ -273,16 +275,23 @@ export class PropSvgLoader implements IPropSvgLoader {
 
   /**
    * Apply color transformation to SVG
-   * Delegates to shared svg-color-utils for consistency across the app
+   * Delegates to shared svg-color-utils for consistency across the app.
+   * Torch-family props preserve dark body fills (only knob/handle gets colored).
    */
   private applyColorToSvg(
     svgText: string,
     color: MotionColor,
-    themeMode: ThemeMode
+    themeMode: ThemeMode,
+    propType?: string
   ): string {
+    const isSelective = propType
+      ? (SELECTIVE_COLOR_PROP_TYPES as readonly string[]).includes(propType.toLowerCase())
+      : false;
+
     return applyMotionColorToSvg(svgText, color, {
       makeClassNamesUnique: true,
       themeMode,
+      selectiveColorMode: isSelective,
     });
   }
 

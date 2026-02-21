@@ -68,6 +68,10 @@
       props: [PropType.EIGHTRINGS, PropType.BIGEIGHTRINGS],
     },
     {
+      name: "Torches",
+      props: [PropType.TORCH, PropType.BIGTORCH],
+    },
+    {
       name: "Singles",
       props: [PropType.HAND, PropType.SWORD, PropType.QUIAD],
       // Note: POI removed until fully implemented

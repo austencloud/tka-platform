@@ -63,16 +63,74 @@ export function getMotionColor(
 }
 
 /**
- * Check if a color should be preserved (not transformed)
+ * Prop types that use selective coloring: only neutral (white/gray) fills get colored,
+ * dark fills and warm/saturated fills (yellows, golds) are preserved.
+ * Used for torches where the shaft stays dark, wick stays yellow, and knob gets hand color.
  */
-export function shouldPreserveColor(color: string): boolean {
+export const SELECTIVE_COLOR_PROP_TYPES = ["torch", "bigtorch"] as const;
+
+/**
+ * Parse a 6-digit hex color to 0-1 RGB channels.
+ * Returns null for non-hex or short-hex colors.
+ */
+function parseHex(hex: string): { r: number; g: number; b: number } | null {
+  const clean = hex.replace("#", "");
+  if (clean.length < 6) return null;
+  return {
+    r: parseInt(clean.slice(0, 2), 16) / 255,
+    g: parseInt(clean.slice(2, 4), 16) / 255,
+    b: parseInt(clean.slice(4, 6), 16) / 255,
+  };
+}
+
+/**
+ * Compute relative luminance (0 = black, 1 = white).
+ */
+function luminance(r: number, g: number, b: number): number {
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/**
+ * Compute HSV saturation (0 = gray/white, 1 = fully saturated).
+ */
+function saturation(r: number, g: number, b: number): number {
+  const max = Math.max(r, g, b);
+  if (max === 0) return 0;
+  const min = Math.min(r, g, b);
+  return (max - min) / max;
+}
+
+/**
+ * Check if a color should be preserved (not transformed).
+ *
+ * In selectiveMode, only neutral unsaturated light colors get replaced:
+ * - Dark colors (luminance < 0.4) → preserved (shaft/body)
+ * - Warm/saturated colors (saturation > 0.05) → preserved (wick, gold accents)
+ * - White is NOT preserved (overrides global list) → gets hand color
+ */
+export function shouldPreserveColor(color: string, selectiveMode?: boolean): boolean {
   const colorLower = color.toLowerCase();
-  return (
-    colorLower === "none" ||
-    colorLower === "transparent" ||
-    ACCENT_COLORS_TO_PRESERVE.some(
-      (accent) => accent.toLowerCase() === colorLower
-    )
+
+  // Always skip none/transparent
+  if (colorLower === "none" || colorLower === "transparent") return true;
+
+  if (selectiveMode && colorLower.startsWith("#")) {
+    const rgb = parseHex(colorLower);
+    if (!rgb) return false;
+
+    // Dark colors: preserve (shaft body)
+    if (luminance(rgb.r, rgb.g, rgb.b) < 0.4) return true;
+
+    // Warm/saturated colors: preserve (wick, gold, cream)
+    if (saturation(rgb.r, rgb.g, rgb.b) > 0.05) return true;
+
+    // Neutral light colors (whites, light grays): replace with hand color
+    return false;
+  }
+
+  // Standard mode: check global accent list
+  return ACCENT_COLORS_TO_PRESERVE.some(
+    (accent) => accent.toLowerCase() === colorLower
   );
 }
 
@@ -93,6 +151,8 @@ export function applyColorToSvg(
     removeCenterPoint?: boolean;
     makeClassNamesUnique?: boolean;
     colorSuffix?: string;
+    /** Enable selective coloring: only neutral (white/gray) fills get replaced. Dark and warm fills preserved. */
+    selectiveColorMode?: boolean;
   } = {}
 ): string {
   const {
@@ -100,6 +160,7 @@ export function applyColorToSvg(
     removeCenterPoint = true,
     makeClassNamesUnique = false,
     colorSuffix = "",
+    selectiveColorMode = false,
   } = options;
 
   let coloredSvg = svgText;
@@ -108,7 +169,7 @@ export function applyColorToSvg(
   coloredSvg = coloredSvg.replace(
     /fill="(#[0-9A-Fa-f]{3,6}|rgb[a]?\([^)]+\)|[a-z]+)"/gi,
     (match, capturedColor) => {
-      if (shouldPreserveColor(capturedColor)) {
+      if (shouldPreserveColor(capturedColor, selectiveColorMode)) {
         return match;
       }
       return `fill="${targetColor}"`;
@@ -119,7 +180,7 @@ export function applyColorToSvg(
   coloredSvg = coloredSvg.replace(
     /fill:\s*(#[0-9A-Fa-f]{3,6}|rgb[a]?\([^)]+\)|[a-z]+)/gi,
     (match, capturedColor) => {
-      if (shouldPreserveColor(capturedColor)) {
+      if (shouldPreserveColor(capturedColor, selectiveColorMode)) {
         return match;
       }
       return `fill:${targetColor}`;
@@ -131,7 +192,7 @@ export function applyColorToSvg(
     coloredSvg = coloredSvg.replace(
       /stroke="(#[0-9A-Fa-f]{3,6}|rgb[a]?\([^)]+\)|[a-z]+)"/gi,
       (match, capturedColor) => {
-        if (shouldPreserveColor(capturedColor)) {
+        if (shouldPreserveColor(capturedColor, selectiveColorMode)) {
           return match;
         }
         return `stroke="${targetColor}"`;
@@ -141,7 +202,7 @@ export function applyColorToSvg(
     coloredSvg = coloredSvg.replace(
       /stroke:\s*(#[0-9A-Fa-f]{3,6}|rgb[a]?\([^)]+\)|[a-z]+)/gi,
       (match, capturedColor) => {
-        if (shouldPreserveColor(capturedColor)) {
+        if (shouldPreserveColor(capturedColor, selectiveColorMode)) {
           return match;
         }
         return `stroke:${targetColor}`;
@@ -186,6 +247,7 @@ export function applyMotionColorToSvg(
     removeCenterPoint?: boolean;
     makeClassNamesUnique?: boolean;
     themeMode?: ThemeMode;
+    selectiveColorMode?: boolean;
   } = {}
 ): string {
   const mode = options.themeMode ?? "dark";

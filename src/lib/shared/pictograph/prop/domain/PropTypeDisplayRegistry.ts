@@ -135,6 +135,10 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
     // === QUIAD ===
     [PropType.QUIAD]: { label: "Quiad", image: "/images/props/buttons/quiad.svg" },
 
+    // === TORCH FAMILY ===
+    [PropType.TORCH]: { label: "Torch", image: "/images/props/buttons/torch.svg" },
+    [PropType.BIGTORCH]: { label: "Big Torch", image: "/images/props/buttons/bigtorch.svg" },
+
     // === POI FAMILY (Momentum-based) ===
     // Uses club.svg as placeholder until proper poi SVG (~175px) is created
     [PropType.POI]: { label: "Poi", image: "/images/props/buttons/club.svg" },
@@ -196,6 +200,8 @@ export const VARIANT_PROP_TYPES: PropType[] = [
   PropType.BIGDOUBLESTAR,
   // Eightrings family
   PropType.BIGEIGHTRINGS,
+  // Torch family
+  PropType.BIGTORCH,
 ];
 
 /**
@@ -227,6 +233,8 @@ const VARIANT_TO_BASE: Partial<Record<PropType, PropType>> = {
   [PropType.BIGDOUBLESTAR]: PropType.DOUBLESTAR,
   // Eightrings variations
   [PropType.BIGEIGHTRINGS]: PropType.EIGHTRINGS,
+  // Torch variations
+  [PropType.BIGTORCH]: PropType.TORCH,
 };
 
 /**
@@ -245,6 +253,7 @@ const BASE_TO_VARIANTS: Partial<Record<PropType, PropType[]>> = {
   [PropType.GUITAR]: [PropType.UKULELE],
   [PropType.DOUBLESTAR]: [PropType.BIGDOUBLESTAR],
   [PropType.EIGHTRINGS]: [PropType.BIGEIGHTRINGS],
+  [PropType.TORCH]: [PropType.BIGTORCH],
 };
 
 /**

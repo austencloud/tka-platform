@@ -21,6 +21,7 @@ import { GridLocation as GridLocationEnum, GridMode as GridModeEnum } from "$lib
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   applyMotionColorToSvg,
+  SELECTIVE_COLOR_PROP_TYPES,
   type ThemeMode,
 } from "$lib/shared/utils/svg-color-utils";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -106,10 +107,14 @@ export class TopologyPropLoader implements ITopologyPropLoader {
         const rawSvg = await this.fetchSvg(svgPath);
         if (!rawSvg) return null;
 
+        const isSelective = (SELECTIVE_COLOR_PROP_TYPES as readonly string[]).includes(
+          propType.toLowerCase()
+        );
         const coloredSvg = applyMotionColorToSvg(rawSvg, motionColor, {
           themeMode,
           removeCenterPoint: true,
           makeClassNamesUnique: true,
+          selectiveColorMode: isSelective,
         });
 
         const metadata = this.parseSvgMetadata(rawSvg);

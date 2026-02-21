@@ -11,7 +11,7 @@
  * - Large size
  * - SKIP beta offset when ending in radial (IN/OUT) or non-radial (CLOCK/COUNTER)
  */
-export const BIG_UNILATERAL_PROPS = ["bighoop", "bigfan", "bigtriad"] as const;
+export const BIG_UNILATERAL_PROPS = ["bighoop", "bigfan", "bigtriad", "bigtorch"] as const;
 
 /**
  * Small Unilateral Props
@@ -27,6 +27,7 @@ export const SMALL_UNILATERAL_PROPS = [
   "triquetra",
   "triquetra2",
   "chicken",
+  "torch",
 ] as const;
 
 /**

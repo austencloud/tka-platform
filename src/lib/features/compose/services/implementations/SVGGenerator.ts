@@ -2,6 +2,7 @@ import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { ISVGGenerator, PropSvgData } from "../contracts/ISVGGenerator";
 import {
   applyColorToSvg,
+  SELECTIVE_COLOR_PROP_TYPES,
   getMotionColor,
   type ThemeMode,
 } from "$lib/shared/utils/svg-color-utils";
@@ -151,7 +152,7 @@ export class SVGGenerator implements ISVGGenerator {
     const propTypeLower = propType.toLowerCase();
     const path = `/images/props/animated/${propTypeLower}.svg`;
     const originalSvg = await this.fetchPropSvg(path);
-    const coloredSvg = this.applyColorToPropSvg(originalSvg, color);
+    const coloredSvg = this.applyColorToPropSvg(originalSvg, color, propTypeLower);
     const { width, height } = this.extractViewBoxDimensions(originalSvg);
     return { svg: coloredSvg, width, height };
   }
@@ -223,11 +224,17 @@ export class SVGGenerator implements ISVGGenerator {
   }
 
   /**
-   * Apply color to prop SVG while preserving transparent sections and accent colors
-   * Delegates to shared svg-color-utils for consistency across the app
+   * Apply color to prop SVG while preserving transparent sections and accent colors.
+   * Torch-family props preserve dark body fills (only knob/handle gets colored).
    */
-  private applyColorToPropSvg(svgText: string, color: string): string {
-    return applyColorToSvg(svgText, color);
+  private applyColorToPropSvg(svgText: string, color: string, propType?: string): string {
+    const isSelective = propType
+      ? (SELECTIVE_COLOR_PROP_TYPES as readonly string[]).includes(propType.toLowerCase())
+      : false;
+
+    return applyColorToSvg(svgText, color, {
+      selectiveColorMode: isSelective,
+    });
   }
 
   /**

@@ -70,6 +70,10 @@ export enum PropType {
   // === QUIAD ===
   QUIAD = "quiad",
 
+  // === TORCH FAMILY ===
+  TORCH = "torch",
+  BIGTORCH = "bigtorch",
+
   // === POI FAMILY (Momentum-based) ===
   // Poi uses physics constraints - see PoiConstraintValidator
   // Uses club.svg as placeholder until proper poi SVG (~175px) is created

@@ -243,6 +243,17 @@ const QUIAD_FIRE_POINTS: PropFirePointConfig = {
 	],
 };
 
+// ─── Torch ────────────────────────────────────────────────────────────────────
+// Single flame at the wick end (left/negative-dx end of the prop).
+
+const TORCH_FIRE_POINTS: PropFirePointConfig = {
+	points: [{ dx: -140, dy: 0, flameScale: 1.0 }],
+};
+
+const BIGTORCH_FIRE_POINTS: PropFirePointConfig = {
+	points: [{ dx: -120, dy: 0, flameScale: 1.3 }],
+};
+
 // ─── Poi ──────────────────────────────────────────────────────────────────────
 // Ball end only (positive direction from center).
 
@@ -336,6 +347,10 @@ export const PROP_FIRE_POINTS: Record<string, PropFirePointConfig> = {
 
 	// Quiad
 	quiad: QUIAD_FIRE_POINTS,
+
+	// Torch family
+	torch: TORCH_FIRE_POINTS,
+	bigtorch: BIGTORCH_FIRE_POINTS,
 
 	// Poi
 	poi: POI_FIRE_POINTS,
