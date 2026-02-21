@@ -42,6 +42,9 @@ export interface ThumbnailRenderInput {
   lightMode: boolean;
   variant: ThumbnailVariant;
 
+  // LOOP badge
+  loopType?: string | null;
+
   // Composition overrides (undefined = use variant defaults)
   addWord?: boolean;
   addStepNumbers?: boolean;

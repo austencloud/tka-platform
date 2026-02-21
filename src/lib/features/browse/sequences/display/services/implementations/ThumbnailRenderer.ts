@@ -24,6 +24,7 @@ import type {
   ThumbnailRenderInput,
   CompositionDefaults,
 } from "../contracts/IThumbnailKeyDeriver";
+import type { ILOOPDetector } from "$lib/features/create/generate/circular/services/contracts/ILOOPDetector";
 
 const DEFAULT_BEAT_SIZE = 240;
 const DEFAULT_FORMAT = "WebP" as const;
@@ -49,7 +50,8 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
   constructor(
     private sequenceRenderer: ISequenceRenderer,
     private startPositionDeriver: IStartPositionDeriver,
-    private browseLoader: IBrowseLoader | null
+    private browseLoader: IBrowseLoader | null,
+    private loopDetector: ILOOPDetector
   ) {}
 
   async render(
@@ -58,8 +60,24 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
     options?: RenderOptions,
     onProgress?: RenderProgressCallback
   ): Promise<Blob> {
-    // Load full sequence data if needed
-    const fullSequence = await this.ensureFullSequenceData(sequence, input.sequenceName);
+    // Load full sequence data if needed (fetches from user's source doc)
+    const loadedSequence = await this.ensureFullSequenceData(sequence, input.sequenceName);
+
+    // Resolve loopType: loaded doc → index fallback → runtime detection
+    let resolvedLoopType = loadedSequence.loopType ?? sequence.loopType ?? null;
+
+    if (!resolvedLoopType && loadedSequence.steps && loadedSequence.steps.length >= 2) {
+      try {
+        const detection = this.loopDetector.detectLOOPType(loadedSequence);
+        resolvedLoopType = detection.loopType;
+      } catch {
+        // Detection failure is non-fatal — thumbnail renders without badge
+      }
+    }
+
+    const fullSequence = resolvedLoopType
+      ? { ...loadedSequence, loopType: resolvedLoopType }
+      : loadedSequence;
 
     // Derive start position if missing
     const sequenceWithStartPos = this.ensureStartPosition(fullSequence);

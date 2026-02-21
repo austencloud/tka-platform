@@ -135,7 +135,10 @@ Used by both desktop side panel and mobile slide-up overlay.
       loader.loadFullSequence(currentSequence)
         .then((loaded) => {
           if (sequence.id === currentSequence.id && loaded) {
-            fullSequence = loaded;
+            // Preserve metadata from public index that the user's source doc may lack
+            fullSequence = loaded.loopType
+              ? loaded
+              : { ...loaded, loopType: currentSequence.loopType };
           }
         })
         .catch((err) => {

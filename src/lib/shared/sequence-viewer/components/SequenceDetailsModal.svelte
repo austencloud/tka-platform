@@ -40,6 +40,7 @@
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { container } from "$lib/shared/di";
   import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
+  import type { IClaudeCodeCopier } from "$lib/features/browse/sequences/display/services/contracts/IClaudeCodeCopier";
   import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
   import { createAnimationPanelState, type PlaybackMode, type AnimationStateKey } from "$lib/features/compose/state/animation-panel-state.svelte";
   import ViewerFooter from "./ViewerFooter.svelte";
@@ -504,6 +505,11 @@
     }
   }
 
+  async function getCopyDataForClaude(): Promise<string> {
+    if (!claudeCopier || !sequence) return "";
+    return claudeCopier.generatePrompt(sequence);
+  }
+
   function handleKeydown(event: KeyboardEvent) {
     // Only handle keys when modal is open
     if (!open) return;
@@ -667,6 +673,7 @@
   let loopabilityChecker: ISequenceLoopabilityChecker | null = null;
   let sequenceDataProvider: ISequenceDataProvider | null = null;
   let hapticService: IHapticFeedback | null = null;
+  let claudeCopier = $state<IClaudeCodeCopier | null>(null);
 
   // Export state (from service)
   let animationCanvas = $state<HTMLCanvasElement | null>(null);
@@ -834,6 +841,7 @@
       loopabilityChecker = container.items.sequenceLoopabilityChecker;
       sequenceDataProvider = container.items.sequenceDataProvider;
       hapticService = container.items.hapticFeedback;
+      claudeCopier = container.items.claudeCodeCopier as IClaudeCodeCopier;
 
       // Initialize LAN sync state with coordinator from container
       const lanSyncCoordinator = container.items.lanSyncCoordinator as ILanSyncCoordinator;
@@ -1255,6 +1263,7 @@
       onBackToExportTypeSelection={backToExportTypeSelection}
       onDarkModeToggle={() => toggleImgSetting("darkMode")}
       onSettingsOpen={() => (settingsModalOpen = true)}
+      getCopyData={claudeCopier ? getCopyDataForClaude : undefined}
     />
   {/snippet}
 

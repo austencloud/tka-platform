@@ -32,6 +32,7 @@ import { Navigator } from "$lib/features/browse/sequences/navigation/services/im
 import { BrowseDeleter } from "$lib/features/browse/shared/services/implementations/BrowseDeleter";
 import { BrowseEventHandler } from "$lib/features/browse/shared/services/implementations/BrowseEventHandler";
 import { OptimizedBrowser } from "$lib/features/browse/shared/services/implementations/OptimizedBrowser";
+import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
 
 // Sequence detail services
 import { SequenceDetailLoader } from "$lib/features/browse/sequences/display/services/implementations/SequenceDetailLoader";
@@ -153,7 +154,8 @@ export function createBrowseContainer(deps: BrowseContainerDeps) {
       new ThumbnailRenderer(
         deps.sequenceRenderer,
         deps.startPositionDeriver,
-        ctx.browseLoader
+        ctx.browseLoader,
+        loopDetector
       ),
   }));
 

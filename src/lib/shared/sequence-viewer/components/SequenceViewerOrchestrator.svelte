@@ -490,6 +490,8 @@
       cellPreWarmer.preWarmSequence(loadedSequence, "user-blocking");
 
       modalAnimationState.setShouldLoop(true);
+      // Viewer always uses continuous mode - don't inherit step mode from localStorage
+      modalAnimationState.setPlaybackMode("continuous");
       const success = playbackController.initialize(loadedSequence, modalAnimationState);
       if (!success) throw new Error("Failed to initialize playback");
 
@@ -498,11 +500,10 @@
       lastLoadedSequenceId = seqId;
       modalAnimationState.setSequenceData(loadedSequence);
 
-      // Apply BPM from state
-      if (bpmLocal !== 60) {
-        const speedMultiplier = bpmLocal / 60;
-        playbackController.setSpeed(speedMultiplier);
-      }
+      // Always sync controller speed to match UI state.
+      // bpmLocal defaults to 60 (initialBpm prop) but modalAnimationState
+      // loads persisted speed from localStorage which can differ.
+      playbackController.setSpeed(bpmLocal / 60);
 
       // Auto-start when enough cells are rendered (or after max wait).
       // This replaces the old fixed 300ms delay with render-aware coordination.

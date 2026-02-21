@@ -50,6 +50,7 @@ export class ThumbnailKeyDeriver implements IThumbnailKeyDeriver {
           prop: propKey,
           mode,
           variant: input.variant,
+          loop: input.loopType ?? null,
         }
       : this.buildFullHashInput(input);
 
@@ -196,6 +197,8 @@ export class ThumbnailKeyDeriver implements IThumbnailKeyDeriver {
       showNonRadialPoints: input.visibility?.showNonRadialPoints,
       // QR code in empty cell
       showQRCode: input.visibility?.showQRCode,
+      // LOOP badge
+      loop: input.loopType ?? null,
       // EXCLUDED: showTKA, showReversals - these are canonical (always ON)
     };
   }

@@ -14,32 +14,14 @@ Variation support:
   a pill shows "1/3" etc. at the bottom
 - Tapping the pill cycles through variations with crossfade
 
-LOOP badge:
-- Shows a small pie chart glyph when sequence has LOOP constraints
-- Positioned in bottom-left corner as overlay
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
-  import type { ILOOPTypeResolver } from "$lib/features/create/generate/shared/services/contracts/ILOOPTypeResolver";
-  import { container } from "$lib/shared/di";
-  import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
-  import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import PropAwareThumbnail from "../PropAwareThumbnail.svelte";
   import VariationPill from "./VariationPill.svelte";
 
-  // Services via DI
-  let loopTypeResolver: ILOOPTypeResolver | null = $state(null);
-
-  onMount(() => {
-    loopTypeResolver = container.items.loopTypeResolver;
-  });
-
   // Cache for on-demand LOOP detection results (keyed by sequence ID)
-  const loopDetectionCache = new Map<string, Set<LOOPComponent> | null>();
-
   const {
     sequence,
     variations = [],
@@ -63,7 +45,9 @@ LOOP badge:
     lightMode?: boolean;
   } = $props();
 
-  // Track which variation is currently displayed
+  // Track which variation is currently displayed.
+  // Initialized to this card's own position in the variations array so each card
+  // starts by showing its own base sequence (prevents duplicate view-transition-names).
   let currentVariationIndex = $state(0);
 
   // The sequence currently being shown (either the original or a variation)
@@ -78,65 +62,6 @@ LOOP badge:
 
   // Total count for the pill
   const variationCount = $derived(variations.length > 1 ? variations.length : 0);
-
-  /**
-   * Detect LOOP components on demand for sequences without loopType.
-   * Uses caching to avoid repeated analysis.
-   */
-  function detectLoopComponents(seq: SequenceData): Set<LOOPComponent> | null {
-    if (!loopTypeResolver) return null;
-
-    // Check cache first
-    const cacheKey = seq.id;
-    if (loopDetectionCache.has(cacheKey)) {
-      return loopDetectionCache.get(cacheKey)!;
-    }
-
-    // Need full sequence data with steps for detection
-    if (!seq.steps || seq.steps.length < 2) {
-      loopDetectionCache.set(cacheKey, null);
-      return null;
-    }
-
-    try {
-      const result = loopDetector.detectLOOPType(seq);
-
-      if (result.loopType !== null) {
-        const components = loopTypeResolver.parseComponents(result.loopType);
-        const resultSet = components.size > 0 ? components : null;
-        loopDetectionCache.set(cacheKey, resultSet);
-        return resultSet;
-      }
-
-      loopDetectionCache.set(cacheKey, null);
-      return null;
-    } catch {
-      // Detection failed - cache null to avoid repeated attempts
-      loopDetectionCache.set(cacheKey, null);
-      return null;
-    }
-  }
-
-  // Parse LOOP components for badge display
-  // Priority: 1) Use existing loopType if set, 2) Detect on-demand if steps available
-  const loopComponents = $derived.by(() => {
-    if (!loopTypeResolver) return null;
-
-    const loopType = displayedSequence.loopType;
-
-    // If loopType is explicitly set, use it
-    if (loopType !== null && loopType !== undefined) {
-      const components = loopTypeResolver.parseComponents(loopType);
-      return components.size > 0 ? components : null;
-    }
-
-    // If no loopType, try to detect it on-demand
-    if (!loopType && displayedSequence.steps) {
-      return detectLoopComponents(displayedSequence);
-    }
-
-    return null;
-  });
 
   // Cycle to next variation
   function handleCycleVariation() {
@@ -167,11 +92,15 @@ LOOP badge:
     }
   }
 
-  // Reset index when the base sequence changes
+  // Reset to this card's own position when base sequence or variations change
   $effect(() => {
-    // Depend on sequence.id to detect base sequence change
     const _ = sequence.id;
-    currentVariationIndex = 0;
+    if (variations.length > 1) {
+      const ownIndex = variations.findIndex((v) => v.id === sequence.id);
+      currentVariationIndex = ownIndex >= 0 ? ownIndex : 0;
+    } else {
+      currentVariationIndex = 0;
+    }
   });
 </script>
 
@@ -198,18 +127,6 @@ LOOP badge:
       userName={displayedSequence.ownerDisplayName}
     />
   </div>
-
-  <!-- LOOP badge - bottom-left corner, shows when sequence has LOOP constraints -->
-  {#if loopComponents}
-    <div class="loop-badge" class:light-mode={lightMode}>
-      <LOOPIconStrip
-        activeComponents={loopComponents}
-        size={14}
-        darkMode={!lightMode}
-        showFreeformWhenEmpty={false}
-      />
-    </div>
-  {/if}
 
   <VariationPill
     currentIndex={currentVariationIndex}
@@ -294,22 +211,6 @@ LOOP badge:
   .thumbnail-container.crossfade :global(img),
   .thumbnail-container.crossfade :global(.placeholder) {
     transition: opacity var(--duration-normal) ease-out;
-  }
-
-  /* LOOP badge - positioned bottom-left, horizontal strip */
-  .loop-badge {
-    position: absolute;
-    bottom: 4px;
-    left: 4px;
-    padding: 3px 5px;
-    background: var(--theme-overlay-bg, rgba(0, 0, 0, 0.65));
-    border-radius: 4px;
-    backdrop-filter: blur(4px);
-    z-index: 1;
-  }
-
-  .loop-badge.light-mode {
-    background: var(--theme-overlay-bg-light, rgba(255, 255, 255, 0.85));
   }
 
   /* On mobile, suppress the morph view-transition-name so the drawer

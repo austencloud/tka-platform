@@ -5,6 +5,8 @@
   Handles both normal view mode and export mode headers.
 -->
 <script lang="ts">
+  import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";
+
   type ExportType = "animation" | "image" | "both";
 
   interface Props {
@@ -21,6 +23,8 @@
     onDarkModeToggle: () => void;
     /** Callback to open the settings modal */
     onSettingsOpen?: () => void;
+    /** Returns sequence data for clipboard copy (async). When provided, shows copy button. */
+    getCopyData?: () => string | Promise<string>;
   }
 
   let {
@@ -35,6 +39,7 @@
     onBackToExportTypeSelection,
     onDarkModeToggle,
     onSettingsOpen,
+    getCopyData,
   }: Props = $props();
 </script>
 
@@ -102,6 +107,14 @@
     {/if}
 
     <div class="header-right">
+      {#if getCopyData}
+        <CopyForAIButton
+          getData={getCopyData}
+          variant="icon-only"
+          size="md"
+          ariaLabel="Copy sequence data for AI"
+        />
+      {/if}
       <button
         type="button"
         class="header-action-btn"
@@ -171,6 +184,7 @@
     justify-self: end;
     display: flex;
     align-items: center;
+    gap: 4px;
   }
 
   .header-center {

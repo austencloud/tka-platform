@@ -124,6 +124,7 @@
     catDogModeEnabled,
     lightMode,
     variant,
+    loopType: sequence.loopType ?? null,
     addWord,
     addStepNumbers,
     includeStartPosition,
@@ -161,6 +162,26 @@
       );
       observer.observe(containerRef);
     }
+  });
+
+  // Listen for cache invalidation (fired by admin "Clear Cloud Thumbnails" button)
+  function handleCacheCleared() {
+    if (!isVisible) return; // Only re-render visible thumbnails
+    // Revoke old blob URL to prevent memory leak
+    if (thumbnailUrl?.startsWith("blob:")) {
+      URL.revokeObjectURL(thumbnailUrl);
+    }
+    // Reset state to force the $effect to re-fetch
+    thumbnailUrl = null;
+    currentKeyHash = null;
+    status = { state: "idle" };
+  }
+
+  $effect(() => {
+    window.addEventListener("thumbnailCacheCleared", handleCacheCleared);
+    return () => {
+      window.removeEventListener("thumbnailCacheCleared", handleCacheCleared);
+    };
   });
 
   onDestroy(() => {

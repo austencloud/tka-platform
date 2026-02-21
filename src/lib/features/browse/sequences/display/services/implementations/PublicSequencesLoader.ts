@@ -145,7 +145,7 @@ export class PublicSequencesLoader implements IBrowseLoader {
       difficultyLevel: data.difficultyLevel,
       loopType: data.loopType as SequenceData["loopType"],
       isFavorite: false,
-      isCircular: false,
+      isCircular: (data as unknown as { isCircular?: boolean }).isCircular ?? false,
       tags: [...data.tags],
       metadata: {},
       // Date info - prefer birthday (real creation date) over publishedAt (bulk publish date)

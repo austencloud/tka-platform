@@ -211,7 +211,13 @@
       totalDeleted += wordcardCount;
       console.log(`🗑️ Deleted ${wordcardCount} wordcard thumbnails`);
 
-      console.log(`✅ Total deleted: ${totalDeleted} cloud thumbnails`);
+      // Also clear local IndexedDB thumbnail cache so stale local copies don't persist
+      const localCache = container.items.thumbnailLocalCache as IThumbnailLocalCache;
+      await localCache.clear();
+      console.log(`✅ Total deleted: ${totalDeleted} cloud thumbnails + local cache cleared`);
+
+      // Notify visible thumbnail components to re-render immediately
+      window.dispatchEvent(new CustomEvent("thumbnailCacheCleared"));
 
       introResetMessage = `Deleted ${totalDeleted} cloud thumbnails`;
       setTimeout(() => {

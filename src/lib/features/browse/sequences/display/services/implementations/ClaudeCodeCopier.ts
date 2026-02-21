@@ -1,11 +1,14 @@
 /**
  * ClaudeCodeCopier - Copy sequence data formatted for AI analysis
  *
- * Generates comprehensive sequence prompts for Claude Code agents,
- * including metadata, database location, beat data, and full JSON.
+ * Generates a compact sequence encoding optimized for token efficiency.
+ * Uses a key/legend at the top so AI can decode the abbreviated format.
+ * Strips rendering metadata (placement data, arrow locations, prop types)
+ * and keeps only semantically meaningful motion fields.
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { IClaudeCodeCopier, CopyResult } from "../contracts/IClaudeCodeCopier";
 import type { ISequenceDetailLoader } from "../contracts/ISequenceDetailLoader";
 
@@ -24,7 +27,6 @@ export class ClaudeCodeCopier implements IClaudeCodeCopier {
   }
 
   async generatePrompt(sequence: SequenceData): Promise<string> {
-    // Load full sequence data if steps are missing
     let fullSequence = sequence;
     if (this.detailLoader.needsFullLoad(sequence)) {
       const loaded = await this.detailLoader.loadFullSequence(sequence);
@@ -33,81 +35,138 @@ export class ClaudeCodeCopier implements IClaudeCodeCopier {
       }
     }
 
-    // Build comprehensive sequence context
     const stepCount = fullSequence.steps?.length ?? 0;
-    const difficultyText =
-      fullSequence.difficultyLevel ||
-      fullSequence.level?.toString() ||
-      "Unknown";
-    const tagsText = fullSequence.tags?.length
-      ? fullSequence.tags.join(", ")
-      : "None";
+    const lines: string[] = [];
 
-    // Format beat data compactly
-    const beatSummary = this.formatBeatSummary(fullSequence);
-
-    // Derive starting position from first beat
-    const startPosText = this.formatStartingPosition(fullSequence);
-
-    // Build the prompt
-    return `Analyze sequence ID: ${fullSequence.id}
-
-**${fullSequence.word || fullSequence.name || "Untitled"}**
-Difficulty: ${difficultyText} | Length: ${stepCount} steps | LOOP Type: ${fullSequence.loopType || "Unknown"}
-Tags: ${tagsText}
-Owner: ${fullSequence.ownerDisplayName || fullSequence.author || "Unknown"} (${fullSequence.ownerId || "no-id"})
-
----
-**Database Location:**
-- Collection: \`sequences\` (public) or \`users/{ownerId}/library\` (private)
-- Document ID: \`${fullSequence.id}\`
-- Owner ID: \`${fullSequence.ownerId || "unknown"}\`
-
-**Starting Position (derived from beat 1):**
-${startPosText}
-
-**Beat Sequence:**
-${beatSummary}
-
----
-**Full Sequence JSON:**
-\`\`\`json
-${JSON.stringify(fullSequence, null, 2)}
-\`\`\`
-
----
-Use this data to investigate issues, analyze the sequence structure, or make modifications. The sequence is stored in Firebase Firestore.`;
-  }
-
-  private formatBeatSummary(sequence: SequenceData): string {
-    if (!sequence.steps?.length) {
-      return "  No beat data available";
+    // Header — deduplicate repeated word in circular sequences
+    const rawWord = fullSequence.word || fullSequence.name || "Untitled";
+    lines.push(`# ${this.deduplicateWord(rawWord)}`);
+    lines.push(`id: ${fullSequence.id}`);
+    lines.push(`owner: ${fullSequence.ownerId || "unknown"}`);
+    lines.push(
+      `${stepCount} beats | ` +
+      `difficulty: ${fullSequence.difficultyLevel || fullSequence.level || "?"} | ` +
+      `loop: ${fullSequence.loopType || "none"} | ` +
+      `grid: ${fullSequence.gridMode || "diamond"}`
+    );
+    if (fullSequence.tags?.length) {
+      lines.push(`tags: ${fullSequence.tags.join(", ")}`);
+    }
+    if (fullSequence.notes) {
+      lines.push(`notes: ${fullSequence.notes}`);
     }
 
-    return sequence.steps
-      .map((beat, i) => {
-        const blueMotion = beat.motions?.blue;
-        const redMotion = beat.motions?.red;
-        const blueInfo = blueMotion
-          ? `${blueMotion.motionType} ${blueMotion.startLocation}->${blueMotion.endLocation}`
-          : "none";
-        const redInfo = redMotion
-          ? `${redMotion.motionType} ${redMotion.startLocation}->${redMotion.endLocation}`
-          : "none";
-        return `  Beat ${i + 1}: Blue(${blueInfo}) Red(${redInfo})`;
-      })
-      .join("\n");
-  }
+    // Key/legend
+    lines.push("");
+    lines.push("## Format Key");
+    lines.push("motion = type rot loc>loc t=turns ori>ori [prefloat:type,rot] [hand:path] [skew:steps,dir]");
+    lines.push("loc = n/e/s/w/ne/se/sw/nw/c (grid locations)");
+    lines.push("ori = in/out/cw/ccw/clockIn/clockOut/counterIn/counterOut");
+    lines.push("rot = cw/ccw/no (rotation direction)");
+    lines.push("rev = reversal indicator (B=blue, R=red)");
 
-  private formatStartingPosition(sequence: SequenceData): string {
-    const firstStep = sequence.steps?.[0];
-    if (!firstStep) {
-      return "No steps to derive from";
+    // Beats
+    lines.push("");
+    lines.push("## Beats");
+
+    if (fullSequence.steps?.length) {
+      for (let i = 0; i < fullSequence.steps.length; i++) {
+        const step = fullSequence.steps[i];
+        const beatNum = i + 1;
+        const letter = step.letter ? ` ${step.letter}` : "";
+        const pos = step.startPosition && step.endPosition
+          ? ` ${step.startPosition}>${step.endPosition}`
+          : "";
+
+        const blue = this.formatMotionCompact(step.motions?.blue);
+        const red = this.formatMotionCompact(step.motions?.red);
+
+        const revParts: string[] = [];
+        if (step.blueReversal) revParts.push("B");
+        if (step.redReversal) revParts.push("R");
+        const rev = revParts.length ? ` rev:${revParts.join("")}` : "";
+
+        lines.push(`${beatNum}${letter}${pos}${rev}`);
+        lines.push(`  blue: ${blue}`);
+        lines.push(`  red:  ${red}`);
+      }
+    } else {
+      lines.push("No beat data available");
     }
 
-    const blueStart = firstStep.motions?.blue;
-    const redStart = firstStep.motions?.red;
+    return lines.join("\n");
+  }
 
-    return `Blue: ${blueStart?.startLocation || "?"} (${blueStart?.startOrientation || "?"}), Red: ${redStart?.startLocation || "?"} (${redStart?.startOrientation || "?"})`;
+  private formatMotionCompact(motion: MotionData | undefined | null): string {
+    if (!motion) return "none";
+
+    const loc = `${this.abbrevLoc(motion.startLocation)}>${this.abbrevLoc(motion.endLocation)}`;
+    const rot = this.abbrevRot(motion.rotationDirection);
+    const turns = motion.turns === "fl" ? "fl" : String(motion.turns);
+    const ori = `${this.abbrevOri(motion.startOrientation)}>${this.abbrevOri(motion.endOrientation)}`;
+
+    let line = `${motion.motionType} ${rot} ${loc} t=${turns} ${ori}`;
+
+    // Optional fields (only when present and meaningful)
+    if (motion.prefloatMotionType) {
+      line += ` prefloat:${motion.prefloatMotionType},${this.abbrevRot(motion.prefloatRotationDirection)}`;
+    }
+    if (motion.handPath) {
+      line += ` hand:${motion.handPath}`;
+    }
+    if (motion.skewSteps && motion.skewSteps > 0) {
+      line += ` skew:${motion.skewSteps},${motion.skewDir || "?"}`;
+    }
+
+    return line;
+  }
+
+  private abbrevLoc(loc: string | undefined | null): string {
+    if (!loc) return "?";
+    const map: Record<string, string> = {
+      NORTH: "n", SOUTH: "s", EAST: "e", WEST: "w",
+      NORTHEAST: "ne", SOUTHEAST: "se", SOUTHWEST: "sw", NORTHWEST: "nw",
+      CENTER: "c",
+    };
+    return map[loc] ?? loc.toLowerCase();
+  }
+
+  private abbrevRot(rot: string | undefined | null): string {
+    if (!rot) return "no";
+    const map: Record<string, string> = {
+      CLOCKWISE: "cw", CW: "cw",
+      COUNTER_CLOCKWISE: "ccw", CCW: "ccw",
+      NO_ROTATION: "no",
+    };
+    return map[rot] ?? rot.toLowerCase();
+  }
+
+  private abbrevOri(ori: string | undefined | null): string {
+    if (!ori) return "?";
+    const map: Record<string, string> = {
+      IN: "in", OUT: "out",
+      CLOCKWISE: "cw", COUNTER_CLOCKWISE: "ccw",
+      CLOCK_IN: "clockIn", CLOCK_OUT: "clockOut",
+      COUNTER_IN: "counterIn", COUNTER_OUT: "counterOut",
+    };
+    return map[ori] ?? ori.toLowerCase();
+  }
+
+  /**
+   * Circular sequences store the full rotated cycle as the word,
+   * e.g. "Z-Σ-YΩZ-Σ-YΩZ-Σ-YΩZ-Σ-YΩ". Extract the base unit.
+   */
+  private deduplicateWord(word: string): string {
+    if (word.length < 2) return word;
+    // Try every possible base length from 1 to half the word
+    for (let len = 1; len <= word.length / 2; len++) {
+      if (word.length % len !== 0) continue;
+      const base = word.substring(0, len);
+      const repeats = word.length / len;
+      if (repeats >= 2 && base.repeat(repeats) === word) {
+        return base;
+      }
+    }
+    return word;
   }
 }

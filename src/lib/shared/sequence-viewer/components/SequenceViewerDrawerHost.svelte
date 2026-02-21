@@ -34,6 +34,8 @@
   import { container } from "$lib/shared/di";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
+  import type { IClaudeCodeCopier } from "$lib/features/browse/sequences/display/services/contracts/IClaudeCodeCopier";
+  import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";
 
   const overlay = getSequenceOverlayState();
 
@@ -59,6 +61,14 @@
 
   // Settings modal state
   let settingsModalOpen = $state(false);
+
+  // Copy for AI
+  let claudeCopier = $state<IClaudeCodeCopier | null>(null);
+
+  function getCopyDataForClaude(): Promise<string> {
+    if (!claudeCopier || !overlay.sequence) return Promise.resolve("");
+    return claudeCopier.generatePrompt(overlay.sequence);
+  }
 
   // Sync overlay state to drawer state
   $effect(() => {
@@ -88,6 +98,13 @@
       });
     } catch (error) {
       console.warn("SequenceViewerDrawerHost: Failed to resolve DeviceDetector", error);
+    }
+
+    // Resolve copy-for-AI service
+    try {
+      claudeCopier = container.items.claudeCodeCopier as IClaudeCodeCopier;
+    } catch {
+      // Non-fatal — button just won't appear
     }
 
     // Popstate (back button) listener
@@ -160,6 +177,14 @@
 
               <div class="drawer-header-actions">
                 {#if !ctx.isExportMode}
+                  {#if claudeCopier}
+                    <CopyForAIButton
+                      getData={getCopyDataForClaude}
+                      variant="icon-only"
+                      size="md"
+                      ariaLabel="Copy sequence data for AI"
+                    />
+                  {/if}
                   <button
                     type="button"
                     class="header-action-btn"
