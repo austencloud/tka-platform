@@ -35,6 +35,8 @@ import {
   getAlphabetOverview,
   getCommonAnswer,
   getTypeNamingOrigin,
+  findDomainTopic,
+  listDomainTopics,
 } from "@tka/domain";
 import {
   toDisplayOutput,
@@ -84,7 +86,7 @@ function createTikaTools() {
 
     get_term_definition: tool({
       description:
-        "Get the definition of a TKA domain term like alpha, pro, shift, static, beta, gamma, etc. Use this when asked what a term means.",
+        "Get the definition of a specific TKA glossary term like alpha, pro, shift, static, beta, gamma, dash, anti, etc. Use ONLY for specific technical terms, NOT for system-level concepts (use answer_common_question for 'what is a word/sequence/loop/pictograph/TKA').",
       inputSchema: jsonSchema<{ term: string }>({
         type: "object",
         properties: {
@@ -229,7 +231,7 @@ function createTikaTools() {
 
     answer_common_question: tool({
       description:
-        'Get canonical answer to common TKA questions. Use for: "what is TKA", "what is VTG", "what is a pictograph", "what is a sequence", "what is a loop", "why cross-shift".',
+        'MANDATORY for conceptual questions about TKA itself. Handles: "what is TKA", "what is a word", "what is a sequence", "what is a pictograph", "what is a loop", "what is VTG", "what is float", "what is hash", "why cross-shift", "what are compound letters", "what are interradials". Use this INSTEAD of get_term_definition when the question is about a system-level concept (word, sequence, loop, pictograph, TKA), not a specific glossary term (alpha, shift, dash, pro, anti).',
       inputSchema: jsonSchema<{ question: string }>({
         type: "object",
         properties: {
@@ -423,6 +425,33 @@ function createTikaTools() {
       },
     }),
 
+    get_domain_topic: tool({
+      description:
+        'MANDATORY for deep theoretical questions, design rationale, or "why" questions about the TKA system. Topics include: STUV anomaly (why 4 letters instead of 3), base rotation, orientation algebra, combinatorial space, hand path modifiers, level system, position symmetry, LOOPs and compositional theory, CAPs vs LOOPs, VTG deep dive, compound letters, center-relative orientation, skewed letters, elemental model, motion types. Use this when the user asks WHY something is the way it is, how the math works, or about the theoretical foundations. Returns authoritative reference content. Also use when you are unsure about a domain claim - look it up instead of guessing.',
+      inputSchema: jsonSchema<{ query: string }>({
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description:
+              'Topic to look up. Examples: "stuv-anomaly", "base-rotation", "loops", "orientation-algebra", "level-system", "position-symmetry", "combinatorial-space", "caps-vs-loops", "elemental-model". Natural language queries also work.',
+          },
+        },
+        required: ["query"],
+      }),
+      execute: async ({ query }) => {
+        const result = findDomainTopic(query);
+        if (result) {
+          return { found: true, key: result.key, title: result.title, content: result.content };
+        }
+        const available = listDomainTopics().map((t) => `${t.key}: ${t.title}`);
+        return {
+          found: false,
+          message: `No topic found for "${query}". Available topics: ${available.join(", ")}`,
+        };
+      },
+    }),
+
     find_app_feature: tool({
       description:
         'Find how to do something in TKA Scribe. Use for "How do I...?", "Where do I...?", "How to..." questions about app features. Returns step-by-step instructions for the matching capability. Do NOT use for TKA domain questions (letters, positions, motions) - those use other tools.',
@@ -549,7 +578,7 @@ export const POST: RequestHandler = async (event) => {
       system: systemPrompt,
       messages: modelMessages,
       tools: createTikaTools(),
-      stopWhen: stepCountIs(4),
+      stopWhen: stepCountIs(6),
       experimental_telemetry: {
         isEnabled: false,
       },

@@ -82,6 +82,15 @@
         </div>
       {/if}
 
+      <!-- Thinking indicator during tool execution -->
+      {@const pendingTools = tikaMessageExtractor.getToolsFromParts(message.parts).filter(t => t.isPending)}
+      {#if pendingTools.length > 0 && isStreaming}
+        <div class="thinking-indicator">
+          <i class="fas fa-brain fa-pulse" aria-hidden="true"></i>
+          <span>Looking up {formatToolName(pendingTools[0].name)}...</span>
+        </div>
+      {/if}
+
       <!-- Inline Pictographs/Galleries/Sequence Players from tool outputs -->
       {#if tikaMessageExtractor.getInlineContentFromParts(message.parts).length > 0}
         {@const inlineContent = tikaMessageExtractor.getInlineContentFromParts(message.parts)}
@@ -375,6 +384,25 @@
     opacity: 1;
   }
 
+  /* Thinking indicator during tool execution */
+  .thinking-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 6px 14px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    border-radius: 20px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-compact, 12px);
+  }
+
+  .thinking-indicator i {
+    color: var(--theme-accent, #6366f1);
+    font-size: 14px;
+  }
+
   /* Streaming cursor */
   .streaming-cursor {
     display: inline-block;
@@ -484,6 +512,10 @@
     .typing-indicator span {
       animation: none;
       opacity: 0.5;
+    }
+
+    .thinking-indicator i {
+      animation: none;
     }
 
     .link-chip {
