@@ -249,6 +249,14 @@ with pre-prepared data for better performance.
   let preparedData = $state<PreparedPictographData | null>(null);
   let isLoading = $state(false);
 
+  // Monotonic counter for preparation ordering.
+  // Each $effect run increments this. When a prepare completes, it only applies
+  // if no newer prepare has already applied. This prevents stale results (e.g. from
+  // an old prop type) from overwriting fresh ones, while still allowing rapid WASD
+  // results to show in order.
+  let prepareSequence = 0;
+  let lastAppliedSequence = 0;
+
   // Create a stable key for data preparation dependencies
   // Include effectiveDarkMode so that when it changes (via prop OR global toggle), we re-prepare with correct colors
   // CRITICAL: Include motion data so transforms trigger re-preparation with new positions
@@ -312,23 +320,25 @@ with pre-prepared data for better performance.
     });
   });
 
-  // Prepare data when pictographData or settings change
-  // IMPORTANT: We do NOT cancel in-flight preparations when only the adjustment version changes.
-  // This allows rapid WASD keypresses to each produce a visible result instead of only the last one.
-  // We only discard stale results when the pictograph IDENTITY changes (different step selected).
+  // Prepare data when pictographData or settings change.
+  // Uses a monotonic sequence counter to handle concurrent preparations correctly:
+  // - Rapid WASD presses: each increments the counter. If prepare #1 finishes before #2,
+  //   it applies (showing intermediate position). When #2 finishes, it also applies (newer).
+  // - Prop change after WASD: prop-change prepare gets a higher sequence number.
+  //   If the stale WASD prepare (old prop type) finishes after the prop-change prepare,
+  //   its lower sequence number prevents it from overwriting the correct result.
   $effect(() => {
     const key = prepareKey;
     const data = pictographData;
 
     if (!data || !key) {
       preparedData = null;
+      prepareSequence = 0;
+      lastAppliedSequence = 0;
       return;
     }
 
-    // Capture identity of the pictograph we're preparing for.
-    // Results are only discarded if the pictograph itself changed (different step selected),
-    // NOT if the adjustment version changed (WASD movement on the same step).
-    const prepareForId = data.id;
+    const mySequence = ++prepareSequence;
 
     (async () => {
       // Only show loading opacity for initial loads (no existing data),
@@ -346,21 +356,21 @@ with pre-prepared data for better performance.
           redPropType: redPropTypeOverride,
         };
         const result = await pictographPreparer.prepareSingle(data as PictographData, prepareOptions);
-        // Only apply if we're still viewing the same pictograph
-        // (different step selected = different identity = discard this stale result)
-        const currentData = pictographData;
-        if (currentData && currentData.id === prepareForId) {
+        // Only apply if no newer preparation has already been applied.
+        // This prevents stale results (e.g. old prop type) from overwriting fresh ones,
+        // while still allowing intermediate WASD results to show if they finish in order.
+        if (mySequence > lastAppliedSequence) {
+          lastAppliedSequence = mySequence;
           preparedData = result;
         }
       } catch (error) {
         console.error("Failed to prepare pictograph:", error);
-        const currentData = pictographData;
-        if (currentData && currentData.id === prepareForId) {
+        if (mySequence > lastAppliedSequence) {
+          lastAppliedSequence = mySequence;
           preparedData = data as PreparedPictographData;
         }
       } finally {
-        const currentData = pictographData;
-        if (currentData && currentData.id === prepareForId) {
+        if (mySequence >= lastAppliedSequence) {
           isLoading = false;
         }
       }
