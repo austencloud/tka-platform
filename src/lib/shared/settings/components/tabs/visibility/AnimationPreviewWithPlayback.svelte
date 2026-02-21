@@ -15,6 +15,7 @@
   import { turnPatternManager } from "$lib/features/create/shared/services/implementations/TurnPatternManager";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
+  import { createPlaybackControllerFactory } from "$lib/shared/di/containers/animator-container";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
@@ -30,7 +31,7 @@
   // Reactive visibility state
   let gridVisible = $state(visibilityManager.isGridVisible());
 
-  // Services
+  // Services — own controller instance so we don't stomp the singleton used by the viewer
   let playbackController: IAnimationPlaybackController;
   let browseLoader: IBrowseLoader;
 
@@ -176,8 +177,9 @@
       loading = true;
       error = null;
 
-      // Get services from container
-      playbackController = container.items.animationPlaybackController;
+      // Create own controller (not the singleton) so the settings preview
+      // doesn't clobber the viewer's playback state or dispose it on unmount
+      playbackController = createPlaybackControllerFactory();
       browseLoader = container.items.browseLoader;
 
       // Ensure sequence metadata is loaded (populates the cache) - with retry

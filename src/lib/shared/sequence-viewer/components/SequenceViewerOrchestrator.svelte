@@ -403,6 +403,9 @@
     }
   );
 
+  // Visibility observer ref for cleanup
+  let visibilityObserver: (() => void) | undefined;
+
   onMount(() => {
     // Keyboard handler
     window.addEventListener("keydown", handleKeydown, { capture: true });
@@ -420,6 +423,23 @@
     imageComposition.registerObserver(observer);
     imageCompositionObserver = observer;
 
+    // Sync playback mode from visibility manager (e.g. user toggles step/continuous in settings)
+    const visObs = () => {
+      const newMode = animationVisibility.getPlaybackMode();
+      if (modalAnimationState.playbackMode !== newMode) {
+        const wasPlaying = modalAnimationState.isPlaying;
+        if (wasPlaying && playbackController) {
+          playbackController.togglePlayback(); // stop
+        }
+        modalAnimationState.setPlaybackMode(newMode);
+        if (wasPlaying && playbackController) {
+          playbackController.togglePlayback(); // restart in new mode
+        }
+      }
+    };
+    animationVisibility.registerObserver(visObs);
+    visibilityObserver = visObs;
+
     // Load services
     void loadServices();
   });
@@ -432,6 +452,9 @@
     }
 
     keydownCleanup?.();
+    if (visibilityObserver) {
+      animationVisibility.unregisterObserver(visibilityObserver);
+    }
     if (imageCompositionObserver) {
       imageComposition.unregisterObserver(imageCompositionObserver);
     }
