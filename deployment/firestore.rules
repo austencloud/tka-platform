@@ -72,6 +72,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Fire defaults configuration - readable by all (including anonymous), writable by admins
+    match /config/fireDefaults {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Feature flag audit log - append-only for admins
     match /audit/featureFlags/entries/{entryId} {
       allow read: if isAdmin();
@@ -858,6 +864,19 @@ service cloud.firestore {
 
       // Only admin can write (create, update, delete)
       allow write: if isAdmin();
+    }
+
+    // Global arrow adjustment history - append-only audit trail
+    // Records every save/delete/undo/reset action on arrow adjustments
+    match /global_arrow_adjustment_history/{entryId} {
+      // Admins can read history (for the ArrowAdjustmentHistory panel)
+      allow read: if isAdmin();
+
+      // Admins can create entries (fire-and-forget from persister)
+      allow create: if isAdmin();
+
+      // History is immutable - no updates or deletes
+      allow update, delete: if false;
     }
 
     // ============================================================================
