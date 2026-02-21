@@ -42,6 +42,7 @@
         class="tab"
         class:active={activeTab === "tuning"}
         aria-selected={activeTab === "tuning"}
+        aria-label="Tuning tab — physics and playback controls"
         onclick={() => setTab("tuning")}
       >
         <i class="fas fa-sliders-h" aria-hidden="true"></i>
@@ -52,6 +53,7 @@
         class="tab"
         class:active={activeTab === "fire-points"}
         aria-selected={activeTab === "fire-points"}
+        aria-label="Fire Points tab — visual placement editor"
         onclick={() => setTab("fire-points")}
       >
         <i class="fas fa-crosshairs" aria-hidden="true"></i>
@@ -71,6 +73,11 @@
 
 <style>
   .flame-lab {
+    /* Flame Lab domain color tokens */
+    --flame-orange: #f97316;
+    --flame-orange-mid: rgba(249, 115, 22, 0.15);
+    --flame-orange-border: rgba(249, 115, 22, 0.3);
+
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -102,7 +109,7 @@
   }
 
   .title-row h1 i {
-    color: #f97316;
+    color: var(--flame-orange, #f97316);
   }
 
   .badge {
@@ -110,9 +117,9 @@
     border-radius: 9999px;
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
-    background: rgba(249, 115, 22, 0.15);
-    color: #f97316;
-    border: 1px solid rgba(249, 115, 22, 0.3);
+    background: var(--flame-orange-mid, rgba(249, 115, 22, 0.15));
+    color: var(--flame-orange, #f97316);
+    border: 1px solid var(--flame-orange-border, rgba(249, 115, 22, 0.3));
   }
 
   .tab-bar {
@@ -141,8 +148,8 @@
   }
 
   .tab.active {
-    color: #f97316;
-    border-bottom-color: #f97316;
+    color: var(--flame-orange, #f97316);
+    border-bottom-color: var(--flame-orange, #f97316);
   }
 
   .tab:focus-visible {

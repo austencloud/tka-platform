@@ -5,6 +5,7 @@
   and auto-saved actions (set default, reset, copy, import).
 -->
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import type { FirePointEditorState } from "../state/fire-point-editor-state.svelte";
 
   interface Props {
@@ -17,12 +18,18 @@
   let importText = $state("");
   let importError = $state<string | null>(null);
   let copyFeedback = $state(false);
+  let copyFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
+
+  onDestroy(() => {
+    if (copyFeedbackTimer !== null) clearTimeout(copyFeedbackTimer);
+  });
 
   async function handleCopyJSON() {
     try {
       await navigator.clipboard.writeText(editorState.toJSON());
       copyFeedback = true;
-      setTimeout(() => { copyFeedback = false; }, 1500);
+      if (copyFeedbackTimer !== null) clearTimeout(copyFeedbackTimer);
+      copyFeedbackTimer = setTimeout(() => { copyFeedback = false; copyFeedbackTimer = null; }, 1500);
     } catch {
       // Fallback: select-all on textarea
     }
@@ -70,6 +77,7 @@
       <button
         class="add-center-btn"
         onclick={handleAddAtCenter}
+        aria-label="Add fire point at center (0, 0)"
         title="Add point at center (0, 0)"
       >
         <i class="fas fa-plus" aria-hidden="true"></i>
@@ -169,6 +177,7 @@
       <button
         class="action-btn default-btn"
         onclick={() => editorState.setAsDefault()}
+        aria-label="Set current points as default for this prop"
         title="Save current points as your baseline default for this prop"
       >
         <i class="fas fa-bookmark" aria-hidden="true"></i>
@@ -178,6 +187,7 @@
       <button
         class="action-btn reset-btn"
         onclick={() => editorState.resetToUserDefault()}
+        aria-label={editorState.hasUserDefault ? "Reset to my saved default" : "Reset to system defaults"}
         title={editorState.hasUserDefault ? "Revert to your saved default" : "Revert to system defaults (no custom default set)"}
       >
         <i class="fas fa-undo" aria-hidden="true"></i>
@@ -188,6 +198,7 @@
         class="action-btn undo-btn"
         onclick={() => editorState.undo()}
         disabled={!editorState.canUndo}
+        aria-label="Undo last change"
       >
         <i class="fas fa-undo-alt" aria-hidden="true"></i>
         Undo
@@ -196,6 +207,7 @@
       <button
         class="action-btn copy-btn"
         onclick={handleCopyJSON}
+        aria-label={copyFeedback ? "Copied to clipboard" : "Copy points as JSON"}
       >
         <i class="fas {copyFeedback ? 'fa-check' : 'fa-copy'}" aria-hidden="true"></i>
         {copyFeedback ? "Copied!" : "Copy JSON"}
@@ -204,6 +216,7 @@
       <button
         class="action-btn import-btn"
         onclick={() => { showImport = !showImport; importError = null; }}
+        aria-label={showImport ? "Cancel import" : "Import points from JSON"}
       >
         <i class="fas fa-file-import" aria-hidden="true"></i>
         Import JSON
@@ -221,7 +234,7 @@
         {#if importError}
           <p class="import-error">{importError}</p>
         {/if}
-        <button class="action-btn" onclick={handleImport}>
+        <button class="action-btn" onclick={handleImport} aria-label="Apply imported JSON">
           Apply Import
         </button>
       </div>
@@ -254,6 +267,11 @@
 
 <style>
   .list-panel {
+    /* Flame Lab domain color tokens */
+    --flame-orange: #f97316;
+    --flame-orange-dim: rgba(249, 115, 22, 0.08);
+    --flame-orange-mid: rgba(249, 115, 22, 0.15);
+    --flame-orange-border: rgba(249, 115, 22, 0.3);
     display: flex;
     flex-direction: column;
     gap: var(--spacing-md, 16px);
@@ -282,7 +300,7 @@
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg);
     padding: 2px 8px;
     border-radius: 9999px;
   }
@@ -312,10 +330,10 @@
     gap: 6px;
     min-height: 44px;
     padding: 8px 16px;
-    border: 1px solid rgba(249, 115, 22, 0.3);
+    border: 1px solid var(--flame-orange-border);
     border-radius: var(--border-radius-md, 8px);
-    background: rgba(249, 115, 22, 0.08);
-    color: #f97316;
+    background: var(--flame-orange-dim);
+    color: var(--flame-orange);
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
     cursor: pointer;
@@ -323,7 +341,7 @@
   }
 
   .add-center-btn:hover {
-    background: rgba(249, 115, 22, 0.15);
+    background: var(--flame-orange-mid);
   }
 
   .add-center-btn:focus-visible {
@@ -350,12 +368,12 @@
   }
 
   .point-row:hover {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--theme-card-bg);
   }
 
   .point-row.selected {
-    background: rgba(249, 115, 22, 0.1);
-    border-color: rgba(249, 115, 22, 0.3);
+    background: var(--flame-orange-dim);
+    border-color: var(--flame-orange-border);
   }
 
   .point-row:focus-visible {
@@ -378,8 +396,8 @@
     justify-content: center;
     font-size: var(--font-size-min, 14px);
     font-weight: 700;
-    color: #f97316;
-    background: rgba(249, 115, 22, 0.15);
+    color: var(--flame-orange);
+    background: var(--flame-orange-mid);
     border-radius: 50%;
     flex-shrink: 0;
   }
@@ -413,7 +431,7 @@
     padding: 6px 8px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
     border-radius: var(--border-radius-sm, 4px);
-    background: rgba(0, 0, 0, 0.3);
+    background: var(--theme-overlay-dark, rgba(0, 0, 0, 0.3));
     color: var(--theme-text, white);
     font-family: var(--font-mono, monospace);
     font-size: var(--font-size-min, 14px);
@@ -429,7 +447,7 @@
 
   .coord-input:focus {
     outline: none;
-    border-color: #f97316;
+    border-color: var(--flame-orange);
   }
 
   /* Icon buttons (center, delete) - 44px AAA touch target */
@@ -461,9 +479,9 @@
   }
 
   .center-btn:hover {
-    background: rgba(249, 115, 22, 0.12);
-    border-color: rgba(249, 115, 22, 0.3);
-    color: #f97316;
+    background: var(--flame-orange-dim);
+    border-color: var(--flame-orange-border);
+    color: var(--flame-orange);
   }
 
   .delete-btn {
@@ -471,9 +489,9 @@
   }
 
   .delete-btn:hover {
-    background: rgba(239, 68, 68, 0.12);
-    border-color: rgba(239, 68, 68, 0.3);
-    color: #ef4444;
+    background: var(--semantic-error-dim, rgba(239, 68, 68, 0.12));
+    border-color: color-mix(in srgb, var(--semantic-error) 30%, transparent);
+    color: var(--semantic-error, #ef4444);
   }
 
   /* Row 2: flame scale slider */
@@ -495,7 +513,7 @@
   }
 
   .flame-label i {
-    color: #f97316;
+    color: var(--flame-orange);
     font-size: var(--font-size-compact, 12px);
   }
 
@@ -503,7 +521,7 @@
     flex: 1;
     min-width: 0;
     height: 6px;
-    accent-color: #f97316;
+    accent-color: var(--flame-orange);
     cursor: pointer;
   }
 
@@ -539,7 +557,7 @@
   }
 
   .action-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
+    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
@@ -554,21 +572,21 @@
   }
 
   .default-btn {
-    border-color: rgba(34, 197, 94, 0.4);
-    color: #22c55e;
+    border-color: var(--semantic-success-dim, rgba(34, 197, 94, 0.4));
+    color: var(--semantic-success, #22c55e);
   }
 
   .default-btn:hover:not(:disabled) {
-    background: rgba(34, 197, 94, 0.1);
+    background: var(--semantic-success-dim, rgba(34, 197, 94, 0.1));
   }
 
   .reset-btn {
-    border-color: rgba(239, 68, 68, 0.3);
-    color: rgba(239, 68, 68, 0.8);
+    border-color: var(--semantic-error-dim, rgba(239, 68, 68, 0.3));
+    color: var(--semantic-error, #ef4444);
   }
 
   .reset-btn:hover:not(:disabled) {
-    background: rgba(239, 68, 68, 0.1);
+    background: var(--semantic-error-dim, rgba(239, 68, 68, 0.1));
   }
 
   .import-section {
@@ -584,7 +602,7 @@
     padding: 10px 12px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--border-radius-md, 8px);
-    background: rgba(0, 0, 0, 0.3);
+    background: var(--theme-overlay-dark, rgba(0, 0, 0, 0.3));
     color: var(--theme-text, white);
     font-family: var(--font-mono, monospace);
     font-size: var(--font-size-min, 14px);
@@ -594,7 +612,7 @@
   .import-error {
     margin: 0;
     font-size: var(--font-size-min, 14px);
-    color: #ef4444;
+    color: var(--semantic-error, #ef4444);
   }
 
   /* --- Status bar --- */
@@ -614,7 +632,7 @@
   }
 
   .status-has-default {
-    color: #22c55e;
+    color: var(--semantic-success, #22c55e);
     font-size: var(--font-size-compact, 12px);
   }
 
@@ -627,7 +645,7 @@
   }
 
   .status-action-feedback {
-    color: #22c55e;
+    color: var(--semantic-success, #22c55e);
     display: flex;
     align-items: center;
     gap: 4px;

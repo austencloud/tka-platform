@@ -24,7 +24,7 @@
     { label: "Fan", types: ["fan", "bigfan"] },
     { label: "Triad", types: ["triad", "bigtriad"] },
     { label: "Hoop", types: ["minihoop", "bighoop"] },
-    { label: "Buugeng", types: ["buugeng", "bigbuugeng", "fractalgeng"] },
+    { label: "Buugeng", types: ["buugeng", "bigbuugeng", "fractalgeng", "trigeng"] },
     { label: "Triquetra", types: ["triquetra", "triquetra2"] },
     { label: "Sword", types: ["sword"] },
     { label: "Chicken", types: ["chicken", "bigchicken"] },
@@ -56,6 +56,9 @@
             class:has-default={defaultTypes.includes(propType)}
             onclick={() => editorState.selectPropType(propType)}
             aria-pressed={editorState.selectedPropType === propType}
+            aria-label={defaultTypes.includes(propType)
+              ? `Select ${displayName(propType)} (has saved default)`
+              : `Select ${displayName(propType)}`}
             title={defaultTypes.includes(propType)
               ? `${displayName(propType)} (default set)`
               : displayName(propType)}
@@ -120,15 +123,15 @@
   }
 
   .prop-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
     color: var(--theme-text, white);
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
   .prop-btn.active {
-    background: rgba(249, 115, 22, 0.15);
-    border-color: rgba(249, 115, 22, 0.5);
-    color: #f97316;
+    background: color-mix(in srgb, var(--flame-orange, #f97316) 15%, transparent);
+    border-color: color-mix(in srgb, var(--flame-orange, #f97316) 50%, transparent);
+    color: var(--flame-orange, #f97316);
   }
 
   .prop-btn:focus-visible {
@@ -141,17 +144,17 @@
   }
 
   .default-icon {
-    font-size: 10px;
-    color: #22c55e;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--semantic-success, #22c55e);
     flex-shrink: 0;
   }
 
   .prop-btn.has-default {
-    border-color: rgba(34, 197, 94, 0.25);
+    border-color: color-mix(in srgb, var(--semantic-success, #22c55e) 25%, transparent);
   }
 
   .prop-btn.has-default:not(.active):hover {
-    border-color: rgba(34, 197, 94, 0.4);
+    border-color: color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent);
   }
 
   @media (prefers-reduced-motion: reduce) {

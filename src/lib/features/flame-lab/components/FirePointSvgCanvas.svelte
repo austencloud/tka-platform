@@ -78,7 +78,13 @@
       const text = await resp.text();
       // Extract inner SVG content (strip outer <svg> wrapper)
       const match = text.match(/<svg[^>]*>([\s\S]*)<\/svg>/i);
-      propSvgContent = match?.[1] ?? text;
+      const inner = match?.[1] ?? text;
+      // Strip script elements and event handler attributes to prevent XSS
+      // (internal asset, but defense-in-depth against tampered static files)
+      propSvgContent = inner
+        .replace(/<script[\s\S]*?<\/script>/gi, "")
+        .replace(/\s+on\w+="[^"]*"/gi, "")
+        .replace(/\s+on\w+='[^']*'/gi, "");
     } catch {
       propSvgContent = "";
     }
@@ -350,12 +356,12 @@
       >
         <!-- Glow ring for selected -->
         {#if isSelected}
-          <circle r={r + 4} fill="none" stroke="#f97316" stroke-width="2" opacity="0.5" />
+          <circle r={r + 4} fill="none" stroke="var(--flame-orange, #f97316)" stroke-width="2" opacity="0.5" />
         {/if}
         <!-- Main circle -->
-        <circle r={r} fill="rgba(249, 115, 22, 0.4)" stroke="#f97316" stroke-width="1.5" />
+        <circle r={r} fill="var(--flame-orange-border, rgba(249, 115, 22, 0.3))" stroke="var(--flame-orange, #f97316)" stroke-width="1.5" />
         <!-- Inner dot -->
-        <circle r="2.5" fill="#f97316" />
+        <circle r="2.5" fill="var(--flame-orange, #f97316)" />
         <!-- Point number -->
         <text
           y={-r - 8}
@@ -408,10 +414,14 @@
 
 <style>
   .svg-canvas-wrapper {
+    /* Flame Lab domain color tokens */
+    --flame-orange: #f97316;
+    --flame-orange-border: rgba(249, 115, 22, 0.3);
+
     position: relative;
     flex: 1;
     min-height: 0;
-    background: #0a0a0f;
+    background: var(--theme-surface-dark, #0a0a0f);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--border-radius-lg, 12px);
     overflow: hidden;
@@ -421,7 +431,7 @@
   }
 
   .svg-canvas-wrapper:focus {
-    outline: 2px solid rgba(249, 115, 22, 0.5);
+    outline: 2px solid var(--flame-orange-border);
     outline-offset: -2px;
   }
 
@@ -452,8 +462,8 @@
     top: 10px;
     right: 10px;
     padding: 6px 12px;
-    background: rgba(0, 0, 0, 0.75);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: var(--theme-overlay-dark, rgba(0, 0, 0, 0.75));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: var(--border-radius-md, 8px);
     font-family: var(--font-mono, monospace);
     font-size: var(--font-size-min, 14px);
@@ -478,8 +488,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.75);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: var(--theme-overlay-dark, rgba(0, 0, 0, 0.75));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     color: var(--theme-text, #fff);
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
@@ -504,7 +514,7 @@
 
   .zoom-btn:hover:not(:disabled),
   .zoom-level:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.12));
   }
 
   .zoom-btn:disabled {
@@ -518,7 +528,7 @@
     left: 50%;
     transform: translateX(-50%);
     padding: 6px 16px;
-    background: rgba(0, 0, 0, 0.65);
+    background: var(--theme-overlay-dark, rgba(0, 0, 0, 0.65));
     border-radius: 9999px;
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
@@ -532,8 +542,8 @@
   .prop-shape :global(ellipse),
   .prop-shape :global(circle),
   .prop-shape :global(polygon) {
-    fill: rgba(255, 255, 255, 0.3);
-    stroke: rgba(255, 255, 255, 0.5);
+    fill: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
+    stroke: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     stroke-width: 1;
   }
 </style>

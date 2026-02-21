@@ -950,6 +950,8 @@
     --flame-green-dim: rgba(16, 185, 129, 0.1);
     --flame-green-border: rgba(16, 185, 129, 0.3);
     --flame-green-border-strong: rgba(16, 185, 129, 0.5);
+    /* Text color for buttons with solid semantic backgrounds (accessibility) */
+    --color-on-semantic: #000000;
 
     flex: 1;
     display: flex;
@@ -1443,7 +1445,7 @@
     width: 100%;
     padding: 10px 16px;
     background: var(--semantic-warning, #f59e0b);
-    color: #000;
+    color: var(--color-on-semantic, #000000);
     border: none;
     border-radius: 8px;
     font-weight: 600;
@@ -1462,7 +1464,7 @@
 
   .publish-success {
     padding: 10px 16px;
-    background: rgba(34, 197, 94, 0.15);
+    background: var(--semantic-success-dim, rgba(34, 197, 94, 0.15));
     color: var(--semantic-success, #22c55e);
     border: 1px solid var(--semantic-success, #22c55e);
     border-radius: 8px;
@@ -1490,7 +1492,7 @@
   .confirm-btn {
     padding: 10px;
     background: var(--semantic-success, #22c55e);
-    color: #000;
+    color: var(--color-on-semantic, #000000);
     border: none;
     border-radius: 8px;
     font-weight: 600;
