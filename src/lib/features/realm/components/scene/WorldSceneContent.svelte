@@ -7,7 +7,7 @@
    * and integrates with UnifiedCameraController for full avatar parity.
    */
 
-  import { onMount, onDestroy } from "svelte";
+  import { onMount, onDestroy, getContext } from "svelte";
   import { T, useTask, useThrelte } from "@threlte/core";
 
   // Physics
@@ -185,8 +185,15 @@
     performerState = null,
   }: Props = $props();
 
-  // Get Threlte context (returns stores with .current property for Three.js objects)
+  // Get Threlte context
   const { scene, camera, renderer } = useThrelte();
+
+  // Access the raw Three.js Scene directly from Threlte's internal context.
+  // useThrelte().scene is a Svelte 5 reactive wrapper ({ current: Scene }) whose
+  // .current property is undefined during onMount (signal hasn't propagated yet).
+  // The scene context stores the raw Scene object without any wrapper.
+  const threlteSceneCtx = getContext<{ scene: Scene }>("threlte-scene-context");
+  const rawScene: Scene = threlteSceneCtx.scene;
 
   // Grid plane sets
   // Stage mode: all three planes (wall, wheel, floor)
@@ -277,7 +284,7 @@
     // Initialize position (will be updated when ground snap happens)
     playerPosition = { x: spawnPos[0], y: 500, z: spawnPos[2] };
 
-    // Setup lighting (scene.current is available since Canvas creates it before mounting children)
+    // Setup lighting (rawScene is available since Canvas creates it before mounting children)
     setupLighting();
 
     // Initialize terrain textures (async, non-blocking)
@@ -285,16 +292,16 @@
     initTerrainMaterial();
 
     // Initialize vegetation manager with GLTF models
-    vegetationManager = new VegetationManager(scene.current, { useGLTFModels: true });
+    vegetationManager = new VegetationManager(rawScene, { useGLTFModels: true });
     await vegetationManager.initWithModels();
 
     // Initialize atmosphere (sky, fog)
-    atmosphereManager = new AtmosphereManager(scene.current);
+    atmosphereManager = new AtmosphereManager(rawScene);
     atmosphereManager.createSky();
     atmosphereManager.setFog(stageMode ? "forest" : "plains");
 
     // Initialize water (flat plane that follows camera - legacy fallback)
-    waterManager = new WaterManager(scene.current, {
+    waterManager = new WaterManager(rawScene, {
       waterLevel: 5,
       color: "#2a8faa",
       opacity: 0.75,
@@ -302,7 +309,7 @@
     waterManager.create();
 
     // Initialize drainage-based water (per-chunk water that follows terrain)
-    drainageWaterManager = new DrainageWaterManager(scene.current, {
+    drainageWaterManager = new DrainageWaterManager(rawScene, {
       oceanLevel: activeConfig.terrain.waterLevel ?? -10,
       deepColor: "#1a5f7a",
       shallowColor: "#4a9fb5",
@@ -444,7 +451,7 @@
       // Remove mesh from scene
       const mesh = chunkMeshes.get(key);
       if (mesh) {
-        scene.current.remove(mesh);
+        rawScene.remove(mesh);
         mesh.geometry.dispose();
         if (mesh.material instanceof MeshStandardMaterial) {
           mesh.material.dispose();
@@ -504,7 +511,7 @@
 
     // Dispose chunk meshes
     for (const [key, mesh] of chunkMeshes) {
-      scene.current.remove(mesh);
+      rawScene.remove(mesh);
       mesh.geometry.dispose();
       if (mesh.material instanceof MeshStandardMaterial) {
         mesh.material.dispose();
@@ -514,7 +521,7 @@
 
     // Dispose campground objects
     for (const obj of campgroundObjects) {
-      scene.current.remove(obj);
+      rawScene.remove(obj);
     }
     campgroundObjects = [];
 
@@ -558,11 +565,11 @@
   function setupLighting(): void {
     // Ambient light
     const ambient = new AmbientLight(0x404060, 0.4);
-    scene.current.add(ambient);
+    rawScene.add(ambient);
 
     // Hemisphere light (sky + ground)
     const hemisphere = new HemisphereLight(0x87ceeb, 0x3d5c3d, 0.6);
-    scene.current.add(hemisphere);
+    rawScene.add(hemisphere);
 
     // Sun with standard directional light shadows
     // Shadow frustum follows player for infinite terrain coverage
@@ -588,9 +595,9 @@
     sun.shadow.bias = -0.0005;
     sun.shadow.normalBias = 0.02;
 
-    scene.current.add(sun);
+    rawScene.add(sun);
     sun.target.position.set(0, 0, 0);
-    scene.current.add(sun.target);
+    rawScene.add(sun.target);
     sunLight = sun;
   }
 
@@ -624,7 +631,7 @@
           child.receiveShadow = true;
         }
       });
-      scene.current.add(model);
+      rawScene.add(model);
       campgroundObjects.push(model);
       return model;
     } catch (error) {
@@ -798,7 +805,7 @@
       mesh.position.set(chunkWorldX, 0, chunkWorldZ);
     }
 
-    scene.current.add(mesh);
+    rawScene.add(mesh);
     chunkMeshes.set(key, mesh);
 
     // Store mesh reference in entity
