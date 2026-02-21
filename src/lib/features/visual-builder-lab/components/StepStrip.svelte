@@ -1,9 +1,14 @@
 <!--
-  BeatStrip.svelte - Horizontal strip of real pictographs
+  StepStrip.svelte - Horizontal strip of real pictographs
 
-  Shows one PictographContainer per beat index. Blue beats fill in first,
-  red beats overlay onto existing pictographs when the second hand
+  Shows one PictographContainer per step index. Blue steps fill in first,
+  red steps overlay onto existing pictographs when the second hand
   is built. Always reserves vertical space to prevent grid resizing.
+
+  Start position pictograph appears to the left (stepNumber 0).
+  Step numbers render via PictographContainer's built-in StepNumber glyph.
+  Letters are looked up asynchronously via MotionQueryHandler when both
+  hands have matching steps.
 
   New cells animate in with a scale transition.
 -->
@@ -13,24 +18,27 @@
   import {
     MotionColor,
     MotionType,
+    Orientation,
     RotationDirection,
     HandMotionType,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { GridMode, type GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { HandPathMotionCalculator } from "$lib/features/create/assemble/services/HandPathMotionCalculator";
-  import type { VisualBuilderState, BuilderBeat } from "../state/visual-builder-state.svelte";
+  import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
+  import type { VisualBuilderState, BuilderStep } from "../state/visual-builder-state.svelte";
 
   let { builderState }: { builderState: VisualBuilderState } = $props();
 
   const pathCalculator = new HandPathMotionCalculator();
 
-  /** Derive MotionType (PRO/ANTI/DASH/STATIC) from beat data */
-  function resolveMotionType(beat: BuilderBeat): MotionType {
+  /** Derive MotionType (PRO/ANTI/DASH/STATIC) from step data */
+  function resolveMotionType(step: BuilderStep): MotionType {
     const handMotionType = pathCalculator.calculateMotionType(
-      beat.startPosition, beat.endPosition, builderState.gridMode,
+      step.startPosition, step.endPosition, builderState.gridMode,
     );
     switch (handMotionType) {
       case HandMotionType.STATIC:
@@ -39,77 +47,172 @@
         return MotionType.DASH;
       case HandMotionType.SHIFT: {
         const handPathDir = pathCalculator.calculateRotationDirection(
-          beat.startPosition, beat.endPosition, builderState.gridMode,
+          step.startPosition, step.endPosition, builderState.gridMode,
         );
-        return handPathDir === beat.rotationDirection ? MotionType.PRO : MotionType.ANTI;
+        return handPathDir === step.rotationDirection ? MotionType.PRO : MotionType.ANTI;
       }
       default:
         return MotionType.STATIC;
     }
   }
 
-  /** Convert a BuilderBeat into a MotionData for the pictograph pipeline */
-  function beatToMotion(beat: BuilderBeat, color: MotionColor) {
-    const motionType = resolveMotionType(beat);
-    const resolvedRotation = (beat.startPosition === beat.endPosition)
+  /** Convert a BuilderStep into a MotionData for the pictograph pipeline */
+  function stepToMotion(step: BuilderStep, color: MotionColor) {
+    const motionType = resolveMotionType(step);
+    const resolvedRotation = (step.startPosition === step.endPosition)
       ? RotationDirection.NO_ROTATION
-      : beat.rotationDirection;
+      : step.rotationDirection;
 
     return createMotionData({
       color,
-      startLocation: beat.startPosition,
-      endLocation: beat.endPosition,
+      startLocation: step.startPosition,
+      endLocation: step.endPosition,
       motionType,
       rotationDirection: resolvedRotation,
-      turns: beat.turnCount,
-      startOrientation: beat.startOrientation,
-      endOrientation: beat.endOrientation,
+      turns: step.turnCount,
+      startOrientation: step.startOrientation,
+      endOrientation: step.endOrientation,
       gridMode: builderState.gridMode,
-      arrowLocation: beat.startPosition,
+      arrowLocation: step.startPosition,
       isVisible: true,
     });
   }
 
-  // Total beat count = max of both hands
-  const totalBeats = $derived(
-    Math.max(builderState.blueBeats.length, builderState.redBeats.length)
+  // --- Letter lookup cache ---
+  // Maps step index -> resolved letter (null = looked up but no match)
+  let letterCache = $state<Map<number, Letter | null>>(new Map());
+
+  // Reset cache when steps are cleared
+  $effect(() => {
+    if (builderState.blueSteps.length === 0 && builderState.redSteps.length === 0) {
+      letterCache = new Map();
+    }
+  });
+
+  // Async letter lookup for paired steps
+  $effect(() => {
+    const blueSteps = builderState.blueSteps;
+    const redSteps = builderState.redSteps;
+    const paired = Math.min(blueSteps.length, redSteps.length);
+    const gm = builderState.gridMode;
+
+    for (let i = 0; i < paired; i++) {
+      if (letterCache.has(i)) continue;
+      const blueMotion = stepToMotion(blueSteps[i]!, MotionColor.BLUE);
+      const redMotion = stepToMotion(redSteps[i]!, MotionColor.RED);
+      // Mark as pending so we don't re-trigger
+      letterCache = new Map(letterCache).set(i, null);
+      motionQueryHandler.findLetterByMotionConfiguration(blueMotion, redMotion, gm)
+        .then(letter => {
+          letterCache = new Map(letterCache).set(i, (letter as Letter) ?? null);
+        });
+    }
+  });
+
+  // Total step count = max of both hands
+  const totalSteps = $derived(
+    Math.max(builderState.blueSteps.length, builderState.redSteps.length)
   );
 
-  // Build PictographData for each beat index
-  const beatPictographs = $derived.by((): PictographData[] => {
-    const result: PictographData[] = [];
-    for (let i = 0; i < totalBeats; i++) {
-      const blueBeat = builderState.blueBeats[i];
-      const redBeat = builderState.redBeats[i];
+  /** Create a static MotionData for start position display */
+  function createStaticMotion(position: GridLocation, orientation: Orientation, color: MotionColor) {
+    return createMotionData({
+      color,
+      startLocation: position,
+      endLocation: position,
+      motionType: MotionType.STATIC,
+      rotationDirection: RotationDirection.NO_ROTATION,
+      turns: 0,
+      startOrientation: orientation,
+      endOrientation: orientation,
+      gridMode: builderState.gridMode,
+      arrowLocation: position,
+      isVisible: true,
+    });
+  }
+
+  // Start position pictograph (stepNumber 0 -> renders "Start" text)
+  // Shows immediately on first click (placing phase) before any steps exist.
+  const startPictograph = $derived.by((): (PictographData & { stepNumber: number }) | null => {
+    const firstBlue = builderState.blueSteps[0];
+    const firstRed = builderState.redSteps[0];
+    const isPlacing = builderState.currentPosition !== null;
+    const activeHand = builderState.activeHand;
+
+    // Determine blue start: from first step, or from current position if blue is placing
+    let bluePos: GridLocation | null = null;
+    let blueOri: Orientation = Orientation.IN;
+    if (firstBlue) {
+      bluePos = firstBlue.startPosition;
+      blueOri = firstBlue.startOrientation;
+    } else if (isPlacing && activeHand === MotionColor.BLUE) {
+      bluePos = builderState.currentPosition;
+      blueOri = builderState.currentOrientation;
+    }
+
+    // Determine red start: from first step, or from current position if red is placing
+    let redPos: GridLocation | null = null;
+    let redOri: Orientation = Orientation.IN;
+    if (firstRed) {
+      redPos = firstRed.startPosition;
+      redOri = firstRed.startOrientation;
+    } else if (isPlacing && activeHand === MotionColor.RED) {
+      redPos = builderState.currentPosition;
+      redOri = builderState.currentOrientation;
+    }
+
+    if (!bluePos && !redPos) return null;
+
+    const motions: PictographData["motions"] = {};
+    if (bluePos) motions[MotionColor.BLUE] = createStaticMotion(bluePos, blueOri, MotionColor.BLUE);
+    if (redPos) motions[MotionColor.RED] = createStaticMotion(redPos, redOri, MotionColor.RED);
+
+    return {
+      id: "builder-start",
+      motions,
+      gridMode: builderState.gridMode,
+      stepNumber: 0,
+    };
+  });
+
+  // Build PictographData for each step index (with stepNumber and letter)
+  const stepPictographs = $derived.by((): (PictographData & { stepNumber: number })[] => {
+    const result: (PictographData & { stepNumber: number })[] = [];
+    for (let i = 0; i < totalSteps; i++) {
+      const blueStep = builderState.blueSteps[i];
+      const redStep = builderState.redSteps[i];
 
       const motions: PictographData["motions"] = {};
-      if (blueBeat) motions[MotionColor.BLUE] = beatToMotion(blueBeat, MotionColor.BLUE);
-      if (redBeat) motions[MotionColor.RED] = beatToMotion(redBeat, MotionColor.RED);
+      if (blueStep) motions[MotionColor.BLUE] = stepToMotion(blueStep, MotionColor.BLUE);
+      if (redStep) motions[MotionColor.RED] = stepToMotion(redStep, MotionColor.RED);
+
+      const resolvedLetter = letterCache.get(i) ?? undefined;
 
       result.push({
-        id: `builder-beat-${i}`,
+        id: `builder-step-${i}`,
         motions,
         gridMode: builderState.gridMode,
+        letter: resolvedLetter,
+        stepNumber: i + 1,
       });
     }
     return result;
   });
 
-  const hasBeats = $derived(totalBeats > 0);
+  const hasContent = $derived(totalSteps > 0 || startPictograph !== null);
 </script>
 
-<div class="beat-strip-container" class:has-beats={hasBeats}>
-  {#if hasBeats}
-    <div class="beat-strip-scroll">
-      <div class="beat-strip-row">
-        {#each beatPictographs as pictograph, idx (pictograph.id)}
+<div class="step-strip-container" class:has-steps={hasContent}>
+  {#if hasContent}
+    <div class="step-strip-scroll">
+      <div class="step-strip-row">
+        {#if startPictograph}
           <div
-            class="beat-cell"
-            animate:flip={{ duration: 250 }}
+            class="step-cell start-cell"
             in:scale={{ duration: 250, start: 0.5, opacity: 0 }}
           >
             <PictographContainer
-              pictographData={pictograph}
+              pictographData={startPictograph}
               gridMode={builderState.gridMode}
               disableTransitions={true}
               showTKA={false}
@@ -118,7 +221,24 @@
               showVTG={false}
               showElemental={false}
             />
-            <span class="beat-label">{idx + 1}</span>
+          </div>
+        {/if}
+        {#each stepPictographs as pictograph, idx (pictograph.id)}
+          <div
+            class="step-cell"
+            animate:flip={{ duration: 250 }}
+            in:scale={{ duration: 250, start: 0.5, opacity: 0 }}
+          >
+            <PictographContainer
+              pictographData={pictograph}
+              gridMode={builderState.gridMode}
+              disableTransitions={true}
+              showTKA={true}
+              showReversals={false}
+              showPositions={false}
+              showVTG={false}
+              showElemental={false}
+            />
           </div>
         {/each}
       </div>
@@ -127,7 +247,7 @@
 </div>
 
 <style>
-  .beat-strip-container {
+  .step-strip-container {
     flex-shrink: 0;
     width: 100%;
     min-height: 50px;
@@ -136,11 +256,11 @@
     transition: min-height 0.25s ease;
   }
 
-  .beat-strip-container.has-beats {
+  .step-strip-container.has-steps {
     min-height: 100px;
   }
 
-  .beat-strip-scroll {
+  .step-strip-scroll {
     overflow-x: auto;
     max-width: 100%;
     padding: 4px 8px;
@@ -148,37 +268,31 @@
     scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2)) transparent;
   }
 
-  .beat-strip-row {
+  .step-strip-row {
     display: flex;
     gap: 6px;
     justify-content: center;
   }
 
-  .beat-cell {
+  .step-cell {
     position: relative;
     flex-shrink: 0;
     width: 90px;
     height: 90px;
   }
 
-  .beat-cell :global(svg) {
+  .step-cell :global(svg) {
     width: 100%;
     height: 100%;
     border-radius: 6px;
   }
 
-  .beat-label {
-    position: absolute;
-    bottom: 2px;
-    right: 4px;
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
-    pointer-events: none;
+  .start-cell {
+    opacity: 0.7;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .beat-strip-container {
+    .step-strip-container {
       transition: none;
     }
   }

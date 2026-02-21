@@ -1,7 +1,7 @@
 /**
- * Beat Motion Deriver
+ * Step Motion Deriver
  *
- * Wraps HandPathMotionCalculator to convert a single beat's start/end positions
+ * Wraps HandPathMotionCalculator to convert a single step's start/end positions
  * into a fully populated MotionData. Uses preview mode (FLOAT arrows) since the
  * visual builder shows live feedback before rotation is finalized.
  */
@@ -17,9 +17,9 @@ import {
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { createMotionData, type MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { HandPathMotionCalculator } from "$lib/features/create/assemble/services/HandPathMotionCalculator";
-import type { IBeatMotionDeriver } from "../contracts/IBeatMotionDeriver";
+import type { IStepMotionDeriver } from "../contracts/IStepMotionDeriver";
 
-export class BeatMotionDeriver implements IBeatMotionDeriver {
+export class StepMotionDeriver implements IStepMotionDeriver {
 	private readonly calculator = new HandPathMotionCalculator();
 
 	deriveMotion(

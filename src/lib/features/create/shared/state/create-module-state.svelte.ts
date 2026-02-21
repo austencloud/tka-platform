@@ -22,6 +22,7 @@ import type { AssemblerTabState } from "./assembler-tab-state.svelte";
 import type { GeneratorTabState } from "./generator-tab-state.svelte";
 import type { ConstructTabState } from "./construct-tab-state.svelte";
 import type { SpellTabState } from "$lib/features/create/spell/state/spell-tab-state.svelte";
+import type { VisualBuilderTabState } from "./visual-builder-tab-state.svelte";
 import type { UndoController } from "./create-module/undo-controller.svelte";
 import type {
   UndoOperationType,
@@ -71,6 +72,7 @@ export function createCreateModuleState(
   const assemblerFallbackState = createTabFallbackState();
   const generatorFallbackState = createTabFallbackState();
   const spellFallbackState = createTabFallbackState();
+  const visualBuilderFallbackState = createTabFallbackState();
 
   // Create option history manager
   const optionHistoryManager = createOptionHistoryManager({
@@ -82,6 +84,7 @@ export function createCreateModuleState(
   let _assemblerTabState: AssemblerTabState | null = null;
   let _generatorTabState: GeneratorTabState | null = null;
   let _spellTabState: SpellTabState | null = null;
+  let _visualBuilderTabState: VisualBuilderTabState | null = null;
 
   // Assembly handpath builder undo ref - separate from sequence-level undo
   // This is set by the HandPathOrchestrator component when in assembler mode
@@ -116,6 +119,9 @@ export function createCreateModuleState(
       }
       case "spell": {
         return _spellTabState?.sequenceState || spellFallbackState;
+      }
+      case "visual-builder": {
+        return _visualBuilderTabState?.sequenceState || visualBuilderFallbackState;
       }
       default:
         return sequenceState;
@@ -251,6 +257,9 @@ export function createCreateModuleState(
       }
       case "spell": {
         return _spellTabState?.undoController || null;
+      }
+      case "visual-builder": {
+        return _visualBuilderTabState?.undoController || null;
       }
       default:
         return null;
@@ -428,6 +437,12 @@ export function createCreateModuleState(
     },
     set spellTabState(value: SpellTabState | null) {
       _spellTabState = value;
+    },
+    get visualBuilderTabState() {
+      return _visualBuilderTabState;
+    },
+    set visualBuilderTabState(value: VisualBuilderTabState | null) {
+      _visualBuilderTabState = value;
     },
   };
 

@@ -16,6 +16,7 @@
 export type BuildModeId =
   | "assemble" // Tap-based hand path builder (one hand at a time)
   | "construct" // Manual builder (one pictograph at a time)
+  | "visual-builder" // Click grid points to build sequences visually
   | "one-handed"
   | "guided" // Guided mode
   | "generate" // Automatic sequence generation

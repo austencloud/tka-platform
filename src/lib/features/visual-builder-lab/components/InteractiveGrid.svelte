@@ -1,14 +1,14 @@
 <!--
   InteractiveGrid.svelte - Clickable pictograph grid for visual sequence building
 
-  Sequential per-hand model: build blue's multi-beat path, click Done, build red's.
+  Sequential per-hand model: build blue's multi-step path, click Done, build red's.
   SvgPropAnimator drives arc/line animation on each click.
 
   SVG Layers (render order):
   0. Dark background rect
   1. GridSvg (grid lines and hand points)
-  2. Completed beat motion arrows (lines with arrowheads)
-  3. Completed hand's prop at final position (dimmed, when blue is done)
+  2. Completed step motion arrows (lines with arrowheads)
+  3. Ghost blue prop (animated in sync with red during red building phase)
   4. Active hand's prop indicator (animated <g> driven by SvgPropAnimator)
   5. Hit target circles (always on top for click capture)
 -->
@@ -22,7 +22,7 @@
   import type { GridHitTarget } from "../services/contracts/IGridHitTargetCalculator";
   import { GridHitTargetCalculator } from "../services/implementations/GridHitTargetCalculator";
   import { SvgPropAnimator } from "../services/implementations/SvgPropAnimator";
-  import type { VisualBuilderState, BuilderBeat } from "../state/visual-builder-state.svelte";
+  import type { VisualBuilderState, BuilderStep } from "../state/visual-builder-state.svelte";
 
   // Prop SVG rendering
   import { propSvgLoader } from "$lib/shared/pictograph/prop/services/implementations/PropSvgLoader";
@@ -37,6 +37,7 @@
   // Services
   const calculator = new GridHitTargetCalculator();
   const animator = new SvgPropAnimator();
+  const ghostAnimator = new SvgPropAnimator();
 
   // Grid hit targets derived from current grid mode
   const hitTargets = $derived(calculator.getHitTargets(builderState.gridMode));
@@ -50,6 +51,7 @@
 
   // SVG element ref for the active prop's animated group
   let activePropGroupRef: SVGGElement | null = $state(null);
+  let ghostBluePropGroupRef: SVGGElement | null = $state(null);
 
   // Track whether the active prop just appeared (for scale-in animation)
   let justPlaced = $state(false);
@@ -113,15 +115,15 @@
   }
 
   // Resolve the final position of a completed hand path
-  function getFinalPosition(beats: BuilderBeat[]): GridLocation | null {
-    if (beats.length === 0) return null;
-    return beats[beats.length - 1]!.endPosition;
+  function getFinalPosition(steps: BuilderStep[]): GridLocation | null {
+    if (steps.length === 0) return null;
+    return steps[steps.length - 1]!.endPosition;
   }
 
   // Resolve the starting position of a hand path
-  function getStartPosition(beats: BuilderBeat[]): GridLocation | null {
-    if (beats.length === 0) return null;
-    return beats[0]!.startPosition;
+  function getStartPosition(steps: BuilderStep[]): GridLocation | null {
+    if (steps.length === 0) return null;
+    return steps[0]!.startPosition;
   }
 
   // Compute rotation for a prop at a specific location/orientation
@@ -145,18 +147,49 @@
 
   // Register animation callback on state so addMotion() can trigger animation
   $effect(() => {
-    builderState.setAnimationCallback(async (beat: BuilderBeat) => {
+    builderState.setAnimationCallback(async (step: BuilderStep) => {
       if (!activePropGroupRef) return;
-      await animator.animate({
-        element: activePropGroupRef,
-        startPosition: beat.startPosition,
-        endPosition: beat.endPosition,
-        rotationDirection: beat.rotationDirection,
-        turnCount: beat.turnCount,
-        startOrientation: beat.startOrientation,
-        durationMs: ANIMATION_DURATION_MS,
-        propCenter: activePropCenter,
-      });
+      const animations: Promise<void>[] = [];
+
+      // Animate active hand's prop
+      animations.push(
+        animator.animate({
+          element: activePropGroupRef,
+          startPosition: step.startPosition,
+          endPosition: step.endPosition,
+          rotationDirection: step.rotationDirection,
+          turnCount: step.turnCount,
+          startOrientation: step.startOrientation,
+          durationMs: ANIMATION_DURATION_MS,
+          propCenter: activePropCenter,
+        })
+      );
+
+      // During red building, animate ghost blue through its corresponding step
+      if (
+        builderState.activeHand === MotionColor.RED &&
+        ghostBluePropGroupRef &&
+        bluePropData?.svgData
+      ) {
+        const blueIndex = builderState.redSteps.length;
+        const blueStep = builderState.blueSteps[blueIndex];
+        if (blueStep) {
+          animations.push(
+            ghostAnimator.animate({
+              element: ghostBluePropGroupRef,
+              startPosition: blueStep.startPosition,
+              endPosition: blueStep.endPosition,
+              rotationDirection: blueStep.rotationDirection,
+              turnCount: blueStep.turnCount,
+              startOrientation: blueStep.startOrientation,
+              durationMs: ANIMATION_DURATION_MS,
+              propCenter: bluePropData.svgData.center,
+            })
+          );
+        }
+      }
+
+      await Promise.all(animations);
     });
   });
 
@@ -197,27 +230,47 @@
     return target.label;
   }
 
-  // Derived: blue's completed beats exist and blue hand is done
+  // Derived: blue's completed steps exist and blue hand is done
   const blueIsFinished = $derived(builderState.isBlueComplete);
   const blueFinalTarget = $derived.by(() => {
-    const loc = getFinalPosition(builderState.blueBeats);
+    const loc = getFinalPosition(builderState.blueSteps);
     return loc ? findTarget(loc) : null;
   });
   const blueStartTarget = $derived.by(() => {
-    const loc = getStartPosition(builderState.blueBeats);
+    const loc = getStartPosition(builderState.blueSteps);
     return loc ? findTarget(loc) : null;
   });
 
   // Blue's final and start orientations (for prop rotation when dimmed)
   const blueFinalOrientation = $derived.by(() => {
-    const beats = builderState.blueBeats;
-    if (beats.length === 0) return Orientation.IN;
-    return beats[beats.length - 1]!.endOrientation;
+    const steps = builderState.blueSteps;
+    if (steps.length === 0) return Orientation.IN;
+    return steps[steps.length - 1]!.endOrientation;
   });
   const blueStartOrientation = $derived.by(() => {
-    const beats = builderState.blueBeats;
-    if (beats.length === 0) return Orientation.IN;
-    return beats[0]!.startOrientation;
+    const steps = builderState.blueSteps;
+    if (steps.length === 0) return Orientation.IN;
+    return steps[0]!.startOrientation;
+  });
+
+  // Ghost blue: tracks rest position during red building (syncs with red step count)
+  const ghostBlueState = $derived.by(() => {
+    if (builderState.activeHand !== MotionColor.RED) return null;
+    if (builderState.blueSteps.length === 0) return null;
+    if (builderState.phase === "complete") return null;
+
+    const redStepsDone = builderState.redSteps.length;
+    if (redStepsDone === 0) {
+      return {
+        position: builderState.blueSteps[0]!.startPosition,
+        orientation: builderState.blueSteps[0]!.startOrientation,
+      };
+    }
+    const lastIdx = Math.min(redStepsDone - 1, builderState.blueSteps.length - 1);
+    return {
+      position: builderState.blueSteps[lastIdx]!.endPosition,
+      orientation: builderState.blueSteps[lastIdx]!.endOrientation,
+    };
   });
 
   // Active prop position (for non-animating rest state)
@@ -244,18 +297,18 @@
 
     <!-- Layer 2: Reserved for future motion visualization -->
 
-    <!-- Layer 3: Completed hand's prop at final position (dimmed) -->
-    {#if blueIsFinished && builderState.activeHand === MotionColor.RED && builderState.blueBeats.length > 0}
-      <!-- Blue's final position prop (dimmed) -->
-      {#if blueFinalTarget}
-        {@const finalLoc = getFinalPosition(builderState.blueBeats)}
-        {#if bluePropData?.svgData && finalLoc}
+    <!-- Layer 3: Ghost blue prop (animated in sync during red building) -->
+    {#if ghostBlueState && builderState.phase !== "complete"}
+      {@const ghostTarget = findTarget(ghostBlueState.position)}
+      {#if ghostTarget}
+        {#if bluePropData?.svgData}
           <g
+            bind:this={ghostBluePropGroupRef}
             class="prop-svg-group dimmed-prop"
             style="transform: {propTransform(
-              blueFinalTarget.x,
-              blueFinalTarget.y,
-              getRotation(finalLoc, blueFinalOrientation),
+              ghostTarget.x,
+              ghostTarget.y,
+              getRotation(ghostBlueState.position, ghostBlueState.orientation),
               bluePropData.svgData.center,
             )}"
           >
@@ -263,34 +316,10 @@
           </g>
         {:else}
           <circle
-            cx={blueFinalTarget.x}
-            cy={blueFinalTarget.y}
+            cx={ghostTarget.x}
+            cy={ghostTarget.y}
             r={FALLBACK_RADIUS}
             class="prop-fallback blue-fallback dimmed-prop"
-          />
-        {/if}
-      {/if}
-      <!-- Blue's start position prop (more dimmed) -->
-      {#if blueStartTarget && blueStartTarget !== blueFinalTarget}
-        {@const startLoc = getStartPosition(builderState.blueBeats)}
-        {#if bluePropData?.svgData && startLoc}
-          <g
-            class="prop-svg-group start-prop"
-            style="transform: {propTransform(
-              blueStartTarget.x,
-              blueStartTarget.y,
-              getRotation(startLoc, blueStartOrientation),
-              bluePropData.svgData.center,
-            )} scale(0.7)"
-          >
-            {@html bluePropData.svgData.svgContent}
-          </g>
-        {:else}
-          <circle
-            cx={blueStartTarget.x}
-            cy={blueStartTarget.y}
-            r={FALLBACK_RADIUS * 0.7}
-            class="prop-fallback blue-fallback start-prop"
           />
         {/if}
       {/if}
@@ -335,7 +364,7 @@
     {#if builderState.phase === "complete"}
       <!-- Blue final -->
       {#if blueFinalTarget}
-        {@const blueFinalLoc = getFinalPosition(builderState.blueBeats)}
+        {@const blueFinalLoc = getFinalPosition(builderState.blueSteps)}
         {#if bluePropData?.svgData && blueFinalLoc}
           <g
             class="prop-svg-group"
@@ -358,11 +387,11 @@
         {/if}
       {/if}
       <!-- Red final -->
-      {@const redFinal = getFinalPosition(builderState.redBeats)}
+      {@const redFinal = getFinalPosition(builderState.redSteps)}
       {#if redFinal}
         {@const redFinalT = findTarget(redFinal)}
-        {@const redFinalOri = builderState.redBeats.length > 0
-          ? builderState.redBeats[builderState.redBeats.length - 1]!.endOrientation
+        {@const redFinalOri = builderState.redSteps.length > 0
+          ? builderState.redSteps[builderState.redSteps.length - 1]!.endOrientation
           : Orientation.IN}
         {#if redFinalT}
           {#if redPropData?.svgData}
@@ -449,10 +478,6 @@
     opacity: 0.35;
   }
 
-  .prop-svg-group.start-prop {
-    opacity: 0.2;
-  }
-
   /* Fallback circles (shown while prop SVGs load) */
   .prop-fallback {
     pointer-events: none;
@@ -470,10 +495,6 @@
 
   .prop-fallback.dimmed-prop {
     opacity: 0.35;
-  }
-
-  .prop-fallback.start-prop {
-    opacity: 0.2;
   }
 
   /* Active prop group: no pointer events (hits pass through to targets) */

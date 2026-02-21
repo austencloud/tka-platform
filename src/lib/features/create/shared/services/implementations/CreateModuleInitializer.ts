@@ -22,6 +22,7 @@ import { createConstructTabState } from "$lib/features/create/shared/state/const
 import { createAssemblerTabState } from "$lib/features/create/shared/state/assembler-tab-state.svelte";
 import { createGeneratorTabState } from "$lib/features/create/shared/state/generator-tab-state.svelte";
 import { createSpellTabState } from "$lib/features/create/spell/state/spell-tab-state.svelte";
+import { createVisualBuilderTabState } from "$lib/features/create/shared/state/visual-builder-tab-state.svelte";
 import type { PanelCoordinationState } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
 import type { IStepOperator } from "../contracts/IStepOperator";
 import type { ICreateModuleEffectCoordinator } from "../contracts/ICreateModuleEffectCoordinator";
@@ -125,12 +126,21 @@ export class CreateModuleInitializer implements ICreateModuleInitializer {
       this.sequenceValidationService
     );
 
+    const visualBuilderTabState = createVisualBuilderTabState(
+      this.sequenceService,
+      this.SequencePersister,
+      this.sequenceStatisticsService,
+      this.SequenceTransformer,
+      this.sequenceValidationService
+    );
+
     // Attach tab states to CreateModuleState for easy access
     CreateModuleState.constructTabState = constructTabState; // Legacy accessor
     CreateModuleState.constructorTabState = constructTabState; // Main accessor (triggers setter for _constructorTabState)
     CreateModuleState.assemblerTabState = assemblerTabState;
     CreateModuleState.generatorTabState = generatorTabState;
     CreateModuleState.spellTabState = spellTabState;
+    CreateModuleState.visualBuilderTabState = visualBuilderTabState;
 
     // Initialize services
     await this.CreateModuleOrchestrator.initialize();
@@ -140,6 +150,7 @@ export class CreateModuleInitializer implements ICreateModuleInitializer {
     await assemblerTabState.initializeAssemblerTab();
     await generatorTabState.initializeGeneratorTab();
     await spellTabState.initializeSpellTab();
+    await visualBuilderTabState.initializeVisualBuilderTab();
 
     // Note: Event callbacks configured separately via configureEventCallbacks()
     // after component has created panelState
@@ -154,6 +165,7 @@ export class CreateModuleInitializer implements ICreateModuleInitializer {
       assemblerTabState,
       generatorTabState,
       spellTabState,
+      visualBuilderTabState,
 
       // Core services
       sequenceService: this.sequenceService,

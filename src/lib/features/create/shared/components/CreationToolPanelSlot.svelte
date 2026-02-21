@@ -23,6 +23,7 @@
     AssemblyBackRef,
   } from "../../assemble/components/HandPathOrchestrator.svelte";
   import SpellPanel from "../../spell/components/SpellPanel.svelte";
+  import VisualBuilderToolPanel from "../../visual-builder/components/VisualBuilderToolPanel.svelte";
   import { desktopSidebarState } from "$lib/shared/layout/desktop-sidebar-state.svelte";
 
   // Get context
@@ -341,6 +342,16 @@
             {:else}
               <div class="coming-soon-panel">
                 <p>Spell tab loading...</p>
+              </div>
+            {/if}
+          {:else if activeToolPanel === "visual-builder"}
+            <!-- Visual Builder Mode - Click grid points to build sequences -->
+            {@const visualBuilderTabState = createModuleState.visualBuilderTabState}
+            {#if visualBuilderTabState}
+              <VisualBuilderToolPanel tabState={visualBuilderTabState} />
+            {:else}
+              <div class="coming-soon-panel">
+                <p>Visual builder loading...</p>
               </div>
             {/if}
           {/if}

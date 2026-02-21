@@ -6,11 +6,13 @@
 
 import { createContainer } from "iti";
 import { GridHitTargetCalculator } from "$lib/features/visual-builder-lab/services/implementations/GridHitTargetCalculator";
-import { BeatMotionDeriver } from "$lib/features/visual-builder-lab/services/implementations/BeatMotionDeriver";
+import { StepMotionDeriver } from "$lib/features/visual-builder-lab/services/implementations/StepMotionDeriver";
 import { SvgPropAnimator } from "$lib/features/visual-builder-lab/services/implementations/SvgPropAnimator";
+import { BuilderStepConverter } from "$lib/features/visual-builder-lab/services/implementations/BuilderStepConverter";
 
 export const visualBuilderContainer = createContainer().add({
 	gridHitTargetCalculator: () => new GridHitTargetCalculator(),
-	beatMotionDeriver: () => new BeatMotionDeriver(),
+	stepMotionDeriver: () => new StepMotionDeriver(),
 	svgPropAnimator: () => new SvgPropAnimator(),
+	builderStepConverter: () => new BuilderStepConverter(),
 });

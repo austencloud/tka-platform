@@ -1,9 +1,11 @@
 /**
  * Visual Builder State - Sequential Per-Hand Model
  *
- * Build blue's entire multi-beat path, click Done, build red's path, Done.
+ * Build blue's entire multi-step path, click Done, build red's path, Done.
  * Each click after the first creates a motion (the prop animates to the clicked point).
  * Resting state between clicks shows static pictograph with arrows.
+ *
+ * Terminology: "step" = one motion (start→end position). "beat" is NOT used.
  */
 
 import {
@@ -24,7 +26,7 @@ import {
 
 export type BuilderPhase = "idle" | "placing" | "building" | "animating" | "done" | "complete";
 
-export interface BuilderBeat {
+export interface BuilderStep {
   readonly startPosition: GridLocation;
   readonly endPosition: GridLocation;
   readonly rotationDirection: RotationDirection;
@@ -39,9 +41,9 @@ export function createVisualBuilderState() {
   let activeHand = $state<MotionColor>(MotionColor.BLUE);
   let gridMode = $state<GridMode>(GridMode.DIAMOND);
 
-  // Per-hand completed beats
-  let blueBeats = $state<BuilderBeat[]>([]);
-  let redBeats = $state<BuilderBeat[]>([]);
+  // Per-hand completed steps
+  let blueSteps = $state<BuilderStep[]>([]);
+  let redSteps = $state<BuilderStep[]>([]);
 
   // Current position of the active hand's prop (where it sits right now)
   let currentPosition = $state<GridLocation | null>(null);
@@ -53,21 +55,21 @@ export function createVisualBuilderState() {
 
   // Animation callback — set by the component to trigger SvgPropAnimator
   let onAnimationRequest = $state<
-    ((beat: BuilderBeat) => Promise<void>) | null
+    ((step: BuilderStep) => Promise<void>) | null
   >(null);
 
   // Derived
-  const activeBeats = $derived(activeHand === MotionColor.BLUE ? blueBeats : redBeats);
-  const beatCount = $derived(blueBeats.length + redBeats.length);
+  const activeSteps = $derived(activeHand === MotionColor.BLUE ? blueSteps : redSteps);
+  const stepCount = $derived(blueSteps.length + redSteps.length);
   const isBlueComplete = $derived(phase === "done" || phase === "complete"
     ? true
     : activeHand === MotionColor.RED);
   const canUndo = $derived(
-    phase === "building" && activeBeats.length > 0
+    phase === "building" && activeSteps.length > 0
     || phase === "placing"
   );
   const canFinishHand = $derived(
-    phase === "building" && activeBeats.length > 0
+    phase === "building" && activeSteps.length > 0
   );
 
   /** First click — place prop at a grid point */
@@ -87,7 +89,7 @@ export function createVisualBuilderState() {
       rotationDirection, turnCount,
     );
 
-    const beat: BuilderBeat = {
+    const step: BuilderStep = {
       startPosition: currentPosition,
       endPosition: endLocation,
       rotationDirection,
@@ -99,14 +101,14 @@ export function createVisualBuilderState() {
     // Trigger animation
     phase = "animating";
     if (onAnimationRequest) {
-      await onAnimationRequest(beat);
+      await onAnimationRequest(step);
     }
 
-    // Add beat to active hand
+    // Add step to active hand
     if (activeHand === MotionColor.BLUE) {
-      blueBeats = [...blueBeats, beat];
+      blueSteps = [...blueSteps, step];
     } else {
-      redBeats = [...redBeats, beat];
+      redSteps = [...redSteps, step];
     }
 
     // Advance: end position becomes new current position
@@ -148,8 +150,8 @@ export function createVisualBuilderState() {
     }
   }
 
-  /** Undo last beat from active hand */
-  function undoBeat(): void {
+  /** Undo last step from active hand */
+  function undoStep(): void {
     if (phase === "placing" && currentPosition !== null) {
       // Undo the initial placement
       currentPosition = null;
@@ -157,29 +159,29 @@ export function createVisualBuilderState() {
       return;
     }
 
-    const beats = activeHand === MotionColor.BLUE ? blueBeats : redBeats;
-    if (beats.length === 0) return;
+    const steps = activeHand === MotionColor.BLUE ? blueSteps : redSteps;
+    if (steps.length === 0) return;
 
-    const lastBeat = beats[beats.length - 1]!;
+    const lastStep = steps[steps.length - 1]!;
 
     if (activeHand === MotionColor.BLUE) {
-      blueBeats = blueBeats.slice(0, -1);
+      blueSteps = blueSteps.slice(0, -1);
     } else {
-      redBeats = redBeats.slice(0, -1);
+      redSteps = redSteps.slice(0, -1);
     }
 
-    // Restore position to the start of the removed beat
-    currentPosition = lastBeat.startPosition;
-    currentOrientation = lastBeat.startOrientation;
-    phase = blueBeats.length > 0 || redBeats.length > 0 ? "building" : "placing";
+    // Restore position to the start of the removed step
+    currentPosition = lastStep.startPosition;
+    currentOrientation = lastStep.startOrientation;
+    phase = blueSteps.length > 0 || redSteps.length > 0 ? "building" : "placing";
   }
 
   /** Full reset */
   function reset(): void {
     phase = "idle";
     activeHand = MotionColor.BLUE;
-    blueBeats = [];
-    redBeats = [];
+    blueSteps = [];
+    redSteps = [];
     currentPosition = null;
     currentOrientation = Orientation.IN;
     rotationDirection = RotationDirection.CLOCKWISE;
@@ -198,7 +200,7 @@ export function createVisualBuilderState() {
     currentOrientation = ori;
   }
 
-  function setAnimationCallback(cb: (beat: BuilderBeat) => Promise<void>): void {
+  function setAnimationCallback(cb: (step: BuilderStep) => Promise<void>): void {
     onAnimationRequest = cb;
   }
 
@@ -207,14 +209,14 @@ export function createVisualBuilderState() {
     get phase() { return phase; },
     get activeHand() { return activeHand; },
     get gridMode() { return gridMode; },
-    get blueBeats() { return blueBeats; },
-    get redBeats() { return redBeats; },
+    get blueSteps() { return blueSteps; },
+    get redSteps() { return redSteps; },
     get currentPosition() { return currentPosition; },
     get currentOrientation() { return currentOrientation; },
     get rotationDirection() { return rotationDirection; },
     get turnCount() { return turnCount; },
-    get activeBeats() { return activeBeats; },
-    get beatCount() { return beatCount; },
+    get activeSteps() { return activeSteps; },
+    get stepCount() { return stepCount; },
     get isBlueComplete() { return isBlueComplete; },
     get canUndo() { return canUndo; },
     get canFinishHand() { return canFinishHand; },
@@ -222,7 +224,7 @@ export function createVisualBuilderState() {
     // Actions
     handlePointClick,
     finishHand,
-    undoBeat,
+    undoStep,
     reset,
     setRotationDirection,
     setTurnCount,

@@ -1,19 +1,19 @@
 <!--
   VisualBuilderLabModule.svelte - Visual Sequence Builder Lab
 
-  Click grid points to build sequences beat-by-beat. Each hand's path
+  Click grid points to build sequences step-by-step. Each hand's path
   is built independently: blue first, then red. Prop animates along
   arc/line paths on each click.
 
   Layout: Grid-centric. The pictograph square dominates the view,
   sized to fill available space while maintaining 1:1 aspect ratio.
-  Controls sit compactly above, pictograph strip below.
+  Controls sit compactly above, step strip below.
 -->
 <script lang="ts">
   import { createVisualBuilderState } from "./state/visual-builder-state.svelte";
   import InteractiveGrid from "./components/InteractiveGrid.svelte";
   import BuilderControls from "./components/BuilderControls.svelte";
-  import BeatStrip from "./components/BeatStrip.svelte";
+  import StepStrip from "./components/StepStrip.svelte";
 
   const builderState = createVisualBuilderState();
 </script>
@@ -27,8 +27,8 @@
     <InteractiveGrid {builderState} />
   </div>
 
-  <!-- Pictograph strip: rendered mini pictographs for each beat -->
-  <BeatStrip {builderState} />
+  <!-- Step strip: rendered mini pictographs for each step -->
+  <StepStrip {builderState} />
 </div>
 
 <style>

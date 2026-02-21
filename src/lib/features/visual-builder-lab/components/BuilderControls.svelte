@@ -114,7 +114,7 @@
   <!-- Action buttons -->
   <div class="actions">
     {#if builderState.canUndo}
-      <button class="action-btn" onclick={() => builderState.undoBeat()} aria-label="Undo last beat">
+      <button class="action-btn" onclick={() => builderState.undoStep()} aria-label="Undo last step">
         <i class="fas fa-undo"></i> Undo
       </button>
     {/if}
@@ -134,7 +134,7 @@
       <button class="new-btn" onclick={() => builderState.reset()} aria-label="Start new sequence">
         <i class="fas fa-plus"></i> New Sequence
       </button>
-    {:else if builderState.beatCount > 0}
+    {:else if builderState.stepCount > 0}
       <button class="action-btn danger" onclick={() => builderState.reset()} aria-label="Reset all">
         <i class="fas fa-trash-alt"></i>
       </button>

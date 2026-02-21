@@ -37,6 +37,15 @@ export const CREATE_TABS: Section[] = [
     metadata: { isCreationMethod: true },
   },
   {
+    id: "visual-builder",
+    label: "Visual",
+    icon: '<i class="fas fa-hand-pointer" aria-hidden="true"></i>',
+    description: "Click grid points to build sequences visually",
+    color: "#06b6d4",
+    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
+    metadata: { isCreationMethod: true },
+  },
+  {
     id: "generate",
     label: "Generate",
     icon: '<i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>',
