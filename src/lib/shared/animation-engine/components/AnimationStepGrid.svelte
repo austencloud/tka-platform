@@ -85,7 +85,7 @@
     align-items: center;
     gap: 8px;
     color: var(--theme-text-dim);
-    font-size: 0.85rem;
+    font-size: var(--font-size-min, 14px);
   }
 
   .empty-state i {
@@ -115,12 +115,12 @@
   }
 
   .step-cell.current {
-    border-color: rgba(251, 191, 36, 0.8);
+    border-color: color-mix(in srgb, var(--semantic-warning) 80%, transparent);
     box-shadow:
-      0 0 12px rgba(251, 191, 36, 0.4),
-      0 0 24px rgba(251, 191, 36, 0.2),
-      inset 0 0 8px rgba(251, 191, 36, 0.1);
-    background: rgba(251, 191, 36, 0.08);
+      0 0 12px color-mix(in srgb, var(--semantic-warning) 40%, transparent),
+      0 0 24px color-mix(in srgb, var(--semantic-warning) 20%, transparent),
+      inset 0 0 8px color-mix(in srgb, var(--semantic-warning) 10%, transparent);
+    background: color-mix(in srgb, var(--semantic-warning) 8%, transparent);
   }
 
   .step-cell.played {

@@ -91,37 +91,25 @@ Design:
     padding-bottom: clamp(6px, 3cqw, 12px);
     box-sizing: border-box;
     /* Match WordHeader background for seamless integration */
-    background: linear-gradient(
-      to bottom,
-      rgba(248, 248, 248, 0.98),
-      rgba(240, 240, 240, 0.98)
-    );
+    background: var(--theme-panel-bg, rgba(240, 240, 240, 0.98));
     transition: background 150ms ease-out;
   }
 
   /* Dark mode background */
   .progress-bar-container.dark-mode {
-    background: linear-gradient(
-      to bottom,
-      rgba(15, 15, 20, 0.98),
-      rgba(10, 10, 15, 0.98)
-    );
+    background: var(--theme-panel-bg, rgba(15, 15, 20, 0.98));
   }
 
   /* Global dark class fallback */
   :global(:root.dark) .progress-bar-container:not(.dark-mode) {
-    background: linear-gradient(
-      to bottom,
-      rgba(15, 15, 20, 0.98),
-      rgba(10, 10, 15, 0.98)
-    );
+    background: var(--theme-panel-bg, rgba(15, 15, 20, 0.98));
   }
 
   /* Progress track: rounded pill background */
   .progress-track {
     width: 100%;
     height: 3px;
-    background: rgba(0, 0, 0, 0.08); /* Light mode: subtle dark track */
+    background: var(--theme-stroke, rgba(0, 0, 0, 0.08));
     border-radius: 999px; /* Pill shape */
     overflow: hidden; /* Clip fill to rounded corners */
     position: relative;
@@ -129,11 +117,11 @@ Design:
   }
 
   .dark-mode .progress-track {
-    background: rgba(255, 255, 255, 0.08); /* Dark mode: subtle light track */
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
   :global(:root.dark) .progress-bar-container:not(.dark-mode) .progress-track {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
   /* Progress fill: animated gradient with glow */
@@ -142,11 +130,11 @@ Design:
     width: var(--progress, 0%);
     background: linear-gradient(
       90deg,
-      #3b82f6 0%,
-      #60a5fa 50%,
-      #3b82f6 100%
-    ); /* Light mode: blue gradient */
-    box-shadow: 0 0 8px rgba(59, 130, 246, 0.4); /* Subtle glow */
+      var(--theme-accent) 0%,
+      var(--theme-accent-light, var(--theme-accent)) 50%,
+      var(--theme-accent) 100%
+    );
+    box-shadow: 0 0 8px color-mix(in srgb, var(--theme-accent) 40%, transparent);
     border-radius: 999px;
     /* NO transition on width - let browser render smooth float updates directly from requestAnimationFrame */
     /* Only transition theme changes (background, shadow) */
@@ -158,16 +146,16 @@ Design:
   .dark-mode .progress-fill {
     background: linear-gradient(
       90deg,
-      #00b8b8 0%,
-      #00e5e5 50%,
-      #00b8b8 100%
-    ); /* Dark mode: cyan gradient matching border */
-    box-shadow: 0 0 12px rgba(0, 184, 184, 0.5); /* Stronger glow in dark mode */
+      var(--theme-accent) 0%,
+      var(--theme-accent-light, var(--theme-accent)) 50%,
+      var(--theme-accent) 100%
+    );
+    box-shadow: 0 0 12px color-mix(in srgb, var(--theme-accent) 50%, transparent);
   }
 
   :global(:root.dark) .progress-bar-container:not(.dark-mode) .progress-fill {
-    background: linear-gradient(90deg, #00b8b8 0%, #00e5e5 50%, #00b8b8 100%);
-    box-shadow: 0 0 12px rgba(0, 184, 184, 0.5);
+    background: linear-gradient(90deg, var(--theme-accent) 0%, var(--theme-accent-light, var(--theme-accent)) 50%, var(--theme-accent) 100%);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--theme-accent) 50%, transparent);
   }
 
   /* Accessibility: respect reduced motion preference */

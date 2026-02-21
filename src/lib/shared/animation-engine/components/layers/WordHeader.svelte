@@ -48,6 +48,10 @@ Supports letter highlighting during animation playback.
     const becameVisible = visible && !wasVisible;
     const initialMount = visible && displayedWord === null && word !== null;
 
+    let exitTimer: ReturnType<typeof setTimeout> | undefined;
+    let enterTimer: ReturnType<typeof setTimeout> | undefined;
+    let idleTimer: ReturnType<typeof setTimeout> | undefined;
+
     if (wordChanged && visible && animationPhase === "idle") {
       // Word changed while visible: exit old, then enter new
       animationPhase = "exiting";
@@ -55,11 +59,11 @@ Supports letter highlighting during animation playback.
       const oldLetterCount = displayedWord ? simplifyAndTruncate(displayedWord, 12).length : 1;
       const exitDuration = EXIT_DURATION_BASE + (oldLetterCount * EXIT_STAGGER_PER_LETTER);
 
-      setTimeout(() => {
+      exitTimer = setTimeout(() => {
         displayedWord = word;
         animationPhase = "entering";
 
-        setTimeout(() => {
+        enterTimer = setTimeout(() => {
           animationPhase = "idle";
         }, 400); // Enter animation duration
       }, exitDuration + ENTER_DELAY);
@@ -68,7 +72,7 @@ Supports letter highlighting during animation playback.
       displayedWord = word;
       animationPhase = "entering";
 
-      setTimeout(() => {
+      idleTimer = setTimeout(() => {
         animationPhase = "idle";
       }, 400);
     } else if (!visible && wasVisible) {
@@ -81,6 +85,12 @@ Supports letter highlighting during animation playback.
 
     wasVisible = visible;
     lastWord = word;
+
+    return () => {
+      clearTimeout(exitTimer);
+      clearTimeout(enterTimer);
+      clearTimeout(idleTimer);
+    };
   });
 
   // Derive display text from displayedWord (the word currently showing)
@@ -167,13 +177,8 @@ Supports letter highlighting during animation playback.
     align-items: stretch;
     box-sizing: border-box;
     flex-shrink: 0;
-    /* Light mode: subtle gray background matching image export */
-    background: linear-gradient(
-      to bottom,
-      rgba(248, 248, 248, 0.98),
-      rgba(240, 240, 240, 0.98)
-    );
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    background: var(--theme-panel-bg, rgba(240, 240, 240, 0.98));
+    border-bottom: 1px solid var(--theme-stroke, rgba(0, 0, 0, 0.08));
     /* Smooth transition synced with canvas background (150ms) */
     transition:
       background 150ms ease-out,
@@ -187,8 +192,7 @@ Supports letter highlighting during animation playback.
     font-size: clamp(12px, 6cqw, 28px);
     letter-spacing: 0.08em;
     text-align: center;
-    /* Light mode: dark text, no pill background */
-    color: #1f2937;
+    color: var(--theme-text, rgba(31, 41, 55, 1));
     /* Smooth transition synced with canvas background (150ms) */
     transition: color var(--duration-fast) ease-out;
     /* Prevent text from overflowing - truncate if needed */
@@ -202,51 +206,43 @@ Supports letter highlighting during animation playback.
 
   /* Dark mode: dark background with light text (via prop) */
   .word-header.dark-mode {
-    background: linear-gradient(
-      to bottom,
-      rgba(15, 15, 20, 0.98),
-      rgba(10, 10, 15, 0.98)
-    );
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-panel-bg, rgba(15, 15, 20, 0.98));
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
   .word-header.dark-mode .word-text {
-    color: #ffffff;
+    color: var(--theme-text, rgba(255, 255, 255, 1));
   }
 
   /* Fallback: Global .dark class only applies when NOT controlled by prop */
   /* data-controlled attribute marks prop-controlled instances */
   :global(:root.dark) .word-header:not([data-controlled]) {
-    background: linear-gradient(
-      to bottom,
-      rgba(15, 15, 20, 0.98),
-      rgba(10, 10, 15, 0.98)
-    );
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-panel-bg, rgba(15, 15, 20, 0.98));
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
   :global(:root.dark) .word-header:not([data-controlled]) .word-text {
-    color: #ffffff;
+    color: var(--theme-text, rgba(255, 255, 255, 1));
   }
 
   /* Letter highlighting during animation playback */
   .letter {
     display: inline;
-    color: rgba(31, 41, 55, 0.3); /* Light mode: dimmed dark text */
+    color: var(--theme-text-dim, rgba(31, 41, 55, 0.3));
     transition:
       color 0.15s ease,
       text-shadow 0.15s ease;
   }
 
   .letter.active {
-    color: #1f2937; /* Light mode: full dark text */
-    text-shadow: 0 0 10px rgba(31, 41, 55, 0.3);
+    color: var(--theme-text, rgba(31, 41, 55, 1));
+    text-shadow: 0 0 10px color-mix(in srgb, var(--theme-text) 30%, transparent);
   }
 
   /* Animated letter states (entering, exiting, visible) */
   .letter.animated {
     display: inline-block;
-    color: #1f2937; /* Full color during animation (not dimmed) */
+    color: var(--theme-text, rgba(31, 41, 55, 1));
     /* Start in hidden state */
     opacity: 0;
     transform: translateY(8px) scale(0.8);
@@ -296,31 +292,31 @@ Supports letter highlighting during animation playback.
 
   /* Dark mode animated letters */
   .word-header.dark-mode .letter.animated {
-    color: #ffffff;
+    color: var(--theme-text, rgba(255, 255, 255, 1));
   }
 
   /* Dark mode letter styles */
   .word-header.dark-mode .letter {
-    color: rgba(255, 255, 255, 0.25);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.25));
   }
 
   .word-header.dark-mode .letter.active {
-    color: #ffffff;
-    text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+    color: var(--theme-text, rgba(255, 255, 255, 1));
+    text-shadow: 0 0 20px color-mix(in srgb, var(--theme-text) 50%, transparent);
   }
 
   /* Global dark class fallback */
   :global(:root.dark) .word-header:not([data-controlled]) .letter {
-    color: rgba(255, 255, 255, 0.25);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.25));
   }
 
   :global(:root.dark) .word-header:not([data-controlled]) .letter.active {
-    color: #ffffff;
-    text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+    color: var(--theme-text, rgba(255, 255, 255, 1));
+    text-shadow: 0 0 20px color-mix(in srgb, var(--theme-text) 50%, transparent);
   }
 
   :global(:root.dark) .word-header:not([data-controlled]) .letter.animated {
-    color: #ffffff;
+    color: var(--theme-text, rgba(255, 255, 255, 1));
   }
 
   /* Accessibility: respect reduced motion preference */

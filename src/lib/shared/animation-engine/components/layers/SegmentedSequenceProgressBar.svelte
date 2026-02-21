@@ -280,20 +280,12 @@ Design variants supported:
     width: 100%;
     padding: clamp(6px, 3cqw, 12px) 0;
     box-sizing: border-box;
-    background: linear-gradient(
-      to bottom,
-      rgba(248, 248, 248, 0.98),
-      rgba(240, 240, 240, 0.98)
-    );
+    background: var(--theme-panel-bg, rgba(240, 240, 240, 0.98));
     transition: background 150ms ease-out;
   }
 
   .segmented-progress-container.dark-mode {
-    background: linear-gradient(
-      to bottom,
-      rgba(15, 15, 20, 0.98),
-      rgba(10, 10, 15, 0.98)
-    );
+    background: var(--theme-panel-bg, rgba(15, 15, 20, 0.98));
   }
 
   .segmented-progress-container.interactive {
@@ -305,7 +297,7 @@ Design variants supported:
   }
 
   .segmented-progress-container:focus-visible {
-    outline: 2px solid var(--theme-accent, #3b82f6);
+    outline: 2px solid var(--theme-accent);
     outline-offset: 2px;
   }
 
@@ -320,20 +312,20 @@ Design variants supported:
 
   .label {
     text-align: center;
-    color: rgba(0, 0, 0, 0.4);
+    color: var(--theme-text-dim, rgba(0, 0, 0, 0.4));
     transition: color 0.2s ease;
   }
 
   .dark-mode .label {
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
   }
 
   .label.active {
-    color: rgba(0, 0, 0, 0.8);
+    color: var(--theme-text, rgba(0, 0, 0, 0.8));
   }
 
   .dark-mode .label.active {
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--theme-text, rgba(255, 255, 255, 0.9));
   }
 
   /* Segments track container */
@@ -341,11 +333,11 @@ Design variants supported:
     position: relative;
     width: 100%;
     height: 6px;
-    background: rgba(0, 0, 0, 0.08);
+    background: var(--theme-stroke, rgba(0, 0, 0, 0.08));
   }
 
   .dark-mode .segments-track {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
   /* White segment dividers (always visible, unfilled area) */
@@ -366,7 +358,7 @@ Design variants supported:
   }
 
   .segment-white {
-    border-right: 1px solid rgba(255, 255, 255, 0.3);
+    border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.3));
   }
 
   .segment-white:last-child {
@@ -374,7 +366,7 @@ Design variants supported:
   }
 
   .dark-mode .segment-white {
-    border-right: 1px solid rgba(255, 255, 255, 0.3);
+    border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.3));
   }
 
   /* Continuous progress fill (moves smoothly left to right) */
@@ -383,13 +375,13 @@ Design variants supported:
     top: 0;
     left: 0;
     height: 100%;
-    background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 50%, #3b82f6 100%);
+    background: linear-gradient(90deg, var(--theme-accent) 0%, var(--theme-accent-light, var(--theme-accent)) 50%, var(--theme-accent) 100%);
     transition: background 150ms ease-out;
     z-index: 1; /* Below white dividers, above track */
   }
 
   .dark-mode .progress-fill {
-    background: linear-gradient(90deg, #00b8b8 0%, #00e5e5 50%, #00b8b8 100%);
+    background: linear-gradient(90deg, var(--theme-accent) 0%, var(--theme-accent-light, var(--theme-accent)) 50%, var(--theme-accent) 100%);
   }
 
   /* ========================================
@@ -402,27 +394,27 @@ Design variants supported:
      ======================================== */
   [data-variant="raised"] .segments-track {
     height: 8px;
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+    box-shadow: inset 0 1px 2px var(--theme-shadow, rgba(0, 0, 0, 0.1));
   }
 
   .dark-mode[data-variant="raised"] .segments-track {
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+    box-shadow: inset 0 1px 2px var(--theme-shadow, rgba(0, 0, 0, 0.3));
   }
 
   [data-variant="raised"] .segment {
-    border-right: 1px solid rgba(0, 0, 0, 0.2);
+    border-right: 1px solid var(--theme-stroke, rgba(0, 0, 0, 0.2));
   }
 
   .dark-mode[data-variant="raised"] .segment {
-    border-right: 1px solid rgba(255, 255, 255, 0.2);
+    border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.2));
   }
 
   [data-variant="raised"] .progress-fill {
-    box-shadow: 0 1px 3px rgba(59, 130, 246, 0.4);
+    box-shadow: 0 1px 3px var(--theme-shadow, rgba(0, 0, 0, 0.4));
   }
 
   .dark-mode[data-variant="raised"] .progress-fill {
-    box-shadow: 0 1px 3px rgba(0, 184, 184, 0.5);
+    box-shadow: 0 1px 3px var(--theme-shadow, rgba(0, 0, 0, 0.5));
   }
 
   /* ========================================
@@ -447,12 +439,12 @@ Design variants supported:
      ======================================== */
   [data-variant="neon"] .segments-track {
     height: 5px;
-    background: rgba(59, 130, 246, 0.15);
+    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
     border-radius: 2px;
   }
 
   .dark-mode[data-variant="neon"] .segments-track {
-    background: rgba(0, 184, 184, 0.15);
+    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
   }
 
   [data-variant="neon"] .segments-background {
@@ -461,15 +453,15 @@ Design variants supported:
 
   [data-variant="neon"] .progress-fill {
     box-shadow:
-      0 0 8px rgba(59, 130, 246, 0.8),
-      0 0 12px rgba(59, 130, 246, 0.4);
+      0 0 8px color-mix(in srgb, var(--theme-accent) 80%, transparent),
+      0 0 12px color-mix(in srgb, var(--theme-accent) 40%, transparent);
     animation: neonPulse 1s ease-in-out infinite;
   }
 
   .dark-mode[data-variant="neon"] .progress-fill {
     box-shadow:
-      0 0 8px rgba(0, 184, 184, 0.8),
-      0 0 16px rgba(0, 184, 184, 0.5);
+      0 0 8px color-mix(in srgb, var(--theme-accent) 80%, transparent),
+      0 0 16px color-mix(in srgb, var(--theme-accent) 50%, transparent);
   }
 
   @keyframes neonPulse {
@@ -486,11 +478,11 @@ Design variants supported:
      VARIANT: GRADIENT (colorful gradient fill)
      ======================================== */
   [data-variant="gradient"] .progress-fill {
-    background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
+    background: linear-gradient(90deg, var(--theme-accent) 0%, var(--prop-blue, var(--theme-accent)) 50%, var(--theme-accent) 100%);
   }
 
   .dark-mode[data-variant="gradient"] .progress-fill {
-    background: linear-gradient(90deg, #00b8b8 0%, #00e5e5 50%, #00b8b8 100%);
+    background: linear-gradient(90deg, var(--theme-accent) 0%, var(--theme-accent-light, var(--theme-accent)) 50%, var(--theme-accent) 100%);
   }
 
   /* ========================================
@@ -503,12 +495,12 @@ Design variants supported:
   }
 
   [data-variant="labeled"] .segment {
-    border-right: 2px solid rgba(0, 0, 0, 0.5);
+    border-right: 2px solid var(--theme-stroke-strong, rgba(0, 0, 0, 0.5));
     position: relative;
   }
 
   .dark-mode[data-variant="labeled"] .segment {
-    border-right: 2px solid rgba(255, 255, 255, 0.5);
+    border-right: 2px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.5));
   }
 
   /* Make segment dividers visible even over progress fill */
@@ -534,20 +526,20 @@ Design variants supported:
   }
 
   [data-variant="gradient-labeled"] .segment {
-    border-right: 2px solid rgba(0, 0, 0, 0.5);
+    border-right: 2px solid var(--theme-stroke-strong, rgba(0, 0, 0, 0.5));
     position: relative;
   }
 
   .dark-mode[data-variant="gradient-labeled"] .segment {
-    border-right: 2px solid rgba(255, 255, 255, 0.5);
+    border-right: 2px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.5));
   }
 
   [data-variant="gradient-labeled"] .progress-fill {
-    background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
+    background: linear-gradient(90deg, var(--theme-accent) 0%, var(--prop-blue, var(--theme-accent)) 50%, var(--theme-accent) 100%);
   }
 
   .dark-mode[data-variant="gradient-labeled"] .progress-fill {
-    background: linear-gradient(90deg, #00b8b8 0%, #00e5e5 50%, #00b8b8 100%);
+    background: linear-gradient(90deg, var(--theme-accent) 0%, var(--theme-accent-light, var(--theme-accent)) 50%, var(--theme-accent) 100%);
   }
 
   /* Make segment dividers visible over gradient */

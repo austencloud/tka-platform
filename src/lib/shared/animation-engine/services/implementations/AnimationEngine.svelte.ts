@@ -23,7 +23,7 @@ import type { ITurnsTupleGenerator } from "$lib/shared/pictograph/arrow/position
 import type { ISequenceAnimationOrchestrator } from "$lib/features/compose/services/contracts/ISequenceAnimationOrchestrator";
 import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
 import type { PropState } from "../../domain/PropState";
-import type { TrailSettings } from "../../domain/types/TrailTypes";
+import { type TrailSettings, DEFAULT_TRAIL_SETTINGS } from "../../domain/types/TrailTypes";
 import type { RenderFrameParams } from "../contracts/IAnimationRenderLoop";
 import type { AdditionalLayerProps } from "$lib/features/compose/services/contracts/ITrailCapturer";
 import type { AnimationVisibilityState } from "../contracts/IAnimationVisibilitySynchronizer";
@@ -270,7 +270,7 @@ export class AnimationEngine {
   private readonly frameParams: RenderFrameParams = {
     stepData: null,
     currentStep: 0,
-    trailSettings: null as unknown as TrailSettings,
+    trailSettings: DEFAULT_TRAIL_SETTINGS,
     gridVisible: true,
     gridMode: GridMode.DIAMOND,
     letter: null,

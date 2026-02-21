@@ -49,8 +49,7 @@ Shows pre-render progress and perfect playback badge.
     position: absolute;
     top: 12px;
     right: 12px;
-    background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(8px);
+    background: var(--theme-panel-bg, rgba(0, 0, 0, 0.9));
     color: white;
     padding: 8px 12px;
     border-radius: 8px;
@@ -71,8 +70,8 @@ Shows pre-render progress and perfect playback badge.
   .spinner-small {
     width: 12px;
     height: 12px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top-color: white;
+    border: 2px solid color-mix(in srgb, var(--theme-text) 30%, transparent);
+    border-top-color: var(--theme-text);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
@@ -86,7 +85,7 @@ Shows pre-render progress and perfect playback badge.
   .progress-bar {
     width: 100%;
     height: 3px;
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--theme-stroke);
     border-radius: 2px;
     overflow: hidden;
   }
@@ -108,7 +107,7 @@ Shows pre-render progress and perfect playback badge.
     font-size: var(--font-size-compact); /* Supplementary badge text */
     font-weight: 600;
     z-index: 10;
-    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--semantic-success) 40%, transparent);
     animation: fadeInOut 3s ease forwards;
   }
 
@@ -134,8 +133,8 @@ Shows pre-render progress and perfect playback badge.
   @media (prefers-reduced-motion: reduce) {
     .spinner-small {
       animation: none;
-      border-top-color: white;
-      border-right-color: white;
+      border-top-color: var(--theme-text);
+      border-right-color: var(--theme-text);
     }
 
     .perfect-mode-badge {

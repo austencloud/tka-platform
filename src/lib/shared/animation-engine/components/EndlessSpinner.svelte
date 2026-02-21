@@ -12,6 +12,8 @@
   } from "$lib/features/landing/services/contracts/IEndlessSpinnerOrchestrator";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { container } from "$lib/shared/di";
+  import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
+  import type { ISequenceTransformer } from "$lib/features/create/shared/services/contracts/ISequenceTransformer";
   import {
     animationSettings,
     TrackingMode,
@@ -166,17 +168,17 @@
       playbackController = container.items
         .animationPlaybackController as IAnimationPlaybackController;
       startPositionDeriver = startPositionDeriverDirect;
-      const browseLoader = container.items.browseLoader;
-      const sequenceTransformer = container.items.sequenceTransformer;
+      const browseLoader = container.items.browseLoader as IBrowseLoader;
+      const sequenceTransformer = container.items.sequenceTransformer as ISequenceTransformer;
 
       // Create the spinner orchestrator
       spinnerOrchestrator = new EndlessSpinnerOrchestrator(
-        browseLoader as any,
+        browseLoader,
         generationOrchestrator,
-        sequenceTransformer as any,
+        sequenceTransformer,
         startPositionDeriverDirect,
-        orientationCalculatorDirect as any,
-        gridPositionDeriverDirect as any
+        orientationCalculatorDirect,
+        gridPositionDeriverDirect
       );
 
       // Initialize the orchestrator

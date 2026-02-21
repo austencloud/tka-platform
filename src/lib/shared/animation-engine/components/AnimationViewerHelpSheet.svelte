@@ -117,7 +117,7 @@
     align-items: flex-start;
     justify-content: space-between;
     padding: 16px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid var(--theme-stroke);
     margin-bottom: 16px;
     flex-shrink: 0;
   }
@@ -131,12 +131,12 @@
   .help-title {
     font-size: 1.2rem;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.95);
+    color: var(--theme-text);
     margin: 0;
   }
 
   .help-subtitle {
-    font-size: 0.8rem;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim);
     margin: 0;
   }
@@ -151,14 +151,14 @@
     border: 1px solid var(--theme-stroke);
     background: var(--theme-card-bg);
     color: var(--theme-text-dim);
-    font-size: 0.85rem;
+    font-size: var(--font-size-min, 14px);
     cursor: pointer;
     transition: all var(--duration-normal) ease;
     flex-shrink: 0;
   }
 
   .close-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg-hover, color-mix(in srgb, var(--theme-text) 10%, transparent));
     color: var(--theme-text);
   }
 
@@ -181,15 +181,15 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 0.9rem;
+    font-size: var(--font-size-min, 14px);
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--theme-text);
     margin: 0;
   }
 
   .section-title i {
-    font-size: 0.85rem;
-    color: rgba(139, 92, 246, 0.8);
+    font-size: var(--font-size-min, 14px);
+    color: color-mix(in srgb, var(--theme-accent) 80%, transparent);
   }
 
   /* Shortcuts List */
@@ -204,8 +204,8 @@
     align-items: center;
     justify-content: space-between;
     padding: 10px 12px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
     border-radius: 8px;
     gap: 12px;
   }
@@ -219,24 +219,24 @@
   }
 
   .shortcut-label {
-    font-size: 0.85rem;
+    font-size: var(--font-size-min, 14px);
     font-weight: 500;
     color: var(--theme-text);
   }
 
   .shortcut-desc {
-    font-size: 0.75rem;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim);
   }
 
   .shortcut-key {
-    font-size: 0.75rem;
+    font-size: var(--font-size-compact, 12px);
     font-family: "SF Mono", "Monaco", "Inconsolata", "Roboto Mono", monospace;
     padding: 4px 8px;
-    background: rgba(139, 92, 246, 0.15);
-    border: 1px solid rgba(139, 92, 246, 0.3);
+    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 30%, transparent);
     border-radius: 4px;
-    color: rgba(167, 139, 250, 1);
+    color: var(--theme-accent);
     white-space: nowrap;
     flex-shrink: 0;
   }
@@ -254,7 +254,7 @@
   .tips-list li {
     position: relative;
     padding-left: 20px;
-    font-size: 0.85rem;
+    font-size: var(--font-size-min, 14px);
     color: var(--theme-text-dim);
     line-height: 1.5;
   }
@@ -266,7 +266,7 @@
     top: 8px;
     width: 6px;
     height: 6px;
-    background: rgba(139, 92, 246, 0.6);
+    background: color-mix(in srgb, var(--theme-accent) 60%, transparent);
     border-radius: 50%;
   }
 
