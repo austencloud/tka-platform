@@ -50,6 +50,10 @@
   import { DrainageWaterManager } from "../../rendering/drainage-water";
   import type { RealmConfig } from "../../core/realm-config";
 
+  // Museum
+  import MuseumGrounds from "$lib/features/museum/components/MuseumGrounds.svelte";
+  import { createMuseumState } from "$lib/features/museum/state/museum-state.svelte";
+
   import hannonsTerrainData from "../../data/hannons-camp-terrain.json";
 
   import {
@@ -206,6 +210,10 @@
   // Campground objects placed in spawn clearing
   let campgroundObjects: Object3D[] = [];
   const gltfLoader = new GLTFLoader();
+
+  // Museum state (created once, only used when museum realm is active)
+  const isMuseumRealm = $derived(activeConfig.id === "museum-grounds");
+  const museumState = createMuseumState();
 
   // Sun light reference for shadow updates
   let sunLight: DirectionalLight | null = null;
@@ -1083,5 +1091,14 @@
     centerPosition={playerPosition}
     facingAngle={playerYaw}
     visiblePlanes={activePlaneSet}
+  />
+{/if}
+
+<!-- Museum Pavilions (only when museum realm is active) -->
+{#if isMuseumRealm && isInitialized && isReadyToRender}
+  <MuseumGrounds
+    {museumState}
+    groundY={(activeConfig.terrain.waterLevel ?? 5) + 3}
+    {playerPosition}
   />
 {/if}

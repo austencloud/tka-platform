@@ -84,7 +84,7 @@ function selectPavilionTemplates(exhibitCount: number): PavilionTemplate[] {
   let extraIndex = 0;
 
   while (capacity < exhibitCount) {
-    const next = extras[extraIndex % extras.length];
+    const next = extras[extraIndex % extras.length]!;
     selected.push(next);
     extraIndex++;
     capacity = totalCapacity(selected);
@@ -184,8 +184,8 @@ function generateSlots(
   let slotIndex = 0;
 
   for (let wi = 0; wi < walls.length && slotsRemaining > 0; wi++) {
-    const wall = walls[wi];
-    const length = wallLengths[wi];
+    const wall = walls[wi]!;
+    const length = wallLengths[wi]!;
 
     // How many slots fit on this wall? At least 1, up to remaining budget.
     const rawCount = Math.round((length / totalLength) * maxSlots);
