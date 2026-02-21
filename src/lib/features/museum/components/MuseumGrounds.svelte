@@ -2,6 +2,7 @@
   import { calculateMuseumLayout } from "../domain/layout-calculator";
   import Pavilion from "./Pavilion.svelte";
   import ExhibitSlot from "./ExhibitSlot.svelte";
+  import PerformerPlatform from "./PerformerPlatform.svelte";
   import type { MuseumState } from "../state/museum-state.svelte";
 
   interface Props {
@@ -34,14 +35,22 @@
   <Pavilion {pavilion} {groundY} />
 
   {#each pavilion.slots as slot (slot.id)}
-    <ExhibitSlot
-      {slot}
-      exhibit={museumState.getExhibitForSlot(slot.id)}
-      thumbnailUrl={museumState.getExhibitForSlot(slot.id)
-        ? getThumbnailUrl(museumState.getExhibitForSlot(slot.id)!.sequenceId)
-        : undefined}
-      {playerPosition}
-      isOwner={museumState.isOwner}
-    />
+    {#if slot.type === "wall"}
+      <ExhibitSlot
+        {slot}
+        exhibit={museumState.getExhibitForSlot(slot.id)}
+        thumbnailUrl={museumState.getExhibitForSlot(slot.id)
+          ? getThumbnailUrl(museumState.getExhibitForSlot(slot.id)!.sequenceId)
+          : undefined}
+        {playerPosition}
+        isOwner={museumState.isOwner}
+      />
+    {:else if slot.type === "performer"}
+      <PerformerPlatform
+        {slot}
+        isPopulated={!!museumState.getExhibitForSlot(slot.id.replace("-performer-", "-wall-"))}
+        {playerPosition}
+      />
+    {/if}
   {/each}
 {/each}
