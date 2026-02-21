@@ -109,7 +109,7 @@ export interface FireOverlayConfig {
    *   4 = 256x256 grid (high, default)
    */
   quality: number;
-  /** Flame color blend: 0.0 = natural, 0.5 = tinted, 1.0 = fully colored */
+  /** Flame color blend: 0.0 = natural fire, 1.0 = prop-colored fire */
   colorBlend?: number;
   /** Optional physics preset to apply. When set, overrides the renderer's base physics. */
   physicsPreset?: FirePhysicsParams;

@@ -190,15 +190,6 @@
       </button>
       <button
         class="compact-btn"
-        class:active={flameColorMode === "tinted"}
-        aria-pressed={flameColorMode === "tinted"}
-        onclick={() => onFlameColorModeChange("tinted")}
-        type="button"
-      >
-        Tinted
-      </button>
-      <button
-        class="compact-btn"
         class:active={flameColorMode === "colored"}
         aria-pressed={flameColorMode === "colored"}
         onclick={() => onFlameColorModeChange("colored")}

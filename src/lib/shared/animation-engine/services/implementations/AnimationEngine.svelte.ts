@@ -321,7 +321,7 @@ export class AnimationEngine {
     this.prevRedMotionVisible = visibilityManager.getVisibility("redMotion");
     this.prevFireEffect = visibilityManager.isFireEffectEnabled();
     this.fireConfig.enabled = this.prevFireEffect;
-    const modeToBlend: Record<string, number> = { natural: 0, tinted: 0.5, colored: 1.0 };
+    const modeToBlend: Record<string, number> = { natural: 0, colored: 1.0 };
     this.fireConfig.colorBlend = modeToBlend[visibilityManager.getFlameColorMode()] ?? 0;
     this.prevFirePreset = visibilityManager.getFirePreset();
     const initialPreset = getFirePreset(this.prevFirePreset);
@@ -429,7 +429,7 @@ export class AnimationEngine {
         }
 
         // Sync flame color mode
-        const flameModeToBlend: Record<string, number> = { natural: 0, tinted: 0.5, colored: 1.0 };
+        const flameModeToBlend: Record<string, number> = { natural: 0, colored: 1.0 };
         const colorBlend = flameModeToBlend[vm.getFlameColorMode()] ?? 0;
         if (colorBlend !== this.fireConfig.colorBlend) {
           this.setFireConfig({ colorBlend });

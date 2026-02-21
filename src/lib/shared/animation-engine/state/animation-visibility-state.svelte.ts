@@ -5,7 +5,7 @@
  * Independent from pictograph visibility but can sync from it.
  */
 
-export type FlameColorMode = "natural" | "tinted" | "colored";
+export type FlameColorMode = "natural" | "colored";
 
 type VisibilityObserver = () => void;
 
@@ -140,6 +140,11 @@ export class AnimationVisibilityStateManager {
         if (parsed.coloredFlames !== undefined && parsed.flameColorMode === undefined) {
           parsed.flameColorMode = parsed.coloredFlames ? "colored" : "natural";
           delete parsed.coloredFlames;
+        }
+
+        // Migrate "tinted" to "colored" (tinted mode removed)
+        if (parsed.flameColorMode === "tinted") {
+          parsed.flameColorMode = "colored";
         }
 
         // Ensure new properties exist with defaults if missing

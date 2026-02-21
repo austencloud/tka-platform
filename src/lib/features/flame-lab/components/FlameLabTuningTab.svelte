@@ -703,15 +703,6 @@
               </button>
               <button
                 class="color-mode-btn"
-                class:active={flameColorMode === "tinted"}
-                aria-pressed={flameColorMode === "tinted"}
-                onclick={() => handleFlameColorModeChange("tinted")}
-                type="button"
-              >
-                Tinted
-              </button>
-              <button
-                class="color-mode-btn"
                 class:active={flameColorMode === "colored"}
                 aria-pressed={flameColorMode === "colored"}
                 onclick={() => handleFlameColorModeChange("colored")}

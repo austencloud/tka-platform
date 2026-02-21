@@ -407,20 +407,6 @@ vec3 coloredBlackbody(float t, vec3 propColor) {
   return color;
 }
 
-// Tinted fire: prop-colored base with a warm-white brightness boost at the core.
-// The fire is clearly blue/red throughout. The hottest core gets a subtle warm
-// brightness lift (not orange — neutral warm white) so it feels like real fire.
-// Difference from "colored": colored has a cold white core. Tinted has a warm one.
-vec3 tintedBlackbody(float t, vec3 propColor) {
-  vec3 colored = coloredBlackbody(t, propColor);
-
-  // At the very hottest core, shift toward warm white instead of cold white
-  // This is the only visual difference from colored mode — subtle but real
-  float coreWarmth = smoothstep(3.0, 5.0, t) * 0.25;
-  vec3 warmWhite = vec3(1.0, 0.92, 0.78); // warm white, NOT orange
-  return mix(colored, warmWhite, coreWarmth);
-}
-
 void main() {
   float temp = texture(u_temperature, v_uv).x;
   float fuel = texture(u_fuel, v_uv).x;
@@ -440,16 +426,9 @@ void main() {
       if (maxC > 0.01) {
         fieldColor /= maxC;
       }
-      if (u_colorBlend > 0.75) {
-        // Colored mode: fully prop-colored fire
-        vec3 colored = coloredBlackbody(fireIntensity, fieldColor);
-        vec3 natural = blackbodyColor(fireIntensity);
-        float t = (u_colorBlend - 0.75) / 0.25; // 0..1 ramp over 0.75..1.0
-        trailColor = mix(natural, colored, t);
-      } else {
-        // Tinted mode: chemically-colored fire (natural base, colored edges)
-        trailColor = tintedBlackbody(fireIntensity, fieldColor);
-      }
+      vec3 natural = blackbodyColor(fireIntensity);
+      vec3 colored = coloredBlackbody(fireIntensity, fieldColor);
+      trailColor = mix(natural, colored, u_colorBlend);
     } else {
       trailColor = blackbodyColor(fireIntensity);
     }
@@ -467,10 +446,7 @@ void main() {
     float dist2 = dot(delta, delta);
 
     // Wick tip color: blend from natural orange toward prop color
-    // Tinted mode (0.01-0.75): subtle prop color influence on outer glow
-    // Colored mode (0.75-1.0): full prop color on body and glow
-    float wickBlend = u_colorBlend > 0.75 ? (u_colorBlend - 0.75) / 0.25 : u_colorBlend * 0.5;
-    vec3 tipColor = mix(vec3(1.0, 0.65, 0.12), u_tipColors[i], wickBlend);
+    vec3 tipColor = mix(vec3(1.0, 0.65, 0.12), u_tipColors[i], u_colorBlend);
 
     // Inner core: white-hot center (always white regardless of mode)
     float coreR = 0.006 * fs;
@@ -484,12 +460,11 @@ void main() {
     float body = exp(-dist2 / bodyR2);
     vec3 bodyColor = tipColor * body * 2.5 * u_displayIntensity;
 
-    // Outer glow: tinted mode shows most color here (like chemical flames)
+    // Outer glow
     float glowR = 0.035 * fs;
     float glowR2 = glowR * glowR;
     float glow = exp(-dist2 / glowR2);
-    float glowBlend = u_colorBlend > 0.75 ? (u_colorBlend - 0.75) / 0.25 : u_colorBlend * 0.7;
-    vec3 glowTint = mix(vec3(0.9, 0.25, 0.02), u_tipColors[i] * 0.4, glowBlend);
+    vec3 glowTint = mix(vec3(0.9, 0.25, 0.02), u_tipColors[i] * 0.4, u_colorBlend);
     vec3 glowColor = glowTint * glow * 1.2 * u_displayIntensity;
 
     color += coreColor + bodyColor + glowColor;
