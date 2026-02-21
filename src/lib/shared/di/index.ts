@@ -91,6 +91,7 @@ import { createSkel2TKAContainer } from "./containers/skel2tka-container";
 import { labContainer } from "./containers/lab-container";
 import { visualBuilderContainer } from "./containers/visual-builder-container";
 import { arenaContainer } from "./containers/arena-container";
+import { flameLabContainer } from "./containers/flame-lab-container";
 // Deep link resolution for cross-tab/cross-user URLs
 import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
 
@@ -427,6 +428,8 @@ function buildAppContainer(): any {
   c = c.add(visualBuilderContainer.items);
   // Arena module services (pairwise ranking)
   c = c.add(arenaContainer.items);
+  // Flame Lab services (fire point override provider)
+  c = c.add(flameLabContainer.items);
   // Cross-container services (depend on multiple container outputs)
   c = c.add({ deepLinkResolver: () => deepLinkResolver });
   c = c.add({ sequenceDataProvider: () => sequenceDataProvider });

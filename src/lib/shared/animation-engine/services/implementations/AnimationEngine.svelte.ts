@@ -33,6 +33,9 @@ import { TUNNEL_LAYER_COLORS } from "$lib/features/compose/compose/domain/types"
 import { loadAnimatorServices as loadServices } from "./AnimatorLoader";
 import { loadTrailSettings } from "$lib/features/compose/utils/animation-panel-persistence";
 import { TrailCapturer } from "$lib/features/compose/services/implementations/TrailCapturer";
+import { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
+import { AnimationStateManager } from "$lib/features/compose/services/implementations/AnimationStateManager";
+import { container } from "$lib/shared/di";
 import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
 
 // Services
@@ -247,6 +250,7 @@ export class AnimationEngine {
   private propTypeOverrideBlue: string | null = null;
   private propTypeOverrideRed: string | null = null;
   private prevDarkMode: boolean = false;
+  private previewDarkModeActive: boolean = false; // true when previewDarkMode prop overrides global
   private prevTrailsVisible: boolean = true;
   private prevPropsVisible: boolean = true;
   private prevBlueMotionVisible: boolean = true;
@@ -333,7 +337,8 @@ export class AnimationEngine {
         this.state.visibilityState = state;
 
         // Sync Dark Mode to renderer when it changes
-        if (state.darkMode !== this.prevDarkMode) {
+        // Skip if previewDarkMode is active (component overrides global)
+        if (state.darkMode !== this.prevDarkMode && !this.previewDarkModeActive) {
           this.prevDarkMode = state.darkMode;
           // Note: setDarkMode on renderer controls the "Dark Mode" effect (dark bg, inverted grid)
           this.animationRenderer?.setDarkMode(state.darkMode);
@@ -419,6 +424,12 @@ export class AnimationEngine {
 
     // Initialize canvas (async process)
     await this.initializeCanvas();
+
+    // Re-create fire overlay if it was enabled before HMR/reload.
+    // The visibility observer won't trigger because prevFireEffect already matches.
+    if (this.fireConfig.enabled) {
+      this.syncFireOverlay();
+    }
   }
 
   /**
@@ -697,8 +708,9 @@ export class AnimationEngine {
 
     // Handle preview dark mode override
     // When previewDarkMode is provided (not null), it overrides global dark mode
-    // This allows the sequence viewer preview to control dark mode locally
+    // This allows the sequence viewer preview and Flame Lab to control dark mode locally
     if (props.previewDarkMode !== undefined && props.previewDarkMode !== null) {
+      this.previewDarkModeActive = true;
       const previewDarkMode = props.previewDarkMode;
       if (previewDarkMode !== this.prevDarkMode) {
         this.prevDarkMode = previewDarkMode;
@@ -718,6 +730,8 @@ export class AnimationEngine {
           });
         }
       }
+    } else {
+      this.previewDarkModeActive = false;
     }
 
     // NOTE: Don't clear trails when props are null - props are temporarily null
@@ -919,11 +933,6 @@ export class AnimationEngine {
       this.state.rendererError = "Failed to load SVG generator service";
       return false;
     }
-    if (!services.orchestrator) {
-      this.state.rendererError =
-        "Failed to load animation orchestrator service";
-      return false;
-    }
     if (!services.TrailCapturer) {
       this.state.rendererError = "Failed to load trail capture service";
       return false;
@@ -931,7 +940,17 @@ export class AnimationEngine {
 
     this.svgGenerator = services.svgGenerator;
     this.settingsService = services.settingsService;
-    this.orchestrator = services.orchestrator;
+    // Per-instance orchestrator instead of shared DI singleton.
+    // The singleton causes trail data corruption when multiple canvases
+    // (e.g. compose grid cells) precompute paths concurrently — each cell's
+    // precomputation yields between chunks (setTimeout(0)), allowing another
+    // cell to re-initialize the shared orchestrator with different sequence data.
+    // Stateless services (StepCalculator, PropInterpolator) are safe to share.
+    this.orchestrator = new SequenceAnimationOrchestrator(
+      new AnimationStateManager(),
+      container.items.stepCalculationService,
+      container.items.propInterpolationService
+    );
     // Per-instance TrailCapturer instead of shared DI singleton.
     // The singleton causes trail data contamination when multiple canvases
     // (e.g. compose grid cells) all write to the same trail buffers.

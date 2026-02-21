@@ -1,0 +1,626 @@
+<!--
+  FirePointListPanel.svelte
+
+  Point list with flameScale sliders, delete buttons,
+  and save/reset/copy/import actions.
+-->
+<script lang="ts">
+  import type { FirePointEditorState } from "../state/fire-point-editor-state.svelte";
+
+  interface Props {
+    editorState: FirePointEditorState;
+  }
+
+  const { editorState }: Props = $props();
+
+  let showImport = $state(false);
+  let importText = $state("");
+  let importError = $state<string | null>(null);
+  let copyFeedback = $state(false);
+
+  async function handleCopyJSON() {
+    try {
+      await navigator.clipboard.writeText(editorState.toJSON());
+      copyFeedback = true;
+      setTimeout(() => { copyFeedback = false; }, 1500);
+    } catch {
+      // Fallback: select-all on textarea
+    }
+  }
+
+  function handleImport() {
+    const err = editorState.importJSON(importText);
+    if (err) {
+      importError = err;
+    } else {
+      showImport = false;
+      importText = "";
+      importError = null;
+    }
+  }
+
+  function handleFlameScaleChange(index: number, value: number) {
+    editorState.updatePoint(index, { flameScale: value });
+  }
+
+  function handleCoordChange(index: number, field: "dx" | "dy", raw: string) {
+    const value = parseFloat(raw);
+    if (Number.isFinite(value)) {
+      editorState.updatePoint(index, { [field]: Math.round(value * 10) / 10 });
+    }
+  }
+
+  function handleCenterPoint(index: number) {
+    editorState.movePoint(index, { dx: 0, dy: 0 });
+  }
+
+  function handleAddAtCenter() {
+    editorState.addPoint(0, 0);
+  }
+</script>
+
+<div class="list-panel themed-scrollbar">
+  <!-- Point list -->
+  <div class="section">
+    <div class="section-header">
+      <h3>
+        Points
+        <span class="point-count">{editorState.points.length}</span>
+      </h3>
+      <button
+        class="add-center-btn"
+        onclick={handleAddAtCenter}
+        title="Add point at center (0, 0)"
+      >
+        <i class="fas fa-plus" aria-hidden="true"></i>
+        Add at Center
+      </button>
+    </div>
+
+    {#if editorState.points.length === 0}
+      <div class="empty-hint">
+        No fire points. Click the canvas or use "Add at Center."
+      </div>
+    {:else}
+      <div class="point-list">
+        {#each editorState.points as point, i (i)}
+          <div
+            class="point-row"
+            class:selected={editorState.selectedPointIndex === i}
+            onclick={() => { editorState.selectedPointIndex = i; }}
+            role="button"
+            tabindex="0"
+            aria-label="Select point {i + 1}"
+          >
+            <!-- Row 1: index, coords, icon buttons -->
+            <div class="point-top-row">
+              <span class="point-index">{i + 1}</span>
+              <div class="point-coords">
+                <label class="coord-field">
+                  <span class="coord-label">dx</span>
+                  <input
+                    type="number"
+                    class="coord-input"
+                    step="0.1"
+                    value={point.dx}
+                    onchange={(e) => handleCoordChange(i, "dx", (e.target as HTMLInputElement).value)}
+                    onclick={(e) => e.stopPropagation()}
+                  />
+                </label>
+                <label class="coord-field">
+                  <span class="coord-label">dy</span>
+                  <input
+                    type="number"
+                    class="coord-input"
+                    step="0.1"
+                    value={point.dy}
+                    onchange={(e) => handleCoordChange(i, "dy", (e.target as HTMLInputElement).value)}
+                    onclick={(e) => e.stopPropagation()}
+                  />
+                </label>
+              </div>
+              <button
+                class="icon-btn center-btn"
+                onclick={(e) => { e.stopPropagation(); handleCenterPoint(i); }}
+                aria-label="Move point {i + 1} to center"
+                title="Move to center (0, 0)"
+              >
+                <i class="fas fa-crosshairs" aria-hidden="true"></i>
+              </button>
+              <button
+                class="icon-btn delete-btn"
+                onclick={(e) => { e.stopPropagation(); editorState.deletePoint(i); }}
+                aria-label="Delete point {i + 1}"
+                title="Delete point"
+              >
+                <i class="fas fa-trash-alt" aria-hidden="true"></i>
+              </button>
+            </div>
+            <!-- Row 2: flame scale slider (full width) -->
+            <div class="flame-scale-row">
+              <label class="flame-label" for="scale-{i}">
+                <i class="fas fa-fire" aria-hidden="true"></i>
+                Scale
+              </label>
+              <input
+                id="scale-{i}"
+                type="range"
+                class="flame-slider"
+                min="0.1"
+                max="2.0"
+                step="0.1"
+                value={point.flameScale}
+                oninput={(e) => handleFlameScaleChange(i, parseFloat((e.target as HTMLInputElement).value))}
+                onclick={(e) => e.stopPropagation()}
+              />
+              <span class="scale-value">{point.flameScale.toFixed(1)}</span>
+            </div>
+          </div>
+        {/each}
+      </div>
+    {/if}
+  </div>
+
+  <!-- Actions -->
+  <div class="section actions-section">
+    <h3>Actions</h3>
+
+    <div class="action-buttons">
+      <button
+        class="action-btn save-btn"
+        onclick={() => editorState.save()}
+        disabled={!editorState.hasUnsavedChanges}
+      >
+        <i class="fas fa-save" aria-hidden="true"></i>
+        Save
+      </button>
+
+      <button
+        class="action-btn reset-btn"
+        onclick={() => editorState.resetToDefaults()}
+      >
+        <i class="fas fa-undo" aria-hidden="true"></i>
+        Reset to Defaults
+      </button>
+
+      <button
+        class="action-btn undo-btn"
+        onclick={() => editorState.undo()}
+        disabled={!editorState.canUndo}
+      >
+        <i class="fas fa-undo-alt" aria-hidden="true"></i>
+        Undo
+      </button>
+
+      <button
+        class="action-btn copy-btn"
+        onclick={handleCopyJSON}
+      >
+        <i class="fas {copyFeedback ? 'fa-check' : 'fa-copy'}" aria-hidden="true"></i>
+        {copyFeedback ? "Copied!" : "Copy JSON"}
+      </button>
+
+      <button
+        class="action-btn import-btn"
+        onclick={() => { showImport = !showImport; importError = null; }}
+      >
+        <i class="fas fa-file-import" aria-hidden="true"></i>
+        Import JSON
+      </button>
+    </div>
+
+    {#if showImport}
+      <div class="import-section">
+        <textarea
+          class="import-textarea"
+          bind:value={importText}
+          placeholder={'{"points": [{"dx": 0, "dy": 0, "flameScale": 1.0}]}'}
+          rows="4"
+        ></textarea>
+        {#if importError}
+          <p class="import-error">{importError}</p>
+        {/if}
+        <button class="action-btn" onclick={handleImport}>
+          Apply Import
+        </button>
+      </div>
+    {/if}
+  </div>
+
+  <!-- Status -->
+  <div class="status-bar">
+    {#if editorState.isUsingOverride}
+      <span class="status-custom">
+        <i class="fas fa-check-circle" aria-hidden="true"></i>
+        Custom ({editorState.points.length} points)
+      </span>
+    {:else}
+      <span class="status-default">
+        Using defaults ({editorState.points.length} points)
+      </span>
+    {/if}
+    {#if editorState.hasUnsavedChanges}
+      <span class="status-unsaved">Unsaved changes</span>
+    {/if}
+  </div>
+</div>
+
+<style>
+  .list-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md, 16px);
+    overflow-y: auto;
+    min-height: 0;
+  }
+
+  .section {
+    padding: var(--spacing-md, 16px);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius-lg, 12px);
+  }
+
+  .section h3 {
+    margin: 0 0 var(--spacing-sm, 8px);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    color: var(--theme-text, white);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs, 4px);
+  }
+
+  .point-count {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    background: rgba(255, 255, 255, 0.06);
+    padding: 2px 8px;
+    border-radius: 9999px;
+  }
+
+  .empty-hint {
+    padding: var(--spacing-lg, 24px) var(--spacing-md, 16px);
+    text-align: center;
+    font-size: var(--font-size-min, 14px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+  }
+
+  /* --- Section header --- */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-sm, 8px);
+  }
+
+  .section-header h3 {
+    margin: 0;
+  }
+
+  .add-center-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 8px 16px;
+    border: 1px solid rgba(249, 115, 22, 0.3);
+    border-radius: var(--border-radius-md, 8px);
+    background: rgba(249, 115, 22, 0.08);
+    color: #f97316;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 100ms ease;
+  }
+
+  .add-center-btn:hover {
+    background: rgba(249, 115, 22, 0.15);
+  }
+
+  .add-center-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 1px;
+  }
+
+  /* --- Point list --- */
+  .point-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .point-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid transparent;
+    border-radius: var(--border-radius-md, 8px);
+    cursor: pointer;
+    transition: background 100ms ease;
+  }
+
+  .point-row:hover {
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .point-row.selected {
+    background: rgba(249, 115, 22, 0.1);
+    border-color: rgba(249, 115, 22, 0.3);
+  }
+
+  .point-row:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: -2px;
+  }
+
+  /* Row 1: index + coords + icon buttons */
+  .point-top-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .point-index {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    color: #f97316;
+    background: rgba(249, 115, 22, 0.15);
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .point-coords {
+    display: flex;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .coord-field {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .coord-label {
+    font-family: var(--font-mono, monospace);
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    flex-shrink: 0;
+  }
+
+  .coord-input {
+    width: 100%;
+    min-width: 0;
+    height: 36px;
+    padding: 6px 8px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: var(--border-radius-sm, 4px);
+    background: rgba(0, 0, 0, 0.3);
+    color: var(--theme-text, white);
+    font-family: var(--font-mono, monospace);
+    font-size: var(--font-size-min, 14px);
+    text-align: right;
+    -moz-appearance: textfield;
+  }
+
+  .coord-input::-webkit-inner-spin-button,
+  .coord-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .coord-input:focus {
+    outline: none;
+    border-color: #f97316;
+  }
+
+  /* Icon buttons (center, delete) - 44px AAA touch target */
+  .icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius-md, 8px);
+    background: transparent;
+    cursor: pointer;
+    transition: all 100ms ease;
+    flex-shrink: 0;
+  }
+
+  .icon-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 1px;
+  }
+
+  .icon-btn i {
+    font-size: var(--font-size-min, 14px);
+  }
+
+  .center-btn {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  }
+
+  .center-btn:hover {
+    background: rgba(249, 115, 22, 0.12);
+    border-color: rgba(249, 115, 22, 0.3);
+    color: #f97316;
+  }
+
+  .delete-btn {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+  }
+
+  .delete-btn:hover {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+  }
+
+  /* Row 2: flame scale slider */
+  .flame-scale-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-left: 36px;
+  }
+
+  .flame-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+
+  .flame-label i {
+    color: #f97316;
+    font-size: var(--font-size-compact, 12px);
+  }
+
+  .flame-slider {
+    flex: 1;
+    min-width: 0;
+    height: 6px;
+    accent-color: #f97316;
+    cursor: pointer;
+  }
+
+  .scale-value {
+    font-family: var(--font-mono, monospace);
+    font-size: var(--font-size-min, 14px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    min-width: 28px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* --- Action buttons --- */
+  .action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .action-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 10px 16px;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius-md, 8px);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text, white);
+    font-size: var(--font-size-min, 14px);
+    cursor: pointer;
+    transition: all 150ms ease;
+  }
+
+  .action-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+  }
+
+  .action-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 1px;
+  }
+
+  .action-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .save-btn:not(:disabled) {
+    border-color: rgba(34, 197, 94, 0.4);
+    color: #22c55e;
+  }
+
+  .save-btn:not(:disabled):hover {
+    background: rgba(34, 197, 94, 0.1);
+  }
+
+  .reset-btn {
+    border-color: rgba(239, 68, 68, 0.3);
+    color: rgba(239, 68, 68, 0.8);
+  }
+
+  .reset-btn:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.1);
+  }
+
+  .import-section {
+    margin-top: var(--spacing-sm, 8px);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm, 8px);
+  }
+
+  .import-textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 10px 12px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius-md, 8px);
+    background: rgba(0, 0, 0, 0.3);
+    color: var(--theme-text, white);
+    font-family: var(--font-mono, monospace);
+    font-size: var(--font-size-min, 14px);
+    resize: vertical;
+  }
+
+  .import-error {
+    margin: 0;
+    font-size: var(--font-size-min, 14px);
+    color: #ef4444;
+  }
+
+  /* --- Status bar --- */
+  .status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+    font-size: var(--font-size-min, 14px);
+  }
+
+  .status-custom {
+    color: #22c55e;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .status-default {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+  }
+
+  .status-unsaved {
+    color: #eab308;
+    font-style: italic;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .action-btn,
+    .point-row,
+    .icon-btn,
+    .add-center-btn {
+      transition: none;
+    }
+  }
+</style>

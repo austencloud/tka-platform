@@ -1,67 +1,136 @@
 /**
- * WebGLFireRenderer
+ * WebGLFireRenderer — Navier-Stokes Fluid Fire Simulation
  *
  * Creates a transparent WebGL2 canvas overlaid on the Canvas2D animation canvas.
- * Renders procedural fire at prop tip positions using FBM fragment shaders.
+ * Runs a multi-pass fluid simulation with combustion, buoyancy, and blackbody
+ * rendering to produce physically-based fire at prop tip positions.
  *
- * The overlay canvas is positioned absolutely with pointer-events: none
- * so it doesn't interfere with user interaction on the animation canvas.
+ * Architecture per frame (~30 draw calls):
+ *   1. Splat fuel + velocity at each tip position
+ *   2. Advect velocity through itself
+ *   3. Compute curl → apply vorticity confinement
+ *   4. Apply buoyancy (temperature → upward force)
+ *   5. Combustion: fuel burns → heat, fuel decays, cooling
+ *   6. Compute divergence → Jacobi pressure solve (30 iterations)
+ *   7. Gradient subtraction → divergence-free velocity
+ *   8. Advect temperature + fuel through velocity field
+ *   9. Display render: temperature → blackbody color
+ *
+ * References:
+ *   - GPU Gems Ch. 38 (Harris, 2004)
+ *   - andrewkchan.dev/posts/fire.html
+ *   - Pavel Dobryakov's WebGL-Fluid-Simulation
  */
 
 import type { IFireOverlayRenderer } from "../../contracts/IFireOverlayRenderer";
-import type { FireFrameInput, FireOverlayConfig } from "../../../domain/types/FireTypes";
-import { FIRE_VERTEX_SHADER, FIRE_FRAGMENT_SHADER } from "./FireShaderSource";
+import type {
+  FireFrameInput,
+  FireOverlayConfig,
+  FirePhysicsParams,
+  PropTipData,
+} from "../../../domain/types/FireTypes";
+import { DEFAULT_PHYSICS } from "../../../domain/types/FireTypes";
+import {
+  VERTEX_SHADER,
+  SPLAT_FRAG,
+  ADVECTION_FRAG,
+  CURL_FRAG,
+  VORTICITY_FRAG,
+  BUOYANCY_FRAG,
+  COMBUSTION_FRAG,
+  DIVERGENCE_FRAG,
+  JACOBI_FRAG,
+  GRADIENT_SUBTRACT_FRAG,
+  CLEAR_FRAG,
+  DISPLAY_FRAG,
+} from "./FluidShaderSources";
 
-/** Max DPR to prevent excessive fragment shader work on high-res displays */
 const MAX_DPR = 2;
+const JACOBI_ITERATIONS = 30;
+
+/** Maps quality level to simulation grid resolution */
+function qualityToResolution(quality: number): number {
+  if (quality <= 2) return 128;
+  if (quality === 3) return 192;
+  return 256;
+}
+
+// ============================================================
+// Framebuffer pair for ping-pong rendering
+// ============================================================
+
+interface DoubleFBO {
+  read: FBOAttachment;
+  write: FBOAttachment;
+}
+
+interface FBOAttachment {
+  fbo: WebGLFramebuffer;
+  texture: WebGLTexture;
+}
+
+// ============================================================
+// Shader program with cached uniform locations
+// ============================================================
+
+interface ShaderProgram {
+  program: WebGLProgram;
+  uniforms: Map<string, WebGLUniformLocation>;
+}
 
 export class WebGLFireRenderer implements IFireOverlayRenderer {
   private canvas: HTMLCanvasElement | null = null;
   private gl: WebGL2RenderingContext | null = null;
-  private program: WebGLProgram | null = null;
   private initialized = false;
 
-  // Uniform locations (cached after program link)
-  private uniforms: {
-    u_time: WebGLUniformLocation | null;
-    u_resolution: WebGLUniformLocation | null;
-    u_tipCount: WebGLUniformLocation | null;
-    u_tipPositions: WebGLUniformLocation | null;
-    u_tipVelocities: WebGLUniformLocation | null;
-    u_tipSpeeds: WebGLUniformLocation | null;
-    u_intensity: WebGLUniformLocation | null;
-    u_flameHeight: WebGLUniformLocation | null;
-    u_quality: WebGLUniformLocation | null;
-  } = {
-    u_time: null,
-    u_resolution: null,
-    u_tipCount: null,
-    u_tipPositions: null,
-    u_tipVelocities: null,
-    u_tipSpeeds: null,
-    u_intensity: null,
-    u_flameHeight: null,
-    u_quality: null,
-  };
+  // Simulation grid resolution (independent of display resolution)
+  private simWidth = 256;
+  private simHeight = 256;
 
-  // Reusable typed arrays for uniform uploads (avoid allocation each frame)
-  private tipPositionsArray = new Float32Array(16); // 8 tips * 2 floats
-  private tipVelocitiesArray = new Float32Array(16);
-  private tipSpeedsArray = new Float32Array(8);
-
+  // Display dimensions
   private dpr = 1;
-  private cssWidth = 0;
-  private cssHeight = 0;
-  private quality = 4; // FBM octaves
 
-  // Start time for animation
-  private startTime = 0;
+  // Shader programs
+  private splatProgram: ShaderProgram | null = null;
+  private advectionProgram: ShaderProgram | null = null;
+  private curlProgram: ShaderProgram | null = null;
+  private vorticityProgram: ShaderProgram | null = null;
+  private buoyancyProgram: ShaderProgram | null = null;
+  private combustionProgram: ShaderProgram | null = null;
+  private divergenceProgram: ShaderProgram | null = null;
+  private jacobiProgram: ShaderProgram | null = null;
+  private gradientSubtractProgram: ShaderProgram | null = null;
+  private clearProgram: ShaderProgram | null = null;
+  private displayProgram: ShaderProgram | null = null;
 
-  // Reduced motion: slow time to 20% speed
+  // Double-buffered simulation fields
+  private velocity: DoubleFBO | null = null;
+  private pressure: DoubleFBO | null = null;
+  private temperature: DoubleFBO | null = null;
+  private fuel: DoubleFBO | null = null;
+
+  // Single-buffered fields (no ping-pong needed)
+  private divergenceFBO: FBOAttachment | null = null;
+  private curlFBO: FBOAttachment | null = null;
+
+  // Timing
+  private lastTime = 0;
   private reducedMotion = false;
 
+  // Per-frame tip data cached for display pass (set during stepSimulation)
+  private displayTipUVs: Float32Array = new Float32Array(32);  // 16 tips * 2 (x,y)
+  private displayTipSpeeds: Float32Array = new Float32Array(16);
+  private displayTipFlameScales: Float32Array = new Float32Array(16);
+  private displayTipCount = 0;
+  private displayCanvasWidth = 1;
+  private displayCanvasHeight = 1;
+
+  // Mutable physics parameters — set via config.physicsPreset or defaults
+  private physics: FirePhysicsParams = { ...DEFAULT_PHYSICS };
+  private readonly AMBIENT_TEMP = 0.0;
+  private readonly BURN_TEMP = 0.1;
+
   initialize(container: HTMLElement, width: number, height: number): boolean {
-    // Create overlay canvas
     this.canvas = document.createElement("canvas");
     this.canvas.style.position = "absolute";
     this.canvas.style.top = "0";
@@ -72,16 +141,12 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.canvas.style.zIndex = "2";
     this.canvas.setAttribute("aria-hidden", "true");
 
-    // DPR capped for performance
     this.dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
-    this.cssWidth = width;
-    this.cssHeight = height;
     this.canvas.width = Math.round(width * this.dpr);
     this.canvas.height = Math.round(height * this.dpr);
 
     container.appendChild(this.canvas);
 
-    // Initialize WebGL2
     this.gl = this.canvas.getContext("webgl2", {
       alpha: true,
       premultipliedAlpha: true,
@@ -97,120 +162,70 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
       return false;
     }
 
-    // Compile and link shaders
-    if (!this.compileProgram()) {
+    const gl = this.gl;
+
+    // Float texture support is required for fluid simulation
+    const ext = gl.getExtension("EXT_color_buffer_float");
+    if (!ext) {
+      console.warn("EXT_color_buffer_float not available — fire simulation requires float FBOs");
+      this.cleanup();
+      return false;
+    }
+    gl.getExtension("OES_texture_float_linear");
+
+    if (!this.compileAllPrograms()) {
       this.cleanup();
       return false;
     }
 
-    // Cache uniform locations
-    this.cacheUniforms();
+    this.createSimulationBuffers();
 
-    // Configure blending: premultiplied alpha source-over compositing
-    // The shader outputs premultiplied alpha (rgb * a, a).
-    // For transparent overlay on Canvas2D, we need standard source-over:
-    //   result.rgb = src.rgb + dst.rgb * (1 - src.a)
-    //   result.a   = src.a  + dst.a  * (1 - src.a)
-    const gl = this.gl;
+    // Blending for final display composite (premultiplied alpha source-over)
     gl.enable(gl.BLEND);
     gl.blendFuncSeparate(
-      gl.ONE,                 // src RGB (already premultiplied)
-      gl.ONE_MINUS_SRC_ALPHA, // dst RGB
-      gl.ONE,                 // src Alpha
-      gl.ONE_MINUS_SRC_ALPHA  // dst Alpha
+      gl.ONE, gl.ONE_MINUS_SRC_ALPHA,
+      gl.ONE, gl.ONE_MINUS_SRC_ALPHA
     );
-
-    // Disable depth test (2D overlay)
     gl.disable(gl.DEPTH_TEST);
 
-    // Set viewport
-    gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-
-    this.startTime = performance.now() / 1000;
-
-    // Check reduced motion preference
     if (typeof window !== "undefined" && window.matchMedia) {
-      this.reducedMotion = window.matchMedia(
-        "(prefers-reduced-motion: reduce)"
-      ).matches;
+      this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     }
 
+    this.lastTime = performance.now();
     this.initialized = true;
     return true;
   }
 
   resize(width: number, height: number): void {
     if (!this.canvas || !this.gl) return;
-
-    this.cssWidth = width;
-    this.cssHeight = height;
     this.dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
     this.canvas.width = Math.round(width * this.dpr);
     this.canvas.height = Math.round(height * this.dpr);
-    this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+    // Simulation buffers stay at simWidth x simHeight — independent of display
   }
 
   renderFire(input: FireFrameInput, config: FireOverlayConfig): void {
     const gl = this.gl;
-    if (!gl || !this.program || !this.initialized) return;
-    if (input.tips.length === 0) {
-      // Nothing to render — clear the canvas
-      gl.clear(gl.COLOR_BUFFER_BIT);
-      return;
+    if (!gl || !this.initialized) return;
+
+    // Apply physics preset if provided
+    if (config.physicsPreset) {
+      this.physics = config.physicsPreset;
     }
 
-    gl.useProgram(this.program);
-
-    // Clear with transparent
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-
-    // Time uniform (relative to start, slowed for reduced motion)
-    const rawTime = input.currentTime / 1000 - this.startTime;
-    const time = this.reducedMotion ? rawTime * 0.2 : rawTime;
-    gl.uniform1f(this.uniforms.u_time, time);
-
-    // Resolution must match the tip position coordinate space (e.g. 950x950 viewbox)
-    // NOT the CSS pixel dimensions of the canvas element
-    gl.uniform2f(
-      this.uniforms.u_resolution,
-      input.canvasWidth,
-      input.canvasHeight
-    );
-
-    // Tip count
-    const tipCount = Math.min(input.tips.length, 8);
-    gl.uniform1i(this.uniforms.u_tipCount, tipCount);
-
-    // Fill tip data arrays
-    for (let i = 0; i < tipCount; i++) {
-      const tip = input.tips[i]!;
-      this.tipPositionsArray[i * 2] = tip.x;
-      this.tipPositionsArray[i * 2 + 1] = tip.y;
-      this.tipVelocitiesArray[i * 2] = tip.velocityX;
-      this.tipVelocitiesArray[i * 2 + 1] = tip.velocityY;
-      this.tipSpeedsArray[i] = tip.speed;
-    }
-
-    // Upload tip arrays
-    gl.uniform2fv(this.uniforms.u_tipPositions, this.tipPositionsArray);
-    gl.uniform2fv(this.uniforms.u_tipVelocities, this.tipVelocitiesArray);
-    gl.uniform1fv(this.uniforms.u_tipSpeeds, this.tipSpeedsArray);
-
-    // Configuration uniforms
-    const darkBoost = input.darkMode ? 1.2 : 1.0;
-    gl.uniform1f(this.uniforms.u_intensity, config.intensity * darkBoost);
-    gl.uniform1f(this.uniforms.u_flameHeight, config.flameHeight);
-    // Use config quality if provided, otherwise fall back to instance quality
-    const effectiveQuality = Math.max(2, Math.min(4, config.quality ?? this.quality));
-    gl.uniform1i(this.uniforms.u_quality, effectiveQuality);
-
-    // Draw full-screen quad (vertex shader uses gl_VertexID)
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    this.stepSimulation(input.tips, input, config);
+    this.renderDisplay(config, input);
   }
 
-  setQuality(octaves: number): void {
-    this.quality = Math.max(2, Math.min(4, octaves));
+  setQuality(level: number): void {
+    const newRes = qualityToResolution(level);
+    if (newRes !== this.simWidth && this.gl) {
+      this.simWidth = newRes;
+      this.simHeight = newRes;
+      this.destroySimulationBuffers();
+      this.createSimulationBuffers();
+    }
   }
 
   dispose(): void {
@@ -222,20 +237,493 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
   }
 
   // ============================================================
-  // Private helpers
+  // Simulation pipeline
   // ============================================================
 
-  private compileProgram(): boolean {
+  private stepSimulation(
+    tips: PropTipData[],
+    input: FireFrameInput,
+    config: FireOverlayConfig
+  ): void {
+    const gl = this.gl!;
+    const now = input.currentTime;
+    let dt = Math.min((now - this.lastTime) / 1000, 0.033);
+    if (this.reducedMotion) dt *= 0.2;
+    this.lastTime = now;
+    if (dt <= 0) dt = 0.016;
+
+    gl.viewport(0, 0, this.simWidth, this.simHeight);
+    gl.disable(gl.BLEND);
+
+    const texelSize: [number, number] = [1.0 / this.simWidth, 1.0 / this.simHeight];
+
+    // Cache tip UV positions for the display pass (wick core rendering)
+    this.displayTipCount = Math.min(tips.length, 16);
+    this.displayCanvasWidth = input.canvasWidth;
+    this.displayCanvasHeight = input.canvasHeight;
+
+    // 1. Inject fuel + velocity at tip positions, scaled by per-tip flameScale
+    const p = this.physics;
+    const baseSplatRadius = p.splatRadius;
+
+    for (const tip of tips) {
+      const uvX = tip.x / input.canvasWidth;
+      const uvY = 1.0 - tip.y / input.canvasHeight;
+      const fs = tip.flameScale;
+
+      // Scale splat radius by flameScale (larger wicks = wider splat)
+      this.physics.splatRadius = baseSplatRadius * fs;
+
+      const fuelAmount = p.fuelAmount * config.intensity * fs;
+      this.splat(this.fuel!, uvX, uvY, fuelAmount, 0, 0);
+
+      // Velocity injection: fire trails BEHIND the wick (opposite to motion).
+      // The upward bias is reduced for spinning — centrifugal force dominates.
+      const velScale = config.velocityReactive ? p.velocityInjectScale : 0;
+      const injectVx = -tip.velocityX * velScale * fs;
+      const injectVy = tip.velocityY * velScale * fs + p.upwardBias * config.flameHeight * fs;
+      this.splat(this.velocity!, uvX, uvY, injectVx, injectVy, 0);
+
+      // Temperature injection: the wick is always hot
+      this.splat(this.temperature!, uvX, uvY, p.temperatureInjection * config.intensity * fs, 0, 0);
+    }
+
+    // Restore base splat radius after per-tip overrides
+    this.physics.splatRadius = baseSplatRadius;
+
+    // Cache tip UV positions + flameScales for the display pass (wick core rendering)
+    for (let ti = 0; ti < this.displayTipCount; ti++) {
+      const tip = tips[ti]!;
+      this.displayTipUVs[ti * 2] = tip.x / input.canvasWidth;
+      this.displayTipUVs[ti * 2 + 1] = 1.0 - tip.y / input.canvasHeight;
+      this.displayTipSpeeds[ti] = tip.speed;
+      this.displayTipFlameScales[ti] = tip.flameScale;
+    }
+
+    // 2. Advect velocity through itself
+    this.advect(this.velocity!, this.velocity!.read, p.velocityDissipation, dt, texelSize);
+
+    // 3. Curl + vorticity confinement
+    this.computeCurl(texelSize);
+    this.applyVorticity(dt, texelSize, config.flameHeight);
+
+    // 4. Buoyancy
+    this.applyBuoyancy(dt, config.flameHeight);
+
+    // 5. Combustion + cooling
+    this.applyCombustion(dt, config.intensity);
+
+    // 6. Pressure projection
+    this.computeDivergence(texelSize);
+    this.scalePressure();
+    for (let i = 0; i < JACOBI_ITERATIONS; i++) {
+      this.jacobiStep(texelSize);
+    }
+    this.gradientSubtract(texelSize);
+
+    // 7. Advect temperature + fuel
+    this.advect(this.temperature!, this.temperature!.read, p.temperatureDissipation, dt, texelSize);
+    this.advect(this.fuel!, this.fuel!.read, p.fuelDissipation, dt, texelSize);
+  }
+
+  // ============================================================
+  // Simulation passes
+  // ============================================================
+
+  private splat(target: DoubleFBO, x: number, y: number, r: number, g: number, b: number): void {
+    const gl = this.gl!;
+    const prog = this.splatProgram!;
+    gl.useProgram(prog.program);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, target.read.texture);
+    gl.uniform1i(prog.uniforms.get("u_target")!, 0);
+    gl.uniform2f(prog.uniforms.get("u_point")!, x, y);
+    gl.uniform3f(prog.uniforms.get("u_splatValue")!, r, g, b);
+    gl.uniform1f(prog.uniforms.get("u_radius")!, this.physics.splatRadius);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, target.write.fbo);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    this.swapFBO(target);
+  }
+
+  private advect(
+    target: DoubleFBO,
+    source: FBOAttachment,
+    dissipation: number,
+    dt: number,
+    texelSize: [number, number]
+  ): void {
+    const gl = this.gl!;
+    const prog = this.advectionProgram!;
+    gl.useProgram(prog.program);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.velocity!.read.texture);
+    gl.uniform1i(prog.uniforms.get("u_velocity")!, 0);
+
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, source.texture);
+    gl.uniform1i(prog.uniforms.get("u_source")!, 1);
+
+    gl.uniform2f(prog.uniforms.get("u_texelSize")!, texelSize[0], texelSize[1]);
+    gl.uniform1f(prog.uniforms.get("u_dt")!, dt);
+    gl.uniform1f(prog.uniforms.get("u_dissipation")!, dissipation);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, target.write.fbo);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    this.swapFBO(target);
+  }
+
+  private computeCurl(texelSize: [number, number]): void {
+    const gl = this.gl!;
+    const prog = this.curlProgram!;
+    gl.useProgram(prog.program);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.velocity!.read.texture);
+    gl.uniform1i(prog.uniforms.get("u_velocity")!, 0);
+    gl.uniform2f(prog.uniforms.get("u_texelSize")!, texelSize[0], texelSize[1]);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.curlFBO!.fbo);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+  }
+
+  private applyVorticity(dt: number, texelSize: [number, number], heightMult: number): void {
+    const gl = this.gl!;
+    const prog = this.vorticityProgram!;
+    gl.useProgram(prog.program);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.velocity!.read.texture);
+    gl.uniform1i(prog.uniforms.get("u_velocity")!, 0);
+
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, this.curlFBO!.texture);
+    gl.uniform1i(prog.uniforms.get("u_curl")!, 1);
+
+    gl.uniform2f(prog.uniforms.get("u_texelSize")!, texelSize[0], texelSize[1]);
+    gl.uniform1f(prog.uniforms.get("u_dt")!, dt);
+    gl.uniform1f(prog.uniforms.get("u_strength")!, this.physics.vorticityStrength * heightMult);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.velocity!.write.fbo);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    this.swapFBO(this.velocity!);
+  }
+
+  private applyBuoyancy(dt: number, heightMult: number): void {
+    const gl = this.gl!;
+    const prog = this.buoyancyProgram!;
+    gl.useProgram(prog.program);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.velocity!.read.texture);
+    gl.uniform1i(prog.uniforms.get("u_velocity")!, 0);
+
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, this.temperature!.read.texture);
+    gl.uniform1i(prog.uniforms.get("u_temperature")!, 1);
+
+    gl.uniform1f(prog.uniforms.get("u_dt")!, dt);
+    gl.uniform1f(prog.uniforms.get("u_buoyancy")!, this.physics.buoyancyStrength * heightMult);
+    gl.uniform1f(prog.uniforms.get("u_ambientTemp")!, this.AMBIENT_TEMP);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.velocity!.write.fbo);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    this.swapFBO(this.velocity!);
+  }
+
+  private applyCombustion(dt: number, intensityMult: number): void {
+    const gl = this.gl!;
+    const prog = this.combustionProgram!;
+    gl.useProgram(prog.program);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.temperature!.read.texture);
+    gl.uniform1i(prog.uniforms.get("u_temperature")!, 0);
+
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, this.fuel!.read.texture);
+    gl.uniform1i(prog.uniforms.get("u_fuel")!, 1);
+
+    gl.uniform1f(prog.uniforms.get("u_dt")!, dt);
+    gl.uniform1f(prog.uniforms.get("u_burnRate")!, this.physics.burnRate * intensityMult);
+    gl.uniform1f(prog.uniforms.get("u_burnTemp")!, this.BURN_TEMP);
+    gl.uniform1f(prog.uniforms.get("u_fuelEfficiency")!, this.physics.fuelEfficiency);
+    gl.uniform1f(prog.uniforms.get("u_coolingRate")!, this.physics.coolingRate);
+    gl.uniform1f(prog.uniforms.get("u_ambientTemp")!, this.AMBIENT_TEMP);
+
+    // Combustion shader outputs only updated temperature in .x channel.
+    // Fuel decay is handled separately via advection dissipation (FUEL_DISSIPATION).
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.temperature!.write.fbo);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    this.swapFBO(this.temperature!);
+  }
+
+  private computeDivergence(texelSize: [number, number]): void {
+    const gl = this.gl!;
+    const prog = this.divergenceProgram!;
+    gl.useProgram(prog.program);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.velocity!.read.texture);
+    gl.uniform1i(prog.uniforms.get("u_velocity")!, 0);
+    gl.uniform2f(prog.uniforms.get("u_texelSize")!, texelSize[0], texelSize[1]);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.divergenceFBO!.fbo);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+  }
+
+  /** Scale pressure field by dissipation factor before Jacobi iterations */
+  private scalePressure(): void {
+    const gl = this.gl!;
+    const prog = this.clearProgram!;
+    gl.useProgram(prog.program);
+
+    // We want to multiply pressure by PRESSURE_DISSIPATION, not set to a constant.
+    // The clear shader sets a flat value — that's not what we want.
+    // Instead, use advection with dt=0 and dissipation = PRESSURE_DISSIPATION.
+    const advProg = this.advectionProgram!;
+    gl.useProgram(advProg.program);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.velocity!.read.texture);
+    gl.uniform1i(advProg.uniforms.get("u_velocity")!, 0);
+
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, this.pressure!.read.texture);
+    gl.uniform1i(advProg.uniforms.get("u_source")!, 1);
+
+    gl.uniform2f(advProg.uniforms.get("u_texelSize")!, 1.0 / this.simWidth, 1.0 / this.simHeight);
+    gl.uniform1f(advProg.uniforms.get("u_dt")!, 0.0);
+    gl.uniform1f(advProg.uniforms.get("u_dissipation")!, this.physics.pressureDissipation);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.pressure!.write.fbo);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    this.swapFBO(this.pressure!);
+  }
+
+  private jacobiStep(texelSize: [number, number]): void {
+    const gl = this.gl!;
+    const prog = this.jacobiProgram!;
+    gl.useProgram(prog.program);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.pressure!.read.texture);
+    gl.uniform1i(prog.uniforms.get("u_pressure")!, 0);
+
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, this.divergenceFBO!.texture);
+    gl.uniform1i(prog.uniforms.get("u_divergence")!, 1);
+
+    gl.uniform2f(prog.uniforms.get("u_texelSize")!, texelSize[0], texelSize[1]);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.pressure!.write.fbo);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    this.swapFBO(this.pressure!);
+  }
+
+  private gradientSubtract(texelSize: [number, number]): void {
+    const gl = this.gl!;
+    const prog = this.gradientSubtractProgram!;
+    gl.useProgram(prog.program);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.velocity!.read.texture);
+    gl.uniform1i(prog.uniforms.get("u_velocity")!, 0);
+
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, this.pressure!.read.texture);
+    gl.uniform1i(prog.uniforms.get("u_pressure")!, 1);
+
+    gl.uniform2f(prog.uniforms.get("u_texelSize")!, texelSize[0], texelSize[1]);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.velocity!.write.fbo);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    this.swapFBO(this.velocity!);
+  }
+
+  // ============================================================
+  // Display rendering
+  // ============================================================
+
+  private renderDisplay(config: FireOverlayConfig, input: FireFrameInput): void {
+    const gl = this.gl!;
+
+    gl.viewport(0, 0, this.canvas!.width, this.canvas!.height);
+    gl.enable(gl.BLEND);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    const prog = this.displayProgram!;
+    gl.useProgram(prog.program);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.temperature!.read.texture);
+    gl.uniform1i(prog.uniforms.get("u_temperature")!, 0);
+
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, this.fuel!.read.texture);
+    gl.uniform1i(prog.uniforms.get("u_fuel")!, 1);
+
+    gl.uniform1f(prog.uniforms.get("u_displayIntensity")!, config.intensity);
+
+    // Wick core positions (always-bright flame at each tip)
+    gl.uniform1i(prog.uniforms.get("u_tipCount")!, this.displayTipCount);
+
+    for (let i = 0; i < this.displayTipCount; i++) {
+      const posLoc = gl.getUniformLocation(prog.program, `u_tipPositions[${i}]`);
+      const speedLoc = gl.getUniformLocation(prog.program, `u_tipSpeeds[${i}]`);
+      const scaleLoc = gl.getUniformLocation(prog.program, `u_tipFlameScales[${i}]`);
+      if (posLoc) gl.uniform2f(posLoc, this.displayTipUVs[i * 2]!, this.displayTipUVs[i * 2 + 1]!);
+      if (speedLoc) gl.uniform1f(speedLoc, this.displayTipSpeeds[i]!);
+      if (scaleLoc) gl.uniform1f(scaleLoc, this.displayTipFlameScales[i]!);
+    }
+
+    // Aspect correction so wick cores render as circles, not ellipses
+    const aspect = this.displayCanvasWidth / Math.max(this.displayCanvasHeight, 1);
+    gl.uniform2f(prog.uniforms.get("u_aspectCorrect")!, 1.0, aspect);
+
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+  }
+
+  // ============================================================
+  // FBO management
+  // ============================================================
+
+  private createDoubleFBO(w: number, h: number): DoubleFBO {
+    const gl = this.gl!;
+    return {
+      read: this.createFBO(w, h, gl.RGBA16F, gl.RGBA, gl.HALF_FLOAT, gl.LINEAR),
+      write: this.createFBO(w, h, gl.RGBA16F, gl.RGBA, gl.HALF_FLOAT, gl.LINEAR),
+    };
+  }
+
+  private createSingleFBO(w: number, h: number): FBOAttachment {
+    const gl = this.gl!;
+    return this.createFBO(w, h, gl.RGBA16F, gl.RGBA, gl.HALF_FLOAT, gl.NEAREST);
+  }
+
+  private createFBO(
+    w: number, h: number,
+    internalFormat: number, format: number, type: number, filter: number
+  ): FBOAttachment {
+    const gl = this.gl!;
+
+    const texture = gl.createTexture()!;
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, w, h, 0, format, type, null);
+
+    const fbo = gl.createFramebuffer()!;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+
+    return { fbo, texture };
+  }
+
+  private swapFBO(fbo: DoubleFBO): void {
+    const tmp = fbo.read;
+    fbo.read = fbo.write;
+    fbo.write = tmp;
+  }
+
+  private createSimulationBuffers(): void {
+    const w = this.simWidth;
+    const h = this.simHeight;
+
+    this.velocity = this.createDoubleFBO(w, h);
+    this.pressure = this.createDoubleFBO(w, h);
+    this.temperature = this.createDoubleFBO(w, h);
+    this.fuel = this.createDoubleFBO(w, h);
+    this.divergenceFBO = this.createSingleFBO(w, h);
+    this.curlFBO = this.createSingleFBO(w, h);
+  }
+
+  private destroySimulationBuffers(): void {
     const gl = this.gl;
-    if (!gl) return false;
+    if (!gl) return;
 
-    const vertShader = this.compileShader(gl, gl.VERTEX_SHADER, FIRE_VERTEX_SHADER);
-    const fragShader = this.compileShader(gl, gl.FRAGMENT_SHADER, FIRE_FRAGMENT_SHADER);
-    if (!vertShader || !fragShader) return false;
+    const destroyDouble = (d: DoubleFBO | null) => {
+      if (!d) return;
+      gl.deleteTexture(d.read.texture);
+      gl.deleteFramebuffer(d.read.fbo);
+      gl.deleteTexture(d.write.texture);
+      gl.deleteFramebuffer(d.write.fbo);
+    };
 
-    const program = gl.createProgram();
-    if (!program) return false;
+    const destroySingle = (f: FBOAttachment | null) => {
+      if (!f) return;
+      gl.deleteTexture(f.texture);
+      gl.deleteFramebuffer(f.fbo);
+    };
 
+    destroyDouble(this.velocity);
+    destroyDouble(this.pressure);
+    destroyDouble(this.temperature);
+    destroyDouble(this.fuel);
+    destroySingle(this.divergenceFBO);
+    destroySingle(this.curlFBO);
+
+    this.velocity = null;
+    this.pressure = null;
+    this.temperature = null;
+    this.fuel = null;
+    this.divergenceFBO = null;
+    this.curlFBO = null;
+  }
+
+  // ============================================================
+  // Shader compilation
+  // ============================================================
+
+  private compileAllPrograms(): boolean {
+    this.splatProgram = this.buildProgram(SPLAT_FRAG, ["u_target", "u_point", "u_splatValue", "u_radius"]);
+    this.advectionProgram = this.buildProgram(ADVECTION_FRAG, ["u_velocity", "u_source", "u_texelSize", "u_dt", "u_dissipation"]);
+    this.curlProgram = this.buildProgram(CURL_FRAG, ["u_velocity", "u_texelSize"]);
+    this.vorticityProgram = this.buildProgram(VORTICITY_FRAG, ["u_velocity", "u_curl", "u_texelSize", "u_dt", "u_strength"]);
+    this.buoyancyProgram = this.buildProgram(BUOYANCY_FRAG, ["u_velocity", "u_temperature", "u_dt", "u_buoyancy", "u_ambientTemp"]);
+    this.combustionProgram = this.buildProgram(COMBUSTION_FRAG, ["u_temperature", "u_fuel", "u_dt", "u_burnRate", "u_burnTemp", "u_fuelEfficiency", "u_coolingRate", "u_ambientTemp"]);
+    this.divergenceProgram = this.buildProgram(DIVERGENCE_FRAG, ["u_velocity", "u_texelSize"]);
+    this.jacobiProgram = this.buildProgram(JACOBI_FRAG, ["u_pressure", "u_divergence", "u_texelSize"]);
+    this.gradientSubtractProgram = this.buildProgram(GRADIENT_SUBTRACT_FRAG, ["u_velocity", "u_pressure", "u_texelSize"]);
+    this.clearProgram = this.buildProgram(CLEAR_FRAG, ["u_clearValue"]);
+    this.displayProgram = this.buildProgram(DISPLAY_FRAG, [
+      "u_temperature", "u_fuel", "u_displayIntensity",
+      "u_tipCount", "u_aspectCorrect",
+    ]);
+
+    const all = [
+      this.splatProgram, this.advectionProgram, this.curlProgram,
+      this.vorticityProgram, this.buoyancyProgram, this.combustionProgram,
+      this.divergenceProgram, this.jacobiProgram, this.gradientSubtractProgram,
+      this.clearProgram, this.displayProgram,
+    ];
+
+    if (all.some(p => p === null)) {
+      console.error("Failed to compile one or more fire simulation shaders");
+      return false;
+    }
+
+    return true;
+  }
+
+  private buildProgram(fragSource: string, uniformNames: string[]): ShaderProgram | null {
+    const gl = this.gl!;
+
+    const vertShader = this.compileShader(gl.VERTEX_SHADER, VERTEX_SHADER);
+    const fragShader = this.compileShader(gl.FRAGMENT_SHADER, fragSource);
+    if (!vertShader || !fragShader) return null;
+
+    const program = gl.createProgram()!;
     gl.attachShader(program, vertShader);
     gl.attachShader(program, fragShader);
     gl.linkProgram(program);
@@ -245,24 +733,27 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
       gl.deleteProgram(program);
       gl.deleteShader(vertShader);
       gl.deleteShader(fragShader);
-      return false;
+      return null;
     }
 
-    // Shaders can be detached after linking
     gl.detachShader(program, vertShader);
     gl.detachShader(program, fragShader);
     gl.deleteShader(vertShader);
     gl.deleteShader(fragShader);
 
-    this.program = program;
-    return true;
+    const uniforms = new Map<string, WebGLUniformLocation>();
+    for (const name of uniformNames) {
+      const loc = gl.getUniformLocation(program, name);
+      if (loc !== null) {
+        uniforms.set(name, loc);
+      }
+    }
+
+    return { program, uniforms };
   }
 
-  private compileShader(
-    gl: WebGL2RenderingContext,
-    type: number,
-    source: string
-  ): WebGLShader | null {
+  private compileShader(type: number, source: string): WebGLShader | null {
+    const gl = this.gl!;
     const shader = gl.createShader(type);
     if (!shader) return null;
 
@@ -279,27 +770,37 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     return shader;
   }
 
-  private cacheUniforms(): void {
-    const gl = this.gl;
-    const program = this.program;
-    if (!gl || !program) return;
-
-    this.uniforms.u_time = gl.getUniformLocation(program, "u_time");
-    this.uniforms.u_resolution = gl.getUniformLocation(program, "u_resolution");
-    this.uniforms.u_tipCount = gl.getUniformLocation(program, "u_tipCount");
-    this.uniforms.u_tipPositions = gl.getUniformLocation(program, "u_tipPositions");
-    this.uniforms.u_tipVelocities = gl.getUniformLocation(program, "u_tipVelocities");
-    this.uniforms.u_tipSpeeds = gl.getUniformLocation(program, "u_tipSpeeds");
-    this.uniforms.u_intensity = gl.getUniformLocation(program, "u_intensity");
-    this.uniforms.u_flameHeight = gl.getUniformLocation(program, "u_flameHeight");
-    this.uniforms.u_quality = gl.getUniformLocation(program, "u_quality");
-  }
+  // ============================================================
+  // Cleanup
+  // ============================================================
 
   private cleanup(): void {
-    if (this.gl && this.program) {
-      this.gl.deleteProgram(this.program);
-      this.program = null;
+    this.destroySimulationBuffers();
+
+    const gl = this.gl;
+    if (gl) {
+      const programs = [
+        this.splatProgram, this.advectionProgram, this.curlProgram,
+        this.vorticityProgram, this.buoyancyProgram, this.combustionProgram,
+        this.divergenceProgram, this.jacobiProgram, this.gradientSubtractProgram,
+        this.clearProgram, this.displayProgram,
+      ];
+      for (const p of programs) {
+        if (p) gl.deleteProgram(p.program);
+      }
     }
+
+    this.splatProgram = null;
+    this.advectionProgram = null;
+    this.curlProgram = null;
+    this.vorticityProgram = null;
+    this.buoyancyProgram = null;
+    this.combustionProgram = null;
+    this.divergenceProgram = null;
+    this.jacobiProgram = null;
+    this.gradientSubtractProgram = null;
+    this.clearProgram = null;
+    this.displayProgram = null;
 
     if (this.canvas) {
       this.canvas.remove();
