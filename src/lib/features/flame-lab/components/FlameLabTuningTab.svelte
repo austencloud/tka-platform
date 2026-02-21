@@ -286,12 +286,19 @@
   }
 
   async function preloadNextSequence() {
-    if (!spinnerOrchestrator || !sequence || isPreloading) return;
+    if (!sequence || isPreloading || preloadedSequence) return;
     isPreloading = true;
     try {
       const endState = extractEndState(sequence);
-      const nextSeq = await spinnerOrchestrator.getNextSequence(endState);
-      preloadedSequence = nextSeq ?? (await spinnerOrchestrator.getInitialSequence());
+
+      if (sourceMode === "infinite" && infiniteGenerator) {
+        // Generate the next LOOP constrained to start at the current end position
+        const generated = await infiniteGenerator.generateFromEndState(endState);
+        preloadedSequence = generated?.sequence ?? null;
+      } else if (sourceMode === "library" && spinnerOrchestrator) {
+        const nextSeq = await spinnerOrchestrator.getNextSequence(endState);
+        preloadedSequence = nextSeq ?? (await spinnerOrchestrator.getInitialSequence());
+      }
     } catch (err) {
       console.error("Flame Lab: preload failed:", err);
     } finally {
@@ -299,41 +306,60 @@
     }
   }
 
-  async function chainToNextSequence() {
+  function chainToNextSequence() {
     if (!playbackController || isChainingNow) return;
-    isChainingNow = true;
 
-    try {
-      if (sourceMode === "infinite" && infiniteGenerator) {
-        const endState = sequence ? extractEndState(sequence) : null;
-        const generated = endState
-          ? await infiniteGenerator.generateFromEndState(endState)
-          : await infiniteGenerator.generateInitial();
-        if (generated) hotSwapSequence(generated.sequence);
-      } else if (sourceMode === "library" && spinnerOrchestrator) {
-        let nextSeq = preloadedSequence;
-        if (!nextSeq && sequence) {
-          const endState = extractEndState(sequence);
-          nextSeq = await spinnerOrchestrator.getNextSequence(endState);
-          if (!nextSeq) nextSeq = await spinnerOrchestrator.getInitialSequence();
-        }
-        if (nextSeq) hotSwapSequence(nextSeq);
-        preloadedSequence = null;
-      }
-    } catch (err) {
-      console.error("Flame Lab: chain failed:", err);
-    } finally {
+    // Synchronous swap from preloaded sequence — no visible step 0 gap
+    if (preloadedSequence) {
+      isChainingNow = true;
+      hotSwapSequence(preloadedSequence);
+      preloadedSequence = null;
       isChainingNow = false;
+      // Immediately start preloading the NEXT sequence
+      preloadNextSequence();
+      return;
     }
+
+    // Fallback: async generation if preload wasn't ready (rare)
+    isChainingNow = true;
+    (async () => {
+      try {
+        if (sourceMode === "infinite" && infiniteGenerator) {
+          const endState = sequence ? extractEndState(sequence) : null;
+          const generated = endState
+            ? await infiniteGenerator.generateFromEndState(endState)
+            : await infiniteGenerator.generateInitial();
+          if (generated) hotSwapSequence(generated.sequence);
+        } else if (sourceMode === "library" && spinnerOrchestrator) {
+          if (sequence) {
+            const endState = extractEndState(sequence);
+            const nextSeq = await spinnerOrchestrator.getNextSequence(endState);
+            if (nextSeq) hotSwapSequence(nextSeq);
+          }
+        }
+      } catch (err) {
+        console.error("Flame Lab: chain failed:", err);
+      } finally {
+        isChainingNow = false;
+        // Start preloading for the next chain
+        preloadNextSequence();
+      }
+    })();
   }
 
   async function startAutoMode() {
     if (sourceMode === "library" && spinnerOrchestrator) {
       const initial = await spinnerOrchestrator.getInitialSequence();
-      if (initial) hotSwapSequence(initial);
+      if (initial) {
+        hotSwapSequence(initial);
+        preloadNextSequence();
+      }
     } else if (sourceMode === "infinite" && infiniteGenerator) {
       const generated = await infiniteGenerator.generateInitial();
-      if (generated) hotSwapSequence(generated.sequence);
+      if (generated) {
+        hotSwapSequence(generated.sequence);
+        preloadNextSequence();
+      }
     }
   }
 
@@ -378,9 +404,10 @@
     lastStep = currentStep;
   });
 
-  // Preload next sequence in library mode
+  // Preload next sequence (library + infinite modes)
+  // Start generation early so the swap is synchronous when the sequence ends.
   $effect(() => {
-    if (sourceMode !== "library") return;
+    if (sourceMode === "pick") return;
 
     const currentStep = Math.floor(animationState.currentStep);
     const totalSteps = animationState.totalSteps;
