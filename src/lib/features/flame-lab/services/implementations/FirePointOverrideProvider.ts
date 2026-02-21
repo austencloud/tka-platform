@@ -11,23 +11,33 @@ function deepCopy<T>(value: T): T {
 
 /**
  * localStorage-backed fire point override provider.
- * Maintains an in-memory cache for fast lookups during animation frames.
+ * Maintains in-memory caches for fast lookups during animation frames.
  *
- * Two caches:
- * - `cache` = working state (auto-saved on every edit)
- * - `defaultsCache` = user-defined baselines ("Set as Default")
+ * Three-tier fallback chain (highest to lowest priority):
+ * 1. `cache` = working state (auto-saved on every edit in Flame Lab)
+ * 2. `defaultsCache` = user-defined baselines ("Set as Default")
+ * 3. `publishedDefaults` = admin-published Firestore defaults (loaded at startup)
  */
 export class FirePointOverrideProvider implements IFirePointOverrideProvider {
 	private cache: Map<string, PropFirePointConfig>;
 	private defaultsCache: Map<string, PropFirePointConfig>;
+	private publishedDefaults: Map<string, PropFirePointConfig>;
 
 	constructor() {
 		this.cache = this.loadFromStorage(STORAGE_KEY);
 		this.defaultsCache = this.loadFromStorage(DEFAULTS_STORAGE_KEY);
+		this.publishedDefaults = new Map();
 	}
 
 	getOverride(propType: string): PropFirePointConfig | null {
-		return this.cache.get(propType.toLowerCase()) ?? null;
+		const key = propType.toLowerCase();
+		// Fallback chain: local working edits -> user defaults -> admin-published defaults
+		return (
+			this.cache.get(key) ??
+			this.defaultsCache.get(key) ??
+			this.publishedDefaults.get(key) ??
+			null
+		);
 	}
 
 	saveOverride(propType: string, config: PropFirePointConfig): void {
@@ -66,6 +76,15 @@ export class FirePointOverrideProvider implements IFirePointOverrideProvider {
 			}
 		}
 		this.persistCache(STORAGE_KEY, this.cache);
+	}
+
+	// --- Published defaults (admin-tuned, from Firestore) ---
+
+	loadPublishedDefaults(defaults: Record<string, PropFirePointConfig>): void {
+		this.publishedDefaults.clear();
+		for (const [key, config] of Object.entries(defaults)) {
+			this.publishedDefaults.set(key.toLowerCase(), deepCopy(config));
+		}
 	}
 
 	// --- User-defined defaults ---

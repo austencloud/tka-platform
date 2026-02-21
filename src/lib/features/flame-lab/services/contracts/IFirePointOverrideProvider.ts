@@ -30,6 +30,11 @@ export interface IFirePointOverrideProvider {
 	/** Import overrides from a JSON object (merges with existing). */
 	importAll(overrides: Record<string, PropFirePointConfig>): void;
 
+	// --- Published defaults (admin-tuned, from Firestore) ---
+
+	/** Load published fire point defaults from admin config. */
+	loadPublishedDefaults(defaults: Record<string, PropFirePointConfig>): void;
+
 	// --- User-defined defaults ---
 
 	/** Save a user-defined default baseline for a prop type. */
