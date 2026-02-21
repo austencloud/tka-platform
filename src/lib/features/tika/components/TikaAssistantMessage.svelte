@@ -87,7 +87,7 @@
       {#if pendingTools.length > 0 && isStreaming}
         <div class="thinking-indicator">
           <i class="fas fa-brain fa-pulse" aria-hidden="true"></i>
-          <span>Looking up {formatToolName(pendingTools[0].name)}...</span>
+          <span>Looking up {formatToolName(pendingTools[0]?.name ?? "")}...</span>
         </div>
       {/if}
 
