@@ -43,6 +43,7 @@
     duration: () => import("$lib/features/duration-lab/DurationLabModule.svelte"),
     "visual-builder": () => import("$lib/features/visual-builder-lab/VisualBuilderLabModule.svelte"),
     flame: () => import("$lib/features/flame-lab/FlameLabModule.svelte"),
+    led: () => import("$lib/features/led-lab/LedLabModule.svelte"),
     museum: () => import("$lib/features/museum/MuseumDestination.svelte"),
   };
 

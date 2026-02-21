@@ -742,98 +742,48 @@
       "issues": []
     },
     "features/flame-lab": {
-      "lastAuditedAt": "2026-02-21T08:26:01.649Z",
+      "lastAuditedAt": "2026-02-21T08:54:10.912Z",
       "name": "Flame Lab",
       "type": "module",
       "grades": {
         "architecture": "A+",
         "codeQuality": "A+",
         "svelte5": "A+",
-        "accessibility": "A",
+        "accessibility": "A+",
         "uxStates": "A+",
-        "uiConsistency": "C",
+        "uiConsistency": "A+",
         "performance": "A+",
         "security": "A"
       },
-      "overallGrade": "A",
+      "overallGrade": "A+",
       "notes": null,
       "issues": [
         {
-          "severity": "critical",
-          "dimension": "uiConsistency",
-          "file": "features/flame-lab/components/FirePointListPanel.svelte",
-          "line": 303,
-          "description": "Hardcoded rgba values - should use design tokens"
-        },
-        {
-          "severity": "critical",
-          "dimension": "uiConsistency",
-          "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
-          "line": 1140,
-          "description": "Hardcoded success green - should use var(--semantic-success)"
-        },
-        {
-          "severity": "critical",
-          "dimension": "uiConsistency",
-          "file": "features/flame-lab/components/PropTypeSelector.svelte",
-          "line": 134,
-          "description": "Hardcoded #f97316 - should use var(--flame-orange)"
+          "severity": "serious",
+          "dimension": "security",
+          "file": "features/flame-lab/components/FirePointSvgCanvas.svelte",
+          "line": 338,
+          "description": "{@html propSvgContent} renders internal SVG with sanitization; trusted but htmlDirective flagged"
         }
       ]
     },
     "shared/3d-animation": {
-      "lastAuditedAt": "2026-02-21T08:26:06.739Z",
+      "lastAuditedAt": "2026-02-21T08:54:05.675Z",
       "name": "Shared: 3d Animation",
       "type": "shared",
       "grades": {
         "architecture": "A+",
         "codeQuality": "A+",
         "svelte5": "A+",
-        "accessibility": "F",
+        "accessibility": "A+",
         "uxStates": "A+",
-        "uiConsistency": "C",
+        "uiConsistency": "A+",
         "performance": "A+",
         "security": "A+"
       },
-      "overallGrade": "A",
+      "overallGrade": "A+",
       "notes": null,
-      "issues": [
-        {
-          "severity": "critical",
-          "dimension": "accessibility",
-          "file": "shared/3d-animation/components/controls/EffectsSettingsPanel.svelte",
-          "line": 143,
-          "description": "6 buttons missing aria-label"
-        },
-        {
-          "severity": "critical",
-          "dimension": "accessibility",
-          "file": "shared/3d-animation/components/panels/DuetCreatorPanel.svelte",
-          "line": 155,
-          "description": "8 buttons missing aria-label"
-        },
-        {
-          "severity": "critical",
-          "dimension": "accessibility",
-          "file": "shared/3d-animation/effects/components/EffectsControlPanel.svelte",
-          "line": 461,
-          "description": "font-size 0.625rem (10px) below minimum + 3 buttons missing aria-label"
-        },
-        {
-          "severity": "critical",
-          "dimension": "uiConsistency",
-          "file": "shared/3d-animation/components/panels/DuetCreatorPanel.svelte",
-          "line": 530,
-          "description": "6 hardcoded color values"
-        },
-        {
-          "severity": "critical",
-          "dimension": "uiConsistency",
-          "file": "shared/3d-animation/effects/components/EffectsControlPanel.svelte",
-          "line": 395,
-          "description": "7 hardcoded rgba box-shadow values"
-        }
-      ]
+      "issues": []
     }
   },
   "targets": [],

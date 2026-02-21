@@ -60,6 +60,81 @@ export function simplifyRepeatedWord(word: string): string {
     }
   }
 
-  // No repeating pattern found, return original word
+  // No repeating pattern found, try palindrome detection
+  return simplifyPalindromicWord(word);
+}
+
+/**
+ * Split a word into letter units, treating letter+dash combinations as single units
+ *
+ * Examples:
+ * - "ABC" → ["A", "B", "C"]
+ * - "AW-B" → ["A", "W-", "B"]
+ * - "Φ-Ψ-Ω-" → ["Φ-", "Ψ-", "Ω-"]
+ */
+function splitIntoLetterUnits(word: string): string[] {
+  const units: string[] = [];
+  let i = 0;
+
+  while (i < word.length) {
+    const char = word[i];
+    if (!char) break;
+
+    if (/[a-zA-Z\u0370-\u03FF\u1F00-\u1FFF]/.test(char)) {
+      const nextChar = word[i + 1];
+      if (i + 1 < word.length && nextChar === "-") {
+        units.push(char + "-");
+        i += 2;
+      } else {
+        units.push(char);
+        i += 1;
+      }
+    } else {
+      i += 1;
+    }
+  }
+
+  return units;
+}
+
+/**
+ * Simplify a word with palindromic (ABBA) group structure by removing the mirrored half.
+ *
+ * Works on letter-unit groups, not raw characters, so "Δ-UY-Ψ-" is one group
+ * when group size = 4 tokens.
+ *
+ * Example:
+ * - "Δ-UY-Ψ-Σ-VZ-Ψ-Σ-VZ-Ψ-Δ-UY-Ψ-" (ABBA at G=4) → "Δ-UY-Ψ-Σ-VZ-Ψ-"
+ */
+function simplifyPalindromicWord(word: string): string {
+  const tokens = splitIntoLetterUnits(word);
+  const n = tokens.length;
+  if (n < 2) return word;
+
+  for (let g = 1; g <= Math.floor(n / 2); g++) {
+    if (n % g !== 0) continue;
+
+    const numGroups = n / g;
+    if (numGroups < 2) continue;
+
+    const groups: string[] = [];
+    for (let i = 0; i < numGroups; i++) {
+      groups.push(tokens.slice(i * g, (i + 1) * g).join(""));
+    }
+
+    let isPalindrome = true;
+    for (let i = 0; i < Math.floor(numGroups / 2); i++) {
+      if (groups[i] !== groups[numGroups - 1 - i]) {
+        isPalindrome = false;
+        break;
+      }
+    }
+
+    if (isPalindrome && groups[0] !== groups[1]) {
+      const halfCount = Math.ceil(numGroups / 2);
+      return groups.slice(0, halfCount).join("");
+    }
+  }
+
   return word;
 }

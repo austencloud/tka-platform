@@ -754,6 +754,14 @@ export const LAB_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #fb923c 0%, #f97316 100%)",
   },
   {
+    id: "led",
+    label: "LED",
+    icon: '<i class="fas fa-lightbulb" aria-hidden="true"></i>',
+    description: "LED prop rendering and pattern design",
+    color: "#00ff88",
+    gradient: "linear-gradient(135deg, #00ff88 0%, #00cc6a 100%)",
+  },
+  {
     id: "museum",
     label: "Museum",
     icon: '<i class="fas fa-building-columns" aria-hidden="true"></i>',
