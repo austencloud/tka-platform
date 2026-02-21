@@ -23,3 +23,26 @@ export interface LoopBaseComponent {
 export interface CompoundLoopType {
   components: LoopComponent[];
 }
+
+/** Spatial transform used in compositional LOOP algebra. */
+export type LoopTransform =
+  | "mirror"
+  | "flip"
+  | "swap"
+  | "rotate"
+  | "inverted";
+
+/** Fixed-point data for a single transform or compound. */
+export interface LoopFixedPointEntry {
+  transform: string;
+  fixedPositions: string[];
+  note?: string;
+}
+
+/** A single row in a composability matrix. */
+export interface LoopComposabilityEntry {
+  composition: string;
+  innerValid: string;
+  outerValid: string;
+  overall: "valid" | "blocked" | "degenerate";
+}

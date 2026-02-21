@@ -82,23 +82,22 @@ function invertMotionType(type) {
 
 /**
  * Extract beats from Firestore sequence document (sourceRef format).
+ * Handles both `steps` (newer) and `beats` (legacy) field names.
  * Maps motions.blue.startLocation → blue.startLoc etc.
  */
 function extractBeatsFromFirestore(sequenceData) {
-  const steps = sequenceData.steps;
-  if (!steps || !Array.isArray(steps)) return [];
+  const items = sequenceData.steps || sequenceData.beats;
+  if (!items || !Array.isArray(items)) return [];
 
-  return steps
-    .filter((s) => s.stepNumber >= 1)
+  return items
+    .filter((s) => (s.beatNumber || s.stepNumber) >= 1)
     .map((s) => {
       const blueMotion = s.motions?.blue;
       const redMotion = s.motions?.red;
 
       return {
-        beatNumber: s.stepNumber,
+        beatNumber: s.beatNumber || s.stepNumber,
         letter: s.letter || null,
-        startPos: s.startPosition || null,
-        endPos: s.endPosition || null,
         blue: {
           startLoc: blueMotion?.startLocation?.toLowerCase(),
           endLoc: blueMotion?.endLocation?.toLowerCase(),
@@ -114,26 +113,45 @@ function extractBeatsFromFirestore(sequenceData) {
 }
 
 /**
- * Check circularity by comparing start position to last step end position.
- * Works with Firestore sequence format (steps array with startPosition/endPosition).
+ * Check circularity by comparing first beat's motion start locations to
+ * last beat's motion end locations.
+ *
+ * Firestore items don't have startPosition/endPosition fields at the item level.
+ * Instead, circularity is determined from the motion data itself:
+ * for each hand (blue, red), the last beat's endLocation must match the
+ * first beat's startLocation.
  */
 function isCircularFromFirestore(sequenceData) {
-  const steps = sequenceData.steps;
-  if (!steps || !Array.isArray(steps) || steps.length < 1) return false;
+  const items = sequenceData.steps || sequenceData.beats;
+  if (!items || !Array.isArray(items) || items.length < 2) return false;
 
-  // Get start position from the sequence's startPosition or startingPosition
-  const startPosData = sequenceData.startPosition || sequenceData.startingPosition;
-  const startGridPos =
-    startPosData?.startPosition ||
-    startPosData?.gridPosition ||
-    steps[0]?.startPosition;
+  // Filter to actual beats (beatNumber >= 1)
+  const beats = items.filter((s) => (s.beatNumber || s.stepNumber) >= 1);
+  if (beats.length < 2) return false;
 
-  if (!startGridPos) return false;
+  const first = beats[0];
+  const last = beats[beats.length - 1];
 
-  const lastStep = steps[steps.length - 1];
-  if (!lastStep?.endPosition) return false;
+  const firstBlue = first.motions?.blue;
+  const firstRed = first.motions?.red;
+  const lastBlue = last.motions?.blue;
+  const lastRed = last.motions?.red;
 
-  return startGridPos === lastStep.endPosition;
+  // Need at least one hand with valid start/end locations
+  if (!firstBlue?.startLocation && !firstRed?.startLocation) return false;
+  if (!lastBlue?.endLocation && !lastRed?.endLocation) return false;
+
+  // Check blue hand circularity
+  const blueCircular = firstBlue?.startLocation && lastBlue?.endLocation
+    ? firstBlue.startLocation.toLowerCase() === lastBlue.endLocation.toLowerCase()
+    : true; // If no blue data, don't fail on it
+
+  // Check red hand circularity
+  const redCircular = firstRed?.startLocation && lastRed?.endLocation
+    ? firstRed.startLocation.toLowerCase() === lastRed.endLocation.toLowerCase()
+    : true; // If no red data, don't fail on it
+
+  return blueCircular && redCircular;
 }
 
 // ============================================================================
@@ -452,8 +470,9 @@ async function main() {
         continue;
       }
 
-      // Check if source has steps
-      if (!sourceData.steps || !Array.isArray(sourceData.steps) || sourceData.steps.length === 0) {
+      // Check if source has steps or beats
+      const sourceItems = sourceData.steps || sourceData.beats;
+      if (!sourceItems || !Array.isArray(sourceItems) || sourceItems.length === 0) {
         stats.noSteps++;
         continue;
       }

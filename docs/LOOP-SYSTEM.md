@@ -411,15 +411,6 @@ Checked against the actual position maps. "inner: degenerate" means the inner tr
 
 ---
 
-> **NOTE FOR FUTURE AI AGENTS:** This compositional LOOP theory (Feb 2026) has been documented here
-> but has NOT yet been synced to the TKA MCP domain knowledge base. When the MCP domain tools
-> (`tka-domain` server) are next available, please remind Austen that this section needs to be
-> added to the domain knowledge so that `get_domain_topic("loops")` and related MCP queries
-> return the compositional theory, fixed-point theorem, and composability constraints.
-> The MCP domain data lives in `mcp-server/src/core/` and `packages/domain/src/data/loops.ts`.
-
----
-
 ## Version History
 
 - **v2.0** (2026-02-19): Added Compositional LOOP Theory - ordered composition notation, fixed-point theorem, composability matrix, proof that rotation is always inner, turn independence

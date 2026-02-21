@@ -19,6 +19,9 @@ export type {
   LoopComponent,
   LoopBaseComponent,
   CompoundLoopType,
+  LoopTransform,
+  LoopFixedPointEntry,
+  LoopComposabilityEntry,
 } from "./types/loop.js";
 export type {
   InversionPair,
@@ -54,6 +57,14 @@ export {
   LOOP_BASE_COMPONENTS,
   COMPOUND_LOOP_TYPES,
   LOOP_CONSTRUCTION_PRINCIPLES,
+  LOOP_TURN_INDEPENDENCE,
+  LOOP_COMPOSITIONAL_NOTATION,
+  LOOP_FIXED_POINT_THEOREM,
+  LOOP_FIXED_POINTS,
+  LOOP_COMPOUND_FIXED_POINTS,
+  LOOP_ROTATE_ALWAYS_INNER,
+  LOOP_COMPOSABILITY_MATRICES,
+  LOOP_COMPOSITIONAL_KEY_RESULTS,
 } from "./data/loops.js";
 export {
   TRANSFORMATION_DESCRIPTION,

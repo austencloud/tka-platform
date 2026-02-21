@@ -331,6 +331,142 @@ Whether a position is **symmetric** or **asymmetric** determines which letters a
 On the 8-point grid, skewed positions require one hand on a cardinal point and one on an intercardinal point. The possible angular separations are always odd multiples of 45 degrees: either 45 degrees (Eta) or 135 degrees (Zeta). You **cannot** get 90 degrees with one hand on each grid. Gamma (90 degrees) only occurs when both hands are on the **same** grid (both cardinal or both intercardinal).`,
   },
 
+  "loops": {
+    title: "LOOP System and Compositional Theory",
+    content: `## LOOP System
+
+A **LOOP** is a sequence that returns to its starting position (circular) and follows a structured transformation pattern between its halves/quarters. The LOOP type is determined by beat data (positions, motion types, hand identity), not by the word or letters.
+
+### LOOP Types
+
+| Type | Definition |
+|------|------------|
+| **Strict LOOP** | Single transformation applies uniformly to ALL beat pairs |
+| **Compound LOOP** | Different transformations at different intervals |
+| **Modular LOOP** | Multiple distinct patterns at the SAME interval |
+| **Freeform** | Circular but no recognizable pattern |
+
+### Six Transformation Components
+
+| Component | What it does |
+|-----------|-------------|
+| **Rotated** | Positions continue rotating same direction (180 or 90 degree slices) |
+| **Mirrored** | Left-right swap across vertical axis |
+| **Flipped** | Top-bottom swap across horizontal axis |
+| **Swapped** | Blue<->Red hand roles swap |
+| **Inverted** | Pro<->Anti motion types swap |
+| **Rewound** | Second half plays in reverse (temporal, not geometric) |
+
+---
+
+## Compositional LOOP Theory (Feb 2026)
+
+### Turn Independence
+
+The LOOP algebra operates on a reduced space of:
+- **Grid positions** (where hands are)
+- **Motion types** (pro / anti / static / dash / float)
+- **Hand identity** (blue / red)
+
+**Turn values and orientations do not affect LOOP classification.** You can set every turn to 0 and the LOOP type is unchanged. Every LOOP type has a "canonical zero-turn form" representing its pure algebraic skeleton:
+
+\`\`\`
+Performed Sequence = LOOP Skeleton + Turn Assignment
+\`\`\`
+
+### Compositional Notation
+
+Instead of flat component bags like {MIRRORED, SWAPPED, INVERTED}, express LOOPs as ordered compositions:
+
+- \`/\` = applied **simultaneously** as one compound operation
+- \`+\` = applied **sequentially** (inner pattern, then outer transformation on top)
+
+Example: \`SWAPPED + MIRRORED/INVERTED\`
+1. Take a SWAPPED inner pattern (seed doubled via hand-role swap)
+2. Apply MIRRORED and INVERTED simultaneously (mirror positions + flip pro/anti)
+
+The flat label {MIRRORED, SWAPPED, INVERTED} doesn't tell you which transformation came first. The compositional notation preserves construction order.
+
+### The Fixed-Point Theorem
+
+For the composition INNER + OUTER:
+- INNER produces a circular sub-pattern: starts at S, ends at S
+- OUTER takes that sub-pattern and applies a transformation to double it
+- The outer half must start at S (continuity) and end at S (circularity)
+
+**Therefore: T(S) = S for any outer transform T.** The starting position must be a **fixed point** of the outer transformation.
+
+### Computed Fixed Points
+
+From the actual position maps in the codebase:
+
+| Transform | Fixed-point positions (can be OUTER from these) |
+|---|---|
+| **MIRROR (vertical)** | alpha1, alpha5, beta1, beta5 |
+| **FLIP (horizontal)** | alpha3, alpha7, beta3, beta7 |
+| **SWAP** | all beta (beta1-beta8) |
+| **ROTATE 180deg** | terra1 only (L5) |
+| **INVERTED** | ALL positions (doesn't change positions) |
+
+Swap is identity on beta because swapping two hands at the same grid location changes nothing positionally. This is why beta enables the most compositions.
+
+### Compound Outer Fixed Points
+
+Intersect the individual fixed-point sets:
+
+| Compound Outer | Valid Starting Positions |
+|---|---|
+| MIRROR/INVERTED | alpha1, alpha5, beta1, beta5 |
+| FLIP/INVERTED | alpha3, alpha7, beta3, beta7 |
+| SWAP/INVERTED | all beta |
+| MIRROR/SWAP | beta1, beta5 only |
+| FLIP/SWAP | beta3, beta7 only |
+| MIRROR/FLIP | none (L1-4), terra1 (L5) |
+| MIRROR/SWAP/INVERTED | beta1, beta5 only |
+| FLIP/SWAP/INVERTED | beta3, beta7 only |
+
+### Rotation Is Always Inner
+
+**No standard L1-L4 grid position is a fixed point under 180deg rotation.**
+
+- alpha1 -> alpha5 (moves)
+- beta3 -> beta7 (moves)
+- gamma1 -> gamma5 (moves)
+- Only terra1 (both hands at center, L5) maps to itself
+
+ROTATE cannot be an outer transform from any standard position. It must be the innermost structural layer or standalone. This is a mathematical constraint, not a design choice.
+
+For ROTATE as INNER, the seed goes S -> ROTATE(S), which is always a different position, producing non-degenerate structure from any starting point.
+
+### Composability Matrix (from alpha1)
+
+| Composition | Inner valid? | Outer valid? | Overall |
+|---|---|---|---|
+| SWAP + MIRROR/INV | alpha1->alpha5 yes | MIRROR(alpha1)=alpha1 yes | **VALID** |
+| SWAP + FLIP/INV | alpha1->alpha5 yes | FLIP(alpha1)=alpha5 no | **BLOCKED** |
+| SWAP + INVERTED | alpha1->alpha5 yes | always yes | **VALID** |
+| ROTATE + SWAP | alpha1->alpha5 yes | SWAP(alpha1)=alpha5 no | **BLOCKED** |
+| ROTATE + MIRROR/INV | alpha1->alpha5 yes | MIRROR(alpha1)=alpha1 yes | **VALID** |
+| MIRROR/INV + SWAP | alpha1->alpha1 degenerate | SWAP(alpha1)=alpha5 no | **BLOCKED** |
+
+### Composability Matrix (from beta3)
+
+| Composition | Inner valid? | Outer valid? | Overall |
+|---|---|---|---|
+| SWAP + MIRROR/INV | beta3->beta3 degenerate | MIRROR(beta3)=beta7 no | **BLOCKED** |
+| ROTATE + SWAP | beta3->beta7 yes | SWAP(beta3)=beta3 yes | **VALID** |
+| ROTATE + FLIP/INV | beta3->beta7 yes | FLIP(beta3)=beta3 yes | **VALID** |
+| MIRROR/INV + SWAP | beta3->beta7 yes | SWAP(beta3)=beta3 yes | **VALID** |
+
+### Key Results
+
+1. **Order matters.** SWAP + MIRROR/INV (valid from alpha1) and MIRROR/INV + SWAP (valid from beta3, not alpha1) are different compositions. NOT interchangeable.
+2. **Beta is the universal connector.** All beta positions are SWAP fixed points. beta1/beta5 support MIRROR as outer. beta3/beta7 support FLIP as outer.
+3. **ROTATE is always the innermost layer.** Mathematical proof: no L1-L4 position is a 180deg rotation fixed point.
+4. **INVERTED is always free.** No positional constraint. Can be added to any outer transform via / without restricting valid starting positions.
+5. **Flat detection loses information.** The same component set can correspond to different compositional structures depending on starting position and construction order.`,
+  },
+
   "caps-vs-loops": {
     title: "LOOP Transformation Algebra and CAPs vs LOOPs",
     content: `## LOOP Transformation Algebra

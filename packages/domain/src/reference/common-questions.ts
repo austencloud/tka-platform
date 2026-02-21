@@ -118,6 +118,18 @@ Compound letters are pairs that complete each other to create circular (LOOP) mo
 
 In continuous spinning, you're always doing compound units. D alone is half a cycle; DJ is complete.`,
 
+  "what is a word": `## What is a Word?
+
+A word in TKA is a sequence of letters that spells out a choreographic phrase. Each letter is one beat of motion, and stringing them together creates a "word" - a complete movement sequence.
+
+**Example:** The word "CAKE" is 4 beats long: C → A → K → E, each letter representing one beat of dual-prop movement.
+
+**Key properties:**
+- Words can be any length (1 letter = 1 beat, 6 letters = 6 beats, etc.)
+- Letters must chain: the end position of one letter must match the start position of the next
+- Invalid transitions require "bridge" letters to connect
+- If a word loops back to its starting position, it's a LOOP`,
+
   "what are interradials": `## What are Interradial Orientations?
 
 Interradials are the 4 orientations at 45° between the cardinal orientations. Introduced at Level 7.
