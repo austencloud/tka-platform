@@ -1,6 +1,7 @@
 <script lang="ts">
   import { calculateMuseumLayout } from "../domain/layout-calculator";
   import Pavilion from "./Pavilion.svelte";
+  import ExhibitSlot from "./ExhibitSlot.svelte";
   import type { MuseumState } from "../state/museum-state.svelte";
 
   interface Props {
@@ -21,8 +22,26 @@
   $effect(() => {
     museumState.setLayout(layout);
   });
+
+  // Placeholder thumbnail resolver — returns undefined for now.
+  // Phase 4 will wire this to Firebase/cloud thumbnail URLs.
+  function getThumbnailUrl(_sequenceId: string): string | undefined {
+    return undefined;
+  }
 </script>
 
 {#each layout.pavilions as pavilion (pavilion.id)}
   <Pavilion {pavilion} {groundY} />
+
+  {#each pavilion.slots as slot (slot.id)}
+    <ExhibitSlot
+      {slot}
+      exhibit={museumState.getExhibitForSlot(slot.id)}
+      thumbnailUrl={museumState.getExhibitForSlot(slot.id)
+        ? getThumbnailUrl(museumState.getExhibitForSlot(slot.id)!.sequenceId)
+        : undefined}
+      {playerPosition}
+      isOwner={museumState.isOwner}
+    />
+  {/each}
 {/each}
