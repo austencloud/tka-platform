@@ -16,6 +16,7 @@
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
   import { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
   import { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
@@ -43,6 +44,9 @@
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import type { IFireDefaultsPublisher } from "$lib/shared/animation-engine/services/contracts/IFireDefaultsPublisher";
+  import type { IFirePointOverrideProvider } from "../services/contracts/IFirePointOverrideProvider";
+  import { authState } from "$lib/shared/auth/state/authState.svelte";
 
   const DEFAULT_BPM = 60;
   const STORAGE_KEY = "flame-lab-state";
@@ -100,6 +104,7 @@
   let servicesReady = $state(false);
   let loading = $state(false);
   let error = $state<string | null>(null);
+  let playbackStartTimer: ReturnType<typeof setTimeout> | null = null;
   let showPicker = $state(false);
   let sequence = $state<SequenceData | null>(null);
   let isPlaying = $state(false);
@@ -123,6 +128,12 @@
   let isChainingNow = $state(false);
   let lastStep = $state(-1);
   const propTypeApplier = new PropTypeApplier();
+
+  // Publish-to-production state (admin only)
+  let isAdmin = $derived(authState.isAdmin);
+  let publishing = $state(false);
+  let publishConfirm = $state(false);
+  let publishSuccess = $state(false);
 
   let activePreset = $derived(FIRE_PRESETS.find(p => p.id === activePresetId) ?? FIRE_PRESETS[0]!);
 
@@ -245,6 +256,7 @@
     const finalStep = seq.steps?.[seq.steps.length - 1];
     let position = finalStep?.endPosition ?? null;
 
+    // Fallback 1: derive from motion end locations
     if (!position && gridPositionDeriver && finalStep?.motions) {
       const blueMotion = finalStep.motions[MotionColor.BLUE];
       const redMotion = finalStep.motions[MotionColor.RED];
@@ -255,6 +267,15 @@
             redMotion.endLocation
           );
         } catch { /* silently fail */ }
+      }
+    }
+
+    // Fallback 2: for circular sequences (LOOPs), end position = start position.
+    // Use the sequence's start position data if available.
+    if (!position && seq.isCircular) {
+      const startPos = seq.startPosition ?? seq.startingPosition;
+      if (startPos) {
+        position = startPos.gridPosition ?? startPos.startPosition ?? null;
       }
     }
 
@@ -278,7 +299,10 @@
     if (!ok) return;
 
     animationState.setPlaybackMode("continuous");
-    animationState.setCurrentStep(1);
+    // seekToStep syncs BOTH currentStep AND the controller's internal timePosition.
+    // Using setCurrentStep(1) alone gets overridden by the animation loop which
+    // reads from timePosition (still 0 after initialize), causing step 0 to flash.
+    playbackController.seekToStep(1);
 
     if (!animationState.isPlaying) {
       playbackController.togglePlayback();
@@ -339,6 +363,7 @@
         }
       } catch (err) {
         console.error("Flame Lab: chain failed:", err);
+        error = "Failed to load next sequence";
       } finally {
         isChainingNow = false;
         // Start preloading for the next chain
@@ -378,6 +403,7 @@
       if (generated) hotSwapSequence(generated.sequence);
     } catch (err) {
       console.error("Flame Lab: shuffle failed:", err);
+      error = "Shuffle failed — could not generate a new sequence";
     } finally {
       isChainingNow = false;
     }
@@ -491,6 +517,7 @@
       }
     } catch (err) {
       console.error("Flame Lab: failed to restore sequence:", err);
+      error = "Could not restore the previous session's sequence";
     } finally {
       loading = false;
     }
@@ -503,6 +530,7 @@
   };
 
   onDestroy(() => {
+    if (playbackStartTimer !== null) clearTimeout(playbackStartTimer);
     visibilityManager.setFireEffect(false);
     visibilityManager.unregisterObserver(flameColorObserver);
     playbackController?.dispose();
@@ -528,7 +556,8 @@
       const ok = playbackController.initialize(full, animationState);
       if (!ok) throw new Error("Playback init failed");
 
-      setTimeout(() => playbackController?.togglePlayback(), 300);
+      if (playbackStartTimer !== null) clearTimeout(playbackStartTimer);
+      playbackStartTimer = setTimeout(() => { playbackController?.togglePlayback(); playbackStartTimer = null; }, 300);
     } catch (err) {
       console.error("Flame Lab: load failed:", err);
       error = err instanceof Error ? err.message : "Load failed";
@@ -573,6 +602,28 @@
     // Start auto mode (library or infinite)
     startAutoMode();
   }
+
+  async function publishToProduction() {
+    publishing = true;
+    try {
+      const publisher = container.items.fireDefaultsPublisher as IFireDefaultsPublisher;
+      const overrideProvider = container.items.firePointOverrideProvider as IFirePointOverrideProvider;
+
+      await publisher.publish({
+        firePoints: overrideProvider.exportAll(),
+        propPhysics: {},
+        globalPhysics: adjustedPhysics,
+      });
+
+      publishConfirm = false;
+      publishSuccess = true;
+      setTimeout(() => { publishSuccess = false; }, 3000);
+    } catch (err) {
+      console.error("[FlameLabTuningTab] Publish failed:", err);
+    } finally {
+      publishing = false;
+    }
+  }
 </script>
 
 <div class="tuning-tab">
@@ -583,7 +634,7 @@
         <div class="empty-state">
           <i class="fas fa-fire" aria-hidden="true"></i>
           <p>Load a sequence to start</p>
-          <button class="pick-btn" onclick={() => (showPicker = true)}>
+          <button class="pick-btn" onclick={() => (showPicker = true)} aria-label="Pick a sequence to load">
             <i class="fas fa-folder-open" aria-hidden="true"></i>
             Pick Sequence
           </button>
@@ -601,7 +652,7 @@
       {:else if error}
         <div class="error-state">
           <span>{error}</span>
-          <button class="pick-btn" onclick={() => loadAnimation()}>Retry</button>
+          <button class="pick-btn" onclick={() => loadAnimation()} aria-label="Retry loading the sequence">Retry</button>
         </div>
       {:else}
         <div class="canvas-wrapper">
@@ -613,12 +664,14 @@
             letter={currentLetter}
             stepData={currentStepData}
             sequenceData={animationState.sequenceData}
+            currentStep={animationState.currentStep}
             {isPlaying}
             onPlaybackToggle={togglePlayback}
             trailSettings={animationSettings.trail}
             word={sequence?.word || sequence?.name || null}
             {fireConfig}
             backgroundAlpha={0}
+            focused={true}
           />
         </div>
       {/if}
@@ -663,18 +716,18 @@
         </div>
 
         {#if sourceMode === "pick"}
-          <button class="action-btn" onclick={() => (showPicker = true)}>
+          <button class="action-btn" onclick={() => (showPicker = true)} aria-label={sequence ? "Change the current sequence" : "Pick a sequence to load"}>
             <i class="fas fa-folder-open" aria-hidden="true"></i>
             {sequence ? "Change Sequence" : "Pick Sequence"}
           </button>
         {:else}
           <div class="auto-actions">
-            <button class="action-btn skip-btn" onclick={handleSkip} disabled={isChainingNow || !sequence}>
+            <button class="action-btn skip-btn" onclick={handleSkip} disabled={isChainingNow || !sequence} aria-label="Skip to the next sequence">
               <i class="fas fa-forward" aria-hidden="true"></i>
               Skip
             </button>
             {#if sourceMode === "infinite"}
-              <button class="action-btn shuffle-btn" onclick={handleShuffle} disabled={isChainingNow || !sequence}>
+              <button class="action-btn shuffle-btn" onclick={handleShuffle} disabled={isChainingNow || !sequence} aria-label="Shuffle to a random sequence">
                 <i class="fas fa-random" aria-hidden="true"></i>
                 Shuffle
               </button>
@@ -684,7 +737,7 @@
 
         {#if sequence}
           <div class="sequence-info">
-            <span class="seq-name">{sequence.word || sequence.name || "Unnamed"}</span>
+            <span class="seq-name">{simplifyAndTruncate(sequence.word || sequence.name || "Unnamed")}</span>
             <span class="seq-beats">{sequence.steps?.length || 0} beats</span>
           </div>
         {/if}
@@ -695,7 +748,7 @@
         <div class="control-section">
           <h3>Playback</h3>
           <div class="playback-row">
-            <button class="play-btn" onclick={togglePlayback}>
+            <button class="play-btn" onclick={togglePlayback} aria-label={isPlaying ? "Pause playback" : "Play sequence"}>
               <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
               {isPlaying ? "Pause" : "Play"}
             </button>
@@ -746,6 +799,7 @@
                 class="color-mode-btn"
                 class:active={flameColorMode === "natural"}
                 aria-pressed={flameColorMode === "natural"}
+                aria-label="Use natural flame colors"
                 onclick={() => handleFlameColorModeChange("natural")}
                 type="button"
               >
@@ -755,6 +809,7 @@
                 class="color-mode-btn"
                 class:active={flameColorMode === "colored"}
                 aria-pressed={flameColorMode === "colored"}
+                aria-label="Use colored flame tints based on prop colors"
                 onclick={() => handleFlameColorModeChange("colored")}
                 type="button"
               >
@@ -770,6 +825,7 @@
                 class:active={activePresetId === preset.id}
                 onclick={() => (activePresetId = preset.id)}
                 aria-pressed={activePresetId === preset.id}
+                aria-label="Select {preset.name} fire preset"
               >
                 <span class="preset-name">{preset.name}</span>
                 <span class="preset-desc">{preset.description}</span>
@@ -844,6 +900,31 @@
           </div>
         </div>
       {/if}
+
+      <!-- Publish to Production (admin only) -->
+      {#if isAdmin}
+        <div class="publish-section">
+          {#if publishSuccess}
+            <div class="publish-success">
+              <i class="fas fa-check-circle" aria-hidden="true"></i>
+              Published to all users
+            </div>
+          {:else if !publishConfirm}
+            <button class="publish-btn" onclick={() => publishConfirm = true}>
+              <i class="fas fa-upload" aria-hidden="true"></i>
+              Publish to Production
+            </button>
+          {:else}
+            <div class="publish-confirm">
+              <span class="publish-confirm-text">Push these fire settings to all users?</span>
+              <button class="confirm-btn" onclick={publishToProduction} disabled={publishing}>
+                {publishing ? "Publishing..." : "Yes, Publish"}
+              </button>
+              <button class="cancel-btn" onclick={() => publishConfirm = false}>Cancel</button>
+            </div>
+          {/if}
+        </div>
+      {/if}
     </div>
   </div>
 </div>
@@ -858,6 +939,18 @@
 
 <style>
   .tuning-tab {
+    /* Flame Lab domain color tokens */
+    --flame-orange: #f97316;
+    --flame-orange-bright: #fb923c;
+    --flame-orange-dim: rgba(249, 115, 22, 0.08);
+    --flame-orange-mid: rgba(249, 115, 22, 0.15);
+    --flame-orange-border: rgba(249, 115, 22, 0.3);
+    --flame-orange-border-strong: rgba(249, 115, 22, 0.5);
+    --flame-green: rgb(16, 185, 129);
+    --flame-green-dim: rgba(16, 185, 129, 0.1);
+    --flame-green-border: rgba(16, 185, 129, 0.3);
+    --flame-green-border-strong: rgba(16, 185, 129, 0.5);
+
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -877,7 +970,7 @@
 
   .canvas-area {
     position: relative;
-    background: #0a0a0f;
+    background: var(--theme-surface-dark, #0a0a0f);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--border-radius-lg, 12px);
     display: flex;
@@ -907,7 +1000,7 @@
 
   .empty-state i {
     font-size: 3rem;
-    color: rgba(249, 115, 22, 0.3);
+    color: var(--flame-orange-border);
   }
 
   .empty-state p,
@@ -922,10 +1015,10 @@
     align-items: center;
     gap: var(--spacing-xs, 4px);
     padding: 10px 20px;
-    border: 1.5px solid rgba(249, 115, 22, 0.4);
+    border: 1.5px solid var(--flame-orange-border);
     border-radius: var(--border-radius-md, 8px);
-    background: rgba(249, 115, 22, 0.1);
-    color: #f97316;
+    background: var(--flame-orange-dim);
+    color: var(--flame-orange);
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
     cursor: pointer;
@@ -933,8 +1026,8 @@
   }
 
   .pick-btn:hover {
-    background: rgba(249, 115, 22, 0.2);
-    border-color: rgba(249, 115, 22, 0.6);
+    background: var(--flame-orange-mid);
+    border-color: var(--flame-orange-border-strong);
   }
 
   .pick-btn:focus-visible {
@@ -968,7 +1061,7 @@
   }
 
   .control-section h3 i {
-    color: #f97316;
+    color: var(--flame-orange);
   }
 
   .action-btn {
@@ -988,7 +1081,7 @@
   }
 
   .action-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: color-mix(in srgb, var(--theme-text) 10%, transparent);
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
@@ -998,7 +1091,7 @@
     align-items: center;
     margin-top: var(--spacing-sm, 8px);
     padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
-    background: rgba(255, 255, 255, 0.03);
+    background: color-mix(in srgb, var(--theme-text) 3%, transparent);
     border-radius: var(--border-radius-sm, 4px);
   }
 
@@ -1017,7 +1110,7 @@
   .source-toggle {
     display: flex;
     gap: 2px;
-    background: rgba(255, 255, 255, 0.03);
+    background: color-mix(in srgb, var(--theme-text) 3%, transparent);
     border-radius: var(--border-radius-md, 8px);
     padding: 3px;
     margin-bottom: var(--spacing-sm, 8px);
@@ -1043,13 +1136,13 @@
 
   .source-btn:hover {
     color: var(--theme-text, white);
-    background: rgba(255, 255, 255, 0.06);
+    background: color-mix(in srgb, var(--theme-text) 6%, transparent);
   }
 
   .source-btn.active {
-    background: rgba(249, 115, 22, 0.15);
-    color: #fb923c;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    background: var(--flame-orange-mid);
+    color: var(--flame-orange-bright);
+    box-shadow: 0 1px 3px var(--theme-overlay-dark, rgba(0, 0, 0, 0.2));
   }
 
   .source-btn:focus-visible {
@@ -1058,7 +1151,7 @@
   }
 
   .source-btn i {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
   }
 
   .auto-actions {
@@ -1089,10 +1182,10 @@
     justify-content: center;
     gap: var(--spacing-xs, 4px);
     padding: 10px 16px;
-    border: 1.5px solid rgba(16, 185, 129, 0.3);
+    border: 1.5px solid var(--flame-green-border);
     border-radius: var(--border-radius-md, 8px);
-    background: rgba(16, 185, 129, 0.1);
-    color: rgb(16, 185, 129);
+    background: var(--flame-green-dim);
+    color: var(--flame-green);
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
     cursor: pointer;
@@ -1100,8 +1193,8 @@
   }
 
   .play-btn:hover {
-    background: rgba(16, 185, 129, 0.2);
-    border-color: rgba(16, 185, 129, 0.5);
+    background: color-mix(in srgb, var(--flame-green) 20%, transparent);
+    border-color: var(--flame-green-border-strong);
   }
 
   .bpm-control {
@@ -1118,7 +1211,7 @@
 
   .bpm-control input[type="range"] {
     flex: 1;
-    accent-color: #f97316;
+    accent-color: var(--flame-orange);
   }
 
   .bpm-value {
@@ -1130,7 +1223,7 @@
   }
 
   .fire-section {
-    border-color: rgba(249, 115, 22, 0.2);
+    border-color: var(--flame-orange-dim);
   }
 
   .color-mode-section {
@@ -1168,20 +1261,20 @@
   }
 
   .color-mode-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     color: var(--theme-text, white);
   }
 
   .color-mode-btn.active {
-    background: rgba(249, 115, 22, 0.15);
-    border-color: rgba(249, 115, 22, 0.5);
-    color: #fb923c;
+    background: var(--flame-orange-mid);
+    border-color: var(--flame-orange-border-strong);
+    color: var(--flame-orange-bright);
   }
 
   .color-mode-btn.active:hover {
-    background: rgba(249, 115, 22, 0.22);
-    border-color: rgba(249, 115, 22, 0.65);
+    background: color-mix(in srgb, var(--flame-orange) 22%, transparent);
+    border-color: color-mix(in srgb, var(--flame-orange) 65%, transparent);
   }
 
   .color-mode-btn:focus-visible {
@@ -1201,7 +1294,7 @@
     padding: 6px 16px;
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
     border-radius: 9999px;
-    background: rgba(255, 255, 255, 0.05);
+    background: color-mix(in srgb, var(--theme-text) 5%, transparent);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
@@ -1211,24 +1304,24 @@
   }
 
   .toggle-btn.active {
-    background: linear-gradient(135deg, rgba(251, 146, 60, 0.3), rgba(239, 68, 68, 0.3));
-    border-color: rgba(251, 146, 60, 0.5);
-    color: rgb(251, 146, 60);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--flame-orange) 30%, transparent), var(--semantic-error-dim, rgba(239, 68, 68, 0.3)));
+    border-color: var(--flame-orange-border-strong);
+    color: var(--flame-orange-bright);
   }
 
   .toggle-btn:hover {
-    border-color: rgba(255, 255, 255, 0.3);
+    border-color: color-mix(in srgb, var(--theme-text) 30%, transparent);
   }
 
   .toggle-btn.active:hover {
-    border-color: rgba(251, 146, 60, 0.7);
+    border-color: color-mix(in srgb, var(--flame-orange) 70%, transparent);
   }
 
   .active-preset-label {
     margin-left: auto;
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
-    color: #fb923c;
+    color: var(--flame-orange-bright);
     opacity: 0.7;
   }
 
@@ -1255,13 +1348,13 @@
   }
 
   .preset-card:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
   .preset-card.active {
-    background: rgba(249, 115, 22, 0.12);
-    border-color: rgba(249, 115, 22, 0.5);
+    background: var(--flame-orange-dim);
+    border-color: var(--flame-orange-border-strong);
   }
 
   .preset-card:focus-visible {
@@ -1277,11 +1370,11 @@
   }
 
   .preset-card.active .preset-name {
-    color: #fb923c;
+    color: var(--flame-orange-bright);
   }
 
   .preset-desc {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
     line-height: 1.2;
   }
@@ -1307,7 +1400,7 @@
 
   .slider-row input[type="range"] {
     flex: 1;
-    accent-color: #f97316;
+    accent-color: var(--flame-orange);
   }
 
   .slider-value {
@@ -1319,7 +1412,7 @@
   }
 
   .debug-section {
-    border-color: rgba(255, 255, 255, 0.05);
+    border-color: color-mix(in srgb, var(--theme-text) 5%, transparent);
   }
 
   .debug-info {
@@ -1340,12 +1433,105 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 
+  .publish-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .publish-btn {
+    width: 100%;
+    padding: 10px 16px;
+    background: var(--semantic-warning, #f59e0b);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: var(--font-size-min, 14px);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: opacity 150ms ease;
+  }
+
+  .publish-btn:hover {
+    opacity: 0.9;
+  }
+
+  .publish-success {
+    padding: 10px 16px;
+    background: rgba(34, 197, 94, 0.15);
+    color: var(--semantic-success, #22c55e);
+    border: 1px solid var(--semantic-success, #22c55e);
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: var(--font-size-min, 14px);
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .publish-confirm {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+
+  .publish-confirm-text {
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-min, 14px);
+  }
+
+  .confirm-btn {
+    padding: 10px;
+    background: var(--semantic-success, #22c55e);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: var(--font-size-min, 14px);
+    cursor: pointer;
+    transition: opacity 150ms ease;
+  }
+
+  .confirm-btn:hover {
+    opacity: 0.9;
+  }
+
+  .confirm-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .cancel-btn {
+    padding: 8px;
+    background: transparent;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    font-size: var(--font-size-min, 14px);
+    cursor: pointer;
+    transition: opacity 150ms ease;
+  }
+
+  .cancel-btn:hover {
+    opacity: 0.8;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .pick-btn,
     .action-btn,
     .play-btn,
     .toggle-btn,
-    .preset-card {
+    .preset-card,
+    .publish-btn,
+    .confirm-btn,
+    .cancel-btn {
       transition: none;
     }
   }
