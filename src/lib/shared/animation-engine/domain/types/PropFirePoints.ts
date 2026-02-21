@@ -154,6 +154,15 @@ const FRACTALGENG_FIRE_POINTS: PropFirePointConfig = {
 	],
 };
 
+// Trigeng: 3-segment S-curve. Three tips — top, middle, and bottom of the curve.
+const TRIGENG_FIRE_POINTS: PropFirePointConfig = {
+	points: [
+		{ dx: 130, dy: -60, flameScale: 0.6 },  // upper tip
+		{ dx: 0, dy: 0, flameScale: 0.5 },       // center junction
+		{ dx: -130, dy: 60, flameScale: 0.6 },   // lower tip
+	],
+};
+
 // ─── Sword ────────────────────────────────────────────────────────────────────
 // Blade tip only. The golden blade is the "fire" end.
 
@@ -318,6 +327,7 @@ export const PROP_FIRE_POINTS: Record<string, PropFirePointConfig> = {
 	buugeng: BUUGENG_FIRE_POINTS,
 	bigbuugeng: BIGBUUGENG_FIRE_POINTS,
 	fractalgeng: FRACTALGENG_FIRE_POINTS,
+	trigeng: TRIGENG_FIRE_POINTS,
 
 	// Hand
 	hand: HAND_FIRE_POINTS,
