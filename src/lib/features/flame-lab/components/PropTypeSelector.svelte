@@ -2,7 +2,7 @@
   PropTypeSelector.svelte
 
   Horizontal strip of prop type buttons grouped by family.
-  Shows override indicator dots on props with custom fire points.
+  Shows bookmark icon on props with a user-defined default.
 -->
 <script lang="ts">
   import type { FirePointEditorState } from "../state/fire-point-editor-state.svelte";
@@ -32,11 +32,12 @@
     { label: "Doublestar", types: ["doublestar", "bigdoublestar"] },
     { label: "Eightrings", types: ["eightrings", "bigeightrings"] },
     { label: "Quiad", types: ["quiad"] },
+    { label: "Torch", types: ["torch", "bigtorch"] },
     { label: "Poi", types: ["poi"] },
     { label: "Hand", types: ["hand"] },
   ];
 
-  let overriddenTypes = $derived(editorState.getOverriddenTypes());
+  let defaultTypes = $derived(editorState.getUserDefaultTypes());
 
   function displayName(propType: string): string {
     return propType.replace(/_/g, " ");
@@ -52,14 +53,16 @@
           <button
             class="prop-btn"
             class:active={editorState.selectedPropType === propType}
-            class:has-override={overriddenTypes.includes(propType)}
+            class:has-default={defaultTypes.includes(propType)}
             onclick={() => editorState.selectPropType(propType)}
             aria-pressed={editorState.selectedPropType === propType}
-            title={displayName(propType)}
+            title={defaultTypes.includes(propType)
+              ? `${displayName(propType)} (default set)`
+              : displayName(propType)}
           >
             <span class="prop-name">{displayName(propType)}</span>
-            {#if overriddenTypes.includes(propType)}
-              <span class="override-dot" aria-label="Has custom fire points"></span>
+            {#if defaultTypes.includes(propType)}
+              <i class="fas fa-bookmark default-icon" aria-label="Has saved default"></i>
             {/if}
           </button>
         {/each}
@@ -137,12 +140,18 @@
     text-transform: capitalize;
   }
 
-  .override-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #22c55e;
+  .default-icon {
+    font-size: 10px;
+    color: #22c55e;
     flex-shrink: 0;
+  }
+
+  .prop-btn.has-default {
+    border-color: rgba(34, 197, 94, 0.25);
+  }
+
+  .prop-btn.has-default:not(.active):hover {
+    border-color: rgba(34, 197, 94, 0.4);
   }
 
   @media (prefers-reduced-motion: reduce) {

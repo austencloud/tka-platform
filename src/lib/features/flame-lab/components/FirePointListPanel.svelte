@@ -2,7 +2,7 @@
   FirePointListPanel.svelte
 
   Point list with flameScale sliders, delete buttons,
-  and save/reset/copy/import actions.
+  and auto-saved actions (set default, reset, copy, import).
 -->
 <script lang="ts">
   import type { FirePointEditorState } from "../state/fire-point-editor-state.svelte";
@@ -167,20 +167,21 @@
 
     <div class="action-buttons">
       <button
-        class="action-btn save-btn"
-        onclick={() => editorState.save()}
-        disabled={!editorState.hasUnsavedChanges}
+        class="action-btn default-btn"
+        onclick={() => editorState.setAsDefault()}
+        title="Save current points as your baseline default for this prop"
       >
-        <i class="fas fa-save" aria-hidden="true"></i>
-        Save
+        <i class="fas fa-bookmark" aria-hidden="true"></i>
+        Set as Default
       </button>
 
       <button
         class="action-btn reset-btn"
-        onclick={() => editorState.resetToDefaults()}
+        onclick={() => editorState.resetToUserDefault()}
+        title={editorState.hasUserDefault ? "Revert to your saved default" : "Revert to system defaults (no custom default set)"}
       >
         <i class="fas fa-undo" aria-hidden="true"></i>
-        Reset to Defaults
+        {editorState.hasUserDefault ? "Reset to My Default" : "Reset to Defaults"}
       </button>
 
       <button
@@ -229,18 +230,24 @@
 
   <!-- Status -->
   <div class="status-bar">
-    {#if editorState.isUsingOverride}
-      <span class="status-custom">
+    <span class="status-info">
+      {editorState.points.length} {editorState.points.length === 1 ? "point" : "points"}
+      {#if editorState.hasUserDefault}
+        <span class="status-has-default" title="Custom default set">
+          <i class="fas fa-bookmark" aria-hidden="true"></i>
+        </span>
+      {/if}
+    </span>
+    {#if editorState.actionFeedback}
+      <span class="status-action-feedback">
         <i class="fas fa-check-circle" aria-hidden="true"></i>
-        Custom ({editorState.points.length} points)
+        {editorState.actionFeedback}
       </span>
-    {:else}
-      <span class="status-default">
-        Using defaults ({editorState.points.length} points)
+    {:else if editorState.saveIndicatorVisible}
+      <span class="status-saved">
+        <i class="fas fa-check" aria-hidden="true"></i>
+        Saved
       </span>
-    {/if}
-    {#if editorState.hasUnsavedChanges}
-      <span class="status-unsaved">Unsaved changes</span>
     {/if}
   </div>
 </div>
@@ -546,12 +553,12 @@
     cursor: not-allowed;
   }
 
-  .save-btn:not(:disabled) {
+  .default-btn {
     border-color: rgba(34, 197, 94, 0.4);
     color: #22c55e;
   }
 
-  .save-btn:not(:disabled):hover {
+  .default-btn:hover:not(:disabled) {
     background: rgba(34, 197, 94, 0.1);
   }
 
@@ -599,20 +606,48 @@
     font-size: var(--font-size-min, 14px);
   }
 
-  .status-custom {
-    color: #22c55e;
+  .status-info {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     display: flex;
     align-items: center;
     gap: 6px;
   }
 
-  .status-default {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+  .status-has-default {
+    color: #22c55e;
+    font-size: var(--font-size-compact, 12px);
   }
 
-  .status-unsaved {
-    color: #eab308;
-    font-style: italic;
+  .status-saved {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    animation: fade-in-out 1.2s ease;
+  }
+
+  .status-action-feedback {
+    color: #22c55e;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+    animation: action-pop 2s ease;
+  }
+
+  @keyframes fade-in-out {
+    0% { opacity: 0; }
+    15% { opacity: 1; }
+    75% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  @keyframes action-pop {
+    0% { opacity: 0; transform: scale(0.95); }
+    10% { opacity: 1; transform: scale(1.02); }
+    20% { transform: scale(1); }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -621,6 +656,11 @@
     .icon-btn,
     .add-center-btn {
       transition: none;
+    }
+
+    .status-saved,
+    .status-action-feedback {
+      animation: none;
     }
   }
 </style>

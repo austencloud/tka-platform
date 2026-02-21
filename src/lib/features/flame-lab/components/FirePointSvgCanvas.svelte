@@ -23,6 +23,18 @@
   let dragOrigin = $state<{ dx: number; dy: number } | null>(null);
   let constraintAxis = $state<"h" | "v" | null>(null);
 
+  // Zoom & pan state
+  let zoomLevel = $state(1.0);
+  let panX = $state(0);
+  let panY = $state(0);
+  let isPanning = $state(false);
+  let panStart = $state<{ x: number; y: number; panX: number; panY: number } | null>(null);
+  let spaceHeld = $state(false);
+
+  const ZOOM_MIN = 0.25;
+  const ZOOM_MAX = 3.0;
+  const ZOOM_STEP = 0.15;
+
   const PADDING = 60;
   const POINT_MIN_RADIUS = 8;
   const POINT_MAX_RADIUS = 20;
@@ -37,8 +49,18 @@
     PROP_DIMENSIONS[editorState.selectedPropType.toLowerCase()] ?? DEFAULT_PROP_DIMENSIONS
   );
 
-  let viewBoxWidth = $derived(dims.width + PADDING * 2);
-  let viewBoxHeight = $derived(dims.height + PADDING * 2);
+  let baseViewBoxWidth = $derived(dims.width + PADDING * 2);
+  let baseViewBoxHeight = $derived(dims.height + PADDING * 2);
+
+  // Zoomed viewBox: larger viewBox = zoomed out, smaller = zoomed in
+  let viewBoxWidth = $derived(baseViewBoxWidth / zoomLevel);
+  let viewBoxHeight = $derived(baseViewBoxHeight / zoomLevel);
+
+  // ViewBox origin accounts for zoom centering + pan offset
+  let viewBoxX = $derived((baseViewBoxWidth - viewBoxWidth) / 2 - panX);
+  let viewBoxY = $derived((baseViewBoxHeight - viewBoxHeight) / 2 - panY);
+
+  let zoomPercent = $derived(Math.round(zoomLevel * 100));
 
   // Load the prop SVG inline when prop type changes
   $effect(() => {
@@ -68,16 +90,65 @@
     if (!ctm) return null;
     const inv = ctm.inverse();
     const pt = new DOMPoint(e.clientX, e.clientY).matrixTransform(inv);
-    // Convert from viewBox coords (prop centered in viewBox) to prop-local coords
-    const centerX = viewBoxWidth / 2;
-    const centerY = viewBoxHeight / 2;
+    // Convert from viewBox coords (prop centered in base viewBox) to prop-local coords
+    const centerX = baseViewBoxWidth / 2;
+    const centerY = baseViewBoxHeight / 2;
     const dx = Math.round((pt.x - centerX) * 10) / 10;
     const dy = Math.round((pt.y - centerY) * 10) / 10;
     return { dx, dy };
   }
 
+  function handleWheel(e: WheelEvent) {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+    zoomLevel = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoomLevel + delta));
+  }
+
+  function zoomIn() {
+    zoomLevel = Math.min(ZOOM_MAX, zoomLevel + ZOOM_STEP);
+  }
+
+  function zoomOut() {
+    zoomLevel = Math.max(ZOOM_MIN, zoomLevel - ZOOM_STEP);
+  }
+
+  function resetView() {
+    zoomLevel = 1.0;
+    panX = 0;
+    panY = 0;
+  }
+
+  function handlePanStart(e: MouseEvent) {
+    // Middle-click or Space+click to pan
+    if (e.button === 1 || (spaceHeld && e.button === 0)) {
+      e.preventDefault();
+      isPanning = true;
+      panStart = { x: e.clientX, y: e.clientY, panX, panY };
+
+      const onPanMove = (moveEvent: MouseEvent) => {
+        if (!panStart || !svgEl) return;
+        // Convert pixel delta to viewBox units
+        const rect = svgEl.getBoundingClientRect();
+        const scaleX = viewBoxWidth / rect.width;
+        const scaleY = viewBoxHeight / rect.height;
+        panX = panStart.panX + (moveEvent.clientX - panStart.x) * scaleX;
+        panY = panStart.panY + (moveEvent.clientY - panStart.y) * scaleY;
+      };
+
+      const onPanEnd = () => {
+        isPanning = false;
+        panStart = null;
+        window.removeEventListener("mousemove", onPanMove);
+        window.removeEventListener("mouseup", onPanEnd);
+      };
+
+      window.addEventListener("mousemove", onPanMove);
+      window.addEventListener("mouseup", onPanEnd);
+    }
+  }
+
   function handleCanvasClick(e: MouseEvent) {
-    if (editorState.isDragging) return;
+    if (editorState.isDragging || isPanning || spaceHeld) return;
     const target = e.target as Element;
     // Don't add point if clicking on an existing point marker
     if (target.closest(".fire-point-marker")) return;
@@ -158,6 +229,15 @@
   }
 
   function handleKeyDown(e: KeyboardEvent) {
+    if (e.key === " " || e.code === "Space") {
+      // Don't capture Space if focused on an input
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      e.preventDefault();
+      spaceHeld = true;
+      return;
+    }
+
     if (editorState.selectedPointIndex < 0) return;
     const idx = editorState.selectedPointIndex;
     const point = editorState.points[idx];
@@ -196,6 +276,12 @@
     }
   }
 
+  function handleKeyUp(e: KeyboardEvent) {
+    if (e.key === " " || e.code === "Space") {
+      spaceHeld = false;
+    }
+  }
+
   function pointRadius(flameScale: number): number {
     return Math.max(POINT_MIN_RADIUS, Math.min(POINT_MAX_RADIUS, flameScale * 12));
   }
@@ -206,17 +292,20 @@
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-<div class="svg-canvas-wrapper" tabindex="0" onkeydown={handleKeyDown}>
+<div class="svg-canvas-wrapper" tabindex="0" onkeydown={handleKeyDown} onkeyup={handleKeyUp}>
   <svg
     bind:this={svgEl}
     class="editor-svg"
-    viewBox="0 0 {viewBoxWidth} {viewBoxHeight}"
+    class:panning={spaceHeld || isPanning}
+    viewBox="{viewBoxX} {viewBoxY} {viewBoxWidth} {viewBoxHeight}"
     xmlns="http://www.w3.org/2000/svg"
     role="img"
     aria-label="Fire point editor canvas for {editorState.selectedPropType}"
     onclick={handleCanvasClick}
+    onmousedown={handlePanStart}
     onmousemove={handleCanvasMouseMove}
     onmouseleave={handleCanvasMouseLeave}
+    onwheel={handleWheel}
   >
     <!-- Background grid -->
     <defs>
@@ -225,19 +314,19 @@
         <line x1="0" y1="0" x2="50" y2="0" stroke="rgba(255,255,255,0.04)" stroke-width="0.5" />
       </pattern>
     </defs>
-    <rect width="100%" height="100%" fill="url(#editor-grid)" />
+    <rect x={viewBoxX} y={viewBoxY} width={viewBoxWidth} height={viewBoxHeight} fill="url(#editor-grid)" />
 
     <!-- Origin crosshair -->
-    <g class="origin-crosshair" transform="translate({viewBoxWidth / 2}, {viewBoxHeight / 2})">
+    <g class="origin-crosshair" transform="translate({baseViewBoxWidth / 2}, {baseViewBoxHeight / 2})">
       <line x1="-20" y1="0" x2="20" y2="0" stroke="rgba(255,255,255,0.15)" stroke-width="1" stroke-dasharray="4,3" />
       <line x1="0" y1="-20" x2="0" y2="20" stroke="rgba(255,255,255,0.15)" stroke-width="1" stroke-dasharray="4,3" />
       <circle r="3" fill="rgba(255,255,255,0.2)" />
     </g>
 
-    <!-- Prop shape (centered in viewBox) -->
+    <!-- Prop shape (centered in base viewBox) -->
     <g
       class="prop-shape"
-      transform="translate({(viewBoxWidth - dims.width) / 2}, {(viewBoxHeight - dims.height) / 2})"
+      transform="translate({(baseViewBoxWidth - dims.width) / 2}, {(baseViewBoxHeight - dims.height) / 2})"
       opacity="0.6"
     >
       {@html propSvgContent}
@@ -245,8 +334,8 @@
 
     <!-- Fire point markers -->
     {#each editorState.points as point, i (i)}
-      {@const cx = viewBoxWidth / 2 + point.dx}
-      {@const cy = viewBoxHeight / 2 + point.dy}
+      {@const cx = baseViewBoxWidth / 2 + point.dx}
+      {@const cy = baseViewBoxHeight / 2 + point.dy}
       {@const r = pointRadius(point.flameScale)}
       {@const isSelected = editorState.selectedPointIndex === i}
       <g
@@ -281,6 +370,30 @@
     {/each}
   </svg>
 
+  <!-- Zoom controls -->
+  <div class="zoom-controls">
+    <button
+      class="zoom-btn"
+      onclick={zoomIn}
+      disabled={zoomLevel >= ZOOM_MAX}
+      aria-label="Zoom in"
+      title="Zoom in"
+    >+</button>
+    <button
+      class="zoom-level"
+      onclick={resetView}
+      aria-label="Reset zoom to 100%"
+      title="Reset view"
+    >{zoomPercent}%</button>
+    <button
+      class="zoom-btn"
+      onclick={zoomOut}
+      disabled={zoomLevel <= ZOOM_MIN}
+      aria-label="Zoom out"
+      title="Zoom out"
+    >&minus;</button>
+  </div>
+
   <!-- Coordinate readout -->
   {#if hoverCoords}
     <div class="coord-readout">
@@ -289,7 +402,7 @@
   {/if}
 
   <div class="canvas-hint">
-    Click to add. Drag to move. Shift+drag to constrain axis. Arrow keys to nudge.
+    Click to add. Drag to move. Scroll to zoom. Space+drag to pan.
   </div>
 </div>
 
@@ -318,6 +431,14 @@
     cursor: crosshair;
   }
 
+  .editor-svg.panning {
+    cursor: grab;
+  }
+
+  .editor-svg.panning:active {
+    cursor: grabbing;
+  }
+
   .fire-point-marker {
     cursor: grab;
   }
@@ -338,6 +459,57 @@
     font-size: var(--font-size-min, 14px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     pointer-events: none;
+  }
+
+  .zoom-controls {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    z-index: 1;
+  }
+
+  .zoom-btn,
+  .zoom-level {
+    width: 36px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .zoom-btn:first-child {
+    border-radius: var(--border-radius-md, 8px) var(--border-radius-md, 8px) 0 0;
+  }
+
+  .zoom-btn:last-child {
+    border-radius: 0 0 var(--border-radius-md, 8px) var(--border-radius-md, 8px);
+  }
+
+  .zoom-level {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    font-family: var(--font-mono, monospace);
+    border-radius: 0;
+  }
+
+  .zoom-btn:hover:not(:disabled),
+  .zoom-level:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .zoom-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
   }
 
   .canvas-hint {

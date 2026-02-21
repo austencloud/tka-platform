@@ -25,11 +25,38 @@
 
   import { DEFAULT_FIRE_CONFIG, type FirePhysicsParams } from "$lib/shared/animation-engine/domain/types/FireTypes";
   import { FIRE_PRESETS } from "$lib/shared/animation-engine/domain/types/FirePresets";
+  import type { FlameColorMode } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+
+  // Auto-chaining imports (Endless Spinner integration)
+  import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
+  import { InfiniteSequenceGenerator } from "$lib/features/landing/services/implementations/InfiniteSequenceGenerator";
+  import { SpinnerMetricsRepository } from "$lib/features/landing/services/implementations/SpinnerMetricsRepository";
+  import { PropTypeApplier } from "$lib/features/landing/services/implementations/PropTypeApplier";
+  import type { IEndlessSpinnerOrchestrator, EndState } from "$lib/features/landing/services/contracts/IEndlessSpinnerOrchestrator";
+  import type { IInfiniteSequenceGenerator } from "$lib/features/landing/services/contracts/IInfiniteSequenceGenerator";
+  import type { IGenerationOrchestrator } from "$lib/features/create/generate/shared/services/contracts/IGenerationOrchestrator";
+  import type { ISequenceTransformer } from "$lib/features/create/shared/services/contracts/ISequenceTransformer";
+  import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
+  import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+  import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
+  import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   const DEFAULT_BPM = 60;
   const STORAGE_KEY = "flame-lab-state";
   const DEFAULT_PRESET_ID = "fire-spin";
   const visibilityManager = getAnimationVisibilityManager();
+
+  let flameColorMode = $state<FlameColorMode>(visibilityManager.getFlameColorMode());
+
+  function handleFlameColorModeChange(mode: FlameColorMode) {
+    flameColorMode = mode;
+    visibilityManager.setFlameColorMode(mode);
+  }
+
+  type SourceMode = "pick" | "library" | "infinite";
 
   interface FlameLabPersistedState {
     sequenceId: string | null;
@@ -39,6 +66,7 @@
     trailLength: number;
     presetId: string;
     bpm: number;
+    sourceMode: SourceMode;
   }
 
   function loadPersistedState(): Partial<FlameLabPersistedState> {
@@ -59,6 +87,7 @@
         trailLength,
         presetId: activePresetId,
         bpm,
+        sourceMode,
       };
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch { /* ignore */ }
@@ -76,11 +105,24 @@
   let isPlaying = $state(false);
   let bpm = $state(persisted.bpm ?? DEFAULT_BPM);
 
-  let fireEnabled = $state(persisted.fireEnabled ?? false);
+  // Fire starts disabled; restored after engine is ready to avoid the
+  // race where the toggle shows ON but the WebGL renderer hasn't mounted.
+  let fireEnabled = $state(false);
+  let fireStateRestored = false;
   let intensity = $state(persisted.intensity ?? DEFAULT_FIRE_CONFIG.intensity);
   let flameHeight = $state(persisted.flameHeight ?? DEFAULT_FIRE_CONFIG.flameHeight);
   let trailLength = $state(persisted.trailLength ?? 1.0);
   let activePresetId = $state(persisted.presetId ?? DEFAULT_PRESET_ID);
+  let sourceMode = $state<SourceMode>(persisted.sourceMode ?? "pick");
+
+  // Auto-chaining state
+  let spinnerOrchestrator: IEndlessSpinnerOrchestrator | null = null;
+  let infiniteGenerator: IInfiniteSequenceGenerator | null = null;
+  let preloadedSequence = $state<SequenceData | null>(null);
+  let isPreloading = $state(false);
+  let isChainingNow = $state(false);
+  let lastStep = $state(-1);
+  const propTypeApplier = new PropTypeApplier();
 
   let activePreset = $derived(FIRE_PRESETS.find(p => p.id === activePresetId) ?? FIRE_PRESETS[0]!);
 
@@ -124,6 +166,20 @@
 
   $effect(() => {
     visibilityManager.setFireEffect(fireEnabled);
+  });
+
+  // Restore persisted fire state AFTER the engine is ready and has a sequence.
+  // This ensures the toggle change (false→true) fires after AnimatorCanvas has
+  // mounted and the engine can actually create the WebGL fire overlay.
+  $effect(() => {
+    if (servicesReady && sequence && !fireStateRestored) {
+      fireStateRestored = true;
+      if (persisted.fireEnabled) {
+        // Small delay lets the AnimatorCanvas $effect that passes fireConfig
+        // to the engine settle before we flip the toggle.
+        requestAnimationFrame(() => { fireEnabled = true; });
+      }
+    }
   });
 
   $effect(() => {
@@ -179,10 +235,156 @@
     void activePresetId;
     void bpm;
     void sequence;
+    void sourceMode;
     untrack(() => savePersistedState());
   });
 
-  onMount(() => {
+  // --- Auto-chaining logic (borrowed from Endless Spinner) ---
+
+  function extractEndState(seq: SequenceData): EndState {
+    const finalStep = seq.steps?.[seq.steps.length - 1];
+    let position = finalStep?.endPosition ?? null;
+
+    if (!position && gridPositionDeriver && finalStep?.motions) {
+      const blueMotion = finalStep.motions[MotionColor.BLUE];
+      const redMotion = finalStep.motions[MotionColor.RED];
+      if (blueMotion?.endLocation && redMotion?.endLocation) {
+        try {
+          position = gridPositionDeriver.getGridPositionFromLocations(
+            blueMotion.endLocation,
+            redMotion.endLocation
+          );
+        } catch { /* silently fail */ }
+      }
+    }
+
+    return {
+      position,
+      blueOrientation: (finalStep?.motions?.blue?.endOrientation ?? null) as Orientation | null,
+      redOrientation: (finalStep?.motions?.red?.endOrientation ?? null) as Orientation | null,
+    };
+  }
+
+  function hotSwapSequence(sequenceData: SequenceData) {
+    if (!playbackController) return;
+
+    sequence = sequenceData;
+    lastStep = -1;
+
+    const applied = propTypeApplier.applyToSequence(sequenceData, PropType.STAFF);
+
+    animationState.setShouldLoop(true);
+    const ok = playbackController.initialize(applied, animationState);
+    if (!ok) return;
+
+    animationState.setPlaybackMode("continuous");
+    animationState.setCurrentStep(1);
+
+    if (!animationState.isPlaying) {
+      playbackController.togglePlayback();
+    }
+  }
+
+  async function preloadNextSequence() {
+    if (!spinnerOrchestrator || !sequence || isPreloading) return;
+    isPreloading = true;
+    try {
+      const endState = extractEndState(sequence);
+      const nextSeq = await spinnerOrchestrator.getNextSequence(endState);
+      preloadedSequence = nextSeq ?? (await spinnerOrchestrator.getInitialSequence());
+    } catch (err) {
+      console.error("Flame Lab: preload failed:", err);
+    } finally {
+      isPreloading = false;
+    }
+  }
+
+  async function chainToNextSequence() {
+    if (!playbackController || isChainingNow) return;
+    isChainingNow = true;
+
+    try {
+      if (sourceMode === "infinite" && infiniteGenerator) {
+        const endState = sequence ? extractEndState(sequence) : null;
+        const generated = endState
+          ? await infiniteGenerator.generateFromEndState(endState)
+          : await infiniteGenerator.generateInitial();
+        if (generated) hotSwapSequence(generated.sequence);
+      } else if (sourceMode === "library" && spinnerOrchestrator) {
+        let nextSeq = preloadedSequence;
+        if (!nextSeq && sequence) {
+          const endState = extractEndState(sequence);
+          nextSeq = await spinnerOrchestrator.getNextSequence(endState);
+          if (!nextSeq) nextSeq = await spinnerOrchestrator.getInitialSequence();
+        }
+        if (nextSeq) hotSwapSequence(nextSeq);
+        preloadedSequence = null;
+      }
+    } catch (err) {
+      console.error("Flame Lab: chain failed:", err);
+    } finally {
+      isChainingNow = false;
+    }
+  }
+
+  async function startAutoMode() {
+    if (sourceMode === "library" && spinnerOrchestrator) {
+      const initial = await spinnerOrchestrator.getInitialSequence();
+      if (initial) hotSwapSequence(initial);
+    } else if (sourceMode === "infinite" && infiniteGenerator) {
+      const generated = await infiniteGenerator.generateInitial();
+      if (generated) hotSwapSequence(generated.sequence);
+    }
+  }
+
+  function handleSkip() {
+    if (sourceMode === "pick") return;
+    chainToNextSequence();
+  }
+
+  // Watch for sequence completion → chain to next (library/infinite modes only)
+  $effect(() => {
+    if (sourceMode === "pick") return;
+
+    const currentStep = Math.floor(animationState.currentStep);
+    const totalSteps = animationState.totalSteps;
+
+    if (
+      servicesReady &&
+      !isChainingNow &&
+      sequence &&
+      lastStep >= totalSteps - 1 &&
+      currentStep <= 1 &&
+      totalSteps > 0
+    ) {
+      chainToNextSequence();
+    }
+
+    lastStep = currentStep;
+  });
+
+  // Preload next sequence in library mode
+  $effect(() => {
+    if (sourceMode !== "library") return;
+
+    const currentStep = Math.floor(animationState.currentStep);
+    const totalSteps = animationState.totalSteps;
+
+    const shouldPreload =
+      servicesReady &&
+      !isPreloading &&
+      !preloadedSequence &&
+      sequence &&
+      totalSteps > 2 &&
+      currentStep >= 2 &&
+      currentStep < totalSteps - 1;
+
+    if (shouldPreload) preloadNextSequence();
+  });
+
+  onMount(async () => {
+    visibilityManager.registerObserver(flameColorObserver);
+
     try {
       sequenceService = container.items.sequenceRepository;
       const propInterpolator = container.items.propInterpolationService;
@@ -190,17 +392,44 @@
       const stateManager = new AnimationStateManager();
       const stepCalculator = new StepCalculator();
       const loop = new AnimationLoop();
-      const orchestrator = new SequenceAnimationOrchestrator(
+      const animOrchestrator = new SequenceAnimationOrchestrator(
         stateManager, stepCalculator, propInterpolator
       );
       playbackController = new AnimationPlaybackController(
-        orchestrator, loop, loopabilityChecker
+        animOrchestrator, loop, loopabilityChecker
       );
+
+      // Initialize auto-chaining services
+      const browseLoader = container.items.browseLoader as IBrowseLoader;
+      const generationOrchestrator = container.items.generationOrchestrator as IGenerationOrchestrator;
+      const sequenceTransformer = container.items.sequenceTransformer as ISequenceTransformer;
+
+      spinnerOrchestrator = new EndlessSpinnerOrchestrator(
+        browseLoader,
+        generationOrchestrator,
+        sequenceTransformer,
+        startPositionDeriver,
+        orientationCalculator,
+        gridPositionDeriver
+      );
+
+      const metricsRepo = new SpinnerMetricsRepository();
+      infiniteGenerator = new InfiniteSequenceGenerator(
+        generationOrchestrator,
+        metricsRepo
+      );
+
+      await spinnerOrchestrator.initialize();
       servicesReady = true;
 
-      const savedId = persisted.sequenceId;
-      if (savedId && sequenceService) {
-        restoreSequence(savedId);
+      // Restore or auto-start based on source mode
+      if (sourceMode === "pick") {
+        const savedId = persisted.sequenceId;
+        if (savedId && sequenceService) {
+          restoreSequence(savedId);
+        }
+      } else {
+        startAutoMode();
       }
     } catch (err) {
       console.error("Flame Lab: failed to initialize:", err);
@@ -225,8 +454,15 @@
     }
   }
 
+  // Keep flameColorMode reactive state in sync with external changes
+  // (e.g., if user changes it in the visibility tab while Flame Lab is open)
+  const flameColorObserver = () => {
+    flameColorMode = visibilityManager.getFlameColorMode();
+  };
+
   onDestroy(() => {
     visibilityManager.setFireEffect(false);
+    visibilityManager.unregisterObserver(flameColorObserver);
     playbackController?.dispose();
     animationState.dispose();
   });
@@ -281,13 +517,27 @@
     bpm = newBpm;
     playbackController?.setSpeed(newBpm / DEFAULT_BPM);
   }
+
+  function handleSourceChange(mode: SourceMode) {
+    if (mode === sourceMode) return;
+    sourceMode = mode;
+    preloadedSequence = null;
+    lastStep = -1;
+
+    if (mode === "pick") {
+      // Stop auto-chaining, keep current sequence
+      return;
+    }
+    // Start auto mode (library or infinite)
+    startAutoMode();
+  }
 </script>
 
 <div class="tuning-tab">
   <div class="content">
     <!-- Canvas Area -->
     <div class="canvas-area">
-      {#if !sequence}
+      {#if !sequence && sourceMode === "pick"}
         <div class="empty-state">
           <i class="fas fa-fire" aria-hidden="true"></i>
           <p>Load a sequence to start</p>
@@ -295,6 +545,11 @@
             <i class="fas fa-folder-open" aria-hidden="true"></i>
             Pick Sequence
           </button>
+        </div>
+      {:else if !sequence}
+        <div class="loading-state">
+          <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+          <span>Generating...</span>
         </div>
       {:else if loading}
         <div class="loading-state">
@@ -329,13 +584,54 @@
 
     <!-- Controls Panel -->
     <div class="controls-panel themed-scrollbar">
-      <!-- Sequence Picker -->
+      <!-- Source Mode -->
       <div class="control-section">
-        <h3>Sequence</h3>
-        <button class="action-btn" onclick={() => (showPicker = true)}>
-          <i class="fas fa-folder-open" aria-hidden="true"></i>
-          {sequence ? "Change Sequence" : "Pick Sequence"}
-        </button>
+        <h3>Source</h3>
+        <div class="source-toggle" role="radiogroup" aria-label="Sequence source">
+          <button
+            role="radio"
+            class="source-btn"
+            class:active={sourceMode === "pick"}
+            aria-checked={sourceMode === "pick"}
+            onclick={() => handleSourceChange("pick")}
+          >
+            <i class="fas fa-hand-pointer" aria-hidden="true"></i>
+            Pick
+          </button>
+          <button
+            role="radio"
+            class="source-btn"
+            class:active={sourceMode === "library"}
+            aria-checked={sourceMode === "library"}
+            onclick={() => handleSourceChange("library")}
+          >
+            <i class="fas fa-book" aria-hidden="true"></i>
+            Library
+          </button>
+          <button
+            role="radio"
+            class="source-btn"
+            class:active={sourceMode === "infinite"}
+            aria-checked={sourceMode === "infinite"}
+            onclick={() => handleSourceChange("infinite")}
+          >
+            <i class="fas fa-infinity" aria-hidden="true"></i>
+            Infinite
+          </button>
+        </div>
+
+        {#if sourceMode === "pick"}
+          <button class="action-btn" onclick={() => (showPicker = true)}>
+            <i class="fas fa-folder-open" aria-hidden="true"></i>
+            {sequence ? "Change Sequence" : "Pick Sequence"}
+          </button>
+        {:else}
+          <button class="action-btn skip-btn" onclick={handleSkip} disabled={isChainingNow || !sequence}>
+            <i class="fas fa-forward" aria-hidden="true"></i>
+            Skip
+          </button>
+        {/if}
+
         {#if sequence}
           <div class="sequence-info">
             <span class="seq-name">{sequence.word || sequence.name || "Unnamed"}</span>
@@ -393,6 +689,39 @@
         </div>
 
         {#if fireEnabled}
+          <div class="color-mode-section">
+            <span class="section-label">Color</span>
+            <div class="color-mode-row">
+              <button
+                class="color-mode-btn"
+                class:active={flameColorMode === "natural"}
+                aria-pressed={flameColorMode === "natural"}
+                onclick={() => handleFlameColorModeChange("natural")}
+                type="button"
+              >
+                Natural
+              </button>
+              <button
+                class="color-mode-btn"
+                class:active={flameColorMode === "tinted"}
+                aria-pressed={flameColorMode === "tinted"}
+                onclick={() => handleFlameColorModeChange("tinted")}
+                type="button"
+              >
+                Tinted
+              </button>
+              <button
+                class="color-mode-btn"
+                class:active={flameColorMode === "colored"}
+                aria-pressed={flameColorMode === "colored"}
+                onclick={() => handleFlameColorModeChange("colored")}
+                type="button"
+              >
+                Colored
+              </button>
+            </div>
+          </div>
+
           <div class="preset-grid">
             {#each FIRE_PRESETS as preset (preset.id)}
               <button
@@ -643,6 +972,59 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 
+  /* Source mode toggle */
+  .source-toggle {
+    display: flex;
+    gap: 2px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--border-radius-md, 8px);
+    padding: 3px;
+    margin-bottom: var(--spacing-sm, 8px);
+  }
+
+  .source-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 150ms ease;
+    min-height: 36px;
+  }
+
+  .source-btn:hover {
+    color: var(--theme-text, white);
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .source-btn.active {
+    background: rgba(249, 115, 22, 0.15);
+    color: #fb923c;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  .source-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: -2px;
+  }
+
+  .source-btn i {
+    font-size: 11px;
+  }
+
+  .skip-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
   .playback-row {
     display: flex;
     flex-direction: column;
@@ -698,6 +1080,62 @@
 
   .fire-section {
     border-color: rgba(249, 115, 22, 0.2);
+  }
+
+  .color-mode-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: var(--spacing-sm, 8px) 0 var(--spacing-md, 16px);
+  }
+
+  .section-label {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  }
+
+  .color-mode-row {
+    display: flex;
+    gap: 6px;
+  }
+
+  .color-mode-btn {
+    flex: 1;
+    padding: 7px 10px;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius-md, 8px);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 150ms ease;
+    text-align: center;
+  }
+
+  .color-mode-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    color: var(--theme-text, white);
+  }
+
+  .color-mode-btn.active {
+    background: rgba(249, 115, 22, 0.15);
+    border-color: rgba(249, 115, 22, 0.5);
+    color: #fb923c;
+  }
+
+  .color-mode-btn.active:hover {
+    background: rgba(249, 115, 22, 0.22);
+    border-color: rgba(249, 115, 22, 0.65);
+  }
+
+  .color-mode-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
   }
 
   .toggle-row {

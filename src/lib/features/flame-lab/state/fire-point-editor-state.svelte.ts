@@ -3,8 +3,10 @@ import { getFirePoints, PROP_FIRE_POINTS } from "$lib/shared/animation-engine/do
 import type { IFirePointOverrideProvider } from "../services/contracts/IFirePointOverrideProvider";
 
 const MAX_UNDO_DEPTH = 20;
+/** How long the "Saved" indicator stays visible (ms). */
+const SAVE_INDICATOR_DURATION = 1200;
 
-/** Deep-copy that works on Svelte 5 $state proxies (deepCopy cannot clone them). */
+/** Deep-copy that works on Svelte 5 $state proxies (structuredClone cannot clone them). */
 function deepCopy<T>(value: T): T {
 	return JSON.parse(JSON.stringify(value));
 }
@@ -17,16 +19,23 @@ interface UndoEntry {
 /**
  * Reactive state for the fire point editor UI.
  * Tracks selected prop, point list, selection, drag state, and undo stack.
+ *
+ * Auto-saves to the override provider on every mutation.
+ * Supports user-defined defaults separate from hardcoded defaults.
  */
 export class FirePointEditorState {
 	selectedPropType = $state<string>("staff");
 	points = $state<FirePoint[]>([]);
 	selectedPointIndex = $state<number>(-1);
 	isDragging = $state(false);
-	hasUnsavedChanges = $state(false);
+	saveIndicatorVisible = $state(false);
+	/** Feedback message shown briefly after actions like "Set as Default" or "Reset". */
+	actionFeedback = $state<string | null>(null);
 
 	private undoStack: UndoEntry[] = [];
 	private provider: IFirePointOverrideProvider;
+	private saveIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
+	private actionFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
 
 	constructor(provider: IFirePointOverrideProvider) {
 		this.provider = provider;
@@ -43,6 +52,11 @@ export class FirePointEditorState {
 		return this.provider.hasOverride(this.selectedPropType);
 	}
 
+	/** Whether the current prop type has a user-defined default. */
+	get hasUserDefault(): boolean {
+		return this.provider.hasUserDefault(this.selectedPropType);
+	}
+
 	/** Whether undo is available. */
 	get canUndo(): boolean {
 		return this.undoStack.length > 0;
@@ -53,7 +67,6 @@ export class FirePointEditorState {
 		this.selectedPropType = propType;
 		this.selectedPointIndex = -1;
 		this.undoStack = [];
-		this.hasUnsavedChanges = false;
 		this.loadPointsForCurrentProp();
 	}
 
@@ -62,7 +75,7 @@ export class FirePointEditorState {
 		const newPoint: FirePoint = { dx, dy, flameScale };
 		this.points = [...this.points, newPoint];
 		this.selectedPointIndex = this.points.length - 1;
-		this.hasUnsavedChanges = true;
+		this.autoSave();
 	}
 
 	updatePoint(index: number, updates: Partial<FirePoint>): void {
@@ -70,7 +83,7 @@ export class FirePointEditorState {
 		this.points = this.points.map((p, i) =>
 			i === index ? { ...p, ...updates } : p
 		);
-		this.hasUnsavedChanges = true;
+		this.autoSave();
 	}
 
 	/** Update a point with undo recording (for deliberate repositioning like centering). */
@@ -80,7 +93,7 @@ export class FirePointEditorState {
 		this.points = this.points.map((p, i) =>
 			i === index ? { ...p, ...updates } : p
 		);
-		this.hasUnsavedChanges = true;
+		this.autoSave();
 	}
 
 	/** Update a point during drag without recording undo (recorded on dragStart). */
@@ -89,7 +102,7 @@ export class FirePointEditorState {
 		this.points = this.points.map((p, i) =>
 			i === index ? { ...p, dx, dy } : p
 		);
-		this.hasUnsavedChanges = true;
+		this.autoSave();
 	}
 
 	deletePoint(index: number): void {
@@ -99,7 +112,7 @@ export class FirePointEditorState {
 		if (this.selectedPointIndex >= this.points.length) {
 			this.selectedPointIndex = this.points.length - 1;
 		}
-		this.hasUnsavedChanges = true;
+		this.autoSave();
 	}
 
 	/** Record undo entry before a drag begins. */
@@ -117,29 +130,35 @@ export class FirePointEditorState {
 		const entry = this.undoStack.pop();
 		if (!entry) return;
 		this.points = entry.points;
-		this.hasUnsavedChanges = true;
 		if (this.selectedPointIndex >= this.points.length) {
 			this.selectedPointIndex = this.points.length - 1;
 		}
+		this.autoSave();
 	}
 
-	/** Save current points as override and update the live fire system. */
-	save(): void {
+	/** Save current points as the user's baseline default for this prop type. */
+	setAsDefault(): void {
 		const config: PropFirePointConfig = {
 			points: deepCopy(this.points),
 		};
-		this.provider.saveOverride(this.selectedPropType, config);
-		this.hasUnsavedChanges = false;
+		this.provider.saveUserDefault(this.selectedPropType, config);
+		this.showActionFeedback("Default saved");
 	}
 
-	/** Revert to hardcoded defaults, removing any override. */
-	resetToDefaults(): void {
-		this.pushUndo("Reset to defaults");
-		this.provider.clearOverride(this.selectedPropType);
-		const defaults = getFirePoints(this.selectedPropType);
-		this.points = deepCopy(defaults.points);
-		this.hasUnsavedChanges = false;
+	/** Revert to the user's baseline default. Falls back to hardcoded defaults if no user default set. */
+	resetToUserDefault(): void {
+		this.pushUndo("Reset to default");
+		const userDefault = this.provider.getUserDefault(this.selectedPropType);
+		if (userDefault) {
+			this.points = deepCopy(userDefault.points);
+			this.showActionFeedback("Reset to your default");
+		} else {
+			const hardcoded = getFirePoints(this.selectedPropType);
+			this.points = deepCopy(hardcoded.points);
+			this.showActionFeedback("Reset to system defaults");
+		}
 		this.selectedPointIndex = -1;
+		this.autoSave();
 	}
 
 	/** Get JSON representation for copying to clipboard. */
@@ -162,17 +181,17 @@ export class FirePointEditorState {
 			}
 			this.pushUndo("Import JSON");
 			this.points = parsed.points;
-			this.hasUnsavedChanges = true;
 			this.selectedPointIndex = -1;
+			this.autoSave();
 			return null;
 		} catch {
 			return "Invalid JSON";
 		}
 	}
 
-	/** Get all prop types with overrides. */
-	getOverriddenTypes(): string[] {
-		return this.provider.getOverriddenTypes();
+	/** Get all prop types with user-defined defaults (not just any working override). */
+	getUserDefaultTypes(): string[] {
+		return this.provider.getUserDefaultTypes();
 	}
 
 	private loadPointsForCurrentProp(): void {
@@ -180,6 +199,37 @@ export class FirePointEditorState {
 		const override = this.provider.getOverride(this.selectedPropType);
 		const config = override ?? getFirePoints(this.selectedPropType);
 		this.points = deepCopy(config.points);
+	}
+
+	/** Persist current points to the override provider and flash the save indicator. */
+	private autoSave(): void {
+		const config: PropFirePointConfig = {
+			points: deepCopy(this.points),
+		};
+		this.provider.saveOverride(this.selectedPropType, config);
+		this.showSaveIndicator();
+	}
+
+	private showSaveIndicator(): void {
+		this.saveIndicatorVisible = true;
+		if (this.saveIndicatorTimer) {
+			clearTimeout(this.saveIndicatorTimer);
+		}
+		this.saveIndicatorTimer = setTimeout(() => {
+			this.saveIndicatorVisible = false;
+			this.saveIndicatorTimer = null;
+		}, SAVE_INDICATOR_DURATION);
+	}
+
+	private showActionFeedback(message: string): void {
+		this.actionFeedback = message;
+		if (this.actionFeedbackTimer) {
+			clearTimeout(this.actionFeedbackTimer);
+		}
+		this.actionFeedbackTimer = setTimeout(() => {
+			this.actionFeedback = null;
+			this.actionFeedbackTimer = null;
+		}, 2000);
 	}
 
 	private pushUndo(label: string): void {

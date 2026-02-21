@@ -2,6 +2,7 @@ import type { PropFirePointConfig } from "$lib/shared/animation-engine/domain/ty
 import type { IFirePointOverrideProvider } from "../contracts/IFirePointOverrideProvider";
 
 const STORAGE_KEY = "fire-point-overrides";
+const DEFAULTS_STORAGE_KEY = "fire-point-user-defaults";
 
 /** Deep-copy that works on Svelte 5 $state proxies (deepCopy cannot clone them). */
 function deepCopy<T>(value: T): T {
@@ -11,12 +12,18 @@ function deepCopy<T>(value: T): T {
 /**
  * localStorage-backed fire point override provider.
  * Maintains an in-memory cache for fast lookups during animation frames.
+ *
+ * Two caches:
+ * - `cache` = working state (auto-saved on every edit)
+ * - `defaultsCache` = user-defined baselines ("Set as Default")
  */
 export class FirePointOverrideProvider implements IFirePointOverrideProvider {
 	private cache: Map<string, PropFirePointConfig>;
+	private defaultsCache: Map<string, PropFirePointConfig>;
 
 	constructor() {
-		this.cache = this.loadFromStorage();
+		this.cache = this.loadFromStorage(STORAGE_KEY);
+		this.defaultsCache = this.loadFromStorage(DEFAULTS_STORAGE_KEY);
 	}
 
 	getOverride(propType: string): PropFirePointConfig | null {
@@ -26,13 +33,13 @@ export class FirePointOverrideProvider implements IFirePointOverrideProvider {
 	saveOverride(propType: string, config: PropFirePointConfig): void {
 		const key = propType.toLowerCase();
 		this.cache.set(key, deepCopy(config));
-		this.persistToStorage();
+		this.persistCache(STORAGE_KEY, this.cache);
 	}
 
 	clearOverride(propType: string): void {
 		const key = propType.toLowerCase();
 		if (this.cache.delete(key)) {
-			this.persistToStorage();
+			this.persistCache(STORAGE_KEY, this.cache);
 		}
 	}
 
@@ -58,13 +65,42 @@ export class FirePointOverrideProvider implements IFirePointOverrideProvider {
 				this.cache.set(key.toLowerCase(), deepCopy(config));
 			}
 		}
-		this.persistToStorage();
+		this.persistCache(STORAGE_KEY, this.cache);
 	}
 
-	private loadFromStorage(): Map<string, PropFirePointConfig> {
+	// --- User-defined defaults ---
+
+	saveUserDefault(propType: string, config: PropFirePointConfig): void {
+		const key = propType.toLowerCase();
+		this.defaultsCache.set(key, deepCopy(config));
+		this.persistCache(DEFAULTS_STORAGE_KEY, this.defaultsCache);
+	}
+
+	getUserDefault(propType: string): PropFirePointConfig | null {
+		return this.defaultsCache.get(propType.toLowerCase()) ?? null;
+	}
+
+	hasUserDefault(propType: string): boolean {
+		return this.defaultsCache.has(propType.toLowerCase());
+	}
+
+	clearUserDefault(propType: string): void {
+		const key = propType.toLowerCase();
+		if (this.defaultsCache.delete(key)) {
+			this.persistCache(DEFAULTS_STORAGE_KEY, this.defaultsCache);
+		}
+	}
+
+	getUserDefaultTypes(): string[] {
+		return Array.from(this.defaultsCache.keys());
+	}
+
+	// --- Private helpers ---
+
+	private loadFromStorage(storageKey: string): Map<string, PropFirePointConfig> {
 		const map = new Map<string, PropFirePointConfig>();
 		try {
-			const raw = localStorage.getItem(STORAGE_KEY);
+			const raw = localStorage.getItem(storageKey);
 			if (!raw) return map;
 			const parsed = JSON.parse(raw) as Record<string, PropFirePointConfig>;
 			for (const [key, config] of Object.entries(parsed)) {
@@ -78,13 +114,13 @@ export class FirePointOverrideProvider implements IFirePointOverrideProvider {
 		return map;
 	}
 
-	private persistToStorage(): void {
+	private persistCache(storageKey: string, cache: Map<string, PropFirePointConfig>): void {
 		try {
 			const obj: Record<string, PropFirePointConfig> = {};
-			for (const [key, config] of this.cache) {
+			for (const [key, config] of cache) {
 				obj[key] = config;
 			}
-			localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+			localStorage.setItem(storageKey, JSON.stringify(obj));
 		} catch {
 			// Storage full or unavailable — silent fail
 		}

@@ -8,8 +8,23 @@
   import FlameLabTuningTab from "./components/FlameLabTuningTab.svelte";
   import FirePointEditorTab from "./components/FirePointEditorTab.svelte";
 
+  const TAB_STORAGE_KEY = "flame-lab-active-tab";
   type FlameLabTab = "tuning" | "fire-points";
-  let activeTab = $state<FlameLabTab>("tuning");
+
+  function loadTab(): FlameLabTab {
+    try {
+      const raw = sessionStorage.getItem(TAB_STORAGE_KEY);
+      if (raw === "tuning" || raw === "fire-points") return raw;
+    } catch { /* ignore */ }
+    return "tuning";
+  }
+
+  let activeTab = $state<FlameLabTab>(loadTab());
+
+  function setTab(tab: FlameLabTab) {
+    activeTab = tab;
+    try { sessionStorage.setItem(TAB_STORAGE_KEY, tab); } catch { /* ignore */ }
+  }
 </script>
 
 <div class="flame-lab">
@@ -27,7 +42,7 @@
         class="tab"
         class:active={activeTab === "tuning"}
         aria-selected={activeTab === "tuning"}
-        onclick={() => (activeTab = "tuning")}
+        onclick={() => setTab("tuning")}
       >
         <i class="fas fa-sliders-h" aria-hidden="true"></i>
         Tuning
@@ -37,7 +52,7 @@
         class="tab"
         class:active={activeTab === "fire-points"}
         aria-selected={activeTab === "fire-points"}
-        onclick={() => (activeTab = "fire-points")}
+        onclick={() => setTab("fire-points")}
       >
         <i class="fas fa-crosshairs" aria-hidden="true"></i>
         Fire Points
