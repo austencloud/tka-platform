@@ -30,6 +30,9 @@ import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 const logger = createComponentLogger("GlobalArrowAdjustmentPersister");
 
 const COLLECTION_NAME = "global_arrow_adjustments";
+const HISTORY_COLLECTION_NAME = "global_arrow_adjustment_history";
+
+export type AdjustmentHistoryAction = "save" | "delete" | "reset" | "undo";
 
 export class GlobalArrowAdjustmentPersister
   implements IGlobalArrowAdjustmentPersister
@@ -88,7 +91,10 @@ export class GlobalArrowAdjustmentPersister
    */
   async save(
     input: GlobalArrowAdjustmentInput,
-    userEmail: string
+    userEmail: string,
+    previousX: number = 0,
+    previousY: number = 0,
+    action: AdjustmentHistoryAction = "save"
   ): Promise<void> {
     const keyString = generateAdjustmentKeyString({
       gridMode: input.gridMode,
@@ -117,6 +123,18 @@ export class GlobalArrowAdjustmentPersister
       logger.success(
         `Saved adjustment: ${keyString} → (${input.adjustmentX}, ${input.adjustmentY})`
       );
+
+      // Fire-and-forget history write
+      this.appendHistory(
+        input,
+        action,
+        input.adjustmentX,
+        input.adjustmentY,
+        previousX,
+        previousY,
+        userEmail,
+        keyString
+      );
     } catch (error) {
       logger.error(`Failed to save adjustment ${keyString}:`, error);
       throw error;
@@ -126,15 +144,92 @@ export class GlobalArrowAdjustmentPersister
   /**
    * Delete an adjustment from Firestore
    */
-  async delete(keyString: string): Promise<void> {
+  async delete(
+    keyString: string,
+    previousX: number = 0,
+    previousY: number = 0,
+    userEmail: string = "unknown",
+    historyInput?: {
+      gridMode: string;
+      oriKey: string;
+      letter: string;
+      turnsTuple: string;
+      arrowKey: string;
+      propType?: string;
+      otherPropType?: string;
+    }
+  ): Promise<void> {
     try {
       const firestore = await getFirestoreInstance();
       const docRef = doc(firestore, COLLECTION_NAME, keyString);
       await deleteDoc(docRef);
       logger.success(`Deleted adjustment: ${keyString}`);
+
+      // Fire-and-forget history write
+      if (historyInput) {
+        this.appendHistory(
+          historyInput,
+          "delete",
+          0,
+          0,
+          previousX,
+          previousY,
+          userEmail,
+          keyString
+        );
+      }
     } catch (error) {
       logger.error(`Failed to delete adjustment ${keyString}:`, error);
       throw error;
+    }
+  }
+
+  /**
+   * Append a history record. Fire-and-forget — never blocks the main operation.
+   */
+  private async appendHistory(
+    input: {
+      gridMode: string;
+      oriKey: string;
+      letter: string;
+      turnsTuple: string;
+      arrowKey: string;
+      propType?: string;
+      otherPropType?: string;
+    },
+    action: AdjustmentHistoryAction,
+    adjustmentX: number,
+    adjustmentY: number,
+    previousX: number,
+    previousY: number,
+    userEmail: string,
+    sourceKey: string
+  ): Promise<void> {
+    try {
+      const firestore = await getFirestoreInstance();
+      const colRef = collection(firestore, HISTORY_COLLECTION_NAME);
+      const historyDoc = doc(colRef);
+
+      await setDoc(historyDoc, {
+        gridMode: input.gridMode,
+        oriKey: input.oriKey,
+        letter: input.letter,
+        turnsTuple: input.turnsTuple,
+        arrowKey: input.arrowKey,
+        ...(input.propType && { propType: input.propType }),
+        ...(input.otherPropType && { otherPropType: input.otherPropType }),
+        action,
+        adjustmentX,
+        adjustmentY,
+        previousX,
+        previousY,
+        timestamp: serverTimestamp(),
+        updatedBy: userEmail,
+        sourceKey,
+      });
+    } catch (error) {
+      // Fire-and-forget: log but don't throw
+      logger.warn("Failed to write adjustment history:", error);
     }
   }
 

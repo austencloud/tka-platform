@@ -24,6 +24,8 @@
   import { onMount } from "svelte";
   import { getGlobalAdjustmentRepository } from "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton";
   import { globalAdjustmentVersion } from "$lib/shared/pictograph/arrow/positioning/global/state/global-adjustment-version.svelte";
+  import { arrowAdjustmentUndoStack } from "$lib/shared/pictograph/arrow/positioning/global/state/ArrowAdjustmentUndoStack";
+  import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
   const logger = createComponentLogger("ArrowAdjustmentPanel");
@@ -122,6 +124,13 @@
     if (["w", "a", "s", "d"].includes(key)) {
       event.preventDefault();
       handleWASDMovement(key as "w" | "a" | "s" | "d");
+    }
+
+    // Ctrl+Z: undo last adjustment (must be before plain Z check)
+    if (key === "z" && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      handleUndo();
+      return;
     }
 
     if (key === "z" && !event.ctrlKey && !event.metaKey) {
@@ -242,6 +251,50 @@
     }
   }
 
+  async function handleUndo() {
+    const entry = arrowAdjustmentUndoStack.pop();
+    if (!entry) return;
+
+    const repo = getGlobalAdjustmentRepository();
+    if (!repo) return;
+
+    hapticService?.trigger("selection");
+
+    // Restore previous value locally
+    if (entry.previousX === 0 && entry.previousY === 0) {
+      repo.deleteAdjustmentLocal(entry.targetKey);
+    } else {
+      repo.saveAdjustmentLocal({
+        ...entry.targetKey,
+        adjustmentX: entry.previousX,
+        adjustmentY: entry.previousY,
+      });
+    }
+
+    // Clear pictograph cache and trigger re-render
+    pictographPreparer.clearCache();
+    globalAdjustmentVersion.increment();
+
+    // Persist to Firestore (fire-and-forget)
+    try {
+      if (entry.previousX === 0 && entry.previousY === 0) {
+        await repo.deleteAdjustment(entry.targetKey);
+      } else {
+        await repo.saveAdjustment({
+          ...entry.targetKey,
+          adjustmentX: entry.previousX,
+          adjustmentY: entry.previousY,
+        });
+      }
+    } catch (error) {
+      logger.warn("Failed to persist undo to Firestore:", error);
+    }
+
+    // Clear any pending auto-save since we just manually reverted
+    clearTimers();
+    saveState = 'idle';
+  }
+
   function handleClearSelection() {
     selectedArrowState.clearSelection();
     hapticService?.trigger("selection");
@@ -320,6 +373,19 @@
         <i class="fas fa-check" aria-hidden="true"></i>
       {/if}
     </span>
+  {/if}
+
+  <!-- Undo button (Ctrl+Z) -->
+  {#if arrowAdjustmentUndoStack.size > 0}
+    <button
+      class="undo-btn"
+      onclick={handleUndo}
+      title="Undo last adjustment (Ctrl+Z) — {arrowAdjustmentUndoStack.size} in stack"
+      aria-label="Undo last arrow adjustment"
+    >
+      <i class="fas fa-undo-alt" aria-hidden="true"></i>
+      <span class="undo-count">{arrowAdjustmentUndoStack.size}</span>
+    </button>
   {/if}
 
   <!-- Reset to default button -->
@@ -455,6 +521,32 @@
   @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
+  }
+
+  .undo-btn {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    height: 20px;
+    border-radius: 10px;
+    border: 1px solid rgba(96, 165, 250, 0.3);
+    background: rgba(96, 165, 250, 0.1);
+    color: #60a5fa;
+    cursor: pointer;
+    font-size: 0.6rem;
+    padding: 0 6px;
+    transition: all var(--duration-fast) ease;
+  }
+
+  .undo-btn:hover {
+    background: rgba(96, 165, 250, 0.2);
+    color: #93bbfd;
+  }
+
+  .undo-count {
+    font-family: "SF Mono", Monaco, monospace;
+    font-size: 0.6rem;
+    font-weight: 600;
   }
 
   .reset-btn,

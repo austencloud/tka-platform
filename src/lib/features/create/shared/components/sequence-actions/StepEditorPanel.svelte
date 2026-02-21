@@ -18,6 +18,7 @@
   import StepEditorHelpModal from "./StepEditorHelpModal.svelte";
   import HelpButton from "$lib/shared/components/help/HelpButton.svelte";
   import ArrowAdjustmentPanel from "./ArrowAdjustmentPanel.svelte";
+  import ArrowAdjustmentHistory from "./ArrowAdjustmentHistory.svelte";
   import type { StepData } from "../../domain/models/StepData";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import {
@@ -280,6 +281,7 @@
           onStepDataUpdate={handleStepDataUpdate}
           {onPushUndoSnapshot}
         />
+        <ArrowAdjustmentHistory />
       {/if}
 
       <div class="header-actions">

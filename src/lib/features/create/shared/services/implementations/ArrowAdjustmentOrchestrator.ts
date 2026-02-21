@@ -27,6 +27,7 @@ import { getGlobalAdjustmentRepository } from "$lib/shared/pictograph/arrow/posi
 import { globalAdjustmentVersion } from "$lib/shared/pictograph/arrow/positioning/global/state/global-adjustment-version.svelte";
 import type { GlobalArrowAdjustmentInput } from "$lib/shared/pictograph/arrow/positioning/global/domain/GlobalArrowAdjustment";
 import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { arrowAdjustmentUndoStack } from "$lib/shared/pictograph/arrow/positioning/global/state/ArrowAdjustmentUndoStack";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("ArrowAdjustmentOrchestrator");
@@ -140,6 +141,16 @@ export class ArrowAdjustmentOrchestrator implements IArrowAdjustmentOrchestrator
     // Calculate new total using reference-transformed adjustment
     const newX = currentX + referenceAdjustment.x;
     const newY = currentY + referenceAdjustment.y;
+
+    // Push previous state to undo stack BEFORE saving
+    arrowAdjustmentUndoStack.push({
+      targetKey: targetKey!,
+      previousX: currentX,
+      previousY: currentY,
+      newX,
+      newY,
+      timestamp: Date.now(),
+    });
 
     // Save to global repo locally (NOT to Firestore yet)
     try {
