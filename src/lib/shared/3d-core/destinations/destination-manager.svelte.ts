@@ -24,10 +24,13 @@ export function createDestinationManager() {
 	// Loading state
 	let isTransitioning = $state(false);
 
+	// Optional parameters for the active destination (e.g., userId for museum visiting)
+	let navigationParams = $state<Record<string, string>>({});
+
 	/**
-	 * Navigate to a destination
+	 * Navigate to a destination with optional parameters
 	 */
-	function navigateTo(destinationId: string): void {
+	function navigateTo(destinationId: string, params?: Record<string, string>): void {
 		const destination = getDestination(destinationId);
 		if (!destination) {
 			console.error(`Destination not found: ${destinationId}`);
@@ -40,6 +43,7 @@ export function createDestinationManager() {
 		}
 
 		currentDestinationId = destinationId;
+		navigationParams = params ?? {};
 	}
 
 	/**
@@ -62,6 +66,7 @@ export function createDestinationManager() {
 	function returnToPicker(): void {
 		currentDestinationId = null;
 		history = [];
+		navigationParams = {};
 	}
 
 	/**
@@ -89,6 +94,9 @@ export function createDestinationManager() {
 		},
 		get canGoBack() {
 			return history.length > 0;
+		},
+		get navigationParams() {
+			return navigationParams;
 		},
 
 		// Computed

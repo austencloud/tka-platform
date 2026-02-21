@@ -1,15 +1,51 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
   import WorldScene from "$lib/features/realm/components/scene/WorldScene.svelte";
   import { MUSEUM_GROUNDS_CONFIG } from "$lib/features/realm/core/realm-definitions";
   import { getActiveMuseumState } from "./state/museum-state-bridge.svelte";
   import InteractionPrompt from "./components/InteractionPrompt.svelte";
   import SequenceBrowserOverlay from "./overlay/SequenceBrowserOverlay.svelte";
   import { container } from "$lib/shared/di";
+  import { destinationManager } from "$lib/shared/3d-core/destinations/destination-manager.svelte";
   import type { IMuseumPersister } from "./services/contracts/IMuseumPersister";
+
+  // The userId to view — if set and different from current user, this is visitor mode
+  const CURRENT_USER_ID = "local-user"; // Placeholder until auth integration
+  const visitingUserId = $derived(destinationManager.navigationParams.userId || CURRENT_USER_ID);
+  const isOwnerMode = $derived(visitingUserId === CURRENT_USER_ID);
 
   // Reactive access to the shared museum state (published by WorldSceneContent)
   const museumState = $derived(getActiveMuseumState());
+
+  // Set ownership on museum state when it becomes available
+  $effect(() => {
+    if (museumState) {
+      museumState.setIsOwner(isOwnerMode);
+    }
+  });
+
+  // Load exhibits from Firebase when museum state is ready
+  $effect(() => {
+    if (museumState && museumState.layout) {
+      loadExhibits();
+    }
+  });
+
+  async function loadExhibits() {
+    if (!museumState) return;
+
+    try {
+      const persister = container.items.museumPersister as IMuseumPersister;
+      const data = await persister.loadMuseum(visitingUserId);
+      if (data) {
+        for (const [slotId, exhibit] of data.exhibits) {
+          museumState.assignExhibit(slotId, exhibit.sequenceId);
+        }
+      }
+      museumState.setLoading(false);
+    } catch {
+      museumState.setLoading(false);
+    }
+  }
 
   // Interaction target info derived from museum state
   const interactionTarget = $derived.by(() => {
@@ -51,8 +87,7 @@
     // Persist to Firebase
     try {
       const persister = container.items.museumPersister as IMuseumPersister;
-      // For now, use a placeholder userId. Full auth integration comes in Phase 5.
-      await persister.saveExhibit("local-user", slotId, sequenceId);
+      await persister.saveExhibit(CURRENT_USER_ID, slotId, sequenceId);
     } catch {
       // Exhibit is already assigned locally; Firebase failure is non-blocking
     }
