@@ -43,6 +43,7 @@
     duration: () => import("$lib/features/duration-lab/DurationLabModule.svelte"),
     "visual-builder": () => import("$lib/features/visual-builder-lab/VisualBuilderLabModule.svelte"),
     flame: () => import("$lib/features/flame-lab/FlameLabModule.svelte"),
+    museum: () => import("$lib/features/museum/MuseumDestination.svelte"),
   };
 
   // Get current tab, default to first tab

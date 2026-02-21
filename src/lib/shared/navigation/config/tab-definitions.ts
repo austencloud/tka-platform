@@ -753,6 +753,14 @@ export const LAB_TABS: Section[] = [
     color: "#f97316",
     gradient: "linear-gradient(135deg, #fb923c 0%, #f97316 100%)",
   },
+  {
+    id: "museum",
+    label: "Museum",
+    icon: '<i class="fas fa-building-columns" aria-hidden="true"></i>',
+    description: "Walkable 3D museum with curated sequence exhibits",
+    color: "#a78bfa",
+    gradient: "linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%)",
+  },
 ];
 
 // REMOVED: LANDING_PAGE_TABS - LandingPreviewModule now handles its own internal tabs
