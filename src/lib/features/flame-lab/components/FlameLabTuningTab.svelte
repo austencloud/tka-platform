@@ -342,6 +342,21 @@
     chainToNextSequence();
   }
 
+  /** Generate a new sequence from a random position, breaking the chain. */
+  async function handleShuffle() {
+    if (sourceMode === "pick" || !infiniteGenerator) return;
+    isChainingNow = true;
+    try {
+      // generateInitial() uses no position constraint → random start
+      const generated = await infiniteGenerator.generateInitial();
+      if (generated) hotSwapSequence(generated.sequence);
+    } catch (err) {
+      console.error("Flame Lab: shuffle failed:", err);
+    } finally {
+      isChainingNow = false;
+    }
+  }
+
   // Watch for sequence completion → chain to next (library/infinite modes only)
   $effect(() => {
     if (sourceMode === "pick") return;
@@ -626,10 +641,18 @@
             {sequence ? "Change Sequence" : "Pick Sequence"}
           </button>
         {:else}
-          <button class="action-btn skip-btn" onclick={handleSkip} disabled={isChainingNow || !sequence}>
-            <i class="fas fa-forward" aria-hidden="true"></i>
-            Skip
-          </button>
+          <div class="auto-actions">
+            <button class="action-btn skip-btn" onclick={handleSkip} disabled={isChainingNow || !sequence}>
+              <i class="fas fa-forward" aria-hidden="true"></i>
+              Skip
+            </button>
+            {#if sourceMode === "infinite"}
+              <button class="action-btn shuffle-btn" onclick={handleShuffle} disabled={isChainingNow || !sequence}>
+                <i class="fas fa-random" aria-hidden="true"></i>
+                Shuffle
+              </button>
+            {/if}
+          </div>
         {/if}
 
         {#if sequence}
@@ -1011,7 +1034,17 @@
     font-size: 11px;
   }
 
-  .skip-btn:disabled {
+  .auto-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  .auto-actions .action-btn {
+    flex: 1;
+  }
+
+  .skip-btn:disabled,
+  .shuffle-btn:disabled {
     opacity: 0.4;
     cursor: not-allowed;
   }

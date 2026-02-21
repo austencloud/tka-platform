@@ -11,13 +11,14 @@
  * - Cycles through LOOP types: Rotated, Mirrored, Swapped, Inverted, and combinations
  */
 
-import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { GridMode, type GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import {
   GenerationMode,
   DifficultyLevel,
   PropContinuity,
 } from "$lib/features/create/generate/shared/domain/models/generate-models";
+import { getAllPositions } from "$lib/features/create/generate/shared/domain/start-position-presets";
 import {
   LOOPType,
   SliceSize,
@@ -75,9 +76,9 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
   async generateFromEndState(
     endState: EndState
   ): Promise<GeneratedSequenceInfo | null> {
-    // For LOOPs, we don't constrain by end state - each LOOP is self-contained
-    // The end position naturally returns to start for true LOOPs
-    return this.generateLOOP();
+    // LOOPs are self-contained (end = start), so to chain continuously,
+    // constrain the NEXT loop to start at the PREVIOUS loop's end position.
+    return this.generateLOOP(endState.position ?? undefined);
   }
 
   async generateInitial(): Promise<GeneratedSequenceInfo | null> {
@@ -86,9 +87,18 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
 
   /**
    * Generate a LOOP sequence with the current settings rotation.
+   * @param targetStartPosition - If provided, block all other positions to force this start.
    */
-  private async generateLOOP(): Promise<GeneratedSequenceInfo | null> {
+  private async generateLOOP(
+    targetStartPosition?: GridPosition
+  ): Promise<GeneratedSequenceInfo | null> {
     const settings = this.getNextSettings();
+
+    // If a target start position is specified, block everything else
+    // so the generator is forced to use it.
+    const blockedStartPositions = targetStartPosition
+      ? getAllPositions(GridMode.DIAMOND).filter(p => p !== targetStartPosition)
+      : undefined;
 
     try {
       const sequence = await this.generationOrchestrator.generateSequence({
@@ -101,6 +111,7 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
         turnIntensity: settings.turnIntensity,
         loopType: settings.loopType,
         sliceSize: settings.sliceSize,
+        ...(blockedStartPositions && { blockedStartPositions }),
       });
 
       // Update counters
