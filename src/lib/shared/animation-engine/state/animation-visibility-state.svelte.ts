@@ -45,6 +45,11 @@ interface AnimationVisibilitySettings {
   flameColorMode: FlameColorMode; // Flame color mode: natural, tinted, or fully colored
   firePreset: string; // Fire intensity tier ID (small, medium, large)
 
+  // LED Effects
+  ledEffect: boolean; // WebGL LED overlay
+  ledPatternId: string; // Active LED pattern ID
+  ledPrimaryColor: string; // Primary color (hex)
+
   // Shared with pictograph visibility (can sync)
   tkaGlyph: boolean; // TKA Glyph includes turn numbers
   reversalIndicators: boolean;
@@ -108,6 +113,11 @@ export class AnimationVisibilityStateManager {
       fireEffect: false, // Fire shader disabled by default
       flameColorMode: "colored" as FlameColorMode, // Default to fully colored flames
       firePreset: "medium", // Default to medium intensity tier
+
+      // LED Effects
+      ledEffect: false,
+      ledPatternId: "solid",
+      ledPrimaryColor: "#00ff88",
 
       // Shared elements - defaults optimized for animation viewing
       tkaGlyph: true, // TKA Glyph includes turn numbers
@@ -223,7 +233,7 @@ export class AnimationVisibilityStateManager {
   getVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "flameColorMode" | "firePreset"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "flameColorMode" | "firePreset" | "ledPatternId" | "ledPrimaryColor"
     >
   ): boolean {
     return this.settings[key];
@@ -247,7 +257,7 @@ export class AnimationVisibilityStateManager {
   setVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "flameColorMode" | "firePreset"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "flameColorMode" | "firePreset" | "ledPatternId" | "ledPrimaryColor"
     >,
     visible: boolean
   ): void {
@@ -532,13 +542,72 @@ export class AnimationVisibilityStateManager {
     this.notifyObservers();
   }
 
+  // ============================================================================
+  // LED EFFECT
+  // ============================================================================
+
+  /**
+   * Check if LED effect is enabled
+   */
+  isLedEffectEnabled(): boolean {
+    return this.settings.ledEffect;
+  }
+
+  /**
+   * Set LED effect
+   */
+  setLedEffect(enabled: boolean): void {
+    this.settings.ledEffect = enabled;
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  /**
+   * Toggle LED effect
+   */
+  toggleLedEffect(): void {
+    this.setLedEffect(!this.settings.ledEffect);
+  }
+
+  /**
+   * Get current LED pattern ID
+   */
+  getLedPatternId(): string {
+    return this.settings.ledPatternId;
+  }
+
+  /**
+   * Set LED pattern ID
+   */
+  setLedPatternId(patternId: string): void {
+    this.settings.ledPatternId = patternId;
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  /**
+   * Get current LED primary color
+   */
+  getLedPrimaryColor(): string {
+    return this.settings.ledPrimaryColor;
+  }
+
+  /**
+   * Set LED primary color
+   */
+  setLedPrimaryColor(color: string): void {
+    this.settings.ledPrimaryColor = color;
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
   /**
    * Toggle a boolean visibility setting
    */
   toggleVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "flameColorMode" | "firePreset"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "flameColorMode" | "firePreset" | "ledPatternId" | "ledPrimaryColor"
     >
   ): void {
     this.setVisibility(key, !this.settings[key]);
