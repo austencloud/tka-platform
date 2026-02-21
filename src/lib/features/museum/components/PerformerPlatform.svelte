@@ -28,17 +28,19 @@
   });
 
   // Create performer animation state
-  const performerState = createAvatarInstanceState(
-    {
-      id: `museum-performer-${slot.id}`,
-      positionX: slot.position.x,
-      positionZ: slot.position.z,
-    },
-    {
-      propInterpolator: container.items.propStateInterpolator,
-      sequenceConverter: container.items.sequenceConverter,
-    }
-  );
+  // Slot identity is captured once at init (slots don't move)
+  const performerState = ((s: ExhibitSlot) =>
+    createAvatarInstanceState(
+      {
+        id: `museum-performer-${s.id}`,
+        positionX: s.position.x,
+        positionZ: s.position.z,
+      },
+      {
+        propInterpolator: container.items.propStateInterpolator,
+        sequenceConverter: container.items.sequenceConverter,
+      }
+    ))(slot);
 
   // Load sequence when it becomes available
   $effect(() => {

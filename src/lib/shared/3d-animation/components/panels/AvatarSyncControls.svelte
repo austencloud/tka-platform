@@ -218,7 +218,7 @@
   }
 
   .beat-label {
-    font-size: var(--font-size-xs, 11px);
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
     text-transform: uppercase;
     letter-spacing: 0.05em;

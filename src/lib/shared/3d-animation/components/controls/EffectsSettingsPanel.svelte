@@ -335,7 +335,7 @@
 
   .mode-chips.triple .mode-chip {
     padding: 0 0.5rem;
-    font-size: var(--font-size-xs, 0.7rem);
+    font-size: var(--font-size-compact, 12px);
   }
 
   .mode-chip {

@@ -141,6 +141,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.canvas.style.height = "100%";
     this.canvas.style.pointerEvents = "none";
     this.canvas.style.zIndex = "2";
+    this.canvas.style.background = "transparent";
     this.canvas.setAttribute("aria-hidden", "true");
 
     this.dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
