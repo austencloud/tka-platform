@@ -20,7 +20,7 @@ const { COLLECTIONS, LINK_TYPES, JOURNAL_TYPES } = config;
  * @param {string} [note] - Optional note describing the relationship
  * @returns {Promise<{success: boolean, error?: string}>}
  */
-export async function addLink(db, fromId, toId, linkType, note = null) {
+async function addLink(db, fromId, toId, linkType, note = null) {
   // Validate link type
   if (!LINK_TYPES.includes(linkType)) {
     return {
@@ -111,7 +111,7 @@ export async function addLink(db, fromId, toId, linkType, note = null) {
  * @param {string} toId - Target item ID
  * @returns {Promise<{success: boolean, removed: boolean, error?: string}>}
  */
-export async function removeLink(db, fromId, toId) {
+async function removeLink(db, fromId, toId) {
   const collection = db.collection(COLLECTIONS.ITEMS);
   const fromRef = collection.doc(fromId);
   const toRef = collection.doc(toId);
@@ -184,7 +184,7 @@ export async function removeLink(db, fromId, toId) {
  * @param {string} docId - Item ID
  * @returns {Promise<{linksTo: Array, linkedFrom: Array, error?: string}>}
  */
-export async function getLinks(db, docId) {
+async function getLinks(db, docId) {
   const collection = db.collection(COLLECTIONS.ITEMS);
   const docRef = collection.doc(docId);
 
@@ -243,7 +243,7 @@ export async function getLinks(db, docId) {
  * @param {number} [maxDepth=10] - Maximum traversal depth
  * @returns {Promise<{sessions: Array, path: Array, error?: string}>}
  */
-export async function traceToSession(db, docId, maxDepth = 10) {
+async function traceToSession(db, docId, maxDepth = 10) {
   const collection = db.collection(COLLECTIONS.ITEMS);
   const visited = new Set();
   const sessions = [];
@@ -303,7 +303,7 @@ export async function traceToSession(db, docId, maxDepth = 10) {
  * @param {string} sessionId - Session item ID
  * @returns {Promise<{items: Array, error?: string}>}
  */
-export async function getSessionTree(db, sessionId) {
+async function getSessionTree(db, sessionId) {
   const collection = db.collection(COLLECTIONS.ITEMS);
 
   try {

@@ -179,16 +179,43 @@ export const ATTACHMENT_TYPES = [
 /**
  * Default Tags for Quick Categorization
  */
-export const DEFAULT_TAGS = [
+/**
+ * Department Tags
+ *
+ * The 7 departments that organize museum development work.
+ * Items should be tagged with their department for filtering.
+ */
+export const DEPARTMENT_TAGS = [
+  "lore",              // Lore & Narrative: The Order, Vessels, time mechanics, world bible
+  "exhibit-design",    // Exhibit Design: Room concepts, floor plan, spatial flow, naming
+  "experience-design", // Experience Design: Interaction, pacing, emotional arc, tone
+  "art-direction",     // Art Direction: Visual philosophy, era aesthetics, lighting
+  "audio",             // Audio: Sound design, ambient transitions, music, voice acting
+  "engineering",       // Engineering: UE5, animation pipeline, hand IK, Scribe integration
+  "production",        // Production: MVP scope, milestones, phasing, pre-production
+];
+
+/**
+ * Domain Tags for Quick Categorization
+ *
+ * Cross-cutting tags for specific topics within any department.
+ */
+export const DOMAIN_TAGS = [
   "order",           // The Order faction
   "vtg",             // VTG/notation related
   "flow-arts",       // Flow arts culture
   "museum-layout",   // Physical museum structure
   "character",       // Character development
   "mechanic",        // Game/interaction mechanics
-  "lore",            // Worldbuilding lore
   "tone",            // Tone/style decisions
+  "audit",           // Concept audit concerns
+  "meta",            // Decisions about the tracking system itself
 ];
+
+/**
+ * All Tags (departments + domain)
+ */
+export const DEFAULT_TAGS = [...DEPARTMENT_TAGS, ...DOMAIN_TAGS];
 
 // Default export for convenience
 export default {
@@ -206,5 +233,7 @@ export default {
   ARCHIVE_REASONS,
   COLLECTIONS,
   ATTACHMENT_TYPES,
+  DEPARTMENT_TAGS,
+  DOMAIN_TAGS,
   DEFAULT_TAGS,
 };

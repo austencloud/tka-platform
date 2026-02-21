@@ -27,7 +27,8 @@ System: `meta` tag marks decisions about the tracking system itself.
 ## Usage
 
 - `/museum` - **Department briefing** (dispatches 7 agents, synthesizes status)
-- `/museum list` - Raw item list (old behavior)
+- `/museum list` - Raw item list
+- `/museum list --tag <tag>` - Filter by tag (e.g., `--tag lore`, `--tag exhibit-design`)
 - `/museum <dept>` - Focus on a specific department (e.g., `/museum lore`)
 - `/museum session "Title"` - Start a new brainstorming session
 - `/museum capture <sessionId> decision "Content"` - Capture a decision during session
@@ -56,7 +57,7 @@ You are the {DEPARTMENT_NAME} department manager for The Kinetic Archive museum 
 Your job: Review all items in your department and produce a concise status briefing.
 
 Run this command to get your department's items:
-  node scripts/museum-dev.js search "{TAG}"
+  node scripts/museum-dev.js list --tag "{TAG}"
 
 Then for any items that look important (audit items, unanswered questions, recent decisions), read their full details:
   node scripts/museum-dev.js {itemId}
@@ -104,19 +105,23 @@ Ask the user what they want to focus on. Present 3-4 options based on the briefi
 
 ### For "list":
 
-Show the raw museum development tracker item list:
+Show the museum development tracker item list:
 ```bash
 node scripts/museum-dev.js list
+node scripts/museum-dev.js list --tag lore
+node scripts/museum-dev.js list --type decision --status completed
 ```
 
 ### For a department name (e.g., "lore", "engineering", "exhibit-design"):
 
 Focus on a single department. Run:
 ```bash
-node scripts/museum-dev.js search "{department-tag}"
+node scripts/museum-dev.js list --tag "{department-tag}"
 ```
 
 Then read key items and present a detailed department view — not just the list, but analysis of what's decided vs open, what needs attention, and what to work on next within that department.
+
+**Note:** Items must be tagged with the department tag to appear. If a department shows no items, existing items may need tagging.
 
 ### For "session <title>":
 

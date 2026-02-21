@@ -47,7 +47,7 @@ function generateAttachmentId() {
  * @param {string} [type] - Attachment type (image, audio, document, url) - auto-detected if not provided
  * @returns {Promise<{success: boolean, attachmentId?: string, url?: string, error?: string}>}
  */
-export async function addAttachment(db, docId, filePath, description = null, type = null) {
+async function addAttachment(db, docId, filePath, description = null, type = null) {
   const collection = db.collection(COLLECTIONS.ITEMS);
   const docRef = collection.doc(docId);
 
@@ -101,9 +101,11 @@ export async function addAttachment(db, docId, filePath, description = null, typ
         .on("finish", resolve);
     });
 
-    // Make file publicly accessible and get URL
-    await file.makePublic();
-    const url = `https://storage.googleapis.com/${bucket.name}/${storagePath}`;
+    // Generate a signed URL (7-day expiry, re-generate as needed)
+    const [url] = await file.getSignedUrl({
+      action: "read",
+      expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
+    });
 
     const now = Timestamp.now();
     const attachmentData = {
@@ -144,7 +146,7 @@ export async function addAttachment(db, docId, filePath, description = null, typ
  * @param {string} [description] - Optional description
  * @returns {Promise<{success: boolean, attachmentId?: string, error?: string}>}
  */
-export async function addUrlAttachment(db, docId, url, description = null) {
+async function addUrlAttachment(db, docId, url, description = null) {
   const collection = db.collection(COLLECTIONS.ITEMS);
   const docRef = collection.doc(docId);
 
@@ -199,7 +201,7 @@ export async function addUrlAttachment(db, docId, url, description = null) {
  * @param {string} docId - Item ID
  * @returns {Promise<{attachments: Array, error?: string}>}
  */
-export async function listAttachments(db, docId) {
+async function listAttachments(db, docId) {
   const collection = db.collection(COLLECTIONS.ITEMS);
   const docRef = collection.doc(docId);
 
@@ -229,7 +231,7 @@ export async function listAttachments(db, docId) {
  * @param {string} attachmentId - Attachment ID to remove
  * @returns {Promise<{success: boolean, error?: string}>}
  */
-export async function removeAttachment(db, docId, attachmentId) {
+async function removeAttachment(db, docId, attachmentId) {
   const collection = db.collection(COLLECTIONS.ITEMS);
   const docRef = collection.doc(docId);
 
