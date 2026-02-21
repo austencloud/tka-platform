@@ -8,6 +8,7 @@
   import type {
     TrailVisibility,
     PlaybackMode,
+    FlameColorMode,
   } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
   interface Props {
@@ -18,6 +19,11 @@
     stepNumbersVisible: boolean;
     tkaGlyphVisible: boolean;
     wordHeaderVisible: boolean;
+    fireEffectEnabled: boolean;
+    flameColorMode: FlameColorMode;
+    firePreset: string;
+    onFlameColorModeChange: (mode: FlameColorMode) => void;
+    onFirePresetChange: (presetId: string) => void;
     trailStyle: TrailVisibility;
     showBilateralToggle: boolean;
     isBothEnds: boolean;
@@ -36,6 +42,11 @@
     stepNumbersVisible,
     tkaGlyphVisible,
     wordHeaderVisible,
+    fireEffectEnabled,
+    flameColorMode,
+    firePreset,
+    onFlameColorModeChange,
+    onFirePresetChange,
     trailStyle,
     showBilateralToggle,
     isBothEnds,
@@ -152,6 +163,80 @@
       </button>
     {/if}
   </div>
+
+  <!-- Row 5: Effects -->
+  <div class="mobile-row">
+    <button
+      class="compact-btn"
+      class:active={fireEffectEnabled}
+      aria-pressed={fireEffectEnabled}
+      onclick={() => onToggle("fireEffect")}
+      type="button"
+    >
+      <i class="fas fa-fire" aria-hidden="true"></i>
+      <span>Fire</span>
+    </button>
+  </div>
+  {#if fireEffectEnabled}
+    <div class="mobile-row">
+      <button
+        class="compact-btn"
+        class:active={flameColorMode === "natural"}
+        aria-pressed={flameColorMode === "natural"}
+        onclick={() => onFlameColorModeChange("natural")}
+        type="button"
+      >
+        Natural
+      </button>
+      <button
+        class="compact-btn"
+        class:active={flameColorMode === "tinted"}
+        aria-pressed={flameColorMode === "tinted"}
+        onclick={() => onFlameColorModeChange("tinted")}
+        type="button"
+      >
+        Tinted
+      </button>
+      <button
+        class="compact-btn"
+        class:active={flameColorMode === "colored"}
+        aria-pressed={flameColorMode === "colored"}
+        onclick={() => onFlameColorModeChange("colored")}
+        type="button"
+      >
+        Colored
+      </button>
+    </div>
+    <div class="mobile-row">
+      <button
+        class="compact-btn"
+        class:active={firePreset === "candlewick"}
+        aria-pressed={firePreset === "candlewick"}
+        onclick={() => onFirePresetChange("candlewick")}
+        type="button"
+      >
+        Small
+      </button>
+      <button
+        class="compact-btn"
+        class:active={firePreset === "fire-spin"}
+        aria-pressed={firePreset === "fire-spin"}
+        onclick={() => onFirePresetChange("fire-spin")}
+        type="button"
+      >
+        Medium
+      </button>
+      <button
+        class="compact-btn"
+        class:active={firePreset === "torch"}
+        aria-pressed={firePreset === "torch"}
+        onclick={() => onFirePresetChange("torch")}
+        type="button"
+      >
+        Large
+      </button>
+    </div>
+  {/if}
 </div>
 
 <style>

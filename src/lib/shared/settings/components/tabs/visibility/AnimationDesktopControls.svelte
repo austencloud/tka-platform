@@ -8,6 +8,7 @@
   import type {
     TrailVisibility,
     PlaybackMode,
+    FlameColorMode,
   } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
   interface Props {
@@ -18,6 +19,11 @@
     stepNumbersVisible: boolean;
     tkaGlyphVisible: boolean;
     wordHeaderVisible: boolean;
+    fireEffectEnabled: boolean;
+    flameColorMode: FlameColorMode;
+    firePreset: string;
+    onFlameColorModeChange: (mode: FlameColorMode) => void;
+    onFirePresetChange: (presetId: string) => void;
     trailStyle: TrailVisibility;
     showBilateralToggle: boolean;
     isBothEnds: boolean;
@@ -36,6 +42,11 @@
     stepNumbersVisible,
     tkaGlyphVisible,
     wordHeaderVisible,
+    fireEffectEnabled,
+    flameColorMode,
+    firePreset,
+    onFlameColorModeChange,
+    onFirePresetChange,
     trailStyle,
     showBilateralToggle,
     isBothEnds,
@@ -156,6 +167,81 @@
       >
     </div>
   </div>
+
+  <div class="control-group">
+    <span class="group-label">Effects</span>
+    <div class="toggle-grid">
+      <button
+        class="toggle-btn"
+        class:active={fireEffectEnabled}
+        aria-pressed={fireEffectEnabled}
+        onclick={() => onToggle("fireEffect")}
+        type="button"
+      >
+        Fire
+      </button>
+    </div>
+    {#if fireEffectEnabled}
+      <div class="flame-mode-row">
+        <button
+          class="preset-btn"
+          class:active={flameColorMode === "natural"}
+          aria-pressed={flameColorMode === "natural"}
+          onclick={() => onFlameColorModeChange("natural")}
+          type="button"
+        >
+          Natural
+        </button>
+        <button
+          class="preset-btn"
+          class:active={flameColorMode === "tinted"}
+          aria-pressed={flameColorMode === "tinted"}
+          onclick={() => onFlameColorModeChange("tinted")}
+          type="button"
+        >
+          Tinted
+        </button>
+        <button
+          class="preset-btn"
+          class:active={flameColorMode === "colored"}
+          aria-pressed={flameColorMode === "colored"}
+          onclick={() => onFlameColorModeChange("colored")}
+          type="button"
+        >
+          Colored
+        </button>
+      </div>
+      <div class="flame-mode-row">
+        <button
+          class="preset-btn"
+          class:active={firePreset === "candlewick"}
+          aria-pressed={firePreset === "candlewick"}
+          onclick={() => onFirePresetChange("candlewick")}
+          type="button"
+        >
+          Small
+        </button>
+        <button
+          class="preset-btn"
+          class:active={firePreset === "fire-spin"}
+          aria-pressed={firePreset === "fire-spin"}
+          onclick={() => onFirePresetChange("fire-spin")}
+          type="button"
+        >
+          Medium
+        </button>
+        <button
+          class="preset-btn"
+          class:active={firePreset === "torch"}
+          aria-pressed={firePreset === "torch"}
+          onclick={() => onFirePresetChange("torch")}
+          type="button"
+        >
+          Large
+        </button>
+      </div>
+    {/if}
+  </div>
 </div>
 
 <style>
@@ -169,6 +255,11 @@
   .control-group {
     display: flex;
     flex-direction: column;
+    gap: clamp(4px, 1cqi, 6px);
+  }
+
+  .flame-mode-row {
+    display: flex;
     gap: clamp(4px, 1cqi, 6px);
   }
 

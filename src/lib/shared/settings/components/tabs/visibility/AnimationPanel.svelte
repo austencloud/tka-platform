@@ -11,6 +11,7 @@
   import type {
     TrailVisibility,
     PlaybackMode,
+    FlameColorMode,
   } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import {
     animationSettings,
@@ -27,6 +28,11 @@
     bpm: number;
     tkaGlyphVisible: boolean;
     wordHeaderVisible: boolean;
+    fireEffectEnabled: boolean;
+    flameColorMode: FlameColorMode;
+    firePreset: string;
+    onFlameColorModeChange: (mode: FlameColorMode) => void;
+    onFirePresetChange: (presetId: string) => void;
     onToggle: (key: string) => void;
     onTrailStyleChange: (style: string) => void;
     onPlaybackModeChange: (mode: PlaybackMode) => void;
@@ -42,6 +48,11 @@
     bpm,
     tkaGlyphVisible,
     wordHeaderVisible,
+    fireEffectEnabled,
+    flameColorMode,
+    firePreset,
+    onFlameColorModeChange,
+    onFirePresetChange,
     onToggle,
     onTrailStyleChange,
     onPlaybackModeChange,
@@ -112,6 +123,11 @@
         {stepNumbersVisible}
         {tkaGlyphVisible}
         {wordHeaderVisible}
+        {fireEffectEnabled}
+        {flameColorMode}
+        {firePreset}
+        {onFlameColorModeChange}
+        {onFirePresetChange}
         {trailStyle}
         {showBilateralToggle}
         {isBothEnds}
@@ -133,6 +149,11 @@
         {stepNumbersVisible}
         {tkaGlyphVisible}
         {wordHeaderVisible}
+        {fireEffectEnabled}
+        {flameColorMode}
+        {firePreset}
+        {onFlameColorModeChange}
+        {onFirePresetChange}
         {trailStyle}
         {showBilateralToggle}
         {isBothEnds}

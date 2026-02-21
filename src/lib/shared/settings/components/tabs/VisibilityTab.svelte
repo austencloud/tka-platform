@@ -15,6 +15,7 @@
     getAnimationVisibilityManager,
     type TrailVisibility,
     type PlaybackMode,
+    type FlameColorMode,
   } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -57,6 +58,9 @@
   let animBpm = $state(60);
   let animTkaGlyphVisible = $state(true);
   let animWordHeaderVisible = $state(true);
+  let animFireEffectEnabled = $state(false);
+  let animFlameColorMode = $state<FlameColorMode>("colored");
+  let animFirePreset = $state("fire-spin");
 
   // Image composition state
   let imgAddWord = $state(true);
@@ -150,7 +154,23 @@
           animWordHeaderVisible
         );
         break;
+      case "fireEffect":
+        animFireEffectEnabled = !animFireEffectEnabled;
+        animationVisibilityManager.setFireEffect(animFireEffectEnabled);
+        break;
     }
+  }
+
+  function handleFlameColorModeChange(mode: FlameColorMode) {
+    triggerHaptic();
+    animFlameColorMode = mode;
+    animationVisibilityManager.setFlameColorMode(mode);
+  }
+
+  function handleFirePresetChange(presetId: string) {
+    triggerHaptic();
+    animFirePreset = presetId;
+    animationVisibilityManager.setFirePreset(presetId);
   }
 
   function handleTrailStyleChange(newStyle: string) {
@@ -237,6 +257,9 @@
     animTkaGlyphVisible = animationVisibilityManager.getVisibility("tkaGlyph");
     animWordHeaderVisible =
       animationVisibilityManager.getVisibility("wordHeader");
+    animFireEffectEnabled = animationVisibilityManager.isFireEffectEnabled();
+    animFlameColorMode = animationVisibilityManager.getFlameColorMode();
+    animFirePreset = animationVisibilityManager.getFirePreset();
 
     // Load initial image composition
     imgAddWord = imageCompositionManager.addWord;
@@ -273,6 +296,9 @@
         animationVisibilityManager.getVisibility("tkaGlyph");
       animWordHeaderVisible =
         animationVisibilityManager.getVisibility("wordHeader");
+      animFireEffectEnabled = animationVisibilityManager.isFireEffectEnabled();
+      animFlameColorMode = animationVisibilityManager.getFlameColorMode();
+      animFirePreset = animationVisibilityManager.getFirePreset();
     };
 
     const imageObserver = () => {
@@ -335,6 +361,11 @@
       bpm={animBpm}
       tkaGlyphVisible={animTkaGlyphVisible}
       wordHeaderVisible={animWordHeaderVisible}
+      fireEffectEnabled={animFireEffectEnabled}
+      flameColorMode={animFlameColorMode}
+      firePreset={animFirePreset}
+      onFlameColorModeChange={handleFlameColorModeChange}
+      onFirePresetChange={handleFirePresetChange}
       onToggle={handleAnimationToggle}
       onTrailStyleChange={handleTrailStyleChange}
       onPlaybackModeChange={handlePlaybackModeChange}

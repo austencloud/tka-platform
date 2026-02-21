@@ -5,6 +5,8 @@
  * Independent from pictograph visibility but can sync from it.
  */
 
+export type FlameColorMode = "natural" | "tinted" | "colored";
+
 type VisibilityObserver = () => void;
 
 /**
@@ -40,6 +42,8 @@ interface AnimationVisibilitySettings {
 
   // Effects
   fireEffect: boolean; // WebGL fire shader at prop tips
+  flameColorMode: FlameColorMode; // Flame color mode: natural, tinted, or fully colored
+  firePreset: string; // Fire physics preset ID (candlewick, fire-spin, torch, etc.)
 
   // Shared with pictograph visibility (can sync)
   tkaGlyph: boolean; // TKA Glyph includes turn numbers
@@ -102,6 +106,8 @@ export class AnimationVisibilityStateManager {
 
       // Effects
       fireEffect: false, // Fire shader disabled by default
+      flameColorMode: "colored" as FlameColorMode, // Default to fully colored flames
+      firePreset: "fire-spin", // Default to fire-spin preset (medium size)
 
       // Shared elements - defaults optimized for animation viewing
       tkaGlyph: true, // TKA Glyph includes turn numbers
@@ -129,6 +135,12 @@ export class AnimationVisibilityStateManager {
 
         // Force beatPosition to false (replaced by progress bar)
         parsed.beatPosition = false;
+
+        // Migrate coloredFlames boolean to flameColorMode string
+        if (parsed.coloredFlames !== undefined && parsed.flameColorMode === undefined) {
+          parsed.flameColorMode = parsed.coloredFlames ? "colored" : "natural";
+          delete parsed.coloredFlames;
+        }
 
         // Ensure new properties exist with defaults if missing
         const defaults = this.getDefaultSettings();
@@ -198,7 +210,7 @@ export class AnimationVisibilityStateManager {
   getVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "flameColorMode" | "firePreset"
     >
   ): boolean {
     return this.settings[key];
@@ -222,7 +234,7 @@ export class AnimationVisibilityStateManager {
   setVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "flameColorMode" | "firePreset"
     >,
     visible: boolean
   ): void {
@@ -467,13 +479,53 @@ export class AnimationVisibilityStateManager {
     this.setFireEffect(!this.settings.fireEffect);
   }
 
+  // ============================================================================
+  // FLAME COLOR MODE
+  // ============================================================================
+
+  /**
+   * Get current flame color mode
+   */
+  getFlameColorMode(): FlameColorMode {
+    return this.settings.flameColorMode;
+  }
+
+  /**
+   * Set flame color mode
+   */
+  setFlameColorMode(mode: FlameColorMode): void {
+    this.settings.flameColorMode = mode;
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  // ============================================================================
+  // FIRE PRESET
+  // ============================================================================
+
+  /**
+   * Get current fire physics preset ID
+   */
+  getFirePreset(): string {
+    return this.settings.firePreset;
+  }
+
+  /**
+   * Set fire physics preset ID
+   */
+  setFirePreset(presetId: string): void {
+    this.settings.firePreset = presetId;
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
   /**
    * Toggle a boolean visibility setting
    */
   toggleVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "flameColorMode" | "firePreset"
     >
   ): void {
     this.setVisibility(key, !this.settings[key]);
