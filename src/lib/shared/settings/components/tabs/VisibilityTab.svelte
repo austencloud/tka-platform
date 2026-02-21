@@ -60,7 +60,7 @@
   let animWordHeaderVisible = $state(true);
   let animFireEffectEnabled = $state(false);
   let animFlameColorMode = $state<FlameColorMode>("colored");
-  let animFirePreset = $state("fire-spin");
+  let animFirePreset = $state("medium");
 
   // Image composition state
   let imgAddWord = $state(true);

@@ -43,7 +43,7 @@ interface AnimationVisibilitySettings {
   // Effects
   fireEffect: boolean; // WebGL fire shader at prop tips
   flameColorMode: FlameColorMode; // Flame color mode: natural, tinted, or fully colored
-  firePreset: string; // Fire physics preset ID (candlewick, fire-spin, torch, etc.)
+  firePreset: string; // Fire intensity tier ID (small, medium, large)
 
   // Shared with pictograph visibility (can sync)
   tkaGlyph: boolean; // TKA Glyph includes turn numbers
@@ -107,7 +107,7 @@ export class AnimationVisibilityStateManager {
       // Effects
       fireEffect: false, // Fire shader disabled by default
       flameColorMode: "colored" as FlameColorMode, // Default to fully colored flames
-      firePreset: "fire-spin", // Default to fire-spin preset (medium size)
+      firePreset: "medium", // Default to medium intensity tier
 
       // Shared elements - defaults optimized for animation viewing
       tkaGlyph: true, // TKA Glyph includes turn numbers
@@ -145,6 +145,14 @@ export class AnimationVisibilityStateManager {
         // Migrate "tinted" to "colored" (tinted mode removed)
         if (parsed.flameColorMode === "tinted") {
           parsed.flameColorMode = "colored";
+        }
+
+        // Migrate preset IDs to intensity tiers
+        if (parsed.firePreset === "candlewick") parsed.firePreset = "small";
+        else if (parsed.firePreset === "fire-spin") parsed.firePreset = "medium";
+        else if (parsed.firePreset === "torch") parsed.firePreset = "large";
+        else if (parsed.firePreset && !["small", "medium", "large"].includes(parsed.firePreset)) {
+          parsed.firePreset = "medium";
         }
 
         // Ensure new properties exist with defaults if missing

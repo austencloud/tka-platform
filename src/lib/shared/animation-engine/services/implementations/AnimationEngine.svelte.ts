@@ -71,7 +71,8 @@ import { WebGLFireRenderer } from "./fire/WebGLFireRenderer";
 import type { IFireOverlayRenderer } from "../contracts/IFireOverlayRenderer";
 import type { IFireTipTracker } from "../contracts/IFireTipTracker";
 import { DEFAULT_FIRE_CONFIG, DEFAULT_PROP_FLAME_COLORS, type FireOverlayConfig } from "../../domain/types/FireTypes";
-import { getFirePreset } from "../../domain/types/FirePresets";
+import { FIRE_INTENSITY_TIERS, type FireIntensityTier } from "../../domain/types/FireDefaultsDocument";
+import type { IFireDefaultsLoader } from "../contracts/IFireDefaultsLoader";
 
 /**
  * Props passed to engine.update()
@@ -221,6 +222,7 @@ export class AnimationEngine {
   private fireRenderer: IFireOverlayRenderer | null = null;
   private fireTipTracker: IFireTipTracker | null = null;
   private fireConfig: FireOverlayConfig = { ...DEFAULT_FIRE_CONFIG };
+  private fireDefaultsLoader: IFireDefaultsLoader | null = null;
 
   // ============================================================================
   // PRIVATE STATE
@@ -257,7 +259,7 @@ export class AnimationEngine {
   private prevBlueMotionVisible: boolean = true;
   private prevRedMotionVisible: boolean = true;
   private prevFireEffect: boolean = false;
-  private prevFirePreset: string = "fire-spin";
+  private prevFirePreset: string = "medium";
 
   // Additional layer texture loading for tunnel mode (indexed by layer)
   private additionalLayerTexturesLoaded: boolean[] = [];
@@ -324,9 +326,13 @@ export class AnimationEngine {
     const modeToBlend: Record<string, number> = { natural: 0, colored: 1.0 };
     this.fireConfig.colorBlend = modeToBlend[visibilityManager.getFlameColorMode()] ?? 0;
     this.prevFirePreset = visibilityManager.getFirePreset();
-    const initialPreset = getFirePreset(this.prevFirePreset);
-    if (initialPreset) {
-      this.fireConfig.physicsPreset = initialPreset.params;
+    this.fireDefaultsLoader = container.items.fireDefaultsLoader as IFireDefaultsLoader;
+    const initialTier = FIRE_INTENSITY_TIERS[this.prevFirePreset as FireIntensityTier] ?? FIRE_INTENSITY_TIERS.medium;
+    this.fireConfig.intensity = initialTier.intensity;
+    this.fireConfig.flameHeight = initialTier.flameHeight;
+    const adminPhysics = this.fireDefaultsLoader?.getGlobalPhysics() ?? null;
+    if (adminPhysics) {
+      this.fireConfig.physicsPreset = adminPhysics;
     }
     this.state.visibilityState = {
       grid: visibilityManager.getGridMode() !== "none",
@@ -435,14 +441,18 @@ export class AnimationEngine {
           this.setFireConfig({ colorBlend });
         }
 
-        // Sync fire physics preset
+        // Sync fire intensity tier
         const firePresetId = vm.getFirePreset();
         if (firePresetId !== this.prevFirePreset) {
           this.prevFirePreset = firePresetId;
-          const preset = getFirePreset(firePresetId);
-          if (preset) {
-            this.setFireConfig({ physicsPreset: preset.params });
-          }
+          const tier = FIRE_INTENSITY_TIERS[firePresetId as FireIntensityTier] ?? FIRE_INTENSITY_TIERS.medium;
+          const tierAdminPhysics = this.fireDefaultsLoader?.getGlobalPhysics() ?? null;
+
+          this.setFireConfig({
+            intensity: tier.intensity,
+            flameHeight: tier.flameHeight,
+            ...(tierAdminPhysics ? { physicsPreset: tierAdminPhysics } : {}),
+          });
         }
       }
     );

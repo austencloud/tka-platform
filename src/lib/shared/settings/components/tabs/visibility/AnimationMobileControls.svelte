@@ -201,27 +201,27 @@
     <div class="mobile-row">
       <button
         class="compact-btn"
-        class:active={firePreset === "candlewick"}
-        aria-pressed={firePreset === "candlewick"}
-        onclick={() => onFirePresetChange("candlewick")}
+        class:active={firePreset === "small"}
+        aria-pressed={firePreset === "small"}
+        onclick={() => onFirePresetChange("small")}
         type="button"
       >
         Small
       </button>
       <button
         class="compact-btn"
-        class:active={firePreset === "fire-spin"}
-        aria-pressed={firePreset === "fire-spin"}
-        onclick={() => onFirePresetChange("fire-spin")}
+        class:active={firePreset === "medium"}
+        aria-pressed={firePreset === "medium"}
+        onclick={() => onFirePresetChange("medium")}
         type="button"
       >
         Medium
       </button>
       <button
         class="compact-btn"
-        class:active={firePreset === "torch"}
-        aria-pressed={firePreset === "torch"}
-        onclick={() => onFirePresetChange("torch")}
+        class:active={firePreset === "large"}
+        aria-pressed={firePreset === "large"}
+        onclick={() => onFirePresetChange("large")}
         type="button"
       >
         Large
