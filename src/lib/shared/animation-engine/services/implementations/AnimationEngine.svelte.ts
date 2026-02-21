@@ -73,6 +73,11 @@ import type { IFireTipTracker } from "../contracts/IFireTipTracker";
 import { DEFAULT_FIRE_CONFIG, DEFAULT_PROP_FLAME_COLORS, type FireOverlayConfig } from "../../domain/types/FireTypes";
 import { FIRE_INTENSITY_TIERS, type FireIntensityTier } from "../../domain/types/FireDefaultsDocument";
 import type { IFireDefaultsLoader } from "../contracts/IFireDefaultsLoader";
+import { LedTipTracker } from "./LedTipTracker";
+import { WebGLLedRenderer } from "./led/WebGLLedRenderer";
+import type { ILedOverlayRenderer } from "../contracts/ILedOverlayRenderer";
+import type { ILedTipTracker } from "../contracts/ILedTipTracker";
+import { DEFAULT_LED_CONFIG, type LedOverlayConfig } from "../../domain/types/LedTypes";
 
 /**
  * Props passed to engine.update()
@@ -223,6 +228,9 @@ export class AnimationEngine {
   private fireTipTracker: IFireTipTracker | null = null;
   private fireConfig: FireOverlayConfig = { ...DEFAULT_FIRE_CONFIG };
   private fireDefaultsLoader: IFireDefaultsLoader | null = null;
+  private ledRenderer: ILedOverlayRenderer | null = null;
+  private ledTipTracker: ILedTipTracker | null = null;
+  private ledConfig: LedOverlayConfig = { ...DEFAULT_LED_CONFIG };
 
   // ============================================================================
   // PRIVATE STATE
@@ -298,6 +306,7 @@ export class AnimationEngine {
     fireConfig: null,
     darkMode: false,
     propColors: undefined,
+    ledConfig: null,
   };
 
   // ============================================================================
@@ -334,6 +343,11 @@ export class AnimationEngine {
     if (adminPhysics) {
       this.fireConfig.physicsPreset = adminPhysics;
     }
+    // Initialize LED state from visibility manager
+    this.ledConfig.enabled = visibilityManager.isLedEffectEnabled();
+    this.ledConfig.patternId = visibilityManager.getLedPatternId();
+    this.ledConfig.primaryColor = visibilityManager.getLedPrimaryColor();
+
     this.state.visibilityState = {
       grid: visibilityManager.getGridMode() !== "none",
       stepNumbers: visibilityManager.getVisibility("stepNumbers"),
@@ -454,6 +468,20 @@ export class AnimationEngine {
             ...(tierAdminPhysics ? { physicsPreset: tierAdminPhysics } : {}),
           });
         }
+
+        // Sync LED effect from visibility manager
+        const ledEnabled = vm.isLedEffectEnabled();
+        if (ledEnabled !== this.ledConfig.enabled) {
+          this.setLedConfig({ enabled: ledEnabled });
+        }
+        const ledPatternId = vm.getLedPatternId();
+        if (ledPatternId !== this.ledConfig.patternId) {
+          this.setLedConfig({ patternId: ledPatternId });
+        }
+        const ledColor = vm.getLedPrimaryColor();
+        if (ledColor !== this.ledConfig.primaryColor) {
+          this.setLedConfig({ primaryColor: ledColor });
+        }
       }
     );
 
@@ -469,6 +497,11 @@ export class AnimationEngine {
     // The visibility observer won't trigger because prevFireEffect already matches.
     if (this.fireConfig.enabled) {
       this.syncFireOverlay();
+    }
+
+    // Re-create LED overlay if it was enabled before HMR/reload.
+    if (this.ledConfig.enabled) {
+      this.syncLedOverlay();
     }
   }
 
@@ -887,6 +920,11 @@ export class AnimationEngine {
     this.fireRenderer = null;
     this.fireTipTracker = null;
 
+    // Dispose LED overlay
+    this.ledRenderer?.dispose();
+    this.ledRenderer = null;
+    this.ledTipTracker = null;
+
     // Clear trails
     this.trailCapturer?.clearTrails();
 
@@ -1095,6 +1133,7 @@ export class AnimationEngine {
 
     // Initialize fire overlay (lazy: only creates WebGL when first enabled)
     this.fireTipTracker = new FireTipTracker();
+    this.ledTipTracker = new LedTipTracker();
 
     this.renderLoopService = new AnimationRenderLoop();
     this.renderLoopService.initialize({
@@ -1104,6 +1143,7 @@ export class AnimationEngine {
       canvasSize: this.canvasSize,
       frameBudgetMonitor: this.frameBudgetMonitor,
       fireTipTracker: this.fireTipTracker,
+      ledTipTracker: this.ledTipTracker,
     });
   }
 
@@ -1171,6 +1211,54 @@ export class AnimationEngine {
    */
   getFireConfig(): FireOverlayConfig {
     return { ...this.fireConfig };
+  }
+
+  /**
+   * Initialize or destroy the LED overlay based on config.enabled.
+   * Creates the WebGL canvas lazily on first enable, removes on disable.
+   */
+  private syncLedOverlay(): void {
+    if (this.ledConfig.enabled && !this.ledRenderer?.isInitialized()) {
+      if (!this.containerElement) return;
+      this.ledRenderer = new WebGLLedRenderer();
+      const success = this.ledRenderer.initialize(
+        this.containerElement,
+        this.canvasSize,
+        this.canvasSize
+      );
+      if (success) {
+        this.renderLoopService?.updateConfig({ ledRenderer: this.ledRenderer });
+      } else {
+        this.ledRenderer = null;
+      }
+    } else if (!this.ledConfig.enabled && this.ledRenderer) {
+      this.ledRenderer.dispose();
+      this.ledRenderer = null;
+      this.renderLoopService?.updateConfig({ ledRenderer: null });
+      this.ledTipTracker?.reset();
+    }
+  }
+
+  /**
+   * Set LED overlay configuration. Called by visibility state changes.
+   */
+  setLedConfig(config: Partial<LedOverlayConfig>): void {
+    Object.assign(this.ledConfig, config);
+    this.syncLedOverlay();
+
+    // Trigger a render to start/stop LED loop
+    if (this.renderLoopService && this.lastPropsRef) {
+      this.renderLoopService.triggerRender(() =>
+        this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
+      );
+    }
+  }
+
+  /**
+   * Get current LED overlay configuration.
+   */
+  getLedConfig(): LedOverlayConfig {
+    return { ...this.ledConfig };
   }
 
   private initializeTrailCapturer(props: AnimationEngineProps): void {
@@ -1263,6 +1351,7 @@ export class AnimationEngine {
         this.trailCapturer?.updateConfig({ canvasSize: newSize });
         this.renderLoopService?.updateConfig({ canvasSize: newSize });
         this.fireRenderer?.resize(newSize, newSize);
+        this.ledRenderer?.resize(newSize, newSize);
       }
     }
   }
@@ -1438,6 +1527,9 @@ export class AnimationEngine {
     fp.darkMode = this.prevDarkMode;
     // Prop colors for colored flames (default blue/red)
     fp.propColors = DEFAULT_PROP_FLAME_COLORS;
+
+    // LED overlay config
+    fp.ledConfig = this.ledConfig.enabled ? this.ledConfig : null;
 
     return fp;
   }

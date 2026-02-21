@@ -13,6 +13,8 @@ import type { AnimationPathCache } from "$lib/features/compose/services/implemen
 import type { IFrameBudgetMonitor } from "../contracts/IFrameBudgetMonitor";
 import type { IFireOverlayRenderer } from "../contracts/IFireOverlayRenderer";
 import type { IFireTipTracker, FireTipTrackerConfig } from "../contracts/IFireTipTracker";
+import type { ILedOverlayRenderer } from "../contracts/ILedOverlayRenderer";
+import type { ILedTipTracker, LedTipTrackerConfig } from "../contracts/ILedTipTracker";
 import type {
   IAnimationRenderLoop,
   RenderLoopConfig,
@@ -26,6 +28,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private frameBudgetMonitor: IFrameBudgetMonitor | null = null;
   private fireRenderer: IFireOverlayRenderer | null = null;
   private fireTipTracker: IFireTipTracker | null = null;
+  private ledRenderer: ILedOverlayRenderer | null = null;
+  private ledTipTracker: ILedTipTracker | null = null;
   private canvasSize: number = 950;
   private rafId: number | null = null;
   private needsRender: boolean = false;
@@ -55,6 +59,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.frameBudgetMonitor = config.frameBudgetMonitor ?? null;
     this.fireRenderer = config.fireRenderer ?? null;
     this.fireTipTracker = config.fireTipTracker ?? null;
+    this.ledRenderer = config.ledRenderer ?? null;
+    this.ledTipTracker = config.ledTipTracker ?? null;
   }
 
   updateConfig(config: Partial<RenderLoopConfig>): void {
@@ -69,6 +75,10 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.fireRenderer = config.fireRenderer ?? null;
     if (config.fireTipTracker !== undefined)
       this.fireTipTracker = config.fireTipTracker ?? null;
+    if (config.ledRenderer !== undefined)
+      this.ledRenderer = config.ledRenderer ?? null;
+    if (config.ledTipTracker !== undefined)
+      this.ledTipTracker = config.ledTipTracker ?? null;
   }
 
   start(getFrameParams: () => RenderFrameParams): void {
@@ -119,6 +129,10 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.fireRenderer?.dispose();
     this.fireRenderer = null;
     this.fireTipTracker = null;
+    // Clean up LED overlay
+    this.ledRenderer?.dispose();
+    this.ledRenderer = null;
+    this.ledTipTracker = null;
     // Clear reusable arrays to free memory
     this.reusableBlueTrailPoints.length = 0;
     this.reusableRedTrailPoints.length = 0;
@@ -175,12 +189,16 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     const fireActive =
       params.fireConfig?.enabled === true &&
       this.fireRenderer?.isInitialized() === true;
+    const ledActive =
+      params.ledConfig?.enabled === true &&
+      this.ledRenderer?.isInitialized() === true;
     const shouldContinueLoop =
       this.needsRender ||
       trailsNeedContinuousRender ||
       isPlaying ||
       backgroundTransitioning ||
-      fireActive;
+      fireActive ||
+      ledActive;
 
     if (shouldContinueLoop) {
       this.render(params, currentTime);
@@ -331,6 +349,39 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
           propColors: params.propColors,
         },
         params.fireConfig
+      );
+    }
+
+    // LED overlay: render after fire so it composites on top of both Canvas2D and fire
+    if (
+      this.ledRenderer?.isInitialized() &&
+      this.ledTipTracker &&
+      params.ledConfig?.enabled
+    ) {
+      const ledTrackerConfig: LedTipTrackerConfig = {
+        canvasSize: this.canvasSize,
+        bluePropDimensions: props.bluePropDimensions,
+        redPropDimensions: props.redPropDimensions,
+        bluePropType: params.bluePropType,
+        redPropType: params.redPropType,
+      };
+
+      const tips = this.ledTipTracker.update(
+        props.blueProp,
+        props.redProp,
+        ledTrackerConfig,
+        currentTime,
+        params.ledConfig
+      );
+
+      this.ledRenderer.renderLeds(
+        {
+          tips,
+          currentTime,
+          canvasWidth: this.canvasSize,
+          canvasHeight: this.canvasSize,
+        },
+        params.ledConfig
       );
     }
 
