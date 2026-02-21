@@ -22,8 +22,8 @@
       title: "What Is TKA",
       color: "#22c55e",
       content: [
-        "The Kinetic Alphabet brings something novel to flow arts. Previous attempts to document flow arts patterns created valuable knowledge collections. TKA builds on that foundation.",
-        "Flow arts needs a way to describe patterns that expands beyond videos across the Internet. Sheet music tells musicians what notes to play. Actors memorize their lines so they can act. TKA works the same way: it documents the physical movements so you can reliably reproduce them later.",
+        "TKA is a notation system for flow arts. Other people have documented patterns before, and that work matters. TKA tries to take it further.",
+        "Right now, flow arts knowledge lives mostly in videos scattered across the internet. Sheet music tells musicians what to play. Scripts tell actors what to say. TKA does that for prop movement: write it down, read it back, reproduce it later.",
       ],
     },
     {
@@ -32,8 +32,8 @@
       title: "How It Works",
       color: "#14b8a6",
       content: [
-        "Every beat of movement becomes a pictograph showing where your hands are and how they move on a grid. The visual approach means you can read a sequence immediately without memorizing terminology. Positions describe where your hands are relative to each other: across from each other, at the same point, forming a right angle.",
-        "Pictographs also capture motion types, direction, and rotation. The letter system is optional, but useful when you need to reference a single beat in a specific sequence during choreography and rehearsal.",
+        "Each beat of movement gets a pictograph. It shows where your hands are and how they move on a grid. You can read it without memorizing terminology. Positions are simple: hands across from each other, at the same point, or at a right angle.",
+        "Pictographs also capture motion type, direction, and rotation. Letters are optional but handy when you need to talk about a specific beat during rehearsal.",
       ],
     },
     {
@@ -42,9 +42,9 @@
       title: "Why This Matters",
       color: "#ec4899",
       content: [
-        "Flow arts is a very young art form. Many practitioners find it hard to collaborate with others due to physical distance or foundational differences in technique. Especially in the US, where TKA got its start, flow arts is a heavily solo-influenced art form.",
-        "The Kinetic Alphabet does not rely on English terminology, instead embracing symbols and pictures for its communication, making it shareable across languages and distances. It exists in both physical form (pen and paper) and digital form.",
-        "With documented patterns, choreographers can build on each other's work instead of recreating from scratch. You can archive your own material and revisit it months later.",
+        "Flow arts is young. Most spinners learn alone, develop their own vocabulary, and have a hard time collaborating with people who learned differently. That's especially true in the US, where TKA started.",
+        "TKA uses symbols and pictures instead of English terminology, so it works across languages. It works on paper and on screen.",
+        "When patterns are written down, choreographers can share and build on each other's work. You can also archive your own material and actually find it again months later.",
       ],
     },
     {
@@ -53,9 +53,9 @@
       title: "Who It's For",
       color: "#f59e0b",
       content: [
-        "The Kinetic Alphabet is designed for flow arts teachers, choreographers, and spinners. For beginners and veterans alike, TKA bridges theory and performance. It exists to make synchronized group choreography more achievable, and it is also a tool for self-directed progression.",
-        "By tracking your individual parts, it makes choreography accessible even if you struggle with memory and executive function. It is split into multiple levels of increasing complexity and density, so you can learn at your own pace.",
-        "For those who value theatrical performance more than technical patterns, TKA handles the groundwork so you can focus on expression. Once you internalize its framework, it can be a foundation for expressive creativity.",
+        "Teachers, choreographers, spinners. TKA is meant to make synchronized group choreography more realistic, but it's also useful for solo practice.",
+        "It tracks individual parts, which helps if you struggle with memory or executive function. The level system starts simple and gets denser, so you set your own pace.",
+        "If you care more about theatrical performance than technical patterns, that's fine. Learn the notation, then forget about it while you perform.",
       ],
     },
     {
@@ -64,10 +64,9 @@
       title: "The Vision",
       color: "#06b6d4",
       content: [
-        "TKA changes how you teach. Instead of demonstrating repeatedly, show them the pictograph. Share notated sequences with students anywhere in the world. The visual system works across languages.",
-        "Once you internalize the pictographs and vocabulary, you gain building blocks for thinking about movement.",
-        "TKA breaks prop movement into building blocks. Once you understand how pictographs work, you can create your own sequences with them and call them yours. The letter system shows you what you've already browsed and what's still unbrowseed, giving you a fountain of novelty to pull from.",
-        "The goal is greater collaboration and more ambitious live performances. The Kinetic Alphabet has already gained momentum. The movement is growing.",
+        "If you teach, you can hand someone a pictograph instead of demonstrating the same thing over and over. Send notated sequences to students anywhere. No shared language required.",
+        "Once the system clicks, you start thinking in it. Make your own sequences. The letter system shows you what you've explored and what you haven't, so there's always something new to try.",
+        "The long-term goal is better collaboration and more ambitious group performances.",
       ],
     },
   ];
