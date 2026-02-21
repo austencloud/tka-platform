@@ -29,6 +29,20 @@ export const DESTINATIONS: Destination[] = [
 			import("../../../features/realm/RealmDestination.svelte"),
 		enabled: true,
 	},
+	{
+		id: "museum",
+		name: "Museum",
+		description: "Curate your own open-air museum of sequences",
+		icon: "fa-building-columns",
+		color: "#a78bfa",
+		supportsMultiplayer: false,
+		supportsPhysics: true,
+		defaultCameraMode: CameraMode.FIRST_PERSON,
+		category: "social",
+		tags: ["museum", "gallery", "curation", "exhibits"],
+		component: () => import("../../../features/museum/MuseumDestination.svelte"),
+		enabled: true,
+	},
 	// Disabled destinations (kept for future re-enabling)
 	{
 		id: "stage",
