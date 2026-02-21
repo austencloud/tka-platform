@@ -2,16 +2,14 @@
   PropIndicatorButton.svelte
 
   Shows current prop type icon in the button panel.
-  Tap opens PropSelectionSheet for quick prop changes.
+  Tap toggles the prop selection drawer (mounted at CreateModule level).
 -->
 <script lang="ts">
-  import { getSettings, updateSetting } from "$lib/shared/application/state/app-state.svelte";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import PropSelectionSheet from "$lib/shared/settings/components/tabs/prop-type/PropSelectionSheet.svelte";
+  import { propDrawerState } from "$lib/shared/settings/state/prop-drawer-state.svelte";
   import { container } from "$lib/shared/di";
-
-  let sheetOpen = $state(false);
 
   const settings = $derived(getSettings());
   const bluePropType = $derived(settings.bluePropType ?? PropType.STAFF);
@@ -24,15 +22,7 @@
     } catch {
       // Haptic not available
     }
-    sheetOpen = true;
-  }
-
-  function handleSelect(propType: PropType) {
-    updateSetting("bluePropType", propType);
-    if (!settings.catDogMode) {
-      updateSetting("redPropType", propType);
-    }
-    sheetOpen = false;
+    propDrawerState.toggle();
   }
 </script>
 
@@ -50,14 +40,6 @@
     draggable="false"
   />
 </button>
-
-<PropSelectionSheet
-  bind:isOpen={sheetOpen}
-  selectedPropType={bluePropType}
-  color="blue"
-  title="Change Prop"
-  onSelect={handleSelect}
-/>
 
 <style>
   .prop-indicator-button {

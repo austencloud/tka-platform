@@ -34,13 +34,37 @@ import type { Composition } from "../../compose/domain/types";
  * Strips Date objects and replaces with ISO strings for nested data,
  * uses serverTimestamp() for top-level timestamps.
  */
+/**
+ * Recursively strip undefined values from an object.
+ * Firebase rejects documents containing undefined fields.
+ */
+function stripUndefined(obj: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value === undefined) continue;
+    if (value !== null && typeof value === "object" && !Array.isArray(value) && !(value instanceof Date)) {
+      result[key] = stripUndefined(value as Record<string, unknown>);
+    } else if (Array.isArray(value)) {
+      result[key] = value.map((item) =>
+        item !== null && typeof item === "object" && !Array.isArray(item)
+          ? stripUndefined(item as Record<string, unknown>)
+          : item
+      );
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
 function compositionToFirestoreDoc(composition: Composition): Record<string, unknown> {
   const { createdAt, updatedAt, ...rest } = composition;
-  return {
+  const doc = {
     ...rest,
     createdAt: createdAt instanceof Date ? createdAt.toISOString() : createdAt,
     updatedAt: serverTimestamp(),
   };
+  return stripUndefined(doc);
 }
 
 /**

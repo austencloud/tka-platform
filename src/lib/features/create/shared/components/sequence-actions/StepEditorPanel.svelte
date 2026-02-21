@@ -561,8 +561,8 @@
 
   .pictograph-container {
     /* Size based on smaller dimension - fills the space as a square */
-    width: min(90cqw, 90cqh, 450px);
-    height: min(90cqw, 90cqh, 450px);
+    width: min(90cqw, 90cqh);
+    height: min(90cqw, 90cqh);
     aspect-ratio: 1;
     /* Subtle container styling */
     background: rgba(255, 255, 255, 0.02);

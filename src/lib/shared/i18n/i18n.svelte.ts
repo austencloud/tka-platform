@@ -13,6 +13,7 @@
  */
 
 import type { TranslationKey } from "./i18n-types.js";
+import enMessagesStatic from "../../../../messages/en.json";
 
 // Available locales - must match messages/*.json files
 export const locales = [
@@ -55,45 +56,29 @@ type Messages = Record<string, string>;
 const LOCALE_COOKIE_NAME = "PARAGLIDE_LOCALE";
 const LOCALE_COOKIE_MAX_AGE = 34560000; // ~400 days
 
-// English messages - mutable for HMR support
-let enMessages: Messages = {};
+// English messages - loaded synchronously to prevent missing-key warnings on first render
+let enMessages: Messages = enMessagesStatic as Messages;
 
 // Cache for loaded locales
 const localeCache = new Map<Locale, Messages>();
+localeCache.set("en", enMessages);
 
-// Reactive state (initialized after enMessages is ready)
-let currentLocale = $state<Locale>("en");
-let messages = $state<Messages>({});
-let i18nInitialized = false;
+// Reactive state (initialized synchronously with English)
+let currentLocale = $state<Locale>(getInitialLocale());
+let messages = $state<Messages>(enMessages);
+let i18nInitialized = true;
 
 /**
- * Load English messages dynamically (enables HMR)
+ * Reload English messages dynamically (for HMR only)
  */
-async function loadEnglishMessages(): Promise<Messages> {
+async function reloadEnglishMessages(): Promise<void> {
   const module = await import("../../../../messages/en.json");
-  return module.default as Messages;
-}
-
-/**
- * Initialize English messages and reactive state
- * Called once on module load
- */
-async function initializeEnglishMessages(): Promise<void> {
-  enMessages = await loadEnglishMessages();
+  enMessages = module.default as Messages;
   localeCache.set("en", enMessages);
-
-  if (!i18nInitialized) {
-    currentLocale = getInitialLocale();
-    messages = enMessages;
-    i18nInitialized = true;
-  } else if (currentLocale === "en") {
-    // HMR case - update messages if English is active
+  if (currentLocale === "en") {
     messages = enMessages;
   }
 }
-
-// Initial load (async but runs immediately)
-initializeEnglishMessages();
 
 // HMR support - reload messages when any locale JSON changes
 if (import.meta.hot) {
@@ -106,7 +91,7 @@ if (import.meta.hot) {
         console.log(`[i18n] Reloading ${locale} messages...`);
 
         if (locale === "en") {
-          await initializeEnglishMessages();
+          await reloadEnglishMessages();
         } else if (localeCache.has(locale)) {
           // Reload this locale - clear cache and re-fetch
           localeCache.delete(locale);

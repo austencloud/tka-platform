@@ -18,6 +18,7 @@ Bottom row: [Start/End] [Generate]
   import GenerateButtonCard from "./cards/GenerateButtonCard.svelte";
   import LOOPExpandPanel from "./LOOPExpandPanel.svelte";
   import StartEndExpandPanel from "./StartEndExpandPanel.svelte";
+  import StyleExpandPanel from "./StyleExpandPanel.svelte";
   import type { ILOOPParameterProvider } from "../shared/services/contracts/ILOOPParameterProvider";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { UIGenerationConfig } from "../state/generate-config.svelte";
@@ -305,24 +306,6 @@ Bottom row: [Start/End] [Generate]
     closePanel();
   }
 
-  // ============================================================================
-  // STYLE (3-AXIS) HANDLERS
-  // ============================================================================
-  function handlePropsChange(v: "smooth" | "mixed" | "high-reversal") {
-    haptic?.trigger("selection");
-    updateConfig({ constraintPreset: v });
-  }
-
-  function handleHandsChange(v: "smooth" | "mixed" | "high") {
-    haptic?.trigger("selection");
-    updateConfig({ handPathMode: v });
-  }
-
-  function handleDashesChange(v: "no-dash" | "mixed" | "prefer-dash") {
-    haptic?.trigger("selection");
-    updateConfig({ motionTypeFilter: v === "mixed" ? null : v as "no-dash" | "prefer-dash" });
-  }
-
   // Style chip display value
   let styleDisplayValue = $derived.by(() => {
     const presetLabel = config.constraintPreset === "smooth" ? "Smooth"
@@ -442,32 +425,6 @@ Bottom row: [Start/End] [Generate]
     return chips;
   });
 
-  // ============================================================================
-  // STYLE PANEL OPTIONS (3-axis)
-  // ============================================================================
-  const propsOptions = [
-    { value: "smooth", label: "Smooth" },
-    { value: "mixed", label: "Mixed" },
-    { value: "high-reversal", label: "High" },
-  ] as const;
-
-  const handsOptions = [
-    { value: "smooth", label: "Smooth" },
-    { value: "mixed", label: "Mixed" },
-    { value: "high", label: "High" },
-  ] as const;
-
-  const dashOptions = [
-    { value: "no-dash", label: "Low" },
-    { value: "mixed", label: "Mixed" },
-    { value: "prefer-dash", label: "High" },
-  ] as const;
-
-  let currentDashValue = $derived.by(() => {
-    if (config.motionTypeFilter === "no-dash") return "no-dash";
-    if (config.motionTypeFilter === "prefer-dash") return "prefer-dash";
-    return "mixed";
-  });
 
 </script>
 
@@ -645,44 +602,15 @@ Bottom row: [Start/End] [Generate]
           </div>
 
         {:else if activeChipId === "style"}
-          <div class="style-panel">
-            <div class="style-axis">
-              <span class="style-axis-label">Prop Rev.</span>
-              <div class="style-axis-options">
-                {#each propsOptions as opt}
-                  <button
-                    class="option-btn"
-                    class:selected={config.constraintPreset === opt.value}
-                    onclick={() => handlePropsChange(opt.value)}
-                  >{opt.label}</button>
-                {/each}
-              </div>
-            </div>
-            <div class="style-axis">
-              <span class="style-axis-label">Hand Rev.</span>
-              <div class="style-axis-options">
-                {#each handsOptions as opt}
-                  <button
-                    class="option-btn"
-                    class:selected={config.handPathMode === opt.value}
-                    onclick={() => handleHandsChange(opt.value)}
-                  >{opt.label}</button>
-                {/each}
-              </div>
-            </div>
-            <div class="style-axis">
-              <span class="style-axis-label">Dashes</span>
-              <div class="style-axis-options">
-                {#each dashOptions as opt}
-                  <button
-                    class="option-btn"
-                    class:selected={currentDashValue === opt.value}
-                    onclick={() => handleDashesChange(opt.value)}
-                  >{opt.label}</button>
-                {/each}
-              </div>
-            </div>
-          </div>
+          <StyleExpandPanel
+            constraintPreset={config.constraintPreset}
+            handPathMode={config.handPathMode}
+            motionTypeFilter={config.motionTypeFilter}
+            {haptic}
+            onPropsChange={(v) => updateConfig({ constraintPreset: v })}
+            onHandsChange={(v) => updateConfig({ handPathMode: v })}
+            onDashesChange={(v) => updateConfig({ motionTypeFilter: v === "mixed" ? null : v })}
+          />
 
         {:else if activeChipId === "turn-intensity"}
           <div class="option-row">
@@ -994,48 +922,6 @@ Bottom row: [Start/End] [Generate]
     border-color: rgba(255, 255, 255, 0.5);
     color: #fff;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  }
-
-  /* ============================================================ */
-  /* STYLE PANEL (3-axis: Props, Hands, Dashes) */
-  /* ============================================================ */
-
-  .style-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    width: 100%;
-    flex: 1;
-    justify-content: center;
-  }
-
-  .style-axis {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .style-axis-label {
-    font-size: 11px;
-    font-weight: 600;
-    opacity: 0.75;
-    min-width: 58px;
-    text-align: right;
-    flex-shrink: 0;
-  }
-
-  .style-axis-options {
-    display: flex;
-    gap: 4px;
-    flex: 1;
-  }
-
-  .style-axis-options .option-btn {
-    min-height: 40px;
-    font-size: 13px;
-    font-weight: 700;
-    padding: 2px 6px;
-    border-radius: 10px;
   }
 
   /* ============================================================ */

@@ -83,7 +83,7 @@ export const handle: Handle = async ({ event, resolve }) => {
     "Content-Security-Policy",
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' https://accounts.google.com",
+      "script-src 'self' 'unsafe-inline' https://accounts.google.com https://us-assets.i.posthog.com https://*.posthog.com https://*.firebaseio.com",
       "style-src 'self' 'unsafe-inline'",
       "connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.google.com https://firestore.googleapis.com https://firebasestorage.googleapis.com https://us.i.posthog.com https://*.posthog.com wss://*.firebaseio.com",
       "img-src 'self' data: blob: https://firebasestorage.googleapis.com https://storage.googleapis.com https://*.googleusercontent.com",

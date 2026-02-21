@@ -20,6 +20,9 @@
   import HeyTikaListener from "../../voice-control/components/HeyTikaListener.svelte";
   import VoiceControlIndicator from "../../voice-control/components/VoiceControlIndicator.svelte";
   import VoiceCommandHelpOverlay from "../../voice-control/components/VoiceCommandHelpOverlay.svelte";
+  import PropSelectionSheet from "../../settings/components/tabs/prop-type/PropSelectionSheet.svelte";
+  import { propDrawerState } from "../../settings/state/prop-drawer-state.svelte";
+  import { PropType } from "../../pictograph/prop/domain/enums/PropType";
 
   import { getContext, onMount } from "svelte";
   import MainInterface from "../../MainInterface.svelte";
@@ -40,6 +43,7 @@
     getSettings,
     restoreApplicationState,
     updateSettings,
+    updateSetting,
   } from "../state/app-state.svelte";
   import {
     getIsInitialized,
@@ -95,6 +99,17 @@
   // My Feedback Detail drawer state (controlled via global myFeedbackDetailState)
   let feedbackDetailItem = $derived(myFeedbackDetailState.selectedItem);
   let showFeedbackDetail = $derived(myFeedbackDetailState.isOpen);
+
+  // Global prop drawer (P key shortcut + PropIndicatorButton)
+  const propDrawerBluePropType = $derived(settings?.bluePropType ?? PropType.STAFF);
+
+  function handleGlobalPropSelect(propType: PropType) {
+    updateSetting("bluePropType", propType);
+    if (!settings?.catDogMode) {
+      updateSetting("redPropType", propType);
+    }
+    propDrawerState.close();
+  }
 
   // Resolve services from ITI container (synchronous - no async needed)
   $effect(() => {
@@ -489,6 +504,15 @@
 
     <!-- Deferred Attribution Prompt (appears after engagement threshold) -->
     <AttributionPrompt />
+
+    <!-- Global Prop Selection Drawer (P key shortcut) -->
+    <PropSelectionSheet
+      bind:isOpen={propDrawerState.isOpen}
+      selectedPropType={propDrawerBluePropType}
+      color="blue"
+      title="Change Prop"
+      onSelect={handleGlobalPropSelect}
+    />
 
     <!-- Voice Control: opt-in via Settings > Preferences -->
     {#if voiceControlEnabled}

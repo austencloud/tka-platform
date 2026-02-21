@@ -510,6 +510,7 @@
     handlers.handleOpenFilterPanel(panelState);
   }
 
+
   function handleOpenSequenceActions() {
     if (!handlers) return;
     handlers.handleOpenSequenceActions(panelState);

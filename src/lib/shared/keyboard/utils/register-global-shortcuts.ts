@@ -28,7 +28,7 @@ import { toast } from "../../toast/state/toast-state.svelte";
 import { BackgroundType } from "@austencloud/backgrounds";
 import { BACKGROUND_CARD_REGISTRY } from "@austencloud/backgrounds/card";
 import { applyThemeFromColors } from "../../settings/utils/background-theme-calculator";
-import { PropType } from "../../pictograph/prop/domain/enums/PropType";
+import { propDrawerState } from "../../settings/state/prop-drawer-state.svelte";
 
 export function registerGlobalShortcuts(
   service: IKeyboardShortcutManager,
@@ -254,65 +254,20 @@ export function registerGlobalShortcuts(
     },
   });
 
-  // ==================== Prop Type Cycle Shortcuts ====================
+  // ==================== Prop Drawer Toggle ====================
 
-  // Common prop types to cycle through (subset of most used props)
-  const cyclePropTypes: PropType[] = [
-    PropType.STAFF,
-    PropType.CLUB,
-    PropType.FAN,
-    PropType.TRIAD,
-    PropType.MINIHOOP,
-    PropType.BUUGENG,
-    PropType.HAND,
-  ];
-
-  // P - Cycle to next prop type
+  // P - Toggle prop selection drawer
   service.register({
-    id: "global.cycle-prop-type",
-    label: "Cycle Prop Type",
-    description: "Cycle to next prop type (P)",
+    id: "global.toggle-prop-drawer",
+    label: "Toggle Prop Drawer",
+    description: "Open or close the prop selection drawer (P)",
     key: "p",
     modifiers: [],
     context: "global",
     scope: "action",
     priority: "high",
     action: () => {
-      const currentPropType = settingsService.settings.bluePropType || PropType.STAFF;
-      const currentIndex = cyclePropTypes.indexOf(currentPropType as PropType);
-      const nextIndex = (currentIndex + 1) % cyclePropTypes.length;
-      const nextPropType = cyclePropTypes[nextIndex];
-
-      settingsService.updateSettings({
-        bluePropType: nextPropType,
-        redPropType: nextPropType,
-      });
-      toast.info(`Prop: ${nextPropType}`, 1500);
-    },
-  });
-
-  // Shift+P - Cycle to previous prop type
-  service.register({
-    id: "global.cycle-prop-type-reverse",
-    label: "Cycle Prop Type (Reverse)",
-    description: "Cycle to previous prop type (Shift+P)",
-    key: "p",
-    modifiers: ["shift"],
-    context: "global",
-    scope: "action",
-    priority: "high",
-    action: () => {
-      const currentPropType = settingsService.settings.bluePropType || PropType.STAFF;
-      const currentIndex = cyclePropTypes.indexOf(currentPropType as PropType);
-      const prevIndex =
-        currentIndex <= 0 ? cyclePropTypes.length - 1 : currentIndex - 1;
-      const prevPropType = cyclePropTypes[prevIndex];
-
-      settingsService.updateSettings({
-        bluePropType: prevPropType,
-        redPropType: prevPropType,
-      });
-      toast.info(`Prop: ${prevPropType}`, 1500);
+      propDrawerState.toggle();
     },
   });
 

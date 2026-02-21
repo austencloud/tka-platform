@@ -1,18 +1,36 @@
 ---
 description: Work with museum development tracking system
-argument-hint: "[session|capture|create|link|search|<id>]"
+argument-hint: "[session|capture|create|link|search|<id>|list]"
 ---
 
 # Museum Development Tracking System
 
 Track creative worldbuilding decisions, brainstorming sessions, and design evolution with full traceability.
 
+## Departments
+
+All items are tagged by department. These are the 7 departments:
+
+| Department | Tag | Covers |
+|---|---|---|
+| Lore & Narrative | `lore` | The Order, Vessels, time mechanics, Austen's character, world bible |
+| Exhibit Design | `exhibit-design` | Room concepts, floor plan, spatial flow, naming, what's in the museum |
+| Experience Design | `experience-design` | Interaction, pacing, emotional arc, tone, level system, performer count |
+| Art Direction | `art-direction` | Visual philosophy, era aesthetics, lighting, costume design |
+| Audio | `audio` | Sound design, ambient transitions, music, voice acting |
+| Engineering | `engineering` | UE5, animation pipeline, hand IK, MetaHuman, Scribe integration |
+| Production | `production` | MVP scope, milestones, phasing, pre-production |
+
+Cross-cutting: `audit` tag marks items from concept audits (weak threads, concerns, risks).
+System: `meta` tag marks decisions about the tracking system itself.
+
 ## Usage
 
-- `/museum` - List all museum development items
+- `/museum` - **Department briefing** (dispatches 7 agents, synthesizes status)
+- `/museum list` - Raw item list (old behavior)
+- `/museum <dept>` - Focus on a specific department (e.g., `/museum lore`)
 - `/museum session "Title"` - Start a new brainstorming session
 - `/museum capture <sessionId> decision "Content"` - Capture a decision during session
-- `/museum capture <sessionId> question "Content"` - Capture a question during session
 - `/museum <id>` - View item details
 - `/museum <id> verdict accepted "Rationale"` - Set verdict on a decision
 - `/museum link <from> <to> spawned "Note"` - Link two items
@@ -24,12 +42,81 @@ $ARGUMENTS - Command and arguments (see help for full list)
 
 ## Instructions
 
-### For no arguments or "list":
+### For no arguments (Department Briefing):
 
-Show the current museum development tracker status:
+**This is the orchestrator workflow.** Launch 7 parallel Task agents (one per department), collect their briefings, then synthesize.
+
+**Step 1: Dispatch department agents in parallel**
+
+Launch 7 Task agents simultaneously using `subagent_type: "general-purpose"` and `model: "haiku"`. Each agent gets this prompt template (fill in the department name and tag):
+
+```
+You are the {DEPARTMENT_NAME} department manager for The Kinetic Archive museum project.
+
+Your job: Review all items in your department and produce a concise status briefing.
+
+Run this command to get your department's items:
+  node scripts/museum-dev.js search "{TAG}"
+
+Then for any items that look important (audit items, unanswered questions, recent decisions), read their full details:
+  node scripts/museum-dev.js {itemId}
+
+Produce a briefing in EXACTLY this format:
+
+## {DEPARTMENT_NAME}
+**Items:** [total] | **Decided:** [count with verdict] | **Open:** [count without verdict] | **Questions:** [answered/total]
+**Audit concerns:** [count, or "None"]
+
+**Status summary:** [2-3 sentences on current state — what's solid, what's unresolved]
+
+**Top priority:** [The single most important thing to address next in this department, and why]
+
+**Blockers/dependencies:** [What this department is waiting on from other departments, or "None"]
+
+Keep it tight. No filler. The orchestrator will synthesize across all 7 departments.
+```
+
+The 7 departments and their tags:
+1. Lore & Narrative → `lore`
+2. Exhibit Design → `exhibit-design`
+3. Experience Design → `experience-design`
+4. Art Direction → `art-direction`
+5. Audio → `audio`
+6. Engineering → `engineering`
+7. Production → `production`
+
+**Step 2: Synthesize briefings**
+
+After all 7 agents return, present the combined briefing to the user with:
+
+1. **Dashboard** — all 7 department summaries stacked
+2. **Cross-department dependencies** — what's blocking what across departments
+3. **Audit concerns** — any unresolved audit items across all departments
+4. **Recommended focus** — your recommendation for what to work on next, with reasoning based on dependencies and urgency. Consider:
+   - Audit concerns that affect multiple departments (address first)
+   - Departments with unanswered questions that block other departments
+   - Departments with the most open/unverdicted decisions
+   - What the user worked on most recently (check session dates)
+
+**Step 3: Joint decision**
+
+Ask the user what they want to focus on. Present 3-4 options based on the briefing analysis.
+
+### For "list":
+
+Show the raw museum development tracker item list:
 ```bash
 node scripts/museum-dev.js list
 ```
+
+### For a department name (e.g., "lore", "engineering", "exhibit-design"):
+
+Focus on a single department. Run:
+```bash
+node scripts/museum-dev.js search "{department-tag}"
+```
+
+Then read key items and present a detailed department view — not just the list, but analysis of what's decided vs open, what needs attention, and what to work on next within that department.
 
 ### For "session <title>":
 

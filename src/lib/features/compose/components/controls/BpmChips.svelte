@@ -287,8 +287,8 @@
 
   .bpm-chips.compact {
     gap: 6px;
-    overflow: hidden;
     flex-wrap: nowrap;
+    overflow: hidden;
   }
 
   /* Wide layout for full variant */
@@ -489,10 +489,11 @@
 
   /* Custom chip (compact variant) */
   .custom-chip {
+    flex: 0 0 auto;
     font-size: var(--font-size-compact, 12px);
     text-transform: uppercase;
     letter-spacing: 0.2px;
-    padding: 10px 6px;
+    padding: 10px 12px;
     white-space: nowrap;
   }
 
