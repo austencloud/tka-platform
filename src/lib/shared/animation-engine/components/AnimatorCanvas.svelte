@@ -126,10 +126,12 @@ Last audit: 2025-12-27
   let globalDarkMode = $state(visibilityManager.isDarkMode());
   let wordHeaderVisible = $state(visibilityManager.getVisibility("wordHeader"));
   let progressBarVisible = $state(visibilityManager.getVisibility("progressBar"));
+  let fireEffectEnabled = $state(visibilityManager.isFireEffectEnabled());
 
   // Effective dark mode: use preview override if provided, otherwise global
+  // Fire forces dark mode ON because fire on white background looks terrible
   const darkModeEnabled = $derived(
-    previewDarkMode !== null ? previewDarkMode : globalDarkMode
+    previewDarkMode !== null ? previewDarkMode : (globalDarkMode || fireEffectEnabled)
   );
 
   // Effective visibility: combine global settings with hide props (for tunnel mode)
@@ -144,6 +146,7 @@ Last audit: 2025-12-27
     globalDarkMode = visibilityManager.isDarkMode();
     wordHeaderVisible = visibilityManager.getVisibility("wordHeader");
     progressBarVisible = visibilityManager.getVisibility("progressBar");
+    fireEffectEnabled = visibilityManager.isFireEffectEnabled();
   }
 
   visibilityManager.registerObserver(handleVisibilityChange);
@@ -366,6 +369,10 @@ Last audit: 2025-12-27
     width: 100%;
     height: 100%;
     object-fit: contain;
+  }
+
+  .canvas-wrapper[data-dark-mode="true"] :global(canvas) {
+    --canvas-bg: #0a0a0f;
   }
 
   .canvas-wrapper[data-transparent="true"] :global(canvas) {

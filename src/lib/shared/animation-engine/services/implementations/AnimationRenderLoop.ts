@@ -328,6 +328,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
           canvasWidth: this.canvasSize,
           canvasHeight: this.canvasSize,
           darkMode: params.darkMode ?? false,
+          propColors: params.propColors,
         },
         params.fireConfig
       );

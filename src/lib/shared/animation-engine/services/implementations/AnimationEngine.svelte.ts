@@ -70,7 +70,8 @@ import { FireTipTracker } from "./FireTipTracker";
 import { WebGLFireRenderer } from "./fire/WebGLFireRenderer";
 import type { IFireOverlayRenderer } from "../contracts/IFireOverlayRenderer";
 import type { IFireTipTracker } from "../contracts/IFireTipTracker";
-import { DEFAULT_FIRE_CONFIG, type FireOverlayConfig } from "../../domain/types/FireTypes";
+import { DEFAULT_FIRE_CONFIG, DEFAULT_PROP_FLAME_COLORS, type FireOverlayConfig } from "../../domain/types/FireTypes";
+import { getFirePreset } from "../../domain/types/FirePresets";
 
 /**
  * Props passed to engine.update()
@@ -256,6 +257,7 @@ export class AnimationEngine {
   private prevBlueMotionVisible: boolean = true;
   private prevRedMotionVisible: boolean = true;
   private prevFireEffect: boolean = false;
+  private prevFirePreset: string = "fire-spin";
 
   // Additional layer texture loading for tunnel mode (indexed by layer)
   private additionalLayerTexturesLoaded: boolean[] = [];
@@ -293,6 +295,7 @@ export class AnimationEngine {
     redPropType: undefined,
     fireConfig: null,
     darkMode: false,
+    propColors: undefined,
   };
 
   // ============================================================================
@@ -318,6 +321,13 @@ export class AnimationEngine {
     this.prevRedMotionVisible = visibilityManager.getVisibility("redMotion");
     this.prevFireEffect = visibilityManager.isFireEffectEnabled();
     this.fireConfig.enabled = this.prevFireEffect;
+    const modeToBlend: Record<string, number> = { natural: 0, tinted: 0.5, colored: 1.0 };
+    this.fireConfig.colorBlend = modeToBlend[visibilityManager.getFlameColorMode()] ?? 0;
+    this.prevFirePreset = visibilityManager.getFirePreset();
+    const initialPreset = getFirePreset(this.prevFirePreset);
+    if (initialPreset) {
+      this.fireConfig.physicsPreset = initialPreset.params;
+    }
     this.state.visibilityState = {
       grid: visibilityManager.getGridMode() !== "none",
       stepNumbers: visibilityManager.getVisibility("stepNumbers"),
@@ -341,7 +351,9 @@ export class AnimationEngine {
         if (state.darkMode !== this.prevDarkMode && !this.previewDarkModeActive) {
           this.prevDarkMode = state.darkMode;
           // Note: setDarkMode on renderer controls the "Dark Mode" effect (dark bg, inverted grid)
-          this.animationRenderer?.setDarkMode(state.darkMode);
+          // When fire is enabled, always keep dark mode ON (fire on white bg looks terrible)
+          const effectiveDarkMode = this.fireConfig.enabled ? true : state.darkMode;
+          this.animationRenderer?.setDarkMode(effectiveDarkMode);
 
           // CRITICAL: Trigger immediate render so dark mode takes effect visually
           // Don't wait for prop textures - render with existing textures first
@@ -409,10 +421,28 @@ export class AnimationEngine {
         }
 
         // Sync fire effect toggle from visibility manager
-        const fireEnabled = getAnimationVisibilityManager().isFireEffectEnabled();
+        const vm = getAnimationVisibilityManager();
+        const fireEnabled = vm.isFireEffectEnabled();
         if (fireEnabled !== this.prevFireEffect) {
           this.prevFireEffect = fireEnabled;
           this.setFireConfig({ enabled: fireEnabled });
+        }
+
+        // Sync flame color mode
+        const flameModeToBlend: Record<string, number> = { natural: 0, tinted: 0.5, colored: 1.0 };
+        const colorBlend = flameModeToBlend[vm.getFlameColorMode()] ?? 0;
+        if (colorBlend !== this.fireConfig.colorBlend) {
+          this.setFireConfig({ colorBlend });
+        }
+
+        // Sync fire physics preset
+        const firePresetId = vm.getFirePreset();
+        if (firePresetId !== this.prevFirePreset) {
+          this.prevFirePreset = firePresetId;
+          const preset = getFirePreset(firePresetId);
+          if (preset) {
+            this.setFireConfig({ physicsPreset: preset.params });
+          }
         }
       }
     );
@@ -907,7 +937,9 @@ export class AnimationEngine {
         onPixiRendererReady: (renderer) => {
           this.animationRenderer = renderer;
           // Set initial Dark Mode on renderer (no animation for initial sync)
-          renderer.setDarkMode(this.prevDarkMode, false);
+          // Force dark mode when fire is enabled (fire on white bg looks terrible)
+          const initialDarkMode = this.fireConfig.enabled ? true : this.prevDarkMode;
+          renderer.setDarkMode(initialDarkMode, false);
         },
         onInitialized: (initialized) => {
           this.state.isInitialized = initialized;
@@ -1097,12 +1129,25 @@ export class AnimationEngine {
    * Set fire overlay configuration. Called by visibility state changes.
    */
   setFireConfig(config: Partial<FireOverlayConfig>): void {
+    const wasEnabled = this.fireConfig.enabled;
     Object.assign(this.fireConfig, config);
     // Forward quality setting to renderer if present
     if (config.quality !== undefined && this.fireRenderer) {
       this.fireRenderer.setQuality(config.quality);
     }
     this.syncFireOverlay();
+
+    // Force dark mode when fire is enabled (fire on white background looks terrible)
+    if (config.enabled !== undefined && config.enabled !== wasEnabled) {
+      if (config.enabled && !this.previewDarkModeActive) {
+        // Fire turning ON: force renderer to dark mode
+        this.animationRenderer?.setDarkMode(true);
+      } else if (!config.enabled && !this.previewDarkModeActive) {
+        // Fire turning OFF: restore actual dark mode setting
+        this.animationRenderer?.setDarkMode(this.prevDarkMode);
+      }
+    }
+
     // Trigger a render to start/stop fire loop
     if (this.renderLoopService && this.lastPropsRef) {
       this.renderLoopService.triggerRender(() =>
@@ -1381,6 +1426,8 @@ export class AnimationEngine {
     // Fire overlay config
     fp.fireConfig = this.fireConfig.enabled ? this.fireConfig : null;
     fp.darkMode = this.prevDarkMode;
+    // Prop colors for colored flames (default blue/red)
+    fp.propColors = DEFAULT_PROP_FLAME_COLORS;
 
     return fp;
   }

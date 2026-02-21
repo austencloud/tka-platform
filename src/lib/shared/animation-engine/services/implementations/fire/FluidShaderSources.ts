@@ -348,15 +348,19 @@ out vec4 fragColor;
 
 uniform sampler2D u_temperature;
 uniform sampler2D u_fuel;
+uniform sampler2D u_colorField;
 uniform float u_displayIntensity;
+uniform float u_colorBlend; // 0.0 = natural, 0.5 = tinted, 1.0 = colored
 
 // Wick core rendering uniforms (up to 16 tips for multi-point props like fans)
 uniform vec2 u_tipPositions[16];
 uniform float u_tipSpeeds[16];
 uniform float u_tipFlameScales[16];
+uniform vec3 u_tipColors[16];
 uniform int u_tipCount;
-uniform vec2 u_aspectCorrect;  // (1.0, width/height) to keep cores circular
+uniform vec2 u_aspectCorrect;
 
+// Standard blackbody for natural fire
 vec3 blackbodyColor(float t) {
   vec3 color;
   if (t < 0.4) {
@@ -377,6 +381,46 @@ vec3 blackbodyColor(float t) {
   return color;
 }
 
+// Fully colored blackbody: temperature ramp entirely in prop color.
+// Same fire structure, different palette. Hot core stays white.
+vec3 coloredBlackbody(float t, vec3 propColor) {
+  vec3 darkBase = propColor * 0.15;
+  vec3 brightMid = propColor;
+  vec3 hotCore = mix(propColor, vec3(1.0), 0.7);
+
+  vec3 color;
+  if (t < 0.4) {
+    color = darkBase * (t / 0.4);
+  } else if (t < 1.0) {
+    float f = (t - 0.4) / 0.6;
+    color = mix(darkBase, brightMid * 0.6, f);
+  } else if (t < 2.0) {
+    float f = (t - 1.0);
+    color = mix(brightMid * 0.6, brightMid, f);
+  } else if (t < 3.5) {
+    float f = (t - 2.0) / 1.5;
+    color = mix(brightMid, hotCore, f);
+  } else {
+    float f = clamp((t - 3.5) / 2.0, 0.0, 1.0);
+    color = mix(hotCore, vec3(1.0, 0.98, 0.95), f);
+  }
+  return color;
+}
+
+// Tinted fire: prop-colored base with a warm-white brightness boost at the core.
+// The fire is clearly blue/red throughout. The hottest core gets a subtle warm
+// brightness lift (not orange — neutral warm white) so it feels like real fire.
+// Difference from "colored": colored has a cold white core. Tinted has a warm one.
+vec3 tintedBlackbody(float t, vec3 propColor) {
+  vec3 colored = coloredBlackbody(t, propColor);
+
+  // At the very hottest core, shift toward warm white instead of cold white
+  // This is the only visual difference from colored mode — subtle but real
+  float coreWarmth = smoothstep(3.0, 5.0, t) * 0.25;
+  vec3 warmWhite = vec3(1.0, 0.92, 0.78); // warm white, NOT orange
+  return mix(colored, warmWhite, coreWarmth);
+}
+
 void main() {
   float temp = texture(u_temperature, v_uv).x;
   float fuel = texture(u_fuel, v_uv).x;
@@ -384,23 +428,37 @@ void main() {
   vec3 color = vec3(0.0);
   float alpha = 0.0;
 
-  // --- Layer 1: Fluid sim trail (the wake behind each wick) ---
-  // Threshold at 0.1 cuts the dim reddish "smoke" while preserving bright fire.
+  // --- Layer 1: Fluid sim trail ---
   float fireIntensity = temp + fuel * 0.5;
   fireIntensity *= u_displayIntensity;
 
   if (fireIntensity > 0.1) {
-    vec3 trailColor = blackbodyColor(fireIntensity);
+    vec3 trailColor;
+    if (u_colorBlend > 0.01) {
+      vec3 fieldColor = texture(u_colorField, v_uv).rgb;
+      float maxC = max(fieldColor.r, max(fieldColor.g, fieldColor.b));
+      if (maxC > 0.01) {
+        fieldColor /= maxC;
+      }
+      if (u_colorBlend > 0.75) {
+        // Colored mode: fully prop-colored fire
+        vec3 colored = coloredBlackbody(fireIntensity, fieldColor);
+        vec3 natural = blackbodyColor(fireIntensity);
+        float t = (u_colorBlend - 0.75) / 0.25; // 0..1 ramp over 0.75..1.0
+        trailColor = mix(natural, colored, t);
+      } else {
+        // Tinted mode: chemically-colored fire (natural base, colored edges)
+        trailColor = tintedBlackbody(fireIntensity, fieldColor);
+      }
+    } else {
+      trailColor = blackbodyColor(fireIntensity);
+    }
     float trailAlpha = smoothstep(0.1, 0.8, fireIntensity);
     color = trailColor * trailAlpha;
     alpha = trailAlpha;
   }
 
-  // --- Layer 2: Wick cores (the actual burning wick) ---
-  // Always visible, constant brightness. A real wick stays lit
-  // regardless of spin speed — the brightness doesn't change.
-  // flameScale from PropFirePoints controls the wick core size per-tip:
-  // fan tines (0.6) get smaller cores, staff ends (1.0) get full-size cores.
+  // --- Layer 2: Wick cores ---
   for (int i = 0; i < 16; i++) {
     if (i >= u_tipCount) break;
 
@@ -408,23 +466,31 @@ void main() {
     vec2 delta = (v_uv - u_tipPositions[i]) * u_aspectCorrect;
     float dist2 = dot(delta, delta);
 
-    // Inner core: white-hot center of the wick (scaled by flameScale)
+    // Wick tip color: blend from natural orange toward prop color
+    // Tinted mode (0.01-0.75): subtle prop color influence on outer glow
+    // Colored mode (0.75-1.0): full prop color on body and glow
+    float wickBlend = u_colorBlend > 0.75 ? (u_colorBlend - 0.75) / 0.25 : u_colorBlend * 0.5;
+    vec3 tipColor = mix(vec3(1.0, 0.65, 0.12), u_tipColors[i], wickBlend);
+
+    // Inner core: white-hot center (always white regardless of mode)
     float coreR = 0.006 * fs;
     float coreR2 = coreR * coreR;
     float core = exp(-dist2 / coreR2);
     vec3 coreColor = vec3(1.0, 0.95, 0.85) * core * 4.0 * u_displayIntensity;
 
-    // Middle flame body: bright orange envelope
+    // Middle flame body
     float bodyR = 0.018 * fs;
     float bodyR2 = bodyR * bodyR;
     float body = exp(-dist2 / bodyR2);
-    vec3 bodyColor = vec3(1.0, 0.65, 0.12) * body * 2.5 * u_displayIntensity;
+    vec3 bodyColor = tipColor * body * 2.5 * u_displayIntensity;
 
-    // Outer glow: soft red-orange halo
+    // Outer glow: tinted mode shows most color here (like chemical flames)
     float glowR = 0.035 * fs;
     float glowR2 = glowR * glowR;
     float glow = exp(-dist2 / glowR2);
-    vec3 glowColor = vec3(0.9, 0.25, 0.02) * glow * 1.2 * u_displayIntensity;
+    float glowBlend = u_colorBlend > 0.75 ? (u_colorBlend - 0.75) / 0.25 : u_colorBlend * 0.7;
+    vec3 glowTint = mix(vec3(0.9, 0.25, 0.02), u_tipColors[i] * 0.4, glowBlend);
+    vec3 glowColor = glowTint * glow * 1.2 * u_displayIntensity;
 
     color += coreColor + bodyColor + glowColor;
     alpha = max(alpha, max(core, max(body * 0.9, glow * 0.5)));

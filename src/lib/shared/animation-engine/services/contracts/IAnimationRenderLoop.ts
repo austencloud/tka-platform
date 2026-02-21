@@ -13,7 +13,7 @@ import type { AnimationPathCache } from "$lib/features/compose/services/implemen
 import type { IFrameBudgetMonitor } from "./IFrameBudgetMonitor";
 import type { IFireOverlayRenderer } from "./IFireOverlayRenderer";
 import type { IFireTipTracker } from "./IFireTipTracker";
-import type { FireOverlayConfig } from "../../domain/types/FireTypes";
+import type { FireOverlayConfig, PropFlameColor } from "../../domain/types/FireTypes";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
@@ -89,6 +89,8 @@ export interface RenderFrameParams {
   fireConfig?: FireOverlayConfig | null;
   /** Whether dark mode is active (used by fire renderer for intensity boost) */
   darkMode?: boolean;
+  /** Prop colors for colored flames: [leftPropColor, rightPropColor] */
+  propColors?: [PropFlameColor, PropFlameColor];
 }
 
 /**

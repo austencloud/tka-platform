@@ -7,6 +7,15 @@
  */
 
 /**
+ * RGB color for a prop, normalized to [0, 1] for shader consumption.
+ */
+export interface PropFlameColor {
+  r: number;
+  g: number;
+  b: number;
+}
+
+/**
  * Per-tip data computed each frame by FireTipTracker.
  * Positions are in viewbox coordinates (e.g. 950x950).
  */
@@ -42,6 +51,8 @@ export interface FireFrameInput {
   canvasHeight: number;
   /** Whether dark mode is active (affects intensity) */
   darkMode: boolean;
+  /** Prop colors for colored flames: [leftPropColor, rightPropColor] */
+  propColors?: [PropFlameColor, PropFlameColor];
 }
 
 /**
@@ -98,26 +109,28 @@ export interface FireOverlayConfig {
    *   4 = 256x256 grid (high, default)
    */
   quality: number;
+  /** Flame color blend: 0.0 = natural, 0.5 = tinted, 1.0 = fully colored */
+  colorBlend?: number;
   /** Optional physics preset to apply. When set, overrides the renderer's base physics. */
   physicsPreset?: FirePhysicsParams;
 }
 
-/** Default physics parameters — balanced starting point */
+/** Default physics parameters — tuned for fire spinning (shorter trails, wick-focused) */
 export const DEFAULT_PHYSICS: FirePhysicsParams = {
-  splatRadius: 0.012,
-  fuelAmount: 0.6,
-  velocityInjectScale: 0.0005,
-  velocityDissipation: 0.96,
-  temperatureDissipation: 0.95,
-  fuelDissipation: 0.94,
-  vorticityStrength: 5.0,
-  buoyancyStrength: 50,
+  splatRadius: 0.011,
+  fuelAmount: 0.55,
+  velocityInjectScale: 0.0006,
+  velocityDissipation: 0.955,
+  temperatureDissipation: 0.945,
+  fuelDissipation: 0.935,
+  vorticityStrength: 3.5,
+  buoyancyStrength: 40,
   burnRate: 3.5,
   fuelEfficiency: 2.5,
-  coolingRate: 3.0,
+  coolingRate: 3.5,
   pressureDissipation: 0.8,
-  temperatureInjection: 1.2,
-  upwardBias: 3.0,
+  temperatureInjection: 1.1,
+  upwardBias: 2.0,
 };
 
 /** Default fire overlay config */
@@ -128,3 +141,19 @@ export const DEFAULT_FIRE_CONFIG: FireOverlayConfig = {
   velocityReactive: true,
   quality: 4,
 };
+
+/**
+ * Convert a CSS hex color (#rrggbb) to normalized [0,1] RGB for shader use.
+ */
+export function hexToFlameColor(hex: string): PropFlameColor {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  return { r, g, b };
+}
+
+/** Default prop flame colors (blue/red) */
+export const DEFAULT_PROP_FLAME_COLORS: [PropFlameColor, PropFlameColor] = [
+  hexToFlameColor("#3b82f6"), // blue (left prop)
+  hexToFlameColor("#ef4444"), // red (right prop)
+];

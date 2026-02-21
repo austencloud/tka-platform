@@ -108,6 +108,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
   private pressure: DoubleFBO | null = null;
   private temperature: DoubleFBO | null = null;
   private fuel: DoubleFBO | null = null;
+  private colorField: DoubleFBO | null = null;
 
   // Single-buffered fields (no ping-pong needed)
   private divergenceFBO: FBOAttachment | null = null;
@@ -121,6 +122,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
   private displayTipUVs: Float32Array = new Float32Array(32);  // 16 tips * 2 (x,y)
   private displayTipSpeeds: Float32Array = new Float32Array(16);
   private displayTipFlameScales: Float32Array = new Float32Array(16);
+  private displayTipColors: Float32Array = new Float32Array(48); // 16 tips * 3 (r,g,b)
   private displayTipCount = 0;
   private displayCanvasWidth = 1;
   private displayCanvasHeight = 1;
@@ -286,6 +288,14 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
 
       // Temperature injection: the wick is always hot
       this.splat(this.temperature!, uvX, uvY, p.temperatureInjection * config.intensity * fs, 0, 0);
+
+      // Color injection: splat prop color into color field
+      if ((config.colorBlend ?? 0) > 0 && input.propColors && this.colorField) {
+        const propColor = input.propColors[tip.propIndex];
+        if (propColor) {
+          this.splat(this.colorField, uvX, uvY, propColor.r, propColor.g, propColor.b);
+        }
+      }
     }
 
     // Restore base splat radius after per-tip overrides
@@ -298,6 +308,14 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
       this.displayTipUVs[ti * 2 + 1] = 1.0 - tip.y / input.canvasHeight;
       this.displayTipSpeeds[ti] = tip.speed;
       this.displayTipFlameScales[ti] = tip.flameScale;
+      if (input.propColors) {
+        const color = input.propColors[tip.propIndex];
+        if (color) {
+          this.displayTipColors[ti * 3] = color.r;
+          this.displayTipColors[ti * 3 + 1] = color.g;
+          this.displayTipColors[ti * 3 + 2] = color.b;
+        }
+      }
     }
 
     // 2. Advect velocity through itself
@@ -324,6 +342,9 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     // 7. Advect temperature + fuel
     this.advect(this.temperature!, this.temperature!.read, p.temperatureDissipation, dt, texelSize);
     this.advect(this.fuel!, this.fuel!.read, p.fuelDissipation, dt, texelSize);
+    if (this.colorField && (config.colorBlend ?? 0) > 0) {
+      this.advect(this.colorField, this.colorField.read, p.fuelDissipation, dt, texelSize);
+    }
   }
 
   // ============================================================
@@ -568,6 +589,18 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     gl.bindTexture(gl.TEXTURE_2D, this.fuel!.read.texture);
     gl.uniform1i(prog.uniforms.get("u_fuel")!, 1);
 
+    // Color field texture
+    gl.activeTexture(gl.TEXTURE2);
+    if (this.colorField && (config.colorBlend ?? 0) > 0) {
+      gl.bindTexture(gl.TEXTURE_2D, this.colorField.read.texture);
+    } else {
+      gl.bindTexture(gl.TEXTURE_2D, this.fuel!.read.texture);
+    }
+    gl.uniform1i(prog.uniforms.get("u_colorField")!, 2);
+
+    // Color blend factor (0.0 = natural, 0.5 = tinted, 1.0 = fully colored)
+    gl.uniform1f(prog.uniforms.get("u_colorBlend")!, config.colorBlend ?? 0);
+
     gl.uniform1f(prog.uniforms.get("u_displayIntensity")!, config.intensity);
 
     // Wick core positions (always-bright flame at each tip)
@@ -580,6 +613,15 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
       if (posLoc) gl.uniform2f(posLoc, this.displayTipUVs[i * 2]!, this.displayTipUVs[i * 2 + 1]!);
       if (speedLoc) gl.uniform1f(speedLoc, this.displayTipSpeeds[i]!);
       if (scaleLoc) gl.uniform1f(scaleLoc, this.displayTipFlameScales[i]!);
+      const colorLoc = gl.getUniformLocation(prog.program, `u_tipColors[${i}]`);
+      if (colorLoc) {
+        gl.uniform3f(
+          colorLoc,
+          this.displayTipColors[i * 3] ?? 1.0,
+          this.displayTipColors[i * 3 + 1] ?? 0.65,
+          this.displayTipColors[i * 3 + 2] ?? 0.12
+        );
+      }
     }
 
     // Aspect correction so wick cores render as circles, not ellipses
@@ -646,6 +688,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.fuel = this.createDoubleFBO(w, h);
     this.divergenceFBO = this.createSingleFBO(w, h);
     this.curlFBO = this.createSingleFBO(w, h);
+    this.colorField = this.createDoubleFBO(w, h);
   }
 
   private destroySimulationBuffers(): void {
@@ -670,6 +713,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     destroyDouble(this.pressure);
     destroyDouble(this.temperature);
     destroyDouble(this.fuel);
+    destroyDouble(this.colorField);
     destroySingle(this.divergenceFBO);
     destroySingle(this.curlFBO);
 
@@ -677,6 +721,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.pressure = null;
     this.temperature = null;
     this.fuel = null;
+    this.colorField = null;
     this.divergenceFBO = null;
     this.curlFBO = null;
   }
@@ -697,8 +742,8 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.gradientSubtractProgram = this.buildProgram(GRADIENT_SUBTRACT_FRAG, ["u_velocity", "u_pressure", "u_texelSize"]);
     this.clearProgram = this.buildProgram(CLEAR_FRAG, ["u_clearValue"]);
     this.displayProgram = this.buildProgram(DISPLAY_FRAG, [
-      "u_temperature", "u_fuel", "u_displayIntensity",
-      "u_tipCount", "u_aspectCorrect",
+      "u_temperature", "u_fuel", "u_colorField", "u_displayIntensity",
+      "u_tipCount", "u_aspectCorrect", "u_colorBlend",
     ]);
 
     const all = [
