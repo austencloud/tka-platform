@@ -16,7 +16,7 @@ import {
 import {
   getDefaultPositions,
   MAX_PERFORMERS,
-} from "../utils/performer-positions";
+} from "../domain/constants/performer-positions";
 import type { IPropStateInterpolator } from "../services/contracts/IPropStateInterpolator";
 import type { ISequenceConverter } from "../services/contracts/ISequenceConverter";
 import type { AvatarId } from "../config/avatar-definitions";

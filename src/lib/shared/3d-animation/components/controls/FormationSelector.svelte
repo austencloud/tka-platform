@@ -34,6 +34,8 @@
       class="formation-btn"
       class:active={value === preset.id}
       onclick={() => onchange(preset.id)}
+      aria-label={preset.description}
+      aria-pressed={value === preset.id}
       title={preset.description}
       disabled={isTransitioning}
     >

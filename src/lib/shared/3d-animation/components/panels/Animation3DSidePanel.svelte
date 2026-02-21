@@ -65,7 +65,7 @@
 <aside class="side-panel" class:collapsed>
   <!-- Load Sequence Button -->
   <div class="load-section">
-    <button class="load-btn" onclick={onLoadSequence}>
+    <button class="load-btn" onclick={onLoadSequence} aria-label="Load sequence">
       <i class="fas fa-folder-open" aria-hidden="true"></i>
       {t("action_load")}
     </button>
@@ -96,6 +96,7 @@
           expandedSections = next;
         }}
         aria-expanded={expandedSections.has("avatar")}
+        aria-label={expandedSections.has("avatar") ? "Collapse avatar settings" : "Expand avatar settings"}
       >
         <i class="fas fa-person" aria-hidden="true"></i>
         <span>{t("avatar_settings")}</span>
@@ -129,6 +130,7 @@
           expandedSections = next;
         }}
         aria-expanded={expandedSections.has("proportions")}
+        aria-label={expandedSections.has("proportions") ? "Collapse proportions" : "Expand proportions"}
       >
         <i class="fas fa-ruler-vertical" aria-hidden="true"></i>
         <span>{t("avatar_proportions")}</span>
@@ -157,6 +159,7 @@
           expandedSections = next;
         }}
         aria-expanded={expandedSections.has("environment")}
+        aria-label={expandedSections.has("environment") ? "Collapse environment settings" : "Expand environment settings"}
       >
         <i class="fas fa-mountain-sun" aria-hidden="true"></i>
         <span>{t("viewer3d_environment")}</span>
@@ -183,6 +186,7 @@
           expandedSections = next;
         }}
         aria-expanded={expandedSections.has("effects")}
+        aria-label={expandedSections.has("effects") ? "Collapse effects settings" : "Expand effects settings"}
       >
         <i class="fas fa-sparkles" aria-hidden="true"></i>
         <span>{t("viewer3d_effects")}</span>
@@ -209,6 +213,7 @@
           expandedSections = next;
         }}
         aria-expanded={expandedSections.has("grid")}
+        aria-label={expandedSections.has("grid") ? "Collapse grid settings" : "Expand grid settings"}
       >
         <i class="fas fa-border-all" aria-hidden="true"></i>
         <span>{t("viewer3d_grid")}</span>

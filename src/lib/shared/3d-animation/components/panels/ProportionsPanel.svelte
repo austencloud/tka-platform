@@ -66,6 +66,8 @@
             class="preset-btn"
             class:active={Math.abs(userProportionsState.heightCm - cm) < 1}
             onclick={() => selectHeightPreset(cm)}
+            aria-label={`Height preset: ${label}`}
+            aria-pressed={Math.abs(userProportionsState.heightCm - cm) < 1}
           >
             {label}
           </button>
@@ -73,6 +75,7 @@
         <button
           class="preset-btn custom-btn"
           onclick={() => (useCustomHeight = true)}
+          aria-label="Enter custom height"
         >
           Custom
         </button>
@@ -98,8 +101,8 @@
           <span>in</span>
         </div>
         <div class="btn-row">
-          <button class="apply-btn" onclick={applyCustomHeight}>Apply</button>
-          <button class="cancel-btn" onclick={() => (useCustomHeight = false)}
+          <button class="apply-btn" onclick={applyCustomHeight} aria-label="Apply custom height">Apply</button>
+          <button class="cancel-btn" onclick={() => (useCustomHeight = false)} aria-label="Cancel custom height"
             >Cancel</button
           >
         </div>
@@ -118,6 +121,8 @@
             class="preset-btn"
             class:active={Math.abs(userProportionsState.staffLengthCm - cm) < 1}
             onclick={() => selectStaffPreset(cm)}
+            aria-label={`Staff length preset: ${label}`}
+            aria-pressed={Math.abs(userProportionsState.staffLengthCm - cm) < 1}
           >
             {label}
           </button>
@@ -125,6 +130,7 @@
         <button
           class="preset-btn custom-btn"
           onclick={() => (useCustomStaff = true)}
+          aria-label="Enter custom staff length"
         >
           Custom
         </button>
@@ -142,8 +148,8 @@
           <span>inches</span>
         </div>
         <div class="btn-row">
-          <button class="apply-btn" onclick={applyCustomStaff}>Apply</button>
-          <button class="cancel-btn" onclick={() => (useCustomStaff = false)}
+          <button class="apply-btn" onclick={applyCustomStaff} aria-label="Apply custom staff length">Apply</button>
+          <button class="cancel-btn" onclick={() => (useCustomStaff = false)} aria-label="Cancel custom staff length"
             >Cancel</button
           >
         </div>

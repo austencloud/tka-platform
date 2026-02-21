@@ -27,6 +27,7 @@
     class:active={syncState.isSyncEnabled}
     onclick={() => syncState.toggleSync()}
     aria-pressed={syncState.isSyncEnabled}
+    aria-label={syncState.isSyncEnabled ? "Disable avatar sync" : "Enable avatar sync"}
   >
     <i class="fas fa-link" aria-hidden="true"></i>
     <span>{t('avatar_sync')}</span>
@@ -81,7 +82,7 @@
       </div>
 
       <!-- Swap master button -->
-      <button class="swap-btn" onclick={() => syncState.swapMaster()}>
+      <button class="swap-btn" onclick={() => syncState.swapMaster()} aria-label="Swap master avatar">
         <i class="fas fa-exchange-alt" aria-hidden="true"></i>
         <span>{t('avatar_swap_master')}</span>
       </button>

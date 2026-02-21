@@ -126,8 +126,8 @@
   }
 
   .main-btn.active {
-    background: rgba(100, 180, 255, 0.3);
-    color: #64b5f6;
+    background: color-mix(in srgb, var(--theme-accent) 30%, transparent);
+    color: var(--theme-accent);
   }
 
   .settings-btn {
@@ -138,8 +138,8 @@
   }
 
   .settings-btn.popover-open {
-    background: rgba(100, 180, 255, 0.2);
-    color: #64b5f6;
+    background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
+    color: var(--theme-accent);
   }
 
   .popover {
@@ -150,7 +150,7 @@
     background: var(--theme-panel-bg);
     border: 1px solid var(--theme-stroke, var(--theme-stroke));
     border-radius: 16px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 8px 32px var(--theme-shadow-strong, rgba(0, 0, 0, 0.4));
     z-index: 100;
     animation: popoverIn var(--duration-fast) ease-out;
   }

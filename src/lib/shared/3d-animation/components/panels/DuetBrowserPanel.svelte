@@ -121,6 +121,8 @@
       class="toggle-btn"
       class:active={viewMode === "sequences"}
       onclick={() => handleViewModeChange("sequences")}
+      aria-label="View sequences"
+      aria-pressed={viewMode === "sequences"}
     >
       <i class="fas fa-film" aria-hidden="true"></i>
       Sequences
@@ -129,6 +131,8 @@
       class="toggle-btn"
       class:active={viewMode === "duets"}
       onclick={() => handleViewModeChange("duets")}
+      aria-label="View duets"
+      aria-pressed={viewMode === "duets"}
     >
       <i class="fas fa-users" aria-hidden="true"></i>
       Duets
@@ -137,7 +141,7 @@
 
   <!-- Create Duet Button -->
   {#if viewMode === "duets"}
-    <button class="create-btn" onclick={onCreateDuet}>
+    <button class="create-btn" onclick={onCreateDuet} aria-label="Create new duet">
       <i class="fas fa-plus" aria-hidden="true"></i>
       {t('duet_create')}
     </button>
@@ -154,7 +158,7 @@
       <div class="error">
         <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
         <span>{error}</span>
-        <button class="retry-btn" onclick={loadDuets}>Retry</button>
+        <button class="retry-btn" onclick={loadDuets} aria-label="Retry loading duets">Retry</button>
       </div>
     {:else if viewMode === "duets"}
       {#if duets.length === 0}
@@ -179,6 +183,7 @@
                 <button
                   class="delete-btn"
                   onclick={(e) => handleDeleteDuet(duet, e)}
+                  aria-label={`Delete duet: ${duet.name}`}
                   title="Delete duet"
                 >
                   <i class="fas fa-trash" aria-hidden="true"></i>
@@ -268,7 +273,7 @@
 
   .toggle-btn.active {
     background: var(--theme-accent, #64b5f6);
-    color: #000;
+    color: var(--theme-on-accent, #000);
   }
 
   /* Create Button */
@@ -289,7 +294,7 @@
   }
 
   .create-btn:hover {
-    background: #8b5cf6;
+    background: var(--theme-accent, #8b5cf6);
     transform: translateY(-1px);
   }
 
@@ -401,7 +406,7 @@
 
   .delete-btn:hover {
     color: var(--semantic-error, #ef4444);
-    background: rgba(239, 68, 68, 0.1);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
   }
 
   .duet-info {
@@ -435,12 +440,12 @@
   }
 
   .duet-meta i {
-    font-size: 0.625rem;
+    font-size: var(--font-size-compact, 12px);
     opacity: 0.7;
   }
 
   .offset.synced {
-    color: #4caf50;
+    color: var(--semantic-success, #4caf50);
   }
 
   .date {

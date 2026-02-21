@@ -55,6 +55,7 @@
       onclick={toggleExpand}
       aria-expanded={expanded}
       aria-controls="effect-content-{label.toLowerCase().replace(/\s+/g, '-')}"
+      aria-label={expanded ? `Collapse ${label} settings` : `Expand ${label} settings`}
     >
       <span class="effect-indicator" class:enabled>
         <i class={icon} aria-hidden="true"></i>
@@ -138,7 +139,7 @@
     border-radius: 50%;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    font-size: 0.625rem;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     transition: all var(--duration-normal) ease;
   }
@@ -158,7 +159,7 @@
   }
 
   .expand-icon {
-    font-size: 0.625rem;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     transition: transform var(--duration-normal) ease;
   }
@@ -190,7 +191,7 @@
   .toggle-slider {
     position: absolute;
     inset: 0;
-    background: rgba(120, 120, 128, 0.32);
+    background: var(--theme-toggle-track, rgba(120, 120, 128, 0.32));
     border-radius: 999px;
     transition: all var(--duration-normal) ease;
   }
@@ -202,10 +203,10 @@
     width: 20px;
     left: 2px;
     top: 2px;
-    background: white;
+    background: var(--theme-toggle-thumb, white);
     border-radius: 50%;
     transition: all var(--duration-normal) ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 4px var(--theme-shadow, rgba(0, 0, 0, 0.2));
   }
 
   .toggle-switch input:checked + .toggle-slider {

@@ -50,6 +50,7 @@
     class="mode-toggle"
     class:active={choreographyState.isEnabled}
     onclick={() => choreographyState.toggle()}
+    aria-label={choreographyState.isEnabled ? "Switch to orbit camera" : "Enable choreographed camera"}
     title={choreographyState.isEnabled ? "Switch to orbit camera" : "Enable choreographed camera"}
     disabled={!hasSequence}
   >
@@ -68,6 +69,7 @@
     <button
       class="action-btn"
       onclick={handleAddKeyframe}
+      aria-label="Add keyframe at current beat"
       title="Add keyframe at current beat"
       disabled={!currentCameraPosition}
     >
@@ -79,6 +81,7 @@
       class="action-btn"
       class:recording={choreographyState.isRecording}
       onclick={handleToggleRecording}
+      aria-label={choreographyState.isRecording ? "Stop recording" : "Start recording"}
       title={choreographyState.isRecording ? "Stop recording" : "Start recording"}
     >
       <i class="fas fa-circle" aria-hidden="true"></i>
@@ -89,6 +92,7 @@
       <button
         class="action-btn danger"
         onclick={() => choreographyState.clearChoreography()}
+        aria-label="Clear all keyframes"
         title="Clear all keyframes"
       >
         <i class="fas fa-trash" aria-hidden="true"></i>
@@ -161,7 +165,7 @@
   }
 
   .keyframe-count i {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     opacity: 0.7;
   }
 
@@ -191,12 +195,12 @@
   }
 
   .action-btn.recording {
-    color: #ef4444;
+    color: var(--semantic-error, #ef4444);
     animation: pulse 1s ease-in-out infinite;
   }
 
   .action-btn.danger:hover:not(:disabled) {
-    color: #ef4444;
+    color: var(--semantic-error, #ef4444);
   }
 
   @keyframes pulse {

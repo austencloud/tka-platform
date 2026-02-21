@@ -146,6 +146,8 @@
         style="--color: {effect.color}"
         onclick={() => toggle(effect.key)}
         ondblclick={() => enabled && toggleExpand(effect.key)}
+        aria-label={enabled ? `${effect.label} (double-click to adjust)` : `Enable ${effect.label}`}
+        aria-pressed={enabled}
         title={enabled ? "Double-click to adjust" : "Click to enable"}
       >
         <i class="fas fa-{effect.icon}" aria-hidden="true"></i>
@@ -163,6 +165,8 @@
           class="mode-chip"
           class:active={isRainbow}
           onclick={() => config.setTrailMode("rainbow")}
+          aria-label="Trail color: Rainbow"
+          aria-pressed={isRainbow}
         >
           Rainbow
         </button>
@@ -170,6 +174,8 @@
           class="mode-chip"
           class:active={!isRainbow}
           onclick={() => config.setTrailMode("color")}
+          aria-label="Trail color: Solid"
+          aria-pressed={!isRainbow}
         >
           Solid
         </button>
@@ -184,6 +190,8 @@
           class="mode-chip"
           class:active={trackingModeLabel === "left"}
           onclick={() => config.setTrackingMode("left")}
+          aria-label="Track left end only"
+          aria-pressed={trackingModeLabel === "left"}
           title="Track left end only"
         >
           Left
@@ -192,6 +200,8 @@
           class="mode-chip"
           class:active={trackingModeLabel === "both"}
           onclick={() => config.setTrackingMode("both")}
+          aria-label="Track both ends"
+          aria-pressed={trackingModeLabel === "both"}
           title="Track both ends"
         >
           Both
@@ -200,6 +210,8 @@
           class="mode-chip"
           class:active={trackingModeLabel === "right"}
           onclick={() => config.setTrackingMode("right")}
+          aria-label="Track right end only"
+          aria-pressed={trackingModeLabel === "right"}
           title="Track right end only"
         >
           Right

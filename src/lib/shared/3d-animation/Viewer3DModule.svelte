@@ -20,7 +20,7 @@
   import type { CameraPreset } from "./components/controls/CameraPresetBar.svelte";
   import { Plane } from "./domain/enums/Plane";
   import type { GridMode } from "./domain/constants/grid-layout";
-  import { WALL_OFFSET } from "./utils/performer-positions";
+  import { WALL_OFFSET } from "./domain/constants/performer-positions";
   import PerformerManagerUI from "./components/panels/PerformerManager.svelte";
   import AvatarSyncControls from "./components/panels/AvatarSyncControls.svelte";
   import DuetOrchestrator from "./components/DuetOrchestrator.svelte";
@@ -85,6 +85,9 @@
   // Services - initialized asynchronously
   let persistenceService: IAnimation3DPersister | null = $state(null);
   let servicesReady = $state(false);
+
+  // Timers for cleanup
+  let initTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Physics state (Rapier)
   let physicsState: PhysicsWorldState | null = $state(null);
@@ -345,7 +348,7 @@
     performerStates[0]?.autoStartIfNeeded();
 
     servicesReady = true;
-    setTimeout(() => (initialized = true), 50);
+    initTimer = setTimeout(() => (initialized = true), 50);
 
     // Initialize MCP Game Bridge in dev mode
     if (import.meta.env.DEV && typeof window !== 'undefined') {
@@ -499,6 +502,10 @@
   });
 
   onDestroy(async () => {
+    if (initTimer !== null) {
+      clearTimeout(initTimer);
+      initTimer = null;
+    }
     performerManager?.destroy();
     // Clean up Rapier physics
     if (physicsState?.world) {
@@ -799,7 +806,7 @@
     width: 100%;
     height: 100%;
     min-height: 400px;
-    background: #0a0a12;
+    background: var(--theme-panel-bg, rgba(10, 10, 18, 1));
     color: var(--theme-text-dim);
     gap: 1rem;
   }
@@ -808,7 +815,7 @@
     width: 40px;
     height: 40px;
     border: 3px solid var(--theme-stroke);
-    border-top-color: #64b5f6;
+    border-top-color: var(--theme-accent);
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
@@ -822,8 +829,8 @@
     display: flex;
     width: 100%;
     height: 100%;
-    background: #0a0a12;
-    color: white;
+    background: var(--theme-panel-bg, rgba(10, 10, 18, 1));
+    color: var(--theme-text, white);
     overflow: hidden;
   }
 
@@ -884,21 +891,21 @@
   }
 
   .mode-toggle-btn.game-mode {
-    background: #3b82f6;
+    background: var(--prop-blue, #3b82f6);
     color: white;
   }
 
   .mode-toggle-btn.game-mode:hover {
-    background: #2563eb;
+    background: var(--prop-blue-dark, color-mix(in srgb, var(--prop-blue, #3b82f6) 80%, black));
   }
 
   .mode-toggle-btn.active {
-    background: #22c55e;
+    background: var(--semantic-success, #22c55e);
     color: white;
   }
 
   .mode-toggle-btn.active:hover {
-    background: #16a34a;
+    background: var(--semantic-success-dark, color-mix(in srgb, var(--semantic-success, #22c55e) 80%, black));
   }
 
   .toggle-panel-btn:focus-visible,

@@ -38,6 +38,7 @@
         class="action-btn add-btn"
         onclick={onAdd}
         disabled={!canAdd}
+        aria-label={canAdd ? "Add performer" : `Maximum ${maxPerformers} performers reached`}
         title={canAdd ? "Add performer" : `Maximum ${maxPerformers} performers`}
       >
         <i class="fas fa-plus" aria-hidden="true"></i>
@@ -51,6 +52,8 @@
         class="performer-chip"
         class:active={activePerformerIndex === i}
         onclick={() => onSelect(i)}
+        aria-label={`Select performer ${i + 1}`}
+        aria-pressed={activePerformerIndex === i}
       >
         <span class="performer-number">{i + 1}</span>
         {#if performer.hasSequence}
@@ -61,7 +64,7 @@
   </div>
 
   {#if canRemove}
-    <button class="remove-btn" onclick={onRemove} title="Remove last performer">
+    <button class="remove-btn" onclick={onRemove} aria-label="Remove last performer" title="Remove last performer">
       <i class="fas fa-minus" aria-hidden="true"></i>
       <span>Remove</span>
     </button>
@@ -105,14 +108,14 @@
     background: var(--theme-accent, #64b5f6);
     border: none;
     border-radius: 8px;
-    color: #000;
+    color: var(--theme-on-accent, #000);
     font-size: 0.875rem;
     cursor: pointer;
     transition: all var(--duration-fast) ease;
   }
 
   .action-btn:hover:not(:disabled) {
-    background: #8cc8ff;
+    background: var(--prop-blue-light, color-mix(in srgb, var(--theme-accent) 60%, white));
     transform: scale(1.05);
   }
 
@@ -154,7 +157,7 @@
   .performer-chip.active {
     background: var(--theme-accent, #64b5f6);
     border-color: var(--theme-accent, #64b5f6);
-    color: #000;
+    color: var(--theme-on-accent, #000);
   }
 
   .performer-number {
@@ -167,7 +170,7 @@
     right: 4px;
     width: 10px;
     height: 10px;
-    background: #4caf50;
+    background: var(--semantic-success, #4caf50);
     border-radius: 50%;
     border: 2px solid var(--theme-card-bg, #1a1a2e);
   }
@@ -192,9 +195,9 @@
   }
 
   .remove-btn:hover {
-    background: rgba(239, 68, 68, 0.1);
-    border-color: rgba(239, 68, 68, 0.3);
-    color: #ef4444;
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
+    color: var(--semantic-error, #ef4444);
   }
 
   .remove-btn i {

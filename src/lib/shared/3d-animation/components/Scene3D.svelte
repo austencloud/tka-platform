@@ -33,7 +33,7 @@
   import { Plane } from "../domain/enums/Plane";
   import type { GridMode } from "../domain/constants/grid-layout";
   import type { Snippet } from "svelte";
-  import { WALL_OFFSET } from "../utils/performer-positions";
+  import { WALL_OFFSET } from "../domain/constants/performer-positions";
   import { CameraMode } from "$lib/shared/3d-core/camera/types";
   import type { AvatarInstanceState } from "../state/avatar-instance-state.svelte";
   import { getCameraLayers } from "$lib/shared/3d-core/layers/layer-constants";
@@ -385,7 +385,7 @@
     min-height: 400px;
     /* Background now handled by SkyGradient in 3D when environment is active */
     /* Fallback gradient for NONE environment type */
-    background: linear-gradient(180deg, #0a0a12 0%, #050510 100%);
+    background: linear-gradient(180deg, var(--theme-surface-dark, #0a0a12) 0%, var(--theme-panel-bg, #050510) 100%);
     border-radius: 8px;
     overflow: hidden;
   }

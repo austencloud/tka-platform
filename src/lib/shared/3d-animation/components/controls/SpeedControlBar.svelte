@@ -29,6 +29,8 @@
       class="speed-btn"
       class:active={value === speed}
       onclick={() => onchange(speed)}
+      aria-label={`Speed: ${speed}x`}
+      aria-pressed={value === speed}
     >
       {formatSpeed(speed)}&times;
     </button>

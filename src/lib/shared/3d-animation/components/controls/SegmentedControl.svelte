@@ -55,6 +55,8 @@
       class="segment"
       class:selected={value === option.value}
       onclick={() => handleSelect(option.value)}
+      aria-label={option.label}
+      aria-pressed={value === option.value}
     >
       {#if option.icon}
         <i class={option.icon} aria-hidden="true"></i>

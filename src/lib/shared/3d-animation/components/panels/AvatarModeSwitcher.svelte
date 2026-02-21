@@ -32,6 +32,8 @@
     class="avatar-btn"
     class:active={activeAvatarId === "avatar1"}
     onclick={() => onSwitch("avatar1")}
+    aria-label={`Switch to ${avatar1Label}`}
+    aria-pressed={activeAvatarId === "avatar1"}
   >
     <span class="avatar-icon">
       <i class="fas fa-user" aria-hidden="true"></i>
@@ -46,6 +48,8 @@
     class="avatar-btn"
     class:active={activeAvatarId === "avatar2"}
     onclick={() => onSwitch("avatar2")}
+    aria-label={`Switch to ${avatar2Label}`}
+    aria-pressed={activeAvatarId === "avatar2"}
   >
     <span class="avatar-icon">
       <i class="fas fa-user" aria-hidden="true"></i>
@@ -90,7 +94,7 @@
   .avatar-btn.active {
     background: var(--theme-accent, #64b5f6);
     border-color: var(--theme-accent, #64b5f6);
-    color: #000;
+    color: var(--theme-on-accent, #000);
   }
 
   .avatar-icon {
@@ -104,7 +108,7 @@
     right: -6px;
     width: 8px;
     height: 8px;
-    background: #4caf50;
+    background: var(--semantic-success, #4caf50);
     border-radius: 50%;
     border: 1px solid var(--theme-card-bg, #1a1a2e);
   }

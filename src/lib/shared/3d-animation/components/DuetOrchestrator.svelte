@@ -128,6 +128,8 @@
         <button
           class="view-mode-btn"
           onclick={() => (browserViewMode = "sequences")}
+          aria-label="View solo sequences"
+          aria-pressed={false}
         >
           <i class="fas fa-film" aria-hidden="true"></i>
           Solo Sequences
@@ -135,6 +137,8 @@
         <button
           class="view-mode-btn active"
           onclick={() => (browserViewMode = "duets")}
+          aria-label="View duets"
+          aria-pressed={true}
         >
           <i class="fas fa-users" aria-hidden="true"></i>
           Duets
@@ -165,7 +169,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.7);
+    background: var(--theme-overlay-dark, rgba(0, 0, 0, 0.7));
     backdrop-filter: blur(4px);
   }
 
@@ -257,7 +261,7 @@
   .view-mode-btn.active {
     background: var(--theme-accent, #8b5cf6);
     border-color: var(--theme-accent, #8b5cf6);
-    color: #000;
+    color: var(--theme-on-accent, #000);
   }
 
   .duet-creator-panel {

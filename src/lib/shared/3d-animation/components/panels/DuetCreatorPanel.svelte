@@ -143,7 +143,7 @@
 <div class="duet-creator">
   <header class="header">
     <h2>{t('duet_create')}</h2>
-    <button class="close-btn" onclick={onCancel} title="Cancel">
+    <button class="close-btn" onclick={onCancel} aria-label="Cancel and close" title="Cancel">
       <i class="fas fa-times" aria-hidden="true"></i>
     </button>
   </header>
@@ -185,6 +185,8 @@
               class:selected={seq.id === avatar1SequenceId ||
                 seq.id === avatar2SequenceId}
               onclick={() => selectSequence(seq.id)}
+              aria-label={`Select sequence: ${seq.word || seq.name || "Untitled"}`}
+              aria-pressed={seq.id === avatar1SequenceId || seq.id === avatar2SequenceId}
             >
               <span class="seq-word">{seq.word || seq.name || "Untitled"}</span>
               <span class="seq-meta">
@@ -243,6 +245,7 @@
             class="picker-btn"
             class:has-selection={avatar1Sequence}
             onclick={() => (activeSelector = "avatar1")}
+            aria-label={avatar1Sequence ? `Avatar 1: ${avatar1Sequence.word || avatar1Sequence.name || "Untitled"} - click to change` : "Select sequence for Avatar 1"}
           >
             {#if avatar1Sequence}
               <span class="selection-name">
@@ -264,6 +267,7 @@
             class="picker-btn"
             class:has-selection={avatar2Sequence}
             onclick={() => (activeSelector = "avatar2")}
+            aria-label={avatar2Sequence ? `Avatar 2: ${avatar2Sequence.word || avatar2Sequence.name || "Untitled"} - click to change` : "Select sequence for Avatar 2"}
           >
             {#if avatar2Sequence}
               <span class="selection-name">
@@ -317,6 +321,8 @@
             class="pos-btn"
             class:active={positioning === "side-by-side"}
             onclick={() => (positioning = "side-by-side")}
+            aria-label="Positioning: Side by Side"
+            aria-pressed={positioning === "side-by-side"}
           >
             <i class="fas fa-arrows-alt-h" aria-hidden="true"></i>
             Side by Side
@@ -325,6 +331,8 @@
             class="pos-btn"
             class:active={positioning === "face-to-face"}
             onclick={() => (positioning = "face-to-face")}
+            aria-label="Positioning: Face to Face"
+            aria-pressed={positioning === "face-to-face"}
           >
             <i class="fas fa-exchange-alt" aria-hidden="true"></i>
             Face to Face
@@ -335,8 +343,8 @@
 
     <!-- Footer -->
     <footer class="footer">
-      <button class="cancel-btn" onclick={onCancel}>{t('action_cancel')}</button>
-      <button class="save-btn" disabled={!canSave} onclick={handleSave}>
+      <button class="cancel-btn" onclick={onCancel} aria-label="Cancel">{t('action_cancel')}</button>
+      <button class="save-btn" disabled={!canSave} onclick={handleSave} aria-label="Save duet">
         {#if isSaving}
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
           {t('action_saving')}
@@ -519,7 +527,7 @@
 
   .offset-btn:hover:not(:disabled) {
     background: var(--theme-accent, #64b5f6);
-    color: #000;
+    color: var(--theme-on-accent, #000);
   }
 
   .offset-btn:disabled {
@@ -565,7 +573,7 @@
   .pos-btn.active {
     background: var(--theme-accent, #64b5f6);
     border-color: var(--theme-accent, #64b5f6);
-    color: #000;
+    color: var(--theme-on-accent, #000);
   }
 
   .pos-btn i {
@@ -612,7 +620,7 @@
   }
 
   .save-btn:hover:not(:disabled) {
-    background: #8b5cf6;
+    background: var(--theme-accent, #8b5cf6);
   }
 
   .save-btn:disabled {
@@ -626,7 +634,7 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.75rem;
-    background: rgba(239, 68, 68, 0.1);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
     border: 1px solid var(--semantic-error, #ef4444);
     border-radius: 8px;
     color: var(--semantic-error, #ef4444);
@@ -715,7 +723,7 @@
 
   .sequence-item.selected {
     background: var(--theme-accent, #64b5f6);
-    color: #000;
+    color: var(--theme-on-accent, #000);
   }
 
   .seq-word {
@@ -725,7 +733,7 @@
   }
 
   .sequence-item.selected .seq-word {
-    color: #000;
+    color: var(--theme-on-accent, #000);
   }
 
   .seq-meta {
@@ -736,7 +744,7 @@
   }
 
   .sequence-item.selected .seq-meta {
-    color: rgba(0, 0, 0, 0.6);
+    color: color-mix(in srgb, var(--theme-on-accent, #000) 60%, transparent);
   }
 
   .loading {

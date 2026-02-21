@@ -39,6 +39,7 @@
       onclick={() => state.toggleCollapsed()}
       aria-expanded={!state.isCollapsed}
       aria-controls="effects-panel-content"
+      aria-label={state.isCollapsed ? "Expand effects panel" : "Collapse effects panel"}
     >
       <span class="header-icon">
         <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
@@ -73,6 +74,8 @@
                 class="mode-btn"
                 class:active={trailMode === mode.value}
                 onclick={() => state.setTrailMode(mode.value)}
+                aria-label={`Trail mode: ${mode.label}`}
+                aria-pressed={trailMode === mode.value}
               >
                 {mode.label}
               </button>
@@ -366,7 +369,7 @@
 
       <!-- Reset Button -->
       <div class="panel-footer">
-        <button class="reset-btn" onclick={() => state.resetToDefaults()}>
+        <button class="reset-btn" onclick={() => state.resetToDefaults()} aria-label="Reset all effects to defaults">
           <i class="fas fa-rotate-left" aria-hidden="true"></i>
           Reset All
         </button>
@@ -389,7 +392,7 @@
     display: flex;
     flex-direction: column;
     pointer-events: auto;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 32px var(--theme-shadow, rgba(0, 0, 0, 0.3));
     z-index: 100;
   }
 
@@ -450,12 +453,12 @@
     border-radius: 9px;
     background: var(--theme-accent);
     color: white;
-    font-size: 0.6875rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
   }
 
   .collapse-icon {
-    font-size: 0.625rem;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     transition: transform var(--duration-normal) ease;
   }
@@ -488,7 +491,7 @@
 
   .value-display {
     flex-shrink: 0;
-    font-size: 0.6875rem;
+    font-size: var(--font-size-compact, 12px);
     font-family: "SF Mono", Consolas, monospace;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     min-width: 36px;
@@ -514,7 +517,7 @@
     border-radius: 50%;
     background: var(--theme-accent);
     cursor: pointer;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 1px 4px var(--theme-shadow, rgba(0, 0, 0, 0.3));
     transition: transform var(--duration-instant) ease;
   }
 
@@ -529,7 +532,7 @@
     background: var(--theme-accent);
     cursor: pointer;
     border: none;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 1px 4px var(--theme-shadow, rgba(0, 0, 0, 0.3));
   }
 
   /* Button Group */
@@ -549,7 +552,7 @@
     border-radius: 4px;
     background: transparent;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: 0.6875rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     cursor: pointer;
     transition: all var(--duration-fast) ease;
@@ -593,7 +596,7 @@
     height: 100%;
     border-radius: 50%;
     background: var(--swatch-color);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 1px 3px var(--theme-shadow, rgba(0, 0, 0, 0.3));
   }
 
   /* Mini Toggle */
@@ -619,7 +622,7 @@
   .mini-slider {
     position: absolute;
     inset: 0;
-    background: rgba(120, 120, 128, 0.32);
+    background: var(--theme-toggle-track, rgba(120, 120, 128, 0.32));
     border-radius: 999px;
     transition: all var(--duration-normal) ease;
   }
@@ -631,10 +634,10 @@
     width: 14px;
     left: 2px;
     top: 2px;
-    background: white;
+    background: var(--theme-toggle-thumb, white);
     border-radius: 50%;
     transition: all var(--duration-normal) ease;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 1px 3px var(--theme-shadow, rgba(0, 0, 0, 0.2));
   }
 
   .mini-toggle input:checked + .mini-slider {

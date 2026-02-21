@@ -192,8 +192,8 @@
   }
 
   .play-btn.active {
-    background: rgba(139, 92, 246, 0.4);
-    color: #a78bfa;
+    background: color-mix(in srgb, var(--theme-accent) 40%, transparent);
+    color: var(--theme-accent);
   }
 
   .progress-slider {

@@ -9,7 +9,6 @@
 
   import { T } from "@threlte/core";
   import { useGltf } from "@threlte/extras";
-  import { useMemo } from "$lib/shared/3d-animation/utils/use-memo.svelte";
   import { userProportionsState } from "../../state/user-proportions-state.svelte";
 
   interface PlacementConfig {
@@ -64,7 +63,7 @@
   }
 
   // Generate placement configurations
-  const placements = useMemo<PlacementConfig[]>(() => {
+  const placements = ((): PlacementConfig[] => {
     const rand = seededRandom(seed);
     const configs: PlacementConfig[] = [];
 
@@ -93,7 +92,7 @@
     }
 
     return configs;
-  });
+  })();
 </script>
 
 {#if $gltf}

@@ -32,7 +32,7 @@
     type AvatarId,
     DEFAULT_AVATAR_ID,
   } from "../config/avatar-definitions";
-  import { WALL_OFFSET } from "../utils/performer-positions";
+  import { WALL_OFFSET } from "../domain/constants/performer-positions";
   import { userProportionsState } from "../state/user-proportions-state.svelte";
   import IKFigure3D from "./IKFigure3D.svelte";
   import AvatarLoadingIndicator from "./AvatarLoadingIndicator.svelte";

@@ -55,6 +55,7 @@
           role="radio"
           aria-checked={avatarId === avatar.id}
           onclick={() => onAvatarChange(avatar.id)}
+          aria-label={avatar.name}
           title={avatar.description}
         >
           <i class="fas {avatar.icon ?? 'fa-user'}" aria-hidden="true"></i>
@@ -108,9 +109,9 @@
   }
 
   .visibility-toggle.active {
-    background: rgba(100, 180, 255, 0.2);
-    border-color: rgba(100, 180, 255, 0.3);
-    color: #64b5f6;
+    background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 30%, transparent);
+    color: var(--theme-accent);
   }
 
   .avatar-grid {
@@ -141,9 +142,9 @@
   }
 
   .avatar-card.selected {
-    background: rgba(100, 180, 255, 0.15);
-    border-color: rgba(100, 180, 255, 0.4);
-    color: #64b5f6;
+    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
+    color: var(--theme-accent);
   }
 
   .avatar-card i {

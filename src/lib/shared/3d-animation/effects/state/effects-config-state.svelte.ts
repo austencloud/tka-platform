@@ -175,6 +175,13 @@ export function createEffectsConfigState(
     persistTimeout = setTimeout(() => {
       persistConfig(config);
     }, 300);
+
+    return () => {
+      if (persistTimeout) {
+        clearTimeout(persistTimeout);
+        persistTimeout = null;
+      }
+    };
   });
 
   // =============================================================================

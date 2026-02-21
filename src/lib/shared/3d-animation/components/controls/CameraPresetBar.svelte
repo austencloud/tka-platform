@@ -34,6 +34,8 @@
       class="preset-btn"
       class:active={value === preset.value && !isCustom}
       onclick={() => onchange(preset.value)}
+      aria-label={`Camera preset: ${preset.label}`}
+      aria-pressed={value === preset.value && !isCustom}
     >
       {preset.label}
     </button>

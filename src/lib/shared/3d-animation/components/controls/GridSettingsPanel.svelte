@@ -35,6 +35,8 @@
       class="mode-btn"
       class:active={gridMode === "diamond"}
       onclick={() => onGridModeChange("diamond")}
+      aria-label="Diamond grid mode"
+      aria-pressed={gridMode === "diamond"}
     >
       <i class="fas fa-diamond" aria-hidden="true"></i>
       Diamond
@@ -43,6 +45,8 @@
       class="mode-btn"
       class:active={gridMode === "box"}
       onclick={() => onGridModeChange("box")}
+      aria-label="Box grid mode"
+      aria-pressed={gridMode === "box"}
     >
       <i class="fas fa-square" aria-hidden="true"></i>
       Box
@@ -57,6 +61,8 @@
         class:active={visiblePlanes.has(plane)}
         style="--color: {PLANE_COLORS[plane]}"
         onclick={() => onPlaneToggle(plane)}
+        aria-label={`Toggle ${PLANE_LABELS[plane]} plane`}
+        aria-pressed={visiblePlanes.has(plane)}
       >
         <span class="indicator"></span>
         {PLANE_LABELS[plane]}

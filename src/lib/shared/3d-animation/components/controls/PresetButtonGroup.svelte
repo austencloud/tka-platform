@@ -22,7 +22,7 @@
   class:red={color === "red"}
 >
   {#each presets as preset}
-    <button type="button" class="preset-btn" onclick={() => onSelect(preset)}>
+    <button type="button" class="preset-btn" onclick={() => onSelect(preset)} aria-label={`Select preset: ${preset}`}>
       {preset}
     </button>
   {/each}

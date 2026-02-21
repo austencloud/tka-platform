@@ -103,6 +103,7 @@
         role="radio"
         aria-checked={option.type === currentBackground}
         onclick={() => handleSelect(option.type)}
+        aria-label={option.has3DScene ? option.name : `${option.name} (2D only)`}
         title={option.has3DScene ? option.name : `${option.name} (2D only)`}
       >
         <i class="fas {option.icon}" aria-hidden="true"></i>
@@ -192,17 +193,17 @@
     position: absolute;
     top: 4px;
     right: 4px;
-    font-size: 9px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     padding: 1px 4px;
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
     border-radius: 3px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 
   .env-card.selected .badge-2d {
-    background: rgba(255, 255, 255, 0.25);
-    color: white;
+    background: color-mix(in srgb, var(--theme-text, white) 25%, transparent);
+    color: var(--theme-text, white);
   }
 
   @media (max-width: 400px) {

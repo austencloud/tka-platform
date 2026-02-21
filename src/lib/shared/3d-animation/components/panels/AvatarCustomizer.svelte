@@ -41,6 +41,7 @@
         class="toggle-btn"
         class:active={bodyType === "masculine"}
         onclick={() => onBodyTypeChange("masculine")}
+        aria-label="Body type: Masculine"
         aria-pressed={bodyType === "masculine"}
       >
         <i class="fas fa-mars" aria-hidden="true"></i>
@@ -50,6 +51,7 @@
         class="toggle-btn"
         class:active={bodyType === "feminine"}
         onclick={() => onBodyTypeChange("feminine")}
+        aria-label="Body type: Feminine"
         aria-pressed={bodyType === "feminine"}
       >
         <i class="fas fa-venus" aria-hidden="true"></i>
@@ -86,9 +88,9 @@
     flex-direction: column;
     gap: 1rem;
     padding: 0.75rem;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
   }
 
   .section-title {
@@ -133,14 +135,14 @@
   }
 
   .toggle-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.8);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
+    color: var(--theme-text, rgba(255, 255, 255, 0.8));
   }
 
   .toggle-btn.active {
-    background: rgba(100, 180, 255, 0.2);
-    border-color: rgba(100, 180, 255, 0.4);
-    color: #64b5f6;
+    background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
+    color: var(--theme-accent);
   }
 
   .toggle-btn i {
@@ -167,17 +169,17 @@
 
   .skin-swatch:hover {
     transform: scale(1.1);
-    border-color: rgba(255, 255, 255, 0.3);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
   }
 
   .skin-swatch.active {
-    border-color: #64b5f6;
-    box-shadow: 0 0 0 2px rgba(100, 180, 255, 0.3);
+    border-color: var(--theme-accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--theme-accent) 30%, transparent);
   }
 
   .skin-swatch i {
-    color: rgba(0, 0, 0, 0.5);
+    color: color-mix(in srgb, var(--theme-text) 50%, transparent);
     font-size: 0.8rem;
-    text-shadow: 0 0 2px rgba(255, 255, 255, 0.5);
+    text-shadow: 0 0 2px var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 </style>
