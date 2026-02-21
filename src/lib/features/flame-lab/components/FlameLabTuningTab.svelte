@@ -105,6 +105,7 @@
   let loading = $state(false);
   let error = $state<string | null>(null);
   let playbackStartTimer: ReturnType<typeof setTimeout> | null = null;
+  let publishSuccessTimer: ReturnType<typeof setTimeout> | null = null;
   let showPicker = $state(false);
   let sequence = $state<SequenceData | null>(null);
   let isPlaying = $state(false);
@@ -531,6 +532,7 @@
 
   onDestroy(() => {
     if (playbackStartTimer !== null) clearTimeout(playbackStartTimer);
+    if (publishSuccessTimer !== null) clearTimeout(publishSuccessTimer);
     visibilityManager.setFireEffect(false);
     visibilityManager.unregisterObserver(flameColorObserver);
     playbackController?.dispose();
@@ -617,7 +619,8 @@
 
       publishConfirm = false;
       publishSuccess = true;
-      setTimeout(() => { publishSuccess = false; }, 3000);
+      if (publishSuccessTimer !== null) clearTimeout(publishSuccessTimer);
+      publishSuccessTimer = setTimeout(() => { publishSuccess = false; publishSuccessTimer = null; }, 3000);
     } catch (err) {
       console.error("[FlameLabTuningTab] Publish failed:", err);
     } finally {
@@ -910,17 +913,17 @@
               Published to all users
             </div>
           {:else if !publishConfirm}
-            <button class="publish-btn" onclick={() => publishConfirm = true}>
+            <button class="publish-btn" onclick={() => publishConfirm = true} aria-label="Publish fire settings to production">
               <i class="fas fa-upload" aria-hidden="true"></i>
               Publish to Production
             </button>
           {:else}
             <div class="publish-confirm">
               <span class="publish-confirm-text">Push these fire settings to all users?</span>
-              <button class="confirm-btn" onclick={publishToProduction} disabled={publishing}>
+              <button class="confirm-btn" onclick={publishToProduction} disabled={publishing} aria-label={publishing ? "Publishing in progress" : "Confirm publish to production"}>
                 {publishing ? "Publishing..." : "Yes, Publish"}
               </button>
-              <button class="cancel-btn" onclick={() => publishConfirm = false}>Cancel</button>
+              <button class="cancel-btn" onclick={() => publishConfirm = false} aria-label="Cancel publish">Cancel</button>
             </div>
           {/if}
         </div>

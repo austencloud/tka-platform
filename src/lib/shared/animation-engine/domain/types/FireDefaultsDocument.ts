@@ -32,7 +32,7 @@ export interface FireDefaultsDocument {
 export type FireIntensityTier = "small" | "medium" | "large";
 
 export const FIRE_INTENSITY_TIERS: Record<FireIntensityTier, { intensity: number; flameHeight: number }> = {
-	small: { intensity: 0.5, flameHeight: 0.6 },
-	medium: { intensity: 1.0, flameHeight: 1.0 },
-	large: { intensity: 1.5, flameHeight: 1.4 },
+	small: { intensity: 0.35, flameHeight: 0.4 },
+	medium: { intensity: 0.5, flameHeight: 0.6 },
+	large: { intensity: 1.0, flameHeight: 1.0 },
 };

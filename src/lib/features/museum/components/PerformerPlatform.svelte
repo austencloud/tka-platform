@@ -1,6 +1,5 @@
 <script lang="ts">
   import { T } from "@threlte/core";
-  import { onDestroy } from "svelte";
   import * as THREE from "three";
   import type { ExhibitSlot } from "../domain/museum-types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -27,20 +26,20 @@
     return Math.sqrt(dx * dx + dz * dz) < ACTIVATION_DISTANCE;
   });
 
-  // Create performer animation state
-  // Slot identity is captured once at init (slots don't move)
-  const performerState = ((s: ExhibitSlot) =>
+  // Create performer animation state (slot identity is stable per instance)
+  const performerState = $derived.by(() =>
     createAvatarInstanceState(
       {
-        id: `museum-performer-${s.id}`,
-        positionX: s.position.x,
-        positionZ: s.position.z,
+        id: `museum-performer-${slot.id}`,
+        positionX: slot.position.x,
+        positionZ: slot.position.z,
       },
       {
         propInterpolator: container.items.propStateInterpolator,
         sequenceConverter: container.items.sequenceConverter,
       }
-    ))(slot);
+    )
+  );
 
   // Load sequence when it becomes available
   $effect(() => {
@@ -51,8 +50,9 @@
     }
   });
 
-  onDestroy(() => {
-    performerState.destroy();
+  // Cleanup on destroy
+  $effect(() => {
+    return () => performerState.destroy();
   });
 </script>
 
