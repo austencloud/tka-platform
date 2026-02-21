@@ -301,6 +301,13 @@ export class PropPlacer implements IPropPlacer {
       return { x: 0, y: 0 };
     }
 
+    // Trigeng: opposite orientations (IN/OUT or CLOCK/COUNTER) don't need separation.
+    // Physically, trigeng with opposite orientations face away from each other
+    // and don't overlap, same as clubs or hoops.
+    if (sameTypeButDifferentOrientation && actualPropType === "trigeng") {
+      return { x: 0, y: 0 };
+    }
+
     // Calculate direction for this specific prop
     const directionCalculator = new BetaPropDirectionCalculator(
       {

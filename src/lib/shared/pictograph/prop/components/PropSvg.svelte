@@ -40,6 +40,7 @@ even when Svelte recreates the component instance.
     PropType.BUUGENG,
     PropType.BIGBUUGENG,
     PropType.FRACTALGENG,
+    PropType.TRIGENG,
   ]);
 
   // Get centralized visibility manager for transform state
