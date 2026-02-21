@@ -10,9 +10,10 @@ Dark mode: Controlled via prop (for preview isolation) or falls back to :root.da
 Supports letter highlighting during animation playback.
 -->
 <script lang="ts">
-  import { cubicOut, backOut } from "svelte/easing";
+  import { cubicOut } from "svelte/easing";
   import { safeSlide } from "$lib/shared/utils/transitions";
   import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+  import { untrack } from "svelte";
 
   let {
     word = null,
@@ -33,64 +34,84 @@ Supports letter highlighting during animation playback.
   // The word currently being displayed (may lag behind `word` during transitions)
   let displayedWord = $state<string | null>(null);
 
-  // Track for detecting changes
-  let wasVisible = $state(false);
-  let lastWord = $state<string | null>(null);
+  // Track for detecting changes (not reactive — only read/written inside the effect)
+  let wasVisible = false;
+  let lastWord: string | null = null;
+
+  // Timers live at component level so cleanup doesn't race with effect re-runs
+  let exitTimer: ReturnType<typeof setTimeout> | undefined;
+  let enterTimer: ReturnType<typeof setTimeout> | undefined;
+  let idleTimer: ReturnType<typeof setTimeout> | undefined;
+
+  function clearAnimationTimers() {
+    clearTimeout(exitTimer);
+    clearTimeout(enterTimer);
+    clearTimeout(idleTimer);
+    exitTimer = enterTimer = idleTimer = undefined;
+  }
 
   // Exit animation duration (per letter stagger + base)
   const EXIT_DURATION_BASE = 80;
   const EXIT_STAGGER_PER_LETTER = 40;
   const ENTER_DELAY = 100; // Gap between exit and enter
 
-  // Handle visibility and word changes with proper exit → enter sequencing
+  // Handle visibility and word changes with proper exit → enter sequencing.
+  // Only tracks `word` and `visible` props. Internal state (animationPhase,
+  // displayedWord, wasVisible, lastWord) is read via untrack() to prevent
+  // the effect from re-triggering when it writes to them.
   $effect(() => {
-    const wordChanged = word !== lastWord && word !== null && lastWord !== null;
-    const becameVisible = visible && !wasVisible;
-    const initialMount = visible && displayedWord === null && word !== null;
+    // Track these two props as dependencies
+    const currentWord = word;
+    const currentlyVisible = visible;
 
-    let exitTimer: ReturnType<typeof setTimeout> | undefined;
-    let enterTimer: ReturnType<typeof setTimeout> | undefined;
-    let idleTimer: ReturnType<typeof setTimeout> | undefined;
+    // Read internal state without tracking — this effect manages these values,
+    // so re-triggering on its own writes would cause a cleanup race condition
+    // that clears animation timers before they fire.
+    const prevWord = untrack(() => lastWord);
+    const prevVisible = untrack(() => wasVisible);
+    const currentDisplayedWord = untrack(() => displayedWord);
+    const currentPhase = untrack(() => animationPhase);
 
-    if (wordChanged && visible && animationPhase === "idle") {
+    const wordChanged = currentWord !== prevWord && currentWord !== null && prevWord !== null;
+    const becameVisible = currentlyVisible && !prevVisible;
+    const initialMount = currentlyVisible && currentDisplayedWord === null && currentWord !== null;
+
+    if (wordChanged && currentlyVisible && currentPhase === "idle") {
       // Word changed while visible: exit old, then enter new
+      clearAnimationTimers();
       animationPhase = "exiting";
 
-      const oldLetterCount = displayedWord ? simplifyAndTruncate(displayedWord, 12).length : 1;
+      const oldLetterCount = currentDisplayedWord ? simplifyAndTruncate(currentDisplayedWord, 12).length : 1;
       const exitDuration = EXIT_DURATION_BASE + (oldLetterCount * EXIT_STAGGER_PER_LETTER);
 
       exitTimer = setTimeout(() => {
-        displayedWord = word;
+        displayedWord = currentWord;
         animationPhase = "entering";
 
         enterTimer = setTimeout(() => {
           animationPhase = "idle";
         }, 400); // Enter animation duration
       }, exitDuration + ENTER_DELAY);
-    } else if ((becameVisible || initialMount) && animationPhase === "idle") {
+    } else if ((becameVisible || initialMount) && currentPhase === "idle") {
       // First appearance: just enter
-      displayedWord = word;
+      clearAnimationTimers();
+      displayedWord = currentWord;
       animationPhase = "entering";
 
       idleTimer = setTimeout(() => {
         animationPhase = "idle";
       }, 400);
-    } else if (!visible && wasVisible) {
+    } else if (!currentlyVisible && prevVisible) {
       // Hiding: reset state
+      clearAnimationTimers();
       animationPhase = "idle";
-    } else if (word !== lastWord && animationPhase === "idle") {
+    } else if (currentWord !== prevWord && currentPhase === "idle") {
       // Word changed but wasn't visible before, just update
-      displayedWord = word;
+      displayedWord = currentWord;
     }
 
-    wasVisible = visible;
-    lastWord = word;
-
-    return () => {
-      clearTimeout(exitTimer);
-      clearTimeout(enterTimer);
-      clearTimeout(idleTimer);
-    };
+    wasVisible = currentlyVisible;
+    lastWord = currentWord;
   });
 
   // Derive display text from displayedWord (the word currently showing)
