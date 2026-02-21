@@ -101,9 +101,25 @@ export class PictographPreparer implements IPictographPreparer {
     options?: PrepareOptions
   ): Promise<PreparedRenderData> {
     const gridMode = this.deriveGridMode(pictograph);
+
+    // Apply propType overrides BEFORE arrow lifecycle so the arrow adjustment
+    // cascading lookup (SpecialPlacer) uses the correct prop-specific layer.
+    // Without this, arrows always look up adjustments for the raw sequence propType
+    // instead of the user's currently selected prop type from settings.
+    const globalSettings = getSettings();
+    const settings = {
+      bluePropType: globalSettings.bluePropType,
+      redPropType: globalSettings.redPropType,
+    };
+    const overriddenMotions = this.getMotionsWithOverrides(pictograph, settings, options);
+    const pictographWithPropOverrides: PictographData = {
+      ...pictograph,
+      motions: Object.fromEntries(overriddenMotions) as PictographData["motions"],
+    };
+
     // Pass themeMode and gridMode to arrow lifecycle for correct positioning and color selection
     const arrowResult = await this.arrowManager.coordinateArrowLifecycle(
-      pictograph,
+      pictographWithPropOverrides,
       { themeMode: options?.themeMode, gridMode }
     );
     const { propPositions, propAssets } = await this.calculateProps(
@@ -135,6 +151,8 @@ export class PictographPreparer implements IPictographPreparer {
 
     // Key components that affect arrow/prop positioning
     const parts = [
+      // Letter affects arrow placement keys (e.g., pro_to_layer1_alpha_F vs _A)
+      pictograph.letter ?? "none",
       // Blue motion
       blue?.motionType ?? "none",
       blue?.startLocation ?? "",

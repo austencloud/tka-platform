@@ -12,7 +12,7 @@
  *         (EXCLUDES: TKA, reversals, hand points, layer 2 points)
  * - GridPoints: includes showNonRadialPoints, handPointVisibility, gridMode, size
  *         (contains: hand points, layer 2 points)
- * - TKA: includes letter, turnsTuple, darkMode, size (SHARED across pictographs!)
+ * - TKA: includes letter, turnsTuple, motionTypes, darkMode, size (SHARED across pictographs with same arrangement!)
  * - Reversal: includes blueReversal, redReversal, size (only 4 states possible)
  * - Beat: includes stepNumber, size (simple text, rarely cached)
  *
@@ -58,6 +58,10 @@ export interface TKALayerKeyComponents {
   letter: string;
   // Turns tuple (e.g., "(s, 0, 1.5)")
   turnsTuple: string;
+  // Motion types per hand — determines turn number colors
+  // (e.g., blue=pro/red=anti vs blue=anti/red=pro produce different color assignments)
+  blueMotionType: string;
+  redMotionType: string;
   // Visual mode
   darkMode: boolean;
   // Size
@@ -161,6 +165,10 @@ export class LayerKeyDeriver {
 
   /**
    * Get TKA layer key components
+   *
+   * Includes motionType per hand because turn number colors depend on
+   * which hand is pro vs anti (TYPE1_HYBRID), shift vs static (TYPE2), etc.
+   * Without this, beats with swapped hand assignments share the wrong cached colors.
    */
   getTKALayerComponents(
     pictograph: PreparedPictographData,
@@ -170,6 +178,8 @@ export class LayerKeyDeriver {
     return {
       letter: String(pictograph.letter ?? ""),
       turnsTuple,
+      blueMotionType: pictograph.motions?.blue?.motionType ?? "",
+      redMotionType: pictograph.motions?.red?.motionType ?? "",
       darkMode: options.darkMode,
       size: options.size,
     };

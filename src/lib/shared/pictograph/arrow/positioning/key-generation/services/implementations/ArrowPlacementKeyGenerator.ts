@@ -139,23 +139,45 @@ export class ArrowPlacementKeyGenerator implements IArrowPlacementKeyGenerator {
     hasBetaProps: boolean;
     hasGammaProps: boolean;
   } {
-    // Implement legacy layer detection logic
     const redEndOri = pictographData.motions.red?.endOrientation;
     const blueEndOri = pictographData.motions.blue?.endOrientation;
 
+    const radialOrientations = ["in", "out"];
+    const nonRadialOrientations = ["clock", "counter"];
+
+    let hasRadialProps: boolean;
+    let hasNonRadialProps: boolean;
+    let hasHybridOrientation: boolean;
+
     if (!redEndOri || !blueEndOri) {
+      // Single-hand case: use available hand's orientation for layer,
+      // default to alpha position. This gives a valid key like
+      // "pro_to_layer1_alpha" instead of bare "pro" (which has no JSON match).
+      const availableOri = blueEndOri || redEndOri;
+      if (!availableOri) {
+        return {
+          hasRadialProps: false,
+          hasNonRadialProps: false,
+          hasHybridOrientation: false,
+          hasAlphaProps: false,
+          hasBetaProps: false,
+          hasGammaProps: false,
+        };
+      }
+      hasRadialProps = radialOrientations.includes(availableOri);
+      hasNonRadialProps = nonRadialOrientations.includes(availableOri);
+      hasHybridOrientation = false;
+
+      // Can't determine position without both hands — default to alpha
       return {
-        hasRadialProps: false,
-        hasNonRadialProps: false,
-        hasHybridOrientation: false,
-        hasAlphaProps: false,
+        hasRadialProps,
+        hasNonRadialProps,
+        hasHybridOrientation,
+        hasAlphaProps: true,
         hasBetaProps: false,
         hasGammaProps: false,
       };
     }
-
-    const radialOrientations = ["in", "out"];
-    const nonRadialOrientations = ["clock", "counter"];
 
     const redIsRadial = radialOrientations.includes(redEndOri);
     const redIsNonRadial = nonRadialOrientations.includes(redEndOri);
@@ -163,9 +185,9 @@ export class ArrowPlacementKeyGenerator implements IArrowPlacementKeyGenerator {
     const blueIsNonRadial = nonRadialOrientations.includes(blueEndOri);
 
     // Layer detection logic (matching legacy)
-    const hasRadialProps = redIsRadial && blueIsRadial;
-    const hasNonRadialProps = redIsNonRadial && blueIsNonRadial;
-    const hasHybridOrientation =
+    hasRadialProps = redIsRadial && blueIsRadial;
+    hasNonRadialProps = redIsNonRadial && blueIsNonRadial;
+    hasHybridOrientation =
       (redIsRadial && blueIsNonRadial) || (redIsNonRadial && blueIsRadial);
 
     // Letter type detection (matching legacy letter_condition_mappings.py)
