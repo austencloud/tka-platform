@@ -133,18 +133,19 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
         error
       );
 
-      // Try a simpler LOOP type on failure
-      return this.generateFallbackLOOP(settings);
+      // Try a simpler LOOP type on failure, preserving the position constraint
+      return this.generateFallbackLOOP(settings, targetStartPosition);
     }
   }
 
   /**
    * Fallback generation with simpler settings if the primary generation fails.
+   * Preserves the target start position constraint to maintain chain continuity.
    */
   private async generateFallbackLOOP(
-    originalSettings: GenerationSettings
+    originalSettings: GenerationSettings,
+    targetStartPosition?: GridPosition
   ): Promise<GeneratedSequenceInfo | null> {
-    // Try with the simplest LOOP type: strict rotated, 16 steps
     const fallbackSettings: GenerationSettings = {
       loopType: LOOPType.STRICT_ROTATED,
       sliceSize: SliceSize.QUARTERED,
@@ -154,10 +155,14 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
       totalSteps: 16,
     };
 
+    const blockedStartPositions = targetStartPosition
+      ? getAllPositions(GridMode.DIAMOND).filter(p => p !== targetStartPosition)
+      : undefined;
+
     try {
       const sequence = await this.generationOrchestrator.generateSequence({
         mode: GenerationMode.CIRCULAR,
-        length: fallbackSettings.totalSteps, // Pass total (16)
+        length: fallbackSettings.totalSteps,
         gridMode: GridMode.DIAMOND,
         propType: PropType.STAFF,
         difficulty: fallbackSettings.difficulty,
@@ -165,6 +170,7 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
         turnIntensity: fallbackSettings.turnIntensity,
         loopType: fallbackSettings.loopType,
         sliceSize: fallbackSettings.sliceSize,
+        ...(blockedStartPositions && { blockedStartPositions }),
       });
 
       this.sessionCount++;
