@@ -9,6 +9,7 @@ export function createMuseumState() {
   let exhibits = $state<Map<string, MuseumExhibit>>(new Map());
   let isOwner = $state(true);
   let selectedSlotId = $state<string | null>(null);
+  let interactionTargetSlotId = $state<string | null>(null);
   let isOverlayOpen = $state(false);
   let isLoading = $state(true);
   let error = $state<string | null>(null);
@@ -27,6 +28,7 @@ export function createMuseumState() {
     get exhibits() { return exhibits; },
     get isOwner() { return isOwner; },
     get selectedSlotId() { return selectedSlotId; },
+    get interactionTargetSlotId() { return interactionTargetSlotId; },
     get isOverlayOpen() { return isOverlayOpen; },
     get isLoading() { return isLoading; },
     get error() { return error; },
@@ -39,6 +41,7 @@ export function createMuseumState() {
     setError(err: string | null) { error = err; },
 
     selectSlot(slotId: string | null) { selectedSlotId = slotId; },
+    setInteractionTarget(slotId: string | null) { interactionTargetSlotId = slotId; },
     openOverlay() { isOverlayOpen = true; },
     closeOverlay() { isOverlayOpen = false; },
 
@@ -76,6 +79,7 @@ export function createMuseumState() {
       exhibits = new Map();
       isOwner = true;
       selectedSlotId = null;
+      interactionTargetSlotId = null;
       isOverlayOpen = false;
       isLoading = true;
       error = null;

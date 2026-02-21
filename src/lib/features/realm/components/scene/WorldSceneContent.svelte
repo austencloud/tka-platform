@@ -53,6 +53,8 @@
   // Museum
   import MuseumGrounds from "$lib/features/museum/components/MuseumGrounds.svelte";
   import { createMuseumState } from "$lib/features/museum/state/museum-state.svelte";
+  import { InteractionDetector } from "$lib/features/museum/services/implementations/InteractionDetector";
+  import { setActiveMuseumState } from "$lib/features/museum/state/museum-state-bridge.svelte";
 
   import hannonsTerrainData from "../../data/hannons-camp-terrain.json";
 
@@ -214,6 +216,13 @@
   // Museum state (created once, only used when museum realm is active)
   const isMuseumRealm = $derived(activeConfig.id === "museum-grounds");
   const museumState = createMuseumState();
+  const museumInteractionDetector = new InteractionDetector();
+
+  // Publish museum state to bridge so MuseumDestination can access it for HTML overlays
+  $effect(() => {
+    setActiveMuseumState(isMuseumRealm ? museumState : null);
+    return () => setActiveMuseumState(null);
+  });
 
   // Sun light reference for shadow updates
   let sunLight: DirectionalLight | null = null;
@@ -1011,6 +1020,20 @@
     if (camera.current) {
       waterManager?.update(time, camera.current.position.x, camera.current.position.z);
       drainageWaterManager?.update(time, camera.current.position.x, camera.current.position.z);
+    }
+
+    // Museum interaction detection (only when museum realm is active)
+    if (isMuseumRealm && museumState.layout && camera.current && !museumState.isOverlayOpen) {
+      const forward = new Vector3(0, 0, -1);
+      forward.applyQuaternion(camera.current.quaternion);
+
+      const allSlots = museumState.layout.pavilions.flatMap((p) => p.slots);
+      const target = museumInteractionDetector.findInteractableSlot(
+        playerPosition,
+        { x: forward.x, y: forward.y, z: forward.z },
+        allSlots
+      );
+      museumState.setInteractionTarget(target?.slot.id ?? null);
     }
   });
 </script>
