@@ -1,0 +1,319 @@
+{
+  "meta": {
+    "scope": "features/flame-lab",
+    "scopePath": "src/lib/features/flame-lab",
+    "collectedAt": "2026-02-21T08:47:51.946Z",
+    "fileCount": {
+      "total": 9,
+      "svelte": 6,
+      "ts": 3,
+      "css": 0
+    },
+    "durationMs": 473
+  },
+  "dimensions": {
+    "architecture": {
+      "barrelImports": [],
+      "serviceSuffix": [],
+      "utilsOrHooks": [],
+      "potentialDiGaps": [
+        {
+          "file": "features/flame-lab/services/implementations/FirePointOverrideProvider.ts",
+          "line": 0,
+          "preview": "Class \"FirePointOverrideProvider\" in implementations/ - verify DI registration"
+        }
+      ]
+    },
+    "codeQuality": {
+      "anyType": [],
+      "asAny": [],
+      "asUnknownAs": [],
+      "missingReturnType": [],
+      "serviceNaming": []
+    },
+    "svelte5": {
+      "storeImports": [],
+      "writableReadable": [],
+      "dollarColon": [],
+      "exportLet": [],
+      "createEventDispatcher": []
+    },
+    "accessibility": {
+      "reducedMotion": [],
+      "smallFontSize": [],
+      "htmlDirective": [
+        {
+          "file": "features/flame-lab/components/FirePointSvgCanvas.svelte",
+          "line": 338,
+          "preview": "{@html propSvgContent}"
+        }
+      ],
+      "clickWithoutRole": [],
+      "missingAriaLabel": [
+        {
+          "file": "features/flame-lab/components/FirePointListPanel.svelte",
+          "line": 77,
+          "preview": "<button"
+        },
+        {
+          "file": "features/flame-lab/components/FirePointListPanel.svelte",
+          "line": 130,
+          "preview": "<button"
+        },
+        {
+          "file": "features/flame-lab/components/FirePointListPanel.svelte",
+          "line": 138,
+          "preview": "<button"
+        },
+        {
+          "file": "features/flame-lab/components/FirePointListPanel.svelte",
+          "line": 177,
+          "preview": "<button"
+        },
+        {
+          "file": "features/flame-lab/components/FirePointListPanel.svelte",
+          "line": 187,
+          "preview": "<button"
+        },
+        {
+          "file": "features/flame-lab/components/FirePointListPanel.svelte",
+          "line": 197,
+          "preview": "<button"
+        },
+        {
+          "file": "features/flame-lab/components/FirePointListPanel.svelte",
+          "line": 207,
+          "preview": "<button"
+        },
+        {
+          "file": "features/flame-lab/components/FirePointListPanel.svelte",
+          "line": 216,
+          "preview": "<button"
+        },
+        {
+          "file": "features/flame-lab/components/FirePointSvgCanvas.svelte",
+          "line": 381,
+          "preview": "<button"
+        },
+        {
+          "file": "features/flame-lab/components/FirePointSvgCanvas.svelte",
+          "line": 388,
+          "preview": "<button"
+        },
+        {
+          "file": "features/flame-lab/components/FirePointSvgCanvas.svelte",
+          "line": 394,
+          "preview": "<button"
+        },
+        {
+          "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
+          "line": 686,
+          "preview": "<button"
+        },
+        {
+          "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
+          "line": 696,
+          "preview": "<button"
+        },
+        {
+          "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
+          "line": 706,
+          "preview": "<button"
+        },
+        {
+          "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
+          "line": 784,
+          "preview": "<button"
+        },
+        {
+          "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
+          "line": 798,
+          "preview": "<button"
+        },
+        {
+          "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
+          "line": 808,
+          "preview": "<button"
+        },
+        {
+          "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
+          "line": 823,
+          "preview": "<button"
+        },
+        {
+          "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
+          "line": 913,
+          "preview": "<button class=\"publish-btn\" onclick={() => publishConfirm = true}>"
+        },
+        {
+          "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
+          "line": 920,
+          "preview": "<button class=\"confirm-btn\" onclick={publishToProduction} disabled={publishing}>"
+        },
+        {
+          "file": "features/flame-lab/components/PropTypeSelector.svelte",
+          "line": 53,
+          "preview": "<button"
+        },
+        {
+          "file": "features/flame-lab/FlameLabModule.svelte",
+          "line": 40,
+          "preview": "<button"
+        },
+        {
+          "file": "features/flame-lab/FlameLabModule.svelte",
+          "line": 51,
+          "preview": "<button"
+        }
+      ]
+    },
+    "uxStates": {
+      "hasLoadingState": true,
+      "hasErrorState": true,
+      "hasEmptyState": true,
+      "bareCatch": [],
+      "consoleErrorOnly": [
+        {
+          "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
+          "line": 327,
+          "preview": "console.error(\"Flame Lab: preload failed:\", err);"
+        },
+        {
+          "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
+          "line": 365,
+          "preview": "console.error(\"Flame Lab: chain failed:\", err);"
+        },
+        {
+          "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
+          "line": 405,
+          "preview": "console.error(\"Flame Lab: shuffle failed:\", err);"
+        },
+        {
+          "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
+          "line": 503,
+          "preview": "console.error(\"Flame Lab: failed to initialize:\", err);"
+        },
+        {
+          "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
+          "line": 519,
+          "preview": "console.error(\"Flame Lab: failed to restore sequence:\", err);"
+        },
+        {
+          "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
+          "line": 562,
+          "preview": "console.error(\"Flame Lab: load failed:\", err);"
+        },
+        {
+          "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
+          "line": 622,
+          "preview": "console.error(\"[FlameLabTuningTab] Publish failed:\", err);"
+        }
+      ]
+    },
+    "uiConsistency": {
+      "hardcodedDurations": {
+        "count": 0,
+        "files": []
+      },
+      "hardcodedColors": [],
+      "blurOnContent": [],
+      "legacyVars": []
+    },
+    "performance": {
+      "directTransitionImports": {
+        "count": 0,
+        "files": []
+      },
+      "barrelImports": [],
+      "effectWithoutCleanup": [],
+      "timerWithoutCleanup": [
+        {
+          "file": "features/flame-lab/components/FirePointListPanel.svelte",
+          "line": 32,
+          "preview": "copyFeedbackTimer = setTimeout(() => { copyFeedback = false; copyFeedbackTimer = null; }, 1500);"
+        },
+        {
+          "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
+          "line": 202,
+          "preview": "const interval = setInterval(check, 50);"
+        },
+        {
+          "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
+          "line": 560,
+          "preview": "playbackStartTimer = setTimeout(() => { playbackController?.togglePlayback(); playbackStartTimer = null; }, 300);"
+        },
+        {
+          "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
+          "line": 620,
+          "preview": "setTimeout(() => { publishSuccess = false; }, 3000);"
+        }
+      ]
+    },
+    "security": {
+      "htmlDirective": [
+        {
+          "file": "features/flame-lab/components/FirePointSvgCanvas.svelte",
+          "line": 338,
+          "preview": "> | {@html propSvgContent} | </g>"
+        }
+      ],
+      "evalUsage": [],
+      "hardcodedSecrets": [],
+      "innerHTML": []
+    }
+  },
+  "summary": {
+    "architecture": {
+      "barrelImports": 0,
+      "serviceSuffix": 0,
+      "utilsOrHooks": 0,
+      "potentialDiGaps": 1
+    },
+    "codeQuality": {
+      "anyType": 0,
+      "asAny": 0,
+      "asUnknownAs": 0,
+      "missingReturnType": 0,
+      "serviceNaming": 0
+    },
+    "svelte5": {
+      "storeImports": 0,
+      "writableReadable": 0,
+      "dollarColon": 0,
+      "exportLet": 0,
+      "createEventDispatcher": 0
+    },
+    "accessibility": {
+      "reducedMotion": 0,
+      "smallFontSize": 0,
+      "htmlDirective": 1,
+      "clickWithoutRole": 0,
+      "missingAriaLabel": 23
+    },
+    "uxStates": {
+      "hasLoadingState": true,
+      "hasErrorState": true,
+      "hasEmptyState": true,
+      "bareCatch": 0,
+      "consoleErrorOnly": 7
+    },
+    "uiConsistency": {
+      "hardcodedDurations": 0,
+      "hardcodedColors": 0,
+      "blurOnContent": 0,
+      "legacyVars": 0
+    },
+    "performance": {
+      "directTransitionImports": 0,
+      "barrelImports": 0,
+      "effectWithoutCleanup": 0,
+      "timerWithoutCleanup": 4
+    },
+    "security": {
+      "htmlDirective": 1,
+      "evalUsage": 0,
+      "hardcodedSecrets": 0,
+      "innerHTML": 0
+    }
+  }
+}
