@@ -47,11 +47,11 @@ export class ArrowAdjustmentOrchestrator implements IArrowAdjustmentOrchestrator
     this.keyGenerator = new GlobalAdjustmentKeyGenerator(gridModeDeriver, turnsTupleGenerator);
   }
 
-  getDefaultSaveLayer(thisPropType: string, otherPropType: string): 1 | 2 | 3 {
-    if (thisPropType === "staff" && otherPropType === "staff") {
-      return 1; // Base layer for staff
-    }
-    return 2; // Prop-specific layer for non-staff
+  getDefaultSaveLayer(_thisPropType: string, _otherPropType: string): 1 | 2 | 3 {
+    // Always save at Layer 2 (prop-specific). Even staff+staff adjustments are stored
+    // under the key `...|staff` so they don't bleed into other prop types via Layer 1 fallback.
+    // Without this, changing props after WASD adjustment shows the old prop's position.
+    return 2;
   }
 
   generateTargetKey(

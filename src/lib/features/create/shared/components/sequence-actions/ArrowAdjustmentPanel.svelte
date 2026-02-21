@@ -342,11 +342,8 @@
   <!-- Layer and prop indicator -->
   <span
     class="layer-badge"
-    class:layer-1={defaultSaveLayer === 1}
     class:layer-2={defaultSaveLayer === 2}
-    title={defaultSaveLayer === 1
-      ? "Base layer (staff) - applies to all props"
-      : `Prop-specific layer for ${thisPropType}`}
+    title={`Prop-specific adjustment for ${thisPropType}`}
   >
     L{defaultSaveLayer}·{thisPropType}
   </span>
