@@ -72,6 +72,7 @@ export class ClaudeCodeCopier implements IClaudeCodeCopier {
     if (fullSequence.steps?.length) {
       for (let i = 0; i < fullSequence.steps.length; i++) {
         const step = fullSequence.steps[i];
+        if (!step) continue;
         const beatNum = i + 1;
         const letter = step.letter ? ` ${step.letter}` : "";
         const pos = step.startPosition && step.endPosition

@@ -98,6 +98,8 @@ export interface SequenceData {
   readonly performanceVideoPath?: string;
   /** Storage path for animated sequence (for deletion) */
   readonly animatedSequencePath?: string;
+  /** User-provided tagline or notes for this sequence */
+  readonly notes?: string;
 }
 
 export function createSequenceData(
@@ -172,6 +174,7 @@ export function createSequenceData(
     ...(data.animatedSequencePath !== undefined && {
       animatedSequencePath: data.animatedSequencePath,
     }),
+    ...(data.notes !== undefined && { notes: data.notes }),
   };
   return result;
 }

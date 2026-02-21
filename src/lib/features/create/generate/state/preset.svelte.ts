@@ -89,6 +89,7 @@ function createDefaultPreset(): GenerationPreset {
     constraintPreset: "smooth",
     handPathMode: "mixed",
     motionTypeFilter: null,
+    durationTemplateId: null,
   };
 
   return {
