@@ -49,44 +49,6 @@
   import DuetOrchestrator from "$lib/shared/3d-animation/components/DuetOrchestrator.svelte";
 
   // ============================================================================
-  // HMR POSITION PERSISTENCE
-  // ============================================================================
-  // Stores player position/yaw in sessionStorage so HMR doesn't reset you to spawn
-
-  const HMR_STORAGE_KEY = "realm-hmr-state";
-
-  interface HMRState {
-    x: number;
-    y: number;
-    z: number;
-    yaw: number;
-    cameraMode: CameraMode;
-  }
-
-  function loadHMRState(): HMRState | null {
-    if (!browser) return null;
-    try {
-      const stored = sessionStorage.getItem(HMR_STORAGE_KEY);
-      if (!stored) return null;
-      return JSON.parse(stored) as HMRState;
-    } catch {
-      return null;
-    }
-  }
-
-  function saveHMRState(state: HMRState): void {
-    if (!browser) return;
-    try {
-      sessionStorage.setItem(HMR_STORAGE_KEY, JSON.stringify(state));
-    } catch {
-      // Ignore storage errors
-    }
-  }
-
-  // Load initial state from HMR storage (if exists)
-  const hmrState = loadHMRState();
-
-  // ============================================================================
   // PROPS
   // ============================================================================
 
@@ -113,6 +75,51 @@
 
   // Use provided realm config or default
   const activeConfig = $derived(realmConfig ?? getDefaultRealmConfig());
+
+  // ============================================================================
+  // HMR POSITION PERSISTENCE
+  // ============================================================================
+  // Stores player position/yaw in sessionStorage so HMR doesn't reset you to spawn.
+  // Key is per-realm so different worlds don't share camera state.
+
+  interface HMRState {
+    x: number;
+    y: number;
+    z: number;
+    yaw: number;
+    cameraMode: CameraMode;
+  }
+
+  function getHMRKey(): string {
+    return `realm-hmr-${activeConfig.id}`;
+  }
+
+  function loadHMRState(): HMRState | null {
+    if (!browser) return null;
+    try {
+      const stored = sessionStorage.getItem(getHMRKey());
+      if (!stored) return null;
+      const state = JSON.parse(stored) as HMRState;
+      // Reject stored state if position is underground (invalid)
+      const minSafeHeight = (activeConfig.terrain?.waterLevel ?? 5) + 2;
+      if (state.y < minSafeHeight) return null;
+      return state;
+    } catch {
+      return null;
+    }
+  }
+
+  function saveHMRState(state: HMRState): void {
+    if (!browser) return;
+    try {
+      sessionStorage.setItem(getHMRKey(), JSON.stringify(state));
+    } catch {
+      // Ignore storage errors
+    }
+  }
+
+  // Load initial state from HMR storage (if exists for THIS realm)
+  const hmrState = loadHMRState();
 
   // ============================================================================
   // STATE (bindable to WorldSceneContent)
