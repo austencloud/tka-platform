@@ -1,15 +1,22 @@
 <script lang="ts">
   import { T } from "@threlte/core";
+  import { onDestroy } from "svelte";
   import * as THREE from "three";
   import type { ExhibitSlot } from "../domain/museum-types";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import Avatar3D from "$lib/shared/3d-animation/components/Avatar3D.svelte";
+  import Staff3D from "$lib/shared/3d-animation/components/Staff3D.svelte";
+  import { createAvatarInstanceState } from "$lib/shared/3d-animation/state/avatar-instance-state.svelte";
+  import { container } from "$lib/shared/di";
 
   interface Props {
     slot: ExhibitSlot;
     isPopulated: boolean;
     playerPosition: { x: number; y: number; z: number };
+    sequence?: SequenceData | null;
   }
 
-  let { slot, isPopulated, playerPosition }: Props = $props();
+  let { slot, isPopulated, playerPosition, sequence = null }: Props = $props();
 
   const ACTIVATION_DISTANCE = 15; // meters
   const platformColor = new THREE.Color(0x6b5b4f); // dark stone
@@ -18,6 +25,32 @@
     const dx = playerPosition.x - slot.position.x;
     const dz = playerPosition.z - slot.position.z;
     return Math.sqrt(dx * dx + dz * dz) < ACTIVATION_DISTANCE;
+  });
+
+  // Create performer animation state
+  const performerState = createAvatarInstanceState(
+    {
+      id: `museum-performer-${slot.id}`,
+      positionX: slot.position.x,
+      positionZ: slot.position.z,
+    },
+    {
+      propInterpolator: container.items.propStateInterpolator,
+      sequenceConverter: container.items.sequenceConverter,
+    }
+  );
+
+  // Load sequence when it becomes available
+  $effect(() => {
+    if (sequence) {
+      performerState.loadSequence(sequence);
+      performerState.loop = true;
+      performerState.play();
+    }
+  });
+
+  onDestroy(() => {
+    performerState.destroy();
   });
 </script>
 
@@ -33,8 +66,40 @@
     <T.MeshStandardMaterial color={platformColor} roughness={0.85} />
   </T.Mesh>
 
-  <!-- Avatar placeholder — replaced with Avatar3D in Task 14 -->
-  {#if isPopulated && isActive}
+  <!-- Avatar performer — renders when populated, nearby, and sequence loaded -->
+  {#if isPopulated && isActive && sequence}
+    <Avatar3D
+      id={`museum-${slot.id}`}
+      bluePropState={performerState.bluePropState}
+      redPropState={performerState.redPropState}
+      position={{ x: slot.position.x, y: slot.position.y + 0.3, z: slot.position.z }}
+      facingAngle={slot.rotationY}
+      isActive={false}
+      isMoving={false}
+    />
+
+    {#if performerState.bluePropState}
+      <Staff3D
+        propState={performerState.bluePropState}
+        color="blue"
+        avatarPosition={{ x: slot.position.x, y: slot.position.y + 0.3, z: slot.position.z }}
+        facingAngle={slot.rotationY}
+        gridOffset={-0.5}
+        isActivePlayer={false}
+      />
+    {/if}
+    {#if performerState.redPropState}
+      <Staff3D
+        propState={performerState.redPropState}
+        color="red"
+        avatarPosition={{ x: slot.position.x, y: slot.position.y + 0.3, z: slot.position.z }}
+        facingAngle={slot.rotationY}
+        gridOffset={-0.5}
+        isActivePlayer={false}
+      />
+    {/if}
+  {:else if isPopulated && isActive}
+    <!-- Capsule placeholder when sequence data not yet loaded -->
     <T.Mesh
       position.x={slot.position.x}
       position.y={slot.position.y + 1.2}
