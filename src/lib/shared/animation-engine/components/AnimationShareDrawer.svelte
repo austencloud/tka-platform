@@ -27,7 +27,7 @@
   import { responsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
   import type { IResponsiveLayoutManager } from "$lib/features/create/shared/services/contracts/IResponsiveLayoutManager";
   import type { IKeyboardShortcutManager } from "$lib/shared/keyboard/services/contracts/IKeyboardShortcutManager";
-  import { registerAnimationShortcuts } from "../utils/register-animation-shortcuts";
+  import { animationShortcutRegistrar } from "../services/implementations/AnimationShortcutRegistrar";
 
   // Types
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
@@ -237,7 +237,7 @@
     shortcutService.setContext("animation-panel");
 
     // Register shortcuts
-    unregisterShortcuts = registerAnimationShortcuts(shortcutService, {
+    unregisterShortcuts = animationShortcutRegistrar.register(shortcutService, {
       onPlaybackToggle,
       onStepHalfBeatForward,
       onStepHalfBeatBackward,

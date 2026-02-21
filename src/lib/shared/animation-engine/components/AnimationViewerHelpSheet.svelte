@@ -7,7 +7,8 @@
 -->
 <script lang="ts">
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
-  import { ANIMATION_SHORTCUTS } from "../utils/register-animation-shortcuts";
+  import { animationShortcutRegistrar } from "../services/implementations/AnimationShortcutRegistrar";
+  const ANIMATION_SHORTCUTS = animationShortcutRegistrar.shortcuts;
 
   let {
     isOpen = $bindable(false),
