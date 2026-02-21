@@ -42,6 +42,7 @@ Last audit: 2025-12-27
   import { AnimationEngine } from "../services/implementations/AnimationEngine.svelte";
   import { getAnimationVisibilityManager } from "../state/animation-visibility-state.svelte";
   import type { FireOverlayConfig } from "../domain/types/FireTypes";
+  import type { LedOverlayConfig } from "../domain/types/LedTypes";
   import { onMount, onDestroy, untrack } from "svelte";
 
   // Props
@@ -82,6 +83,8 @@ Last audit: 2025-12-27
     focused = false,
     // Fire overlay configuration — when provided, overrides the engine's defaults
     fireConfig = undefined,
+    // LED overlay configuration — when provided, overrides the engine's defaults
+    ledConfig = undefined,
   }: {
     blueProp: PropState | null;
     redProp: PropState | null;
@@ -108,6 +111,7 @@ Last audit: 2025-12-27
     onProgressBarSeek?: ((targetStep: number) => void) | null;
     focused?: boolean;
     fireConfig?: Partial<FireOverlayConfig>;
+    ledConfig?: Partial<LedOverlayConfig>;
   } = $props();
 
   // Container element
@@ -215,6 +219,15 @@ Last audit: 2025-12-27
     if (fireConfig) {
       untrack(() => {
         engine.setFireConfig(fireConfig);
+      });
+    }
+  });
+
+  // Sync LED config to engine when provided
+  $effect(() => {
+    if (ledConfig) {
+      untrack(() => {
+        engine.setLedConfig(ledConfig);
       });
     }
   });

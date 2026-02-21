@@ -358,7 +358,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.ledTipTracker &&
       params.ledConfig?.enabled
     ) {
-      const ledTrackerConfig: LedTipTrackerConfig = {
+      const tipTrackerConfig: LedTipTrackerConfig = {
         canvasSize: this.canvasSize,
         bluePropDimensions: props.bluePropDimensions,
         redPropDimensions: props.redPropDimensions,
@@ -369,7 +369,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       const tips = this.ledTipTracker.update(
         props.blueProp,
         props.redProp,
-        ledTrackerConfig,
+        tipTrackerConfig,
         currentTime,
         params.ledConfig
       );
