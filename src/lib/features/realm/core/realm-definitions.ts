@@ -235,6 +235,69 @@ export const FLAT_TESTING_CONFIG: RealmConfig = {
 };
 
 // ============================================================================
+// MUSEUM GROUNDS
+// ============================================================================
+
+/**
+ * Museum Grounds
+ *
+ * Open-air museum with pavilion structures on natural terrain.
+ * Large clearing for museum pavilions, no campground objects.
+ * Player spawns facing pavilions (negative Z direction).
+ */
+export const MUSEUM_GROUNDS_CONFIG: RealmConfig = {
+  id: "museum-grounds",
+  name: "Museum Grounds",
+  description: "Open-air museum with pavilion structures in natural terrain",
+
+  terrain: {
+    type: "procedural",
+    seed: 314,
+    waterLevel: 5,
+  },
+
+  chunks: {
+    size: 32,
+    viewDistance: 256,
+    lodDistances: [],
+  },
+
+  features: {
+    objectPlacement: false,
+    boundaryEditing: false,
+    satelliteImagery: false,
+  },
+
+  spawn: {
+    position: [0, 50, 0],
+    yaw: Math.PI, // Face toward pavilions (negative Z)
+  },
+
+  physics: {
+    walkSpeed: 3.5,
+    runSpeed: 7,
+    flySpeed: 50,
+    gravity: 9.81,
+    jumpForce: 5,
+    playerHeight: 1.7,
+  },
+
+  spawnClearing: {
+    enabled: true,
+    center: { x: 0, z: 0 },
+    radius: 40,
+    blendWidth: 20,
+    campground: {
+      enabled: false,
+      firePit: false,
+      tent: false,
+      seatingLogs: 0,
+      torches: 0,
+    },
+  },
+};
+
+// ============================================================================
 // REALM REGISTRY
 // ============================================================================
 
@@ -246,6 +309,7 @@ export const REALM_CONFIGS: Record<string, RealmConfig> = {
   "performance-stage": PERFORMANCE_STAGE_CONFIG,
   procedural: PROCEDURAL_WORLD_CONFIG,
   "flat-testing": FLAT_TESTING_CONFIG,
+  "museum-grounds": MUSEUM_GROUNDS_CONFIG,
 };
 
 /**
