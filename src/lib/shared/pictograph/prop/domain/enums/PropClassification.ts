@@ -56,6 +56,7 @@ export const SMALL_BILATERAL_PROPS = [
   "simple_staff",
   "staff_v2",
   "buugeng",
+  "trigeng",
   "doublestar",
   "quiad",
   "fractalgeng",
@@ -103,6 +104,7 @@ export const BUUGENG_FAMILY_PROPS = [
   "buugeng",
   "bigbuugeng",
   "fractalgeng",
+  "trigeng",
 ] as const;
 
 /**

@@ -1,13 +1,11 @@
 <!--
   PropSelectionSheet.svelte
-  Drawer for selecting props - right on desktop, bottom on mobile
+  Bottom drawer for selecting props.
   Uses BentoPropGrid to show all variations organized by family.
 -->
 <script lang="ts">
   import { container } from "$lib/shared/di";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
-  import { onMount } from "svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import BentoPropGrid from "./BentoPropGrid.svelte";
 
@@ -25,30 +23,6 @@
     onSelect: (propType: PropType) => void;
   }>();
 
-  // Services
-  let deviceDetector: IDeviceDetector | null = null;
-
-  // Drawer placement based on device
-  let placement = $state<"bottom" | "right">("right");
-
-  onMount(() => {
-    deviceDetector = container.items.deviceDetector as IDeviceDetector;
-    updatePlacement();
-
-    const cleanup = deviceDetector?.onCapabilitiesChanged(() => {
-      updatePlacement();
-    });
-
-    return () => cleanup?.();
-  });
-
-  function updatePlacement() {
-    if (!deviceDetector) return;
-    const navigationLayout = deviceDetector.getNavigationLayoutImmediate();
-    // Bottom navigation = bottom drawer, Top/Left navigation = right drawer
-    placement = navigationLayout === "bottom" ? "bottom" : "right";
-  }
-
   function handlePropSelect(propType: PropType) {
     const hapticService = container.items.hapticFeedback;
     hapticService?.trigger("selection");
@@ -59,7 +33,7 @@
 
 <Drawer
   {isOpen}
-  {placement}
+  placement="bottom"
   closeOnBackdrop={true}
   closeOnEscape={true}
   dismissible={true}
@@ -82,15 +56,17 @@
 </Drawer>
 
 <style>
-  /* Bottom sheet constraint - only cover prop controls area, not beat grid */
+  /* Bottom drawer sizing - centered with margin auto (avoids transform conflicts with drag) */
   :global(.prop-selection-drawer[data-placement="bottom"]) {
+    height: fit-content;
     max-height: 70vh;
-    height: auto;
-  }
-
-  /* Right drawer - wider to accommodate Bento grid */
-  :global(.prop-selection-drawer[data-placement="right"]) {
-    width: min(480px, 90vw);
+    min-height: 0 !important;
+    max-width: 480px;
+    left: 0 !important;
+    right: 0 !important;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: var(--sheet-radius-large, 20px) var(--sheet-radius-large, 20px) 0 0;
   }
 
   /* Content - fills drawer */

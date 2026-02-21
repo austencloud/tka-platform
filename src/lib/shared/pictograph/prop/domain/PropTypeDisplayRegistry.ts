@@ -73,6 +73,12 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
       image: "/images/props/buttons/fractalgeng.svg",
     },
 
+    // === TRIGENG FAMILY ===
+    [PropType.TRIGENG]: {
+      label: "Trigeng",
+      image: "/images/props/buttons/trigeng.svg",
+    },
+
     // === HAND ===
     [PropType.HAND]: { label: "Hand", image: "/images/props/buttons/hand.svg" },
 

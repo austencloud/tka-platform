@@ -37,8 +37,7 @@
     },
     {
       name: "Buugengs",
-      props: [PropType.BUUGENG, PropType.BIGBUUGENG],
-      // Note: Fractalgeng removed - not commonly used
+      props: [PropType.BUUGENG, PropType.BIGBUUGENG, PropType.TRIGENG],
     },
     {
       name: "Hoops",

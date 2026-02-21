@@ -130,6 +130,7 @@ const PROP_TYPE_ENCODE: Record<PropType, string> = {
   [PropType.BUUGENG]: "B",
   [PropType.BIGBUUGENG]: "b",
   [PropType.FRACTALGENG]: "R",
+  [PropType.TRIGENG]: "J",
   // Hand
   [PropType.HAND]: "X",
   // Triquetra family
