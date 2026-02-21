@@ -9,13 +9,17 @@
     savePublicThemeIndex,
     getNextThemeIndex,
   } from "$lib/shared/settings/utils/public-page-backgrounds";
+  import LightsToggleButton from "$lib/shared/ui/components/LightsToggleButton.svelte";
 
   type VersionKey = "original" | "firejam" | "grant";
+
+  let positionLightsOn = $state(true);
 
   interface Section {
     title: string;
     icon: string;
     paragraphs: string[];
+    hasPositionGrid?: boolean;
   }
 
   interface Version {
@@ -49,6 +53,7 @@
         {
           title: "How It Works",
           icon: "fa-diagram-project",
+          hasPositionGrid: true,
           paragraphs: [
             "Every beat of movement becomes a pictograph showing where your hands are and how they move on a grid. The visual approach means you can read a sequence immediately without memorizing terminology. Positions describe where your hands are relative to each other: across from each other, at the same point, forming a right angle.",
             "Pictographs also capture motion types, direction, and rotation. The letter system is optional, but useful when you need to reference a single beat in a specific sequence during choreography and rehearsal.",
@@ -104,6 +109,7 @@
         {
           title: "How It Works",
           icon: "fa-diagram-project",
+          hasPositionGrid: true,
           paragraphs: [
             "Each beat of movement gets a pictograph. It shows where your hands are and how they move on a grid. You can read it without memorizing terminology. Positions are simple: hands across from each other, at the same point, or at a right angle.",
             "Pictographs also capture motion type, direction, and rotation. Letters are optional but handy when you need to talk about a specific beat during rehearsal.",
@@ -160,6 +166,7 @@
         {
           title: "What TKA Is",
           icon: "fa-seedling",
+          hasPositionGrid: true,
           paragraphs: [
             "The Kinetic Alphabet (TKA) is a notation system that encodes prop movement as pictographs and letters. Each beat of a performance is represented as a pictograph: a grid-based diagram showing hand positions, prop orientations, motion types, direction, and rotation. Sequences of pictographs form words, and words spell out choreography that can be read, written, spoken, and reproduced.",
             'The system is visual-first. A pictograph can be read without terminology training. Positions are geometric: hands at opposite points (alpha), the same point (beta), or at a right angle (gamma).',
@@ -295,15 +302,65 @@
           style="animation-delay: {i * 60}ms;"
         >
           <div class="section-header">
-            <div class="section-icon">
-              <i class="fas {section.icon}" aria-hidden="true"></i>
+            <div class="section-header-left">
+              <div class="section-icon">
+                <i class="fas {section.icon}" aria-hidden="true"></i>
+              </div>
+              <h2>{section.title}</h2>
             </div>
-            <h2>{section.title}</h2>
+            {#if section.hasPositionGrid}
+              <LightsToggleButton
+                lightsOn={positionLightsOn}
+                onToggle={() => (positionLightsOn = !positionLightsOn)}
+                size="small"
+              />
+            {/if}
           </div>
           <div class="section-body">
-            {#each section.paragraphs as p}
-              <p>{p}</p>
-            {/each}
+            {#if section.hasPositionGrid}
+              <p>{section.paragraphs[0]}</p>
+
+              <div class="position-grid" class:dark-mode={!positionLightsOn}>
+                <div class="position-item">
+                  <div class="position-image-container">
+                    <img
+                      src="/images/position_images/alpha.png"
+                      alt="Alpha position: hands at opposite points on the grid"
+                    />
+                  </div>
+                  <span class="position-name">Alpha</span>
+                  <span class="position-desc">Opposite points</span>
+                </div>
+                <div class="position-item">
+                  <div class="position-image-container">
+                    <img
+                      src="/images/position_images/beta.png"
+                      alt="Beta position: hands at the same point on the grid"
+                    />
+                  </div>
+                  <span class="position-name">Beta</span>
+                  <span class="position-desc">Same point</span>
+                </div>
+                <div class="position-item">
+                  <div class="position-image-container">
+                    <img
+                      src="/images/position_images/gamma.png"
+                      alt="Gamma position: hands forming a right angle on the grid"
+                    />
+                  </div>
+                  <span class="position-name">Gamma</span>
+                  <span class="position-desc">Right angle</span>
+                </div>
+              </div>
+
+              {#each section.paragraphs.slice(1) as p}
+                <p>{p}</p>
+              {/each}
+            {:else}
+              {#each section.paragraphs as p}
+                <p>{p}</p>
+              {/each}
+            {/if}
           </div>
         </article>
       {/each}
@@ -513,8 +570,15 @@
   .section-header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 0.75rem;
     margin-bottom: 1rem;
+  }
+
+  .section-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
   }
 
   .section-icon {
@@ -550,6 +614,61 @@
 
   .section-body p:last-child {
     margin-bottom: 0;
+  }
+
+  /* Position pictographs grid */
+  .position-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .position-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .position-image-container {
+    width: 100%;
+    max-width: 150px;
+    aspect-ratio: 1;
+    background: #ffffff;
+    border-radius: 10px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+    transition: filter 0.3s ease, background 0.3s ease;
+  }
+
+  .position-image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .position-grid.dark-mode .position-image-container {
+    background: #1a1a2e;
+    filter: invert(1) hue-rotate(180deg);
+  }
+
+  .position-name {
+    font-family: "DM Sans", sans-serif;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    color: var(--theme-text, #fff);
+    margin-bottom: 0.125rem;
+  }
+
+  .position-desc {
+    font-family: "DM Sans", sans-serif;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 
   /* Footer */
@@ -620,6 +739,23 @@
       font-size: 1rem;
     }
 
+    .section-header {
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .position-grid {
+      gap: 0.75rem;
+    }
+
+    .position-image-container {
+      max-width: 100px;
+    }
+
+    .position-name {
+      font-size: 0.8125rem;
+    }
+
     .theme-toggle {
       bottom: 16px;
       right: 16px;
@@ -636,7 +772,8 @@
     .verdict-bar,
     .version-tab,
     .back-link,
-    .theme-toggle {
+    .theme-toggle,
+    .position-image-container {
       transition: none;
     }
   }
