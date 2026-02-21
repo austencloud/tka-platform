@@ -142,7 +142,7 @@
     right: 4px;
     font-size: var(--font-size-compact);
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
     font-variant-numeric: tabular-nums;
   }
 
