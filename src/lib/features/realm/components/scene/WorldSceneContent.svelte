@@ -277,6 +277,17 @@
     // Initialize position (will be updated when ground snap happens)
     playerPosition = { x: spawnPos[0], y: 500, z: spawnPos[2] };
 
+    // Wait for Threlte scene to be ready (async canvas init may race with physics)
+    if (!scene.current) {
+      await new Promise<void>((resolve) => {
+        const check = () => {
+          if (scene.current) return resolve();
+          requestAnimationFrame(check);
+        };
+        check();
+      });
+    }
+
     // Setup lighting
     setupLighting();
 
