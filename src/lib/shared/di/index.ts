@@ -92,6 +92,7 @@ import { labContainer } from "./containers/lab-container";
 import { visualBuilderContainer } from "./containers/visual-builder-container";
 import { arenaContainer } from "./containers/arena-container";
 import { flameLabContainer } from "./containers/flame-lab-container";
+import { createMuseumContainer } from "./containers/museum-container";
 // Deep link resolution for cross-tab/cross-user URLs
 import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
 
@@ -301,6 +302,9 @@ const composeBrowseContainer = typeof window !== 'undefined' ? createComposeBrow
 // Compose Arrange container - beat calculation, persistence, playback, transforms
 const composeArrangeContainer = typeof window !== 'undefined' ? createComposeArrangeContainer() : null as any;
 
+// Museum container - self-contained, no external dependencies
+const museumContainer = typeof window !== 'undefined' ? createMuseumContainer() : null as any;
+
 // Voice session recording, formatting, persistence, analysis, and replay
 const voiceSessionContainer = typeof window !== 'undefined' ? createVoiceSessionContainer({
   commandInterpreter: voiceControlContainer.items.commandInterpreter,
@@ -430,6 +434,8 @@ function buildAppContainer(): any {
   c = c.add(arenaContainer.items);
   // Flame Lab services (fire point override provider)
   c = c.add(flameLabContainer.items);
+  // Museum services (persistence, interaction detection)
+  c = c.add(museumContainer.items);
   // Cross-container services (depend on multiple container outputs)
   c = c.add({ deepLinkResolver: () => deepLinkResolver });
   c = c.add({ sequenceDataProvider: () => sequenceDataProvider });
