@@ -51,6 +51,8 @@
     customNotesText?: string;
     // Visibility overrides (grid, hand points, glyphs)
     visibility?: ThumbnailVisibilitySettings;
+    // Skip IntersectionObserver and load immediately (use in modals/pickers)
+    eager?: boolean;
   }
 
   const {
@@ -71,6 +73,7 @@
     showBirthday,
     customNotesText,
     visibility,
+    eager = false,
   }: Props = $props();
 
   // State
@@ -150,7 +153,14 @@
     cloudCache = container.items.cloudThumbnailCache;
     servicesReady = true;
 
-    // Set up intersection observer
+    // Eager mode: skip IntersectionObserver entirely (used in modals/pickers
+    // where cards are already visible but dialog top-layer breaks observer)
+    if (eager) {
+      isVisible = true;
+      return;
+    }
+
+    // Set up intersection observer for lazy loading
     if (containerRef) {
       observer = new IntersectionObserver(
         ([entry]) => {

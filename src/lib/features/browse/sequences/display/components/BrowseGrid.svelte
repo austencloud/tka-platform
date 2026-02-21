@@ -34,6 +34,7 @@
     pinchColumnOverride,
     isTransitioning = false,
     disableVirtualization = false,
+    eager = false,
   } = $props<{
     sequences?: SequenceData[];
     sections?: SequenceData[];
@@ -47,6 +48,8 @@
     isTransitioning?: boolean;
     /** Force flat grid rendering (skip virtualization). Use in modals/pickers. */
     disableVirtualization?: boolean;
+    /** Skip lazy loading - load thumbnails immediately (use in modals/pickers) */
+    eager?: boolean;
   }>();
 
   // Determine if we should use virtualization
@@ -232,6 +235,7 @@
                 redPropType={propSettings.redPropType}
                 catDogModeEnabled={isCatDog}
                 {lightMode}
+                {eager}
               />
             {/each}
           </div>
@@ -264,6 +268,7 @@
         redPropType={propSettings.redPropType}
         catDogModeEnabled={isCatDog}
         {lightMode}
+        {eager}
       />
     {/each}
   </div>

@@ -32,6 +32,7 @@ Variation support:
     redPropType = undefined,
     catDogModeEnabled = false,
     lightMode = false,
+    eager = false,
   }: {
     sequence: SequenceData;
     variations?: SequenceData[];
@@ -43,6 +44,8 @@ Variation support:
     redPropType?: PropType;
     catDogModeEnabled?: boolean;
     lightMode?: boolean;
+    /** Skip lazy loading - load thumbnails immediately (use in modals/pickers) */
+    eager?: boolean;
   } = $props();
 
   // Track which variation is currently displayed.
@@ -124,6 +127,7 @@ Variation support:
       {redPropType}
       {catDogModeEnabled}
       {lightMode}
+      {eager}
       userName={displayedSequence.ownerDisplayName}
     />
   </div>

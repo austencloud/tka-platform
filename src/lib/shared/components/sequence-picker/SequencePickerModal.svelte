@@ -393,6 +393,7 @@
               onAction={handleSequenceAction}
               pinchColumnOverride={columnCount}
               disableVirtualization
+              eager
             />
           {/if}
         </div>
