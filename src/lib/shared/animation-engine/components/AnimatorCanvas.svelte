@@ -331,14 +331,14 @@ Last audit: 2025-12-27
     /* Container query context for header font scaling */
     container-type: inline-size;
     /* Border styling */
-    border: 1.5px solid #1a1a2e;
+    border: 1.5px solid var(--theme-panel-bg, #1a1a2e);
     border-radius: 4px;
     overflow: hidden;
     transition: border-color var(--duration-fast) ease-out;
   }
 
   .content-wrapper[data-dark-mode="true"] {
-    border-color: #00b8b8;
+    border-color: var(--theme-accent, #00b8b8);
   }
 
   /* Header slot: in portrait, takes natural height at top */
