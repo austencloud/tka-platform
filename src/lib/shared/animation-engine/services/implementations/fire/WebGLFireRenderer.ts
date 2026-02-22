@@ -44,6 +44,7 @@ import {
   CLEAR_FRAG,
   DISPLAY_FRAG,
 } from "./FluidShaderSources";
+import { WHITE_GAS_COLOR } from "../../../domain/types/BuiltInFuelSources";
 
 const MAX_DPR = 2;
 const JACOBI_ITERATIONS = 30;
@@ -629,6 +630,13 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     const aspect = this.displayCanvasWidth / Math.max(this.displayCanvasHeight, 1);
     gl.uniform2f(prog.uniforms.get("u_aspectCorrect")!, 1.0, aspect);
 
+    // Per-fuel-source color curve (falls back to white gas = old hardcoded values)
+    const curve = config.colorCurve ?? WHITE_GAS_COLOR;
+    gl.uniform3fv(prog.uniforms.get("u_colorCold")!, curve.coldColor);
+    gl.uniform3fv(prog.uniforms.get("u_colorMid")!, curve.midColor);
+    gl.uniform3fv(prog.uniforms.get("u_colorHot")!, curve.hotColor);
+    gl.uniform3fv(prog.uniforms.get("u_colorCore")!, curve.coreColor);
+
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
 
@@ -745,6 +753,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.displayProgram = this.buildProgram(DISPLAY_FRAG, [
       "u_temperature", "u_fuel", "u_colorField", "u_displayIntensity",
       "u_tipCount", "u_aspectCorrect", "u_colorBlend",
+      "u_colorCold", "u_colorMid", "u_colorHot", "u_colorCore",
     ]);
 
     const all = [
