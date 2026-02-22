@@ -8,7 +8,7 @@
  * require the complex dependency chain of the main app's LOOPDetector.
  */
 
-import type { SequenceStep } from "../sequence-builder.js";
+import type { SequenceStep } from "../domain/models/SequenceEngineTypes.js";
 
 /**
  * LOOP component primitives that can be detected
@@ -107,7 +107,7 @@ function initPositionMaps() {
 export function isSequenceCircular(steps: SequenceStep[]): boolean {
   if (steps.length < 2) return false;
 
-  const startPositionStep = steps.find((s) => s.stepNumber === 0);
+  const startPositionStep = steps.find((s) => (s.stepNumber ?? s.beatIndex) === 0);
   const lastStep = steps[steps.length - 1];
 
   if (!startPositionStep || !lastStep) return false;
@@ -134,7 +134,7 @@ export function detectLOOPFromSteps(steps: SequenceStep[]): LOOPDetectionResult 
   }
 
   // Get letter steps only (exclude step 0 start position)
-  const letterSteps = steps.filter((s) => s.stepNumber > 0);
+  const letterSteps = steps.filter((s) => (s.stepNumber ?? s.beatIndex) > 0);
 
   if (letterSteps.length < 2) {
     return {
