@@ -352,6 +352,12 @@ uniform sampler2D u_colorField;
 uniform float u_displayIntensity;
 uniform float u_colorBlend; // 0.0 = natural, 0.5 = tinted, 1.0 = colored
 
+// Per-fuel-source color curve (replaces hardcoded blackbody ramp)
+uniform vec3 u_colorCold;   // FireColorCurve.coldColor
+uniform vec3 u_colorMid;    // FireColorCurve.midColor
+uniform vec3 u_colorHot;    // FireColorCurve.hotColor
+uniform vec3 u_colorCore;   // FireColorCurve.coreColor
+
 // Wick core rendering uniforms (up to 16 tips for multi-point props like fans)
 uniform vec2 u_tipPositions[16];
 uniform float u_tipSpeeds[16];
@@ -360,23 +366,23 @@ uniform vec3 u_tipColors[16];
 uniform int u_tipCount;
 uniform vec2 u_aspectCorrect;
 
-// Standard blackbody for natural fire
+// Natural fire color ramp driven by per-fuel-source uniforms
 vec3 blackbodyColor(float t) {
   vec3 color;
   if (t < 0.4) {
-    color = vec3(0.2, 0.02, 0.0) * (t / 0.4);
+    color = u_colorCold * (t / 0.4);
   } else if (t < 1.0) {
     float f = (t - 0.4) / 0.6;
-    color = mix(vec3(0.2, 0.02, 0.0), vec3(0.9, 0.15, 0.0), f);
+    color = mix(u_colorCold, u_colorMid, f);
   } else if (t < 2.0) {
     float f = (t - 1.0);
-    color = mix(vec3(0.9, 0.15, 0.0), vec3(1.0, 0.55, 0.05), f);
+    color = mix(u_colorMid, u_colorHot, f);
   } else if (t < 3.5) {
     float f = (t - 2.0) / 1.5;
-    color = mix(vec3(1.0, 0.55, 0.05), vec3(1.0, 0.9, 0.35), f);
+    color = mix(u_colorHot, u_colorCore, f);
   } else {
     float f = clamp((t - 3.5) / 2.0, 0.0, 1.0);
-    color = mix(vec3(1.0, 0.9, 0.35), vec3(1.0, 0.98, 0.9), f);
+    color = mix(u_colorCore, vec3(1.0, 0.98, 0.9), f);
   }
   return color;
 }
@@ -445,8 +451,8 @@ void main() {
     vec2 delta = (v_uv - u_tipPositions[i]) * u_aspectCorrect;
     float dist2 = dot(delta, delta);
 
-    // Wick tip color: blend from natural orange toward prop color
-    vec3 tipColor = mix(vec3(1.0, 0.65, 0.12), u_tipColors[i], u_colorBlend);
+    // Wick tip color: blend from fuel-source hot color toward prop color
+    vec3 tipColor = mix(u_colorHot, u_tipColors[i], u_colorBlend);
 
     // Inner core: white-hot center (always white regardless of mode)
     float coreR = 0.006 * fs;
@@ -464,7 +470,7 @@ void main() {
     float glowR = 0.035 * fs;
     float glowR2 = glowR * glowR;
     float glow = exp(-dist2 / glowR2);
-    vec3 glowTint = mix(vec3(0.9, 0.25, 0.02), u_tipColors[i] * 0.4, u_colorBlend);
+    vec3 glowTint = mix(u_colorMid, u_tipColors[i] * 0.4, u_colorBlend);
     vec3 glowColor = glowTint * glow * 1.2 * u_displayIntensity;
 
     color += coreColor + bodyColor + glowColor;
