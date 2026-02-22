@@ -68,10 +68,11 @@ import { PropTypeChanger } from "./PropTypeChanger.svelte";
 import { AnimatorCanvasInitializer } from "./AnimatorCanvasInitializer";
 import { FireTipTracker } from "./FireTipTracker";
 import { WebGLFireRenderer } from "./fire/WebGLFireRenderer";
+import { CharcoalParticleRenderer } from "./fire/CharcoalParticleRenderer";
 import type { IFireOverlayRenderer } from "../contracts/IFireOverlayRenderer";
+import type { ICharcoalRenderer } from "../contracts/ICharcoalRenderer";
 import type { IFireTipTracker } from "../contracts/IFireTipTracker";
 import { DEFAULT_FIRE_CONFIG, DEFAULT_PROP_FLAME_COLORS, type FireOverlayConfig } from "../../domain/types/FireTypes";
-import { FIRE_INTENSITY_TIERS, type FireIntensityTier } from "../../domain/types/FireDefaultsDocument";
 import type { IFireDefaultsLoader } from "../contracts/IFireDefaultsLoader";
 import { LedTipTracker } from "./LedTipTracker";
 import { WebGLLedRenderer } from "./led/WebGLLedRenderer";
@@ -226,6 +227,7 @@ export class AnimationEngine {
     new FrameBudgetMonitor(new DeviceTierDetector().detect());
   private fireRenderer: IFireOverlayRenderer | null = null;
   private fireTipTracker: IFireTipTracker | null = null;
+  private charcoalRenderer: ICharcoalRenderer | null = null;
   private fireConfig: FireOverlayConfig = { ...DEFAULT_FIRE_CONFIG };
   private fireDefaultsLoader: IFireDefaultsLoader | null = null;
   private ledRenderer: ILedOverlayRenderer | null = null;
@@ -267,7 +269,8 @@ export class AnimationEngine {
   private prevBlueMotionVisible: boolean = true;
   private prevRedMotionVisible: boolean = true;
   private prevFireEffect: boolean = false;
-  private prevFirePreset: string = "medium";
+  private prevFuelSourceId: string = "white-gas";
+  private prevFireIntensity: number = 1.0;
 
   // Additional layer texture loading for tunnel mode (indexed by layer)
   private additionalLayerTexturesLoaded: boolean[] = [];
@@ -334,11 +337,12 @@ export class AnimationEngine {
     this.fireConfig.enabled = this.prevFireEffect;
     const modeToBlend: Record<string, number> = { natural: 0, colored: 1.0 };
     this.fireConfig.colorBlend = modeToBlend[visibilityManager.getFlameColorMode()] ?? 0;
-    this.prevFirePreset = visibilityManager.getFirePreset();
+    this.prevFuelSourceId = visibilityManager.getFuelSourceId();
+    this.prevFireIntensity = visibilityManager.getFireIntensity();
     this.fireDefaultsLoader = container.items.fireDefaultsLoader as IFireDefaultsLoader;
-    const initialTier = FIRE_INTENSITY_TIERS[this.prevFirePreset as FireIntensityTier] ?? FIRE_INTENSITY_TIERS.medium;
-    this.fireConfig.intensity = initialTier.intensity;
-    this.fireConfig.flameHeight = initialTier.flameHeight;
+    this.fireConfig.intensity = this.prevFireIntensity;
+    this.fireConfig.flameHeight = this.prevFireIntensity;
+    this.fireConfig.fuelSourceId = this.prevFuelSourceId;
     const adminPhysics = this.fireDefaultsLoader?.getGlobalPhysics() ?? null;
     if (adminPhysics) {
       this.fireConfig.physicsPreset = adminPhysics;
@@ -455,17 +459,22 @@ export class AnimationEngine {
           this.setFireConfig({ colorBlend });
         }
 
-        // Sync fire intensity tier
-        const firePresetId = vm.getFirePreset();
-        if (firePresetId !== this.prevFirePreset) {
-          this.prevFirePreset = firePresetId;
-          const tier = FIRE_INTENSITY_TIERS[firePresetId as FireIntensityTier] ?? FIRE_INTENSITY_TIERS.medium;
-          const tierAdminPhysics = this.fireDefaultsLoader?.getGlobalPhysics() ?? null;
+        // Sync fuel source ID
+        const fuelSourceId = vm.getFuelSourceId();
+        if (fuelSourceId !== this.prevFuelSourceId) {
+          this.prevFuelSourceId = fuelSourceId;
+          this.setFireConfig({ fuelSourceId });
+        }
 
+        // Sync fire intensity
+        const fireIntensity = vm.getFireIntensity();
+        if (fireIntensity !== this.prevFireIntensity) {
+          this.prevFireIntensity = fireIntensity;
+          const intensityAdminPhysics = this.fireDefaultsLoader?.getGlobalPhysics() ?? null;
           this.setFireConfig({
-            intensity: tier.intensity,
-            flameHeight: tier.flameHeight,
-            ...(tierAdminPhysics ? { physicsPreset: tierAdminPhysics } : {}),
+            intensity: fireIntensity,
+            flameHeight: fireIntensity,
+            ...(intensityAdminPhysics ? { physicsPreset: intensityAdminPhysics } : {}),
           });
         }
 
@@ -915,6 +924,10 @@ export class AnimationEngine {
     // Dispose precomputation
     this.precomputationService?.dispose?.();
 
+    // Dispose charcoal particle renderer (uses shared GL resources, must dispose before fire renderer)
+    this.charcoalRenderer?.dispose();
+    this.charcoalRenderer = null;
+
     // Dispose fire overlay
     this.fireRenderer?.dispose();
     this.fireRenderer = null;
@@ -1153,7 +1166,7 @@ export class AnimationEngine {
    */
   private syncFireOverlay(): void {
     if (this.fireConfig.enabled && !this.fireRenderer?.isInitialized()) {
-      // Create fire overlay
+      // Create fire overlay (fluid renderer)
       if (!this.containerElement) return;
       this.fireRenderer = new WebGLFireRenderer();
       const success = this.fireRenderer.initialize(
@@ -1162,15 +1175,31 @@ export class AnimationEngine {
         this.canvasSize
       );
       if (success) {
-        this.renderLoopService?.updateConfig({ fireRenderer: this.fireRenderer });
+        // Create charcoal particle renderer sharing the same WebGL context
+        const canvas = this.fireRenderer.getCanvas();
+        const gl = this.fireRenderer.getGl();
+        if (canvas && gl) {
+          this.charcoalRenderer = new CharcoalParticleRenderer();
+          this.charcoalRenderer.init(canvas, gl);
+        }
+        this.renderLoopService?.updateConfig({
+          fireRenderer: this.fireRenderer,
+          charcoalRenderer: this.charcoalRenderer,
+        });
       } else {
         this.fireRenderer = null;
       }
     } else if (!this.fireConfig.enabled && this.fireRenderer) {
+      // Tear down charcoal particle renderer first (uses shared GL resources)
+      this.charcoalRenderer?.dispose();
+      this.charcoalRenderer = null;
       // Tear down fire overlay
       this.fireRenderer.dispose();
       this.fireRenderer = null;
-      this.renderLoopService?.updateConfig({ fireRenderer: null });
+      this.renderLoopService?.updateConfig({
+        fireRenderer: null,
+        charcoalRenderer: null,
+      });
       this.fireTipTracker?.reset();
     }
   }

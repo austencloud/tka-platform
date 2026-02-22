@@ -240,6 +240,14 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     return this.initialized;
   }
 
+  getCanvas(): HTMLCanvasElement | null {
+    return this.canvas;
+  }
+
+  getGl(): WebGL2RenderingContext | null {
+    return this.gl;
+  }
+
   // ============================================================
   // Simulation pipeline
   // ============================================================

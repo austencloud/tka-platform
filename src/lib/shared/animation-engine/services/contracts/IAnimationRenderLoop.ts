@@ -13,6 +13,7 @@ import type { AnimationPathCache } from "$lib/features/compose/services/implemen
 import type { IFrameBudgetMonitor } from "./IFrameBudgetMonitor";
 import type { IFireOverlayRenderer } from "./IFireOverlayRenderer";
 import type { IFireTipTracker } from "./IFireTipTracker";
+import type { ICharcoalRenderer } from "./ICharcoalRenderer";
 import type { FireOverlayConfig, PropFlameColor } from "../../domain/types/FireTypes";
 import type { ILedOverlayRenderer } from "./ILedOverlayRenderer";
 import type { ILedTipTracker } from "./ILedTipTracker";
@@ -39,6 +40,8 @@ export interface RenderLoopConfig {
   ledRenderer?: ILedOverlayRenderer | null;
   /** Optional LED tip position/color tracker */
   ledTipTracker?: ILedTipTracker | null;
+  /** Optional charcoal particle renderer (shares fire renderer's WebGL context) */
+  charcoalRenderer?: ICharcoalRenderer | null;
 }
 
 /**
