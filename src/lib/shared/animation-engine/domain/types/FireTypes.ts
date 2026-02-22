@@ -6,6 +6,9 @@
  * combustion, buoyancy, and blackbody radiation rendering.
  */
 
+import type { FireColorCurve, FuelRendererType, CharcoalParams } from "./FuelSourceTypes";
+import { DEFAULT_FUEL_SOURCE_ID } from "./FuelSourceTypes";
+
 /**
  * RGB color for a prop, normalized to [0, 1] for shader consumption.
  */
@@ -113,6 +116,14 @@ export interface FireOverlayConfig {
   colorBlend?: number;
   /** Optional physics preset to apply. When set, overrides the renderer's base physics. */
   physicsPreset?: FirePhysicsParams;
+  /** Active fuel source ID (replaces preset system) */
+  fuelSourceId?: string;
+  /** Which renderer to use for this fuel */
+  fuelRendererType?: FuelRendererType;
+  /** Color curve for the fluid renderer display pass */
+  colorCurve?: FireColorCurve;
+  /** Charcoal particle params (when fuelRendererType === "particle") */
+  charcoalParams?: CharcoalParams;
 }
 
 /** Default physics parameters — tuned for fire spinning (shorter trails, wick-focused) */
@@ -140,6 +151,7 @@ export const DEFAULT_FIRE_CONFIG: FireOverlayConfig = {
   flameHeight: 1.0,
   velocityReactive: true,
   quality: 4,
+  fuelSourceId: DEFAULT_FUEL_SOURCE_ID,
 };
 
 /**
