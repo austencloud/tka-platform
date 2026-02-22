@@ -111,6 +111,10 @@
     const { initI18n } = await import("$lib/shared/i18n/i18n.svelte.js");
     initI18n();
 
+    // Analytics: PostHog (same instance as app mode — lightweight, no DI needed)
+    const { initPostHog } = await import("$lib/shared/analytics/services/posthog");
+    initPostHog();
+
     // Landing doesn't need DI container or auth — mark ready immediately
     containerReady = true;
 
