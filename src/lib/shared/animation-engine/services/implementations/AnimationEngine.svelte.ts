@@ -74,6 +74,8 @@ import type { ICharcoalRenderer } from "../contracts/ICharcoalRenderer";
 import type { IFireTipTracker } from "../contracts/IFireTipTracker";
 import { DEFAULT_FIRE_CONFIG, DEFAULT_PROP_FLAME_COLORS, type FireOverlayConfig } from "../../domain/types/FireTypes";
 import type { IFireDefaultsLoader } from "../contracts/IFireDefaultsLoader";
+import type { IFuelSourceLoader } from "../contracts/IFuelSourceLoader";
+import { BUILT_IN_FUEL_SOURCES } from "../../domain/types/BuiltInFuelSources";
 import { LedTipTracker } from "./LedTipTracker";
 import { WebGLLedRenderer } from "./led/WebGLLedRenderer";
 import type { ILedOverlayRenderer } from "../contracts/ILedOverlayRenderer";
@@ -230,6 +232,7 @@ export class AnimationEngine {
   private charcoalRenderer: ICharcoalRenderer | null = null;
   private fireConfig: FireOverlayConfig = { ...DEFAULT_FIRE_CONFIG };
   private fireDefaultsLoader: IFireDefaultsLoader | null = null;
+  private fuelSourceLoader: IFuelSourceLoader | null = null;
   private ledRenderer: ILedOverlayRenderer | null = null;
   private ledTipTracker: ILedTipTracker | null = null;
   private ledConfig: LedOverlayConfig = { ...DEFAULT_LED_CONFIG };
@@ -340,13 +343,20 @@ export class AnimationEngine {
     this.prevFuelSourceId = visibilityManager.getFuelSourceId();
     this.prevFireIntensity = visibilityManager.getFireIntensity();
     this.fireDefaultsLoader = container.items.fireDefaultsLoader as IFireDefaultsLoader;
+    this.fuelSourceLoader = (container.items as Record<string, unknown>).fuelSourceLoader as IFuelSourceLoader ?? null;
+
+    // Look up fuel source on startup: try loader first, fall back to built-in
+    const initialFuelSource = this.fuelSourceLoader?.get(this.prevFuelSourceId)
+      ?? BUILT_IN_FUEL_SOURCES.find(f => f.id === this.prevFuelSourceId)
+      ?? BUILT_IN_FUEL_SOURCES[0]!; // ultimate fallback: white gas
+
     this.fireConfig.intensity = this.prevFireIntensity;
     this.fireConfig.flameHeight = this.prevFireIntensity;
-    this.fireConfig.fuelSourceId = this.prevFuelSourceId;
-    const adminPhysics = this.fireDefaultsLoader?.getGlobalPhysics() ?? null;
-    if (adminPhysics) {
-      this.fireConfig.physicsPreset = adminPhysics;
-    }
+    this.fireConfig.fuelSourceId = initialFuelSource.id;
+    this.fireConfig.fuelRendererType = initialFuelSource.rendererType;
+    this.fireConfig.physicsPreset = initialFuelSource.fluidParams;
+    this.fireConfig.colorCurve = initialFuelSource.colorCurve;
+    this.fireConfig.charcoalParams = initialFuelSource.particleParams;
     // Initialize LED state from visibility manager
     this.ledConfig.enabled = visibilityManager.isLedEffectEnabled();
     this.ledConfig.patternId = visibilityManager.getLedPatternId();
@@ -459,22 +469,26 @@ export class AnimationEngine {
           this.setFireConfig({ colorBlend });
         }
 
-        // Sync fuel source ID
+        // Sync fuel source ID + intensity (combined: both trigger fuel source lookup)
         const fuelSourceId = vm.getFuelSourceId();
-        if (fuelSourceId !== this.prevFuelSourceId) {
-          this.prevFuelSourceId = fuelSourceId;
-          this.setFireConfig({ fuelSourceId });
-        }
-
-        // Sync fire intensity
         const fireIntensity = vm.getFireIntensity();
-        if (fireIntensity !== this.prevFireIntensity) {
+        if (fuelSourceId !== this.prevFuelSourceId || fireIntensity !== this.prevFireIntensity) {
+          this.prevFuelSourceId = fuelSourceId;
           this.prevFireIntensity = fireIntensity;
-          const intensityAdminPhysics = this.fireDefaultsLoader?.getGlobalPhysics() ?? null;
+
+          // Look up fuel source: try loader first, fall back to built-in
+          const fuelSource = this.fuelSourceLoader?.get(fuelSourceId)
+            ?? BUILT_IN_FUEL_SOURCES.find(f => f.id === fuelSourceId)
+            ?? BUILT_IN_FUEL_SOURCES[0]!; // ultimate fallback: white gas
+
           this.setFireConfig({
+            fuelSourceId: fuelSource.id,
+            fuelRendererType: fuelSource.rendererType,
             intensity: fireIntensity,
             flameHeight: fireIntensity,
-            ...(intensityAdminPhysics ? { physicsPreset: intensityAdminPhysics } : {}),
+            physicsPreset: fuelSource.fluidParams,
+            colorCurve: fuelSource.colorCurve,
+            charcoalParams: fuelSource.particleParams,
           });
         }
 
