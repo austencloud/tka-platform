@@ -5,15 +5,16 @@
  * Each preset maps a commercial prop's LED layout to the
  * PropLedConfig coordinate system used by the LED renderer.
  *
- * Coordinate system (prop-local space):
- *   dx = offset along the prop's primary (long) axis
- *        0 = center, +1 = toward tip, -1 = toward handle
+ * Coordinate system (prop-local space, same as PropLedPoints.ts):
+ *   dx = offset along the prop's primary (long) axis in prop-dimension units
+ *        0 = center, positive = toward tip, negative = toward handle
  *   dy = offset perpendicular to the primary axis
  *        0 = centerline
- *   Values are normalized: roughly -1.0 to 1.0
+ *   Reference sizes from PROP_DIMENSIONS: staff ~150, bigstaff ~300,
+ *   club ~130, bigclub ~260, fan ~120
  */
 
-import type { PropLedConfig, LedPoint } from "./LedTypes";
+import type { PropLedConfig } from "./LedTypes";
 
 export interface LedManufacturerPreset {
   /** Unique identifier for this preset */
@@ -39,12 +40,12 @@ const flowtoysCapsule2: LedManufacturerPreset = {
   description: "Modular club/staff capsule with 6 LEDs along the body, one per segment",
   config: {
     points: [
-      { dx: -0.8, dy: 0, brightness: 1.0 },
-      { dx: -0.48, dy: 0, brightness: 1.0 },
-      { dx: -0.16, dy: 0, brightness: 1.0 },
-      { dx: 0.16, dy: 0, brightness: 1.0 },
-      { dx: 0.48, dy: 0, brightness: 1.0 },
-      { dx: 0.8, dy: 0, brightness: 1.0 },
+      { dx: -104, dy: 0, brightness: 1.0 },
+      { dx: -62, dy: 0, brightness: 1.0 },
+      { dx: -21, dy: 0, brightness: 1.0 },
+      { dx: 21, dy: 0, brightness: 1.0 },
+      { dx: 62, dy: 0, brightness: 1.0 },
+      { dx: 104, dy: 0, brightness: 1.0 },
     ],
   },
   defaultPatternId: "rainbow",
@@ -57,14 +58,14 @@ const flowtoysVisionClub: LedManufacturerPreset = {
   description: "LED club with 8 individually addressable LEDs along the body",
   config: {
     points: [
-      { dx: -0.85, dy: 0, brightness: 1.0 },
-      { dx: -0.61, dy: 0, brightness: 1.0 },
-      { dx: -0.37, dy: 0, brightness: 1.0 },
-      { dx: -0.13, dy: 0, brightness: 1.0 },
-      { dx: 0.13, dy: 0, brightness: 1.0 },
-      { dx: 0.37, dy: 0, brightness: 1.0 },
-      { dx: 0.61, dy: 0, brightness: 1.0 },
-      { dx: 0.85, dy: 0, brightness: 1.0 },
+      { dx: -111, dy: 0, brightness: 1.0 },
+      { dx: -79, dy: 0, brightness: 1.0 },
+      { dx: -48, dy: 0, brightness: 1.0 },
+      { dx: -17, dy: 0, brightness: 1.0 },
+      { dx: 17, dy: 0, brightness: 1.0 },
+      { dx: 48, dy: 0, brightness: 1.0 },
+      { dx: 79, dy: 0, brightness: 1.0 },
+      { dx: 111, dy: 0, brightness: 1.0 },
     ],
   },
   defaultPatternId: "rainbow",
@@ -78,13 +79,13 @@ const flowtoysIsoBaton: LedManufacturerPreset = {
   config: {
     points: [
       // Left pod (handle end)
-      { dx: -0.9, dy: 0, brightness: 1.0 },
-      { dx: -0.75, dy: 0, brightness: 1.0 },
-      { dx: -0.6, dy: 0, brightness: 1.0 },
+      { dx: -135, dy: 0, brightness: 1.0 },
+      { dx: -113, dy: 0, brightness: 1.0 },
+      { dx: -90, dy: 0, brightness: 1.0 },
       // Right pod (tip end)
-      { dx: 0.6, dy: 0, brightness: 1.0 },
-      { dx: 0.75, dy: 0, brightness: 1.0 },
-      { dx: 0.9, dy: 0, brightness: 1.0 },
+      { dx: 90, dy: 0, brightness: 1.0 },
+      { dx: 113, dy: 0, brightness: 1.0 },
+      { dx: 135, dy: 0, brightness: 1.0 },
     ],
   },
   defaultPatternId: "pulse",
@@ -99,10 +100,10 @@ const lighttoysClub: LedManufacturerPreset = {
   description: "LED juggling club with 4 bright LEDs distributed along the body",
   config: {
     points: [
-      { dx: -0.6, dy: 0, brightness: 1.0 },
-      { dx: -0.2, dy: 0, brightness: 1.0 },
-      { dx: 0.2, dy: 0, brightness: 1.0 },
-      { dx: 0.6, dy: 0, brightness: 1.0 },
+      { dx: -78, dy: 0, brightness: 1.0 },
+      { dx: -26, dy: 0, brightness: 1.0 },
+      { dx: 26, dy: 0, brightness: 1.0 },
+      { dx: 78, dy: 0, brightness: 1.0 },
     ],
   },
   defaultPatternId: "solid",
@@ -117,8 +118,8 @@ const genericStaff: LedManufacturerPreset = {
   description: "Basic staff with one LED at each tip",
   config: {
     points: [
-      { dx: -0.95, dy: 0, brightness: 1.0 },
-      { dx: 0.95, dy: 0, brightness: 1.0 },
+      { dx: -143, dy: 0, brightness: 1.0 },
+      { dx: 143, dy: 0, brightness: 1.0 },
     ],
   },
   defaultPatternId: "solid",
@@ -130,7 +131,7 @@ const genericSingle: LedManufacturerPreset = {
   manufacturer: "Generic",
   description: "Single LED point source at the prop tip",
   config: {
-    points: [{ dx: 0.9, dy: 0, brightness: 1.0 }],
+    points: [{ dx: 117, dy: 0, brightness: 1.0 }],
   },
   defaultPatternId: "solid",
 };
