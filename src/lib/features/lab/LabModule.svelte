@@ -18,7 +18,7 @@
     attribution: () => import("./tabs/AttributionLab.svelte"),
     level4: () => import("$lib/features/skewlab/SkewLabModule.svelte"),
     level5: () => import("$lib/features/level5-lab/Level5LabModule.svelte"),
-    level7: () => import("$lib/features/level7-lab/Level7LabModule.svelte"),
+    level7: () => import("$lib/features/conjoined-lab/ConjoinedLabModule.svelte"),
     poi: () => import("$lib/features/poi-lab/PoiLabModule.svelte"),
     avatar: () => import("./tabs/ProfileAvatarLab.svelte"),
     "photo-picker": () => import("./tabs/PhotoPickerLab.svelte"),
@@ -29,7 +29,7 @@
     backgrounds: () => import("$lib/features/background-builder/BackgroundBuilder.svelte"),
     landing: () => import("$lib/features/landing-preview/LandingPreviewModule.svelte"),
     composition: () => import("$lib/features/constraint-layout-lab/CompositionLab.svelte"),
-    level6: () => import("$lib/features/conjoined-lab/ConjoinedLabModule.svelte"),
+    level6: () => import("$lib/features/level7-lab/Level7LabModule.svelte"),
     "multi-grid": () => import("$lib/features/multi-grid-lab/MultiGridLabModule.svelte"),
     "ml-training": () =>
       import("$lib/features/train/ml-training/components/MLTrainingModule.svelte"),

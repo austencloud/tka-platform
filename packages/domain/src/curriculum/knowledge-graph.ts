@@ -248,69 +248,69 @@ export const KNOWLEDGE_GRAPH: KnowledgeConcept[] = [
   },
 
   // ═══════════════════════════════════════════════════════════════════
-  // LEVEL 6: Conjoined Grids
-  // Dual grids sharing a junction point. Extended dashes.
+  // LEVEL 6: Interradial Orientations (completes single-grid 2D)
+  // 8 orientations. Quarter turns. Full orientation freedom.
   // ═══════════════════════════════════════════════════════════════════
 
   {
     id: "6.1",
     level: 6,
     subLevel: 1,
-    name: "Conjoined Grids",
+    name: "Interradial Orientations",
     prerequisites: ["5.4"],
-    terms: ["conjoined", "conjoined grid", "dual grid", "junction point"],
-    description: "Two grids sharing a common junction point",
+    terms: ["interradial", "clockIn", "clockOut", "counterIn", "counterOut"],
+    description: "4 orientations at 45° between the cardinal orientations",
   },
   {
     id: "6.2",
     level: 6,
     subLevel: 2,
-    name: "Extended Dashes",
+    name: "Quarter Turns",
     prerequisites: ["6.1"],
-    terms: ["dash+", "dash++", "extended dash", "cross-grid"],
-    description: "Straight-line paths that cross the grid boundary via the junction",
+    terms: ["quarter turn", "45°", "0.25 turn", "0.75 turn"],
+    description: "Turn values that produce interradial orientations",
   },
   {
     id: "6.3",
     level: 6,
     subLevel: 3,
-    name: "Inter-Grid Positions",
+    name: "8-Point Radial Cycle",
     prerequisites: ["6.2"],
-    terms: ["inter-grid position", "cross-grid position"],
-    description: "New position combinations from having two grids",
+    terms: ["radial cycle", "8-step cycle", "RADIAL_CW_CYCLE"],
+    description: "The complete cycle: in → clockIn → clock → clockOut → out → counterOut → counter → counterIn",
   },
 
   // ═══════════════════════════════════════════════════════════════════
-  // LEVEL 7: Interradial Orientations (completes 2D)
-  // 8 orientations. Quarter turns. Full 2D mastery.
+  // LEVEL 7: Conjoined Grids
+  // Dual grids sharing a junction point. Extended dashes. Bridges to 3D.
   // ═══════════════════════════════════════════════════════════════════
 
   {
     id: "7.1",
     level: 7,
     subLevel: 1,
-    name: "Interradial Orientations",
+    name: "Conjoined Grids",
     prerequisites: ["6.3"],
-    terms: ["interradial", "clockIn", "clockOut", "counterIn", "counterOut"],
-    description: "4 orientations at 45° between the cardinal orientations",
+    terms: ["conjoined", "conjoined grid", "dual grid", "junction point"],
+    description: "Two grids sharing a common junction point",
   },
   {
     id: "7.2",
     level: 7,
     subLevel: 2,
-    name: "Quarter Turns",
+    name: "Extended Dashes",
     prerequisites: ["7.1"],
-    terms: ["quarter turn", "45°", "0.25 turn", "0.75 turn"],
-    description: "Turn values that produce interradial orientations",
+    terms: ["dash+", "dash++", "extended dash", "cross-grid"],
+    description: "Straight-line paths that cross the grid boundary via the junction",
   },
   {
     id: "7.3",
     level: 7,
     subLevel: 3,
-    name: "8-Point Radial Cycle",
+    name: "Inter-Grid Positions",
     prerequisites: ["7.2"],
-    terms: ["radial cycle", "8-step cycle", "RADIAL_CW_CYCLE"],
-    description: "The complete cycle: in → clockIn → clock → clockOut → out → counterOut → counter → counterIn",
+    terms: ["inter-grid position", "cross-grid position"],
+    description: "New position combinations from having two grids",
   },
 
   // ═══════════════════════════════════════════════════════════════════

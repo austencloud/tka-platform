@@ -22,10 +22,10 @@ export function getLevelConstraints(majorLevel: MajorLevel): string {
     constraints.push("Level 5 terms: center, center point, 9-point grid, centric, hash, half-dash, tau, terra");
   }
   if (majorLevel >= 6) {
-    constraints.push("Level 6 terms: conjoined, dual grid, junction point, dash+, dash++, extended dash, inter-grid position");
+    constraints.push("Level 6 terms: interradial, clockIn, clockOut, counterIn, counterOut, quarter turn, 45°, 8-point radial cycle");
   }
   if (majorLevel >= 7) {
-    constraints.push("Level 7 terms: interradial, clockIn, clockOut, counterIn, counterOut, quarter turn, 45°, 8-point radial cycle");
+    constraints.push("Level 7 terms: conjoined, dual grid, junction point, dash+, dash++, extended dash, inter-grid position");
   }
   if (majorLevel >= 8) {
     constraints.push("Level 8 terms: plane, wall plane, wheel plane, overhead plane, multi-plane, atomic");
@@ -85,22 +85,22 @@ DO NOT use concepts from Level 5+ (center point, hash, conjoined, etc.).`;
 - Tau and terra positions
 - Center orientations (compass-based)
 
-DO NOT use concepts from Level 6+ (conjoined grids, interradials, etc.).`;
+DO NOT use concepts from Level 6+ (interradials, conjoined grids, etc.).`;
 
     case 6:
-      return `The user is at Level 6 (Conjoined Grids). They know Levels 1-5 plus:
+      return `The user is at Level 6 (Interradial Orientations). They know Levels 1-5 plus:
+- 8 orientations (4 cardinal + 4 interradial)
+- Quarter turns producing interradial orientations
+- Complete single-grid 2D orientation freedom
+
+DO NOT use concepts from Level 7+ (conjoined grids, extended dashes, 3D, etc.).`;
+
+    case 7:
+      return `The user is at Level 7 (Conjoined Grids). They know all 2D concepts:
+- All previous levels (complete orientation freedom)
 - Dual grids sharing a junction point
 - Extended dashes (dash+, dash++)
 - Inter-grid positions and cross-grid paths
-
-DO NOT use concepts from Level 7+ (interradials, quarter turns, 3D, etc.).`;
-
-    case 7:
-      return `The user is at Level 7 (Interradial Orientations). They know all 2D concepts:
-- All previous levels
-- 8 orientations (4 cardinal + 4 interradial)
-- Quarter turns producing interradial orientations
-- Complete 2D mastery
 
 DO NOT use concepts from Level 8+ (3D planes, atomics, etc.).`;
 

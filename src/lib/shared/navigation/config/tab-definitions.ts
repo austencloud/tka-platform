@@ -572,10 +572,10 @@ export const LAB_TABS: Section[] = [
   {
     id: "level7",
     label: "Level 7",
-    icon: '<i class="fas fa-magnet" aria-hidden="true"></i>',
-    description: "Interradial orientations (completes 2D mastery)",
-    color: "#a855f7",
-    gradient: "linear-gradient(135deg, #c084fc 0%, #a855f7 100%)",
+    icon: '<i class="fas fa-link" aria-hidden="true"></i>',
+    description: "Conjoined grids (dual grids, junction point)",
+    color: "#10b981",
+    gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
   },
   {
     id: "poi",
@@ -652,10 +652,10 @@ export const LAB_TABS: Section[] = [
   {
     id: "level6",
     label: "Level 6",
-    icon: '<i class="fas fa-link" aria-hidden="true"></i>',
-    description: "Conjoined grids (dual grids, junction point)",
-    color: "#10b981",
-    gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
+    icon: '<i class="fas fa-magnet" aria-hidden="true"></i>',
+    description: "Interradial orientations (completes 2D mastery)",
+    color: "#a855f7",
+    gradient: "linear-gradient(135deg, #c084fc 0%, #a855f7 100%)",
   },
   {
     id: "multi-grid",
