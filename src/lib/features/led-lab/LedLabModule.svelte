@@ -5,6 +5,9 @@
   Tab shell: "Tuning" for pattern/playback, "LED Points" for visual placement editor.
 -->
 <script lang="ts">
+  import LedLabTuningTab from "./components/LedLabTuningTab.svelte";
+  import LedPointEditorTab from "./components/LedPointEditorTab.svelte";
+
   const TAB_STORAGE_KEY = "led-lab-active-tab";
   type LedLabTab = "tuning" | "led-points";
 
@@ -61,9 +64,9 @@
 
   <div class="tab-content" role="tabpanel">
     {#if activeTab === "tuning"}
-      <div class="placeholder">LED tuning controls coming soon</div>
+      <LedLabTuningTab />
     {:else}
-      <div class="placeholder">LED point editor coming soon</div>
+      <LedPointEditorTab />
     {/if}
   </div>
 </div>
@@ -159,15 +162,6 @@
     flex-direction: column;
     min-height: 0;
     overflow: hidden;
-  }
-
-  .placeholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-min, 14px);
   }
 
   @media (prefers-reduced-motion: reduce) {

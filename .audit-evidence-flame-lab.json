@@ -2,14 +2,14 @@
   "meta": {
     "scope": "features/flame-lab",
     "scopePath": "src/lib/features/flame-lab",
-    "collectedAt": "2026-02-21T08:47:51.946Z",
+    "collectedAt": "2026-02-22T19:38:11.700Z",
     "fileCount": {
       "total": 9,
       "svelte": 6,
       "ts": 3,
       "css": 0
     },
-    "durationMs": 473
+    "durationMs": 487
   },
   "dimensions": {
     "architecture": {
@@ -41,13 +41,7 @@
     "accessibility": {
       "reducedMotion": [],
       "smallFontSize": [],
-      "htmlDirective": [
-        {
-          "file": "features/flame-lab/components/FirePointSvgCanvas.svelte",
-          "line": 338,
-          "preview": "{@html propSvgContent}"
-        }
-      ],
+      "htmlDirective": [],
       "clickWithoutRole": [],
       "missingAriaLabel": [
         {
@@ -57,98 +51,88 @@
         },
         {
           "file": "features/flame-lab/components/FirePointListPanel.svelte",
-          "line": 130,
+          "line": 131,
           "preview": "<button"
         },
         {
           "file": "features/flame-lab/components/FirePointListPanel.svelte",
-          "line": 138,
+          "line": 139,
           "preview": "<button"
         },
         {
           "file": "features/flame-lab/components/FirePointListPanel.svelte",
-          "line": 177,
+          "line": 178,
           "preview": "<button"
         },
         {
           "file": "features/flame-lab/components/FirePointListPanel.svelte",
-          "line": 187,
+          "line": 188,
           "preview": "<button"
         },
         {
           "file": "features/flame-lab/components/FirePointListPanel.svelte",
-          "line": 197,
+          "line": 198,
           "preview": "<button"
         },
         {
           "file": "features/flame-lab/components/FirePointListPanel.svelte",
-          "line": 207,
+          "line": 208,
           "preview": "<button"
         },
         {
           "file": "features/flame-lab/components/FirePointListPanel.svelte",
-          "line": 216,
+          "line": 217,
           "preview": "<button"
         },
         {
           "file": "features/flame-lab/components/FirePointSvgCanvas.svelte",
-          "line": 381,
+          "line": 391,
           "preview": "<button"
         },
         {
           "file": "features/flame-lab/components/FirePointSvgCanvas.svelte",
-          "line": 388,
+          "line": 398,
           "preview": "<button"
         },
         {
           "file": "features/flame-lab/components/FirePointSvgCanvas.svelte",
-          "line": 394,
+          "line": 404,
           "preview": "<button"
         },
         {
           "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
-          "line": 686,
+          "line": 689,
           "preview": "<button"
         },
         {
           "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
-          "line": 696,
+          "line": 699,
           "preview": "<button"
         },
         {
           "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
-          "line": 706,
+          "line": 709,
           "preview": "<button"
         },
         {
           "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
-          "line": 784,
+          "line": 787,
           "preview": "<button"
         },
         {
           "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
-          "line": 798,
+          "line": 801,
           "preview": "<button"
         },
         {
           "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
-          "line": 808,
+          "line": 811,
           "preview": "<button"
         },
         {
           "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
-          "line": 823,
+          "line": 826,
           "preview": "<button"
-        },
-        {
-          "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
-          "line": 913,
-          "preview": "<button class=\"publish-btn\" onclick={() => publishConfirm = true}>"
-        },
-        {
-          "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
-          "line": 920,
-          "preview": "<button class=\"confirm-btn\" onclick={publishToProduction} disabled={publishing}>"
         },
         {
           "file": "features/flame-lab/components/PropTypeSelector.svelte",
@@ -175,37 +159,37 @@
       "consoleErrorOnly": [
         {
           "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
-          "line": 327,
+          "line": 328,
           "preview": "console.error(\"Flame Lab: preload failed:\", err);"
         },
         {
           "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
-          "line": 365,
+          "line": 366,
           "preview": "console.error(\"Flame Lab: chain failed:\", err);"
         },
         {
           "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
-          "line": 405,
+          "line": 406,
           "preview": "console.error(\"Flame Lab: shuffle failed:\", err);"
         },
         {
           "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
-          "line": 503,
+          "line": 504,
           "preview": "console.error(\"Flame Lab: failed to initialize:\", err);"
         },
         {
           "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
-          "line": 519,
+          "line": 520,
           "preview": "console.error(\"Flame Lab: failed to restore sequence:\", err);"
         },
         {
           "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
-          "line": 562,
+          "line": 564,
           "preview": "console.error(\"Flame Lab: load failed:\", err);"
         },
         {
           "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
-          "line": 622,
+          "line": 625,
           "preview": "console.error(\"[FlameLabTuningTab] Publish failed:\", err);"
         }
       ]
@@ -234,29 +218,23 @@
         },
         {
           "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
-          "line": 202,
+          "line": 203,
           "preview": "const interval = setInterval(check, 50);"
         },
         {
           "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
-          "line": 560,
+          "line": 562,
           "preview": "playbackStartTimer = setTimeout(() => { playbackController?.togglePlayback(); playbackStartTimer = null; }, 300);"
         },
         {
           "file": "features/flame-lab/components/FlameLabTuningTab.svelte",
-          "line": 620,
-          "preview": "setTimeout(() => { publishSuccess = false; }, 3000);"
+          "line": 623,
+          "preview": "publishSuccessTimer = setTimeout(() => { publishSuccess = false; publishSuccessTimer = null; }, 3000);"
         }
       ]
     },
     "security": {
-      "htmlDirective": [
-        {
-          "file": "features/flame-lab/components/FirePointSvgCanvas.svelte",
-          "line": 338,
-          "preview": "> | {@html propSvgContent} | </g>"
-        }
-      ],
+      "htmlDirective": [],
       "evalUsage": [],
       "hardcodedSecrets": [],
       "innerHTML": []
@@ -286,9 +264,9 @@
     "accessibility": {
       "reducedMotion": 0,
       "smallFontSize": 0,
-      "htmlDirective": 1,
+      "htmlDirective": 0,
       "clickWithoutRole": 0,
-      "missingAriaLabel": 23
+      "missingAriaLabel": 21
     },
     "uxStates": {
       "hasLoadingState": true,
@@ -310,7 +288,7 @@
       "timerWithoutCleanup": 4
     },
     "security": {
-      "htmlDirective": 1,
+      "htmlDirective": 0,
       "evalUsage": 0,
       "hardcodedSecrets": 0,
       "innerHTML": 0

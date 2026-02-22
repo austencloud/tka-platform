@@ -47,6 +47,14 @@
       return;
     }
 
+    // Load cloud data before checking - ensures cross-device persistence works.
+    // Without this, hasSeenVersion falls back to localStorage which is empty
+    // on new devices, causing the modal to show every time.
+    const { syncOnboardingFromCloud } = await import(
+      "$lib/shared/onboarding/config/storage-keys"
+    );
+    await syncOnboardingFromCloud();
+
     // Check if user has already seen this version
     const currentVersion = __APP_VERSION__;
     if (whatsNewState.hasSeenVersion(currentVersion)) {

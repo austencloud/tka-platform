@@ -742,7 +742,7 @@
       "issues": []
     },
     "features/flame-lab": {
-      "lastAuditedAt": "2026-02-21T08:54:10.912Z",
+      "lastAuditedAt": "2026-02-22T19:38:23.584Z",
       "name": "Flame Lab",
       "type": "module",
       "grades": {
@@ -753,19 +753,11 @@
         "uxStates": "A+",
         "uiConsistency": "A+",
         "performance": "A+",
-        "security": "A"
+        "security": "A+"
       },
       "overallGrade": "A+",
       "notes": null,
-      "issues": [
-        {
-          "severity": "serious",
-          "dimension": "security",
-          "file": "features/flame-lab/components/FirePointSvgCanvas.svelte",
-          "line": 338,
-          "description": "{@html propSvgContent} renders internal SVG with sanitization; trusted but htmlDirective flagged"
-        }
-      ]
+      "issues": []
     },
     "shared/3d-animation": {
       "lastAuditedAt": "2026-02-21T08:54:05.675Z",
