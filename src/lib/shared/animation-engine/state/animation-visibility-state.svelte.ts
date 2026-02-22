@@ -43,7 +43,8 @@ interface AnimationVisibilitySettings {
   // Effects
   fireEffect: boolean; // WebGL fire shader at prop tips
   flameColorMode: FlameColorMode; // Flame color mode: natural, tinted, or fully colored
-  firePreset: string; // Fire intensity tier ID (small, medium, large)
+  fuelSourceId: string; // Active fuel source: "white-gas", "lamp-oil", "isopropyl", "charcoal"
+  fireIntensity: number; // User intensity slider value (0.1-3.0)
 
   // LED Effects
   ledEffect: boolean; // WebGL LED overlay
@@ -112,7 +113,8 @@ export class AnimationVisibilityStateManager {
       // Effects
       fireEffect: false, // Fire shader disabled by default
       flameColorMode: "colored" as FlameColorMode, // Default to fully colored flames
-      firePreset: "medium", // Default to medium intensity tier
+      fuelSourceId: "white-gas", // Default fuel source
+      fireIntensity: 1.0, // Default intensity (1.0 = baseline)
 
       // LED Effects
       ledEffect: false,
@@ -157,13 +159,24 @@ export class AnimationVisibilityStateManager {
           parsed.flameColorMode = "colored";
         }
 
-        // Migrate preset IDs to intensity tiers
-        if (parsed.firePreset === "candlewick") parsed.firePreset = "small";
-        else if (parsed.firePreset === "fire-spin") parsed.firePreset = "medium";
-        else if (parsed.firePreset === "torch") parsed.firePreset = "large";
-        else if (parsed.firePreset && !["small", "medium", "large"].includes(parsed.firePreset)) {
-          parsed.firePreset = "medium";
+        // Migrate old firePreset (small/medium/large) to fuelSourceId + fireIntensity
+        if ("firePreset" in parsed && !("fuelSourceId" in parsed)) {
+          const tierToIntensity: Record<string, number> = {
+            small: 0.35,
+            medium: 0.5,
+            large: 1.0,
+            // Old preset IDs that were migrated to tiers
+            candlewick: 0.35,
+            "fire-spin": 0.5,
+            torch: 1.0,
+          };
+          parsed.fireIntensity = tierToIntensity[parsed.firePreset as string] ?? 0.5;
+          parsed.fuelSourceId = "white-gas";
+          delete (parsed as Record<string, unknown>).firePreset;
         }
+        // Ensure new properties exist with defaults if missing from old storage
+        if (!("fuelSourceId" in parsed)) parsed.fuelSourceId = "white-gas";
+        if (!("fireIntensity" in parsed)) parsed.fireIntensity = 1.0;
 
         // Ensure new properties exist with defaults if missing
         const defaults = this.getDefaultSettings();
@@ -233,7 +246,7 @@ export class AnimationVisibilityStateManager {
   getVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "flameColorMode" | "firePreset" | "ledPatternId" | "ledPrimaryColor"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "flameColorMode" | "fuelSourceId" | "fireIntensity" | "ledPatternId" | "ledPrimaryColor"
     >
   ): boolean {
     return this.settings[key];
@@ -257,7 +270,7 @@ export class AnimationVisibilityStateManager {
   setVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "flameColorMode" | "firePreset" | "ledPatternId" | "ledPrimaryColor"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "flameColorMode" | "fuelSourceId" | "fireIntensity" | "ledPatternId" | "ledPrimaryColor"
     >,
     visible: boolean
   ): void {
@@ -523,21 +536,37 @@ export class AnimationVisibilityStateManager {
   }
 
   // ============================================================================
-  // FIRE PRESET
+  // FUEL SOURCE & FIRE INTENSITY
   // ============================================================================
 
   /**
-   * Get current fire physics preset ID
+   * Get active fuel source ID
    */
-  getFirePreset(): string {
-    return this.settings.firePreset;
+  getFuelSourceId(): string {
+    return this.settings.fuelSourceId;
   }
 
   /**
-   * Set fire physics preset ID
+   * Set active fuel source ID
    */
-  setFirePreset(presetId: string): void {
-    this.settings.firePreset = presetId;
+  setFuelSourceId(id: string): void {
+    this.settings.fuelSourceId = id;
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  /**
+   * Get current fire intensity (0.1-3.0)
+   */
+  getFireIntensity(): number {
+    return this.settings.fireIntensity;
+  }
+
+  /**
+   * Set fire intensity (clamped to 0.1-3.0)
+   */
+  setFireIntensity(intensity: number): void {
+    this.settings.fireIntensity = Math.max(0.1, Math.min(3.0, intensity));
     this.saveToStorage();
     this.notifyObservers();
   }
@@ -607,7 +636,7 @@ export class AnimationVisibilityStateManager {
   toggleVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "flameColorMode" | "firePreset" | "ledPatternId" | "ledPrimaryColor"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "flameColorMode" | "fuelSourceId" | "fireIntensity" | "ledPatternId" | "ledPrimaryColor"
     >
   ): void {
     this.setVisibility(key, !this.settings[key]);

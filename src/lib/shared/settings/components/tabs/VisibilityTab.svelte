@@ -61,7 +61,7 @@
   let animFireEffectEnabled = $state(false);
   let animLedEffectEnabled = $state(false);
   let animFlameColorMode = $state<FlameColorMode>("colored");
-  let animFirePreset = $state("medium");
+  let animFirePreset = $state("white-gas");
 
   // Image composition state
   let imgAddWord = $state(true);
@@ -175,7 +175,7 @@
   function handleFirePresetChange(presetId: string) {
     triggerHaptic();
     animFirePreset = presetId;
-    animationVisibilityManager.setFirePreset(presetId);
+    animationVisibilityManager.setFuelSourceId(presetId);
   }
 
   function handleTrailStyleChange(newStyle: string) {
@@ -265,7 +265,7 @@
     animFireEffectEnabled = animationVisibilityManager.isFireEffectEnabled();
     animLedEffectEnabled = animationVisibilityManager.isLedEffectEnabled();
     animFlameColorMode = animationVisibilityManager.getFlameColorMode();
-    animFirePreset = animationVisibilityManager.getFirePreset();
+    animFirePreset = animationVisibilityManager.getFuelSourceId();
 
     // Load initial image composition
     imgAddWord = imageCompositionManager.addWord;
@@ -305,7 +305,7 @@
       animFireEffectEnabled = animationVisibilityManager.isFireEffectEnabled();
       animLedEffectEnabled = animationVisibilityManager.isLedEffectEnabled();
       animFlameColorMode = animationVisibilityManager.getFlameColorMode();
-      animFirePreset = animationVisibilityManager.getFirePreset();
+      animFirePreset = animationVisibilityManager.getFuelSourceId();
     };
 
     const imageObserver = () => {
