@@ -194,7 +194,7 @@
   });
 
   // Detect when a first-click placement happens (for scale-in animation)
-  let previousPhase = $state(builderState.phase);
+  let previousPhase = $state("idle");
   $effect(() => {
     const currentPhase = builderState.phase;
     let timeout: ReturnType<typeof setTimeout> | null = null;

@@ -16,7 +16,7 @@
   const { editorState }: Props = $props();
 
   let svgEl: SVGSVGElement | undefined = $state();
-  let propSvgContent = $state("");
+  let propShapeGroup: SVGGElement | undefined = $state();
   let hoverCoords = $state<{ dx: number; dy: number } | null>(null);
 
   // Drag origin for shift-constraint axis locking
@@ -62,31 +62,40 @@
 
   let zoomPercent = $derived(Math.round(zoomLevel * 100));
 
-  // Load the prop SVG inline when prop type changes
+  // Load the prop SVG inline when prop type changes or group element mounts
   $effect(() => {
     const propType = editorState.selectedPropType;
-    loadPropSvg(propType);
+    const group = propShapeGroup;
+    if (group) loadPropSvg(propType);
   });
 
   async function loadPropSvg(propType: string) {
+    if (!propShapeGroup) return;
     try {
       const resp = await fetch(`/images/props/animated/${propType}.svg`);
       if (!resp.ok) {
-        propSvgContent = "";
+        propShapeGroup.replaceChildren();
         return;
       }
       const text = await resp.text();
-      // Extract inner SVG content (strip outer <svg> wrapper)
-      const match = text.match(/<svg[^>]*>([\s\S]*)<\/svg>/i);
-      const inner = match?.[1] ?? text;
-      // Strip script elements and event handler attributes to prevent XSS
-      // (internal asset, but defense-in-depth against tampered static files)
-      propSvgContent = inner
-        .replace(/<script[\s\S]*?<\/script>/gi, "")
-        .replace(/\s+on\w+="[^"]*"/gi, "")
-        .replace(/\s+on\w+='[^']*'/gi, "");
+      // Parse SVG via DOMParser (safe: no script execution in parsed documents)
+      const doc = new DOMParser().parseFromString(text, "image/svg+xml");
+      const svgRoot = doc.documentElement;
+      // Remove any script elements (defense-in-depth)
+      svgRoot.querySelectorAll("script").forEach((s) => s.remove());
+      // Remove event handler attributes from all elements
+      for (const el of svgRoot.querySelectorAll("*")) {
+        for (const attr of Array.from(el.attributes)) {
+          if (attr.name.startsWith("on")) el.removeAttribute(attr.name);
+        }
+      }
+      // Move child nodes into the prop shape group
+      propShapeGroup.replaceChildren();
+      while (svgRoot.firstChild) {
+        propShapeGroup.appendChild(document.importNode(svgRoot.firstChild, true));
+      }
     } catch {
-      propSvgContent = "";
+      propShapeGroup?.replaceChildren();
     }
   }
 
@@ -297,15 +306,16 @@
   });
 </script>
 
-<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-<div class="svg-canvas-wrapper" tabindex="0" onkeydown={handleKeyDown} onkeyup={handleKeyUp}>
+<!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
+<div class="svg-canvas-wrapper" tabindex="0" role="application" onkeydown={handleKeyDown} onkeyup={handleKeyUp}>
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
   <svg
     bind:this={svgEl}
     class="editor-svg"
     class:panning={spaceHeld || isPanning}
     viewBox="{viewBoxX} {viewBoxY} {viewBoxWidth} {viewBoxHeight}"
     xmlns="http://www.w3.org/2000/svg"
-    role="img"
+    role="application"
     aria-label="Fire point editor canvas for {editorState.selectedPropType}"
     onclick={handleCanvasClick}
     onmousedown={handlePanStart}
@@ -334,9 +344,8 @@
       class="prop-shape"
       transform="translate({(baseViewBoxWidth - dims.width) / 2}, {(baseViewBoxHeight - dims.height) / 2})"
       opacity="0.6"
-    >
-      {@html propSvgContent}
-    </g>
+      bind:this={propShapeGroup}
+    ></g>
 
     <!-- Fire point markers -->
     {#each editorState.points as point, i (i)}
@@ -350,6 +359,7 @@
         transform="translate({cx}, {cy})"
         onmousedown={(e) => handlePointMouseDown(e, i)}
         onclick={(e) => { e.stopPropagation(); editorState.selectedPointIndex = i; }}
+        onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); editorState.selectedPointIndex = i; } }}
         role="button"
         tabindex="0"
         aria-label="Fire point {i + 1}: dx={point.dx}, dy={point.dy}, scale={point.flameScale}"

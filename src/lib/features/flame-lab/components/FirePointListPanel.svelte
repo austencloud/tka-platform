@@ -96,6 +96,7 @@
             class="point-row"
             class:selected={editorState.selectedPointIndex === i}
             onclick={() => { editorState.selectedPointIndex = i; }}
+            onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); editorState.selectedPointIndex = i; } }}
             role="button"
             tabindex="0"
             aria-label="Select point {i + 1}"
@@ -436,6 +437,7 @@
     font-family: var(--font-mono, monospace);
     font-size: var(--font-size-min, 14px);
     text-align: right;
+    appearance: textfield;
     -moz-appearance: textfield;
   }
 

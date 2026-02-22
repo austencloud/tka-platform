@@ -505,9 +505,9 @@
 <!-- Tag Picker Panel (batch tagging modal) -->
 {#if tagFilter.showTagPicker}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="tag-picker-backdrop" onclick={tagFilter.closeTagPicker}>
+  <div class="tag-picker-backdrop" onclick={tagFilter.closeTagPicker} onkeydown={(e) => { if (e.key === "Escape") tagFilter.closeTagPicker(); }}>
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="tag-picker-container" onclick={(e) => e.stopPropagation()}>
+    <div class="tag-picker-container" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
       <TagPickerPanel
         allTags={tagFilter.allTags}
         selectedItems={selectedMediaItems}
