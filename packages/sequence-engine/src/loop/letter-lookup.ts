@@ -10,13 +10,13 @@
  */
 
 interface MotionData {
-  color: string;
+  color?: string;
   startLocation: string;
   endLocation: string;
   motionType: string;
   rotationDirection: string;
-  startOrientation: string;
-  endOrientation: string;
+  startOrientation?: string;
+  endOrientation?: string;
 }
 
 interface PictographData {

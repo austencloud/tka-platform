@@ -12,7 +12,7 @@
  * reversing E's motions produces K (they are inverses of each other).
  */
 
-import type { SequenceStep } from "../sequence-builder.js";
+import type { SequenceStep } from "../domain/models/SequenceEngineTypes.js";
 import { LOOPType, SliceSize } from "./loop-types.js";
 import { HALVED_LOOPS, QUARTERED_LOOPS } from "./loop-validator.js";
 import { findLetterByMotions } from "./letter-lookup.js";
@@ -407,7 +407,7 @@ function executeStrictRotated(
   const derivedLetters: string[] = [];
   const allStepsForGeneration = [...actualSteps];
   let lastStep = actualSteps[actualSteps.length - 1]!;
-  let nextStepNumber = lastStep.stepNumber + 1;
+  let nextStepNumber = (lastStep.stepNumber ?? lastStep.beatIndex) + 1;
 
   for (let i = 0; i < entriesToAdd; i++) {
     const finalIntendedLength = originalLength + entriesToAdd;
@@ -535,6 +535,7 @@ function createRotatedStep(
       startLocation: previousStep.redMotion.endLocation,
       endLocation: newRedEndLoc,
     },
+    beatIndex: stepNumber,
     stepNumber,
     isBridge: false,
   };

@@ -131,6 +131,12 @@ export interface SequenceStep {
   redMotion: MotionData;
   /** Beat number in the sequence */
   beatIndex: number;
+  /** Step number (0 = start position, 1+ = beats). Used by LOOP detection/execution. */
+  stepNumber?: number;
+  /** Variation index within a letter's pictograph set */
+  variation?: number;
+  /** Whether this step is a bridge letter (inserted for position continuity) */
+  isBridge?: boolean;
 }
 
 /**
