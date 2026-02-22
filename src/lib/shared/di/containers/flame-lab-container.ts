@@ -2,6 +2,8 @@ import { createContainer } from "iti";
 import { FirePointOverrideProvider } from "$lib/features/flame-lab/services/implementations/FirePointOverrideProvider";
 import { FireDefaultsLoader } from "$lib/shared/animation-engine/services/implementations/FireDefaultsLoader";
 import { FireDefaultsPublisher } from "$lib/shared/animation-engine/services/implementations/FireDefaultsPublisher";
+import { FuelSourceLoader } from "$lib/shared/animation-engine/services/implementations/FuelSourceLoader";
+import { FuelSourcePublisher } from "$lib/shared/animation-engine/services/implementations/FuelSourcePublisher";
 import { setFirePointOverrideProvider } from "$lib/shared/animation-engine/domain/types/PropFirePoints";
 
 /**
@@ -14,6 +16,8 @@ export const flameLabContainer = createContainer()
 	.add({
 		fireDefaultsLoader: () => new FireDefaultsLoader(),
 		fireDefaultsPublisher: () => new FireDefaultsPublisher(),
+		fuelSourceLoader: () => new FuelSourceLoader(),
+		fuelSourcePublisher: () => new FuelSourcePublisher(),
 	})
 	.add(({ fireDefaultsLoader }) => ({
 		firePointOverrideProvider: () => {
