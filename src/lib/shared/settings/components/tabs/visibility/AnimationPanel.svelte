@@ -29,6 +29,7 @@
     tkaGlyphVisible: boolean;
     wordHeaderVisible: boolean;
     fireEffectEnabled: boolean;
+    ledEffectEnabled: boolean;
     flameColorMode: FlameColorMode;
     firePreset: string;
     onFlameColorModeChange: (mode: FlameColorMode) => void;
@@ -49,6 +50,7 @@
     tkaGlyphVisible,
     wordHeaderVisible,
     fireEffectEnabled,
+    ledEffectEnabled,
     flameColorMode,
     firePreset,
     onFlameColorModeChange,
@@ -124,6 +126,7 @@
         {tkaGlyphVisible}
         {wordHeaderVisible}
         {fireEffectEnabled}
+        {ledEffectEnabled}
         {flameColorMode}
         {firePreset}
         {onFlameColorModeChange}
@@ -150,6 +153,7 @@
         {tkaGlyphVisible}
         {wordHeaderVisible}
         {fireEffectEnabled}
+        {ledEffectEnabled}
         {flameColorMode}
         {firePreset}
         {onFlameColorModeChange}

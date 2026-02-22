@@ -59,6 +59,7 @@
   let animTkaGlyphVisible = $state(true);
   let animWordHeaderVisible = $state(true);
   let animFireEffectEnabled = $state(false);
+  let animLedEffectEnabled = $state(false);
   let animFlameColorMode = $state<FlameColorMode>("colored");
   let animFirePreset = $state("medium");
 
@@ -157,6 +158,10 @@
       case "fireEffect":
         animFireEffectEnabled = !animFireEffectEnabled;
         animationVisibilityManager.setFireEffect(animFireEffectEnabled);
+        break;
+      case "ledEffect":
+        animLedEffectEnabled = !animLedEffectEnabled;
+        animationVisibilityManager.setLedEffect(animLedEffectEnabled);
         break;
     }
   }
@@ -258,6 +263,7 @@
     animWordHeaderVisible =
       animationVisibilityManager.getVisibility("wordHeader");
     animFireEffectEnabled = animationVisibilityManager.isFireEffectEnabled();
+    animLedEffectEnabled = animationVisibilityManager.isLedEffectEnabled();
     animFlameColorMode = animationVisibilityManager.getFlameColorMode();
     animFirePreset = animationVisibilityManager.getFirePreset();
 
@@ -297,6 +303,7 @@
       animWordHeaderVisible =
         animationVisibilityManager.getVisibility("wordHeader");
       animFireEffectEnabled = animationVisibilityManager.isFireEffectEnabled();
+      animLedEffectEnabled = animationVisibilityManager.isLedEffectEnabled();
       animFlameColorMode = animationVisibilityManager.getFlameColorMode();
       animFirePreset = animationVisibilityManager.getFirePreset();
     };
@@ -362,6 +369,7 @@
       tkaGlyphVisible={animTkaGlyphVisible}
       wordHeaderVisible={animWordHeaderVisible}
       fireEffectEnabled={animFireEffectEnabled}
+      ledEffectEnabled={animLedEffectEnabled}
       flameColorMode={animFlameColorMode}
       firePreset={animFirePreset}
       onFlameColorModeChange={handleFlameColorModeChange}

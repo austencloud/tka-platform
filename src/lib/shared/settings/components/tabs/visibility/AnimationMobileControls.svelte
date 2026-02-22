@@ -20,6 +20,7 @@
     tkaGlyphVisible: boolean;
     wordHeaderVisible: boolean;
     fireEffectEnabled: boolean;
+    ledEffectEnabled: boolean;
     flameColorMode: FlameColorMode;
     firePreset: string;
     onFlameColorModeChange: (mode: FlameColorMode) => void;
@@ -43,6 +44,7 @@
     tkaGlyphVisible,
     wordHeaderVisible,
     fireEffectEnabled,
+    ledEffectEnabled,
     flameColorMode,
     firePreset,
     onFlameColorModeChange,
@@ -175,6 +177,16 @@
     >
       <i class="fas fa-fire" aria-hidden="true"></i>
       <span>Fire</span>
+    </button>
+    <button
+      class="compact-btn"
+      class:active={ledEffectEnabled}
+      aria-pressed={ledEffectEnabled}
+      onclick={() => onToggle("ledEffect")}
+      type="button"
+    >
+      <i class="fas fa-lightbulb" aria-hidden="true"></i>
+      <span>LED</span>
     </button>
   </div>
   {#if fireEffectEnabled}
