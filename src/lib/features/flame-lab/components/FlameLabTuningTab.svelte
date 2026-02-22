@@ -25,8 +25,11 @@
   import { StepCalculator } from "$lib/features/compose/services/implementations/StepCalculator";
 
   import { DEFAULT_FIRE_CONFIG, type FirePhysicsParams } from "$lib/shared/animation-engine/domain/types/FireTypes";
-  import { FIRE_PRESETS } from "$lib/shared/animation-engine/domain/types/FirePresets";
   import type { FlameColorMode } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import FuelSourcePicker from "$lib/shared/animation-engine/components/FuelSourcePicker.svelte";
+  import { BUILT_IN_FUEL_SOURCES } from "$lib/shared/animation-engine/domain/types/BuiltInFuelSources";
+  import type { FuelSourceDocument, FireColorCurve, CharcoalParams } from "$lib/shared/animation-engine/domain/types/FuelSourceTypes";
+  import type { IFuelSourcePublisher } from "$lib/shared/animation-engine/services/contracts/IFuelSourcePublisher";
 
   // Auto-chaining imports (Endless Spinner integration)
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
@@ -50,7 +53,6 @@
 
   const DEFAULT_BPM = 60;
   const STORAGE_KEY = "flame-lab-state";
-  const DEFAULT_PRESET_ID = "fire-spin";
   const visibilityManager = getAnimationVisibilityManager();
 
   let flameColorMode = $state<FlameColorMode>(visibilityManager.getFlameColorMode());
@@ -66,9 +68,7 @@
     sequenceId: string | null;
     fireEnabled: boolean;
     intensity: number;
-    flameHeight: number;
-    trailLength: number;
-    presetId: string;
+    fuelSourceId: string;
     bpm: number;
     sourceMode: SourceMode;
   }
@@ -87,9 +87,7 @@
         sequenceId: sequence?.word || sequence?.name || sequence?.id || null,
         fireEnabled,
         intensity,
-        flameHeight,
-        trailLength,
-        presetId: activePresetId,
+        fuelSourceId: activeFuelId,
         bpm,
         sourceMode,
       };
@@ -116,10 +114,83 @@
   let fireEnabled = $state(false);
   let fireStateRestored = false;
   let intensity = $state(persisted.intensity ?? DEFAULT_FIRE_CONFIG.intensity);
-  let flameHeight = $state(persisted.flameHeight ?? DEFAULT_FIRE_CONFIG.flameHeight);
-  let trailLength = $state(persisted.trailLength ?? 1.0);
-  let activePresetId = $state(persisted.presetId ?? DEFAULT_PRESET_ID);
+  let activeFuelId = $state(persisted.fuelSourceId ?? "white-gas");
   let sourceMode = $state<SourceMode>(persisted.sourceMode ?? "pick");
+
+  // Fuel source derived + edited physics state
+  const defaultFuel = BUILT_IN_FUEL_SOURCES[0]!;
+  let activeFuel = $derived(
+    BUILT_IN_FUEL_SOURCES.find((f) => f.id === activeFuelId) ?? defaultFuel
+  );
+
+  // Editable fluid physics — initialized from active fuel, re-populated on fuel change
+  let editedFluidParams = $state<FirePhysicsParams>({ ...defaultFuel.fluidParams! });
+  let editedColorCurve = $state<FireColorCurve>({
+    coldColor: [...defaultFuel.colorCurve!.coldColor],
+    midColor: [...defaultFuel.colorCurve!.midColor],
+    hotColor: [...defaultFuel.colorCurve!.hotColor],
+    coreColor: [...defaultFuel.colorCurve!.coreColor],
+  });
+  let editedCharcoalParams = $state<CharcoalParams>({
+    ...(BUILT_IN_FUEL_SOURCES.find((f) => f.rendererType === "particle")?.particleParams ?? {
+      sparkRate: 120, sparkLifetime: 0.8, sparkInitialSpeed: 1.2, sparkScatter: 100,
+      sparkSize: 3.0, sparkSizeVariance: 0.5, gravity: 150, dragCoefficient: 2.0,
+      secondarySparkChance: 0.15, emberGlowDuration: 0.3, coolingRate: 0.002, initialTemperature: 1.0,
+    }),
+  });
+
+  // Collapsible section state
+  let openSections = $state<Record<string, boolean>>({
+    combustion: true,
+    convection: false,
+    persistence: false,
+    turbulence: false,
+  });
+
+  function populateFromFuel(fuel: FuelSourceDocument) {
+    if (fuel.rendererType === "fluid" && fuel.fluidParams) {
+      editedFluidParams = { ...fuel.fluidParams };
+    }
+    if (fuel.rendererType === "fluid" && fuel.colorCurve) {
+      editedColorCurve = {
+        coldColor: [...fuel.colorCurve.coldColor],
+        midColor: [...fuel.colorCurve.midColor],
+        hotColor: [...fuel.colorCurve.hotColor],
+        coreColor: [...fuel.colorCurve.coreColor],
+      };
+    }
+    if (fuel.rendererType === "particle" && fuel.particleParams) {
+      editedCharcoalParams = { ...fuel.particleParams };
+    }
+  }
+
+  // Populate from persisted fuel on init (if not the default white-gas)
+  {
+    const initialFuel = BUILT_IN_FUEL_SOURCES.find((f) => f.id === activeFuelId);
+    if (initialFuel) populateFromFuel(initialFuel);
+  }
+
+  function handleFuelSelect(id: string) {
+    activeFuelId = id;
+    const fuel = BUILT_IN_FUEL_SOURCES.find((f) => f.id === id);
+    if (fuel) populateFromFuel(fuel);
+  }
+
+  // Color helpers
+  function rgbToHex(rgb: [number, number, number]): string {
+    return "#" + rgb.map((c) => Math.round(c * 255).toString(16).padStart(2, "0")).join("");
+  }
+
+  function hexToRgb(hex: string): [number, number, number] {
+    const r = parseInt(hex.slice(1, 3), 16) / 255;
+    const g = parseInt(hex.slice(3, 5), 16) / 255;
+    const b = parseInt(hex.slice(5, 7), 16) / 255;
+    return [r, g, b];
+  }
+
+  function updateColorCurve(key: keyof FireColorCurve, value: [number, number, number]) {
+    editedColorCurve = { ...editedColorCurve, [key]: value };
+  }
 
   // Auto-chaining state
   let spinnerOrchestrator: IEndlessSpinnerOrchestrator | null = null;
@@ -136,42 +207,17 @@
   let publishConfirm = $state(false);
   let publishSuccess = $state(false);
 
-  let activePreset = $derived(FIRE_PRESETS.find(p => p.id === activePresetId) ?? FIRE_PRESETS[0]!);
-
-  let adjustedPhysics = $derived.by((): FirePhysicsParams => {
-    const base = activePreset.params;
-    if (Math.abs(trailLength - 1.0) < 0.01) return base;
-
-    const scaleDissipation = (d: number): number => {
-      if (trailLength < 1.0) {
-        const minD = d * 0.85;
-        return minD + (d - minD) * trailLength;
-      }
-      const maxD = Math.min(d + (1.0 - d) * 0.5, 0.998);
-      const t = trailLength - 1.0;
-      return d + (maxD - d) * t;
-    };
-
-    const coolingScale = trailLength < 1.0
-      ? 1.0 + (1.0 - trailLength) * 1.5
-      : 1.0 / (1.0 + (trailLength - 1.0) * 0.8);
-
-    return {
-      ...base,
-      velocityDissipation: scaleDissipation(base.velocityDissipation),
-      temperatureDissipation: scaleDissipation(base.temperatureDissipation),
-      fuelDissipation: scaleDissipation(base.fuelDissipation),
-      coolingRate: base.coolingRate * coolingScale,
-    };
-  });
-
   let fireConfig = $derived({
     enabled: fireEnabled,
     intensity,
-    flameHeight,
+    flameHeight: 1.0,
     velocityReactive: true,
     quality: 4,
-    physicsPreset: adjustedPhysics,
+    fuelSourceId: activeFuelId,
+    fuelRendererType: activeFuel?.rendererType ?? "fluid" as const,
+    physicsPreset: activeFuel?.rendererType === "fluid" ? editedFluidParams : undefined,
+    colorCurve: activeFuel?.rendererType === "fluid" ? editedColorCurve : undefined,
+    charcoalParams: activeFuel?.rendererType === "particle" ? editedCharcoalParams : undefined,
   });
 
   const animationState = createAnimationPanelState();
@@ -242,9 +288,7 @@
   $effect(() => {
     void fireEnabled;
     void intensity;
-    void flameHeight;
-    void trailLength;
-    void activePresetId;
+    void activeFuelId;
     void bpm;
     void sequence;
     void sourceMode;
@@ -610,12 +654,23 @@
     try {
       const publisher = container.items.fireDefaultsPublisher as IFireDefaultsPublisher;
       const overrideProvider = container.items.firePointOverrideProvider as IFirePointOverrideProvider;
+      const fuelPublisher = container.items.fuelSourcePublisher as IFuelSourcePublisher;
 
+      // Publish fire point overrides + current physics as global defaults
       await publisher.publish({
         firePoints: overrideProvider.exportAll(),
         propPhysics: {},
-        globalPhysics: adjustedPhysics,
+        globalPhysics: activeFuel.rendererType === "fluid" ? editedFluidParams : defaultFuel.fluidParams!,
       });
+
+      // Build and publish the edited fuel source
+      const editedFuel: FuelSourceDocument = {
+        ...activeFuel,
+        fluidParams: activeFuel.rendererType === "fluid" ? editedFluidParams : undefined,
+        colorCurve: activeFuel.rendererType === "fluid" ? editedColorCurve : undefined,
+        particleParams: activeFuel.rendererType === "particle" ? editedCharcoalParams : undefined,
+      };
+      await fuelPublisher.publish(editedFuel);
 
       publishConfirm = false;
       publishSuccess = true;
@@ -778,7 +833,7 @@
           <i class="fas fa-fire" aria-hidden="true"></i>
           Fire Effect
           {#if fireEnabled}
-            <span class="active-preset-label">{activePreset.name}</span>
+            <span class="active-fuel-label">{activeFuel.name}</span>
           {/if}
         </h3>
 
@@ -821,21 +876,17 @@
             </div>
           </div>
 
-          <div class="preset-grid">
-            {#each FIRE_PRESETS as preset (preset.id)}
-              <button
-                class="preset-card"
-                class:active={activePresetId === preset.id}
-                onclick={() => (activePresetId = preset.id)}
-                aria-pressed={activePresetId === preset.id}
-                aria-label="Select {preset.name} fire preset"
-              >
-                <span class="preset-name">{preset.name}</span>
-                <span class="preset-desc">{preset.description}</span>
-              </button>
-            {/each}
+          <!-- Fuel Source Picker -->
+          <div class="fuel-picker-section">
+            <span class="section-label">Fuel Source</span>
+            <FuelSourcePicker
+              fuelSources={BUILT_IN_FUEL_SOURCES}
+              {activeFuelId}
+              onSelect={handleFuelSelect}
+            />
           </div>
 
+          <!-- Intensity slider (universal) -->
           <div class="slider-group">
             <div class="slider-row">
               <label for="intensity-slider">Intensity</label>
@@ -846,36 +897,178 @@
                 max="3.0"
                 step="0.1"
                 bind:value={intensity}
+                aria-label="Fire intensity"
               />
               <span class="slider-value">{intensity.toFixed(1)}</span>
             </div>
-
-            <div class="slider-row">
-              <label for="trail-slider">Trail Length</label>
-              <input
-                id="trail-slider"
-                type="range"
-                min="0.2"
-                max="2.0"
-                step="0.1"
-                bind:value={trailLength}
-              />
-              <span class="slider-value">{trailLength.toFixed(1)}x</span>
-            </div>
-
-            <div class="slider-row">
-              <label for="height-slider">Flame Height</label>
-              <input
-                id="height-slider"
-                type="range"
-                min="0.3"
-                max="3.0"
-                step="0.1"
-                bind:value={flameHeight}
-              />
-              <span class="slider-value">{flameHeight.toFixed(1)}x</span>
-            </div>
           </div>
+
+          <!-- Fluid physics sliders (4 collapsible groups) -->
+          {#if activeFuel.rendererType === "fluid"}
+            <div class="physics-groups">
+              <!-- Combustion -->
+              <details bind:open={openSections.combustion}>
+                <summary class="group-summary">Combustion</summary>
+                <div class="group-sliders">
+                  <div class="slider-row">
+                    <label for="burn-rate">Burn speed</label>
+                    <input id="burn-rate" type="range" min="1.0" max="8.0" step="0.1" bind:value={editedFluidParams.burnRate} aria-label="Burn speed" />
+                    <span class="slider-value">{editedFluidParams.burnRate.toFixed(1)}</span>
+                  </div>
+                  <div class="slider-row">
+                    <label for="fuel-amount">Fuel density</label>
+                    <input id="fuel-amount" type="range" min="0.1" max="2.0" step="0.05" bind:value={editedFluidParams.fuelAmount} aria-label="Fuel density" />
+                    <span class="slider-value">{editedFluidParams.fuelAmount.toFixed(2)}</span>
+                  </div>
+                  <div class="slider-row">
+                    <label for="fuel-efficiency">Fuel efficiency</label>
+                    <input id="fuel-efficiency" type="range" min="1.0" max="5.0" step="0.1" bind:value={editedFluidParams.fuelEfficiency} aria-label="Fuel efficiency" />
+                    <span class="slider-value">{editedFluidParams.fuelEfficiency.toFixed(1)}</span>
+                  </div>
+                  <div class="slider-row">
+                    <label for="temp-injection">Heat injection</label>
+                    <input id="temp-injection" type="range" min="0.3" max="4.0" step="0.1" bind:value={editedFluidParams.temperatureInjection} aria-label="Heat injection" />
+                    <span class="slider-value">{editedFluidParams.temperatureInjection.toFixed(1)}</span>
+                  </div>
+                </div>
+              </details>
+
+              <!-- Convection -->
+              <details bind:open={openSections.convection}>
+                <summary class="group-summary">Convection</summary>
+                <div class="group-sliders">
+                  <div class="slider-row">
+                    <label for="buoyancy">Buoyancy</label>
+                    <input id="buoyancy" type="range" min="10" max="200" step="5" bind:value={editedFluidParams.buoyancyStrength} aria-label="Buoyancy" />
+                    <span class="slider-value">{editedFluidParams.buoyancyStrength.toFixed(0)}</span>
+                  </div>
+                  <div class="slider-row">
+                    <label for="upward-bias">Upward bias</label>
+                    <input id="upward-bias" type="range" min="0.5" max="8.0" step="0.1" bind:value={editedFluidParams.upwardBias} aria-label="Upward bias" />
+                    <span class="slider-value">{editedFluidParams.upwardBias.toFixed(1)}</span>
+                  </div>
+                </div>
+              </details>
+
+              <!-- Persistence -->
+              <details bind:open={openSections.persistence}>
+                <summary class="group-summary">Persistence</summary>
+                <div class="group-sliders">
+                  <div class="slider-row">
+                    <label for="vel-diss">Velocity persistence</label>
+                    <input id="vel-diss" type="range" min="0.88" max="0.995" step="0.005" bind:value={editedFluidParams.velocityDissipation} aria-label="Velocity persistence" />
+                    <span class="slider-value">{editedFluidParams.velocityDissipation.toFixed(3)}</span>
+                  </div>
+                  <div class="slider-row">
+                    <label for="temp-diss">Heat persistence</label>
+                    <input id="temp-diss" type="range" min="0.88" max="0.995" step="0.005" bind:value={editedFluidParams.temperatureDissipation} aria-label="Heat persistence" />
+                    <span class="slider-value">{editedFluidParams.temperatureDissipation.toFixed(3)}</span>
+                  </div>
+                  <div class="slider-row">
+                    <label for="fuel-diss">Fuel persistence</label>
+                    <input id="fuel-diss" type="range" min="0.88" max="0.995" step="0.005" bind:value={editedFluidParams.fuelDissipation} aria-label="Fuel persistence" />
+                    <span class="slider-value">{editedFluidParams.fuelDissipation.toFixed(3)}</span>
+                  </div>
+                  <div class="slider-row">
+                    <label for="cooling-rate">Cooling speed</label>
+                    <input id="cooling-rate" type="range" min="1.0" max="8.0" step="0.1" bind:value={editedFluidParams.coolingRate} aria-label="Cooling speed" />
+                    <span class="slider-value">{editedFluidParams.coolingRate.toFixed(1)}</span>
+                  </div>
+                </div>
+              </details>
+
+              <!-- Turbulence -->
+              <details bind:open={openSections.turbulence}>
+                <summary class="group-summary">Turbulence</summary>
+                <div class="group-sliders">
+                  <div class="slider-row">
+                    <label for="vorticity">Turbulence</label>
+                    <input id="vorticity" type="range" min="1.0" max="20.0" step="0.5" bind:value={editedFluidParams.vorticityStrength} aria-label="Turbulence" />
+                    <span class="slider-value">{editedFluidParams.vorticityStrength.toFixed(1)}</span>
+                  </div>
+                  <div class="slider-row">
+                    <label for="splat-radius">Splat radius</label>
+                    <input id="splat-radius" type="range" min="0.004" max="0.025" step="0.001" bind:value={editedFluidParams.splatRadius} aria-label="Splat radius" />
+                    <span class="slider-value">{editedFluidParams.splatRadius.toFixed(3)}</span>
+                  </div>
+                  <div class="slider-row">
+                    <label for="pressure-diss">Pressure decay</label>
+                    <input id="pressure-diss" type="range" min="0.5" max="1.0" step="0.05" bind:value={editedFluidParams.pressureDissipation} aria-label="Pressure decay" />
+                    <span class="slider-value">{editedFluidParams.pressureDissipation.toFixed(2)}</span>
+                  </div>
+                  <div class="slider-row">
+                    <label for="vel-inject">Velocity scale</label>
+                    <input id="vel-inject" type="range" min="0.0001" max="0.002" step="0.0001" bind:value={editedFluidParams.velocityInjectScale} aria-label="Velocity scale" />
+                    <span class="slider-value">{editedFluidParams.velocityInjectScale.toFixed(4)}</span>
+                  </div>
+                </div>
+              </details>
+            </div>
+
+            <!-- Color Curve Editor -->
+            <div class="color-curve-section">
+              <span class="section-label">Color Curve</span>
+              <div class="color-pickers">
+                <label class="color-pick">
+                  <span>Cold</span>
+                  <input type="color" value={rgbToHex(editedColorCurve.coldColor)} oninput={(e) => updateColorCurve("coldColor", hexToRgb(e.currentTarget.value))} aria-label="Cold ember color" />
+                </label>
+                <label class="color-pick">
+                  <span>Mid</span>
+                  <input type="color" value={rgbToHex(editedColorCurve.midColor)} oninput={(e) => updateColorCurve("midColor", hexToRgb(e.currentTarget.value))} aria-label="Mid flame color" />
+                </label>
+                <label class="color-pick">
+                  <span>Hot</span>
+                  <input type="color" value={rgbToHex(editedColorCurve.hotColor)} oninput={(e) => updateColorCurve("hotColor", hexToRgb(e.currentTarget.value))} aria-label="Hot flame color" />
+                </label>
+                <label class="color-pick">
+                  <span>Core</span>
+                  <input type="color" value={rgbToHex(editedColorCurve.coreColor)} oninput={(e) => updateColorCurve("coreColor", hexToRgb(e.currentTarget.value))} aria-label="Core wick color" />
+                </label>
+              </div>
+            </div>
+          {/if}
+
+          <!-- Charcoal particle sliders -->
+          {#if activeFuel.rendererType === "particle"}
+            <div class="physics-groups">
+              <details open>
+                <summary class="group-summary">Spark Physics</summary>
+                <div class="group-sliders">
+                  <div class="slider-row">
+                    <label for="spark-rate">Spark rate</label>
+                    <input id="spark-rate" type="range" min="10" max="500" step="10" bind:value={editedCharcoalParams.sparkRate} aria-label="Spark rate" />
+                    <span class="slider-value">{editedCharcoalParams.sparkRate}</span>
+                  </div>
+                  <div class="slider-row">
+                    <label for="spark-lifetime">Spark lifetime</label>
+                    <input id="spark-lifetime" type="range" min="0.1" max="3.0" step="0.1" bind:value={editedCharcoalParams.sparkLifetime} aria-label="Spark lifetime" />
+                    <span class="slider-value">{editedCharcoalParams.sparkLifetime.toFixed(1)}s</span>
+                  </div>
+                  <div class="slider-row">
+                    <label for="spark-scatter">Spark scatter</label>
+                    <input id="spark-scatter" type="range" min="30" max="180" step="5" bind:value={editedCharcoalParams.sparkScatter} aria-label="Spark scatter angle" />
+                    <span class="slider-value">{editedCharcoalParams.sparkScatter}&deg;</span>
+                  </div>
+                  <div class="slider-row">
+                    <label for="spark-gravity">Gravity</label>
+                    <input id="spark-gravity" type="range" min="50" max="500" step="10" bind:value={editedCharcoalParams.gravity} aria-label="Gravity" />
+                    <span class="slider-value">{editedCharcoalParams.gravity}</span>
+                  </div>
+                  <div class="slider-row">
+                    <label for="spark-drag">Drag</label>
+                    <input id="spark-drag" type="range" min="0.5" max="5.0" step="0.1" bind:value={editedCharcoalParams.dragCoefficient} aria-label="Drag coefficient" />
+                    <span class="slider-value">{editedCharcoalParams.dragCoefficient.toFixed(1)}</span>
+                  </div>
+                  <div class="slider-row">
+                    <label for="secondary-chance">Secondary sparks</label>
+                    <input id="secondary-chance" type="range" min="0" max="0.5" step="0.01" bind:value={editedCharcoalParams.secondarySparkChance} aria-label="Secondary spark chance" />
+                    <span class="slider-value">{(editedCharcoalParams.secondarySparkChance * 100).toFixed(0)}%</span>
+                  </div>
+                </div>
+              </details>
+            </div>
+          {/if}
         {/if}
       </div>
 
@@ -966,7 +1159,7 @@
   .content {
     flex: 1;
     display: grid;
-    grid-template-columns: 1fr 320px;
+    grid-template-columns: 1fr 360px;
     gap: var(--spacing-md, 16px);
     padding: var(--spacing-md, 16px);
     min-height: 0;
@@ -1322,7 +1515,7 @@
     border-color: color-mix(in srgb, var(--flame-orange) 70%, transparent);
   }
 
-  .active-preset-label {
+  .active-fuel-label {
     margin-left: auto;
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
@@ -1330,58 +1523,106 @@
     opacity: 0.7;
   }
 
-  .preset-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-    margin-bottom: var(--spacing-md, 16px);
-  }
-
-  .preset-card {
+  .fuel-picker-section {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-    padding: 8px 10px;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    gap: 6px;
+    margin: var(--spacing-sm, 8px) 0;
+  }
+
+  .physics-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: var(--spacing-sm, 8px);
+  }
+
+  .physics-groups details {
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: var(--border-radius-md, 8px);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text, white);
-    cursor: pointer;
-    transition: all 150ms ease;
-    text-align: left;
+    overflow: hidden;
   }
 
-  .preset-card:hover {
-    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-  }
-
-  .preset-card.active {
-    background: var(--flame-orange-dim);
-    border-color: var(--flame-orange-border-strong);
-  }
-
-  .preset-card:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: 2px;
-  }
-
-  .preset-name {
+  .group-summary {
+    padding: 10px 12px;
     font-size: var(--font-size-compact, 12px);
     font-weight: 600;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+  }
+
+  .group-summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .group-summary::before {
+    content: "\f054";
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    font-size: 10px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
+    transition: transform 150ms ease;
+  }
+
+  details[open] > .group-summary::before {
+    transform: rotate(90deg);
+  }
+
+  .group-summary:hover {
     color: var(--theme-text, white);
-    line-height: 1.2;
   }
 
-  .preset-card.active .preset-name {
-    color: var(--flame-orange-bright);
+  .group-sliders {
+    padding: 4px 12px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm, 8px);
   }
 
-  .preset-desc {
+  .color-curve-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: var(--spacing-sm, 8px);
+  }
+
+  .color-pickers {
+    display: flex;
+    gap: 8px;
+  }
+
+  .color-pick {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+  }
+
+  .color-pick span {
     font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-    line-height: 1.2;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  }
+
+  .color-pick input[type="color"] {
+    width: 100%;
+    height: 36px;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 6px;
+    background: transparent;
+    cursor: pointer;
+    padding: 2px;
+  }
+
+  .color-pick input[type="color"]:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
   .slider-group {
@@ -1398,7 +1639,7 @@
   }
 
   .slider-row label {
-    min-width: 100px;
+    min-width: 120px;
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
@@ -1533,10 +1774,10 @@
     .action-btn,
     .play-btn,
     .toggle-btn,
-    .preset-card,
     .publish-btn,
     .confirm-btn,
-    .cancel-btn {
+    .cancel-btn,
+    .group-summary::before {
       transition: none;
     }
   }
