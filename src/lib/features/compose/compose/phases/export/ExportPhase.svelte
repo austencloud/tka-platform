@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
   import type { AudioState } from "../../state/composition-state.svelte";
+  import LoadingButton from "$lib/shared/components/loading/LoadingButton.svelte";
 
   let {
     hasContent = false,
@@ -202,19 +203,14 @@
 
         <!-- Export Button -->
         <div class="export-action">
-          <button
-            class="export-btn"
+          <LoadingButton
+            loading={isExporting}
+            label="Export {format.toUpperCase()}"
+            loadingLabel="Exporting..."
+            icon="fa-download"
             onclick={handleExport}
-            disabled={isExporting}
-          >
-            {#if isExporting}
-              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-              Exporting...
-            {:else}
-              <i class="fas fa-download" aria-hidden="true"></i>
-              Export {format.toUpperCase()}
-            {/if}
-          </button>
+            disabled={!hasContent}
+          />
         </div>
       </div>
     {/if}
@@ -521,44 +517,26 @@
     border-top: 1px solid rgba(255, 255, 255, 0.08);
   }
 
-  .export-btn {
+  .export-action :global(.loading-button) {
     width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
     padding: 1rem 2rem;
     background: linear-gradient(
       135deg,
       rgba(139, 92, 246, 0.8) 0%,
       rgba(124, 58, 237, 0.8) 100%
     );
-    border: none;
     border-radius: 12px;
-    color: white;
     font-size: 1rem;
     font-weight: 600;
-    cursor: pointer;
-    transition: all var(--duration-normal) ease;
   }
 
-  .export-btn:hover:not(:disabled) {
+  .export-action :global(.loading-button:hover:not(:disabled)) {
     background: linear-gradient(
       135deg,
       rgba(139, 92, 246, 1) 0%,
       rgba(124, 58, 237, 1) 100%
     );
     transform: translateY(-1px);
-  }
-
-  .export-btn:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-  }
-
-  .export-btn:focus-visible {
-    outline: 2px solid white;
-    outline-offset: 2px;
   }
 
   /* Mobile adjustments */
@@ -585,12 +563,11 @@
     .quality-btn,
     .toggle-track,
     .toggle-track::after,
-    .loop-btn,
-    .export-btn {
+    .loop-btn {
       transition: none;
     }
 
-    .export-btn:hover:not(:disabled) {
+    .export-action :global(.loading-button:hover:not(:disabled)) {
       transform: none;
     }
   }

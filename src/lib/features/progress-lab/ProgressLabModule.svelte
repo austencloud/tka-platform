@@ -11,6 +11,7 @@
   import ShimmerBlock from "$lib/shared/components/loading/ShimmerBlock.svelte";
   import StepProgress from "$lib/shared/components/loading/StepProgress.svelte";
   import LoadingGate from "$lib/shared/components/loading/LoadingGate.svelte";
+  import LoadingButton from "$lib/shared/components/loading/LoadingButton.svelte";
 
   // ---------------------------------------------------------------------------
   // Global controls
@@ -400,27 +401,23 @@
         </button>
 
       {:else if buttonVariant === "morph"}
-        {#if buttonActive}
-          <div class="morph-bar-wrapper">
-            <ProgressBar percent={buttonPercent} height={40} showPercent />
-          </div>
-        {:else}
-          <button class="action-btn">
-            <i class="fas fa-wand-magic-sparkles"></i>
-            <span>Generate</span>
-          </button>
-        {/if}
+        <LoadingButton
+          loading={buttonActive}
+          percent={buttonPercent}
+          label="Generate"
+          loadingLabel="Generating..."
+          icon="fa-wand-magic-sparkles"
+          onclick={playButton}
+        />
 
       {:else if buttonVariant === "fill"}
-        <button class="action-btn fill-btn" disabled={buttonActive}>
-          {#if buttonActive}
-            <div class="fill-overlay" style:width="{buttonPercent}%"></div>
-            <span class="fill-label">Generating...</span>
-          {:else}
-            <i class="fas fa-wand-magic-sparkles"></i>
-            <span>Generate</span>
-          {/if}
-        </button>
+        <LoadingButton
+          loading={buttonActive}
+          label="Generate"
+          loadingLabel="Generating..."
+          icon="fa-wand-magic-sparkles"
+          onclick={playButton}
+        />
       {/if}
     </div>
   </section>
@@ -820,32 +817,6 @@
     cursor: not-allowed;
   }
 
-  .morph-bar-wrapper {
-    width: 200px;
-    height: 40px;
-    border-radius: 10px;
-    overflow: hidden;
-  }
-
-  .fill-btn {
-    min-width: 160px;
-    justify-content: center;
-  }
-
-  .fill-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    background: rgba(255, 255, 255, 0.2);
-    transition: width 80ms linear;
-    pointer-events: none;
-  }
-
-  .fill-label {
-    position: relative;
-    z-index: 1;
-  }
 
   /* =========================================================================
      Reduced motion (system-level)
