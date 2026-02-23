@@ -1,6 +1,9 @@
 /**
  * Fire Physics Presets
  *
+ * @deprecated Use FuelSourceTypes and BuiltInFuelSources instead.
+ * This file is retained for migration compatibility only.
+ *
  * 8 named tuning variations for the Navier-Stokes fire simulation.
  * Each preset defines a complete set of physics parameters that produce
  * a distinct visual character. Users compare presets visually and pick
@@ -21,6 +24,7 @@
 
 import type { FirePhysicsParams } from "./FireTypes";
 
+/** @deprecated Use FuelSource from FuelSourceTypes.ts instead */
 export interface FirePreset {
   id: string;
   name: string;
@@ -28,6 +32,7 @@ export interface FirePreset {
   params: FirePhysicsParams;
 }
 
+/** @deprecated Use BUILT_IN_FUEL_SOURCES from BuiltInFuelSources.ts instead */
 export const FIRE_PRESETS: FirePreset[] = [
   {
     id: "candlewick",
@@ -199,7 +204,7 @@ export const FIRE_PRESETS: FirePreset[] = [
   },
 ];
 
-/** Look up a preset by ID */
+/** @deprecated Use FuelSourceLoader.loadById() instead */
 export function getFirePreset(id: string): FirePreset | undefined {
   return FIRE_PRESETS.find(p => p.id === id);
 }

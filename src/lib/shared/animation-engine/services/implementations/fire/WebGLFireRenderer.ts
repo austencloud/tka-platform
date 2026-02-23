@@ -47,7 +47,30 @@ import {
 import { WHITE_GAS_COLOR } from "../../../domain/types/BuiltInFuelSources";
 
 const MAX_DPR = 2;
-const JACOBI_ITERATIONS = 30;
+const DEFAULT_JACOBI_ITERATIONS = 20;
+
+// ============================================================
+// Active instance tracking for adaptive quality
+// ============================================================
+
+/** Number of currently active fire renderer instances across all animation engines */
+let activeFireInstanceCount = 0;
+
+/** Read the current active instance count (used by compose module for quality decisions) */
+export function getActiveFireInstanceCount(): number {
+  return activeFireInstanceCount;
+}
+
+/**
+ * Compute optimal Jacobi iterations based on how many fire renderers
+ * are running simultaneously. Fire doesn't need precise pressure solving —
+ * visual plausibility is all that matters.
+ */
+export function computeAdaptiveJacobiIterations(instanceCount: number): number {
+  if (instanceCount <= 1) return 20;
+  if (instanceCount <= 4) return 15;
+  return 10;
+}
 
 /** Maps quality level to simulation grid resolution */
 function qualityToResolution(quality: number): number {
@@ -198,6 +221,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
 
     this.lastTime = performance.now();
     this.initialized = true;
+    activeFireInstanceCount++;
     return true;
   }
 
@@ -344,7 +368,8 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     // 6. Pressure projection
     this.computeDivergence(texelSize);
     this.scalePressure();
-    for (let i = 0; i < JACOBI_ITERATIONS; i++) {
+    const iterations = config.jacobiIterations ?? computeAdaptiveJacobiIterations(activeFireInstanceCount);
+    for (let i = 0; i < iterations; i++) {
       this.jacobiStep(texelSize);
     }
     this.gradientSubtract(texelSize);
@@ -838,6 +863,9 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
   // ============================================================
 
   private cleanup(): void {
+    if (this.initialized) {
+      activeFireInstanceCount = Math.max(0, activeFireInstanceCount - 1);
+    }
     this.destroySimulationBuffers();
 
     const gl = this.gl;

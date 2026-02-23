@@ -246,73 +246,77 @@ Controls moved below the grid for better UX
 
   <!-- Controls Footer - below grid -->
   <div class="controls-footer">
-    <button
-      class="control-button"
-      onclick={handleToggleView}
-      aria-label={`Show ${viewModeLabel}`}
-    >
-      <svg
-        class="control-icon"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+    <div class="orientation-controls">
+      <OrientationCycler
+        orientation={pickerState.blueOrientation}
+        onOrientationChange={handleBlueOrientationChange}
+        color="blue"
+      />
+
+      <OrientationCycler
+        orientation={pickerState.redOrientation}
+        onOrientationChange={handleRedOrientationChange}
+        color="red"
+      />
+    </div>
+
+    <div class="mode-controls">
+      <button
+        class="control-button"
+        onclick={handleToggleView}
+        aria-label={`Show ${viewModeLabel}`}
       >
-        {#if showAdvancedPicker}
-          <!-- Minimize icon -->
-          <polyline points="4 14 10 14 10 20" />
-          <polyline points="20 10 14 10 14 4" />
-          <line x1="14" y1="10" x2="21" y2="3" />
-          <line x1="3" y1="21" x2="10" y2="14" />
-        {:else}
-          <!-- Grid/expand icon -->
-          <rect x="3" y="3" width="7" height="7" />
-          <rect x="14" y="3" width="7" height="7" />
-          <rect x="3" y="14" width="7" height="7" />
-          <rect x="14" y="14" width="7" height="7" />
-        {/if}
-      </svg>
-      <span class="control-label">{viewModeLabel}</span>
-    </button>
+        <svg
+          class="control-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          {#if showAdvancedPicker}
+            <!-- Minimize icon -->
+            <polyline points="4 14 10 14 10 20" />
+            <polyline points="20 10 14 10 14 4" />
+            <line x1="14" y1="10" x2="21" y2="3" />
+            <line x1="3" y1="21" x2="10" y2="14" />
+          {:else}
+            <!-- Grid/expand icon -->
+            <rect x="3" y="3" width="7" height="7" />
+            <rect x="14" y="3" width="7" height="7" />
+            <rect x="3" y="14" width="7" height="7" />
+            <rect x="14" y="14" width="7" height="7" />
+          {/if}
+        </svg>
+        <span class="control-label">{viewModeLabel}</span>
+      </button>
 
-    <OrientationCycler
-      orientation={pickerState.blueOrientation}
-      onOrientationChange={handleBlueOrientationChange}
-      color="blue"
-    />
-
-    <OrientationCycler
-      orientation={pickerState.redOrientation}
-      onOrientationChange={handleRedOrientationChange}
-      color="red"
-    />
-
-    <button
-      class="control-button"
-      onclick={handleGridModeToggle}
-      aria-label={`Switch to ${gridModeLabel} grid`}
-    >
-      <svg
-        class="control-icon"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+      <button
+        class="control-button"
+        onclick={handleGridModeToggle}
+        aria-label={`Switch to ${gridModeLabel} grid`}
       >
-        {#if pickerState.currentGridMode === GridMode.DIAMOND}
-          <!-- Box icon -->
-          <rect x="3" y="3" width="18" height="18" rx="2" />
-        {:else}
-          <!-- Diamond icon -->
-          <polygon points="12 2 22 12 12 22 2 12" />
-        {/if}
-      </svg>
-      <span class="control-label">{gridModeLabel}</span>
-    </button>
+        <svg
+          class="control-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          {#if pickerState.currentGridMode === GridMode.DIAMOND}
+            <!-- Box icon -->
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+          {:else}
+            <!-- Diamond icon -->
+            <polygon points="12 2 22 12 12 22 2 12" />
+          {/if}
+        </svg>
+        <span class="control-label">{gridModeLabel}</span>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -397,30 +401,42 @@ Controls moved below the grid for better UX
   }
 
   /* ============================================
-     Controls Footer - in layout flow
+     Controls Footer - wraps into two rows when narrow
      ============================================ */
   .controls-footer {
     display: flex;
+    flex-wrap: wrap;
     justify-content: center;
     align-items: center;
-    gap: clamp(12px, 3vmin, 24px);
-    padding: clamp(12px, 2vmin, 16px) clamp(16px, 3vmin, 32px);
+    gap: clamp(8px, 2vmin, 16px);
+    padding: clamp(8px, 2vmin, 16px) clamp(12px, 3vmin, 32px);
     background: transparent;
     flex-shrink: 0;
+  }
+
+  .orientation-controls,
+  .mode-controls {
+    display: flex;
+    align-items: stretch;
+    gap: clamp(8px, 2vmin, 12px);
+    width: 100%;
+  }
+
+  /* Make orientation cyclers stretch to fill their row equally */
+  .orientation-controls :global(.orientation-cycler) {
+    flex: 1;
   }
 
   .control-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    flex: 1;
     gap: 8px;
-
-    /* Fixed width so buttons don't shift when label text changes */
-    width: 130px;
 
     /* Touch target */
     min-height: var(--min-touch-target, 48px);
-    padding: 10px 20px;
+    padding: 10px 16px;
 
     /* Theme-aware styling */
     background: var(--theme-card-bg);
@@ -432,6 +448,7 @@ Controls moved below the grid for better UX
     font-weight: 600;
     color: var(--theme-text, var(--theme-text));
     letter-spacing: 0.3px;
+    white-space: nowrap;
 
     /* Interaction */
     cursor: pointer;
@@ -494,27 +511,15 @@ Controls moved below the grid for better UX
     }
   }
 
-  /* Mobile responsive */
-  @media (max-width: 480px) {
-    .controls-footer {
-      gap: 8px;
-      padding: 10px 12px;
-    }
-
+  /* Narrow container: compact buttons but keep labels */
+  @container (max-width: 500px) {
     .control-button {
-      width: auto;
-      padding: 8px 14px;
-      font-size: var(--font-size-compact);
+      padding: 8px 12px;
     }
 
     .control-icon {
       width: 16px;
       height: 16px;
-    }
-
-    /* Hide all text labels to save space for the orientation cycler */
-    .control-label {
-      display: none;
     }
   }
 </style>

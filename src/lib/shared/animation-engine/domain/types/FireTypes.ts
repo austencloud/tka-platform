@@ -124,6 +124,15 @@ export interface FireOverlayConfig {
   colorCurve?: FireColorCurve;
   /** Charcoal particle params (when fuelRendererType === "particle") */
   charcoalParams?: CharcoalParams;
+  /**
+   * Jacobi pressure-solve iterations per frame.
+   * Higher = more accurate pressure field, but more GPU draw calls.
+   * Fire doesn't need physical accuracy — visual plausibility is sufficient.
+   *   20 = default (single instance, no visible difference from 30)
+   *   15 = 2-4 simultaneous instances
+   *   10 = 5+ simultaneous instances
+   */
+  jacobiIterations?: number;
 }
 
 /** Default physics parameters — tuned for fire spinning (shorter trails, wick-focused) */

@@ -31,9 +31,11 @@
     fireEffectEnabled: boolean;
     ledEffectEnabled: boolean;
     flameColorMode: FlameColorMode;
-    firePreset: string;
+    fuelSourceId: string;
+    fireIntensity: number;
     onFlameColorModeChange: (mode: FlameColorMode) => void;
-    onFirePresetChange: (presetId: string) => void;
+    onFuelSourceChange: (id: string) => void;
+    onFireIntensityChange: (value: number) => void;
     onToggle: (key: string) => void;
     onTrailStyleChange: (style: string) => void;
     onPlaybackModeChange: (mode: PlaybackMode) => void;
@@ -52,9 +54,11 @@
     fireEffectEnabled,
     ledEffectEnabled,
     flameColorMode,
-    firePreset,
+    fuelSourceId,
+    fireIntensity,
     onFlameColorModeChange,
-    onFirePresetChange,
+    onFuelSourceChange,
+    onFireIntensityChange,
     onToggle,
     onTrailStyleChange,
     onPlaybackModeChange,
@@ -128,9 +132,11 @@
         {fireEffectEnabled}
         {ledEffectEnabled}
         {flameColorMode}
-        {firePreset}
+        {fuelSourceId}
+        {fireIntensity}
         {onFlameColorModeChange}
-        {onFirePresetChange}
+        {onFuelSourceChange}
+        {onFireIntensityChange}
         {trailStyle}
         {showBilateralToggle}
         {isBothEnds}
@@ -155,9 +161,11 @@
         {fireEffectEnabled}
         {ledEffectEnabled}
         {flameColorMode}
-        {firePreset}
+        {fuelSourceId}
+        {fireIntensity}
         {onFlameColorModeChange}
-        {onFirePresetChange}
+        {onFuelSourceChange}
+        {onFireIntensityChange}
         {trailStyle}
         {showBilateralToggle}
         {isBothEnds}

@@ -10,6 +10,8 @@
     PlaybackMode,
     FlameColorMode,
   } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import FuelSourcePicker from "$lib/shared/animation-engine/components/FuelSourcePicker.svelte";
+  import { BUILT_IN_FUEL_SOURCES } from "$lib/shared/animation-engine/domain/types/BuiltInFuelSources";
 
   interface Props {
     playbackMode: PlaybackMode;
@@ -22,9 +24,11 @@
     fireEffectEnabled: boolean;
     ledEffectEnabled: boolean;
     flameColorMode: FlameColorMode;
-    firePreset: string;
+    fuelSourceId: string;
+    fireIntensity: number;
     onFlameColorModeChange: (mode: FlameColorMode) => void;
-    onFirePresetChange: (presetId: string) => void;
+    onFuelSourceChange: (id: string) => void;
+    onFireIntensityChange: (value: number) => void;
     trailStyle: TrailVisibility;
     showBilateralToggle: boolean;
     isBothEnds: boolean;
@@ -46,9 +50,11 @@
     fireEffectEnabled,
     ledEffectEnabled,
     flameColorMode,
-    firePreset,
+    fuelSourceId,
+    fireIntensity,
     onFlameColorModeChange,
-    onFirePresetChange,
+    onFuelSourceChange,
+    onFireIntensityChange,
     trailStyle,
     showBilateralToggle,
     isBothEnds,
@@ -210,34 +216,24 @@
         Colored
       </button>
     </div>
-    <div class="mobile-row">
-      <button
-        class="compact-btn"
-        class:active={firePreset === "small"}
-        aria-pressed={firePreset === "small"}
-        onclick={() => onFirePresetChange("small")}
-        type="button"
-      >
-        Small
-      </button>
-      <button
-        class="compact-btn"
-        class:active={firePreset === "medium"}
-        aria-pressed={firePreset === "medium"}
-        onclick={() => onFirePresetChange("medium")}
-        type="button"
-      >
-        Medium
-      </button>
-      <button
-        class="compact-btn"
-        class:active={firePreset === "large"}
-        aria-pressed={firePreset === "large"}
-        onclick={() => onFirePresetChange("large")}
-        type="button"
-      >
-        Large
-      </button>
+    <FuelSourcePicker
+      fuelSources={BUILT_IN_FUEL_SOURCES}
+      activeFuelId={fuelSourceId}
+      onSelect={onFuelSourceChange}
+    />
+    <div class="intensity-row">
+      <span class="slider-label">Intensity</span>
+      <input
+        type="range"
+        min="0.1"
+        max="3.0"
+        step="0.1"
+        value={fireIntensity}
+        oninput={(e) => onFireIntensityChange(parseFloat(e.currentTarget.value))}
+        class="intensity-slider"
+        aria-label="Fire intensity"
+      />
+      <span class="intensity-value">{fireIntensity.toFixed(1)}</span>
     </div>
   {/if}
 </div>
@@ -324,6 +320,37 @@
   .compact-btn.trail.ends {
     flex: 0 0 48px;
     padding: 8px;
+  }
+
+  .intensity-row {
+    display: flex;
+    align-items: center;
+    gap: clamp(6px, 1cqi, 10px);
+    margin-top: clamp(4px, 1cqi, 6px);
+  }
+
+  .slider-label {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--theme-text-dim);
+    white-space: nowrap;
+  }
+
+  .intensity-slider {
+    flex: 1;
+    min-height: 44px;
+    accent-color: var(--theme-accent);
+    cursor: pointer;
+  }
+
+  .intensity-value {
+    font-size: var(--font-size-compact, 12px);
+    font-variant-numeric: tabular-nums;
+    color: var(--theme-text-dim);
+    min-width: 28px;
+    text-align: right;
   }
 
   @media (prefers-reduced-motion: reduce) {

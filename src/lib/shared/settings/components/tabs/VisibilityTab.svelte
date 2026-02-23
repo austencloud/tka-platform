@@ -61,7 +61,8 @@
   let animFireEffectEnabled = $state(false);
   let animLedEffectEnabled = $state(false);
   let animFlameColorMode = $state<FlameColorMode>("colored");
-  let animFirePreset = $state("white-gas");
+  let animFuelSourceId = $state("white-gas");
+  let animFireIntensity = $state(1.0);
 
   // Image composition state
   let imgAddWord = $state(true);
@@ -172,10 +173,16 @@
     animationVisibilityManager.setFlameColorMode(mode);
   }
 
-  function handleFirePresetChange(presetId: string) {
+  function handleFuelSourceChange(id: string) {
     triggerHaptic();
-    animFirePreset = presetId;
-    animationVisibilityManager.setFuelSourceId(presetId);
+    animFuelSourceId = id;
+    animationVisibilityManager.setFuelSourceId(id);
+  }
+
+  function handleFireIntensityChange(value: number) {
+    triggerHaptic();
+    animFireIntensity = value;
+    animationVisibilityManager.setFireIntensity(value);
   }
 
   function handleTrailStyleChange(newStyle: string) {
@@ -265,7 +272,8 @@
     animFireEffectEnabled = animationVisibilityManager.isFireEffectEnabled();
     animLedEffectEnabled = animationVisibilityManager.isLedEffectEnabled();
     animFlameColorMode = animationVisibilityManager.getFlameColorMode();
-    animFirePreset = animationVisibilityManager.getFuelSourceId();
+    animFuelSourceId = animationVisibilityManager.getFuelSourceId();
+    animFireIntensity = animationVisibilityManager.getFireIntensity();
 
     // Load initial image composition
     imgAddWord = imageCompositionManager.addWord;
@@ -305,7 +313,8 @@
       animFireEffectEnabled = animationVisibilityManager.isFireEffectEnabled();
       animLedEffectEnabled = animationVisibilityManager.isLedEffectEnabled();
       animFlameColorMode = animationVisibilityManager.getFlameColorMode();
-      animFirePreset = animationVisibilityManager.getFuelSourceId();
+      animFuelSourceId = animationVisibilityManager.getFuelSourceId();
+      animFireIntensity = animationVisibilityManager.getFireIntensity();
     };
 
     const imageObserver = () => {
@@ -371,9 +380,11 @@
       fireEffectEnabled={animFireEffectEnabled}
       ledEffectEnabled={animLedEffectEnabled}
       flameColorMode={animFlameColorMode}
-      firePreset={animFirePreset}
+      fuelSourceId={animFuelSourceId}
+      fireIntensity={animFireIntensity}
       onFlameColorModeChange={handleFlameColorModeChange}
-      onFirePresetChange={handleFirePresetChange}
+      onFuelSourceChange={handleFuelSourceChange}
+      onFireIntensityChange={handleFireIntensityChange}
       onToggle={handleAnimationToggle}
       onTrailStyleChange={handleTrailStyleChange}
       onPlaybackModeChange={handlePlaybackModeChange}

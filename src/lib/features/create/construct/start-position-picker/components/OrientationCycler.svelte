@@ -1,6 +1,7 @@
 <!--
 OrientationCycler.svelte - Compact prev/next orientation control
 Cycles through IN -> CLOCK -> OUT -> COUNTER (clockwise order)
+Arrow buttons overlay the full left/right halves for large touch targets.
 -->
 <script lang="ts">
   import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -47,12 +48,10 @@ Cycles through IN -> CLOCK -> OUT -> COUNTER (clockwise order)
 </script>
 
 <div class="orientation-cycler" class:color-blue={color === "blue"} class:color-red={color === "red"} role="group" aria-label="{color ? `${color} prop orientation` : 'Orientation selector'}">
-  <button
-    class="cycle-arrow"
-    onclick={cyclePrev}
-    aria-label="Previous orientation"
-  >
+  <!-- Visual display layer (not interactive) -->
+  <div class="orientation-display">
     <svg
+      class="arrow-icon left"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -62,19 +61,14 @@ Cycles through IN -> CLOCK -> OUT -> COUNTER (clockwise order)
     >
       <polyline points="15 18 9 12 15 6" />
     </svg>
-  </button>
 
-  <div class="orientation-display">
-    <i class="fas {currentDisplay?.icon ?? 'fa-compress-arrows-alt'}" aria-hidden="true"></i>
-    <span class="control-label">{currentDisplay?.label ?? 'In'}</span>
-  </div>
+    <div class="orientation-value">
+      <i class="fas {currentDisplay?.icon ?? 'fa-compress-arrows-alt'}" aria-hidden="true"></i>
+      <span>{currentDisplay?.label ?? 'In'}</span>
+    </div>
 
-  <button
-    class="cycle-arrow"
-    onclick={cycleNext}
-    aria-label="Next orientation"
-  >
     <svg
+      class="arrow-icon right"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -84,12 +78,25 @@ Cycles through IN -> CLOCK -> OUT -> COUNTER (clockwise order)
     >
       <polyline points="9 18 15 12 9 6" />
     </svg>
-  </button>
+  </div>
+
+  <!-- Touch target layer: two invisible buttons covering full left/right halves -->
+  <button
+    class="touch-target left"
+    onclick={cyclePrev}
+    aria-label="Previous orientation"
+  ></button>
+  <button
+    class="touch-target right"
+    onclick={cycleNext}
+    aria-label="Next orientation"
+  ></button>
 </div>
 
 <style>
   .orientation-cycler {
-    display: inline-flex;
+    position: relative;
+    display: flex;
     align-items: center;
     min-height: var(--min-touch-target, 48px);
     background: var(--theme-card-bg);
@@ -98,42 +105,80 @@ Cycles through IN -> CLOCK -> OUT -> COUNTER (clockwise order)
     overflow: hidden;
   }
 
-  .cycle-arrow {
+  /* Visual display fills the entire component */
+  .orientation-display {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: var(--min-touch-target, 48px);
+    padding: 0 12px;
+    pointer-events: none;
+  }
+
+  .arrow-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    opacity: 0.7;
+    color: var(--theme-text);
+  }
+
+  .orientation-value {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    min-height: var(--min-touch-target, 48px);
+    gap: 6px;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    color: var(--theme-text);
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+  }
+
+  .orientation-value i {
+    font-size: 14px;
+    opacity: 0.85;
+  }
+
+  /* Invisible touch targets covering full left/right halves */
+  .touch-target {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 50%;
     padding: 0;
+    margin: 0;
     background: transparent;
     border: none;
-    color: var(--theme-text);
     cursor: pointer;
-    user-select: none;
     -webkit-tap-highlight-color: transparent;
-    opacity: 0.7;
-    transition: opacity 0.15s ease, background 0.15s ease;
+    z-index: 1;
+    transition: background 0.15s ease;
   }
 
-  .cycle-arrow svg {
-    width: 16px;
-    height: 16px;
+  .touch-target.left {
+    left: 0;
+    border-radius: 12px 0 0 12px;
   }
 
-  .cycle-arrow:active {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
-    opacity: 1;
+  .touch-target.right {
+    right: 0;
+    border-radius: 0 12px 12px 0;
   }
 
-  .cycle-arrow:focus-visible {
+  .touch-target:active {
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .touch-target:focus-visible {
     outline: 2px solid var(--theme-accent);
     outline-offset: -2px;
   }
 
   @media (hover: hover) {
-    .cycle-arrow:hover {
-      opacity: 1;
-      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
+    .touch-target:hover {
+      background: rgba(255, 255, 255, 0.04);
     }
   }
 
@@ -148,46 +193,21 @@ Cycles through IN -> CLOCK -> OUT -> COUNTER (clockwise order)
     background: rgba(239, 68, 68, 0.08);
   }
 
-  .orientation-display {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    /* Fixed width to fit longest label ("Counter") so arrows don't shift */
-    width: 80px;
-    padding: 0 4px;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    color: var(--theme-text);
-    letter-spacing: 0.3px;
-    white-space: nowrap;
-    pointer-events: none;
-  }
-
-  .orientation-display i {
-    font-size: 14px;
-    opacity: 0.85;
-  }
-
-  /* Mobile responsive - hide label, compress width */
-  @media (max-width: 480px) {
-    .orientation-display {
-      padding: 0 2px;
-    }
-
-    .cycle-arrow {
-      width: 32px;
-    }
-
-    .cycle-arrow svg {
+  /* Narrow container */
+  @container (max-width: 500px) {
+    .arrow-icon {
       width: 14px;
       height: 14px;
+    }
+
+    .orientation-display {
+      padding: 0 8px;
     }
   }
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .cycle-arrow {
+    .touch-target {
       transition: none;
     }
   }
