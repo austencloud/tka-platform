@@ -376,21 +376,19 @@
     // Apply current prop type to sequence data
     const sequence = applyPropTypeToSequence(sequenceData, currentPropType);
 
-    // Reinitialize the playback controller with new sequence
-    // This preserves the playing state and updates the animation data
+    // Use updateSequenceData instead of initialize to keep playback running.
+    // initialize() sets isPlaying=false which briefly interrupts the animation
+    // loop, causing fire/LED effects to freeze at the old prop positions.
     animationState.setShouldLoop(true);
-    const success = playbackController.initialize(sequence, animationState);
+    playbackController.updateSequenceData(sequence);
 
-    if (!success) {
-      console.error("[LandingDemo] Hot-swap failed");
-      return;
-    }
+    // Seek to beat 1 without stopping playback
+    playbackController.seekToStep(1);
 
-    // Ensure we're in continuous playback mode and start from beat 1
+    // Ensure we're in continuous playback mode
     animationState.setPlaybackMode("continuous");
-    animationState.setCurrentStep(1);
 
-    // Make sure playback is running
+    // Start playback if not already running
     if (!animationState.isPlaying) {
       playbackController.togglePlayback();
     }
@@ -580,7 +578,7 @@
                 {darkMode}
                 bluePropType={currentPropType}
                 redPropType={currentPropType}
-                columnCount={4}
+                columnCount={5}
                 highlightedStepIndex={currentStepNumber > 0 ? currentStepNumber - 1 : null}
                 showHighlight={animationState.isPlaying}
                 showDifficultyLevel={false}

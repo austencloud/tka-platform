@@ -131,7 +131,18 @@
   const timelineUnitSize = $derived.by(() => {
     if (!isTimelineMode) return 0;
     const hasStart = startPosition && !startPosition.isBlank;
-    const totalUnits = hasStart ? timelineRowCapacity + 1 : timelineRowCapacity;
+    const actualCellCount = steps.length + (hasStart ? 1 : 0);
+    const fullRowUnits = hasStart ? timelineRowCapacity + 1 : timelineRowCapacity;
+
+    // Mobile-adaptive: on narrow screens, size based on actual cell count (min 2)
+    // so fewer pictographs appear larger. Ramps smoothly from ~224px (1 cell) down
+    // to ~89px (5+ cells) as beats are added, instead of always pre-allocating for
+    // a full row of 5 units.
+    const isNarrow = containerWidth > 0 && containerWidth < 650;
+    const totalUnits = isNarrow
+      ? Math.max(Math.min(actualCellCount, fullRowUnits), 2)
+      : fullRowUnits;
+
     const widthBased = calculateTimelineUnitSize(containerWidth, totalUnits);
 
     // Constrain by available height so all rows fit without scrolling
