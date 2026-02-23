@@ -46,7 +46,7 @@
 
   // Image dimensions in viewBox units - props are placed relative to their center
   // Using a square bounding box that gets scaled by the recipe
-  const imgSize = 40;
+  const imgSize = 70;
   const imgOffset = -(imgSize / 2);
 </script>
 
