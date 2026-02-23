@@ -38,10 +38,12 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private getFrameParamsCallback: (() => RenderFrameParams) | null = null;
   private isDisposed: boolean = false; // Prevent RAF from continuing after disposal
 
-  // Loop detection for cache-based trail gathering
+  // Loop detection for cache-based trail gathering and fire frame cache
   // Tracks when the animation loops to prevent trail artifacts
   private previousStep: number = 0;
   private loopOccurredAtStep: number | null = null;
+  /** True on the frame where a loop was detected. Reset each frame. */
+  private loopDetectedThisFrame: boolean = false;
 
   // CRITICAL: Reusable arrays to prevent GC pressure on mobile
   // These are reused every frame instead of allocating new arrays
@@ -244,7 +246,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       blueMotion && redMotion ? `${blueMotion.turns}${redMotion.turns}` : null;
 
     // Gather trail points
-    const trailPoints = this.gatherTrailPoints(currentStep, trailSettings);
+    const trailPoints = this.gatherTrailPoints(currentStep, trailSettings, params.isSeamlesslyLoopable ?? false);
 
     // Apply visibility settings
     const effectiveGridVisible = gridVisible && visibility.gridVisible;
@@ -351,6 +353,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         canvasHeight: this.canvasSize,
         darkMode: params.darkMode ?? false,
         propColors: params.propColors,
+        loopDetected: this.loopDetectedThisFrame,
+        playbackSpeed: params.playbackSpeed,
       };
 
       if (params.fireConfig.fuelRendererType === "particle" && this.charcoalRenderer) {
@@ -408,7 +412,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
 
   private gatherTrailPoints(
     currentStep: number,
-    trailSettings: TrailSettings
+    trailSettings: TrailSettings,
+    isSeamlesslyLoopable: boolean
   ): {
     blue: TrailPoint[];
     red: TrailPoint[];
@@ -422,9 +427,14 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     // Detect animation loop (currentStep jumps backward significantly)
     // This happens when the sequence repeats from the beginning
     const LOOP_DETECTION_THRESHOLD = 0.5; // steps
+    this.loopDetectedThisFrame = false;
     if (this.previousStep - currentStep > LOOP_DETECTION_THRESHOLD) {
-      // Animation looped - record where the loop occurred
-      this.loopOccurredAtStep = currentStep;
+      this.loopDetectedThisFrame = true;
+      // For non-seamless loops, record where the loop occurred to clamp trail start.
+      // For seamless loops, don't clamp — trails wrap around the boundary.
+      if (!isSeamlesslyLoopable) {
+        this.loopOccurredAtStep = currentStep;
+      }
     }
     this.previousStep = currentStep;
 
@@ -433,59 +443,97 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
 
     if (usingCache && this.pathCache) {
       const scaleFactor = this.canvasSize / 950;
+      const cacheInfo = this.pathCache.getCacheInfo();
 
-      // Calculate startStep based on trail mode
-      // In FADE mode, we only want points within the fade duration window
-      // Otherwise, start from 0 (show entire trail history)
-      let startStep = 0;
-      if (trailSettings.mode === TrailMode.FADE && trailSettings.fadeDurationMs > 0) {
-        // Get cache info to calculate step duration
-        const cacheInfo = this.pathCache.getCacheInfo();
-        if (cacheInfo && cacheInfo.totalSteps > 0) {
-          const stepDurationMs = cacheInfo.totalDurationMs / cacheInfo.totalSteps;
-          // Calculate how many steps fit in the fade duration
-          const fadeSteps = trailSettings.fadeDurationMs / stepDurationMs;
-          // Start from currentStep minus fadeSteps (but not less than 0)
-          startStep = Math.max(0, currentStep - fadeSteps);
+      if (cacheInfo && cacheInfo.totalSteps > 0) {
+        const stepDurationMs = cacheInfo.totalDurationMs / cacheInfo.totalSteps;
 
-          // CRITICAL FIX: When a loop has occurred, don't let startStep go before
-          // the loop point. This prevents the renderer from drawing a line from
-          // the fading tail back to the start position (where the sequence began).
-          // The cache contains pre-computed points for steps 0 to totalSteps, but
-          // after a loop, step 0 is "fresh" and shouldn't connect to old points.
+        // Calculate how many steps the trail should span
+        const fadeSteps = trailSettings.mode === TrailMode.FADE && trailSettings.fadeDurationMs > 0
+          ? trailSettings.fadeDurationMs / stepDurationMs
+          : currentStep; // Non-fade: show entire trail from step 0
+
+        const desiredStart = currentStep - fadeSteps;
+
+        // Determine if trail wraps around the loop boundary
+        const needsWrapAround = isSeamlesslyLoopable && desiredStart < 0;
+
+        if (needsWrapAround) {
+          // SEAMLESS LOOP WRAP-AROUND:
+          // Trail window spans the loop boundary, so read from two ranges:
+          //   1. Tail of previous loop: [totalSteps + desiredStart, totalSteps]
+          //   2. Head of current loop:  [0, currentStep]
+          const wrapStartStep = Math.max(0, cacheInfo.totalSteps + desiredStart);
+
+          // Blue prop: tail segment (both ends) then head segment (both ends)
+          let blueCount = this.pathCache.fillTrailPoints(
+            0, 0, wrapStartStep, cacheInfo.totalSteps, scaleFactor,
+            this.reusableBlueTrailPoints, 0
+          );
+          blueCount += this.pathCache.fillTrailPoints(
+            0, 1, wrapStartStep, cacheInfo.totalSteps, scaleFactor,
+            this.reusableBlueTrailPoints, blueCount
+          );
+          blueCount += this.pathCache.fillTrailPoints(
+            0, 0, 0, currentStep, scaleFactor,
+            this.reusableBlueTrailPoints, blueCount
+          );
+          blueCount += this.pathCache.fillTrailPoints(
+            0, 1, 0, currentStep, scaleFactor,
+            this.reusableBlueTrailPoints, blueCount
+          );
+          this.reusableBlueTrailPoints.length = blueCount;
+
+          // Red prop: tail segment (both ends) then head segment (both ends)
+          let redCount = this.pathCache.fillTrailPoints(
+            1, 0, wrapStartStep, cacheInfo.totalSteps, scaleFactor,
+            this.reusableRedTrailPoints, 0
+          );
+          redCount += this.pathCache.fillTrailPoints(
+            1, 1, wrapStartStep, cacheInfo.totalSteps, scaleFactor,
+            this.reusableRedTrailPoints, redCount
+          );
+          redCount += this.pathCache.fillTrailPoints(
+            1, 0, 0, currentStep, scaleFactor,
+            this.reusableRedTrailPoints, redCount
+          );
+          redCount += this.pathCache.fillTrailPoints(
+            1, 1, 0, currentStep, scaleFactor,
+            this.reusableRedTrailPoints, redCount
+          );
+          this.reusableRedTrailPoints.length = redCount;
+        } else {
+          // NORMAL PATH (non-seamless, or seamless but trail doesn't cross boundary yet)
+          let startStep = Math.max(0, desiredStart);
+
+          // For non-seamless loops, clamp at loop point to prevent stale trail artifacts
           if (this.loopOccurredAtStep !== null) {
-            // After a loop, the earliest point we should retrieve is the loop point
-            // This ensures the trail only shows points captured since the loop
             startStep = Math.max(startStep, this.loopOccurredAtStep);
           }
+
+          // Blue prop trails (both left and right endpoints)
+          let blueCount = this.pathCache.fillTrailPoints(
+            0, 0, startStep, currentStep, scaleFactor,
+            this.reusableBlueTrailPoints, 0
+          );
+          blueCount += this.pathCache.fillTrailPoints(
+            0, 1, startStep, currentStep, scaleFactor,
+            this.reusableBlueTrailPoints, blueCount
+          );
+          this.reusableBlueTrailPoints.length = blueCount;
+
+          // Red prop trails (both left and right endpoints)
+          let redCount = this.pathCache.fillTrailPoints(
+            1, 0, startStep, currentStep, scaleFactor,
+            this.reusableRedTrailPoints, 0
+          );
+          redCount += this.pathCache.fillTrailPoints(
+            1, 1, startStep, currentStep, scaleFactor,
+            this.reusableRedTrailPoints, redCount
+          );
+          this.reusableRedTrailPoints.length = redCount;
         }
       }
-
-      // Zero-allocation hot path: fill directly into reusable arrays
-      // fillTrailPoints() reuses existing objects at each index, only allocating
-      // when the array needs to grow (first few frames, then steady state = 0 allocs)
-
-      // Blue prop trails (both left and right endpoints)
-      let blueCount = this.pathCache.fillTrailPoints(
-        0, 0, startStep, currentStep, scaleFactor,
-        this.reusableBlueTrailPoints, 0
-      );
-      blueCount += this.pathCache.fillTrailPoints(
-        0, 1, startStep, currentStep, scaleFactor,
-        this.reusableBlueTrailPoints, blueCount
-      );
-      this.reusableBlueTrailPoints.length = blueCount;
-
-      // Red prop trails (both left and right endpoints)
-      let redCount = this.pathCache.fillTrailPoints(
-        1, 0, startStep, currentStep, scaleFactor,
-        this.reusableRedTrailPoints, 0
-      );
-      redCount += this.pathCache.fillTrailPoints(
-        1, 1, startStep, currentStep, scaleFactor,
-        this.reusableRedTrailPoints, redCount
-      );
-      this.reusableRedTrailPoints.length = redCount;
     } else if (this.TrailCapturer) {
       // Fallback to real-time capture - use zero-allocation fill method
       this.TrailCapturer.fillTrailPointArrays(
