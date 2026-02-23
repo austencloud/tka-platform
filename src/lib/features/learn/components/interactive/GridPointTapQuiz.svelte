@@ -4,6 +4,7 @@ Asks users to tap specific points on both Diamond and Box grids.
 Provides instant visual feedback (correct = green glow, wrong = red shake).
 -->
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -14,6 +15,31 @@ Provides instant visual feedback (correct = green glow, wrong = red shake).
   }>();
 
   const hapticService = container.items.hapticFeedback;
+
+  let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
+
+  onDestroy(() => {
+    if (feedbackTimer !== null) clearTimeout(feedbackTimer);
+  });
+
+  interface TextSegment {
+    text: string;
+    bold: boolean;
+  }
+
+  function parseStrongTags(input: string): TextSegment[] {
+    const segments: TextSegment[] = [];
+    const parts = input.split(/(<strong>.*?<\/strong>)/g);
+    for (const part of parts) {
+      const match = part.match(/^<strong>(.*?)<\/strong>$/);
+      if (match) {
+        segments.push({ text: match[1] ?? "", bold: true });
+      } else if (part) {
+        segments.push({ text: part, bold: false });
+      }
+    }
+    return segments;
+  }
 
   // Quiz questions configuration
   type PointType = "center" | "hand" | "outer";
@@ -155,8 +181,9 @@ Provides instant visual feedback (correct = green glow, wrong = red shake).
     hapticService?.trigger(isCorrect ? "success" : "error");
 
     // After feedback, advance or let user try again
-    setTimeout(
+    feedbackTimer = setTimeout(
       () => {
+        feedbackTimer = null;
         feedbackState = "none";
         feedbackPointId = null;
 
@@ -192,7 +219,7 @@ Provides instant visual feedback (correct = green glow, wrong = red shake).
 
   <!-- Question prompt -->
   <div class="prompt">
-    {@html currentQuestion?.prompt ?? ""}
+    {#each parseStrongTags(currentQuestion?.prompt ?? "") as segment}{#if segment.bold}<strong>{segment.text}</strong>{:else}{segment.text}{/if}{/each}
   </div>
 
   <!-- Grid with clickable points -->
@@ -365,7 +392,7 @@ Provides instant visual feedback (correct = green glow, wrong = red shake).
   .mode-badge {
     padding: 0.5rem 1rem;
     border-radius: 8px;
-    font-size: 0.75rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     letter-spacing: 0.5px;
     background: color-mix(in srgb, var(--prop-blue, #4a9eff) 20%, transparent);

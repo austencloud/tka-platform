@@ -22,7 +22,7 @@
 <style>
   .achievements-section {
     padding: var(--spacing-lg);
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    border-top: 1px solid var(--theme-stroke);
   }
 
   .achievements-section h4 {

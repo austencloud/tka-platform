@@ -74,7 +74,7 @@ Features:
 		color: var(--semantic-success);
 		text-shadow:
 			0 0 10px color-mix(in srgb, var(--semantic-success) 50%, transparent),
-			0 2px 4px rgba(0, 0, 0, 0.3);
+			0 2px 4px color-mix(in srgb, var(--theme-panel-bg) 70%, transparent);
 	}
 
 	.score-pop.streak .score-value {
@@ -82,7 +82,7 @@ Features:
 		color: var(--semantic-warning);
 		text-shadow:
 			0 0 15px color-mix(in srgb, var(--semantic-warning) 60%, transparent),
-			0 2px 4px rgba(0, 0, 0, 0.3);
+			0 2px 4px color-mix(in srgb, var(--theme-panel-bg) 70%, transparent);
 	}
 
 	.streak-badge {

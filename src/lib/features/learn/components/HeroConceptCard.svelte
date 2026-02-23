@@ -69,6 +69,7 @@ Clean design with:
   style="--category-color: {category.color}"
   onclick={handleStart}
   disabled={status === "locked"}
+  aria-label="{buttonText()} {concept.name}"
 >
   <!-- Background gradient overlay -->
   <div class="card-bg"></div>
@@ -278,7 +279,7 @@ Clean design with:
   }
 
   .cta-button span {
-    font-size: 0.75rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: var(--theme-text, #ffffff);
     text-transform: uppercase;

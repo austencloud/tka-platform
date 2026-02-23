@@ -8,7 +8,7 @@ Shows pictograph, user identifies the motion pattern (Pro-Pro, Anti-Anti, or Hyb
   import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import {
     type MotionPattern,
     type Type1LetterQuestion,
@@ -21,6 +21,12 @@ Shows pictograph, user identifies the motion pattern (Pro-Pro, Anti-Anti, or Hyb
   let { onComplete } = $props<{ onComplete?: () => void }>();
 
   const hapticService = container.items.hapticFeedback as IHapticFeedback;
+
+  let answerTimer: ReturnType<typeof setTimeout> | null = null;
+
+  onDestroy(() => {
+    if (answerTimer !== null) clearTimeout(answerTimer);
+  });
 
   type AnswerState = "idle" | "correct" | "incorrect";
 
@@ -98,7 +104,8 @@ Shows pictograph, user identifies the motion pattern (Pro-Pro, Anti-Anti, or Hyb
       hapticService?.trigger("error");
     }
 
-    setTimeout(() => {
+    answerTimer = setTimeout(() => {
+      answerTimer = null;
       if (currentQuestionIndex < questions.length - 1) {
         currentQuestionIndex++;
         answerState = "idle";

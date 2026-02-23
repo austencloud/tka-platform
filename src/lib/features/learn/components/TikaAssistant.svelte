@@ -10,6 +10,8 @@
 	 * - Feedback buttons for A/B testing
 	 */
 
+	import { onDestroy } from 'svelte'
+
 	// Response type from the server API
 	interface AssistantResponse {
 		explanation: string
@@ -182,7 +184,12 @@
 	}
 
 	// Copy conversation to clipboard
+	let copyTimer: ReturnType<typeof setTimeout> | null = null
 	let copySuccess = $state(false)
+
+	onDestroy(() => {
+		if (copyTimer !== null) clearTimeout(copyTimer)
+	})
 	async function copyConversation() {
 		if (conversationHistory.length === 0) return
 
@@ -206,7 +213,7 @@ Timestamp: ${new Date().toISOString()}
 		try {
 			await navigator.clipboard.writeText(header + formatted)
 			copySuccess = true
-			setTimeout(() => copySuccess = false, 2000)
+			copyTimer = setTimeout(() => { copyTimer = null; copySuccess = false }, 2000)
 		} catch (err) {
 			console.error('Failed to copy:', err)
 		}

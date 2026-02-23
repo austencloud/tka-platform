@@ -62,7 +62,7 @@ VTGModeChips - Preview chips showing all 6 VTG modes
   }
 
   .chip-name {
-    font-size: 0.6875rem;
+    font-size: var(--font-size-compact, 12px);
     color: var(--chip-color);
     opacity: 0.8;
   }

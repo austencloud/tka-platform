@@ -3,10 +3,23 @@ GridComparison - Side-by-side view of Diamond and Box grids
 Shows both grids simultaneously for comparison
 -->
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import GridVisualizer from "./GridVisualizer.svelte";
 
   let showMerged = $state(false);
   let isAnimating = $state(false);
+  let mounted = $state(true);
+  let mergeTimer: ReturnType<typeof setTimeout> | null = null;
+
+  $effect(() => {
+    return () => {
+      mounted = false;
+    };
+  });
+
+  onDestroy(() => {
+    if (mergeTimer !== null) clearTimeout(mergeTimer);
+  });
 
   async function handleMergeAnimation() {
     if (isAnimating) return;
@@ -14,7 +27,14 @@ Shows both grids simultaneously for comparison
     isAnimating = true;
 
     // Animate the merge
-    await new Promise((resolve) => setTimeout(resolve, 600));
+    await new Promise<void>((resolve) => {
+      mergeTimer = setTimeout(() => {
+        mergeTimer = null;
+        resolve();
+      }, 600);
+    });
+
+    if (!mounted) return;
     showMerged = true;
 
     isAnimating = false;

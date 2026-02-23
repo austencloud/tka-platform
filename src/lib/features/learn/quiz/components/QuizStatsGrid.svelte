@@ -47,13 +47,13 @@
     align-items: center;
     gap: var(--spacing-xs);
     padding: var(--spacing-md);
-    background: rgba(0, 0, 0, 0.02);
+    background: var(--theme-card-bg);
     border-radius: 8px;
     transition: all var(--transition-fast);
   }
 
   .stat-item:hover {
-    background: rgba(0, 0, 0, 0.04);
+    background: color-mix(in srgb, var(--theme-card-bg) 80%, var(--theme-stroke));
     transform: translateY(-2px);
   }
 

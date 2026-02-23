@@ -61,7 +61,7 @@ VTGModeSummary - Summary grid showing all VTG modes before quiz
   }
 
   .summary-name {
-    font-size: 0.6875rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: var(--type-color);
     opacity: 0.8;

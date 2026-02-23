@@ -122,7 +122,7 @@ Used in the Point Types lesson step.
   }
 
   .grid-bg {
-    fill: #ffffff;
+    fill: var(--lm-pictograph-bg, #ffffff);
     transition: fill var(--duration-fast) ease-out;
   }
 

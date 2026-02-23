@@ -9,7 +9,7 @@ Features:
 - Auto-dismisses after delay or on tap
 -->
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { fly, scale } from 'svelte/transition';
 	import { cubicOut, elasticOut } from 'svelte/easing';
 	import {
@@ -77,6 +77,10 @@ Features:
 		};
 	});
 
+	onDestroy(() => {
+		if (dismissAnimTimer !== null) clearTimeout(dismissAnimTimer);
+	});
+
 	function handleDismiss() {
 		visible = false;
 		if (autoDismissTimer !== null) {
@@ -131,19 +135,20 @@ Features:
 
 <style>
 	.overlay-backdrop {
+		--achievement-gold: #ffd700;
 		position: fixed;
 		inset: 0;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: rgba(0, 0, 0, 0);
+		background: transparent;
 		z-index: 9999;
 		pointer-events: none;
 		transition: background var(--duration-emphasis) ease;
 	}
 
 	.overlay-backdrop.visible {
-		background: rgba(0, 0, 0, 0.7);
+		background: color-mix(in srgb, var(--theme-panel-bg) 70%, transparent);
 		pointer-events: auto;
 	}
 
@@ -155,14 +160,14 @@ Features:
 		padding: 2rem 2.5rem;
 		background: linear-gradient(
 			135deg,
-			rgba(30, 30, 40, 0.95) 0%,
-			rgba(20, 20, 30, 0.98) 100%
+			color-mix(in srgb, var(--theme-panel-bg) 95%, transparent) 0%,
+			color-mix(in srgb, var(--theme-panel-bg) 98%, transparent) 100%
 		);
 		border: 2px solid var(--tier-primary);
 		border-radius: 20px;
 		box-shadow:
 			0 0 40px var(--tier-glow),
-			0 20px 60px rgba(0, 0, 0, 0.5);
+			0 20px 60px color-mix(in srgb, var(--theme-panel-bg) 50%, transparent);
 		max-width: 320px;
 		text-align: center;
 	}
@@ -170,16 +175,16 @@ Features:
 	.achievement-card.gold {
 		background: linear-gradient(
 			135deg,
-			rgba(40, 35, 20, 0.95) 0%,
-			rgba(25, 22, 15, 0.98) 100%
+			color-mix(in srgb, var(--theme-panel-bg) 95%, var(--achievement-gold)) 0%,
+			color-mix(in srgb, var(--theme-panel-bg) 98%, var(--achievement-gold)) 100%
 		);
 	}
 
 	.achievement-card.silver {
 		background: linear-gradient(
 			135deg,
-			rgba(35, 35, 40, 0.95) 0%,
-			rgba(25, 25, 30, 0.98) 100%
+			color-mix(in srgb, var(--theme-panel-bg) 95%, transparent) 0%,
+			color-mix(in srgb, var(--theme-panel-bg) 98%, transparent) 100%
 		);
 	}
 
@@ -192,7 +197,7 @@ Features:
 
 	.achievement-icon {
 		font-size: 4rem;
-		filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+		filter: drop-shadow(0 4px 8px color-mix(in srgb, var(--theme-panel-bg) 30%, transparent));
 	}
 
 	.icon-glow {
@@ -236,7 +241,7 @@ Features:
 		margin: 0;
 		font-size: 1.5rem;
 		font-weight: 700;
-		color: #ffffff;
+		color: var(--theme-text, #ffffff);
 	}
 
 	.achievement-description {

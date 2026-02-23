@@ -121,7 +121,7 @@ Uses the actual GridSvg component for consistency with the rest of the app.
 
   /* Background respects light/dark mode - matches PictographRenderer */
   .grid-background {
-    fill: #ffffff;
+    fill: var(--lm-pictograph-bg, #ffffff);
     transition: fill var(--duration-fast) ease-out;
   }
 

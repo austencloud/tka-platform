@@ -283,7 +283,6 @@
     background: var(--desktop-bg-tertiary);
     border: 1px solid var(--desktop-border-tertiary);
     border-radius: var(--desktop-border-radius);
-    backdrop-filter: blur(10px);
     transition: all var(--desktop-transition-normal);
   }
 

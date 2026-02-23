@@ -115,7 +115,7 @@
     min-width: clamp(80px, 15cqi, 120px);
     gap: 0.5rem;
     color: var(--theme-text);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--theme-panel-bg) 60%, transparent);
   }
 
   .control-button:hover:not(:disabled) {

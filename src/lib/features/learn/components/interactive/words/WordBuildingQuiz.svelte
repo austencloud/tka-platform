@@ -3,6 +3,7 @@ WordBuildingQuiz - Coordinator for word formation quiz
 Questions about letter sequences, motion types, position transitions, and LOOPs
 -->
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import {
@@ -16,6 +17,12 @@ Questions about letter sequences, motion types, position transitions, and LOOPs
   let { onComplete } = $props<{ onComplete?: () => void }>();
 
   const hapticService = container.items.hapticFeedback as IHapticFeedback;
+
+  let answerTimer: ReturnType<typeof setTimeout> | null = null;
+
+  onDestroy(() => {
+    if (answerTimer !== null) clearTimeout(answerTimer);
+  });
 
   type AnswerState = "idle" | "correct" | "incorrect";
 
@@ -50,7 +57,8 @@ Questions about letter sequences, motion types, position transitions, and LOOPs
       hapticService?.trigger("error");
     }
 
-    setTimeout(() => {
+    answerTimer = setTimeout(() => {
+      answerTimer = null;
       if (currentQuestion < shuffledQuestions.length - 1) {
         currentQuestion++;
         answerState = "idle";

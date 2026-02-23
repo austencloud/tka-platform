@@ -33,6 +33,25 @@ Eliminates ~1000 lines of duplicated code across the three letter type pages
     onPrevious,
     showFinalSummary = false,
   }: Props = $props();
+
+  interface TextSegment {
+    text: string;
+    bold: boolean;
+  }
+
+  function parseStrongTags(input: string): TextSegment[] {
+    const segments: TextSegment[] = [];
+    const parts = input.split(/(<strong>.*?<\/strong>)/g);
+    for (const part of parts) {
+      const match = part.match(/^<strong>(.*?)<\/strong>$/);
+      if (match) {
+        segments.push({ text: match[1] ?? "", bold: true });
+      } else if (part) {
+        segments.push({ text: part, bold: false });
+      }
+    }
+    return segments;
+  }
 </script>
 
 <div class="page">
@@ -43,7 +62,7 @@ Eliminates ~1000 lines of duplicated code across the three letter type pages
       <i class="fa-solid {config.icon}" aria-hidden="true"></i>
     </div>
     <p class="motion-summary">
-      {@html config.motionSummary}
+      {#each parseStrongTags(config.motionSummary) as segment}{#if segment.bold}<strong>{segment.text}</strong>{:else}{segment.text}{/if}{/each}
     </p>
     <span class="motion-badge">{config.badge}</span>
   </div>
@@ -52,7 +71,7 @@ Eliminates ~1000 lines of duplicated code across the three letter type pages
     <h3>{config.explanation.title}</h3>
     <ul>
       {#each config.explanation.points as point}
-        <li>{@html point}</li>
+        <li>{#each parseStrongTags(point) as segment}{#if segment.bold}<strong>{segment.text}</strong>{:else}{segment.text}{/if}{/each}</li>
       {/each}
     </ul>
   </div>
@@ -93,6 +112,7 @@ Eliminates ~1000 lines of duplicated code across the three letter type pages
           class="letter-chip"
           class:active={i === letterIndex}
           onclick={() => onSelectLetter(i)}
+          aria-label="Select letter {letterData.letter}"
         >
           {letterData.letter}
         </button>

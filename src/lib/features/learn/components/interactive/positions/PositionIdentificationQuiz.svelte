@@ -3,6 +3,7 @@ PositionIdentificationQuiz - Quiz to identify Alpha, Beta, and Gamma positions
 Shows hand positions on grid, user identifies the type
 -->
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import {
@@ -22,6 +23,12 @@ Shows hand positions on grid, user identifies the type
   }>();
 
   const hapticService = container.items.hapticFeedback as IHapticFeedback;
+
+  let answerTimer: ReturnType<typeof setTimeout> | null = null;
+
+  onDestroy(() => {
+    if (answerTimer !== null) clearTimeout(answerTimer);
+  });
 
   type AnswerState = "idle" | "correct" | "incorrect";
 
@@ -53,7 +60,8 @@ Shows hand positions on grid, user identifies the type
       hapticService?.trigger("error");
     }
 
-    setTimeout(() => {
+    answerTimer = setTimeout(() => {
+      answerTimer = null;
       if (currentQuestion < questions.length - 1) {
         currentQuestion++;
         answerState = "idle";

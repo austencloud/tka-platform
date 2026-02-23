@@ -15,6 +15,25 @@ VTGComponentCard - Shows direction or timing component explanation
     options: string;
     subtitle: string;
   } = $props();
+
+  interface TextSegment {
+    text: string;
+    bold: boolean;
+  }
+
+  function parseStrongTags(input: string): TextSegment[] {
+    const segments: TextSegment[] = [];
+    const parts = input.split(/(<strong>.*?<\/strong>)/g);
+    for (const part of parts) {
+      const match = part.match(/^<strong>(.*?)<\/strong>$/);
+      if (match) {
+        segments.push({ text: match[1] ?? "", bold: true });
+      } else if (part) {
+        segments.push({ text: part, bold: false });
+      }
+    }
+    return segments;
+  }
 </script>
 
 <div
@@ -26,7 +45,7 @@ VTGComponentCard - Shows direction or timing component explanation
     <i class="fa-solid {icon}" aria-hidden="true"></i>
   </div>
   <h4>{title}</h4>
-  <p>{@html options}</p>
+  <p>{#each parseStrongTags(options) as segment}{#if segment.bold}<strong>{segment.text}</strong>{:else}{segment.text}{/if}{/each}</p>
   <small>{subtitle}</small>
 </div>
 

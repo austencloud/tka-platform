@@ -221,7 +221,7 @@
   }
 
   .beat-desc {
-    font-size: 0.6875rem;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim);
   }
 

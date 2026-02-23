@@ -57,13 +57,13 @@ MotionTypeReviewGrid - Summary grid showing all motion types
     justify-content: center;
     background: var(--type-color);
     color: black;
-    font-size: 0.6875rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     border-radius: 4px;
   }
 
   .review-name {
-    font-size: 0.625rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: var(--type-color);
   }

@@ -189,7 +189,7 @@
         currentStep={animState.currentStep}
         isPlaying={animState.isPlaying}
         word={sequence.word}
-        progressBarVariant="gradient-labeled"
+        progressBarVariant="gradient"
       />
     </div>
   {/if}

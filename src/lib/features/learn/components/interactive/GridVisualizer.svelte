@@ -278,7 +278,7 @@ Shows box and diamond grids side-by-side with animations
   .grid-mode-badge {
     padding: 0.5rem 1rem;
     border-radius: 8px;
-    font-size: 0.75rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     letter-spacing: 0.5px;
     transition: all var(--duration-emphasis) ease;

@@ -57,7 +57,7 @@ VTGModeReviewGrid - Grid showing all VTG modes for review
   }
 
   .review-name {
-    font-size: 0.5625rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: var(--type-color);
     opacity: 0.8;

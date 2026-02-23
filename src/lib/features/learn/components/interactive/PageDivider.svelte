@@ -60,7 +60,7 @@ Shows a numbered section marker with decorative lines
     height: 24px;
     background: var(--theme-accent, #22d3ee);
     border-radius: 50%;
-    font-size: 0.75rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     color: var(--theme-on-accent, #000);
   }

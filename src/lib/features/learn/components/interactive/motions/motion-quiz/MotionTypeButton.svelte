@@ -100,7 +100,7 @@ MotionTypeButton - Answer button for motion type selection
   }
 
   .type-name {
-    font-size: 0.6875rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.3px;

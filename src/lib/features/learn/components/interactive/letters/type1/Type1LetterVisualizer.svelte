@@ -339,7 +339,7 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
   }
 
   .pattern-badge {
-    font-size: 0.625rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     padding: 0.25rem 0.5rem;
     border-radius: 4px;

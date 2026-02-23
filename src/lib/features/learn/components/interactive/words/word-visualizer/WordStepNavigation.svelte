@@ -71,7 +71,7 @@ WordStepNavigation - Step navigation dots for letter sequence
   .step-dot.compact {
     width: 24px;
     height: 24px;
-    font-size: 0.625rem;
+    font-size: var(--font-size-compact, 12px);
   }
 
   .step-dot:hover {

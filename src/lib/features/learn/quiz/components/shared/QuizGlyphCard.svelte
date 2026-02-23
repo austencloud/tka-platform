@@ -173,8 +173,8 @@ QuizGlyphCard - Displays TKA glyph with smooth crossfade transitions between let
     border-radius: 20px;
     border: 2px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.12),
-      0 0 0 1px rgba(255, 255, 255, 0.08),
+      0 8px 32px color-mix(in srgb, var(--theme-panel-bg) 12%, transparent),
+      0 0 0 1px color-mix(in srgb, var(--theme-text) 8%, transparent),
       0 0 80px -20px color-mix(in srgb, var(--theme-accent) 15%, transparent);
     opacity: 0;
     transition: opacity var(--duration-emphasis) ease;
@@ -202,8 +202,8 @@ QuizGlyphCard - Displays TKA glyph with smooth crossfade transitions between let
       width: 240px;
       height: 160px;
       box-shadow:
-        0 12px 50px rgba(0, 0, 0, 0.15),
-        0 0 0 1px rgba(255, 255, 255, 0.06),
+        0 12px 50px color-mix(in srgb, var(--theme-panel-bg) 15%, transparent),
+        0 0 0 1px color-mix(in srgb, var(--theme-text) 6%, transparent),
         0 0 120px -30px color-mix(in srgb, var(--theme-accent) 20%, transparent);
     }
   }

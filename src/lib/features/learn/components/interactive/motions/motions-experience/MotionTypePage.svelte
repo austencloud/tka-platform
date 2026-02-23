@@ -49,7 +49,7 @@ MotionTypePage - Displays a single motion type with visualizer
       showLabels={true}
       showMotionType={false}
     />
-    <button class="cycle-button" onclick={onCycleExample}>
+    <button class="cycle-button" onclick={onCycleExample} aria-label="Next example">
       <i class="fa-solid fa-shuffle" aria-hidden="true"></i>
       Show Another Example
     </button>

@@ -11,6 +11,31 @@ PositionIntroCard - Intro card for a position type
     type: "alpha" | "beta" | "gamma";
     info: PositionInfo;
   } = $props();
+
+  interface TextSegment {
+    text: string;
+    bold: boolean;
+  }
+
+  function parseSummarySegments(input: string): TextSegment[] {
+    const segments: TextSegment[] = [];
+    const regex = /opposite|same|right angles/gi;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(input)) !== null) {
+      if (match.index > lastIndex) {
+        segments.push({ text: input.slice(lastIndex, match.index), bold: false });
+      }
+      segments.push({ text: match[0], bold: true });
+      lastIndex = match.index + match[0].length;
+    }
+    if (lastIndex < input.length) {
+      segments.push({ text: input.slice(lastIndex), bold: false });
+    }
+    return segments;
+  }
+
+  const summarySegments = $derived(parseSummarySegments(info.summary));
 </script>
 
 <div class="position-intro {type}">
@@ -18,10 +43,7 @@ PositionIntroCard - Intro card for a position type
     <i class="fa-solid {info.icon}" aria-hidden="true"></i>
   </div>
   <p class="position-summary">
-    {@html info.summary.replace(
-      /(opposite|same|right angles)/gi,
-      "<strong>$1</strong>"
-    )}
+    {#each summarySegments as segment}{#if segment.bold}<strong>{segment.text}</strong>{:else}{segment.text}{/if}{/each}
   </p>
 </div>
 

@@ -44,7 +44,7 @@ QuizLetterCard - Question letter display
     border-radius: 20px;
     border: 2px solid var(--theme-stroke-strong);
     box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.12),
+      0 8px 32px color-mix(in srgb, var(--theme-panel-bg) 12%, transparent),
       0 0 0 1px color-mix(in srgb, var(--theme-text) 8%, transparent),
       0 0 80px -20px color-mix(in srgb, var(--theme-accent) 15%, transparent);
   }
@@ -54,7 +54,7 @@ QuizLetterCard - Question letter display
     font-weight: 800;
     color: var(--theme-text, #ffffff);
     font-family: Georgia, serif;
-    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    text-shadow: 0 4px 12px color-mix(in srgb, var(--theme-panel-bg) 20%, transparent);
   }
 
   @media (min-width: 600px) {
@@ -74,7 +74,7 @@ QuizLetterCard - Question letter display
       width: 180px;
       height: 180px;
       box-shadow:
-        0 12px 50px rgba(0, 0, 0, 0.15),
+        0 12px 50px color-mix(in srgb, var(--theme-panel-bg) 15%, transparent),
         0 0 0 1px color-mix(in srgb, var(--theme-text) 6%, transparent),
         0 0 120px -30px color-mix(in srgb, var(--theme-accent) 20%, transparent);
     }

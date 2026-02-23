@@ -125,7 +125,7 @@ Fixed Questions mode (set number) and Countdown mode (timed challenge).
     border-radius: 16px;
     padding: 4px;
     box-shadow:
-      0 4px 16px rgba(0, 0, 0, 0.1),
+      0 4px 16px color-mix(in srgb, var(--theme-panel-bg) 60%, transparent),
       inset 0 1px 0 color-mix(in srgb, var(--theme-text) 5%, transparent);
   }
 
@@ -269,7 +269,7 @@ Fixed Questions mode (set number) and Countdown mode (timed challenge).
     }
 
     .segment-label {
-      font-size: 0.6875rem;
+      font-size: var(--font-size-compact, 12px);
     }
   }
 

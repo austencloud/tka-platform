@@ -41,7 +41,7 @@
   }
 
   .back-button:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--theme-stroke-strong);
     transform: translateX(-4px);
   }
 

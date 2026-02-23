@@ -276,7 +276,7 @@ Features a welcoming header, mode toggle, and game cards.
     }
 
     .section-label {
-      font-size: 0.6875rem;
+      font-size: var(--font-size-compact, 12px);
     }
 
     .quiz-cards {

@@ -300,7 +300,7 @@
     font-size: 4rem;
     font-weight: bold;
     color: var(--theme-text, #ffffff);
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    text-shadow: 0 2px 4px color-mix(in srgb, var(--theme-panel-bg) 70%, transparent);
   }
 
   .text-display p {

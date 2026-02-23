@@ -9,16 +9,40 @@ PositionExplanation - Explanation box for a position type
   }: {
     info: PositionInfo;
   } = $props();
+
+  const BOLD_WORDS = /straight line|identical position|perpendicular/gi;
+
+  interface TextSegment {
+    text: string;
+    bold: boolean;
+  }
+
+  function parseDescriptionSegments(input: string): TextSegment[] {
+    const segments: TextSegment[] = [];
+    let lastIndex = 0;
+    const regex = new RegExp(BOLD_WORDS.source, "gi");
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(input)) !== null) {
+      if (match.index > lastIndex) {
+        segments.push({ text: input.slice(lastIndex, match.index), bold: false });
+      }
+      segments.push({ text: match[0], bold: true });
+      lastIndex = match.index + match[0].length;
+    }
+    if (lastIndex < input.length) {
+      segments.push({ text: input.slice(lastIndex), bold: false });
+    }
+    return segments;
+  }
+
+  const descriptionSegments = $derived(parseDescriptionSegments(info.description));
 </script>
 
 <div class="explanation">
   <h3>Understanding {info.name}</h3>
   <ul>
     <li>
-      {@html info.description.replace(
-        /(straight line|identical position|perpendicular)/gi,
-        "<strong>$1</strong>"
-      )}
+      {#each descriptionSegments as segment}{#if segment.bold}<strong>{segment.text}</strong>{:else}{segment.text}{/if}{/each}
     </li>
     <li>Think: <strong>{info.angle} apart</strong></li>
     <li>Examples: {info.examples}</li>

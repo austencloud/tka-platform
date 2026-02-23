@@ -97,7 +97,7 @@ VTGAnswerButton - Single answer button with state styling
   }
 
   .mode-name {
-    font-size: 0.625rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.3px;

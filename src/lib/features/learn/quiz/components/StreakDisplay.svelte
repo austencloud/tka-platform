@@ -9,7 +9,7 @@ Features:
 -->
 <script lang="ts">
 	import { container } from '$lib/shared/di';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import type { IStreakTracker } from '$lib/shared/gamification/services/contracts/IStreakTracker';
 
 	let {
@@ -23,6 +23,7 @@ Features:
 	let isActive = $state(false);
 	let isLoading = $state(true);
 	let justIncremented = $state(false);
+	let pulseTimer: ReturnType<typeof setTimeout> | null = null;
 
 	// Streak milestones that trigger celebrations
 	const MILESTONES = [3, 7, 14, 30, 50, 100];
@@ -59,8 +60,9 @@ Features:
 			// Trigger pulse animation
 			if (result.streakIncremented) {
 				justIncremented = true;
-				setTimeout(() => {
+				pulseTimer = setTimeout(() => {
 					justIncremented = false;
+					pulseTimer = null;
 				}, 600);
 			}
 
@@ -75,6 +77,10 @@ Features:
 			console.error('[StreakDisplay] Failed to record activity:', error);
 		}
 	}
+
+	onDestroy(() => {
+		if (pulseTimer !== null) clearTimeout(pulseTimer);
+	});
 </script>
 
 <div
@@ -105,6 +111,7 @@ Features:
 
 <style>
 	.streak-display {
+		--streak-flame: #ff9800;
 		display: flex;
 		align-items: center;
 		gap: 0.375rem;
@@ -157,7 +164,7 @@ Features:
 	}
 
 	.active .flame-icon {
-		color: #ff9800;
+		color: var(--streak-flame);
 		--flame-inner-color: #ffeb3b;
 	}
 
@@ -188,7 +195,7 @@ Features:
 	.glow {
 		position: absolute;
 		inset: -4px;
-		background: radial-gradient(circle, rgba(255, 152, 0, 0.4) 0%, transparent 70%);
+		background: radial-gradient(circle, color-mix(in srgb, var(--streak-flame) 40%, transparent) 0%, transparent 70%);
 		border-radius: 50%;
 		animation: glowPulse 2s ease-in-out infinite;
 		pointer-events: none;
@@ -216,7 +223,7 @@ Features:
 	}
 
 	.active .streak-count {
-		color: #ff9800;
+		color: var(--streak-flame);
 	}
 
 	/* Reduced motion */

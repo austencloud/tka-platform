@@ -304,7 +304,7 @@ rotating, mirroring, and color-swapping pictographs.
 
     .orientation-selector {
       padding: 8px 28px 8px 12px;
-      font-size: 0.8125rem;
+      font-size: var(--font-size-min, 14px);
       border-radius: 8px;
     }
 

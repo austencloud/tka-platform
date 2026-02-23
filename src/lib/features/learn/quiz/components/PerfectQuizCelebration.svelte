@@ -8,7 +8,7 @@ Features:
 - Dismisses on tap
 -->
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { scale, fade } from 'svelte/transition';
 	import { elasticOut, cubicOut } from 'svelte/easing';
 	import { getDelightOrchestrator } from '$lib/shared/delight/context/delight-context';
@@ -52,6 +52,10 @@ Features:
 			if (autoDismissTimer !== null) clearTimeout(autoDismissTimer);
 			if (dismissAnimTimer !== null) clearTimeout(dismissAnimTimer);
 		};
+	});
+
+	onDestroy(() => {
+		if (dismissAnimTimer !== null) clearTimeout(dismissAnimTimer);
 	});
 
 	function handleDismiss() {
@@ -107,13 +111,14 @@ Features:
 
 <style>
 	.celebration-overlay {
+		--achievement-gold: #ffd700;
 		position: fixed;
 		inset: 0;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		background: rgba(0, 0, 0, 0);
+		background: transparent;
 		z-index: 9999;
 		pointer-events: none;
 		transition: background var(--duration-emphasis) ease;
@@ -121,7 +126,7 @@ Features:
 	}
 
 	.celebration-overlay.visible {
-		background: rgba(0, 0, 0, 0.85);
+		background: color-mix(in srgb, var(--theme-panel-bg) 85%, transparent);
 		pointer-events: auto;
 	}
 
@@ -142,9 +147,9 @@ Features:
 		background: linear-gradient(
 			to top,
 			transparent 0%,
-			rgba(255, 215, 0, 0.1) 30%,
-			rgba(255, 215, 0, 0.3) 50%,
-			rgba(255, 215, 0, 0.1) 70%,
+			color-mix(in srgb, var(--achievement-gold) 10%, transparent) 30%,
+			color-mix(in srgb, var(--achievement-gold) 30%, transparent) 50%,
+			color-mix(in srgb, var(--achievement-gold) 10%, transparent) 70%,
 			transparent 100%
 		);
 		transform-origin: center center;
@@ -180,11 +185,11 @@ Features:
 	.letter {
 		font-size: 3.5rem;
 		font-weight: 900;
-		color: #ffd700;
+		color: var(--achievement-gold);
 		text-shadow:
-			0 0 20px rgba(255, 215, 0, 0.8),
-			0 0 40px rgba(255, 215, 0, 0.5),
-			0 4px 8px rgba(0, 0, 0, 0.5);
+			0 0 20px color-mix(in srgb, var(--achievement-gold) 80%, transparent),
+			0 0 40px color-mix(in srgb, var(--achievement-gold) 50%, transparent),
+			0 4px 8px color-mix(in srgb, var(--theme-panel-bg) 50%, transparent);
 		animation: letterBounce 0.6s ease-out both;
 		animation-delay: calc(var(--letter-index, 0) * 0.05s);
 	}
@@ -220,7 +225,7 @@ Features:
 		background: linear-gradient(
 			90deg,
 			transparent,
-			rgba(255, 255, 255, 0.4),
+			color-mix(in srgb, var(--theme-text) 40%, transparent),
 			transparent
 		);
 		animation: shine 2s ease-in-out infinite;

@@ -111,7 +111,6 @@
     color: var(--theme-text, #ffffff);
     cursor: pointer;
     transition: all var(--duration-emphasis) ease;
-    backdrop-filter: blur(10px);
     overflow: hidden;
   }
 
@@ -197,9 +196,9 @@
     font-size: 1.125rem;
     font-weight: 600;
     color: var(--theme-text, #ffffff);
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    text-shadow: 0 2px 4px color-mix(in srgb, var(--theme-panel-bg) 30%, transparent);
     padding: 0.25rem 0.75rem;
-    background: rgba(0, 0, 0, 0.3);
+    background: color-mix(in srgb, var(--theme-panel-bg) 30%, transparent);
     border-radius: 6px;
   }
 
@@ -212,7 +211,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.7);
+    background: color-mix(in srgb, var(--theme-panel-bg) 70%, transparent);
     z-index: 10;
     border-radius: 10px;
   }
@@ -309,7 +308,7 @@
     }
 
     .feedback-overlay {
-      background: rgba(0, 0, 0, 0.9);
+      background: color-mix(in srgb, var(--theme-panel-bg) 90%, transparent);
     }
   }
 

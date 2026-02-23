@@ -73,7 +73,7 @@ QuizLetterButton - Answer button for quiz
     font-weight: 800;
     color: var(--theme-text, #ffffff);
     font-family: Georgia, serif;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    text-shadow: 0 2px 8px color-mix(in srgb, var(--theme-panel-bg) 60%, transparent);
   }
 
   .answer-btn.correct {

@@ -253,7 +253,7 @@ and smooth hover animations.
     overflow: hidden;
     text-align: left;
     box-shadow:
-      0 4px 20px rgba(0, 0, 0, 0.1),
+      0 4px 20px color-mix(in srgb, var(--theme-panel-bg) 10%, transparent),
       inset 0 1px 0 color-mix(in srgb, var(--theme-text) 8%, transparent);
   }
 
@@ -262,7 +262,7 @@ and smooth hover animations.
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
     transform: translateY(-3px) scale(1.01);
     box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.15),
+      0 8px 32px color-mix(in srgb, var(--theme-panel-bg) 15%, transparent),
       0 0 0 1px var(--theme-stroke, rgba(255, 255, 255, 0.1)) inset,
       0 0 30px color-mix(in srgb, var(--theme-accent) 10%, transparent);
   }
@@ -470,7 +470,7 @@ and smooth hover animations.
     }
 
     .card-subtitle {
-      font-size: 0.6875rem;
+      font-size: var(--font-size-compact, 12px);
     }
   }
 
