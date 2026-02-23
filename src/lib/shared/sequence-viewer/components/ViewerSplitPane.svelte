@@ -17,6 +17,7 @@
   } from "../domain/viewer-prop-groups";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import LayeredSequencePreview from "./LayeredSequencePreview.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   interface Props {
     sequence: SequenceData;
@@ -114,7 +115,7 @@
 
       {#if playback.animationLoading}
         <div class="loading-state">
-          <div class="spinner"></div>
+          <ProgressRing percent={-1} size={32} strokeWidth={3} />
         </div>
       {:else if playback.animationState.error}
         <div class="error-state">
@@ -486,26 +487,7 @@
     color: var(--semantic-error, #f87171);
   }
 
-  .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-top-color: var(--theme-accent, #6366f1);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-    }
-
     .split-view,
     .split-column,
     .preview-column,

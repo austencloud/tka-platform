@@ -11,6 +11,7 @@
   - Quick add to timeline button
 -->
 <script lang="ts">
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount, onDestroy, untrack } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
@@ -285,7 +286,7 @@
   <div class="preview-canvas">
     {#if loading}
       <div class="loading-state">
-        <div class="spinner"></div>
+        <ProgressRing percent={-1} size={32} strokeWidth={3} />
         <span>Initializing...</span>
       </div>
     {:else if error}
@@ -511,21 +512,6 @@
     opacity: 0.6;
   }
 
-  .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--theme-stroke);
-    border-top-color: #ffd43b;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   .playback-status {
     position: absolute;
     bottom: 8px;
@@ -681,9 +667,6 @@
 
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */
   @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-    }
     .playback-status {
       animation: none;
     }

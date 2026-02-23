@@ -19,6 +19,7 @@
   import { onMount } from "svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   let email = $state("");
   let loading = $state(false);
@@ -198,7 +199,7 @@
 
   <button type="submit" disabled={loading} class="submit-button">
     {#if loading}
-      <span class="spinner"></span>
+      <ProgressRing percent={-1} size={24} strokeWidth={2} />
       {t("auth_sending")}
     {:else}
       <svg
@@ -340,29 +341,6 @@
 
   .submit-button:active:not(:disabled) {
     transform: scale(0.98);
-  }
-
-  .spinner {
-    display: inline-block;
-    width: 1rem;
-    height: 1rem;
-    border: 2px solid currentColor;
-    border-right-color: transparent;
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-      border-right-color: currentColor;
-    }
   }
 
   .error-message {

@@ -14,6 +14,7 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { onMount } from "svelte";
 
   let {
@@ -159,7 +160,7 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
     >
       {#if isLoading}
         <div class="loading-state">
-          <div class="loading-spinner"></div>
+          <ProgressRing percent={-1} size={24} strokeWidth={2} />
         </div>
       {:else if error}
         <div class="error-state" role="alert" aria-live="assertive">
@@ -283,21 +284,6 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
     background: rgba(255, 255, 255, 0.1);
   }
 
-  .loading-spinner {
-    width: 24px;
-    height: 24px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top-color: #22d3ee;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   /* Error state */
   .error-state {
     display: flex;
@@ -393,9 +379,4 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
     line-height: 1.4;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .loading-spinner {
-      animation: none;
-    }
-  }
 </style>

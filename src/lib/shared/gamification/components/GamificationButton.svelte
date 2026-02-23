@@ -13,6 +13,7 @@
   import type { UserXP } from "../domain/models/achievement-models";
   import { getLevelProgress } from "../domain/constants/xp-constants";
   import { auth } from "../../auth/firebase";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   // Props
   let { onclick = () => {} }: { onclick?: () => void } = $props();
@@ -96,7 +97,7 @@
   >
     {#if isLoading}
       <div class="loading-state">
-        <div class="spinner"></div>
+        <ProgressRing percent={-1} size={24} strokeWidth={2} />
       </div>
     {:else if error}
       <div class="error-state">
@@ -151,21 +152,6 @@
     height: 100%;
   }
 
-  .spinner {
-    width: 20px;
-    height: 20px;
-    border: 2px solid var(--theme-stroke);
-    border-top-color: var(--theme-text);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   /* Minimal icon styling */
   .icon-minimal {
     font-size: var(--font-size-xl);
@@ -203,8 +189,7 @@
 
   /* Reduced Motion */
   @media (prefers-reduced-motion: reduce) {
-    .gamification-button,
-    .spinner {
+    .gamification-button {
       animation: none;
       transition: none;
     }

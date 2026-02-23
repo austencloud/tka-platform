@@ -6,6 +6,7 @@
     IUserActivityTracker,
     SessionSummary,
   } from "../../services/contracts/IUserActivityTracker";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import type { ActivityEvent } from "$lib/shared/analytics/domain/models/ActivityEvent";
 
   interface Props {
@@ -107,7 +108,7 @@
   <div class="detail-content">
     {#if isLoading}
       <div class="loading" role="status" aria-live="polite" aria-busy="true">
-        <div class="spinner" aria-hidden="true"></div>
+        <ProgressRing percent={-1} size={24} strokeWidth={2} />
         <span>Loading sessions...</span>
       </div>
     {:else if sessions.length === 0}
@@ -156,7 +157,7 @@
                   aria-live="polite"
                   aria-busy="true"
                 >
-                  <div class="spinner-small" aria-hidden="true"></div>
+                  <ProgressRing percent={-1} size={24} strokeWidth={2} />
                 </div>
               {:else if sessionEvents.length === 0}
                 <p class="no-events">No events recorded</p>
@@ -255,30 +256,6 @@
     color: var(--theme-text-secondary, var(--theme-text-dim));
   }
 
-  .spinner {
-    width: 24px;
-    height: 24px;
-    border: 2px solid var(--theme-stroke);
-    border-top-color: var(--theme-accent);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .spinner,
-    .spinner-small {
-      animation: none;
-      border-top-color: var(--theme-accent);
-      border-right-color: var(--theme-accent);
-    }
-  }
-
   .sessions-list h4 {
     margin: 0 0 0.75rem;
     font-size: var(--font-size-compact, 12px);
@@ -365,15 +342,6 @@
     display: flex;
     justify-content: center;
     padding: 0.5rem;
-  }
-
-  .spinner-small {
-    width: 16px;
-    height: 16px;
-    border: 2px solid var(--theme-stroke);
-    border-top-color: var(--theme-accent);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
   }
 
   .no-events {

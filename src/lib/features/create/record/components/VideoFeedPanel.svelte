@@ -8,6 +8,7 @@ Features square aspect ratio for consistent layout and settings dialog for camer
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
   import CameraSettingsDialog from "./CameraSettingsDialog.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   // Props
   const {
@@ -215,7 +216,7 @@ Features square aspect ratio for consistent layout and settings dialog for camer
     <!-- Overlays for different states -->
     {#if isLoading}
       <div class="state-overlay loading-state">
-        <div class="spinner"></div>
+        <ProgressRing percent={-1} size={32} strokeWidth={3} />
         <p>Accessing camera...</p>
       </div>
     {:else if error}
@@ -354,24 +355,6 @@ Features square aspect ratio for consistent layout and settings dialog for camer
     text-align: center;
   }
 
-  .spinner {
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
-    border: 4px solid var(--theme-stroke);
-    border-top-color: var(
-      --theme-accent,
-      var(--primary-color, var(--semantic-info))
-    );
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   .error-icon {
     font-size: var(--font-size-3xl);
     opacity: 0.5;
@@ -429,10 +412,6 @@ Features square aspect ratio for consistent layout and settings dialog for camer
 
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */
   @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-    }
-
     .video-feed,
     .settings-button,
     .retry-button {

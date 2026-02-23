@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy, tick } from "svelte";
   import AnimatorCanvas from "./AnimatorCanvas.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
@@ -330,7 +331,7 @@
     </div>
   {:else}
     <div class="loading-state">
-      <div class="spinner"></div>
+      <ProgressRing percent={-1} size={32} strokeWidth={3} />
       <span>Loading...</span>
     </div>
   {/if}
@@ -379,24 +380,4 @@
     font-weight: bold;
   }
 
-  .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--border, rgba(255, 255, 255, 0.1));
-    border-top-color: var(--primary, #6366f1);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-    }
-  }
 </style>

@@ -14,6 +14,7 @@
   import type { QuizResults, QuizProgress } from "../domain/models/quiz-models";
   import { QuizConfigurator } from "../services/implementations/QuizConfigurator";
   import type { IQuizSessionManager } from "../services/contracts/IQuizSessionManager";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   // Props
   let {
@@ -222,7 +223,7 @@
 <div class="quiz-workspace">
   {#if isLoading}
     <div class="loading-screen">
-      <div class="loading-spinner"></div>
+      <ProgressRing percent={-1} size={32} strokeWidth={3} />
       <p>Starting quiz...</p>
     </div>
   {:else}
@@ -297,28 +298,4 @@
     color: #ffffff;
   }
 
-  .loading-spinner {
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
-    border: 4px solid var(--theme-stroke);
-    border-left: 4px solid #667eea;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
-  @media (prefers-reduced-motion: reduce) {
-    .loading-spinner {
-      animation: none;
-    }
-  }
 </style>

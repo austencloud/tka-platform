@@ -8,6 +8,7 @@
   import { container } from "$lib/shared/di";
   import type { ActThumbnailInfo } from "../domain/types/write";
   import ActCard from "./ActCard.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   interface Props {
     acts?: ActThumbnailInfo[];
@@ -59,7 +60,7 @@
   <div class="browser-content">
     {#if isLoading}
       <div class="state-container">
-        <div class="spinner"></div>
+        <ProgressRing percent={-1} size={24} strokeWidth={2} />
         <p>Loading acts...</p>
       </div>
     {:else if acts.length === 0}
@@ -190,15 +191,6 @@
     min-height: 200px;
   }
 
-  .spinner {
-    width: 24px;
-    height: 24px;
-    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-top-color: var(--theme-accent, #f43f5e);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
   .state-container p {
     margin: 0;
     font-size: var(--font-size-sm, 14px);
@@ -246,7 +238,6 @@
 
   @media (prefers-reduced-motion: reduce) {
     .icon-btn,
-    .spinner,
     .icon-btn i.spinning {
       animation: none;
       transition: none;

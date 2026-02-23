@@ -6,6 +6,7 @@
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { galleryGeneratorState } from "../state/gallery-generator-state.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   interface Props {
     onRenderSingle: (sequence: SequenceData) => void;
@@ -41,7 +42,7 @@
             >L{sequence.level || 1} · {sequence.sequenceLength}b</span
           >
           {#if isRenderingThis}
-            <span class="spinner" title="Rendering..."></span>
+            <ProgressRing percent={-1} size={24} strokeWidth={2} />
           {:else}
             <button
               class="render-btn"
@@ -167,23 +168,6 @@
     color: #f43f5e;
   }
 
-  /* Spinner */
-  .spinner {
-    width: 24px;
-    height: 24px;
-    border: 2px solid #3f3f46;
-    border-top-color: #f43f5e;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    flex-shrink: 0;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   .more-text {
     color: #52525b;
     text-align: center;
@@ -201,9 +185,6 @@
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */
   @media (prefers-reduced-motion: reduce) {
     .rendering-count {
-      animation: none;
-    }
-    .spinner {
       animation: none;
     }
   }

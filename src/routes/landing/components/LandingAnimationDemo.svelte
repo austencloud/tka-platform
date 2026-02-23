@@ -27,6 +27,7 @@
   import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
   import DemoControlBar from "./DemoControlBar.svelte";
   import { RANDOM_PROPS } from "../landing-content";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
@@ -535,7 +536,7 @@
               </div>
             {:else}
               <div class="animation-loading">
-                <div class="spinner"></div>
+                <ProgressRing percent={-1} size={32} strokeWidth={3} />
                 <span>{isLoading ? "Loading..." : "Initializing..."}</span>
               </div>
             {/if}
@@ -649,21 +650,6 @@
     opacity: 0.5;
   }
 
-  .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--border, rgba(255, 255, 255, 0.1));
-    border-top-color: var(--primary, #6366f1);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   .controls-wrapper {
     margin-top: 24px;
   }
@@ -700,9 +686,4 @@
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-    }
-  }
 </style>

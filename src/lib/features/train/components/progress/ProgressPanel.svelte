@@ -7,6 +7,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IPerformanceHistoryTracker } from "../../services/contracts/IPerformanceHistoryTracker";
   import type {
@@ -58,7 +59,7 @@
 <div class="progress-panel">
   {#if isLoading}
     <div class="loading-state">
-      <div class="spinner"></div>
+      <ProgressRing percent={-1} size={32} strokeWidth={3} />
       <p>{t("train_loading_stats")}</p>
     </div>
   {:else if !hasData}
@@ -214,21 +215,6 @@
     gap: 1rem;
     min-height: 400px;
     text-align: center;
-  }
-
-  .spinner {
-    width: 3rem;
-    height: 3rem;
-    border: 3px solid var(--theme-stroke, var(--theme-stroke));
-    border-top: 3px solid var(--semantic-error, var(--semantic-error));
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
   }
 
   /* ========================================

@@ -7,6 +7,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import { container } from "$lib/shared/di";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
@@ -107,7 +108,7 @@
   <!-- Loading Overlay -->
   {#if isLoadingFullSequence}
     <div class="loading-overlay">
-      <div class="loading-spinner"></div>
+      <ProgressRing percent={-1} size={32} strokeWidth={3} />
       <p>{t("train_loading_sequence")}</p>
     </div>
   {/if}
@@ -301,25 +302,10 @@
     z-index: 1000;
   }
 
-  .loading-spinner {
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
-    border: 4px solid var(--theme-stroke, var(--theme-stroke));
-    border-top-color: var(--semantic-info, var(--semantic-info));
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
   .loading-overlay p {
     color: var(--theme-text, white);
     font-size: 1rem;
     margin: 0;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
   }
 
   @media (max-width: 768px) {
@@ -338,10 +324,4 @@
     }
   }
 
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
-  @media (prefers-reduced-motion: reduce) {
-    .loading-spinner {
-      animation: none;
-    }
-  }
 </style>

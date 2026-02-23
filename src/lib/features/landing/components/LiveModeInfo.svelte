@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
   import type { BroadcastStateClient } from "../domain/models/broadcast-models";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   let {
     broadcastState,
@@ -56,7 +57,7 @@
     </div>
   {:else}
     <div class="connecting">
-      <div class="connecting-spinner"></div>
+      <ProgressRing percent={-1} size={24} strokeWidth={2} />
       <span>Connecting to live broadcast...</span>
     </div>
   {/if}
@@ -138,24 +139,8 @@
     font-size: 0.875rem;
   }
 
-  .connecting-spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    border-top-color: #ef4444;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    .live-dot,
-    .connecting-spinner {
+    .live-dot {
       animation: none;
     }
   }

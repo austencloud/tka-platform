@@ -10,6 +10,7 @@ Features frame processing loop for pose estimation and overlay support.
   import { CameraManager } from "../services/implementations/CameraManager";
   import type { ICameraManager } from "../services/contracts/ICameraManager";
   import type { Snippet } from "svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   interface Props {
     onCameraReady?: () => void;
@@ -99,7 +100,7 @@ Features frame processing loop for pose estimation and overlay support.
   <div class="video-container" bind:this={videoContainer}>
     {#if isInitializing}
       <div class="loading-state">
-        <div class="spinner"></div>
+        <ProgressRing percent={-1} size={32} strokeWidth={3} />
         <p>Initializing camera...</p>
       </div>
     {/if}
@@ -167,21 +168,6 @@ Features frame processing loop for pose estimation and overlay support.
     background: color-mix(in srgb, var(--theme-shadow) 80%, transparent);
   }
 
-  .spinner {
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
-    border: 3px solid var(--theme-stroke-strong);
-    border-top-color: var(--semantic-info, var(--semantic-info));
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   .error-icon {
     width: var(--min-touch-target);
     height: var(--min-touch-target);
@@ -229,10 +215,4 @@ Features frame processing loop for pose estimation and overlay support.
     pointer-events: auto;
   }
 
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
-  @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-    }
-  }
 </style>

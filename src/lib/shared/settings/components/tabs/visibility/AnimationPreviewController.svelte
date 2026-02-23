@@ -18,6 +18,7 @@
   import type { TurnPattern } from "$lib/features/create/shared/domain/models/TurnPatternData";
   import { Timestamp } from "firebase/firestore";
   import AnimationPreviewCanvas from "./AnimationPreviewCanvas.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   // Animation state - created once per component instance
   const animationState = createAnimationPanelState();
@@ -198,7 +199,7 @@
 
 {#if loading}
   <div class="preview-loading">
-    <div class="spinner"></div>
+    <ProgressRing percent={-1} size={24} strokeWidth={2} />
     <span>Loading...</span>
   </div>
 {:else if error}
@@ -228,21 +229,6 @@
     color: var(--theme-text-dim);
   }
 
-  .preview-loading .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid color-mix(in srgb, var(--theme-accent) 20%, transparent);
-    border-top-color: var(--theme-accent);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   .preview-loading span,
   .preview-error span {
     font-size: var(--font-size-compact);
@@ -255,10 +241,4 @@
     opacity: 0.6;
   }
 
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
-  @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-    }
-  }
 </style>

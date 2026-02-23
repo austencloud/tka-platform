@@ -14,6 +14,7 @@ Provides access to the complete TKA letter codex with drill-down detail view:
   import LetterDetailView from "./LetterDetailView.svelte";
   import { createCodexState } from "../state/codex-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   // Codex state for fetching letter details
   const codexState = createCodexState();
@@ -90,7 +91,7 @@ Provides access to the complete TKA letter codex with drill-down detail view:
       <!-- Loading overlay when fetching letter details -->
       {#if isLoadingDetails}
         <div class="loading-overlay" transition:fade={{ duration: 150 }}>
-          <div class="loading-spinner"></div>
+          <ProgressRing percent={-1} size={32} strokeWidth={3} />
           <p>{t("learn_loading_letter_details")}</p>
         </div>
       {/if}
@@ -193,24 +194,6 @@ Provides access to the complete TKA letter codex with drill-down detail view:
     font-size: 0.9375rem;
   }
 
-  .loading-spinner {
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
-    border: 3px solid rgba(255, 255, 255, 0.2);
-    border-left: 3px solid rgba(167, 139, 250, 0.9);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-
   /* Responsive adjustments */
   @media (max-width: 768px) {
     .codex-header h2 {
@@ -249,10 +232,6 @@ Provides access to the complete TKA letter codex with drill-down detail view:
     .grid-panel,
     .detail-panel {
       transition: none;
-    }
-
-    .loading-spinner {
-      animation: none;
     }
   }
 </style>

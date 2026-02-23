@@ -6,6 +6,7 @@ Shows pre-render progress and perfect playback badge.
 -->
 <script lang="ts">
   import type { PreRenderProgress } from "$lib/features/compose/services/implementations/SequenceFramePreRenderer";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   let {
     isPreRendering = false,
@@ -27,7 +28,7 @@ Shows pre-render progress and perfect playback badge.
     aria-busy="true"
   >
     <div class="badge-content">
-      <div class="spinner-small" aria-hidden="true"></div>
+      <ProgressRing percent={-1} size={24} strokeWidth={2} />
       <span>Optimizing... {Math.round(preRenderProgress.percent)}%</span>
     </div>
     <div class="progress-bar">
@@ -65,21 +66,6 @@ Shows pre-render progress and perfect playback badge.
     align-items: center;
     gap: 8px;
     margin-bottom: 6px;
-  }
-
-  .spinner-small {
-    width: 12px;
-    height: 12px;
-    border: 2px solid color-mix(in srgb, var(--theme-text) 30%, transparent);
-    border-top-color: var(--theme-text);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
   }
 
   .progress-bar {
@@ -131,12 +117,6 @@ Shows pre-render progress and perfect playback badge.
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .spinner-small {
-      animation: none;
-      border-top-color: var(--theme-text);
-      border-right-color: var(--theme-text);
-    }
-
     .perfect-mode-badge {
       animation: none;
     }

@@ -16,6 +16,7 @@
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import AnimationControlsPanel from "$lib/features/compose/components/canvas/AnimationControlsPanel.svelte";
   import { getAnimationExportContext } from "../../context/animation-export-context.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   // Get context object (don't destructure to maintain reactivity)
   const context = getAnimationExportContext();
@@ -72,7 +73,7 @@
   <div class="preview-canvas">
     {#if context.state.loading}
       <div class="loading-state">
-        <div class="spinner"></div>
+        <ProgressRing percent={-1} size={32} strokeWidth={3} />
         <p>Loading animation...</p>
       </div>
     {:else if !context.state.sequenceData}
@@ -94,7 +95,7 @@
       />
     {:else}
       <div class="loading-state">
-        <div class="spinner"></div>
+        <ProgressRing percent={-1} size={32} strokeWidth={3} />
         <p>Initializing...</p>
       </div>
     {/if}
@@ -215,21 +216,6 @@
     opacity: 0.3;
   }
 
-  .spinner {
-    width: 44px;
-    height: 44px;
-    border: 4px solid var(--theme-stroke);
-    border-top-color: var(--theme-accent);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   /* Export Progress Overlay */
   .export-overlay {
     position: absolute;
@@ -313,10 +299,6 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-    }
-
     .cancel-button {
       transition: none;
     }

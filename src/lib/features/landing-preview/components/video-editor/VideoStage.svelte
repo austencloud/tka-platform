@@ -7,6 +7,7 @@
    */
   import CroppedVideoPlayer from "../CroppedVideoPlayer.svelte";
   import type { ShowcaseVideo } from "../../types";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   interface Props {
     video: ShowcaseVideo;
@@ -116,7 +117,7 @@
       />
     {:else}
       <div class="video-loading">
-        <div class="spinner"></div>
+        <ProgressRing percent={-1} size={32} strokeWidth={3} />
         <span>Loading video...</span>
       </div>
     {/if}
@@ -235,19 +236,6 @@
     gap: 12px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: 14px;
-  }
-
-  .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-top-color: var(--theme-accent, #6366f1);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
   }
 
   /* Mobile: video takes less height */

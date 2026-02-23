@@ -7,6 +7,7 @@
 <script lang="ts">
 	import { connectState } from '../../state/connect-state.svelte';
 	import SessionCard from './SessionCard.svelte';
+	import ProgressRing from '$lib/shared/components/loading/ProgressRing.svelte';
 
 	// Derived from connectState
 	const nearbySessions = $derived(connectState.nearbySessions);
@@ -51,7 +52,7 @@
 	<div class="sessions-list">
 		{#if isLoading && nearbySessions.length === 0}
 			<div class="loading-state">
-				<div class="spinner"></div>
+				<ProgressRing percent={-1} size={32} strokeWidth={3} />
 				<p>Looking for sessions...</p>
 			</div>
 		{:else if nearbySessions.length === 0}
@@ -161,15 +162,6 @@
 		gap: 16px;
 	}
 
-	.spinner {
-		width: 40px;
-		height: 40px;
-		border: 3px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		border-top-color: var(--theme-accent, #6366f1);
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-	}
-
 	.loading-state p {
 		font-size: var(--font-size-sm, 14px);
 		color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
@@ -234,8 +226,7 @@
 
 	/* Reduced motion */
 	@media (prefers-reduced-motion: reduce) {
-		.refresh-button i.spinning,
-		.spinner {
+		.refresh-button i.spinning {
 			animation: none;
 		}
 	}

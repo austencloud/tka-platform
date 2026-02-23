@@ -4,6 +4,7 @@
   Shows the current pictograph with a shuffle button
 -->
 <script lang="ts">
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
 
@@ -20,7 +21,7 @@
   <div class="pictograph-display">
     {#if isLoading}
       <div class="loading-state">
-        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+        <ProgressRing percent={-1} size={32} strokeWidth={3} />
       </div>
     {:else if pictograph}
       <PictographContainer pictographData={pictograph} />
@@ -69,19 +70,6 @@
   .loading-state,
   .empty-state {
     font-size: var(--font-size-2xl);
-  }
-
-  .loading-state i {
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
   }
 
   .shuffle-btn {

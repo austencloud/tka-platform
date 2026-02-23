@@ -4,6 +4,7 @@ Type1PictographDisplay - Pictograph visualizer with loading state
 <script lang="ts">
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   let {
     isLoading,
@@ -17,7 +18,7 @@ Type1PictographDisplay - Pictograph visualizer with loading state
 <div class="visualizer-container">
   {#if isLoading}
     <div class="loading-state">
-      <div class="loading-spinner"></div>
+      <ProgressRing percent={-1} size={32} strokeWidth={3} />
     </div>
   {:else if pictographData}
     <PictographContainer
@@ -55,21 +56,6 @@ Type1PictographDisplay - Pictograph visualizer with loading state
     gap: 0.5rem;
   }
 
-  .loading-spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid rgba(34, 211, 238, 0.2);
-    border-top-color: #22d3ee;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   .error-state {
     background: rgba(239, 68, 68, 0.05);
     color: var(--semantic-error);
@@ -86,9 +72,4 @@ Type1PictographDisplay - Pictograph visualizer with loading state
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .loading-spinner {
-      animation: none;
-    }
-  }
 </style>

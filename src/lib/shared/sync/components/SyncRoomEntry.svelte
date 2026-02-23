@@ -10,6 +10,7 @@
   import { deviceSyncState, getConnectionStatusText } from '../state/device-sync-state.svelte';
   import SyncStatusIndicator from './SyncStatusIndicator.svelte';
   import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
+  import ProgressRing from '$lib/shared/components/loading/ProgressRing.svelte';
 
   let {
     sequence = null,
@@ -184,7 +185,7 @@
           disabled={!roomCodeInput.trim() || isLoading || isConnecting}
         >
           {#if isLoading || isConnecting}
-            <div class="btn-spinner"></div>
+            <ProgressRing percent={-1} size={24} strokeWidth={2} />
             Joining...
           {:else}
             <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
@@ -409,15 +410,6 @@
     cursor: not-allowed;
   }
 
-  .btn-spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(139, 92, 246, 0.3);
-    border-top-color: var(--theme-accent, #8b5cf6);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
   /* Back button */
   .back-btn {
     display: flex;
@@ -467,12 +459,6 @@
     width: 100%;
   }
 
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   /* Responsive */
   @media (max-width: 480px) {
     .sync-entry {
@@ -489,9 +475,4 @@
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .btn-spinner {
-      animation: none;
-    }
-  }
 </style>

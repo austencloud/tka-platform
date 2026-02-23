@@ -16,6 +16,7 @@
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import LayeredSequencePreview from "./LayeredSequencePreview.svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   export type ExportType = "animation" | "image" | "both";
 
@@ -141,7 +142,7 @@
         <!-- For video exports, show the animation canvas -->
         {#if animationLoading}
           <div class="loading-state">
-            <div class="spinner"></div>
+            <ProgressRing percent={-1} size={32} strokeWidth={3} />
           </div>
         {:else if animationState.error}
           <div class="error-state">
@@ -519,19 +520,6 @@
     color: var(--semantic-error, #f87171);
   }
 
-  .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-top-color: var(--theme-accent, #6366f1);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
   /* View container for absolute positioning */
   .view-container {
     position: absolute;
@@ -556,10 +544,6 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-    }
-
     .chip,
     .export-type-card {
       transition: none !important;

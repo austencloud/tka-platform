@@ -22,6 +22,7 @@ Provides quiz functionality for learning TKA notation:
   import QuizWorkspaceView from "./QuizWorkspaceView.svelte";
   import StreakDisplay from "./StreakDisplay.svelte";
   import { getDelightOrchestrator } from "$lib/shared/delight/context/delight-context";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   // Import learn components
 
@@ -302,7 +303,7 @@ Provides quiz functionality for learning TKA notation:
   <!-- Loading overlay -->
   {#if isLoading}
     <div class="loading-overlay">
-      <div class="loading-spinner"></div>
+      <ProgressRing percent={-1} size={32} strokeWidth={3} />
       <span>Loading quiz...</span>
     </div>
   {/if}
@@ -413,28 +414,4 @@ Provides quiz functionality for learning TKA notation:
     color: var(--foreground, #ffffff);
   }
 
-  .loading-spinner {
-    width: 2rem;
-    height: 2rem;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-top: 2px solid var(--foreground, #ffffff);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
-  @media (prefers-reduced-motion: reduce) {
-    .loading-spinner {
-      animation: none;
-    }
-  }
 </style>

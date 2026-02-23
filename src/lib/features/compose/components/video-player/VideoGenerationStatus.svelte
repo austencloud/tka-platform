@@ -5,6 +5,7 @@
   Shows current phase, percentage, frame count, and allows cancellation.
 -->
 <script lang="ts">
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import type { VideoRenderProgress } from "../../services/contracts/IVideoPreRenderer";
 
   let {
@@ -18,7 +19,7 @@
 
 <div class="video-generation-status" role="status" aria-live="polite">
   <div class="status-content">
-    <div class="spinner" aria-hidden="true"></div>
+    <ProgressRing percent={-1} size={24} strokeWidth={2} />
     <div class="status-text">
       {#if progress.phase === "rendering"}
         Generating video... {progress.percent.toFixed(0)}%
@@ -63,29 +64,6 @@
     align-items: center;
     gap: 10px;
     margin-bottom: 8px;
-  }
-
-  .spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid var(--theme-stroke-strong);
-    border-top-color: white;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-      border-top-color: white;
-      border-right-color: white;
-    }
   }
 
   .status-text {

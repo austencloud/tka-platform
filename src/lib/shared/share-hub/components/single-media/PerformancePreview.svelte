@@ -24,6 +24,7 @@
     RecordingProgress,
     RecordingResult,
   } from "$lib/shared/video-record/services/contracts/IVideoRecorder";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   const hubState = getShareHubState();
 
@@ -254,7 +255,7 @@
       <!-- Camera Mode -->
       {#if loading}
         <div class="loading-state">
-          <div class="spinner"></div>
+          <ProgressRing percent={-1} size={32} strokeWidth={3} />
           <p>Initializing camera...</p>
         </div>
       {:else if error}
@@ -545,15 +546,6 @@
     color: var(--semantic-warning);
   }
 
-  .spinner {
-    width: 44px;
-    height: 44px;
-    border: 4px solid var(--theme-stroke);
-    border-top-color: var(--theme-accent);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
   .retry-button {
     display: flex;
     align-items: center;
@@ -707,12 +699,6 @@
     }
   }
 
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   /* Mobile optimization */
   @media (max-width: 600px) {
     .inline-controls {
@@ -742,8 +728,7 @@
     }
 
     .recording-indicator i,
-    .duration-badge i.pulse,
-    .spinner {
+    .duration-badge i.pulse {
       animation: none;
     }
   }
