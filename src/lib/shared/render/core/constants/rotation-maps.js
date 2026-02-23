@@ -54,7 +54,7 @@ export const DIAMOND_PROP_ANGLES = {
         nw: 0,
         c: 0,
     },
-    // Interradial orientations (Level 7)
+    // Interradial orientations (Level 6)
     clockIn: {
         n: 45,
         s: 225,
@@ -158,7 +158,7 @@ export const BOX_PROP_ANGLES = {
         w: 0,
         c: 0,
     },
-    // Interradial orientations (Level 7)
+    // Interradial orientations (Level 6)
     clockIn: {
         ne: 90,
         nw: 0,

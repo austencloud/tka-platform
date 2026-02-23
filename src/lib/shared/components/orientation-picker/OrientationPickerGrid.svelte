@@ -1,7 +1,7 @@
 <!--
 OrientationPickerGrid.svelte - Grid for selecting prop orientation
 Shows 4 cardinal orientations (in, out, clock, counter).
-When showInterradial=true, adds 4 interradial orientations (Level 7).
+When showInterradial=true, adds 4 interradial orientations (Level 6).
 50px touch targets for accessibility.
 -->
 <script lang="ts">
@@ -17,7 +17,7 @@ When showInterradial=true, adds 4 interradial orientations (Level 7).
   } = $props<{
     currentOrientation: Orientation | null;
     onOrientationChange: (orientation: Orientation | null) => void;
-    /** Show interradial orientations (Level 7: clockIn, clockOut, counterIn, counterOut) */
+    /** Show interradial orientations (Level 6: clockIn, clockOut, counterIn, counterOut) */
     showInterradial?: boolean;
   }>();
 
@@ -62,7 +62,7 @@ When showInterradial=true, adds 4 interradial orientations (Level 7).
     },
   ];
 
-  // Interradial orientation options (Level 7)
+  // Interradial orientation options (Level 6)
   const interradialOptions: OrientationOption[] = [
     {
       value: Orientation.CLOCK_IN,
@@ -129,7 +129,7 @@ When showInterradial=true, adds 4 interradial orientations (Level 7).
 
   {#if showInterradial}
     <div class="interradial-divider">
-      <span class="divider-label">Interradial (Level 7)</span>
+      <span class="divider-label">Interradial (Level 6)</span>
     </div>
     <div class="grid">
       {#each interradialOptions as option (option.value)}

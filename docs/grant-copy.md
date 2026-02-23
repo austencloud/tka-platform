@@ -31,8 +31,8 @@ TKA is structured as a progressive system with nine levels of increasing complex
 - **Levels 1-3** introduce turns (zero rotation, whole turns, half turns and float), building foundational movement vocabulary on a four-point grid
 - **Level 4** expands to an eight-point grid, adding diagonal positions
 - **Level 5** adds a center point (nine-point grid)
-- **Level 6** introduces conjoined grids (dual performers sharing a junction point)
-- **Level 7** completes two-dimensional movement with eight prop orientations (cardinal and interradial)
+- **Level 6** completes two-dimensional movement with eight prop orientations (cardinal and interradial)
+- **Level 7** introduces conjoined grids (dual performers sharing a junction point)
 - **Levels 8-9** extend into three dimensions
 
 A beginner at Level 1 works with 6 possible single-hand motions from any grid point. By Level 5, that number grows to 129. The ceiling (all levels, quarter-turn granularity) reaches 237 distinct single-hand motions per grid point. The combinatorial space is large enough to sustain years of practice without repetition, and every motion within it is documented and indexable.
