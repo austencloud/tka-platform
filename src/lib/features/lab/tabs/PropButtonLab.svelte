@@ -24,7 +24,7 @@
   // Load persisted overrides from settings
   const settings = $derived(getSettings());
   let overrides = $state<Record<string, CompositionRecipe>>(
-    structuredClone(settings.compositionRecipeOverrides ?? {})
+    $state.snapshot(settings.compositionRecipeOverrides ?? {})
   );
 
   // --- Undo / Redo ---
@@ -36,14 +36,14 @@
 
   /** Capture current overrides before a mutation */
   function pushUndo() {
-    undoStack = [...undoStack, structuredClone(overrides)].slice(-MAX_HISTORY);
+    undoStack = [...undoStack, $state.snapshot(overrides)].slice(-MAX_HISTORY);
     redoStack = [];
   }
 
   function undo() {
     if (undoStack.length === 0) return;
-    const previous = undoStack[undoStack.length - 1];
-    redoStack = [...redoStack, structuredClone(overrides)];
+    const previous = undoStack[undoStack.length - 1]!;
+    redoStack = [...redoStack, $state.snapshot(overrides)];
     undoStack = undoStack.slice(0, -1);
     overrides = structuredClone(previous);
     persistOverrides();
@@ -51,8 +51,8 @@
 
   function redo() {
     if (redoStack.length === 0) return;
-    const next = redoStack[redoStack.length - 1];
-    undoStack = [...undoStack, structuredClone(overrides)];
+    const next = redoStack[redoStack.length - 1]!;
+    undoStack = [...undoStack, $state.snapshot(overrides)];
     redoStack = redoStack.slice(0, -1);
     overrides = structuredClone(next);
     persistOverrides();
@@ -86,7 +86,7 @@
 
   function ensureOverride(propType: PropType) {
     if (!overrides[propType]) {
-      overrides[propType] = structuredClone(getCompositionRecipe(propType));
+      overrides[propType] = $state.snapshot(getCompositionRecipe(propType));
     }
   }
 
