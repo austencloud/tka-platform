@@ -75,7 +75,7 @@
       { positionX: 0, positionY: 0, rotationAngle: 0 },
       blueMotion,
       false,
-    ).then(data => { bluePropData = data; });
+    ).then(data => { bluePropData = data; }).catch(() => { /* SVG unavailable; fallback circle renders */ });
 
     // Load red prop SVG
     const redMotion = createMotionData({
@@ -86,7 +86,7 @@
       { positionX: 0, positionY: 0, rotationAngle: 0 },
       redMotion,
       false,
-    ).then(data => { redPropData = data; });
+    ).then(data => { redPropData = data; }).catch(() => { /* SVG unavailable; fallback circle renders */ });
   });
 
   // Active hand's prop render data
@@ -461,11 +461,7 @@
 
   /* Dark background matching pictograph containers */
   .grid-background {
-    fill: rgba(10, 10, 18, 0.95);
-  }
-
-  :global(:root:not(.dark)) .grid-background {
-    fill: rgba(245, 245, 250, 0.95);
+    fill: var(--theme-panel-bg, rgba(10, 10, 18, 0.95));
   }
 
   /* Prop SVG groups (real prop rendering) */
@@ -526,8 +522,8 @@
 
   /* Hit targets */
   .hit-target {
-    fill: rgba(255, 255, 255, 0.04);
-    stroke: rgba(255, 255, 255, 0.2);
+    fill: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    stroke: var(--theme-stroke, rgba(255, 255, 255, 0.2));
     stroke-width: 2;
     cursor: pointer;
     transition: fill 0.15s ease, stroke 0.15s ease, stroke-width 0.15s ease;
@@ -538,12 +534,12 @@
   }
 
   .hit-target.active-hand-blue:hover {
-    fill: rgba(46, 139, 240, 0.2);
+    fill: color-mix(in srgb, var(--prop-blue, #2e8bf0) 20%, transparent);
     stroke: var(--prop-blue, #2e8bf0);
   }
 
   .hit-target.active-hand-red:hover {
-    fill: rgba(237, 28, 36, 0.2);
+    fill: color-mix(in srgb, var(--prop-red, #ed1c24) 20%, transparent);
     stroke: var(--prop-red, #ed1c24);
   }
 
