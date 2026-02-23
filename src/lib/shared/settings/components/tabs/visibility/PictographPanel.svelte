@@ -37,6 +37,8 @@
     onToggle,
     isMobileHidden = false,
   }: Props = $props();
+
+  let collapsed = $state(false);
 </script>
 
 <section
@@ -48,93 +50,106 @@
       <i class="fas fa-image" aria-hidden="true"></i>
     </span>
     <h3 class="panel-title">{t("visibility_pictograph")}</h3>
+    <button
+      class="collapse-toggle"
+      onclick={() => (collapsed = !collapsed)}
+      aria-expanded={!collapsed}
+      aria-label={collapsed ? "Expand pictograph settings" : "Collapse pictograph settings"}
+      type="button"
+    >
+      <i class="fas {collapsed ? 'fa-chevron-right' : 'fa-chevron-down'}" aria-hidden="true"></i>
+    </button>
   </header>
 
-  <div class="preview-frame">
-    <PictographWithVisibility
-      pictographData={examplePictographData}
-      forceShowAll={true}
-      previewMode={true}
-      onToggleTKA={() => onToggle("tka")}
-      onToggleVTG={() => onToggle("vtg")}
-      onToggleElemental={() => onToggle("elemental")}
-      onTogglePositions={() => onToggle("positions")}
-      onToggleReversals={() => onToggle("reversals")}
-      onToggleNonRadial={() => onToggle("nonRadial")}
-    />
-  </div>
+  {#if !collapsed}
+    <div class="panel-body" transition:slide={{ duration: 200 }}>
+      <div class="preview-frame">
+        <PictographWithVisibility
+          pictographData={examplePictographData}
+          forceShowAll={true}
+          previewMode={true}
+          onToggleTKA={() => onToggle("tka")}
+          onToggleVTG={() => onToggle("vtg")}
+          onToggleElemental={() => onToggle("elemental")}
+          onTogglePositions={() => onToggle("positions")}
+          onToggleReversals={() => onToggle("reversals")}
+          onToggleNonRadial={() => onToggle("nonRadial")}
+        />
+      </div>
 
-  <div class="panel-controls">
-    <div class="control-group">
-      <span class="group-label">{t("visibility_elements")}</span>
-      <div class="toggle-grid">
-        <button
-          class="toggle-btn"
-          class:active={tkaGlyphVisible}
-          aria-pressed={tkaGlyphVisible}
-          onclick={() => onToggle("tka")}>{t("visibility_tka")}</button
-        >
-        <button
-          class="toggle-btn"
-          class:active={vtgGlyphVisible}
-          aria-pressed={vtgGlyphVisible}
-          onclick={() => onToggle("vtg")}>{t("visibility_vtg")}</button
-        >
-        <button
-          class="toggle-btn"
-          class:active={elementalGlyphVisible}
-          aria-pressed={elementalGlyphVisible}
-          onclick={() => onToggle("elemental")}
-          >{t("visibility_elemental")}</button
-        >
-        <button
-          class="toggle-btn"
-          class:active={positionsGlyphVisible}
-          aria-pressed={positionsGlyphVisible}
-          onclick={() => onToggle("positions")}
-          >{t("visibility_positions")}</button
-        >
-        <button
-          class="toggle-btn"
-          class:active={reversalIndicatorsVisible}
-          aria-pressed={reversalIndicatorsVisible}
-          onclick={() => onToggle("reversals")}
-          >{t("visibility_reversals")}</button
-        >
-        <button
-          class="toggle-btn"
-          class:active={stepNumbersVisible}
-          aria-pressed={stepNumbersVisible}
-          onclick={() => onToggle("stepNumbers")}
-          >{t("visibility_step_numbers")}</button
-        >
-        <button
-          class="toggle-btn"
-          class:active={gridVisible}
-          aria-pressed={gridVisible}
-          onclick={() => onToggle("grid")}>{t("visibility_show_grid")}</button
-        >
-        {#if gridVisible}
-          <button
-            transition:slide={{ duration: 150 }}
-            class="toggle-btn"
-            class:active={handPointVisibility === "all"}
-            aria-pressed={handPointVisibility === "all"}
-            onclick={() => onToggle("handPoints")}
-            >{t("visibility_hand_points")}</button
-          >
-          <button
-            transition:slide={{ duration: 150 }}
-            class="toggle-btn"
-            class:active={nonRadialVisible}
-            aria-pressed={nonRadialVisible}
-            onclick={() => onToggle("nonRadial")}
-            >{t("visibility_non_radial")}</button
-          >
-        {/if}
+      <div class="panel-controls">
+        <div class="control-group">
+          <span class="group-label">{t("visibility_elements")}</span>
+          <div class="toggle-grid">
+            <button
+              class="toggle-btn"
+              class:active={tkaGlyphVisible}
+              aria-pressed={tkaGlyphVisible}
+              onclick={() => onToggle("tka")}>{t("visibility_tka")}</button
+            >
+            <button
+              class="toggle-btn"
+              class:active={vtgGlyphVisible}
+              aria-pressed={vtgGlyphVisible}
+              onclick={() => onToggle("vtg")}>{t("visibility_vtg")}</button
+            >
+            <button
+              class="toggle-btn"
+              class:active={elementalGlyphVisible}
+              aria-pressed={elementalGlyphVisible}
+              onclick={() => onToggle("elemental")}
+              >{t("visibility_elemental")}</button
+            >
+            <button
+              class="toggle-btn"
+              class:active={positionsGlyphVisible}
+              aria-pressed={positionsGlyphVisible}
+              onclick={() => onToggle("positions")}
+              >{t("visibility_positions")}</button
+            >
+            <button
+              class="toggle-btn"
+              class:active={reversalIndicatorsVisible}
+              aria-pressed={reversalIndicatorsVisible}
+              onclick={() => onToggle("reversals")}
+              >{t("visibility_reversals")}</button
+            >
+            <button
+              class="toggle-btn"
+              class:active={stepNumbersVisible}
+              aria-pressed={stepNumbersVisible}
+              onclick={() => onToggle("stepNumbers")}
+              >{t("visibility_step_numbers")}</button
+            >
+            <button
+              class="toggle-btn"
+              class:active={gridVisible}
+              aria-pressed={gridVisible}
+              onclick={() => onToggle("grid")}>{t("visibility_show_grid")}</button
+            >
+            {#if gridVisible}
+              <button
+                transition:slide={{ duration: 150 }}
+                class="toggle-btn"
+                class:active={handPointVisibility === "all"}
+                aria-pressed={handPointVisibility === "all"}
+                onclick={() => onToggle("handPoints")}
+                >{t("visibility_hand_points")}</button
+              >
+              <button
+                transition:slide={{ duration: 150 }}
+                class="toggle-btn"
+                class:active={nonRadialVisible}
+                aria-pressed={nonRadialVisible}
+                onclick={() => onToggle("nonRadial")}
+                >{t("visibility_non_radial")}</button
+              >
+            {/if}
+          </div>
+        </div>
       </div>
     </div>
-  </div>
+  {/if}
 </section>
 
 <style>
@@ -143,16 +158,12 @@
     container-name: pictograph-panel;
     display: flex;
     flex-direction: column;
-    align-items: center;
     gap: clamp(12px, 2cqi, 16px);
     padding: clamp(12px, 2cqi, 20px);
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 20px;
-    /* Take equal width but don't stretch height */
-    flex: 1 1 0;
     min-width: 0;
-    /* In modal: allows panel to be shorter than content */
     min-height: var(--vt-panel-min-h, auto);
     transition:
       background 0.2s ease,
@@ -223,7 +234,7 @@
     overflow: hidden;
     width: 100%;
     aspect-ratio: 1;
-    max-width: 280px;
+    max-width: 500px;
     box-shadow: inset 0 2px 8px var(--theme-shadow);
     /* In modal: preview shrinks to fit; in settings: auto (full aspect-ratio size) */
     min-height: var(--vt-preview-min-h, auto);
@@ -362,9 +373,61 @@
     outline-offset: 2px;
   }
 
+  .panel-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(12px, 2cqi, 16px);
+    width: 100%;
+  }
+
+  .collapse-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    color: var(--theme-text-dim);
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all var(--duration-fast) ease;
+    flex-shrink: 0;
+  }
+
+  .collapse-toggle:hover {
+    background: color-mix(in srgb, var(--theme-text-dim) 15%, transparent);
+    color: var(--theme-text);
+  }
+
+  .collapse-toggle:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--theme-accent) 50%, transparent);
+    outline-offset: 2px;
+  }
+
+  @container pictograph-panel (min-width: 500px) {
+    .panel-body {
+      flex-direction: row;
+      align-items: flex-start;
+    }
+
+    .preview-frame {
+      flex-shrink: 0;
+      width: 50%;
+      max-width: 500px;
+    }
+
+    .panel-controls {
+      flex: 1;
+      margin-top: 0;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .settings-panel,
-    .toggle-btn {
+    .toggle-btn,
+    .collapse-toggle {
       transition: none;
     }
   }

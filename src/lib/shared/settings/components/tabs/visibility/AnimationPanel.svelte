@@ -5,6 +5,7 @@
   Includes grid mode, trail style, and overlay toggles.
 -->
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import AnimationPreviewController from "./AnimationPreviewController.svelte";
   import AnimationMobileControls from "./AnimationMobileControls.svelte";
   import AnimationDesktopControls from "./AnimationDesktopControls.svelte";
@@ -69,6 +70,8 @@
     isMobileHidden = false,
   }: Props = $props();
 
+  let collapsed = $state(false);
+
   const bpmPresets = [30, 60, 90, 120];
 
   // Check if tracking both ends
@@ -115,75 +118,88 @@
       <i class="fas fa-film" aria-hidden="true"></i>
     </span>
     <h3 class="panel-title">{t("visibility_animation")}</h3>
+    <button
+      class="collapse-toggle"
+      onclick={() => (collapsed = !collapsed)}
+      aria-expanded={!collapsed}
+      aria-label={collapsed ? "Expand animation settings" : "Collapse animation settings"}
+      type="button"
+    >
+      <i class="fas {collapsed ? 'fa-chevron-right' : 'fa-chevron-down'}" aria-hidden="true"></i>
+    </button>
   </header>
 
-  <div class="preview-frame animation-preview">
-    <AnimationPreviewController />
-  </div>
+  {#if !collapsed}
+    <div class="panel-body" transition:slide={{ duration: 200 }}>
+      <div class="preview-frame animation-preview">
+        <AnimationPreviewController />
+      </div>
 
-  <div class="panel-controls">
-    <!-- Mobile: Compact layout (below 320px) -->
-    <div class="mobile-layout">
-      <AnimationMobileControls
-        {playbackMode}
-        {bpm}
-        {bpmPresets}
-        {gridVisible}
-        {stepNumbersVisible}
-        {tkaGlyphVisible}
-        {wordHeaderVisible}
-        {fireEffectEnabled}
-        {ledEffectEnabled}
-        {colorBlend}
-        {smokeLevel}
-        {useCharcoal}
-        {fireIntensity}
-        {onColorBlendChange}
-        {onSmokeLevelChange}
-        {onUseCharcoalChange}
-        {onFireIntensityChange}
-        {trailStyle}
-        {showBilateralToggle}
-        {isBothEnds}
-        {onPlaybackModeChange}
-        {onBpmChange}
-        {onToggle}
-        onTrailPreset={setTrailPreset}
-        onToggleBothEnds={toggleBothEnds}
-      />
-    </div>
+      <div class="panel-controls">
+        <!-- Mobile: Compact layout (below 320px) -->
+        <div class="mobile-layout">
+          <AnimationMobileControls
+            {playbackMode}
+            {bpm}
+            {bpmPresets}
+            {gridVisible}
+            {stepNumbersVisible}
+            {tkaGlyphVisible}
+            {wordHeaderVisible}
+            {fireEffectEnabled}
+            {ledEffectEnabled}
+            {colorBlend}
+            {smokeLevel}
+            {useCharcoal}
+            {fireIntensity}
+            {onColorBlendChange}
+            {onSmokeLevelChange}
+            {onUseCharcoalChange}
+            {onFireIntensityChange}
+            {trailStyle}
+            {showBilateralToggle}
+            {isBothEnds}
+            {onPlaybackModeChange}
+            {onBpmChange}
+            {onToggle}
+            onTrailPreset={setTrailPreset}
+            onToggleBothEnds={toggleBothEnds}
+          />
+        </div>
 
-    <!-- Desktop: Expanded layout (320px+) -->
-    <div class="desktop-layout">
-      <AnimationDesktopControls
-        {playbackMode}
-        {bpm}
-        {bpmPresets}
-        {gridVisible}
-        {stepNumbersVisible}
-        {tkaGlyphVisible}
-        {wordHeaderVisible}
-        {fireEffectEnabled}
-        {ledEffectEnabled}
-        {colorBlend}
-        {smokeLevel}
-        {useCharcoal}
-        {fireIntensity}
-        {onColorBlendChange}
-        {onSmokeLevelChange}
-        {onUseCharcoalChange}
-        {onFireIntensityChange}
-        {trailStyle}
-        {showBilateralToggle}
-        {isBothEnds}
-        {onPlaybackModeChange}
-        {onBpmChange}
-        {onToggle}
-        onTrailPreset={setTrailPreset}
-        onToggleBothEnds={toggleBothEnds}
-      />
+        <!-- Desktop: Expanded layout (320px+) -->
+        <div class="desktop-layout">
+          <AnimationDesktopControls
+            {playbackMode}
+            {bpm}
+            {bpmPresets}
+            {gridVisible}
+            {stepNumbersVisible}
+            {tkaGlyphVisible}
+            {wordHeaderVisible}
+            {fireEffectEnabled}
+            {ledEffectEnabled}
+            {colorBlend}
+            {smokeLevel}
+            {useCharcoal}
+            {fireIntensity}
+            {onColorBlendChange}
+            {onSmokeLevelChange}
+            {onUseCharcoalChange}
+            {onFireIntensityChange}
+            {trailStyle}
+            {showBilateralToggle}
+            {isBothEnds}
+            {onPlaybackModeChange}
+            {onBpmChange}
+            {onToggle}
+            onTrailPreset={setTrailPreset}
+            onToggleBothEnds={toggleBothEnds}
+          />
+        </div>
+      </div>
     </div>
-  </div>
+  {/if}
 </section>
 
 <style>
@@ -192,13 +208,11 @@
     container-name: animation-panel;
     display: flex;
     flex-direction: column;
-    align-items: center;
     gap: clamp(12px, 2cqi, 16px);
     padding: clamp(12px, 2cqi, 20px);
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 20px;
-    flex: 1 1 0;
     min-width: 0;
     min-height: var(--vt-panel-min-h, auto);
     transition:
@@ -270,7 +284,7 @@
     overflow: hidden;
     width: 100%;
     aspect-ratio: 1;
-    max-width: 280px;
+    max-width: 500px;
     box-shadow: inset 0 2px 8px var(--theme-shadow);
     min-height: var(--vt-preview-min-h, auto);
   }
@@ -309,8 +323,60 @@
     }
   }
 
+  .panel-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(12px, 2cqi, 16px);
+    width: 100%;
+  }
+
+  .collapse-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    color: var(--theme-text-dim);
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all var(--duration-fast) ease;
+    flex-shrink: 0;
+  }
+
+  .collapse-toggle:hover {
+    background: color-mix(in srgb, var(--theme-text-dim) 15%, transparent);
+    color: var(--theme-text);
+  }
+
+  .collapse-toggle:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--theme-accent) 50%, transparent);
+    outline-offset: 2px;
+  }
+
+  @container animation-panel (min-width: 500px) {
+    .panel-body {
+      flex-direction: row;
+      align-items: flex-start;
+    }
+
+    .preview-frame {
+      flex-shrink: 0;
+      width: 50%;
+      max-width: 500px;
+    }
+
+    .panel-controls {
+      flex: 1;
+      margin-top: 0;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .settings-panel {
+    .settings-panel,
+    .collapse-toggle {
       transition: none;
     }
   }
