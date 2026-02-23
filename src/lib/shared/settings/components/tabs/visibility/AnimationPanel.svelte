@@ -11,7 +11,6 @@
   import type {
     TrailVisibility,
     PlaybackMode,
-    FlameColorMode,
   } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import {
     animationSettings,
@@ -30,11 +29,13 @@
     wordHeaderVisible: boolean;
     fireEffectEnabled: boolean;
     ledEffectEnabled: boolean;
-    flameColorMode: FlameColorMode;
-    fuelSourceId: string;
+    colorBlend: number;
+    smokeLevel: number;
+    useCharcoal: boolean;
     fireIntensity: number;
-    onFlameColorModeChange: (mode: FlameColorMode) => void;
-    onFuelSourceChange: (id: string) => void;
+    onColorBlendChange: (value: number) => void;
+    onSmokeLevelChange: (value: number) => void;
+    onUseCharcoalChange: (value: boolean) => void;
     onFireIntensityChange: (value: number) => void;
     onToggle: (key: string) => void;
     onTrailStyleChange: (style: string) => void;
@@ -53,11 +54,13 @@
     wordHeaderVisible,
     fireEffectEnabled,
     ledEffectEnabled,
-    flameColorMode,
-    fuelSourceId,
+    colorBlend,
+    smokeLevel,
+    useCharcoal,
     fireIntensity,
-    onFlameColorModeChange,
-    onFuelSourceChange,
+    onColorBlendChange,
+    onSmokeLevelChange,
+    onUseCharcoalChange,
     onFireIntensityChange,
     onToggle,
     onTrailStyleChange,
@@ -131,11 +134,13 @@
         {wordHeaderVisible}
         {fireEffectEnabled}
         {ledEffectEnabled}
-        {flameColorMode}
-        {fuelSourceId}
+        {colorBlend}
+        {smokeLevel}
+        {useCharcoal}
         {fireIntensity}
-        {onFlameColorModeChange}
-        {onFuelSourceChange}
+        {onColorBlendChange}
+        {onSmokeLevelChange}
+        {onUseCharcoalChange}
         {onFireIntensityChange}
         {trailStyle}
         {showBilateralToggle}
@@ -160,11 +165,13 @@
         {wordHeaderVisible}
         {fireEffectEnabled}
         {ledEffectEnabled}
-        {flameColorMode}
-        {fuelSourceId}
+        {colorBlend}
+        {smokeLevel}
+        {useCharcoal}
         {fireIntensity}
-        {onFlameColorModeChange}
-        {onFuelSourceChange}
+        {onColorBlendChange}
+        {onSmokeLevelChange}
+        {onUseCharcoalChange}
         {onFireIntensityChange}
         {trailStyle}
         {showBilateralToggle}

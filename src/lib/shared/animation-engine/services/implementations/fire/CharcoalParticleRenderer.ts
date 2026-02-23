@@ -15,7 +15,7 @@
 
 import type { ICharcoalRenderer } from "../../contracts/ICharcoalRenderer";
 import type { FireFrameInput, FireOverlayConfig, PropTipData } from "../../../domain/types/FireTypes";
-import type { CharcoalParams } from "../../../domain/types/FuelSourceTypes";
+import type { CharcoalParams } from "../../../domain/types/FireTypes";
 import { CHARCOAL_VERT, CHARCOAL_FRAG } from "./CharcoalShaderSources";
 
 // ============================================================

@@ -15,7 +15,6 @@
     getAnimationVisibilityManager,
     type TrailVisibility,
     type PlaybackMode,
-    type FlameColorMode,
   } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -60,9 +59,10 @@
   let animWordHeaderVisible = $state(true);
   let animFireEffectEnabled = $state(false);
   let animLedEffectEnabled = $state(false);
-  let animFlameColorMode = $state<FlameColorMode>("colored");
-  let animFuelSourceId = $state("white-gas");
-  let animFireIntensity = $state(1.0);
+  let animColorBlend = $state(0.5);
+  let animSmokeLevel = $state(0.1);
+  let animUseCharcoal = $state(false);
+  let animFireIntensity = $state(0.7);
 
   // Image composition state
   let imgAddWord = $state(true);
@@ -167,16 +167,22 @@
     }
   }
 
-  function handleFlameColorModeChange(mode: FlameColorMode) {
+  function handleColorBlendChange(value: number) {
     triggerHaptic();
-    animFlameColorMode = mode;
-    animationVisibilityManager.setFlameColorMode(mode);
+    animColorBlend = value;
+    animationVisibilityManager.setFireColorBlend(value);
   }
 
-  function handleFuelSourceChange(id: string) {
+  function handleSmokeLevelChange(value: number) {
     triggerHaptic();
-    animFuelSourceId = id;
-    animationVisibilityManager.setFuelSourceId(id);
+    animSmokeLevel = value;
+    animationVisibilityManager.setFireSmokeLevel(value);
+  }
+
+  function handleUseCharcoalChange(value: boolean) {
+    triggerHaptic();
+    animUseCharcoal = value;
+    animationVisibilityManager.setFireUseCharcoal(value);
   }
 
   function handleFireIntensityChange(value: number) {
@@ -271,8 +277,9 @@
       animationVisibilityManager.getVisibility("wordHeader");
     animFireEffectEnabled = animationVisibilityManager.isFireEffectEnabled();
     animLedEffectEnabled = animationVisibilityManager.isLedEffectEnabled();
-    animFlameColorMode = animationVisibilityManager.getFlameColorMode();
-    animFuelSourceId = animationVisibilityManager.getFuelSourceId();
+    animColorBlend = animationVisibilityManager.getFireColorBlend();
+    animSmokeLevel = animationVisibilityManager.getFireSmokeLevel();
+    animUseCharcoal = animationVisibilityManager.getFireUseCharcoal();
     animFireIntensity = animationVisibilityManager.getFireIntensity();
 
     // Load initial image composition
@@ -312,8 +319,9 @@
         animationVisibilityManager.getVisibility("wordHeader");
       animFireEffectEnabled = animationVisibilityManager.isFireEffectEnabled();
       animLedEffectEnabled = animationVisibilityManager.isLedEffectEnabled();
-      animFlameColorMode = animationVisibilityManager.getFlameColorMode();
-      animFuelSourceId = animationVisibilityManager.getFuelSourceId();
+      animColorBlend = animationVisibilityManager.getFireColorBlend();
+      animSmokeLevel = animationVisibilityManager.getFireSmokeLevel();
+      animUseCharcoal = animationVisibilityManager.getFireUseCharcoal();
       animFireIntensity = animationVisibilityManager.getFireIntensity();
     };
 
@@ -379,11 +387,13 @@
       wordHeaderVisible={animWordHeaderVisible}
       fireEffectEnabled={animFireEffectEnabled}
       ledEffectEnabled={animLedEffectEnabled}
-      flameColorMode={animFlameColorMode}
-      fuelSourceId={animFuelSourceId}
+      colorBlend={animColorBlend}
+      smokeLevel={animSmokeLevel}
+      useCharcoal={animUseCharcoal}
       fireIntensity={animFireIntensity}
-      onFlameColorModeChange={handleFlameColorModeChange}
-      onFuelSourceChange={handleFuelSourceChange}
+      onColorBlendChange={handleColorBlendChange}
+      onSmokeLevelChange={handleSmokeLevelChange}
+      onUseCharcoalChange={handleUseCharcoalChange}
       onFireIntensityChange={handleFireIntensityChange}
       onToggle={handleAnimationToggle}
       onTrailStyleChange={handleTrailStyleChange}
@@ -458,15 +468,8 @@
     min-height: var(--vt-container-min-h, auto);
   }
 
-  /* Desktop: Side by side - all panels match tallest panel's height */
+  /* Desktop: Show all panels regardless of mobile mode */
   @container visibility-tab (min-width: 700px) {
-    .visibility-panels-container {
-      flex-direction: row;
-      /* Stretch all panels to match the tallest (Animation panel) */
-      align-items: stretch;
-    }
-
-    /* Show all panels on desktop regardless of mobile mode */
     .visibility-panels-container :global(.mobile-hidden) {
       display: flex !important;
     }

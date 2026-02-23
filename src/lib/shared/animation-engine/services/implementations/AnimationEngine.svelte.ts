@@ -74,13 +74,20 @@ import type { ICharcoalRenderer } from "../contracts/ICharcoalRenderer";
 import type { IFireTipTracker } from "../contracts/IFireTipTracker";
 import { DEFAULT_FIRE_CONFIG, DEFAULT_PROP_FLAME_COLORS, type FireOverlayConfig } from "../../domain/types/FireTypes";
 import type { IFireDefaultsLoader } from "../contracts/IFireDefaultsLoader";
-import type { IFuelSourceLoader } from "../contracts/IFuelSourceLoader";
-import { BUILT_IN_FUEL_SOURCES } from "../../domain/types/BuiltInFuelSources";
+import {
+  BASE_FIRE_PHYSICS,
+  BASE_COLOR_CURVE,
+  DEFAULT_CHARCOAL_PARAMS,
+  intensityToPhysics,
+  smokeLevelToPhysics,
+  smokeLevelToOpacity,
+} from "../../domain/types/FireTypes";
 import { LedTipTracker } from "./LedTipTracker";
 import { WebGLLedRenderer } from "./led/WebGLLedRenderer";
 import type { ILedOverlayRenderer } from "../contracts/ILedOverlayRenderer";
 import type { ILedTipTracker } from "../contracts/ILedTipTracker";
 import { DEFAULT_LED_CONFIG, type LedOverlayConfig } from "../../domain/types/LedTypes";
+import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
 
 /**
  * Props passed to engine.update()
@@ -232,7 +239,6 @@ export class AnimationEngine {
   private charcoalRenderer: ICharcoalRenderer | null = null;
   private fireConfig: FireOverlayConfig = { ...DEFAULT_FIRE_CONFIG };
   private fireDefaultsLoader: IFireDefaultsLoader | null = null;
-  private fuelSourceLoader: IFuelSourceLoader | null = null;
   private ledRenderer: ILedOverlayRenderer | null = null;
   private ledTipTracker: ILedTipTracker | null = null;
   private ledConfig: LedOverlayConfig = { ...DEFAULT_LED_CONFIG };
@@ -272,8 +278,10 @@ export class AnimationEngine {
   private prevBlueMotionVisible: boolean = true;
   private prevRedMotionVisible: boolean = true;
   private prevFireEffect: boolean = false;
-  private prevFuelSourceId: string = "white-gas";
-  private prevFireIntensity: number = 1.0;
+  private prevColorBlend: number = 0.5;
+  private prevSmokeLevel: number = 0.1;
+  private prevUseCharcoal: boolean = false;
+  private prevFireIntensity: number = 0.7;
 
   // Additional layer texture loading for tunnel mode (indexed by layer)
   private additionalLayerTexturesLoaded: boolean[] = [];
@@ -339,25 +347,25 @@ export class AnimationEngine {
     this.prevRedMotionVisible = visibilityManager.getVisibility("redMotion");
     this.prevFireEffect = visibilityManager.isFireEffectEnabled();
     this.fireConfig.enabled = this.prevFireEffect;
-    const modeToBlend: Record<string, number> = { natural: 0, colored: 1.0 };
-    this.fireConfig.colorBlend = modeToBlend[visibilityManager.getFlameColorMode()] ?? 0;
-    this.prevFuelSourceId = visibilityManager.getFuelSourceId();
+    this.prevColorBlend = visibilityManager.getFireColorBlend();
+    this.prevSmokeLevel = visibilityManager.getFireSmokeLevel();
+    this.prevUseCharcoal = visibilityManager.getFireUseCharcoal();
     this.prevFireIntensity = visibilityManager.getFireIntensity();
     this.fireDefaultsLoader = container.items.fireDefaultsLoader as IFireDefaultsLoader;
-    this.fuelSourceLoader = (container.items as Record<string, unknown>).fuelSourceLoader as IFuelSourceLoader ?? null;
 
-    // Look up fuel source on startup: try loader first, fall back to built-in
-    const initialFuelSource = this.fuelSourceLoader?.get(this.prevFuelSourceId)
-      ?? BUILT_IN_FUEL_SOURCES.find(f => f.id === this.prevFuelSourceId)
-      ?? BUILT_IN_FUEL_SOURCES[0]!; // ultimate fallback: white gas
-
+    // Build fireConfig from base params + slider mappings
+    this.fireConfig.colorBlend = this.prevColorBlend;
     this.fireConfig.intensity = this.prevFireIntensity;
     this.fireConfig.flameHeight = this.prevFireIntensity;
-    this.fireConfig.fuelSourceId = initialFuelSource.id;
-    this.fireConfig.fuelRendererType = initialFuelSource.rendererType;
-    this.fireConfig.physicsPreset = initialFuelSource.fluidParams;
-    this.fireConfig.colorCurve = initialFuelSource.colorCurve;
-    this.fireConfig.charcoalParams = initialFuelSource.particleParams;
+    this.fireConfig.fuelRendererType = this.prevUseCharcoal ? "particle" : "fluid";
+    this.fireConfig.physicsPreset = {
+      ...BASE_FIRE_PHYSICS,
+      ...intensityToPhysics(this.prevFireIntensity),
+      ...smokeLevelToPhysics(this.prevSmokeLevel),
+    };
+    this.fireConfig.colorCurve = BASE_COLOR_CURVE;
+    this.fireConfig.smokeOpacity = smokeLevelToOpacity(this.prevSmokeLevel);
+    this.fireConfig.charcoalParams = DEFAULT_CHARCOAL_PARAMS;
     // Initialize LED state from visibility manager
     this.ledConfig.enabled = visibilityManager.isLedEffectEnabled();
     this.ledConfig.patternId = visibilityManager.getLedPatternId();
@@ -463,33 +471,37 @@ export class AnimationEngine {
           this.setFireConfig({ enabled: fireEnabled });
         }
 
-        // Sync flame color mode
-        const flameModeToBlend: Record<string, number> = { natural: 0, colored: 1.0 };
-        const colorBlend = flameModeToBlend[vm.getFlameColorMode()] ?? 0;
-        if (colorBlend !== this.fireConfig.colorBlend) {
-          this.setFireConfig({ colorBlend });
-        }
-
-        // Sync fuel source ID + intensity (combined: both trigger fuel source lookup)
-        const fuelSourceId = vm.getFuelSourceId();
+        // Sync fire slider values → physics
+        const colorBlend = vm.getFireColorBlend();
+        const smokeLevel = vm.getFireSmokeLevel();
+        const useCharcoal = vm.getFireUseCharcoal();
         const fireIntensity = vm.getFireIntensity();
-        if (fuelSourceId !== this.prevFuelSourceId || fireIntensity !== this.prevFireIntensity) {
-          this.prevFuelSourceId = fuelSourceId;
+
+        const slidersChanged =
+          colorBlend !== this.prevColorBlend ||
+          smokeLevel !== this.prevSmokeLevel ||
+          useCharcoal !== this.prevUseCharcoal ||
+          fireIntensity !== this.prevFireIntensity;
+
+        if (slidersChanged) {
+          this.prevColorBlend = colorBlend;
+          this.prevSmokeLevel = smokeLevel;
+          this.prevUseCharcoal = useCharcoal;
           this.prevFireIntensity = fireIntensity;
 
-          // Look up fuel source: try loader first, fall back to built-in
-          const fuelSource = this.fuelSourceLoader?.get(fuelSourceId)
-            ?? BUILT_IN_FUEL_SOURCES.find(f => f.id === fuelSourceId)
-            ?? BUILT_IN_FUEL_SOURCES[0]!; // ultimate fallback: white gas
-
           this.setFireConfig({
-            fuelSourceId: fuelSource.id,
-            fuelRendererType: fuelSource.rendererType,
+            colorBlend,
+            fuelRendererType: useCharcoal ? "particle" : "fluid",
             intensity: fireIntensity,
             flameHeight: fireIntensity,
-            physicsPreset: fuelSource.fluidParams,
-            colorCurve: fuelSource.colorCurve,
-            charcoalParams: fuelSource.particleParams,
+            physicsPreset: {
+              ...BASE_FIRE_PHYSICS,
+              ...intensityToPhysics(fireIntensity),
+              ...smokeLevelToPhysics(smokeLevel),
+            },
+            colorCurve: BASE_COLOR_CURVE,
+            smokeOpacity: smokeLevelToOpacity(smokeLevel),
+            charcoalParams: DEFAULT_CHARCOAL_PARAMS,
           });
         }
 
@@ -1579,8 +1591,13 @@ export class AnimationEngine {
     const visibilityManager = getAnimationVisibilityManager();
     fp.playbackSpeed = visibilityManager.getSpeed();
 
-    // Seamless loop flag for trail wrap-around
-    fp.isSeamlesslyLoopable = props.isSeamlesslyLoopable;
+    // Seamless loop flag for trail wrap-around.
+    // Auto-detect from sequence data when not explicitly provided by parent.
+    fp.isSeamlesslyLoopable =
+      props.isSeamlesslyLoopable ??
+      (props.sequenceData
+        ? sequenceLoopabilityChecker.isSeamlesslyLoopable(props.sequenceData)
+        : false);
 
     return fp;
   }

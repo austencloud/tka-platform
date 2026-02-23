@@ -8,10 +8,7 @@
   import type {
     TrailVisibility,
     PlaybackMode,
-    FlameColorMode,
   } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import FuelSourcePicker from "$lib/shared/animation-engine/components/FuelSourcePicker.svelte";
-  import { BUILT_IN_FUEL_SOURCES } from "$lib/shared/animation-engine/domain/types/BuiltInFuelSources";
 
   interface Props {
     playbackMode: PlaybackMode;
@@ -23,11 +20,13 @@
     wordHeaderVisible: boolean;
     fireEffectEnabled: boolean;
     ledEffectEnabled: boolean;
-    flameColorMode: FlameColorMode;
-    fuelSourceId: string;
+    colorBlend: number;
+    smokeLevel: number;
+    useCharcoal: boolean;
     fireIntensity: number;
-    onFlameColorModeChange: (mode: FlameColorMode) => void;
-    onFuelSourceChange: (id: string) => void;
+    onColorBlendChange: (value: number) => void;
+    onSmokeLevelChange: (value: number) => void;
+    onUseCharcoalChange: (value: boolean) => void;
     onFireIntensityChange: (value: number) => void;
     trailStyle: TrailVisibility;
     showBilateralToggle: boolean;
@@ -49,11 +48,13 @@
     wordHeaderVisible,
     fireEffectEnabled,
     ledEffectEnabled,
-    flameColorMode,
-    fuelSourceId,
+    colorBlend,
+    smokeLevel,
+    useCharcoal,
     fireIntensity,
-    onFlameColorModeChange,
-    onFuelSourceChange,
+    onColorBlendChange,
+    onSmokeLevelChange,
+    onUseCharcoalChange,
     onFireIntensityChange,
     trailStyle,
     showBilateralToggle,
@@ -202,41 +203,66 @@
       <div class="flame-mode-row">
         <button
           class="preset-btn"
-          class:active={flameColorMode === "natural"}
-          aria-pressed={flameColorMode === "natural"}
-          onclick={() => onFlameColorModeChange("natural")}
+          class:active={!useCharcoal}
+          aria-pressed={!useCharcoal}
+          onclick={() => onUseCharcoalChange(false)}
           type="button"
         >
-          Natural
+          Fire
         </button>
         <button
           class="preset-btn"
-          class:active={flameColorMode === "colored"}
-          aria-pressed={flameColorMode === "colored"}
-          onclick={() => onFlameColorModeChange("colored")}
+          class:active={useCharcoal}
+          aria-pressed={useCharcoal}
+          onclick={() => onUseCharcoalChange(true)}
           type="button"
         >
-          Colored
+          Charcoal
         </button>
       </div>
-      <FuelSourcePicker
-        fuelSources={BUILT_IN_FUEL_SOURCES}
-        activeFuelId={fuelSourceId}
-        onSelect={onFuelSourceChange}
-      />
       <div class="intensity-row">
         <span class="slider-label">Intensity</span>
         <input
           type="range"
-          min="0.1"
-          max="3.0"
-          step="0.1"
+          min="0"
+          max="1"
+          step="0.05"
           value={fireIntensity}
           oninput={(e) => onFireIntensityChange(parseFloat(e.currentTarget.value))}
           class="intensity-slider"
           aria-label="Fire intensity"
         />
-        <span class="intensity-value">{fireIntensity.toFixed(1)}</span>
+        <span class="intensity-value">{(fireIntensity * 100).toFixed(0)}%</span>
+      </div>
+      {#if !useCharcoal}
+        <div class="intensity-row">
+          <span class="slider-label">Smoke</span>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={smokeLevel}
+            oninput={(e) => onSmokeLevelChange(parseFloat(e.currentTarget.value))}
+            class="intensity-slider"
+            aria-label="Smoke level"
+          />
+          <span class="intensity-value">{(smokeLevel * 100).toFixed(0)}%</span>
+        </div>
+      {/if}
+      <div class="intensity-row">
+        <span class="slider-label">Color</span>
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value={colorBlend}
+          oninput={(e) => onColorBlendChange(parseFloat(e.currentTarget.value))}
+          class="intensity-slider"
+          aria-label="Flame color blend"
+        />
+        <span class="intensity-value">{colorBlend < 0.1 ? "Nat" : colorBlend > 0.9 ? "Col" : `${(colorBlend * 100).toFixed(0)}%`}</span>
       </div>
     {/if}
   </div>

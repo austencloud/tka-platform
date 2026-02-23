@@ -3,8 +3,6 @@ import { FirePointOverrideProvider } from "$lib/features/effects-lab/services/im
 import { LedPointOverrideProvider } from "$lib/features/effects-lab/services/implementations/LedPointOverrideProvider";
 import { FireDefaultsLoader } from "$lib/shared/animation-engine/services/implementations/FireDefaultsLoader";
 import { FireDefaultsPublisher } from "$lib/shared/animation-engine/services/implementations/FireDefaultsPublisher";
-import { FuelSourceLoader } from "$lib/shared/animation-engine/services/implementations/FuelSourceLoader";
-import { FuelSourcePublisher } from "$lib/shared/animation-engine/services/implementations/FuelSourcePublisher";
 import { setFirePointOverrideProvider } from "$lib/shared/animation-engine/domain/types/PropFirePoints";
 import { setLedPointOverrideProvider } from "$lib/shared/animation-engine/domain/types/PropLedPoints";
 
@@ -19,8 +17,6 @@ export const effectsLabContainer = createContainer()
 	.add({
 		fireDefaultsLoader: () => new FireDefaultsLoader(),
 		fireDefaultsPublisher: () => new FireDefaultsPublisher(),
-		fuelSourceLoader: () => new FuelSourceLoader(),
-		fuelSourcePublisher: () => new FuelSourcePublisher(),
 	})
 	.add(({ fireDefaultsLoader }) => ({
 		firePointOverrideProvider: () => {

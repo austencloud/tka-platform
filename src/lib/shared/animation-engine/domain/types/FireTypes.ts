@@ -6,8 +6,50 @@
  * combustion, buoyancy, and blackbody radiation rendering.
  */
 
-import type { FireColorCurve, FuelRendererType, CharcoalParams } from "./FuelSourceTypes";
-import { DEFAULT_FUEL_SOURCE_ID } from "./FuelSourceTypes";
+/** Renderer type determines which WebGL pipeline handles this fuel */
+export type FuelRendererType = "fluid" | "particle";
+
+/** Color curve for the fluid renderer's display pass.
+ *  Maps normalized temperature through 4 color stops
+ *  instead of the hardcoded blackbody ramp. */
+export interface FireColorCurve {
+  /** RGB [0-1] at lowest visible temperature (dark ember glow) */
+  coldColor: [number, number, number];
+  /** RGB [0-1] at mid combustion (main flame body) */
+  midColor: [number, number, number];
+  /** RGB [0-1] at peak combustion (bright flame) */
+  hotColor: [number, number, number];
+  /** RGB [0-1] at wick core (brightest point, near-white) */
+  coreColor: [number, number, number];
+}
+
+/** Charcoal/steel wool particle physics params */
+export interface CharcoalParams {
+  /** Sparks emitted per second per tip */
+  sparkRate: number;
+  /** Seconds before a spark fades out completely */
+  sparkLifetime: number;
+  /** Multiplier on tip velocity for initial spark speed */
+  sparkInitialSpeed: number;
+  /** Scatter cone angle in degrees around tangential direction */
+  sparkScatter: number;
+  /** Base particle render size in pixels */
+  sparkSize: number;
+  /** Random size variation (0.0-1.0, multiplied by sparkSize) */
+  sparkSizeVariance: number;
+  /** Downward acceleration in units/s^2 */
+  gravity: number;
+  /** Air resistance coefficient (velocity decay per second) */
+  dragCoefficient: number;
+  /** Probability (0.0-1.0) of spawning secondary branching sparks */
+  secondarySparkChance: number;
+  /** How long ember glow persists after spark stops moving (seconds) */
+  emberGlowDuration: number;
+  /** Temperature decay rate (normalized units per ms) */
+  coolingRate: number;
+  /** Starting temperature in normalized units (1.0 = brightest) */
+  initialTemperature: number;
+}
 
 /**
  * RGB color for a prop, normalized to [0, 1] for shader consumption.
@@ -95,6 +137,16 @@ export interface FirePhysicsParams {
   temperatureInjection: number;
   /** Constant upward velocity injected at tip via splat (0.5 - 8.0) */
   upwardBias: number;
+  /** Fraction of burned fuel that becomes soot (0.01 = clean, 0.15 = sooty) */
+  sootYield: number;
+  /** Temperature below which cooling gas emits visible smoke (0.2 - 0.6) */
+  sootCoolThreshold: number;
+  /** Rate at which cooling gas generates smoke (0.3 - 3.0) */
+  sootCoolRate: number;
+  /** Soot fade rate per simulation step (1.0 - 4.0) */
+  sootDissipation: number;
+  /** Soot persistence during advection transport (0.95 - 0.99) */
+  sootAdvectionDissipation: number;
 }
 
 /**
@@ -128,6 +180,10 @@ export interface FireOverlayConfig {
   colorCurve?: FireColorCurve;
   /** Charcoal particle params (when fuelRendererType === "particle") */
   charcoalParams?: CharcoalParams;
+  /** Smoke opacity in display shader (0.0 = no smoke, 0.5 = heavy smoke, default per fuel) */
+  smokeOpacity?: number;
+  /** HDR bloom strength (0.0 = no bloom, 0.04-0.15 = subtle glow, default 0.08) */
+  bloomStrength?: number;
   /**
    * Jacobi pressure-solve iterations per frame.
    * Higher = more accurate pressure field, but more GPU draw calls.
@@ -155,6 +211,11 @@ export const DEFAULT_PHYSICS: FirePhysicsParams = {
   pressureDissipation: 0.8,
   temperatureInjection: 1.1,
   upwardBias: 2.0,
+  sootYield: 0.04,
+  sootCoolThreshold: 0.3,
+  sootCoolRate: 0.8,
+  sootDissipation: 2.5,
+  sootAdvectionDissipation: 0.97,
 };
 
 /** Default fire overlay config */
@@ -164,7 +225,6 @@ export const DEFAULT_FIRE_CONFIG: FireOverlayConfig = {
   flameHeight: 1.0,
   velocityReactive: true,
   quality: 4,
-  fuelSourceId: DEFAULT_FUEL_SOURCE_ID,
 };
 
 /**
@@ -182,3 +242,97 @@ export const DEFAULT_PROP_FLAME_COLORS: [PropFlameColor, PropFlameColor] = [
   hexToFlameColor("#3b82f6"), // blue (left prop)
   hexToFlameColor("#ef4444"), // red (right prop)
 ];
+
+// ============================================================================
+// BASE CONSTANTS — White gas physics/colors as the canonical baseline
+// ============================================================================
+
+/** White gas fluid physics — bright, fast burn, the standard for fire spinning */
+export const BASE_FIRE_PHYSICS: FirePhysicsParams = {
+  splatRadius: 0.012,
+  fuelAmount: 1.0,
+  velocityInjectScale: 0.001,
+  velocityDissipation: 0.935,
+  temperatureDissipation: 0.93,
+  fuelDissipation: 0.93,
+  vorticityStrength: 8.0,
+  buoyancyStrength: 80.0,
+  burnRate: 5.0,
+  fuelEfficiency: 2.5,
+  coolingRate: 4.0,
+  pressureDissipation: 0.8,
+  temperatureInjection: 1.5,
+  upwardBias: 3.0,
+  sootYield: 0.02,
+  sootCoolThreshold: 0.3,
+  sootCoolRate: 0.6,
+  sootDissipation: 3.0,
+  sootAdvectionDissipation: 0.96,
+};
+
+/** White gas color curve — natural fire colors */
+export const BASE_COLOR_CURVE: FireColorCurve = {
+  coldColor: [0.2, 0.02, 0.0],
+  midColor: [0.9, 0.15, 0.0],
+  hotColor: [1.0, 0.55, 0.05],
+  coreColor: [1.0, 0.9, 0.35],
+};
+
+/** Default charcoal/steel-wool spark parameters */
+export const DEFAULT_CHARCOAL_PARAMS: CharcoalParams = {
+  sparkRate: 120,
+  sparkLifetime: 0.8,
+  sparkInitialSpeed: 1.2,
+  sparkScatter: 100,
+  sparkSize: 3.0,
+  sparkSizeVariance: 0.5,
+  gravity: 150,
+  dragCoefficient: 2.0,
+  secondarySparkChance: 0.15,
+  emberGlowDuration: 0.3,
+  coolingRate: 0.002,
+  initialTemperature: 1.0,
+};
+
+// ============================================================================
+// SLIDER-TO-PHYSICS MAPPING — Maps user-facing 0-1 sliders to physics params
+// ============================================================================
+
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}
+
+/**
+ * Map user-facing intensity (0-1) to physics overrides.
+ * 1.0 = "normal fire" (white gas baseline). 0.0 = barely visible embers.
+ */
+export function intensityToPhysics(intensity: number): Partial<FirePhysicsParams> {
+  return {
+    fuelAmount: lerp(0.2, 1.6, intensity),
+    temperatureInjection: lerp(0.4, 2.2, intensity),
+    buoyancyStrength: lerp(20, 120, intensity),
+    upwardBias: lerp(0.8, 4.5, intensity),
+    burnRate: lerp(2.0, 7.0, intensity),
+  };
+}
+
+/**
+ * Map user-facing smoke level (0-1) to soot physics overrides.
+ * 0.0 = clean burn (nearly no soot). 1.0 = heavy sooty fire.
+ */
+export function smokeLevelToPhysics(smokeLevel: number): Partial<FirePhysicsParams> {
+  return {
+    sootYield: lerp(0.005, 0.15, smokeLevel),
+    sootCoolRate: lerp(0.2, 2.5, smokeLevel),
+    sootDissipation: lerp(4.0, 1.2, smokeLevel),
+    sootAdvectionDissipation: lerp(0.93, 0.985, smokeLevel),
+  };
+}
+
+/**
+ * Map smoke level (0-1) to display shader smoke opacity.
+ * 0.0 = no visible smoke. 1.0 = heavy smoke.
+ */
+export function smokeLevelToOpacity(smokeLevel: number): number {
+  return lerp(0.0, 0.45, smokeLevel);
+}

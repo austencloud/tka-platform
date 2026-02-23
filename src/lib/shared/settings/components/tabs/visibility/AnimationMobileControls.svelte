@@ -8,10 +8,7 @@
   import type {
     TrailVisibility,
     PlaybackMode,
-    FlameColorMode,
   } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import FuelSourcePicker from "$lib/shared/animation-engine/components/FuelSourcePicker.svelte";
-  import { BUILT_IN_FUEL_SOURCES } from "$lib/shared/animation-engine/domain/types/BuiltInFuelSources";
 
   interface Props {
     playbackMode: PlaybackMode;
@@ -23,11 +20,13 @@
     wordHeaderVisible: boolean;
     fireEffectEnabled: boolean;
     ledEffectEnabled: boolean;
-    flameColorMode: FlameColorMode;
-    fuelSourceId: string;
+    colorBlend: number;
+    smokeLevel: number;
+    useCharcoal: boolean;
     fireIntensity: number;
-    onFlameColorModeChange: (mode: FlameColorMode) => void;
-    onFuelSourceChange: (id: string) => void;
+    onColorBlendChange: (value: number) => void;
+    onSmokeLevelChange: (value: number) => void;
+    onUseCharcoalChange: (value: boolean) => void;
     onFireIntensityChange: (value: number) => void;
     trailStyle: TrailVisibility;
     showBilateralToggle: boolean;
@@ -49,11 +48,13 @@
     wordHeaderVisible,
     fireEffectEnabled,
     ledEffectEnabled,
-    flameColorMode,
-    fuelSourceId,
+    colorBlend,
+    smokeLevel,
+    useCharcoal,
     fireIntensity,
-    onFlameColorModeChange,
-    onFuelSourceChange,
+    onColorBlendChange,
+    onSmokeLevelChange,
+    onUseCharcoalChange,
     onFireIntensityChange,
     trailStyle,
     showBilateralToggle,
@@ -196,44 +197,77 @@
     </button>
   </div>
   {#if fireEffectEnabled}
+    <!-- Fire/Charcoal toggle -->
     <div class="mobile-row">
       <button
         class="compact-btn"
-        class:active={flameColorMode === "natural"}
-        aria-pressed={flameColorMode === "natural"}
-        onclick={() => onFlameColorModeChange("natural")}
+        class:active={!useCharcoal}
+        aria-pressed={!useCharcoal}
+        onclick={() => onUseCharcoalChange(false)}
         type="button"
       >
-        Natural
+        <i class="fas fa-fire" aria-hidden="true"></i>
+        <span>Fire</span>
       </button>
       <button
         class="compact-btn"
-        class:active={flameColorMode === "colored"}
-        aria-pressed={flameColorMode === "colored"}
-        onclick={() => onFlameColorModeChange("colored")}
+        class:active={useCharcoal}
+        aria-pressed={useCharcoal}
+        onclick={() => onUseCharcoalChange(true)}
         type="button"
       >
-        Colored
+        <i class="fas fa-circle" aria-hidden="true"></i>
+        <span>Charcoal</span>
       </button>
     </div>
-    <FuelSourcePicker
-      fuelSources={BUILT_IN_FUEL_SOURCES}
-      activeFuelId={fuelSourceId}
-      onSelect={onFuelSourceChange}
-    />
-    <div class="intensity-row">
+    <!-- Intensity slider -->
+    <div class="slider-row">
       <span class="slider-label">Intensity</span>
       <input
         type="range"
-        min="0.1"
-        max="3.0"
-        step="0.1"
+        min="0"
+        max="1"
+        step="0.01"
         value={fireIntensity}
         oninput={(e) => onFireIntensityChange(parseFloat(e.currentTarget.value))}
-        class="intensity-slider"
+        class="slider-input"
         aria-label="Fire intensity"
       />
-      <span class="intensity-value">{fireIntensity.toFixed(1)}</span>
+      <span class="slider-value">{Math.round(fireIntensity * 100)}%</span>
+    </div>
+    {#if !useCharcoal}
+      <!-- Smoke slider (fluid fire only) -->
+      <div class="slider-row">
+        <span class="slider-label">Smoke</span>
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          value={smokeLevel}
+          oninput={(e) => onSmokeLevelChange(parseFloat(e.currentTarget.value))}
+          class="slider-input"
+          aria-label="Smoke level"
+        />
+        <span class="slider-value">{Math.round(smokeLevel * 100)}%</span>
+      </div>
+    {/if}
+    <!-- Color blend slider -->
+    <div class="slider-row">
+      <span class="slider-label">Color</span>
+      <input
+        type="range"
+        min="0"
+        max="1"
+        step="0.01"
+        value={colorBlend}
+        oninput={(e) => onColorBlendChange(parseFloat(e.currentTarget.value))}
+        class="slider-input"
+        aria-label="Color blend"
+      />
+      <span class="slider-value">
+        {#if colorBlend < 0.05}Nat{:else if colorBlend > 0.95}Col{:else}{Math.round(colorBlend * 100)}%{/if}
+      </span>
     </div>
   {/if}
 </div>
@@ -322,7 +356,7 @@
     padding: 8px;
   }
 
-  .intensity-row {
+  .slider-row {
     display: flex;
     align-items: center;
     gap: clamp(6px, 1cqi, 10px);
@@ -336,20 +370,21 @@
     letter-spacing: 0.5px;
     color: var(--theme-text-dim);
     white-space: nowrap;
+    min-width: 52px;
   }
 
-  .intensity-slider {
+  .slider-input {
     flex: 1;
     min-height: 44px;
     accent-color: var(--theme-accent);
     cursor: pointer;
   }
 
-  .intensity-value {
+  .slider-value {
     font-size: var(--font-size-compact, 12px);
     font-variant-numeric: tabular-nums;
     color: var(--theme-text-dim);
-    min-width: 28px;
+    min-width: 32px;
     text-align: right;
   }
 

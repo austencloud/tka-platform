@@ -44,8 +44,14 @@ import {
   GRADIENT_SUBTRACT_FRAG,
   CLEAR_FRAG,
   DISPLAY_FRAG,
+  SOOT_GENERATION_FRAG,
+  BLOOM_COMPOSITE_FRAG,
 } from "./FluidShaderSources";
-import { WHITE_GAS_COLOR } from "../../../domain/types/BuiltInFuelSources";
+import {
+  BLOOM_DOWNSAMPLE_FRAG,
+  BLOOM_UPSAMPLE_FRAG,
+} from "../led/LedShaderSources";
+import { BASE_COLOR_CURVE } from "../../../domain/types/FireTypes";
 
 const MAX_DPR = 2;
 const DEFAULT_JACOBI_ITERATIONS = 20;
@@ -127,6 +133,10 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
   private gradientSubtractProgram: ShaderProgram | null = null;
   private clearProgram: ShaderProgram | null = null;
   private displayProgram: ShaderProgram | null = null;
+  private sootGenerationProgram: ShaderProgram | null = null;
+  private bloomDownsampleProgram: ShaderProgram | null = null;
+  private bloomUpsampleProgram: ShaderProgram | null = null;
+  private bloomCompositeProgram: ShaderProgram | null = null;
 
   // Double-buffered simulation fields
   private velocity: DoubleFBO | null = null;
@@ -135,9 +145,17 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
   private fuel: DoubleFBO | null = null;
   private colorField: DoubleFBO | null = null;
 
+  // Soot density field (combustion byproduct, rendered as dark smoke)
+  private soot: DoubleFBO | null = null;
+
   // Single-buffered fields (no ping-pong needed)
   private divergenceFBO: FBOAttachment | null = null;
   private curlFBO: FBOAttachment | null = null;
+
+  // Bloom pipeline FBOs
+  private displayFBO: FBOAttachment | null = null;
+  private bloomMips: FBOAttachment[] = [];
+  private bloomMipSizes: [number, number][] = [];
 
   // Timing
   private lastTime = 0;
@@ -474,6 +492,12 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     if (this.colorField && (config.colorBlend ?? 0) > 0) {
       this.advect(this.colorField, this.colorField.read, p.fuelDissipation, dt, texelSize);
     }
+
+    // 8. Soot generation + advection
+    if (this.soot && this.sootGenerationProgram) {
+      this.applySootGeneration(dt);
+      this.advect(this.soot, this.soot.read, p.sootAdvectionDissipation, dt, texelSize);
+    }
   }
 
   // ============================================================
@@ -610,6 +634,35 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.swapFBO(this.temperature!);
   }
 
+  private applySootGeneration(dt: number): void {
+    const gl = this.gl!;
+    const prog = this.sootGenerationProgram!;
+    const p = this.physics;
+    gl.useProgram(prog.program);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.soot!.read.texture);
+    gl.uniform1i(prog.uniforms.get("u_soot")!, 0);
+
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, this.temperature!.read.texture);
+    gl.uniform1i(prog.uniforms.get("u_temperature")!, 1);
+
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_2D, this.fuel!.read.texture);
+    gl.uniform1i(prog.uniforms.get("u_fuel")!, 2);
+
+    gl.uniform1f(prog.uniforms.get("u_dt")!, dt);
+    gl.uniform1f(prog.uniforms.get("u_sootYield")!, p.sootYield);
+    gl.uniform1f(prog.uniforms.get("u_sootCoolThreshold")!, p.sootCoolThreshold);
+    gl.uniform1f(prog.uniforms.get("u_sootCoolRate")!, p.sootCoolRate);
+    gl.uniform1f(prog.uniforms.get("u_sootDissipation")!, p.sootDissipation);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.soot!.write.fbo);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    this.swapFBO(this.soot!);
+  }
+
   private computeDivergence(texelSize: [number, number]): void {
     const gl = this.gl!;
     const prog = this.divergenceProgram!;
@@ -698,20 +751,116 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
   // ============================================================
 
   /**
-   * Render the display pass to the default framebuffer (screen).
-   * Sets up viewport, clears, and calls renderDisplayPass.
+   * Render the display pass. When bloom is enabled, renders to an intermediate
+   * FBO, runs the bloom mip chain, then composites scene + bloom to screen.
+   * Without bloom, renders directly to the default framebuffer.
    */
   private renderDisplay(config: FireOverlayConfig, input: FireFrameInput): void {
     const gl = this.gl!;
+    const bloomStrength = config.bloomStrength ?? 0.08;
+    const useBloom = bloomStrength > 0 && this.displayFBO && this.bloomMips.length > 0;
 
-    gl.viewport(0, 0, this.canvas!.width, this.canvas!.height);
+    if (useBloom) {
+      // Render fire to intermediate FBO at sim resolution
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.displayFBO!.fbo);
+      gl.viewport(0, 0, this.simWidth, this.simHeight);
+      gl.enable(gl.BLEND);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      this.renderDisplayPass(config, input);
+
+      // Run bloom pipeline: downsample → upsample → composite to screen
+      this.runBloomPipeline(bloomStrength);
+    } else {
+      // No bloom: render directly to screen
+      gl.viewport(0, 0, this.canvas!.width, this.canvas!.height);
+      gl.enable(gl.BLEND);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      this.renderDisplayPass(config, input);
+    }
+  }
+
+  /**
+   * PBR bloom pipeline (CoD:AW method):
+   * 1. Downsample scene through mip chain with 13-tap energy-preserving kernel
+   * 2. Upsample with additive 3x3 tent filter accumulation
+   * 3. Composite bloom + original scene to screen
+   */
+  private runBloomPipeline(bloomStrength: number): void {
+    const gl = this.gl!;
+    const mips = this.bloomMips;
+    const sizes = this.bloomMipSizes;
+    if (mips.length === 0) return;
+
+    gl.disable(gl.BLEND);
+
+    // --- Downsample chain ---
+    const downProg = this.bloomDownsampleProgram!;
+    gl.useProgram(downProg.program);
+
+    // First downsample: from displayFBO to mip[0]
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.displayFBO!.texture);
+    gl.uniform1i(downProg.uniforms.get("u_source")!, 0);
+    gl.uniform2f(downProg.uniforms.get("u_texelSize")!, 1.0 / this.simWidth, 1.0 / this.simHeight);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, mips[0]!.fbo);
+    gl.viewport(0, 0, sizes[0]![0], sizes[0]![1]);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    // Subsequent downsamples: mip[i-1] → mip[i]
+    for (let i = 1; i < mips.length; i++) {
+      gl.bindTexture(gl.TEXTURE_2D, mips[i - 1]!.texture);
+      gl.uniform2f(downProg.uniforms.get("u_texelSize")!, 1.0 / sizes[i - 1]![0], 1.0 / sizes[i - 1]![1]);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, mips[i]!.fbo);
+      gl.viewport(0, 0, sizes[i]![0], sizes[i]![1]);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    }
+
+    // --- Upsample chain (additive accumulation) ---
+    const upProg = this.bloomUpsampleProgram!;
+    gl.useProgram(upProg.program);
+    gl.uniform1f(upProg.uniforms.get("u_bloomRadius")!, 1.0);
+
     gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE); // additive blend for bloom accumulation
+
+    // Upsample: mip[last] → mip[last-1] → ... → mip[0]
+    for (let i = mips.length - 1; i > 0; i--) {
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, mips[i]!.texture);
+      gl.uniform1i(upProg.uniforms.get("u_source")!, 0);
+      gl.uniform2f(upProg.uniforms.get("u_texelSize")!, 1.0 / sizes[i]![0], 1.0 / sizes[i]![1]);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, mips[i - 1]!.fbo);
+      gl.viewport(0, 0, sizes[i - 1]![0], sizes[i - 1]![1]);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    }
+
+    // --- Composite to screen ---
+    gl.blendFuncSeparate(
+      gl.ONE, gl.ONE_MINUS_SRC_ALPHA,
+      gl.ONE, gl.ONE_MINUS_SRC_ALPHA
+    ); // restore premultiplied alpha blend
+
+    const compProg = this.bloomCompositeProgram!;
+    gl.useProgram(compProg.program);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.displayFBO!.texture);
+    gl.uniform1i(compProg.uniforms.get("u_scene")!, 0);
+
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, mips[0]!.texture);
+    gl.uniform1i(compProg.uniforms.get("u_bloom")!, 1);
+
+    gl.uniform1f(compProg.uniforms.get("u_bloomStrength")!, bloomStrength);
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, this.canvas!.width, this.canvas!.height);
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
-
-    this.renderDisplayPass(config, input);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
 
   /**
@@ -740,6 +889,16 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
       gl.bindTexture(gl.TEXTURE_2D, this.fuel!.read.texture);
     }
     gl.uniform1i(prog.uniforms.get("u_colorField")!, 2);
+
+    // Soot density field for smoke rendering
+    gl.activeTexture(gl.TEXTURE3);
+    if (this.soot) {
+      gl.bindTexture(gl.TEXTURE_2D, this.soot.read.texture);
+    } else {
+      gl.bindTexture(gl.TEXTURE_2D, this.fuel!.read.texture); // fallback: no soot
+    }
+    gl.uniform1i(prog.uniforms.get("u_soot")!, 3);
+    gl.uniform1f(prog.uniforms.get("u_smokeOpacity")!, config.smokeOpacity ?? 0.06);
 
     // Color blend factor (0.0 = natural, 0.5 = tinted, 1.0 = fully colored)
     gl.uniform1f(prog.uniforms.get("u_colorBlend")!, config.colorBlend ?? 0);
@@ -775,7 +934,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     gl.uniform2f(prog.uniforms.get("u_aspectCorrect")!, 1.0, aspect);
 
     // Per-fuel-source color curve (falls back to white gas = old hardcoded values)
-    const curve = config.colorCurve ?? WHITE_GAS_COLOR;
+    const curve = config.colorCurve ?? BASE_COLOR_CURVE;
     gl.uniform3fv(prog.uniforms.get("u_colorCold")!, curve.coldColor);
     gl.uniform3fv(prog.uniforms.get("u_colorMid")!, curve.midColor);
     gl.uniform3fv(prog.uniforms.get("u_colorHot")!, curve.hotColor);
@@ -842,6 +1001,41 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.divergenceFBO = this.createSingleFBO(w, h);
     this.curlFBO = this.createSingleFBO(w, h);
     this.colorField = this.createDoubleFBO(w, h);
+    this.soot = this.createDoubleFBO(w, h);
+
+    // Display FBO for bloom pipeline (fire rendered here, then bloomed)
+    this.displayFBO = this.createFBO(
+      w, h,
+      this.gl!.RGBA16F, this.gl!.RGBA, this.gl!.HALF_FLOAT, this.gl!.LINEAR
+    );
+
+    // Bloom mip chain: 4 levels, each half the previous
+    this.createBloomMipChain(w, h);
+  }
+
+  private createBloomMipChain(baseW: number, baseH: number): void {
+    this.destroyBloomMipChain();
+    let w = Math.max(1, baseW >> 1);
+    let h = Math.max(1, baseH >> 1);
+    for (let i = 0; i < 4; i++) {
+      this.bloomMips.push(
+        this.createFBO(w, h, this.gl!.RGBA16F, this.gl!.RGBA, this.gl!.HALF_FLOAT, this.gl!.LINEAR)
+      );
+      this.bloomMipSizes.push([w, h]);
+      w = Math.max(1, w >> 1);
+      h = Math.max(1, h >> 1);
+    }
+  }
+
+  private destroyBloomMipChain(): void {
+    const gl = this.gl;
+    if (!gl) return;
+    for (const mip of this.bloomMips) {
+      gl.deleteTexture(mip.texture);
+      gl.deleteFramebuffer(mip.fbo);
+    }
+    this.bloomMips = [];
+    this.bloomMipSizes = [];
   }
 
   private destroySimulationBuffers(): void {
@@ -867,16 +1061,21 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     destroyDouble(this.temperature);
     destroyDouble(this.fuel);
     destroyDouble(this.colorField);
+    destroyDouble(this.soot);
     destroySingle(this.divergenceFBO);
     destroySingle(this.curlFBO);
+    destroySingle(this.displayFBO);
+    this.destroyBloomMipChain();
 
     this.velocity = null;
     this.pressure = null;
     this.temperature = null;
     this.fuel = null;
     this.colorField = null;
+    this.soot = null;
     this.divergenceFBO = null;
     this.curlFBO = null;
+    this.displayFBO = null;
   }
 
   // ============================================================
@@ -895,10 +1094,24 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.gradientSubtractProgram = this.buildProgram(GRADIENT_SUBTRACT_FRAG, ["u_velocity", "u_pressure", "u_texelSize"]);
     this.clearProgram = this.buildProgram(CLEAR_FRAG, ["u_clearValue"]);
     this.displayProgram = this.buildProgram(DISPLAY_FRAG, [
-      "u_temperature", "u_fuel", "u_colorField", "u_displayIntensity",
+      "u_temperature", "u_fuel", "u_colorField", "u_soot",
+      "u_displayIntensity", "u_smokeOpacity",
       "u_tipCount", "u_aspectCorrect", "u_colorBlend",
       "u_colorCold", "u_colorMid", "u_colorHot", "u_colorCore",
       "u_time",
+    ]);
+    this.sootGenerationProgram = this.buildProgram(SOOT_GENERATION_FRAG, [
+      "u_soot", "u_temperature", "u_fuel", "u_dt",
+      "u_sootYield", "u_sootCoolThreshold", "u_sootCoolRate", "u_sootDissipation",
+    ]);
+    this.bloomDownsampleProgram = this.buildProgram(BLOOM_DOWNSAMPLE_FRAG, [
+      "u_source", "u_texelSize",
+    ]);
+    this.bloomUpsampleProgram = this.buildProgram(BLOOM_UPSAMPLE_FRAG, [
+      "u_source", "u_texelSize", "u_bloomRadius",
+    ]);
+    this.bloomCompositeProgram = this.buildProgram(BLOOM_COMPOSITE_FRAG, [
+      "u_scene", "u_bloom", "u_bloomStrength",
     ]);
 
     const all = [
@@ -906,6 +1119,8 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
       this.vorticityProgram, this.buoyancyProgram, this.combustionProgram,
       this.divergenceProgram, this.jacobiProgram, this.gradientSubtractProgram,
       this.clearProgram, this.displayProgram,
+      this.sootGenerationProgram, this.bloomDownsampleProgram,
+      this.bloomUpsampleProgram, this.bloomCompositeProgram,
     ];
 
     if (all.some(p => p === null)) {
@@ -989,6 +1204,8 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
         this.vorticityProgram, this.buoyancyProgram, this.combustionProgram,
         this.divergenceProgram, this.jacobiProgram, this.gradientSubtractProgram,
         this.clearProgram, this.displayProgram,
+        this.sootGenerationProgram, this.bloomDownsampleProgram,
+        this.bloomUpsampleProgram, this.bloomCompositeProgram,
       ];
       for (const p of programs) {
         if (p) gl.deleteProgram(p.program);
@@ -1006,6 +1223,10 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.gradientSubtractProgram = null;
     this.clearProgram = null;
     this.displayProgram = null;
+    this.sootGenerationProgram = null;
+    this.bloomDownsampleProgram = null;
+    this.bloomUpsampleProgram = null;
+    this.bloomCompositeProgram = null;
 
     if (this.canvas) {
       this.canvas.remove();
