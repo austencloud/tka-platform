@@ -52,9 +52,7 @@
   import { deepLinker } from "./navigation/services/implementations/DeepLinker";
   import { useDesktopSidebarVisibility } from "./navigation/services/desktop-sidebar-visibility.svelte";
   import { browseScrollState } from "../features/browse/shared/state/BrowseScrollState.svelte";
-  import type { IViewportManager } from "./device/services/contracts/IViewportManager";
   import { container } from "./di";
-  import type { IDeviceDetector } from "./device/services/contracts/IDeviceDetector";
   import type { ModuleId } from "./navigation/domain/types";
   import { navigationState } from "./navigation/state/navigation-state.svelte";
   import { hasOpenDrawers } from "./foundation/ui/drawer/DrawerStack";
@@ -84,8 +82,6 @@
   // LAN Sync
   import NearbySyncBanner from "./lan-sync/components/NearbySyncBanner.svelte";
   import { lanSyncState } from "./lan-sync/state/lan-sync-state.svelte";
-  import type { ISyncRoomDiscovery } from "./lan-sync/services/contracts/ISyncRoomDiscovery";
-  import type { ILanSyncCoordinator } from "./lan-sync/services/contracts/ILanSyncCoordinator";
 
   // Connect module - Invite overlay for app-wide invite notifications
   import InviteOverlay from "../features/connect/components/InviteOverlay.svelte";
@@ -225,8 +221,8 @@
 
     // Initialize desktop sidebar visibility
     try {
-      const deviceDetector = container.items.deviceDetector as IDeviceDetector;
-      const viewportService = container.items.viewportManager as IViewportManager;
+      const deviceDetector = container.items.deviceDetector;
+      const viewportService = container.items.viewportManager;
       desktopSidebarVisibility = useDesktopSidebarVisibility(
         deviceDetector,
         viewportService
@@ -240,8 +236,8 @@
 
     // Initialize LAN sync services (coordinator and discovery)
     try {
-      const lanSyncCoordinator = container.items.lanSyncCoordinator as ILanSyncCoordinator;
-      const syncRoomDiscovery = container.items.syncRoomDiscovery as ISyncRoomDiscovery;
+      const lanSyncCoordinator = container.items.lanSyncCoordinator;
+      const syncRoomDiscovery = container.items.syncRoomDiscovery;
 
       lanSyncState.initialize(lanSyncCoordinator);
       lanSyncState.initializeDiscovery(syncRoomDiscovery);

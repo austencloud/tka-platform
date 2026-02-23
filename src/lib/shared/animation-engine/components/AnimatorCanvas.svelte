@@ -133,9 +133,8 @@ Last audit: 2025-12-27
   let fireEffectEnabled = $state(visibilityManager.isFireEffectEnabled());
 
   // Effective dark mode: use preview override if provided, otherwise global
-  // Fire forces dark mode ON because fire on white background looks terrible
   const darkModeEnabled = $derived(
-    previewDarkMode !== null ? previewDarkMode : (globalDarkMode || fireEffectEnabled)
+    previewDarkMode !== null ? previewDarkMode : globalDarkMode
   );
 
   // Effective visibility: combine global settings with hide props (for tunnel mode)

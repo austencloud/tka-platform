@@ -21,6 +21,7 @@ import type {
   RenderLoopConfig,
   RenderFrameParams,
 } from "../contracts/IAnimationRenderLoop";
+import { QualityTier } from "../../domain/types/QualityTypes";
 
 export class AnimationRenderLoop implements IAnimationRenderLoop {
   private renderer: IAnimationRenderer | null = null;
@@ -46,6 +47,9 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private loopDetectedThisFrame: boolean = false;
   /** True after the first loop has occurred. Prevents wrap-around on initial play. */
   private hasLoopedAtLeastOnce: boolean = false;
+
+  // Track quality tier for fire adaptive quality
+  private previousQualityTier: QualityTier | null = null;
 
   // CRITICAL: Reusable arrays to prevent GC pressure on mobile
   // These are reused every frame instead of allocating new arrays
@@ -410,6 +414,19 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     // End frame budget measurement (updates rolling averages, may trigger tier change)
     if (this.frameBudgetMonitor) {
       this.frameBudgetMonitor.endFrame(frameStart);
+
+      // Propagate quality tier changes to fire renderer
+      const hints = this.frameBudgetMonitor.getQualityHints();
+      if (hints && hints.tier !== this.previousQualityTier) {
+        this.previousQualityTier = hints.tier;
+        if (this.fireRenderer?.isInitialized()) {
+          // Map quality tier → fire simulation quality level
+          const fireQuality = hints.tier === QualityTier.HIGH ? 3
+            : hints.tier === QualityTier.MEDIUM ? 2
+            : 1;
+          this.fireRenderer.setQuality(fireQuality);
+        }
+      }
     }
   }
 

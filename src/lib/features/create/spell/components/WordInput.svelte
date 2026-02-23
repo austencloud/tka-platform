@@ -9,7 +9,6 @@ Features:
 -->
 <script lang="ts">
   import { container } from "$lib/shared/di";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 
   let {
     value = "",
@@ -27,7 +26,7 @@ Features:
     onSubmit?: () => void;
   } = $props();
 
-  const haptic = container.items.hapticFeedback as IHapticFeedback;
+  const haptic = container.items.hapticFeedback;
 
   function handleFocus() {
     onFocusChange?.(true);

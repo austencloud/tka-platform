@@ -32,6 +32,7 @@ MotionTypeButton - Answer button for motion type selection
   style="--type-color: {type.color}"
   {onclick}
   {disabled}
+  aria-label="Select Type {type.num}: {type.name}"
 >
   <span class="type-num">{type.num}</span>
   <span class="type-name">{type.name}</span>

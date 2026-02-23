@@ -34,7 +34,7 @@ New "Progress" tab in the Lab module (`src/lib/features/lab/tabs/ProgressLab.sve
 | **Full-page gate** | Route loading (`/p/[code]`, `/sequence/[id]`, domain detection) | A) Thin top bar (YouTube/GitHub) B) Center card with progress ring C) Skeleton with brand shimmer |
 | **Panel loading** | PanelSpinner (browse, collections, challenges) | A) Skeleton shimmer (inbox pattern) B) Indeterminate bar + status text C) Animated dots pulse |
 | **Deterministic progress** | Multi-step save, batch ops | A) Linear bar with `X/Y` B) Circular progress ring with % C) Step dots + sub-bar (SaveProgressOverlay style) |
-| **Grid cells** | LayeredSequencePreview thumbnails | A) Per-cell shimmer B) Staggered fade-in C) Micro progress ring per cell |
+| **Grid cells** | ChoreoCard thumbnails | A) Per-cell shimmer B) Staggered fade-in C) Micro progress ring per cell |
 | **Button actions** | Async operations (spell, export) | A) Inline spinner B) Button morphs to progress bar C) Button fill sweep |
 
 ### Lab Controls
@@ -104,7 +104,7 @@ Files affected:
 
 ### Wave 3: Grid cells
 
-Add per-cell loading indicator to `LayeredSequencePreview.svelte` using the chosen grid-cell variant.
+Add per-cell loading indicator to `ChoreoCard.svelte` using the chosen grid-cell variant.
 
 ### Wave 4: Button actions (~5 files)
 

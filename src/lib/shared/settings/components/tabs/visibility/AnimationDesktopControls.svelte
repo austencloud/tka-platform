@@ -20,6 +20,8 @@
     wordHeaderVisible: boolean;
     fireEffectEnabled: boolean;
     ledEffectEnabled: boolean;
+    ledBrightness: number;
+    onLedBrightnessChange: (level: number) => void;
     colorBlend: number;
     smokeLevel: number;
     useCharcoal: boolean;
@@ -48,6 +50,8 @@
     wordHeaderVisible,
     fireEffectEnabled,
     ledEffectEnabled,
+    ledBrightness,
+    onLedBrightnessChange,
     colorBlend,
     smokeLevel,
     useCharcoal,
@@ -65,6 +69,8 @@
     onTrailPreset,
     onToggleBothEnds,
   }: Props = $props();
+
+  const brightnessLevels = [1, 2, 3, 4, 5];
 </script>
 
 <div class="desktop-controls">
@@ -199,6 +205,25 @@
         LED
       </button>
     </div>
+    {#if ledEffectEnabled}
+      <div class="led-brightness-section">
+        <span class="group-label">Brightness</span>
+        <div class="bpm-presets">
+          {#each brightnessLevels as level}
+            <button
+              class="bpm-btn"
+              class:active={ledBrightness === level}
+              aria-pressed={ledBrightness === level}
+              onclick={() => onLedBrightnessChange(level)}
+              type="button"
+              aria-label="Set LED brightness to level {level}"
+            >
+              {level}
+            </button>
+          {/each}
+        </div>
+      </div>
+    {/if}
     {#if fireEffectEnabled}
       <div class="flame-mode-row">
         <button
@@ -277,6 +302,12 @@
   }
 
   .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(4px, 1cqi, 6px);
+  }
+
+  .led-brightness-section {
     display: flex;
     flex-direction: column;
     gap: clamp(4px, 1cqi, 6px);

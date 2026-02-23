@@ -26,15 +26,12 @@
   import { AnimationLoop } from "$lib/features/compose/services/implementations/AnimationLoop";
   import { StepCalculator } from "$lib/features/compose/services/implementations/StepCalculator";
 
-  import { DEFAULT_LED_CONFIG, type LedOverlayConfig } from "$lib/shared/animation-engine/domain/types/LedTypes";
+  import { DEFAULT_LED_CONFIG, ledBrightnessToFloat, type LedOverlayConfig } from "$lib/shared/animation-engine/domain/types/LedTypes";
 
   // Auto-chaining (shared with FireTuningTab)
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
   import { InfiniteSequenceGenerator } from "$lib/features/landing/services/implementations/InfiniteSequenceGenerator";
   import { SpinnerMetricsRepository } from "$lib/features/landing/services/implementations/SpinnerMetricsRepository";
-  import type { IGenerationOrchestrator } from "$lib/features/create/generate/shared/services/contracts/IGenerationOrchestrator";
-  import type { ISequenceTransformer } from "$lib/features/create/shared/services/contracts/ISequenceTransformer";
-  import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
   import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
@@ -48,6 +45,7 @@
   interface LedLabPersistedState {
     sequenceId: string | null;
     ledEnabled: boolean;
+    brightness: number;
     patternId: string;
     primaryColor: string;
     patternSpeed: number;
@@ -71,6 +69,7 @@
       const state: LedLabPersistedState = {
         sequenceId: sequence?.word || sequence?.name || sequence?.id || null,
         ledEnabled,
+        brightness,
         patternId,
         primaryColor,
         patternSpeed,
@@ -102,6 +101,7 @@
   // race where the toggle shows ON but the WebGL renderer hasn't mounted.
   let ledEnabled = $state(false);
   let ledStateRestored = false;
+  let brightness = $state(persisted.brightness ?? 5);
   let patternId = $state(persisted.patternId ?? DEFAULT_LED_CONFIG.patternId);
   let primaryColor = $state(persisted.primaryColor ?? DEFAULT_LED_CONFIG.primaryColor);
   let patternSpeed = $state(persisted.patternSpeed ?? DEFAULT_LED_CONFIG.patternSpeed);
@@ -118,6 +118,7 @@
     patternId,
     patternSpeed,
     primaryColor,
+    brightness: ledBrightnessToFloat(brightness),
   });
 
   const animationState = createAnimationPanelState();
@@ -183,6 +184,7 @@
 
   $effect(() => {
     void ledEnabled;
+    void brightness;
     void patternId;
     void primaryColor;
     void patternSpeed;
@@ -235,9 +237,9 @@
       );
 
       // Initialize auto-chaining services
-      const browseLoader = container.items.browseLoader as IBrowseLoader;
-      const generationOrchestrator = container.items.generationOrchestrator as IGenerationOrchestrator;
-      const sequenceTransformer = container.items.sequenceTransformer as ISequenceTransformer;
+      const browseLoader = container.items.browseLoader;
+      const generationOrchestrator = container.items.generationOrchestrator;
+      const sequenceTransformer = container.items.sequenceTransformer;
 
       const spinnerOrch = new EndlessSpinnerOrchestrator(
         browseLoader,
@@ -296,7 +298,10 @@
 
   onDestroy(() => {
     if (playbackStartTimer !== null) clearTimeout(playbackStartTimer);
-    visibilityManager.setLedEffect(false);
+    // NOTE: We intentionally do NOT call visibilityManager.setLedEffect(false) here.
+    // This component unmounts when switching to the "Points" inner tab within the same
+    // LED mode. Disabling the LED effect would kill the overlay. The EffectsLabModule
+    // handles cleanup when the mode changes or the module unmounts.
     chainingOrchestrator?.dispose();
     playbackController?.dispose();
     animationState.dispose();
@@ -524,6 +529,7 @@
       <div class="control-section">
         <LedControlPanel
           bind:ledEnabled
+          bind:brightness
           bind:patternId
           bind:primaryColor
           bind:patternSpeed

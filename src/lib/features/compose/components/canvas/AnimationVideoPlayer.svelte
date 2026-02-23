@@ -22,7 +22,6 @@
   import { getVideoPlayer } from "../../services/implementations/VideoPlayer";
   import { getVideoGenerationCoordinator } from "../../services/implementations/VideoGenerationCoordinator";
   import { container } from "$lib/shared/di";
-  import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
   import VideoGenerationStatus from "../video-player/VideoGenerationStatus.svelte";
   import VideoReadyNotification from "../video-player/VideoReadyNotification.svelte";
   import GenerateVideoButton from "../video-player/GenerateVideoButton.svelte";
@@ -62,7 +61,7 @@
   // Services
   const playbackService = getVideoPlayer();
   const generationCoordinator = getVideoGenerationCoordinator();
-  const errorHandler = container.items.errorHandler as IErrorHandler;
+  const errorHandler = container.items.errorHandler;
 
   // Timer refs for cleanup
   let switchToVideoTimer: ReturnType<typeof setTimeout> | null = null;
@@ -270,7 +269,7 @@
 <!-- Loading state: video generation in progress -->
 {#if isLoading}
   <VideoGenerationStatus
-    progress={videoProgress}
+    progress={videoProgress!}
     onCancel={cancelVideoGeneration}
   />
 {/if}

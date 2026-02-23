@@ -58,6 +58,8 @@ export interface RequestFullStateMessage extends BaseSyncMessage {
 export interface FullStateMessage extends BaseSyncMessage {
 	type: 'FULL_STATE';
 	state: SyncedPlaybackState;
+	/** The actual sequence data (so the peer doesn't need to load it from a database) */
+	sequenceData?: Record<string, unknown>;
 }
 
 /** Incremental state update (sent by either peer on playback action) */

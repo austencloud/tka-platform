@@ -54,7 +54,7 @@ import {
 import { BASE_COLOR_CURVE } from "../../../domain/types/FireTypes";
 
 const MAX_DPR = 2;
-const DEFAULT_JACOBI_ITERATIONS = 20;
+const DEFAULT_JACOBI_ITERATIONS = 12;
 
 // ============================================================
 // Active instance tracking for adaptive quality
@@ -74,13 +74,14 @@ export function getActiveFireInstanceCount(): number {
  * visual plausibility is all that matters.
  */
 export function computeAdaptiveJacobiIterations(instanceCount: number): number {
-  if (instanceCount <= 1) return 20;
-  if (instanceCount <= 4) return 15;
-  return 10;
+  if (instanceCount <= 1) return 12;
+  if (instanceCount <= 4) return 8;
+  return 6;
 }
 
 /** Maps quality level to simulation grid resolution */
 function qualityToResolution(quality: number): number {
+  if (quality <= 1) return 64;
   if (quality <= 2) return 128;
   if (quality === 3) return 192;
   return 256;
@@ -169,6 +170,14 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
   private displayTipCount = 0;
   private displayCanvasWidth = 1;
   private displayCanvasHeight = 1;
+
+  // Pre-cached uniform locations for tip arrays (avoids getUniformLocation per frame)
+  // On Windows/ANGLE, each getUniformLocation call triggers a GPU-CPU sync stall.
+  // With 4 tips × 4 uniforms = 16 calls per frame, this was costing 1.6-8ms of pure stall.
+  private tipPositionLocs: (WebGLUniformLocation | null)[] = [];
+  private tipSpeedLocs: (WebGLUniformLocation | null)[] = [];
+  private tipFlameScaleLocs: (WebGLUniformLocation | null)[] = [];
+  private tipColorLocs: (WebGLUniformLocation | null)[] = [];
 
   // Mutable physics parameters — set via config.physicsPreset or defaults
   private physics: FirePhysicsParams = { ...DEFAULT_PHYSICS };
@@ -909,16 +918,17 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     gl.uniform1f(prog.uniforms.get("u_displayIntensity")!, config.intensity);
 
     // Wick core positions (always-bright flame at each tip)
+    // Uses pre-cached uniform locations to avoid per-frame getUniformLocation stalls
     gl.uniform1i(prog.uniforms.get("u_tipCount")!, this.displayTipCount);
 
     for (let i = 0; i < this.displayTipCount; i++) {
-      const posLoc = gl.getUniformLocation(prog.program, `u_tipPositions[${i}]`);
-      const speedLoc = gl.getUniformLocation(prog.program, `u_tipSpeeds[${i}]`);
-      const scaleLoc = gl.getUniformLocation(prog.program, `u_tipFlameScales[${i}]`);
+      const posLoc = this.tipPositionLocs[i];
+      const speedLoc = this.tipSpeedLocs[i];
+      const scaleLoc = this.tipFlameScaleLocs[i];
+      const colorLoc = this.tipColorLocs[i];
       if (posLoc) gl.uniform2f(posLoc, this.displayTipUVs[i * 2]!, this.displayTipUVs[i * 2 + 1]!);
       if (speedLoc) gl.uniform1f(speedLoc, this.displayTipSpeeds[i]!);
       if (scaleLoc) gl.uniform1f(scaleLoc, this.displayTipFlameScales[i]!);
-      const colorLoc = gl.getUniformLocation(prog.program, `u_tipColors[${i}]`);
       if (colorLoc) {
         gl.uniform3f(
           colorLoc,
@@ -1128,7 +1138,30 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
       return false;
     }
 
+    // Pre-cache tip array uniform locations to avoid per-frame getUniformLocation calls.
+    // On Windows/ANGLE, each getUniformLocation triggers a GPU-CPU pipeline sync stall.
+    this.cacheTipUniformLocations();
+
     return true;
+  }
+
+  private cacheTipUniformLocations(): void {
+    if (!this.displayProgram || !this.gl) return;
+    const gl = this.gl;
+    const prog = this.displayProgram.program;
+    const MAX_TIPS = 16;
+
+    this.tipPositionLocs = new Array(MAX_TIPS);
+    this.tipSpeedLocs = new Array(MAX_TIPS);
+    this.tipFlameScaleLocs = new Array(MAX_TIPS);
+    this.tipColorLocs = new Array(MAX_TIPS);
+
+    for (let i = 0; i < MAX_TIPS; i++) {
+      this.tipPositionLocs[i] = gl.getUniformLocation(prog, `u_tipPositions[${i}]`);
+      this.tipSpeedLocs[i] = gl.getUniformLocation(prog, `u_tipSpeeds[${i}]`);
+      this.tipFlameScaleLocs[i] = gl.getUniformLocation(prog, `u_tipFlameScales[${i}]`);
+      this.tipColorLocs[i] = gl.getUniformLocation(prog, `u_tipColors[${i}]`);
+    }
   }
 
   private buildProgram(fragSource: string, uniformNames: string[]): ShaderProgram | null {

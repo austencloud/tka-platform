@@ -83,10 +83,11 @@ export const handle: Handle = async ({ event, resolve }) => {
     "Content-Security-Policy",
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://accounts.google.com https://us-assets.i.posthog.com https://*.posthog.com https://*.firebaseio.com",
+      "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://accounts.google.com https://apis.google.com https://us-assets.i.posthog.com https://*.posthog.com https://*.firebaseio.com",
       "style-src 'self' 'unsafe-inline'",
-      "connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.google.com https://firestore.googleapis.com https://firebasestorage.googleapis.com https://us.i.posthog.com https://*.posthog.com https://pub-f5505ed75927471cb198c54336317370.r2.dev wss://*.firebaseio.com ws://localhost:*",
+      "connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.google.com https://firestore.googleapis.com https://firebasestorage.googleapis.com https://us.i.posthog.com https://*.posthog.com https://pub-f5505ed75927471cb198c54336317370.r2.dev wss://*.firebaseio.com wss://*.peerjs.com ws://localhost:*",
       "img-src 'self' data: blob: https://firebasestorage.googleapis.com https://storage.googleapis.com https://*.googleusercontent.com",
+      "media-src 'self' blob:",
       "font-src 'self'",
       "frame-src https://accounts.google.com https://*.firebaseapp.com",
       "object-src 'none'",

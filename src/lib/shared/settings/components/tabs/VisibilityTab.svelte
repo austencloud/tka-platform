@@ -59,6 +59,7 @@
   let animWordHeaderVisible = $state(true);
   let animFireEffectEnabled = $state(false);
   let animLedEffectEnabled = $state(false);
+  let animLedBrightness = $state(5);
   let animColorBlend = $state(0.5);
   let animSmokeLevel = $state(0.1);
   let animUseCharcoal = $state(false);
@@ -167,6 +168,12 @@
     }
   }
 
+  function handleLedBrightnessChange(level: number) {
+    triggerHaptic();
+    animLedBrightness = level;
+    animationVisibilityManager.setLedBrightness(level);
+  }
+
   function handleColorBlendChange(value: number) {
     triggerHaptic();
     animColorBlend = value;
@@ -252,7 +259,7 @@
   }
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback as IHapticFeedback;
+    hapticService = container.items.hapticFeedback;
 
     // Load initial pictograph visibility
     tkaGlyphVisible = visibilityManager.getRawGlyphVisibility("tkaGlyph");
@@ -277,6 +284,7 @@
       animationVisibilityManager.getVisibility("wordHeader");
     animFireEffectEnabled = animationVisibilityManager.isFireEffectEnabled();
     animLedEffectEnabled = animationVisibilityManager.isLedEffectEnabled();
+    animLedBrightness = animationVisibilityManager.getLedBrightness();
     animColorBlend = animationVisibilityManager.getFireColorBlend();
     animSmokeLevel = animationVisibilityManager.getFireSmokeLevel();
     animUseCharcoal = animationVisibilityManager.getFireUseCharcoal();
@@ -319,6 +327,7 @@
         animationVisibilityManager.getVisibility("wordHeader");
       animFireEffectEnabled = animationVisibilityManager.isFireEffectEnabled();
       animLedEffectEnabled = animationVisibilityManager.isLedEffectEnabled();
+      animLedBrightness = animationVisibilityManager.getLedBrightness();
       animColorBlend = animationVisibilityManager.getFireColorBlend();
       animSmokeLevel = animationVisibilityManager.getFireSmokeLevel();
       animUseCharcoal = animationVisibilityManager.getFireUseCharcoal();
@@ -387,6 +396,8 @@
       wordHeaderVisible={animWordHeaderVisible}
       fireEffectEnabled={animFireEffectEnabled}
       ledEffectEnabled={animLedEffectEnabled}
+      ledBrightness={animLedBrightness}
+      onLedBrightnessChange={handleLedBrightnessChange}
       colorBlend={animColorBlend}
       smokeLevel={animSmokeLevel}
       useCharcoal={animUseCharcoal}

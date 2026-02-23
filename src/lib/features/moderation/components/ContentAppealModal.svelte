@@ -57,7 +57,7 @@
 
 		try {
 			const appealManager = container.items.contentAppealManager;
-			const userId = container.items.authenticator?.currentUser?.uid;
+			const userId = (container.items.authenticator as any)?.currentUser?.uid;
 
 			if (!userId) {
 				throw new Error('You must be signed in to submit an appeal.');

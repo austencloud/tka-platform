@@ -213,7 +213,7 @@
     if (!browser) return;
 
     try {
-      cameraService = container.items.cameraManager as ICameraManager;
+      cameraService = container.items.cameraManager;
       await initializeCamera();
     } catch (err) {
       error = "Failed to load camera service";

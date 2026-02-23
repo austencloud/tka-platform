@@ -1097,7 +1097,7 @@ This is the main lab component. It has 5 demo sections, each with variant toggle
   <section class="demo-section">
     <div class="section-header">
       <h3>Grid Cell Loading</h3>
-      <p>LayeredSequencePreview — pictograph cells loading one by one</p>
+      <p>ChoreoCard — pictograph cells loading one by one</p>
     </div>
     <div class="variant-selector">
       <button class:active={gridVariant === "shimmer"} onclick={() => gridVariant = "shimmer"}>A: Shimmer</button>
@@ -1664,7 +1664,7 @@ git commit -m "feat(loading): upgrade PanelState loading indicator"
 ## Task 11: Roll out grid cell loading (Wave 3)
 
 **Files:**
-- Modify: `src/lib/shared/sequence-viewer/components/LayeredSequencePreview.svelte`
+- Modify: `src/lib/shared/sequence-viewer/components/ChoreoCard.svelte`
 
 **Step 1:** Add the chosen grid cell loading indicator where `isLoaded` is false.
 
@@ -1673,8 +1673,8 @@ git commit -m "feat(loading): upgrade PanelState loading indicator"
 **Step 3:** Commit
 
 ```bash
-git add src/lib/shared/sequence-viewer/components/LayeredSequencePreview.svelte
-git commit -m "feat(loading): add per-cell loading indicator to LayeredSequencePreview"
+git add src/lib/shared/sequence-viewer/components/ChoreoCard.svelte
+git commit -m "feat(loading): add per-cell loading indicator to ChoreoCard"
 ```
 
 ---

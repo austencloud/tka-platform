@@ -7,28 +7,36 @@ Tappable: navigates to TIKA with the misconception pre-loaded.
 -->
 <script lang="ts">
   import type { DetectedGap } from "../../../services/contracts/IGapDetector";
-  import { tkaKnowledgeGraph } from "$lib/features/tika/knowledge/semantic-graph";
+  import { container } from "$lib/shared/di";
+  import type { ILetterBreakdownGenerator } from "../../../services/contracts/ILetterBreakdownGenerator";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { browser } from "$app/environment";
 
   let { gap }: { gap: DetectedGap } = $props();
 
-  // Use actual letters for the visible hint, type names for TIKA context
   const correctLetter = gap.correctLabel;
   const chosenLetter = gap.chosenLabel;
-
-  const correctNode = $derived(tkaKnowledgeGraph.getNode(gap.correctNodeId));
-  const chosenNode = $derived(tkaKnowledgeGraph.getNode(gap.chosenNodeId));
-  const correctTypeName = $derived(correctNode?.name.en ?? gap.correctNodeId);
-  const chosenTypeName = $derived(chosenNode?.name.en ?? gap.chosenNodeId);
 
   const hintText = `Not sure about ${correctLetter} vs ${chosenLetter}? Ask TIKA`;
 
   function openInTika() {
     if (!browser) return;
 
-    // Give TIKA full context: the specific letters AND their types
-    const question = `I just picked ${chosenLetter} instead of ${correctLetter} in a pictograph quiz. ${correctLetter} is ${correctTypeName} and ${chosenLetter} is ${chosenTypeName}. What's the difference and how can I tell them apart?`;
+    const generator = container.items
+      .letterBreakdownGenerator as ILetterBreakdownGenerator;
+    const comparison = generator.compare(correctLetter, chosenLetter);
+
+    let question: string;
+    if (comparison) {
+      question =
+        `I confused ${correctLetter} with ${chosenLetter} in a quiz. Here's what I need to understand:\n\n` +
+        `${comparison.letterA.summary}. It's a Type ${comparison.letterA.typeNumber} (${comparison.letterA.typeName}) letter.\n` +
+        `${comparison.letterB.summary}. It's a Type ${comparison.letterB.typeNumber} (${comparison.letterB.typeName}) letter.\n\n` +
+        `Key difference: ${comparison.explanation}`;
+    } else {
+      question = `I confused ${correctLetter} with ${chosenLetter} in a quiz. What's the difference?`;
+    }
+
     sessionStorage.setItem("tika-seed-message", question);
     handleModuleChange("tika");
   }

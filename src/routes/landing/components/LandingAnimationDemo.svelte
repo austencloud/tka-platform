@@ -24,7 +24,7 @@
     TrackingMode,
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import LayeredSequencePreview from "$lib/shared/sequence-viewer/components/LayeredSequencePreview.svelte";
+  import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import DemoControlBar from "./DemoControlBar.svelte";
   import { RANDOM_PROPS } from "../landing-content";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
@@ -229,8 +229,8 @@
       visibilityManager.setDarkMode(darkMode);
 
       // Get services from DI container (some still need container, others use direct imports)
-      browseLoader = container.items.browseLoader as IBrowseLoader;
-      playbackController = container.items.animationPlaybackController as IAnimationPlaybackController;
+      browseLoader = container.items.browseLoader;
+      playbackController = container.items.animationPlaybackController;
       startPositionDeriver = startPositionDeriverInstance;
       gridPositionDeriver = gridPositionDeriverInstance;
 
@@ -573,7 +573,7 @@
 
           {#if animationState.sequenceData}
             <div class="beat-grid-panel">
-              <LayeredSequencePreview
+              <ChoreoCard
                 sequence={animationState.sequenceData}
                 {darkMode}
                 bluePropType={currentPropType}

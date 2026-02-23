@@ -16,9 +16,7 @@ Provides quiz functionality for learning TKA notation:
   import type { QuizProgress, QuizAnswerEvent } from "../domain/models/quiz-models";
   import type { IQuizRepoManager } from "../services/contracts/IQuizRepository";
   import type { IQuizSessionManager } from "../services/contracts/IQuizSessionManager";
-  import type { IQuizHistoryRecorder } from "../../services/contracts/IQuizHistoryRecorder";
-  import type { ILetterToConceptMapper } from "../../services/contracts/ILetterToConceptMapper";
-  import type { IGapDetector, DetectedGap } from "../../services/contracts/IGapDetector";
+  import type { DetectedGap } from "../../services/contracts/IGapDetector";
   import { getEffectiveUserId } from "$lib/shared/auth/state/authState.svelte";
   import { QuestionGenerator } from "../services/implementations/QuestionGenerator";
   import QuizResultsView from "./QuizResultsView.svelte";
@@ -38,9 +36,9 @@ Provides quiz functionality for learning TKA notation:
   const quizRepo = container.items.quizRepoManager;
   const quizSessionService = container.items.quizSessionManager;
   const hapticService = container.items.hapticFeedback;
-  const quizHistoryRecorder = container.items.quizHistoryRecorder as IQuizHistoryRecorder;
-  const letterToConceptMapper = container.items.letterToConceptMapper as ILetterToConceptMapper;
-  const gapDetector = container.items.gapDetector as IGapDetector;
+  const quizHistoryRecorder = container.items.quizHistoryRecorder;
+  const letterToConceptMapper = container.items.letterToConceptMapper;
+  const gapDetector = container.items.gapDetector;
   const delightOrchestrator = getDelightOrchestrator();
 
   // Component refs

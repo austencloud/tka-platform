@@ -35,6 +35,7 @@ StaffQuizAnswerButton - Single answer option button
   style="--type-color: {info.color}"
   onclick={onSelect}
   {disabled}
+  aria-label="Select {option.charAt(0).toUpperCase() + option.slice(1)}"
 >
   <i class="fa-solid {info.icon}" aria-hidden="true"></i>
   <span>{option.charAt(0).toUpperCase() + option.slice(1)}</span>

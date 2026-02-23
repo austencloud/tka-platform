@@ -36,6 +36,7 @@ VTGAnswerButton - Single answer button with state styling
   style="--type-color: {color}"
   {onclick}
   {disabled}
+  aria-label="Select {name} ({mode})"
 >
   <span class="mode-code">{mode}</span>
   <span class="mode-name">{name}</span>

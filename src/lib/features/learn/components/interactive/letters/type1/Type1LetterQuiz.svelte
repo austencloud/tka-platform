@@ -6,7 +6,6 @@ Shows pictograph, user identifies the motion pattern (Pro-Pro, Anti-Anti, or Hyb
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { container } from "$lib/shared/di";
   import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { onMount, onDestroy } from "svelte";
   import {
@@ -20,7 +19,7 @@ Shows pictograph, user identifies the motion pattern (Pro-Pro, Anti-Anti, or Hyb
 
   let { onComplete } = $props<{ onComplete?: () => void }>();
 
-  const hapticService = container.items.hapticFeedback as IHapticFeedback;
+  const hapticService = container.items.hapticFeedback;
 
   let answerTimer: ReturnType<typeof setTimeout> | null = null;
 

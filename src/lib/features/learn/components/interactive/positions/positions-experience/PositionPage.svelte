@@ -2,7 +2,6 @@
 PositionPage - Single position type learning page
 -->
 <script lang="ts">
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import {
     POSITION_INFO,
@@ -26,7 +25,7 @@ PositionPage - Single position type learning page
     onNext: () => void;
   } = $props();
 
-  const hapticService = container.items.hapticFeedback as IHapticFeedback;
+  const hapticService = container.items.hapticFeedback;
   const info = $derived(POSITION_INFO[type]);
 
   // State - initialized with defaults, $effect below syncs from props

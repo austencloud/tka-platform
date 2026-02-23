@@ -38,17 +38,12 @@
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
   import { InfiniteSequenceGenerator } from "$lib/features/landing/services/implementations/InfiniteSequenceGenerator";
   import { SpinnerMetricsRepository } from "$lib/features/landing/services/implementations/SpinnerMetricsRepository";
-  import type { IGenerationOrchestrator } from "$lib/features/create/generate/shared/services/contracts/IGenerationOrchestrator";
-  import type { ISequenceTransformer } from "$lib/features/create/shared/services/contracts/ISequenceTransformer";
-  import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
   import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
   import { SequenceChainingOrchestrator } from "../services/implementations/SequenceChainingOrchestrator";
   import type { ISequenceChainingOrchestrator, SourceMode } from "../services/contracts/ISequenceChainingOrchestrator";
 
-  import type { IFireDefaultsPublisher } from "$lib/shared/animation-engine/services/contracts/IFireDefaultsPublisher";
-  import type { IEffectPointOverrideProvider } from "../services/contracts/IEffectPointOverrideProvider";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
 
   const DEFAULT_BPM = 60;
@@ -279,9 +274,9 @@
       );
 
       // Initialize auto-chaining services
-      const browseLoader = container.items.browseLoader as IBrowseLoader;
-      const generationOrchestrator = container.items.generationOrchestrator as IGenerationOrchestrator;
-      const sequenceTransformer = container.items.sequenceTransformer as ISequenceTransformer;
+      const browseLoader = container.items.browseLoader;
+      const generationOrchestrator = container.items.generationOrchestrator;
+      const sequenceTransformer = container.items.sequenceTransformer;
 
       const spinnerOrch = new EndlessSpinnerOrchestrator(
         browseLoader,
@@ -341,7 +336,10 @@
   onDestroy(() => {
     if (playbackStartTimer !== null) clearTimeout(playbackStartTimer);
     if (publishSuccessTimer !== null) clearTimeout(publishSuccessTimer);
-    visibilityManager.setFireEffect(false);
+    // NOTE: We intentionally do NOT call visibilityManager.setFireEffect(false) here.
+    // This component unmounts when switching to the "Points" inner tab within the same
+    // fire mode. Disabling the fire effect would kill the overlay. The EffectsLabModule
+    // handles cleanup when the mode changes or the module unmounts.
     chainingOrchestrator?.dispose();
     playbackController?.dispose();
     animationState.dispose();
@@ -424,8 +422,8 @@
   async function publishToProduction() {
     publishing = true;
     try {
-      const publisher = container.items.fireDefaultsPublisher as IFireDefaultsPublisher;
-      const overrideProvider = container.items.firePointOverrideProvider as IEffectPointOverrideProvider;
+      const publisher = container.items.fireDefaultsPublisher;
+      const overrideProvider = container.items.firePointOverrideProvider;
 
       // Publish fire point overrides as global defaults
       const mergedPhysics = {

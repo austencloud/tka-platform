@@ -4,7 +4,6 @@ Shows hand positions on grid, user identifies the type
 -->
 <script lang="ts">
   import { onDestroy } from "svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import {
     POSITION_TYPE_INFO,
@@ -22,7 +21,7 @@ Shows hand positions on grid, user identifies the type
     onComplete?: () => void;
   }>();
 
-  const hapticService = container.items.hapticFeedback as IHapticFeedback;
+  const hapticService = container.items.hapticFeedback;
 
   let answerTimer: ReturnType<typeof setTimeout> | null = null;
 

@@ -21,6 +21,7 @@
   import type { ISequenceAnimationOrchestrator } from "../../services/contracts/ISequenceAnimationOrchestrator";
   import type { PropState } from "../../shared/domain/types/PropState";
   import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
+  import { startPositionDeriver as startPositionDeriverSingleton } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 
@@ -128,8 +129,7 @@
       loading = true;
       animationOrchestrator = container.items
         .sequenceAnimationOrchestrator as ISequenceAnimationOrchestrator;
-      startPositionDeriver = container.items
-        .startPositionDeriver as IStartPositionDeriver;
+      startPositionDeriver = startPositionDeriverSingleton;
       initialized = true;
       loading = false;
     } catch (err) {

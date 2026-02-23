@@ -12,7 +12,6 @@ Container-aware responsive design (2-tier):
 -->
 <script lang="ts">
   import { container } from "$lib/shared/di";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { SpellPreferences } from "../domain/models/spell-models";
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { LOOPType, LOOP_TYPE_LABELS } from "$lib/features/create/generate/circular/domain/models/circular-models";
@@ -40,7 +39,7 @@ Container-aware responsive design (2-tier):
     onLoopExpandedChange?: (expanded: boolean) => void;
   } = $props();
 
-  const haptic = container.items.hapticFeedback as IHapticFeedback;
+  const haptic = container.items.hapticFeedback;
 
   // ============================================================
   // EXPANSION STATE

@@ -31,8 +31,19 @@ export class LanSyncCoordinator implements ILanSyncCoordinator {
 	private playbackStateCallbacks: Set<(state: SyncedPlaybackState) => void> = new Set();
 	private connectionStateCallbacks: Set<(state: PeerConnectionState) => void> = new Set();
 	private sequenceMismatchCallbacks: Set<(peerSequenceId: string | null) => void> = new Set();
+	private sequenceReceivedCallbacks: Set<(data: Record<string, unknown>) => void> = new Set();
+
+	/** The host's local sequence data, sent to joining peers */
+	private _localSequence: Record<string, unknown> | null = null;
+
+	/** Sequence data received from the host peer */
+	private _receivedSequence: Record<string, unknown> | null = null;
 
 	private unsubscribers: Array<() => void> = [];
+
+	/** Throttle: last time a currentStep-only update was broadcast */
+	private lastStepBroadcastTime = 0;
+	private static readonly STEP_BROADCAST_INTERVAL_MS = 50; // ~20 updates/sec max
 
 	constructor(
 		private peerManager: IPeerConnectionManager,
@@ -171,14 +182,20 @@ export class LanSyncCoordinator implements ILanSyncCoordinator {
 
 		this._playbackState = newState;
 
-		// Broadcast to peers
+		// Broadcast to peers (throttle continuous currentStep updates to ~20/sec)
 		if (this.connectionState.status === 'connected') {
-			this.peerManager.broadcast({
-				type: 'STATE_UPDATE',
-				timestamp: newState.timestamp,
-				senderId: this.connectionState.peerId || 'unknown',
-				state: update
-			});
+			const isStepOnly = Object.keys(update).length === 1 && 'currentStep' in update;
+			const now = Date.now();
+
+			if (!isStepOnly || now - this.lastStepBroadcastTime >= LanSyncCoordinator.STEP_BROADCAST_INTERVAL_MS) {
+				if (isStepOnly) this.lastStepBroadcastTime = now;
+				this.peerManager.broadcast({
+					type: 'STATE_UPDATE',
+					timestamp: newState.timestamp,
+					senderId: this.connectionState.peerId || 'unknown',
+					state: update
+				});
+			}
 		}
 
 		// Notify local listeners
@@ -189,6 +206,19 @@ export class LanSyncCoordinator implements ILanSyncCoordinator {
 		if (this._playbackState.sequenceId !== sequenceId) {
 			this.updatePlaybackState({ sequenceId });
 		}
+	}
+
+	setLocalSequence(data: Record<string, unknown> | null): void {
+		this._localSequence = data;
+	}
+
+	get receivedSequence(): Record<string, unknown> | null {
+		return this._receivedSequence;
+	}
+
+	onSequenceReceived(callback: (data: Record<string, unknown>) => void): () => void {
+		this.sequenceReceivedCallbacks.add(callback);
+		return () => this.sequenceReceivedCallbacks.delete(callback);
 	}
 
 	onPlaybackStateChange(callback: (state: SyncedPlaybackState) => void): () => void {
@@ -216,6 +246,9 @@ export class LanSyncCoordinator implements ILanSyncCoordinator {
 		this.playbackStateCallbacks.clear();
 		this.connectionStateCallbacks.clear();
 		this.sequenceMismatchCallbacks.clear();
+		this.sequenceReceivedCallbacks.clear();
+		this._localSequence = null;
+		this._receivedSequence = null;
 	}
 
 	private setupMessageHandler(): void {
@@ -243,7 +276,7 @@ export class LanSyncCoordinator implements ILanSyncCoordinator {
 				break;
 
 			case 'FULL_STATE':
-				this.handleFullState(message.state);
+				this.handleFullState(message.state, message.sequenceData);
 				break;
 
 			case 'STATE_UPDATE':
@@ -270,18 +303,21 @@ export class LanSyncCoordinator implements ILanSyncCoordinator {
 			type: 'FULL_STATE',
 			timestamp: Date.now(),
 			senderId: this.connectionState.peerId || 'unknown',
-			state: this._playbackState
+			state: this._playbackState,
+			sequenceData: this._localSequence ?? undefined
 		});
-
-		// Check for sequence mismatch
-		if (this._playbackState.sequenceId) {
-			// We'll detect mismatch when we receive their state update
-		}
 	}
 
-	private handleFullState(state: SyncedPlaybackState): void {
+	private handleFullState(state: SyncedPlaybackState, sequenceData?: Record<string, unknown>): void {
 		this._playbackState = state;
 		this.notifyPlaybackStateChange(state);
+
+		if (sequenceData) {
+			this._receivedSequence = sequenceData;
+			for (const callback of this.sequenceReceivedCallbacks) {
+				callback(sequenceData);
+			}
+		}
 	}
 
 	private handleStateUpdate(update: Partial<SyncedPlaybackState>, timestamp: number): void {

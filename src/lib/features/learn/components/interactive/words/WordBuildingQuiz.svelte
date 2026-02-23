@@ -4,7 +4,6 @@ Questions about letter sequences, motion types, position transitions, and LOOPs
 -->
 <script lang="ts">
   import { onDestroy } from "svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import {
     type WordQuizQuestion,
@@ -16,7 +15,7 @@ Questions about letter sequences, motion types, position transitions, and LOOPs
 
   let { onComplete } = $props<{ onComplete?: () => void }>();
 
-  const hapticService = container.items.hapticFeedback as IHapticFeedback;
+  const hapticService = container.items.hapticFeedback;
 
   let answerTimer: ReturnType<typeof setTimeout> | null = null;
 

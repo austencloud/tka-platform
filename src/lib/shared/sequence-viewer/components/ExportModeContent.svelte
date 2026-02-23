@@ -14,7 +14,7 @@
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import LayeredSequencePreview from "./LayeredSequencePreview.svelte";
+  import ChoreoCard from "./ChoreoCard.svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
@@ -122,7 +122,7 @@
     <!-- Preview area -->
     <div class="export-preview-area">
       {#if exportType === "image"}
-        <LayeredSequencePreview
+        <ChoreoCard
           {sequence}
           showHighlight={false}
           showStepNumbers={exportOptions.imageShowStepNumbers}

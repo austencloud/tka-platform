@@ -16,7 +16,7 @@
     ViewerLayoutState,
   } from "../domain/viewer-prop-groups";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import LayeredSequencePreview from "./LayeredSequencePreview.svelte";
+  import ChoreoCard from "./ChoreoCard.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   interface Props {
@@ -168,7 +168,7 @@
           </div>
         {/if}
 
-        <LayeredSequencePreview
+        <ChoreoCard
           {sequence}
           highlightedStepIndex={playback.highlightedStepIndex}
           showHighlight={playback.isPlaying || playback.highlightedStepIndex !== null}
@@ -386,7 +386,7 @@
       padding: 24px;
     }
 
-    /* Preview pane needs less padding — the LayeredSequencePreview
+    /* Preview pane needs less padding — the ChoreoCard
        handles its own glow padding internally */
     .preview-pane {
       padding: 4px;

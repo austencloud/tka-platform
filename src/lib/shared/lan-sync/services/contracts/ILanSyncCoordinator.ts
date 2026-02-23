@@ -53,6 +53,15 @@ export interface ILanSyncCoordinator {
 	/** Set the current sequence ID (for mismatch detection) */
 	setSequenceId(sequenceId: string | null): void;
 
+	/** Store the current sequence data so it can be sent to joining peers */
+	setLocalSequence(data: Record<string, unknown> | null): void;
+
+	/** Sequence data received from the host peer (null until FULL_STATE arrives) */
+	readonly receivedSequence: Record<string, unknown> | null;
+
+	/** Subscribe to sequence data received from the host */
+	onSequenceReceived(callback: (data: Record<string, unknown>) => void): () => void;
+
 	/** Subscribe to playback state changes from peers */
 	onPlaybackStateChange(callback: (state: SyncedPlaybackState) => void): () => void;
 

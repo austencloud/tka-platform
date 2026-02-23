@@ -1,5 +1,5 @@
 <!--
-  LayeredSequencePreview.svelte
+  ChoreoCard.svelte
 
   Renders a sequence preview with individually animated pictograph cells.
   Each pictograph is rendered separately, enabling:

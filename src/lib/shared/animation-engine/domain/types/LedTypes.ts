@@ -105,6 +105,12 @@ export interface LedOverlayConfig {
   patternSpeed: number;
   /** Primary color for the pattern engine, expressed as a CSS hex string (e.g. "#00ff88") */
   primaryColor: string;
+  /**
+   * Global brightness multiplier (0.0 - 1.0, default 1.0).
+   * Applied on top of per-LED brightness values.
+   * Maps to 5 discrete user-facing levels via LED_BRIGHTNESS_LEVELS.
+   */
+  brightness: number;
 }
 
 /** Default LED overlay config — disabled with neutral green glow and solid pattern */
@@ -116,7 +122,23 @@ export const DEFAULT_LED_CONFIG: LedOverlayConfig = {
   patternId: "solid",
   patternSpeed: 1.0,
   primaryColor: "#00ff88",
+  brightness: 1.0,
 };
+
+/**
+ * Discrete brightness levels matching physical LED prop controls.
+ * Index 0 = dimmest (level 1), index 4 = full brightness (level 5).
+ */
+export const LED_BRIGHTNESS_LEVELS = [0.2, 0.4, 0.6, 0.8, 1.0] as const;
+
+/**
+ * Convert a user-facing brightness level (1-5) to a 0-1 float.
+ * Clamps out-of-range inputs to the nearest valid level.
+ */
+export function ledBrightnessToFloat(level: number): number {
+  const clamped = Math.max(1, Math.min(5, Math.round(level)));
+  return LED_BRIGHTNESS_LEVELS[clamped - 1]!;
+}
 
 /**
  * Convert a CSS hex color (#rrggbb) to normalized [0, 1] RGB for shader use.

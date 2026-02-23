@@ -10,15 +10,10 @@
 -->
 <script lang="ts">
   import { container } from "$lib/shared/di";
-  import type { IVideoFrameExtractor } from "../services/contracts/IVideoFrameExtractor";
-  import type { IVideoHandAnalyzer } from "../services/contracts/IVideoHandAnalyzer";
-  import type { IBeatBoundaryDetector } from "../services/contracts/IBeatBoundaryDetector";
   import type { Phase1Result } from "../domain/models";
   import VideoUploadDropzone from "./VideoUploadDropzone.svelte";
   import TrajectoryTimeline from "./TrajectoryTimeline.svelte";
   import PositionSequenceOutput from "./PositionSequenceOutput.svelte";
-
-  import type { IImageModeHandLandmarker } from "../services/contracts/IImageModeHandLandmarker";
 
   type PipelineState =
     | "idle"
@@ -36,10 +31,10 @@
   let errorMessage = $state("");
   let result = $state<Phase1Result | null>(null);
 
-  const landmarker = container.items.imageModeHandLandmarker as IImageModeHandLandmarker;
-  const frameExtractor = container.items.videoFrameExtractor as IVideoFrameExtractor;
-  const handAnalyzer = container.items.videoHandAnalyzer as IVideoHandAnalyzer;
-  const beatDetector = container.items.beatBoundaryDetector as IBeatBoundaryDetector;
+  const landmarker = container.items.imageModeHandLandmarker;
+  const frameExtractor = container.items.videoFrameExtractor;
+  const handAnalyzer = container.items.videoHandAnalyzer;
+  const beatDetector = container.items.beatBoundaryDetector;
 
   function onProgress(current: number, total: number, label?: string) {
     progressCurrent = current;

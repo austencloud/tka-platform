@@ -29,7 +29,6 @@ import { container } from "$lib/shared/di";
 import type { ISettingsPersister } from "../services/contracts/ISettingsPersister";
 import { auth } from "../../auth/firebase";
 import type { ISettingsState } from "../services/contracts/ISettingsState";
-import type { IActivityLogger } from "../../analytics/services/contracts/IActivityLogger";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const debug = createComponentLogger("SettingsState");
@@ -130,7 +129,7 @@ class SettingsState implements ISettingsState {
 
     // Try to get the Firebase persistence service
     try {
-      this.firebasePersistence = container.items.settingsPersister as ISettingsPersister;
+      this.firebasePersistence = container.items.settingsPersister;
     } catch {
       console.warn(
         "⚠️ [SettingsState] Firebase persistence service not available"
@@ -389,7 +388,7 @@ class SettingsState implements ISettingsState {
 
     // Log settings change for analytics (non-blocking)
     try {
-      const activityService = container.items.activityLogger as IActivityLogger;
+      const activityService = container.items.activityLogger;
       if (activityService) {
         void activityService.logSettingChange(
           key,

@@ -88,7 +88,7 @@
       // Create own controller (not the singleton) so the settings preview
       // doesn't clobber the viewer's playback state or dispose it on unmount
       playbackController = createPlaybackControllerFactory();
-      browseLoader = container.items.browseLoader as IBrowseLoader;
+      browseLoader = container.items.browseLoader;
 
       // Ensure sequence metadata is loaded (populates the cache) - with retry
       await withRetry(() => browseLoader!.loadSequenceMetadata());

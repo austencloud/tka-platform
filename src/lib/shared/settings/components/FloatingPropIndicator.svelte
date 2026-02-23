@@ -13,8 +13,6 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import PropSelectionSheet from "./tabs/prop-type/PropSelectionSheet.svelte";
   import { container } from "$lib/shared/di";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-
   let sheetOpen = $state(false);
 
   const settings = $derived(getSettings());
@@ -32,7 +30,7 @@
 
   function handleOpen() {
     try {
-      const haptic = container.items.hapticFeedback as IHapticFeedback;
+      const haptic = container.items.hapticFeedback;
       haptic.trigger("selection");
     } catch {
       // Haptic not available

@@ -224,7 +224,7 @@ export const DEFAULT_FIRE_CONFIG: FireOverlayConfig = {
   intensity: 1.0,
   flameHeight: 1.0,
   velocityReactive: true,
-  quality: 4,
+  quality: 2, // 128×128 grid — fire is inherently noisy, higher resolution is imperceptible
 };
 
 /**

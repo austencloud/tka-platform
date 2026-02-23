@@ -99,7 +99,7 @@
 
   onMount(() => {
     try {
-      hapticService = container.items.hapticFeedback as IHapticFeedback;
+      hapticService = container.items.hapticFeedback;
     } catch {
       // Haptics optional
     }

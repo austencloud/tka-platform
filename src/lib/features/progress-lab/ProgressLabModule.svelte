@@ -330,7 +330,7 @@
     <div class="section-header">
       <div class="header-text">
         <h3>Grid Cell Loading</h3>
-        <p class="subtitle">LayeredSequencePreview pictograph cells loading one by one</p>
+        <p class="subtitle">ChoreoCard pictograph cells loading one by one</p>
       </div>
     </div>
 

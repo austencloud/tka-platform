@@ -13,7 +13,6 @@
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "../../../services/contracts/IAnimationPlaybackController";
-  import type { IAnimationRenderer } from "../../../services/contracts/IAnimationRenderer";
   import { createAnimationPanelState } from "../../../state/animation-panel-state.svelte";
   import {
     ANIMATION_LOAD_DELAY_MS,
@@ -49,7 +48,6 @@
 
   // Services
   let playbackController: IAnimationPlaybackController | null = null;
-  let animationRenderer: IAnimationRenderer | null = null;
 
   // Animation state
   const animationState = createAnimationPanelState();
@@ -74,7 +72,6 @@
   onMount(() => {
     try {
       playbackController = container.items.animationPlaybackController;
-      animationRenderer = container.items.animationRenderer;
     } catch (err) {
       console.error("Failed to initialize single renderer:", err);
       error = "Failed to initialize animation services";

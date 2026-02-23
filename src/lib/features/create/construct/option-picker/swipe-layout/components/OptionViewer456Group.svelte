@@ -14,8 +14,6 @@ Matches the desktop version exactly:
     Letter,
     getLetterType,
   } from "$lib/shared/foundation/domain/models/Letter";
-  import type { IAnimator } from "$lib/shared/application/services/contracts/IAnimator";
-  import type { IAspectLayoutPlanner } from "../../services/contracts/IAspectLayoutPlanner";
   import type { IOptionGridFitCalculator } from "../../services/contracts/IGridFitCalculator";
   import { container } from "$lib/shared/di";
   import { optionGridFitCalculator } from "../../services/implementations/OptionGridFitCalculator";
@@ -23,8 +21,8 @@ Matches the desktop version exactly:
   import OptionViewerSection from "./OptionViewerSection.svelte";
 
   // Services - resolve synchronously to ensure they're available for $derived computations
-  const animationService = container.items.animator as IAnimator;
-  const aspectLayoutPlanner = container.items.aspectLayoutPlanner as IAspectLayoutPlanner;
+  const animationService = container.items.animator;
+  const aspectLayoutPlanner = container.items.aspectLayoutPlanner;
   const gridFitCalculator = optionGridFitCalculator;
 
   // Animation functions following established app patterns

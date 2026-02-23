@@ -92,10 +92,13 @@
           if (attr.name.startsWith("on")) el.removeAttribute(attr.name);
         }
       }
-      // Move child nodes into the prop shape group
+      // Move child nodes into the prop shape group.
+      // NOTE: Use Array.from snapshot, NOT while(firstChild) + importNode.
+      // importNode creates a COPY without removing the source node,
+      // so while(firstChild) would loop forever.
       propShapeGroup.replaceChildren();
-      while (svgRoot.firstChild) {
-        propShapeGroup.appendChild(document.importNode(svgRoot.firstChild, true));
+      for (const child of Array.from(svgRoot.childNodes)) {
+        propShapeGroup.appendChild(document.importNode(child, true));
       }
     } catch {
       propShapeGroup?.replaceChildren();

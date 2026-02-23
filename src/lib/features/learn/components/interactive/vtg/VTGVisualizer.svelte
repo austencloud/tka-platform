@@ -3,7 +3,6 @@ VTGVisualizer - Animated visualization of VTG (Velocity-Timing-Direction) modes
 Shows how hands coordinate their movements in different VTG patterns
 -->
 <script lang="ts">
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
 
   type VTGMode = "SS" | "TS" | "SO" | "TO" | "QS" | "QO";
@@ -18,7 +17,7 @@ Shows how hands coordinate their movements in different VTG patterns
     showLabels?: boolean;
   }>();
 
-  const hapticService = container.items.hapticFeedback as IHapticFeedback;
+  const hapticService = container.items.hapticFeedback;
 
   // VTG mode info
   const VTG_INFO: Record<

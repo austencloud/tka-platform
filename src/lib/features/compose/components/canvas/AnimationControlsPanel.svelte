@@ -144,7 +144,7 @@
     if (!browser) return;
 
     // Initialize settings service
-    settingsService = container.items.settingsState as ISettingsState;
+    settingsService = container.items.settingsState;
 
     const checkViewport = () => {
       viewportHeight = window.innerHeight;

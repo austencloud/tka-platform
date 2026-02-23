@@ -6,7 +6,6 @@ Supports enabled/disabled states and highlights current position.
 -->
 <script lang="ts">
   import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
 
   const {
@@ -28,7 +27,7 @@ Supports enabled/disabled states and highlights current position.
   }>();
 
   // Access haptic feedback service from ITI container
-  const hapticService = container.items.hapticFeedback as IHapticFeedback;
+  const hapticService = container.items.hapticFeedback;
 
   // Map GridLocation to display label
   const positionLabels: Record<GridLocation, string> = {

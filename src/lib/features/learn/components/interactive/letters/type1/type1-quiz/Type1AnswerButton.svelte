@@ -38,6 +38,7 @@ Type1AnswerButton - Single answer option for motion pattern
   style="--pattern-color: {info.color}"
   onclick={onSelect}
   {disabled}
+  aria-label="Select {info.label} - {info.description}"
 >
   <i class="fa-solid {info.icon}" aria-hidden="true"></i>
   <div class="answer-content">

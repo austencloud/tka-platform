@@ -21,6 +21,7 @@ import { QuizHistoryRecorder } from "$lib/features/learn/services/implementation
 import { ConceptRecommender } from "$lib/features/learn/services/implementations/ConceptRecommender";
 import { LetterToConceptMapper } from "$lib/features/learn/services/implementations/LetterToConceptMapper";
 import { GapDetector } from "$lib/features/learn/services/implementations/GapDetector";
+import { LetterBreakdownGenerator } from "$lib/features/learn/services/implementations/LetterBreakdownGenerator";
 import { SoundPlayer } from "$lib/shared/audio/services/implementations/SoundPlayer";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 
@@ -50,6 +51,7 @@ export function createLearnContainer(letterQueryHandler: ILetterQueryHandler) {
       quizHistoryRecorder: () => new QuizHistoryRecorder(),
       conceptRecommender: () => new ConceptRecommender(),
       letterToConceptMapper: () => new LetterToConceptMapper(),
+      letterBreakdownGenerator: () => new LetterBreakdownGenerator(),
       soundPlayer: () => new SoundPlayer(),
     })
     // === Tier 2: Services with internal dependencies ===

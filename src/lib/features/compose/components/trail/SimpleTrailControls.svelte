@@ -19,10 +19,9 @@
   import { isBilateralProp, getBilateralEndLabels } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { container } from "$lib/shared/di";
-  import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
 
   const animationVisibilityManager = getAnimationVisibilityManager();
-  const settingsState = container.items.settingsState as ISettingsState;
+  const settingsState = container.items.settingsState;
 
   interface Props {
     /** @deprecated Use bluePropType and redPropType instead */

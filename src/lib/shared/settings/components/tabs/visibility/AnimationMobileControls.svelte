@@ -20,6 +20,8 @@
     wordHeaderVisible: boolean;
     fireEffectEnabled: boolean;
     ledEffectEnabled: boolean;
+    ledBrightness: number;
+    onLedBrightnessChange: (level: number) => void;
     colorBlend: number;
     smokeLevel: number;
     useCharcoal: boolean;
@@ -48,6 +50,8 @@
     wordHeaderVisible,
     fireEffectEnabled,
     ledEffectEnabled,
+    ledBrightness,
+    onLedBrightnessChange,
     colorBlend,
     smokeLevel,
     useCharcoal,
@@ -65,6 +69,8 @@
     onTrailPreset,
     onToggleBothEnds,
   }: Props = $props();
+
+  const brightnessLevels = [1, 2, 3, 4, 5];
 </script>
 
 <div class="mobile-controls">
@@ -196,6 +202,23 @@
       <span>LED</span>
     </button>
   </div>
+  {#if ledEffectEnabled}
+    <!-- LED Brightness -->
+    <div class="mobile-row bpm-row">
+      {#each brightnessLevels as level}
+        <button
+          class="compact-btn bpm"
+          class:active={ledBrightness === level}
+          aria-pressed={ledBrightness === level}
+          onclick={() => onLedBrightnessChange(level)}
+          type="button"
+          aria-label="Set LED brightness to level {level}"
+        >
+          {level}
+        </button>
+      {/each}
+    </div>
+  {/if}
   {#if fireEffectEnabled}
     <!-- Fire/Charcoal toggle -->
     <div class="mobile-row">

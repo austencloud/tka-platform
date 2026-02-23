@@ -59,7 +59,7 @@ The next pictograph's start position must match the initial pictograph's end pos
 
   onMount(async () => {
     hapticService = container.items.hapticFeedback;
-    gapDetector = container.items.gapDetector as IGapDetector;
+    gapDetector = container.items.gapDetector;
     await loadQuestion();
   });
 

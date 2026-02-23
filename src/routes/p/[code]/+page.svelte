@@ -21,7 +21,6 @@
   import { goto } from "$app/navigation";
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
-  import type { ISequenceEncoder } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
   import { saveSequenceRouteHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
   import { openSequenceOverlay } from "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte";
   import LoadingGate from "$lib/shared/components/loading/LoadingGate.svelte";
@@ -42,7 +41,7 @@
 
     try {
       const shortCodeManager = container.items.shortCodeManager;
-      const sequenceEncoder = container.items.sequenceEncoder as ISequenceEncoder;
+      const sequenceEncoder = container.items.sequenceEncoder;
 
       // Resolve short code to sequence
       // Handles both formats:

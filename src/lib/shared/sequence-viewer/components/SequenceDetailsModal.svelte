@@ -35,11 +35,9 @@
   import type { ISequenceDataProvider } from "../services/contracts/ISequenceDataProvider";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
-  import type { ILanSyncCoordinator } from "$lib/shared/lan-sync/services/contracts/ILanSyncCoordinator";
   import { sequenceModalExporter } from "../services/implementations/SequenceModalExporter";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { container } from "$lib/shared/di";
-  import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
   import type { IClaudeCodeCopier } from "$lib/features/browse/sequences/display/services/contracts/IClaudeCodeCopier";
   import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
   import { createAnimationPanelState, type PlaybackMode, type AnimationStateKey } from "$lib/features/compose/state/animation-panel-state.svelte";
@@ -74,7 +72,7 @@
   import { createTempoRampState } from "../state/tempo-ramp-state.svelte";
   import RampProgressIndicator from "./RampProgressIndicator.svelte";
   import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
-  import LayeredSequencePreview from "./LayeredSequencePreview.svelte";
+  import ChoreoCard from "./ChoreoCard.svelte";
   import { browser } from "$app/environment";
   import {
     getExportOptionsState,
@@ -149,7 +147,7 @@
 
   // Mobile: no auto-hide - controls stay visible until user collapses
 
-  // Prop type settings for LayeredSequencePreview
+  // Prop type settings for ChoreoCard
   const settings = $derived(getSettings());
   const bluePropType = $derived(settings.bluePropType);
   const redPropType = $derived(settings.redPropType);
@@ -325,6 +323,10 @@
     try {
       // Use sequence.word for display in discovery banners
       const sequenceWord = sequence.word || sequence.name || "Sequence";
+
+      // Store the full sequence data so joining peers can receive it
+      lanSyncState.setLocalSequence(sequence as unknown as Record<string, unknown>);
+
       const isNowSyncing = await lanSyncState.toggleSync(
         sequence.id,
         sequenceWord,
@@ -336,6 +338,11 @@
           shouldLoop: true
         }
       );
+
+      if (!isNowSyncing) {
+        lanSyncState.setLocalSequence(null);
+      }
+
       hapticService?.trigger(isNowSyncing ? "success" : "selection");
       accessibilityHelper.announce(isNowSyncing ? "Sync enabled. Searching for peers." : "Sync disabled");
     } catch (err) {
@@ -444,7 +451,7 @@
       return;
     }
     try {
-      const libraryRepo = container.items.libraryRepository as ILibraryRepository;
+      const libraryRepo = container.items.libraryRepository;
       await libraryRepo.saveSequence(sequence);
       showToast("Saved to library", "success");
     } catch (error) {
@@ -702,7 +709,7 @@
   let arrivedViaStepping = $state(false);
 
   // Use hydrated sequence data when available, otherwise fall back to prop
-  // This ensures LayeredSequencePreview gets the full sequence with motion data
+  // This ensures ChoreoCard gets the full sequence with motion data
   const effectiveSequence = $derived(modalAnimationState.sequenceData ?? sequence);
 
   // After stepping (via step buttons), props land at the START of the next beat,
@@ -715,7 +722,7 @@
     Math.abs(currentStepLocal - Math.round(currentStepLocal)) < 0.01
   );
 
-  // Step highlighting for LayeredSequencePreview
+  // Step highlighting for ChoreoCard
   // -1 = start position, 0+ = motion steps
   let highlightedStepIndex = $derived.by(() => {
     if (!isPlayingLocal && currentStepLocal < 0.5) return null;
@@ -841,10 +848,10 @@
       loopabilityChecker = container.items.sequenceLoopabilityChecker;
       sequenceDataProvider = container.items.sequenceDataProvider;
       hapticService = container.items.hapticFeedback;
-      claudeCopier = container.items.claudeCodeCopier as IClaudeCodeCopier;
+      claudeCopier = container.items.claudeCodeCopier;
 
       // Initialize LAN sync state with coordinator from container
-      const lanSyncCoordinator = container.items.lanSyncCoordinator as ILanSyncCoordinator;
+      const lanSyncCoordinator = container.items.lanSyncCoordinator;
       lanSyncState.initialize(lanSyncCoordinator);
 
       animationServicesReady = true;

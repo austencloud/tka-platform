@@ -194,7 +194,7 @@ export class WebGLLedRenderer implements ILedOverlayRenderer {
 			this.instanceData[offset + 2] = tip.r;
 			this.instanceData[offset + 3] = tip.g;
 			this.instanceData[offset + 4] = tip.b;
-			this.instanceData[offset + 5] = tip.brightness;
+			this.instanceData[offset + 5] = tip.brightness * config.brightness;
 			this.instanceData[offset + 6] = baseGlowRadius;
 		}
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.instanceBuffer);

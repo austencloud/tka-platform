@@ -47,6 +47,7 @@ interface AnimationVisibilitySettings {
 
   // LED Effects
   ledEffect: boolean; // WebGL LED overlay
+  ledBrightness: number; // 1-5 discrete level (maps to 0.2-1.0 float)
   ledPatternId: string; // Active LED pattern ID
   ledPrimaryColor: string; // Primary color (hex)
 
@@ -118,6 +119,7 @@ export class AnimationVisibilityStateManager {
 
       // LED Effects
       ledEffect: false,
+      ledBrightness: 5,
       ledPatternId: "solid",
       ledPrimaryColor: "#00ff88",
 
@@ -257,7 +259,7 @@ export class AnimationVisibilityStateManager {
   getVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "ledPatternId" | "ledPrimaryColor"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor"
     >
   ): boolean {
     return this.settings[key] as boolean;
@@ -281,7 +283,7 @@ export class AnimationVisibilityStateManager {
   setVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "ledPatternId" | "ledPrimaryColor"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor"
     >,
     visible: boolean
   ): void {
@@ -630,12 +632,28 @@ export class AnimationVisibilityStateManager {
   }
 
   /**
+   * Get LED brightness level (1-5)
+   */
+  getLedBrightness(): number {
+    return this.settings.ledBrightness;
+  }
+
+  /**
+   * Set LED brightness level (1-5, clamped)
+   */
+  setLedBrightness(level: number): void {
+    this.settings.ledBrightness = Math.max(1, Math.min(5, Math.round(level)));
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  /**
    * Toggle a boolean visibility setting
    */
   toggleVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "ledPatternId" | "ledPrimaryColor"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor"
     >
   ): void {
     this.setVisibility(key, !(this.settings[key] as boolean));

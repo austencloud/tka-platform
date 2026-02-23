@@ -58,7 +58,7 @@ Letter to Pictograph Quiz - Shows a letter, asks user to identify the correct pi
 
   onMount(async () => {
     hapticService = container.items.hapticFeedback;
-    gapDetector = container.items.gapDetector as IGapDetector;
+    gapDetector = container.items.gapDetector;
     await loadQuestion();
   });
 

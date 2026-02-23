@@ -24,7 +24,7 @@
 
 	// Lazy load heavy components
 	import AnimationPlayer from '$lib/shared/sequence-viewer/components/AnimationPlayer.svelte';
-	import LayeredSequencePreview from '$lib/shared/sequence-viewer/components/LayeredSequencePreview.svelte';
+	import ChoreoCard from '$lib/shared/sequence-viewer/components/ChoreoCard.svelte';
 
 	interface Props {
 		session: SyncSession;
@@ -55,7 +55,7 @@
 	onMount(async () => {
 		try {
 			const browseLoader = container.items.browseLoader;
-			const loadedSequence = await browseLoader.loadSequenceById(session.sequenceId);
+			const loadedSequence = await browseLoader.loadFullSequenceData(session.sequenceId);
 
 			if (loadedSequence) {
 				sequence = loadedSequence;
@@ -199,7 +199,7 @@
 						</div>
 					{:else if displayPreference === 'pictograph'}
 						<div class="pictograph-container">
-							<LayeredSequencePreview
+							<ChoreoCard
 								{sequence}
 								showStepNumbers={true}
 								showDifficultyLevel={false}
@@ -218,7 +218,7 @@
 								/>
 							</div>
 							<div class="split-right">
-								<LayeredSequencePreview
+								<ChoreoCard
 									{sequence}
 									showStepNumbers={true}
 									showDifficultyLevel={false}

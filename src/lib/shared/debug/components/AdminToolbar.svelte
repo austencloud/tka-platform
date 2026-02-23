@@ -29,9 +29,6 @@
     IQuickAccessPersister,
     QuickAccessUser,
   } from "../services/contracts/IQuickAccessPersister";
-  import type { ICloudThumbnailCache } from "$lib/features/browse/sequences/display/services/contracts/ICloudThumbnailCache";
-  import type { IImageComposer } from "$lib/shared/render/services/contracts/IImageComposer";
-  import type { IThumbnailLocalCache } from "$lib/features/browse/sequences/display/services/contracts/IThumbnailLocalCache";
   import { tikaPictographCache } from "$lib/features/tika/services/implementations/TikaPictographCache";
   import AdminToolbarDesktop from "./AdminToolbarDesktop.svelte";
   import AdminToolbarMobile from "./AdminToolbarMobile.svelte";
@@ -193,7 +190,7 @@
     introResetMessage = "Scanning cloud thumbnails...";
 
     try {
-      const cloudCache = container.items.cloudThumbnailCache as ICloudThumbnailCache;
+      const cloudCache = container.items.cloudThumbnailCache;
 
       let totalDeleted = 0;
 
@@ -212,7 +209,7 @@
       console.log(`🗑️ Deleted ${wordcardCount} wordcard thumbnails`);
 
       // Also clear local IndexedDB thumbnail cache so stale local copies don't persist
-      const localCache = container.items.thumbnailLocalCache as IThumbnailLocalCache;
+      const localCache = container.items.thumbnailLocalCache;
       await localCache.clear();
       console.log(`✅ Total deleted: ${totalDeleted} cloud thumbnails + local cache cleared`);
 
@@ -244,7 +241,7 @@
     introResetMessage = "Clearing local pictograph cache...";
 
     try {
-      const imageComposer = container.items.imageComposer as IImageComposer;
+      const imageComposer = container.items.imageComposer;
 
       // Get stats before clearing
       const statsBefore = imageComposer.getCacheStats();
@@ -317,7 +314,7 @@
     introResetMessage = "Clearing thumbnail cache...";
 
     try {
-      const thumbnailCache = container.items.thumbnailLocalCache as IThumbnailLocalCache;
+      const thumbnailCache = container.items.thumbnailLocalCache;
 
       // Get stats before clearing
       const statsBefore = await thumbnailCache.getStats();
@@ -368,7 +365,7 @@
 
     // Resolve the service after mount
     try {
-      quickAccessPersister = container.items.quickAccessPersister as IQuickAccessPersister;
+      quickAccessPersister = container.items.quickAccessPersister;
       quickAccessUsers = quickAccessPersister.load();
     } catch {
       console.warn("QuickAccessPersister not available");

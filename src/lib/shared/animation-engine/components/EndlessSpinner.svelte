@@ -13,8 +13,6 @@
   } from "$lib/features/landing/services/contracts/IEndlessSpinnerOrchestrator";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { container } from "$lib/shared/di";
-  import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
-  import type { ISequenceTransformer } from "$lib/features/create/shared/services/contracts/ISequenceTransformer";
   import {
     animationSettings,
     TrackingMode,
@@ -167,10 +165,10 @@
 
       // Get services from DI container (some still need container, others use direct imports)
       playbackController = container.items
-        .animationPlaybackController as IAnimationPlaybackController;
+        .animationPlaybackController;
       startPositionDeriver = startPositionDeriverDirect;
-      const browseLoader = container.items.browseLoader as IBrowseLoader;
-      const sequenceTransformer = container.items.sequenceTransformer as ISequenceTransformer;
+      const browseLoader = container.items.browseLoader;
+      const sequenceTransformer = container.items.sequenceTransformer;
 
       // Create the spinner orchestrator
       spinnerOrchestrator = new EndlessSpinnerOrchestrator(

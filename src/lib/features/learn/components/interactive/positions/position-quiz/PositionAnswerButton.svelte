@@ -40,6 +40,7 @@ PositionAnswerButton - Answer button for position type selection
   style="--type-color: {info.color}"
   {onclick}
   {disabled}
+  aria-label="Select {info.label}"
 >
   <i class="fa-solid {info.icon}" aria-hidden="true"></i>
   <span>{info.label}</span>

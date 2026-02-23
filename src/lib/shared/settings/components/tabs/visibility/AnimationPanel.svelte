@@ -30,6 +30,8 @@
     wordHeaderVisible: boolean;
     fireEffectEnabled: boolean;
     ledEffectEnabled: boolean;
+    ledBrightness: number;
+    onLedBrightnessChange: (level: number) => void;
     colorBlend: number;
     smokeLevel: number;
     useCharcoal: boolean;
@@ -55,6 +57,8 @@
     wordHeaderVisible,
     fireEffectEnabled,
     ledEffectEnabled,
+    ledBrightness,
+    onLedBrightnessChange,
     colorBlend,
     smokeLevel,
     useCharcoal,
@@ -148,6 +152,8 @@
             {wordHeaderVisible}
             {fireEffectEnabled}
             {ledEffectEnabled}
+            {ledBrightness}
+            {onLedBrightnessChange}
             {colorBlend}
             {smokeLevel}
             {useCharcoal}
@@ -179,6 +185,8 @@
             {wordHeaderVisible}
             {fireEffectEnabled}
             {ledEffectEnabled}
+            {ledBrightness}
+            {onLedBrightnessChange}
             {colorBlend}
             {smokeLevel}
             {useCharcoal}

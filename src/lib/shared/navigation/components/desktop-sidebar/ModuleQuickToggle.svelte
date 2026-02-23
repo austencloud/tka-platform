@@ -305,7 +305,7 @@
   }
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback as IHapticFeedback;
+    hapticService = container.items.hapticFeedback;
   });
 </script>
 

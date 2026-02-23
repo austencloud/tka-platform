@@ -8,17 +8,15 @@
  */
 
 import { container } from "$lib/shared/di";
-import type { IBrowseCache } from "../../features/browse/sequences/display/services/contracts/IBrowseCache";
-import type { IOptimizedBrowser } from "../../features/browse/shared/services/contracts/IOptimizedBrowser";
 
 export async function clearAllGalleryCaches(): Promise<void> {
   try {
     // 1. Clear BrowseCache
-    const browseCacheService = container.items.browseCache as IBrowseCache;
+    const browseCacheService = container.items.browseCache;
     browseCacheService.clearCache();
 
     // 2. Clear OptimizedBrowser
-    const optimizedService = container.items.optimizedBrowser as IOptimizedBrowser;
+    const optimizedService = container.items.optimizedBrowser;
     optimizedService.clearCache();
 
     // 3. Clear IndexedDB/Dexie cache if it exists

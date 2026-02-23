@@ -69,6 +69,7 @@ export class QuizHistoryRecorder implements IQuizHistoryRecorder {
       await trackWrite(() => addDoc(colRef, doc));
     } catch (error) {
       console.error("[QuizHistoryRecorder] Failed to record attempt:", error);
+      throw error;
     }
   }
 
@@ -107,7 +108,7 @@ export class QuizHistoryRecorder implements IQuizHistoryRecorder {
       });
     } catch (error) {
       console.error("[QuizHistoryRecorder] Failed to get history:", error);
-      return [];
+      throw error;
     }
   }
 

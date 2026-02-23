@@ -169,8 +169,8 @@ export function consumeSequenceRouteHandoff(): SequenceRouteHandoff | null {
 			return null;
 		}
 
-		// Basic validation
-		if (!handoff.sequence || !handoff.sequence.id) {
+		// Basic validation - sequence must exist with at least an id, word, or steps
+		if (!handoff.sequence || (!handoff.sequence.id && !handoff.sequence.word && !handoff.sequence.steps)) {
 			console.warn('[SequenceRouteHandoff] Invalid handoff data - missing sequence');
 			return null;
 		}

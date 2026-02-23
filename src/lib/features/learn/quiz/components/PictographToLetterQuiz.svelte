@@ -71,7 +71,7 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
 
   onMount(async () => {
     hapticService = container.items.hapticFeedback;
-    gapDetector = container.items.gapDetector as IGapDetector;
+    gapDetector = container.items.gapDetector;
     await loadQuestion();
   });
 

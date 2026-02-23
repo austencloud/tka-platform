@@ -21,6 +21,7 @@
   import type { ISequenceAnimationOrchestrator } from "../../services/contracts/ISequenceAnimationOrchestrator";
   import type { PropState } from "../../shared/domain/types/PropState";
   import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
+  import { startPositionDeriver as startPositionDeriverSingleton } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
 
   interface Props {
     /** Current playhead position in seconds */
@@ -196,8 +197,7 @@
       // Get services from ITI container
       animationOrchestrator = container.items
         .sequenceAnimationOrchestrator as ISequenceAnimationOrchestrator;
-      startPositionDeriver = container.items
-        .startPositionDeriver as IStartPositionDeriver;
+      startPositionDeriver = startPositionDeriverSingleton;
       initialized = true;
       loading = false;
     } catch (err) {

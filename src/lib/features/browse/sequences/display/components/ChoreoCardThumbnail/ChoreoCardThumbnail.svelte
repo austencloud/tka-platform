@@ -1,5 +1,5 @@
 <!--
-ChoreoCard.svelte
+ChoreoCardThumbnail.svelte
 
 Ultra-minimal card component for the Browse grid.
 Clicking the card opens the sequence detail viewer.

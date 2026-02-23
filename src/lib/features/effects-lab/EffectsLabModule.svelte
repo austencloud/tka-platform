@@ -5,11 +5,13 @@
   Mode switcher at top, inner tabs (Tuning / Points) below.
 -->
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import EffectModeBar from "./components/EffectModeBar.svelte";
   import {
     getEffectDescriptor,
     type EffectMode,
   } from "./domain/EffectDescriptor";
+  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
   const MODE_KEY = "effects-lab-active-mode";
   const TAB_KEY = "effects-lab-active-tab";
@@ -36,7 +38,18 @@
 
   let descriptor = $derived(getEffectDescriptor(activeMode));
 
+  const visibilityManager = getAnimationVisibilityManager();
+
+  // Clean up effects when switching away from a mode
+  function cleanupMode(mode: EffectMode) {
+    if (mode === "fire") visibilityManager.setFireEffect(false);
+    if (mode === "led") visibilityManager.setLedEffect(false);
+  }
+
   function setMode(mode: EffectMode) {
+    if (mode !== activeMode) {
+      cleanupMode(activeMode);
+    }
     activeMode = mode;
     try { sessionStorage.setItem(MODE_KEY, mode); } catch { /* ignore */ }
     // If switching to a mode without point editor, fall back to tuning
@@ -45,6 +58,11 @@
       setTab("tuning");
     }
   }
+
+  // Clean up when the entire module unmounts (navigating away from Effects Lab)
+  onDestroy(() => {
+    cleanupMode(activeMode);
+  });
 
   function setTab(tab: InnerTab) {
     activeTab = tab;

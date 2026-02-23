@@ -86,7 +86,7 @@ import { LedTipTracker } from "./LedTipTracker";
 import { WebGLLedRenderer } from "./led/WebGLLedRenderer";
 import type { ILedOverlayRenderer } from "../contracts/ILedOverlayRenderer";
 import type { ILedTipTracker } from "../contracts/ILedTipTracker";
-import { DEFAULT_LED_CONFIG, type LedOverlayConfig } from "../../domain/types/LedTypes";
+import { DEFAULT_LED_CONFIG, ledBrightnessToFloat, type LedOverlayConfig } from "../../domain/types/LedTypes";
 import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
 
 /**
@@ -242,6 +242,7 @@ export class AnimationEngine {
   private ledRenderer: ILedOverlayRenderer | null = null;
   private ledTipTracker: ILedTipTracker | null = null;
   private ledConfig: LedOverlayConfig = { ...DEFAULT_LED_CONFIG };
+  private ledInitPending = false;
 
   // ============================================================================
   // PRIVATE STATE
@@ -351,7 +352,7 @@ export class AnimationEngine {
     this.prevSmokeLevel = visibilityManager.getFireSmokeLevel();
     this.prevUseCharcoal = visibilityManager.getFireUseCharcoal();
     this.prevFireIntensity = visibilityManager.getFireIntensity();
-    this.fireDefaultsLoader = container.items.fireDefaultsLoader as IFireDefaultsLoader;
+    this.fireDefaultsLoader = container.items.fireDefaultsLoader;
 
     // Build fireConfig from base params + slider mappings
     this.fireConfig.colorBlend = this.prevColorBlend;
@@ -394,9 +395,7 @@ export class AnimationEngine {
         if (state.darkMode !== this.prevDarkMode && !this.previewDarkModeActive) {
           this.prevDarkMode = state.darkMode;
           // Note: setDarkMode on renderer controls the "Dark Mode" effect (dark bg, inverted grid)
-          // When fire is enabled, always keep dark mode ON (fire on white bg looks terrible)
-          const effectiveDarkMode = this.fireConfig.enabled ? true : state.darkMode;
-          this.animationRenderer?.setDarkMode(effectiveDarkMode);
+          this.animationRenderer?.setDarkMode(state.darkMode);
 
           // CRITICAL: Trigger immediate render so dark mode takes effect visually
           // Don't wait for prop textures - render with existing textures first
@@ -505,18 +504,24 @@ export class AnimationEngine {
           });
         }
 
-        // Sync LED effect from visibility manager
+        // Sync LED effect from visibility manager — batch into a single setLedConfig call
+        // to avoid calling syncLedOverlay (WebGL init) multiple times per notification.
         const ledEnabled = vm.isLedEffectEnabled();
-        if (ledEnabled !== this.ledConfig.enabled) {
-          this.setLedConfig({ enabled: ledEnabled });
-        }
         const ledPatternId = vm.getLedPatternId();
-        if (ledPatternId !== this.ledConfig.patternId) {
-          this.setLedConfig({ patternId: ledPatternId });
-        }
         const ledColor = vm.getLedPrimaryColor();
-        if (ledColor !== this.ledConfig.primaryColor) {
-          this.setLedConfig({ primaryColor: ledColor });
+        const ledBrightness = ledBrightnessToFloat(vm.getLedBrightness());
+
+        const ledDiff: Partial<LedOverlayConfig> = {};
+        if (ledEnabled !== this.ledConfig.enabled) ledDiff.enabled = ledEnabled;
+        if (ledPatternId !== this.ledConfig.patternId)
+          ledDiff.patternId = ledPatternId;
+        if (ledColor !== this.ledConfig.primaryColor)
+          ledDiff.primaryColor = ledColor;
+        if (ledBrightness !== this.ledConfig.brightness)
+          ledDiff.brightness = ledBrightness;
+
+        if (Object.keys(ledDiff).length > 0) {
+          this.setLedConfig(ledDiff);
         }
       }
     );
@@ -602,6 +607,9 @@ export class AnimationEngine {
         this.additionalLayerTexturesLoaded = [];
         this.additionalLayerTexturesLoading = [];
 
+        // Reset fire tip tracker so fire points recalculate for the new prop geometry
+        this.fireTipTracker?.reset();
+
         // Hot-swap textures
         this.loadPropTextures().then(() => {
           if (this.state.isInitialized) {
@@ -635,6 +643,9 @@ export class AnimationEngine {
         // Reset additional layer textures so they reload with new prop type
         this.additionalLayerTexturesLoaded = [];
         this.additionalLayerTexturesLoading = [];
+
+        // Reset fire tip tracker so fire points recalculate for the new prop geometry
+        this.fireTipTracker?.reset();
 
         // Hot-swap textures without full re-initialization
         // The render loop keeps running with old textures until new ones load
@@ -960,7 +971,8 @@ export class AnimationEngine {
     this.fireRenderer = null;
     this.fireTipTracker = null;
 
-    // Dispose LED overlay
+    // Dispose LED overlay (also prevent any pending deferred init from running)
+    this.ledConfig.enabled = false;
     this.ledRenderer?.dispose();
     this.ledRenderer = null;
     this.ledTipTracker = null;
@@ -1025,9 +1037,7 @@ export class AnimationEngine {
         onPixiRendererReady: (renderer) => {
           this.animationRenderer = renderer;
           // Set initial Dark Mode on renderer (no animation for initial sync)
-          // Force dark mode when fire is enabled (fire on white bg looks terrible)
-          const initialDarkMode = this.fireConfig.enabled ? true : this.prevDarkMode;
-          renderer.setDarkMode(initialDarkMode, false);
+          renderer.setDarkMode(this.prevDarkMode, false);
         },
         onInitialized: (initialized) => {
           this.state.isInitialized = initialized;
@@ -1243,15 +1253,9 @@ export class AnimationEngine {
     }
     this.syncFireOverlay();
 
-    // Force dark mode when fire is enabled (fire on white background looks terrible)
-    if (config.enabled !== undefined && config.enabled !== wasEnabled) {
-      if (config.enabled && !this.previewDarkModeActive) {
-        // Fire turning ON: force renderer to dark mode
-        this.animationRenderer?.setDarkMode(true);
-      } else if (!config.enabled && !this.previewDarkModeActive) {
-        // Fire turning OFF: restore actual dark mode setting
-        this.animationRenderer?.setDarkMode(this.prevDarkMode);
-      }
+    // When fire toggles, trigger a dark mode sync so the renderer reflects current state
+    if (config.enabled !== undefined && config.enabled !== wasEnabled && !this.previewDarkModeActive) {
+      this.animationRenderer?.setDarkMode(this.prevDarkMode);
     }
 
     // Trigger a render to start/stop fire loop
@@ -1272,21 +1276,49 @@ export class AnimationEngine {
   /**
    * Initialize or destroy the LED overlay based on config.enabled.
    * Creates the WebGL canvas lazily on first enable, removes on disable.
+   *
+   * IMPORTANT: LED WebGL initialization (shader compilation, framebuffer creation)
+   * is deferred via requestAnimationFrame to prevent blocking the main thread
+   * during Svelte effect processing. On Windows/ANGLE, synchronous shader
+   * compilation can hang the page for seconds.
    */
   private syncLedOverlay(): void {
     if (this.ledConfig.enabled && !this.ledRenderer?.isInitialized()) {
-      if (!this.containerElement) return;
-      this.ledRenderer = new WebGLLedRenderer();
-      const success = this.ledRenderer.initialize(
-        this.containerElement,
-        this.canvasSize,
-        this.canvasSize
-      );
-      if (success) {
-        this.renderLoopService?.updateConfig({ ledRenderer: this.ledRenderer });
-      } else {
-        this.ledRenderer = null;
-      }
+      if (!this.containerElement || this.ledInitPending) return;
+      // Defer WebGL initialization to avoid blocking the reactive effect chain.
+      // Without this, shader compilation on Windows/ANGLE can freeze the entire page.
+      this.ledInitPending = true;
+      requestAnimationFrame(() => {
+        this.ledInitPending = false;
+        // Re-check: config or container may have changed while deferred
+        if (!this.ledConfig.enabled || !this.containerElement) return;
+        if (this.ledRenderer?.isInitialized()) return;
+        try {
+          this.ledRenderer = new WebGLLedRenderer();
+          const success = this.ledRenderer.initialize(
+            this.containerElement,
+            this.canvasSize,
+            this.canvasSize
+          );
+          if (success) {
+            this.renderLoopService?.updateConfig({
+              ledRenderer: this.ledRenderer,
+            });
+            // Trigger a render now that the renderer is ready
+            if (this.renderLoopService && this.lastPropsRef) {
+              this.renderLoopService.triggerRender(() =>
+                this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
+              );
+            }
+          } else {
+            console.warn("[AnimationEngine] LED WebGL initialization failed");
+            this.ledRenderer = null;
+          }
+        } catch (err) {
+          console.error("[AnimationEngine] LED overlay init error:", err);
+          this.ledRenderer = null;
+        }
+      });
     } else if (!this.ledConfig.enabled && this.ledRenderer) {
       this.ledRenderer.dispose();
       this.ledRenderer = null;
@@ -1381,8 +1413,15 @@ export class AnimationEngine {
       this.state.isNewLetter = this.glyphTransitionService.state.isNewLetter;
     }
 
-    // Sync from prop type service
-    if (this.propTypeChangeService) {
+    // Sync from prop type service — but ONLY when overrides are not active.
+    // When overrides are set (e.g., landing page demo), the override detection
+    // block in update() owns the prop type state. If we overwrite here, the
+    // next frame's override check sees no change and the state reverts.
+    if (
+      this.propTypeChangeService &&
+      this.propTypeOverrideBlue == null &&
+      this.propTypeOverrideRed == null
+    ) {
       this.state.currentBluePropType =
         this.propTypeChangeService.state.bluePropType;
       this.state.currentRedPropType =
@@ -1408,6 +1447,10 @@ export class AnimationEngine {
         this.renderLoopService?.updateConfig({ canvasSize: newSize });
         this.fireRenderer?.resize(newSize, newSize);
         this.ledRenderer?.resize(newSize, newSize);
+        // Reset fire/LED tip trackers so positions recalculate at the new canvas size.
+        // Without this, after HMR the tracker uses stale positions from the old size.
+        this.fireTipTracker?.reset();
+        this.ledTipTracker?.reset();
       }
     }
   }

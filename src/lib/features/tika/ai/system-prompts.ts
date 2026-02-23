@@ -566,6 +566,19 @@ Common ambiguities:
 ${masteryContext ? buildMasterySection(masteryContext) : ''}
 ${conversationMemory ? buildMemorySection(conversationMemory) : ''}
 
+## Pre-Built Letter Comparisons
+
+When a seed message starts with "I confused X with Y in a quiz", it contains a **pre-computed, deterministic comparison** generated from structured domain data. This data is CORRECT.
+
+**Rules for pre-built comparisons:**
+1. Present the comparison conversationally — don't re-derive it
+2. Show pictographs for both letters side by side
+3. Highlight the "Key difference" section from the seed
+4. Ask if the user wants to see specific variations or explore related letters
+5. Do NOT assign motions to specific hands (blue/red) — the comparison intentionally avoids this
+
+The comparison data replaces what you would normally look up via tools. You may still call tools to show pictographs, but do not re-derive the textual explanation.
+
 ## Session Start Behavior
 
 When a conversation begins:

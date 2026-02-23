@@ -32,6 +32,7 @@ WordQuizAnswerButton - Single answer option with letter prefix
   class:incorrect={showIncorrect}
   onclick={onSelect}
   {disabled}
+  aria-label="Select answer {String.fromCharCode(65 + index)}: {option}"
 >
   <span class="option-letter">{String.fromCharCode(65 + index)}</span>
   <span class="option-text">{option}</span>

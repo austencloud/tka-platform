@@ -149,8 +149,6 @@
   import { container } from "$lib/shared/di";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
-  import type { ILanSyncCoordinator } from "$lib/shared/lan-sync/services/contracts/ILanSyncCoordinator";
   import type { ISequenceDataProvider } from "$lib/shared/sequence-viewer/services/contracts/ISequenceDataProvider";
   import { createAnimationPanelState, type AnimationStateKey } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { setAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
@@ -171,7 +169,7 @@
   import { TempoRampOrchestrator } from "$lib/shared/sequence-viewer/services/implementations/TempoRampOrchestrator";
   import { createTempoRampState } from "$lib/shared/sequence-viewer/state/tempo-ramp-state.svelte";
   import { page } from "$app/stores";
-  import type { ISequenceEncoder, ShareURLMetadata } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
+  import type { ShareURLMetadata } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
 
   // ============================================================================
   // PROPS
@@ -484,7 +482,7 @@
       sequenceDataProvider = container.items.sequenceDataProvider;
       hapticService = container.items.hapticFeedback;
 
-      const lanSyncCoordinator = container.items.lanSyncCoordinator as ILanSyncCoordinator;
+      const lanSyncCoordinator = container.items.lanSyncCoordinator;
       lanSyncState.initialize(lanSyncCoordinator);
 
       animationServicesReady = true;
@@ -839,6 +837,9 @@
 
     try {
       const sequenceWord = sequence.word || sequence.name || "Sequence";
+      // Store the full sequence data so joining peers can receive it
+      lanSyncState.setLocalSequence(sequence as unknown as Record<string, unknown>);
+
       const isNowSyncing = await lanSyncState.toggleSync(
         sequence.id,
         sequenceWord,
@@ -850,6 +851,11 @@
           shouldLoop: true
         }
       );
+
+      if (!isNowSyncing) {
+        lanSyncState.setLocalSequence(null);
+      }
+
       hapticService?.trigger(isNowSyncing ? "success" : "selection");
       accessibilityHelper.announce(isNowSyncing ? "Sync enabled. Searching for peers." : "Sync disabled");
     } catch (err) {
@@ -924,7 +930,7 @@
       return;
     }
     try {
-      const libraryRepo = container.items.libraryRepository as ILibraryRepository;
+      const libraryRepo = container.items.libraryRepository;
       await libraryRepo.saveSequence(sequence);
       showToast("Saved to library", "success");
     } catch (error) {
@@ -941,7 +947,7 @@
 
     if (sequence) {
       try {
-        const encoder = container.items.sequenceEncoder as ISequenceEncoder;
+        const encoder = container.items.sequenceEncoder;
         const metadata: ShareURLMetadata = {};
 
         if (sequence.word) metadata.word = sequence.word;

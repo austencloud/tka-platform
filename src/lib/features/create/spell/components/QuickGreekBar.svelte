@@ -7,7 +7,6 @@ Haptic feedback on all interactions.
 -->
 <script lang="ts">
   import { container } from "$lib/shared/di";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import { GREEK_LETTER_DISPLAY } from "../domain/constants/spell-constants";
   import { slide } from "svelte/transition";
@@ -30,7 +29,7 @@ Haptic feedback on all interactions.
 
   let { onSelect }: Props = $props();
 
-  const haptic = container.items.hapticFeedback as IHapticFeedback;
+  const haptic = container.items.hapticFeedback;
 
   // Most common Greek letters for quick access
   const QUICK_LETTERS: Letter[] = [

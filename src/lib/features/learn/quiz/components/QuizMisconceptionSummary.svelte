@@ -6,7 +6,8 @@ Only renders if there are actual type-confusion gaps to report.
 -->
 <script lang="ts">
   import type { DetectedGap } from "../../services/contracts/IGapDetector";
-  import { tkaKnowledgeGraph } from "$lib/features/tika/knowledge/semantic-graph";
+  import { container } from "$lib/shared/di";
+  import type { ILetterBreakdownGenerator } from "../../services/contracts/ILetterBreakdownGenerator";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { browser } from "$app/environment";
 
@@ -15,7 +16,24 @@ Only renders if there are actual type-confusion gaps to report.
   function openInTika(group: ConfusionGroup) {
     if (!browser) return;
 
-    const question = `I confused ${group.correctLabel} with ${group.chosenLabel} in a quiz (${group.correctLabel} is ${group.correctTypeName}, ${group.chosenLabel} is ${group.chosenTypeName}). What's the difference and how can I tell them apart?`;
+    const generator = container.items
+      .letterBreakdownGenerator as ILetterBreakdownGenerator;
+    const comparison = generator.compare(
+      group.correctLabel,
+      group.chosenLabel
+    );
+
+    let question: string;
+    if (comparison) {
+      question =
+        `I confused ${group.correctLabel} with ${group.chosenLabel} in a quiz (${group.count}x). Here's what I need to understand:\n\n` +
+        `${comparison.letterA.summary}. It's a Type ${comparison.letterA.typeNumber} (${comparison.letterA.typeName}) letter.\n` +
+        `${comparison.letterB.summary}. It's a Type ${comparison.letterB.typeNumber} (${comparison.letterB.typeName}) letter.\n\n` +
+        `Key difference: ${comparison.explanation}`;
+    } else {
+      question = `I confused ${group.correctLabel} with ${group.chosenLabel} in a quiz (${group.count}x). What's the difference?`;
+    }
+
     sessionStorage.setItem("tika-seed-message", question);
     handleModuleChange("tika");
   }
@@ -23,8 +41,6 @@ Only renders if there are actual type-confusion gaps to report.
   interface ConfusionGroup {
     correctLabel: string;
     chosenLabel: string;
-    correctTypeName: string;
-    chosenTypeName: string;
     count: number;
     explanation?: string;
   }
@@ -33,7 +49,6 @@ Only renders if there are actual type-confusion gaps to report.
     const groups = new Map<string, ConfusionGroup>();
 
     for (const gap of gaps) {
-      // Normalize key so A|B and B|A merge using letters
       const key =
         gap.correctLabel < gap.chosenLabel
           ? `${gap.correctLabel}|${gap.chosenLabel}`
@@ -43,13 +58,9 @@ Only renders if there are actual type-confusion gaps to report.
       if (existing) {
         existing.count++;
       } else {
-        const correctNode = tkaKnowledgeGraph.getNode(gap.correctNodeId);
-        const chosenNode = tkaKnowledgeGraph.getNode(gap.chosenNodeId);
         groups.set(key, {
           correctLabel: gap.correctLabel,
           chosenLabel: gap.chosenLabel,
-          correctTypeName: correctNode?.name.en ?? gap.correctNodeId,
-          chosenTypeName: chosenNode?.name.en ?? gap.chosenNodeId,
           count: 1,
           explanation: gap.confusionExplanation,
         });

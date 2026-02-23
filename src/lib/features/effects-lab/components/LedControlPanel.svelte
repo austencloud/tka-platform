@@ -14,6 +14,7 @@
 
   interface Props {
     ledEnabled: boolean;
+    brightness: number;
     patternId: string;
     primaryColor: string;
     patternSpeed: number;
@@ -24,6 +25,7 @@
 
   let {
     ledEnabled = $bindable(),
+    brightness = $bindable(),
     patternId = $bindable(),
     primaryColor = $bindable(),
     patternSpeed = $bindable(),
@@ -31,6 +33,8 @@
     bloomIntensity = $bindable(),
     trailFadeRate = $bindable(),
   }: Props = $props();
+
+  const brightnessLevels = [1, 2, 3, 4, 5];
 </script>
 
 <div class="led-section">
@@ -52,6 +56,24 @@
   </div>
 
   {#if ledEnabled}
+    <div class="brightness-section">
+      <span class="brightness-label">Brightness</span>
+      <div class="brightness-row">
+        {#each brightnessLevels as level}
+          <button
+            class="brightness-btn"
+            class:active={brightness === level}
+            aria-pressed={brightness === level}
+            onclick={() => (brightness = level)}
+            type="button"
+            aria-label="Set LED brightness to level {level}"
+          >
+            {level}
+          </button>
+        {/each}
+      </div>
+    </div>
+
     <div class="pattern-grid">
       {#each LED_PATTERNS as pattern (pattern.id)}
         <button
@@ -186,6 +208,57 @@
     border-color: color-mix(in srgb, var(--led-green) 70%, transparent);
   }
 
+  .brightness-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: var(--spacing-sm, 8px) 0;
+  }
+
+  .brightness-label {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  }
+
+  .brightness-row {
+    display: flex;
+    gap: 6px;
+  }
+
+  .brightness-btn {
+    flex: 1;
+    min-height: 36px;
+    padding: 6px 8px;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius-md, 8px);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    transition: all 150ms ease;
+  }
+
+  .brightness-btn:hover {
+    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+  }
+
+  .brightness-btn.active {
+    background: var(--led-green-dim);
+    border-color: var(--led-green-border-strong);
+    color: var(--led-green-bright);
+  }
+
+  .brightness-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
+  }
+
   .pattern-grid {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
@@ -285,7 +358,8 @@
 
   @media (prefers-reduced-motion: reduce) {
     .toggle-btn,
-    .pattern-card {
+    .pattern-card,
+    .brightness-btn {
       transition: none;
     }
   }

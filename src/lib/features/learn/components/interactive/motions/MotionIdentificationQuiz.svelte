@@ -3,7 +3,6 @@ MotionIdentificationQuiz - Quiz to identify motion types from animations
 User must play animation first, then identify the motion type (1-6)
 -->
 <script lang="ts">
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import {
     MOTION_QUIZ_QUESTIONS,
@@ -21,7 +20,7 @@ User must play animation first, then identify the motion type (1-6)
     onComplete?: () => void;
   }>();
 
-  const hapticService = container.items.hapticFeedback as IHapticFeedback;
+  const hapticService = container.items.hapticFeedback;
 
   function shuffle<T>(array: T[]): T[] {
     const arr = [...array];
