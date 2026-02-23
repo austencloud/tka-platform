@@ -31,7 +31,7 @@
   // Unified camera system
   import UnifiedCameraController from "$lib/shared/3d-core/camera/UnifiedCameraController.svelte";
   import { CameraMode } from "$lib/shared/3d-core/camera/types";
-  import { cameraPreferences } from "$lib/shared/3d-core/camera/camera-preferences.svelte";
+
 
   // Avatar components
   import Avatar3D from "$lib/shared/3d-animation/components/Avatar3D.svelte";
@@ -479,10 +479,6 @@
     };
 
     isInitialized = true;
-
-    // Force FIRST_PERSON mode for realm (ORBIT mode doesn't work without OrbitControls)
-    // This ensures the camera starts correctly regardless of saved preferences
-    cameraPreferences.setModeForDestination("realm", CameraMode.FIRST_PERSON);
 
     // Place campground objects (spawn clearing was already set above)
     if (activeConfig.spawnClearing?.enabled && activeConfig.spawnClearing.campground.enabled) {
