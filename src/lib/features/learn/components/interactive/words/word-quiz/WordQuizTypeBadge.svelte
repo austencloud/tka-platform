@@ -21,12 +21,13 @@ WordQuizTypeBadge - Question type indicator badge
     align-items: center;
     gap: 0.5rem;
     padding: 0.375rem 0.75rem;
-    background: rgba(168, 85, 247, 0.15);
-    border: 1px solid rgba(168, 85, 247, 0.3);
+    --quiz-color: #a855f7;
+    background: color-mix(in srgb, var(--quiz-color) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--quiz-color) 30%, transparent);
     border-radius: 20px;
     font-size: 0.75rem;
     font-weight: 600;
-    color: #a855f7;
+    color: var(--quiz-color);
     text-transform: capitalize;
   }
 </style>

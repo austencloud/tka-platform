@@ -118,9 +118,8 @@ Provides access to the complete TKA letter codex with drill-down detail view:
   .codex-header h2 {
     font-size: 2.5rem;
     font-weight: 800;
-    color: var(--foreground, #ffffff);
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-    background: linear-gradient(135deg, #ffffff, #e0e0e0);
+    color: var(--theme-text);
+    background: linear-gradient(135deg, var(--theme-text), var(--theme-text-muted));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -182,8 +181,7 @@ Provides access to the complete TKA letter codex with drill-down detail view:
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(8px);
+    background: color-mix(in srgb, var(--theme-panel-bg) 85%, transparent);
     z-index: 100;
     gap: 1rem;
   }

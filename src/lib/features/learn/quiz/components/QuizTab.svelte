@@ -16,7 +16,7 @@ Provides quiz functionality for learning TKA notation:
   import type { QuizProgress } from "../domain/models/quiz-models";
   import type { IQuizRepoManager } from "../services/contracts/IQuizRepository";
   import type { IQuizSessionManager } from "../services/contracts/IQuizSessionManager";
-  import { QuestionGeneratorService } from "../services/implementations/QuestionGenerator";
+  import { QuestionGenerator } from "../services/implementations/QuestionGenerator";
   import QuizResultsView from "./QuizResultsView.svelte";
   import QuizSelectorView from "./QuizSelectorView.svelte";
   import QuizWorkspaceView from "./QuizWorkspaceView.svelte";
@@ -85,7 +85,7 @@ Provides quiz functionality for learning TKA notation:
       selectedQuizMode = data.quizMode;
 
       // Initialize the question generator service with pictograph data
-      await QuestionGeneratorService.initialize();
+      await QuestionGenerator.initialize();
 
       // Convert the quiz type to a quiz ID
       const quizId = `${data.quizType}_${data.quizMode}`;
@@ -115,7 +115,7 @@ Provides quiz functionality for learning TKA notation:
     }
   }
 
-  async function handleAnswerSubmit(answer: any) {
+  async function handleAnswerSubmit(answer: boolean) {
     if (!quizSessionService) return;
 
     try {
@@ -259,7 +259,7 @@ Provides quiz functionality for learning TKA notation:
   {#if error}
     <div class="error-banner">
       <span>{error}</span>
-      <button onclick={() => (error = null)}>×</button>
+      <button onclick={() => (error = null)} aria-label="Dismiss error">×</button>
     </div>
   {/if}
 
@@ -372,8 +372,8 @@ Provides quiz functionality for learning TKA notation:
   }
 
   .error-banner {
-    background: var(--color-error, #ff4444);
-    color: white;
+    background: var(--semantic-error, #ff4444);
+    color: var(--theme-text, #ffffff);
     padding: 0.5rem 1rem;
     display: flex;
     justify-content: space-between;
@@ -383,7 +383,7 @@ Provides quiz functionality for learning TKA notation:
   .error-banner button {
     background: none;
     border: none;
-    color: white;
+    color: var(--theme-text, #ffffff);
     font-size: 1.2rem;
     cursor: pointer;
   }

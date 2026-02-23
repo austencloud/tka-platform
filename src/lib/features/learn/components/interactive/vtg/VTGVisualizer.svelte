@@ -75,8 +75,8 @@ Shows how hands coordinate their movements in different VTG patterns
     },
   };
 
-  const LEFT_HAND_COLOR = "#4A9EFF";
-  const RIGHT_HAND_COLOR = "#FF4A9E";
+  const LEFT_HAND_COLOR = "var(--prop-blue, #4A9EFF)";
+  const RIGHT_HAND_COLOR = "var(--prop-red, #FF4A9E)";
 
   // Animation state
   let animating = $state(false);
@@ -228,7 +228,7 @@ Shows how hands coordinate their movements in different VTG patterns
     />
 
     <!-- Center point -->
-    <circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.2)" />
+    <circle cx="50" cy="50" r="2" fill="var(--theme-stroke, rgba(255,255,255,0.2))" />
 
     <!-- Hand trails (when animating) -->
     {#if animating}
@@ -348,7 +348,7 @@ Shows how hands coordinate their movements in different VTG patterns
     align-items: center;
     gap: 1rem;
     padding: 1.25rem;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border: 1px solid var(--theme-stroke);
     border-radius: 16px;
   }
@@ -423,7 +423,7 @@ Shows how hands coordinate their movements in different VTG patterns
   }
 
   .info-value {
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--theme-text, rgba(255, 255, 255, 0.85));
     font-weight: 500;
   }
 
@@ -436,12 +436,12 @@ Shows how hands coordinate their movements in different VTG patterns
     padding: 0.75rem 1.5rem;
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.2) 0%,
-      rgba(6, 182, 212, 0.2) 100%
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 20%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 20%, transparent) 100%
     );
-    border: 1px solid rgba(34, 211, 238, 0.4);
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent);
     border-radius: 10px;
-    color: #22d3ee;
+    color: var(--theme-accent, #22d3ee);
     font-size: 0.9375rem;
     font-weight: 600;
     cursor: pointer;
@@ -452,10 +452,10 @@ Shows how hands coordinate their movements in different VTG patterns
   .play-button:hover:not(:disabled) {
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.3) 0%,
-      rgba(6, 182, 212, 0.3) 100%
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent) 100%
     );
-    border-color: rgba(34, 211, 238, 0.6);
+    border-color: color-mix(in srgb, var(--theme-accent, #22d3ee) 60%, transparent);
   }
 
   .play-button:disabled {

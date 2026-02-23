@@ -169,8 +169,8 @@ ModeQuizSection - Identify diamond vs box grid
   }
 
   .answer-btn.correct {
-    background: rgba(80, 200, 120, 0.2);
-    border-color: rgba(80, 200, 120, 0.6);
+    background: color-mix(in srgb, var(--semantic-success, #50c878) 20%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-success, #50c878) 60%, transparent);
     animation: correctPulse 0.5s ease;
   }
 
@@ -187,8 +187,8 @@ ModeQuizSection - Identify diamond vs box grid
   }
 
   .answer-btn.incorrect {
-    background: rgba(255, 74, 74, 0.2);
-    border-color: rgba(255, 74, 74, 0.6);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 60%, transparent);
     animation: shake var(--duration-dramatic) ease;
   }
 
@@ -206,8 +206,8 @@ ModeQuizSection - Identify diamond vs box grid
   }
 
   .answer-btn.reveal-correct {
-    background: rgba(80, 200, 120, 0.15);
-    border-color: rgba(80, 200, 120, 0.4);
+    background: color-mix(in srgb, var(--semantic-success, #50c878) 15%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-success, #50c878) 40%, transparent);
   }
 
   .result-icon {
@@ -219,11 +219,11 @@ ModeQuizSection - Identify diamond vs box grid
   }
 
   .answer-btn.correct .result-icon {
-    color: #50c878;
+    color: var(--semantic-success, #50c878);
   }
 
   .answer-btn.incorrect .result-icon {
-    color: #ff4a4a;
+    color: var(--semantic-error, #ef4444);
   }
 
   .feedback {
@@ -246,15 +246,15 @@ ModeQuizSection - Identify diamond vs box grid
   }
 
   .feedback.correct {
-    background: rgba(80, 200, 120, 0.15);
-    border: 1px solid rgba(80, 200, 120, 0.3);
-    color: #50c878;
+    background: color-mix(in srgb, var(--semantic-success, #50c878) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-success, #50c878) 30%, transparent);
+    color: var(--semantic-success, #50c878);
   }
 
   .feedback.incorrect {
-    background: rgba(255, 158, 74, 0.15);
-    border: 1px solid rgba(255, 158, 74, 0.3);
-    color: #ff9e4a;
+    background: color-mix(in srgb, var(--semantic-warning, #f59e0b) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-warning, #f59e0b) 30%, transparent);
+    color: var(--semantic-warning, #f59e0b);
   }
 
   @media (max-width: 500px) {

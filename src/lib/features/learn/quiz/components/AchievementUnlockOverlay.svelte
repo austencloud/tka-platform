@@ -35,21 +35,27 @@ Features:
 	let iconVisible = $state(false);
 	let textVisible = $state(false);
 
+	let iconTimer: ReturnType<typeof setTimeout> | null = null;
+	let textTimer: ReturnType<typeof setTimeout> | null = null;
+	let confettiTimer: ReturnType<typeof setTimeout> | null = null;
+	let autoDismissTimer: ReturnType<typeof setTimeout> | null = null;
+	let dismissAnimTimer: ReturnType<typeof setTimeout> | null = null;
+
 	onMount(() => {
 		// Stagger the animations
 		visible = true;
 
-		setTimeout(() => {
+		iconTimer = setTimeout(() => {
 			iconVisible = true;
 		}, 200);
 
-		setTimeout(() => {
+		textTimer = setTimeout(() => {
 			textVisible = true;
 		}, 400);
 
 		// Trigger confetti for silver/gold achievements
 		if (confettiAmount > 0) {
-			setTimeout(() => {
+			confettiTimer = setTimeout(() => {
 				delightOrchestrator?.celebrate(
 					achievement.tier === 'gold' ? 'badge-earned' : 'quiz-complete',
 					{}
@@ -58,16 +64,26 @@ Features:
 		}
 
 		// Auto-dismiss after 3.5 seconds
-		const dismissTimer = setTimeout(() => {
+		autoDismissTimer = setTimeout(() => {
 			handleDismiss();
 		}, 3500);
 
-		return () => clearTimeout(dismissTimer);
+		return () => {
+			if (iconTimer !== null) clearTimeout(iconTimer);
+			if (textTimer !== null) clearTimeout(textTimer);
+			if (confettiTimer !== null) clearTimeout(confettiTimer);
+			if (autoDismissTimer !== null) clearTimeout(autoDismissTimer);
+			if (dismissAnimTimer !== null) clearTimeout(dismissAnimTimer);
+		};
 	});
 
 	function handleDismiss() {
 		visible = false;
-		setTimeout(() => {
+		if (autoDismissTimer !== null) {
+			clearTimeout(autoDismissTimer);
+			autoDismissTimer = null;
+		}
+		dismissAnimTimer = setTimeout(() => {
 			onDismiss();
 		}, 300);
 	}

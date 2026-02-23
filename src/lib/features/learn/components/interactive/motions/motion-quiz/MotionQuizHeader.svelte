@@ -30,8 +30,8 @@ MotionQuizHeader - Progress and score display for motion quiz
     justify-content: space-between;
     align-items: center;
     padding: 0.75rem 1rem;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 10px;
   }
 
@@ -44,6 +44,6 @@ MotionQuizHeader - Progress and score display for motion quiz
   .score {
     font-size: 0.875rem;
     font-weight: 600;
-    color: #22d3ee;
+    color: var(--theme-accent, #22d3ee);
   }
 </style>

@@ -116,7 +116,7 @@ Uses the actual GridSvg component for consistency with the rest of the app.
     aspect-ratio: 1;
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px var(--theme-shadow, rgba(0, 0, 0, 0.1));
   }
 
   /* Background respects light/dark mode - matches PictographRenderer */
@@ -131,7 +131,7 @@ Uses the actual GridSvg component for consistency with the rest of the app.
 
   /* Border to make grid stand out against dark backgrounds */
   :global(:root.dark) .grid-svg {
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15), 0 2px 8px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 0 0 1px var(--theme-stroke, rgba(255, 255, 255, 0.15)), 0 2px 8px color-mix(in srgb, var(--theme-shadow, #000) 30%, transparent);
   }
 
   /* ============================================
@@ -234,7 +234,7 @@ Uses the actual GridSvg component for consistency with the rest of the app.
     0%,
     100% {
       transform: scale(1);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 8px var(--theme-shadow, rgba(0, 0, 0, 0.1));
     }
     50% {
       transform: scale(1.02);
@@ -247,7 +247,7 @@ Uses the actual GridSvg component for consistency with the rest of the app.
   .direction-label {
     font-size: var(--font-size-3xl);
     font-weight: 700;
-    fill: #374151;
+    fill: var(--theme-text, #374151);
     font-family:
       system-ui,
       -apple-system,
@@ -255,7 +255,7 @@ Uses the actual GridSvg component for consistency with the rest of the app.
   }
 
   :global(:root.dark) .direction-label {
-    fill: #9ca3af;
+    fill: var(--theme-text-dim, #9ca3af);
   }
 
   /* Responsive */

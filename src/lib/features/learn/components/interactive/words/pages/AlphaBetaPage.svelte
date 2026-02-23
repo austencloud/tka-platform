@@ -99,7 +99,7 @@
     color: white;
     margin: 0;
     text-align: center;
-    background: linear-gradient(135deg, #50c878 0%, #3cb371 100%);
+    background: linear-gradient(135deg, var(--semantic-success, #50c878) 0%, var(--semantic-success, #3cb371) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -115,7 +115,7 @@
   p {
     font-size: 1rem;
     line-height: 1.6;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--theme-text, rgba(255, 255, 255, 0.85));
     margin: 0;
   }
 
@@ -140,21 +140,23 @@
   }
 
   .letter-card.alpha {
+    --alpha-color: #ff6b6b;
     background: linear-gradient(
       135deg,
-      rgba(255, 107, 107, 0.1) 0%,
-      rgba(255, 107, 107, 0.02) 100%
+      color-mix(in srgb, var(--alpha-color) 10%, transparent) 0%,
+      color-mix(in srgb, var(--alpha-color) 2%, transparent) 100%
     );
-    border: 1px solid rgba(255, 107, 107, 0.2);
+    border: 1px solid color-mix(in srgb, var(--alpha-color) 20%, transparent);
   }
 
   .letter-card.beta {
+    --beta-color: #4ecdc4;
     background: linear-gradient(
       135deg,
-      rgba(78, 205, 196, 0.1) 0%,
-      rgba(78, 205, 196, 0.02) 100%
+      color-mix(in srgb, var(--beta-color) 10%, transparent) 0%,
+      color-mix(in srgb, var(--beta-color) 2%, transparent) 100%
     );
-    border: 1px solid rgba(78, 205, 196, 0.2);
+    border: 1px solid color-mix(in srgb, var(--beta-color) 20%, transparent);
   }
 
   .letter-info {
@@ -165,7 +167,7 @@
 
   .pattern-highlight {
     padding: 1.25rem;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
     text-align: center;
@@ -204,18 +206,19 @@
   }
 
   .pattern-type.pro {
-    background: rgba(74, 158, 255, 0.2);
-    color: #4a9eff;
+    background: color-mix(in srgb, var(--prop-blue, #4a9eff) 20%, transparent);
+    color: var(--prop-blue, #4a9eff);
   }
 
   .pattern-type.anti {
-    background: rgba(255, 74, 158, 0.2);
-    color: #ff4a9e;
+    background: color-mix(in srgb, var(--prop-red, #ff4a9e) 20%, transparent);
+    color: var(--prop-red, #ff4a9e);
   }
 
   .pattern-type.hybrid {
-    background: rgba(255, 230, 109, 0.2);
-    color: #ffe66d;
+    --hybrid-color: #ffe66d;
+    background: color-mix(in srgb, var(--hybrid-color) 20%, transparent);
+    color: var(--hybrid-color);
   }
 
   .pattern-note {

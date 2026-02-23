@@ -48,7 +48,7 @@ Page 5 of 5: Test knowledge with Type1LetterQuiz component
     color: white;
     margin: 0;
     text-align: center;
-    background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
+    background: linear-gradient(135deg, var(--theme-accent, #22d3ee) 0%, var(--theme-accent, #06b6d4) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -57,7 +57,7 @@ Page 5 of 5: Test knowledge with Type1LetterQuiz component
   .quiz-intro {
     font-size: 1.125rem;
     line-height: 1.7;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--theme-text, rgba(255, 255, 255, 0.85));
     margin: 0;
     text-align: center;
     margin-bottom: 1rem;

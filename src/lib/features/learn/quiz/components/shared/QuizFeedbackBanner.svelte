@@ -62,22 +62,21 @@ Features:
     left: 50%;
     transform: translateX(-50%);
     padding: 0.75rem 1.25rem;
-    background: rgba(239, 68, 68, 0.9);
+    background: color-mix(in srgb, var(--semantic-error) 90%, transparent);
     border-radius: 12px;
     text-align: center;
     animation: bannerFadeIn var(--duration-emphasis) cubic-bezier(0.16, 1, 0.3, 1);
-    backdrop-filter: blur(8px);
     white-space: nowrap;
     z-index: 150;
   }
 
   .feedback-banner.correct {
-    background: rgba(34, 197, 94, 0.9);
+    background: color-mix(in srgb, var(--semantic-success) 90%, transparent);
   }
 
   .feedback-banner.streak {
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.9) 0%, rgba(251, 191, 36, 0.9) 100%);
-    box-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--semantic-success) 90%, transparent) 0%, color-mix(in srgb, var(--semantic-warning) 90%, transparent) 100%);
+    box-shadow: 0 0 20px color-mix(in srgb, var(--semantic-warning) 40%, transparent);
   }
 
   @keyframes bannerFadeIn {
@@ -92,7 +91,7 @@ Features:
   }
 
   .feedback-text {
-    color: white;
+    color: var(--theme-text, #ffffff);
     font-size: 0.9375rem;
     font-weight: 600;
     letter-spacing: 0.01em;

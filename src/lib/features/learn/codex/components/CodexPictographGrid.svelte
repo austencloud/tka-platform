@@ -153,6 +153,7 @@
           class:placeholder={isPlaceholder}
           onclick={() => !isPlaceholder && handlePictographClick(pictograph)}
           title={letter}
+          aria-label={letter}
           disabled={isPlaceholder}
         >
           {#if isPlaceholder}
@@ -204,7 +205,6 @@
     border: 1px solid var(--theme-stroke-strong);
     border-radius: 8px;
     padding: 6px 16px;
-    backdrop-filter: blur(10px);
   }
 
   .section-text {
@@ -392,7 +392,7 @@
     }
 
     .section-text {
-      font-size: 0.6875rem;
+      font-size: var(--font-size-compact, 12px);
     }
   }
 

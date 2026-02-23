@@ -57,7 +57,7 @@ Type1PictographDisplay - Pictograph visualizer with loading state
   }
 
   .error-state {
-    background: rgba(239, 68, 68, 0.05);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 5%, transparent);
     color: var(--semantic-error);
   }
 

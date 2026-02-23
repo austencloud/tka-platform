@@ -52,14 +52,20 @@ QuizGlyphCard - Displays TKA glyph with smooth crossfade transitions between let
   $effect(() => {
     if (!letter) return;
 
+    let cancelled = false;
+    let clearTimer: ReturnType<typeof setTimeout> | null = null;
+
     // First load - no transition needed
     if (displayedLetter === null) {
       preloadLetterDimensions([letter]).then(() => {
+        if (cancelled) return;
         glyphDimensions = getLetterDimensions(letter);
         displayedLetter = letter;
         isLoaded = true;
       });
-      return;
+      return () => {
+        cancelled = true;
+      };
     }
 
     // Same letter - no transition needed
@@ -70,6 +76,7 @@ QuizGlyphCard - Displays TKA glyph with smooth crossfade transitions between let
 
     // Preload the new letter
     preloadLetterDimensions([newLetter]).then(() => {
+      if (cancelled) return;
       // Start crossfade: fade out current, fade in new
       outgoingLetter = displayedLetter;
       isTransitioning = true;
@@ -79,11 +86,17 @@ QuizGlyphCard - Displays TKA glyph with smooth crossfade transitions between let
       displayedLetter = newLetter;
 
       // Clear outgoing letter after transition completes
-      setTimeout(() => {
+      clearTimer = setTimeout(() => {
+        if (cancelled) return;
         outgoingLetter = null;
         isTransitioning = false;
       }, transitionDuration);
     });
+
+    return () => {
+      cancelled = true;
+      if (clearTimer !== null) clearTimeout(clearTimer);
+    };
   });
 </script>
 

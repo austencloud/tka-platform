@@ -129,7 +129,7 @@ User watches animation and identifies which VTG mode is being shown
   .question-prompt {
     font-size: 1.125rem;
     font-weight: 600;
-    color: white;
+    color: var(--theme-text);
     margin: 0;
   }
 </style>

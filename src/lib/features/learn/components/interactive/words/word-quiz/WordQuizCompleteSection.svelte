@@ -100,7 +100,7 @@ WordQuizCompleteSection - Score display and completion actions
   .score-value {
     font-size: 3rem;
     font-weight: 800;
-    background: linear-gradient(135deg, #a855f7, #ec4899);
+    background: linear-gradient(135deg, var(--theme-accent, #a855f7), var(--theme-accent, #ec4899));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -108,7 +108,7 @@ WordQuizCompleteSection - Score display and completion actions
 
   .score-separator {
     font-size: 1.5rem;
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
   }
 
   .score-total {
@@ -148,31 +148,31 @@ WordQuizCompleteSection - Score display and completion actions
   .action-btn.secondary {
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke-strong);
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--theme-text, rgba(255, 255, 255, 0.8));
   }
 
   .action-btn.secondary:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.25);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
   }
 
   .action-btn.primary {
     background: linear-gradient(
       135deg,
-      rgba(168, 85, 247, 0.3),
-      rgba(236, 72, 153, 0.3)
+      color-mix(in srgb, var(--theme-accent, #a855f7) 30%, transparent),
+      color-mix(in srgb, var(--theme-accent, #a855f7) 30%, transparent)
     );
-    border: 1px solid rgba(168, 85, 247, 0.4);
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #a855f7) 40%, transparent);
     color: white;
   }
 
   .action-btn.primary:hover {
     background: linear-gradient(
       135deg,
-      rgba(168, 85, 247, 0.4),
-      rgba(236, 72, 153, 0.4)
+      color-mix(in srgb, var(--theme-accent, #a855f7) 40%, transparent),
+      color-mix(in srgb, var(--theme-accent, #a855f7) 40%, transparent)
     );
-    border-color: rgba(168, 85, 247, 0.6);
+    border-color: color-mix(in srgb, var(--theme-accent, #a855f7) 60%, transparent);
     transform: translateY(-2px);
   }
 

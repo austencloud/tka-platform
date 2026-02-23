@@ -43,7 +43,7 @@ StaffGridPoint - Single grid point with label and interactivity
     cx={point.x}
     cy={point.y}
     r="4"
-    fill="rgba(255, 255, 255, 0.3)"
+    fill="var(--theme-stroke-strong, rgba(255, 255, 255, 0.3))"
     class="outer-point"
   />
 
@@ -73,7 +73,7 @@ StaffGridPoint - Single grid point with label and interactivity
   }
 
   .grid-point.clickable:hover .outer-point {
-    fill: rgba(255, 255, 255, 0.6);
+    fill: var(--theme-text, rgba(255, 255, 255, 0.6));
     transform: scale(1.2);
     transform-origin: center;
   }

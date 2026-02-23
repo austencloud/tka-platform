@@ -1,0 +1,1670 @@
+{
+  "meta": {
+    "scope": "features/learn/quiz",
+    "scopePath": "src/lib/features/learn/quiz",
+    "collectedAt": "2026-02-23T06:27:59.125Z",
+    "fileCount": {
+      "total": 49,
+      "svelte": 37,
+      "ts": 12,
+      "css": 0
+    },
+    "durationMs": 501
+  },
+  "dimensions": {
+    "architecture": {
+      "barrelImports": [],
+      "serviceSuffix": [
+        {
+          "file": "features/learn/quiz/services/implementations/QuestionGenerator.ts",
+          "line": 22,
+          "preview": "export class QuestionGeneratorService {"
+        }
+      ],
+      "utilsOrHooks": [],
+      "potentialDiGaps": [
+        {
+          "file": "features/learn/quiz/services/implementations/AnswerChecker.ts",
+          "line": 0,
+          "preview": "Class \"AnswerChecker\" in implementations/ - verify DI registration"
+        },
+        {
+          "file": "features/learn/quiz/services/implementations/QuestionGenerator.ts",
+          "line": 0,
+          "preview": "Class \"QuestionGeneratorService\" in implementations/ - verify DI registration"
+        },
+        {
+          "file": "features/learn/quiz/services/implementations/QuizConfigurator.ts",
+          "line": 0,
+          "preview": "Class \"QuizConfigurator\" in implementations/ - verify DI registration"
+        },
+        {
+          "file": "features/learn/quiz/services/implementations/QuizRepoManager.ts",
+          "line": 0,
+          "preview": "Class \"QuizRepoManager\" in implementations/ - verify DI registration"
+        },
+        {
+          "file": "features/learn/quiz/services/implementations/QuizSessionManager.ts",
+          "line": 0,
+          "preview": "Class \"QuizSessionManager\" in implementations/ - verify DI registration"
+        }
+      ]
+    },
+    "codeQuality": {
+      "anyType": [
+        {
+          "file": "features/learn/quiz/components/QuizTab.svelte",
+          "line": 118,
+          "preview": "async function handleAnswerSubmit(answer: any) {"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizWorkspaceView.svelte",
+          "line": 36,
+          "preview": "onAnswerSubmit?: (answer: any) => void;"
+        }
+      ],
+      "asAny": [],
+      "asUnknownAs": [],
+      "missingReturnType": [],
+      "serviceNaming": [
+        {
+          "file": "features/learn/quiz/components/LetterToPictographQuiz.svelte",
+          "line": 9,
+          "preview": "import { QuestionGeneratorService } from \"../services/implementations/QuestionGenerator\";"
+        },
+        {
+          "file": "features/learn/quiz/components/PictographToLetterQuiz.svelte",
+          "line": 9,
+          "preview": "import { QuestionGeneratorService } from \"../services/implementations/QuestionGenerator\";"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizTab.svelte",
+          "line": 19,
+          "preview": "import { QuestionGeneratorService } from \"../services/implementations/QuestionGenerator\";"
+        },
+        {
+          "file": "features/learn/quiz/components/ValidNextPictographQuiz.svelte",
+          "line": 10,
+          "preview": "import { QuestionGeneratorService } from \"../services/implementations/QuestionGenerator\";"
+        }
+      ]
+    },
+    "svelte5": {
+      "storeImports": [],
+      "writableReadable": [],
+      "dollarColon": [],
+      "exportLet": [],
+      "createEventDispatcher": []
+    },
+    "accessibility": {
+      "reducedMotion": [],
+      "smallFontSize": [
+        {
+          "file": "features/learn/quiz/components/AchievementUnlockOverlay.svelte",
+          "line": 212,
+          "preview": "font-size: 0.75rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/AchievementUnlockOverlay.svelte",
+          "line": 228,
+          "preview": "font-size: 0.9rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/AchievementUnlockOverlay.svelte",
+          "line": 238,
+          "preview": "font-size: 0.75rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerPictograph.svelte",
+          "line": 291,
+          "preview": "font-size: 0.875rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/LessonButton.svelte",
+          "line": 351,
+          "preview": "font-size: 0.875rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/LessonButton.svelte",
+          "line": 417,
+          "preview": "font-size: 0.8125rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/LessonButton.svelte",
+          "line": 440,
+          "preview": "font-size: 0.9375rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/LessonButton.svelte",
+          "line": 444,
+          "preview": "font-size: 0.75rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/LessonButton.svelte",
+          "line": 470,
+          "preview": "font-size: 0.875rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/LessonButton.svelte",
+          "line": 474,
+          "preview": "font-size: 0.6875rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/PerfectQuizCelebration.svelte",
+          "line": 245,
+          "preview": "font-size: 0.875rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizModeToggle.svelte",
+          "line": 172,
+          "preview": "font-size: 0.9375rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizModeToggle.svelte",
+          "line": 229,
+          "preview": "font-size: 0.875rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizModeToggle.svelte",
+          "line": 252,
+          "preview": "font-size: 0.8125rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizModeToggle.svelte",
+          "line": 267,
+          "preview": "font-size: 0.75rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizModeToggle.svelte",
+          "line": 271,
+          "preview": "font-size: 0.6875rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizPictographRenderer.svelte",
+          "line": 58,
+          "preview": "font-size: 0.8rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizPictographRenderer.svelte",
+          "line": 77,
+          "preview": "font-size: 0.8rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizProgressTracker.svelte",
+          "line": 379,
+          "preview": "font-size: 0.875rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizProgressTracker.svelte",
+          "line": 413,
+          "preview": "font-size: 0.75rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizSelectorView.svelte",
+          "line": 206,
+          "preview": "font-size: 0.75rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizSelectorView.svelte",
+          "line": 245,
+          "preview": "font-size: 0.9375rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizSelectorView.svelte",
+          "line": 275,
+          "preview": "font-size: 0.875rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizSelectorView.svelte",
+          "line": 279,
+          "preview": "font-size: 0.6875rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizSelectorView.svelte",
+          "line": 298,
+          "preview": "font-size: 0.8125rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizTimer.svelte",
+          "line": 259,
+          "preview": "font-size: 0.75rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizErrorState.svelte",
+          "line": 30,
+          "preview": "font-size: 0.9375rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizErrorState.svelte",
+          "line": 42,
+          "preview": "font-size: 0.9375rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizFeedbackBanner.svelte",
+          "line": 96,
+          "preview": "font-size: 0.9375rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizLetterButton.svelte",
+          "line": 133,
+          "preview": "font-size: 0.9rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizLoadingState.svelte",
+          "line": 24,
+          "preview": "font-size: 0.9375rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizPictographButton.svelte",
+          "line": 133,
+          "preview": "font-size: 0.9rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizPrompt.svelte",
+          "line": 13,
+          "preview": "font-size: 0.9375rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/ScorePopAnimation.svelte",
+          "line": 89,
+          "preview": "font-size: 0.875rem;"
+        }
+      ],
+      "htmlDirective": [],
+      "clickWithoutRole": [
+        {
+          "file": "features/learn/quiz/components/PerfectQuizCelebration.svelte",
+          "line": 58,
+          "preview": "<div class=\"celebration-overlay\" class:visible onclick={handleDismiss}>"
+        }
+      ],
+      "missingAriaLabel": [
+        {
+          "file": "features/learn/quiz/components/AnswerButton.svelte",
+          "line": 75,
+          "preview": "<button class={buttonClass} onclick={handleClick} {disabled} type=\"button\">"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerPictograph.svelte",
+          "line": 76,
+          "preview": "<button class={cardClass} onclick={handleClick} {disabled} type=\"button\">"
+        },
+        {
+          "file": "features/learn/quiz/components/LessonButton.svelte",
+          "line": 77,
+          "preview": "<button class=\"quiz-card\" class:disabled onclick={handleClick} {disabled}>"
+        },
+        {
+          "file": "features/learn/quiz/components/QuestionGenerator.svelte",
+          "line": 244,
+          "preview": "<button class=\"next-button\" onclick={handleNextQuestion}>"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizControls.svelte",
+          "line": 71,
+          "preview": "<button"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizControls.svelte",
+          "line": 82,
+          "preview": "<button"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizModeToggle.svelte",
+          "line": 54,
+          "preview": "<button"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizModeToggle.svelte",
+          "line": 81,
+          "preview": "<button"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizResultsActions.svelte",
+          "line": 18,
+          "preview": "<button class=\"retry-button btn-primary\" onclick={onRetry}>"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizResultsActions.svelte",
+          "line": 21,
+          "preview": "<button class=\"new-lesson-button btn-glass\" onclick={onChooseNew}>"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizResultsHeader.svelte",
+          "line": 16,
+          "preview": "<button class=\"back-button btn-glass\" onclick={onBack}>"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizTab.svelte",
+          "line": 231,
+          "preview": "<button"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizLetterButton.svelte",
+          "line": 18,
+          "preview": "<button"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizPictographButton.svelte",
+          "line": 23,
+          "preview": "<button"
+        }
+      ]
+    },
+    "uxStates": {
+      "hasLoadingState": true,
+      "hasErrorState": true,
+      "hasEmptyState": true,
+      "bareCatch": [],
+      "consoleErrorOnly": [
+        {
+          "file": "features/learn/quiz/components/LetterToPictographQuiz.svelte",
+          "line": 60,
+          "preview": "console.error(\"Failed to load question:\", err);"
+        },
+        {
+          "file": "features/learn/quiz/components/PictographToLetterQuiz.svelte",
+          "line": 69,
+          "preview": "console.error(\"Failed to load question:\", err);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizTab.svelte",
+          "line": 111,
+          "preview": "console.error(\"❌ QuizTab: Failed to start quiz:\", err);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizTab.svelte",
+          "line": 137,
+          "preview": "console.error(\"❌ QuizTab: Failed to submit answer:\", err);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizTab.svelte",
+          "line": 152,
+          "preview": "console.error(\"❌ QuizTab: Failed to complete quiz:\", err);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizTab.svelte",
+          "line": 189,
+          "preview": "console.error(\"❌ QuizTab: Failed to restart quiz:\", err);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizTab.svelte",
+          "line": 210,
+          "preview": "console.error(\"❌ QuizTab: Initialization failed:\", err);"
+        },
+        {
+          "file": "features/learn/quiz/components/StreakDisplay.svelte",
+          "line": 42,
+          "preview": "console.error('[StreakDisplay] Failed to load streak:', error);"
+        },
+        {
+          "file": "features/learn/quiz/components/StreakDisplay.svelte",
+          "line": 75,
+          "preview": "console.error('[StreakDisplay] Failed to record activity:', error);"
+        },
+        {
+          "file": "features/learn/quiz/components/ValidNextPictographQuiz.svelte",
+          "line": 62,
+          "preview": "console.error(\"Failed to load question:\", err);"
+        },
+        {
+          "file": "features/learn/quiz/services/implementations/QuestionGenerator.ts",
+          "line": 58,
+          "preview": "console.error(\"❌ QuestionGenerator: Failed to initialize:\", error);"
+        },
+        {
+          "file": "features/learn/quiz/services/implementations/QuestionGenerator.ts",
+          "line": 73,
+          "preview": "console.error(\"❌ QuestionGenerator:\", errorMsg);"
+        },
+        {
+          "file": "features/learn/quiz/services/implementations/QuizRepoManager.ts",
+          "line": 40,
+          "preview": "console.error(\"Failed to initialize QuizRepoManager:\", error);"
+        },
+        {
+          "file": "features/learn/quiz/services/implementations/QuizRepoManager.ts",
+          "line": 127,
+          "preview": "console.error(\"Failed to load lesson configurations:\", error);"
+        }
+      ]
+    },
+    "uiConsistency": {
+      "hardcodedDurations": {
+        "count": 0,
+        "files": []
+      },
+      "hardcodedColors": [
+        {
+          "file": "features/learn/quiz/components/AchievementUnlockOverlay.svelte",
+          "line": 123,
+          "preview": "background: rgba(0, 0, 0, 0);"
+        },
+        {
+          "file": "features/learn/quiz/components/AchievementUnlockOverlay.svelte",
+          "line": 130,
+          "preview": "background: rgba(0, 0, 0, 0.7);"
+        },
+        {
+          "file": "features/learn/quiz/components/AchievementUnlockOverlay.svelte",
+          "line": 142,
+          "preview": "rgba(30, 30, 40, 0.95) 0%,"
+        },
+        {
+          "file": "features/learn/quiz/components/AchievementUnlockOverlay.svelte",
+          "line": 143,
+          "preview": "rgba(20, 20, 30, 0.98) 100%"
+        },
+        {
+          "file": "features/learn/quiz/components/AchievementUnlockOverlay.svelte",
+          "line": 149,
+          "preview": "0 20px 60px rgba(0, 0, 0, 0.5);"
+        },
+        {
+          "file": "features/learn/quiz/components/AchievementUnlockOverlay.svelte",
+          "line": 157,
+          "preview": "rgba(40, 35, 20, 0.95) 0%,"
+        },
+        {
+          "file": "features/learn/quiz/components/AchievementUnlockOverlay.svelte",
+          "line": 158,
+          "preview": "rgba(25, 22, 15, 0.98) 100%"
+        },
+        {
+          "file": "features/learn/quiz/components/AchievementUnlockOverlay.svelte",
+          "line": 165,
+          "preview": "rgba(35, 35, 40, 0.95) 0%,"
+        },
+        {
+          "file": "features/learn/quiz/components/AchievementUnlockOverlay.svelte",
+          "line": 166,
+          "preview": "rgba(25, 25, 30, 0.98) 100%"
+        },
+        {
+          "file": "features/learn/quiz/components/AchievementUnlockOverlay.svelte",
+          "line": 179,
+          "preview": "filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));"
+        },
+        {
+          "file": "features/learn/quiz/components/AchievementUnlockOverlay.svelte",
+          "line": 223,
+          "preview": "color: #ffffff;"
+        },
+        {
+          "file": "features/learn/quiz/components/AnimatedScoreCounter.svelte",
+          "line": 77,
+          "preview": "color: #4ade80;"
+        },
+        {
+          "file": "features/learn/quiz/components/AnimatedScoreCounter.svelte",
+          "line": 78,
+          "preview": "text-shadow: 0 0 20px rgba(74, 222, 128, 0.4);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnimatedScoreCounter.svelte",
+          "line": 82,
+          "preview": "color: #fbbf24;"
+        },
+        {
+          "file": "features/learn/quiz/components/AnimatedScoreCounter.svelte",
+          "line": 83,
+          "preview": "text-shadow: 0 0 20px rgba(251, 191, 36, 0.4);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnimatedScoreCounter.svelte",
+          "line": 87,
+          "preview": "color: #f87171;"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerButton.svelte",
+          "line": 95,
+          "preview": "background: rgba(255, 255, 255, 0.1);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerButton.svelte",
+          "line": 96,
+          "preview": "border: 2px solid rgba(255, 255, 255, 0.2);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerButton.svelte",
+          "line": 98,
+          "preview": "color: #ffffff;"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerButton.svelte",
+          "line": 117,
+          "preview": "rgba(255, 255, 255, 0.1),"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerButton.svelte",
+          "line": 128,
+          "preview": "background: rgba(255, 255, 255, 0.15);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerButton.svelte",
+          "line": 129,
+          "preview": "border-color: rgba(255, 255, 255, 0.3);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerButton.svelte",
+          "line": 147,
+          "preview": "background: rgba(74, 222, 128, 0.3);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerButton.svelte",
+          "line": 148,
+          "preview": "border-color: #4ade80;"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerButton.svelte",
+          "line": 149,
+          "preview": "box-shadow: 0 0 20px rgba(74, 222, 128, 0.4);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerButton.svelte",
+          "line": 154,
+          "preview": "background: rgba(248, 113, 113, 0.3);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerButton.svelte",
+          "line": 156,
+          "preview": "box-shadow: 0 0 20px rgba(248, 113, 113, 0.4);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerButton.svelte",
+          "line": 175,
+          "preview": "text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerButton.svelte",
+          "line": 188,
+          "preview": "color: #4ade80;"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerButton.svelte",
+          "line": 189,
+          "preview": "text-shadow: 0 0 8px rgba(74, 222, 128, 0.8);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerButton.svelte",
+          "line": 194,
+          "preview": "text-shadow: 0 0 8px rgba(248, 113, 113, 0.8);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerButton.svelte",
+          "line": 254,
+          "preview": "background: rgba(74, 222, 128, 0.5);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerButton.svelte",
+          "line": 258,
+          "preview": "background: rgba(248, 113, 113, 0.5);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerPictograph.svelte",
+          "line": 108,
+          "preview": "background: rgba(255, 255, 255, 0.1);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerPictograph.svelte",
+          "line": 109,
+          "preview": "border: 2px solid rgba(255, 255, 255, 0.2);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerPictograph.svelte",
+          "line": 111,
+          "preview": "color: #ffffff;"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerPictograph.svelte",
+          "line": 128,
+          "preview": "rgba(255, 255, 255, 0.1),"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerPictograph.svelte",
+          "line": 140,
+          "preview": "background: rgba(255, 255, 255, 0.15);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerPictograph.svelte",
+          "line": 141,
+          "preview": "border-color: rgba(255, 255, 255, 0.3);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerPictograph.svelte",
+          "line": 160,
+          "preview": "background: rgba(74, 222, 128, 0.3);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerPictograph.svelte",
+          "line": 161,
+          "preview": "border-color: #4ade80;"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerPictograph.svelte",
+          "line": 162,
+          "preview": "box-shadow: 0 0 25px rgba(74, 222, 128, 0.4);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerPictograph.svelte",
+          "line": 167,
+          "preview": "background: rgba(248, 113, 113, 0.3);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerPictograph.svelte",
+          "line": 169,
+          "preview": "box-shadow: 0 0 25px rgba(248, 113, 113, 0.4);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerPictograph.svelte",
+          "line": 199,
+          "preview": "color: #ffffff;"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerPictograph.svelte",
+          "line": 200,
+          "preview": "text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerPictograph.svelte",
+          "line": 202,
+          "preview": "background: rgba(0, 0, 0, 0.3);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerPictograph.svelte",
+          "line": 216,
+          "preview": "background: rgba(0, 0, 0, 0.7);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerPictograph.svelte",
+          "line": 223,
+          "preview": "background: rgba(74, 222, 128, 0.2);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerPictograph.svelte",
+          "line": 227,
+          "preview": "background: rgba(248, 113, 113, 0.2);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerPictograph.svelte",
+          "line": 237,
+          "preview": "color: #4ade80;"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerPictograph.svelte",
+          "line": 306,
+          "preview": "background: rgba(74, 222, 128, 0.5);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerPictograph.svelte",
+          "line": 310,
+          "preview": "background: rgba(248, 113, 113, 0.5);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerPictograph.svelte",
+          "line": 314,
+          "preview": "background: rgba(0, 0, 0, 0.9);"
+        },
+        {
+          "file": "features/learn/quiz/components/LessonButton.svelte",
+          "line": 257,
+          "preview": "0 4px 20px rgba(0, 0, 0, 0.1),"
+        },
+        {
+          "file": "features/learn/quiz/components/LessonButton.svelte",
+          "line": 258,
+          "preview": "inset 0 1px 0 rgba(255, 255, 255, 0.08);"
+        },
+        {
+          "file": "features/learn/quiz/components/LessonButton.svelte",
+          "line": 262,
+          "preview": "background: rgba(255, 255, 255, 0.12);"
+        },
+        {
+          "file": "features/learn/quiz/components/LessonButton.svelte",
+          "line": 263,
+          "preview": "border-color: rgba(255, 255, 255, 0.25);"
+        },
+        {
+          "file": "features/learn/quiz/components/LessonButton.svelte",
+          "line": 266,
+          "preview": "0 8px 32px rgba(0, 0, 0, 0.15),"
+        },
+        {
+          "file": "features/learn/quiz/components/LessonButton.svelte",
+          "line": 338,
+          "preview": "color: rgba(255, 255, 255, 0.95);"
+        },
+        {
+          "file": "features/learn/quiz/components/LessonButton.svelte",
+          "line": 362,
+          "preview": "color: rgba(255, 255, 255, 0.4);"
+        },
+        {
+          "file": "features/learn/quiz/components/LessonButton.svelte",
+          "line": 367,
+          "preview": "color: rgba(255, 255, 255, 0.8);"
+        },
+        {
+          "file": "features/learn/quiz/components/PerfectQuizCelebration.svelte",
+          "line": 97,
+          "preview": "background: rgba(0, 0, 0, 0);"
+        },
+        {
+          "file": "features/learn/quiz/components/PerfectQuizCelebration.svelte",
+          "line": 105,
+          "preview": "background: rgba(0, 0, 0, 0.85);"
+        },
+        {
+          "file": "features/learn/quiz/components/PerfectQuizCelebration.svelte",
+          "line": 126,
+          "preview": "rgba(255, 215, 0, 0.1) 30%,"
+        },
+        {
+          "file": "features/learn/quiz/components/PerfectQuizCelebration.svelte",
+          "line": 127,
+          "preview": "rgba(255, 215, 0, 0.3) 50%,"
+        },
+        {
+          "file": "features/learn/quiz/components/PerfectQuizCelebration.svelte",
+          "line": 128,
+          "preview": "rgba(255, 215, 0, 0.1) 70%,"
+        },
+        {
+          "file": "features/learn/quiz/components/PerfectQuizCelebration.svelte",
+          "line": 164,
+          "preview": "color: #ffd700;"
+        },
+        {
+          "file": "features/learn/quiz/components/PerfectQuizCelebration.svelte",
+          "line": 166,
+          "preview": "0 0 20px rgba(255, 215, 0, 0.8),"
+        },
+        {
+          "file": "features/learn/quiz/components/PerfectQuizCelebration.svelte",
+          "line": 167,
+          "preview": "0 0 40px rgba(255, 215, 0, 0.5),"
+        },
+        {
+          "file": "features/learn/quiz/components/PerfectQuizCelebration.svelte",
+          "line": 168,
+          "preview": "0 4px 8px rgba(0, 0, 0, 0.5);"
+        },
+        {
+          "file": "features/learn/quiz/components/PerfectQuizCelebration.svelte",
+          "line": 204,
+          "preview": "rgba(255, 255, 255, 0.4),"
+        },
+        {
+          "file": "features/learn/quiz/components/QuestionGenerator.svelte",
+          "line": 278,
+          "preview": "color: #ffffff;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuestionGenerator.svelte",
+          "line": 289,
+          "preview": "background: rgba(255, 255, 255, 0.03);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuestionGenerator.svelte",
+          "line": 303,
+          "preview": "color: #ffffff;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuestionGenerator.svelte",
+          "line": 304,
+          "preview": "text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuestionGenerator.svelte",
+          "line": 310,
+          "preview": "color: #ffffff;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuestionGenerator.svelte",
+          "line": 372,
+          "preview": "color: #4ade80;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuestionGenerator.svelte",
+          "line": 406,
+          "preview": "color: #ffffff;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizAchievementsBadges.svelte",
+          "line": 25,
+          "preview": "border-top: 1px solid rgba(0, 0, 0, 0.1);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizAchievementsBadges.svelte",
+          "line": 53,
+          "preview": "box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizAchievementsBadges.svelte",
+          "line": 59,
+          "preview": "box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizControls.svelte",
+          "line": 117,
+          "preview": "box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizControls.svelte",
+          "line": 121,
+          "preview": "background: rgba(255, 255, 255, 0.12);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizControls.svelte",
+          "line": 145,
+          "preview": "rgba(251, 146, 60, 0.2),"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizControls.svelte",
+          "line": 146,
+          "preview": "rgba(249, 115, 22, 0.2)"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizControls.svelte",
+          "line": 148,
+          "preview": "border-color: rgba(251, 146, 60, 0.4);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizControls.svelte",
+          "line": 154,
+          "preview": "rgba(251, 146, 60, 0.3),"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizControls.svelte",
+          "line": 155,
+          "preview": "rgba(249, 115, 22, 0.3)"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizControls.svelte",
+          "line": 157,
+          "preview": "border-color: rgba(251, 146, 60, 0.6);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizControls.svelte",
+          "line": 164,
+          "preview": "rgba(34, 197, 94, 0.2),"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizControls.svelte",
+          "line": 165,
+          "preview": "rgba(22, 163, 74, 0.2)"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizControls.svelte",
+          "line": 167,
+          "preview": "border-color: rgba(34, 197, 94, 0.4);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizControls.svelte",
+          "line": 173,
+          "preview": "rgba(34, 197, 94, 0.3),"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizControls.svelte",
+          "line": 174,
+          "preview": "rgba(22, 163, 74, 0.3)"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizControls.svelte",
+          "line": 176,
+          "preview": "border-color: rgba(34, 197, 94, 0.6);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizModeToggle.svelte",
+          "line": 121,
+          "preview": "background: rgba(255, 255, 255, 0.06);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizModeToggle.svelte",
+          "line": 122,
+          "preview": "border: 1px solid rgba(255, 255, 255, 0.12);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizModeToggle.svelte",
+          "line": 127,
+          "preview": "0 4px 16px rgba(0, 0, 0, 0.1),"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizModeToggle.svelte",
+          "line": 128,
+          "preview": "inset 0 1px 0 rgba(255, 255, 255, 0.05);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizModeToggle.svelte",
+          "line": 164,
+          "preview": "color: rgba(255, 255, 255, 0.65);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizModeToggle.svelte",
+          "line": 180,
+          "preview": "color: rgba(255, 255, 255, 0.85);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizPictographRenderer.svelte",
+          "line": 60,
+          "preview": "color: #ffffff;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizPictographRenderer.svelte",
+          "line": 61,
+          "preview": "background: rgba(0, 0, 0, 0.6);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizProgressTracker.svelte",
+          "line": 268,
+          "preview": "background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizProgressTracker.svelte",
+          "line": 343,
+          "preview": "background: rgba(0, 255, 0, 0.1);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizProgressTracker.svelte",
+          "line": 348,
+          "preview": "background: rgba(255, 255, 0, 0.1);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizProgressTracker.svelte",
+          "line": 353,
+          "preview": "background: rgba(255, 165, 0, 0.1);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizProgressTracker.svelte",
+          "line": 358,
+          "preview": "background: rgba(255, 0, 0, 0.1);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizProgressTracker.svelte",
+          "line": 376,
+          "preview": "color: #000000;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizProgressTracker.svelte",
+          "line": 380,
+          "preview": "box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizResultsActions.svelte",
+          "line": 50,
+          "preview": "box-shadow: 0 4px 12px rgba(168, 28, 237, 0.3);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizResultsActions.svelte",
+          "line": 56,
+          "preview": "box-shadow: 0 6px 16px rgba(168, 28, 237, 0.4);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizResultsActions.svelte",
+          "line": 60,
+          "preview": "background: rgba(255, 255, 255, 0.1);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizResultsActions.svelte",
+          "line": 61,
+          "preview": "border: 1px solid rgba(255, 255, 255, 0.2);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizResultsActions.svelte",
+          "line": 66,
+          "preview": "background: rgba(255, 255, 255, 0.15);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizResultsHeader.svelte",
+          "line": 44,
+          "preview": "background: rgba(255, 255, 255, 0.15);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizResultsView.svelte",
+          "line": 224,
+          "preview": "border-top: 1px solid rgba(0, 0, 0, 0.1);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizResultsView.svelte",
+          "line": 237,
+          "preview": "border-top: 1px solid rgba(0, 0, 0, 0.1);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizResultsView.svelte",
+          "line": 284,
+          "preview": "background: rgba(0, 0, 0, 0.02);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizSelectorView.svelte",
+          "line": 144,
+          "preview": "inset 0 1px 0 rgba(255, 255, 255, 0.1);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizSelectorView.svelte",
+          "line": 158,
+          "preview": "color: rgba(255, 255, 255, 0.95);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizSelectorView.svelte",
+          "line": 210,
+          "preview": "color: rgba(255, 255, 255, 0.75); /* WCAG AAA */"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizStatsGrid.svelte",
+          "line": 50,
+          "preview": "background: rgba(0, 0, 0, 0.02);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizStatsGrid.svelte",
+          "line": 56,
+          "preview": "background: rgba(0, 0, 0, 0.04);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizTab.svelte",
+          "line": 348,
+          "preview": "background: rgba(255, 255, 255, 0.06);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizTab.svelte",
+          "line": 357,
+          "preview": "background: rgba(255, 255, 255, 0.1);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizTab.svelte",
+          "line": 358,
+          "preview": "border-color: rgba(255, 255, 255, 0.2);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizTab.svelte",
+          "line": 407,
+          "preview": "background: rgba(0, 0, 0, 0.8);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizTimer.svelte",
+          "line": 239,
+          "preview": "stroke: #667eea;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizTimer.svelte",
+          "line": 253,
+          "preview": "color: #ffffff;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizTimer.svelte",
+          "line": 254,
+          "preview": "text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizTimer.svelte",
+          "line": 260,
+          "preview": "color: #94a3b8;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizTimer.svelte",
+          "line": 314,
+          "preview": "stroke: #6b7280;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizTimer.svelte",
+          "line": 319,
+          "preview": "color: #6b7280;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizTimer.svelte",
+          "line": 323,
+          "preview": "stroke: #374151;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizTimer.svelte",
+          "line": 328,
+          "preview": "color: #9ca3af;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizTimer.svelte",
+          "line": 368,
+          "preview": "stroke: rgba(255, 255, 255, 0.3);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizWorkspaceView.svelte",
+          "line": 287,
+          "preview": "color: #94a3b8;"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizWorkspaceView.svelte",
+          "line": 298,
+          "preview": "color: #ffffff;"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizBackButton.svelte",
+          "line": 33,
+          "preview": "background: rgba(255, 255, 255, 0.06);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizBackButton.svelte",
+          "line": 43,
+          "preview": "background: rgba(255, 255, 255, 0.1);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizBackButton.svelte",
+          "line": 44,
+          "preview": "border-color: rgba(255, 255, 255, 0.2);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizErrorState.svelte",
+          "line": 29,
+          "preview": "color: rgba(255, 255, 255, 0.8);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizFeedbackBanner.svelte",
+          "line": 65,
+          "preview": "background: rgba(239, 68, 68, 0.9);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizFeedbackBanner.svelte",
+          "line": 75,
+          "preview": "background: rgba(34, 197, 94, 0.9);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizFeedbackBanner.svelte",
+          "line": 79,
+          "preview": "background: linear-gradient(135deg, rgba(34, 197, 94, 0.9) 0%, rgba(251, 191, 36, 0.9) 100%);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizFeedbackBanner.svelte",
+          "line": 80,
+          "preview": "box-shadow: 0 0 20px rgba(251, 191, 36, 0.4);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizGlyphCard.svelte",
+          "line": 163,
+          "preview": "0 8px 32px rgba(0, 0, 0, 0.12),"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizGlyphCard.svelte",
+          "line": 164,
+          "preview": "0 0 0 1px rgba(255, 255, 255, 0.08),"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizGlyphCard.svelte",
+          "line": 192,
+          "preview": "0 12px 50px rgba(0, 0, 0, 0.15),"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizGlyphCard.svelte",
+          "line": 193,
+          "preview": "0 0 0 1px rgba(255, 255, 255, 0.06),"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizLetterButton.svelte",
+          "line": 44,
+          "preview": "background: rgba(255, 255, 255, 0.06);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizLetterButton.svelte",
+          "line": 45,
+          "preview": "border: 1.5px solid rgba(255, 255, 255, 0.12);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizLetterButton.svelte",
+          "line": 52,
+          "preview": "background: rgba(255, 255, 255, 0.1);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizLetterButton.svelte",
+          "line": 75,
+          "preview": "text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizLetterButton.svelte",
+          "line": 79,
+          "preview": "background: rgba(34, 197, 94, 0.2);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizLetterButton.svelte",
+          "line": 80,
+          "preview": "border-color: rgba(34, 197, 94, 0.6);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizLetterButton.svelte",
+          "line": 87,
+          "preview": "box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizLetterButton.svelte",
+          "line": 91,
+          "preview": "box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizLetterButton.svelte",
+          "line": 95,
+          "preview": "box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizLetterButton.svelte",
+          "line": 100,
+          "preview": "background: rgba(239, 68, 68, 0.2);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizLetterButton.svelte",
+          "line": 101,
+          "preview": "border-color: rgba(239, 68, 68, 0.6);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizLetterButton.svelte",
+          "line": 150,
+          "preview": "color: rgb(34, 197, 94);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizLetterButton.svelte",
+          "line": 154,
+          "preview": "color: rgb(239, 68, 68);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizLetterCard.svelte",
+          "line": 47,
+          "preview": "0 8px 32px rgba(0, 0, 0, 0.12),"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizLetterCard.svelte",
+          "line": 48,
+          "preview": "0 0 0 1px rgba(255, 255, 255, 0.08),"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizLetterCard.svelte",
+          "line": 57,
+          "preview": "text-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizLetterCard.svelte",
+          "line": 77,
+          "preview": "0 12px 50px rgba(0, 0, 0, 0.15),"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizLetterCard.svelte",
+          "line": 78,
+          "preview": "0 0 0 1px rgba(255, 255, 255, 0.06),"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizLoadingState.svelte",
+          "line": 23,
+          "preview": "color: rgba(255, 255, 255, 0.8);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizPictographButton.svelte",
+          "line": 51,
+          "preview": "border: 1.5px solid rgba(255, 255, 255, 0.15);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizPictographButton.svelte",
+          "line": 79,
+          "preview": "background: rgba(34, 197, 94, 0.2);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizPictographButton.svelte",
+          "line": 80,
+          "preview": "border-color: rgba(34, 197, 94, 0.6);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizPictographButton.svelte",
+          "line": 87,
+          "preview": "box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizPictographButton.svelte",
+          "line": 91,
+          "preview": "box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizPictographButton.svelte",
+          "line": 95,
+          "preview": "box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizPictographButton.svelte",
+          "line": 100,
+          "preview": "background: rgba(239, 68, 68, 0.2);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizPictographButton.svelte",
+          "line": 101,
+          "preview": "border-color: rgba(239, 68, 68, 0.6);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizPictographButton.svelte",
+          "line": 150,
+          "preview": "color: rgb(34, 197, 94);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizPictographButton.svelte",
+          "line": 154,
+          "preview": "color: rgb(239, 68, 68);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizPictographCard.svelte",
+          "line": 82,
+          "preview": "color: rgba(255, 255, 255, 0.75); /* WCAG AAA */"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizPrompt.svelte",
+          "line": 34,
+          "preview": "color: rgba(255, 255, 255, 0.75); /* WCAG AAA */"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/ScorePopAnimation.svelte",
+          "line": 74,
+          "preview": "color: #4ade80;"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/ScorePopAnimation.svelte",
+          "line": 76,
+          "preview": "0 0 10px rgba(74, 222, 128, 0.5),"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/ScorePopAnimation.svelte",
+          "line": 77,
+          "preview": "0 2px 4px rgba(0, 0, 0, 0.3);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/ScorePopAnimation.svelte",
+          "line": 82,
+          "preview": "color: #fbbf24;"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/ScorePopAnimation.svelte",
+          "line": 84,
+          "preview": "0 0 15px rgba(251, 191, 36, 0.6),"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/ScorePopAnimation.svelte",
+          "line": 85,
+          "preview": "0 2px 4px rgba(0, 0, 0, 0.3);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/ScorePopAnimation.svelte",
+          "line": 91,
+          "preview": "color: #fbbf24;"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/ScorePopAnimation.svelte",
+          "line": 92,
+          "preview": "background: rgba(251, 191, 36, 0.2);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/ScorePopAnimation.svelte",
+          "line": 95,
+          "preview": "border: 1px solid rgba(251, 191, 36, 0.4);"
+        },
+        {
+          "file": "features/learn/quiz/components/StreakDisplay.svelte",
+          "line": 122,
+          "preview": "background: rgba(255, 152, 0, 0.1);"
+        },
+        {
+          "file": "features/learn/quiz/components/StreakDisplay.svelte",
+          "line": 123,
+          "preview": "border-color: rgba(255, 152, 0, 0.3);"
+        },
+        {
+          "file": "features/learn/quiz/components/StreakDisplay.svelte",
+          "line": 160,
+          "preview": "color: #ff9800;"
+        },
+        {
+          "file": "features/learn/quiz/components/StreakDisplay.svelte",
+          "line": 191,
+          "preview": "background: radial-gradient(circle, rgba(255, 152, 0, 0.4) 0%, transparent 70%);"
+        },
+        {
+          "file": "features/learn/quiz/components/StreakDisplay.svelte",
+          "line": 219,
+          "preview": "color: #ff9800;"
+        }
+      ],
+      "blurOnContent": [
+        {
+          "file": "features/learn/quiz/components/AnswerButton.svelte",
+          "line": 103,
+          "preview": "backdrop-filter: blur(10px);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerPictograph.svelte",
+          "line": 114,
+          "preview": "backdrop-filter: blur(10px);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerPictograph.svelte",
+          "line": 204,
+          "preview": "backdrop-filter: blur(4px);"
+        },
+        {
+          "file": "features/learn/quiz/components/AnswerPictograph.svelte",
+          "line": 217,
+          "preview": "backdrop-filter: blur(4px);"
+        },
+        {
+          "file": "features/learn/quiz/components/LessonButton.svelte",
+          "line": 251,
+          "preview": "backdrop-filter: blur(16px);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuestionGenerator.svelte",
+          "line": 265,
+          "preview": "backdrop-filter: blur(10px);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizControls.svelte",
+          "line": 105,
+          "preview": "backdrop-filter: blur(10px);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizModeToggle.svelte",
+          "line": 125,
+          "preview": "backdrop-filter: blur(12px);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizProgressTracker.svelte",
+          "line": 180,
+          "preview": "backdrop-filter: blur(10px);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizProgressTracker.svelte",
+          "line": 287,
+          "preview": "backdrop-filter: blur(10px);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizWorkspaceView.svelte",
+          "line": 286,
+          "preview": "backdrop-filter: blur(10px);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizFeedbackBanner.svelte",
+          "line": 69,
+          "preview": "backdrop-filter: blur(8px);"
+        }
+      ],
+      "legacyVars": []
+    },
+    "performance": {
+      "directTransitionImports": {
+        "count": 0,
+        "files": []
+      },
+      "barrelImports": [],
+      "effectWithoutCleanup": [
+        {
+          "file": "features/learn/quiz/components/shared/QuizGlyphCard.svelte",
+          "line": 52,
+          "preview": "$effect(() => {"
+        }
+      ],
+      "timerWithoutCleanup": [
+        {
+          "file": "features/learn/quiz/components/AchievementUnlockOverlay.svelte",
+          "line": 42,
+          "preview": "setTimeout(() => {"
+        },
+        {
+          "file": "features/learn/quiz/components/AchievementUnlockOverlay.svelte",
+          "line": 46,
+          "preview": "setTimeout(() => {"
+        },
+        {
+          "file": "features/learn/quiz/components/AchievementUnlockOverlay.svelte",
+          "line": 52,
+          "preview": "setTimeout(() => {"
+        },
+        {
+          "file": "features/learn/quiz/components/AchievementUnlockOverlay.svelte",
+          "line": 61,
+          "preview": "const dismissTimer = setTimeout(() => {"
+        },
+        {
+          "file": "features/learn/quiz/components/AchievementUnlockOverlay.svelte",
+          "line": 70,
+          "preview": "setTimeout(() => {"
+        },
+        {
+          "file": "features/learn/quiz/components/AnimatedScoreCounter.svelte",
+          "line": 36,
+          "preview": "const timeout = setTimeout(() => {"
+        },
+        {
+          "file": "features/learn/quiz/components/LetterToPictographQuiz.svelte",
+          "line": 74,
+          "preview": "setTimeout(() => {"
+        },
+        {
+          "file": "features/learn/quiz/components/LetterToPictographQuiz.svelte",
+          "line": 79,
+          "preview": "setTimeout(handleNextQuestion, 1200);"
+        },
+        {
+          "file": "features/learn/quiz/components/PerfectQuizCelebration.svelte",
+          "line": 31,
+          "preview": "setTimeout(() => {"
+        },
+        {
+          "file": "features/learn/quiz/components/PerfectQuizCelebration.svelte",
+          "line": 42,
+          "preview": "const timer = setTimeout(() => {"
+        },
+        {
+          "file": "features/learn/quiz/components/PerfectQuizCelebration.svelte",
+          "line": 51,
+          "preview": "setTimeout(() => {"
+        },
+        {
+          "file": "features/learn/quiz/components/PictographToLetterQuiz.svelte",
+          "line": 95,
+          "preview": "setTimeout(() => {"
+        },
+        {
+          "file": "features/learn/quiz/components/PictographToLetterQuiz.svelte",
+          "line": 102,
+          "preview": "setTimeout(() => {"
+        },
+        {
+          "file": "features/learn/quiz/components/PictographToLetterQuiz.svelte",
+          "line": 107,
+          "preview": "setTimeout(handleNextQuestion, 1200);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizResultsView.svelte",
+          "line": 51,
+          "preview": "setTimeout(() => {"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizResultsView.svelte",
+          "line": 76,
+          "preview": "setTimeout(() => {"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizTimer.svelte",
+          "line": 73,
+          "preview": "interval = setInterval(() => {"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/QuizGlyphCard.svelte",
+          "line": 82,
+          "preview": "setTimeout(() => {"
+        },
+        {
+          "file": "features/learn/quiz/components/StreakDisplay.svelte",
+          "line": 62,
+          "preview": "setTimeout(() => {"
+        },
+        {
+          "file": "features/learn/quiz/components/ValidNextPictographQuiz.svelte",
+          "line": 76,
+          "preview": "setTimeout(() => {"
+        },
+        {
+          "file": "features/learn/quiz/components/ValidNextPictographQuiz.svelte",
+          "line": 81,
+          "preview": "setTimeout(handleNextQuestion, 1200);"
+        }
+      ]
+    },
+    "security": {
+      "htmlDirective": [],
+      "evalUsage": [],
+      "hardcodedSecrets": [],
+      "innerHTML": []
+    }
+  },
+  "summary": {
+    "architecture": {
+      "barrelImports": 0,
+      "serviceSuffix": 1,
+      "utilsOrHooks": 0,
+      "potentialDiGaps": 5
+    },
+    "codeQuality": {
+      "anyType": 2,
+      "asAny": 0,
+      "asUnknownAs": 0,
+      "missingReturnType": 0,
+      "serviceNaming": 4
+    },
+    "svelte5": {
+      "storeImports": 0,
+      "writableReadable": 0,
+      "dollarColon": 0,
+      "exportLet": 0,
+      "createEventDispatcher": 0
+    },
+    "accessibility": {
+      "reducedMotion": 0,
+      "smallFontSize": 34,
+      "htmlDirective": 0,
+      "clickWithoutRole": 1,
+      "missingAriaLabel": 14
+    },
+    "uxStates": {
+      "hasLoadingState": true,
+      "hasErrorState": true,
+      "hasEmptyState": true,
+      "bareCatch": 0,
+      "consoleErrorOnly": 14
+    },
+    "uiConsistency": {
+      "hardcodedDurations": 0,
+      "hardcodedColors": 197,
+      "blurOnContent": 12,
+      "legacyVars": 0
+    },
+    "performance": {
+      "directTransitionImports": 0,
+      "barrelImports": 0,
+      "effectWithoutCleanup": 1,
+      "timerWithoutCleanup": 21
+    },
+    "security": {
+      "htmlDirective": 0,
+      "evalUsage": 0,
+      "hardcodedSecrets": 0,
+      "innerHTML": 0
+    }
+  }
+}

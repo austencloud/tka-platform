@@ -102,8 +102,8 @@ MotionTypePage - Displays a single motion type with visualizer
     text-align: center;
     background: linear-gradient(
       135deg,
-      var(--type-color, #22d3ee) 0%,
-      color-mix(in srgb, var(--type-color, #22d3ee) 70%, #06b6d4) 100%
+      var(--type-color, var(--theme-accent, #22d3ee)) 0%,
+      color-mix(in srgb, var(--type-color, var(--theme-accent, #22d3ee)) 70%, transparent) 100%
     );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -122,8 +122,8 @@ MotionTypePage - Displays a single motion type with visualizer
     align-items: center;
     gap: 0.5rem;
     padding: 0.625rem 1rem;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 8px;
     color: var(--theme-text-dim);
     font-size: 0.875rem;
@@ -132,8 +132,8 @@ MotionTypePage - Displays a single motion type with visualizer
   }
 
   .cycle-button:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
+    color: var(--theme-text, white);
   }
 
   .next-button {
@@ -145,10 +145,10 @@ MotionTypePage - Displays a single motion type with visualizer
     padding: 1rem 2.5rem;
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.3) 0%,
-      rgba(6, 182, 212, 0.3) 100%
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent) 100%
     );
-    border: 2px solid rgba(34, 211, 238, 0.5);
+    border: 2px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 50%, transparent);
     border-radius: 12px;
     color: white;
     font-size: 1.0625rem;
@@ -162,10 +162,10 @@ MotionTypePage - Displays a single motion type with visualizer
   .next-button:hover {
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.4) 0%,
-      rgba(6, 182, 212, 0.4) 100%
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent) 100%
     );
-    border-color: rgba(34, 211, 238, 0.8);
+    border-color: color-mix(in srgb, var(--theme-accent, #22d3ee) 80%, transparent);
     transform: translateY(-2px);
   }
 

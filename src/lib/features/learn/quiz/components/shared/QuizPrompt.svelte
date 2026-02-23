@@ -31,7 +31,7 @@ QuizPrompt - Subtle prompt text for quizzes
     .quiz-prompt {
       font-size: 1.125rem;
       margin-bottom: 1.5rem;
-      color: rgba(255, 255, 255, 0.75); /* WCAG AAA */
+      color: var(--theme-text-muted, rgba(255, 255, 255, 0.75));
     }
   }
 </style>

@@ -57,7 +57,7 @@
     right: 8px;
     font-size: 0.8rem;
     font-weight: bold;
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
     background: rgba(0, 0, 0, 0.6);
     padding: 2px 6px;
     border-radius: 4px;

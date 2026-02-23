@@ -75,15 +75,15 @@ WordStepNavigation - Step navigation dots for letter sequence
   }
 
   .step-dot:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.25);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
     transform: scale(1.1);
   }
 
   .step-dot.active {
-    background: rgba(34, 211, 238, 0.25);
-    border-color: rgba(34, 211, 238, 0.6);
-    color: #22d3ee;
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 25%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #22d3ee) 60%, transparent);
+    color: var(--theme-accent, #22d3ee);
   }
 
   .step-number {

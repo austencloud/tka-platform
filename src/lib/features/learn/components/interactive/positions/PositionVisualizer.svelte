@@ -73,16 +73,16 @@ Visualizes Alpha (opposite), Beta (same), and Gamma (right angle) positions
     return "gamma";
   });
 
-  // Position type colors
+  // Position type colors — domain-specific visualization colors
   const POSITION_COLORS: Record<PositionType, string> = {
-    alpha: "#FF6B6B", // Red/coral for opposite
-    beta: "#4ECDC4", // Teal for same
-    gamma: "#FFE66D", // Yellow for right angle
+    alpha: "#FF6B6B", // Red/coral for opposite (alpha position)
+    beta: "#4ECDC4", // Teal for same (beta position)
+    gamma: "#FFE66D", // Yellow for right angle (gamma position)
   };
 
   // Hand colors
-  const LEFT_HAND_COLOR = "#4A9EFF"; // Blue
-  const RIGHT_HAND_COLOR = "#FF4A9E"; // Pink
+  const LEFT_HAND_COLOR = "var(--prop-blue, #4A9EFF)";
+  const RIGHT_HAND_COLOR = "var(--prop-red, #FF4A9E)";
 
   let selectingHand = $state<"left" | "right" | null>(null);
 
@@ -225,7 +225,7 @@ Visualizes Alpha (opposite), Beta (same), and Gamma (right angle) positions
             cx={point.x}
             cy={point.y}
             r="3"
-            fill="rgba(255, 255, 255, 0.3)"
+            fill="var(--theme-stroke-strong, rgba(255, 255, 255, 0.3))"
             class="base-point"
           />
         {/if}
@@ -297,7 +297,7 @@ Visualizes Alpha (opposite), Beta (same), and Gamma (right angle) positions
     {/each}
 
     <!-- Center point -->
-    <circle cx="50" cy="50" r="2" fill="rgba(255, 255, 255, 0.2)" />
+    <circle cx="50" cy="50" r="2" fill="var(--theme-stroke, rgba(255, 255, 255, 0.2))" />
   </svg>
 
   <!-- Hand legend (interactive mode) -->
@@ -330,13 +330,13 @@ Visualizes Alpha (opposite), Beta (same), and Gamma (right angle) positions
     align-items: center;
     gap: 1rem;
     padding: 1rem;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border: 1px solid var(--theme-stroke);
     border-radius: 16px;
   }
 
   .position-visualizer.interactive {
-    border-color: rgba(74, 158, 255, 0.3);
+    border-color: color-mix(in srgb, var(--prop-blue, #4a9eff) 30%, transparent);
   }
 
   /* Position badge */
@@ -380,7 +380,7 @@ Visualizes Alpha (opposite), Beta (same), and Gamma (right angle) positions
   }
 
   .grid-point.clickable:hover .base-point {
-    fill: rgba(255, 255, 255, 0.6);
+    fill: var(--theme-text, rgba(255, 255, 255, 0.6));
     transform: scale(1.3);
     transform-origin: center;
   }
@@ -449,13 +449,13 @@ Visualizes Alpha (opposite), Beta (same), and Gamma (right angle) positions
   }
 
   .legend-item:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
   .legend-item.selecting {
-    background: rgba(74, 158, 255, 0.15);
-    border-color: rgba(74, 158, 255, 0.4);
+    background: color-mix(in srgb, var(--prop-blue, #4a9eff) 15%, transparent);
+    border-color: color-mix(in srgb, var(--prop-blue, #4a9eff) 40%, transparent);
   }
 
   .legend-dot {

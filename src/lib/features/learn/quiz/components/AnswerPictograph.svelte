@@ -73,7 +73,7 @@
   }
 </script>
 
-<button class={cardClass} onclick={handleClick} {disabled} type="button">
+<button class={cardClass} onclick={handleClick} {disabled} type="button" aria-label="Answer: pictograph{pictographData?.letter ? ` for letter ${pictographData.letter}` : ''}">
   <div class="pictograph-container">
     <PictographRenderer {pictographData} size="medium" />
   </div>
@@ -105,10 +105,10 @@
     width: 100%;
     min-height: 180px;
     padding: 1rem;
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
+    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.2));
     border-radius: 12px;
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
     cursor: pointer;
     transition: all var(--duration-emphasis) ease;
     backdrop-filter: blur(10px);
@@ -125,7 +125,7 @@
     background: linear-gradient(
       90deg,
       transparent,
-      rgba(255, 255, 255, 0.1),
+      color-mix(in srgb, var(--theme-text) 10%, transparent),
       transparent
     );
     transition: left 0.5s ease;
@@ -137,8 +137,8 @@
   }
 
   .answer-pictograph:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
     transform: translateY(-4px);
     box-shadow: 0 12px 30px var(--theme-shadow);
   }
@@ -157,16 +157,16 @@
   }
 
   .answer-pictograph.correct {
-    background: rgba(74, 222, 128, 0.3);
-    border-color: #4ade80;
-    box-shadow: 0 0 25px rgba(74, 222, 128, 0.4);
+    background: color-mix(in srgb, var(--semantic-success) 30%, transparent);
+    border-color: var(--semantic-success);
+    box-shadow: 0 0 25px color-mix(in srgb, var(--semantic-success) 40%, transparent);
     animation: correctPulse 0.8s ease-in-out;
   }
 
   .answer-pictograph.incorrect {
-    background: rgba(248, 113, 113, 0.3);
+    background: color-mix(in srgb, var(--semantic-error) 30%, transparent);
     border-color: var(--semantic-error);
-    box-shadow: 0 0 25px rgba(248, 113, 113, 0.4);
+    box-shadow: 0 0 25px color-mix(in srgb, var(--semantic-error) 40%, transparent);
     animation: incorrectShake 0.8s ease-in-out;
   }
 
@@ -196,12 +196,11 @@
     z-index: 2;
     font-size: 1.125rem;
     font-weight: 600;
-    color: #ffffff;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    color: var(--theme-text, #ffffff);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     padding: 0.25rem 0.75rem;
     background: rgba(0, 0, 0, 0.3);
     border-radius: 6px;
-    backdrop-filter: blur(4px);
   }
 
   .feedback-overlay {
@@ -214,17 +213,16 @@
     align-items: center;
     justify-content: center;
     background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(4px);
     z-index: 10;
     border-radius: 10px;
   }
 
   .feedback-overlay.correct {
-    background: rgba(74, 222, 128, 0.2);
+    background: color-mix(in srgb, var(--semantic-success) 20%, transparent);
   }
 
   .feedback-overlay.incorrect {
-    background: rgba(248, 113, 113, 0.2);
+    background: color-mix(in srgb, var(--semantic-error) 20%, transparent);
   }
 
   .feedback-icon {
@@ -234,7 +232,7 @@
   }
 
   .feedback-overlay.correct .feedback-icon {
-    color: #4ade80;
+    color: var(--semantic-success);
   }
 
   .feedback-overlay.incorrect .feedback-icon {
@@ -303,11 +301,11 @@
     }
 
     .answer-pictograph.correct {
-      background: rgba(74, 222, 128, 0.5);
+      background: color-mix(in srgb, var(--semantic-success) 50%, transparent);
     }
 
     .answer-pictograph.incorrect {
-      background: rgba(248, 113, 113, 0.5);
+      background: color-mix(in srgb, var(--semantic-error) 50%, transparent);
     }
 
     .feedback-overlay {

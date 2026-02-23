@@ -141,7 +141,7 @@ Features a welcoming header, mode toggle, and game cards.
     border: 1px solid color-mix(in srgb, var(--theme-accent) 30%, transparent);
     box-shadow:
       0 4px 16px color-mix(in srgb, var(--theme-accent) 20%, transparent),
-      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      inset 0 1px 0 color-mix(in srgb, var(--theme-text) 10%, transparent);
   }
 
   .header-title {
@@ -155,7 +155,7 @@ Features a welcoming header, mode toggle, and game cards.
     );
     font-size: 2rem;
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.95);
+    color: var(--theme-text, rgba(255, 255, 255, 0.95));
     letter-spacing: -0.02em;
     line-height: 1.2;
   }
@@ -207,7 +207,7 @@ Features a welcoming header, mode toggle, and game cards.
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: rgba(255, 255, 255, 0.75); /* WCAG AAA */
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.75));
     align-self: flex-start;
     padding-left: 4px;
   }

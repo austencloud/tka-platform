@@ -2,7 +2,7 @@
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import type { QuizResults } from "../domain/models/quiz-models";
   import type { IQuizResultsAnalyzer } from "../QuizResultsAnalyzer";
   import type { AchievementDefinition } from "../domain/achievement-definitions";
@@ -37,6 +37,14 @@
   let showPerfectCelebration = $state(false);
   let currentAchievement = $state<AchievementDefinition | null>(null);
 
+  let perfectTimer: ReturnType<typeof setTimeout> | null = null;
+  let achievementTimer: ReturnType<typeof setTimeout> | null = null;
+
+  onDestroy(() => {
+    if (perfectTimer !== null) clearTimeout(perfectTimer);
+    if (achievementTimer !== null) clearTimeout(achievementTimer);
+  });
+
   // Check if this was a perfect quiz
   const isPerfectQuiz = $derived(results?.accuracyPercentage === 100);
 
@@ -48,7 +56,7 @@
     if (results && analyzer) {
       // Show perfect quiz celebration first if applicable
       if (isPerfectQuiz) {
-        setTimeout(() => {
+        perfectTimer = setTimeout(() => {
           showPerfectCelebration = true;
         }, 300);
       } else {
@@ -73,7 +81,7 @@
         (a) => a.tier === "gold" || a.tier === "silver"
       );
       if (worthyAchievement) {
-        setTimeout(() => {
+        achievementTimer = setTimeout(() => {
           currentAchievement = worthyAchievement;
         }, 500);
       }

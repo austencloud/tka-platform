@@ -73,6 +73,7 @@
       class:paused={isPaused}
       disabled={isDisabled}
       onclick={handlePauseClick}
+      aria-label={isPaused ? "Resume quiz" : "Pause quiz"}
     >
       {isPaused ? "▶ Resume" : "⏸ Pause"}
     </button>
@@ -83,6 +84,7 @@
       class="control-button restart-button"
       disabled={isDisabled}
       onclick={handleRestartClick}
+      aria-label="Restart quiz"
     >
       ↻ Restart
     </button>
@@ -102,7 +104,6 @@
     border-radius: 12px;
     border: 1px solid var(--theme-stroke-strong);
     background: var(--theme-card-bg);
-    backdrop-filter: blur(10px);
     cursor: pointer;
     transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     display: inline-flex;
@@ -114,11 +115,11 @@
     min-width: clamp(80px, 15cqi, 120px);
     gap: 0.5rem;
     color: var(--theme-text);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   }
 
   .control-button:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px
@@ -140,40 +141,24 @@
 
   /* Pause/Resume button */
   .pause-button {
-    background: linear-gradient(
-      135deg,
-      rgba(251, 146, 60, 0.2),
-      rgba(249, 115, 22, 0.2)
-    );
-    border-color: rgba(251, 146, 60, 0.4);
+    background: color-mix(in srgb, var(--semantic-warning) 20%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-warning) 40%, transparent);
   }
 
   .pause-button:hover:not(:disabled) {
-    background: linear-gradient(
-      135deg,
-      rgba(251, 146, 60, 0.3),
-      rgba(249, 115, 22, 0.3)
-    );
-    border-color: rgba(251, 146, 60, 0.6);
+    background: color-mix(in srgb, var(--semantic-warning) 30%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-warning) 60%, transparent);
   }
 
   /* Resume state styling */
   .pause-button.paused {
-    background: linear-gradient(
-      135deg,
-      rgba(34, 197, 94, 0.2),
-      rgba(22, 163, 74, 0.2)
-    );
-    border-color: rgba(34, 197, 94, 0.4);
+    background: color-mix(in srgb, var(--semantic-success) 20%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-success) 40%, transparent);
   }
 
   .pause-button.paused:hover:not(:disabled) {
-    background: linear-gradient(
-      135deg,
-      rgba(34, 197, 94, 0.3),
-      rgba(22, 163, 74, 0.3)
-    );
-    border-color: rgba(34, 197, 94, 0.6);
+    background: color-mix(in srgb, var(--semantic-success) 30%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-success) 60%, transparent);
   }
 
   /* Restart button */

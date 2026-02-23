@@ -53,7 +53,7 @@ VTGAnswerButton - Single answer button with state styling
     align-items: center;
     gap: 0.25rem;
     padding: 0.75rem 0.5rem;
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 2px solid var(--theme-stroke);
     border-radius: 10px;
     color: var(--theme-text-dim);
@@ -79,13 +79,13 @@ VTGAnswerButton - Single answer button with state styling
   }
 
   .answer-button.correct {
-    background: rgba(74, 222, 128, 0.15);
-    border-color: #4ade80;
-    color: #4ade80;
+    background: color-mix(in srgb, var(--semantic-success, #4ade80) 15%, transparent);
+    border-color: var(--semantic-success, #4ade80);
+    color: var(--semantic-success, #4ade80);
   }
 
   .answer-button.incorrect {
-    background: rgba(248, 113, 113, 0.15);
+    background: color-mix(in srgb, var(--semantic-error) 15%, transparent);
     border-color: var(--semantic-error);
     color: var(--semantic-error);
   }

@@ -9,7 +9,7 @@ Manages navigation through 5 pages:
 5. Quiz
 -->
 <script lang="ts">
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { IHapticFeedback, HapticFeedbackType } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import StaffIntroPage from "./pages/StaffIntroPage.svelte";
   import ThumbOrientationsPage from "./pages/ThumbOrientationsPage.svelte";
@@ -34,7 +34,7 @@ Manages navigation through 5 pages:
   // Wrap the haptic service to match the simpler interface expected by child components
   const hapticService = hapticServiceRaw
     ? {
-        trigger: (type: string) => hapticServiceRaw.trigger(type as any),
+        trigger: (type: HapticFeedbackType) => hapticServiceRaw.trigger(type),
       }
     : undefined;
 

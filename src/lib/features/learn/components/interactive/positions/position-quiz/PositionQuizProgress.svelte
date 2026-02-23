@@ -36,14 +36,14 @@ PositionQuizProgress - Progress bar for position quiz
 
   .progress-bar {
     height: 6px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 3px;
     overflow: hidden;
   }
 
   .progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #22d3ee, #06b6d4);
+    background: var(--theme-accent, #22d3ee);
     border-radius: 3px;
     transition: width var(--duration-emphasis) ease;
   }

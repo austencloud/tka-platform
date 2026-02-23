@@ -236,7 +236,7 @@
     transition:
       stroke-dashoffset 0.3s ease,
       stroke 0.3s ease;
-    stroke: #667eea;
+    stroke: var(--theme-accent);
   }
 
   .time-display {
@@ -250,14 +250,14 @@
 
   .time-text {
     font-weight: bold;
-    color: #ffffff;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    color: var(--theme-text, #ffffff);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     line-height: 1;
   }
 
   .status-text {
     font-size: 0.75rem;
-    color: #94a3b8;
+    color: var(--theme-text-muted, #94a3b8);
     font-weight: 500;
     margin-top: 0.25rem;
   }
@@ -311,21 +311,21 @@
   }
 
   .quiz-timer.paused .progress-ring-progress {
-    stroke: #6b7280;
+    stroke: var(--theme-text-muted, #6b7280);
     animation: none;
   }
 
   .quiz-timer.paused .time-text {
-    color: #6b7280;
+    color: var(--theme-text-muted, #6b7280);
   }
 
   .quiz-timer.stopped .progress-ring-progress {
-    stroke: #374151;
+    stroke: var(--theme-stroke, #374151);
     animation: none;
   }
 
   .quiz-timer.stopped .time-text {
-    color: #9ca3af;
+    color: var(--theme-text-muted, #9ca3af);
   }
 
   /* Animations */

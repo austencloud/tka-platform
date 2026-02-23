@@ -24,11 +24,15 @@ Features:
 	let visible = $state(false);
 	let textVisible = $state(false);
 
+	let staggerTimer: ReturnType<typeof setTimeout> | null = null;
+	let autoDismissTimer: ReturnType<typeof setTimeout> | null = null;
+	let dismissAnimTimer: ReturnType<typeof setTimeout> | null = null;
+
 	onMount(() => {
 		// Stagger animations
 		visible = true;
 
-		setTimeout(() => {
+		staggerTimer = setTimeout(() => {
 			textVisible = true;
 			// Trigger celebration
 			hapticService?.trigger('success');
@@ -39,23 +43,38 @@ Features:
 		}, 200);
 
 		// Auto-dismiss after 4 seconds
-		const timer = setTimeout(() => {
+		autoDismissTimer = setTimeout(() => {
 			handleDismiss();
 		}, 4000);
 
-		return () => clearTimeout(timer);
+		return () => {
+			if (staggerTimer !== null) clearTimeout(staggerTimer);
+			if (autoDismissTimer !== null) clearTimeout(autoDismissTimer);
+			if (dismissAnimTimer !== null) clearTimeout(dismissAnimTimer);
+		};
 	});
 
 	function handleDismiss() {
 		visible = false;
-		setTimeout(() => {
+		if (autoDismissTimer !== null) {
+			clearTimeout(autoDismissTimer);
+			autoDismissTimer = null;
+		}
+		dismissAnimTimer = setTimeout(() => {
 			onDismiss();
 		}, 300);
 	}
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-<div class="celebration-overlay" class:visible onclick={handleDismiss}>
+<div
+	class="celebration-overlay"
+	class:visible
+	onclick={handleDismiss}
+	onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleDismiss()}
+	role="button"
+	tabindex="0"
+	aria-label="Dismiss celebration"
+>
 	<!-- Starburst rays -->
 	<div class="starburst">
 		{#each Array(12) as _, i}

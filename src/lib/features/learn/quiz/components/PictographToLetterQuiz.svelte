@@ -5,8 +5,8 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { onMount } from "svelte";
-  import { QuestionGeneratorService } from "../services/implementations/QuestionGenerator";
+  import { onDestroy, onMount } from "svelte";
+  import { QuestionGenerator } from "../services/implementations/QuestionGenerator";
   import { QuizType } from "../domain/enums/quiz-enums";
   import type { QuizQuestionData } from "../domain/models/quiz-models";
   import QuizContainer from "./shared/QuizContainer.svelte";
@@ -27,6 +27,16 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
 
   let hapticService: IHapticFeedback;
   const delightOrchestrator = getDelightOrchestrator();
+
+  let scorePopTimer: ReturnType<typeof setTimeout> | null = null;
+  let hapticTimer: ReturnType<typeof setTimeout> | null = null;
+  let nextQuestionTimer: ReturnType<typeof setTimeout> | null = null;
+
+  onDestroy(() => {
+    if (scorePopTimer !== null) clearTimeout(scorePopTimer);
+    if (hapticTimer !== null) clearTimeout(hapticTimer);
+    if (nextQuestionTimer !== null) clearTimeout(nextQuestionTimer);
+  });
 
   let questionData = $state<QuizQuestionData | null>(null);
   let selectedAnswerId = $state<string | null>(null);
@@ -62,7 +72,7 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
     isLoading = true;
     error = null;
     try {
-      questionData = await QuestionGeneratorService.generateQuestion(
+      questionData = await QuestionGenerator.generateQuestion(
         QuizType.PICTOGRAPH_TO_LETTER
       );
     } catch (err) {
@@ -92,19 +102,19 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
         });
       }
 
-      setTimeout(() => {
+      scorePopTimer = setTimeout(() => {
         showScorePop = false;
       }, 800);
     } else {
       currentStreak = 0;
     }
 
-    setTimeout(() => {
+    hapticTimer = setTimeout(() => {
       hapticService?.trigger(isCorrect ? "success" : "error");
     }, 100);
 
     onAnswerSubmit?.(isCorrect);
-    setTimeout(handleNextQuestion, 1200);
+    nextQuestionTimer = setTimeout(handleNextQuestion, 1200);
   }
 
   async function handleNextQuestion() {

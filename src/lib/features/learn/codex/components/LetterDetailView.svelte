@@ -154,8 +154,8 @@ Shows all pictographs for a selected letter with:
     align-items: center;
     gap: 1rem;
     padding: 1rem 1.5rem;
-    background: rgba(255, 255, 255, 0.03);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg);
+    border-bottom: 1px solid var(--theme-stroke);
     flex-shrink: 0;
   }
 
@@ -168,16 +168,16 @@ Shows all pictographs for a selected letter with:
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 10px;
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--theme-text-muted);
     cursor: pointer;
     transition: all var(--duration-normal) ease;
     flex-shrink: 0;
   }
 
   .back-button:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
-    color: rgba(255, 255, 255, 1);
+    background: var(--theme-stroke);
+    border-color: var(--theme-stroke-strong);
+    color: var(--theme-text);
     transform: translateX(-2px);
   }
 
@@ -197,11 +197,11 @@ Shows all pictographs for a selected letter with:
     margin: 0;
     font-size: 1.5rem;
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.95);
+    color: var(--theme-text);
     background: linear-gradient(
       135deg,
-      #a78bfa 0%,
-      var(--theme-accent-strong, var(--theme-accent-strong)) 100%
+      var(--theme-accent) 0%,
+      var(--theme-accent-strong, var(--theme-accent)) 100%
     );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -240,7 +240,7 @@ Shows all pictographs for a selected letter with:
     margin: 0;
     font-size: 0.9375rem;
     line-height: 1.6;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--theme-text-muted);
   }
 
   /* Pictograph section */

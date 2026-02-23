@@ -13,7 +13,12 @@ MotionPlayButton - Play/replay button for motion animation
   } = $props();
 </script>
 
-<button class="play-button" {onclick} disabled={animating}>
+<button
+  class="play-button"
+  {onclick}
+  disabled={animating}
+  aria-label={animating ? 'Playing animation' : hasCompleted ? 'Replay animation' : 'Play animation'}
+>
   {#if animating}
     <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
     Playing...
@@ -35,12 +40,12 @@ MotionPlayButton - Play/replay button for motion animation
     padding: 0.75rem 1.5rem;
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.2) 0%,
-      rgba(6, 182, 212, 0.2) 100%
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 20%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 20%, transparent) 100%
     );
-    border: 1px solid rgba(34, 211, 238, 0.4);
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent);
     border-radius: 10px;
-    color: #22d3ee;
+    color: var(--theme-accent, #22d3ee);
     font-size: 0.9375rem;
     font-weight: 600;
     cursor: pointer;
@@ -51,10 +56,10 @@ MotionPlayButton - Play/replay button for motion animation
   .play-button:hover:not(:disabled) {
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.3) 0%,
-      rgba(6, 182, 212, 0.3) 100%
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent) 100%
     );
-    border-color: rgba(34, 211, 238, 0.6);
+    border-color: color-mix(in srgb, var(--theme-accent, #22d3ee) 60%, transparent);
   }
 
   .play-button:disabled {

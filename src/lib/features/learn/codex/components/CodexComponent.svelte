@@ -229,7 +229,7 @@
       sans-serif
     );
     font-size: 0.875rem;
-    color: rgba(239, 68, 68, 0.8);
+    color: var(--semantic-error);
   }
 
   .retry-button {

@@ -118,7 +118,7 @@ Used in the Point Types lesson step.
     max-width: 320px;
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px var(--theme-shadow, rgba(0, 0, 0, 0.1));
   }
 
   .grid-bg {
@@ -132,13 +132,13 @@ Used in the Point Types lesson step.
 
   :global(:root.dark) .highlight-svg {
     box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.15),
-      0 2px 8px rgba(0, 0, 0, 0.3);
+      0 0 0 1px var(--theme-stroke, rgba(255, 255, 255, 0.15)),
+      0 2px 8px color-mix(in srgb, var(--theme-shadow, #000) 30%, transparent);
   }
 
   /* Base point styles - very muted when not highlighted */
   .point {
-    fill: #d1d5db;
+    fill: var(--theme-text-muted, #d1d5db);
     opacity: 0.4;
     transition:
       fill 300ms ease-out,
@@ -149,22 +149,22 @@ Used in the Point Types lesson step.
   }
 
   :global(:root.dark) .point {
-    fill: #374151;
+    fill: var(--theme-text-tertiary, #374151);
     opacity: 0.5;
   }
 
   /* Highlighted points - high contrast, bold and visible */
   .point.highlighted {
     /* Light mode: dark fill for contrast against white background */
-    fill: #1f2937;
+    fill: var(--theme-text, #1f2937);
     opacity: 1;
     animation: pointHighlight 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     animation-delay: var(--anim-delay, 0ms);
   }
 
   :global(:root.dark) .point.highlighted {
-    /* Dark mode: bright white for contrast against dark background */
-    fill: #ffffff;
+    /* Dark mode: bright text for contrast against dark background */
+    fill: var(--theme-text, #ffffff);
     opacity: 1;
   }
 

@@ -5,8 +5,8 @@ Letter to Pictograph Quiz - Shows a letter, asks user to identify the correct pi
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { onMount } from "svelte";
-  import { QuestionGeneratorService } from "../services/implementations/QuestionGenerator";
+  import { onDestroy, onMount } from "svelte";
+  import { QuestionGenerator } from "../services/implementations/QuestionGenerator";
   import { QuizType } from "../domain/enums/quiz-enums";
   import type { QuizQuestionData } from "../domain/models/quiz-models";
   import QuizContainer from "./shared/QuizContainer.svelte";
@@ -24,6 +24,14 @@ Letter to Pictograph Quiz - Shows a letter, asks user to identify the correct pi
   }>();
 
   let hapticService: IHapticFeedback;
+
+  let hapticTimer: ReturnType<typeof setTimeout> | null = null;
+  let nextQuestionTimer: ReturnType<typeof setTimeout> | null = null;
+
+  onDestroy(() => {
+    if (hapticTimer !== null) clearTimeout(hapticTimer);
+    if (nextQuestionTimer !== null) clearTimeout(nextQuestionTimer);
+  });
 
   let questionData = $state<QuizQuestionData | null>(null);
   let selectedAnswerId = $state<string | null>(null);
@@ -53,7 +61,7 @@ Letter to Pictograph Quiz - Shows a letter, asks user to identify the correct pi
     isLoading = true;
     error = null;
     try {
-      questionData = await QuestionGeneratorService.generateQuestion(
+      questionData = await QuestionGenerator.generateQuestion(
         QuizType.LETTER_TO_PICTOGRAPH
       );
     } catch (err) {
@@ -71,12 +79,12 @@ Letter to Pictograph Quiz - Shows a letter, asks user to identify the correct pi
     isAnswered = true;
     showFeedback = true;
 
-    setTimeout(() => {
+    hapticTimer = setTimeout(() => {
       hapticService?.trigger(isCorrect ? "success" : "error");
     }, 100);
 
     onAnswerSubmit?.(isCorrect);
-    setTimeout(handleNextQuestion, 1200);
+    nextQuestionTimer = setTimeout(handleNextQuestion, 1200);
   }
 
   async function handleNextQuestion() {

@@ -119,8 +119,8 @@ Features:
 	}
 
 	.streak-display.active {
-		background: rgba(255, 152, 0, 0.1);
-		border-color: rgba(255, 152, 0, 0.3);
+		background: color-mix(in srgb, var(--semantic-warning) 10%, transparent);
+		border-color: color-mix(in srgb, var(--semantic-warning) 30%, transparent);
 	}
 
 	.streak-display.loading {

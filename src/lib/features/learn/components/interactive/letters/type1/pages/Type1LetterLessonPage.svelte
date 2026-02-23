@@ -181,15 +181,17 @@ Eliminates ~1000 lines of duplicated code across the three letter type pages
 
   /* Theme-specific header gradients */
   .page:has(.motion-intro.pro) h2 {
-    background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
+    background: linear-gradient(135deg, var(--theme-accent, #22d3ee) 0%, var(--theme-accent, #06b6d4) 100%);
   }
 
   .page:has(.motion-intro.anti) h2 {
-    background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+    --anti-color: #a855f7;
+    background: linear-gradient(135deg, var(--anti-color) 0%, #9333ea 100%);
   }
 
   .page:has(.motion-intro.hybrid) h2 {
-    background: linear-gradient(135deg, #22d3ee 0%, #a855f7 100%);
+    --anti-color: #a855f7;
+    background: linear-gradient(135deg, var(--theme-accent, #22d3ee) 0%, var(--anti-color) 100%);
   }
 
   h3 {
@@ -211,28 +213,30 @@ Eliminates ~1000 lines of duplicated code across the three letter type pages
   .motion-intro.pro {
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.1) 0%,
-      rgba(34, 211, 238, 0.02) 100%
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 10%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 2%, transparent) 100%
     );
-    border: 1px solid rgba(34, 211, 238, 0.2);
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 20%, transparent);
   }
 
   .motion-intro.anti {
+    --anti-color: #a855f7;
     background: linear-gradient(
       135deg,
-      rgba(168, 85, 247, 0.1) 0%,
-      rgba(168, 85, 247, 0.02) 100%
+      color-mix(in srgb, var(--anti-color) 10%, transparent) 0%,
+      color-mix(in srgb, var(--anti-color) 2%, transparent) 100%
     );
-    border: 1px solid rgba(168, 85, 247, 0.2);
+    border: 1px solid color-mix(in srgb, var(--anti-color) 20%, transparent);
   }
 
   .motion-intro.hybrid {
+    --anti-color: #a855f7;
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.1) 0%,
-      rgba(168, 85, 247, 0.1) 100%
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 10%, transparent) 0%,
+      color-mix(in srgb, var(--anti-color) 10%, transparent) 100%
     );
-    border: 1px solid rgba(168, 85, 247, 0.2);
+    border: 1px solid color-mix(in srgb, var(--anti-color) 20%, transparent);
   }
 
   .motion-icon {
@@ -246,28 +250,30 @@ Eliminates ~1000 lines of duplicated code across the three letter type pages
   }
 
   .motion-intro.pro .motion-icon {
-    background: rgba(34, 211, 238, 0.2);
-    color: #22d3ee;
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 20%, transparent);
+    color: var(--theme-accent, #22d3ee);
   }
 
   .motion-intro.anti .motion-icon {
-    background: rgba(168, 85, 247, 0.2);
-    color: #a855f7;
+    --anti-color: #a855f7;
+    background: color-mix(in srgb, var(--anti-color) 20%, transparent);
+    color: var(--anti-color);
   }
 
   .motion-intro.hybrid .motion-icon {
+    --anti-color: #a855f7;
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.2),
-      rgba(168, 85, 247, 0.2)
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 20%, transparent),
+      color-mix(in srgb, var(--anti-color) 20%, transparent)
     );
-    color: #a855f7;
+    color: var(--anti-color);
   }
 
   .motion-summary {
     font-size: 1.25rem;
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--theme-text, rgba(255, 255, 255, 0.85));
     margin: 0;
     text-align: center;
   }
@@ -282,28 +288,30 @@ Eliminates ~1000 lines of duplicated code across the three letter type pages
   }
 
   .motion-intro.pro .motion-badge {
-    background: rgba(34, 211, 238, 0.2);
-    color: #22d3ee;
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 20%, transparent);
+    color: var(--theme-accent, #22d3ee);
   }
 
   .motion-intro.anti .motion-badge {
-    background: rgba(168, 85, 247, 0.2);
-    color: #a855f7;
+    --anti-color: #a855f7;
+    background: color-mix(in srgb, var(--anti-color) 20%, transparent);
+    color: var(--anti-color);
   }
 
   .motion-intro.hybrid .motion-badge {
+    --anti-color: #a855f7;
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.2),
-      rgba(168, 85, 247, 0.2)
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 20%, transparent),
+      color-mix(in srgb, var(--anti-color) 20%, transparent)
     );
-    color: #a855f7;
+    color: var(--anti-color);
   }
 
   .explanation {
     padding: 1.25rem;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
   }
 
@@ -314,7 +322,7 @@ Eliminates ~1000 lines of duplicated code across the three letter type pages
 
   .explanation li {
     font-size: 1rem;
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
     line-height: 1.6;
     margin-bottom: 0.5rem;
   }
@@ -351,8 +359,8 @@ Eliminates ~1000 lines of duplicated code across the three letter type pages
   }
 
   .nav-button:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.25);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
   }
 
   .nav-button:disabled {
@@ -369,8 +377,8 @@ Eliminates ~1000 lines of duplicated code across the three letter type pages
 
   .letter-summary {
     padding: 1rem;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
   }
 
@@ -399,21 +407,21 @@ Eliminates ~1000 lines of duplicated code across the three letter type pages
   }
 
   .letter-chip:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.12));
     color: white;
   }
 
   .letter-chip.active {
-    background: rgba(34, 211, 238, 0.2);
-    border-color: rgba(34, 211, 238, 0.5);
-    color: #22d3ee;
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 20%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #22d3ee) 50%, transparent);
+    color: var(--theme-accent, #22d3ee);
   }
 
   /* Final Summary Section (Hybrid page only) */
   .final-summary {
     padding: 1.25rem;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
   }
 
@@ -439,37 +447,39 @@ Eliminates ~1000 lines of duplicated code across the three letter type pages
   }
 
   .summary-card.pro {
-    background: rgba(34, 211, 238, 0.1);
-    border: 1px solid rgba(34, 211, 238, 0.25);
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 25%, transparent);
   }
 
   .summary-card.pro i,
   .summary-card.pro .card-label {
-    color: #22d3ee;
+    color: var(--theme-accent, #22d3ee);
   }
 
   .summary-card.anti {
-    background: rgba(168, 85, 247, 0.1);
-    border: 1px solid rgba(168, 85, 247, 0.25);
+    --anti-color: #a855f7;
+    background: color-mix(in srgb, var(--anti-color) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--anti-color) 25%, transparent);
   }
 
   .summary-card.anti i,
   .summary-card.anti .card-label {
-    color: #a855f7;
+    color: var(--anti-color, #a855f7);
   }
 
   .summary-card.hybrid {
+    --anti-color: #a855f7;
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.1),
-      rgba(168, 85, 247, 0.1)
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 10%, transparent),
+      color-mix(in srgb, var(--anti-color) 10%, transparent)
     );
-    border: 1px solid rgba(168, 85, 247, 0.25);
+    border: 1px solid color-mix(in srgb, var(--anti-color) 25%, transparent);
   }
 
   .summary-card.hybrid i,
   .summary-card.hybrid .card-label {
-    color: #a855f7;
+    color: var(--anti-color, #a855f7);
   }
 
   .card-label {
@@ -482,7 +492,7 @@ Eliminates ~1000 lines of duplicated code across the three letter type pages
   .card-letters {
     font-size: 0.875rem;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--theme-text, rgba(255, 255, 255, 0.85));
     letter-spacing: 1px;
   }
 
@@ -511,32 +521,32 @@ Eliminates ~1000 lines of duplicated code across the three letter type pages
   .next-button {
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.3) 0%,
-      rgba(6, 182, 212, 0.3) 100%
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent, #06b6d4) 30%, transparent) 100%
     );
-    border: 2px solid rgba(34, 211, 238, 0.5);
+    border: 2px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 50%, transparent);
     color: white;
   }
 
   .next-button:hover {
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.4) 0%,
-      rgba(6, 182, 212, 0.4) 100%
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent, #06b6d4) 40%, transparent) 100%
     );
-    border-color: rgba(34, 211, 238, 0.8);
+    border-color: color-mix(in srgb, var(--theme-accent, #22d3ee) 80%, transparent);
     transform: translateY(-2px);
   }
 
   .prev-button {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
     border: 2px solid var(--theme-stroke-strong);
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--theme-text, rgba(255, 255, 255, 0.8));
   }
 
   .prev-button:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.25);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
   }
 
   @media (max-width: 600px) {

@@ -15,10 +15,10 @@
 </script>
 
 <div class="action-buttons">
-  <button class="retry-button btn-primary" onclick={onRetry}>
+  <button class="retry-button btn-primary" onclick={onRetry} aria-label={retryText}>
     {retryText}
   </button>
-  <button class="new-lesson-button btn-glass" onclick={onChooseNew}>
+  <button class="new-lesson-button btn-glass" onclick={onChooseNew} aria-label={chooseNewText}>
     {chooseNewText}
   </button>
 </div>

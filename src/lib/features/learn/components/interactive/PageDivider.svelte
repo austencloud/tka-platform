@@ -62,7 +62,7 @@ Shows a numbered section marker with decorative lines
     border-radius: 50%;
     font-size: 0.75rem;
     font-weight: 700;
-    color: #000;
+    color: var(--theme-on-accent, #000);
   }
 
   .badge-label {

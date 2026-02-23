@@ -84,7 +84,7 @@ WordHandPositions - Renders left and right hand positions with connection
       y1={leftPos.y}
       x2={rightPos.x}
       y2={rightPos.y}
-      stroke="rgba(255, 255, 255, 0.2)"
+      stroke="var(--theme-stroke, rgba(255, 255, 255, 0.2))"
       stroke-width="1"
       stroke-dasharray="3 2"
       class="connection-line"

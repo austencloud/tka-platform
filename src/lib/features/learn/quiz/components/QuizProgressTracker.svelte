@@ -174,11 +174,10 @@
 
 <style>
   .progress-tracker {
-    background: var(--desktop-bg-secondary);
-    border: 1px solid var(--desktop-border-secondary);
+    background: var(--theme-card-bg, var(--desktop-bg-secondary));
+    border: 1px solid var(--theme-stroke, var(--desktop-border-secondary));
     border-radius: var(--desktop-border-radius);
-    backdrop-filter: blur(10px);
-    color: var(--desktop-text-primary);
+    color: var(--theme-text, var(--desktop-text-primary));
   }
 
   /* Compact View */
@@ -265,7 +264,7 @@
 
   .progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(90deg, var(--theme-accent) 0%, color-mix(in srgb, var(--theme-accent) 70%, purple) 100%);
     border-radius: var(--desktop-border-radius-xs);
     transition: width var(--desktop-transition-slow);
   }
@@ -339,23 +338,23 @@
   }
 
   .accuracy-card.excellent {
-    border-color: var(--desktop-progress-excellent);
-    background: rgba(0, 255, 0, 0.1);
+    border-color: var(--semantic-success);
+    background: color-mix(in srgb, var(--semantic-success) 10%, transparent);
   }
 
   .accuracy-card.good {
-    border-color: var(--desktop-progress-good);
-    background: rgba(255, 255, 0, 0.1);
+    border-color: var(--semantic-warning);
+    background: color-mix(in srgb, var(--semantic-warning) 10%, transparent);
   }
 
   .accuracy-card.fair {
-    border-color: var(--desktop-progress-fair);
-    background: rgba(255, 165, 0, 0.1);
+    border-color: var(--semantic-warning);
+    background: color-mix(in srgb, var(--semantic-warning) 10%, transparent);
   }
 
   .accuracy-card.poor {
-    border-color: var(--desktop-progress-poor);
-    background: rgba(255, 0, 0, 0.1);
+    border-color: var(--semantic-error);
+    background: color-mix(in srgb, var(--semantic-error) 10%, transparent);
   }
 
   .streak-section {
@@ -373,11 +372,11 @@
       var(--semantic-warning) 0%,
       var(--semantic-warning) 100%
     );
-    color: #000000;
+    color: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border-radius: 20px;
     font-weight: 600;
     font-size: 0.875rem;
-    box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--semantic-warning) 30%, transparent);
   }
 
   .streak-icon {

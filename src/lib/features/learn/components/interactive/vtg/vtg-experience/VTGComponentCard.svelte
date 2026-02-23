@@ -45,13 +45,13 @@ VTGComponentCard - Shows direction or timing component explanation
   }
 
   .component-card.direction {
-    background: rgba(34, 211, 238, 0.1);
-    border: 1px solid rgba(34, 211, 238, 0.25);
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 25%, transparent);
   }
 
   .component-card.timing {
-    background: rgba(167, 139, 250, 0.1);
-    border: 1px solid rgba(167, 139, 250, 0.25);
+    background: color-mix(in srgb, var(--theme-accent-secondary, #a78bfa) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent-secondary, #a78bfa) 25%, transparent);
   }
 
   .component-icon {
@@ -65,13 +65,13 @@ VTGComponentCard - Shows direction or timing component explanation
   }
 
   .component-card.direction .component-icon {
-    background: rgba(34, 211, 238, 0.2);
-    color: #22d3ee;
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 20%, transparent);
+    color: var(--theme-accent, #22d3ee);
   }
 
   .component-card.timing .component-icon {
-    background: rgba(167, 139, 250, 0.2);
-    color: #a78bfa;
+    background: color-mix(in srgb, var(--theme-accent-secondary, #a78bfa) 20%, transparent);
+    color: var(--theme-accent-secondary, #a78bfa);
   }
 
   h4 {
@@ -81,16 +81,16 @@ VTGComponentCard - Shows direction or timing component explanation
   }
 
   .component-card.direction h4 {
-    color: #22d3ee;
+    color: var(--theme-accent, #22d3ee);
   }
 
   .component-card.timing h4 {
-    color: #a78bfa;
+    color: var(--theme-accent-secondary, #a78bfa);
   }
 
   p {
     font-size: 0.9375rem;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--theme-text, rgba(255, 255, 255, 0.85));
     margin: 0;
   }
 

@@ -33,7 +33,7 @@
     questionIndex?: number;
     onBackToSelector?: () => void;
     onQuizComplete?: (results: QuizResults) => void;
-    onAnswerSubmit?: (answer: any) => void;
+    onAnswerSubmit?: (answer: boolean) => void;
   }>();
 
   // State
@@ -283,8 +283,7 @@
     background: var(--theme-card-bg);
     border-radius: 12px;
     border: 1px solid var(--theme-stroke);
-    backdrop-filter: blur(10px);
-    color: #94a3b8;
+    color: var(--theme-text-muted, #94a3b8);
     font-size: 1.125rem;
   }
 
@@ -295,7 +294,7 @@
     justify-content: center;
     height: 100%;
     gap: 1rem;
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
   }
 
 </style>

@@ -25,12 +25,12 @@ VTGNextButton - Next question/see results button
     padding: 0.875rem 2rem;
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.25) 0%,
-      rgba(6, 182, 212, 0.25) 100%
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 25%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 25%, transparent) 100%
     );
-    border: 1px solid rgba(34, 211, 238, 0.4);
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent);
     border-radius: 10px;
-    color: #22d3ee;
+    color: var(--theme-accent, #22d3ee);
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
@@ -40,9 +40,9 @@ VTGNextButton - Next question/see results button
   .next-button:hover {
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.35) 0%,
-      rgba(6, 182, 212, 0.35) 100%
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 35%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 35%, transparent) 100%
     );
-    border-color: rgba(34, 211, 238, 0.6);
+    border-color: color-mix(in srgb, var(--theme-accent, #22d3ee) 60%, transparent);
   }
 </style>

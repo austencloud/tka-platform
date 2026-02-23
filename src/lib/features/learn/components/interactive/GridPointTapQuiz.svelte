@@ -249,7 +249,7 @@ Provides instant visual feedback (correct = green glow, wrong = red shake).
   .progress-bar {
     width: 100%;
     height: 6px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 3px;
     overflow: hidden;
   }
@@ -277,7 +277,7 @@ Provides instant visual feedback (correct = green glow, wrong = red shake).
   }
 
   .prompt :global(strong) {
-    color: #a78bfa;
+    color: var(--theme-accent, #a78bfa);
     font-weight: 700;
   }
 
@@ -294,7 +294,7 @@ Provides instant visual feedback (correct = green glow, wrong = red shake).
   .grid-wrapper.feedback-correct {
     box-shadow:
       0 4px 16px var(--theme-shadow),
-      0 0 24px rgba(34, 197, 94, 0.4);
+      0 0 24px color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent);
   }
 
   .quiz-grid {
@@ -323,22 +323,22 @@ Provides instant visual feedback (correct = green glow, wrong = red shake).
 
   /* Correct feedback - green glow */
   .click-target.correct {
-    fill: rgba(34, 197, 94, 0.4);
+    fill: color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent);
     animation: correct-pulse 0.6s ease;
   }
 
   @keyframes correct-pulse {
     0% {
-      fill: rgba(34, 197, 94, 0.6);
+      fill: color-mix(in srgb, var(--semantic-success, #22c55e) 60%, transparent);
     }
     100% {
-      fill: rgba(34, 197, 94, 0.3);
+      fill: color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent);
     }
   }
 
   /* Incorrect feedback - red shake */
   .click-target.incorrect {
-    fill: rgba(239, 68, 68, 0.4);
+    fill: color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
     animation: incorrect-shake var(--duration-dramatic) ease;
   }
 
@@ -368,16 +368,16 @@ Provides instant visual feedback (correct = green glow, wrong = red shake).
     font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.5px;
-    background: rgba(74, 158, 255, 0.2);
-    color: #4a9eff;
-    border: 2px solid rgba(74, 158, 255, 0.3);
+    background: color-mix(in srgb, var(--prop-blue, #4a9eff) 20%, transparent);
+    color: var(--prop-blue, #4a9eff);
+    border: 2px solid color-mix(in srgb, var(--prop-blue, #4a9eff) 30%, transparent);
     transition: all var(--duration-emphasis) ease;
   }
 
   .mode-badge.box {
-    background: rgba(255, 74, 158, 0.2);
-    color: #ff4a9e;
-    border-color: rgba(255, 74, 158, 0.3);
+    background: color-mix(in srgb, var(--prop-red, #ff4a9e) 20%, transparent);
+    color: var(--prop-red, #ff4a9e);
+    border-color: color-mix(in srgb, var(--prop-red, #ff4a9e) 30%, transparent);
   }
 
   /* Responsive */

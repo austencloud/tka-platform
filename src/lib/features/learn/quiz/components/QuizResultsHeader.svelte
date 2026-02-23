@@ -13,7 +13,7 @@
 </script>
 
 <div class="results-header glass-surface">
-  <button class="back-button btn-glass" onclick={onBack}>
+  <button class="back-button btn-glass" onclick={onBack} aria-label={backButtonText}>
     {backButtonText}
   </button>
   <div class="lesson-info">

@@ -768,6 +768,154 @@
           "description": "{@html} renders trusted bundled SVG via propSvgLoader - static/trusted content"
         }
       ]
+    },
+    "features/learn/codex": {
+      "lastAuditedAt": "2026-02-23T06:36:48.756Z",
+      "name": "Learn > Codex",
+      "type": "feature",
+      "grades": {
+        "architecture": "A+",
+        "codeQuality": "A+",
+        "svelte5": "A+",
+        "accessibility": "A",
+        "uxStates": "A+",
+        "uiConsistency": "A+",
+        "performance": "A+",
+        "security": "A"
+      },
+      "overallGrade": "A",
+      "notes": null,
+      "issues": [
+        {
+          "severity": "serious",
+          "dimension": "accessibility",
+          "file": "src/lib/features/learn/codex/components/CodexPictographGrid.svelte",
+          "line": 380,
+          "description": "font-size 0.75rem (12px) at Tier 2 floor"
+        },
+        {
+          "severity": "serious",
+          "dimension": "security",
+          "file": "src/lib/features/learn/codex/components/CodexPictographGrid.svelte",
+          "line": 138,
+          "description": "{@html getColoredText()} safe today but injection risk if source changes"
+        },
+        {
+          "severity": "moderate",
+          "dimension": "uxStates",
+          "file": "src/lib/features/learn/codex/state/codex-state.svelte.ts",
+          "line": 90,
+          "description": "4 console.error-only catches on state mutations"
+        }
+      ]
+    },
+    "features/learn/quiz": {
+      "lastAuditedAt": "2026-02-23T06:47:04.921Z",
+      "name": "Learn > Quiz",
+      "type": "feature",
+      "grades": {
+        "architecture": "A+",
+        "codeQuality": "A+",
+        "svelte5": "A+",
+        "accessibility": "A",
+        "uxStates": "A+",
+        "uiConsistency": "C",
+        "performance": "A",
+        "security": "A+"
+      },
+      "overallGrade": "A",
+      "notes": null,
+      "issues": [
+        {
+          "severity": "critical",
+          "dimension": "uiConsistency",
+          "file": "features/learn/quiz/components/AchievementUnlockOverlay.svelte",
+          "line": 139,
+          "description": "11 hardcoded color values in overlay gradients/shadows"
+        },
+        {
+          "severity": "critical",
+          "dimension": "uiConsistency",
+          "file": "features/learn/quiz/components/PerfectQuizCelebration.svelte",
+          "line": 116,
+          "description": "Gold celebration colors and backdrop rgba not mapped to tokens"
+        },
+        {
+          "severity": "serious",
+          "dimension": "accessibility",
+          "file": "features/learn/quiz/components/LessonButton.svelte",
+          "line": 473,
+          "description": "font-size 0.6875rem (11px) below 12px minimum"
+        },
+        {
+          "severity": "serious",
+          "dimension": "performance",
+          "file": "features/learn/quiz/components/StreakDisplay.svelte",
+          "line": 62,
+          "description": "Anonymous setTimeout with no stored reference; cannot be cleared on destroy"
+        },
+        {
+          "severity": "serious",
+          "dimension": "uiConsistency",
+          "file": "features/learn/quiz/components/AnswerPictograph.svelte",
+          "line": 114,
+          "description": "backdrop-filter: blur(10px) on content panel"
+        },
+        {
+          "severity": "serious",
+          "dimension": "uiConsistency",
+          "file": "features/learn/quiz/components/QuizProgressTracker.svelte",
+          "line": 286,
+          "description": "backdrop-filter: blur(10px) on content panel"
+        }
+      ]
+    },
+    "features/learn/components": {
+      "lastAuditedAt": "2026-02-23T07:22:57.004Z",
+      "name": "Learn Components",
+      "type": "components",
+      "grades": {
+        "architecture": "A+",
+        "codeQuality": "A+",
+        "svelte5": "A+",
+        "accessibility": "F",
+        "uxStates": "A+",
+        "uiConsistency": "A",
+        "performance": "B",
+        "security": "A"
+      },
+      "overallGrade": "A",
+      "notes": null,
+      "issues": [
+        {
+          "severity": "critical",
+          "dimension": "accessibility",
+          "file": "features/learn/components/ConceptCard.svelte",
+          "line": 60,
+          "description": "65 buttons missing aria-labels across the module"
+        },
+        {
+          "severity": "critical",
+          "dimension": "accessibility",
+          "file": "features/learn/components/interactive/vtg/vtg-quiz/VTGModeReviewGrid.svelte",
+          "line": 60,
+          "description": "font-size 0.5625rem (9px) below 12px minimum; multiple sub-12px fonts remain"
+        },
+        {
+          "severity": "serious",
+          "dimension": "performance",
+          "file": "features/learn/components/interactive/GridIdentificationQuiz.svelte",
+          "line": 71,
+          "description": "6 setTimeouts without cleanup across quiz components"
+        },
+        {
+          "severity": "serious",
+          "dimension": "uiConsistency",
+          "file": "features/learn/components/interactive/GridPointHighlight.svelte",
+          "line": 125,
+          "description": "2 remaining hardcoded #ffffff SVG fills + 1 blur-on-content"
+        }
+      ]
     }
   },
   "targets": [],

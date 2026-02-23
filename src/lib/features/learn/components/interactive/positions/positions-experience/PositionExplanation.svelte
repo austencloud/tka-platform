@@ -28,8 +28,8 @@ PositionExplanation - Explanation box for a position type
 <style>
   .explanation {
     padding: 1.25rem;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
   }
 
@@ -47,7 +47,7 @@ PositionExplanation - Explanation box for a position type
 
   li {
     font-size: 1rem;
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--theme-text, rgba(255, 255, 255, 0.75));
     line-height: 1.6;
     margin-bottom: 0.5rem;
   }

@@ -84,8 +84,8 @@ Features:
     justify-content: center;
     gap: 1rem;
     padding: 0.75rem 1rem;
-    background: var(--surface, #242424);
-    border-bottom: 1px solid var(--border-color, var(--theme-stroke));
+    background: var(--theme-panel-bg, #242424);
+    border-bottom: 1px solid var(--theme-stroke);
     position: relative;
     z-index: 10;
   }
@@ -112,7 +112,7 @@ Features:
     padding: 0.5rem 1rem;
     background: transparent;
     border: none;
-    color: var(--foreground-muted, var(--theme-text-dim));
+    color: var(--theme-text-dim);
     cursor: pointer;
     transition: all var(--duration-normal) ease;
     border-radius: 8px;
@@ -123,8 +123,8 @@ Features:
   }
 
   .tab-button:hover {
-    background: var(--hover-bg, rgba(255, 255, 255, 0.05));
-    color: var(--foreground, #ffffff);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    color: var(--theme-text);
   }
 
   .tab-button:active {
@@ -132,11 +132,11 @@ Features:
   }
 
   .tab-button.active {
-    color: var(--accent, #4a9eff);
+    color: var(--theme-accent, #4a9eff);
   }
 
   .tab-button:focus-visible {
-    outline: 2px solid var(--accent, #4a9eff);
+    outline: 2px solid var(--theme-accent, #4a9eff);
     outline-offset: 2px;
   }
 
@@ -158,7 +158,7 @@ Features:
     left: 0;
     width: calc(100% / 2);
     height: 2px;
-    background: var(--accent, #4a9eff);
+    background: var(--theme-accent, #4a9eff);
     transition: transform var(--duration-emphasis) cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 1;
     border-radius: 2px 2px 0 0;

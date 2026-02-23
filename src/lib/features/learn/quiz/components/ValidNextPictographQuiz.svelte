@@ -6,8 +6,8 @@ The next pictograph's start position must match the initial pictograph's end pos
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { onMount } from "svelte";
-  import { QuestionGeneratorService } from "../services/implementations/QuestionGenerator";
+  import { onDestroy, onMount } from "svelte";
+  import { QuestionGenerator } from "../services/implementations/QuestionGenerator";
   import { QuizType } from "../domain/enums/quiz-enums";
   import type { QuizQuestionData } from "../domain/models/quiz-models";
   import QuizContainer from "./shared/QuizContainer.svelte";
@@ -26,6 +26,14 @@ The next pictograph's start position must match the initial pictograph's end pos
   }>();
 
   let hapticService: IHapticFeedback;
+
+  let hapticTimer: ReturnType<typeof setTimeout> | null = null;
+  let nextQuestionTimer: ReturnType<typeof setTimeout> | null = null;
+
+  onDestroy(() => {
+    if (hapticTimer !== null) clearTimeout(hapticTimer);
+    if (nextQuestionTimer !== null) clearTimeout(nextQuestionTimer);
+  });
 
   let questionData = $state<QuizQuestionData | null>(null);
   let selectedAnswerId = $state<string | null>(null);
@@ -54,7 +62,7 @@ The next pictograph's start position must match the initial pictograph's end pos
     isLoading = true;
     error = null;
     try {
-      questionData = await QuestionGeneratorService.generateQuestion(
+      questionData = await QuestionGenerator.generateQuestion(
         QuizType.VALID_NEXT_PICTOGRAPH
       );
       questionKey++;
@@ -73,12 +81,12 @@ The next pictograph's start position must match the initial pictograph's end pos
     isAnswered = true;
     showFeedback = true;
 
-    setTimeout(() => {
+    hapticTimer = setTimeout(() => {
       hapticService?.trigger(isCorrect ? "success" : "error");
     }, 100);
 
     onAnswerSubmit?.(isCorrect);
-    setTimeout(handleNextQuestion, 1200);
+    nextQuestionTimer = setTimeout(handleNextQuestion, 1200);
   }
 
   async function handleNextQuestion() {
