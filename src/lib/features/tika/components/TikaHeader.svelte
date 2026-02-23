@@ -27,6 +27,8 @@
     showToolDetails = false,
     onToggleToolDetails,
     generateCopyForAI,
+    compareMode = false,
+    onToggleCompare,
   }: {
     reviewStatus?: ReviewStatus;
     reviewMetadata?: ReviewMetadata;
@@ -44,6 +46,8 @@
     showToolDetails?: boolean;
     onToggleToolDetails?: () => void;
     generateCopyForAI?: () => string;
+    compareMode?: boolean;
+    onToggleCompare?: () => void;
   } = $props();
 
   // Derived: review badge display
@@ -102,10 +106,9 @@
     {#if reviewBadge()}
       {@const badge = reviewBadge()}
       {#if badge}
-        <button
+        <button aria-label={`Review status: ${badge.label}`}
           class="review-badge review-badge-{badge.color}"
           title={reviewMetadata?.aiNotes || `Status: ${reviewStatus}`}
-          aria-label={`Review status: ${badge.label}`}
         >
           <i class="fas {badge.icon}" aria-hidden="true"></i>
           <span>{badge.label}</span>
@@ -123,21 +126,19 @@
       />
     {/if}
     {#if onNewChat}
-      <button
+      <button aria-label="Start new conversation"
         class="action-btn new-chat-btn"
         onclick={onNewChat}
         title="New conversation"
-        aria-label="Start new conversation"
       >
         <i class="fas fa-plus" aria-hidden="true"></i>
       </button>
     {/if}
     {#if onOpenHistory}
-      <button
+      <button aria-label="Open chat history"
         class="action-btn history-btn"
         onclick={onOpenHistory}
         title="Chat history"
-        aria-label="Open chat history"
       >
         <i class="fas fa-history" aria-hidden="true"></i>
       </button>
@@ -145,15 +146,27 @@
 
     <!-- Flag for Review: Shows when there's a saved session -->
     {#if sessionId && onFlagForReview}
-      <button
+      <button aria-label={isFlagged ? "Remove from review queue" : "Flag conversation for review"}
         class="action-btn flag-btn"
         class:flagged={isFlagged}
         onclick={() => onFlagForReview(!isFlagged)}
         title={isFlagged ? "Remove from review queue" : "Flag for review"}
-        aria-label={isFlagged ? "Remove from review queue" : "Flag conversation for review"}
         aria-pressed={isFlagged}
       >
         <i class="fas fa-flag" aria-hidden="true"></i>
+      </button>
+    {/if}
+
+    <!-- Compare Mode Toggle: Desktop only -->
+    {#if onToggleCompare}
+      <button
+        aria-label={compareMode ? "Exit compare mode" : "Compare models side by side"}
+        class="action-btn compare-btn"
+        class:active={compareMode}
+        onclick={onToggleCompare}
+        title={compareMode ? "Exit compare mode" : "Compare models side by side"}
+      >
+        <i class="fas fa-columns" aria-hidden="true"></i>
       </button>
     {/if}
 
@@ -215,7 +228,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    background: rgba(15, 20, 30, 0.95);
+    background: var(--theme-panel-bg, rgba(15, 20, 30, 0.95));
   }
 
   .header-left {
@@ -244,53 +257,53 @@
   }
 
   .review-badge-green {
-    background: rgba(34, 197, 94, 0.15);
-    border-color: rgba(34, 197, 94, 0.4);
-    color: #22c55e;
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 15%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent);
+    color: var(--semantic-success, #22c55e);
   }
 
   .review-badge-green:hover {
-    background: rgba(34, 197, 94, 0.25);
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 25%, transparent);
   }
 
   .review-badge-red {
-    background: rgba(239, 68, 68, 0.15);
-    border-color: rgba(239, 68, 68, 0.4);
-    color: #ef4444;
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
+    color: var(--semantic-error, #ef4444);
   }
 
   .review-badge-red:hover {
-    background: rgba(239, 68, 68, 0.25);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 25%, transparent);
   }
 
   .review-badge-blue {
-    background: rgba(59, 130, 246, 0.15);
-    border-color: rgba(59, 130, 246, 0.4);
-    color: #3b82f6;
+    background: color-mix(in srgb, var(--semantic-info, #3b82f6) 15%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-info, #3b82f6) 40%, transparent);
+    color: var(--semantic-info, #3b82f6);
   }
 
   .review-badge-blue:hover {
-    background: rgba(59, 130, 246, 0.25);
+    background: color-mix(in srgb, var(--semantic-info, #3b82f6) 25%, transparent);
   }
 
   .review-badge-purple {
-    background: rgba(168, 85, 247, 0.15);
-    border-color: rgba(168, 85, 247, 0.4);
-    color: #a855f7;
+    background: color-mix(in srgb, var(--theme-accent, #a855f7) 15%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #a855f7) 40%, transparent);
+    color: var(--theme-accent, #a855f7);
   }
 
   .review-badge-purple:hover {
-    background: rgba(168, 85, 247, 0.25);
+    background: color-mix(in srgb, var(--theme-accent, #a855f7) 25%, transparent);
   }
 
   .review-badge-gray {
-    background: rgba(156, 163, 175, 0.15);
-    border-color: rgba(156, 163, 175, 0.4);
-    color: #9ca3af;
+    background: color-mix(in srgb, var(--theme-text-secondary, #9ca3af) 15%, transparent);
+    border-color: color-mix(in srgb, var(--theme-text-secondary, #9ca3af) 40%, transparent);
+    color: var(--theme-text-secondary, #9ca3af);
   }
 
   .review-badge-gray:hover {
-    background: rgba(156, 163, 175, 0.25);
+    background: color-mix(in srgb, var(--theme-text-secondary, #9ca3af) 25%, transparent);
   }
 
   .header-title {
@@ -303,7 +316,7 @@
     width: 40px;
     height: 40px;
     border-radius: 12px;
-    background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
+    background: linear-gradient(135deg, var(--theme-accent, #818cf8) 0%, color-mix(in srgb, var(--theme-accent, #6366f1) 85%, black) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -348,9 +361,9 @@
     width: var(--min-touch-target, 48px);
     height: var(--min-touch-target, 48px);
     padding: 0;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
     border-radius: 50%;
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
     font-size: 16px;
     cursor: pointer;
     transition: all var(--duration-normal, 0.3s) ease;
@@ -375,49 +388,78 @@
 
   /* New chat button - green gradient for "create new" action */
   .new-chat-btn {
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.9), rgba(22, 163, 74, 0.9));
-    border-color: rgba(34, 197, 94, 0.3);
+    background: linear-gradient(135deg, var(--semantic-success, #22c55e), color-mix(in srgb, var(--semantic-success, #22c55e) 80%, black));
+    border-color: color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent);
     box-shadow: 0 2px 8px rgba(34, 197, 94, 0.25);
   }
 
   .new-chat-btn:hover {
-    background: linear-gradient(135deg, rgba(34, 197, 94, 1), rgba(22, 163, 74, 1));
+    background: linear-gradient(135deg, var(--semantic-success, #22c55e), color-mix(in srgb, var(--semantic-success, #22c55e) 75%, black));
     box-shadow: 0 4px 14px rgba(34, 197, 94, 0.4);
   }
 
   /* History button - indigo gradient for navigation */
   .history-btn {
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(79, 70, 229, 0.9));
-    border-color: rgba(99, 102, 241, 0.3);
+    background: linear-gradient(135deg, var(--theme-accent, #6366f1), color-mix(in srgb, var(--theme-accent, #6366f1) 80%, black));
+    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent);
     box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
   }
 
   .history-btn:hover {
-    background: linear-gradient(135deg, rgba(99, 102, 241, 1), rgba(79, 70, 229, 1));
+    background: linear-gradient(135deg, var(--theme-accent, #6366f1), color-mix(in srgb, var(--theme-accent, #6366f1) 75%, black));
     box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
   }
 
   /* Flag button - amber/yellow when not flagged, red when flagged */
   .flag-btn {
-    background: linear-gradient(135deg, rgba(100, 100, 120, 0.85), rgba(70, 70, 90, 0.85));
-    border-color: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg, rgba(100, 100, 120, 0.85));
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   .flag-btn:hover {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.9), rgba(217, 119, 6, 0.9));
-    border-color: rgba(245, 158, 11, 0.3);
+    background: linear-gradient(135deg, var(--semantic-warning, #f59e0b), color-mix(in srgb, var(--semantic-warning, #f59e0b) 80%, black));
+    border-color: color-mix(in srgb, var(--semantic-warning, #f59e0b) 30%, transparent);
     box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
   }
 
   .flag-btn.flagged {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 119, 6, 0.95));
-    border-color: rgba(245, 158, 11, 0.4);
+    background: linear-gradient(135deg, var(--semantic-warning, #f59e0b), color-mix(in srgb, var(--semantic-warning, #f59e0b) 80%, black));
+    border-color: color-mix(in srgb, var(--semantic-warning, #f59e0b) 40%, transparent);
     box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
   }
 
   .flag-btn.flagged:hover {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 1), rgba(217, 119, 6, 1));
+    background: linear-gradient(135deg, var(--semantic-warning, #f59e0b), color-mix(in srgb, var(--semantic-warning, #f59e0b) 75%, black));
     box-shadow: 0 4px 14px rgba(245, 158, 11, 0.5);
+  }
+
+  /* Compare toggle - hidden on mobile (needs width for side-by-side) */
+  .compare-btn {
+    display: none;
+    background: var(--theme-card-bg, rgba(100, 100, 120, 0.85));
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  @media (min-width: 768px) {
+    .compare-btn {
+      display: flex;
+    }
+  }
+
+  .compare-btn:hover {
+    background: linear-gradient(135deg, var(--theme-accent, #6366f1), color-mix(in srgb, var(--theme-accent, #6366f1) 80%, black));
+    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent);
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+  }
+
+  .compare-btn.active {
+    background: linear-gradient(135deg, var(--theme-accent, #6366f1), color-mix(in srgb, var(--theme-accent, #6366f1) 80%, black));
+    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+  }
+
+  .compare-btn.active:hover {
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.5);
   }
 
   /* Responsive: hide subtitle on very narrow screens */
