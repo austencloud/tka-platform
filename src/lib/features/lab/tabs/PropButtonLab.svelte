@@ -583,7 +583,6 @@
     appearance: none;
     flex: 1;
     min-width: 0;
-    max-width: 200px;
     height: 6px;
     background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
     border-radius: 3px;
@@ -675,10 +674,6 @@
 
   .pair-scale-row .field-name {
     min-width: 72px;
-  }
-
-  .pair-scale-row input[type="range"] {
-    max-width: 240px;
   }
 
   /* ================================================================
