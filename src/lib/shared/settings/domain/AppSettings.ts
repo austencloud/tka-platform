@@ -6,6 +6,7 @@
  */
 
 import type { PropType } from "../../pictograph/prop/domain/enums/PropType";
+import type { CompositionRecipe } from "../../pictograph/prop/domain/prop-composition-recipes";
 import type { GridMode, GridPosition } from "../../pictograph/grid/domain/enums/grid-enums";
 import type { BackgroundType } from "@austencloud/backgrounds";
 import type { BackgroundLabSettings } from "$lib/features/background-builder/domain/lab-settings-types";
@@ -108,6 +109,9 @@ export interface AppSettings {
 
   // Voice Control
   voiceControlEnabled?: boolean; // Enable "Hey Tika" voice control (opt-in, default false)
+
+  // Prop Composition Recipes (lab-tuned overrides per family)
+  compositionRecipeOverrides?: Record<string, CompositionRecipe>;
 
   // Browse Grid Settings
   gridZoomLevel?: number; // Mobile pinch-to-zoom: columns 2-6, default 2

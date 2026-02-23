@@ -14,11 +14,23 @@
     type CompositionRecipe,
     type PropTransform,
   } from "$lib/shared/pictograph/prop/domain/prop-composition-recipes";
+  import { getSettings, updateSetting } from "$lib/shared/application/state/app-state.svelte";
 
   const families = getRecipeFamilies();
 
   let expandedFamily = $state<PropType | null>(null);
-  let overrides = $state<Record<string, CompositionRecipe>>({});
+
+  // Load persisted overrides from settings
+  const settings = $derived(getSettings());
+  let overrides = $state<Record<string, CompositionRecipe>>(
+    structuredClone(settings.compositionRecipeOverrides ?? {})
+  );
+
+  /** Persist overrides to settings (auto-saves to localStorage + Firebase) */
+  function persistOverrides() {
+    const toSave = Object.keys(overrides).length > 0 ? { ...overrides } : undefined;
+    updateSetting("compositionRecipeOverrides", toSave);
+  }
 
   function getRecipe(propType: PropType): CompositionRecipe {
     return overrides[propType] ?? getCompositionRecipe(propType);
@@ -48,12 +60,14 @@
     ensureOverride(propType);
     (overrides[propType]![color] as PropTransform)[field] = value;
     overrides = { ...overrides };
+    persistOverrides();
   }
 
   function updatePairScale(propType: PropType, value: number) {
     ensureOverride(propType);
     overrides[propType]!.pairScale = value;
     overrides = { ...overrides };
+    persistOverrides();
   }
 
   /** Rotate both props as a group by adding degrees to both rotations */
@@ -63,11 +77,13 @@
     recipe.blue.rotation = ((recipe.blue.rotation + degrees + 180) % 360) - 180;
     recipe.red.rotation = ((recipe.red.rotation + degrees + 180) % 360) - 180;
     overrides = { ...overrides };
+    persistOverrides();
   }
 
   function resetFamily(propType: PropType) {
     delete overrides[propType];
     overrides = { ...overrides };
+    persistOverrides();
   }
 
   function copyRecipe(propType: PropType) {
@@ -349,6 +365,7 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+    overflow: hidden;
   }
 
   .controls-header {
@@ -443,6 +460,7 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+    min-width: 0;
   }
 
   .color-col .color-label {
@@ -478,7 +496,7 @@
 
   .field-row input[type="range"] {
     flex: 1;
-    min-width: 60px;
+    min-width: 0;
     max-width: 160px;
     height: 4px;
     accent-color: var(--theme-accent, #818cf8);
@@ -486,6 +504,8 @@
 
   .field-row input[type="number"] {
     width: 54px;
+    min-width: 42px;
+    flex-shrink: 0;
     padding: 2px 4px;
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));

@@ -284,6 +284,7 @@ class SettingsState implements ISettingsState {
       "redPropType",
       "catDogMode",
       "selectedPresetIndex",
+      "compositionRecipeOverrides",
     ]);
 
     // Apply to state (preserve local timestamp), excluding background settings
