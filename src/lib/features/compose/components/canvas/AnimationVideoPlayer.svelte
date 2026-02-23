@@ -53,6 +53,11 @@
   let isGeneratingVideo = $state(false);
   let videoProgress = $state<VideoRenderProgress | null>(null);
   let videoElement: HTMLVideoElement | null = $state(null);
+  let hasError = $state(false);
+
+  // Derived UX states
+  const isLoading = $derived(isGeneratingVideo && videoProgress !== null);
+  const isEmpty = $derived(!sequenceData);
 
   // Services
   const playbackService = getVideoPlayer();
@@ -137,6 +142,7 @@
   async function startVideoGeneration() {
     if (!sequenceData || isGeneratingVideo) return;
 
+    hasError = false;
     isGeneratingVideo = true;
     videoProgress = {
       currentFrame: 0,
@@ -163,6 +169,7 @@
       videoResult = result;
       onVideoReady(result);
     } catch (error) {
+      hasError = true;
       errorHandler.showUserError({
         message: "Video generation failed. Try again or use live preview.",
         technicalDetails: error instanceof Error ? error.message : String(error),
@@ -224,6 +231,7 @@
 
   // Handle video errors
   function handleVideoError(event: Event) {
+    hasError = true;
     const video = event.target as HTMLVideoElement;
     const error = video.error;
     errorHandler.showUserError({
@@ -254,8 +262,13 @@
   }
 </script>
 
-<!-- Video generation status indicator -->
-{#if isGeneratingVideo && videoProgress}
+<!-- Empty state: no sequence data provided -->
+{#if isEmpty}
+  <!-- No content to render - parent provides sequence data -->
+{/if}
+
+<!-- Loading state: video generation in progress -->
+{#if isLoading}
   <VideoGenerationStatus
     progress={videoProgress}
     onCancel={cancelVideoGeneration}

@@ -154,10 +154,10 @@
   }
 
   .step-btn.stepping {
-    border-color: var(--theme-accent, rgba(99, 102, 241, 0.6));
-    background: rgba(99, 102, 241, 0.15);
-    color: var(--theme-text, white);
-    box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+    border-color: var(--theme-accent);
+    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
+    color: var(--theme-text);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--theme-accent) 30%, transparent);
   }
 
   /* Play/Pause Button - Uses semantic success/error colors */

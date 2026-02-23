@@ -420,13 +420,13 @@
     border: 1.5px solid var(--theme-stroke, var(--theme-stroke));
     border-radius: 12px;
     color: var(--theme-text);
-    font-size: 0.85rem;
+    font-size: var(--font-size-min, 14px);
     font-weight: 600;
     cursor: pointer;
     transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     -webkit-tap-highlight-color: transparent;
     box-shadow:
-      0 1px 3px rgba(0, 0, 0, 0.1),
+      0 1px 3px var(--theme-shadow),
       inset 0 1px 0 var(--theme-card-bg);
   }
 
@@ -442,7 +442,7 @@
   .settings-sheet-btn .settings-summary {
     flex: 1;
     text-align: right;
-    font-size: 0.75rem;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-weight: 500;
   }

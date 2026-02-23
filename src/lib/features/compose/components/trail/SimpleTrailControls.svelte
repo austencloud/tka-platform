@@ -18,9 +18,11 @@
   } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { isBilateralProp, getBilateralEndLabels } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { container } from "$lib/shared/di";
+  import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
 
   const animationVisibilityManager = getAnimationVisibilityManager();
+  const settingsState = container.items.settingsState as ISettingsState;
 
   interface Props {
     /** @deprecated Use bluePropType and redPropType instead */
@@ -37,10 +39,10 @@
 
   // Fall back to user's global settings when props not explicitly provided
   const effectiveBluePropType = $derived(
-    bluePropType ?? propType ?? settingsService.settings.bluePropType ?? null
+    bluePropType ?? propType ?? settingsState.settings.bluePropType ?? null
   );
   const effectiveRedPropType = $derived(
-    redPropType ?? propType ?? settingsService.settings.redPropType ?? null
+    redPropType ?? propType ?? settingsState.settings.redPropType ?? null
   );
 
   // Check if ANY selected prop is bilateral (staff, buugeng, etc.)
@@ -196,8 +198,8 @@
     border: 1.5px solid var(--theme-stroke, var(--theme-stroke));
     border-radius: 14px;
     box-shadow:
-      0 1px 3px rgba(0, 0, 0, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.03);
+      0 1px 3px var(--theme-shadow),
+      inset 0 1px 0 var(--theme-stroke);
   }
 
   .label {
@@ -223,14 +225,14 @@
     border: 1.5px solid var(--theme-stroke, var(--theme-stroke));
     border-radius: 10px;
     color: var(--theme-text-dim, var(--theme-text-dim));
-    font-size: 0.8rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     cursor: pointer;
     transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     -webkit-tap-highlight-color: transparent;
     box-shadow:
-      0 1px 3px rgba(0, 0, 0, 0.08),
-      inset 0 1px 0 rgba(255, 255, 255, 0.03);
+      0 1px 3px var(--theme-shadow),
+      inset 0 1px 0 var(--theme-stroke);
   }
 
   @media (hover: hover) and (pointer: fine) {
@@ -240,8 +242,8 @@
       color: var(--theme-text);
       transform: translateY(-1px);
       box-shadow:
-        0 2px 8px rgba(0, 0, 0, 0.12),
-        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        0 2px 8px var(--theme-shadow),
+        inset 0 1px 0 var(--theme-stroke);
     }
   }
 
@@ -318,7 +320,7 @@
   }
 
   .ends-btn i {
-    font-size: 0.85rem;
+    font-size: var(--font-size-sm);
   }
 
   .ends-label {

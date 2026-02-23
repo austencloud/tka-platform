@@ -194,7 +194,7 @@
     border: 1.5px solid var(--theme-stroke, var(--theme-stroke));
     border-radius: 8px;
     color: var(--theme-text-dim, var(--theme-text-dim));
-    font-size: 0.75rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     cursor: pointer;
     transition: all var(--duration-normal) ease;

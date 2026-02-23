@@ -49,8 +49,7 @@
     position: absolute;
     top: 12px;
     right: 12px;
-    background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(8px);
+    background: var(--theme-panel-bg);
     color: white;
     padding: 12px 16px;
     border-radius: 10px;
@@ -69,7 +68,7 @@
   .spinner {
     width: 16px;
     height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    border: 2px solid var(--theme-stroke-strong);
     border-top-color: white;
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
@@ -100,7 +99,7 @@
   }
 
   .cancel-btn {
-    background: rgba(255, 255, 255, 0.2);
+    background: color-mix(in srgb, var(--theme-text) 20%, transparent);
     border: none;
     color: white;
     padding: 10px 14px;
@@ -111,13 +110,13 @@
   }
 
   .cancel-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: color-mix(in srgb, var(--theme-text) 30%, transparent);
   }
 
   .progress-bar {
     width: 100%;
     height: 4px;
-    background: rgba(255, 255, 255, 0.2);
+    background: color-mix(in srgb, var(--theme-text) 20%, transparent);
     border-radius: 2px;
     overflow: hidden;
   }

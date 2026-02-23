@@ -21,7 +21,8 @@
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { isBilateralProp, getBilateralEndLabels } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { container } from "$lib/shared/di";
+  import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
 
   let {
     propType = null,
@@ -33,12 +34,14 @@
     redPropType?: PropType | string | null;
   } = $props();
 
+  const settingsState = container.items.settingsState as ISettingsState;
+
   // Fall back to user's global settings when props not explicitly provided
   const effectiveBluePropType = $derived(
-    bluePropType ?? propType ?? settingsService.settings.bluePropType ?? null
+    bluePropType ?? propType ?? settingsState.settings.bluePropType ?? null
   );
   const effectiveRedPropType = $derived(
-    redPropType ?? propType ?? settingsService.settings.redPropType ?? null
+    redPropType ?? propType ?? settingsState.settings.redPropType ?? null
   );
 
   // Visibility state
@@ -419,7 +422,7 @@
     border: 1.5px solid var(--theme-stroke);
     border-radius: 10px;
     color: var(--theme-text-dim);
-    font-size: 0.8rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     cursor: pointer;
     transition: all var(--duration-normal) ease;
@@ -463,7 +466,7 @@
     border: 1.5px solid var(--theme-stroke);
     border-radius: 10px;
     color: var(--theme-text-dim);
-    font-size: 0.75rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     cursor: pointer;
     transition: all var(--duration-normal) ease;
@@ -497,7 +500,7 @@
     border: 1.5px solid var(--theme-stroke);
     border-radius: 10px;
     color: var(--theme-text-dim);
-    font-size: 0.8rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     cursor: pointer;
     transition: all var(--duration-normal) ease;
@@ -536,7 +539,7 @@
     border: 1.5px solid var(--theme-stroke);
     border-radius: 10px;
     color: var(--theme-text-dim);
-    font-size: 0.8rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     cursor: pointer;
     transition: all var(--duration-normal) ease;

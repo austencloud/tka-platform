@@ -54,12 +54,12 @@
     gap: 10px;
     padding: 8px 12px;
     background: var(--theme-card-bg);
-    border: 1.5px solid rgba(251, 191, 36, 0.15);
+    border: 1.5px solid color-mix(in srgb, var(--theme-accent) 15%, transparent);
     border-radius: 12px;
   }
 
   .step-label {
-    font-size: 0.8rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     color: var(--theme-text-dim, var(--theme-text-dim));
   }
@@ -76,7 +76,7 @@
     border: 1px solid var(--theme-stroke, var(--theme-stroke));
     border-radius: 8px;
     color: var(--theme-text-dim, var(--theme-text-dim));
-    font-size: 0.8rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     cursor: pointer;
     transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
@@ -85,9 +85,9 @@
   }
 
   .step-chip.active {
-    background: rgba(251, 191, 36, 0.15);
-    border-color: rgba(251, 191, 36, 0.35);
-    color: rgba(252, 211, 77, 1);
+    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 35%, transparent);
+    color: var(--theme-accent);
   }
 
   @media (hover: hover) and (pointer: fine) {
@@ -123,7 +123,7 @@
     .step-chip {
       min-height: 32px;
       padding: 4px 12px;
-      font-size: 0.75rem;
+      font-size: var(--font-size-compact, 12px);
     }
   }
 </style>
