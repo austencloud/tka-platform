@@ -91,8 +91,7 @@ import { createSkel2TKAContainer } from "./containers/skel2tka-container";
 import { labContainer } from "./containers/lab-container";
 import { visualBuilderContainer } from "./containers/visual-builder-container";
 import { arenaContainer } from "./containers/arena-container";
-import { flameLabContainer } from "./containers/flame-lab-container";
-import { ledLabContainer } from "./containers/led-lab-container";
+import { effectsLabContainer } from "./containers/effects-lab-container";
 import { createMuseumContainer } from "./containers/museum-container";
 // Deep link resolution for cross-tab/cross-user URLs
 import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
@@ -433,10 +432,8 @@ function buildAppContainer(): any {
   c = c.add(visualBuilderContainer.items);
   // Arena module services (pairwise ranking)
   c = c.add(arenaContainer.items);
-  // Flame Lab services (fire point override provider)
-  c = c.add(flameLabContainer.items);
-  // LED Lab services (LED point override provider)
-  c = c.add(ledLabContainer.items);
+  // Effects Lab services (fire + LED point override providers, fuel sources)
+  c = c.add(effectsLabContainer.items);
   // Museum services (persistence, interaction detection)
   c = c.add(museumContainer.items);
   // Cross-container services (depend on multiple container outputs)
