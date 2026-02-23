@@ -26,3 +26,5 @@ export const labContainer = createContainer()
         ctx.screenshotLoader
       ),
   }));
+
+export type LabContainer = typeof labContainer;

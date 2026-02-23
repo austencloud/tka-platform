@@ -56,3 +56,5 @@ export const effectsLabContainer = createContainer()
 			return provider;
 		},
 	});
+
+export type EffectsLabContainer = typeof effectsLabContainer;

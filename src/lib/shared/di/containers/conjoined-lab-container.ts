@@ -10,3 +10,5 @@ import { ConjoinedLayoutCalculator } from "$lib/features/conjoined-lab/services/
 export const conjoinedLabContainer = createContainer().add({
   conjoinedLayoutCalculator: () => new ConjoinedLayoutCalculator(),
 });
+
+export type ConjoinedLabContainer = typeof conjoinedLabContainer;

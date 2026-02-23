@@ -99,6 +99,8 @@ import { DeepLinkResolver } from "../application/services/implementations/DeepLi
 // Unified sequence data provider (abstracts local + Firebase sources)
 import { SequenceDataProvider } from "../sequence-viewer/services/implementations/SequenceDataProvider";
 
+import type { IAppContainerItems } from "./container-types";
+
 // ============================================================================
 // INSTANTIATE FACTORY CONTAINERS WITH STUB DEPENDENCIES
 // NOTE: This is a temporary fix to get the app compiling.
@@ -443,8 +445,10 @@ function buildAppContainer(): any {
   return c;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const container: any = typeof window !== 'undefined' ? buildAppContainer() : null;
+// Cast to the composed type. The null branch only executes in SSR/Node where
+// no consumer code runs, so the non-null assertion is safe for all browser consumers.
+export const container = (typeof window !== 'undefined' ? buildAppContainer() : null) as unknown as
+  { items: IAppContainerItems };
 
 // Late binding: Inject QR generator into ImageComposer after container is fully composed
 // This resolves the circular dependency between render-container and qr-container
@@ -455,7 +459,7 @@ if (typeof window !== 'undefined' && container?.items?.imageComposer && containe
 }
 
 // Export type for the composed container
-export type AppContainer = typeof container;
+export type AppContainer = { items: IAppContainerItems };
 
 // ============================================================================
 // CACHE MANAGEMENT
