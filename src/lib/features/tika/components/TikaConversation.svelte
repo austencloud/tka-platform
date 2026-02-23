@@ -36,6 +36,8 @@
     reviewMetadata,
     onQuizComplete,
     welcomeContext,
+    compareMode = false,
+    onToggleCompare,
   }: {
     messages: UIMessage[];
     status: "submitted" | "streaming" | "ready" | "error";
@@ -55,6 +57,8 @@
     reviewMetadata?: ReviewMetadata;
     onQuizComplete?: (quizId: string, topic: string, correct: boolean) => void;
     welcomeContext?: WelcomeContext;
+    compareMode?: boolean;
+    onToggleCompare?: () => void;
   } = $props();
 
   // Local state
@@ -105,6 +109,8 @@
     {showToolDetails}
     onToggleToolDetails={() => (showToolDetails = !showToolDetails)}
     {generateCopyForAI}
+    {compareMode}
+    {onToggleCompare}
   />
 
   <!-- Chat Messages -->
@@ -148,6 +154,13 @@
       {/if}
     {/if}
   </div>
+
+  {#if status === "error"}
+    <div class="error-banner" role="alert">
+      <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+      <span>Something went wrong. Please try again.</span>
+    </div>
+  {/if}
 
   <TikaInputArea {status} {onSubmit} {onStop} />
 </div>
@@ -206,7 +219,7 @@
     width: 32px;
     height: 32px;
     border-radius: 8px;
-    background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
+    background: linear-gradient(135deg, var(--theme-accent, #818cf8) 0%, color-mix(in srgb, var(--theme-accent, #6366f1) 85%, black) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -259,6 +272,17 @@
       opacity: 1;
       transform: scale(1);
     }
+  }
+
+  .error-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 12%, transparent);
+    border-top: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
+    color: var(--semantic-error, #ef4444);
+    font-size: var(--font-size-min, 14px);
   }
 
   /* Reduced Motion */
