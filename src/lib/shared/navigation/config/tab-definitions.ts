@@ -762,6 +762,14 @@ export const LAB_TABS: Section[] = [
     color: "#a78bfa",
     gradient: "linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%)",
   },
+  {
+    id: "prop-buttons",
+    label: "Prop Buttons",
+    icon: '<i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>',
+    description: "Paired prop composition tuning for buttons",
+    color: "#f97316",
+    gradient: "linear-gradient(135deg, #fb923c 0%, #f97316 100%)",
+  },
 ];
 
 // REMOVED: LANDING_PAGE_TABS - LandingPreviewModule now handles its own internal tabs

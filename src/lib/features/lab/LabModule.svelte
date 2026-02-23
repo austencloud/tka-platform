@@ -45,6 +45,7 @@
     effects: () => import("$lib/features/effects-lab/EffectsLabModule.svelte"),
     progress: () => import("$lib/features/progress-lab/ProgressLabModule.svelte"),
     museum: () => import("$lib/features/museum/MuseumDestination.svelte"),
+    "prop-buttons": () => import("./tabs/PropButtonLab.svelte"),
   };
 
   // Get current tab, default to first tab
