@@ -351,6 +351,7 @@ uniform sampler2D u_fuel;
 uniform sampler2D u_colorField;
 uniform float u_displayIntensity;
 uniform float u_colorBlend; // 0.0 = natural, 0.5 = tinted, 1.0 = colored
+uniform float u_time;       // seconds, for FBM noise animation
 
 // Per-fuel-source color curve (replaces hardcoded blackbody ramp)
 uniform vec3 u_colorCold;   // FireColorCurve.coldColor
@@ -365,6 +366,41 @@ uniform float u_tipFlameScales[16];
 uniform vec3 u_tipColors[16];
 uniform int u_tipCount;
 uniform vec2 u_aspectCorrect;
+
+// ---- FBM noise for high-frequency fire detail ----
+// Adds flickering that the low-res simulation grid can't capture.
+// 2D value noise with smooth interpolation.
+float hash(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+float valueNoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f); // smoothstep interpolation
+  float a = hash(i);
+  float b = hash(i + vec2(1.0, 0.0));
+  float c = hash(i + vec2(0.0, 1.0));
+  float d = hash(i + vec2(1.0, 1.0));
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+// 3-octave FBM scrolling upward to match fire's natural rise.
+// Returns value in [0, 1] range.
+float fireNoise(vec2 uv, float time) {
+  float n = 0.0;
+  float amp = 0.5;
+  float freq = 8.0;
+  // Scroll upward: fire rises, noise moves with it
+  vec2 scroll = vec2(0.0, -time * 1.5);
+  for (int i = 0; i < 3; i++) {
+    n += amp * valueNoise(uv * freq + scroll);
+    freq *= 2.2;
+    amp *= 0.45;
+    scroll *= 1.8;
+  }
+  return n;
+}
 
 // Natural fire color ramp driven by per-fuel-source uniforms
 vec3 blackbodyColor(float t) {
@@ -423,6 +459,15 @@ void main() {
   // --- Layer 1: Fluid sim trail ---
   float fireIntensity = temp + fuel * 0.5;
   fireIntensity *= u_displayIntensity;
+
+  // FBM noise detail: modulate intensity for high-frequency flickering.
+  // Only applied where fire already exists (noise never creates fire).
+  // The 0.7 + 0.3 * noise range means intensity varies ±15% around baseline,
+  // enough for visible flicker without overwhelming the simulation.
+  if (fireIntensity > 0.05) {
+    float noise = fireNoise(v_uv, u_time);
+    fireIntensity *= 0.7 + 0.3 * noise;
+  }
 
   if (fireIntensity > 0.1) {
     vec3 trailColor;

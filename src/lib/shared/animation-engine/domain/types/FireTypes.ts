@@ -56,6 +56,10 @@ export interface FireFrameInput {
   darkMode: boolean;
   /** Prop colors for colored flames: [leftPropColor, rightPropColor] */
   propColors?: [PropFlameColor, PropFlameColor];
+  /** Set to true on the frame where the animation loops back to the start */
+  loopDetected?: boolean;
+  /** Playback speed multiplier (1.0 = 60 BPM). Used for cache invalidation — different speeds produce different fire physics. */
+  playbackSpeed?: number;
 }
 
 /**

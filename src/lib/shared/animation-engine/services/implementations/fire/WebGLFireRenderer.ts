@@ -23,6 +23,7 @@
  */
 
 import type { IFireOverlayRenderer } from "../../contracts/IFireOverlayRenderer";
+import { FireFrameCache } from "./FireFrameCache";
 import type {
   FireFrameInput,
   FireOverlayConfig,
@@ -156,6 +157,10 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
   private readonly AMBIENT_TEMP = 0.0;
   private readonly BURN_TEMP = 0.1;
 
+  // Frame cache for loop replay (Tier 3 optimization)
+  private frameCache: FireFrameCache | null = null;
+  private lastConfigHash = "";
+
   initialize(container: HTMLElement, width: number, height: number): boolean {
     this.canvas = document.createElement("canvas");
     this.canvas.style.position = "absolute";
@@ -222,6 +227,10 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.lastTime = performance.now();
     this.initialized = true;
     activeFireInstanceCount++;
+
+    // Create frame cache for loop replay optimization
+    this.frameCache = new FireFrameCache(gl);
+
     return true;
   }
 
@@ -231,6 +240,8 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.canvas.width = Math.round(width * this.dpr);
     this.canvas.height = Math.round(height * this.dpr);
     // Simulation buffers stay at simWidth x simHeight — independent of display
+    // Invalidate frame cache since display dimensions changed
+    this.frameCache?.invalidate();
   }
 
   renderFire(input: FireFrameInput, config: FireOverlayConfig): void {
@@ -242,8 +253,90 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
       this.physics = config.physicsPreset;
     }
 
+    // --- Frame cache logic ---
+    const cache = this.frameCache;
+    if (cache) {
+      // Compute config hash for invalidation (includes playback speed — different BPM = different fire physics)
+      const hash = this.computeConfigHash(config, input.playbackSpeed);
+
+      // Invalidate cache if config changed
+      if (hash !== this.lastConfigHash) {
+        cache.checkConfigHash(hash);
+        this.lastConfigHash = hash;
+      }
+
+      // Handle loop detection
+      if (input.loopDetected) {
+        if (cache.isRecording()) {
+          // First loop complete — switch to playback
+          cache.onLoopDetected();
+        } else if (cache.isWarm()) {
+          // Subsequent loop — reset playback index
+          cache.onLoopDetected();
+        } else {
+          // Cache is idle — start recording this loop
+          cache.startRecording(
+            this.simWidth, this.simHeight,
+            this.canvas!.width, this.canvas!.height,
+            hash
+          );
+        }
+      }
+
+      // If cache is warm, skip simulation entirely and blit from cache
+      if (cache.isWarm()) {
+        if (cache.blitCachedFrame()) {
+          return; // Done — no simulation needed
+        }
+        // Cache exhausted (shouldn't happen), fall through to live simulation
+      }
+
+      // If recording, render display to cache FBO after simulation
+      if (cache.isRecording()) {
+        this.stepSimulation(input.tips, input, config);
+        this.renderDisplayToCache(config, input, cache);
+        return;
+      }
+    }
+
+    // Default path: no cache, run full simulation + display
     this.stepSimulation(input.tips, input, config);
     this.renderDisplay(config, input);
+  }
+
+  /**
+   * Compute a hash of fire config properties that affect visual output.
+   * When any of these change, the frame cache must be invalidated.
+   * Includes playback speed because different BPMs produce different tip velocities,
+   * which change the fire physics (buoyancy, turbulence, trail shape).
+   */
+  private computeConfigHash(config: FireOverlayConfig, playbackSpeed?: number): string {
+    return `${config.fuelSourceId ?? "default"}_${config.intensity}_${config.flameHeight}_${config.quality}_${config.colorBlend ?? 0}_${playbackSpeed ?? 1}`;
+  }
+
+  /**
+   * Render the display pass to the cache's recording FBO, then blit to screen.
+   * Used during the recording phase of the first loop.
+   */
+  private renderDisplayToCache(
+    config: FireOverlayConfig,
+    input: FireFrameInput,
+    cache: FireFrameCache
+  ): void {
+    const gl = this.gl!;
+
+    // Render display pass to the cache recording FBO at sim resolution
+    gl.bindFramebuffer(gl.FRAMEBUFFER, cache.getRecordingFBO());
+    gl.viewport(0, 0, cache.getCacheWidth(), cache.getCacheHeight());
+    gl.enable(gl.BLEND);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    // Run the same display shader, but output goes to cache FBO
+    this.renderDisplayPass(config, input);
+
+    // Commit the frame (copies to cache texture + blits to screen)
+    cache.commitFrame();
   }
 
   setQuality(level: number): void {
@@ -253,6 +346,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
       this.simHeight = newRes;
       this.destroySimulationBuffers();
       this.createSimulationBuffers();
+      this.frameCache?.invalidate();
     }
   }
 
@@ -603,6 +697,10 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
   // Display rendering
   // ============================================================
 
+  /**
+   * Render the display pass to the default framebuffer (screen).
+   * Sets up viewport, clears, and calls renderDisplayPass.
+   */
   private renderDisplay(config: FireOverlayConfig, input: FireFrameInput): void {
     const gl = this.gl!;
 
@@ -613,6 +711,16 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
+    this.renderDisplayPass(config, input);
+  }
+
+  /**
+   * The display shader pass — sets uniforms and draws.
+   * Caller is responsible for binding the target framebuffer and setting viewport.
+   * This allows both renderDisplay (screen) and renderDisplayToCache (FBO) to share the same logic.
+   */
+  private renderDisplayPass(config: FireOverlayConfig, input: FireFrameInput): void {
+    const gl = this.gl!;
     const prog = this.displayProgram!;
     gl.useProgram(prog.program);
 
@@ -635,6 +743,9 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
 
     // Color blend factor (0.0 = natural, 0.5 = tinted, 1.0 = fully colored)
     gl.uniform1f(prog.uniforms.get("u_colorBlend")!, config.colorBlend ?? 0);
+
+    // Time for FBM noise animation (seconds since page load)
+    gl.uniform1f(prog.uniforms.get("u_time")!, input.currentTime * 0.001);
 
     gl.uniform1f(prog.uniforms.get("u_displayIntensity")!, config.intensity);
 
@@ -787,6 +898,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
       "u_temperature", "u_fuel", "u_colorField", "u_displayIntensity",
       "u_tipCount", "u_aspectCorrect", "u_colorBlend",
       "u_colorCold", "u_colorMid", "u_colorHot", "u_colorCore",
+      "u_time",
     ]);
 
     const all = [
@@ -866,6 +978,8 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     if (this.initialized) {
       activeFireInstanceCount = Math.max(0, activeFireInstanceCount - 1);
     }
+    this.frameCache?.dispose();
+    this.frameCache = null;
     this.destroySimulationBuffers();
 
     const gl = this.gl;
