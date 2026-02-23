@@ -9,6 +9,8 @@
   import { lanSyncState } from "../state/lan-sync-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { goto } from "$app/navigation";
+  import { saveSequenceRouteHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
   let joining = $state(false);
   let error = $state<string | null>(null);
@@ -22,18 +24,34 @@
   async function handleJoin() {
     if (!nearbyRoom || joining) return;
 
+    // Capture room data before any async work — the reactive value can become
+    // null if the room is removed from Firebase mid-operation (onDisconnect cleanup).
+    const room = { ...nearbyRoom };
+
     joining = true;
     error = null;
 
     try {
-      // Navigate to the sequence in gallery
-      await goto(`/browse/gallery?sequence=${nearbyRoom.sequenceId}`);
+      // Connect to the PeerJS room first (before navigation)
+      await lanSyncState.joinRoomByCode(room.peerJsRoomCode);
 
-      // Connect to the PeerJS room
-      await lanSyncState.joinRoomByCode(nearbyRoom.peerJsRoomCode);
+      // Wait for the host to send the full sequence data (up to 5s)
+      const sequenceData = await lanSyncState.waitForSequence(5000);
+
+      if (sequenceData) {
+        // Save as a handoff so the route picks it up instantly
+        saveSequenceRouteHandoff({
+          sequence: sequenceData as unknown as SequenceData,
+          returnPath: "/browse/gallery",
+          returnLabel: "Browse",
+        });
+      }
+
+      // Navigate to the sequence viewer
+      await goto(`/sequence/${room.sequenceId}?sync=join`);
 
       // Dismiss this banner after successful join
-      lanSyncState.dismissRoom(nearbyRoom.roomId);
+      lanSyncState.dismissRoom(room.roomId);
     } catch (err) {
       console.error("[NearbySyncBanner] Join failed:", err);
       error = "Couldn't connect. Try again?";

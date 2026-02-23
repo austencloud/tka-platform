@@ -19,7 +19,7 @@ function getOnboardingService(): IOnboardingPersister | null {
   if (_onboardingService) return _onboardingService;
 
   try {
-    _onboardingService = container.items.onboardingPersister as IOnboardingPersister;
+    _onboardingService = container.items.onboardingPersister;
     return _onboardingService;
   } catch {
     return null;

@@ -57,7 +57,7 @@
     position: relative;
     width: 44px;
     height: 24px;
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--theme-card-bg);
     border-radius: 12px;
     transition: background var(--duration-normal) ease;
   }

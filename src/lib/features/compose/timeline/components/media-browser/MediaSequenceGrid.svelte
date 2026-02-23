@@ -2,6 +2,7 @@
   MediaSequenceGrid.svelte - Grid display of sequences with infinite scroll
 -->
 <script lang="ts">
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import MediaSequenceCard from "./MediaSequenceCard.svelte";
 
@@ -48,7 +49,7 @@
 <div class="sequence-list" onscroll={handleScroll}>
   {#if isLoading && sequences.length === 0}
     <div class="state-message">
-      <div class="spinner"></div>
+      <ProgressRing percent={-1} size={32} strokeWidth={3} />
       <span>Loading...</span>
     </div>
   {:else if error}
@@ -79,7 +80,7 @@
 
     {#if hasMore}
       <div class="load-more-indicator">
-        <div class="spinner small"></div>
+        <ProgressRing percent={-1} size={24} strokeWidth={2} />
         <span>Scroll for more...</span>
       </div>
     {/if}
@@ -171,27 +172,6 @@
     transform: translateY(-1px);
   }
 
-  .spinner {
-    width: 28px;
-    height: 28px;
-    border: 3px solid color-mix(in srgb, var(--theme-accent) 15%, transparent);
-    border-top-color: var(--theme-accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  .spinner.small {
-    width: 18px;
-    height: 18px;
-    border-width: 2px;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   .load-more-indicator {
     grid-column: 1 / -1;
     display: flex;
@@ -204,14 +184,5 @@
     font-size: var(--font-size-compact);
   }
 
-  .load-more-indicator .spinner {
-    opacity: 0.6;
-  }
 
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
-  @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-    }
-  }
 </style>

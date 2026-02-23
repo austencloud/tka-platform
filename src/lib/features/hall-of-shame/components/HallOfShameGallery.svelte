@@ -19,6 +19,7 @@
   import HallOfShameGate from "./HallOfShameGate.svelte";
   import ShameSequenceCard from "./ShameSequenceCard.svelte";
   import PanelGrid from "$lib/shared/components/panel/PanelGrid.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   // State
   let isVerified = $state(false);
@@ -199,7 +200,7 @@
 <div class="hall-of-shame-gallery">
   {#if !authState.initialized || isCheckingVerification}
     <div class="loading-state">
-      <div class="spinner" aria-hidden="true"></div>
+      <ProgressRing percent={-1} size={32} strokeWidth={3} />
       <p>Checking access...</p>
     </div>
   {:else if !authState.user}
@@ -278,7 +279,7 @@
     <section class="main-gallery">
       {#if isLoading}
         <div class="loading-state">
-          <div class="spinner" aria-hidden="true"></div>
+          <ProgressRing percent={-1} size={32} strokeWidth={3} />
           <p>Loading gallery...</p>
         </div>
       {:else if error}
@@ -354,21 +355,6 @@
     text-align: center;
     color: var(--theme-text-dim);
     flex: 1;
-  }
-
-  .loading-state .spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid var(--theme-stroke);
-    border-top-color: var(--theme-accent);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
   }
 
   .access-denied i,
@@ -608,11 +594,4 @@
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .loading-state .spinner {
-      animation: none;
-      border-top-color: var(--theme-accent);
-      border-right-color: var(--theme-accent);
-    }
-  }
 </style>

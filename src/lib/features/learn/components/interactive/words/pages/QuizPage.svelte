@@ -42,7 +42,7 @@
     color: white;
     margin: 0;
     text-align: center;
-    background: linear-gradient(135deg, #50c878 0%, #3cb371 100%);
+    background: linear-gradient(135deg, var(--semantic-success, #50c878) 0%, var(--semantic-success, #3cb371) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -51,7 +51,7 @@
   p {
     font-size: 1rem;
     line-height: 1.6;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--theme-text, rgba(255, 255, 255, 0.85));
     margin: 0;
   }
 

@@ -166,10 +166,10 @@ Shows box and diamond grids side-by-side with animations
               ? 2
               : 1.5}
           {@const pointColor = isCenter(key)
-            ? "#FFD700"
+            ? "var(--achievement-gold, #FFD700)"
             : isHandPoint(key)
-              ? "#4A9EFF"
-              : "#FF4A4A"}
+              ? "var(--prop-blue, #4A9EFF)"
+              : "var(--semantic-error, #FF4A4A)"}
 
           <g
             class="grid-point"
@@ -251,11 +251,12 @@ Shows box and diamond grids side-by-side with animations
 
 <style>
   .grid-visualizer {
+    --achievement-gold: #ffd700;
     display: flex;
     flex-direction: column;
     gap: 1rem;
     padding: 1.5rem;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border: 2px solid var(--theme-stroke);
     border-radius: 16px;
   }
@@ -277,28 +278,28 @@ Shows box and diamond grids side-by-side with animations
   .grid-mode-badge {
     padding: 0.5rem 1rem;
     border-radius: 8px;
-    font-size: 0.75rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     letter-spacing: 0.5px;
     transition: all var(--duration-emphasis) ease;
   }
 
   .grid-mode-badge.diamond {
-    background: rgba(74, 158, 255, 0.2);
-    color: #4a9eff;
-    border: 2px solid rgba(74, 158, 255, 0.3);
+    background: color-mix(in srgb, var(--prop-blue, #4a9eff) 20%, transparent);
+    color: var(--prop-blue, #4a9eff);
+    border: 2px solid color-mix(in srgb, var(--prop-blue, #4a9eff) 30%, transparent);
   }
 
   .grid-mode-badge.box {
-    background: rgba(255, 74, 158, 0.2);
-    color: #ff4a9e;
-    border: 2px solid rgba(255, 74, 158, 0.3);
+    background: color-mix(in srgb, var(--prop-red, #ff4a9e) 20%, transparent);
+    color: var(--prop-red, #ff4a9e);
+    border: 2px solid color-mix(in srgb, var(--prop-red, #ff4a9e) 30%, transparent);
   }
 
   .grid-mode-badge.merged {
-    background: rgba(123, 104, 238, 0.2);
-    color: #7b68ee;
-    border: 2px solid rgba(123, 104, 238, 0.3);
+    background: color-mix(in srgb, var(--theme-accent, #7b68ee) 20%, transparent);
+    color: var(--theme-accent, #7b68ee);
+    border: 2px solid color-mix(in srgb, var(--theme-accent, #7b68ee) 30%, transparent);
   }
 
   .grid-container {
@@ -312,13 +313,13 @@ Shows box and diamond grids side-by-side with animations
     max-width: 400px;
     margin: 0 auto;
     display: block;
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--theme-panel-bg, rgba(0, 0, 0, 0.2));
     border-radius: 12px;
     cursor: pointer;
   }
 
   .grid-svg.merged {
-    background: rgba(123, 104, 238, 0.05);
+    background: color-mix(in srgb, var(--theme-accent, #7b68ee) 5%, transparent);
   }
 
   .grid-point {
@@ -337,15 +338,15 @@ Shows box and diamond grids side-by-side with animations
   }
 
   .point-circle.center {
-    filter: drop-shadow(0 0 4px #ffd700);
+    filter: drop-shadow(0 0 4px var(--achievement-gold, #ffd700));
   }
 
   .point-circle.hand {
-    filter: drop-shadow(0 0 3px #4a9eff);
+    filter: drop-shadow(0 0 3px var(--prop-blue, #4a9eff));
   }
 
   .point-circle.outer {
-    filter: drop-shadow(0 0 3px #ff4a4a);
+    filter: drop-shadow(0 0 3px var(--semantic-error, #ff4a4a));
   }
 
   .point-glow {
@@ -394,7 +395,7 @@ Shows box and diamond grids side-by-side with animations
     align-items: center;
     gap: 0.5rem;
     font-size: 0.875rem;
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--theme-text, rgba(255, 255, 255, 0.8));
   }
 
   .legend-dot {
@@ -404,18 +405,18 @@ Shows box and diamond grids side-by-side with animations
   }
 
   .legend-dot.center {
-    background: #ffd700;
-    box-shadow: 0 0 8px #ffd700;
+    background: var(--achievement-gold, #ffd700);
+    box-shadow: 0 0 8px var(--achievement-gold, #ffd700);
   }
 
   .legend-dot.hand {
-    background: #4a9eff;
-    box-shadow: 0 0 6px #4a9eff;
+    background: var(--prop-blue, #4a9eff);
+    box-shadow: 0 0 6px var(--prop-blue, #4a9eff);
   }
 
   .legend-dot.outer {
-    background: #ff4a4a;
-    box-shadow: 0 0 6px #ff4a4a;
+    background: var(--semantic-error, #ff4a4a);
+    box-shadow: 0 0 6px var(--semantic-error, #ff4a4a);
   }
 
   .helper-text {

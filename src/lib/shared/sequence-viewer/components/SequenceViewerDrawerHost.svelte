@@ -102,7 +102,7 @@
 
     // Resolve copy-for-AI service
     try {
-      claudeCopier = container.items.claudeCodeCopier as IClaudeCodeCopier;
+      claudeCopier = container.items.claudeCodeCopier;
     } catch {
       // Non-fatal — button just won't appear
     }

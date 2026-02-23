@@ -476,11 +476,6 @@
     text-transform: lowercase;
   }
 
-  .layer-badge.layer-1 {
-    color: #a3a3a3;
-    background: rgba(163, 163, 163, 0.2);
-  }
-
   .layer-badge.layer-2 {
     color: #22d3d8;
     background: rgba(34, 211, 216, 0.2);

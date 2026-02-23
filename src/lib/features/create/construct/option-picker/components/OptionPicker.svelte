@@ -164,18 +164,18 @@ Delegates all rendering to child components.
     let darkModeUnsubscribe: (() => void) | null = null;
 
     try {
-      const loader = container.items.optionLoader as IOptionLoader;
-      const filter = container.items.optionFilter as IOptionFilter;
-      const sorter = container.items.optionSorter as IOptionSorter;
+      const loader = container.items.optionLoader;
+      const filter = container.items.optionFilter;
+      const sorter = container.items.optionSorter;
 
-      organizerService = container.items.optionOrganizer as IOptionOrganizer;
+      organizerService = container.items.optionOrganizer;
       sizerService = optionGridFitCalculator;
       preparer = pictographPreparer as IPictographPreparer;
-      hapticService = container.items.hapticFeedback as IHapticFeedback;
+      hapticService = container.items.hapticFeedback;
 
       // Subscribe to Dark Mode changes for prop color updates
       try {
-        darkModeProvider = container.items.darkModeProvider as IDarkModeProvider;
+        darkModeProvider = container.items.darkModeProvider;
         darkModeUnsubscribe = darkModeProvider.subscribe((value) => {
           darkMode = value;
         });

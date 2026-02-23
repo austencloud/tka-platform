@@ -103,9 +103,9 @@
     flex: 1 1 auto;
     container-type: size;
     container-name: canvas-zone;
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--theme-card-bg);
     border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--theme-stroke);
     overflow: hidden;
   }
 

@@ -10,6 +10,7 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { propDrawerState } from "$lib/shared/settings/state/prop-drawer-state.svelte";
   import { container } from "$lib/shared/di";
+  import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
 
   const settings = $derived(getSettings());
   const bluePropType = $derived(settings.bluePropType ?? PropType.STAFF);
@@ -33,12 +34,7 @@
   title={displayInfo.label}
   data-testid="prop-indicator-button"
 >
-  <img
-    src={displayInfo.image}
-    alt=""
-    class="prop-icon"
-    draggable="false"
-  />
+  <PropCompositionPreview propType={bluePropType} size={32} />
 </button>
 
 <style>
@@ -72,16 +68,6 @@
   .prop-indicator-button:focus-visible {
     outline: 2px solid var(--theme-accent, #818cf8);
     outline-offset: 2px;
-  }
-
-  .prop-icon {
-    width: 28px;
-    height: 28px;
-    object-fit: contain;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
-    pointer-events: none;
-    -webkit-user-select: none;
-    user-select: none;
   }
 
   /* Mobile responsive - 48px minimum */

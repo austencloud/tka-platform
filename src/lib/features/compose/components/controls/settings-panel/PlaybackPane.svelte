@@ -63,6 +63,8 @@
       class:active={playbackMode === "continuous"}
       onclick={() => handleModeChange("continuous")}
       type="button"
+      aria-label="Continuous playback mode"
+      aria-pressed={playbackMode === "continuous"}
     >
       <i class="fas fa-infinity" aria-hidden="true"></i>
       <span>Flow</span>
@@ -72,6 +74,8 @@
       class:active={playbackMode === "step"}
       onclick={() => handleModeChange("step")}
       type="button"
+      aria-label="Step playback mode"
+      aria-pressed={playbackMode === "step"}
     >
       <i class="fas fa-shoe-prints" aria-hidden="true"></i>
       <span>Step</span>
@@ -88,6 +92,8 @@
           class:active={stepPlaybackStepSize === 1}
           onclick={() => onStepPlaybackStepSizeChange(1)}
           type="button"
+          aria-label="Step by full beat"
+          aria-pressed={stepPlaybackStepSize === 1}
         >
           Beat
         </button>
@@ -96,6 +102,8 @@
           class:active={stepPlaybackStepSize === 0.5}
           onclick={() => onStepPlaybackStepSizeChange(0.5)}
           type="button"
+          aria-label="Step by half beat"
+          aria-pressed={stepPlaybackStepSize === 0.5}
         >
           Half
         </button>
@@ -144,14 +152,14 @@
     border: 1.5px solid var(--theme-stroke);
     border-radius: 12px;
     color: var(--theme-text-dim);
-    font-size: 0.85rem;
+    font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
     transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .style-btn i {
-    font-size: 0.9rem;
+    font-size: var(--font-size-sm);
   }
 
   .style-btn.active {
@@ -182,7 +190,7 @@
   }
 
   .step-label {
-    font-size: 0.75rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: var(--theme-text-dim);
     white-space: nowrap;
@@ -202,7 +210,7 @@
     border: 1px solid var(--theme-stroke);
     border-radius: 8px;
     color: var(--theme-text-dim);
-    font-size: 0.8rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     cursor: pointer;
     transition: all var(--duration-normal) ease;

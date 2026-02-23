@@ -113,20 +113,9 @@
 </script>
 
 <div class="morph-toolbar">
-  <!-- Play/Pause - always visible for consistent expectations -->
-  <button
-    type="button"
-    class="play-btn"
-    class:playing={isPlaying}
-    onclick={onPlayPause}
-    aria-label={isPlaying ? "Pause animation" : "Play animation"}
-  >
-    <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
-  </button>
-
-  <!-- Action buttons - hide when any chip is expanded -->
+  <!-- Row 1: Action buttons (hidden when a chip is expanded) -->
   {#if expandedChip === null}
-    <div class="action-buttons">
+    <div class="action-row-top">
       {#if isLoggedIn}
         <button
           type="button"
@@ -185,8 +174,19 @@
     </div>
   {/if}
 
-  <!-- Chip area with BPM and Download chips -->
-  <div class="chip-area">
+  <!-- Row 2: Play + chips (always visible) -->
+  <div class="playback-row">
+    <button
+      type="button"
+      class="play-btn"
+      class:playing={isPlaying}
+      onclick={onPlayPause}
+      aria-label={isPlaying ? "Pause animation" : "Play animation"}
+    >
+      <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
+    </button>
+
+    <div class="chip-area">
     <MorphChipGroup
       bind:expandedId={expandedChip}
       onExpandedChange={handleExpandedChange}
@@ -319,6 +319,7 @@
         {/snippet}
       </MorphChip>
     </MorphChipGroup>
+    </div>
   </div>
 </div>
 
@@ -328,6 +329,35 @@
      =========================== */
 
   .morph-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+  }
+
+  /* ===========================
+     ROW 1: ACTION BUTTONS
+     =========================== */
+
+  .action-row-top {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .action-row-top::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* ===========================
+     ROW 2: PLAY + CHIPS
+     =========================== */
+
+  .playback-row {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -378,17 +408,6 @@
   .play-btn:focus-visible {
     outline: 2px solid var(--theme-accent, #6366f1);
     outline-offset: 2px;
-  }
-
-  /* ===========================
-     ACTION BUTTONS (collapsed state)
-     =========================== */
-
-  .action-buttons {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-shrink: 0;
   }
 
   .action-btn {

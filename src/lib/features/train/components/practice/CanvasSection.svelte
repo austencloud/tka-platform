@@ -8,6 +8,7 @@
   import { onMount } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import { container } from "$lib/shared/di";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
@@ -162,7 +163,7 @@
 <div class="canvas-section">
   {#if isLoading}
     <div class="loading-state">
-      <div class="loading-spinner"></div>
+      <ProgressRing percent={-1} size={32} strokeWidth={3} />
       <span>Loading animation...</span>
     </div>
   {:else if loadError}
@@ -239,25 +240,6 @@
     background: color-mix(in srgb, var(--theme-shadow) 30%, transparent);
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-size: 0.875rem;
-  }
-
-  .loading-spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--theme-stroke);
-    border-top-color: color-mix(
-      in srgb,
-      var(--semantic-info, var(--semantic-info)) 80%,
-      transparent
-    );
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
   }
 
   /* Error State */
@@ -393,10 +375,4 @@
     transform: translateY(-1px);
   }
 
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
-  @media (prefers-reduced-motion: reduce) {
-    .loading-spinner {
-      animation: none;
-    }
-  }
 </style>

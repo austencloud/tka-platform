@@ -40,6 +40,7 @@ PositionAnswerButton - Answer button for position type selection
   style="--type-color: {info.color}"
   {onclick}
   {disabled}
+  aria-label="Select {info.label}"
 >
   <i class="fa-solid {info.icon}" aria-hidden="true"></i>
   <span>{info.label}</span>
@@ -105,8 +106,8 @@ PositionAnswerButton - Answer button for position type selection
   }
 
   .answer-btn.incorrect {
-    background: rgba(255, 74, 74, 0.2);
-    border-color: rgba(255, 74, 74, 0.6);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 60%, transparent);
     animation: shake var(--duration-dramatic) ease;
   }
 
@@ -129,7 +130,7 @@ PositionAnswerButton - Answer button for position type selection
     right: 0.5rem;
     font-size: 1.25rem;
     font-weight: 700;
-    color: #ff4a4a;
+    color: var(--semantic-error, #ef4444);
   }
 
   .result-icon.correct,

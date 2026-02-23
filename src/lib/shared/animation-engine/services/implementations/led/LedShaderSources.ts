@@ -73,15 +73,16 @@ void main() {
   vec2 centered = v_uv - 0.5;
   float dist = length(centered);
 
+  // Smooth circular fade — starts tapering at 60% radius, fully transparent at edge
+  float edgeFade = 1.0 - smoothstep(0.3, 0.5, dist);
+  if (edgeFade < 0.001) discard;
+
   // Inverse-square radial falloff with soft edge
   float glow = 1.0 / (1.0 + 30.0 * dist * dist);
 
-  // Discard fragments beyond visible range
-  if (glow < 0.005) discard;
-
   // Core hotspot: brighter center for LED look
   float core = exp(-dist * dist * 80.0);
-  float combined = glow + core * 0.5;
+  float combined = (glow + core * 0.5) * edgeFade;
 
   vec3 color = v_color * combined * v_brightness;
   fragColor = vec4(color, combined * v_brightness);

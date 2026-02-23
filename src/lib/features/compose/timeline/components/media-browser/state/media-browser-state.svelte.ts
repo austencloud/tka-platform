@@ -111,11 +111,10 @@ export function createMediaBrowserState() {
   // Initialize services
   function initializeServices(): boolean {
     try {
-      loaderService = container.items.browseLoader as IBrowseLoader;
-      thumbnailService = container.items
-        .browseThumbnailProvider as IBrowseThumbnailProvider;
-      filterService = container.items.browseFilter as IBrowseFilter;
-      sortService = container.items.browseSorter as IBrowseSorter;
+      loaderService = container.items.browseLoader;
+      thumbnailService = container.items.browseThumbnailProvider;
+      filterService = container.items.browseFilter;
+      sortService = container.items.browseSorter;
       servicesReady = !!(loaderService && thumbnailService);
       return servicesReady;
     } catch (err) {

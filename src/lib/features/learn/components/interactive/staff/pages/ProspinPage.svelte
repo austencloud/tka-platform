@@ -114,7 +114,7 @@ ProspinPage - Page 3: Prospin rotation concept
     font-weight: 700;
     margin: 0;
     text-align: center;
-    background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
+    background: linear-gradient(135deg, var(--theme-accent, #22d3ee) 0%, var(--theme-accent, #06b6d4) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -139,10 +139,10 @@ ProspinPage - Page 3: Prospin rotation concept
   .prospin-intro {
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.1) 0%,
-      rgba(34, 211, 238, 0.02) 100%
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 10%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 2%, transparent) 100%
     );
-    border: 1px solid rgba(34, 211, 238, 0.2);
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 20%, transparent);
   }
 
   .concept-icon {
@@ -153,15 +153,15 @@ ProspinPage - Page 3: Prospin rotation concept
     justify-content: center;
     border-radius: 50%;
     font-size: 1.5rem;
-    background: rgba(34, 211, 238, 0.2);
-    color: #22d3ee;
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 20%, transparent);
+    color: var(--theme-accent, #22d3ee);
   }
 
   .concept-summary {
     font-size: 1.25rem;
     font-weight: 500;
     text-align: center;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--theme-text, rgba(255, 255, 255, 0.85));
     margin: 0;
   }
 
@@ -185,8 +185,8 @@ ProspinPage - Page 3: Prospin rotation concept
     align-items: center;
     gap: 0.5rem;
     padding: 0.625rem 1rem;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 8px;
     color: var(--theme-text-dim);
     font-size: 0.875rem;
@@ -195,19 +195,19 @@ ProspinPage - Page 3: Prospin rotation concept
   }
 
   .cycle-button:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     color: white;
   }
 
   .explanation {
     padding: 1.25rem;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
   }
 
   .prospin-explanation {
-    border-color: rgba(34, 211, 238, 0.15);
+    border-color: color-mix(in srgb, var(--theme-accent, #22d3ee) 15%, transparent);
   }
 
   .explanation ul {
@@ -217,7 +217,7 @@ ProspinPage - Page 3: Prospin rotation concept
 
   .explanation li {
     font-size: 1rem;
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
     line-height: 1.6;
     margin-bottom: 0.5rem;
   }
@@ -232,13 +232,13 @@ ProspinPage - Page 3: Prospin rotation concept
     justify-content: center;
     gap: 0.75rem;
     padding: 1rem;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border-radius: 12px;
     flex-wrap: wrap;
   }
 
   .rotation-formula > i {
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
     font-size: 0.875rem;
   }
 
@@ -265,8 +265,8 @@ ProspinPage - Page 3: Prospin rotation concept
   }
 
   .prospin-item {
-    background: rgba(34, 211, 238, 0.15);
-    color: #22d3ee;
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 15%, transparent);
+    color: var(--theme-accent, #22d3ee);
   }
 
   .formula-item i {
@@ -282,10 +282,10 @@ ProspinPage - Page 3: Prospin rotation concept
     padding: 1rem 3rem;
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.3) 0%,
-      rgba(6, 182, 212, 0.3) 100%
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent) 100%
     );
-    border: 2px solid rgba(34, 211, 238, 0.5);
+    border: 2px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 50%, transparent);
     border-radius: 12px;
     color: white;
     font-size: 1.125rem;
@@ -299,10 +299,10 @@ ProspinPage - Page 3: Prospin rotation concept
   .next-button:hover {
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.4) 0%,
-      rgba(6, 182, 212, 0.4) 100%
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent) 100%
     );
-    border-color: rgba(34, 211, 238, 0.8);
+    border-color: color-mix(in srgb, var(--theme-accent, #22d3ee) 80%, transparent);
     transform: translateY(-2px);
   }
 

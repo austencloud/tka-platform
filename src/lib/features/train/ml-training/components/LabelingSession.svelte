@@ -8,6 +8,7 @@ Allows navigating through frames and labeling each one.
   import { onMount } from "svelte";
   import { getMLTrainingStorage } from "../services/MLTrainingStorageManager";
   import LabelingCanvas from "./LabelingCanvas.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import type {
     CaptureSession,
     CapturedFrame,
@@ -258,7 +259,7 @@ Allows navigating through frames and labeling each one.
   <div class="main-content">
     {#if isLoading}
       <div class="loading" role="status" aria-live="polite" aria-busy="true">
-        <div class="spinner" aria-hidden="true"></div>
+        <ProgressRing percent={-1} size={32} strokeWidth={3} />
         <p>Loading frames...</p>
       </div>
     {:else if frames.length === 0}
@@ -481,29 +482,6 @@ Allows navigating through frames and labeling each one.
     align-items: center;
     justify-content: center;
     gap: 1rem;
-  }
-
-  .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid rgba(255, 255, 255, 0.3);
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-      border-top-color: #fff;
-      border-right-color: #fff;
-    }
   }
 
   .canvas-container {

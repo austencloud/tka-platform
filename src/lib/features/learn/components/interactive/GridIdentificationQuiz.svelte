@@ -6,6 +6,7 @@ Two phases:
 2. Point Identification: Click the correct point (8 questions)
 -->
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { GRID_DIRECTIONS } from "../../domain/constants/grid-constants";
@@ -19,6 +20,12 @@ Two phases:
   }>();
 
   const hapticService = container.items.hapticFeedback;
+
+  let answerTimer: ReturnType<typeof setTimeout> | null = null;
+
+  onDestroy(() => {
+    if (answerTimer !== null) clearTimeout(answerTimer);
+  });
 
   type QuizPhase = "mode" | "point" | "complete";
   type AnswerState = "idle" | "correct" | "incorrect";
@@ -68,7 +75,8 @@ Two phases:
       hapticService?.trigger("error");
     }
 
-    setTimeout(() => {
+    answerTimer = setTimeout(() => {
+      answerTimer = null;
       if (currentQuestion < modeQuestions.length - 1) {
         currentQuestion++;
         answerState = "idle";
@@ -97,7 +105,8 @@ Two phases:
       hapticService?.trigger("error");
     }
 
-    setTimeout(() => {
+    answerTimer = setTimeout(() => {
+      answerTimer = null;
       if (currentQuestion < pointQuestions.length - 1) {
         currentQuestion++;
         answerState = "idle";

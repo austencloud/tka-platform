@@ -284,7 +284,7 @@
   }
 
   .step-label {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -296,7 +296,7 @@
 
   .step-item.is-start .step-label {
     background: var(--theme-accent, #a855f7);
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
   }
 
   .pictograph-container {
@@ -331,7 +331,7 @@
   }
 
   .step-positions {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     white-space: nowrap;
   }
@@ -346,7 +346,7 @@
 
   .loading-indicator {
     margin-top: 8px;
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
     text-align: center;
   }

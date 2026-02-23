@@ -6,10 +6,10 @@ The next pictograph's start position must match the initial pictograph's end pos
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { onMount } from "svelte";
-  import { QuestionGeneratorService } from "../services/implementations/QuestionGenerator";
+  import { onDestroy, onMount } from "svelte";
+  import { QuestionGenerator } from "../services/implementations/QuestionGenerator";
   import { QuizType } from "../domain/enums/quiz-enums";
-  import type { QuizQuestionData } from "../domain/models/quiz-models";
+  import type { QuizQuestionData, QuizAnswerEvent } from "../domain/models/quiz-models";
   import QuizContainer from "./shared/QuizContainer.svelte";
   import QuizBackButton from "./shared/QuizBackButton.svelte";
   import QuizLoadingState from "./shared/QuizLoadingState.svelte";
@@ -18,14 +18,25 @@ The next pictograph's start position must match the initial pictograph's end pos
   import QuizPictographCard from "./shared/QuizPictographCard.svelte";
   import QuizPictographButton from "./shared/QuizPictographButton.svelte";
   import QuizFeedbackBanner from "./shared/QuizFeedbackBanner.svelte";
+  import MisconceptionHint from "./shared/MisconceptionHint.svelte";
+  import type { IGapDetector, DetectedGap } from "../../services/contracts/IGapDetector";
 
   let { onAnswerSubmit, onNextQuestion, onBack } = $props<{
-    onAnswerSubmit?: (isCorrect: boolean) => void;
+    onAnswerSubmit?: (event: QuizAnswerEvent) => void;
     onNextQuestion?: () => void;
     onBack?: () => void;
   }>();
 
   let hapticService: IHapticFeedback;
+  let gapDetector: IGapDetector;
+
+  let hapticTimer: ReturnType<typeof setTimeout> | null = null;
+  let nextQuestionTimer: ReturnType<typeof setTimeout> | null = null;
+
+  onDestroy(() => {
+    if (hapticTimer !== null) clearTimeout(hapticTimer);
+    if (nextQuestionTimer !== null) clearTimeout(nextQuestionTimer);
+  });
 
   let questionData = $state<QuizQuestionData | null>(null);
   let selectedAnswerId = $state<string | null>(null);
@@ -34,6 +45,7 @@ The next pictograph's start position must match the initial pictograph's end pos
   let isLoading = $state(true);
   let error = $state<string | null>(null);
   let questionKey = $state(0);
+  let currentGap = $state<DetectedGap | null>(null);
 
   let currentPictograph = $derived(
     questionData?.questionContent as PictographData | null
@@ -47,6 +59,7 @@ The next pictograph's start position must match the initial pictograph's end pos
 
   onMount(async () => {
     hapticService = container.items.hapticFeedback;
+    gapDetector = container.items.gapDetector;
     await loadQuestion();
   });
 
@@ -54,7 +67,7 @@ The next pictograph's start position must match the initial pictograph's end pos
     isLoading = true;
     error = null;
     try {
-      questionData = await QuestionGeneratorService.generateQuestion(
+      questionData = await QuestionGenerator.generateQuestion(
         QuizType.VALID_NEXT_PICTOGRAPH
       );
       questionKey++;
@@ -73,18 +86,51 @@ The next pictograph's start position must match the initial pictograph's end pos
     isAnswered = true;
     showFeedback = true;
 
-    setTimeout(() => {
+    // Detect misconception gap on wrong answers
+    currentGap = null;
+    if (!isCorrect && questionData && gapDetector) {
+      const selectedOption = questionData.answerOptions.find((o) => o.id === optionId);
+      const correctOption = questionData.answerOptions.find((o) => o.isCorrect);
+      const gap = gapDetector.detectSingleError({
+        isCorrect: false,
+        questionData,
+        selectedOptionId: optionId,
+        selectedContent: selectedOption?.content ?? null,
+        correctContent: correctOption?.content ?? null,
+        quizType: QuizType.VALID_NEXT_PICTOGRAPH,
+        answeredAt: new Date(),
+      });
+      if (gap) {
+        currentGap = gap;
+      }
+    }
+
+    hapticTimer = setTimeout(() => {
       hapticService?.trigger(isCorrect ? "success" : "error");
     }, 100);
 
-    onAnswerSubmit?.(isCorrect);
-    setTimeout(handleNextQuestion, 1200);
+    if (questionData) {
+      const selectedOption = questionData.answerOptions.find((o) => o.id === optionId);
+      const correctOption = questionData.answerOptions.find((o) => o.isCorrect);
+      onAnswerSubmit?.({
+        isCorrect,
+        questionData,
+        selectedOptionId: optionId,
+        selectedContent: selectedOption?.content ?? null,
+        correctContent: correctOption?.content ?? null,
+        quizType: QuizType.VALID_NEXT_PICTOGRAPH,
+        answeredAt: new Date(),
+      });
+    }
+    const feedbackDuration = currentGap ? 5000 : 1200;
+    nextQuestionTimer = setTimeout(handleNextQuestion, feedbackDuration);
   }
 
   async function handleNextQuestion() {
     selectedAnswerId = null;
     isAnswered = false;
     showFeedback = false;
+    currentGap = null;
     await loadQuestion();
     onNextQuestion?.();
   }
@@ -138,6 +184,9 @@ The next pictograph's start position must match the initial pictograph's end pos
             correctMessage="Correct!"
             incorrectMessage=""
           />
+          {#if currentGap}
+            <MisconceptionHint gap={currentGap} />
+          {/if}
         {/if}
       </div>
     </div>

@@ -2,7 +2,7 @@
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import type { QuizResults } from "../domain/models/quiz-models";
   import type { IQuizResultsAnalyzer } from "../QuizResultsAnalyzer";
   import type { AchievementDefinition } from "../domain/achievement-definitions";
@@ -11,18 +11,22 @@
   import QuizAchievementsBadges from "./QuizAchievementsBadges.svelte";
   import QuizStatsGrid from "./QuizStatsGrid.svelte";
   import QuizResultsActions from "./QuizResultsActions.svelte";
+  import QuizMisconceptionSummary from "./QuizMisconceptionSummary.svelte";
   import AchievementUnlockOverlay from "./AchievementUnlockOverlay.svelte";
   import PerfectQuizCelebration from "./PerfectQuizCelebration.svelte";
+  import type { DetectedGap } from "../../services/contracts/IGapDetector";
 
   // Props
   let {
     results = null,
+    detectedGaps = [],
     onBackToSelector,
     onRetryLesson,
     onReturnToSelector,
     onRestartQuiz,
   } = $props<{
     results?: QuizResults | null;
+    detectedGaps?: DetectedGap[];
     onBackToSelector?: () => void;
     onRetryLesson?: () => void;
     onReturnToSelector?: () => void;
@@ -37,6 +41,14 @@
   let showPerfectCelebration = $state(false);
   let currentAchievement = $state<AchievementDefinition | null>(null);
 
+  let perfectTimer: ReturnType<typeof setTimeout> | null = null;
+  let achievementTimer: ReturnType<typeof setTimeout> | null = null;
+
+  onDestroy(() => {
+    if (perfectTimer !== null) clearTimeout(perfectTimer);
+    if (achievementTimer !== null) clearTimeout(achievementTimer);
+  });
+
   // Check if this was a perfect quiz
   const isPerfectQuiz = $derived(results?.accuracyPercentage === 100);
 
@@ -48,7 +60,7 @@
     if (results && analyzer) {
       // Show perfect quiz celebration first if applicable
       if (isPerfectQuiz) {
-        setTimeout(() => {
+        perfectTimer = setTimeout(() => {
           showPerfectCelebration = true;
         }, 300);
       } else {
@@ -73,7 +85,7 @@
         (a) => a.tier === "gold" || a.tier === "silver"
       );
       if (worthyAchievement) {
-        setTimeout(() => {
+        achievementTimer = setTimeout(() => {
           currentAchievement = worthyAchievement;
         }, 500);
       }
@@ -142,6 +154,10 @@
             {analyzer?.getPerformanceFeedback(results) || "Keep practicing!"}
           </p>
         </div>
+
+        {#if detectedGaps.length > 0}
+          <QuizMisconceptionSummary gaps={detectedGaps} />
+        {/if}
 
         <QuizAchievementsBadges
           achievements={analyzer?.getAchievements(results) || []}
@@ -221,7 +237,7 @@
 
   .feedback-section {
     padding: var(--spacing-lg);
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     text-align: center;
   }
 
@@ -234,7 +250,7 @@
 
   .lesson-details {
     padding: var(--spacing-lg);
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     display: flex;
     flex-direction: column;
     gap: var(--spacing-sm);
@@ -281,7 +297,7 @@
   .coming-soon {
     margin-top: var(--spacing-xl);
     text-align: left;
-    background: rgba(0, 0, 0, 0.02);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     padding: var(--spacing-lg);
     border-radius: 8px;
   }

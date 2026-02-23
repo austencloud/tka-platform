@@ -168,7 +168,7 @@
     "auditDate": "2026-02-02",
     "reason": "Legitimate orchestrator - coordinates playback, export, sync, ramp training via dedicated services. Headless (20 lines markup). Clear section comments. Large context object is inherent to snippet pattern."
   },
-  "lib/shared/sequence-viewer/components/LayeredSequencePreview.svelte": {
+  "lib/shared/sequence-viewer/components/ChoreoCard.svelte": {
     "auditDate": "2026-02-02",
     "reason": "Just extracted PreviewCellRenderer service (this session). Remaining: orchestration of rendering, container sizing (UI-specific), LOOP detection (delegates to service), ~305 lines CSS. No further extraction needed."
   },

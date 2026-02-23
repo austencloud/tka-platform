@@ -41,7 +41,7 @@ Computes reversal indicators for options based on current sequence.
   const effectiveColumns = $derived(Math.min(columns, options.length) || 1);
 
   // Get reversal detection service
-  const ReversalDetector = container.items.reversalDetector as IReversalDetector;
+  const ReversalDetector = container.items.reversalDetector;
 
   // Compute reversals for all options based on current sequence
   const optionsWithReversals = $derived(() => {

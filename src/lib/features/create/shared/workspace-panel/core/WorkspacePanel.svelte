@@ -41,8 +41,6 @@
     // Letter sources for spell tab
     letterSources = null,
 
-    // Assembler back handler (returns to welcome screen)
-    onAssemblerBack = null,
   }: {
     sequenceState?: SequenceState;
     createModuleState?: CreateModuleState;
@@ -63,8 +61,6 @@
     /** Letter sources for spell tab - enables original vs bridge letter styling */
     letterSources?: LetterSource[] | null;
 
-    /** Handler for assembler back button - returns to welcome screen */
-    onAssemblerBack?: (() => void) | null;
   } = $props();
 
   // Derive selection directly from sequenceState when not animating
@@ -174,7 +170,6 @@
         onBeatSelected={handleBeatSelected}
         onStartPositionSelected={handleStartPositionSelected}
         onStepDelete={handleStepDelete}
-        {onAssemblerBack}
         selectedStepNumber={effectiveSelectedStepNumber}
         practiceStepNumber={animatingStepNumber ?? practiceStepIndex}
         {isSideBySideLayout}

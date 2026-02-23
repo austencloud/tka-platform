@@ -13,6 +13,7 @@ import type { AnimationPathCache } from "$lib/features/compose/services/implemen
 import type { IFrameBudgetMonitor } from "./IFrameBudgetMonitor";
 import type { IFireOverlayRenderer } from "./IFireOverlayRenderer";
 import type { IFireTipTracker } from "./IFireTipTracker";
+import type { ICharcoalRenderer } from "./ICharcoalRenderer";
 import type { FireOverlayConfig, PropFlameColor } from "../../domain/types/FireTypes";
 import type { ILedOverlayRenderer } from "./ILedOverlayRenderer";
 import type { ILedTipTracker } from "./ILedTipTracker";
@@ -39,6 +40,8 @@ export interface RenderLoopConfig {
   ledRenderer?: ILedOverlayRenderer | null;
   /** Optional LED tip position/color tracker */
   ledTipTracker?: ILedTipTracker | null;
+  /** Optional charcoal particle renderer (shares fire renderer's WebGL context) */
+  charcoalRenderer?: ICharcoalRenderer | null;
 }
 
 /**
@@ -100,6 +103,11 @@ export interface RenderFrameParams {
   propColors?: [PropFlameColor, PropFlameColor];
   /** LED overlay configuration (null or undefined = disabled) */
   ledConfig?: LedOverlayConfig | null;
+  /** Playback speed multiplier (1.0 = 60 BPM). Passed to fire for cache invalidation. */
+  playbackSpeed?: number;
+  /** Whether sequence loops seamlessly (end position = start position).
+   *  When true, trail rendering wraps around the loop boundary instead of resetting. */
+  isSeamlesslyLoopable?: boolean;
 }
 
 /**

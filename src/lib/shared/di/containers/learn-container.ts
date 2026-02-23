@@ -19,6 +19,9 @@ import { ConceptProgressTracker } from "$lib/features/learn/services/implementat
 import { UserKnowledgeProfilePersister } from "$lib/features/learn/services/implementations/UserKnowledgeProfilePersister";
 import { QuizHistoryRecorder } from "$lib/features/learn/services/implementations/QuizHistoryRecorder";
 import { ConceptRecommender } from "$lib/features/learn/services/implementations/ConceptRecommender";
+import { LetterToConceptMapper } from "$lib/features/learn/services/implementations/LetterToConceptMapper";
+import { GapDetector } from "$lib/features/learn/services/implementations/GapDetector";
+import { LetterBreakdownGenerator } from "$lib/features/learn/services/implementations/LetterBreakdownGenerator";
 import { SoundPlayer } from "$lib/shared/audio/services/implementations/SoundPlayer";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 
@@ -47,6 +50,8 @@ export function createLearnContainer(letterQueryHandler: ILetterQueryHandler) {
       userKnowledgeProfilePersister: () => new UserKnowledgeProfilePersister(),
       quizHistoryRecorder: () => new QuizHistoryRecorder(),
       conceptRecommender: () => new ConceptRecommender(),
+      letterToConceptMapper: () => new LetterToConceptMapper(),
+      letterBreakdownGenerator: () => new LetterBreakdownGenerator(),
       soundPlayer: () => new SoundPlayer(),
     })
     // === Tier 2: Services with internal dependencies ===
@@ -55,6 +60,8 @@ export function createLearnContainer(letterQueryHandler: ILetterQueryHandler) {
         new QuizRepoManager(ctx.codexLetterMappingRepo),
       conceptProgressTracker: () =>
         new ConceptProgressTracker(ctx.userKnowledgeProfilePersister),
+      gapDetector: () =>
+        new GapDetector(ctx.letterToConceptMapper, ctx.quizHistoryRecorder),
     }))
     // === Tier 3: Codex depends on multiple Tier 1 and Tier 2 services ===
     .add((ctx) => ({

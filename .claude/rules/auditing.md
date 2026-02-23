@@ -66,6 +66,8 @@ Each dimension is graded A+ through F. Thresholds are mechanical based on eviden
 | C | No state handling |
 | F | No states + bare catches |
 
+**Presentational exemption:** Pure presentational components (props in, events out, no async/fetch) don't own loading/error/empty states — the parent orchestrator does. Grade these on error handling quality only: A+ for 0 bare catches, A for 1.
+
 ### 6. UI Consistency
 
 | Grade | Criteria |

@@ -34,6 +34,6 @@ MotionKeyPoint - Key point display with lightbulb icon
 
   .key-point span {
     font-size: 1rem;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--theme-text, rgba(255, 255, 255, 0.85));
   }
 </style>

@@ -8,6 +8,7 @@
 
   import { onMount, onDestroy } from "svelte";
   import { container } from "$lib/shared/di";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import type { IPromoOrchestrator } from "../services/contracts/IPromoOrchestrator";
   import type {
     PromoGeneratorState,
@@ -238,7 +239,7 @@
 
     {#if !generatorState.isReady}
       <div class="loading-overlay">
-        <div class="loader"></div>
+        <ProgressRing percent={-1} size={32} strokeWidth={3} />
         <span>Initializing 3D Engine...</span>
       </div>
     {/if}
@@ -483,19 +484,6 @@
     background: rgba(10, 10, 15, 0.9);
     color: rgba(255, 255, 255, 0.7);
     font-size: 14px;
-  }
-
-  .loader {
-    width: 48px;
-    height: 48px;
-    border: 3px solid rgba(255, 255, 255, 0.1);
-    border-top-color: #6366f1;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
   }
 
   /* Floating Controls */
@@ -1001,10 +989,4 @@
     }
   }
 
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
-  @media (prefers-reduced-motion: reduce) {
-    .loader {
-      animation: none;
-    }
-  }
 </style>

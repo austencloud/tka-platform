@@ -100,7 +100,7 @@ StaffQuizSection - Main quiz UI with visualizer and answers
   .quiz-title {
     font-size: 1.25rem;
     font-weight: 700;
-    color: white;
+    color: var(--theme-text);
     margin: 0;
     text-align: center;
     line-height: 1.4;

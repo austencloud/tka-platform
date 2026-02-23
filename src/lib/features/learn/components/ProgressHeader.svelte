@@ -60,9 +60,9 @@ Shows:
           x2="100%"
           y2="100%"
         >
-          <stop offset="0%" stop-color="#4A90E2" />
-          <stop offset="50%" stop-color="#7B68EE" />
-          <stop offset="100%" stop-color="#50C878" />
+          <stop offset="0%" stop-color="var(--prop-blue, #4A90E2)" />
+          <stop offset="50%" stop-color="var(--theme-accent, #7B68EE)" />
+          <stop offset="100%" stop-color="var(--semantic-success, #50C878)" />
         </linearGradient>
       </defs>
       <circle
@@ -124,8 +124,8 @@ Shows:
     align-items: center;
     gap: 1.25rem;
     padding: 0.75rem 1rem;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     border-radius: 12px;
   }
 
@@ -204,7 +204,7 @@ Shows:
   .bar-track {
     flex: 1;
     height: 6px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 3px;
     overflow: hidden;
     min-width: 24px;

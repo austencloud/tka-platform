@@ -46,11 +46,14 @@ export interface ITikaSessionRepository {
   /**
    * Subscribe to session list changes (real-time updates)
    * @param callback - Called with updated session list
+   * @param options - Query options
+   * @param onError - Optional callback for subscription errors
    * @returns Unsubscribe function
    */
   subscribeToSessions(
     callback: (sessions: TikaSessionPreview[]) => void,
-    options?: TikaSessionQueryOptions
+    options?: TikaSessionQueryOptions,
+    onError?: (error: Error) => void
   ): () => void;
 
   /**

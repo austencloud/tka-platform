@@ -12,7 +12,7 @@
   import { container } from "$lib/shared/di";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PoiValidationResult } from "../domain/poi-models";
-  import ChoreoCard from "$lib/features/browse/sequences/display/components/ChoreoCard/ChoreoCard.svelte";
+  import ChoreoCardThumbnail from "$lib/features/browse/sequences/display/components/ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 
   // State
@@ -256,7 +256,7 @@
             class:valid={!validation.isPending && validation.isValid}
             class:invalid={!validation.isPending && !validation.isValid}
           >
-            <ChoreoCard
+            <ChoreoCardThumbnail
               {sequence}
               bluePropType={propSettings.bluePropType}
               redPropType={propSettings.redPropType}

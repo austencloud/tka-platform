@@ -9,6 +9,7 @@
   import EndlessVideoPlayer from "$lib/features/landing-preview/components/EndlessVideoPlayer.svelte";
   import type { ShowcaseVideo } from "$lib/features/landing-preview/types";
   import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   interface Props {
     /** When true, hides the header and shows just the video player (for hero integration) */
@@ -111,7 +112,7 @@
     <div class="player-wrapper">
       {#if loading}
         <div class="loading-state">
-          <div class="spinner"></div>
+          <ProgressRing percent={-1} size={32} strokeWidth={3} />
           <span>Loading videos...</span>
         </div>
       {:else if error}
@@ -182,21 +183,6 @@
     background: rgba(0, 0, 0, 0.2);
     border-radius: 16px;
     aspect-ratio: 9 / 16;
-  }
-
-  .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid rgba(255, 255, 255, 0.2);
-    border-top-color: var(--theme-accent, #6366f1);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
   }
 
   .error-state i {

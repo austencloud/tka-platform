@@ -12,3 +12,5 @@ export const trigridLabContainer = createContainer().add({
   triGridCalculator: () => new TriGridCalculator(),
   triGridPositionResolver: () => new TriGridPositionResolver(),
 });
+
+export type TrigridLabContainer = typeof trigridLabContainer;

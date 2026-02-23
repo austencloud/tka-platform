@@ -8,6 +8,7 @@
   import UserPresenceCard from "./active-users/UserPresenceCard.svelte";
   import UserDetailModal from "./UserDetailModal.svelte";
   import PanelGrid from "$lib/shared/components/panel/PanelGrid.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   // Services
   let userActivityService: IUserActivityTracker | null = null;
@@ -137,7 +138,7 @@
   <div class="active-users-body">
     {#if isLoading}
       <div class="loading" role="status" aria-live="polite" aria-busy="true">
-        <div class="spinner" aria-hidden="true"></div>
+        <ProgressRing percent={-1} size={32} strokeWidth={3} />
         <span>{t("admin_loading_users")}</span>
       </div>
     {:else if error}
@@ -338,29 +339,6 @@
     height: 100%;
     color: var(--theme-text-secondary, var(--theme-text-dim));
     text-align: center;
-  }
-
-  .loading .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--theme-stroke);
-    border-top-color: var(--theme-accent);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .loading .spinner {
-      animation: none;
-      border-top-color: var(--theme-accent);
-      border-right-color: var(--theme-accent);
-    }
   }
 
   .error {

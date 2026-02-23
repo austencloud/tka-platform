@@ -183,16 +183,16 @@
   }
 
   .btn-label {
-    font-size: 0.85rem;
+    font-size: var(--font-size-min, 14px);
     font-weight: 700;
     color: white;
     letter-spacing: 0.3px;
   }
 
   .btn-hint {
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--theme-text);
   }
 
   @media (hover: hover) and (pointer: fine) {
@@ -362,7 +362,7 @@
     }
 
     .btn-label {
-      font-size: 0.8rem;
+      font-size: var(--font-size-compact, 12px);
     }
 
     .btn-hint {

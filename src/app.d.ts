@@ -68,6 +68,8 @@ declare global {
         };
       };
     };
+    tikaPictographCache?: { clear: () => Promise<void> };
+    clearTikaCache?: () => Promise<string>;
   }
 }
 

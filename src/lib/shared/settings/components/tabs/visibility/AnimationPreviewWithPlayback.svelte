@@ -23,6 +23,7 @@
   // TurnPatternManager is loaded dynamically to avoid pulling in entire Create module at startup
   import type { TurnPattern } from "$lib/features/create/shared/domain/models/TurnPatternData";
   import { Timestamp } from "firebase/firestore";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   // Animation state - created once per component instance
   const animationState = createAnimationPanelState();
@@ -241,7 +242,7 @@
 
 {#if loading}
   <div class="preview-loading">
-    <div class="spinner"></div>
+    <ProgressRing percent={-1} size={24} strokeWidth={2} />
     <span>Loading...</span>
   </div>
 {:else if error}
@@ -281,21 +282,6 @@
     color: var(--theme-text-dim);
   }
 
-  .preview-loading .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid rgba(244, 114, 182, 0.2);
-    border-top-color: #f472b6;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   .preview-loading span,
   .preview-error span {
     font-size: var(--font-size-compact);
@@ -308,10 +294,4 @@
     opacity: 0.6;
   }
 
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
-  @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-    }
-  }
 </style>

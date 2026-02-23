@@ -5,8 +5,6 @@
  * Independent from pictograph visibility but can sync from it.
  */
 
-export type FlameColorMode = "natural" | "colored";
-
 type VisibilityObserver = () => void;
 
 /**
@@ -42,11 +40,14 @@ interface AnimationVisibilitySettings {
 
   // Effects
   fireEffect: boolean; // WebGL fire shader at prop tips
-  flameColorMode: FlameColorMode; // Flame color mode: natural, tinted, or fully colored
-  firePreset: string; // Fire intensity tier ID (small, medium, large)
+  fireColorBlend: number; // 0 = natural fire, 1 = prop-colored (continuous slider)
+  fireSmokeLevel: number; // 0 = clean burn, 1 = heavy smoke (continuous slider)
+  fireUseCharcoal: boolean; // false = fluid fire, true = charcoal sparks
+  fireIntensity: number; // User intensity slider value (0.0-1.0)
 
   // LED Effects
   ledEffect: boolean; // WebGL LED overlay
+  ledBrightness: number; // 1-5 discrete level (maps to 0.2-1.0 float)
   ledPatternId: string; // Active LED pattern ID
   ledPrimaryColor: string; // Primary color (hex)
 
@@ -111,11 +112,14 @@ export class AnimationVisibilityStateManager {
 
       // Effects
       fireEffect: false, // Fire shader disabled by default
-      flameColorMode: "colored" as FlameColorMode, // Default to fully colored flames
-      firePreset: "medium", // Default to medium intensity tier
+      fireColorBlend: 0.5, // Halfway between natural and prop-colored
+      fireSmokeLevel: 0.1, // Light smoke
+      fireUseCharcoal: false, // Fluid fire by default
+      fireIntensity: 0.7, // 0-1 range, 0.7 = normal fire
 
       // LED Effects
       ledEffect: false,
+      ledBrightness: 5,
       ledPatternId: "solid",
       ledPrimaryColor: "#00ff88",
 
@@ -146,24 +150,46 @@ export class AnimationVisibilityStateManager {
         // Force beatPosition to false (replaced by progress bar)
         parsed.beatPosition = false;
 
-        // Migrate coloredFlames boolean to flameColorMode string
-        if (parsed.coloredFlames !== undefined && parsed.flameColorMode === undefined) {
-          parsed.flameColorMode = parsed.coloredFlames ? "colored" : "natural";
+        // Migrate old flameColorMode (binary) → continuous fireColorBlend
+        if ("flameColorMode" in parsed && !("fireColorBlend" in parsed)) {
+          parsed.fireColorBlend = parsed.flameColorMode === "natural" ? 0 : 1.0;
+          delete parsed.flameColorMode;
+        }
+        if ("coloredFlames" in parsed && !("fireColorBlend" in parsed)) {
+          parsed.fireColorBlend = parsed.coloredFlames ? 1.0 : 0;
           delete parsed.coloredFlames;
         }
 
-        // Migrate "tinted" to "colored" (tinted mode removed)
-        if (parsed.flameColorMode === "tinted") {
-          parsed.flameColorMode = "colored";
+        // Migrate old fuelSourceId → fireUseCharcoal boolean
+        if ("fuelSourceId" in parsed && !("fireUseCharcoal" in parsed)) {
+          parsed.fireUseCharcoal = parsed.fuelSourceId === "charcoal";
+          delete parsed.fuelSourceId;
         }
 
-        // Migrate preset IDs to intensity tiers
-        if (parsed.firePreset === "candlewick") parsed.firePreset = "small";
-        else if (parsed.firePreset === "fire-spin") parsed.firePreset = "medium";
-        else if (parsed.firePreset === "torch") parsed.firePreset = "large";
-        else if (parsed.firePreset && !["small", "medium", "large"].includes(parsed.firePreset)) {
-          parsed.firePreset = "medium";
+        // Migrate old firePreset (small/medium/large) → 0-1 intensity
+        if ("firePreset" in parsed && !("fireIntensity" in parsed)) {
+          const tierToIntensity: Record<string, number> = {
+            small: 0.3, medium: 0.5, large: 0.8,
+            candlewick: 0.3, "fire-spin": 0.5, torch: 0.8,
+          };
+          parsed.fireIntensity = tierToIntensity[parsed.firePreset as string] ?? 0.7;
+          delete (parsed as Record<string, unknown>).firePreset;
         }
+
+        // Migrate old 0.1-3.0 intensity range → 0-1 range
+        if ("fireIntensity" in parsed && parsed.fireIntensity > 1.0) {
+          parsed.fireIntensity = Math.min(1.0, parsed.fireIntensity / 3.0);
+        }
+
+        // Ensure new slider properties exist
+        if (!("fireColorBlend" in parsed)) parsed.fireColorBlend = 0.5;
+        if (!("fireSmokeLevel" in parsed)) parsed.fireSmokeLevel = 0.1;
+        if (!("fireUseCharcoal" in parsed)) parsed.fireUseCharcoal = false;
+        if (!("fireIntensity" in parsed)) parsed.fireIntensity = 0.7;
+
+        // Clean up removed keys
+        delete parsed.fuelSourceId;
+        delete parsed.flameColorMode;
 
         // Ensure new properties exist with defaults if missing
         const defaults = this.getDefaultSettings();
@@ -233,10 +259,10 @@ export class AnimationVisibilityStateManager {
   getVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "flameColorMode" | "firePreset" | "ledPatternId" | "ledPrimaryColor"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor"
     >
   ): boolean {
-    return this.settings[key];
+    return this.settings[key] as boolean;
   }
 
   /**
@@ -257,11 +283,11 @@ export class AnimationVisibilityStateManager {
   setVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "flameColorMode" | "firePreset" | "ledPatternId" | "ledPrimaryColor"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor"
     >,
     visible: boolean
   ): void {
-    this.settings[key] = visible;
+    (this.settings as unknown as Record<string, unknown>)[key] = visible;
     this.saveToStorage();
     this.notifyObservers();
   }
@@ -503,41 +529,45 @@ export class AnimationVisibilityStateManager {
   }
 
   // ============================================================================
-  // FLAME COLOR MODE
+  // FIRE SLIDERS: Color Blend, Smoke Level, Use Charcoal, Intensity
   // ============================================================================
 
-  /**
-   * Get current flame color mode
-   */
-  getFlameColorMode(): FlameColorMode {
-    return this.settings.flameColorMode;
+  getFireColorBlend(): number {
+    return this.settings.fireColorBlend;
   }
 
-  /**
-   * Set flame color mode
-   */
-  setFlameColorMode(mode: FlameColorMode): void {
-    this.settings.flameColorMode = mode;
+  setFireColorBlend(value: number): void {
+    this.settings.fireColorBlend = Math.max(0, Math.min(1, value));
     this.saveToStorage();
     this.notifyObservers();
   }
 
-  // ============================================================================
-  // FIRE PRESET
-  // ============================================================================
-
-  /**
-   * Get current fire physics preset ID
-   */
-  getFirePreset(): string {
-    return this.settings.firePreset;
+  getFireSmokeLevel(): number {
+    return this.settings.fireSmokeLevel;
   }
 
-  /**
-   * Set fire physics preset ID
-   */
-  setFirePreset(presetId: string): void {
-    this.settings.firePreset = presetId;
+  setFireSmokeLevel(value: number): void {
+    this.settings.fireSmokeLevel = Math.max(0, Math.min(1, value));
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  getFireUseCharcoal(): boolean {
+    return this.settings.fireUseCharcoal;
+  }
+
+  setFireUseCharcoal(value: boolean): void {
+    this.settings.fireUseCharcoal = value;
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  getFireIntensity(): number {
+    return this.settings.fireIntensity;
+  }
+
+  setFireIntensity(intensity: number): void {
+    this.settings.fireIntensity = Math.max(0, Math.min(1, intensity));
     this.saveToStorage();
     this.notifyObservers();
   }
@@ -602,15 +632,31 @@ export class AnimationVisibilityStateManager {
   }
 
   /**
+   * Get LED brightness level (1-5)
+   */
+  getLedBrightness(): number {
+    return this.settings.ledBrightness;
+  }
+
+  /**
+   * Set LED brightness level (1-5, clamped)
+   */
+  setLedBrightness(level: number): void {
+    this.settings.ledBrightness = Math.max(1, Math.min(5, Math.round(level)));
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  /**
    * Toggle a boolean visibility setting
    */
   toggleVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "flameColorMode" | "firePreset" | "ledPatternId" | "ledPrimaryColor"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor"
     >
   ): void {
-    this.setVisibility(key, !this.settings[key]);
+    this.setVisibility(key, !(this.settings[key] as boolean));
   }
 
   // ============================================================================

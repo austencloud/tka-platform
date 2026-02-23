@@ -36,6 +36,7 @@
     class="tag-context-panel"
     style="left: {position.x}px; top: {position.y}px;"
     onclick={(e) => e.stopPropagation()}
+    onkeydown={(e) => e.stopPropagation()}
   >
     <div class="tag-panel-header">
       <span class="tag-panel-title">Tag screenshot</span>

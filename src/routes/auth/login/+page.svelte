@@ -15,6 +15,7 @@
   import GoogleOneTap from "$lib/shared/auth/components/GoogleOneTap.svelte";
   import { isGoogleOneTapConfigured } from "$lib/shared/auth/config/google-oauth";
   import LegalSheet from "$lib/shared/legal/components/LegalSheet.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   let hasRedirected = $state(false);
 
@@ -82,7 +83,7 @@
 
     {#if !authState.initialized}
       <div class="loading-state">
-        <div class="spinner"></div>
+        <ProgressRing percent={-1} size={48} strokeWidth={4} />
         <p>Loading...</p>
       </div>
     {:else}
@@ -202,25 +203,6 @@
     gap: 1rem;
   }
 
-  .loading-state .spinner {
-    width: 48px;
-    height: 48px;
-    border: 4px solid
-      color-mix(
-        in srgb,
-        var(--theme-accent, var(--theme-accent)) 20%,
-        transparent
-      );
-    border-top-color: var(--theme-accent, var(--theme-accent));
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
 
   .loading-state p {
     color: var(--theme-text-dim, var(--theme-text-dim));
@@ -286,10 +268,4 @@
     }
   }
 
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
-  @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-    }
-  }
 </style>

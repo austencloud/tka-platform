@@ -116,11 +116,11 @@
     if (!servicesResolved) {
       try {
         initService = container.items
-          .applicationInitializer as IApplicationInitializer;
-        settingsService = container.items.settingsState as ISettingsState;
-        deviceService = container.items.deviceDetector as IDeviceDetector;
-        sheetRouterService = container.items.sheetRouter as ISheetRouter;
-        authService = container.items.authenticator as IAuthenticator;
+          .applicationInitializer;
+        settingsService = container.items.settingsState;
+        deviceService = container.items.deviceDetector;
+        sheetRouterService = container.items.sheetRouter;
+        authService = container.items.authenticator;
         servicesResolved = true;
       } catch (error) {
         console.error("Failed to resolve services:", error);
@@ -238,7 +238,7 @@
 
         // Record session start for theme discovery trigger
         try {
-          const trigger = container.items.themeDiscoveryTrigger;
+          const trigger = (container.items as any).themeDiscoveryTrigger;
           if (trigger && typeof trigger.recordSessionStart === "function") {
             trigger.recordSessionStart();
           }

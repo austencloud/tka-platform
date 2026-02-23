@@ -20,7 +20,6 @@ LAYOUT PRIORITY (mobile-first):
     GridLocation,
     GridMode,
   } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import {
     MotionColor,
@@ -183,7 +182,7 @@ LAYOUT PRIORITY (mobile-first):
   const redPathLength = $derived(assemblyState.redHandPath.length);
 
   // Haptic feedback service
-  const hapticService = container.items.hapticFeedback as IHapticFeedback;
+  const hapticService = container.items.hapticFeedback;
 
   /**
    * Numpad-to-GridLocation mapping

@@ -58,6 +58,8 @@ export interface RequestFullStateMessage extends BaseSyncMessage {
 export interface FullStateMessage extends BaseSyncMessage {
 	type: 'FULL_STATE';
 	state: SyncedPlaybackState;
+	/** The actual sequence data (so the peer doesn't need to load it from a database) */
+	sequenceData?: Record<string, unknown>;
 }
 
 /** Incremental state update (sent by either peer on playback action) */
@@ -145,6 +147,8 @@ export interface SyncRoom {
 	hostUserId: string;
 	/** Display name of the host */
 	hostDisplayName: string;
+	/** Unique session ID for this browser tab (used to filter out own device, not own user) */
+	hostSessionId: string;
 	/** The sequence being shared */
 	sequenceId: string;
 	/** Human-readable sequence word for display (e.g., "AΔUSTY-EΘ-N") */
@@ -154,6 +158,14 @@ export interface SyncRoom {
 	/** PeerJS room code derived from sequenceId */
 	peerJsRoomCode: string;
 }
+
+/**
+ * Unique identifier for this browser tab/session.
+ * Used to distinguish "my device" from "my other device on the same account."
+ * Discovery hides rooms from this session but shows rooms from other sessions,
+ * even if they belong to the same Firebase user.
+ */
+export const localSyncSessionId = crypto.randomUUID();
 
 /** Sync room with its Firebase key */
 export interface SyncRoomWithId extends SyncRoom {

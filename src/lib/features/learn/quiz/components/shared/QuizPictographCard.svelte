@@ -79,7 +79,7 @@ QuizPictographCard - Question pictograph display
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(255, 255, 255, 0.75); /* WCAG AAA */
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.75));
     animation: arrowPulse 2s ease-in-out infinite;
   }
 

@@ -5,6 +5,7 @@
   Shows current phase, percentage, frame count, and allows cancellation.
 -->
 <script lang="ts">
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import type { VideoRenderProgress } from "../../services/contracts/IVideoPreRenderer";
 
   let {
@@ -18,7 +19,7 @@
 
 <div class="video-generation-status" role="status" aria-live="polite">
   <div class="status-content">
-    <div class="spinner" aria-hidden="true"></div>
+    <ProgressRing percent={-1} size={24} strokeWidth={2} />
     <div class="status-text">
       {#if progress.phase === "rendering"}
         Generating video... {progress.percent.toFixed(0)}%
@@ -49,8 +50,7 @@
     position: absolute;
     top: 12px;
     right: 12px;
-    background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(8px);
+    background: var(--theme-panel-bg);
     color: white;
     padding: 12px 16px;
     border-radius: 10px;
@@ -66,29 +66,6 @@
     margin-bottom: 8px;
   }
 
-  .spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top-color: white;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-      border-top-color: white;
-      border-right-color: white;
-    }
-  }
-
   .status-text {
     flex: 1;
   }
@@ -100,7 +77,7 @@
   }
 
   .cancel-btn {
-    background: rgba(255, 255, 255, 0.2);
+    background: color-mix(in srgb, var(--theme-text) 20%, transparent);
     border: none;
     color: white;
     padding: 10px 14px;
@@ -111,13 +88,13 @@
   }
 
   .cancel-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: color-mix(in srgb, var(--theme-text) 30%, transparent);
   }
 
   .progress-bar {
     width: 100%;
     height: 4px;
-    background: rgba(255, 255, 255, 0.2);
+    background: color-mix(in srgb, var(--theme-text) 20%, transparent);
     border-radius: 2px;
     overflow: hidden;
   }

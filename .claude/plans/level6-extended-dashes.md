@@ -1,4 +1,4 @@
-# Level 6: Extended Dashes (Dash+/Dash++) Implementation Plan
+# Level 7: Extended Dashes (Dash+/Dash++) Implementation Plan
 
 **Status:** Design phase — concept documented, no code yet
 **Created:** 2026-02-08
@@ -8,7 +8,7 @@
 
 ## The Concept
 
-In Level 6 (conjoined grids), two grids share a junction point. This creates new straight-line paths that cross the grid boundary:
+In Level 7 (conjoined grids), two grids share a junction point. This creates new straight-line paths that cross the grid boundary:
 
 - **Dash+**: Perimeter of Grid A → center of Grid B (crosses junction)
 - **Dash++**: Perimeter of Grid A → opposite perimeter of Grid B (crosses both grids)
@@ -36,7 +36,7 @@ Before writing any code, these questions need answers. Each is a conversation be
 | **C: Remote suffix** | `"e"` → `"w_remote"` | Minimal data model change | Ugly, unclear which grid "remote" means in multi-grid scenarios |
 | **D: Absolute coordinates** | Each grid's points get unique IDs in the conjoined space | Future-proof for L8/L9 multi-plane | Most complex, biggest refactor |
 
-**Recommended:** Option B. It's the cleanest separation of concerns. The `grid` field defaults to `undefined` (= "current grid" = backward compatible for L1-5). Only L6+ motions populate it.
+**Recommended:** Option B. It's the cleanest separation of concerns. The `grid` field defaults to `undefined` (= "current grid" = backward compatible for L1-6). Only L7+ motions populate it.
 
 ### Decision 2: Hand Path Classification
 
@@ -104,7 +104,7 @@ Before writing any code, these questions need answers. Each is a conversation be
 - CSV format — extend to support cross-grid motions (new columns or notation)
 - `CSVPictographParser` — parse the new format
 
-**Backward compatible:** L1-5 data unchanged. New fields are optional with undefined = same grid.
+**Backward compatible:** L1-6 data unchanged. New fields are optional with undefined = same grid.
 
 **Files affected:**
 - `src/lib/shared/pictograph/shared/domain/` — MotionData types
@@ -165,7 +165,7 @@ Before writing any code, these questions need answers. Each is a conversation be
 ### Phase 6: Combinatorial Enumeration
 
 **Changes:**
-- Update the motion space count for L6 to include extended dash destinations
+- Update the motion space count for L7 to include extended dash destinations
 - Each perimeter point gains new dash destinations: remote center (dash+), remote opposite (dash++)
 - The exact count depends on grid arrangement and which paths are valid
 
@@ -176,7 +176,7 @@ Before writing any code, these questions need answers. Each is a conversation be
 - **The letter set.** No new letters needed. Dash+/++ are dashes for classification.
 - **Rotation algebra.** Straight line = same parity rules as standard dash.
 - **Turn counts.** Same turn progression applies.
-- **Levels 1-5.** Completely unaffected. Extended dashes only exist when conjoined grids exist.
+- **Levels 1-6.** Completely unaffected. Extended dashes only exist when conjoined grids exist (Level 7).
 
 ---
 

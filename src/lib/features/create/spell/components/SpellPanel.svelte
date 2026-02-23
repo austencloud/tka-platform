@@ -386,8 +386,8 @@ Same functionality, different density.
       aria-label={canGenerate ? "Generate sequence" : "Enter a word first"}
     >
       {#if spellState.isGenerating}
-        <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
-        <span>Generating...</span>
+        <div class="generate-sweep"></div>
+        <span class="generate-label">Generating...</span>
       {:else}
         <i class="fas fa-magic" aria-hidden="true"></i>
         <span>Generate</span>
@@ -570,10 +570,37 @@ Same functionality, different density.
     cursor: not-allowed;
   }
 
-  /* Generating state - pulse animation for visual feedback */
+  /* Generating state - shimmer sweep + initial pulse */
   .generate-button.generating {
     animation: generatePulse 600ms ease-out;
     pointer-events: none;
+    overflow: hidden;
+  }
+
+  .generate-sweep {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.2) 40%,
+      rgba(255, 255, 255, 0.3) 50%,
+      rgba(255, 255, 255, 0.2) 60%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: generateSweep 1.8s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  .generate-label {
+    position: relative;
+    z-index: 1;
+  }
+
+  @keyframes generateSweep {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
   }
 
   @keyframes generatePulse {
@@ -654,6 +681,16 @@ Same functionality, different density.
     button.generate-button,
     button.generate-button.loop-collapsed {
       transition: none;
+    }
+
+    .generate-button.generating {
+      animation: none;
+    }
+
+    .generate-sweep {
+      animation: none;
+      background: rgba(255, 255, 255, 0.15);
+      background-size: 100% 100%;
     }
   }
 </style>

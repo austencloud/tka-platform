@@ -9,6 +9,7 @@
     stepUpWithPasskey,
   } from "../webauthn/passkeysClient";
   import { t } from "$lib/shared/i18n/i18n.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   interface Props {
     isOpen: boolean;
@@ -246,7 +247,7 @@
             disabled={isSubmitting}
           >
             {#if isSubmitting}
-              <span class="spinner"></span>
+              <ProgressRing percent={-1} size={24} strokeWidth={2} />
               {t("auth_verifying")}
             {:else}
               {t("auth_verify_with_password")}
@@ -261,7 +262,7 @@
           disabled={isSubmitting}
         >
           {#if isSubmitting}
-            <span class="spinner"></span>
+            <ProgressRing percent={-1} size={24} strokeWidth={2} />
             {t("auth_verifying")}
           {:else}
             {t("auth_verify_with_passkey")}
@@ -494,31 +495,10 @@
     cursor: not-allowed;
   }
 
-  .spinner {
-    width: 14px;
-    height: 14px;
-    border-radius: 999px;
-    border: 2px solid rgba(255, 255, 255, 0.4);
-    border-top-color: #fff;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   @media (prefers-reduced-motion: reduce) {
     .modal-backdrop,
     .modal-content {
       animation: none;
-    }
-
-    .spinner {
-      animation: none;
-      border-top-color: #fff;
-      border-right-color: #fff;
     }
   }
 </style>

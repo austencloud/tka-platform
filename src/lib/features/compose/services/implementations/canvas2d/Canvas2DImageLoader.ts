@@ -10,7 +10,6 @@
  * Single Responsibility: Image loading and management
  */
 
-import type { ISVGGenerator } from "../../contracts/ISVGGenerator";
 import { container } from "$lib/shared/di";
 
 const VIEWBOX_SIZE = 950;
@@ -44,7 +43,7 @@ export class Canvas2DImageLoader {
     red: HTMLImageElement;
   }> {
     try {
-      const svgGenerator = container.items.svgGenerator as ISVGGenerator;
+      const svgGenerator = container.items.svgGenerator;
 
       // Generate blue and red prop SVGs
       const [bluePropData, redPropData] = await Promise.all([
@@ -99,7 +98,7 @@ export class Canvas2DImageLoader {
     red: HTMLImageElement;
   }> {
     try {
-      const svgGenerator = container.items.svgGenerator as ISVGGenerator;
+      const svgGenerator = container.items.svgGenerator;
 
       // Generate blue and red prop SVGs with different types
       // Pass darkMode to use local preview state instead of global
@@ -159,7 +158,7 @@ export class Canvas2DImageLoader {
     red: HTMLImageElement;
   }> {
     try {
-      const svgGenerator = container.items.svgGenerator as ISVGGenerator;
+      const svgGenerator = container.items.svgGenerator;
 
       // Generate prop SVGs with custom colors for this layer
       const [bluePropData, redPropData] = await Promise.all([
@@ -209,7 +208,7 @@ export class Canvas2DImageLoader {
     try {
       const { GridMode } =
         await import("$lib/shared/pictograph/grid/domain/enums/grid-enums");
-      const svgGenerator = container.items.svgGenerator as ISVGGenerator;
+      const svgGenerator = container.items.svgGenerator;
 
       // Convert gridMode string to GridMode enum
       const gridModeEnum =

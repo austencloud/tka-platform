@@ -31,6 +31,7 @@
   import ShortcutsHelp from "$lib/shared/keyboard/components/ShortcutsHelp.svelte";
   import { keyboardShortcutState } from "$lib/shared/keyboard/state/keyboard-shortcut-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   // Unified camera system (handles orbit, third-person, first-person)
   import UnifiedCameraController from "$lib/shared/3d-core/camera/UnifiedCameraController.svelte";
@@ -521,7 +522,7 @@
 
 {#if !servicesReady}
   <div class="loading-container">
-    <div class="loading-spinner"></div>
+    <ProgressRing percent={-1} size={32} strokeWidth={3} />
     <p>Loading 3D Viewer...</p>
   </div>
 {:else if performerStates.length > 0}
@@ -811,20 +812,6 @@
     gap: 1rem;
   }
 
-  .loading-spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid var(--theme-stroke);
-    border-top-color: var(--theme-accent);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
   .viewer-3d-module {
     display: flex;
     width: 100%;

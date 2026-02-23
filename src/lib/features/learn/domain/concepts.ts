@@ -609,18 +609,13 @@ export function getPreviousConcept(
 }
 
 /**
- * Check if concept is unlocked based on completed prerequisites
+ * Check if concept is unlocked based on completed prerequisites.
+ * Currently all concepts are unlocked for admin review and content iteration.
+ * Prerequisites are preserved in concept definitions for future re-enablement.
  */
 export function isConceptUnlocked(
-  conceptId: string,
-  completedConcepts: Set<string>
+  _conceptId: string,
+  _completedConcepts: Set<string>
 ): boolean {
-  const concept = getConceptById(conceptId);
-  if (!concept) return false;
-
-  // First concept is always unlocked
-  if (concept.prerequisites.length === 0) return true;
-
-  // Check if all prerequisites are completed
-  return concept.prerequisites.every((prereq) => completedConcepts.has(prereq));
+  return true;
 }

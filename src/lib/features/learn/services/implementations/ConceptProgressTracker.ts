@@ -299,14 +299,24 @@ export class ConceptProgressTracker implements IConceptProgressTracker {
     this.saveProgress();
   }
 
-  private calculateNextPracticeDate(progress: ConceptProgress): Date {
+  private calculateNextPracticeDate(
+    progress: ConceptProgress,
+    activeMisconceptionCount: number = 0
+  ): Date {
     const intervals = [1, 3, 7, 14, 30];
     const reviewCount = Math.min(
       Math.floor(progress.correctAnswers / 5),
       intervals.length - 1
     );
 
-    const daysToAdd = intervals[reviewCount] ?? 1;
+    let daysToAdd = intervals[reviewCount] ?? 1;
+
+    // Halve the interval when the user has active misconceptions
+    // for the concept being reviewed, keeping minimum of 1 day
+    if (activeMisconceptionCount > 0) {
+      daysToAdd = Math.max(1, Math.floor(daysToAdd * 0.5));
+    }
+
     const nextDate = new Date();
     nextDate.setDate(nextDate.getDate() + daysToAdd);
 

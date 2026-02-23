@@ -91,14 +91,15 @@ import { createSkel2TKAContainer } from "./containers/skel2tka-container";
 import { labContainer } from "./containers/lab-container";
 import { visualBuilderContainer } from "./containers/visual-builder-container";
 import { arenaContainer } from "./containers/arena-container";
-import { flameLabContainer } from "./containers/flame-lab-container";
-import { ledLabContainer } from "./containers/led-lab-container";
+import { effectsLabContainer } from "./containers/effects-lab-container";
 import { createMuseumContainer } from "./containers/museum-container";
 // Deep link resolution for cross-tab/cross-user URLs
 import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
 
 // Unified sequence data provider (abstracts local + Firebase sources)
 import { SequenceDataProvider } from "../sequence-viewer/services/implementations/SequenceDataProvider";
+
+import type { IAppContainerItems } from "./container-types";
 
 // ============================================================================
 // INSTANTIATE FACTORY CONTAINERS WITH STUB DEPENDENCIES
@@ -433,10 +434,8 @@ function buildAppContainer(): any {
   c = c.add(visualBuilderContainer.items);
   // Arena module services (pairwise ranking)
   c = c.add(arenaContainer.items);
-  // Flame Lab services (fire point override provider)
-  c = c.add(flameLabContainer.items);
-  // LED Lab services (LED point override provider)
-  c = c.add(ledLabContainer.items);
+  // Effects Lab services (fire + LED point override providers, fuel sources)
+  c = c.add(effectsLabContainer.items);
   // Museum services (persistence, interaction detection)
   c = c.add(museumContainer.items);
   // Cross-container services (depend on multiple container outputs)
@@ -446,8 +445,10 @@ function buildAppContainer(): any {
   return c;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const container: any = typeof window !== 'undefined' ? buildAppContainer() : null;
+// Cast to the composed type. The null branch only executes in SSR/Node where
+// no consumer code runs, so the non-null assertion is safe for all browser consumers.
+export const container = (typeof window !== 'undefined' ? buildAppContainer() : null) as unknown as
+  { items: IAppContainerItems };
 
 // Late binding: Inject QR generator into ImageComposer after container is fully composed
 // This resolves the circular dependency between render-container and qr-container
@@ -458,7 +459,7 @@ if (typeof window !== 'undefined' && container?.items?.imageComposer && containe
 }
 
 // Export type for the composed container
-export type AppContainer = typeof container;
+export type AppContainer = { items: IAppContainerItems };
 
 // ============================================================================
 // CACHE MANAGEMENT

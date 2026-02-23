@@ -53,3 +53,5 @@ export function createConnectContainer(deps: ConnectContainerDeps) {
 
 	return fullContainer;
 }
+
+export type ConnectContainer = ReturnType<typeof createConnectContainer>;

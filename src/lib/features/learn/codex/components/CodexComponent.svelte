@@ -13,6 +13,7 @@
   import { createCodexState } from "../state/codex-state.svelte";
   import CodexControlPanel from "./CodexControlPanel.svelte";
   import CodexPictographGrid from "./CodexPictographGrid.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   // Props
   let {
@@ -118,17 +119,17 @@
           </div>
         {:else if isLoading}
           <div class="loading-state">
-            <div class="loading-spinner"></div>
+            <ProgressRing percent={-1} size={32} strokeWidth={3} />
             <p>Loading pictographs...</p>
           </div>
         {:else if isProcessingOperation}
           <div class="loading-state">
-            <div class="loading-spinner"></div>
+            <ProgressRing percent={-1} size={32} strokeWidth={3} />
             <p>Processing operation...</p>
           </div>
         {:else if !isInitialized}
           <div class="loading-state">
-            <div class="loading-spinner"></div>
+            <ProgressRing percent={-1} size={32} strokeWidth={3} />
             <p>Initializing codex...</p>
           </div>
         {:else if Object.keys(filteredPictographsByLetter).length === 0}
@@ -228,7 +229,7 @@
       sans-serif
     );
     font-size: 0.875rem;
-    color: rgba(239, 68, 68, 0.8);
+    color: var(--semantic-error);
   }
 
   .retry-button {
@@ -259,29 +260,4 @@
     transform: scale(0.97);
   }
 
-  .loading-spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--theme-stroke);
-    border-left: 3px solid
-      color-mix(in srgb, var(--theme-accent) 80%, transparent);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
-  @media (prefers-reduced-motion: reduce) {
-    .loading-spinner {
-      animation: none;
-    }
-  }
 </style>

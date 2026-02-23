@@ -4,6 +4,8 @@
   Video container with loading, recording indicator, and error overlays.
 -->
 <script lang="ts">
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+
   interface Props {
     videoContainer: HTMLDivElement | undefined;
     isInitialized: boolean;
@@ -23,7 +25,7 @@
   <div class="video-container" bind:this={videoContainer}>
     {#if !isInitialized}
       <div class="loading-overlay">
-        <div class="spinner"></div>
+        <ProgressRing percent={-1} size={32} strokeWidth={3} />
         <p>Initializing camera...</p>
       </div>
     {/if}
@@ -82,21 +84,6 @@
     color: #ff6b6b;
   }
 
-  .spinner {
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
-    border: 3px solid var(--theme-stroke);
-    border-top-color: var(--theme-text);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   .recording-indicator {
     position: absolute;
     top: 1rem;
@@ -138,9 +125,6 @@
 
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */
   @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-    }
     .recording-indicator {
       animation: none;
     }

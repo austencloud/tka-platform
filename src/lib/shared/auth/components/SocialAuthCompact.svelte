@@ -11,6 +11,7 @@
 <script lang="ts">
   import FacebookIcon from "./icons/FacebookIcon.svelte";
   import GoogleIcon from "./icons/GoogleIcon.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { goto } from "$app/navigation";
   import {
     GoogleAuthProvider,
@@ -91,7 +92,7 @@
         : "Sign up with Google"}
     >
       {#if isLoading}
-        <span class="spinner"></span>
+        <ProgressRing percent={-1} size={24} strokeWidth={2} />
         Signing in...
       {:else}
         <GoogleIcon />
@@ -189,25 +190,4 @@
     color: var(--semantic-error, var(--semantic-error));
   }
 
-  .spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(0, 0, 0, 0.2);
-    border-top-color: currentColor;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
-  @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-    }
-  }
 </style>

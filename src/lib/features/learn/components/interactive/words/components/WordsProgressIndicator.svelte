@@ -24,8 +24,8 @@
     display: flex;
     gap: 0.5rem;
     padding: 0.5rem 1rem;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(12px);
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 20px;
     z-index: 100;
   }
@@ -34,16 +34,16 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     transition: all var(--duration-emphasis) ease;
   }
 
   .progress-dot.active {
-    background: #50c878;
+    background: var(--semantic-success, #50c878);
     transform: scale(1.25);
   }
 
   .progress-dot.completed {
-    background: rgba(80, 200, 120, 0.5);
+    background: color-mix(in srgb, var(--semantic-success, #50c878) 50%, transparent);
   }
 </style>

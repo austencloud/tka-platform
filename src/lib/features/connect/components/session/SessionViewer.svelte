@@ -20,10 +20,11 @@
 	import SyncToggle from './SyncToggle.svelte';
 	import ParticipantsList from './ParticipantsList.svelte';
 	import DisplayPreferenceSelector from './DisplayPreferenceSelector.svelte';
+	import ProgressRing from '$lib/shared/components/loading/ProgressRing.svelte';
 
 	// Lazy load heavy components
 	import AnimationPlayer from '$lib/shared/sequence-viewer/components/AnimationPlayer.svelte';
-	import LayeredSequencePreview from '$lib/shared/sequence-viewer/components/LayeredSequencePreview.svelte';
+	import ChoreoCard from '$lib/shared/sequence-viewer/components/ChoreoCard.svelte';
 
 	interface Props {
 		session: SyncSession;
@@ -54,7 +55,7 @@
 	onMount(async () => {
 		try {
 			const browseLoader = container.items.browseLoader;
-			const loadedSequence = await browseLoader.loadSequenceById(session.sequenceId);
+			const loadedSequence = await browseLoader.loadFullSequenceData(session.sequenceId);
 
 			if (loadedSequence) {
 				sequence = loadedSequence;
@@ -177,7 +178,7 @@
 		<main class="viewer-content">
 			{#if isLoading}
 				<div class="loading-state">
-					<div class="spinner"></div>
+					<ProgressRing percent={-1} size={32} strokeWidth={3} />
 					<p>Loading sequence...</p>
 				</div>
 			{:else if loadError}
@@ -198,7 +199,7 @@
 						</div>
 					{:else if displayPreference === 'pictograph'}
 						<div class="pictograph-container">
-							<LayeredSequencePreview
+							<ChoreoCard
 								{sequence}
 								showStepNumbers={true}
 								showDifficultyLevel={false}
@@ -217,7 +218,7 @@
 								/>
 							</div>
 							<div class="split-right">
-								<LayeredSequencePreview
+								<ChoreoCard
 									{sequence}
 									showStepNumbers={true}
 									showDifficultyLevel={false}
@@ -405,21 +406,6 @@
 		text-align: center;
 	}
 
-	.spinner {
-		width: 40px;
-		height: 40px;
-		border: 3px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		border-top-color: var(--theme-accent, #6366f1);
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-	}
-
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
-	}
-
 	.error-state i {
 		font-size: 48px;
 		color: var(--semantic-error, #ef4444);
@@ -513,10 +499,4 @@
 		}
 	}
 
-	/* Reduced motion */
-	@media (prefers-reduced-motion: reduce) {
-		.spinner {
-			animation: none;
-		}
-	}
 </style>

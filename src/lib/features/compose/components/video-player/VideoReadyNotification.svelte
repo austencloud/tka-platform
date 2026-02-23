@@ -53,7 +53,7 @@
   }
 
   .switch-btn {
-    background: rgba(255, 255, 255, 0.25);
+    background: color-mix(in srgb, var(--theme-text) 25%, transparent);
     border: none;
     color: white;
     padding: 12px 16px;
@@ -65,7 +65,7 @@
   }
 
   .switch-btn:hover {
-    background: rgba(255, 255, 255, 0.4);
+    background: color-mix(in srgb, var(--theme-text) 40%, transparent);
   }
 
   .switch-btn:focus-visible {

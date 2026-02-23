@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import type { VideoCropData, AspectRatioPreset } from "../types";
   import { ASPECT_RATIO_VALUES } from "../types";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   interface Props {
     videoUrl: string;
@@ -331,7 +332,7 @@
     <!-- Loading state -->
     {#if !videoLoaded}
       <div class="loading-overlay">
-        <div class="spinner"></div>
+        <ProgressRing percent={-1} size={32} strokeWidth={3} />
         <span>Loading video...</span>
       </div>
     {/if}
@@ -598,21 +599,6 @@
     font-size: 14px;
   }
 
-  .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid rgba(255, 255, 255, 0.2);
-    border-top-color: #6366f1;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   @keyframes fadeIn {
     from {
       opacity: 0;
@@ -852,11 +838,6 @@
 
   /* Reduced motion support */
   @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-      border-top-color: rgba(255, 255, 255, 0.6);
-    }
-
     .instructions {
       animation: none;
     }

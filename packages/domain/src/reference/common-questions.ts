@@ -132,7 +132,7 @@ A word in TKA is a sequence of letters that spells out a choreographic phrase. E
 
   "what are interradials": `## What are Interradial Orientations?
 
-Interradials are the 4 orientations at 45° between the cardinal orientations. Introduced at Level 7.
+Interradials are the 4 orientations at 45° between the cardinal orientations. Introduced at Level 6.
 
 **The 4 interradial orientations:**
 - **clockIn** - between clock and in
@@ -143,7 +143,7 @@ Interradials are the 4 orientations at 45° between the cardinal orientations. I
 **Key properties:**
 - Complete the 8-point radial cycle: in → clockIn → clock → clockOut → out → counterOut → counter → counterIn
 - Produced by quarter turns (0.25, 0.75, 1.25, etc.)
-- Level 7 completes 2D mastery before 3D begins at Level 8`,
+- Level 6 completes single-grid orientation freedom before conjoined grids at Level 7`,
 };
 
 export function getCommonAnswer(question: string): string | null {

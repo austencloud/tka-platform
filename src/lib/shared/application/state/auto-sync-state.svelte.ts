@@ -8,8 +8,6 @@
 import { browser } from "$app/environment";
 import { container } from "../../di";
 
-import type { IStorageManager } from "../../foundation/services/contracts/IStorageManager";
-
 // ============================================================================
 // AUTO-SYNC CONFIGURATION
 // ============================================================================
@@ -103,7 +101,7 @@ export function createAutoSyncState<T>(config: AutoSyncConfig) {
     if (!browser) return defaultValue;
 
     try {
-      const storageService = container.items.storageManager as IStorageManager;
+      const storageService = container.items.storageManager;
       const stored = storageService.safeLocalStorageGet(key, null);
 
       if (stored === null) {

@@ -29,6 +29,8 @@
     class="animation-mode-btn"
     class:active={currentMode === "live"}
     onclick={switchToLive}
+    aria-label="Live playback mode"
+    aria-pressed={currentMode === "live"}
   >
     Live
   </button>
@@ -36,6 +38,8 @@
     class="animation-mode-btn"
     class:active={currentMode === "video"}
     onclick={switchToVideo}
+    aria-label="Video playback mode"
+    aria-pressed={currentMode === "video"}
   >
     Video
   </button>
@@ -48,8 +52,7 @@
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(8px);
+    background: var(--theme-panel-bg);
     border-radius: 8px;
     padding: 4px;
     z-index: 20;
@@ -72,7 +75,7 @@
   }
 
   .animation-mode-btn.active {
-    background: rgba(255, 255, 255, 0.2);
+    background: color-mix(in srgb, var(--theme-text) 20%, transparent);
     color: white;
   }
 </style>

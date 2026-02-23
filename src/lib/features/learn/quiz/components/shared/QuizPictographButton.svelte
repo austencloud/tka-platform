@@ -27,6 +27,7 @@ QuizPictographButton - Answer button containing a pictograph
   class:dimmed={state === "dimmed"}
   {onclick}
   {disabled}
+  aria-label="Answer: pictograph option"
 >
   <div class="pictograph-wrapper">
     <PictographContainer pictographData={pictograph} {showTKA} />
@@ -48,7 +49,7 @@ QuizPictographButton - Answer button containing a pictograph
     padding: 0;
     /* Transparent - pictograph has its own dark background */
     background: transparent;
-    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
     border-radius: 12px;
     cursor: pointer;
     overflow: hidden;
@@ -76,29 +77,29 @@ QuizPictographButton - Answer button containing a pictograph
   }
 
   .answer-btn.correct {
-    background: rgba(34, 197, 94, 0.2);
-    border-color: rgba(34, 197, 94, 0.6);
+    background: color-mix(in srgb, var(--semantic-success) 20%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-success) 60%, transparent);
     animation: correctPulse 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   @keyframes correctPulse {
     0% {
       transform: scale(1);
-      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--semantic-success) 40%, transparent);
     }
     50% {
       transform: scale(1.04);
-      box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+      box-shadow: 0 0 0 10px transparent;
     }
     100% {
       transform: scale(1);
-      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+      box-shadow: 0 0 0 0 transparent;
     }
   }
 
   .answer-btn.incorrect {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: rgba(239, 68, 68, 0.6);
+    background: color-mix(in srgb, var(--semantic-error) 20%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error) 60%, transparent);
     animation: incorrectShake var(--duration-dramatic) ease-out;
   }
 
@@ -147,11 +148,11 @@ QuizPictographButton - Answer button containing a pictograph
   }
 
   .correct-icon {
-    color: rgb(34, 197, 94);
+    color: var(--semantic-success);
   }
 
   .incorrect-icon {
-    color: rgb(239, 68, 68);
+    color: var(--semantic-error);
   }
 
   @media (min-width: 600px) {

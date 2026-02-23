@@ -38,17 +38,17 @@ StaffQuizTypeBadge - Question type indicator badge
   }
 
   .question-type-badge.position {
-    background: rgba(255, 107, 107, 0.15);
-    color: #ff6b6b;
+    background: color-mix(in srgb, var(--semantic-error) 15%, transparent);
+    color: var(--semantic-error);
   }
 
   .question-type-badge.thumb {
-    background: rgba(59, 130, 246, 0.15);
+    background: color-mix(in srgb, var(--semantic-info, #3b82f6) 15%, transparent);
     color: var(--semantic-info);
   }
 
   .question-type-badge.rotation {
-    background: rgba(34, 211, 238, 0.15);
-    color: #22d3ee;
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 15%, transparent);
+    color: var(--theme-accent, #22d3ee);
   }
 </style>

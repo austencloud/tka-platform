@@ -71,17 +71,18 @@ function createTikaTools() {
   return {
     get_letter_explanation: tool({
       description:
-        "MANDATORY for ANY question about a specific letter (A-Z, Greek letters). Returns pictograph data and detailed explanation. ALWAYS use this for \"What is X?\", \"Tell me about X\", \"Explain X\" where X is a letter.",
-      inputSchema: jsonSchema<{ letter: string; variation?: number }>({
+        "MANDATORY for ANY question about a specific letter (A-Z, Greek letters). Returns pictograph data and detailed explanation. ALWAYS use this for \"What is X?\", \"Tell me about X\", \"Explain X\" where X is a letter. Use gridMode='box' when the user asks to see something in box mode.",
+      inputSchema: jsonSchema<{ letter: string; variation?: number; gridMode?: string }>({
         type: "object",
         properties: {
           letter: { type: "string", description: "The letter to explain (A-Z or Greek)" },
           variation: { type: "number", description: "Variation index (0-based)", default: 0 },
+          gridMode: { type: "string", enum: ["diamond", "box"], description: "Grid mode - diamond (default) or box", default: "diamond" },
         },
         required: ["letter"],
       }),
-      execute: async ({ letter, variation = 0 }) =>
-        filterLetterExplanation(toolExecutor.getLetterExplanation(letter, variation)),
+      execute: async ({ letter, variation = 0, gridMode = "diamond" }) =>
+        filterLetterExplanation(toolExecutor.getLetterExplanation(letter, variation, gridMode as "diamond" | "box")),
     }),
 
     get_term_definition: tool({

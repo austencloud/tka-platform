@@ -3,7 +3,6 @@ MotionIdentificationQuiz - Quiz to identify motion types from animations
 User must play animation first, then identify the motion type (1-6)
 -->
 <script lang="ts">
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import {
     MOTION_QUIZ_QUESTIONS,
@@ -21,7 +20,7 @@ User must play animation first, then identify the motion type (1-6)
     onComplete?: () => void;
   }>();
 
-  const hapticService = container.items.hapticFeedback as IHapticFeedback;
+  const hapticService = container.items.hapticFeedback;
 
   function shuffle<T>(array: T[]): T[] {
     const arr = [...array];
@@ -173,12 +172,12 @@ User must play animation first, then identify the motion type (1-6)
     padding: 0.875rem 2rem;
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.25) 0%,
-      rgba(6, 182, 212, 0.25) 100%
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 25%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent, #06b6d4) 25%, transparent) 100%
     );
-    border: 1px solid rgba(34, 211, 238, 0.4);
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent);
     border-radius: 10px;
-    color: #22d3ee;
+    color: var(--theme-accent, #22d3ee);
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
@@ -188,10 +187,10 @@ User must play animation first, then identify the motion type (1-6)
   .next-button:hover {
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.35) 0%,
-      rgba(6, 182, 212, 0.35) 100%
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 35%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent, #06b6d4) 35%, transparent) 100%
     );
-    border-color: rgba(34, 211, 238, 0.6);
+    border-color: color-mix(in srgb, var(--theme-accent, #22d3ee) 60%, transparent);
   }
 
   @media (max-width: 480px) {

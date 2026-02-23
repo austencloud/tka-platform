@@ -192,6 +192,7 @@
         err
       );
       useProceduralFallback = true;
+      currentLoadedAvatarId = targetAvatarId; // Prevent infinite retry loop
 
       // Show user-friendly toast (only once per session)
       if (!hasShownFallbackToast) {

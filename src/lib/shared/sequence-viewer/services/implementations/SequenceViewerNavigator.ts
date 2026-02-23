@@ -65,7 +65,7 @@ export function openSequenceViewer(
 	}
 
 	// Pre-warm pictograph cells at highest priority while the drawer animates.
-	// By the time LayeredSequencePreview mounts, cells are already in IndexedDB.
+	// By the time ChoreoCard mounts, cells are already in IndexedDB.
 	cellPreWarmer.preWarmSequence(seqToOpen, "user-blocking");
 
 	// Always use drawer overlay - keeps the underlying module mounted

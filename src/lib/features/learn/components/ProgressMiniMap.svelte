@@ -126,7 +126,7 @@ Shows:
         {@const y1 = size / 2 + (radius - strokeWidth / 2 - 2) * Math.sin(rad)}
         {@const x2 = size / 2 + (radius + strokeWidth / 2 + 2) * Math.cos(rad)}
         {@const y2 = size / 2 + (radius + strokeWidth / 2 + 2) * Math.sin(rad)}
-        <line {x1} {y1} {x2} {y2} stroke="rgb(20, 20, 28)" stroke-width="3" />
+        <line {x1} {y1} {x2} {y2} stroke="var(--theme-panel-bg, rgb(20, 20, 28))" stroke-width="3" />
       {/if}
     {/each}
   </svg>

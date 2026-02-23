@@ -14,6 +14,7 @@ Provides access to the complete TKA letter codex with drill-down detail view:
   import LetterDetailView from "./LetterDetailView.svelte";
   import { createCodexState } from "../state/codex-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   // Codex state for fetching letter details
   const codexState = createCodexState();
@@ -90,7 +91,7 @@ Provides access to the complete TKA letter codex with drill-down detail view:
       <!-- Loading overlay when fetching letter details -->
       {#if isLoadingDetails}
         <div class="loading-overlay" transition:fade={{ duration: 150 }}>
-          <div class="loading-spinner"></div>
+          <ProgressRing percent={-1} size={32} strokeWidth={3} />
           <p>{t("learn_loading_letter_details")}</p>
         </div>
       {/if}
@@ -117,9 +118,8 @@ Provides access to the complete TKA letter codex with drill-down detail view:
   .codex-header h2 {
     font-size: 2.5rem;
     font-weight: 800;
-    color: var(--foreground, #ffffff);
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-    background: linear-gradient(135deg, #ffffff, #e0e0e0);
+    color: var(--theme-text);
+    background: linear-gradient(135deg, var(--theme-text), var(--theme-text-muted));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -181,8 +181,7 @@ Provides access to the complete TKA letter codex with drill-down detail view:
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(8px);
+    background: color-mix(in srgb, var(--theme-panel-bg) 85%, transparent);
     z-index: 100;
     gap: 1rem;
   }
@@ -191,24 +190,6 @@ Provides access to the complete TKA letter codex with drill-down detail view:
     margin: 0;
     color: var(--theme-text);
     font-size: 0.9375rem;
-  }
-
-  .loading-spinner {
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
-    border: 3px solid rgba(255, 255, 255, 0.2);
-    border-left: 3px solid rgba(167, 139, 250, 0.9);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
   }
 
   /* Responsive adjustments */
@@ -249,10 +230,6 @@ Provides access to the complete TKA letter codex with drill-down detail view:
     .grid-panel,
     .detail-panel {
       transition: none;
-    }
-
-    .loading-spinner {
-      animation: none;
     }
   }
 </style>

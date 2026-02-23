@@ -387,7 +387,7 @@
     border: 1.5px solid var(--theme-stroke, var(--theme-stroke));
     border-radius: 50%;
     color: var(--theme-text-dim, var(--theme-text-dim));
-    font-size: 0.75rem;
+    font-size: var(--font-size-compact, 12px);
     cursor: pointer;
     transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     -webkit-tap-highlight-color: transparent;
@@ -558,7 +558,7 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
     transition: all var(--duration-fast) ease;
-    font-size: 0.75rem;
+    font-size: var(--font-size-compact, 12px);
     box-shadow:
       0 1px 3px var(--theme-shadow),
       inset 0 1px 0 var(--theme-stroke);
@@ -622,13 +622,13 @@
     .adjust-btn {
       width: 44px;
       height: 44px;
-      font-size: 0.7rem;
+      font-size: var(--font-size-compact, 12px);
     }
 
     .preset-chip {
       min-height: 44px;
       padding: 8px 6px;
-      font-size: 0.75rem;
+      font-size: var(--font-size-compact, 12px);
     }
   }
 

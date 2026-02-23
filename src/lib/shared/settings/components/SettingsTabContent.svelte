@@ -7,6 +7,7 @@
 <script lang="ts">
   import type { AppSettings } from "../domain/AppSettings";
   import type { Component } from "svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   interface Props {
     activeTab: string;
@@ -52,7 +53,7 @@
 <div class="settings-tab-wrapper">
   {#await tabPromise}
     <div class="tab-loading">
-      <div class="loading-spinner"></div>
+      <ProgressRing percent={-1} size={32} strokeWidth={3} />
     </div>
   {:then LoadedTab}
     {#if LoadedTab}
@@ -93,34 +94,10 @@
     min-height: 200px;
   }
 
-  .loading-spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--border-color, #e0e0e0);
-    border-top: 3px solid var(--primary-color, #007bff);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-
   .tab-error {
     color: var(--error-color, #dc3545);
     text-align: center;
     padding: 20px;
   }
 
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
-  @media (prefers-reduced-motion: reduce) {
-    .loading-spinner {
-      animation: none;
-    }
-  }
 </style>

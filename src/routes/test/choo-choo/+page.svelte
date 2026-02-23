@@ -45,7 +45,7 @@
       loading = true;
       try {
         // ITI container is ready synchronously - get services directly
-        playbackController = container.items.animationPlaybackController as IAnimationPlaybackController;
+        playbackController = container.items.animationPlaybackController;
         servicesReady = true;
 
         // Generate initial variations after services are ready

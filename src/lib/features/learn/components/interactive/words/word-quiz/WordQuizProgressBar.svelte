@@ -37,14 +37,14 @@ WordQuizProgressBar - Progress indicator for word building quiz
 
   .progress-bar {
     height: 6px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 3px;
     overflow: hidden;
   }
 
   .progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #a855f7, #ec4899);
+    background: linear-gradient(90deg, var(--theme-accent, #a855f7), var(--theme-accent, #ec4899));
     border-radius: 3px;
     transition: width var(--duration-emphasis) ease;
   }

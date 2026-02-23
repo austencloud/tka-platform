@@ -6,7 +6,6 @@
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
-  import type { IUsernameValidator } from "../../../auth/services/contracts/IUsernameValidator";
   import type { User } from "firebase/auth";
   import { authState } from "../../../auth/state/authState.svelte";
   import { container } from "$lib/shared/di";
@@ -34,7 +33,7 @@
   let checkTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   // Get username validator service
-  const usernameValidator = container.items.usernameValidator as IUsernameValidator;
+  const usernameValidator = container.items.usernameValidator;
 
   // Load current username from Firestore on mount
   onMount(async () => {

@@ -14,6 +14,7 @@
 
   import { onMount } from "svelte";
   import { container } from "../../di";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { authState } from "../../auth/state/authState.svelte";
   import { getLevelProgress } from "../domain/constants/xp-constants";
   import Drawer from "../../foundation/ui/Drawer.svelte";
@@ -206,7 +207,7 @@
 
       {#if isLoading}
         <div class="loading-container">
-          <div class="spinner-large"></div>
+          <ProgressRing percent={-1} size={32} strokeWidth={3} />
           <p>Loading your progress...</p>
         </div>
       {:else}
@@ -439,21 +440,6 @@
     justify-content: center;
     padding: var(--spacing-xl);
     gap: var(--spacing-md);
-  }
-
-  .spinner-large {
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
-    border: 4px solid var(--theme-stroke);
-    border-top-color: var(--theme-text);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
   }
 
   /* Stats Section - Container-aware responsive grid */
@@ -930,10 +916,6 @@
     *::after {
       animation-duration: 0.01ms !important;
       transition-duration: 0.01ms !important;
-    }
-
-    .spinner-large {
-      animation: none;
     }
 
     .close-button:hover,

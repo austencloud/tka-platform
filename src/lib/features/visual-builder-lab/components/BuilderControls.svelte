@@ -72,6 +72,7 @@
                 class:active={builderState.currentOrientation === ori.value}
                 role="radio"
                 aria-checked={builderState.currentOrientation === ori.value}
+                aria-label="{ori.label} orientation"
                 onclick={() => builderState.setOrientation(ori.value)}
               >
                 {ori.label}
@@ -97,16 +98,20 @@
       <!-- Turn count -->
       <div class="control-group">
         <span class="control-label">Turns</span>
-        <select
-          class="turn-select"
-          value={builderState.turnCount}
-          onchange={(e) => builderState.setTurnCount(Number((e.target as HTMLSelectElement).value))}
-          aria-label="Turn count"
-        >
+        <div class="pill-group" role="radiogroup" aria-label="Turn count">
           {#each TURN_OPTIONS as t}
-            <option value={t}>{t}</option>
+            <button
+              class="pill"
+              class:active={builderState.turnCount === t}
+              role="radio"
+              aria-checked={builderState.turnCount === t}
+              aria-label="{t} turns"
+              onclick={() => builderState.setTurnCount(t)}
+            >
+              {t}
+            </button>
           {/each}
-        </select>
+        </div>
       </div>
     </div>
   {/if}
@@ -157,11 +162,11 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 14px;
+    padding: 8px 14px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
-    min-height: 36px;
+    min-height: 44px;
   }
 
   .hand-dot {
@@ -205,38 +210,42 @@
   }
 
   .pill {
-    padding: 4px 8px;
+    padding: 8px 12px;
     border: none;
     border-radius: 4px;
     background: transparent;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-compact, 12px);
+    font-size: var(--font-size-min, 14px);
     cursor: pointer;
-    min-height: 28px;
+    min-height: 44px;
+    min-width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: background 0.15s ease, color 0.15s ease;
   }
 
   .pill:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
   }
 
   .pill.active {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     color: var(--theme-text, #fff);
   }
 
   .icon-btn {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 4px 10px;
+    gap: 6px;
+    padding: 8px 14px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 6px;
+    border-radius: 8px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     color: var(--theme-text, #fff);
-    font-size: var(--font-size-compact, 12px);
+    font-size: var(--font-size-min, 14px);
     cursor: pointer;
-    min-height: 28px;
+    min-height: 44px;
     transition: border-color 0.15s ease;
   }
 
@@ -248,17 +257,6 @@
     transform: scaleX(-1);
   }
 
-  .turn-select {
-    padding: 4px 6px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 6px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text, #fff);
-    font-size: var(--font-size-compact, 12px);
-    min-height: 28px;
-    cursor: pointer;
-  }
-
   .actions {
     display: flex;
     gap: 6px;
@@ -268,15 +266,15 @@
   .action-btn {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 4px 10px;
+    gap: 6px;
+    padding: 8px 14px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 6px;
+    border-radius: 8px;
     background: transparent;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-compact, 12px);
+    font-size: var(--font-size-min, 14px);
     cursor: pointer;
-    min-height: 32px;
+    min-height: 44px;
     transition: color 0.15s ease, border-color 0.15s ease;
   }
 
@@ -291,7 +289,7 @@
   }
 
   .done-btn {
-    padding: 6px 16px;
+    padding: 8px 18px;
     border: 1.5px solid var(--hand-color);
     border-radius: 8px;
     background: color-mix(in srgb, var(--hand-color) 15%, transparent);
@@ -299,7 +297,7 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
     cursor: pointer;
-    min-height: 36px;
+    min-height: 44px;
     transition: background 0.15s ease;
   }
 
@@ -311,7 +309,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 16px;
+    padding: 8px 18px;
     border: 1.5px solid var(--theme-accent, #6366f1);
     border-radius: 8px;
     background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, transparent);
@@ -319,7 +317,7 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
     cursor: pointer;
-    min-height: 36px;
+    min-height: 44px;
     transition: background 0.15s ease;
   }
 
@@ -329,6 +327,10 @@
 
   @media (prefers-reduced-motion: reduce) {
     .icon-btn i { transition: none; }
-    .pill { transition: none; }
+    .pill,
+    .icon-btn,
+    .action-btn,
+    .done-btn,
+    .new-btn { transition: none; }
   }
 </style>

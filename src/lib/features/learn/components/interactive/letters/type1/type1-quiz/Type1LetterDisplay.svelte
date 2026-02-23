@@ -14,15 +14,15 @@ Type1LetterDisplay - Shows the current letter being quizzed
 <style>
   .letter-display {
     padding: 0.75rem 2rem;
-    background: rgba(34, 211, 238, 0.1);
-    border: 1px solid rgba(34, 211, 238, 0.3);
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent);
     border-radius: 12px;
   }
 
   .quiz-letter {
     font-size: 2.5rem;
     font-weight: 800;
-    color: #22d3ee;
+    color: var(--theme-accent, #22d3ee);
   }
 
   @media (max-width: 500px) {

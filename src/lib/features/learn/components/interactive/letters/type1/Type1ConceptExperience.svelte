@@ -13,7 +13,6 @@ Supports two view modes:
 -->
 <script lang="ts">
   import { container } from "$lib/shared/di";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { createType1ConceptState } from "./state/type1-concept-state.svelte";
   import Type1IntroPage from "./pages/Type1IntroPage.svelte";
   import Type1ProspinPage from "./pages/Type1ProspinPage.svelte";
@@ -32,7 +31,7 @@ Supports two view modes:
 
   let { onComplete, viewMode = "step" }: { onComplete?: () => void; viewMode?: ExperienceViewMode } = $props();
 
-  const hapticService = container.items.hapticFeedback as IHapticFeedback;
+  const hapticService = container.items.hapticFeedback;
 
   // Only create interactive state in step mode
   const state = $derived.by(() => viewMode === "step"
@@ -221,22 +220,24 @@ Supports two view modes:
   }
 
   .gradient-text {
-    background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
+    background: linear-gradient(135deg, var(--theme-accent, #22d3ee) 0%, var(--theme-accent, #06b6d4) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   .pro-theme {
-    color: #22d3ee;
+    color: var(--theme-accent, #22d3ee);
   }
 
   .anti-theme {
-    color: #a855f7;
+    --anti-color: #a855f7;
+    color: var(--anti-color);
   }
 
   .hybrid-theme {
-    background: linear-gradient(135deg, #22d3ee, #a855f7);
+    --anti-color: #a855f7;
+    background: linear-gradient(135deg, var(--theme-accent, #22d3ee), var(--anti-color));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -257,10 +258,10 @@ Supports two view modes:
     padding: 1.5rem;
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.1) 0%,
-      rgba(34, 211, 238, 0.02) 100%
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 10%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 2%, transparent) 100%
     );
-    border: 1px solid rgba(34, 211, 238, 0.2);
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 20%, transparent);
     border-radius: 16px;
     width: 100%;
   }
@@ -271,23 +272,23 @@ Supports two view modes:
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(34, 211, 238, 0.2);
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 20%, transparent);
     border-radius: 50%;
-    color: #22d3ee;
+    color: var(--theme-accent, #22d3ee);
     font-size: 1.75rem;
   }
 
   .intro-text {
     font-size: 1.125rem;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--theme-text, rgba(255, 255, 255, 0.85));
     text-align: center;
     margin: 0;
   }
 
   .alphabet-preview {
     padding: 1.25rem;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
     text-align: center;
     width: 100%;
@@ -343,22 +344,24 @@ Supports two view modes:
   }
 
   .letter-card.pro {
-    background: rgba(34, 211, 238, 0.1);
-    border: 1px solid rgba(34, 211, 238, 0.25);
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 25%, transparent);
   }
 
   .letter-card.anti {
-    background: rgba(168, 85, 247, 0.1);
-    border: 1px solid rgba(168, 85, 247, 0.25);
+    --anti-color: #a855f7;
+    background: color-mix(in srgb, var(--anti-color) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--anti-color) 25%, transparent);
   }
 
   .letter-card.hybrid {
+    --anti-color: #a855f7;
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.1),
-      rgba(168, 85, 247, 0.1)
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 10%, transparent),
+      color-mix(in srgb, var(--anti-color) 10%, transparent)
     );
-    border: 1px solid rgba(168, 85, 247, 0.25);
+    border: 1px solid color-mix(in srgb, var(--anti-color) 25%, transparent);
   }
 
   .letter-char {

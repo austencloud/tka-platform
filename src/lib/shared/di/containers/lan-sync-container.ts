@@ -37,3 +37,5 @@ export function createLanSyncContainer() {
 
 	return fullContainer;
 }
+
+export type LanSyncContainer = ReturnType<typeof createLanSyncContainer>;

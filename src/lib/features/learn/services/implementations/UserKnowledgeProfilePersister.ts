@@ -137,6 +137,7 @@ export class UserKnowledgeProfilePersister
         "[UserKnowledgeProfilePersister] Failed to save progress:",
         error
       );
+      throw error;
     }
   }
 
@@ -158,13 +159,14 @@ export class UserKnowledgeProfilePersister
         "[UserKnowledgeProfilePersister] Failed to load progress:",
         error
       );
-      return null;
+      throw error;
     }
   }
 
   subscribeToProgress(
     userId: string,
-    callback: (progress: LearningProgress) => void
+    callback: (progress: LearningProgress) => void,
+    onError?: (error: unknown) => void
   ): () => void {
     // Clean up existing subscription
     if (this.unsubscribe) {
@@ -191,6 +193,7 @@ export class UserKnowledgeProfilePersister
               "[UserKnowledgeProfilePersister] Subscription error:",
               error
             );
+            onError?.(error);
           }
         );
       })
@@ -199,6 +202,7 @@ export class UserKnowledgeProfilePersister
           "[UserKnowledgeProfilePersister] Failed to initialize subscription:",
           error
         );
+        onError?.(error);
       });
 
     return () => {

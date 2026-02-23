@@ -74,7 +74,7 @@ and smooth hover animations.
   }
 </script>
 
-<button class="quiz-card" class:disabled onclick={handleClick} {disabled}>
+<button class="quiz-card" class:disabled onclick={handleClick} {disabled} aria-label={gameConfig.title}>
   <!-- Icon area -->
   <div class="card-icon">
     {#if gameConfig.icon === "pictograph-to-letter"}
@@ -248,23 +248,22 @@ and smooth hover animations.
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke-strong);
     border-radius: 20px;
-    backdrop-filter: blur(16px);
     cursor: pointer;
     transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
     text-align: left;
     box-shadow:
-      0 4px 20px rgba(0, 0, 0, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      0 4px 20px color-mix(in srgb, var(--theme-panel-bg) 10%, transparent),
+      inset 0 1px 0 color-mix(in srgb, var(--theme-text) 8%, transparent);
   }
 
   .quiz-card:hover:not(.disabled) {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.25);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
     transform: translateY(-3px) scale(1.01);
     box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.15),
-      0 0 0 1px var(--theme-stroke) inset,
+      0 8px 32px color-mix(in srgb, var(--theme-panel-bg) 15%, transparent),
+      0 0 0 1px var(--theme-stroke, rgba(255, 255, 255, 0.1)) inset,
       0 0 30px color-mix(in srgb, var(--theme-accent) 10%, transparent);
   }
 
@@ -335,7 +334,7 @@ and smooth hover animations.
     );
     font-size: 1.0625rem;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.95);
+    color: var(--theme-text, #ffffff);
     line-height: 1.3;
   }
 
@@ -359,12 +358,12 @@ and smooth hover animations.
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
     transition: all var(--duration-emphasis) ease;
   }
 
   .quiz-card:hover:not(.disabled) .card-arrow {
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--theme-text, rgba(255, 255, 255, 0.8));
     transform: translateX(4px);
   }
 
@@ -471,7 +470,7 @@ and smooth hover animations.
     }
 
     .card-subtitle {
-      font-size: 0.6875rem;
+      font-size: var(--font-size-compact, 12px);
     }
   }
 

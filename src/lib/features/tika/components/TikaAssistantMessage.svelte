@@ -11,6 +11,7 @@
   import InlineSequencePlayer from "./InlineSequencePlayer.svelte";
   import InlineStepGrid from "./InlineStepGrid.svelte";
   import InlineQuiz from "./InlineQuiz.svelte";
+  import SanitizedHtml from "$lib/shared/foundation/ui/SanitizedHtml.svelte";
   import { tikaMarkdownParser } from "../services/implementations/TikaMarkdownParser";
   import { tikaMessageExtractor } from "../services/implementations/TikaMessageExtractor";
 
@@ -63,22 +64,22 @@
       {@const parsed = getMessageParsedContent(message.parts)}
       {#if parsed.textHtml}
         <div class="text-response markdown-content">
-          {@html parsed.textHtml}
+          <SanitizedHtml html={parsed.textHtml} />
           {#if isStreaming}
             <span class="streaming-cursor"></span>
           {/if}
         </div>
-      {:else if parsed.toolHtml}
-        <!-- Tool output as response (when model doesn't generate text) -->
-        <div class="tool-response markdown-content">
-          {@html parsed.toolHtml}
-        </div>
       {:else if isStreaming}
-        <!-- Still waiting for text to stream -->
+        <!-- Still waiting for text (model may be processing tool results) -->
         <div class="typing-indicator">
           <span></span>
           <span></span>
           <span></span>
+        </div>
+      {:else if parsed.toolHtml}
+        <!-- Tool output as response (model finished without generating text) -->
+        <div class="tool-response markdown-content">
+          <SanitizedHtml html={parsed.toolHtml} />
         </div>
       {/if}
 
@@ -173,6 +174,8 @@
     display: flex;
     gap: 12px;
     max-width: 100%;
+    --shadow-accent-sm: 0 4px 12px rgba(99, 102, 241, 0.3);
+    --shadow-dark-sm: 0 0 0 rgba(0, 0, 0, 0.2);
   }
 
   .assistant-message {
@@ -183,7 +186,7 @@
     width: 32px;
     height: 32px;
     border-radius: 8px;
-    background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
+    background: linear-gradient(135deg, var(--theme-accent, #818cf8) 0%, color-mix(in srgb, var(--theme-accent, #6366f1) 85%, black) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -349,7 +352,7 @@
     border-color: var(--theme-accent, #6366f1);
     color: white;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    box-shadow: var(--shadow-accent-sm);
   }
 
   .link-chip .link-number {
@@ -424,7 +427,7 @@
   .tool-details {
     margin-top: 12px;
     padding: 10px;
-    background: rgba(99, 102, 241, 0.1);
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 10%, transparent);
     border-radius: 8px;
     font-size: 12px;
   }
@@ -443,7 +446,7 @@
     flex-direction: column;
     gap: 2px;
     padding: 6px;
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--theme-shadow-bg, rgba(0, 0, 0, 0.2));
     border-radius: 4px;
     margin-bottom: 4px;
   }

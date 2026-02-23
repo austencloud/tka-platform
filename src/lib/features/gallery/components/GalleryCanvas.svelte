@@ -12,6 +12,7 @@
   import { WebGLRenderer, PCFSoftShadowMap, type ToneMapping } from "three";
   import type { RenderingBackend } from "../state/gallery-settings.svelte";
   import { isWebGPUSupported } from "$lib/shared/3d-core/rendering/create-renderer";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   interface Props {
     /** Rendering backend preference */
@@ -115,7 +116,7 @@
 {:else}
   <!-- Loading state while checking WebGPU support -->
   <div class="canvas-loading">
-    <div class="spinner"></div>
+    <ProgressRing percent={-1} size={32} strokeWidth={3} />
     <span>Initializing renderer...</span>
   </div>
 {/if}
@@ -133,25 +134,4 @@
     gap: 12px;
   }
 
-  .spinner {
-    width: 32px;
-    height: 32px;
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    border-top-color: rgba(255, 255, 255, 0.6);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
-  @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-    }
-  }
 </style>

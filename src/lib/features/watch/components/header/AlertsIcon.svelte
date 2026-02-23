@@ -24,7 +24,8 @@
     try {
       // Check if notification service exists in container
       // For now, this may not be implemented - alerts will show 0
-      const notificationService = container.items.notificationService;
+      // notificationService not yet registered in DI - access via any
+      const notificationService = (container.items as any).notificationService;
       if (notificationService?.subscribeToUnreadCount) {
         notificationService.getUnreadCount?.().then((count: number) => {
           unreadCount = count;

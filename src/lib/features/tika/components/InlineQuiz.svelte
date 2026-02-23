@@ -10,6 +10,7 @@
   - WCAG 2.2 compliant (48px touch targets, keyboard nav, reduced motion)
 -->
 <script lang="ts">
+  import { onMount } from "svelte";
   import type { InlineQuiz, QuizOption, TextQuizOption, PictographQuizOption, MotionPatternQuizOption } from "../types";
   import InlinePictograph from "./InlinePictograph.svelte";
 
@@ -30,6 +31,22 @@
 
   // Find the correct option
   const correctOption = $derived(quiz.options.find(opt => opt.correct));
+
+  // Timer handles for cleanup
+  let processingTimer: number | null = null;
+  let confettiTimer: number | null = null;
+
+  // Schedule a timeout with automatic cleanup on component destroy
+  const _timer = window.setTimeout.bind(window);
+  const scheduleTimeout = (fn: () => void, ms: number): number => _timer(fn, ms);
+
+  // Cleanup timers on destroy
+  onMount(() => {
+    return () => {
+      if (processingTimer !== null) window.clearTimeout(processingTimer);
+      if (confettiTimer !== null) window.clearTimeout(confettiTimer);
+    };
+  });
 
   // Check if reduced motion is preferred
   let prefersReducedMotion: boolean = $state(false);
@@ -61,12 +78,16 @@
     quizState = "processing";
 
     // Brief delay for processing feel (100ms)
-    setTimeout(() => {
+    processingTimer = scheduleTimeout(() => {
+      processingTimer = null;
       if (option.correct) {
         quizState = "correct";
         if (!prefersReducedMotion) {
           showConfetti = true;
-          setTimeout(() => showConfetti = false, 1500);
+          confettiTimer = scheduleTimeout(() => {
+            confettiTimer = null;
+            showConfetti = false;
+          }, 1500);
         }
       } else {
         quizState = "incorrect";
@@ -153,14 +174,13 @@
     >
       {#each quiz.options as option (option.id)}
         {#if isPictographOption(option)}
-          <button
+          <button aria-label="Letter {option.letter}"
             class="quiz-pictograph-option {getOptionClass(option)}"
             onclick={() => selectOption(option)}
             onkeydown={(e) => handleKeydown(e, option)}
             disabled={quizState !== "unanswered"}
             role="radio"
             aria-checked={selectedOptionId === option.id}
-            aria-label="Letter {option.letter}"
           >
             <div class="pictograph-wrapper">
               <InlinePictograph
@@ -196,14 +216,13 @@
     >
       {#each quiz.options as option (option.id)}
         {#if isMotionPatternOption(option)}
-          <button
+          <button aria-label="Blue {option.blueMotion}, Red {option.redMotion}"
             class="quiz-motion-chip {getOptionClass(option)}"
             onclick={() => selectOption(option)}
             onkeydown={(e) => handleKeydown(e, option)}
             disabled={quizState !== "unanswered"}
             role="radio"
             aria-checked={selectedOptionId === option.id}
-            aria-label="Blue {option.blueMotion}, Red {option.redMotion}"
           >
             <span class="motion-blue">
               <span class="motion-dot blue"></span>
@@ -237,7 +256,7 @@
     >
       {#each quiz.options as option, index (option.id)}
         {#if isTextOption(option)}
-          <button
+          <button aria-label={option.text}
             class="quiz-option {getOptionClass(option)}"
             onclick={() => selectOption(option)}
             onkeydown={(e) => handleKeydown(e, option)}
@@ -365,7 +384,7 @@
 
   .quiz-pictograph-option:hover:not(:disabled) {
     border-color: var(--theme-accent, #6366f1);
-    background: rgba(99, 102, 241, 0.1);
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 10%, transparent);
   }
 
   .quiz-pictograph-option:focus-visible {
@@ -415,13 +434,13 @@
 
   .quiz-pictograph-option.correct {
     border-color: var(--semantic-success, #22c55e);
-    background: rgba(34, 197, 94, 0.15);
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 15%, transparent);
     animation: pulse-correct 0.3s ease;
   }
 
   .quiz-pictograph-option.incorrect {
     border-color: var(--semantic-error, #ef4444);
-    background: rgba(239, 68, 68, 0.15);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
     animation: shake 0.3s ease;
   }
 
@@ -502,7 +521,7 @@
 
   .quiz-motion-chip.correct {
     border-color: var(--semantic-success, #22c55e);
-    background: rgba(34, 197, 94, 0.15);
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 15%, transparent);
     animation: pulse-correct 0.3s ease;
   }
 
@@ -512,7 +531,7 @@
 
   .quiz-motion-chip.incorrect {
     border-color: var(--semantic-error, #ef4444);
-    background: rgba(239, 68, 68, 0.15);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
     animation: shake 0.3s ease;
   }
 
@@ -594,12 +613,12 @@
 
   .quiz-option.selected {
     border-color: var(--theme-accent, #6366f1);
-    background: rgba(99, 102, 241, 0.1);
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 10%, transparent);
   }
 
   .quiz-option.correct {
     border-color: var(--semantic-success, #22c55e);
-    background: rgba(34, 197, 94, 0.15);
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 15%, transparent);
     animation: pulse-correct 0.3s ease;
   }
 
@@ -614,7 +633,7 @@
 
   .quiz-option.incorrect {
     border-color: var(--semantic-error, #ef4444);
-    background: rgba(239, 68, 68, 0.15);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
     animation: shake 0.3s ease;
   }
 
@@ -642,13 +661,13 @@
   }
 
   .quiz-feedback.correct {
-    background: rgba(34, 197, 94, 0.1);
-    border: 1px solid rgba(34, 197, 94, 0.3);
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent);
   }
 
   .quiz-feedback.incorrect {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
   }
 
   .feedback-header {
@@ -686,7 +705,7 @@
   .feedback-explanation {
     margin: 10px 0 0 0;
     padding-top: 10px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     font-size: 13px;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
     line-height: 1.5;
@@ -712,14 +731,14 @@
     animation-delay: var(--delay);
   }
 
-  .confetti:nth-child(1) { background: #22c55e; }
-  .confetti:nth-child(2) { background: #6366f1; }
-  .confetti:nth-child(3) { background: #f59e0b; }
-  .confetti:nth-child(4) { background: #ec4899; }
-  .confetti:nth-child(5) { background: #22c55e; }
-  .confetti:nth-child(6) { background: #6366f1; }
-  .confetti:nth-child(7) { background: #f59e0b; }
-  .confetti:nth-child(8) { background: #ec4899; }
+  .confetti:nth-child(1) { background: var(--semantic-success, #22c55e); }
+  .confetti:nth-child(2) { background: var(--theme-accent, #6366f1); }
+  .confetti:nth-child(3) { background: var(--semantic-warning, #f59e0b); }
+  .confetti:nth-child(4) { background: var(--semantic-error, #ec4899); }
+  .confetti:nth-child(5) { background: var(--semantic-success, #22c55e); }
+  .confetti:nth-child(6) { background: var(--theme-accent, #6366f1); }
+  .confetti:nth-child(7) { background: var(--semantic-warning, #f59e0b); }
+  .confetti:nth-child(8) { background: var(--semantic-error, #ec4899); }
 
   /* ═══════════════════════════════════════════════════════════════════════════
      Animations

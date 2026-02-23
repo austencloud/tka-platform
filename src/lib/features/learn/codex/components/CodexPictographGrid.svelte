@@ -99,29 +99,25 @@
     return letterTypeSections.some((section) => section.startRow === rowIndex);
   }
 
-  // Function to generate colored HTML text like desktop LetterTypeTextPainter
-  function getColoredText(description: string): string {
-    const colors = {
-      Shift: "#6F2DA8",
-      Dual: "#00b3ff",
-      Dash: "#26e600",
-      Cross: "#26e600",
-      Static: "#eb7d00",
-      "-": "#000000",
-    };
+  const wordColors: Record<string, string> = {
+    Shift: "#6F2DA8",
+    Dual: "#00b3ff",
+    Dash: "#26e600",
+    Cross: "#26e600",
+    Static: "#eb7d00",
+  };
 
-    let coloredText = description;
-
-    // Apply colors to each word
-    Object.entries(colors).forEach(([word, color]) => {
-      const regex = new RegExp(`\\b${word}\\b`, "gi");
-      coloredText = coloredText.replace(
-        regex,
-        `<span style="color: ${color};">${word}</span>`
-      );
+  // Returns an array of {text, color} parts for a description string
+  function getDescriptionParts(description: string): { text: string; color: string }[] {
+    const parts = description.split("-");
+    return parts.flatMap((part, i) => {
+      const color = wordColors[part] ?? "inherit";
+      const entries: { text: string; color: string }[] = [{ text: part, color }];
+      if (i < parts.length - 1) {
+        entries.push({ text: "-", color: "inherit" });
+      }
+      return entries;
     });
-
-    return coloredText;
   }
 </script>
 
@@ -135,7 +131,7 @@
           <div class="section-header-container">
             <span class="section-text">
               <span class="section-type">{section.name}:</span>
-              {@html getColoredText(section.description)}
+              {#each getDescriptionParts(section.description) as part}<span style:color={part.color}>{part.text}</span>{/each}
             </span>
           </div>
         </div>
@@ -153,6 +149,7 @@
           class:placeholder={isPlaceholder}
           onclick={() => !isPlaceholder && handlePictographClick(pictograph)}
           title={letter}
+          aria-label={letter}
           disabled={isPlaceholder}
         >
           {#if isPlaceholder}
@@ -204,13 +201,12 @@
     border: 1px solid var(--theme-stroke-strong);
     border-radius: 8px;
     padding: 6px 16px;
-    backdrop-filter: blur(10px);
   }
 
   .section-text {
     display: inline-block;
     font-family: var(--font-sans, system-ui);
-    font-size: 0.8125rem;
+    font-size: var(--font-size-min, 14px);
     font-weight: 500;
     line-height: 1.2;
     white-space: nowrap;
@@ -392,7 +388,7 @@
     }
 
     .section-text {
-      font-size: 0.6875rem;
+      font-size: var(--font-size-compact, 12px);
     }
   }
 

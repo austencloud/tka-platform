@@ -30,7 +30,7 @@ export type Orientation =
   | "out"
   | "clock"
   | "counter"
-  // Interradial orientations (Level 7 - 45° between cardinal orientations)
+  // Interradial orientations (Level 6 - 45° between cardinal orientations)
   | "clockIn"
   | "clockOut"
   | "counterIn"

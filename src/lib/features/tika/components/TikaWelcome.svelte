@@ -55,7 +55,7 @@
   <ul class="suggestion-list">
     {#each suggestions as suggestion}
       <li>
-        <button
+        <button aria-label={suggestion.text}
           class={getReasonClass(suggestion.reason)}
           onclick={() => onSubmit(suggestion.question)}
           disabled={isLoading}
@@ -82,7 +82,7 @@
     width: 64px;
     height: 64px;
     border-radius: 16px;
-    background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
+    background: linear-gradient(135deg, var(--theme-accent, #818cf8) 0%, color-mix(in srgb, var(--theme-accent, #6366f1) 85%, black) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -156,35 +156,35 @@
 
   /* Reason-based accent colors */
   .suggestion-list button.reason-review i {
-    color: #f59e0b;
+    color: var(--semantic-warning, #f59e0b);
   }
 
   .suggestion-list button.reason-review:hover {
-    border-color: #f59e0b;
+    border-color: var(--semantic-warning, #f59e0b);
   }
 
   .suggestion-list button.reason-continue i {
-    color: #3b82f6;
+    color: var(--semantic-info, #3b82f6);
   }
 
   .suggestion-list button.reason-continue:hover {
-    border-color: #3b82f6;
+    border-color: var(--semantic-info, #3b82f6);
   }
 
   .suggestion-list button.reason-next i {
-    color: #10b981;
+    color: var(--semantic-success, #10b981);
   }
 
   .suggestion-list button.reason-next:hover {
-    border-color: #10b981;
+    border-color: var(--semantic-success, #10b981);
   }
 
   .suggestion-list button.reason-explore i {
-    color: #8b5cf6;
+    color: var(--theme-accent, #8b5cf6);
   }
 
   .suggestion-list button.reason-explore:hover {
-    border-color: #8b5cf6;
+    border-color: var(--theme-accent, #8b5cf6);
   }
 
   /* Reduced Motion */

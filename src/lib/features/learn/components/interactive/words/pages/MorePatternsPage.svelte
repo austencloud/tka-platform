@@ -107,7 +107,7 @@
     color: white;
     margin: 0;
     text-align: center;
-    background: linear-gradient(135deg, #50c878 0%, #3cb371 100%);
+    background: linear-gradient(135deg, var(--semantic-success, #50c878) 0%, var(--semantic-success, #3cb371) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -130,7 +130,7 @@
   p {
     font-size: 1rem;
     line-height: 1.6;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--theme-text, rgba(255, 255, 255, 0.85));
     margin: 0;
   }
 
@@ -151,8 +151,8 @@
     align-items: center;
     gap: 0.75rem;
     padding: 1.25rem;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 16px;
   }
 
@@ -166,10 +166,10 @@
     padding: 1.25rem;
     background: linear-gradient(
       135deg,
-      rgba(80, 200, 120, 0.08) 0%,
-      rgba(80, 200, 120, 0.02) 100%
+      color-mix(in srgb, var(--semantic-success, #50c878) 8%, transparent) 0%,
+      color-mix(in srgb, var(--semantic-success, #50c878) 2%, transparent) 100%
     );
-    border: 1px solid rgba(80, 200, 120, 0.2);
+    border: 1px solid color-mix(in srgb, var(--semantic-success, #50c878) 20%, transparent);
     border-radius: 12px;
   }
 
@@ -180,7 +180,7 @@
 
   .summary-box li {
     font-size: 0.9375rem;
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--theme-text, rgba(255, 255, 255, 0.8));
     line-height: 1.6;
     margin-bottom: 0.375rem;
   }

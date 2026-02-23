@@ -250,12 +250,12 @@ Supports two navigation modes:
 
   .mode-toggle:hover {
     background: var(--theme-card-hover-bg);
-    border-color: var(--theme-accent, #22d3ee);
+    border-color: var(--theme-accent);
   }
 
   .mode-toggle i {
     font-size: 1rem;
-    color: var(--theme-accent, #22d3ee);
+    color: var(--theme-accent);
   }
 
   .mode-label {

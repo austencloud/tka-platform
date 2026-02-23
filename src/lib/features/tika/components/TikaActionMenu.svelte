@@ -55,12 +55,11 @@
 </script>
 
 <div class="action-menu" bind:this={menuRef}>
-  <button
+  <button aria-label="More actions"
     class="menu-trigger"
     class:active={isOpen}
     onclick={toggle}
     type="button"
-    aria-label="More actions"
     aria-expanded={isOpen}
     aria-haspopup="menu"
   >
@@ -70,7 +69,7 @@
   {#if isOpen}
     <div class="menu-dropdown" role="menu">
       {#each actions as action (action.id)}
-        <button
+        <button aria-label={action.label}
           class="menu-item"
           class:active={action.active}
           class:danger={action.danger}
@@ -92,6 +91,9 @@
 <style>
   .action-menu {
     position: relative;
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
   }
 
   .menu-trigger {
@@ -101,21 +103,21 @@
     width: var(--min-touch-target, 48px);
     height: var(--min-touch-target, 48px);
     padding: 0;
-    background: linear-gradient(135deg, rgba(100, 100, 120, 0.85), rgba(70, 70, 90, 0.85));
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: var(--theme-card-bg, rgba(100, 100, 120, 0.85));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
     border-radius: 50%;
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
     font-size: 16px;
     cursor: pointer;
     transition: all var(--duration-normal, 0.3s) ease;
     flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--shadow-sm);
   }
 
   .menu-trigger:hover {
     transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    background: linear-gradient(135deg, rgba(120, 120, 140, 0.95), rgba(90, 90, 110, 0.95));
+    box-shadow: var(--shadow-md);
+    background: var(--theme-card-bg, rgba(120, 120, 140, 0.95));
   }
 
   .menu-trigger:active {
@@ -124,8 +126,8 @@
   }
 
   .menu-trigger.active {
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(79, 70, 229, 0.9));
-    border-color: rgba(99, 102, 241, 0.3);
+    background: var(--theme-accent, rgba(99, 102, 241, 0.9));
+    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent);
   }
 
   .menu-trigger:focus-visible {
@@ -141,7 +143,7 @@
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
     border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--shadow-lg);
     z-index: 10000;
     overflow: hidden;
     animation: slideDown var(--duration-normal, 0.3s) ease;
@@ -194,7 +196,7 @@
   }
 
   .menu-item.danger:hover {
-    background: rgba(239, 68, 68, 0.1);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
   }
 
   .menu-item i:first-child {
@@ -210,7 +212,7 @@
 
   .check-icon {
     color: var(--semantic-success, #22c55e);
-    font-size: 0.875rem;
+    font-size: var(--font-size-min, 14px);
     flex-shrink: 0;
   }
 

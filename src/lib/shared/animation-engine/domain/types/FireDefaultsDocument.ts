@@ -25,14 +25,3 @@ export interface FireDefaultsDocument {
 	updatedBy: string;
 }
 
-/**
- * Intensity tier multipliers applied on top of admin physics baseline.
- * Users pick Small/Medium/Large; these scale intensity + flameHeight.
- */
-export type FireIntensityTier = "small" | "medium" | "large";
-
-export const FIRE_INTENSITY_TIERS: Record<FireIntensityTier, { intensity: number; flameHeight: number }> = {
-	small: { intensity: 0.35, flameHeight: 0.4 },
-	medium: { intensity: 0.5, flameHeight: 0.6 },
-	large: { intensity: 1.0, flameHeight: 1.0 },
-};

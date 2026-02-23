@@ -8,6 +8,7 @@
 -->
 <script lang="ts">
   import { onMount, onDestroy, untrack } from "svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -316,7 +317,7 @@
 <div class="inline-animation-player">
   {#if loading}
     <div class="loading-state">
-      <div class="spinner"></div>
+      <ProgressRing percent={-1} size={24} strokeWidth={3} />
       <span>Loading animation...</span>
     </div>
   {:else if error}
@@ -520,21 +521,6 @@
     font-size: var(--font-size-sm);
   }
 
-  .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--theme-stroke);
-    border-top-color: rgba(59, 130, 246, 0.8);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   .error-state {
     color: rgba(252, 165, 165, 1);
   }
@@ -559,10 +545,6 @@
     .control-btn,
     .retry-btn {
       transition: none;
-    }
-
-    .spinner {
-      animation: none;
     }
   }
 </style>

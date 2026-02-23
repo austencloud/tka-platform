@@ -210,13 +210,19 @@ export class PeerConnectionManager implements IPeerConnectionManager {
 		});
 
 		conn.on('data', (data) => {
+			let message: SyncMessage;
 			try {
-				const message = JSON.parse(data as string) as SyncMessage;
-				for (const callback of this.messageCallbacks) {
-					callback(message);
-				}
+				message = JSON.parse(data as string) as SyncMessage;
 			} catch {
 				console.warn('Failed to parse sync message:', data);
+				return;
+			}
+			for (const callback of this.messageCallbacks) {
+				try {
+					callback(message);
+				} catch (err) {
+					console.error('[PeerConnectionManager] Message handler error:', err);
+				}
 			}
 		});
 

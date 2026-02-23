@@ -80,8 +80,8 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "general"
   },
   "level": {
-    definition: "A progressive difficulty tier that unlocks new positions, grid modes, turn counts, and orientations. Level 1: 0 turns only. Level 2: whole turns (0-3). Level 3: half turns and float. Level 4: skewed grid (zeta, eta positions). Level 5: centric grid with center point (tau, terra positions, not yet implemented). Level 6: conjoined grids (dual grids sharing a junction point, new position combinations). Level 7: interradial orientations (clockIn, clockOut, counterIn, counterOut — completes 2D mastery). Level 8: atomics (two props on different spinning planes simultaneously). Level 9: Rubik's cube tech (in-between points across intersecting planes, same expansion skewed brought to single-plane).",
-    examples: ["Level 1: alpha, beta, gamma positions with 0 turns only", "Level 4: introduces zeta, eta positions with skewed grid", "Level 6: conjoined grids expand the spatial canvas with dual grids", "Level 7: interradial orientations double angular precision (completes 2D)", "Level 8: one prop on wall plane, one on wheel plane (atomics)", "Level 9: skewed-equivalent access to in-between points across multiple planes"],
+    definition: "A progressive difficulty tier that unlocks new positions, grid modes, turn counts, and orientations. Level 1: 0 turns only. Level 2: whole turns (0-3). Level 3: half turns and float. Level 4: skewed grid (zeta, eta positions). Level 5: centric grid with center point (tau, terra positions, not yet implemented). Level 6: interradial orientations (clockIn, clockOut, counterIn, counterOut — completes single-grid orientation freedom). Level 7: conjoined grids (dual grids sharing a junction point, new position combinations, bridges to 3D). Level 8: atomics (two props on different spinning planes simultaneously). Level 9: Rubik's cube tech (in-between points across intersecting planes, same expansion skewed brought to single-plane).",
+    examples: ["Level 1: alpha, beta, gamma positions with 0 turns only", "Level 4: introduces zeta, eta positions with skewed grid", "Level 6: interradial orientations double angular precision (completes single-grid 2D)", "Level 7: conjoined grids expand the spatial canvas with dual grids, bridging to 3D", "Level 8: one prop on wall plane, one on wheel plane (atomics)", "Level 9: skewed-equivalent access to in-between points across multiple planes"],
     relatedTerms: ["turns", "position", "orientation", "spinning-plane", "atomic", "rubiks-cube", "conjoined-grid"],
     category: "general"
   },
@@ -146,8 +146,8 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "rotation"
   },
   "half-float": {
-    definition: "A prop rotation state at -0.25 turns from the base rotation — halfway between float (no rotation, -0.5 turns) and the base form (0 turns). The prop rotates in the motion's direction (pro or anti) but less than the base amount, producing an interradial orientation change (45 degrees) instead of the full cardinal change (90 degrees). Only meaningful at Level 7, where quarter-turn subdivision and interradial orientations exist. The name is mathematically literal: half the turn offset of a float. Like float, half-float applies only to shifts (curved hand paths).",
-    examples: ["Pro shift E to N with half-float: orientation ends at counterIn instead of in (0 turns) or counter (float)", "Half-float is -0.25 turns; float is -0.5 turns; the name reflects the halved offset", "Completing the L7 turn continuum: ... float (-0.5) → half-float (-0.25) → base (0) → +0.25 → +0.5 ..."],
+    definition: "A prop rotation state at -0.25 turns from the base rotation — halfway between float (no rotation, -0.5 turns) and the base form (0 turns). The prop rotates in the motion's direction (pro or anti) but less than the base amount, producing an interradial orientation change (45 degrees) instead of the full cardinal change (90 degrees). Only meaningful at Level 6, where quarter-turn subdivision and interradial orientations exist. The name is mathematically literal: half the turn offset of a float. Like float, half-float applies only to shifts (curved hand paths).",
+    examples: ["Pro shift E to N with half-float: orientation ends at counterIn instead of in (0 turns) or counter (float)", "Half-float is -0.25 turns; float is -0.5 turns; the name reflects the halved offset", "Completing the L6 turn continuum: ... float (-0.5) → half-float (-0.25) → base (0) → +0.25 → +0.5 ..."],
     relatedTerms: ["float", "pro", "anti", "shift", "interradial", "turns"],
     category: "rotation"
   },
@@ -176,14 +176,14 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "motion"
   },
   "turns": {
-    definition: "Additional prop rotation beyond the base rotation inherent to the motion type. 1 turn = 180 degrees of additional rotation. This unit is a deliberate pedagogical choice: at 180°, whole turns 0-3 stay as clean small integers (Level 2), half turns (90°) produce cardinal orientation shifts (Level 3), and quarter turns (45°) produce interradial orientations (Level 7). If 1 turn were 360°, interradials would require 1/8 turns; if 90°, Level 2 would need 6 turn values. At 0 turns, pro and anti still produce base rotation from the hand path. The turn count measures rotation on top of that base behavior. The turn axis extends into negative values for shifts: -0.25 (half-float) and -0.5 (float). Values beyond -0.5 are equivalent to the opposite motion type (e.g., pro at -0.75 = anti at -0.25), making float the symmetry boundary.",
-    examples: ["0 turns with pro shift: prop rotates 90 degrees (base only, no additional)", "1 turn with pro shift: prop rotates 90 degrees base + 180 degrees additional", "0 turns with dash: no rotation (pure translation)", "Full L7 continuum for shifts: float (-0.5) → half-float (-0.25) → 0 → 0.25 → 0.5 → 0.75 → 1.0 → ..."],
+    definition: "Additional prop rotation beyond the base rotation inherent to the motion type. 1 turn = 180 degrees of additional rotation. This unit is a deliberate pedagogical choice: at 180°, whole turns 0-3 stay as clean small integers (Level 2), half turns (90°) produce cardinal orientation shifts (Level 3), and quarter turns (45°) produce interradial orientations (Level 6). If 1 turn were 360°, interradials would require 1/8 turns; if 90°, Level 2 would need 6 turn values. At 0 turns, pro and anti still produce base rotation from the hand path. The turn count measures rotation on top of that base behavior. The turn axis extends into negative values for shifts: -0.25 (half-float) and -0.5 (float). Values beyond -0.5 are equivalent to the opposite motion type (e.g., pro at -0.75 = anti at -0.25), making float the symmetry boundary.",
+    examples: ["0 turns with pro shift: prop rotates 90 degrees (base only, no additional)", "1 turn with pro shift: prop rotates 90 degrees base + 180 degrees additional", "0 turns with dash: no rotation (pure translation)", "Full L6 continuum for shifts: float (-0.5) → half-float (-0.25) → 0 → 0.25 → 0.5 → 0.75 → 1.0 → ..."],
     relatedTerms: ["rotation", "pro", "anti", "float", "half-float", "level"],
     category: "rotation"
   },
   "orientation": {
-    definition: "The facing direction of a prop relative to the performer's center point. Eight possible values across the level system. Cardinal orientations (all levels): in (toward center), out (away from center), clock (clockwise-facing), counter (counter-clockwise-facing). Interradial orientations (Level 7+): clockIn, clockOut, counterIn, counterOut — the four orientations at 45 degrees between cardinal orientations.",
-    examples: ["Pro at 0 turns preserves orientation (in stays in)", "Anti at 0 turns switches orientation (in becomes out)", "Level 7 adds clockIn, clockOut, counterIn, counterOut between base orientations"],
+    definition: "The facing direction of a prop relative to the performer's center point. Eight possible values across the level system. Cardinal orientations (all levels): in (toward center), out (away from center), clock (clockwise-facing), counter (counter-clockwise-facing). Interradial orientations (Level 6+): clockIn, clockOut, counterIn, counterOut — the four orientations at 45 degrees between cardinal orientations.",
+    examples: ["Pro at 0 turns preserves orientation (in stays in)", "Anti at 0 turns switches orientation (in becomes out)", "Level 6 adds clockIn, clockOut, counterIn, counterOut between base orientations"],
     relatedTerms: ["pro", "anti", "turns", "rotation", "level"],
     category: "rotation"
   },
@@ -497,19 +497,19 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "general"
   },
   "conjoined-grid": {
-    definition: "A Level 6 concept where two grids share a junction point, expanding the spatial canvas while staying in 2D. Each grid shows one hand's motion. The junction point creates new position combinations that can't exist on a single grid — including patterns with two center points. Uses existing terminology (alpha, beta, gamma, etc.) to express new spatial relationships across the paired grids. More accessible than interradials as the next step after centric mode.",
+    definition: "A Level 7 concept where two grids share a junction point, expanding the spatial canvas and bridging to 3D. Each grid shows one hand's motion. The junction point creates new position combinations that can't exist on a single grid — including patterns with two center points. Uses existing terminology (alpha, beta, gamma, etc.) to express new spatial relationships across the paired grids. Placed after interradials (L6) so all orientation freedom is complete before expanding beyond one grid.",
     examples: ["Two grids sharing a north/south junction, blue hand on grid A, red hand on grid B", "Layouts: left-right, top-bottom, diagonal arrangements", "Patterns where hands are spatially further apart than a single grid allows"],
     relatedTerms: ["level", "centric", "position"],
     category: "grid"
   },
   "atomic": {
-    definition: "A Level 8 concept where two props operate on different spinning planes simultaneously. One prop might be on the wall plane while the other is on the wheel plane. Analogous to how Level 4 expanded from single-grid (diamond or box) to mixed-grid (skewed), Level 8 expands from single-plane to mixed-plane. By this level, the full 2D system (including interradial orientations from Level 7) is complete, so all 2D knowledge carries into 3D. Not yet implemented.",
+    definition: "A Level 8 concept where two props operate on different spinning planes simultaneously. One prop might be on the wall plane while the other is on the wheel plane. Analogous to how Level 4 expanded from single-grid (diamond or box) to mixed-grid (skewed), Level 8 expands from single-plane to mixed-plane. By this level, the full 2D system (including interradial orientations from Level 6 and conjoined grids from Level 7) is complete, so all 2D knowledge carries into 3D. Not yet implemented.",
     examples: ["Left hand doing a wall-plane pattern while right hand does a wheel-plane pattern", "Intersecting two planes creates 3D motion even though each individual prop traces a 2D circle"],
     relatedTerms: ["spinning-plane", "level", "skewed", "rubiks-cube"],
     category: "general"
   },
   "rubiks-cube": {
-    definition: "Level 9 concept. Within the multi-plane context of Level 8 (atomics), the points between the relative cardinal points on each plane become individually accessible. The same expansion that Level 4 (skewed) brought to single-plane grid work, Level 9 brings to multi-plane work. Named for the Rubik's cube geometry that emerges when three intersecting planes each have their in-between points addressed. Completes 3D mastery the same way Level 7 (interradials) completes 2D mastery. Not yet implemented.",
+    definition: "Level 9 concept. Within the multi-plane context of Level 8 (atomics), the points between the relative cardinal points on each plane become individually accessible. The same expansion that Level 4 (skewed) brought to single-plane grid work, Level 9 brings to multi-plane work. Named for the Rubik's cube geometry that emerges when three intersecting planes each have their in-between points addressed. Completes 3D mastery the same way Level 6 (interradials) completes 2D orientation freedom. Not yet implemented.",
     examples: ["Level 4 mixed cardinal and intercardinal on one plane (skewed). Level 9 mixes equivalent points across two intersecting planes.", "The 3D grid formed by wall + wheel + overhead planes with in-between access resembles a Rubik's cube"],
     relatedTerms: ["atomic", "spinning-plane", "skewed", "level"],
     category: "general"
@@ -521,8 +521,8 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "motion"
   },
   "interradial": {
-    definition: "The four orientations at 45 degrees between the base cardinal orientations, introduced at Level 7. These double the angular precision of the orientation system from 4 values to 8. The four interradial orientations are: clockIn (between clock and in), clockOut (between clock and out), counterIn (between counter and in), counterOut (between counter and out). Quarter turns (0.25, 0.75, etc.) produce interradial orientations using the 8-point radial cycle: in → clockIn → clock → clockOut → out → counterOut → counter → counterIn.",
-    examples: ["clockIn: prop faces 45° between clock and in", "Level 7 doubles orientation vocabulary from 4 to 8", "Quarter turns step through the 8-point radial cycle"],
+    definition: "The four orientations at 45 degrees between the base cardinal orientations, introduced at Level 6. These double the angular precision of the orientation system from 4 values to 8. The four interradial orientations are: clockIn (between clock and in), clockOut (between clock and out), counterIn (between counter and in), counterOut (between counter and out). Quarter turns (0.25, 0.75, etc.) produce interradial orientations using the 8-point radial cycle: in → clockIn → clock → clockOut → out → counterOut → counter → counterIn.",
+    examples: ["clockIn: prop faces 45° between clock and in", "Level 6 doubles orientation vocabulary from 4 to 8", "Quarter turns step through the 8-point radial cycle"],
     relatedTerms: ["orientation", "level", "clock", "counter"],
     category: "rotation"
   },
@@ -533,8 +533,8 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "rotation"
   },
   "hand-path-modifier": {
-    definition: "The +/- system that extends or shortens standard hand paths. Applies to both shifts and dashes. For shifts: skew+ (longer arc), skew- (shorter arc). For dashes: dash- (to/from center, called 'hash'), dash+ (cross-grid, L6), dash++ (cross-grid to opposite perimeter, L6). The modifier is displayed per-hand in the turns column of the TKA glyph. Modifiers do NOT change the letter type classification — dash and dash- are both in the 'dash' family.",
-    examples: ["Skew+ (shift+): S to NE, extended arc spanning 3 segments", "Dash- (hash): N to center, shortened straight line", "Dash+ (L6): perimeter to center of other grid"],
+    definition: "The +/- system that extends or shortens standard hand paths. Applies to both shifts and dashes. For shifts: skew+ (longer arc), skew- (shorter arc). For dashes: dash- (to/from center, called 'hash'), dash+ (cross-grid, L7), dash++ (cross-grid to opposite perimeter, L7). The modifier is displayed per-hand in the turns column of the TKA glyph. Modifiers do NOT change the letter type classification — dash and dash- are both in the 'dash' family.",
+    examples: ["Skew+ (shift+): S to NE, extended arc spanning 3 segments", "Dash- (hash): N to center, shortened straight line", "Dash+ (L7): perimeter to center of other grid"],
     relatedTerms: ["shift", "dash", "hash", "skew", "hand-path"],
     category: "motion"
   },

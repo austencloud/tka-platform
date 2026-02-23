@@ -72,7 +72,7 @@
 
   onMount(() => {
     hapticService = container.items.hapticFeedback;
-    deviceDetector = container.items.deviceDetector as IDeviceDetector;
+    deviceDetector = container.items.deviceDetector;
 
     updateDeviceCapabilities();
     const cleanup = deviceDetector?.onCapabilitiesChanged(() => {

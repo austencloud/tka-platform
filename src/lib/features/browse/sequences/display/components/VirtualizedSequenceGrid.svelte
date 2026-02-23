@@ -8,13 +8,12 @@
   import { get } from "svelte/store";
   import type { IBrowseThumbnailProvider } from "../services/contracts/IBrowseThumbnailProvider";
   import type { IVariationGrouper } from "../services/contracts/IVariationGrouper";
-  import ChoreoCard from "./ChoreoCard/ChoreoCard.svelte";
+  import ChoreoCardThumbnail from "./ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { isCatDogMode } from "../utils/prop-mode-helpers";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { container } from "$lib/shared/di";
   import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/implementations/CellPreWarmer";
-  import type { ISequenceDataProvider } from "$lib/shared/sequence-viewer/services/contracts/ISequenceDataProvider";
 
   /**
    * VirtualizedSequenceGrid - High-performance grid for large sequence lists
@@ -222,9 +221,9 @@
   });
 
   // Sequence data provider for hover prefetch
-  const sequenceDataProvider = container.items.sequenceDataProvider as ISequenceDataProvider;
+  const sequenceDataProvider = container.items.sequenceDataProvider;
 
-  // Handle hover pre-warming — called by ChoreoCard's onHover prop
+  // Handle hover pre-warming — called by ChoreoCardThumbnail's onHover prop
   // Prefetches full sequence data from Firestore AND pre-warms cells
   function handleSequenceHover(seq: SequenceData) {
     cellPreWarmer.preWarmSequence(seq, "user-visible");
@@ -283,7 +282,7 @@
         {#each getRowSequences(virtualRow.index) as sequence, colIndex (sequence.id)}
           {@const seqVariations = getVariationsForSequence(sequence)}
           <div role="gridcell" aria-colindex={colIndex + 1}>
-            <ChoreoCard
+            <ChoreoCardThumbnail
               {sequence}
               variations={seqVariations}
               onPrimaryAction={(seq) =>

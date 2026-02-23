@@ -22,7 +22,7 @@
 <style>
   .achievements-section {
     padding: var(--spacing-lg);
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    border-top: 1px solid var(--theme-stroke);
   }
 
   .achievements-section h4 {
@@ -50,13 +50,13 @@
     font-weight: 600;
     font-size: var(--font-size-sm);
     color: white;
-    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--semantic-warning) 30%, transparent);
     transition: all var(--transition-fast);
   }
 
   .achievement-badge:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--semantic-warning) 40%, transparent);
   }
 
   @media (max-width: 640px) {

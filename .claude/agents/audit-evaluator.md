@@ -84,7 +84,9 @@ Evidence keys: `reducedMotion`, `smallFontSize`, `htmlDirective`, `clickWithoutR
 
 Evidence keys: `hasLoadingState`, `hasErrorState`, `hasEmptyState`, `bareCatch`, `consoleErrorOnly`
 
-Note: Small utility modules with no UI may legitimately have no loading/error/empty states. Read source files to verify before downgrading. If the scope contains no user-facing components, grade based on error handling quality only.
+**Presentational component exemption:** If the scope contains only presentational/controlled components (props in, events out, no async operations, no data fetching), they legitimately have no loading/error/empty states — those belong in the parent orchestrator. Read source files to verify. If confirmed presentational: grade A+ for 0 bare catches, A for 1 bare catch. Do NOT penalize for missing states that belong elsewhere.
+
+Same exemption applies to small utility modules with no UI. If the scope contains no async operations, grade based on error handling quality only.
 
 ### 6. UI Consistency
 

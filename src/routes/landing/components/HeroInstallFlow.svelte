@@ -14,7 +14,6 @@
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
   import type {
-    IPlatformDetector,
     Platform,
     InAppBrowser,
   } from "$lib/shared/mobile/services/contracts/IPlatformDetector";
@@ -45,7 +44,7 @@
     "https://play.google.com/store/apps/details?id=com.tkascribe.app";
 
   onMount(async () => {
-    const platformService = container.items.platformDetector as IPlatformDetector;
+    const platformService = container.items.platformDetector;
     const info = platformService.detectPlatformAndBrowser();
 
     platform = info.platform;

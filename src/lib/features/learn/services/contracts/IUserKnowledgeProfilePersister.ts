@@ -39,9 +39,14 @@ export interface IUserKnowledgeProfilePersister {
    * Subscribe to real-time progress changes from Firestore.
    * Enables cross-device sync via onSnapshot.
    * Returns an unsubscribe function.
+   *
+   * @param onError - Optional callback invoked when the subscription encounters
+   *   an error (either during init or from onSnapshot). Allows callers to react
+   *   to subscription failures rather than silently losing updates.
    */
   subscribeToProgress(
     userId: string,
-    callback: (progress: LearningProgress) => void
+    callback: (progress: LearningProgress) => void,
+    onError?: (error: unknown) => void
   ): () => void;
 }
