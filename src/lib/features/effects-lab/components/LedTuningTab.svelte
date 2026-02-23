@@ -3,12 +3,13 @@
 
   LED effect tuning: sequence picker, playback controls,
   LED overlay configuration, and the AnimatorCanvas preview.
-  Moved from led-lab to effects-lab.
+  Uses SequenceChainingOrchestrator for auto-chaining (shared with FireTuningTab).
 -->
 <script lang="ts">
   import { onMount, onDestroy, untrack } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
+  import LedControlPanel from "./LedControlPanel.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
@@ -26,30 +27,23 @@
   import { StepCalculator } from "$lib/features/compose/services/implementations/StepCalculator";
 
   import { DEFAULT_LED_CONFIG, type LedOverlayConfig } from "$lib/shared/animation-engine/domain/types/LedTypes";
-  import { LED_PATTERNS } from "$lib/shared/animation-engine/domain/types/LedPatterns";
 
-  // Auto-chaining imports (Endless Spinner integration)
+  // Auto-chaining (shared with FireTuningTab)
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
   import { InfiniteSequenceGenerator } from "$lib/features/landing/services/implementations/InfiniteSequenceGenerator";
   import { SpinnerMetricsRepository } from "$lib/features/landing/services/implementations/SpinnerMetricsRepository";
-  import { PropTypeApplier } from "$lib/features/landing/services/implementations/PropTypeApplier";
-  import type { IEndlessSpinnerOrchestrator, EndState } from "$lib/features/landing/services/contracts/IEndlessSpinnerOrchestrator";
-  import type { IInfiniteSequenceGenerator } from "$lib/features/landing/services/contracts/IInfiniteSequenceGenerator";
   import type { IGenerationOrchestrator } from "$lib/features/create/generate/shared/services/contracts/IGenerationOrchestrator";
   import type { ISequenceTransformer } from "$lib/features/create/shared/services/contracts/ISequenceTransformer";
   import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
   import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { SequenceChainingOrchestrator } from "../services/implementations/SequenceChainingOrchestrator";
+  import type { ISequenceChainingOrchestrator, SourceMode } from "../services/contracts/ISequenceChainingOrchestrator";
 
   const DEFAULT_BPM = 60;
   const STORAGE_KEY = "led-lab-state";
   const visibilityManager = getAnimationVisibilityManager();
-
-  type SourceMode = "pick" | "library" | "infinite";
 
   interface LedLabPersistedState {
     sequenceId: string | null;
@@ -94,6 +88,7 @@
 
   let sequenceService: ISequenceRepository | null = null;
   let playbackController: IAnimationPlaybackController | null = null;
+  let chainingOrchestrator = $state<ISequenceChainingOrchestrator | null>(null);
   let servicesReady = $state(false);
   let loading = $state(false);
   let error = $state<string | null>(null);
@@ -115,15 +110,6 @@
   let trailFadeRate = $state(persisted.trailFadeRate ?? DEFAULT_LED_CONFIG.trailFadeRate);
   let sourceMode = $state<SourceMode>(persisted.sourceMode ?? "pick");
 
-  // Auto-chaining state
-  let spinnerOrchestrator: IEndlessSpinnerOrchestrator | null = null;
-  let infiniteGenerator: IInfiniteSequenceGenerator | null = null;
-  let preloadedSequence = $state<SequenceData | null>(null);
-  let isPreloading = $state(false);
-  let isChainingNow = $state(false);
-  let lastStep = $state(-1);
-  const propTypeApplier = new PropTypeApplier();
-
   let ledConfig = $derived<LedOverlayConfig>({
     enabled: ledEnabled,
     glowRadius,
@@ -141,14 +127,10 @@
   });
 
   // Restore persisted LED state AFTER the engine is ready and has a sequence.
-  // This ensures the toggle change (false->true) fires after AnimatorCanvas has
-  // mounted and the engine can actually create the WebGL LED overlay.
   $effect(() => {
     if (servicesReady && sequence && !ledStateRestored) {
       ledStateRestored = true;
       if (persisted.ledEnabled) {
-        // Small delay lets the AnimatorCanvas $effect that passes ledConfig
-        // to the engine settle before we flip the toggle.
         requestAnimationFrame(() => { ledEnabled = true; });
       }
     }
@@ -213,204 +195,28 @@
     untrack(() => savePersistedState());
   });
 
-  // --- Auto-chaining logic (borrowed from Endless Spinner) ---
-
-  function extractEndState(seq: SequenceData): EndState {
-    const finalStep = seq.steps?.[seq.steps.length - 1];
-    let position = finalStep?.endPosition ?? null;
-
-    // Fallback 1: derive from motion end locations
-    if (!position && gridPositionDeriver && finalStep?.motions) {
-      const blueMotion = finalStep.motions[MotionColor.BLUE];
-      const redMotion = finalStep.motions[MotionColor.RED];
-      if (blueMotion?.endLocation && redMotion?.endLocation) {
-        try {
-          position = gridPositionDeriver.getGridPositionFromLocations(
-            blueMotion.endLocation,
-            redMotion.endLocation
-          );
-        } catch { /* silently fail */ }
-      }
-    }
-
-    // Fallback 2: for circular sequences (LOOPs), end position = start position.
-    // Use the sequence's start position data if available.
-    if (!position && seq.isCircular) {
-      const startPos = seq.startPosition ?? seq.startingPosition;
-      if (startPos) {
-        position = startPos.gridPosition ?? startPos.startPosition ?? null;
-      }
-    }
-
-    return {
-      position,
-      blueOrientation: (finalStep?.motions?.blue?.endOrientation ?? null) as Orientation | null,
-      redOrientation: (finalStep?.motions?.red?.endOrientation ?? null) as Orientation | null,
-    };
-  }
-
-  function hotSwapSequence(sequenceData: SequenceData) {
-    if (!playbackController) return;
-
-    sequence = sequenceData;
-    lastStep = -1;
-
-    const applied = propTypeApplier.applyToSequence(sequenceData, PropType.STAFF);
-
-    animationState.setShouldLoop(true);
-    const ok = playbackController.initialize(applied, animationState);
-    if (!ok) return;
-
-    animationState.setPlaybackMode("continuous");
-    // seekToStep syncs BOTH currentStep AND the controller's internal timePosition.
-    // Using setCurrentStep(1) alone gets overridden by the animation loop which
-    // reads from timePosition (still 0 after initialize), causing step 0 to flash.
-    playbackController.seekToStep(1);
-
-    if (!animationState.isPlaying) {
-      playbackController.togglePlayback();
-    }
-  }
-
-  async function preloadNextSequence() {
-    if (!sequence || isPreloading || preloadedSequence) return;
-    isPreloading = true;
-    try {
-      const endState = extractEndState(sequence);
-
-      if (sourceMode === "infinite" && infiniteGenerator) {
-        // Generate the next LOOP constrained to start at the current end position
-        const generated = await infiniteGenerator.generateFromEndState(endState);
-        preloadedSequence = generated?.sequence ?? null;
-      } else if (sourceMode === "library" && spinnerOrchestrator) {
-        const nextSeq = await spinnerOrchestrator.getNextSequence(endState);
-        preloadedSequence = nextSeq ?? (await spinnerOrchestrator.getInitialSequence());
-      }
-    } catch (err) {
-      console.error("LED Lab: preload failed:", err);
-    } finally {
-      isPreloading = false;
-    }
-  }
-
-  function chainToNextSequence() {
-    if (!playbackController || isChainingNow) return;
-
-    // Synchronous swap from preloaded sequence — no visible step 0 gap
-    if (preloadedSequence) {
-      isChainingNow = true;
-      hotSwapSequence(preloadedSequence);
-      preloadedSequence = null;
-      isChainingNow = false;
-      // Immediately start preloading the NEXT sequence
-      preloadNextSequence();
-      return;
-    }
-
-    // Fallback: async generation if preload wasn't ready (rare)
-    isChainingNow = true;
-    (async () => {
-      try {
-        if (sourceMode === "infinite" && infiniteGenerator) {
-          const endState = sequence ? extractEndState(sequence) : null;
-          const generated = endState
-            ? await infiniteGenerator.generateFromEndState(endState)
-            : await infiniteGenerator.generateInitial();
-          if (generated) hotSwapSequence(generated.sequence);
-        } else if (sourceMode === "library" && spinnerOrchestrator) {
-          if (sequence) {
-            const endState = extractEndState(sequence);
-            const nextSeq = await spinnerOrchestrator.getNextSequence(endState);
-            if (nextSeq) hotSwapSequence(nextSeq);
-          }
-        }
-      } catch (err) {
-        console.error("LED Lab: chain failed:", err);
-        error = "Failed to load next sequence";
-      } finally {
-        isChainingNow = false;
-        // Start preloading for the next chain
-        preloadNextSequence();
-      }
-    })();
-  }
-
-  async function startAutoMode() {
-    if (sourceMode === "library" && spinnerOrchestrator) {
-      const initial = await spinnerOrchestrator.getInitialSequence();
-      if (initial) {
-        hotSwapSequence(initial);
-        preloadNextSequence();
-      }
-    } else if (sourceMode === "infinite" && infiniteGenerator) {
-      const generated = await infiniteGenerator.generateInitial();
-      if (generated) {
-        hotSwapSequence(generated.sequence);
-        preloadNextSequence();
-      }
-    }
-  }
-
-  function handleSkip() {
-    if (sourceMode === "pick") return;
-    chainToNextSequence();
-  }
-
-  /** Generate a new sequence from a random position, breaking the chain. */
-  async function handleShuffle() {
-    if (sourceMode === "pick" || !infiniteGenerator) return;
-    isChainingNow = true;
-    try {
-      // generateInitial() uses no position constraint -> random start
-      const generated = await infiniteGenerator.generateInitial();
-      if (generated) hotSwapSequence(generated.sequence);
-    } catch (err) {
-      console.error("LED Lab: shuffle failed:", err);
-      error = "Shuffle failed — could not generate a new sequence";
-    } finally {
-      isChainingNow = false;
-    }
-  }
-
   // Watch for sequence completion -> chain to next (library/infinite modes only)
   $effect(() => {
-    if (sourceMode === "pick") return;
-
-    const currentStep = Math.floor(animationState.currentStep);
-    const totalSteps = animationState.totalSteps;
-
-    if (
-      servicesReady &&
-      !isChainingNow &&
-      sequence &&
-      lastStep >= totalSteps - 1 &&
-      currentStep <= 1 &&
-      totalSteps > 0
-    ) {
-      chainToNextSequence();
-    }
-
-    lastStep = currentStep;
+    if (sourceMode === "pick" || !chainingOrchestrator) return;
+    chainingOrchestrator.checkAndChain(
+      Math.floor(animationState.currentStep),
+      animationState.totalSteps,
+      sourceMode,
+      servicesReady,
+      !!sequence
+    );
   });
 
   // Preload next sequence (library + infinite modes)
-  // Start generation early so the swap is synchronous when the sequence ends.
   $effect(() => {
-    if (sourceMode === "pick") return;
-
-    const currentStep = Math.floor(animationState.currentStep);
-    const totalSteps = animationState.totalSteps;
-
-    const shouldPreload =
-      servicesReady &&
-      !isPreloading &&
-      !preloadedSequence &&
-      sequence &&
-      totalSteps > 2 &&
-      currentStep >= 2 &&
-      currentStep < totalSteps - 1;
-
-    if (shouldPreload) preloadNextSequence();
+    if (sourceMode === "pick" || !chainingOrchestrator) return;
+    chainingOrchestrator.checkAndPreload(
+      Math.floor(animationState.currentStep),
+      animationState.totalSteps,
+      sourceMode,
+      servicesReady,
+      !!sequence
+    );
   });
 
   onMount(async () => {
@@ -433,7 +239,7 @@
       const generationOrchestrator = container.items.generationOrchestrator as IGenerationOrchestrator;
       const sequenceTransformer = container.items.sequenceTransformer as ISequenceTransformer;
 
-      spinnerOrchestrator = new EndlessSpinnerOrchestrator(
+      const spinnerOrch = new EndlessSpinnerOrchestrator(
         browseLoader,
         generationOrchestrator,
         sequenceTransformer,
@@ -443,12 +249,16 @@
       );
 
       const metricsRepo = new SpinnerMetricsRepository();
-      infiniteGenerator = new InfiniteSequenceGenerator(
+      const infiniteGen = new InfiniteSequenceGenerator(
         generationOrchestrator,
         metricsRepo
       );
 
-      await spinnerOrchestrator.initialize();
+      chainingOrchestrator = new SequenceChainingOrchestrator(spinnerOrch, infiniteGen);
+      chainingOrchestrator.onSequenceSwapped((seq) => { sequence = seq; });
+      chainingOrchestrator.onError((msg) => { error = msg; });
+      await chainingOrchestrator.initialize(playbackController, animationState);
+
       servicesReady = true;
 
       // Restore or auto-start based on source mode
@@ -458,7 +268,7 @@
           restoreSequence(savedId);
         }
       } else {
-        startAutoMode();
+        chainingOrchestrator.startAutoMode(sourceMode);
       }
     } catch (err) {
       console.error("LED Lab: failed to initialize:", err);
@@ -487,6 +297,7 @@
   onDestroy(() => {
     if (playbackStartTimer !== null) clearTimeout(playbackStartTimer);
     visibilityManager.setLedEffect(false);
+    chainingOrchestrator?.dispose();
     playbackController?.dispose();
     animationState.dispose();
   });
@@ -546,15 +357,23 @@
   function handleSourceChange(mode: SourceMode) {
     if (mode === sourceMode) return;
     sourceMode = mode;
-    preloadedSequence = null;
-    lastStep = -1;
 
     if (mode === "pick") {
       // Stop auto-chaining, keep current sequence
       return;
     }
     // Start auto mode (library or infinite)
-    startAutoMode();
+    chainingOrchestrator?.startAutoMode(mode);
+  }
+
+  function handleSkip() {
+    if (sourceMode === "pick") return;
+    chainingOrchestrator?.skip();
+  }
+
+  async function handleShuffle() {
+    if (sourceMode === "pick") return;
+    await chainingOrchestrator?.shuffle();
   }
 </script>
 
@@ -654,12 +473,12 @@
           </button>
         {:else}
           <div class="auto-actions">
-            <button class="action-btn skip-btn" onclick={handleSkip} disabled={isChainingNow || !sequence} aria-label="Skip to the next sequence">
+            <button class="action-btn skip-btn" onclick={handleSkip} disabled={chainingOrchestrator?.isChainingNow || !sequence} aria-label="Skip to the next sequence">
               <i class="fas fa-forward" aria-hidden="true"></i>
               Skip
             </button>
             {#if sourceMode === "infinite"}
-              <button class="action-btn shuffle-btn" onclick={handleShuffle} disabled={isChainingNow || !sequence} aria-label="Shuffle to a random sequence">
+              <button class="action-btn shuffle-btn" onclick={handleShuffle} disabled={chainingOrchestrator?.isChainingNow || !sequence} aria-label="Shuffle to a random sequence">
                 <i class="fas fa-random" aria-hidden="true"></i>
                 Shuffle
               </button>
@@ -702,99 +521,16 @@
       {/if}
 
       <!-- LED Controls -->
-      <div class="control-section led-section">
-        <h3>
-          <i class="fas fa-lightbulb" aria-hidden="true"></i>
-          LED Effect
-        </h3>
-
-        <div class="toggle-row">
-          <span>Enabled</span>
-          <button
-            class="toggle-btn"
-            class:active={ledEnabled}
-            onclick={() => (ledEnabled = !ledEnabled)}
-            aria-label={ledEnabled ? "Disable LED effect" : "Enable LED effect"}
-          >
-            {ledEnabled ? "ON" : "OFF"}
-          </button>
-        </div>
-
-        {#if ledEnabled}
-          <div class="pattern-grid">
-            {#each LED_PATTERNS as pattern (pattern.id)}
-              <button
-                class="pattern-card"
-                class:active={patternId === pattern.id}
-                onclick={() => (patternId = pattern.id)}
-                aria-pressed={patternId === pattern.id}
-                aria-label="Select {pattern.name} LED pattern"
-              >
-                <span class="pattern-name">{pattern.name}</span>
-              </button>
-            {/each}
-          </div>
-
-          <div class="slider-group">
-            <div class="slider-row">
-              <label for="color-picker">Color</label>
-              <input id="color-picker" type="color" bind:value={primaryColor} />
-              <span class="slider-value">{primaryColor}</span>
-            </div>
-
-            <div class="slider-row">
-              <label for="pattern-speed-slider">Pattern Speed</label>
-              <input
-                id="pattern-speed-slider"
-                type="range"
-                min="0.1"
-                max="5.0"
-                step="0.1"
-                bind:value={patternSpeed}
-              />
-              <span class="slider-value">{patternSpeed.toFixed(1)}x</span>
-            </div>
-
-            <div class="slider-row">
-              <label for="glow-radius-slider">Glow Radius</label>
-              <input
-                id="glow-radius-slider"
-                type="range"
-                min="0.5"
-                max="3.0"
-                step="0.1"
-                bind:value={glowRadius}
-              />
-              <span class="slider-value">{glowRadius.toFixed(1)}</span>
-            </div>
-
-            <div class="slider-row">
-              <label for="bloom-intensity-slider">Bloom Intensity</label>
-              <input
-                id="bloom-intensity-slider"
-                type="range"
-                min="0"
-                max="0.15"
-                step="0.01"
-                bind:value={bloomIntensity}
-              />
-              <span class="slider-value">{bloomIntensity.toFixed(2)}</span>
-            </div>
-
-            <div class="slider-row">
-              <label for="trail-fade-slider">Trail Persistence</label>
-              <input
-                id="trail-fade-slider"
-                type="range"
-                min="0.80"
-                max="0.98"
-                step="0.01"
-                bind:value={trailFadeRate}
-              />
-              <span class="slider-value">{trailFadeRate.toFixed(2)}</span>
-            </div>
-          </div>
-        {/if}
+      <div class="control-section">
+        <LedControlPanel
+          bind:ledEnabled
+          bind:patternId
+          bind:primaryColor
+          bind:patternSpeed
+          bind:glowRadius
+          bind:bloomIntensity
+          bind:trailFadeRate
+        />
       </div>
 
       <!-- Debug Info -->
@@ -950,10 +686,6 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-xs, 4px);
-  }
-
-  .control-section h3 i {
-    color: var(--led-green);
   }
 
   .action-btn {
@@ -1114,142 +846,6 @@
     color: var(--theme-text, white);
   }
 
-  .led-section {
-    border-color: var(--led-green-dim);
-  }
-
-  .toggle-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: var(--font-size-min, 14px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-  }
-
-  .toggle-btn {
-    padding: 6px 16px;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: 9999px;
-    background: color-mix(in srgb, var(--theme-text) 5%, transparent);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 150ms ease;
-    min-width: 56px;
-  }
-
-  .toggle-btn.active {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--led-green) 30%, transparent), color-mix(in srgb, var(--led-green) 15%, transparent));
-    border-color: var(--led-green-border-strong);
-    color: var(--led-green-bright);
-  }
-
-  .toggle-btn:hover {
-    border-color: color-mix(in srgb, var(--theme-text) 30%, transparent);
-  }
-
-  .toggle-btn.active:hover {
-    border-color: color-mix(in srgb, var(--led-green) 70%, transparent);
-  }
-
-  .pattern-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 6px;
-    margin: var(--spacing-sm, 8px) 0 var(--spacing-md, 16px);
-  }
-
-  .pattern-card {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 10px;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--border-radius-md, 8px);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text, white);
-    cursor: pointer;
-    transition: all 150ms ease;
-    text-align: center;
-  }
-
-  .pattern-card:hover {
-    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-  }
-
-  .pattern-card.active {
-    background: var(--led-green-dim);
-    border-color: var(--led-green-border-strong);
-  }
-
-  .pattern-card:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: 2px;
-  }
-
-  .pattern-name {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    color: var(--theme-text, white);
-    line-height: 1.2;
-  }
-
-  .pattern-card.active .pattern-name {
-    color: var(--led-green-bright);
-  }
-
-  .slider-group {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm, 8px);
-  }
-
-  .slider-row {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm, 8px);
-  }
-
-  .slider-row label {
-    min-width: 100px;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-  }
-
-  .slider-row input[type="range"] {
-    flex: 1;
-    accent-color: var(--led-green);
-  }
-
-  .slider-row input[type="color"] {
-    width: 36px;
-    height: 28px;
-    padding: 0;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: var(--border-radius-sm, 4px);
-    background: transparent;
-    cursor: pointer;
-  }
-
-  .slider-row input[type="color"]::-webkit-color-swatch-wrapper {
-    padding: 2px;
-  }
-
-  .slider-row input[type="color"]::-webkit-color-swatch {
-    border: none;
-    border-radius: 2px;
-  }
-
-  .slider-value {
-    min-width: 54px;
-    text-align: right;
-    font-family: var(--font-mono, monospace);
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text, white);
-  }
-
   .debug-section {
     border-color: color-mix(in srgb, var(--theme-text) 5%, transparent);
   }
@@ -1275,9 +871,7 @@
   @media (prefers-reduced-motion: reduce) {
     .pick-btn,
     .action-btn,
-    .play-btn,
-    .toggle-btn,
-    .pattern-card {
+    .play-btn {
       transition: none;
     }
   }
