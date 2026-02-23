@@ -375,7 +375,7 @@
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    overflow: hidden; /* Let children handle their own scrolling */
+    overflow-y: auto;
     padding: clamp(8px, 2vw, 16px);
     min-height: 0;
   }
