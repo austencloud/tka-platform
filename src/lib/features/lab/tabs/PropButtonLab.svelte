@@ -17,6 +17,7 @@
   import { getSettings, updateSetting } from "$lib/shared/application/state/app-state.svelte";
 
   const families = getRecipeFamilies();
+  const MAX_HISTORY = 100;
 
   let expandedFamily = $state<PropType | null>(null);
 
@@ -25,6 +26,53 @@
   let overrides = $state<Record<string, CompositionRecipe>>(
     structuredClone(settings.compositionRecipeOverrides ?? {})
   );
+
+  // --- Undo / Redo ---
+  type Snapshot = Record<string, CompositionRecipe>;
+  let undoStack = $state<Snapshot[]>([]);
+  let redoStack = $state<Snapshot[]>([]);
+  let canUndo = $derived(undoStack.length > 0);
+  let canRedo = $derived(redoStack.length > 0);
+
+  /** Capture current overrides before a mutation */
+  function pushUndo() {
+    undoStack = [...undoStack, structuredClone(overrides)].slice(-MAX_HISTORY);
+    redoStack = [];
+  }
+
+  function undo() {
+    if (undoStack.length === 0) return;
+    const previous = undoStack[undoStack.length - 1];
+    redoStack = [...redoStack, structuredClone(overrides)];
+    undoStack = undoStack.slice(0, -1);
+    overrides = structuredClone(previous);
+    persistOverrides();
+  }
+
+  function redo() {
+    if (redoStack.length === 0) return;
+    const next = redoStack[redoStack.length - 1];
+    undoStack = [...undoStack, structuredClone(overrides)];
+    redoStack = redoStack.slice(0, -1);
+    overrides = structuredClone(next);
+    persistOverrides();
+  }
+
+  // Keyboard shortcuts: Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z
+  $effect(() => {
+    function handleKeydown(e: KeyboardEvent) {
+      if (!e.ctrlKey && !e.metaKey) return;
+      if (e.key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if (e.key === "y" || (e.key === "z" && e.shiftKey)) {
+        e.preventDefault();
+        redo();
+      }
+    }
+    window.addEventListener("keydown", handleKeydown);
+    return () => window.removeEventListener("keydown", handleKeydown);
+  });
 
   /** Persist overrides to settings (auto-saves to localStorage + Firebase) */
   function persistOverrides() {
@@ -57,6 +105,7 @@
     field: keyof PropTransform,
     value: number
   ) {
+    pushUndo();
     ensureOverride(propType);
     (overrides[propType]![color] as PropTransform)[field] = value;
     overrides = { ...overrides };
@@ -64,6 +113,7 @@
   }
 
   function updatePairScale(propType: PropType, value: number) {
+    pushUndo();
     ensureOverride(propType);
     overrides[propType]!.pairScale = value;
     overrides = { ...overrides };
@@ -72,6 +122,7 @@
 
   /** Rotate both props as a group by adding degrees to both rotations */
   function rotateGroup(propType: PropType, degrees: number) {
+    pushUndo();
     ensureOverride(propType);
     const recipe = overrides[propType]!;
     recipe.blue.rotation = ((recipe.blue.rotation + degrees + 180) % 360) - 180;
@@ -81,6 +132,7 @@
   }
 
   function resetFamily(propType: PropType) {
+    pushUndo();
     delete overrides[propType];
     overrides = { ...overrides };
     persistOverrides();
@@ -110,9 +162,27 @@
   <header class="lab-header">
     <h1>Prop Button Lab</h1>
     <p class="subtitle">Tune paired prop compositions for buttons and drawers</p>
-    <button class="copy-all-btn" onclick={copyAllRecipes}>
-      <i class="fas fa-copy"></i> Copy All
-    </button>
+    <div class="header-buttons">
+      <button
+        class="header-btn"
+        onclick={undo}
+        disabled={!canUndo}
+        title="Undo (Ctrl+Z)"
+      >
+        <i class="fas fa-undo"></i>
+      </button>
+      <button
+        class="header-btn"
+        onclick={redo}
+        disabled={!canRedo}
+        title="Redo (Ctrl+Y)"
+      >
+        <i class="fas fa-redo"></i>
+      </button>
+      <button class="copy-all-btn" onclick={copyAllRecipes}>
+        <i class="fas fa-copy"></i> Copy All
+      </button>
+    </div>
   </header>
 
   <div class="families-grid">
@@ -280,6 +350,48 @@
     font-size: var(--font-size-min, 14px);
     margin: 0;
     flex: 1;
+  }
+
+  .header-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .header-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--min-touch-target, 48px);
+    height: var(--min-touch-target, 48px);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
+    color: var(--theme-text, white);
+    font-size: 16px;
+    cursor: pointer;
+    transition: all var(--duration-fast, 150ms) ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .header-btn:hover:not(:disabled) {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    transform: translateY(-1px);
+  }
+
+  .header-btn:active:not(:disabled) {
+    transform: translateY(0) scale(0.95);
+  }
+
+  .header-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .header-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #f97316);
+    outline-offset: 2px;
   }
 
   .copy-all-btn {
@@ -705,14 +817,16 @@
     .family-card,
     .rot-btn,
     .action-btn,
-    .copy-all-btn {
+    .copy-all-btn,
+    .header-btn {
       transition: none;
     }
 
     .family-card:hover,
     .rot-btn:hover,
     .action-btn:hover,
-    .copy-all-btn:hover {
+    .copy-all-btn:hover,
+    .header-btn:hover {
       transform: none;
     }
 
