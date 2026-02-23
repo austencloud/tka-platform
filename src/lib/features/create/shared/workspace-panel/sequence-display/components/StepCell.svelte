@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { StepData } from "../../../domain/models/StepData";
   import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
@@ -29,6 +30,9 @@
     // Animation epoch - increments when a new sequence animation starts
     // Used to reset hasAnimated even when step.id stays the same
     animationEpoch = 0,
+    // Prop type overrides for demo/preview rendering (bypasses global settings)
+    bluePropTypeOverride = undefined,
+    redPropTypeOverride = undefined,
   } = $props<{
     step: StepData;
     index?: number;
@@ -50,6 +54,10 @@
     widthMultiplier?: number;
     // Animation epoch - increments when a new sequence animation starts
     animationEpoch?: number;
+    /** Override prop type for blue hand. Bypasses global settings for demo/preview rendering. */
+    bluePropTypeOverride?: PropType;
+    /** Override prop type for red hand. Bypasses global settings for demo/preview rendering. */
+    redPropTypeOverride?: PropType;
   }>();
 
   // Services
@@ -312,6 +320,8 @@
     {musicalPosition}
     {widthMultiplier}
     cellIndex={index}
+    {bluePropTypeOverride}
+    {redPropTypeOverride}
   />
 </div>
 

@@ -6,6 +6,7 @@
   import type { GridLayout } from "../utils/grid-calculations";
   import type { StepGridDisplayState } from "../state/step-grid-display-state.svelte";
   import type { ScrollState } from "../state/scroll-state.svelte";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { calculateBeatPosition } from "../utils/grid-calculations";
   import StepCell from "./StepCell.svelte";
   import StartTile from "./StartTile.svelte";
@@ -29,6 +30,8 @@
     onStepLongPress,
     getBeatKey,
     getDurationDisplay,
+    bluePropTypeOverride = undefined,
+    redPropTypeOverride = undefined,
     scrollContainerRef = $bindable(),
   } = $props<{
     steps: ReadonlyArray<StepData> | StepData[];
@@ -49,6 +52,8 @@
     onStepLongPress?: (stepNumber: number) => void;
     getBeatKey: (beat: StepData, index: number) => string;
     getDurationDisplay: (stepIndex: number) => string;
+    bluePropTypeOverride?: PropType;
+    redPropTypeOverride?: PropType;
     scrollContainerRef?: HTMLElement;
   }>();
 </script>
@@ -114,6 +119,8 @@
           highlightStyle={highlightedSteps?.get(step.stepNumber) ?? null}
           {musicalPosition}
           animationEpoch={displayState.animationEpoch}
+          {bluePropTypeOverride}
+          {redPropTypeOverride}
         />
       </div>
     {/each}

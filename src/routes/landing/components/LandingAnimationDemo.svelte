@@ -24,7 +24,7 @@
     TrackingMode,
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
+  import LayeredSequencePreview from "$lib/shared/sequence-viewer/components/LayeredSequencePreview.svelte";
   import DemoControlBar from "./DemoControlBar.svelte";
   import { RANDOM_PROPS } from "../landing-content";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
@@ -99,6 +99,9 @@
 
   // Dark mode - default ON for landing page visual impact
   let darkMode = $state(true);
+  let fireEnabled = $state(false);
+  let ledEnabled = $state(false);
+  let trailsEnabled = $state(true); // Trails on by default
   const visibilityManager = getAnimationVisibilityManager();
 
   // Derived start position - uses service to derive from first beat if not stored
@@ -495,6 +498,31 @@
     darkMode = !darkMode;
     visibilityManager.setDarkMode(darkMode);
   }
+
+  function handleToggleFire() {
+    fireEnabled = !fireEnabled;
+    if (fireEnabled) {
+      // Mutually exclusive: turn off LED
+      ledEnabled = false;
+      visibilityManager.setLedEffect(false);
+    }
+    visibilityManager.setFireEffect(fireEnabled);
+  }
+
+  function handleToggleLed() {
+    ledEnabled = !ledEnabled;
+    if (ledEnabled) {
+      // Mutually exclusive: turn off fire
+      fireEnabled = false;
+      visibilityManager.setFireEffect(false);
+    }
+    visibilityManager.setLedEffect(ledEnabled);
+  }
+
+  function handleToggleTrails() {
+    trailsEnabled = !trailsEnabled;
+    visibilityManager.setTrailStyle(trailsEnabled ? "on" : "off");
+  }
 </script>
 
 <div class="demo-container" bind:this={containerRef}>
@@ -523,10 +551,13 @@
                   letter={currentLetter}
                   stepData={currentStepData}
                   sequenceData={animationState.sequenceData}
+                  currentStep={animationState.currentStep}
                   isPlaying={animationState.isPlaying}
                   trailSettings={animationSettings.trail}
                   bluePropType={currentPropType}
                   redPropType={currentPropType}
+                  word={animationState.sequenceData?.intendedWord ?? animationState.sequenceData?.word ?? null}
+                  previewDarkMode={darkMode}
                 />
               </div>
             {:else if animationError}
@@ -544,10 +575,19 @@
 
           {#if animationState.sequenceData}
             <div class="beat-grid-panel">
-              <StepGrid
-                steps={animationState.sequenceData.steps}
-                startPosition={derivedStartPosition}
-                selectedStepNumber={currentStepNumber}
+              <LayeredSequencePreview
+                sequence={animationState.sequenceData}
+                {darkMode}
+                bluePropType={currentPropType}
+                redPropType={currentPropType}
+                columnCount={4}
+                highlightedStepIndex={currentStepNumber > 0 ? currentStepNumber - 1 : null}
+                showHighlight={animationState.isPlaying}
+                showDifficultyLevel={false}
+                showCreatorName={false}
+                showNotes={false}
+                showBirthday={false}
+                showLoopGlyph={false}
               />
             </div>
           {/if}
@@ -561,7 +601,13 @@
       {servicesReady}
       {isLoading}
       {darkMode}
+      {fireEnabled}
+      {ledEnabled}
+      {trailsEnabled}
       onToggleDarkMode={handleToggleDarkMode}
+      onToggleFire={handleToggleFire}
+      onToggleLed={handleToggleLed}
+      onToggleTrails={handleToggleTrails}
       onChangeProp={handleChangeProp}
       onRandomize={handleRandomize}
     />
@@ -612,8 +658,6 @@
   .canvas-wrapper {
     width: clamp(420px, 57cqw, 600px);
     height: clamp(420px, 57cqw, 600px);
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 20px;
     overflow: hidden;
     box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
@@ -621,13 +665,10 @@
 
   .beat-grid-panel {
     flex: 0 0 auto;
-    width: clamp(420px, 60cqw, 700px);
+    width: clamp(420px, 57cqw, 600px);
     height: clamp(420px, 57cqw, 600px);
-    background: transparent;
-    border: 2px solid var(--border-strong, rgba(255, 255, 255, 0.2));
     border-radius: 16px;
-    overflow: visible;
-    padding: 0;
+    overflow: hidden;
   }
 
   .animation-loading,

@@ -6,6 +6,7 @@
   import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
   import type { StartPositionData } from "../../../domain/models/StartPositionData";
   import type { TimeSignatureKey } from "$lib/shared/foundation/domain/models/TimeSignature";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { createStepData } from "../../../domain/factories/createStepData";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
@@ -55,6 +56,8 @@
     onStartLongPress,
     onDurationChange,
     timeSignature = undefined,
+    bluePropTypeOverride = undefined,
+    redPropTypeOverride = undefined,
   } = $props<{
     steps: ReadonlyArray<StepData> | StepData[];
     startPosition?: StartPositionData | StepData | null;
@@ -80,6 +83,10 @@
     onStartLongPress?: () => void;
     onDurationChange?: (stepNumber: number, newDuration: number) => void;
     timeSignature?: TimeSignatureKey;
+    /** Override prop type for blue hand. Used by demos/previews to bypass global settings. */
+    bluePropTypeOverride?: PropType;
+    /** Override prop type for red hand. Used by demos/previews to bypass global settings. */
+    redPropTypeOverride?: PropType;
   }>();
 
   // State management
@@ -433,6 +440,8 @@
       {onStepLongPress}
       {getBeatKey}
       {getDurationDisplay}
+      {bluePropTypeOverride}
+      {redPropTypeOverride}
       bind:scrollContainerRef
     />
   {/if}

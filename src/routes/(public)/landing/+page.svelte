@@ -9,6 +9,7 @@
   import WhatIsTKASection from "../../landing/components/WhatIsTKASection.svelte";
   import LandingFooter from "../../landing/components/LandingFooter.svelte";
   import LandingBackgroundPicker from "../../landing/components/LandingBackgroundPicker.svelte";
+  import { prefetchTreeImages } from "$lib/shared/background/shared/prefetch-tree-images";
 
   const STORAGE_KEY = "tka-landing-theme";
   const DEFAULT_BACKGROUND = BackgroundType.NIGHT_SKY;
@@ -26,12 +27,21 @@
     // Apply theme immediately
     applyThemeForBackground(currentBackground);
     mounted = true;
+
+    // If user's saved background is Firefly Forest, prefetch tree images now
+    if (currentBackground === BackgroundType.FIREFLY_FOREST) {
+      prefetchTreeImages();
+    }
   });
 
   function handleBackgroundChange(type: BackgroundType) {
     currentBackground = type;
     applyThemeForBackground(type);
     localStorage.setItem(STORAGE_KEY, type);
+
+    // Start prefetching tree images when user begins exploring backgrounds.
+    // By the time they cycle to Firefly Forest, images will be in browser cache.
+    prefetchTreeImages();
   }
 </script>
 
