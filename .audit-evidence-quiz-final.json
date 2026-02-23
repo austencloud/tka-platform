@@ -2,14 +2,14 @@
   "meta": {
     "scope": "features/learn/quiz",
     "scopePath": "src/lib/features/learn/quiz",
-    "collectedAt": "2026-02-23T17:32:20.168Z",
+    "collectedAt": "2026-02-23T16:11:32.247Z",
     "fileCount": {
       "total": 51,
       "svelte": 39,
       "ts": 12,
       "css": 0
     },
-    "durationMs": 467
+    "durationMs": 402
   },
   "dimensions": {
     "architecture": {
@@ -63,22 +63,22 @@
       "smallFontSize": [
         {
           "file": "features/learn/quiz/components/AchievementUnlockOverlay.svelte",
-          "line": 233,
+          "line": 229,
           "preview": "font-size: 0.75rem;"
         },
         {
           "file": "features/learn/quiz/components/AchievementUnlockOverlay.svelte",
-          "line": 249,
+          "line": 245,
           "preview": "font-size: 0.9rem;"
         },
         {
           "file": "features/learn/quiz/components/AchievementUnlockOverlay.svelte",
-          "line": 259,
+          "line": 255,
           "preview": "font-size: 0.75rem;"
         },
         {
           "file": "features/learn/quiz/components/AnswerPictograph.svelte",
-          "line": 288,
+          "line": 289,
           "preview": "font-size: 0.875rem;"
         },
         {
@@ -108,7 +108,7 @@
         },
         {
           "file": "features/learn/quiz/components/PerfectQuizCelebration.svelte",
-          "line": 269,
+          "line": 265,
           "preview": "font-size: 0.875rem;"
         },
         {
@@ -143,12 +143,12 @@
         },
         {
           "file": "features/learn/quiz/components/QuizProgressTracker.svelte",
-          "line": 377,
+          "line": 378,
           "preview": "font-size: 0.875rem;"
         },
         {
           "file": "features/learn/quiz/components/QuizProgressTracker.svelte",
-          "line": 411,
+          "line": 412,
           "preview": "font-size: 0.75rem;"
         },
         {
@@ -175,6 +175,11 @@
           "file": "features/learn/quiz/components/QuizTimer.svelte",
           "line": 259,
           "preview": "font-size: 0.75rem;"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/MisconceptionHint.svelte",
+          "line": 61,
+          "preview": "font-size: 0.6875rem;"
         },
         {
           "file": "features/learn/quiz/components/shared/QuizErrorState.svelte",
@@ -231,11 +236,6 @@
           "preview": "<button"
         },
         {
-          "file": "features/learn/quiz/components/QuizMisconceptionSummary.svelte",
-          "line": 68,
-          "preview": "<button"
-        },
-        {
           "file": "features/learn/quiz/components/QuizModeToggle.svelte",
           "line": 54,
           "preview": "<button"
@@ -248,11 +248,6 @@
         {
           "file": "features/learn/quiz/components/QuizTab.svelte",
           "line": 291,
-          "preview": "<button"
-        },
-        {
-          "file": "features/learn/quiz/components/shared/MisconceptionHint.svelte",
-          "line": 38,
           "preview": "<button"
         },
         {
@@ -310,12 +305,12 @@
         },
         {
           "file": "features/learn/quiz/components/StreakDisplay.svelte",
-          "line": 43,
+          "line": 42,
           "preview": "console.error('[StreakDisplay] Failed to load streak:', error);"
         },
         {
           "file": "features/learn/quiz/components/StreakDisplay.svelte",
-          "line": 77,
+          "line": 75,
           "preview": "console.error('[StreakDisplay] Failed to record activity:', error);"
         },
         {
@@ -350,8 +345,30 @@
         "count": 0,
         "files": []
       },
-      "hardcodedColors": [],
-      "blurOnContent": [],
+      "hardcodedColors": [
+        {
+          "file": "features/learn/quiz/components/QuizMisconceptionSummary.svelte",
+          "line": 97,
+          "preview": "background: rgba(255, 255, 255, 0.03);"
+        },
+        {
+          "file": "features/learn/quiz/components/shared/MisconceptionHint.svelte",
+          "line": 59,
+          "preview": "background: rgba(255, 255, 255, 0.2);"
+        }
+      ],
+      "blurOnContent": [
+        {
+          "file": "features/learn/quiz/components/AnswerPictograph.svelte",
+          "line": 114,
+          "preview": "backdrop-filter: blur(10px);"
+        },
+        {
+          "file": "features/learn/quiz/components/QuizProgressTracker.svelte",
+          "line": 286,
+          "preview": "backdrop-filter: blur(10px);"
+        }
+      ],
       "legacyVars": []
     },
     "performance": {
@@ -384,7 +401,7 @@
         },
         {
           "file": "features/learn/quiz/components/AchievementUnlockOverlay.svelte",
-          "line": 90,
+          "line": 86,
           "preview": "dismissAnimTimer = setTimeout(() => {"
         },
         {
@@ -414,7 +431,7 @@
         },
         {
           "file": "features/learn/quiz/components/PerfectQuizCelebration.svelte",
-          "line": 67,
+          "line": 63,
           "preview": "dismissAnimTimer = setTimeout(() => {"
         },
         {
@@ -454,8 +471,8 @@
         },
         {
           "file": "features/learn/quiz/components/StreakDisplay.svelte",
-          "line": 63,
-          "preview": "pulseTimer = setTimeout(() => {"
+          "line": 62,
+          "preview": "setTimeout(() => {"
         },
         {
           "file": "features/learn/quiz/components/ValidNextPictographQuiz.svelte",
@@ -499,10 +516,10 @@
     },
     "accessibility": {
       "reducedMotion": 0,
-      "smallFontSize": 31,
+      "smallFontSize": 32,
       "htmlDirective": 0,
       "clickWithoutRole": 0,
-      "missingAriaLabel": 9
+      "missingAriaLabel": 7
     },
     "uxStates": {
       "hasLoadingState": true,
@@ -513,8 +530,8 @@
     },
     "uiConsistency": {
       "hardcodedDurations": 0,
-      "hardcodedColors": 0,
-      "blurOnContent": 0,
+      "hardcodedColors": 2,
+      "blurOnContent": 2,
       "legacyVars": 0
     },
     "performance": {

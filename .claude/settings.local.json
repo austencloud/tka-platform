@@ -597,7 +597,8 @@
       "Bash(# Check if PostHog was ever in the landing app source files git -C /f/tka-platform log --all -S \"\"posthog\"\" --oneline -- \"\"apps/landing/\"\")",
       "Bash(# Check the scribe app \\(repo root now\\) for PostHog analytics grep -r \"\"posthog\\\\|PostHog\"\" /f/tka-platform/src/ --include=\"\"*.ts\"\" --include=\"\"*.svelte\"\" -l)",
       "Bash(# Check if there''s a .env.example or any env template find /f/tka-platform/apps/landing -name \"\".env*\"\" -maxdepth 2 ls /f/tka-platform/apps/landing/.svelte-kit/generated/)",
-      "Bash(# Check if apps/landing source still exists \\(or was flattened away\\) ls /f/tka-platform/apps/landing/src/)"
+      "Bash(# Check if apps/landing source still exists \\(or was flattened away\\) ls /f/tka-platform/apps/landing/src/)",
+      "Bash(echo EXIT: $?:*)"
     ]
   },
   "enableAllProjectMcpServers": false,

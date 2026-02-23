@@ -2,14 +2,14 @@
   "meta": {
     "scope": "features/learn/components",
     "scopePath": "src/lib/features/learn/components",
-    "collectedAt": "2026-02-23T17:40:41.925Z",
+    "collectedAt": "2026-02-23T07:30:09.230Z",
     "fileCount": {
       "total": 147,
       "svelte": 139,
       "ts": 8,
       "css": 0
     },
-    "durationMs": 662
+    "durationMs": 866
   },
   "dimensions": {
     "architecture": {
@@ -133,12 +133,12 @@
         },
         {
           "file": "features/learn/components/interactive/GridComparison.svelte",
-          "line": 196,
+          "line": 176,
           "preview": "font-size: 0.9375rem;"
         },
         {
           "file": "features/learn/components/interactive/GridComparison.svelte",
-          "line": 264,
+          "line": 244,
           "preview": "font-size: 0.9375rem;"
         },
         {
@@ -148,7 +148,7 @@
         },
         {
           "file": "features/learn/components/interactive/GridPointTapQuiz.svelte",
-          "line": 292,
+          "line": 265,
           "preview": "font-size: 0.875rem;"
         },
         {
@@ -183,22 +183,22 @@
         },
         {
           "file": "features/learn/components/interactive/letters/type1/pages/Type1LetterLessonPage.svelte",
-          "line": 302,
+          "line": 282,
           "preview": "font-size: 0.75rem;"
         },
         {
           "file": "features/learn/components/interactive/letters/type1/pages/Type1LetterLessonPage.svelte",
-          "line": 392,
+          "line": 372,
           "preview": "font-size: 0.875rem;"
         },
         {
           "file": "features/learn/components/interactive/letters/type1/pages/Type1LetterLessonPage.svelte",
-          "line": 506,
+          "line": 486,
           "preview": "font-size: 0.75rem;"
         },
         {
           "file": "features/learn/components/interactive/letters/type1/pages/Type1LetterLessonPage.svelte",
-          "line": 513,
+          "line": 493,
           "preview": "font-size: 0.875rem;"
         },
         {
@@ -303,7 +303,7 @@
         },
         {
           "file": "features/learn/components/interactive/motions/motions-experience/FundamentalMotionCard.svelte",
-          "line": 116,
+          "line": 97,
           "preview": "font-size: 0.8125rem;"
         },
         {
@@ -508,12 +508,12 @@
         },
         {
           "file": "features/learn/components/interactive/vtg/vtg-experience/VTGComponentCard.svelte",
-          "line": 111,
+          "line": 92,
           "preview": "font-size: 0.9375rem;"
         },
         {
           "file": "features/learn/components/interactive/vtg/vtg-experience/VTGComponentCard.svelte",
-          "line": 117,
+          "line": 98,
           "preview": "font-size: 0.75rem;"
         },
         {
@@ -697,7 +697,43 @@
           "preview": "font-size: 0.8125rem;"
         }
       ],
-      "htmlDirective": [],
+      "htmlDirective": [
+        {
+          "file": "features/learn/components/interactive/GridPointTapQuiz.svelte",
+          "line": 195,
+          "preview": "{@html currentQuestion?.prompt ?? \"\"}"
+        },
+        {
+          "file": "features/learn/components/interactive/letters/type1/pages/Type1LetterLessonPage.svelte",
+          "line": 46,
+          "preview": "{@html config.motionSummary}"
+        },
+        {
+          "file": "features/learn/components/interactive/letters/type1/pages/Type1LetterLessonPage.svelte",
+          "line": 55,
+          "preview": "<li>{@html point}</li>"
+        },
+        {
+          "file": "features/learn/components/interactive/motions/motions-experience/FundamentalMotionCard.svelte",
+          "line": 23,
+          "preview": "<p>{@html description}</p>"
+        },
+        {
+          "file": "features/learn/components/interactive/positions/positions-experience/PositionExplanation.svelte",
+          "line": 18,
+          "preview": "{@html info.description.replace("
+        },
+        {
+          "file": "features/learn/components/interactive/positions/positions-experience/PositionIntroCard.svelte",
+          "line": 21,
+          "preview": "{@html info.summary.replace("
+        },
+        {
+          "file": "features/learn/components/interactive/vtg/vtg-experience/VTGComponentCard.svelte",
+          "line": 29,
+          "preview": "<p>{@html options}</p>"
+        }
+      ],
       "clickWithoutRole": [],
       "missingAriaLabel": [
         {
@@ -752,12 +788,12 @@
         },
         {
           "file": "features/learn/components/interactive/GridComparison.svelte",
-          "line": 86,
+          "line": 66,
           "preview": "<button"
         },
         {
           "file": "features/learn/components/interactive/GridComparison.svelte",
-          "line": 118,
+          "line": 98,
           "preview": "<button class=\"split-button\" onclick={handleSplit}>"
         },
         {
@@ -767,27 +803,27 @@
         },
         {
           "file": "features/learn/components/interactive/letters/type1/pages/Type1LetterLessonPage.svelte",
-          "line": 85,
+          "line": 66,
           "preview": "<button"
         },
         {
           "file": "features/learn/components/interactive/letters/type1/pages/Type1LetterLessonPage.svelte",
-          "line": 96,
+          "line": 77,
           "preview": "<button"
         },
         {
           "file": "features/learn/components/interactive/letters/type1/pages/Type1LetterLessonPage.svelte",
-          "line": 111,
+          "line": 92,
           "preview": "<button"
         },
         {
           "file": "features/learn/components/interactive/letters/type1/pages/Type1LetterLessonPage.svelte",
-          "line": 153,
+          "line": 133,
           "preview": "<button class=\"prev-button\" onclick={onPrevious}>"
         },
         {
           "file": "features/learn/components/interactive/letters/type1/pages/Type1LetterLessonPage.svelte",
-          "line": 157,
+          "line": 137,
           "preview": "<button class=\"next-button\" onclick={onNext}>"
         },
         {
@@ -829,6 +865,11 @@
           "file": "features/learn/components/interactive/motions/motions-experience/MotionsIntroPage.svelte",
           "line": 45,
           "preview": "<button class=\"next-button\" onclick={onNext}>"
+        },
+        {
+          "file": "features/learn/components/interactive/motions/motions-experience/MotionTypePage.svelte",
+          "line": 52,
+          "preview": "<button class=\"cycle-button\" onclick={onCycleExample}>"
         },
         {
           "file": "features/learn/components/interactive/motions/motions-experience/MotionTypePage.svelte",
@@ -941,6 +982,11 @@
           "preview": "<button class=\"finish-button\" onclick={onFinish}>"
         },
         {
+          "file": "features/learn/components/interactive/vtg/VTGVisualizer.svelte",
+          "line": 333,
+          "preview": "<button class=\"play-button\" onclick={playAnimation} disabled={animating}>"
+        },
+        {
           "file": "features/learn/components/interactive/words/components/WordsLessonNav.svelte",
           "line": 17,
           "preview": "<button class=\"back-btn\" onclick={onBack}>"
@@ -987,17 +1033,22 @@
         },
         {
           "file": "features/learn/components/TikaAssistant.svelte",
-          "line": 224,
+          "line": 217,
           "preview": "<button"
         },
         {
           "file": "features/learn/components/TikaAssistant.svelte",
-          "line": 247,
+          "line": 240,
           "preview": "<button"
         },
         {
           "file": "features/learn/components/TikaAssistant.svelte",
-          "line": 281,
+          "line": 274,
+          "preview": "<button"
+        },
+        {
+          "file": "features/learn/components/TikaAssistant.svelte",
+          "line": 328,
           "preview": "<button"
         },
         {
@@ -1008,11 +1059,6 @@
         {
           "file": "features/learn/components/TikaAssistant.svelte",
           "line": 342,
-          "preview": "<button"
-        },
-        {
-          "file": "features/learn/components/TikaAssistant.svelte",
-          "line": 349,
           "preview": "<button"
         }
       ]
@@ -1025,7 +1071,7 @@
       "consoleErrorOnly": [
         {
           "file": "features/learn/components/interactive/letters/type1/Type1LetterQuiz.svelte",
-          "line": 66,
+          "line": 60,
           "preview": "console.error(\"Failed to load pictograph:\", e);"
         },
         {
@@ -1035,7 +1081,7 @@
         },
         {
           "file": "features/learn/components/TikaAssistant.svelte",
-          "line": 218,
+          "line": 211,
           "preview": "console.error('Failed to copy:', err)"
         }
       ]
@@ -1045,11 +1091,22 @@
         "count": 0,
         "files": []
       },
-      "hardcodedColors": [],
+      "hardcodedColors": [
+        {
+          "file": "features/learn/components/interactive/GridPointHighlight.svelte",
+          "line": 125,
+          "preview": "fill: #ffffff;"
+        },
+        {
+          "file": "features/learn/components/interactive/LessonGridDisplay.svelte",
+          "line": 124,
+          "preview": "fill: #ffffff;"
+        }
+      ],
       "blurOnContent": [
         {
           "file": "features/learn/components/interactive/GridComparison.svelte",
-          "line": 178,
+          "line": 158,
           "preview": "filter: blur(4px);"
         }
       ],
@@ -1075,28 +1132,28 @@
         },
         {
           "file": "features/learn/components/interactive/GridComparison.svelte",
-          "line": 31,
-          "preview": "mergeTimer = setTimeout(() => {"
+          "line": 17,
+          "preview": "await new Promise((resolve) => setTimeout(resolve, 600));"
         },
         {
           "file": "features/learn/components/interactive/GridIdentificationQuiz.svelte",
-          "line": 78,
-          "preview": "answerTimer = setTimeout(() => {"
+          "line": 71,
+          "preview": "setTimeout(() => {"
         },
         {
           "file": "features/learn/components/interactive/GridIdentificationQuiz.svelte",
-          "line": 108,
-          "preview": "answerTimer = setTimeout(() => {"
+          "line": 100,
+          "preview": "setTimeout(() => {"
         },
         {
           "file": "features/learn/components/interactive/GridPointTapQuiz.svelte",
-          "line": 184,
-          "preview": "feedbackTimer = setTimeout("
+          "line": 158,
+          "preview": "setTimeout("
         },
         {
           "file": "features/learn/components/interactive/letters/type1/Type1LetterQuiz.svelte",
-          "line": 107,
-          "preview": "answerTimer = setTimeout(() => {"
+          "line": 101,
+          "preview": "setTimeout(() => {"
         },
         {
           "file": "features/learn/components/interactive/motions/MotionVisualizer.svelte",
@@ -1105,13 +1162,13 @@
         },
         {
           "file": "features/learn/components/interactive/positions/PositionIdentificationQuiz.svelte",
-          "line": 63,
-          "preview": "answerTimer = setTimeout(() => {"
+          "line": 56,
+          "preview": "setTimeout(() => {"
         },
         {
           "file": "features/learn/components/interactive/staff/StaffIdentificationQuiz.svelte",
-          "line": 57,
-          "preview": "answerTimer = setTimeout(() => {"
+          "line": 50,
+          "preview": "setTimeout(() => {"
         },
         {
           "file": "features/learn/components/interactive/vtg/VTGVisualizer.svelte",
@@ -1120,8 +1177,8 @@
         },
         {
           "file": "features/learn/components/interactive/words/WordBuildingQuiz.svelte",
-          "line": 60,
-          "preview": "answerTimer = setTimeout(() => {"
+          "line": 53,
+          "preview": "setTimeout(() => {"
         },
         {
           "file": "features/learn/components/interactive/words/WordVisualizer.svelte",
@@ -1130,13 +1187,49 @@
         },
         {
           "file": "features/learn/components/TikaAssistant.svelte",
-          "line": 216,
-          "preview": "copyTimer = setTimeout(() => { copyTimer = null; copySuccess = false }, 2000)"
+          "line": 209,
+          "preview": "setTimeout(() => copySuccess = false, 2000)"
         }
       ]
     },
     "security": {
-      "htmlDirective": [],
+      "htmlDirective": [
+        {
+          "file": "features/learn/components/interactive/GridPointTapQuiz.svelte",
+          "line": 195,
+          "preview": "<div class=\"prompt\"> | {@html currentQuestion?.prompt ?? \"\"} | </div>"
+        },
+        {
+          "file": "features/learn/components/interactive/letters/type1/pages/Type1LetterLessonPage.svelte",
+          "line": 46,
+          "preview": "<p class=\"motion-summary\"> | {@html config.motionSummary} | </p>"
+        },
+        {
+          "file": "features/learn/components/interactive/letters/type1/pages/Type1LetterLessonPage.svelte",
+          "line": 55,
+          "preview": "{#each config.explanation.points as point} | <li>{@html point}</li> | {/each}"
+        },
+        {
+          "file": "features/learn/components/interactive/motions/motions-experience/FundamentalMotionCard.svelte",
+          "line": 23,
+          "preview": "<h4>{title}</h4> | <p>{@html description}</p> | </div>"
+        },
+        {
+          "file": "features/learn/components/interactive/positions/positions-experience/PositionExplanation.svelte",
+          "line": 18,
+          "preview": "<li> | {@html info.description.replace( | /(straight line|identical position|perpendicular)/gi,"
+        },
+        {
+          "file": "features/learn/components/interactive/positions/positions-experience/PositionIntroCard.svelte",
+          "line": 21,
+          "preview": "<p class=\"position-summary\"> | {@html info.summary.replace( | /(opposite|same|right angles)/gi,"
+        },
+        {
+          "file": "features/learn/components/interactive/vtg/vtg-experience/VTGComponentCard.svelte",
+          "line": 29,
+          "preview": "<h4>{title}</h4> | <p>{@html options}</p> | <small>{subtitle}</small>"
+        }
+      ],
       "evalUsage": [],
       "hardcodedSecrets": [],
       "innerHTML": []
@@ -1166,9 +1259,9 @@
     "accessibility": {
       "reducedMotion": 0,
       "smallFontSize": 131,
-      "htmlDirective": 0,
+      "htmlDirective": 7,
       "clickWithoutRole": 0,
-      "missingAriaLabel": 63
+      "missingAriaLabel": 65
     },
     "uxStates": {
       "hasLoadingState": true,
@@ -1179,7 +1272,7 @@
     },
     "uiConsistency": {
       "hardcodedDurations": 0,
-      "hardcodedColors": 0,
+      "hardcodedColors": 2,
       "blurOnContent": 1,
       "legacyVars": 0
     },
@@ -1190,7 +1283,7 @@
       "timerWithoutCleanup": 14
     },
     "security": {
-      "htmlDirective": 0,
+      "htmlDirective": 7,
       "evalUsage": 0,
       "hardcodedSecrets": 0,
       "innerHTML": 0

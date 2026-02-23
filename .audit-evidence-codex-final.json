@@ -2,14 +2,14 @@
   "meta": {
     "scope": "features/learn/codex",
     "scopePath": "src/lib/features/learn/codex",
-    "collectedAt": "2026-02-23T17:32:15.162Z",
+    "collectedAt": "2026-02-23T16:11:40.783Z",
     "fileCount": {
       "total": 14,
       "svelte": 5,
       "ts": 9,
       "css": 0
     },
-    "durationMs": 414
+    "durationMs": 346
   },
   "dimensions": {
     "architecture": {
@@ -78,8 +78,18 @@
           "preview": "font-size: 0.875rem;"
         },
         {
+          "file": "features/learn/codex/components/CodexControlPanel.svelte",
+          "line": 307,
+          "preview": "font-size: 0.8125rem;"
+        },
+        {
           "file": "features/learn/codex/components/CodexPictographGrid.svelte",
-          "line": 376,
+          "line": 213,
+          "preview": "font-size: 0.8125rem;"
+        },
+        {
+          "file": "features/learn/codex/components/CodexPictographGrid.svelte",
+          "line": 380,
           "preview": "font-size: 0.75rem;"
         },
         {
@@ -103,7 +113,13 @@
           "preview": "font-size: 0.875rem;"
         }
       ],
-      "htmlDirective": [],
+      "htmlDirective": [
+        {
+          "file": "features/learn/codex/components/CodexPictographGrid.svelte",
+          "line": 138,
+          "preview": "{@html getColoredText(section.description)}"
+        }
+      ],
       "clickWithoutRole": [],
       "missingAriaLabel": [
         {
@@ -123,7 +139,7 @@
         },
         {
           "file": "features/learn/codex/components/CodexPictographGrid.svelte",
-          "line": 147,
+          "line": 151,
           "preview": "<button"
         }
       ]
@@ -195,7 +211,13 @@
       "timerWithoutCleanup": []
     },
     "security": {
-      "htmlDirective": [],
+      "htmlDirective": [
+        {
+          "file": "features/learn/codex/components/CodexPictographGrid.svelte",
+          "line": 138,
+          "preview": "<span class=\"section-type\">{section.name}:</span> | {@html getColoredText(section.description)} | </span>"
+        }
+      ],
       "evalUsage": [],
       "hardcodedSecrets": [],
       "innerHTML": []
@@ -224,8 +246,8 @@
     },
     "accessibility": {
       "reducedMotion": 0,
-      "smallFontSize": 9,
-      "htmlDirective": 0,
+      "smallFontSize": 11,
+      "htmlDirective": 1,
       "clickWithoutRole": 0,
       "missingAriaLabel": 4
     },
@@ -249,7 +271,7 @@
       "timerWithoutCleanup": 0
     },
     "security": {
-      "htmlDirective": 0,
+      "htmlDirective": 1,
       "evalUsage": 0,
       "hardcodedSecrets": 0,
       "innerHTML": 0
