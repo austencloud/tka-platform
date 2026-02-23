@@ -62,6 +62,7 @@
   import VideoRecordCoordinator from "./coordinators/VideoRecordCoordinator.svelte";
   import SequenceDrawerHost from "./coordinators/SequenceDrawerHost.svelte";
   import SaveToLibraryPanel from "./SaveToLibraryPanel.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { SessionManager } from "../services/SessionManager.svelte";
   import { Autosaver } from "../services/Autosaver";
   import { SequencePersister } from "../services/SequencePersister";
@@ -122,7 +123,6 @@
   let toolPanelElement: HTMLElement | null = $state(null);
   let toolPanelRef: IToolPanelMethods | null = $state(null);
   let buttonPanelElement: HTMLElement | null = $state(null);
-  let assemblyTabKey = $state(0); // Changes when assembly tab needs to reset
   let effectCleanup: (() => void) | null = null;
   let panelPersistenceCleanup: (() => void) | undefined = undefined;
   let panelHeightTrackerCleanup: (() => void) | null = null;
@@ -178,9 +178,6 @@
     },
     get sequencePersister() {
       return sequencePersister;
-    },
-    get assemblyTabKey() {
-      return assemblyTabKey;
     },
     layout: layoutContext,
     handlers: {
@@ -486,8 +483,6 @@
         })
       );
 
-      // Force assembly tab to remount with fresh state
-      assemblyTabKey++;
     } catch (err) {
       error = err instanceof Error ? err.message : "Failed to clear sequence";
     } finally {
@@ -667,7 +662,7 @@
 {:else}
   <!-- Loading state while async initialization completes -->
   <div class="create-tab create-loading">
-    <div class="loading-spinner"></div>
+    <ProgressRing percent={-1} size={32} strokeWidth={3} />
   </div>
 {/if}
 
@@ -686,25 +681,4 @@
     justify-content: center;
   }
 
-  .loading-spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-top-color: var(--theme-accent, #6366f1);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .loading-spinner {
-      animation: none;
-      opacity: 0.6;
-    }
-  }
 </style>

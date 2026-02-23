@@ -16,6 +16,7 @@
 -->
 <script lang="ts">
 	import { onMount, onDestroy, untrack } from "svelte";
+	import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 	import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 	import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
@@ -232,7 +233,7 @@
 
 <div class="animation-player" class:horizontal={layout === "horizontal"}>
 	{#if loading}
-		<div class="state-msg"><div class="spinner"></div><span>Loading...</span></div>
+		<div class="state-msg"><ProgressRing percent={-1} size={32} strokeWidth={3} /><span>Loading...</span></div>
 	{:else if error}
 		<div class="state-msg error"><span>{error}</span></div>
 	{:else}
@@ -403,21 +404,6 @@
 		color: var(--semantic-error, #fca5a5);
 	}
 
-	.spinner {
-		width: 32px;
-		height: 32px;
-		border: 3px solid var(--theme-stroke);
-		border-top-color: var(--theme-accent, #3b82f6);
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-	}
-
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
-	}
-
 	@media (min-width: 1200px) {
 		.animation-player {
 			gap: 8px;
@@ -425,9 +411,4 @@
 		}
 	}
 
-	@media (prefers-reduced-motion: reduce) {
-		.spinner {
-			animation: none;
-		}
-	}
 </style>
