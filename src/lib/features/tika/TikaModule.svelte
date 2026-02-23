@@ -23,6 +23,7 @@
   import type { ConceptProgressTracker } from "$lib/features/learn/services/implementations/ConceptProgressTracker";
   import type { IQuizHistoryRecorder } from "$lib/features/learn/services/contracts/IQuizHistoryRecorder";
   import type { IConceptRecommender } from "$lib/features/learn/services/contracts/IConceptRecommender";
+  import type { IGapDetector } from "$lib/features/learn/services/contracts/IGapDetector";
   import type { MasteryContext } from "$lib/features/learn/domain/quiz-history-types";
   import { TikaSessionRepository } from "./services/implementations/TikaSessionRepository";
   import { ConversationMemoryRetriever } from "./services/implementations/ConversationMemoryRetriever";
@@ -35,6 +36,9 @@
   // Persistence keys
   const STORAGE_KEY = "tika-conversation";
   const MODEL_STORAGE_KEY = "tika_model_preference";
+
+  /** SessionStorage key for pre-seeded questions from other modules */
+  const SEED_MESSAGE_KEY = "tika-seed-message";
 
   // Load persisted messages from sessionStorage
   function loadPersistedMessages(): UIMessage[] {
@@ -110,6 +114,9 @@
   const conceptRecommender: IConceptRecommender | null = browser
     ? container?.items?.conceptRecommender ?? null
     : null;
+  const gapDetector: IGapDetector | null = browser
+    ? container?.items?.gapDetector ?? null
+    : null;
 
   // Interaction tracker for quiz persistence and topic tracking (depends on quizHistoryRecorder)
   const interactionTracker =
@@ -175,6 +182,28 @@
           suggestedNext,
           dueForReview,
         };
+
+        // Load active misconceptions and inject into mastery context
+        if (gapDetector && userId) {
+          gapDetector
+            .getRecurringMisconceptions(userId)
+            .then((patterns) => {
+              if (patterns.length > 0 && masteryContext) {
+                masteryContext = {
+                  ...masteryContext,
+                  activeMisconceptions: patterns.map((p) => ({
+                    nodeA: p.nodeA,
+                    nodeB: p.nodeB,
+                    occurrenceCount: p.occurrenceCount,
+                    explanation: p.explanation,
+                  })),
+                };
+              }
+            })
+            .catch((err) => {
+              console.warn("[TIKA] Failed to load misconceptions:", err);
+            });
+        }
       })
       .catch((error) => {
         console.warn("[TIKA] Failed to load mastery context:", error);
@@ -355,6 +384,20 @@
         color: "#6366f1",
         description: "Balanced intelligence",
       }];
+    }
+
+    // Check for a seeded question from another module (e.g. quiz misconception hint)
+    if (browser) {
+      const seedMessage = sessionStorage.getItem(SEED_MESSAGE_KEY);
+      if (seedMessage) {
+        sessionStorage.removeItem(SEED_MESSAGE_KEY);
+        // Start a fresh conversation with the seeded question
+        await handleNewChat();
+        // Small delay to let the chat initialize after clearing
+        setTimeout(() => {
+          handleSubmit(seedMessage);
+        }, 100);
+      }
     }
   });
 

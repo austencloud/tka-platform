@@ -8,7 +8,7 @@ Letter to Pictograph Quiz - Shows a letter, asks user to identify the correct pi
   import { onDestroy, onMount } from "svelte";
   import { QuestionGenerator } from "../services/implementations/QuestionGenerator";
   import { QuizType } from "../domain/enums/quiz-enums";
-  import type { QuizQuestionData } from "../domain/models/quiz-models";
+  import type { QuizQuestionData, QuizAnswerEvent } from "../domain/models/quiz-models";
   import QuizContainer from "./shared/QuizContainer.svelte";
   import QuizLoadingState from "./shared/QuizLoadingState.svelte";
   import QuizErrorState from "./shared/QuizErrorState.svelte";
@@ -16,14 +16,17 @@ Letter to Pictograph Quiz - Shows a letter, asks user to identify the correct pi
   import QuizGlyphCard from "./shared/QuizGlyphCard.svelte";
   import QuizPictographButton from "./shared/QuizPictographButton.svelte";
   import QuizFeedbackBanner from "./shared/QuizFeedbackBanner.svelte";
+  import MisconceptionHint from "./shared/MisconceptionHint.svelte";
+  import type { IGapDetector, DetectedGap } from "../../services/contracts/IGapDetector";
 
   let { onAnswerSubmit, onNextQuestion, onBack } = $props<{
-    onAnswerSubmit?: (isCorrect: boolean) => void;
+    onAnswerSubmit?: (event: QuizAnswerEvent) => void;
     onNextQuestion?: () => void;
     onBack?: () => void;
   }>();
 
   let hapticService: IHapticFeedback;
+  let gapDetector: IGapDetector;
 
   let hapticTimer: ReturnType<typeof setTimeout> | null = null;
   let nextQuestionTimer: ReturnType<typeof setTimeout> | null = null;
@@ -39,6 +42,7 @@ Letter to Pictograph Quiz - Shows a letter, asks user to identify the correct pi
   let showFeedback = $state(false);
   let isLoading = $state(true);
   let error = $state<string | null>(null);
+  let currentGap = $state<DetectedGap | null>(null);
 
   let questionLetter = $derived(questionData?.questionContent as string);
 
@@ -54,6 +58,7 @@ Letter to Pictograph Quiz - Shows a letter, asks user to identify the correct pi
 
   onMount(async () => {
     hapticService = container.items.hapticFeedback;
+    gapDetector = container.items.gapDetector as IGapDetector;
     await loadQuestion();
   });
 
@@ -79,18 +84,51 @@ Letter to Pictograph Quiz - Shows a letter, asks user to identify the correct pi
     isAnswered = true;
     showFeedback = true;
 
+    // Detect misconception gap on wrong answers
+    currentGap = null;
+    if (!isCorrect && questionData && gapDetector) {
+      const selectedOption = questionData.answerOptions.find((o) => o.id === optionId);
+      const correctOption = questionData.answerOptions.find((o) => o.isCorrect);
+      const gap = gapDetector.detectSingleError({
+        isCorrect: false,
+        questionData,
+        selectedOptionId: optionId,
+        selectedContent: selectedOption?.content ?? null,
+        correctContent: correctOption?.content ?? null,
+        quizType: QuizType.LETTER_TO_PICTOGRAPH,
+        answeredAt: new Date(),
+      });
+      if (gap) {
+        currentGap = gap;
+      }
+    }
+
     hapticTimer = setTimeout(() => {
       hapticService?.trigger(isCorrect ? "success" : "error");
     }, 100);
 
-    onAnswerSubmit?.(isCorrect);
-    nextQuestionTimer = setTimeout(handleNextQuestion, 1200);
+    if (questionData) {
+      const selectedOption = questionData.answerOptions.find((o) => o.id === optionId);
+      const correctOption = questionData.answerOptions.find((o) => o.isCorrect);
+      onAnswerSubmit?.({
+        isCorrect,
+        questionData,
+        selectedOptionId: optionId,
+        selectedContent: selectedOption?.content ?? null,
+        correctContent: correctOption?.content ?? null,
+        quizType: QuizType.LETTER_TO_PICTOGRAPH,
+        answeredAt: new Date(),
+      });
+    }
+    const feedbackDuration = currentGap ? 5000 : 1200;
+    nextQuestionTimer = setTimeout(handleNextQuestion, feedbackDuration);
   }
 
   async function handleNextQuestion() {
     selectedAnswerId = null;
     isAnswered = false;
     showFeedback = false;
+    currentGap = null;
     await loadQuestion();
     onNextQuestion?.();
   }
@@ -145,6 +183,9 @@ Letter to Pictograph Quiz - Shows a letter, asks user to identify the correct pi
             correctMessage={`Correct! That's "${questionLetter}"`}
             incorrectMessage="The correct pictograph is highlighted"
           />
+          {#if currentGap}
+            <MisconceptionHint gap={currentGap} />
+          {/if}
         {/if}
       </div>
     </div>

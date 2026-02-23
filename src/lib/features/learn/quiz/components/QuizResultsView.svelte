@@ -11,18 +11,22 @@
   import QuizAchievementsBadges from "./QuizAchievementsBadges.svelte";
   import QuizStatsGrid from "./QuizStatsGrid.svelte";
   import QuizResultsActions from "./QuizResultsActions.svelte";
+  import QuizMisconceptionSummary from "./QuizMisconceptionSummary.svelte";
   import AchievementUnlockOverlay from "./AchievementUnlockOverlay.svelte";
   import PerfectQuizCelebration from "./PerfectQuizCelebration.svelte";
+  import type { DetectedGap } from "../../services/contracts/IGapDetector";
 
   // Props
   let {
     results = null,
+    detectedGaps = [],
     onBackToSelector,
     onRetryLesson,
     onReturnToSelector,
     onRestartQuiz,
   } = $props<{
     results?: QuizResults | null;
+    detectedGaps?: DetectedGap[];
     onBackToSelector?: () => void;
     onRetryLesson?: () => void;
     onReturnToSelector?: () => void;
@@ -151,6 +155,10 @@
           </p>
         </div>
 
+        {#if detectedGaps.length > 0}
+          <QuizMisconceptionSummary gaps={detectedGaps} />
+        {/if}
+
         <QuizAchievementsBadges
           achievements={analyzer?.getAchievements(results) || []}
         />
@@ -229,7 +237,7 @@
 
   .feedback-section {
     padding: var(--spacing-lg);
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     text-align: center;
   }
 
@@ -242,7 +250,7 @@
 
   .lesson-details {
     padding: var(--spacing-lg);
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     display: flex;
     flex-direction: column;
     gap: var(--spacing-sm);
@@ -289,7 +297,7 @@
   .coming-soon {
     margin-top: var(--spacing-xl);
     text-align: left;
-    background: rgba(0, 0, 0, 0.02);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     padding: var(--spacing-lg);
     border-radius: 8px;
   }

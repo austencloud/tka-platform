@@ -33,6 +33,24 @@ export interface QuizAttempt {
 
   /** When this attempt was recorded */
   timestamp: Date;
+
+  /** Wrong answer details for gap detection (only present if there were wrong answers) */
+  wrongAnswers?: WrongAnswerRecord[];
+}
+
+/**
+ * A single wrong answer within a quiz attempt.
+ * Stores enough context to identify misconception patterns.
+ */
+export interface WrongAnswerRecord {
+  /** What the user selected */
+  selectedContent: unknown;
+  /** What the correct answer was */
+  correctContent: unknown;
+  /** Which quiz format this came from */
+  quizType: string;
+  /** When the answer was given */
+  answeredAt: string;
 }
 
 /**
@@ -48,6 +66,7 @@ export interface QuizAttemptFirestore {
   totalCount: number;
   timeSpentSeconds: number;
   timestamp: string;
+  wrongAnswers?: WrongAnswerRecord[];
 }
 
 /**
@@ -93,4 +112,21 @@ export interface MasteryContext {
 
   /** Concepts due for spaced repetition review */
   dueForReview: string[];
+
+  /** Active misconceptions detected from quiz wrong answers */
+  activeMisconceptions?: MisconceptionSummary[];
+}
+
+/**
+ * A misconception pair surfaced to TIKA for proactive teaching.
+ */
+export interface MisconceptionSummary {
+  /** First concept node in the confusion pair */
+  nodeA: string;
+  /** Second concept node in the confusion pair */
+  nodeB: string;
+  /** How many times the user has confused these */
+  occurrenceCount: number;
+  /** Explanation from the knowledge graph */
+  explanation?: string;
 }

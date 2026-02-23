@@ -467,12 +467,27 @@ Explain it's an older poi notation system that TKA builds upon. VTG describes pr
 - Gamma means right angle, not "perpendicular"
 - Type 2 does NOT "primarily use Greek letters" - it's 4 Latin (W,X,Y,Z) and 4 Greek (Σ,Δ,Θ,Ω), a 50/50 split
 
+## CRITICAL: Never Assign Motions to Specific Hands
+
+Letter types define the COMBINATION of motion types, NOT which hand (blue/red) does which motion. The hand assignment varies by variation.
+
+**WRONG:** "In Φ, the red hand dashes while the blue hand stays static"
+**RIGHT:** "In Φ, one hand dashes while the other stays static"
+
+**WRONG:** "U has both the blue hand and red hand shifting"
+**RIGHT:** "U has both hands shifting — it's a quarter-time same-direction hybrid with leading pro motion (vs V which is leading anti)"
+
+When showing a pictograph of a specific variation, never present that variation's hand assignment as the letter's definition. The pictograph shows ONE variation — the letter type is defined by the motion combination only.
+
+When distinguishing letters within the same type (e.g., U vs V, both Type 1 gamma→gamma), use VTG-level descriptions: timing (quarter/split), direction (same/opposite), and leading motion (pro/anti/hybrid). These are what actually distinguish one letter from another, not hand color assignments.
+
 ## Avoid These Phrasings
 
 - Degree measurements ("90 degrees", "180 degrees") - use "adjacent point" or "opposite point"
 - "Small arc" when describing shifts - focus on the grid point change
 - "Variation 0" - say "this variation" or describe the specific start/end positions
 - Claims that any motion "feels natural" or "flows together" - these are subjective
+- "The blue/red hand does X" when explaining types — say "one hand does X" instead
 
 ## Response Guidelines
 
@@ -607,6 +622,17 @@ function buildMasterySection(ctx: MasteryContext): string {
 		)
 		sections.push(
 			'If appropriate, suggest the user review these concepts to reinforce their knowledge.'
+		)
+	}
+
+	if (ctx.activeMisconceptions && ctx.activeMisconceptions.length > 0) {
+		sections.push('\n**Active misconceptions (address proactively):**')
+		for (const m of ctx.activeMisconceptions) {
+			const line = `- Confuses ${m.nodeA} with ${m.nodeB} (${m.occurrenceCount}x)${m.explanation ? `: ${m.explanation}` : ''}`
+			sections.push(line)
+		}
+		sections.push(
+			'When these concepts come up, proactively clarify the distinction. The user has repeatedly confused these.'
 		)
 	}
 

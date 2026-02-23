@@ -154,3 +154,17 @@ export interface QuizAnswerResult {
   correctAnswer?: unknown;
   explanation?: string;
 }
+
+/**
+ * Rich answer event emitted from quiz components on each answer.
+ * Contains enough context for gap detection and misconception analysis.
+ */
+export interface QuizAnswerEvent {
+  isCorrect: boolean;
+  questionData: QuizQuestionData;
+  selectedOptionId: string;
+  selectedContent: unknown;
+  correctContent: unknown;
+  quizType: QuizType;
+  answeredAt: Date;
+}

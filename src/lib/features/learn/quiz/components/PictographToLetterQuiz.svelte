@@ -8,7 +8,7 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
   import { onDestroy, onMount } from "svelte";
   import { QuestionGenerator } from "../services/implementations/QuestionGenerator";
   import { QuizType } from "../domain/enums/quiz-enums";
-  import type { QuizQuestionData } from "../domain/models/quiz-models";
+  import type { QuizQuestionData, QuizAnswerEvent } from "../domain/models/quiz-models";
   import QuizContainer from "./shared/QuizContainer.svelte";
   import QuizLoadingState from "./shared/QuizLoadingState.svelte";
   import QuizErrorState from "./shared/QuizErrorState.svelte";
@@ -16,16 +16,19 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
   import QuizPictographCard from "./shared/QuizPictographCard.svelte";
   import QuizLetterButton from "./shared/QuizLetterButton.svelte";
   import QuizFeedbackBanner from "./shared/QuizFeedbackBanner.svelte";
+  import MisconceptionHint from "./shared/MisconceptionHint.svelte";
   import ScorePopAnimation from "./shared/ScorePopAnimation.svelte";
   import { getDelightOrchestrator } from "$lib/shared/delight/context/delight-context";
+  import type { IGapDetector, DetectedGap } from "../../services/contracts/IGapDetector";
 
   let { onAnswerSubmit, onNextQuestion, onBack } = $props<{
-    onAnswerSubmit?: (isCorrect: boolean) => void;
+    onAnswerSubmit?: (event: QuizAnswerEvent) => void;
     onNextQuestion?: () => void;
     onBack?: () => void;
   }>();
 
   let hapticService: IHapticFeedback;
+  let gapDetector: IGapDetector;
   const delightOrchestrator = getDelightOrchestrator();
 
   let scorePopTimer: ReturnType<typeof setTimeout> | null = null;
@@ -49,6 +52,9 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
   let currentStreak = $state(0);
   let showScorePop = $state(false);
 
+  // Misconception hint state
+  let currentGap = $state<DetectedGap | null>(null);
+
   // Fixed answer slots - using indices keeps components persistent for smooth transitions
   const answerSlots = [0, 1, 2, 3];
 
@@ -65,6 +71,7 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
 
   onMount(async () => {
     hapticService = container.items.hapticFeedback;
+    gapDetector = container.items.gapDetector as IGapDetector;
     await loadQuestion();
   });
 
@@ -109,18 +116,52 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
       currentStreak = 0;
     }
 
+    // Detect misconception gap on wrong answers
+    currentGap = null;
+    if (!isCorrect && questionData && gapDetector) {
+      const selectedOption = questionData.answerOptions.find((o) => o.id === optionId);
+      const correctOption = questionData.answerOptions.find((o) => o.isCorrect);
+      const gap = gapDetector.detectSingleError({
+        isCorrect: false,
+        questionData,
+        selectedOptionId: optionId,
+        selectedContent: selectedOption?.content ?? null,
+        correctContent: correctOption?.content ?? null,
+        quizType: QuizType.PICTOGRAPH_TO_LETTER,
+        answeredAt: new Date(),
+      });
+      if (gap) {
+        currentGap = gap;
+      }
+    }
+
     hapticTimer = setTimeout(() => {
       hapticService?.trigger(isCorrect ? "success" : "error");
     }, 100);
 
-    onAnswerSubmit?.(isCorrect);
-    nextQuestionTimer = setTimeout(handleNextQuestion, 1200);
+    if (questionData) {
+      const selectedOption = questionData.answerOptions.find((o) => o.id === optionId);
+      const correctOption = questionData.answerOptions.find((o) => o.isCorrect);
+      onAnswerSubmit?.({
+        isCorrect,
+        questionData,
+        selectedOptionId: optionId,
+        selectedContent: selectedOption?.content ?? null,
+        correctContent: correctOption?.content ?? null,
+        quizType: QuizType.PICTOGRAPH_TO_LETTER,
+        answeredAt: new Date(),
+      });
+    }
+    // Give extra time when a misconception hint is showing so the user can read it
+    const feedbackDuration = currentGap ? 5000 : 1200;
+    nextQuestionTimer = setTimeout(handleNextQuestion, feedbackDuration);
   }
 
   async function handleNextQuestion() {
     selectedAnswerId = null;
     isAnswered = false;
     showFeedback = false;
+    currentGap = null;
     await loadQuestion();
     onNextQuestion?.();
   }
@@ -182,6 +223,9 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
             incorrectMessage={`The correct letter is "${correctAnswer}"`}
             streakCount={currentStreak}
           />
+          {#if currentGap}
+            <MisconceptionHint gap={currentGap} />
+          {/if}
         {/if}
       </div>
     </div>

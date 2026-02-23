@@ -11,7 +11,7 @@
   import ValidNextPictographQuiz from "./ValidNextPictographQuiz.svelte";
   import { QuizMode, QuizType } from "../domain/enums/quiz-enums";
   import type { QuizLayoutMode } from "../domain/enums/quiz-enums";
-  import type { QuizResults, QuizProgress } from "../domain/models/quiz-models";
+  import type { QuizResults, QuizProgress, QuizAnswerEvent } from "../domain/models/quiz-models";
   import { QuizConfigurator } from "../services/implementations/QuizConfigurator";
   import type { IQuizSessionManager } from "../services/contracts/IQuizSessionManager";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
@@ -33,7 +33,7 @@
     questionIndex?: number;
     onBackToSelector?: () => void;
     onQuizComplete?: (results: QuizResults) => void;
-    onAnswerSubmit?: (answer: boolean) => void;
+    onAnswerSubmit?: (event: QuizAnswerEvent) => void;
   }>();
 
   // State
@@ -96,16 +96,19 @@
     isLoading = false;
   }
 
-  function handleAnswerSubmit(isCorrect: boolean) {
+  function handleAnswerSubmit(event: QuizAnswerEvent) {
     totalQuestions++;
-    if (isCorrect) {
+    if (event.isCorrect) {
       correctAnswers++;
     }
 
     if (sessionId) {
-      quizSessionService.updateSessionProgress(sessionId, isCorrect, 0);
+      quizSessionService.updateSessionProgress(sessionId, event.isCorrect, 0);
       updateProgress();
     }
+
+    // Propagate the full event upstream for persistence and gap detection
+    onAnswerSubmit?.(event);
 
     // Check if quiz should continue
     if (!shouldContinueQuiz()) {
@@ -231,19 +234,19 @@
     <div class="workspace-content">
       {#if quizType === QuizType.PICTOGRAPH_TO_LETTER}
         <PictographToLetterQuiz
-          onAnswerSubmit={(isCorrect) => handleAnswerSubmit(isCorrect)}
+          onAnswerSubmit={handleAnswerSubmit}
           onNextQuestion={handleNextQuestion}
           onBack={handleBackClick}
         />
       {:else if quizType === QuizType.LETTER_TO_PICTOGRAPH}
         <LetterToPictographQuiz
-          onAnswerSubmit={(isCorrect) => handleAnswerSubmit(isCorrect)}
+          onAnswerSubmit={handleAnswerSubmit}
           onNextQuestion={handleNextQuestion}
           onBack={handleBackClick}
         />
       {:else if quizType === QuizType.VALID_NEXT_PICTOGRAPH}
         <ValidNextPictographQuiz
-          onAnswerSubmit={(isCorrect) => handleAnswerSubmit(isCorrect)}
+          onAnswerSubmit={handleAnswerSubmit}
           onNextQuestion={handleNextQuestion}
           onBack={handleBackClick}
         />
