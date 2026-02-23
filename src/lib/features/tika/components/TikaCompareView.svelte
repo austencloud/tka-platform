@@ -62,7 +62,7 @@
         onModelChange={onModelAChange}
       />
     </div>
-    <button class="exit-compare" onclick={onExitCompare}>
+    <button aria-label="Exit compare mode" class="exit-compare" onclick={onExitCompare}>
       <i class="fas fa-times" aria-hidden="true"></i>
       Exit Compare
     </button>
@@ -76,6 +76,11 @@
   </div>
 
   <div class="compare-panels">
+    {#if messagesA.length === 0 && messagesB.length === 0}
+      <div class="compare-welcome">
+        <p>Type a message below to send it to both models simultaneously.</p>
+      </div>
+    {/if}
     <TikaComparePanel
       modelLabel={modelAOption?.shortName ?? modelA}
       modelColor={modelAOption?.color ?? "#6366f1"}
@@ -149,6 +154,19 @@
     min-height: 0;
     display: grid;
     grid-template-columns: 1fr auto 1fr;
+    position: relative;
+  }
+
+  .compare-welcome {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.4));
+    font-size: var(--font-size-min, 14px);
+    text-align: center;
+    pointer-events: none;
+    z-index: 1;
   }
 
   .panel-divider {
