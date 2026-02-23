@@ -261,7 +261,7 @@
      HEADER
      ================================================================ */
   .lab-header {
-    margin-bottom: 24px;
+    margin-bottom: 16px;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -369,7 +369,7 @@
   }
 
   .preview-container {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     background: rgba(0, 0, 0, 0.3);
@@ -378,7 +378,7 @@
   }
 
   .preview-large {
-    padding: 20px;
+    padding: 16px;
     border-radius: 16px;
   }
 
@@ -392,7 +392,7 @@
      EXPANDED CARD: CONTROLS PANEL
      ================================================================ */
   .expanded .family-header {
-    padding: 20px;
+    padding: 12px 20px;
   }
 
   .expanded-layout {
