@@ -320,10 +320,7 @@
         console.error("[TIKA] Auto-save failed:", error);
       }
     }, TIKA_LIMITS.AUTO_SAVE_DEBOUNCE_MS);
-  });
 
-  // Cleanup auto-save timeout on unmount
-  $effect(() => {
     return () => {
       if (autoSaveTimeout) {
         clearTimeout(autoSaveTimeout);
@@ -521,6 +518,28 @@
       .join("");
   }
 
+  type ToolInvocationPart = {
+    type: "tool-invocation";
+    toolInvocation: {
+      toolName: string;
+      args: Record<string, unknown>;
+      state: string;
+      result?: unknown;
+    };
+  };
+
+  function isToolInvocationPart(part: unknown): part is ToolInvocationPart {
+    if (!part || typeof part !== "object") return false;
+    const p = part as Record<string, unknown>;
+    if (p.type !== "tool-invocation") return false;
+    const inv = p.toolInvocation;
+    return (
+      inv !== null &&
+      typeof inv === "object" &&
+      typeof (inv as Record<string, unknown>).toolName === "string"
+    );
+  }
+
   // Extract explanation from tool output, handling canonical response format
   function extractToolExplanation(output: unknown): string {
     if (typeof output === "string") return output;
@@ -596,17 +615,8 @@
               lines.push("### Tools Called");
               lines.push("");
               for (const part of toolParts) {
-                const inv = (
-                  part as unknown as {
-                    type: "tool-invocation";
-                    toolInvocation: {
-                      toolName: string;
-                      args: Record<string, unknown>;
-                      state: string;
-                      result?: unknown;
-                    };
-                  }
-                ).toolInvocation;
+                if (!isToolInvocationPart(part)) continue;
+                const inv = part.toolInvocation;
                 lines.push(`- **${inv.toolName}**: \`${JSON.stringify(inv.args)}\``);
                 // Include result if available
                 if (inv.state === "result" && inv.result) {
@@ -741,10 +751,10 @@
   .history-backdrop {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--theme-overlay, rgba(0, 0, 0, 0.5));
     border: none;
     cursor: pointer;
-    backdrop-filter: blur(2px);
+    backdrop-filter: var(--overlay-blur, blur(2px));
   }
 
   .history-drawer-container {

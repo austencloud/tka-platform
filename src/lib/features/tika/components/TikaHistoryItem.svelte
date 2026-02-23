@@ -75,11 +75,10 @@
     {/if}
   </div>
 
-  <button
+  <button aria-label="Delete conversation"
     class="delete-btn"
     onclick={handleDeleteClick}
     title="Delete conversation"
-    aria-label="Delete conversation"
   >
     <i class="fas fa-times" aria-hidden="true"></i>
   </button>
@@ -110,7 +109,7 @@
 
   .history-item.active {
     border-color: var(--theme-accent, #6366f1);
-    background: rgba(99, 102, 241, 0.1);
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 10%, transparent);
   }
 
   .item-content {
@@ -173,7 +172,7 @@
   }
 
   .delete-btn:hover {
-    background: rgba(239, 68, 68, 0.2);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
     color: var(--semantic-error, #ef4444);
   }
 

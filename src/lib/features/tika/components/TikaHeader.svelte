@@ -159,8 +159,7 @@
 
     <!-- Compare Mode Toggle: Desktop only -->
     {#if onToggleCompare}
-      <button
-        aria-label={compareMode ? "Exit compare mode" : "Compare models side by side"}
+      <button aria-label={compareMode ? "Exit compare mode" : "Compare models side by side"}
         class="action-btn compare-btn"
         class:active={compareMode}
         onclick={onToggleCompare}
@@ -229,6 +228,18 @@
     justify-content: space-between;
     gap: 12px;
     background: var(--theme-panel-bg, rgba(15, 20, 30, 0.95));
+    --shadow-dark-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+    --shadow-dark-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-accent-icon: 0 2px 8px rgba(99, 102, 241, 0.3);
+    --shadow-success-sm: 0 2px 8px rgba(34, 197, 94, 0.25);
+    --shadow-success-md: 0 4px 14px rgba(34, 197, 94, 0.4);
+    --shadow-accent-sm: 0 2px 8px rgba(99, 102, 241, 0.25);
+    --shadow-accent-md: 0 4px 14px rgba(99, 102, 241, 0.4);
+    --shadow-accent-sm2: 0 2px 8px rgba(99, 102, 241, 0.35);
+    --shadow-accent-lg: 0 4px 14px rgba(99, 102, 241, 0.5);
+    --shadow-warning-sm: 0 2px 8px rgba(245, 158, 11, 0.35);
+    --shadow-warning-md: 0 4px 14px rgba(245, 158, 11, 0.4);
+    --shadow-warning-lg: 0 4px 14px rgba(245, 158, 11, 0.5);
   }
 
   .header-left {
@@ -321,7 +332,7 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+    box-shadow: var(--shadow-accent-icon);
   }
 
   .title-icon i {
@@ -368,12 +379,12 @@
     cursor: pointer;
     transition: all var(--duration-normal, 0.3s) ease;
     flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--shadow-dark-sm);
   }
 
   .action-btn:hover {
     transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-dark-md);
   }
 
   .action-btn:active {
@@ -390,24 +401,24 @@
   .new-chat-btn {
     background: linear-gradient(135deg, var(--semantic-success, #22c55e), color-mix(in srgb, var(--semantic-success, #22c55e) 80%, black));
     border-color: color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent);
-    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.25);
+    box-shadow: var(--shadow-success-sm);
   }
 
   .new-chat-btn:hover {
     background: linear-gradient(135deg, var(--semantic-success, #22c55e), color-mix(in srgb, var(--semantic-success, #22c55e) 75%, black));
-    box-shadow: 0 4px 14px rgba(34, 197, 94, 0.4);
+    box-shadow: var(--shadow-success-md);
   }
 
   /* History button - indigo gradient for navigation */
   .history-btn {
     background: linear-gradient(135deg, var(--theme-accent, #6366f1), color-mix(in srgb, var(--theme-accent, #6366f1) 80%, black));
     border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent);
-    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+    box-shadow: var(--shadow-accent-sm);
   }
 
   .history-btn:hover {
     background: linear-gradient(135deg, var(--theme-accent, #6366f1), color-mix(in srgb, var(--theme-accent, #6366f1) 75%, black));
-    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+    box-shadow: var(--shadow-accent-md);
   }
 
   /* Flag button - amber/yellow when not flagged, red when flagged */
@@ -419,18 +430,18 @@
   .flag-btn:hover {
     background: linear-gradient(135deg, var(--semantic-warning, #f59e0b), color-mix(in srgb, var(--semantic-warning, #f59e0b) 80%, black));
     border-color: color-mix(in srgb, var(--semantic-warning, #f59e0b) 30%, transparent);
-    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+    box-shadow: var(--shadow-warning-md);
   }
 
   .flag-btn.flagged {
     background: linear-gradient(135deg, var(--semantic-warning, #f59e0b), color-mix(in srgb, var(--semantic-warning, #f59e0b) 80%, black));
     border-color: color-mix(in srgb, var(--semantic-warning, #f59e0b) 40%, transparent);
-    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
+    box-shadow: var(--shadow-warning-sm);
   }
 
   .flag-btn.flagged:hover {
     background: linear-gradient(135deg, var(--semantic-warning, #f59e0b), color-mix(in srgb, var(--semantic-warning, #f59e0b) 75%, black));
-    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.5);
+    box-shadow: var(--shadow-warning-lg);
   }
 
   /* Compare toggle - hidden on mobile (needs width for side-by-side) */
@@ -449,17 +460,17 @@
   .compare-btn:hover {
     background: linear-gradient(135deg, var(--theme-accent, #6366f1), color-mix(in srgb, var(--theme-accent, #6366f1) 80%, black));
     border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent);
-    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+    box-shadow: var(--shadow-accent-md);
   }
 
   .compare-btn.active {
     background: linear-gradient(135deg, var(--theme-accent, #6366f1), color-mix(in srgb, var(--theme-accent, #6366f1) 80%, black));
     border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
-    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+    box-shadow: var(--shadow-accent-sm2);
   }
 
   .compare-btn.active:hover {
-    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.5);
+    box-shadow: var(--shadow-accent-lg);
   }
 
   /* Responsive: hide subtitle on very narrow screens */

@@ -392,28 +392,28 @@
   .item-label {
     padding: 2px 8px;
     border-radius: 4px;
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.03em;
   }
 
   .item-label.pro {
-    background: rgba(34, 197, 94, 0.2);
-    color: #22c55e;
-    border: 1px solid rgba(34, 197, 94, 0.4);
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 20%, transparent);
+    color: var(--semantic-success, #22c55e);
+    border: 1px solid color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent);
   }
 
   .item-label.anti {
-    background: rgba(239, 68, 68, 0.2);
-    color: #ef4444;
-    border: 1px solid rgba(239, 68, 68, 0.4);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
+    color: var(--semantic-error, #ef4444);
+    border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
   }
 
   .item-label.hybrid {
-    background: rgba(168, 85, 247, 0.2);
-    color: #a855f7;
-    border: 1px solid rgba(168, 85, 247, 0.4);
+    background: color-mix(in srgb, var(--semantic-info, #a855f7) 20%, transparent);
+    color: var(--semantic-info, #a855f7);
+    border: 1px solid color-mix(in srgb, var(--semantic-info, #a855f7) 40%, transparent);
   }
 
   /* Default label */
@@ -434,7 +434,7 @@
 
   .loading-indicator {
     margin-top: 6px;
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
     text-align: center;
   }

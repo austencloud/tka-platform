@@ -81,10 +81,10 @@ export class TikaMessageExtractor implements ITikaMessageExtractor {
 		if (typeof output === 'string') return output;
 		if (output && typeof output === 'object') {
 			const obj = output as Record<string, unknown>;
-			// Check for explanation field (canonical response format)
-			if (typeof obj.explanation === 'string') {
-				return obj.explanation;
-			}
+			// Check common response fields in priority order
+			if (typeof obj.explanation === 'string') return obj.explanation;
+			if (typeof obj.content === 'string') return obj.content;
+			if (typeof obj.message === 'string') return obj.message;
 			// Fallback to JSON
 			return JSON.stringify(output, null, 2);
 		}
@@ -101,7 +101,7 @@ export class TikaMessageExtractor implements ITikaMessageExtractor {
 		if (obj.inlinePictograph && typeof obj.inlinePictograph === 'object') {
 			const pic = obj.inlinePictograph as Record<string, unknown>;
 			if (pic.type === 'inline-pictograph' && typeof pic.letter === 'string') {
-				content.pictograph = pic as unknown as InlinePictograph;
+				content.pictograph = obj.inlinePictograph as InlinePictograph;
 			}
 		}
 
@@ -109,7 +109,7 @@ export class TikaMessageExtractor implements ITikaMessageExtractor {
 		if (obj.inlineGallery && typeof obj.inlineGallery === 'object') {
 			const gal = obj.inlineGallery as Record<string, unknown>;
 			if (gal.type === 'inline-gallery' && Array.isArray(gal.items)) {
-				content.gallery = gal as unknown as InlineGallery;
+				content.gallery = obj.inlineGallery as InlineGallery;
 			}
 		}
 
@@ -120,7 +120,7 @@ export class TikaMessageExtractor implements ITikaMessageExtractor {
 				if (gal && typeof gal === 'object') {
 					const galObj = gal as Record<string, unknown>;
 					if (galObj.type === 'inline-gallery' && Array.isArray(galObj.items)) {
-						content.galleries.push(galObj as unknown as InlineGallery);
+						content.galleries.push(gal as InlineGallery);
 					}
 				}
 			}
@@ -130,7 +130,7 @@ export class TikaMessageExtractor implements ITikaMessageExtractor {
 		if (obj.inlineSequencePlayer && typeof obj.inlineSequencePlayer === 'object') {
 			const seq = obj.inlineSequencePlayer as Record<string, unknown>;
 			if (seq.type === 'inline-sequence-player' && typeof seq.word === 'string') {
-				content.sequencePlayer = seq as unknown as InlineSequencePlayer;
+				content.sequencePlayer = obj.inlineSequencePlayer as InlineSequencePlayer;
 			}
 		}
 
@@ -138,7 +138,7 @@ export class TikaMessageExtractor implements ITikaMessageExtractor {
 		if (obj.inlineStepGrid && typeof obj.inlineStepGrid === 'object') {
 			const grid = obj.inlineStepGrid as Record<string, unknown>;
 			if (grid.type === 'inline-step-grid' && Array.isArray(grid.steps)) {
-				content.stepGrid = grid as unknown as InlineStepGrid;
+				content.stepGrid = obj.inlineStepGrid as InlineStepGrid;
 			}
 		}
 
@@ -146,7 +146,7 @@ export class TikaMessageExtractor implements ITikaMessageExtractor {
 		if (obj.inlineQuiz && typeof obj.inlineQuiz === 'object') {
 			const quiz = obj.inlineQuiz as Record<string, unknown>;
 			if (quiz.type === 'inline-quiz' && typeof quiz.question === 'string') {
-				content.quiz = quiz as unknown as InlineQuiz;
+				content.quiz = obj.inlineQuiz as InlineQuiz;
 			}
 		}
 

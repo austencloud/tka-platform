@@ -72,6 +72,13 @@
     };
   });
 
+  // Timer handle for auto-play cleanup
+  let autoPlayTimer: number | null = null;
+
+  // Schedule a timeout with automatic cleanup on component destroy
+  const _timer = window.setTimeout.bind(window);
+  const scheduleTimeout = (fn: () => void, ms: number): number => _timer(fn, ms);
+
   // Watch word changes and generate sequence
   $effect(() => {
     // Read reactive dependencies
@@ -88,6 +95,12 @@
       animState.reset();
       error = null;
       loading = true;
+
+      // Clear any pending auto-play timer from previous run
+      if (autoPlayTimer !== null) {
+        window.clearTimeout(autoPlayTimer);
+        autoPlayTimer = null;
+      }
 
       try {
         // Generate sequence from word using WordSequenceGenerator
@@ -132,13 +145,23 @@
         loading = false;
 
         // Auto-play after a brief delay
-        setTimeout(() => currentController?.togglePlayback(), 300);
+        autoPlayTimer = scheduleTimeout(() => {
+          autoPlayTimer = null;
+          currentController?.togglePlayback();
+        }, 300);
       } catch (err) {
         console.error("[InlineSequencePlayer] Generation error:", err);
         error = err instanceof Error ? err.message : "Animation error";
         loading = false;
       }
     });
+
+    return () => {
+      if (autoPlayTimer !== null) {
+        window.clearTimeout(autoPlayTimer);
+        autoPlayTimer = null;
+      }
+    };
   });
 </script>
 
