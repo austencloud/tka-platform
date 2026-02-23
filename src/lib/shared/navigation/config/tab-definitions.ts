@@ -754,6 +754,14 @@ export const LAB_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
   },
   {
+    id: "progress",
+    label: "Progress",
+    icon: '<i class="fas fa-bars-progress" aria-hidden="true"></i>',
+    description: "Compare loading indicator styles",
+    color: "#06b6d4",
+    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
+  },
+  {
     id: "museum",
     label: "Museum",
     icon: '<i class="fas fa-building-columns" aria-hidden="true"></i>',
