@@ -313,6 +313,7 @@ export class AnimationEngine {
     darkMode: false,
     propColors: undefined,
     ledConfig: null,
+    isSeamlesslyLoopable: false,
   };
 
   // ============================================================================
@@ -1573,6 +1574,13 @@ export class AnimationEngine {
 
     // LED overlay config
     fp.ledConfig = this.ledConfig.enabled ? this.ledConfig : null;
+
+    // Playback speed for fire cache invalidation
+    const visibilityManager = getAnimationVisibilityManager();
+    fp.playbackSpeed = visibilityManager.getSpeed();
+
+    // Seamless loop flag for trail wrap-around
+    fp.isSeamlesslyLoopable = props.isSeamlesslyLoopable;
 
     return fp;
   }

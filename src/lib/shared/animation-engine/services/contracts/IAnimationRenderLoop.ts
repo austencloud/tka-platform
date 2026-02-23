@@ -103,6 +103,11 @@ export interface RenderFrameParams {
   propColors?: [PropFlameColor, PropFlameColor];
   /** LED overlay configuration (null or undefined = disabled) */
   ledConfig?: LedOverlayConfig | null;
+  /** Playback speed multiplier (1.0 = 60 BPM). Passed to fire for cache invalidation. */
+  playbackSpeed?: number;
+  /** Whether sequence loops seamlessly (end position = start position).
+   *  When true, trail rendering wraps around the loop boundary instead of resetting. */
+  isSeamlesslyLoopable?: boolean;
 }
 
 /**
