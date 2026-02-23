@@ -24,6 +24,7 @@
   import type { ISequenceEncoder } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
   import { saveSequenceRouteHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
   import { openSequenceOverlay } from "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte";
+  import LoadingGate from "$lib/shared/components/loading/LoadingGate.svelte";
 
   // Get short code from URL param
   const shortCode = $derived($page.params["code"]);
@@ -108,8 +109,7 @@
 <div class="resolver-page">
   {#if isLoading}
     <div class="loading-container">
-      <div class="spinner"></div>
-      <p>Loading sequence...</p>
+      <LoadingGate variant="card" message="Loading sequence..." />
     </div>
   {:else if error}
     <div class="error-container">
@@ -149,32 +149,7 @@
   .loading-container {
     min-height: 100vh;
     min-height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-  }
-
-  .spinner {
-    width: 48px;
-    height: 48px;
-    border: 3px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-top-color: var(--theme-accent, #f43f5e);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  .loading-container p {
-    font-size: var(--font-size-sm, 14px);
-    margin: 0;
+    position: relative;
   }
 
   .error-container {
@@ -235,9 +210,4 @@
     outline-offset: 2px;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-    }
-  }
 </style>

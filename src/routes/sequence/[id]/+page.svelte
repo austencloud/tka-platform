@@ -50,6 +50,7 @@
   import { getIabBannerVisible, IAB_BANNER_HEIGHT } from "$lib/shared/auth/state/iab-banner-state.svelte";
   import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import LoadingGate from "$lib/shared/components/loading/LoadingGate.svelte";
 
   // ============================================================================
   // ROUTE-SPECIFIC STATE
@@ -416,8 +417,7 @@
 {#if isLoading}
   <div class="sequence-route-page">
     <div class="loading-container">
-      <div class="spinner"></div>
-      <p>Loading sequence...</p>
+      <LoadingGate variant="card" message="Loading sequence..." />
     </div>
   </div>
 {:else if loadError || !sequence}
@@ -614,30 +614,7 @@
   /* Loading state */
   .loading-container {
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-  }
-
-  .spinner {
-    width: 48px;
-    height: 48px;
-    border: 3px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-top-color: var(--theme-accent, #f43f5e);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
-  .loading-container p {
-    font-size: var(--font-size-sm, 14px);
-    margin: 0;
+    position: relative;
   }
 
   /* Error state */
@@ -718,9 +695,4 @@
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-    }
-  }
 </style>
