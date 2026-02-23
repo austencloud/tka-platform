@@ -603,7 +603,8 @@
   "enableAllProjectMcpServers": false,
   "enabledMcpjsonServers": [
     "tka-domain",
-    "chrome-devtools"
+    "chrome-devtools",
+    "game-controller"
   ],
   "disabledMcpjsonServers": []
 }

@@ -693,35 +693,79 @@
       "issues": []
     },
     "features/tika/components": {
-      "lastAuditedAt": "2026-02-23T01:31:50.739Z",
+      "lastAuditedAt": "2026-02-23T02:15:32.878Z",
       "name": "Tika Components",
       "type": "components",
       "grades": {
         "architecture": "A+",
         "codeQuality": "A+",
         "svelte5": "A+",
+        "accessibility": "A+",
+        "uxStates": "A+",
+        "uiConsistency": "A+",
+        "performance": "A+",
+        "security": "A+"
+      },
+      "overallGrade": "A+",
+      "notes": null,
+      "issues": []
+    },
+    "features/conjoined-lab/components": {
+      "lastAuditedAt": "2026-02-23T02:18:00.139Z",
+      "name": "Conjoined Lab Components",
+      "type": "components",
+      "grades": {
+        "architecture": "A+",
+        "codeQuality": "A+",
+        "svelte5": "A+",
         "accessibility": "A",
-        "uxStates": "A",
-        "uiConsistency": "A",
-        "performance": "A",
+        "uxStates": "A+",
+        "uiConsistency": "A+",
+        "performance": "A+",
+        "security": "A+"
+      },
+      "overallGrade": "A+",
+      "notes": null,
+      "issues": [
+        {
+          "severity": "serious",
+          "dimension": "accessibility",
+          "file": "features/conjoined-lab/components/ConjoinedControls.svelte",
+          "line": 41,
+          "description": "<button class=\"preset-btn\"> in {#each LAYOUT_PRESETS} loop lacks explicit aria-label. Has title attribute and visible <span>{preset.name}</span> child — borderline finding."
+        }
+      ]
+    },
+    "features/visual-builder-lab": {
+      "lastAuditedAt": "2026-02-23T02:49:27.216Z",
+      "name": "Visual Builder Lab",
+      "type": "module",
+      "grades": {
+        "architecture": "A+",
+        "codeQuality": "A+",
+        "svelte5": "A+",
+        "accessibility": "A",
+        "uxStates": "A+",
+        "uiConsistency": "A+",
+        "performance": "A+",
         "security": "A"
       },
       "overallGrade": "A",
       "notes": null,
       "issues": [
         {
-          "severity": "moderate",
-          "dimension": "uiConsistency",
-          "file": "features/tika/components/TikaHeader.svelte",
-          "line": 307,
-          "description": "20 remaining hardcoded colors are ALL box-shadows (rgba decorative glows) and overlay scrims (rgba(0,0,0,...)) - intentionally kept, not theme violations"
+          "severity": "serious",
+          "dimension": "accessibility",
+          "file": "features/visual-builder-lab/components/BuilderControls.svelte",
+          "line": 70,
+          "description": "Scanner flagged button without aria-label on same line; actual aria-label present on line 75 - false positive"
         },
         {
-          "severity": "moderate",
-          "dimension": "performance",
-          "file": "features/tika/components/InlineQuiz.svelte",
-          "line": 77,
-          "description": "3 timerWithoutCleanup are false positives - handles stored in variables and cleared on destroy"
+          "severity": "serious",
+          "dimension": "security",
+          "file": "features/visual-builder-lab/components/InteractiveGrid.svelte",
+          "line": 315,
+          "description": "{@html} renders trusted bundled SVG via propSvgLoader - static/trusted content"
         }
       ]
     }

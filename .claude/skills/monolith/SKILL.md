@@ -12,8 +12,6 @@ npx -p @austencloud/code-quality ac-monolith --auto-claim
 
 ## Workflow
 
-Read `.claude/rules/monolith-workflow.md` for the complete workflow, then:
-
 1. **Parse CLAIMED_FILE** from output
 2. **Read the file** and identify responsibilities
 3. **Evaluate with Four Perspectives** (see below)
@@ -24,7 +22,7 @@ Read `.claude/rules/monolith-workflow.md` for the complete workflow, then:
 
 ---
 
-## Critical Guardrails (read before every run)
+## Critical Guardrails
 
 ### The Single Responsibility Test
 
@@ -44,6 +42,15 @@ Evaluate through all four before proposing changes:
 4. **Svelte Component** - Are there extractable UI sections?
 
 **Convergence:** 3/4 must agree before proceeding.
+
+### When to Extract
+
+| Extract When | Example |
+|--------------|---------|
+| Distinct UI section with own markup + CSS | Header, Footer, SplitPane |
+| Reusable logic in multiple places | Validation, formatting |
+| Logic that needs unit testing (silent bugs) | Calculations, algorithms |
+| A section you can't describe without "and" | "handles swipe AND export AND sync" |
 
 ### When NOT to Extract
 
@@ -68,6 +75,43 @@ If yes to all three, it's fine regardless of line count.
 
 ---
 
+## Service Extraction Pattern (MANDATORY)
+
+Every service extraction MUST follow this structure:
+
+```
+1. Interface:      services/contracts/I{Name}.ts
+2. Implementation: services/implementations/{Name}.ts
+3. Registration:   Add to appropriate DI container
+4. Usage:          container.items.serviceName
+```
+
+### Service Naming (no "Service" suffix):
+
+| Action | Suffix | Example |
+|--------|--------|---------|
+| Load data | `*Loader` | `SequenceLoader` |
+| Detect/check | `*Detector` | `LayoutDetector` |
+| Manage state | `*Manager` | `PlaybackManager` |
+| Calculate | `*Calculator` | `BeatCalculator` |
+| Persist | `*Persister` | `SequencePersister` |
+| Orchestrate | `*Orchestrator` | `GenerationOrchestrator` |
+
+### Component Extraction (Markup + CSS)
+
+When extracting UI, the markup AND styles go together. CSS travels with components in Svelte.
+
+### FORBIDDEN Patterns
+
+| FORBIDDEN | CORRECT ALTERNATIVE |
+|-----------|---------------------|
+| `use*.ts` hooks | Service class in ITI container |
+| `*Utils.ts` | Service class in ITI container |
+| `*.css` standalone | Extract component with markup + CSS |
+| Loose function files | Service class in ITI container |
+
+---
+
 ## Two Valid Outcomes
 
 ### Option A: Decompose
@@ -81,3 +125,25 @@ npx -p @austencloud/code-quality ac-monolith --mark-audited "lib/path/to/File.sv
 ```
 
 **Always offer this when concluding "leave it alone."**
+
+---
+
+## Commands Reference
+
+```bash
+# Scanning
+npx -p @austencloud/code-quality ac-monolith              # Top 20 monoliths
+npx -p @austencloud/code-quality ac-monolith --all         # All over threshold
+npx -p @austencloud/code-quality ac-monolith --include-audited  # Include audited
+
+# Claiming
+npx -p @austencloud/code-quality ac-monolith --auto-claim     # Find and claim top
+npx -p @austencloud/code-quality ac-monolith --claim <path>   # Claim specific
+npx -p @austencloud/code-quality ac-monolith --release <path> # Release claim
+npx -p @austencloud/code-quality ac-monolith --claims         # Show active claims
+npx -p @austencloud/code-quality ac-monolith --clear-expired  # Remove stale claims
+
+# Auditing
+npx -p @austencloud/code-quality ac-monolith --mark-audited <path> "<reason>"
+npx -p @austencloud/code-quality ac-monolith --unmark-audited <path>
+```
