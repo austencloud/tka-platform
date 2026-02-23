@@ -434,6 +434,9 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       // For seamless loops, don't clamp — trails wrap around the boundary.
       if (!isSeamlesslyLoopable) {
         this.loopOccurredAtStep = currentStep;
+      } else {
+        // Clear any stale clamp from a previous non-seamless session
+        this.loopOccurredAtStep = null;
       }
     }
     this.previousStep = currentStep;
