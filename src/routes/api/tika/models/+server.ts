@@ -41,6 +41,18 @@ export const GET: RequestHandler = async (event) => {
     })
   }
 
+  // Sonnet 4 Legacy - previous generation, available for A/B comparison
+  if (env.ANTHROPIC_API_KEY) {
+    models.push({
+      id: 'sonnet-4-legacy',
+      name: 'Claude Sonnet 4 (Legacy)',
+      shortName: 'Sonnet 4',
+      icon: 'fa-brain',
+      color: '#94a3b8',
+      description: 'Previous generation (comparison baseline)',
+    })
+  }
+
   // Deepseek - cost-effective alternative
   if (env.DEEPSEEK_API_KEY) {
     models.push({
