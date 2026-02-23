@@ -83,12 +83,12 @@ Arrow buttons overlay the full left/right halves for large touch targets.
   <!-- Touch target layer: two invisible buttons covering full left/right halves -->
   <button
     class="touch-target left"
-    onclick={cyclePrev}
+    onclick={cycleNext}
     aria-label="Previous orientation"
   ></button>
   <button
     class="touch-target right"
-    onclick={cycleNext}
+    onclick={cyclePrev}
     aria-label="Next orientation"
   ></button>
 </div>

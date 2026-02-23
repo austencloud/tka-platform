@@ -412,6 +412,9 @@ Controls moved below the grid for better UX
     padding: clamp(8px, 2vmin, 16px) clamp(12px, 3vmin, 32px);
     background: transparent;
     flex-shrink: 0;
+    max-width: 600px;
+    margin: 0 auto;
+    width: 100%;
   }
 
   .orientation-controls,
