@@ -26,8 +26,8 @@
     error = null;
 
     try {
-      // Navigate to the sequence in gallery
-      await goto(`/browse/gallery?sequence=${nearbyRoom.sequenceId}`);
+      // Navigate directly to the sequence viewer
+      await goto(`/sequence/${nearbyRoom.sequenceId}`);
 
       // Connect to the PeerJS room
       await lanSyncState.joinRoomByCode(nearbyRoom.peerJsRoomCode);

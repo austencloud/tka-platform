@@ -798,6 +798,40 @@
   // LAN SYNC
   // ============================================================================
 
+  // Track last applied sync timestamp to avoid feedback loops
+  let lastAppliedSyncTimestamp = 0;
+
+  // Listen for incoming sync state changes from remote peers
+  $effect(() => {
+    const playback = lanSyncState.playbackState;
+    if (!lanSyncState.isConnected || !playbackController) return;
+
+    // Only apply if this is a remote update (timestamp changed)
+    if (playback.timestamp > lastAppliedSyncTimestamp) {
+      lastAppliedSyncTimestamp = playback.timestamp;
+
+      // Apply play/pause changes
+      if (playback.isPlaying !== isPlayingLocal) {
+        if (playback.isPlaying) {
+          if (!isPlayingLocal) playbackController.togglePlayback();
+        } else {
+          if (isPlayingLocal) playbackController.togglePlayback();
+        }
+      }
+
+      // Seek if step is significantly different (>0.5 step difference)
+      if (Math.abs(playback.currentStep - currentStepLocal) > 0.5) {
+        playbackController.jumpToStep(playback.currentStep);
+      }
+
+      // Apply speed/BPM changes
+      const currentSpeed = bpmLocal / 60;
+      if (Math.abs(playback.speed - currentSpeed) > 0.01) {
+        playbackController.setSpeed(playback.speed);
+      }
+    }
+  });
+
   async function handleSyncToggle() {
     if (isSyncToggling || !sequence) return;
     isSyncToggling = true;
