@@ -29,7 +29,7 @@ import type { ISharer } from "$lib/shared/share/services/contracts/ISharer";
 import type { IPanelPersister } from "./IPanelPersister";
 import type { ICreateModuleState } from "../../types/create-module-types";
 import type { createConstructTabState } from "../../state/construct-tab-state.svelte";
-import type { AssemblerTabState } from "../../state/assembler-tab-state.svelte";
+// ARCHIVED: AssemblerTabState import removed (Feb 2026)
 import type { GeneratorTabState } from "../../state/generator-tab-state.svelte";
 import type { SpellTabState } from "$lib/features/create/spell/state/spell-tab-state.svelte";
 import type { VisualBuilderTabState } from "../../state/visual-builder-tab-state.svelte";
@@ -41,7 +41,7 @@ export interface CreateModuleInitializationResult {
   // State objects
   CreateModuleState: ICreateModuleState;
   constructTabState: ConstructTabState;
-  assemblerTabState: AssemblerTabState;
+  // ARCHIVED: assemblerTabState removed (Feb 2026)
   generatorTabState: GeneratorTabState;
   spellTabState: SpellTabState;
   visualBuilderTabState: VisualBuilderTabState;

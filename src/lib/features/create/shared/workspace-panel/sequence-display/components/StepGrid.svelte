@@ -193,8 +193,6 @@
       if (beatCountDiff === 1) {
         if (previousStepCount === 0) {
           displayState.handleSingleBeatAddition(currentStepCount - 1);
-        } else if (activeMode === "assemble") {
-          displayState.handleSingleBeatAddition(currentStepCount - 1);
         } else {
           const lastPreviousBeat = previousStepsRef[previousStepCount - 1];
           const lastCurrentBeat = steps[previousStepCount - 1];
@@ -238,7 +236,7 @@
     if (currentStepCount > previousStepCount) {
       const stepsAdded = currentStepCount - previousStepCount;
       if (stepsAdded === 1) {
-        // Single step added (constructor/assembler) - scroll to see the new step
+        // Single step added (constructor/visual-builder) - scroll to see the new step
         scrollState.scrollToBottom();
       } else {
         // Multiple steps added at once (generation) - scroll to top to see start position

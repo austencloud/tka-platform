@@ -51,8 +51,6 @@ export interface CreateModuleContext {
     setInputMode: (mode: boolean) => void;
   };
 
-  // Assembly tab reset key (increments on clear to force remount)
-  assemblyTabKey: number;
 
   // Common handlers
   handlers: {

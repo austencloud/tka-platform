@@ -18,7 +18,7 @@ import type { ISequenceValidator } from "../services/contracts/ISequenceValidato
 import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 import type { StepData } from "../domain/models/StepData";
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
-import type { AssemblerTabState } from "./assembler-tab-state.svelte";
+// ARCHIVED: AssemblerTabState import removed (Feb 2026) - files kept for reference
 import type { GeneratorTabState } from "./generator-tab-state.svelte";
 import type { ConstructTabState } from "./construct-tab-state.svelte";
 import type { SpellTabState } from "$lib/features/create/spell/state/spell-tab-state.svelte";
@@ -69,7 +69,6 @@ export function createCreateModuleState(
     });
 
   const constructorFallbackState = createTabFallbackState();
-  const assemblerFallbackState = createTabFallbackState();
   const generatorFallbackState = createTabFallbackState();
   const spellFallbackState = createTabFallbackState();
   const visualBuilderFallbackState = createTabFallbackState();
@@ -81,20 +80,11 @@ export function createCreateModuleState(
 
   // Store tab states in closure - moved up so getSequenceStateForTab can access them
   let _constructorTabState: ConstructTabState | null = null;
-  let _assemblerTabState: AssemblerTabState | null = null;
+  // ARCHIVED: _assemblerTabState removed (Feb 2026)
   let _generatorTabState: GeneratorTabState | null = null;
   let _spellTabState: SpellTabState | null = null;
   let _visualBuilderTabState: VisualBuilderTabState | null = null;
 
-  // Assembly handpath builder undo ref - separate from sequence-level undo
-  // This is set by the HandPathOrchestrator component when in assembler mode
-  // Uses $state for reactivity so derived values in components update correctly
-  let _assemblyUndoRef = $state<{ canUndo: boolean; undo: () => void } | null>(null);
-
-  // Assembly handpath builder back ref - returns to welcome screen
-  // This is set by the HandPathOrchestrator component when building
-  // Uses $state for reactivity so derived values in components update correctly
-  let _assemblyBackRef = $state<{ canGoBack: boolean; back: () => void } | null>(null);
 
   /**
    * Get the sequence state for a specific tab
@@ -111,9 +101,7 @@ export function createCreateModuleState(
         } | null;
         return ctor?.sequenceState || constructorFallbackState;
       }
-      case "assemble": {
-        return _assemblerTabState?.sequenceState || assemblerFallbackState;
-      }
+      // ARCHIVED: "assemble" case removed (Feb 2026)
       case "generate": {
         return _generatorTabState?.sequenceState || generatorFallbackState;
       }
@@ -249,9 +237,6 @@ export function createCreateModuleState(
       case "construct": {
         return _constructorTabState?.undoController ?? null;
       }
-      case "assemble": {
-        return _assemblerTabState?.undoController || null;
-      }
       case "generate": {
         return _generatorTabState?.undoController || null;
       }
@@ -306,15 +291,6 @@ export function createCreateModuleState(
       controller?.pushUndoSnapshot(type, metadata);
     },
     undo: () => {
-      // Check assembly handpath builder undo first (when in assembler mode building positions)
-      if (
-        navigationState.activeTab === "assemble" &&
-        _assemblyUndoRef?.canUndo
-      ) {
-        _assemblyUndoRef.undo();
-        return true;
-      }
-      // Fall back to sequence-level undo controller
       const controller = getActiveTabUndoController();
       return controller?.undo() || false;
     },
@@ -339,14 +315,6 @@ export function createCreateModuleState(
       controller?.setOnUndoingOptionCallback(callback);
     },
     get canUndo() {
-      // Check assembly handpath builder undo first (when in assembler mode building positions)
-      if (
-        navigationState.activeTab === "assemble" &&
-        _assemblyUndoRef?.canUndo
-      ) {
-        return true;
-      }
-      // Fall back to sequence-level undo controller
       const controller = getActiveTabUndoController();
       return controller?.canUndo || false;
     },
@@ -406,26 +374,7 @@ export function createCreateModuleState(
       _constructorTabState = value;
     },
     constructTabState: null as ConstructTabState | null, // Legacy accessor - will be set by initializer
-    get assemblerTabState() {
-      return _assemblerTabState;
-    },
-    set assemblerTabState(value: AssemblerTabState | null) {
-      _assemblerTabState = value;
-    },
-    // Assembly handpath builder undo ref - set by HandPathOrchestrator when building positions
-    get assemblyUndoRef() {
-      return _assemblyUndoRef;
-    },
-    set assemblyUndoRef(value: { canUndo: boolean; undo: () => void } | null) {
-      _assemblyUndoRef = value;
-    },
-    // Assembly handpath builder back ref - set by HandPathOrchestrator for workspace back button
-    get assemblyBackRef() {
-      return _assemblyBackRef;
-    },
-    set assemblyBackRef(value: { canGoBack: boolean; back: () => void } | null) {
-      _assemblyBackRef = value;
-    },
+    // ARCHIVED: assemblerTabState, assemblyUndoRef, assemblyBackRef removed (Feb 2026)
     get generatorTabState() {
       return _generatorTabState;
     },

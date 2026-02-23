@@ -50,14 +50,6 @@
   const isDurationPreviewMode = $derived(panelState.isDurationPreviewMode);
   const previewSequence = $derived(panelState.previewSequence);
 
-  // Derive assembler back handler from state - only available when in assembler tab and has started building
-  const assemblerBackHandler = $derived.by(() => {
-    if (navigationState.activeTab !== "assemble") return null;
-    const backRef = CreateModuleState.assemblyBackRef;
-    if (!backRef?.canGoBack) return null;
-    return backRef.back;
-  });
-
   // CRITICAL: Derive the active tab's sequence state reactively
   // Track both the active tab AND the sequence within that tab
   // This ensures the workspace updates when:
@@ -104,7 +96,6 @@
         {animationStateRef}
         {currentDisplayWord}
         {letterSources}
-        onAssemblerBack={assemblerBackHandler}
       />
     {/key}
   {/if}

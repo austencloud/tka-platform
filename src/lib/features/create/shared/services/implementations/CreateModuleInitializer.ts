@@ -19,7 +19,7 @@ import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { IStartPositionManager } from "../../../construct/start-position-picker/services/contracts/IStartPositionManager";
 import { createCreateModuleState } from "$lib/features/create/shared/state/create-module-state.svelte";
 import { createConstructTabState } from "$lib/features/create/shared/state/construct-tab-state.svelte";
-import { createAssemblerTabState } from "$lib/features/create/shared/state/assembler-tab-state.svelte";
+// ARCHIVED: createAssemblerTabState import removed (Feb 2026)
 import { createGeneratorTabState } from "$lib/features/create/shared/state/generator-tab-state.svelte";
 import { createSpellTabState } from "$lib/features/create/spell/state/spell-tab-state.svelte";
 import { createVisualBuilderTabState } from "$lib/features/create/shared/state/visual-builder-tab-state.svelte";
@@ -102,14 +102,6 @@ export class CreateModuleInitializer implements ICreateModuleInitializer {
       CreateModuleState
     );
 
-    const assemblerTabState = createAssemblerTabState(
-      this.sequenceService,
-      this.SequencePersister,
-      this.sequenceStatisticsService,
-      this.SequenceTransformer,
-      this.sequenceValidationService
-    );
-
     const generatorTabState = createGeneratorTabState(
       this.sequenceService,
       this.SequencePersister,
@@ -137,7 +129,7 @@ export class CreateModuleInitializer implements ICreateModuleInitializer {
     // Attach tab states to CreateModuleState for easy access
     CreateModuleState.constructTabState = constructTabState; // Legacy accessor
     CreateModuleState.constructorTabState = constructTabState; // Main accessor (triggers setter for _constructorTabState)
-    CreateModuleState.assemblerTabState = assemblerTabState;
+    // ARCHIVED: assemblerTabState removed (Feb 2026)
     CreateModuleState.generatorTabState = generatorTabState;
     CreateModuleState.spellTabState = spellTabState;
     CreateModuleState.visualBuilderTabState = visualBuilderTabState;
@@ -147,7 +139,6 @@ export class CreateModuleInitializer implements ICreateModuleInitializer {
 
     // Initialize tab states (but NOT persistence - that's done after deep link check)
     await constructTabState.initializeConstructTab();
-    await assemblerTabState.initializeAssemblerTab();
     await generatorTabState.initializeGeneratorTab();
     await spellTabState.initializeSpellTab();
     await visualBuilderTabState.initializeVisualBuilderTab();
@@ -162,7 +153,6 @@ export class CreateModuleInitializer implements ICreateModuleInitializer {
       // State objects
       CreateModuleState,
       constructTabState,
-      assemblerTabState,
       generatorTabState,
       spellTabState,
       visualBuilderTabState,
