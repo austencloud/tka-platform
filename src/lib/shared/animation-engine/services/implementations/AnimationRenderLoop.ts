@@ -44,6 +44,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private loopOccurredAtStep: number | null = null;
   /** True on the frame where a loop was detected. Reset each frame. */
   private loopDetectedThisFrame: boolean = false;
+  /** True after the first loop has occurred. Prevents wrap-around on initial play. */
+  private hasLoopedAtLeastOnce: boolean = false;
 
   // CRITICAL: Reusable arrays to prevent GC pressure on mobile
   // These are reused every frame instead of allocating new arrays
@@ -104,6 +106,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     // Reset loop tracking on stop
     this.previousStep = 0;
     this.loopOccurredAtStep = null;
+    this.hasLoopedAtLeastOnce = false;
   }
 
   isRunning(): boolean {
@@ -430,6 +433,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.loopDetectedThisFrame = false;
     if (this.previousStep - currentStep > LOOP_DETECTION_THRESHOLD) {
       this.loopDetectedThisFrame = true;
+      this.hasLoopedAtLeastOnce = true;
       // For non-seamless loops, record where the loop occurred to clamp trail start.
       // For seamless loops, don't clamp — trails wrap around the boundary.
       if (!isSeamlesslyLoopable) {
@@ -458,23 +462,29 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
 
         const desiredStart = currentStep - fadeSteps;
 
-        // Determine if trail wraps around the loop boundary
-        const needsWrapAround = isSeamlesslyLoopable && desiredStart < 0;
+        // Determine if trail wraps around the loop boundary.
+        // Only wrap if a loop has actually occurred — on initial play there's
+        // no previous loop to read trail data from.
+        const needsWrapAround = isSeamlesslyLoopable && desiredStart < 0 && this.hasLoopedAtLeastOnce;
 
         if (needsWrapAround) {
           // SEAMLESS LOOP WRAP-AROUND:
           // Trail window spans the loop boundary, so read from two ranges:
-          //   1. Tail of previous loop: [totalSteps + desiredStart, totalSteps]
+          //   1. Tail of previous loop: [totalSteps + desiredStart, totalSteps + 1]
           //   2. Head of current loop:  [0, currentStep]
-          const wrapStartStep = Math.max(0, cacheInfo.totalSteps + desiredStart);
+          // We read to totalSteps + 1 (not totalSteps) because the cache covers
+          // the full last beat's motion arc. For seamless loops, position at
+          // totalSteps + 1 equals position at 0, so tail and head connect smoothly.
+          const cacheEndStep = cacheInfo.totalSteps + 1;
+          const wrapStartStep = Math.max(0, cacheEndStep + desiredStart);
 
           // Blue prop: tail segment (both ends) then head segment (both ends)
           let blueCount = this.pathCache.fillTrailPoints(
-            0, 0, wrapStartStep, cacheInfo.totalSteps, scaleFactor,
+            0, 0, wrapStartStep, cacheEndStep, scaleFactor,
             this.reusableBlueTrailPoints, 0
           );
           blueCount += this.pathCache.fillTrailPoints(
-            0, 1, wrapStartStep, cacheInfo.totalSteps, scaleFactor,
+            0, 1, wrapStartStep, cacheEndStep, scaleFactor,
             this.reusableBlueTrailPoints, blueCount
           );
           blueCount += this.pathCache.fillTrailPoints(
@@ -489,11 +499,11 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
 
           // Red prop: tail segment (both ends) then head segment (both ends)
           let redCount = this.pathCache.fillTrailPoints(
-            1, 0, wrapStartStep, cacheInfo.totalSteps, scaleFactor,
+            1, 0, wrapStartStep, cacheEndStep, scaleFactor,
             this.reusableRedTrailPoints, 0
           );
           redCount += this.pathCache.fillTrailPoints(
-            1, 1, wrapStartStep, cacheInfo.totalSteps, scaleFactor,
+            1, 1, wrapStartStep, cacheEndStep, scaleFactor,
             this.reusableRedTrailPoints, redCount
           );
           redCount += this.pathCache.fillTrailPoints(
