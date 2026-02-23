@@ -1,0 +1,96 @@
+<!--
+  PropCompositionPreview.svelte
+
+  Renders a paired prop composition (blue + red) using SVG.
+  Each prop is positioned according to the composition recipe for its family.
+
+  Used in:
+  - PropIndicatorButton (button panel in Create module)
+  - PropTypeButton (prop selection drawer)
+  - PropButtonLab (visual tuning lab tab)
+-->
+<script lang="ts">
+  import { PropType } from "../domain/enums/PropType";
+  import { getPropTypeDisplayInfo } from "../domain/PropTypeDisplayRegistry";
+  import {
+    getCompositionRecipe,
+    type CompositionRecipe,
+  } from "../domain/prop-composition-recipes";
+
+  let {
+    propType,
+    size = 64,
+    recipeOverride = undefined,
+  }: {
+    propType: PropType;
+    size?: number;
+    /** Override the default recipe (used by lab tab for live tuning) */
+    recipeOverride?: CompositionRecipe;
+  } = $props();
+
+  const displayInfo = $derived(getPropTypeDisplayInfo(propType));
+  const recipe = $derived(recipeOverride ?? getCompositionRecipe(propType));
+
+  // Build transform strings for each prop
+  const blueTransform = $derived(
+    `translate(${recipe.blue.x}, ${recipe.blue.y}) ` +
+    `rotate(${recipe.blue.rotation}) ` +
+    `scale(${recipe.blue.scale * recipe.pairScale})`
+  );
+
+  const redTransform = $derived(
+    `translate(${recipe.red.x}, ${recipe.red.y}) ` +
+    `rotate(${recipe.red.rotation}) ` +
+    `scale(${recipe.red.scale * recipe.pairScale})`
+  );
+
+  // Image dimensions in viewBox units - props are placed relative to their center
+  // Using a square bounding box that gets scaled by the recipe
+  const imgSize = 40;
+  const imgOffset = -(imgSize / 2);
+</script>
+
+<svg
+  class="prop-composition-preview"
+  width={size}
+  height={size}
+  viewBox="0 0 100 100"
+  xmlns="http://www.w3.org/2000/svg"
+  aria-hidden="true"
+>
+  <!-- Blue prop (native color from SVG) -->
+  <g transform={blueTransform}>
+    <image
+      href={displayInfo.image}
+      x={imgOffset}
+      y={imgOffset}
+      width={imgSize}
+      height={imgSize}
+    />
+  </g>
+
+  <!-- Red prop (hue-rotated to match existing red prop coloring) -->
+  <g transform={redTransform}>
+    <image
+      class="red-prop"
+      href={displayInfo.image}
+      x={imgOffset}
+      y={imgOffset}
+      width={imgSize}
+      height={imgSize}
+    />
+  </g>
+</svg>
+
+<style>
+  .prop-composition-preview {
+    display: block;
+    pointer-events: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .red-prop {
+    filter: hue-rotate(125deg) saturate(1.2);
+  }
+</style>
