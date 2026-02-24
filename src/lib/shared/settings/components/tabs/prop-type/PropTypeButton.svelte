@@ -1,37 +1,25 @@
 <script lang="ts">
   import { PropType } from "../../../../pictograph/prop/domain/enums/PropType";
   import { getPropTypeDisplayInfo } from "./PropTypeRegistry";
+  import PropCompositionPreview from "../../../../pictograph/prop/components/PropCompositionPreview.svelte";
 
   let {
     propType,
     selected = false,
     selectedBlue = false,
     selectedRed = false,
-    shouldRotate = false,
     color = "blue",
     onSelect,
-    onImageLoad,
   } = $props<{
     propType: PropType;
     selected?: boolean;
     selectedBlue?: boolean;
     selectedRed?: boolean;
-    shouldRotate?: boolean;
     color?: "blue" | "red";
     onSelect?: (propType: PropType) => void;
-    onImageLoad?: (propType: PropType, width: number, height: number) => void;
   }>();
 
-  // Reactive display info - recalculates when propType changes
   const displayInfo = $derived(getPropTypeDisplayInfo(propType));
-
-  // Handle image load to report dimensions for rotation logic
-  function handleImageLoad(e: Event) {
-    const img = e.target as HTMLImageElement;
-    if (img.naturalWidth && img.naturalHeight) {
-      onImageLoad?.(propType, img.naturalWidth, img.naturalHeight);
-    }
-  }
 
   function handleClick() {
     onSelect?.(propType);
@@ -48,7 +36,6 @@
 <button
   class="prop-button"
   class:selected
-  class:color-red={color === "red"}
   onclick={handleClick}
   onkeydown={handleKeydown}
   aria-label={`Select ${displayInfo.label} prop type`}
@@ -56,14 +43,7 @@
   title={`${displayInfo.label} - Click to select this prop type`}
 >
   <div class="prop-image-container">
-    <img
-      src={displayInfo.image}
-      alt=""
-      class="prop-image"
-      class:rotated={shouldRotate}
-      onload={handleImageLoad}
-      draggable="false"
-    />
+    <PropCompositionPreview {propType} />
   </div>
   <span class="prop-label">{displayInfo.label}</span>
 
@@ -122,9 +102,7 @@
     border-color: var(--theme-stroke-strong);
     color: var(--theme-text);
     transform: translateY(-1px) scale(1.01); /* iOS subtle lift */
-    box-shadow:
-      0 6px 18px rgba(0, 0, 0, 0.14),
-      0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--theme-shadow-hover, 0 6px 18px rgba(0, 0, 0, 0.14));
   }
 
   /* Selected - Uses theme accent */
@@ -166,38 +144,18 @@
     position: relative;
   }
 
-  .prop-image {
-    width: 100%;
-    height: 100%;
-    max-width: 85%;
-    max-height: 85%;
-    object-fit: contain;
+  .prop-image-container :global(.prop-composition-preview) {
+    width: 85%;
+    height: 85%;
     opacity: 0.9;
     transition: opacity var(--duration-normal) ease;
-    /* Prevent text selection and dragging */
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    user-select: none;
-    pointer-events: none;
-    /* Add drop shadow for visibility */
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
   }
 
-  /* Apply red color via hue-rotate filter (same as PresetChip) */
-  .prop-button.color-red .prop-image {
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3)) hue-rotate(125deg) saturate(1.2);
-  }
-
-  /* Rotate image 90 degrees counterclockwise when aspect ratios don't match */
-  .prop-image.rotated {
-    transform: rotate(-90deg);
-  }
-
-  .prop-button:hover .prop-image {
+  .prop-button:hover .prop-image-container :global(.prop-composition-preview) {
     opacity: 1;
   }
 
-  .prop-button.selected .prop-image {
+  .prop-button.selected .prop-image-container :global(.prop-composition-preview) {
     opacity: 1;
   }
 
@@ -279,7 +237,6 @@
   /* iOS Accessibility - Reduced Motion */
   @media (prefers-reduced-motion: reduce) {
     .prop-button,
-    .prop-image,
     .ios-checkmark {
       transition: none;
       animation: none;
@@ -290,8 +247,7 @@
       transform: none;
     }
 
-    /* Keep rotation but remove transition animation */
-    .prop-image {
+    .prop-image-container :global(.prop-composition-preview) {
       transition: none;
     }
   }
