@@ -215,7 +215,7 @@
             <span class="read-receipt read" aria-label="Read">
               <i class="fas fa-check-double" aria-hidden="true"></i>
               {#if readTimestamp}
-                <span class="read-time">{formatReadTime(readTimestamp)}</span>
+                <span class="read-time">Seen {formatReadTime(readTimestamp)}</span>
               {/if}
             </span>
           {/if}
