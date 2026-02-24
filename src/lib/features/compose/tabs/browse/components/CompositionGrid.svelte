@@ -23,7 +23,7 @@
 	}: {
 		compositions: CompositionBrowseItem[];
 		isLoading?: boolean;
-		onExpand: (item: CompositionBrowseItem, rect: DOMRect) => void;
+		onExpand: (item: CompositionBrowseItem) => void;
 		onToggleFavorite?: (id: string) => void;
 		onPlay?: (id: string) => void;
 		onEdit?: (id: string) => void;

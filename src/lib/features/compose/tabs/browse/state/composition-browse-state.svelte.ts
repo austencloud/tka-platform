@@ -104,7 +104,6 @@ export function createCompositionBrowseState() {
 	// Detail view state
 	let viewMode = $state<BrowseViewMode>("grid");
 	let expandedComposition = $state<CompositionBrowseItem | null>(null);
-	let expandedCardRect = $state<DOMRect | null>(null);
 
 	// Derived: filtered + sorted compositions
 	const filteredCompositions = $derived.by(() => {
@@ -261,19 +260,17 @@ export function createCompositionBrowseState() {
 	}
 
 	// Detail view
-	function expandComposition(item: CompositionBrowseItem, cardRect: DOMRect): void {
+	function expandComposition(item: CompositionBrowseItem): void {
 		expandedComposition = item;
-		expandedCardRect = cardRect;
 		viewMode = "detail";
 	}
 
 	function collapseDetail(): void {
 		viewMode = "grid";
-		// Keep expandedComposition briefly for reverse animation, then clear
+		// Keep expandedComposition briefly for drawer close animation, then clear
 		setTimeout(() => {
 			expandedComposition = null;
-			expandedCardRect = null;
-		}, 350);
+		}, 400);
 	}
 
 	function clearError(): void {
@@ -292,7 +289,6 @@ export function createCompositionBrowseState() {
 		get hasActiveFilters() { return hasActiveFilters; },
 		get viewMode() { return viewMode; },
 		get expandedComposition() { return expandedComposition; },
-		get expandedCardRect() { return expandedCardRect; },
 
 		// Methods
 		loadCompositions,
