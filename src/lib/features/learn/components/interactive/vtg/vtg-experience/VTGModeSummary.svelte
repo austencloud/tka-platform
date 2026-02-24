@@ -24,8 +24,8 @@ VTGModeSummary - Summary grid showing all VTG modes before quiz
 <style>
   .mode-summary {
     padding: 1.25rem;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
   }
 
@@ -61,7 +61,7 @@ VTGModeSummary - Summary grid showing all VTG modes before quiz
   }
 
   .summary-name {
-    font-size: 0.6875rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: var(--type-color);
     opacity: 0.8;

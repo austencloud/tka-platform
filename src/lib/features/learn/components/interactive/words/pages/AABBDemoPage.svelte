@@ -114,7 +114,7 @@
     color: white;
     margin: 0;
     text-align: center;
-    background: linear-gradient(135deg, #50c878 0%, #3cb371 100%);
+    background: linear-gradient(135deg, var(--semantic-success, #50c878) 0%, var(--semantic-success, #3cb371) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -130,7 +130,7 @@
   p {
     font-size: 1rem;
     line-height: 1.6;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--theme-text, rgba(255, 255, 255, 0.85));
     margin: 0;
   }
 
@@ -159,7 +159,7 @@
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke-strong);
     border-radius: 10px;
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--theme-text, rgba(255, 255, 255, 0.8));
     font-size: 0.9375rem;
     font-weight: 600;
     cursor: pointer;
@@ -167,19 +167,19 @@
   }
 
   .control-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.25);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
   }
 
   .control-btn.playing {
-    background: rgba(34, 211, 238, 0.2);
-    border-color: rgba(34, 211, 238, 0.4);
-    color: #22d3ee;
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 20%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent);
+    color: var(--theme-accent, #22d3ee);
   }
 
   .beat-breakdown {
     padding: 1rem;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border-radius: 12px;
   }
 
@@ -205,8 +205,8 @@
   }
 
   .beat-item.active {
-    background: rgba(80, 200, 120, 0.15);
-    border-color: rgba(80, 200, 120, 0.5);
+    background: color-mix(in srgb, var(--semantic-success, #50c878) 15%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-success, #50c878) 50%, transparent);
   }
 
   .beat-num {
@@ -221,7 +221,7 @@
   }
 
   .beat-desc {
-    font-size: 0.6875rem;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim);
   }
 

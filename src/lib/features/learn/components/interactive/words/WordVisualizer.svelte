@@ -38,7 +38,7 @@ Displays letters transitioning smoothly on the grid with motion arrows
   }>();
 
   let animationProgress = $state(0);
-  let animationInterval: number | undefined;
+  let animationInterval: ReturnType<typeof setInterval> | undefined;
 
   const currentLetter = $derived(() => {
     if (letters.length === 0) return null;
@@ -91,7 +91,7 @@ Displays letters transitioning smoothly on the grid with motion arrows
         const nextIndex = (currentIdx + 1) % lettersLength;
         stepChangeCallback?.(nextIndex);
       }
-    }, frameInterval) as unknown as number;
+    }, frameInterval);
   }
 
   function stopAnimation() {
@@ -151,7 +151,7 @@ Displays letters transitioning smoothly on the grid with motion arrows
         cx={point.x}
         cy={point.y}
         r="2.5"
-        fill="rgba(255, 255, 255, 0.2)"
+        fill="var(--theme-stroke-strong, rgba(255, 255, 255, 0.2))"
       />
     {/each}
 
@@ -198,7 +198,7 @@ Displays letters transitioning smoothly on the grid with motion arrows
     align-items: center;
     gap: 1rem;
     padding: 1rem;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border: 1px solid var(--theme-stroke);
     border-radius: 16px;
   }

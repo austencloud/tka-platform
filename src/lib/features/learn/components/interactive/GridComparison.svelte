@@ -3,10 +3,23 @@ GridComparison - Side-by-side view of Diamond and Box grids
 Shows both grids simultaneously for comparison
 -->
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import GridVisualizer from "./GridVisualizer.svelte";
 
   let showMerged = $state(false);
   let isAnimating = $state(false);
+  let mounted = $state(true);
+  let mergeTimer: ReturnType<typeof setTimeout> | null = null;
+
+  $effect(() => {
+    return () => {
+      mounted = false;
+    };
+  });
+
+  onDestroy(() => {
+    if (mergeTimer !== null) clearTimeout(mergeTimer);
+  });
 
   async function handleMergeAnimation() {
     if (isAnimating) return;
@@ -14,7 +27,14 @@ Shows both grids simultaneously for comparison
     isAnimating = true;
 
     // Animate the merge
-    await new Promise((resolve) => setTimeout(resolve, 600));
+    await new Promise<void>((resolve) => {
+      mergeTimer = setTimeout(() => {
+        mergeTimer = null;
+        resolve();
+      }, 600);
+    });
+
+    if (!mounted) return;
     showMerged = true;
 
     isAnimating = false;
@@ -120,7 +140,7 @@ Shows both grids simultaneously for comparison
     font-weight: 800;
     color: white;
     margin: 0 0 0.5rem 0;
-    background: linear-gradient(135deg, #4a9eff, #ff4a9e);
+    background: linear-gradient(135deg, var(--prop-blue, #4a9eff), var(--theme-accent, #7b68ee));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -128,7 +148,7 @@ Shows both grids simultaneously for comparison
 
   .comparison-subtitle {
     font-size: 1rem;
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--theme-text, rgba(255, 255, 255, 0.8));
     margin: 0;
     max-width: 600px;
     margin: 0 auto;
@@ -161,7 +181,7 @@ Shows both grids simultaneously for comparison
   .grid-description {
     padding: 1rem;
     background: var(--theme-card-bg);
-    border-left: 3px solid rgba(255, 255, 255, 0.2);
+    border-left: 3px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     border-radius: 8px;
   }
 
@@ -174,7 +194,7 @@ Shows both grids simultaneously for comparison
 
   .grid-description p {
     font-size: 0.9375rem;
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--theme-text, rgba(255, 255, 255, 0.8));
     margin: 0 0 0.5rem 0;
     line-height: 1.5;
   }
@@ -198,12 +218,12 @@ Shows both grids simultaneously for comparison
     padding: 1rem 2rem;
     background: linear-gradient(
       135deg,
-      rgba(74, 158, 255, 0.2),
-      rgba(123, 104, 238, 0.2)
+      color-mix(in srgb, var(--prop-blue, #4a9eff) 20%, transparent),
+      color-mix(in srgb, var(--theme-accent, #7b68ee) 20%, transparent)
     );
-    border: 2px solid rgba(123, 104, 238, 0.4);
+    border: 2px solid color-mix(in srgb, var(--theme-accent, #7b68ee) 40%, transparent);
     border-radius: 12px;
-    color: white;
+    color: var(--theme-text, white);
     font-size: 1.125rem;
     font-weight: 700;
     cursor: pointer;
@@ -214,12 +234,12 @@ Shows both grids simultaneously for comparison
   .merge-button:hover:not(:disabled) {
     background: linear-gradient(
       135deg,
-      rgba(74, 158, 255, 0.3),
-      rgba(123, 104, 238, 0.3)
+      color-mix(in srgb, var(--prop-blue, #4a9eff) 30%, transparent),
+      color-mix(in srgb, var(--theme-accent, #7b68ee) 30%, transparent)
     );
-    border-color: rgba(123, 104, 238, 0.6);
+    border-color: color-mix(in srgb, var(--theme-accent, #7b68ee) 60%, transparent);
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(123, 104, 238, 0.3);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--theme-accent, #7b68ee) 30%, transparent);
   }
 
   .merge-button:active:not(:disabled) {
@@ -270,10 +290,10 @@ Shows both grids simultaneously for comparison
     padding: 2rem;
     background: linear-gradient(
       135deg,
-      rgba(123, 104, 238, 0.1),
-      rgba(74, 158, 255, 0.1)
+      color-mix(in srgb, var(--theme-accent, #7b68ee) 10%, transparent),
+      color-mix(in srgb, var(--prop-blue, #4a9eff) 10%, transparent)
     );
-    border: 2px solid rgba(123, 104, 238, 0.3);
+    border: 2px solid color-mix(in srgb, var(--theme-accent, #7b68ee) 30%, transparent);
     border-radius: 16px;
     text-align: center;
   }
@@ -298,10 +318,10 @@ Shows both grids simultaneously for comparison
   .split-button {
     margin-top: 1.5rem;
     padding: 0.75rem 1.5rem;
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
+    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.2));
     border-radius: 10px;
-    color: white;
+    color: var(--theme-text, white);
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
@@ -310,8 +330,8 @@ Shows both grids simultaneously for comparison
   }
 
   .split-button:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
   }
 
   /* Responsive */

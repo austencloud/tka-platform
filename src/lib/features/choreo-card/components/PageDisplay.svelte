@@ -7,6 +7,7 @@
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { container } from "$lib/shared/di";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { onMount, onDestroy } from "svelte";
   import type { PrintPreviewPage } from "../domain/types/PageLayoutTypes";
   import ChoreoCard from "./ChoreoCard.svelte";
@@ -98,7 +99,7 @@
 <div class="page-display" style:--column-count={columnCount} bind:this={pageDisplayEl}>
   {#if isLoading}
     <div class="state-container" role="status" aria-live="polite" aria-busy="true">
-      <div class="spinner" aria-hidden="true"></div>
+      <ProgressRing percent={-1} size={32} strokeWidth={3} />
       <h3 class="state-title">Loading sequences...</h3>
       <p class="state-message">Preparing print preview</p>
     </div>
@@ -181,22 +182,6 @@
     height: 100%;
     padding: var(--spacing-xl);
     text-align: center;
-  }
-
-  .spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-top-color: var(--theme-accent, #f43f5e);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin-bottom: var(--spacing-lg);
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
   }
 
   .state-icon {
@@ -304,10 +289,6 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-    }
-
     .retry-btn {
       transition: none;
     }

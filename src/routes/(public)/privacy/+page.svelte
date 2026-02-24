@@ -213,7 +213,7 @@
             <strong>Firebase:</strong> Authentication, database, and storage (<a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener noreferrer">privacy policy</a>)
           </li>
           <li>
-            <strong>Google Analytics:</strong> Anonymous usage statistics to understand how people use TKA Scribe. You can disable this in your browser settings or by using an ad blocker.
+            <strong>PostHog:</strong> Anonymous usage statistics to understand how people use TKA. This includes page views, approximate location, device type, and session recordings. You can disable this in your browser settings or by using an ad blocker.
           </li>
         </ul>
       </section>

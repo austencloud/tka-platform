@@ -14,7 +14,6 @@
   import { onMount, onDestroy } from "svelte";
   import { browser } from "$app/environment";
   import { container } from "$lib/shared/di";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 
   let {
     visible = false,
@@ -39,7 +38,7 @@
     onKeyboardHeightChange?: (height: number) => void;
   }>();
 
-  const haptic = container.items.hapticFeedback as IHapticFeedback;
+  const haptic = container.items.hapticFeedback;
 
   let keyboardHeight = $state(0);
   let isKeyboardVisible = $state(false);

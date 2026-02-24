@@ -305,6 +305,11 @@ export class FireDefaultsLoader implements IFireDefaultsLoader {
 			pressureDissipation: obj.pressureDissipation as number,
 			temperatureInjection: obj.temperatureInjection as number,
 			upwardBias: obj.upwardBias as number,
+			sootYield: (obj.sootYield as number) ?? 0.04,
+			sootCoolThreshold: (obj.sootCoolThreshold as number) ?? 0.3,
+			sootCoolRate: (obj.sootCoolRate as number) ?? 0.8,
+			sootDissipation: (obj.sootDissipation as number) ?? 2.5,
+			sootAdvectionDissipation: (obj.sootAdvectionDissipation as number) ?? 0.97,
 		};
 	}
 

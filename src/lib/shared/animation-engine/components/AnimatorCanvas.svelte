@@ -75,7 +75,7 @@ Last audit: 2025-12-27
     // Whether sequence returns to start position - controls trail clearing on loop
     isSeamlesslyLoopable = undefined,
     // Progress bar visual variant
-    progressBarVariant = "gradient-labeled",
+    progressBarVariant = "gradient",
     // Progress bar seek callback
     onProgressBarSeek = null,
     // When true, always show word header and progress bar regardless of aspect ratio.
@@ -133,9 +133,8 @@ Last audit: 2025-12-27
   let fireEffectEnabled = $state(visibilityManager.isFireEffectEnabled());
 
   // Effective dark mode: use preview override if provided, otherwise global
-  // Fire forces dark mode ON because fire on white background looks terrible
   const darkModeEnabled = $derived(
-    previewDarkMode !== null ? previewDarkMode : (globalDarkMode || fireEffectEnabled)
+    previewDarkMode !== null ? previewDarkMode : globalDarkMode
   );
 
   // Effective visibility: combine global settings with hide props (for tunnel mode)
@@ -357,6 +356,12 @@ Last audit: 2025-12-27
   /* Header slot: in portrait, takes natural height at top */
   .header-slot {
     flex-shrink: 0;
+    overflow: hidden;
+    /* Smooth collapse/expand for constrained ↔ focused transitions */
+    max-height: 100px;
+    opacity: 1;
+    transition: max-height 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+                opacity 0.2s ease-out;
   }
 
   /* Canvas wrapper: square in portrait mode */
@@ -403,28 +408,26 @@ Last audit: 2025-12-27
 
   @container (min-aspect-ratio: 1.15) {
     .content-wrapper {
-      /* Size based on shorter dimension (height) */
-      width: calc(100cqh - 8px);
-      max-width: calc(100cqh - 8px);
-      /* Remove overhead calculation - just the square */
+      /* Size based on shorter dimension (height), minus progress bar overhead (~2.5rem) */
+      width: calc(100cqh - 2.5rem);
+      max-width: calc(100cqh - 2.5rem);
+      /* Remove overhead calculation - square canvas + progress bar */
       height: auto;
       /* Tighter border in constrained mode */
       border-width: 1px;
     }
 
-    /* Hide header when constrained - word is visible in choreo card below */
+    /* Smoothly collapse header - word is visible in choreo card below */
     .header-slot {
-      display: none;
+      max-height: 0;
+      opacity: 0;
     }
 
-    /* Hide progress bar when constrained - modal has playback controls */
-    .progress-slot {
-      display: none;
-    }
+    /* Progress bar stays visible in constrained mode */
 
     /* Canvas fills the available space */
     .canvas-wrapper {
-      /* Square based on parent width (which equals height) */
+      /* Square based on parent width (which equals height minus progress) */
       width: 100%;
       height: 100cqw;
     }
@@ -449,11 +452,8 @@ Last audit: 2025-12-27
   }
 
   .animation-container[data-focused] .header-slot {
-    display: block !important;
-  }
-
-  .animation-container[data-focused] .progress-slot {
-    display: block !important;
+    max-height: 100px !important;
+    opacity: 1 !important;
   }
 
   .animation-container[data-focused] .canvas-wrapper {
@@ -481,7 +481,8 @@ Last audit: 2025-12-27
      =========================================== */
 
   @media (prefers-reduced-motion: reduce) {
-    .content-wrapper {
+    .content-wrapper,
+    .header-slot {
       transition: none;
     }
   }

@@ -7,6 +7,7 @@
    */
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { getVideoCache } from "$lib/shared/video";
   import VideoEditorOverlay from "./video-editor/VideoEditorOverlay.svelte";
   import VideoEditModal from "./VideoEditModal.svelte";
@@ -382,7 +383,7 @@
   <!-- Video grid -->
   {#if loading}
     <div class="loading-state">
-      <div class="spinner"></div>
+      <ProgressRing percent={-1} size={32} strokeWidth={3} />
       <span>Loading videos...</span>
     </div>
   {:else if error}
@@ -738,21 +739,6 @@
   .empty-state i {
     font-size: 48px;
     opacity: 0.5;
-  }
-
-  .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--theme-stroke);
-    border-top-color: var(--theme-accent);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
   }
 
   @media (max-width: 600px) {

@@ -114,7 +114,7 @@ export function createStartEndOptionsState(
   // Get settings service for Firebase-synced blocked positions
   let settingsState: ISettingsState | null = null;
   try {
-    settingsState = container.items.settingsState as ISettingsState;
+    settingsState = container.items.settingsState;
   } catch {
     console.warn("⚠️ StartEndOptions: Settings service not available");
   }

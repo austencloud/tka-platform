@@ -10,14 +10,13 @@
   import type { TabId } from "../../navigation/domain/types";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
-  import type { IPersistenceService } from "../services/contracts/IPersistenceService";
 
   // ============================================================================
   // SERVICE INJECTION
   // ============================================================================
 
   // Get the persistence service from the ITI container
-  const persistenceService = container.items.persistenceService as IPersistenceService;
+  const persistenceService = container.items.persistenceService;
 
   // ============================================================================
   // REACTIVE STATE

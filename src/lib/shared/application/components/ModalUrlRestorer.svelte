@@ -17,8 +17,9 @@
     clearModalUrlState,
   } from "../state/ui/modal-url-state.svelte";
   import { container } from "$lib/shared/di";
-  import type { IDeepLinkResolver, DeepLinkError } from "../services/contracts/IDeepLinkResolver";
+  import type { DeepLinkError } from "../services/contracts/IDeepLinkResolver";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   // Error state for failed deep links
   let loadError = $state<DeepLinkError>(null);
@@ -58,7 +59,7 @@
     loadError = null;
 
     // Resolve the sequence to cache it for the route
-    const deepLinkResolver = container.items.deepLinkResolver as IDeepLinkResolver;
+    const deepLinkResolver = container.items.deepLinkResolver;
     const result = await deepLinkResolver.resolve(state.sequenceId);
 
     isLoading = false;
@@ -89,7 +90,7 @@
 {#if isLoading}
   <div class="deep-link-overlay">
     <div class="deep-link-loading" role="status" aria-live="polite">
-      <div class="spinner" aria-hidden="true"></div>
+      <ProgressRing percent={-1} size={32} strokeWidth={3} />
       <p>Loading sequence...</p>
     </div>
   </div>
@@ -143,21 +144,6 @@
     align-items: center;
     gap: 1rem;
     color: var(--theme-text, #ffffff);
-  }
-
-  .spinner {
-    width: 48px;
-    height: 48px;
-    border: 3px solid var(--theme-stroke, rgba(255, 255, 255, 0.2));
-    border-top-color: var(--theme-accent, #6366f1);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
   }
 
   .deep-link-error {

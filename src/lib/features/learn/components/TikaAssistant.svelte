@@ -10,6 +10,8 @@
 	 * - Feedback buttons for A/B testing
 	 */
 
+	import { onDestroy } from 'svelte'
+
 	// Response type from the server API
 	interface AssistantResponse {
 		explanation: string
@@ -182,7 +184,12 @@
 	}
 
 	// Copy conversation to clipboard
+	let copyTimer: ReturnType<typeof setTimeout> | null = null
 	let copySuccess = $state(false)
+
+	onDestroy(() => {
+		if (copyTimer !== null) clearTimeout(copyTimer)
+	})
 	async function copyConversation() {
 		if (conversationHistory.length === 0) return
 
@@ -206,7 +213,7 @@ Timestamp: ${new Date().toISOString()}
 		try {
 			await navigator.clipboard.writeText(header + formatted)
 			copySuccess = true
-			setTimeout(() => copySuccess = false, 2000)
+			copyTimer = setTimeout(() => { copyTimer = null; copySuccess = false }, 2000)
 		} catch (err) {
 			console.error('Failed to copy:', err)
 		}
@@ -380,7 +387,7 @@ Timestamp: ${new Date().toISOString()}
 				placeholder="Ask about any letter or concept..."
 				disabled={isLoading}
 			/>
-			<button type="submit" disabled={isLoading || !question.trim()}>
+			<button type="submit" disabled={isLoading || !question.trim()} aria-label={isLoading ? 'Sending...' : 'Send question'}>
 				{#if isLoading}
 					<i class="fas fa-spinner fa-spin"></i>
 				{:else}
@@ -404,7 +411,7 @@ Timestamp: ${new Date().toISOString()}
 		color: white;
 		border: none;
 		cursor: pointer;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+		box-shadow: 0 4px 12px color-mix(in srgb, var(--theme-panel-bg, #000) 30%, transparent);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -436,7 +443,7 @@ Timestamp: ${new Date().toISOString()}
 		border-radius: var(--radius-lg, 16px);
 		display: flex;
 		flex-direction: column;
-		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+		box-shadow: 0 8px 32px color-mix(in srgb, var(--theme-panel-bg, #000) 40%, transparent);
 		z-index: 999;
 		overflow: hidden;
 	}
@@ -643,7 +650,7 @@ Timestamp: ${new Date().toISOString()}
 		padding: 2px 6px;
 		border-radius: var(--radius-sm, 4px);
 		text-transform: uppercase;
-		font-size: 10px;
+		font-size: var(--font-size-compact, 12px);
 	}
 
 	.source-badge.api {
@@ -679,18 +686,18 @@ Timestamp: ${new Date().toISOString()}
 	}
 
 	.feedback-btn.positive:hover {
-		color: #22c55e;
-		border-color: #22c55e;
+		color: var(--semantic-success, #22c55e);
+		border-color: var(--semantic-success, #22c55e);
 	}
 
 	.feedback-btn.negative:hover {
-		color: #ef4444;
-		border-color: #ef4444;
+		color: var(--semantic-error, #ef4444);
+		border-color: var(--semantic-error, #ef4444);
 	}
 
 	.feedback-btn.inaccurate:hover {
-		color: #f59e0b;
-		border-color: #f59e0b;
+		color: var(--semantic-warning, #f59e0b);
+		border-color: var(--semantic-warning, #f59e0b);
 	}
 
 	/* Loading State */
@@ -735,10 +742,10 @@ Timestamp: ${new Date().toISOString()}
 		align-items: center;
 		gap: var(--spacing-sm, 8px);
 		padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
-		background: rgba(239, 68, 68, 0.1);
-		border: 1px solid rgba(239, 68, 68, 0.3);
+		background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+		border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
 		border-radius: var(--radius-md, 8px);
-		color: #ef4444;
+		color: var(--semantic-error, #ef4444);
 		font-size: var(--font-size-min, 14px);
 	}
 

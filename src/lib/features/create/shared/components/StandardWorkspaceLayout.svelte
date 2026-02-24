@@ -108,8 +108,6 @@
 
     // Map each creation mode to its color (20% opacity for subtle border)
     switch (activeTab) {
-      case "assemble":
-        return "rgba(139, 92, 246, 0.2)"; // Purple
       case "construct":
         return "rgba(59, 130, 246, 0.2)"; // Blue
       case "visual-builder":

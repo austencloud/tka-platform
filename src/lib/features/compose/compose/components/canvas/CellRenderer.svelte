@@ -10,6 +10,7 @@
    * - Synchronized playback via shared currentStep from composition state
    */
 
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { onMount, onDestroy } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import type { CellConfig } from "../../domain/types";
@@ -250,7 +251,7 @@
 >
   {#if loading}
     <div class="loading-state">
-      <div class="spinner"></div>
+      <ProgressRing percent={-1} size={32} strokeWidth={3} />
     </div>
   {:else if error}
     <div class="error-state">
@@ -393,21 +394,6 @@
     justify-content: center;
   }
 
-  .spinner {
-    width: clamp(16px, 15cqi, 32px);
-    height: clamp(16px, 15cqi, 32px);
-    border: clamp(2px, 1cqi, 4px) solid var(--theme-stroke);
-    border-top-color: var(--theme-accent, #ec4899);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   /* Error state */
   .error-state {
     display: flex;
@@ -479,10 +465,6 @@
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-    }
-
     .canvas-container {
       transition: none;
     }

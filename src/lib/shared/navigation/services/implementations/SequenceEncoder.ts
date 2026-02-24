@@ -66,7 +66,7 @@ const ORIENTATION_ENCODE: Record<Orientation, string> = {
   [Orientation.OUT]: "o",
   [Orientation.CLOCK]: "k",
   [Orientation.COUNTER]: "t",
-  // Interradial orientations (Level 7)
+  // Interradial orientations (Level 6)
   [Orientation.CLOCK_IN]: "I",
   [Orientation.CLOCK_OUT]: "O",
   [Orientation.COUNTER_IN]: "N",

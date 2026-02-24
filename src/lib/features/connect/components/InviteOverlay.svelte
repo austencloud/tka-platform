@@ -7,6 +7,7 @@
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
 	import { connectState } from '../state/connect-state.svelte';
+	import ProgressRing from '$lib/shared/components/loading/ProgressRing.svelte';
 	import type { Invite } from '../domain/models/connect-models';
 
 	// Derived from state
@@ -77,7 +78,7 @@
 					disabled={isConnecting}
 				>
 					{#if isConnecting}
-						<div class="button-spinner"></div>
+						<ProgressRing percent={-1} size={24} strokeWidth={2} />
 						Joining...
 					{:else}
 						<i class="fas fa-check" aria-hidden="true"></i>
@@ -261,21 +262,6 @@
 		cursor: not-allowed;
 	}
 
-	.button-spinner {
-		width: 16px;
-		height: 16px;
-		border: 2px solid rgba(255, 255, 255, 0.3);
-		border-top-color: white;
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-	}
-
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
-	}
-
 	/* Dismiss button */
 	.dismiss-button {
 		position: absolute;
@@ -301,10 +287,6 @@
 
 	/* Reduced motion */
 	@media (prefers-reduced-motion: reduce) {
-		.button-spinner {
-			animation: none;
-		}
-
 		.decline-button,
 		.accept-button,
 		.dismiss-button {

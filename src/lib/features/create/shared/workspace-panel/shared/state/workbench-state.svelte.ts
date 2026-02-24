@@ -8,14 +8,13 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "../../../domain/models/StepData";
 import { container } from "$lib/shared/di";
-import type { IWorkbench } from "../services/contracts/IWorkbench";
 
 /**
  * Creates simplified workbench state
  */
 export function createWorkbenchState() {
   // Get the service
-  const Workbench = container.items.workbench as IWorkbench;
+  const Workbench = container.items.workbench;
 
   // Simple reactive state - just what we need
   let selectedStepIndex = $state<number | null>(null);

@@ -75,13 +75,13 @@ MotionQuizResults - Final results display with score and review
   }
 
   .results-icon.passing {
-    background: rgba(74, 222, 128, 0.15);
-    color: #4ade80;
+    background: color-mix(in srgb, var(--semantic-success, #4ade80) 15%, transparent);
+    color: var(--semantic-success, #4ade80);
   }
 
   .results-icon:not(.passing) {
-    background: rgba(251, 146, 60, 0.15);
-    color: #fb923c;
+    background: color-mix(in srgb, var(--semantic-warning, #fb923c) 15%, transparent);
+    color: var(--semantic-warning, #fb923c);
   }
 
   .results-title {
@@ -104,11 +104,11 @@ MotionQuizResults - Final results display with score and review
   }
 
   .score-value.passing {
-    color: #4ade80;
+    color: var(--semantic-success, #4ade80);
   }
 
   .score-value:not(.passing) {
-    color: #fb923c;
+    color: var(--semantic-warning, #fb923c);
   }
 
   .score-label {
@@ -123,10 +123,10 @@ MotionQuizResults - Final results display with score and review
     padding: 1rem 2.5rem;
     background: linear-gradient(
       135deg,
-      rgba(74, 222, 128, 0.3) 0%,
-      rgba(34, 197, 94, 0.3) 100%
+      color-mix(in srgb, var(--semantic-success, #4ade80) 30%, transparent) 0%,
+      color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent) 100%
     );
-    border: 2px solid rgba(74, 222, 128, 0.5);
+    border: 2px solid color-mix(in srgb, var(--semantic-success, #4ade80) 50%, transparent);
     border-radius: 12px;
     color: white;
     font-size: 1.0625rem;
@@ -138,10 +138,10 @@ MotionQuizResults - Final results display with score and review
   .finish-button:hover {
     background: linear-gradient(
       135deg,
-      rgba(74, 222, 128, 0.4) 0%,
-      rgba(34, 197, 94, 0.4) 100%
+      color-mix(in srgb, var(--semantic-success, #4ade80) 40%, transparent) 0%,
+      color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent) 100%
     );
-    border-color: rgba(74, 222, 128, 0.7);
+    border-color: color-mix(in srgb, var(--semantic-success, #4ade80) 70%, transparent);
     transform: translateY(-2px);
   }
 </style>

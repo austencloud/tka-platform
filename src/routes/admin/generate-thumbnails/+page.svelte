@@ -299,7 +299,7 @@
     try {
       console.log("Loading render service...");
       // ITI container is ready synchronously - get service directly
-      renderService = container.items.sequenceRenderer as ISequenceRenderer;
+      renderService = container.items.sequenceRenderer;
       console.log("Render service loaded:", !!renderService);
     } catch (error) {
       console.error("Failed to load render service:", error);

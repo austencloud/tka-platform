@@ -62,7 +62,7 @@
   }
 
   onMount(async () => {
-    thumbnailService = container.items.browseThumbnailProvider as IBrowseThumbnailProvider;
+    thumbnailService = container.items.browseThumbnailProvider;
 
     // Initialize from settings
     gridZoomManager.initFromSettings();

@@ -20,6 +20,7 @@
 
   // UI primitives
   import { ChipToggle, ChipGroup } from '@austencloud/chip-toggle';
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   interface Props {
     /** Gallery state - named galleryState to avoid Svelte compiler treating 'state' as a store */
@@ -328,7 +329,7 @@
   <!-- Loading indicator -->
   {#if galleryState.isLoading}
     <div class="loading-overlay">
-      <div class="loading-spinner"></div>
+      <ProgressRing percent={-1} size={32} strokeWidth={3} />
       <p>{t("gallery_loading")}</p>
     </div>
   {/if}
@@ -513,22 +514,6 @@
     justify-content: center;
     background: rgba(0, 0, 0, 0.8);
     color: white;
-  }
-
-  .loading-spinner {
-    width: 48px;
-    height: 48px;
-    border: 3px solid rgba(255, 255, 255, 0.2);
-    border-top-color: #f59e0b;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 16px;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
   }
 
   .error-message {
@@ -742,9 +727,6 @@
 
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */
   @media (prefers-reduced-motion: reduce) {
-    .loading-spinner {
-      animation: none;
-    }
     .unread-badge {
       animation: none;
     }

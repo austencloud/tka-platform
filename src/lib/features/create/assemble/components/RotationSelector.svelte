@@ -9,7 +9,6 @@ Preview-before-commit flow:
 -->
 <script lang="ts">
   import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
 
   const { onConfirm, onPreviewChange } = $props<{
@@ -17,7 +16,7 @@ Preview-before-commit flow:
     onPreviewChange: (blueRotation: RotationDirection | null, redRotation: RotationDirection | null) => void;
   }>();
 
-  const hapticService = container.items.hapticFeedback as IHapticFeedback;
+  const hapticService = container.items.hapticFeedback;
 
   // Track selections for each hand
   let blueRotation = $state<RotationDirection | null>(null);

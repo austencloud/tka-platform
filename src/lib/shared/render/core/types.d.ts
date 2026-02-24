@@ -51,7 +51,7 @@ export type HandPath = "cw" | "ccw" | "dash" | "static" | "hashIn" | "hashOut";
  * - overhead: Spinning above/below, viewed from above. Grid horizontal.
  *
  * All existing sequences default to "wall" when plane is omitted.
- * Note: Level 7 is interradial orientations. Planes are a separate future concept (Level 8).
+ * Note: Level 6 is interradial orientations. Planes are a separate future concept (Level 8).
  */
 export type SpinningPlane = "wall" | "wheel" | "overhead";
 /** Vector directions for offset calculations */

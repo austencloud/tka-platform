@@ -22,7 +22,6 @@
   import { getVideoPlayer } from "../../services/implementations/VideoPlayer";
   import { getVideoGenerationCoordinator } from "../../services/implementations/VideoGenerationCoordinator";
   import { container } from "$lib/shared/di";
-  import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
   import VideoGenerationStatus from "../video-player/VideoGenerationStatus.svelte";
   import VideoReadyNotification from "../video-player/VideoReadyNotification.svelte";
   import GenerateVideoButton from "../video-player/GenerateVideoButton.svelte";
@@ -53,11 +52,16 @@
   let isGeneratingVideo = $state(false);
   let videoProgress = $state<VideoRenderProgress | null>(null);
   let videoElement: HTMLVideoElement | null = $state(null);
+  let hasError = $state(false);
+
+  // Derived UX states
+  const isLoading = $derived(isGeneratingVideo && videoProgress !== null);
+  const isEmpty = $derived(!sequenceData);
 
   // Services
   const playbackService = getVideoPlayer();
   const generationCoordinator = getVideoGenerationCoordinator();
-  const errorHandler = container.items.errorHandler as IErrorHandler;
+  const errorHandler = container.items.errorHandler;
 
   // Timer refs for cleanup
   let switchToVideoTimer: ReturnType<typeof setTimeout> | null = null;
@@ -137,6 +141,7 @@
   async function startVideoGeneration() {
     if (!sequenceData || isGeneratingVideo) return;
 
+    hasError = false;
     isGeneratingVideo = true;
     videoProgress = {
       currentFrame: 0,
@@ -163,6 +168,7 @@
       videoResult = result;
       onVideoReady(result);
     } catch (error) {
+      hasError = true;
       errorHandler.showUserError({
         message: "Video generation failed. Try again or use live preview.",
         technicalDetails: error instanceof Error ? error.message : String(error),
@@ -224,6 +230,7 @@
 
   // Handle video errors
   function handleVideoError(event: Event) {
+    hasError = true;
     const video = event.target as HTMLVideoElement;
     const error = video.error;
     errorHandler.showUserError({
@@ -254,10 +261,15 @@
   }
 </script>
 
-<!-- Video generation status indicator -->
-{#if isGeneratingVideo && videoProgress}
+<!-- Empty state: no sequence data provided -->
+{#if isEmpty}
+  <!-- No content to render - parent provides sequence data -->
+{/if}
+
+<!-- Loading state: video generation in progress -->
+{#if isLoading}
   <VideoGenerationStatus
-    progress={videoProgress}
+    progress={videoProgress!}
     onCancel={cancelVideoGeneration}
   />
 {/if}

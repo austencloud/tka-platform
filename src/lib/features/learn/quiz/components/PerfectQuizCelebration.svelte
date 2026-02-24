@@ -8,7 +8,7 @@ Features:
 - Dismisses on tap
 -->
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { scale, fade } from 'svelte/transition';
 	import { elasticOut, cubicOut } from 'svelte/easing';
 	import { getDelightOrchestrator } from '$lib/shared/delight/context/delight-context';
@@ -24,11 +24,15 @@ Features:
 	let visible = $state(false);
 	let textVisible = $state(false);
 
+	let staggerTimer: ReturnType<typeof setTimeout> | null = null;
+	let autoDismissTimer: ReturnType<typeof setTimeout> | null = null;
+	let dismissAnimTimer: ReturnType<typeof setTimeout> | null = null;
+
 	onMount(() => {
 		// Stagger animations
 		visible = true;
 
-		setTimeout(() => {
+		staggerTimer = setTimeout(() => {
 			textVisible = true;
 			// Trigger celebration
 			hapticService?.trigger('success');
@@ -39,23 +43,42 @@ Features:
 		}, 200);
 
 		// Auto-dismiss after 4 seconds
-		const timer = setTimeout(() => {
+		autoDismissTimer = setTimeout(() => {
 			handleDismiss();
 		}, 4000);
 
-		return () => clearTimeout(timer);
+		return () => {
+			if (staggerTimer !== null) clearTimeout(staggerTimer);
+			if (autoDismissTimer !== null) clearTimeout(autoDismissTimer);
+			if (dismissAnimTimer !== null) clearTimeout(dismissAnimTimer);
+		};
+	});
+
+	onDestroy(() => {
+		if (dismissAnimTimer !== null) clearTimeout(dismissAnimTimer);
 	});
 
 	function handleDismiss() {
 		visible = false;
-		setTimeout(() => {
+		if (autoDismissTimer !== null) {
+			clearTimeout(autoDismissTimer);
+			autoDismissTimer = null;
+		}
+		dismissAnimTimer = setTimeout(() => {
 			onDismiss();
 		}, 300);
 	}
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-<div class="celebration-overlay" class:visible onclick={handleDismiss}>
+<div
+	class="celebration-overlay"
+	class:visible
+	onclick={handleDismiss}
+	onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleDismiss()}
+	role="button"
+	tabindex="0"
+	aria-label="Dismiss celebration"
+>
 	<!-- Starburst rays -->
 	<div class="starburst">
 		{#each Array(12) as _, i}
@@ -88,13 +111,14 @@ Features:
 
 <style>
 	.celebration-overlay {
+		--achievement-gold: #ffd700;
 		position: fixed;
 		inset: 0;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		background: rgba(0, 0, 0, 0);
+		background: transparent;
 		z-index: 9999;
 		pointer-events: none;
 		transition: background var(--duration-emphasis) ease;
@@ -102,7 +126,7 @@ Features:
 	}
 
 	.celebration-overlay.visible {
-		background: rgba(0, 0, 0, 0.85);
+		background: color-mix(in srgb, var(--theme-panel-bg) 85%, transparent);
 		pointer-events: auto;
 	}
 
@@ -123,9 +147,9 @@ Features:
 		background: linear-gradient(
 			to top,
 			transparent 0%,
-			rgba(255, 215, 0, 0.1) 30%,
-			rgba(255, 215, 0, 0.3) 50%,
-			rgba(255, 215, 0, 0.1) 70%,
+			color-mix(in srgb, var(--achievement-gold) 10%, transparent) 30%,
+			color-mix(in srgb, var(--achievement-gold) 30%, transparent) 50%,
+			color-mix(in srgb, var(--achievement-gold) 10%, transparent) 70%,
 			transparent 100%
 		);
 		transform-origin: center center;
@@ -161,11 +185,11 @@ Features:
 	.letter {
 		font-size: 3.5rem;
 		font-weight: 900;
-		color: #ffd700;
+		color: var(--achievement-gold);
 		text-shadow:
-			0 0 20px rgba(255, 215, 0, 0.8),
-			0 0 40px rgba(255, 215, 0, 0.5),
-			0 4px 8px rgba(0, 0, 0, 0.5);
+			0 0 20px color-mix(in srgb, var(--achievement-gold) 80%, transparent),
+			0 0 40px color-mix(in srgb, var(--achievement-gold) 50%, transparent),
+			0 4px 8px color-mix(in srgb, var(--theme-panel-bg) 50%, transparent);
 		animation: letterBounce 0.6s ease-out both;
 		animation-delay: calc(var(--letter-index, 0) * 0.05s);
 	}
@@ -201,7 +225,7 @@ Features:
 		background: linear-gradient(
 			90deg,
 			transparent,
-			rgba(255, 255, 255, 0.4),
+			color-mix(in srgb, var(--theme-text) 40%, transparent),
 			transparent
 		);
 		animation: shine 2s ease-in-out infinite;

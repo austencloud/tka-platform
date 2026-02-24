@@ -8,6 +8,7 @@ Allows viewing, continuing, or deleting sessions.
   import { onMount } from "svelte";
   import { getMLTrainingStorage } from "../services/MLTrainingStorageManager";
   import type { CaptureSession, DatasetStats } from "../domain/models";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   interface Props {
     onSessionSelect?: (session: CaptureSession) => void;
@@ -102,7 +103,7 @@ Allows viewing, continuing, or deleting sessions.
 
   {#if isLoading}
     <div class="loading" role="status" aria-live="polite" aria-busy="true">
-      <div class="spinner" aria-hidden="true"></div>
+      <ProgressRing percent={-1} size={32} strokeWidth={3} />
       <p>Loading sessions...</p>
     </div>
   {:else if sessions.length === 0}
@@ -273,28 +274,7 @@ Allows viewing, continuing, or deleting sessions.
     opacity: 0.6;
   }
 
-  .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--theme-stroke);
-    border-top-color: var(--theme-text);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-      border-top-color: var(--theme-text);
-      border-right-color: var(--theme-text);
-    }
-
     .btn-refresh .fa-spin {
       animation: none;
     }

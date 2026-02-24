@@ -16,6 +16,7 @@ import {
 import { getDatabaseInstance, getAuthSync } from '$lib/shared/auth/firebase';
 import type { ISyncRoomBroadcaster } from '../contracts/ISyncRoomBroadcaster';
 import type { SyncRoom } from '../../domain/models/lan-sync-models';
+import { localSyncSessionId } from '../../domain/models/lan-sync-models';
 
 export class SyncRoomBroadcaster implements ISyncRoomBroadcaster {
 	private _isBroadcasting = false;
@@ -58,6 +59,7 @@ export class SyncRoomBroadcaster implements ISyncRoomBroadcaster {
 		const roomData: SyncRoom = {
 			hostUserId: user.uid,
 			hostDisplayName: user.displayName || 'Anonymous',
+			hostSessionId: localSyncSessionId,
 			sequenceId,
 			sequenceWord,
 			createdAt: Date.now(),

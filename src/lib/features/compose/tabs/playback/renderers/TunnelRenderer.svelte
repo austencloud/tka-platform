@@ -5,6 +5,7 @@
   Overlays two sequences with different colors on the same canvas.
 -->
 <script lang="ts">
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
@@ -366,7 +367,7 @@
 <div class="tunnel-renderer">
   {#if loading}
     <div class="loading-message">
-      <div class="spinner"></div>
+      <ProgressRing percent={-1} size={32} strokeWidth={3} />
       <p>{t("loading_animation")}</p>
     </div>
   {:else if error}
@@ -457,24 +458,5 @@
     opacity: 0.2;
   }
 
-  .spinner {
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
-    border: 4px solid var(--theme-stroke);
-    border-top-color: #ec4899;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
 
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-    }
-  }
 </style>

@@ -27,6 +27,7 @@
   import PickerToolbar from "./PickerToolbar.svelte";
   import PickerFilterChips from "./PickerFilterChips.svelte";
   import PickerSidebar from "./PickerSidebar.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   // ===== Props =====
   interface Props {
@@ -315,7 +316,7 @@
     <!-- Selection Overlay -->
     {#if isSelectingSequence}
       <div class="selecting-overlay" role="status" aria-live="polite">
-        <div class="spinner" aria-hidden="true"></div>
+        <ProgressRing percent={-1} size={32} strokeWidth={3} />
         <p>Loading sequence...</p>
       </div>
     {/if}
@@ -364,7 +365,7 @@
         <div class="grid-container themed-scrollbar" class:disabled={isSelectingSequence} bind:this={gridContainerRef}>
           {#if isLoading}
             <div class="state-container loading">
-              <div class="spinner" aria-hidden="true"></div>
+              <ProgressRing percent={-1} size={32} strokeWidth={3} />
               <p>Loading sequences...</p>
             </div>
           {:else if error}
@@ -530,22 +531,6 @@
     background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 30%, transparent);
   }
 
-  /* ===== Spinner ===== */
-  .spinner {
-    width: var(--min-touch-target, 44px);
-    height: var(--min-touch-target, 44px);
-    border: 3px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-top-color: var(--theme-accent, #8b5cf6);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   /* ===== Selection Overlay ===== */
   .selecting-overlay {
     position: absolute;
@@ -617,10 +602,4 @@
     }
   }
 
-  /* ===== Accessibility ===== */
-  @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-    }
-  }
 </style>

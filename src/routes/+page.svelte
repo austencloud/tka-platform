@@ -10,6 +10,8 @@
   import LandingFooter from "./landing/components/LandingFooter.svelte";
   import LandingBackgroundPicker from "./landing/components/LandingBackgroundPicker.svelte";
   import type { Component } from "svelte";
+  import LoadingGate from "$lib/shared/components/loading/LoadingGate.svelte";
+  import { prefetchTreeImages } from "$lib/shared/background/shared/prefetch-tree-images";
 
   const STORAGE_KEY = "tka-landing-theme";
   const DEFAULT_BACKGROUND = BackgroundType.NIGHT_SKY;
@@ -46,6 +48,11 @@
         currentBackground = saved as BackgroundType;
       }
       applyThemeForBackground(currentBackground);
+
+      // If user's saved background is Firefly Forest, prefetch tree images now
+      if (currentBackground === BackgroundType.FIREFLY_FOREST) {
+        prefetchTreeImages();
+      }
     }
     mounted = true;
   });
@@ -54,6 +61,10 @@
     currentBackground = type;
     applyThemeForBackground(type);
     localStorage.setItem(STORAGE_KEY, type);
+
+    // Start prefetching tree images when user begins exploring backgrounds.
+    // By the time they cycle to Firefly Forest, images will be in browser cache.
+    prefetchTreeImages();
   }
 </script>
 
@@ -350,7 +361,7 @@
 {#if siteMode === "loading"}
   <!-- Brief loading state while determining domain -->
   <div class="loading-screen">
-    <div class="loading-spinner"></div>
+    <LoadingGate variant="card" message="Loading..." />
   </div>
 {:else if siteMode === "app"}
   <!-- App domain: render the application (dynamically loaded) -->
@@ -405,20 +416,6 @@
     background: #0a0a0f;
   }
 
-  .loading-spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid rgba(99, 102, 241, 0.2);
-    border-top-color: #6366f1;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
 
   /* Skip link - visible only on focus for keyboard users */
   .skip-link {
@@ -462,10 +459,4 @@
     z-index: 1;
   }
 
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
-  @media (prefers-reduced-motion: reduce) {
-    .loading-spinner {
-      animation: none;
-    }
-  }
 </style>

@@ -57,8 +57,8 @@
     right: 8px;
     font-size: 0.8rem;
     font-weight: bold;
-    color: #ffffff;
-    background: rgba(0, 0, 0, 0.6);
+    color: var(--theme-text, #ffffff);
+    background: color-mix(in srgb, var(--theme-panel-bg) 85%, transparent);
     padding: 2px 6px;
     border-radius: 4px;
     z-index: 2;

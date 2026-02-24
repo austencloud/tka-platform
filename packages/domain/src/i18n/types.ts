@@ -28,8 +28,8 @@ export interface DomainGlossary {
   float: string;
   // Level 5+
   hash: string;
-  // Level 6+
+  // Compounds
   compound: string;
-  // Level 7+
+  // Level 6+
   interradial: string;
 }

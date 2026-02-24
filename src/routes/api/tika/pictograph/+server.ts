@@ -163,6 +163,7 @@ export const POST: RequestHandler = async (event) => {
 			letter: csvRow.letter,
 			startPosition: csvRow.startPosition,
 			endPosition: csvRow.endPosition,
+			gridMode,
 			blueMotion: {
 				motionType: csvRow.blueMotion.motionType,
 				rotationDirection: csvRow.blueMotion.rotationDirection || 'no_rotation',
@@ -254,6 +255,7 @@ export const GET: RequestHandler = async (event) => {
 	const letter = url.searchParams.get('letter')
 	const variation = parseInt(url.searchParams.get('variation') || '0', 10)
 	const darkMode = url.searchParams.get('darkMode') !== 'false'
+	const gridMode = (url.searchParams.get('gridMode') || 'diamond') as 'diamond' | 'box'
 
 	if (!letter) {
 		return json({ error: 'Missing letter parameter' }, { status: 400 })
@@ -261,9 +263,8 @@ export const GET: RequestHandler = async (event) => {
 
 	ensureDataLoaded()
 
-	// Use combined pictographs for GET (legacy behavior)
-	const allPictographs = [...diamondPictographs, ...boxPictographs]
-	const variations = allPictographs.filter((p) => p.letter === letter)
+	// Get pictographs for the specified grid mode
+	const variations = getPictographsForMode(gridMode).filter((p) => p.letter === letter)
 
 	if (variations.length === 0) {
 		return json({ error: `No pictograph found for letter: ${letter}` }, { status: 404 })
@@ -292,6 +293,7 @@ export const GET: RequestHandler = async (event) => {
 			letter: csvRow.letter,
 			startPosition: csvRow.startPosition,
 			endPosition: csvRow.endPosition,
+			gridMode,
 			blueMotion: {
 				motionType: csvRow.blueMotion.motionType,
 				rotationDirection: csvRow.blueMotion.rotationDirection || 'no_rotation',

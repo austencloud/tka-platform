@@ -60,7 +60,7 @@ export type Orientation =
   | "out"
   | "clock"
   | "counter"
-  // Interradial orientations (Level 7 - 45° between cardinal orientations)
+  // Interradial orientations (Level 6 - 45° between cardinal orientations)
   | "clockIn"
   | "clockOut"
   | "counterIn"
@@ -124,7 +124,7 @@ export type HandPath = "cw" | "ccw" | "dash" | "static" | "hashIn" | "hashOut";
  * - overhead: Spinning above/below, viewed from above. Grid horizontal.
  *
  * All existing sequences default to "wall" when plane is omitted.
- * Note: Level 7 is interradial orientations. Planes are a separate future concept (Level 8).
+ * Note: Level 6 is interradial orientations. Planes are a separate future concept (Level 8).
  */
 export type SpinningPlane = "wall" | "wheel" | "overhead";
 

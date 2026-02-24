@@ -1,7 +1,6 @@
 <!-- Sidebar Footer Component -->
 <!-- Footer with settings, inbox, network status, and version badge -->
 <script lang="ts">
-  import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import { whatsNewState } from "../../../settings/state/whats-new-state.svelte";
   import { inboxState } from "../../../inbox/state/inbox-state.svelte";
@@ -28,7 +27,7 @@
 
   function handleMicClick() {
     try {
-      const hapticService = container.items.hapticFeedback as IHapticFeedback;
+      const hapticService = container.items.hapticFeedback;
       hapticService?.trigger("selection");
     } catch {
       // Ignore if not available
@@ -59,7 +58,7 @@
   function handleSettingsClick() {
     // Haptic feedback
     try {
-      const hapticService = container.items.hapticFeedback as IHapticFeedback;
+      const hapticService = container.items.hapticFeedback;
       hapticService?.trigger("selection");
     } catch {
       // Ignore if not available
@@ -71,7 +70,7 @@
   function handleInboxClick() {
     // Haptic feedback
     try {
-      const hapticService = container.items.hapticFeedback as IHapticFeedback;
+      const hapticService = container.items.hapticFeedback;
       hapticService?.trigger("selection");
     } catch {
       // Ignore if not available
@@ -83,7 +82,7 @@
   function handleVersionClick() {
     // Haptic feedback
     try {
-      const hapticService = container.items.hapticFeedback as IHapticFeedback;
+      const hapticService = container.items.hapticFeedback;
       hapticService?.trigger("selection");
     } catch {
       // Ignore if not available

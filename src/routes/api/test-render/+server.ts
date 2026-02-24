@@ -1,6 +1,4 @@
-import type { ISequencePersister } from "$lib/features/create/shared/services/contracts/ISequencePersister";
 import { container } from "$lib/shared/di";
-import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import { RATE_LIMITS } from "$lib/server/security/rate-limiter";
@@ -16,8 +14,8 @@ export const POST: RequestHandler = async (event) => {
     const stepSizeValue = body.stepSize;
 
     // Resolve services
-    const renderService = container.items.sequenceRenderer as ISequenceRenderer;
-    const persistenceService = container.items.sequencePersister as ISequencePersister;
+    const renderService = container.items.sequenceRenderer;
+    const persistenceService = container.items.sequencePersister;
 
     // Load current sequence
     const state = await persistenceService.loadCurrentState();

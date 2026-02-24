@@ -51,20 +51,25 @@ export class QuizHistoryRecorder implements IQuizHistoryRecorder {
     try {
       const colRef = await this.getCollectionRef(userId);
 
-      await trackWrite(() =>
-        addDoc(colRef, {
-          conceptId: attempt.conceptId,
-          quizType: attempt.quizType,
-          score: attempt.score,
-          correctCount: attempt.correctCount,
-          totalCount: attempt.totalCount,
-          timeSpentSeconds: attempt.timeSpentSeconds,
-          timestamp: attempt.timestamp.toISOString(),
-          createdAt: serverTimestamp(),
-        })
-      );
+      const doc: Record<string, unknown> = {
+        conceptId: attempt.conceptId,
+        quizType: attempt.quizType,
+        score: attempt.score,
+        correctCount: attempt.correctCount,
+        totalCount: attempt.totalCount,
+        timeSpentSeconds: attempt.timeSpentSeconds,
+        timestamp: attempt.timestamp.toISOString(),
+        createdAt: serverTimestamp(),
+      };
+
+      if (attempt.wrongAnswers && attempt.wrongAnswers.length > 0) {
+        doc.wrongAnswers = attempt.wrongAnswers;
+      }
+
+      await trackWrite(() => addDoc(colRef, doc));
     } catch (error) {
       console.error("[QuizHistoryRecorder] Failed to record attempt:", error);
+      throw error;
     }
   }
 
@@ -103,7 +108,7 @@ export class QuizHistoryRecorder implements IQuizHistoryRecorder {
       });
     } catch (error) {
       console.error("[QuizHistoryRecorder] Failed to get history:", error);
-      return [];
+      throw error;
     }
   }
 

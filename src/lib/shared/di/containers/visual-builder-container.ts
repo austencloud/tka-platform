@@ -16,3 +16,5 @@ export const visualBuilderContainer = createContainer().add({
 	svgPropAnimator: () => new SvgPropAnimator(),
 	builderStepConverter: () => new BuilderStepConverter(),
 });
+
+export type VisualBuilderContainer = typeof visualBuilderContainer;

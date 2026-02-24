@@ -47,23 +47,21 @@
     ></textarea>
     {#if isStreaming}
       <!-- Stop button when streaming -->
-      <button
+      <button aria-label="Stop generating"
         type="button"
         class="stop-button"
         onclick={onStop}
         title="Stop generating"
-        aria-label="Stop generating"
       >
         <i class="fas fa-stop" aria-hidden="true"></i>
       </button>
     {:else}
       <!-- Send button -->
-      <button
+      <button aria-label={isLoading ? "Sending message" : "Send message"}
         type="submit"
         class="send-button"
         disabled={!inputValue.trim() || isLoading}
         title="Send message"
-        aria-label={isLoading ? "Sending message" : "Send message"}
       >
         {#if status === "submitted"}
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>

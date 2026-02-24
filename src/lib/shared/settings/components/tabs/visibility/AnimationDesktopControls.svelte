@@ -8,7 +8,6 @@
   import type {
     TrailVisibility,
     PlaybackMode,
-    FlameColorMode,
   } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
   interface Props {
@@ -20,10 +19,17 @@
     tkaGlyphVisible: boolean;
     wordHeaderVisible: boolean;
     fireEffectEnabled: boolean;
-    flameColorMode: FlameColorMode;
-    firePreset: string;
-    onFlameColorModeChange: (mode: FlameColorMode) => void;
-    onFirePresetChange: (presetId: string) => void;
+    ledEffectEnabled: boolean;
+    ledBrightness: number;
+    onLedBrightnessChange: (level: number) => void;
+    colorBlend: number;
+    smokeLevel: number;
+    useCharcoal: boolean;
+    fireIntensity: number;
+    onColorBlendChange: (value: number) => void;
+    onSmokeLevelChange: (value: number) => void;
+    onUseCharcoalChange: (value: boolean) => void;
+    onFireIntensityChange: (value: number) => void;
     trailStyle: TrailVisibility;
     showBilateralToggle: boolean;
     isBothEnds: boolean;
@@ -43,10 +49,17 @@
     tkaGlyphVisible,
     wordHeaderVisible,
     fireEffectEnabled,
-    flameColorMode,
-    firePreset,
-    onFlameColorModeChange,
-    onFirePresetChange,
+    ledEffectEnabled,
+    ledBrightness,
+    onLedBrightnessChange,
+    colorBlend,
+    smokeLevel,
+    useCharcoal,
+    fireIntensity,
+    onColorBlendChange,
+    onSmokeLevelChange,
+    onUseCharcoalChange,
+    onFireIntensityChange,
     trailStyle,
     showBilateralToggle,
     isBothEnds,
@@ -56,6 +69,8 @@
     onTrailPreset,
     onToggleBothEnds,
   }: Props = $props();
+
+  const brightnessLevels = [1, 2, 3, 4, 5];
 </script>
 
 <div class="desktop-controls">
@@ -180,56 +195,99 @@
       >
         Fire
       </button>
+      <button
+        class="toggle-btn"
+        class:active={ledEffectEnabled}
+        aria-pressed={ledEffectEnabled}
+        onclick={() => onToggle("ledEffect")}
+        type="button"
+      >
+        LED
+      </button>
     </div>
+    {#if ledEffectEnabled}
+      <div class="led-brightness-section">
+        <span class="group-label">Brightness</span>
+        <div class="bpm-presets">
+          {#each brightnessLevels as level}
+            <button
+              class="bpm-btn"
+              class:active={ledBrightness === level}
+              aria-pressed={ledBrightness === level}
+              onclick={() => onLedBrightnessChange(level)}
+              type="button"
+              aria-label="Set LED brightness to level {level}"
+            >
+              {level}
+            </button>
+          {/each}
+        </div>
+      </div>
+    {/if}
     {#if fireEffectEnabled}
       <div class="flame-mode-row">
         <button
           class="preset-btn"
-          class:active={flameColorMode === "natural"}
-          aria-pressed={flameColorMode === "natural"}
-          onclick={() => onFlameColorModeChange("natural")}
+          class:active={!useCharcoal}
+          aria-pressed={!useCharcoal}
+          onclick={() => onUseCharcoalChange(false)}
           type="button"
         >
-          Natural
+          Fire
         </button>
         <button
           class="preset-btn"
-          class:active={flameColorMode === "colored"}
-          aria-pressed={flameColorMode === "colored"}
-          onclick={() => onFlameColorModeChange("colored")}
+          class:active={useCharcoal}
+          aria-pressed={useCharcoal}
+          onclick={() => onUseCharcoalChange(true)}
           type="button"
         >
-          Colored
+          Charcoal
         </button>
       </div>
-      <div class="flame-mode-row">
-        <button
-          class="preset-btn"
-          class:active={firePreset === "small"}
-          aria-pressed={firePreset === "small"}
-          onclick={() => onFirePresetChange("small")}
-          type="button"
-        >
-          Small
-        </button>
-        <button
-          class="preset-btn"
-          class:active={firePreset === "medium"}
-          aria-pressed={firePreset === "medium"}
-          onclick={() => onFirePresetChange("medium")}
-          type="button"
-        >
-          Medium
-        </button>
-        <button
-          class="preset-btn"
-          class:active={firePreset === "large"}
-          aria-pressed={firePreset === "large"}
-          onclick={() => onFirePresetChange("large")}
-          type="button"
-        >
-          Large
-        </button>
+      <div class="intensity-row">
+        <span class="slider-label">Intensity</span>
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value={fireIntensity}
+          oninput={(e) => onFireIntensityChange(parseFloat(e.currentTarget.value))}
+          class="intensity-slider"
+          aria-label="Fire intensity"
+        />
+        <span class="intensity-value">{(fireIntensity * 100).toFixed(0)}%</span>
+      </div>
+      {#if !useCharcoal}
+        <div class="intensity-row">
+          <span class="slider-label">Smoke</span>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={smokeLevel}
+            oninput={(e) => onSmokeLevelChange(parseFloat(e.currentTarget.value))}
+            class="intensity-slider"
+            aria-label="Smoke level"
+          />
+          <span class="intensity-value">{(smokeLevel * 100).toFixed(0)}%</span>
+        </div>
+      {/if}
+      <div class="intensity-row">
+        <span class="slider-label">Color</span>
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value={colorBlend}
+          oninput={(e) => onColorBlendChange(parseFloat(e.currentTarget.value))}
+          class="intensity-slider"
+          aria-label="Flame color blend"
+        />
+        <span class="intensity-value">{colorBlend < 0.1 ? "Nat" : colorBlend > 0.9 ? "Col" : `${(colorBlend * 100).toFixed(0)}%`}</span>
       </div>
     {/if}
   </div>
@@ -249,9 +307,46 @@
     gap: clamp(4px, 1cqi, 6px);
   }
 
+  .led-brightness-section {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(4px, 1cqi, 6px);
+  }
+
   .flame-mode-row {
     display: flex;
     gap: clamp(4px, 1cqi, 6px);
+  }
+
+  .intensity-row {
+    display: flex;
+    align-items: center;
+    gap: clamp(6px, 1cqi, 10px);
+    margin-top: clamp(4px, 1cqi, 6px);
+  }
+
+  .slider-label {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--theme-text-dim);
+    white-space: nowrap;
+  }
+
+  .intensity-slider {
+    flex: 1;
+    min-height: 44px;
+    accent-color: var(--theme-accent);
+    cursor: pointer;
+  }
+
+  .intensity-value {
+    font-size: var(--font-size-compact, 12px);
+    font-variant-numeric: tabular-nums;
+    color: var(--theme-text-dim);
+    min-width: 28px;
+    text-align: right;
   }
 
   .group-label {

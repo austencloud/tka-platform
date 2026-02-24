@@ -4,11 +4,10 @@ CameraSettingsDialog.svelte
 Settings dialog for camera configuration including mirror toggle and camera source selection.
 -->
 <script lang="ts">
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
 
   // Services
-  const hapticService = container.items.hapticFeedback as IHapticFeedback;
+  const hapticService = container.items.hapticFeedback;
 
   // Props
   const {

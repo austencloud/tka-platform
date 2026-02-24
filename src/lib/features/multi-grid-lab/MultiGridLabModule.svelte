@@ -234,7 +234,7 @@
   <div class="controls-panel">
     <div class="panel-header">
       <h2>Multi-Grid Topology</h2>
-      <p class="panel-subtitle">Level 6: Conjoined grid arrangements</p>
+      <p class="panel-subtitle">Level 7: Conjoined grid arrangements</p>
     </div>
     <TopologyControls
       {selectedPresetId}

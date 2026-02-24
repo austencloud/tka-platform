@@ -1,27 +1,21 @@
 <script lang="ts">
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   /**
    * Creation Tool Panel Slot
    *
    * Renders the appropriate tool panel based on the active tab.
-   * Each creation mode (Constructor, Generator, Assembler) has its own dedicated panel.
+   * Each creation mode (Constructor, Generator, Visual Builder, Spell) has its own dedicated panel.
    *
    * Domain: Create module - Tool panel presentation
    */
 
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import { createStepData } from "../domain/factories/createStepData";
-  import { createStartPositionData } from "../domain/factories/createStartPositionData";
   import type { IToolPanelMethods } from "../types/create-module-types";
   import { getCreateModuleContext } from "../context/create-module-context";
   import GeneratePanel from "../../generate/components/GeneratePanel.svelte";
   import ConstructTabContent from "./ConstructTabContent.svelte";
-  import AssemblerTab from "../../assemble/components/AssemblerTab.svelte";
-  import type {
-    AssemblyUndoRef,
-    AssemblyBackRef,
-  } from "../../assemble/components/HandPathOrchestrator.svelte";
   import SpellPanel from "../../spell/components/SpellPanel.svelte";
   import VisualBuilderToolPanel from "../../visual-builder/components/VisualBuilderToolPanel.svelte";
   import { desktopSidebarState } from "$lib/shared/layout/desktop-sidebar-state.svelte";
@@ -35,8 +29,6 @@
     layout,
   } = ctx;
 
-  // Access assemblyTabKey reactively via getter (don't destructure - loses reactivity)
-  const assemblyTabKey = $derived(ctx.assemblyTabKey);
 
   // Derive values from context
   const isSideBySideLayout = () => layout.shouldUseSideBySideLayout;
@@ -103,29 +95,6 @@
   // Transition state for undo animations
   let isUndoingOption = $state(false);
 
-  // Assembly undo ref - synced to CreateModuleState for workspace-level undo
-  let assemblyUndoRef: AssemblyUndoRef | null = $state(null);
-
-  // Assembly back ref - synced to CreateModuleState for workspace back button
-  let assemblyBackRef: AssemblyBackRef | null = $state(null);
-
-  // Sync assembly undo ref to CreateModuleState when it changes
-  $effect(() => {
-    createModuleState.assemblyUndoRef = assemblyUndoRef;
-  });
-
-  // Sync assembly back ref to CreateModuleState when it changes
-  $effect(() => {
-    createModuleState.assemblyBackRef = assemblyBackRef;
-  });
-
-  // Reset assembly refs when assembly tab remounts (via key change)
-  $effect(() => {
-    // Track key changes to clear stale refs
-    void assemblyTabKey;
-    assemblyUndoRef = null;
-    assemblyBackRef = null;
-  });
 
   // Props (only callbacks and bindable refs)
   let {
@@ -147,161 +116,19 @@
   {#if !isPersistenceFullyInitialized}
     <!-- Loading state while persistence is being restored -->
     <div class="persistence-loading">
-      <div class="loading-spinner"></div>
+      <ProgressRing percent={-1} size={32} strokeWidth={3} />
       <p>Loading...</p>
     </div>
   {:else if activeToolPanel}
     <!-- Render the appropriate tool panel based on active tab -->
     <div class="creation-tool-content" data-active-tab={activeToolPanel}>
-      {#key `${activeToolPanel}-${assemblyTabKey}`}
+      {#key activeToolPanel}
         <div class="sub-tab-content" data-tab={activeToolPanel}>
-          {#if activeToolPanel === "assemble"}
-            <!-- Assembler Mode - Simplified tap-based hand path builder -->
-            {@const assemblerTabState = createModuleState.assemblerTabState}
-            {@const assemblerSeq =
-              assemblerTabState?.sequenceState?.currentSequence}
-            {@const existingStartBeat =
-              assemblerSeq?.startingPosition ||
-              assemblerSeq?.startPosition ||
-              null}
-            {@const existingBeatsArray = [...(assemblerSeq?.steps || [])]}
-            {@const hasExistingAssemblerData = !!(
-              existingStartBeat || existingBeatsArray.length > 0
-            )}
-            <AssemblerTab
-              initialGridMode={assemblerTabState?.sequenceState?.gridMode}
-              hasExistingSequence={hasExistingAssemblerData}
-              existingStartPositionStep={existingStartBeat}
-              existingSteps={existingBeatsArray}
-              bind:undoRef={assemblyUndoRef}
-              bind:backRef={assemblyBackRef}
-              onClearSequence={() => {
-                // Fully clear the assembler's sequence (steps + start position)
-                const assemblerSequenceState =
-                  createModuleState.assemblerTabState?.sequenceState;
-                if (assemblerSequenceState) {
-                  assemblerSequenceState.setCurrentSequence(null);
-                }
-              }}
-              onStartPositionSet={(startPosition) => {
-                // IMPORTANT: Use assemblerTabState.sequenceState directly, NOT getActiveTabSequenceState()
-                // getActiveTabSequenceState() returns state based on navigationState.activeTab at call time,
-                // which could be wrong if the user switches tabs before this callback completes.
-                const assemblerSequenceState =
-                  createModuleState.assemblerTabState?.sequenceState;
-                if (!assemblerSequenceState) {
-                  console.warn(
-                    "[CreationToolPanelSlot] Assembler tab state not initialized"
-                  );
-                  return;
-                }
-
-                // Ensure a sequence exists
-                let currentSeq = assemblerSequenceState.currentSequence;
-                if (!currentSeq) {
-                  const gridMode = assemblerSequenceState.gridMode;
-                  currentSeq = {
-                    id: crypto.randomUUID(),
-                    name: "Hand Path Sequence",
-                    word: "",
-                    steps: [],
-                    gridMode,
-                    thumbnails: [],
-                    isFavorite: false,
-                    isCircular: false,
-                    metadata: {},
-                    tags: [],
-                    startingPosition: createStartPositionData({
-                      ...startPosition,
-                    }),
-                  };
-                  assemblerSequenceState.setCurrentSequence(currentSeq);
-                } else {
-                  // Update existing sequence with start position
-                  assemblerSequenceState.updateSequence({
-                    ...currentSeq,
-                    startingPosition: createStartPositionData({
-                      ...startPosition,
-                    }),
-                  });
-                }
-              }}
-              onSequenceUpdate={(pictographs) => {
-                // IMPORTANT: Use assemblerTabState.sequenceState directly, NOT getActiveTabSequenceState()
-                // This ensures we always update the assembler's state, not whatever tab is currently active.
-                const assemblerSequenceState =
-                  createModuleState.assemblerTabState?.sequenceState;
-                if (!assemblerSequenceState) {
-                  console.warn(
-                    "[CreationToolPanelSlot] Assembler tab state not initialized"
-                  );
-                  return;
-                }
-
-                // Ensure a sequence exists
-                let currentSeq = assemblerSequenceState.currentSequence;
-                if (!currentSeq) {
-                  const gridMode = assemblerSequenceState.gridMode;
-                  currentSeq = {
-                    id: crypto.randomUUID(),
-                    name: "Hand Path Sequence",
-                    word: "",
-                    steps: [],
-                    gridMode,
-                    thumbnails: [],
-                    isFavorite: false,
-                    isCircular: false,
-                    metadata: {},
-                    tags: [],
-                  };
-                  assemblerSequenceState.setCurrentSequence(currentSeq);
-                }
-
-                const steps = pictographs.map((p, i) =>
-                  createStepData({ ...p, stepNumber: i + 1, duration: 1 })
-                );
-                assemblerSequenceState.updateSequence({
-                  ...currentSeq,
-                  steps,
-                });
-              }}
-              onSequenceComplete={(pictographs) => {
-                // IMPORTANT: Use assemblerTabState.sequenceState directly, NOT getActiveTabSequenceState()
-                // This ensures we always update the assembler's state, not whatever tab is currently active.
-                const assemblerSequenceState =
-                  createModuleState.assemblerTabState?.sequenceState;
-                if (!assemblerSequenceState) {
-                  console.warn(
-                    "[CreationToolPanelSlot] Assembler tab state not initialized"
-                  );
-                  return;
-                }
-                const currentSeq = assemblerSequenceState.currentSequence;
-
-                if (!currentSeq) {
-                  console.warn(
-                    "[CreationToolPanelSlot] No sequence exists - cannot complete"
-                  );
-                  return;
-                }
-
-                const steps = pictographs.map((p, i) =>
-                  createStepData({ ...p, stepNumber: i + 1, duration: 1 })
-                );
-                assemblerSequenceState.updateSequence({
-                  ...currentSeq,
-                  steps,
-                });
-              }}
-              onHeaderTextChange={(text) => {
-                createModuleState.setGuidedModeHeaderText(text);
-              }}
-            />
-          {:else if activeToolPanel === "construct"}
+          {#if activeToolPanel === "construct"}
             <!-- Constructor Mode - Manual builder (step by step) -->
             {#if isPickerStateLoading}
               <div class="picker-loading">
-                <div class="loading-spinner"></div>
+                <ProgressRing percent={-1} size={32} strokeWidth={3} />
                 <p>Loading...</p>
               </div>
             {:else}
@@ -414,31 +241,10 @@
     color: var(--theme-text-dim);
   }
 
-  .loading-spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--theme-stroke);
-    border-top-color: var(--theme-text-dim);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   .coming-soon-panel p,
   .no-tab-selected p {
     font-size: var(--font-size-sm);
     margin: 0;
   }
 
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
-  @media (prefers-reduced-motion: reduce) {
-    .loading-spinner {
-      animation: none;
-    }
-  }
 </style>

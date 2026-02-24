@@ -2,11 +2,11 @@
   DurationLabModule.svelte - Visual duration template experimenter
 
   Left panel: browse and filter duration templates with mini bar previews.
-  Right panel: live LayeredSequencePreview showing a dummy sequence with
+  Right panel: live ChoreoCard showing a dummy sequence with
   the selected template applied.
 -->
 <script lang="ts">
-  import LayeredSequencePreview from "$lib/shared/sequence-viewer/components/LayeredSequencePreview.svelte";
+  import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import {
     getTemplatesForStepCount,
     getTemplatesByCategory,
@@ -215,7 +215,7 @@
     <div class="preview-container">
       {#if dummySequence}
         {#key `${dummySequence.id}-${rowCapacityOverride}`}
-          <LayeredSequencePreview
+          <ChoreoCard
             sequence={dummySequence}
             darkMode={true}
             showDifficultyLevel={false}

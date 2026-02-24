@@ -23,3 +23,5 @@ export const arenaContainer = createContainer().add({
       arenaContainer.items.arenaMatchupSelector
     ),
 });
+
+export type ArenaContainer = typeof arenaContainer;

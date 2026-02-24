@@ -212,10 +212,15 @@
     left: 0;
     height: calc(100% + 4px);
     background: color-mix(in srgb, var(--theme-accent) 40%, transparent);
-    filter: blur(4px);
     transition: width var(--duration-instant) ease;
     opacity: 0.6;
     pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .slider-glow {
+      box-shadow: 0 0 6px 2px color-mix(in srgb, var(--theme-accent) 30%, transparent);
+    }
   }
 
   /* ===========================
@@ -388,7 +393,7 @@
 
     .slider-label,
     .value-number {
-      color: #ffffff;
+      color: var(--theme-text);
     }
   }
 

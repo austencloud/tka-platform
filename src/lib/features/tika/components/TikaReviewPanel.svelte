@@ -167,6 +167,7 @@
 			}
 		} catch (e) {
 			console.error('[TikaReviewPanel] Failed to save notes:', e);
+			error = 'Failed to save notes';
 		} finally {
 			savingNotes = false;
 		}
@@ -192,6 +193,7 @@
 			}
 		} catch (e) {
 			console.error('[TikaReviewPanel] Failed to archive session:', e);
+			error = 'Failed to archive session';
 		}
 	}
 
@@ -215,6 +217,7 @@
 			}
 		} catch (e) {
 			console.error('[TikaReviewPanel] Failed to approve session:', e);
+			error = 'Failed to approve session';
 		}
 	}
 
@@ -259,7 +262,7 @@
 		<div class="header-content">
 			<h2>Tika Review</h2>
 		</div>
-		<button
+		<button aria-label="Refresh review queue"
 			class="refresh-btn"
 			onclick={loadSessions}
 			disabled={loading}
@@ -271,7 +274,7 @@
 
 	<!-- Status Filter Tabs -->
 	<nav class="status-tabs">
-		<button
+		<button aria-label="Filter by pending status"
 			class:active={activeTab === 'pending'}
 			onclick={() => (activeTab = 'pending')}
 		>
@@ -283,7 +286,7 @@
 				<span class="badge pending">{statusCounts.pending}</span>
 			{/if}
 		</button>
-		<button
+		<button aria-label="Filter by in-review status"
 			class:active={activeTab === 'in-review'}
 			onclick={() => (activeTab = 'in-review')}
 		>
@@ -295,7 +298,7 @@
 				<span class="badge in-review">{statusCounts.inReview}</span>
 			{/if}
 		</button>
-		<button
+		<button aria-label="Filter by completed status"
 			class:active={activeTab === 'completed'}
 			onclick={() => (activeTab = 'completed')}
 		>
@@ -307,7 +310,7 @@
 				<span class="badge completed">{statusCounts.completed}</span>
 			{/if}
 		</button>
-		<button
+		<button aria-label="Show all sessions"
 			class:active={activeTab === 'all'}
 			onclick={() => (activeTab = 'all')}
 		>
@@ -348,7 +351,7 @@
 			{:else}
 				{#each filteredSessions as session (session.id)}
 					{@const statusInfo = getStatusInfo(session.reviewStatus)}
-					<button
+					<button aria-label={`Review session: ${session.title}`}
 						class="session-card"
 						class:selected={selectedSession?.id === session.id}
 						onclick={() => selectSession(session)}
@@ -403,7 +406,7 @@
 						</span>
 					</div>
 					<div class="detail-actions">
-						<button
+						<button aria-label="Open conversation in chat"
 							class="action-btn primary"
 							onclick={() => selectedSession && openInChat(selectedSession)}
 							title="Open in chat"
@@ -412,7 +415,7 @@
 							Open
 						</button>
 						{#if selectedSession.reviewStatus === 'in-review' || selectedSession.reviewStatus === 'needs-correction'}
-							<button
+							<button aria-label="Approve this session"
 								class="action-btn success"
 								onclick={() => selectedSession && approveSession(selectedSession.id)}
 								title="Approve"
@@ -422,7 +425,7 @@
 							</button>
 						{/if}
 						{#if selectedSession.reviewStatus !== 'archived'}
-							<button
+							<button aria-label="Archive this session"
 								class="action-btn neutral"
 								onclick={() => selectedSession && archiveSession(selectedSession.id)}
 								title="Archive"
@@ -473,7 +476,7 @@
 									placeholder="Add context or notes before review..."
 									rows="3"
 								></textarea>
-								<button
+								<button aria-label="Save review notes"
 									class="save-notes-btn"
 									onclick={saveNotes}
 									disabled={savingNotes || !notesInput.trim()}
@@ -568,7 +571,7 @@
 		padding: 12px 16px;
 		border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		gap: 12px;
-		background: rgba(15, 20, 30, 0.95);
+		background: var(--theme-panel-bg, rgba(15, 20, 30, 0.95));
 	}
 
 	.back-btn {
@@ -579,9 +582,9 @@
 		height: var(--min-touch-target, 48px);
 		padding: 0;
 		border-radius: 50%;
-		background: linear-gradient(135deg, rgba(100, 100, 120, 0.85), rgba(70, 70, 90, 0.85));
-		border: 1px solid rgba(255, 255, 255, 0.15);
-		color: #ffffff;
+		background: var(--theme-card-bg, rgba(100, 100, 120, 0.85));
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+		color: var(--theme-text, #ffffff);
 		font-size: 16px;
 		cursor: pointer;
 		transition: all 0.2s ease;
@@ -589,7 +592,7 @@
 	}
 
 	.back-btn:hover {
-		background: linear-gradient(135deg, rgba(120, 120, 140, 0.95), rgba(90, 90, 110, 0.95));
+		background: linear-gradient(135deg, var(--theme-card-bg, rgba(120, 120, 140, 0.95)), var(--theme-card-bg, rgba(120, 120, 140, 0.95)));
 		transform: scale(1.05);
 	}
 
@@ -639,7 +642,7 @@
 		padding: 8px 16px;
 		gap: 4px;
 		border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		background: rgba(15, 20, 30, 0.6);
+		background: color-mix(in srgb, var(--theme-panel-bg, rgba(15, 20, 30, 0.95)) 60%, transparent);
 	}
 
 	.status-tabs button {
@@ -677,9 +680,9 @@
 		font-weight: 600;
 	}
 
-	.badge.pending { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
-	.badge.in-review { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
-	.badge.completed { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+	.badge.pending { background: color-mix(in srgb, var(--semantic-warning, #f59e0b) 20%, transparent); color: var(--semantic-warning, #fbbf24); }
+	.badge.in-review { background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 20%, transparent); color: var(--theme-accent, #a78bfa); }
+	.badge.completed { background: color-mix(in srgb, var(--semantic-success, #22c55e) 20%, transparent); color: var(--semantic-success, #4ade80); }
 
 	/* Content Area */
 	.content-area {
@@ -714,12 +717,12 @@
 
 	.session-card:hover {
 		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-		background: rgba(255, 255, 255, 0.06);
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
 	}
 
 	.session-card.selected {
 		border-color: var(--theme-accent, #6366f1);
-		background: rgba(99, 102, 241, 0.1);
+		background: color-mix(in srgb, var(--theme-accent, #6366f1) 10%, transparent);
 	}
 
 	.card-header {
@@ -735,7 +738,7 @@
 		gap: 6px;
 		padding: 4px 10px;
 		border-radius: 6px;
-		font-size: 11px;
+		font-size: var(--font-size-compact, 12px);
 		font-weight: 600;
 		color: white;
 	}
@@ -745,13 +748,13 @@
 		border-radius: 6px;
 		font-size: 12px;
 		font-weight: 700;
-		background: rgba(239, 68, 68, 0.2);
-		color: #fca5a5;
+		background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
+		color: var(--semantic-error, #fca5a5);
 	}
 
 	.grade-badge.good {
-		background: rgba(34, 197, 94, 0.2);
-		color: #4ade80;
+		background: color-mix(in srgb, var(--semantic-success, #22c55e) 20%, transparent);
+		color: var(--semantic-success, #4ade80);
 	}
 
 	.grade-badge .confidence {
@@ -795,7 +798,7 @@
 	}
 
 	.meta.claimed {
-		color: #60a5fa;
+		color: var(--semantic-info, #60a5fa);
 	}
 
 	/* Detail Panel */
@@ -860,16 +863,16 @@
 	}
 
 	.action-btn.primary:hover {
-		background: #4f46e5;
+		background: color-mix(in srgb, var(--theme-accent, #4f46e5) 80%, black);
 	}
 
 	.action-btn.success {
-		background: #22c55e;
+		background: var(--semantic-success, #22c55e);
 		color: white;
 	}
 
 	.action-btn.success:hover {
-		background: #16a34a;
+		background: color-mix(in srgb, var(--semantic-success, #22c55e) 80%, black);
 	}
 
 	.action-btn.neutral {
@@ -927,11 +930,11 @@
 	.big-grade {
 		font-size: 2rem;
 		font-weight: 700;
-		color: #fca5a5;
+		color: var(--semantic-error, #fca5a5);
 	}
 
 	.big-grade.good {
-		color: #4ade80;
+		color: var(--semantic-success, #4ade80);
 	}
 
 	.confidence-label {
@@ -941,7 +944,7 @@
 
 	.ai-notes {
 		padding: 12px;
-		background: rgba(0, 0, 0, 0.2);
+		background: var(--theme-shadow-bg, rgba(0, 0, 0, 0.2));
 		border-radius: 8px;
 	}
 
@@ -957,7 +960,7 @@
 
 	.response-text {
 		padding: 12px;
-		background: rgba(0, 0, 0, 0.2);
+		background: var(--theme-shadow-bg, rgba(0, 0, 0, 0.2));
 		border-radius: 8px;
 		font-size: 14px;
 		line-height: 1.5;
@@ -1001,7 +1004,7 @@
 	}
 
 	.save-notes-btn:hover:not(:disabled) {
-		background: #4f46e5;
+		background: color-mix(in srgb, var(--theme-accent, #4f46e5) 80%, black);
 	}
 
 	.save-notes-btn:disabled {
@@ -1096,7 +1099,7 @@
 		font-family: monospace;
 		font-size: 12px;
 		padding: 2px 6px;
-		background: rgba(0, 0, 0, 0.2);
+		background: var(--theme-shadow-bg, rgba(0, 0, 0, 0.2));
 		border-radius: 4px;
 	}
 
@@ -1119,7 +1122,7 @@
 	}
 
 	.state-message.error {
-		color: #ef4444;
+		color: var(--semantic-error, #ef4444);
 	}
 
 	.state-message button {

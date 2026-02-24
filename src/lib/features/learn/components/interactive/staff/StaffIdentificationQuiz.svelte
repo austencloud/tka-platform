@@ -3,6 +3,7 @@ StaffIdentificationQuiz - Coordinator for staff position and rotation quiz
 Tests understanding of: Alpha/Beta/Gamma positions, Thumb orientations, Prospin/Antispin
 -->
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import {
@@ -16,6 +17,12 @@ Tests understanding of: Alpha/Beta/Gamma positions, Thumb orientations, Prospin/
   let { onComplete } = $props<{ onComplete?: () => void }>();
 
   const hapticService = container.items.hapticFeedback;
+
+  let answerTimer: ReturnType<typeof setTimeout> | null = null;
+
+  onDestroy(() => {
+    if (answerTimer !== null) clearTimeout(answerTimer);
+  });
 
   type AnswerState = "idle" | "correct" | "incorrect";
 
@@ -47,7 +54,8 @@ Tests understanding of: Alpha/Beta/Gamma positions, Thumb orientations, Prospin/
       hapticService?.trigger("error");
     }
 
-    setTimeout(() => {
+    answerTimer = setTimeout(() => {
+      answerTimer = null;
       if (currentQuestion < questions.length - 1) {
         currentQuestion++;
         answerState = "idle";
@@ -99,7 +107,7 @@ Tests understanding of: Alpha/Beta/Gamma positions, Thumb orientations, Prospin/
     flex-direction: column;
     gap: 1.5rem;
     padding: 1.5rem;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border: 1px solid var(--theme-stroke);
     border-radius: 16px;
   }

@@ -31,7 +31,7 @@ WordLetterLabel - Displays the current letter name and description
   .letter-name {
     font-size: 1.75rem;
     font-weight: 800;
-    color: white;
+    color: var(--theme-text);
     line-height: 1;
   }
 

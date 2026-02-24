@@ -20,7 +20,6 @@
     onStartPositionSelected,
     onStepDelete,
     onStepLongPress,
-    onAssemblerBack,
     selectedStepNumber = null,
     practiceStepNumber = null,
     isSideBySideLayout = false,
@@ -34,7 +33,6 @@
     onStartPositionSelected?: () => void;
     onStepDelete?: (stepNumber: number) => void;
     onStepLongPress?: () => void;
-    onAssemblerBack?: (() => void) | null;
     selectedStepNumber?: number | null; // 0=start, 1=first beat, 2=second beat, etc.
     practiceStepNumber?: number | null; // 0=start, 1=first beat, 2=second beat, etc.
     isSideBySideLayout?: boolean;
@@ -45,8 +43,6 @@
     letterSources?: LetterSource[] | null;
   }>();
 
-  // Check if we're in the assembler tab
-  const isAssemblerTab = $derived(navigationState.activeTab === "assemble");
 
   const logger = createComponentLogger("SequenceDisplay");
 
@@ -125,25 +121,7 @@
       <!-- Top bar: Undo/Back button (left) + Word label (center) -->
       <div class="top-bar">
         <div class="top-left-zone">
-          {#if isAssemblerTab && onAssemblerBack}
-            <button
-              class="back-button"
-              onclick={onAssemblerBack}
-              aria-label="Back to grid mode selection"
-            >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path
-                  d="M12 16L6 10L12 4"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </button>
-          {:else}
-            <UndoButton {CreateModuleState} />
-          {/if}
+          <UndoButton {CreateModuleState} />
         </div>
         <div class="word-label-area">
           <WordLabel
@@ -277,47 +255,13 @@
       0 0 20px rgba(6, 182, 212, 0.2);
   }
 
-  /* Back button for Assembler tab */
-  .back-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--min-touch-target, 48px); /* WCAG AAA touch target */
-    height: var(--min-touch-target, 48px);
-    border: none;
-    background: var(--theme-card-bg);
-    border-radius: 10px;
-    color: var(--theme-text-dim);
-    cursor: pointer;
-    transition: all var(--duration-normal) ease;
-  }
-
-  .back-button:hover {
-    background: var(--theme-card-hover-bg);
-    color: var(--theme-text);
-  }
-
-  .back-button:active {
-    transform: scale(0.95);
-  }
-
-  .back-button:focus-visible {
-    outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.8));
-    outline-offset: 2px;
-  }
-
   /* Accessibility: Respect user's motion preferences */
   @media (prefers-reduced-motion: reduce) {
     .sequence-container,
     .content-wrapper,
     .label-and-beatframe-unit,
-    .step-grid-wrapper,
-    .back-button {
+    .step-grid-wrapper {
       transition: none;
-    }
-
-    .back-button:active {
-      transform: none;
     }
   }
 </style>

@@ -111,18 +111,16 @@ PointQuizSection - Click on the correct grid point
                 cx={point.x}
                 cy={point.y}
                 r="8"
-                fill="#50C878"
+                class="glow glow-correct"
                 opacity="0.3"
-                class="glow"
               />
             {:else if showIncorrect}
               <circle
                 cx={point.x}
                 cy={point.y}
                 r="8"
-                fill="#FF4A4A"
+                class="glow glow-incorrect"
                 opacity="0.3"
-                class="glow"
               />
             {/if}
             <!-- Main point -->
@@ -130,12 +128,10 @@ PointQuizSection - Click on the correct grid point
               cx={point.x}
               cy={point.y}
               r="4"
-              fill={showCorrect || revealCorrect
-                ? "#50C878"
-                : showIncorrect
-                  ? "#FF4A4A"
-                  : "white"}
               class="main-point"
+              class:point-correct={showCorrect || revealCorrect}
+              class:point-incorrect={showIncorrect}
+              class:point-default={!showCorrect && !revealCorrect && !showIncorrect}
             />
             <!-- Label on reveal -->
             {#if showCorrect || revealCorrect}
@@ -143,10 +139,10 @@ PointQuizSection - Click on the correct grid point
                 x={point.x}
                 y={point.y - 8}
                 text-anchor="middle"
-                fill={revealCorrect ? "#50C878" : "white"}
+                class="point-label"
+                class:label-reveal={revealCorrect}
                 font-size="6"
                 font-weight="700"
-                class="point-label"
               >
                 {dir}
               </text>
@@ -156,8 +152,8 @@ PointQuizSection - Click on the correct grid point
       {/each}
 
       <!-- Center point (not clickable) -->
-      <circle cx="50" cy="50" r="3.5" fill="#FFD700" opacity="0.5" />
-      <circle cx="50" cy="50" r="2.5" fill="#FFD700" />
+      <circle cx="50" cy="50" r="3.5" class="center-glow" opacity="0.5" />
+      <circle cx="50" cy="50" r="2.5" class="center-point" />
     </svg>
   </div>
 
@@ -329,16 +325,26 @@ PointQuizSection - Click on the correct grid point
   }
 
   .feedback.correct {
-    background: rgba(80, 200, 120, 0.15);
-    border: 1px solid rgba(80, 200, 120, 0.3);
-    color: #50c878;
+    background: color-mix(in srgb, var(--semantic-success, #50c878) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-success, #50c878) 30%, transparent);
+    color: var(--semantic-success, #50c878);
   }
 
   .feedback.incorrect {
-    background: rgba(255, 158, 74, 0.15);
-    border: 1px solid rgba(255, 158, 74, 0.3);
-    color: #ff9e4a;
+    background: color-mix(in srgb, var(--semantic-warning, #f59e0b) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-warning, #f59e0b) 30%, transparent);
+    color: var(--semantic-warning, #f59e0b);
   }
+
+  /* SVG point classes */
+  .glow-correct { fill: var(--semantic-success, #50c878); }
+  .glow-incorrect { fill: var(--semantic-error, #ef4444); }
+  .point-correct { fill: var(--semantic-success, #50c878); }
+  .point-incorrect { fill: var(--semantic-error, #ef4444); }
+  .point-default { fill: white; }
+  .point-label { fill: white; }
+  .point-label.label-reveal { fill: var(--semantic-success, #50c878); }
+  .center-glow, .center-point { fill: var(--semantic-warning, #ffd700); }
 
   @media (max-width: 500px) {
     .quiz-title {

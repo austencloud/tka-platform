@@ -23,6 +23,7 @@
  */
 
 import type { IFireOverlayRenderer } from "../../contracts/IFireOverlayRenderer";
+import { FireFrameCache } from "./FireFrameCache";
 import type {
   FireFrameInput,
   FireOverlayConfig,
@@ -43,13 +44,44 @@ import {
   GRADIENT_SUBTRACT_FRAG,
   CLEAR_FRAG,
   DISPLAY_FRAG,
+  SOOT_GENERATION_FRAG,
+  BLOOM_COMPOSITE_FRAG,
 } from "./FluidShaderSources";
+import {
+  BLOOM_DOWNSAMPLE_FRAG,
+  BLOOM_UPSAMPLE_FRAG,
+} from "../led/LedShaderSources";
+import { BASE_COLOR_CURVE } from "../../../domain/types/FireTypes";
 
 const MAX_DPR = 2;
-const JACOBI_ITERATIONS = 30;
+const DEFAULT_JACOBI_ITERATIONS = 12;
+
+// ============================================================
+// Active instance tracking for adaptive quality
+// ============================================================
+
+/** Number of currently active fire renderer instances across all animation engines */
+let activeFireInstanceCount = 0;
+
+/** Read the current active instance count (used by compose module for quality decisions) */
+export function getActiveFireInstanceCount(): number {
+  return activeFireInstanceCount;
+}
+
+/**
+ * Compute optimal Jacobi iterations based on how many fire renderers
+ * are running simultaneously. Fire doesn't need precise pressure solving —
+ * visual plausibility is all that matters.
+ */
+export function computeAdaptiveJacobiIterations(instanceCount: number): number {
+  if (instanceCount <= 1) return 12;
+  if (instanceCount <= 4) return 8;
+  return 6;
+}
 
 /** Maps quality level to simulation grid resolution */
 function qualityToResolution(quality: number): number {
+  if (quality <= 1) return 64;
   if (quality <= 2) return 128;
   if (quality === 3) return 192;
   return 256;
@@ -102,6 +134,10 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
   private gradientSubtractProgram: ShaderProgram | null = null;
   private clearProgram: ShaderProgram | null = null;
   private displayProgram: ShaderProgram | null = null;
+  private sootGenerationProgram: ShaderProgram | null = null;
+  private bloomDownsampleProgram: ShaderProgram | null = null;
+  private bloomUpsampleProgram: ShaderProgram | null = null;
+  private bloomCompositeProgram: ShaderProgram | null = null;
 
   // Double-buffered simulation fields
   private velocity: DoubleFBO | null = null;
@@ -110,9 +146,17 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
   private fuel: DoubleFBO | null = null;
   private colorField: DoubleFBO | null = null;
 
+  // Soot density field (combustion byproduct, rendered as dark smoke)
+  private soot: DoubleFBO | null = null;
+
   // Single-buffered fields (no ping-pong needed)
   private divergenceFBO: FBOAttachment | null = null;
   private curlFBO: FBOAttachment | null = null;
+
+  // Bloom pipeline FBOs
+  private displayFBO: FBOAttachment | null = null;
+  private bloomMips: FBOAttachment[] = [];
+  private bloomMipSizes: [number, number][] = [];
 
   // Timing
   private lastTime = 0;
@@ -127,10 +171,22 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
   private displayCanvasWidth = 1;
   private displayCanvasHeight = 1;
 
+  // Pre-cached uniform locations for tip arrays (avoids getUniformLocation per frame)
+  // On Windows/ANGLE, each getUniformLocation call triggers a GPU-CPU sync stall.
+  // With 4 tips × 4 uniforms = 16 calls per frame, this was costing 1.6-8ms of pure stall.
+  private tipPositionLocs: (WebGLUniformLocation | null)[] = [];
+  private tipSpeedLocs: (WebGLUniformLocation | null)[] = [];
+  private tipFlameScaleLocs: (WebGLUniformLocation | null)[] = [];
+  private tipColorLocs: (WebGLUniformLocation | null)[] = [];
+
   // Mutable physics parameters — set via config.physicsPreset or defaults
   private physics: FirePhysicsParams = { ...DEFAULT_PHYSICS };
   private readonly AMBIENT_TEMP = 0.0;
   private readonly BURN_TEMP = 0.1;
+
+  // Frame cache for loop replay (Tier 3 optimization)
+  private frameCache: FireFrameCache | null = null;
+  private lastConfigHash = "";
 
   initialize(container: HTMLElement, width: number, height: number): boolean {
     this.canvas = document.createElement("canvas");
@@ -197,6 +253,11 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
 
     this.lastTime = performance.now();
     this.initialized = true;
+    activeFireInstanceCount++;
+
+    // Create frame cache for loop replay optimization
+    this.frameCache = new FireFrameCache(gl);
+
     return true;
   }
 
@@ -206,6 +267,8 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.canvas.width = Math.round(width * this.dpr);
     this.canvas.height = Math.round(height * this.dpr);
     // Simulation buffers stay at simWidth x simHeight — independent of display
+    // Invalidate frame cache since display dimensions changed
+    this.frameCache?.invalidate();
   }
 
   renderFire(input: FireFrameInput, config: FireOverlayConfig): void {
@@ -217,8 +280,90 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
       this.physics = config.physicsPreset;
     }
 
+    // --- Frame cache logic ---
+    const cache = this.frameCache;
+    if (cache) {
+      // Compute config hash for invalidation (includes playback speed — different BPM = different fire physics)
+      const hash = this.computeConfigHash(config, input.playbackSpeed);
+
+      // Invalidate cache if config changed
+      if (hash !== this.lastConfigHash) {
+        cache.checkConfigHash(hash);
+        this.lastConfigHash = hash;
+      }
+
+      // Handle loop detection
+      if (input.loopDetected) {
+        if (cache.isRecording()) {
+          // First loop complete — switch to playback
+          cache.onLoopDetected();
+        } else if (cache.isWarm()) {
+          // Subsequent loop — reset playback index
+          cache.onLoopDetected();
+        } else {
+          // Cache is idle — start recording this loop
+          cache.startRecording(
+            this.simWidth, this.simHeight,
+            this.canvas!.width, this.canvas!.height,
+            hash
+          );
+        }
+      }
+
+      // If cache is warm, skip simulation entirely and blit from cache
+      if (cache.isWarm()) {
+        if (cache.blitCachedFrame()) {
+          return; // Done — no simulation needed
+        }
+        // Cache exhausted (shouldn't happen), fall through to live simulation
+      }
+
+      // If recording, render display to cache FBO after simulation
+      if (cache.isRecording()) {
+        this.stepSimulation(input.tips, input, config);
+        this.renderDisplayToCache(config, input, cache);
+        return;
+      }
+    }
+
+    // Default path: no cache, run full simulation + display
     this.stepSimulation(input.tips, input, config);
     this.renderDisplay(config, input);
+  }
+
+  /**
+   * Compute a hash of fire config properties that affect visual output.
+   * When any of these change, the frame cache must be invalidated.
+   * Includes playback speed because different BPMs produce different tip velocities,
+   * which change the fire physics (buoyancy, turbulence, trail shape).
+   */
+  private computeConfigHash(config: FireOverlayConfig, playbackSpeed?: number): string {
+    return `${config.fuelSourceId ?? "default"}_${config.intensity}_${config.flameHeight}_${config.quality}_${config.colorBlend ?? 0}_${playbackSpeed ?? 1}`;
+  }
+
+  /**
+   * Render the display pass to the cache's recording FBO, then blit to screen.
+   * Used during the recording phase of the first loop.
+   */
+  private renderDisplayToCache(
+    config: FireOverlayConfig,
+    input: FireFrameInput,
+    cache: FireFrameCache
+  ): void {
+    const gl = this.gl!;
+
+    // Render display pass to the cache recording FBO at sim resolution
+    gl.bindFramebuffer(gl.FRAMEBUFFER, cache.getRecordingFBO());
+    gl.viewport(0, 0, cache.getCacheWidth(), cache.getCacheHeight());
+    gl.enable(gl.BLEND);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    // Run the same display shader, but output goes to cache FBO
+    this.renderDisplayPass(config, input);
+
+    // Commit the frame (copies to cache texture + blits to screen)
+    cache.commitFrame();
   }
 
   setQuality(level: number): void {
@@ -228,6 +373,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
       this.simHeight = newRes;
       this.destroySimulationBuffers();
       this.createSimulationBuffers();
+      this.frameCache?.invalidate();
     }
   }
 
@@ -237,6 +383,14 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
 
   isInitialized(): boolean {
     return this.initialized;
+  }
+
+  getCanvas(): HTMLCanvasElement | null {
+    return this.canvas;
+  }
+
+  getGl(): WebGL2RenderingContext | null {
+    return this.gl;
   }
 
   // ============================================================
@@ -335,7 +489,8 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     // 6. Pressure projection
     this.computeDivergence(texelSize);
     this.scalePressure();
-    for (let i = 0; i < JACOBI_ITERATIONS; i++) {
+    const iterations = config.jacobiIterations ?? computeAdaptiveJacobiIterations(activeFireInstanceCount);
+    for (let i = 0; i < iterations; i++) {
       this.jacobiStep(texelSize);
     }
     this.gradientSubtract(texelSize);
@@ -345,6 +500,12 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.advect(this.fuel!, this.fuel!.read, p.fuelDissipation, dt, texelSize);
     if (this.colorField && (config.colorBlend ?? 0) > 0) {
       this.advect(this.colorField, this.colorField.read, p.fuelDissipation, dt, texelSize);
+    }
+
+    // 8. Soot generation + advection
+    if (this.soot && this.sootGenerationProgram) {
+      this.applySootGeneration(dt);
+      this.advect(this.soot, this.soot.read, p.sootAdvectionDissipation, dt, texelSize);
     }
   }
 
@@ -482,6 +643,35 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.swapFBO(this.temperature!);
   }
 
+  private applySootGeneration(dt: number): void {
+    const gl = this.gl!;
+    const prog = this.sootGenerationProgram!;
+    const p = this.physics;
+    gl.useProgram(prog.program);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.soot!.read.texture);
+    gl.uniform1i(prog.uniforms.get("u_soot")!, 0);
+
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, this.temperature!.read.texture);
+    gl.uniform1i(prog.uniforms.get("u_temperature")!, 1);
+
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_2D, this.fuel!.read.texture);
+    gl.uniform1i(prog.uniforms.get("u_fuel")!, 2);
+
+    gl.uniform1f(prog.uniforms.get("u_dt")!, dt);
+    gl.uniform1f(prog.uniforms.get("u_sootYield")!, p.sootYield);
+    gl.uniform1f(prog.uniforms.get("u_sootCoolThreshold")!, p.sootCoolThreshold);
+    gl.uniform1f(prog.uniforms.get("u_sootCoolRate")!, p.sootCoolRate);
+    gl.uniform1f(prog.uniforms.get("u_sootDissipation")!, p.sootDissipation);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.soot!.write.fbo);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    this.swapFBO(this.soot!);
+  }
+
   private computeDivergence(texelSize: [number, number]): void {
     const gl = this.gl!;
     const prog = this.divergenceProgram!;
@@ -569,16 +759,126 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
   // Display rendering
   // ============================================================
 
+  /**
+   * Render the display pass. When bloom is enabled, renders to an intermediate
+   * FBO, runs the bloom mip chain, then composites scene + bloom to screen.
+   * Without bloom, renders directly to the default framebuffer.
+   */
   private renderDisplay(config: FireOverlayConfig, input: FireFrameInput): void {
     const gl = this.gl!;
+    const bloomStrength = config.bloomStrength ?? 0.08;
+    const useBloom = bloomStrength > 0 && this.displayFBO && this.bloomMips.length > 0;
 
-    gl.viewport(0, 0, this.canvas!.width, this.canvas!.height);
+    if (useBloom) {
+      // Render fire to intermediate FBO at sim resolution
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.displayFBO!.fbo);
+      gl.viewport(0, 0, this.simWidth, this.simHeight);
+      gl.enable(gl.BLEND);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      this.renderDisplayPass(config, input);
+
+      // Run bloom pipeline: downsample → upsample → composite to screen
+      this.runBloomPipeline(bloomStrength);
+    } else {
+      // No bloom: render directly to screen
+      gl.viewport(0, 0, this.canvas!.width, this.canvas!.height);
+      gl.enable(gl.BLEND);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      this.renderDisplayPass(config, input);
+    }
+  }
+
+  /**
+   * PBR bloom pipeline (CoD:AW method):
+   * 1. Downsample scene through mip chain with 13-tap energy-preserving kernel
+   * 2. Upsample with additive 3x3 tent filter accumulation
+   * 3. Composite bloom + original scene to screen
+   */
+  private runBloomPipeline(bloomStrength: number): void {
+    const gl = this.gl!;
+    const mips = this.bloomMips;
+    const sizes = this.bloomMipSizes;
+    if (mips.length === 0) return;
+
+    gl.disable(gl.BLEND);
+
+    // --- Downsample chain ---
+    const downProg = this.bloomDownsampleProgram!;
+    gl.useProgram(downProg.program);
+
+    // First downsample: from displayFBO to mip[0]
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.displayFBO!.texture);
+    gl.uniform1i(downProg.uniforms.get("u_source")!, 0);
+    gl.uniform2f(downProg.uniforms.get("u_texelSize")!, 1.0 / this.simWidth, 1.0 / this.simHeight);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, mips[0]!.fbo);
+    gl.viewport(0, 0, sizes[0]![0], sizes[0]![1]);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    // Subsequent downsamples: mip[i-1] → mip[i]
+    for (let i = 1; i < mips.length; i++) {
+      gl.bindTexture(gl.TEXTURE_2D, mips[i - 1]!.texture);
+      gl.uniform2f(downProg.uniforms.get("u_texelSize")!, 1.0 / sizes[i - 1]![0], 1.0 / sizes[i - 1]![1]);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, mips[i]!.fbo);
+      gl.viewport(0, 0, sizes[i]![0], sizes[i]![1]);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    }
+
+    // --- Upsample chain (additive accumulation) ---
+    const upProg = this.bloomUpsampleProgram!;
+    gl.useProgram(upProg.program);
+    gl.uniform1f(upProg.uniforms.get("u_bloomRadius")!, 1.0);
+
     gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE); // additive blend for bloom accumulation
+
+    // Upsample: mip[last] → mip[last-1] → ... → mip[0]
+    for (let i = mips.length - 1; i > 0; i--) {
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, mips[i]!.texture);
+      gl.uniform1i(upProg.uniforms.get("u_source")!, 0);
+      gl.uniform2f(upProg.uniforms.get("u_texelSize")!, 1.0 / sizes[i]![0], 1.0 / sizes[i]![1]);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, mips[i - 1]!.fbo);
+      gl.viewport(0, 0, sizes[i - 1]![0], sizes[i - 1]![1]);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    }
+
+    // --- Composite to screen ---
+    gl.blendFuncSeparate(
+      gl.ONE, gl.ONE_MINUS_SRC_ALPHA,
+      gl.ONE, gl.ONE_MINUS_SRC_ALPHA
+    ); // restore premultiplied alpha blend
+
+    const compProg = this.bloomCompositeProgram!;
+    gl.useProgram(compProg.program);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.displayFBO!.texture);
+    gl.uniform1i(compProg.uniforms.get("u_scene")!, 0);
+
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, mips[0]!.texture);
+    gl.uniform1i(compProg.uniforms.get("u_bloom")!, 1);
+
+    gl.uniform1f(compProg.uniforms.get("u_bloomStrength")!, bloomStrength);
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, this.canvas!.width, this.canvas!.height);
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+  }
 
+  /**
+   * The display shader pass — sets uniforms and draws.
+   * Caller is responsible for binding the target framebuffer and setting viewport.
+   * This allows both renderDisplay (screen) and renderDisplayToCache (FBO) to share the same logic.
+   */
+  private renderDisplayPass(config: FireOverlayConfig, input: FireFrameInput): void {
+    const gl = this.gl!;
     const prog = this.displayProgram!;
     gl.useProgram(prog.program);
 
@@ -599,22 +899,36 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     }
     gl.uniform1i(prog.uniforms.get("u_colorField")!, 2);
 
+    // Soot density field for smoke rendering
+    gl.activeTexture(gl.TEXTURE3);
+    if (this.soot) {
+      gl.bindTexture(gl.TEXTURE_2D, this.soot.read.texture);
+    } else {
+      gl.bindTexture(gl.TEXTURE_2D, this.fuel!.read.texture); // fallback: no soot
+    }
+    gl.uniform1i(prog.uniforms.get("u_soot")!, 3);
+    gl.uniform1f(prog.uniforms.get("u_smokeOpacity")!, config.smokeOpacity ?? 0.06);
+
     // Color blend factor (0.0 = natural, 0.5 = tinted, 1.0 = fully colored)
     gl.uniform1f(prog.uniforms.get("u_colorBlend")!, config.colorBlend ?? 0);
+
+    // Time for FBM noise animation (seconds since page load)
+    gl.uniform1f(prog.uniforms.get("u_time")!, input.currentTime * 0.001);
 
     gl.uniform1f(prog.uniforms.get("u_displayIntensity")!, config.intensity);
 
     // Wick core positions (always-bright flame at each tip)
+    // Uses pre-cached uniform locations to avoid per-frame getUniformLocation stalls
     gl.uniform1i(prog.uniforms.get("u_tipCount")!, this.displayTipCount);
 
     for (let i = 0; i < this.displayTipCount; i++) {
-      const posLoc = gl.getUniformLocation(prog.program, `u_tipPositions[${i}]`);
-      const speedLoc = gl.getUniformLocation(prog.program, `u_tipSpeeds[${i}]`);
-      const scaleLoc = gl.getUniformLocation(prog.program, `u_tipFlameScales[${i}]`);
+      const posLoc = this.tipPositionLocs[i];
+      const speedLoc = this.tipSpeedLocs[i];
+      const scaleLoc = this.tipFlameScaleLocs[i];
+      const colorLoc = this.tipColorLocs[i];
       if (posLoc) gl.uniform2f(posLoc, this.displayTipUVs[i * 2]!, this.displayTipUVs[i * 2 + 1]!);
       if (speedLoc) gl.uniform1f(speedLoc, this.displayTipSpeeds[i]!);
       if (scaleLoc) gl.uniform1f(scaleLoc, this.displayTipFlameScales[i]!);
-      const colorLoc = gl.getUniformLocation(prog.program, `u_tipColors[${i}]`);
       if (colorLoc) {
         gl.uniform3f(
           colorLoc,
@@ -628,6 +942,13 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     // Aspect correction so wick cores render as circles, not ellipses
     const aspect = this.displayCanvasWidth / Math.max(this.displayCanvasHeight, 1);
     gl.uniform2f(prog.uniforms.get("u_aspectCorrect")!, 1.0, aspect);
+
+    // Per-fuel-source color curve (falls back to white gas = old hardcoded values)
+    const curve = config.colorCurve ?? BASE_COLOR_CURVE;
+    gl.uniform3fv(prog.uniforms.get("u_colorCold")!, curve.coldColor);
+    gl.uniform3fv(prog.uniforms.get("u_colorMid")!, curve.midColor);
+    gl.uniform3fv(prog.uniforms.get("u_colorHot")!, curve.hotColor);
+    gl.uniform3fv(prog.uniforms.get("u_colorCore")!, curve.coreColor);
 
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
@@ -690,6 +1011,41 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.divergenceFBO = this.createSingleFBO(w, h);
     this.curlFBO = this.createSingleFBO(w, h);
     this.colorField = this.createDoubleFBO(w, h);
+    this.soot = this.createDoubleFBO(w, h);
+
+    // Display FBO for bloom pipeline (fire rendered here, then bloomed)
+    this.displayFBO = this.createFBO(
+      w, h,
+      this.gl!.RGBA16F, this.gl!.RGBA, this.gl!.HALF_FLOAT, this.gl!.LINEAR
+    );
+
+    // Bloom mip chain: 4 levels, each half the previous
+    this.createBloomMipChain(w, h);
+  }
+
+  private createBloomMipChain(baseW: number, baseH: number): void {
+    this.destroyBloomMipChain();
+    let w = Math.max(1, baseW >> 1);
+    let h = Math.max(1, baseH >> 1);
+    for (let i = 0; i < 4; i++) {
+      this.bloomMips.push(
+        this.createFBO(w, h, this.gl!.RGBA16F, this.gl!.RGBA, this.gl!.HALF_FLOAT, this.gl!.LINEAR)
+      );
+      this.bloomMipSizes.push([w, h]);
+      w = Math.max(1, w >> 1);
+      h = Math.max(1, h >> 1);
+    }
+  }
+
+  private destroyBloomMipChain(): void {
+    const gl = this.gl;
+    if (!gl) return;
+    for (const mip of this.bloomMips) {
+      gl.deleteTexture(mip.texture);
+      gl.deleteFramebuffer(mip.fbo);
+    }
+    this.bloomMips = [];
+    this.bloomMipSizes = [];
   }
 
   private destroySimulationBuffers(): void {
@@ -715,16 +1071,21 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     destroyDouble(this.temperature);
     destroyDouble(this.fuel);
     destroyDouble(this.colorField);
+    destroyDouble(this.soot);
     destroySingle(this.divergenceFBO);
     destroySingle(this.curlFBO);
+    destroySingle(this.displayFBO);
+    this.destroyBloomMipChain();
 
     this.velocity = null;
     this.pressure = null;
     this.temperature = null;
     this.fuel = null;
     this.colorField = null;
+    this.soot = null;
     this.divergenceFBO = null;
     this.curlFBO = null;
+    this.displayFBO = null;
   }
 
   // ============================================================
@@ -743,8 +1104,24 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.gradientSubtractProgram = this.buildProgram(GRADIENT_SUBTRACT_FRAG, ["u_velocity", "u_pressure", "u_texelSize"]);
     this.clearProgram = this.buildProgram(CLEAR_FRAG, ["u_clearValue"]);
     this.displayProgram = this.buildProgram(DISPLAY_FRAG, [
-      "u_temperature", "u_fuel", "u_colorField", "u_displayIntensity",
+      "u_temperature", "u_fuel", "u_colorField", "u_soot",
+      "u_displayIntensity", "u_smokeOpacity",
       "u_tipCount", "u_aspectCorrect", "u_colorBlend",
+      "u_colorCold", "u_colorMid", "u_colorHot", "u_colorCore",
+      "u_time",
+    ]);
+    this.sootGenerationProgram = this.buildProgram(SOOT_GENERATION_FRAG, [
+      "u_soot", "u_temperature", "u_fuel", "u_dt",
+      "u_sootYield", "u_sootCoolThreshold", "u_sootCoolRate", "u_sootDissipation",
+    ]);
+    this.bloomDownsampleProgram = this.buildProgram(BLOOM_DOWNSAMPLE_FRAG, [
+      "u_source", "u_texelSize",
+    ]);
+    this.bloomUpsampleProgram = this.buildProgram(BLOOM_UPSAMPLE_FRAG, [
+      "u_source", "u_texelSize", "u_bloomRadius",
+    ]);
+    this.bloomCompositeProgram = this.buildProgram(BLOOM_COMPOSITE_FRAG, [
+      "u_scene", "u_bloom", "u_bloomStrength",
     ]);
 
     const all = [
@@ -752,6 +1129,8 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
       this.vorticityProgram, this.buoyancyProgram, this.combustionProgram,
       this.divergenceProgram, this.jacobiProgram, this.gradientSubtractProgram,
       this.clearProgram, this.displayProgram,
+      this.sootGenerationProgram, this.bloomDownsampleProgram,
+      this.bloomUpsampleProgram, this.bloomCompositeProgram,
     ];
 
     if (all.some(p => p === null)) {
@@ -759,7 +1138,30 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
       return false;
     }
 
+    // Pre-cache tip array uniform locations to avoid per-frame getUniformLocation calls.
+    // On Windows/ANGLE, each getUniformLocation triggers a GPU-CPU pipeline sync stall.
+    this.cacheTipUniformLocations();
+
     return true;
+  }
+
+  private cacheTipUniformLocations(): void {
+    if (!this.displayProgram || !this.gl) return;
+    const gl = this.gl;
+    const prog = this.displayProgram.program;
+    const MAX_TIPS = 16;
+
+    this.tipPositionLocs = new Array(MAX_TIPS);
+    this.tipSpeedLocs = new Array(MAX_TIPS);
+    this.tipFlameScaleLocs = new Array(MAX_TIPS);
+    this.tipColorLocs = new Array(MAX_TIPS);
+
+    for (let i = 0; i < MAX_TIPS; i++) {
+      this.tipPositionLocs[i] = gl.getUniformLocation(prog, `u_tipPositions[${i}]`);
+      this.tipSpeedLocs[i] = gl.getUniformLocation(prog, `u_tipSpeeds[${i}]`);
+      this.tipFlameScaleLocs[i] = gl.getUniformLocation(prog, `u_tipFlameScales[${i}]`);
+      this.tipColorLocs[i] = gl.getUniformLocation(prog, `u_tipColors[${i}]`);
+    }
   }
 
   private buildProgram(fragSource: string, uniformNames: string[]): ShaderProgram | null {
@@ -821,6 +1223,11 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
   // ============================================================
 
   private cleanup(): void {
+    if (this.initialized) {
+      activeFireInstanceCount = Math.max(0, activeFireInstanceCount - 1);
+    }
+    this.frameCache?.dispose();
+    this.frameCache = null;
     this.destroySimulationBuffers();
 
     const gl = this.gl;
@@ -830,6 +1237,8 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
         this.vorticityProgram, this.buoyancyProgram, this.combustionProgram,
         this.divergenceProgram, this.jacobiProgram, this.gradientSubtractProgram,
         this.clearProgram, this.displayProgram,
+        this.sootGenerationProgram, this.bloomDownsampleProgram,
+        this.bloomUpsampleProgram, this.bloomCompositeProgram,
       ];
       for (const p of programs) {
         if (p) gl.deleteProgram(p.program);
@@ -847,6 +1256,10 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.gradientSubtractProgram = null;
     this.clearProgram = null;
     this.displayProgram = null;
+    this.sootGenerationProgram = null;
+    this.bloomDownsampleProgram = null;
+    this.bloomUpsampleProgram = null;
+    this.bloomCompositeProgram = null;
 
     if (this.canvas) {
       this.canvas.remove();

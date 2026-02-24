@@ -4,6 +4,7 @@ Asks users to tap specific points on both Diamond and Box grids.
 Provides instant visual feedback (correct = green glow, wrong = red shake).
 -->
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -14,6 +15,31 @@ Provides instant visual feedback (correct = green glow, wrong = red shake).
   }>();
 
   const hapticService = container.items.hapticFeedback;
+
+  let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
+
+  onDestroy(() => {
+    if (feedbackTimer !== null) clearTimeout(feedbackTimer);
+  });
+
+  interface TextSegment {
+    text: string;
+    bold: boolean;
+  }
+
+  function parseStrongTags(input: string): TextSegment[] {
+    const segments: TextSegment[] = [];
+    const parts = input.split(/(<strong>.*?<\/strong>)/g);
+    for (const part of parts) {
+      const match = part.match(/^<strong>(.*?)<\/strong>$/);
+      if (match) {
+        segments.push({ text: match[1] ?? "", bold: true });
+      } else if (part) {
+        segments.push({ text: part, bold: false });
+      }
+    }
+    return segments;
+  }
 
   // Quiz questions configuration
   type PointType = "center" | "hand" | "outer";
@@ -155,8 +181,9 @@ Provides instant visual feedback (correct = green glow, wrong = red shake).
     hapticService?.trigger(isCorrect ? "success" : "error");
 
     // After feedback, advance or let user try again
-    setTimeout(
+    feedbackTimer = setTimeout(
       () => {
+        feedbackTimer = null;
         feedbackState = "none";
         feedbackPointId = null;
 
@@ -192,7 +219,7 @@ Provides instant visual feedback (correct = green glow, wrong = red shake).
 
   <!-- Question prompt -->
   <div class="prompt">
-    {@html currentQuestion?.prompt ?? ""}
+    {#each parseStrongTags(currentQuestion?.prompt ?? "") as segment}{#if segment.bold}<strong>{segment.text}</strong>{:else}{segment.text}{/if}{/each}
   </div>
 
   <!-- Grid with clickable points -->
@@ -249,7 +276,7 @@ Provides instant visual feedback (correct = green glow, wrong = red shake).
   .progress-bar {
     width: 100%;
     height: 6px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 3px;
     overflow: hidden;
   }
@@ -277,7 +304,7 @@ Provides instant visual feedback (correct = green glow, wrong = red shake).
   }
 
   .prompt :global(strong) {
-    color: #a78bfa;
+    color: var(--theme-accent, #a78bfa);
     font-weight: 700;
   }
 
@@ -294,7 +321,7 @@ Provides instant visual feedback (correct = green glow, wrong = red shake).
   .grid-wrapper.feedback-correct {
     box-shadow:
       0 4px 16px var(--theme-shadow),
-      0 0 24px rgba(34, 197, 94, 0.4);
+      0 0 24px color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent);
   }
 
   .quiz-grid {
@@ -323,22 +350,22 @@ Provides instant visual feedback (correct = green glow, wrong = red shake).
 
   /* Correct feedback - green glow */
   .click-target.correct {
-    fill: rgba(34, 197, 94, 0.4);
+    fill: color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent);
     animation: correct-pulse 0.6s ease;
   }
 
   @keyframes correct-pulse {
     0% {
-      fill: rgba(34, 197, 94, 0.6);
+      fill: color-mix(in srgb, var(--semantic-success, #22c55e) 60%, transparent);
     }
     100% {
-      fill: rgba(34, 197, 94, 0.3);
+      fill: color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent);
     }
   }
 
   /* Incorrect feedback - red shake */
   .click-target.incorrect {
-    fill: rgba(239, 68, 68, 0.4);
+    fill: color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
     animation: incorrect-shake var(--duration-dramatic) ease;
   }
 
@@ -365,19 +392,19 @@ Provides instant visual feedback (correct = green glow, wrong = red shake).
   .mode-badge {
     padding: 0.5rem 1rem;
     border-radius: 8px;
-    font-size: 0.75rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     letter-spacing: 0.5px;
-    background: rgba(74, 158, 255, 0.2);
-    color: #4a9eff;
-    border: 2px solid rgba(74, 158, 255, 0.3);
+    background: color-mix(in srgb, var(--prop-blue, #4a9eff) 20%, transparent);
+    color: var(--prop-blue, #4a9eff);
+    border: 2px solid color-mix(in srgb, var(--prop-blue, #4a9eff) 30%, transparent);
     transition: all var(--duration-emphasis) ease;
   }
 
   .mode-badge.box {
-    background: rgba(255, 74, 158, 0.2);
-    color: #ff4a9e;
-    border-color: rgba(255, 74, 158, 0.3);
+    background: color-mix(in srgb, var(--prop-red, #ff4a9e) 20%, transparent);
+    color: var(--prop-red, #ff4a9e);
+    border-color: color-mix(in srgb, var(--prop-red, #ff4a9e) 30%, transparent);
   }
 
   /* Responsive */

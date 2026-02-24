@@ -120,7 +120,7 @@ all content at once instead of stepping through one page at a time.
     border: 1px solid var(--theme-stroke);
     border-radius: 20px;
     color: var(--theme-text-dim);
-    font-size: 0.75rem;
+    font-size: var(--font-size-compact, 12px);
     pointer-events: none;
     opacity: 0.8;
     animation: pulse 2s ease-in-out infinite;

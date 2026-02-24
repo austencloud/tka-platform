@@ -15,6 +15,7 @@
   import { onMount } from "svelte";
   import TikaConversation from "./components/TikaConversation.svelte";
   import TikaReviewPanel from "./components/TikaReviewPanel.svelte";
+  import TikaCompareView from "./components/TikaCompareView.svelte";
   import TikaHistoryDrawer from "./components/TikaHistoryDrawer.svelte";
   import { getEffectiveUserId, authState } from "$lib/shared/auth/state/authState.svelte";
   import { auth } from "$lib/shared/auth/firebase";
@@ -22,6 +23,7 @@
   import type { ConceptProgressTracker } from "$lib/features/learn/services/implementations/ConceptProgressTracker";
   import type { IQuizHistoryRecorder } from "$lib/features/learn/services/contracts/IQuizHistoryRecorder";
   import type { IConceptRecommender } from "$lib/features/learn/services/contracts/IConceptRecommender";
+  import type { IGapDetector } from "$lib/features/learn/services/contracts/IGapDetector";
   import type { MasteryContext } from "$lib/features/learn/domain/quiz-history-types";
   import { TikaSessionRepository } from "./services/implementations/TikaSessionRepository";
   import { ConversationMemoryRetriever } from "./services/implementations/ConversationMemoryRetriever";
@@ -34,6 +36,9 @@
   // Persistence keys
   const STORAGE_KEY = "tika-conversation";
   const MODEL_STORAGE_KEY = "tika_model_preference";
+
+  /** SessionStorage key for pre-seeded questions from other modules */
+  const SEED_MESSAGE_KEY = "tika-seed-message";
 
   // Load persisted messages from sessionStorage
   function loadPersistedMessages(): UIMessage[] {
@@ -74,6 +79,17 @@
   let isFlagged = $state(false);
   let autoSaveTimeout: ReturnType<typeof setTimeout> | null = null;
 
+  // Compare mode state
+  let compareMode = $state(false);
+  const COMPARE_MODEL_A_KEY = "tika-compare-model-a";
+  const COMPARE_MODEL_B_KEY = "tika-compare-model-b";
+  let compareModelA = $state(
+    browser ? localStorage.getItem(COMPARE_MODEL_A_KEY) || "sonnet-4-legacy" : "sonnet-4-legacy"
+  );
+  let compareModelB = $state(
+    browser ? localStorage.getItem(COMPARE_MODEL_B_KEY) || "sonnet-4" : "sonnet-4"
+  );
+
   // Repository instance (initialized lazily when user is authenticated)
   const sessionRepository = browser ? new TikaSessionRepository() : null;
 
@@ -97,6 +113,9 @@
     : null;
   const conceptRecommender: IConceptRecommender | null = browser
     ? container?.items?.conceptRecommender ?? null
+    : null;
+  const gapDetector: IGapDetector | null = browser
+    ? container?.items?.gapDetector ?? null
     : null;
 
   // Interaction tracker for quiz persistence and topic tracking (depends on quizHistoryRecorder)
@@ -163,6 +182,28 @@
           suggestedNext,
           dueForReview,
         };
+
+        // Load active misconceptions and inject into mastery context
+        if (gapDetector && userId) {
+          gapDetector
+            .getRecurringMisconceptions(userId)
+            .then((patterns) => {
+              if (patterns.length > 0 && masteryContext) {
+                masteryContext = {
+                  ...masteryContext,
+                  activeMisconceptions: patterns.map((p) => ({
+                    nodeA: p.nodeA,
+                    nodeB: p.nodeB,
+                    occurrenceCount: p.occurrenceCount,
+                    explanation: p.explanation,
+                  })),
+                };
+              }
+            })
+            .catch((err) => {
+              console.warn("[TIKA] Failed to load misconceptions:", err);
+            });
+        }
       })
       .catch((error) => {
         console.warn("[TIKA] Failed to load mastery context:", error);
@@ -232,11 +273,42 @@
       })
     : null;
 
+  // Compare mode Chat instances (created lazily when compare mode activates)
+  let chatA = $state<Chat | null>(null);
+  let chatB = $state<Chat | null>(null);
+
+  function createCompareChat(id: string, model: string): Chat {
+    return new Chat({
+      id,
+      transport: new DefaultChatTransport({
+        api: "/api/tika/ask",
+        headers: () => getAuthHeaders(),
+        body: () => ({
+          userId,
+          completedConcepts,
+          masteryContext,
+          conversationMemory,
+          language: "en",
+          model,
+        }),
+      }),
+      onError: (error: Error) => {
+        console.error(`[TIKA Compare ${id}] Chat error:`, error);
+      },
+    });
+  }
+
   // Derived reactive bindings for chat state
   // These ensure Svelte 5 properly tracks reactivity from the Chat class
   // IMPORTANT: Must be defined AFTER chat initialization
   const chatMessages = $derived(chat?.messages ?? []);
   const chatStatus = $derived(chat?.status ?? "ready");
+
+  // Compare mode derived state
+  const compareMessagesA = $derived(chatA?.messages ?? []);
+  const compareMessagesB = $derived(chatB?.messages ?? []);
+  const compareStatusA = $derived(chatA?.status ?? "ready");
+  const compareStatusB = $derived(chatB?.status ?? "ready");
 
   // Persist messages to sessionStorage when they change
   $effect(() => {
@@ -277,10 +349,7 @@
         console.error("[TIKA] Auto-save failed:", error);
       }
     }, TIKA_LIMITS.AUTO_SAVE_DEBOUNCE_MS);
-  });
 
-  // Cleanup auto-save timeout on unmount
-  $effect(() => {
     return () => {
       if (autoSaveTimeout) {
         clearTimeout(autoSaveTimeout);
@@ -316,6 +385,20 @@
         description: "Balanced intelligence",
       }];
     }
+
+    // Check for a seeded question from another module (e.g. quiz misconception hint)
+    if (browser) {
+      const seedMessage = sessionStorage.getItem(SEED_MESSAGE_KEY);
+      if (seedMessage) {
+        sessionStorage.removeItem(SEED_MESSAGE_KEY);
+        // Start a fresh conversation with the seeded question
+        await handleNewChat();
+        // Small delay to let the chat initialize after clearing
+        setTimeout(() => {
+          handleSubmit(seedMessage);
+        }, 100);
+      }
+    }
   });
 
   // Handle model change
@@ -348,6 +431,45 @@
   // Handle stop/abort streaming
   function handleStop() {
     chat?.stop();
+  }
+
+  // Compare mode handlers
+  function toggleCompare() {
+    compareMode = !compareMode;
+    if (compareMode && browser) {
+      chatA = createCompareChat("tika-compare-a", compareModelA);
+      chatB = createCompareChat("tika-compare-b", compareModelB);
+    }
+  }
+
+  function handleCompareModelAChange(modelId: string) {
+    compareModelA = modelId;
+    if (browser) localStorage.setItem(COMPARE_MODEL_A_KEY, modelId);
+    chatA = createCompareChat("tika-compare-a", modelId);
+  }
+
+  function handleCompareModelBChange(modelId: string) {
+    compareModelB = modelId;
+    if (browser) localStorage.setItem(COMPARE_MODEL_B_KEY, modelId);
+    chatB = createCompareChat("tika-compare-b", modelId);
+  }
+
+  async function handleCompareSubmit(question: string) {
+    if (!memoryLoaded && memoryRetriever && isAuthenticated) {
+      memoryLoaded = true;
+      try {
+        conversationMemory = await memoryRetriever.buildMemoryContext(question);
+      } catch (error) {
+        console.warn("[TIKA] Failed to load conversation memory:", error);
+      }
+    }
+    chatA?.sendMessage({ text: question });
+    chatB?.sendMessage({ text: question });
+  }
+
+  function handleCompareStop() {
+    chatA?.stop();
+    chatB?.stop();
   }
 
   // Handle inline quiz completion (persist results)
@@ -439,6 +561,28 @@
       .join("");
   }
 
+  type ToolInvocationPart = {
+    type: "tool-invocation";
+    toolInvocation: {
+      toolName: string;
+      args: Record<string, unknown>;
+      state: string;
+      result?: unknown;
+    };
+  };
+
+  function isToolInvocationPart(part: unknown): part is ToolInvocationPart {
+    if (!part || typeof part !== "object") return false;
+    const p = part as Record<string, unknown>;
+    if (p.type !== "tool-invocation") return false;
+    const inv = p.toolInvocation;
+    return (
+      inv !== null &&
+      typeof inv === "object" &&
+      typeof (inv as Record<string, unknown>).toolName === "string"
+    );
+  }
+
   // Extract explanation from tool output, handling canonical response format
   function extractToolExplanation(output: unknown): string {
     if (typeof output === "string") return output;
@@ -514,17 +658,8 @@
               lines.push("### Tools Called");
               lines.push("");
               for (const part of toolParts) {
-                const inv = (
-                  part as unknown as {
-                    type: "tool-invocation";
-                    toolInvocation: {
-                      toolName: string;
-                      args: Record<string, unknown>;
-                      state: string;
-                      result?: unknown;
-                    };
-                  }
-                ).toolInvocation;
+                if (!isToolInvocationPart(part)) continue;
+                const inv = part.toolInvocation;
                 lines.push(`- **${inv.toolName}**: \`${JSON.stringify(inv.args)}\``);
                 // Include result if available
                 if (inv.state === "result" && inv.result) {
@@ -558,27 +693,45 @@
 
 <div class="tika-module">
   {#if mode === "conversation"}
-    <!-- Single-column conversation (inline images in messages) -->
-    <div class="conversation-container">
-      <TikaConversation
-        messages={chatMessages}
-        status={chatStatus}
-        onSubmit={handleSubmit}
-        onStop={handleStop}
-        onNewChat={isAuthenticated ? handleNewChat : undefined}
-        onOpenHistory={isAuthenticated ? handleOpenHistory : undefined}
-        onOpenReview={() => (mode = "review")}
-        {generateCopyForAI}
-        {selectedModel}
+    {#if compareMode}
+      <TikaCompareView
+        messagesA={compareMessagesA}
+        messagesB={compareMessagesB}
+        statusA={compareStatusA}
+        statusB={compareStatusB}
+        modelA={compareModelA}
+        modelB={compareModelB}
         {availableModels}
-        onModelChange={handleModelChange}
-        sessionId={currentSessionId}
-        {isFlagged}
-        onFlagForReview={isAuthenticated ? handleFlagForReview : undefined}
-        onQuizComplete={isAuthenticated ? handleQuizComplete : undefined}
-        {welcomeContext}
+        onModelAChange={handleCompareModelAChange}
+        onModelBChange={handleCompareModelBChange}
+        onSubmit={handleCompareSubmit}
+        onStop={handleCompareStop}
+        onExitCompare={toggleCompare}
       />
-    </div>
+    {:else}
+      <div class="conversation-container">
+        <TikaConversation
+          messages={chatMessages}
+          status={chatStatus}
+          onSubmit={handleSubmit}
+          onStop={handleStop}
+          onNewChat={isAuthenticated ? handleNewChat : undefined}
+          onOpenHistory={isAuthenticated ? handleOpenHistory : undefined}
+          onOpenReview={() => (mode = "review")}
+          {generateCopyForAI}
+          {selectedModel}
+          {availableModels}
+          onModelChange={handleModelChange}
+          sessionId={currentSessionId}
+          {isFlagged}
+          onFlagForReview={isAuthenticated ? handleFlagForReview : undefined}
+          onQuizComplete={isAuthenticated ? handleQuizComplete : undefined}
+          {welcomeContext}
+          {compareMode}
+          onToggleCompare={toggleCompare}
+        />
+      </div>
+    {/if}
   {:else}
     <TikaReviewPanel
       onBack={() => (mode = "conversation")}
@@ -641,10 +794,10 @@
   .history-backdrop {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--theme-overlay, rgba(0, 0, 0, 0.5));
     border: none;
     cursor: pointer;
-    backdrop-filter: blur(2px);
+    backdrop-filter: var(--overlay-blur, blur(2px));
   }
 
   .history-drawer-container {

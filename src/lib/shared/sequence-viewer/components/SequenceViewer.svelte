@@ -21,7 +21,7 @@
 	import { onMount, onDestroy } from "svelte";
 	import AnimationPlayer from "./AnimationPlayer.svelte";
 	import PropAwareThumbnail from "$lib/features/browse/sequences/display/components/PropAwareThumbnail.svelte";
-	import LayeredSequencePreview from "./LayeredSequencePreview.svelte";
+	import ChoreoCard from "./ChoreoCard.svelte";
 	import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 	import { tryGetAnimationExportContext } from "$lib/shared/share-hub/context/animation-export-context.svelte";
 	import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
@@ -253,7 +253,7 @@
 	const hasAnimation = $derived(!!sequence);
 	const hasVideo = $derived(!!sequence?.performanceVideoUrl);
 
-	// Check if sequence has full beat data loaded (needed for LayeredSequencePreview)
+	// Check if sequence has full beat data loaded (needed for ChoreoCard)
 	const hasFullStepData = $derived(!!sequence?.steps?.length);
 
 	const availableMediaTypes = $derived.by(() => {
@@ -347,12 +347,12 @@
 	<!-- Media Content Area -->
 	<div class="media-content">
 		{#if activeMediaType === "image"}
-			<!-- Image View - LayeredSequencePreview for interactive mode (needs steps), PropAwareThumbnail otherwise -->
+			<!-- Image View - ChoreoCard for interactive mode (needs steps), PropAwareThumbnail otherwise -->
 			<div class="image-view-container">
 				<div class="image-view">
 					{#if showVisibilitySettings && hasFullStepData}
 						<!-- Interactive mode: Use layered preview for animated toggles (requires full beat data) -->
-						<LayeredSequencePreview
+						<ChoreoCard
 							{sequence}
 							showStepNumbers={addStepNumbers}
 							showDifficultyLevel={addDifficultyLevel}

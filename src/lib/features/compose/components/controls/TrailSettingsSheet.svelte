@@ -106,7 +106,7 @@
     border: 1px solid var(--theme-stroke, var(--theme-stroke));
     background: var(--theme-card-bg, var(--theme-card-bg));
     color: var(--theme-text-dim, var(--theme-text-dim));
-    font-size: 0.85rem;
+    font-size: var(--font-size-sm);
     cursor: pointer;
     transition: all var(--duration-normal) ease;
   }

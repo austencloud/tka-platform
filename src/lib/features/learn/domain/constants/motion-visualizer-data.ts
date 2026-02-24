@@ -63,8 +63,8 @@ export const MOTION_COLORS: Record<MotionType, string> = {
   static: "#94A3B8",
 };
 
-export const LEFT_HAND_COLOR = "#4A9EFF";
-export const RIGHT_HAND_COLOR = "#FF4A9E";
+export const LEFT_HAND_COLOR = "var(--prop-blue, #4A9EFF)";
+export const RIGHT_HAND_COLOR = "var(--prop-red, #FF4A9E)";
 
 export function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;

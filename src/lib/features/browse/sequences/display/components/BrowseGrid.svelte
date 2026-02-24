@@ -6,14 +6,13 @@
   // import { wrapGrid } from "animate-css-grid";
   import type { IBrowseThumbnailProvider } from "../services/contracts/IBrowseThumbnailProvider";
   import type { IVariationGrouper } from "../services/contracts/IVariationGrouper";
-  import ChoreoCard from "./ChoreoCard/ChoreoCard.svelte";
+  import ChoreoCardThumbnail from "./ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
   import SectionHeader from "./SectionHeader.svelte";
   import VirtualizedSequenceGrid from "./VirtualizedSequenceGrid.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { isCatDogMode } from "../utils/prop-mode-helpers";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { container } from "$lib/shared/di";
-  import type { ISequenceDataProvider } from "$lib/shared/sequence-viewer/services/contracts/ISequenceDataProvider";
 
   /**
    * 🚀 PERFORMANCE: Virtualization threshold
@@ -194,7 +193,7 @@
   }
 
   // Hover prefetch for non-virtualized cards
-  const sequenceDataProvider = container.items.sequenceDataProvider as ISequenceDataProvider;
+  const sequenceDataProvider = container.items.sequenceDataProvider;
 
   function handleSequenceHover(seq: SequenceData) {
     sequenceDataProvider.prefetch(seq);
@@ -225,7 +224,7 @@
           >
             {#each section.sequences as sequence (sequence.id)}
               {@const seqVariations = getVariationsForSequence(sequence)}
-              <ChoreoCard
+              <ChoreoCardThumbnail
                 {sequence}
                 variations={seqVariations}
                 onPrimaryAction={(seq) =>
@@ -258,7 +257,7 @@
   >
     {#each sequences as sequence (sequence.id)}
       {@const seqVariations = getVariationsForSequence(sequence)}
-      <ChoreoCard
+      <ChoreoCardThumbnail
         {sequence}
         variations={seqVariations}
         onPrimaryAction={(seq) =>

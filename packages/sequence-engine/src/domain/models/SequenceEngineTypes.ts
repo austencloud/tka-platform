@@ -30,7 +30,7 @@ export type Orientation =
   | "out"
   | "clock"
   | "counter"
-  // Interradial orientations (Level 7 - 45° between cardinal orientations)
+  // Interradial orientations (Level 6 - 45° between cardinal orientations)
   | "clockIn"
   | "clockOut"
   | "counterIn"
@@ -131,6 +131,12 @@ export interface SequenceStep {
   redMotion: MotionData;
   /** Beat number in the sequence */
   beatIndex: number;
+  /** Step number (0 = start position, 1+ = beats). Used by LOOP detection/execution. */
+  stepNumber?: number;
+  /** Variation index within a letter's pictograph set */
+  variation?: number;
+  /** Whether this step is a bridge letter (inserted for position continuity) */
+  isBridge?: boolean;
 }
 
 /**

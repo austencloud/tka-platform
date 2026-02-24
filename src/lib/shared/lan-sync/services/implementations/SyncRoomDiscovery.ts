@@ -13,21 +13,21 @@ import {
 } from 'firebase/database';
 import {
 	getDatabaseInstance,
-	getAuthSync,
 	createHMRSafeDatabaseListener
 } from '$lib/shared/auth/firebase';
 import type { ISyncRoomDiscovery } from '../contracts/ISyncRoomDiscovery';
 import type { SyncRoom, SyncRoomWithId } from '../../domain/models/lan-sync-models';
+import { localSyncSessionId } from '../../domain/models/lan-sync-models';
 
 export class SyncRoomDiscovery implements ISyncRoomDiscovery {
-	private _isBrowseing = false;
+	private _isBrowsing = false;
 	private _nearbyRooms: SyncRoomWithId[] = [];
 	private roomsRef: DatabaseReference | null = null;
 	private unsubscribeListener: (() => void) | null = null;
 	private callbacks: Set<(rooms: SyncRoomWithId[]) => void> = new Set();
 
-	get isBrowseing(): boolean {
-		return this._isBrowseing;
+	get isBrowsing(): boolean {
+		return this._isBrowsing;
 	}
 
 	get nearbyRooms(): SyncRoomWithId[] {
@@ -35,7 +35,7 @@ export class SyncRoomDiscovery implements ISyncRoomDiscovery {
 	}
 
 	async startDiscovery(): Promise<void> {
-		if (this._isBrowseing) {
+		if (this._isBrowsing) {
 			return;
 		}
 
@@ -61,11 +61,11 @@ export class SyncRoomDiscovery implements ISyncRoomDiscovery {
 			}
 		);
 
-		this._isBrowseing = true;
+		this._isBrowsing = true;
 	}
 
 	stopDiscovery(): void {
-		if (!this._isBrowseing) {
+		if (!this._isBrowsing) {
 			return;
 		}
 
@@ -76,7 +76,7 @@ export class SyncRoomDiscovery implements ISyncRoomDiscovery {
 
 		this.roomsRef = null;
 		this._nearbyRooms = [];
-		this._isBrowseing = false;
+		this._isBrowsing = false;
 		this.notifyCallbacks();
 	}
 
@@ -103,19 +103,18 @@ export class SyncRoomDiscovery implements ISyncRoomDiscovery {
 			return;
 		}
 
-		// Get current user ID to filter out own rooms
-		const auth = getAuthSync();
-		const currentUserId = auth.currentUser?.uid;
-
-		// Convert to array with IDs, filter out own rooms
+		// Convert to array with IDs, filter out rooms from THIS device/tab only.
+		// Same user on a different device should still see the banner.
 		const rooms: SyncRoomWithId[] = Object.entries(data)
 			.map(([roomId, room]) => ({
 				roomId,
 				...room
 			}))
 			.filter((room) => {
-				// Filter out own rooms (don't show invitation for own hosted room)
-				if (currentUserId && room.hostUserId === currentUserId) {
+				// Filter out rooms hosted by THIS browser tab (same session ID).
+				// Rooms from the same user on another device have a different session ID
+				// and will pass through — which is the whole point of multi-device sync.
+				if (room.hostSessionId === localSyncSessionId) {
 					return false;
 				}
 				return true;

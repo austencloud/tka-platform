@@ -11,9 +11,10 @@
   import ValidNextPictographQuiz from "./ValidNextPictographQuiz.svelte";
   import { QuizMode, QuizType } from "../domain/enums/quiz-enums";
   import type { QuizLayoutMode } from "../domain/enums/quiz-enums";
-  import type { QuizResults, QuizProgress } from "../domain/models/quiz-models";
+  import type { QuizResults, QuizProgress, QuizAnswerEvent } from "../domain/models/quiz-models";
   import { QuizConfigurator } from "../services/implementations/QuizConfigurator";
   import type { IQuizSessionManager } from "../services/contracts/IQuizSessionManager";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   // Props
   let {
@@ -32,7 +33,7 @@
     questionIndex?: number;
     onBackToSelector?: () => void;
     onQuizComplete?: (results: QuizResults) => void;
-    onAnswerSubmit?: (answer: any) => void;
+    onAnswerSubmit?: (event: QuizAnswerEvent) => void;
   }>();
 
   // State
@@ -95,16 +96,19 @@
     isLoading = false;
   }
 
-  function handleAnswerSubmit(isCorrect: boolean) {
+  function handleAnswerSubmit(event: QuizAnswerEvent) {
     totalQuestions++;
-    if (isCorrect) {
+    if (event.isCorrect) {
       correctAnswers++;
     }
 
     if (sessionId) {
-      quizSessionService.updateSessionProgress(sessionId, isCorrect, 0);
+      quizSessionService.updateSessionProgress(sessionId, event.isCorrect, 0);
       updateProgress();
     }
+
+    // Propagate the full event upstream for persistence and gap detection
+    onAnswerSubmit?.(event);
 
     // Check if quiz should continue
     if (!shouldContinueQuiz()) {
@@ -222,7 +226,7 @@
 <div class="quiz-workspace">
   {#if isLoading}
     <div class="loading-screen">
-      <div class="loading-spinner"></div>
+      <ProgressRing percent={-1} size={32} strokeWidth={3} />
       <p>Starting quiz...</p>
     </div>
   {:else}
@@ -230,19 +234,19 @@
     <div class="workspace-content">
       {#if quizType === QuizType.PICTOGRAPH_TO_LETTER}
         <PictographToLetterQuiz
-          onAnswerSubmit={(isCorrect) => handleAnswerSubmit(isCorrect)}
+          onAnswerSubmit={handleAnswerSubmit}
           onNextQuestion={handleNextQuestion}
           onBack={handleBackClick}
         />
       {:else if quizType === QuizType.LETTER_TO_PICTOGRAPH}
         <LetterToPictographQuiz
-          onAnswerSubmit={(isCorrect) => handleAnswerSubmit(isCorrect)}
+          onAnswerSubmit={handleAnswerSubmit}
           onNextQuestion={handleNextQuestion}
           onBack={handleBackClick}
         />
       {:else if quizType === QuizType.VALID_NEXT_PICTOGRAPH}
         <ValidNextPictographQuiz
-          onAnswerSubmit={(isCorrect) => handleAnswerSubmit(isCorrect)}
+          onAnswerSubmit={handleAnswerSubmit}
           onNextQuestion={handleNextQuestion}
           onBack={handleBackClick}
         />
@@ -282,8 +286,7 @@
     background: var(--theme-card-bg);
     border-radius: 12px;
     border: 1px solid var(--theme-stroke);
-    backdrop-filter: blur(10px);
-    color: #94a3b8;
+    color: var(--theme-text-muted, #94a3b8);
     font-size: 1.125rem;
   }
 
@@ -294,31 +297,7 @@
     justify-content: center;
     height: 100%;
     gap: 1rem;
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
   }
 
-  .loading-spinner {
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
-    border: 4px solid var(--theme-stroke);
-    border-left: 4px solid #667eea;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
-  @media (prefers-reduced-motion: reduce) {
-    .loading-spinner {
-      animation: none;
-    }
-  }
 </style>

@@ -23,7 +23,7 @@
 
   onMount(() => {
     try {
-      const conversationManager: IConversationManager = container.items.conversationManager;
+      const conversationManager: IConversationManager = (container.items as any).conversationManager;
 
       // Get initial count
       conversationManager.getTotalUnreadCount().then((count) => {

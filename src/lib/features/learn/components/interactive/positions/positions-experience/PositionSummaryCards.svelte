@@ -27,8 +27,8 @@ PositionSummaryCards - Summary cards showing all position types
 <style>
   .summary-section {
     padding: 1.25rem;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
   }
 
@@ -58,21 +58,24 @@ PositionSummaryCards - Summary cards showing all position types
   }
 
   .position-card.alpha {
-    background: rgba(255, 107, 107, 0.1);
-    border: 1px solid rgba(255, 107, 107, 0.25);
-    color: #ff6b6b;
+    --pos-color: #ff6b6b;
+    background: color-mix(in srgb, var(--pos-color) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--pos-color) 25%, transparent);
+    color: var(--pos-color);
   }
 
   .position-card.beta {
-    background: rgba(78, 205, 196, 0.1);
-    border: 1px solid rgba(78, 205, 196, 0.25);
-    color: #4ecdc4;
+    --pos-color: #4ecdc4;
+    background: color-mix(in srgb, var(--pos-color) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--pos-color) 25%, transparent);
+    color: var(--pos-color);
   }
 
   .position-card.gamma {
-    background: rgba(255, 230, 109, 0.1);
-    border: 1px solid rgba(255, 230, 109, 0.25);
-    color: #ffe66d;
+    --pos-color: #ffe66d;
+    background: color-mix(in srgb, var(--pos-color) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--pos-color) 25%, transparent);
+    color: var(--pos-color);
   }
 
   .position-card i {

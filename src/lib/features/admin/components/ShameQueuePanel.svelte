@@ -16,6 +16,7 @@
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import ModalHeader from "$lib/shared/foundation/ui/modal/ModalHeader.svelte";
   import ModalFooter from "$lib/shared/foundation/ui/modal/ModalFooter.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   // State
   let pendingEntries = $state<HallOfShameEntry[]>([]);
@@ -246,7 +247,7 @@
   <div class="panel-body">
     {#if isLoading}
       <div class="loading" role="status">
-        <div class="spinner" aria-hidden="true"></div>
+        <ProgressRing percent={-1} size={32} strokeWidth={3} />
         <span>Loading queue...</span>
       </div>
     {:else if error}
@@ -541,21 +542,6 @@
     padding: 2rem;
   }
 
-  .loading .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--theme-stroke);
-    border-top-color: var(--theme-accent);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   .error {
     color: var(--semantic-error);
   }
@@ -837,11 +823,4 @@
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .loading .spinner {
-      animation: none;
-      border-top-color: var(--theme-accent);
-      border-right-color: var(--theme-accent);
-    }
-  }
 </style>

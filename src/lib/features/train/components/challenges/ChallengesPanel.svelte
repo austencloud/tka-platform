@@ -7,6 +7,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { ITrainChallengeManager } from "../../services/contracts/ITrainChallengeManager";
   import type {
@@ -215,7 +216,7 @@
         aria-live="polite"
         aria-busy="true"
       >
-        <div class="spinner" aria-hidden="true"></div>
+        <ProgressRing percent={-1} size={32} strokeWidth={3} />
         <p>{t("train_loading_challenges")}</p>
       </div>
     {:else if filteredChallenges.length === 0}
@@ -533,21 +534,6 @@
     justify-content: center;
     padding: 60px 20px;
     gap: 16px;
-  }
-
-  .spinner {
-    width: 52px;
-    height: 52px;
-    border: 3px solid rgba(239, 68, 68, 0.2);
-    border-top-color: var(--semantic-error);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
   }
 
   .loading-state p {
@@ -969,8 +955,5 @@
       transition: none;
     }
 
-    .spinner {
-      animation: none;
-    }
   }
 </style>

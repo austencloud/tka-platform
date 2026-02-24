@@ -12,10 +12,23 @@ export class TikaMarkdownParser implements ITikaMarkdownParser {
 	parse(markdown: string): ParsedMarkdown {
 		if (!markdown) return { html: '', links: [] };
 
+		// Strip hallucinated XML component tags that the model sometimes writes
+		// (e.g., <inline-pictograph letter="A" gridMode="box"></inline-pictograph>)
+		// These should be handled by the tool system, not written in text
+		let cleaned = markdown.replace(/<\/?inline-(?:pictograph|gallery|sequence-player|step-grid|quiz)[^>]*>/g, '');
+
+		// Strip inline-content JSON objects the model copies from tool results
+		// (e.g., {"type":"inline-pictograph","letter":"I","variation":0,"gridMode":"diamond"})
+		// The client renders these automatically from tool output parts — text copies are noise
+		cleaned = cleaned.replace(/\{\s*"type"\s*:\s*"inline-(?:pictograph|gallery|sequence-player|step-grid|quiz)"[^}]*\}/g, '');
+
+		// Clean up empty lines left by stripped tags
+		cleaned = cleaned.replace(/\n{3,}/g, '\n\n').trim();
+
 		// First, extract and process tables BEFORE any other transformation
 		// Tables need their structure preserved
 		const tableBlocks: string[] = [];
-		let processed = markdown.replace(
+		let processed = cleaned.replace(
 			/\|[^\n]+\|\n\|[-:\s|]+\|\n(\|[^\n]+\|\n?)*/g,
 			(tableMatch) => {
 				const lines = tableMatch.trim().split('\n');

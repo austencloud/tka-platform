@@ -29,27 +29,47 @@ export const GET: RequestHandler = async (event) => {
 
   const models: ModelOption[] = []
 
-  // Sonnet 4 - always first (default)
   if (env.ANTHROPIC_API_KEY) {
+    // Sonnet 4.6 - latest generation (default)
     models.push({
       id: 'sonnet-4',
+      name: 'Claude Sonnet 4.6',
+      shortName: 'Sonnet 4.6',
+      icon: 'fa-brain',
+      color: '#6366f1',
+      description: 'Latest generation',
+    })
+
+    // Sonnet 4 - previous generation, available for A/B comparison
+    models.push({
+      id: 'sonnet-4-legacy',
       name: 'Claude Sonnet 4',
       shortName: 'Sonnet 4',
       icon: 'fa-brain',
-      color: '#6366f1',
-      description: 'Balanced intelligence',
+      color: '#94a3b8',
+      description: 'Previous generation',
+    })
+
+    // Haiku 4.5 - fast and lightweight
+    models.push({
+      id: 'haiku',
+      name: 'Claude Haiku 4.5',
+      shortName: 'Haiku 4.5',
+      icon: 'fa-bolt',
+      color: '#f59e0b',
+      description: 'Fast and lightweight',
     })
   }
 
-  // Deepseek - cost-effective alternative
+  // DeepSeek - cost-effective alternative
   if (env.DEEPSEEK_API_KEY) {
     models.push({
       id: 'deepseek',
-      name: 'Deepseek V3',
-      shortName: 'Deepseek',
+      name: 'DeepSeek V3',
+      shortName: 'DeepSeek',
       icon: 'fa-water',
       color: '#3b82f6',
-      description: 'Cost-effective testing',
+      description: 'Cost-effective alternative',
     })
   }
 

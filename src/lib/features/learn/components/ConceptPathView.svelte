@@ -234,6 +234,7 @@ Shows:
 
   /* Completion celebration */
   .completion-celebration {
+    --achievement-gold: #ffd700;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -241,10 +242,10 @@ Shows:
     padding: 3rem 2rem;
     background: linear-gradient(
       135deg,
-      rgba(255, 215, 0, 0.1) 0%,
-      rgba(255, 215, 0, 0.02) 100%
+      color-mix(in srgb, var(--achievement-gold) 10%, transparent) 0%,
+      color-mix(in srgb, var(--achievement-gold) 2%, transparent) 100%
     );
-    border: 1px solid rgba(255, 215, 0, 0.2);
+    border: 1px solid color-mix(in srgb, var(--achievement-gold) 20%, transparent);
     border-radius: 16px;
   }
 
@@ -254,21 +255,21 @@ Shows:
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 215, 0, 0.15);
+    background: color-mix(in srgb, var(--achievement-gold) 15%, transparent);
     border-radius: 50%;
     margin-bottom: 1.5rem;
   }
 
   .celebration-icon i {
     font-size: 2.5rem;
-    color: #ffd700;
-    text-shadow: 0 0 24px rgba(255, 215, 0, 0.5);
+    color: var(--achievement-gold);
+    text-shadow: 0 0 24px color-mix(in srgb, var(--achievement-gold) 50%, transparent);
   }
 
   .completion-celebration h2 {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #ffd700;
+    color: var(--achievement-gold);
     margin: 0 0 0.5rem;
   }
 
@@ -284,10 +285,10 @@ Shows:
     gap: 0.5rem;
     padding: 0.875rem 1.5rem;
     min-height: var(--min-touch-target);
-    background: rgba(255, 215, 0, 0.15);
-    border: 1px solid rgba(255, 215, 0, 0.3);
+    background: color-mix(in srgb, var(--achievement-gold) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--achievement-gold) 30%, transparent);
     border-radius: 10px;
-    color: #ffd700;
+    color: var(--achievement-gold);
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
@@ -295,7 +296,7 @@ Shows:
   }
 
   .review-button:hover {
-    background: rgba(255, 215, 0, 0.25);
+    background: color-mix(in srgb, var(--achievement-gold) 25%, transparent);
   }
 
   /* View all toggle */

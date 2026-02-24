@@ -94,11 +94,10 @@
 </script>
 
 <!-- Compact Trigger Button -->
-<button
+<button aria-label="Select AI model"
   bind:this={triggerElement}
   class="model-picker-trigger"
   popovertarget="tika-model-popover"
-  aria-label="Select AI model"
   aria-expanded={isOpen}
   aria-controls="tika-model-popover"
   onclick={handleTriggerClick}
@@ -122,11 +121,12 @@
 >
   <div class="model-list">
     {#each availableModels as model}
-      <button
+      <button aria-label={`Select ${model.name}`}
         class="model-option"
         class:active={currentModel === model.id}
         onclick={() => handleModelClick(model)}
         style="--model-color: {model.color}"
+        aria-pressed={currentModel === model.id}
       >
         <div class="model-option-icon">
           <i class="fas {model.icon}" aria-hidden="true"></i>
@@ -204,7 +204,7 @@
   }
 
   .chevron {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     opacity: 0.6;
     transition: transform var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -233,8 +233,6 @@
     overflow-y: auto;
 
     background: var(--theme-panel-bg);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
 
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 16px 16px 0 0;

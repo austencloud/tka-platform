@@ -13,6 +13,25 @@ FundamentalMotionCard - Displays a fundamental motion type (shift/dash/static)
     title: string;
     description: string;
   } = $props();
+
+  interface TextSegment {
+    text: string;
+    bold: boolean;
+  }
+
+  function parseStrongTags(input: string): TextSegment[] {
+    const segments: TextSegment[] = [];
+    const parts = input.split(/(<strong>.*?<\/strong>)/g);
+    for (const part of parts) {
+      const match = part.match(/^<strong>(.*?)<\/strong>$/);
+      if (match) {
+        segments.push({ text: match[1] ?? "", bold: true });
+      } else if (part) {
+        segments.push({ text: part, bold: false });
+      }
+    }
+    return segments;
+  }
 </script>
 
 <div class="fundamental-card {type}">
@@ -20,7 +39,7 @@ FundamentalMotionCard - Displays a fundamental motion type (shift/dash/static)
     <i class="fa-solid {icon}" aria-hidden="true"></i>
   </div>
   <h4>{title}</h4>
-  <p>{@html description}</p>
+  <p>{#each parseStrongTags(description) as segment}{#if segment.bold}<strong>{segment.text}</strong>{:else}{segment.text}{/if}{/each}</p>
 </div>
 
 <style>
@@ -38,18 +57,18 @@ FundamentalMotionCard - Displays a fundamental motion type (shift/dash/static)
   }
 
   .fundamental-card.shift {
-    background: rgba(74, 222, 128, 0.1);
-    border: 1px solid rgba(74, 222, 128, 0.25);
+    background: color-mix(in srgb, var(--semantic-success, #4ade80) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-success, #4ade80) 25%, transparent);
   }
 
   .fundamental-card.dash {
-    background: rgba(251, 146, 60, 0.1);
-    border: 1px solid rgba(251, 146, 60, 0.25);
+    background: color-mix(in srgb, var(--semantic-warning, #fb923c) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-warning, #fb923c) 25%, transparent);
   }
 
   .fundamental-card.static {
-    background: rgba(148, 163, 184, 0.1);
-    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: color-mix(in srgb, var(--theme-text-muted, #94a3b8) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-text-muted, #94a3b8) 25%, transparent);
   }
 
   .motion-icon {
@@ -63,18 +82,18 @@ FundamentalMotionCard - Displays a fundamental motion type (shift/dash/static)
   }
 
   .fundamental-card.shift .motion-icon {
-    background: rgba(74, 222, 128, 0.2);
-    color: #4ade80;
+    background: color-mix(in srgb, var(--semantic-success, #4ade80) 20%, transparent);
+    color: var(--semantic-success, #4ade80);
   }
 
   .fundamental-card.dash .motion-icon {
-    background: rgba(251, 146, 60, 0.2);
-    color: #fb923c;
+    background: color-mix(in srgb, var(--semantic-warning, #fb923c) 20%, transparent);
+    color: var(--semantic-warning, #fb923c);
   }
 
   .fundamental-card.static .motion-icon {
-    background: rgba(148, 163, 184, 0.2);
-    color: #94a3b8;
+    background: color-mix(in srgb, var(--theme-text-muted, #94a3b8) 20%, transparent);
+    color: var(--theme-text-muted, #94a3b8);
   }
 
   h4 {
@@ -84,18 +103,18 @@ FundamentalMotionCard - Displays a fundamental motion type (shift/dash/static)
   }
 
   .fundamental-card.shift h4 {
-    color: #4ade80;
+    color: var(--semantic-success, #4ade80);
   }
   .fundamental-card.dash h4 {
-    color: #fb923c;
+    color: var(--semantic-warning, #fb923c);
   }
   .fundamental-card.static h4 {
-    color: #94a3b8;
+    color: var(--theme-text-muted, #94a3b8);
   }
 
   p {
     font-size: 0.8125rem;
-    color: rgba(255, 255, 255, 0.65);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.65));
     margin: 0;
   }
 

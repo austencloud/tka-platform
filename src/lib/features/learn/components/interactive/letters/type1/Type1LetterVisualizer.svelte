@@ -14,6 +14,7 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { onMount } from "svelte";
 
   let {
@@ -62,14 +63,14 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
 
   // Motion type colors for labels
   const MOTION_COLORS: Record<MotionType, string> = {
-    [MotionType.PRO]: "#22D3EE", // Cyan for prospin
-    [MotionType.ANTI]: "#A855F7", // Purple for antispin
-    [MotionType.STATIC]: "#6B7280", // Gray for static
+    [MotionType.PRO]: "var(--theme-accent, #22D3EE)", // Cyan for prospin
+    [MotionType.ANTI]: "var(--prop-red, #A855F7)", // Purple for antispin
+    [MotionType.STATIC]: "var(--theme-text-dim, #6B7280)", // Gray for static
     [MotionType.DASH]: "var(--semantic-warning)", // Amber for dash
     [MotionType.FLOAT]: "var(--semantic-success)", // Emerald for float
   };
 
-  // Position group colors
+  // Position group colors — domain-specific visualization colors, no global theme equivalent
   const POSITION_COLORS: Record<GridPositionGroup, string> = {
     [GridPositionGroup.ALPHA]: "#FF6B6B", // Red/coral for opposite
     [GridPositionGroup.BETA]: "#4ECDC4", // Teal for same
@@ -81,8 +82,8 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
   };
 
   // Hand colors
-  const BLUE_COLOR = "#4A9EFF";
-  const RED_COLOR = "#FF4A9E";
+  const BLUE_COLOR = "var(--prop-blue, #4A9EFF)";
+  const RED_COLOR = "var(--prop-red, #FF4A9E)";
 
   // Get motion type label
   function getMotionLabel(type: MotionType): string {
@@ -159,7 +160,7 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
     >
       {#if isLoading}
         <div class="loading-state">
-          <div class="loading-spinner"></div>
+          <ProgressRing percent={-1} size={24} strokeWidth={2} />
         </div>
       {:else if error}
         <div class="error-state" role="alert" aria-live="assertive">
@@ -221,14 +222,14 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
     align-items: center;
     gap: 0.75rem;
     padding: 1rem;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
     transition: all var(--duration-emphasis) ease;
   }
 
   .type1-visualizer:hover {
-    border-color: rgba(255, 255, 255, 0.2);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     background: var(--theme-card-bg);
   }
 
@@ -280,22 +281,7 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
     justify-content: center;
     width: 100%;
     height: 100%;
-    background: rgba(255, 255, 255, 0.1);
-  }
-
-  .loading-spinner {
-    width: 24px;
-    height: 24px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top-color: #22d3ee;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   /* Error state */
@@ -308,7 +294,7 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
     width: 100%;
     height: 100%;
     padding: 1rem;
-    background: rgba(239, 68, 68, 0.1);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
     color: var(--semantic-error);
   }
 
@@ -353,7 +339,7 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
   }
 
   .pattern-badge {
-    font-size: 0.625rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
@@ -362,25 +348,27 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
   }
 
   .pattern-badge.pro {
-    background: rgba(34, 211, 238, 0.15);
-    border: 1px solid rgba(34, 211, 238, 0.4);
-    color: #22d3ee;
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent);
+    color: var(--theme-accent, #22d3ee);
   }
 
   .pattern-badge.anti {
-    background: rgba(168, 85, 247, 0.15);
-    border: 1px solid rgba(168, 85, 247, 0.4);
-    color: #a855f7;
+    --anti-color: #a855f7;
+    background: color-mix(in srgb, var(--anti-color) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--anti-color) 40%, transparent);
+    color: var(--anti-color);
   }
 
   .pattern-badge.hybrid {
+    --anti-color: #a855f7;
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.15),
-      rgba(168, 85, 247, 0.15)
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 15%, transparent),
+      color-mix(in srgb, var(--anti-color) 15%, transparent)
     );
-    border: 1px solid rgba(168, 85, 247, 0.4);
-    color: #a855f7;
+    border: 1px solid color-mix(in srgb, var(--anti-color) 40%, transparent);
+    color: var(--anti-color);
   }
 
   /* Description */
@@ -393,9 +381,4 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
     line-height: 1.4;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .loading-spinner {
-      animation: none;
-    }
-  }
 </style>

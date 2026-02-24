@@ -13,15 +13,18 @@ Provides quiz functionality for learning TKA notation:
   import { onDestroy, onMount } from "svelte";
   import type { ICodex } from "../../codex/services/contracts/ICodex";
   import { QuizMode, QuizType } from "../domain/enums/quiz-enums";
-  import type { QuizProgress } from "../domain/models/quiz-models";
+  import type { QuizProgress, QuizAnswerEvent } from "../domain/models/quiz-models";
   import type { IQuizRepoManager } from "../services/contracts/IQuizRepository";
   import type { IQuizSessionManager } from "../services/contracts/IQuizSessionManager";
-  import { QuestionGeneratorService } from "../services/implementations/QuestionGenerator";
+  import type { DetectedGap } from "../../services/contracts/IGapDetector";
+  import { getEffectiveUserId } from "$lib/shared/auth/state/authState.svelte";
+  import { QuestionGenerator } from "../services/implementations/QuestionGenerator";
   import QuizResultsView from "./QuizResultsView.svelte";
   import QuizSelectorView from "./QuizSelectorView.svelte";
   import QuizWorkspaceView from "./QuizWorkspaceView.svelte";
   import StreakDisplay from "./StreakDisplay.svelte";
   import { getDelightOrchestrator } from "$lib/shared/delight/context/delight-context";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   // Import learn components
 
@@ -33,6 +36,9 @@ Provides quiz functionality for learning TKA notation:
   const quizRepo = container.items.quizRepoManager;
   const quizSessionService = container.items.quizSessionManager;
   const hapticService = container.items.hapticFeedback;
+  const quizHistoryRecorder = container.items.quizHistoryRecorder;
+  const letterToConceptMapper = container.items.letterToConceptMapper;
+  const gapDetector = container.items.gapDetector;
   const delightOrchestrator = getDelightOrchestrator();
 
   // Component refs
@@ -51,6 +57,10 @@ Provides quiz functionality for learning TKA notation:
   let score = $state(0);
   let isLoading = $state(false);
   let error = $state<string | null>(null);
+
+  // Accumulate answer events for persistence and gap detection
+  let sessionAnswers = $state<QuizAnswerEvent[]>([]);
+  let detectedGaps = $state<DetectedGap[]>([]);
 
   // Progress tracking state
   let progress = $state<QuizProgress>({
@@ -84,7 +94,7 @@ Provides quiz functionality for learning TKA notation:
       selectedQuizMode = data.quizMode;
 
       // Initialize the question generator service with pictograph data
-      await QuestionGeneratorService.initialize();
+      await QuestionGenerator.initialize();
 
       // Convert the quiz type to a quiz ID
       const quizId = `${data.quizType}_${data.quizMode}`;
@@ -95,7 +105,9 @@ Provides quiz functionality for learning TKA notation:
       currentQuestionIndex = 0;
       score = 0;
 
-      // Reset progress
+      // Reset session answers, gaps, and progress
+      sessionAnswers = [];
+      detectedGaps = [];
       progress.currentQuestion = 1;
       progress.totalQuestions = totalQuestions;
       progress.correctAnswers = 0;
@@ -114,12 +126,15 @@ Provides quiz functionality for learning TKA notation:
     }
   }
 
-  async function handleAnswerSubmit(answer: any) {
+  async function handleAnswerSubmit(event: QuizAnswerEvent) {
     if (!quizSessionService) return;
 
     try {
-      const isCorrect = await quizSessionService.submitAnswer(answer);
+      const isCorrect = await quizSessionService.submitAnswer(event.isCorrect);
       if (isCorrect) score++;
+
+      // Accumulate for persistence and gap detection
+      sessionAnswers.push(event);
 
       // Update progress
       progress.questionsAnswered++;
@@ -143,14 +158,58 @@ Provides quiz functionality for learning TKA notation:
 
     try {
       await quizSessionService.completeQuiz();
+
+      // Analyze wrong answers for misconception patterns
+      const wrongAnswers = sessionAnswers.filter((a) => !a.isCorrect);
+      if (wrongAnswers.length > 0 && gapDetector) {
+        detectedGaps = gapDetector.analyzeErrors(wrongAnswers);
+      }
+
       currentView = "results";
 
       // Record daily activity for streak tracking
       await streakDisplayRef?.recordActivity();
+
+      // Persist quiz attempt to Firestore (fire-and-forget)
+      persistQuizAttempt();
     } catch (err) {
       console.error("❌ QuizTab: Failed to complete quiz:", err);
       error = err instanceof Error ? err.message : "Failed to complete quiz";
     }
+  }
+
+  function persistQuizAttempt() {
+    const userId = getEffectiveUserId();
+    if (!userId || userId === "anonymous") return;
+    if (!selectedQuizType) return;
+
+    const conceptId = letterToConceptMapper.getConceptId(
+      selectedQuizType === QuizType.PICTOGRAPH_TO_LETTER ? "A" : "A"
+    ) ?? selectedQuizType;
+
+    const wrongAnswers = sessionAnswers
+      .filter((a) => !a.isCorrect)
+      .map((a) => ({
+        selectedContent: a.selectedContent,
+        correctContent: a.correctContent,
+        quizType: a.quizType,
+        answeredAt: a.answeredAt.toISOString(),
+      }));
+
+    quizHistoryRecorder
+      .recordAttempt(userId, {
+        conceptId,
+        quizType: selectedQuizType,
+        score: totalQuestions > 0 ? (score / totalQuestions) * 100 : 0,
+        correctCount: score,
+        totalCount: totalQuestions,
+        timeSpentSeconds: 0,
+        timestamp: new Date(),
+        wrongAnswers: wrongAnswers.length > 0 ? wrongAnswers : undefined,
+      })
+      .catch((err) => {
+        console.warn("[QuizTab] Failed to persist quiz attempt:", err);
+      });
   }
 
   function handleStreakMilestone(streak: number) {
@@ -258,7 +317,7 @@ Provides quiz functionality for learning TKA notation:
   {#if error}
     <div class="error-banner">
       <span>{error}</span>
-      <button onclick={() => (error = null)}>×</button>
+      <button onclick={() => (error = null)} aria-label="Dismiss error">×</button>
     </div>
   {/if}
 
@@ -273,7 +332,7 @@ Provides quiz functionality for learning TKA notation:
           quizType={selectedQuizType}
           quizMode={selectedQuizMode}
           questionIndex={currentQuestionIndex}
-          onAnswerSubmit={handleAnswerSubmit}
+          onAnswerSubmit={(event) => handleAnswerSubmit(event)}
           onQuizComplete={handleQuizComplete}
           onBackToSelector={handleReturnToSelector}
         />
@@ -292,6 +351,7 @@ Provides quiz functionality for learning TKA notation:
             completionTimeSeconds: 0,
             completedAt: new Date(),
           }}
+          {detectedGaps}
           onReturnToSelector={handleReturnToSelector}
           onRestartQuiz={handleRestartQuiz}
         />
@@ -302,7 +362,7 @@ Provides quiz functionality for learning TKA notation:
   <!-- Loading overlay -->
   {#if isLoading}
     <div class="loading-overlay">
-      <div class="loading-spinner"></div>
+      <ProgressRing percent={-1} size={32} strokeWidth={3} />
       <span>Loading quiz...</span>
     </div>
   {/if}
@@ -344,7 +404,7 @@ Provides quiz functionality for learning TKA notation:
     justify-content: center;
     width: 48px;
     height: 48px;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 12px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
@@ -353,8 +413,8 @@ Provides quiz functionality for learning TKA notation:
   }
 
   .header-back-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     color: var(--theme-text, #ffffff);
     transform: translateX(-2px);
   }
@@ -371,8 +431,8 @@ Provides quiz functionality for learning TKA notation:
   }
 
   .error-banner {
-    background: var(--color-error, #ff4444);
-    color: white;
+    background: var(--semantic-error, #ff4444);
+    color: var(--theme-text, #ffffff);
     padding: 0.5rem 1rem;
     display: flex;
     justify-content: space-between;
@@ -382,7 +442,7 @@ Provides quiz functionality for learning TKA notation:
   .error-banner button {
     background: none;
     border: none;
-    color: white;
+    color: var(--theme-text, #ffffff);
     font-size: 1.2rem;
     cursor: pointer;
   }
@@ -403,7 +463,7 @@ Provides quiz functionality for learning TKA notation:
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
+    background: color-mix(in srgb, var(--theme-panel-bg) 80%, transparent);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -413,28 +473,4 @@ Provides quiz functionality for learning TKA notation:
     color: var(--foreground, #ffffff);
   }
 
-  .loading-spinner {
-    width: 2rem;
-    height: 2rem;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-top: 2px solid var(--foreground, #ffffff);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
-  @media (prefers-reduced-motion: reduce) {
-    .loading-spinner {
-      animation: none;
-    }
-  }
 </style>

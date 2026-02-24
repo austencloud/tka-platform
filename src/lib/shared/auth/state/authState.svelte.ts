@@ -470,6 +470,10 @@ export async function initializeAuthListener() {
               await import("$lib/shared/auth/firebase");
             await getFirestoreInstance();
 
+            // Re-check auth after async gap — a logout callback may have
+            // cleared _state.user while we were awaiting Firestore.
+            if (!_state.user) return;
+
             const collectionService = container.items.collectionManager;
             if (collectionService?.ensureSystemCollections) {
               await collectionService.ensureSystemCollections();

@@ -14,6 +14,7 @@
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   interface Props {
     /** Bridge options with their pictograph data */
@@ -115,7 +116,7 @@
 >
   {#if isLoading}
     <div class="loading-state">
-      <span class="spinner"></span>
+      <ProgressRing percent={-1} size={24} strokeWidth={2} />
       <span>Finding bridge options...</span>
     </div>
   {:else if options.length === 0}
@@ -367,21 +368,6 @@
     font-size: 0.875rem; /* 14px */
   }
 
-  .loading-state .spinner {
-    width: 1.5rem;
-    height: 1.5rem;
-    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-top-color: var(--theme-accent, #6366f1);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   .empty-state i {
     font-size: 1.5rem;
     opacity: 0.6;
@@ -536,9 +522,5 @@
       transform: none;
     }
 
-    .loading-state .spinner {
-      animation: none;
-      border-color: var(--theme-accent, #6366f1);
-    }
   }
 </style>

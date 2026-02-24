@@ -17,6 +17,7 @@ class LanSyncState {
 	private _sequenceMismatchWarning = $state<string | null>(null);
 	private _nearbyRooms = $state<SyncRoomWithId[]>([]);
 	private _dismissedRoomIds = $state<Set<string>>(new Set());
+	private _receivedSequence = $state<Record<string, unknown> | null>(null);
 	private _coordinator: ILanSyncCoordinator | null = null;
 	private _discovery: ISyncRoomDiscovery | null = null;
 	private unsubscribers: Array<() => void> = [];
@@ -62,6 +63,11 @@ class LanSyncState {
 		return this._nearbyRooms.filter((room) => !this._dismissedRoomIds.has(room.roomId));
 	}
 
+	/** Sequence data received from the host peer (via FULL_STATE) */
+	get receivedSequence(): Record<string, unknown> | null {
+		return this._receivedSequence;
+	}
+
 	/** The most recent nearby room (for showing a single banner) */
 	get topNearbyRoom(): SyncRoomWithId | null {
 		const filtered = this.nearbyRooms;
@@ -89,6 +95,12 @@ class LanSyncState {
 		this.unsubscribers.push(
 			coordinator.onSequenceMismatch((peerSequenceId) => {
 				this._sequenceMismatchWarning = peerSequenceId;
+			})
+		);
+
+		this.unsubscribers.push(
+			coordinator.onSequenceReceived((data) => {
+				this._receivedSequence = data;
 			})
 		);
 
@@ -158,6 +170,35 @@ class LanSyncState {
 		this._coordinator?.setSequenceId(sequenceId);
 	}
 
+	/** Store the local sequence so the host can send it to joining peers */
+	setLocalSequence(data: Record<string, unknown> | null): void {
+		this._coordinator?.setLocalSequence(data);
+	}
+
+	/**
+	 * Wait for sequence data to arrive from the host (with timeout).
+	 * Returns the sequence data, or null if the timeout expires.
+	 */
+	waitForSequence(timeoutMs = 5000): Promise<Record<string, unknown> | null> {
+		// Already have it
+		if (this._receivedSequence) return Promise.resolve(this._receivedSequence);
+		if (!this._coordinator) return Promise.resolve(null);
+
+		return new Promise((resolve) => {
+			let unsub: (() => void) | null = null;
+			const timer = setTimeout(() => {
+				unsub?.();
+				resolve(null);
+			}, timeoutMs);
+
+			unsub = this._coordinator!.onSequenceReceived((data) => {
+				clearTimeout(timer);
+				unsub?.();
+				resolve(data);
+			});
+		});
+	}
+
 	/** Clear the sequence mismatch warning */
 	clearMismatchWarning(): void {
 		this._sequenceMismatchWarning = null;
@@ -206,6 +247,7 @@ class LanSyncState {
 		this._connectionState = createInitialConnectionState();
 		this._playbackState = createInitialPlaybackState();
 		this._sequenceMismatchWarning = null;
+		this._receivedSequence = null;
 		this._nearbyRooms = [];
 		this._dismissedRoomIds = new Set();
 	}

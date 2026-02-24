@@ -15,6 +15,7 @@
   import { registerModuleCacheClear } from "../hmr-helper";
   import type { Component } from "svelte";
   import { onMount } from "svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   interface Props {
     activeModule: string | null;
@@ -144,7 +145,7 @@
 {#if isModuleLoading}
   <!-- Loading state while module is being restored -->
   <div class="module-loading" role="status" aria-live="polite" aria-busy="true">
-    <div class="loading-spinner" aria-hidden="true"></div>
+    <ProgressRing percent={-1} size={32} strokeWidth={3} />
     <p>Loading...</p>
   </div>
 {:else}
@@ -160,7 +161,7 @@
             aria-live="polite"
             aria-busy="true"
           >
-            <div class="loading-spinner" aria-hidden="true"></div>
+            <ProgressRing percent={-1} size={32} strokeWidth={3} />
             <p>Loading module...</p>
           </div>
         {:then LoadedModule}
@@ -237,23 +238,8 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
   }
 
-  .loading-spinner {
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
-    border: 3px solid var(--theme-stroke);
-    border-top: 3px solid var(--theme-accent);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+  .module-loading :global(.progress-ring) {
     margin-bottom: 16px;
-  }
-
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
   }
 
   .module-loading p {
@@ -306,16 +292,4 @@
     outline-offset: 2px;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .loading-spinner {
-      animation-duration: 3s;
-    }
-  }
-
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
-  @media (prefers-reduced-motion: reduce) {
-    .loading-spinner {
-      animation: none;
-    }
-  }
 </style>

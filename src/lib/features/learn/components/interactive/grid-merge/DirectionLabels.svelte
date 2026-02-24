@@ -3,6 +3,7 @@
   Labels animate position/scale in sync with grid animations using CSS transitions
 -->
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import { CARDINAL_LABELS, INTERCARDINAL_LABELS, type Phase, type HighlightPhase } from './grid-merge-constants';
 
 	let { phase, highlightPhase = 'none' } = $props<{
@@ -19,6 +20,9 @@
 	let animatingCardinal = $state(false);
 	let animatingIntercardinal = $state(false);
 
+	let cardinalTimer: ReturnType<typeof setTimeout> | undefined;
+	let intercardinalTimer: ReturnType<typeof setTimeout> | undefined;
+
 	$effect.pre(() => {
 		// Detect first appearance of cardinal labels
 		const cardinalJustAppeared = phase === 'diamond-labels' && !cardinalShown;
@@ -27,14 +31,16 @@
 		if (cardinalJustAppeared) {
 			animatingCardinal = true;
 			// Clear after animation completes (stagger + duration)
-			setTimeout(() => {
+			clearTimeout(cardinalTimer);
+			cardinalTimer = setTimeout(() => {
 				animatingCardinal = false;
 			}, 600); // 400ms max delay + 400ms animation
 		}
 
 		if (intercardinalJustAppeared) {
 			animatingIntercardinal = true;
-			setTimeout(() => {
+			clearTimeout(intercardinalTimer);
+			intercardinalTimer = setTimeout(() => {
 				animatingIntercardinal = false;
 			}, 600);
 		}
@@ -54,6 +60,11 @@
 		}
 
 		prevPhase = phase;
+	});
+
+	onDestroy(() => {
+		clearTimeout(cardinalTimer);
+		clearTimeout(intercardinalTimer);
 	});
 
 	// Visibility

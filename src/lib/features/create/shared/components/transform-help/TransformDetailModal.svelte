@@ -5,6 +5,7 @@
   Shows visual data mapping + interactive pictograph example.
 -->
 <script lang="ts">
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { onMount } from "svelte";
   import {
     actionHelpContent,
@@ -179,7 +180,7 @@
           <div class="pictograph-frame" style:--transform-color={action?.color}>
             {#if isLoading}
               <div class="loading-state" role="status" aria-live="polite">
-                <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                <ProgressRing percent={-1} size={32} strokeWidth={3} />
                 <span class="sr-only">Loading example...</span>
               </div>
             {:else if displayedPictograph}
@@ -373,10 +374,6 @@
     color: rgba(255, 255, 255, 0.75); /* AAA contrast for icons */
   }
 
-  .loading-state i {
-    animation: spin 1s linear infinite;
-  }
-
   /* Screen reader only - visually hidden but accessible */
   .sr-only {
     position: absolute;
@@ -388,11 +385,6 @@
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border: 0;
-  }
-
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
   }
 
   .action-buttons {

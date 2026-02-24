@@ -258,14 +258,16 @@ If you wouldn't say it out loud without cringing, rewrite it.
 
 ## Rules
 
-`.claude/rules/` contains:
+`.claude/rules/` contains always-loaded rules (keep these small):
 - `code-style.md` - Imports, Svelte 5, state, TypeScript
 - `service-naming.md` - Never use "Service" suffix
 - `styling.md` - CSS variables, typography, panels
 - `testing.md` - Earned tests philosophy
-- `workflows.md` - /fb, /release, /done commands
+- `workflows.md` - Playwright rules, context management, skill command index
 - `project-patterns.md` - Module checklist
 - `sequence-generation.md` - **READ THIS when generating sequences** - humor profile workflow
+
+Workflow-specific rules (fb, release, monolith, deadcode) are minimal pointers. Full content lives in their `/skill` and loads on demand.
 
 ---
 
@@ -274,6 +276,39 @@ If you wouldn't say it out loud without cringing, rewrite it.
 - **Stack:** Svelte 5 + TypeScript + Inversify DI + Firebase
 - **User:** Austen Cloud (austencloud@gmail.com)
 - **Context:** Suggest `/compact` at 70% capacity
+
+---
+
+## Memory Discipline: Token Budget Is Real
+
+Every file in `memory/` and `.claude/rules/` is loaded into EVERY conversation. At ~35k tokens of preamble, this is expensive. Claude must treat memory like production code: every line must earn its place.
+
+### Before Writing to Memory, Ask:
+
+1. **"Does Claude need this in EVERY conversation?"** If no, it belongs in `docs/` (read on demand).
+2. **"Is this a recurring gotcha or a one-time status update?"** Status updates don't belong in memory. Gotchas that will bite future sessions do.
+3. **"Does this duplicate something already in rules or CLAUDE.md?"** If yes, don't write it.
+4. **"Is this reference material or working instructions?"** Reference material (theory, research, API docs) goes in `docs/reference/`, not memory.
+
+### What BELONGS in Memory
+
+- Recurring technical gotchas (patterns that cause bugs across sessions)
+- Active domain tables Claude needs to reference frequently
+- One-liner status of in-progress projects (not phase-by-phase logs)
+
+### What DOES NOT Belong in Memory
+
+- Research dumps, theory documents, source lists
+- Detailed phase completion logs (condense to one line)
+- Anything available via MCP tools (TKA domain knowledge)
+- Anything that duplicates rules files
+- Information that's only relevant during the current session
+
+### Size Guardrails
+
+- MEMORY.md: keep under 80 lines. If approaching 100, trim completed project statuses.
+- Supplementary memory files: only create if the topic is a recurring gotcha that needs detail. Ask user first.
+- If you want to save something large (>20 lines), put it in `docs/` instead and note the path in MEMORY.md.
 
 ---
 

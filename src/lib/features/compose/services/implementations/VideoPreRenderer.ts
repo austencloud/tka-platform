@@ -25,9 +25,6 @@ import type {
   VideoRenderResult,
   VideoRenderOptions,
 } from "../contracts/IVideoPreRenderer";
-import type { ISVGGenerator } from "../contracts/ISVGGenerator";
-import type { ISequenceAnimationOrchestrator } from "../contracts/ISequenceAnimationOrchestrator";
-import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
 import { Canvas2DAnimationRenderer } from "./Canvas2DAnimationRenderer";
 import {
   DEFAULT_TRAIL_SETTINGS,
@@ -183,7 +180,7 @@ export class VideoPreRenderer implements IVideoPreRenderer {
       ]);
 
       // Get prop dimensions from SVG generator
-      const svgGenerator = container.items.svgGenerator as ISVGGenerator;
+      const svgGenerator = container.items.svgGenerator;
       const [bluePropData, redPropData] = await Promise.all([
         svgGenerator.generateBluePropSvg("staff"),
         svgGenerator.generateRedPropSvg("staff"),
@@ -199,7 +196,7 @@ export class VideoPreRenderer implements IVideoPreRenderer {
       };
 
       // Get orchestrator for calculating prop states
-      const orchestrator = container.items.sequenceAnimationOrchestrator as ISequenceAnimationOrchestrator;
+      const orchestrator = container.items.sequenceAnimationOrchestrator;
 
       // Initialize orchestrator with sequence data
       const initSuccess = orchestrator.initializeWithDomainData(sequence);
@@ -260,7 +257,7 @@ export class VideoPreRenderer implements IVideoPreRenderer {
       let bluePropType = "staff";
       let redPropType = "staff";
       try {
-        const settingsState = container.items.settingsState as ISettingsState;
+        const settingsState = container.items.settingsState;
         const settings = settingsState.currentSettings;
         const buugengFamily = ["buugeng", "bigbuugeng", "fractalgeng"];
         bluePropType = (

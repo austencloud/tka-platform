@@ -52,6 +52,7 @@
     onclick={() => handleModeChange("continuous")}
     type="button"
     aria-pressed={playbackMode === "continuous"}
+    aria-label="Continuous playback mode"
   >
     <i class="fas fa-play" aria-hidden="true"></i>
     <span>{t("compose_continuous")}</span>
@@ -62,6 +63,7 @@
     onclick={() => handleModeChange("step")}
     type="button"
     aria-pressed={playbackMode === "step"}
+    aria-label="Step-by-step playback mode"
   >
     <i class="fas fa-shoe-prints" aria-hidden="true"></i>
     <span>{t("compose_step_by_step")}</span>
@@ -87,7 +89,7 @@
     border: 1.5px solid var(--theme-stroke, var(--theme-stroke));
     border-radius: 8px;
     color: var(--theme-text-dim, var(--theme-text-dim));
-    font-size: 0.75rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     cursor: pointer;
     transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
@@ -106,16 +108,16 @@
   }
 
   .mode-btn.active {
-    background: rgba(251, 191, 36, 0.15);
-    border-color: rgba(251, 191, 36, 0.4);
-    color: rgba(252, 211, 77, 1);
+    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
+    color: var(--theme-accent);
     box-shadow:
-      0 0 12px rgba(251, 191, 36, 0.12),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      0 0 12px color-mix(in srgb, var(--theme-accent) 12%, transparent),
+      inset 0 1px 0 var(--theme-stroke);
   }
 
   .mode-btn.active i {
-    color: rgba(252, 211, 77, 0.9);
+    color: var(--theme-accent);
   }
 
   @media (hover: hover) and (pointer: fine) {

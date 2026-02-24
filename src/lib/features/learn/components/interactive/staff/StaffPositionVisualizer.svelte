@@ -94,7 +94,7 @@ Demonstrates Alpha, Beta, Gamma positions with thumb orientations (in, out, mixe
       cx="50"
       cy="50"
       r="3"
-      fill="rgba(255, 255, 255, 0.4)"
+      fill="var(--theme-stroke, rgba(255, 255, 255, 0.4))"
       class="center-point"
     />
 
@@ -152,13 +152,13 @@ Demonstrates Alpha, Beta, Gamma positions with thumb orientations (in, out, mixe
     align-items: center;
     gap: 1rem;
     padding: 1rem;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border: 1px solid var(--theme-stroke);
     border-radius: 16px;
   }
 
   .staff-visualizer.interactive {
-    border-color: rgba(74, 158, 255, 0.3);
+    border-color: color-mix(in srgb, var(--prop-blue, #4a9eff) 30%, transparent);
   }
 
   .staff-grid {

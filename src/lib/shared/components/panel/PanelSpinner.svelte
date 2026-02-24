@@ -1,43 +1,85 @@
 <script lang="ts">
   /**
-   * PanelSpinner - Loading spinner component
+   * PanelSpinner - Pulse dots loading indicator.
+   *
+   * Three dots that bounce in sequence, providing a calm
+   * "something is happening" signal without a spinning wheel.
    */
 
   interface Props {
-    /** Optional size in pixels (default: 40) */
+    /** Dot diameter in pixels. Default 10. */
     size?: number;
+    /** Dot color. Defaults to theme accent. */
+    color?: string;
   }
 
-  let { size = 40 }: Props = $props();
+  let { size = 10, color }: Props = $props();
 </script>
 
 <div
-  class="panel-spinner"
-  style:width="{size}px"
-  style:height="{size}px"
+  class="pulse-dots"
+  style:--dot-size="{size}px"
+  style:--dot-color={color}
   role="status"
   aria-label="Loading"
-></div>
+>
+  <span class="dot"></span>
+  <span class="dot"></span>
+  <span class="dot"></span>
+</div>
 
 <style>
-  .panel-spinner {
-    border: 3px solid var(--theme-stroke);
-    border-top-color: #06b6d4;
-    border-radius: 50%;
-    animation: panel-spin 0.8s linear infinite;
+  .pulse-dots {
+    display: inline-flex;
+    align-items: center;
+    gap: calc(var(--dot-size, 10px) * 0.8);
   }
 
-  @keyframes panel-spin {
-    to {
-      transform: rotate(360deg);
+  .dot {
+    width: var(--dot-size, 10px);
+    height: var(--dot-size, 10px);
+    border-radius: 50%;
+    background: var(--dot-color, var(--theme-accent, #6366f1));
+    opacity: 0.3;
+    animation: pulse-bounce 1.4s ease-in-out infinite;
+  }
+
+  .dot:nth-child(2) {
+    animation-delay: 0.16s;
+  }
+
+  .dot:nth-child(3) {
+    animation-delay: 0.32s;
+  }
+
+  @keyframes pulse-bounce {
+    0%,
+    80%,
+    100% {
+      opacity: 0.3;
+      transform: scale(1);
+    }
+    40% {
+      opacity: 1;
+      transform: scale(1.2);
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .panel-spinner {
+    .dot {
       animation: none;
-      border-top-color: #06b6d4;
-      border-right-color: #06b6d4;
+    }
+
+    .dot:nth-child(1) {
+      opacity: 1;
+    }
+
+    .dot:nth-child(2) {
+      opacity: 0.6;
+    }
+
+    .dot:nth-child(3) {
+      opacity: 0.3;
     }
   }
 </style>

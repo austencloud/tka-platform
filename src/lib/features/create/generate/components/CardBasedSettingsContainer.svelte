@@ -14,6 +14,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
   import type { ILOOPParameterProvider } from "../shared/services/contracts/ILOOPParameterProvider";
   import type { ICardConfigurator } from "../shared/services/contracts/ICardConfigurator";
   import type { IResponsiveTypographer } from "../shared/services/contracts/IResponsiveTypographer";
+  import { ResponsiveTypographer } from "../shared/services/implementations/ResponsiveTypographer";
   import type { UIGenerationConfig } from "../state/generate-config.svelte";
   import type { StartEndOptionsState } from "../state/start-end-options-state.svelte";
   import type {
@@ -124,7 +125,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
 
   // Initialize services
   onMount(() => {
-    typographyService = container.items.responsiveTypographer;
+    typographyService = new ResponsiveTypographer();
     cardConfigService = container.items.cardConfigurator;
     loopParamProvider = container.items.loopParameterProvider;
 

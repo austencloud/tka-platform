@@ -6,7 +6,6 @@ Shown when sequence is empty.
 -->
 <script lang="ts">
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
@@ -19,7 +18,7 @@ Shown when sequence is empty.
   const isDiamond = $derived(gridMode === GridMode.DIAMOND);
 
   // Access haptic feedback service from ITI container
-  const hapticService = container.items.hapticFeedback as IHapticFeedback;
+  const hapticService = container.items.hapticFeedback;
 
   function handleStart() {
     hapticService?.trigger("selection");

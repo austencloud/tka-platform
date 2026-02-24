@@ -38,6 +38,7 @@ Type1AnswerButton - Single answer option for motion pattern
   style="--pattern-color: {info.color}"
   onclick={onSelect}
   {disabled}
+  aria-label="Select {info.label} - {info.description}"
 >
   <i class="fa-solid {info.icon}" aria-hidden="true"></i>
   <div class="answer-content">
@@ -121,8 +122,8 @@ Type1AnswerButton - Single answer option for motion pattern
   }
 
   .answer-btn.incorrect {
-    background: rgba(255, 74, 74, 0.2);
-    border-color: rgba(255, 74, 74, 0.6);
+    background: color-mix(in srgb, var(--semantic-error, #ff4a4a) 20%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error, #ff4a4a) 60%, transparent);
     animation: shake var(--duration-dramatic) ease;
   }
 
@@ -142,7 +143,7 @@ Type1AnswerButton - Single answer option for motion pattern
   .result-icon {
     font-size: 1.25rem;
     font-weight: 700;
-    color: #ff4a4a;
+    color: var(--semantic-error, #ff4a4a);
   }
 
   .result-icon.correct,

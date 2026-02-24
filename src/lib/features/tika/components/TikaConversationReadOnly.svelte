@@ -11,6 +11,9 @@
   import InlineSequencePlayer from "./InlineSequencePlayer.svelte";
   import InlineStepGrid from "./InlineStepGrid.svelte";
   import InlineQuiz from "./InlineQuiz.svelte";
+  import SanitizedHtml from "$lib/shared/foundation/ui/SanitizedHtml.svelte";
+  import { tikaMarkdownParser } from "../services/implementations/TikaMarkdownParser";
+  import { tikaMessageExtractor } from "../services/implementations/TikaMessageExtractor";
   import type {
     InlinePictograph as InlinePictographType,
     InlineGallery as InlineGalleryType,
@@ -34,162 +37,20 @@
     return containerEl;
   }
 
-  // Simple markdown to HTML converter
-  type ParsedMarkdown = { html: string; links: Array<{ text: string; url: string }> };
-  function parseMarkdown(md: string): ParsedMarkdown {
-    if (!md) return { html: "", links: [] };
-
-    // First, extract and process tables BEFORE any other transformation
-    const tableBlocks: string[] = [];
-    let processed = md.replace(
-      /\|[^\n]+\|\n\|[-:\s|]+\|\n(\|[^\n]+\|\n?)*/g,
-      (tableMatch) => {
-        const lines = tableMatch.trim().split('\n');
-        if (lines.length < 2) return tableMatch;
-
-        const headerLine = lines[0];
-        if (!headerLine) return tableMatch;
-        const headerCells = headerLine.split('|').slice(1, -1).map(c => c.trim());
-        const dataRows = lines.slice(2).map(row =>
-          row.split('|').slice(1, -1).map(c => c.trim())
-        );
-
-        let tableHtml = '<table><thead><tr>';
-        tableHtml += headerCells.map(h => `<th>${escapeHtml(h)}</th>`).join('');
-        tableHtml += '</tr></thead><tbody>';
-        for (const row of dataRows) {
-          tableHtml += '<tr>' + row.map(c => `<td>${escapeHtml(c)}</td>`).join('') + '</tr>';
-        }
-        tableHtml += '</tbody></table>';
-
-        const placeholder = `__TABLE_${tableBlocks.length}__`;
-        tableBlocks.push(tableHtml);
-        return placeholder;
-      }
-    );
-
-    // Extract links and convert to footnote references
-    const linkIndex: Array<{ text: string; url: string }> = [];
-    processed = processed.replace(
-      /\[([^\]]+)\]\(([^)]+)\)/g,
-      (_, text, url) => {
-        const existingIndex = linkIndex.findIndex(l => l.url === url);
-        if (existingIndex >= 0) {
-          return `${text}__FOOTNOTE_${existingIndex + 1}__`;
-        }
-        linkIndex.push({ text, url });
-        return `${text}__FOOTNOTE_${linkIndex.length}__`;
-      }
-    );
-
-    // Now escape HTML and process markdown
-    processed = escapeHtml(processed)
-      .replace(/^### (.+)$/gm, '<h4>$1</h4>')
-      .replace(/^## (.+)$/gm, '<h3>$1</h3>')
-      .replace(/^# (.+)$/gm, '<h2>$1</h2>')
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*([^*]+?)\*/g, '<em>$1</em>')
-      .replace(/^- (.+)$/gm, '<li>$1</li>')
-      .replace(/\n\n+/g, '</p><p>')
-      .replace(/\n/g, '<br>');
-
-    // Convert footnote placeholders
-    processed = processed.replace(/__FOOTNOTE_(\d+)__/g, (_, num) => {
-      return `<sup class="footnote-ref">${num}</sup>`;
-    });
-
-    // Restore tables
-    for (let i = 0; i < tableBlocks.length; i++) {
-      const tableHtml = tableBlocks[i];
-      if (tableHtml) {
-        processed = processed.replace(`__TABLE_${i}__`, tableHtml);
-      }
-    }
-
-    // Wrap consecutive <li> in <ul>
-    processed = processed.replace(/(<li>.*?<\/li>(?:<br>)?)+/g, (match) => {
-      const items = match.replace(/<br>/g, '');
-      return '<ul>' + items + '</ul>';
-    });
-
-    // Wrap in paragraph if not already structured
-    if (processed && !processed.startsWith('<')) {
-      processed = '<p>' + processed + '</p>';
-    }
-
-    // Clean up
-    processed = processed
-      .replace(/<p><\/p>/g, '')
-      .replace(/<p><br>/g, '<p>')
-      .replace(/<br><\/p>/g, '</p>')
-      .replace(/<p>(\s*<(?:h[1-4]|ul|table))/g, '$1')
-      .replace(/(<\/(?:h[1-4]|ul|table)>)\s*<\/p>/g, '$1');
-
-    return { html: processed, links: linkIndex };
-  }
-
-  function escapeHtml(str: string): string {
-    return str
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-  }
-
-  // Get text content from message parts
-  function getTextFromParts(parts: UIMessage["parts"]): string {
-    if (!parts) return "";
-    return parts
-      .filter((part) => part.type === "text")
-      .map((part) => (part as { type: "text"; text: string }).text)
-      .join("");
-  }
-
-  // Get the first tool output from parts
-  function getToolOutputFromParts(parts: UIMessage["parts"]): string | null {
-    if (!parts) return null;
-    for (const part of parts) {
-      if (part.type.startsWith("tool-") && part.type !== "tool-invocation") {
-        const toolPart = part as { output?: unknown; state?: string };
-        if (toolPart.state === "output-available" && toolPart.output) {
-          return extractExplanation(toolPart.output);
-        }
-      }
-      if (part.type === "tool-invocation") {
-        const inv = (part as { toolInvocation?: { state: string; result?: unknown } }).toolInvocation;
-        if (inv?.state === "result" && inv.result) {
-          return extractExplanation(inv.result);
-        }
-      }
-    }
-    return null;
-  }
-
-  function extractExplanation(output: unknown): string {
-    if (typeof output === "string") return output;
-    if (output && typeof output === "object") {
-      const obj = output as Record<string, unknown>;
-      if (typeof obj.explanation === "string") {
-        return obj.explanation;
-      }
-      return JSON.stringify(output, null, 2);
-    }
-    return String(output);
-  }
-
-  // Get parsed content for a message
+  // Get parsed content for a message using shared DOMPurify-sanitized parser
   function getMessageParsedContent(parts: UIMessage["parts"]): {
     textHtml: string | null;
     toolHtml: string | null;
     links: Array<{ text: string; url: string }>
   } {
-    const textContent = getTextFromParts(parts);
+    const textContent = tikaMessageExtractor.getTextFromParts(parts);
     if (textContent) {
-      const parsed = parseMarkdown(textContent);
+      const parsed = tikaMarkdownParser.parse(textContent);
       return { textHtml: parsed.html, toolHtml: null, links: parsed.links };
     }
-    const toolOutput = getToolOutputFromParts(parts);
+    const toolOutput = tikaMessageExtractor.getToolOutputFromParts(parts);
     if (toolOutput) {
-      const parsed = parseMarkdown(toolOutput);
+      const parsed = tikaMarkdownParser.parse(toolOutput);
       return { textHtml: null, toolHtml: parsed.html, links: parsed.links };
     }
     return { textHtml: null, toolHtml: null, links: [] };
@@ -205,57 +66,72 @@
     quiz?: InlineQuizType;
   }
 
+  // Type-safe narrowing helpers for inline content.
+  // These use `unknown` parameter to satisfy TypeScript's type predicate rules,
+  // then perform structural checks to narrow to the concrete type.
+  function isInlinePictograph(obj: unknown): obj is InlinePictographType {
+    if (!obj || typeof obj !== "object") return false;
+    const r = obj as Record<string, unknown>;
+    return r.type === "inline-pictograph" && typeof r.letter === "string";
+  }
+
+  function isInlineGallery(obj: unknown): obj is InlineGalleryType {
+    if (!obj || typeof obj !== "object") return false;
+    const r = obj as Record<string, unknown>;
+    return r.type === "inline-gallery" && Array.isArray(r.items);
+  }
+
+  function isInlineSequencePlayer(obj: unknown): obj is InlineSequencePlayerType {
+    if (!obj || typeof obj !== "object") return false;
+    const r = obj as Record<string, unknown>;
+    return r.type === "inline-sequence-player" && typeof r.word === "string";
+  }
+
+  function isInlineStepGrid(obj: unknown): obj is InlineStepGridType {
+    if (!obj || typeof obj !== "object") return false;
+    const r = obj as Record<string, unknown>;
+    return r.type === "inline-step-grid" && Array.isArray(r.steps);
+  }
+
+  function isInlineQuiz(obj: unknown): obj is InlineQuizType {
+    if (!obj || typeof obj !== "object") return false;
+    const r = obj as Record<string, unknown>;
+    return r.type === "inline-quiz" && typeof r.question === "string";
+  }
+
   function extractInlineContent(output: unknown): InlineContent {
     const content: InlineContent = {};
     if (!output || typeof output !== "object") return content;
 
     const obj = output as Record<string, unknown>;
 
-    if (obj.inlinePictograph && typeof obj.inlinePictograph === "object") {
-      const pic = obj.inlinePictograph as Record<string, unknown>;
-      if (pic.type === "inline-pictograph" && typeof pic.letter === "string") {
-        content.pictograph = pic as unknown as InlinePictographType;
-      }
+    if (obj.inlinePictograph && isInlinePictograph(obj.inlinePictograph)) {
+      content.pictograph = obj.inlinePictograph;
     }
 
-    if (obj.inlineGallery && typeof obj.inlineGallery === "object") {
-      const gal = obj.inlineGallery as Record<string, unknown>;
-      if (gal.type === "inline-gallery" && Array.isArray(gal.items)) {
-        content.gallery = gal as unknown as InlineGalleryType;
-      }
+    if (obj.inlineGallery && isInlineGallery(obj.inlineGallery)) {
+      content.gallery = obj.inlineGallery;
     }
 
     if (obj.inlineGalleries && Array.isArray(obj.inlineGalleries)) {
       content.galleries = [];
       for (const gal of obj.inlineGalleries) {
-        if (gal && typeof gal === "object") {
-          const galObj = gal as Record<string, unknown>;
-          if (galObj.type === "inline-gallery" && Array.isArray(galObj.items)) {
-            content.galleries.push(galObj as unknown as InlineGalleryType);
-          }
+        if (isInlineGallery(gal)) {
+          content.galleries.push(gal);
         }
       }
     }
 
-    if (obj.inlineSequencePlayer && typeof obj.inlineSequencePlayer === "object") {
-      const seq = obj.inlineSequencePlayer as Record<string, unknown>;
-      if (seq.type === "inline-sequence-player" && typeof seq.word === "string") {
-        content.sequencePlayer = seq as unknown as InlineSequencePlayerType;
-      }
+    if (obj.inlineSequencePlayer && isInlineSequencePlayer(obj.inlineSequencePlayer)) {
+      content.sequencePlayer = obj.inlineSequencePlayer;
     }
 
-    if (obj.inlineStepGrid && typeof obj.inlineStepGrid === "object") {
-      const grid = obj.inlineStepGrid as Record<string, unknown>;
-      if (grid.type === "inline-step-grid" && Array.isArray(grid.steps)) {
-        content.stepGrid = grid as unknown as InlineStepGridType;
-      }
+    if (obj.inlineStepGrid && isInlineStepGrid(obj.inlineStepGrid)) {
+      content.stepGrid = obj.inlineStepGrid;
     }
 
-    if (obj.inlineQuiz && typeof obj.inlineQuiz === "object") {
-      const quiz = obj.inlineQuiz as Record<string, unknown>;
-      if (quiz.type === "inline-quiz" && typeof quiz.question === "string") {
-        content.quiz = quiz as unknown as InlineQuizType;
-      }
+    if (obj.inlineQuiz && isInlineQuiz(obj.inlineQuiz)) {
+      content.quiz = obj.inlineQuiz;
     }
 
     return content;
@@ -297,7 +173,7 @@
       <!-- User Message -->
       <div class="message user-message">
         <div class="message-content">
-          <p>{getTextFromParts(message.parts)}</p>
+          <p>{tikaMessageExtractor.getTextFromParts(message.parts)}</p>
         </div>
       </div>
     {:else if message.role === "assistant"}
@@ -311,11 +187,11 @@
         <div class="message-content">
           {#if parsed.textHtml}
             <div class="text-response markdown-content">
-              {@html parsed.textHtml}
+              <SanitizedHtml html={parsed.textHtml} />
             </div>
           {:else if parsed.toolHtml}
             <div class="tool-response markdown-content">
-              {@html parsed.toolHtml}
+              <SanitizedHtml html={parsed.toolHtml} />
             </div>
           {/if}
 
@@ -379,6 +255,7 @@
     padding: 16px;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border-radius: 12px;
+    --shadow-accent-sm: 0 4px 12px rgba(99, 102, 241, 0.3);
   }
 
   /* Messages */
@@ -408,7 +285,7 @@
     width: 32px;
     height: 32px;
     border-radius: 8px;
-    background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
+    background: linear-gradient(135deg, var(--theme-accent, #818cf8) 0%, color-mix(in srgb, var(--theme-accent, #6366f1) 85%, black) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -573,7 +450,7 @@
     border-color: var(--theme-accent, #6366f1);
     color: white;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    box-shadow: var(--shadow-accent-sm);
   }
 
   .link-chip .link-number {

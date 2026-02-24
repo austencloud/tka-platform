@@ -4,12 +4,12 @@
   A single cell in the composition grid.
   Renders based on display mode:
   - animation: AnimatorCanvas with tunnel layers
-  - choreo-card: LayeredSequencePreview with beat highlighting
+  - choreo-card: ChoreoCard with beat highlighting
   Can be selected to edit its contents.
 -->
 <script lang="ts">
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import LayeredSequencePreview from "$lib/shared/sequence-viewer/components/LayeredSequencePreview.svelte";
+  import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import { container } from "$lib/shared/di";
   import { onMount, onDestroy } from "svelte";
   import type { GridCell } from "../../state/arrange-grid-state.svelte";
@@ -287,7 +287,7 @@
   {:else if cell.mediaType === "choreo-card" && primaryLayer}
     <!-- Choreo Card mode: Beat-synced sequence preview -->
     <div class="choreo-card-container">
-      <LayeredSequencePreview
+      <ChoreoCard
         sequence={primaryLayer.sequence}
         highlightedStepIndex={primaryCurrentStep}
         showHighlight={isPlaying}
@@ -463,7 +463,7 @@
     overflow: hidden;
   }
 
-  /* Constrain LayeredSequencePreview within the choreo card container */
+  /* Constrain ChoreoCard within the choreo card container */
   .choreo-card-container :global(.layered-preview) {
     max-width: 100%;
     max-height: 100%;

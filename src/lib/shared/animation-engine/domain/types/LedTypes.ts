@@ -73,6 +73,9 @@ export interface LedFrameInput {
   canvasHeight: number;
 }
 
+/** How per-hand LED colors are determined */
+export type LedColorMode = "unified" | "per-hand" | "prop-matched";
+
 /**
  * User-configurable LED overlay settings.
  * Controls glow appearance, bloom post-processing, POV trail persistence,
@@ -105,7 +108,23 @@ export interface LedOverlayConfig {
   patternSpeed: number;
   /** Primary color for the pattern engine, expressed as a CSS hex string (e.g. "#00ff88") */
   primaryColor: string;
+  /**
+   * Global brightness multiplier (0.0 - 1.0, default 1.0).
+   * Applied on top of per-LED brightness values.
+   * Maps to 5 discrete user-facing levels via LED_BRIGHTNESS_LEVELS.
+   */
+  brightness: number;
+  /** How per-hand colors are resolved: unified, per-hand, or prop-matched */
+  colorMode: LedColorMode;
+  /** Custom color for the blue hand (propIndex 0) when colorMode is "per-hand" */
+  blueHandColor: string;
+  /** Custom color for the red hand (propIndex 1) when colorMode is "per-hand" */
+  redHandColor: string;
 }
+
+/** Canonical prop colors matching the domain (blue hand = propIndex 0, red hand = propIndex 1) */
+export const PROP_BLUE = "#2196f3";
+export const PROP_RED = "#f44336";
 
 /** Default LED overlay config — disabled with neutral green glow and solid pattern */
 export const DEFAULT_LED_CONFIG: LedOverlayConfig = {
@@ -116,7 +135,26 @@ export const DEFAULT_LED_CONFIG: LedOverlayConfig = {
   patternId: "solid",
   patternSpeed: 1.0,
   primaryColor: "#00ff88",
+  brightness: 1.0,
+  colorMode: "unified",
+  blueHandColor: PROP_BLUE,
+  redHandColor: PROP_RED,
 };
+
+/**
+ * Discrete brightness levels matching physical LED prop controls.
+ * Index 0 = dimmest (level 1), index 4 = full brightness (level 5).
+ */
+export const LED_BRIGHTNESS_LEVELS = [0.2, 0.4, 0.6, 0.8, 1.0] as const;
+
+/**
+ * Convert a user-facing brightness level (1-5) to a 0-1 float.
+ * Clamps out-of-range inputs to the nearest valid level.
+ */
+export function ledBrightnessToFloat(level: number): number {
+  const clamped = Math.max(1, Math.min(5, Math.round(level)));
+  return LED_BRIGHTNESS_LEVELS[clamped - 1]!;
+}
 
 /**
  * Convert a CSS hex color (#rrggbb) to normalized [0, 1] RGB for shader use.
@@ -126,4 +164,19 @@ export function hexToLedColor(hex: string): { r: number; g: number; b: number } 
   const g = parseInt(hex.slice(3, 5), 16) / 255;
   const b = parseInt(hex.slice(5, 7), 16) / 255;
   return { r, g, b };
+}
+
+/**
+ * Resolve the base color hex string for a given hand based on the color mode.
+ * propIndex 0 = blue hand, propIndex 1 = red hand.
+ */
+export function resolveHandColor(config: LedOverlayConfig, propIndex: 0 | 1): string {
+  switch (config.colorMode) {
+    case "unified":
+      return config.primaryColor;
+    case "per-hand":
+      return propIndex === 0 ? config.blueHandColor : config.redHandColor;
+    case "prop-matched":
+      return propIndex === 0 ? PROP_BLUE : PROP_RED;
+  }
 }

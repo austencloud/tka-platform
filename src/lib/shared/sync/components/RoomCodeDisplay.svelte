@@ -17,6 +17,7 @@
 <script lang="ts">
   import { deviceSyncState } from '../state/device-sync-state.svelte';
   import { container } from '$lib/shared/di';
+  import ProgressRing from '$lib/shared/components/loading/ProgressRing.svelte';
 
   interface Props {
     /** Override room code (otherwise uses deviceSyncState) */
@@ -190,7 +191,7 @@
         <div class="qr-container" aria-label="QR code to join room">
           {#if qrLoading}
             <div class="qr-placeholder loading">
-              <div class="qr-spinner" aria-hidden="true"></div>
+              <ProgressRing percent={-1} size={32} strokeWidth={3} />
               <span class="visually-hidden">Generating QR code...</span>
             </div>
           {:else if qrError}
@@ -416,24 +417,9 @@
     color: rgba(239, 68, 68, 0.6);
   }
 
-  .qr-spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid rgba(139, 92, 246, 0.2);
-    border-top-color: var(--theme-accent, #8b5cf6);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
   .qr-error-text {
     font-size: var(--font-size-compact, 12px);
     text-align: center;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
   }
 
   /* No room state */
@@ -467,10 +453,6 @@
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .qr-spinner {
-      animation: none;
-    }
-
     .action-btn {
       transition: none;
     }

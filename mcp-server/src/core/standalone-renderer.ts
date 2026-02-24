@@ -286,7 +286,7 @@ export class StandaloneRenderer {
 
     // 2. Grid
     if (showGrid) {
-      const gridSvg = this.renderGrid(darkMode);
+      const gridSvg = this.renderGrid(gridMode, darkMode);
       if (gridSvg) svgParts.push(gridSvg);
     }
 
@@ -360,8 +360,9 @@ ${svgParts.join("\n")}
   // GRID RENDERING
   // ==========================================================================
 
-  private renderGrid(darkMode: boolean): string {
-    const gridPath = join(this.projectRoot, "static/images/grid/diamond_grid.svg");
+  private renderGrid(gridMode: GridMode, darkMode: boolean): string {
+    const gridFileName = gridMode === GridMode.BOX ? "box_grid.svg" : gridMode === GridMode.SKEWED ? "skewed_grid.svg" : "diamond_grid.svg";
+    const gridPath = join(this.projectRoot, "static/images/grid", gridFileName);
 
     if (!existsSync(gridPath)) {
       console.error("[Renderer] Grid file not found:", gridPath);

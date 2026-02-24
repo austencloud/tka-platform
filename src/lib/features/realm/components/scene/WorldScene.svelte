@@ -23,6 +23,7 @@
   import { TerrainPhysicsManager } from "$lib/shared/3d-core/physics/terrain-collider";
   import { teleportPlayer } from "$lib/shared/3d-core/physics/player-controller";
   import { CameraMode } from "$lib/shared/3d-core/camera/types";
+  import { cameraPreferences } from "$lib/shared/3d-core/camera/camera-preferences.svelte";
 
   import { type HybridChunkManager } from "../../core/hybrid-chunk-manager";
   import { generateWorldSeed, encodeSeed, SeededNoise } from "../../generation/seed-generator";
@@ -589,8 +590,17 @@
   {/if}
 
   <!-- Controls overlay when in orbit mode (not exploring) -->
+  <!-- Clickable: transitions to third-person mode on click -->
+  <!-- This handles the click at the parent level because the camera controller -->
+  <!-- may not be mounted yet (it waits for isReadyToRender + physicsProvider) -->
   {#if cameraMode === CameraMode.ORBIT}
-    <div class="controls-overlay">
+    <button
+      class="controls-overlay"
+      onclick={() => {
+        cameraMode = CameraMode.THIRD_PERSON;
+        cameraPreferences.setModeForDestination("realm", CameraMode.THIRD_PERSON);
+      }}
+    >
       <h2>{activeConfig.name}</h2>
       {#if activeConfig.description}
         <p class="description">{activeConfig.description}</p>
@@ -604,7 +614,7 @@
         <p><strong>Space</strong> to jump</p>
         <p><strong>V</strong> to change camera mode</p>
       </div>
-    </div>
+    </button>
   {/if}
 
   <!-- Sequence Playback Controls -->
@@ -696,16 +706,22 @@
 
   .controls-overlay {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     text-align: center;
     color: white;
-    background: rgba(0, 0, 0, 0.8);
-    padding: 32px 48px;
-    border-radius: 16px;
-    backdrop-filter: blur(10px);
-    pointer-events: none;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    font: inherit;
+    cursor: pointer;
+    z-index: 10;
+  }
+
+  .controls-overlay:hover {
+    background: rgba(0, 0, 0, 0.4);
   }
 
   .controls-overlay h2 {

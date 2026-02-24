@@ -56,7 +56,7 @@
   }
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback as IHapticFeedback;
+    hapticService = container.items.hapticFeedback;
 
     // Resolve DeviceDetector service (same pattern as MobileNavigation)
     let deviceCleanup: (() => void) | undefined;

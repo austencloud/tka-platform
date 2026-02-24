@@ -22,6 +22,7 @@ QuizLetterButton - Answer button for quiz
   class:dimmed={state === "dimmed"}
   {onclick}
   {disabled}
+  aria-label="Answer: {letter}"
 >
   <span class="letter-container">
     <span class="letter">{letter}</span>
@@ -41,15 +42,15 @@ QuizLetterButton - Answer button for quiz
     justify-content: center;
     aspect-ratio: 1;
     padding: 0.5rem;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 14px;
     cursor: pointer;
     transition: all var(--duration-normal) cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .answer-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
     transform: translateY(-3px);
     box-shadow: 0 8px 24px
@@ -70,35 +71,35 @@ QuizLetterButton - Answer button for quiz
   .letter {
     font-size: 1.875rem;
     font-weight: 800;
-    color: white;
+    color: var(--theme-text, #ffffff);
     font-family: Georgia, serif;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    text-shadow: 0 2px 8px color-mix(in srgb, var(--theme-panel-bg) 60%, transparent);
   }
 
   .answer-btn.correct {
-    background: rgba(34, 197, 94, 0.2);
-    border-color: rgba(34, 197, 94, 0.6);
+    background: color-mix(in srgb, var(--semantic-success) 20%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-success) 60%, transparent);
     animation: correctPulse 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   @keyframes correctPulse {
     0% {
       transform: scale(1);
-      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--semantic-success) 40%, transparent);
     }
     50% {
       transform: scale(1.04);
-      box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+      box-shadow: 0 0 0 10px transparent;
     }
     100% {
       transform: scale(1);
-      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+      box-shadow: 0 0 0 0 transparent;
     }
   }
 
   .answer-btn.incorrect {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: rgba(239, 68, 68, 0.6);
+    background: color-mix(in srgb, var(--semantic-error) 20%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error) 60%, transparent);
     animation: incorrectShake var(--duration-dramatic) ease-out;
   }
 
@@ -147,11 +148,11 @@ QuizLetterButton - Answer button for quiz
   }
 
   .correct-icon {
-    color: rgb(34, 197, 94);
+    color: var(--semantic-success);
   }
 
   .incorrect-icon {
-    color: rgb(239, 68, 68);
+    color: var(--semantic-error);
   }
 
   @media (min-width: 600px) {

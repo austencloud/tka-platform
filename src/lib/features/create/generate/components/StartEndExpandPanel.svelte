@@ -37,10 +37,16 @@ immediately as the user interacts (preset select, position toggle, etc.).
   // ============================================================================
   // PENDING OPTIONS STATE (local copy for editing)
   // ============================================================================
-  let pendingStartEndOptions = $state<StartEndOptions>({ ...startEndState.options });
+  let pendingStartEndOptions = $state<StartEndOptions>({
+    blockedStartPositions: [],
+    startPosition: null,
+    endPosition: null,
+    mustContainLetters: [],
+    mustNotContainLetters: [],
+  });
 
-  // Re-sync when startEndState changes externally
-  $effect(() => {
+  // Sync from startEndState (initial + re-sync on external changes)
+  $effect.pre(() => {
     pendingStartEndOptions = { ...startEndState.options };
   });
 

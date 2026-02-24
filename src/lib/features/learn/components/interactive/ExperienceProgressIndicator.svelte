@@ -61,18 +61,18 @@ Displays:
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     transition: all var(--duration-emphasis) ease;
   }
 
   .progress-dot.active {
-    background: #50c878;
+    background: var(--semantic-success, #50c878);
     transform: scale(1.25);
-    box-shadow: 0 0 8px rgba(80, 200, 120, 0.5);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--semantic-success, #50c878) 50%, transparent);
   }
 
   .progress-dot.completed {
-    background: rgba(80, 200, 120, 0.5);
+    background: color-mix(in srgb, var(--semantic-success, #50c878) 50%, transparent);
   }
 
   .progress-text {

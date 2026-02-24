@@ -44,8 +44,8 @@
   }
 
   .expand-toggle-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.18);
+    background: color-mix(in srgb, var(--theme-accent) 8%, transparent);
+    border-color: var(--theme-stroke-strong);
     color: var(--theme-text);
   }
 
@@ -54,9 +54,9 @@
   }
 
   .expand-toggle-btn.expanded {
-    background: rgba(139, 92, 246, 0.2);
-    border-color: rgba(139, 92, 246, 0.4);
-    color: rgba(167, 139, 250, 1);
+    background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
+    color: var(--theme-accent);
   }
 
   .expand-toggle-btn:focus-visible {

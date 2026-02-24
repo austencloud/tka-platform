@@ -6,6 +6,7 @@
    */
   import type { VideoEditorController } from "../../../state/VideoEditorController.svelte";
   import type { ShowcaseVideo, MatchedSequence } from "../../../types";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   interface Props {
     video: ShowcaseVideo;
@@ -64,13 +65,13 @@
     <div class="section-header">
       <span class="section-label">Matching Sequences</span>
       {#if searching}
-        <div class="spinner small"></div>
+        <ProgressRing percent={-1} size={24} strokeWidth={2} />
       {/if}
     </div>
 
     {#if searching}
       <div class="sequences-loading">
-        <div class="spinner"></div>
+        <ProgressRing percent={-1} size={32} strokeWidth={3} />
         <span>Searching for "{video.title}"...</span>
       </div>
     {:else if matchedSequences.length === 0}
@@ -516,21 +517,4 @@
     transition: width 0.3s ease;
   }
 
-  .spinner {
-    width: 24px;
-    height: 24px;
-    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-top-color: var(--theme-accent, #6366f1);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  .spinner.small {
-    width: 16px;
-    height: 16px;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
 </style>

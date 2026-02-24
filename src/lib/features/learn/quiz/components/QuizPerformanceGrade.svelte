@@ -52,7 +52,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: white;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     flex-shrink: 0;
   }
 

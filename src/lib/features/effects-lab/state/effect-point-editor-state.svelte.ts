@@ -1,0 +1,239 @@
+import type { IEffectPointOverrideProvider } from "../services/contracts/IEffectPointOverrideProvider";
+import type { EffectDescriptor } from "../domain/EffectDescriptor";
+
+const MAX_UNDO_DEPTH = 20;
+const SAVE_INDICATOR_DURATION = 1200;
+
+const COMMON_PROP_TYPES = [
+	"staff",
+	"fan",
+	"club",
+	"buugeng",
+	"triad",
+	"minipoi",
+	"doublestaff",
+	"sword",
+];
+
+function deepCopy<T>(value: T): T {
+	return JSON.parse(JSON.stringify(value));
+}
+
+interface UndoEntry {
+	points: any[];
+	label: string;
+}
+
+export class EffectPointEditorState {
+	selectedPropType = $state<string>("staff");
+	points = $state<any[]>([]);
+	selectedPointIndex = $state<number>(-1);
+	isDragging = $state(false);
+	saveIndicatorVisible = $state(false);
+	actionFeedback = $state<string | null>(null);
+
+	private undoStack: UndoEntry[] = [];
+	private provider: IEffectPointOverrideProvider;
+	private saveIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
+	private actionFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
+
+	constructor(
+		provider: IEffectPointOverrideProvider,
+		private descriptor: EffectDescriptor,
+	) {
+		this.provider = provider;
+		this.loadPointsForCurrentProp();
+	}
+
+	get availablePropTypes(): string[] {
+		return COMMON_PROP_TYPES;
+	}
+
+	get isUsingOverride(): boolean {
+		return this.provider.hasOverride(this.selectedPropType);
+	}
+
+	get hasUserDefault(): boolean {
+		return this.provider.hasUserDefault(this.selectedPropType);
+	}
+
+	get canUndo(): boolean {
+		return this.undoStack.length > 0;
+	}
+
+	selectPropType(propType: string): void {
+		if (propType === this.selectedPropType) return;
+		this.selectedPropType = propType;
+		this.selectedPointIndex = -1;
+		this.undoStack = [];
+		this.loadPointsForCurrentProp();
+	}
+
+	addPoint(dx: number, dy: number): void {
+		this.pushUndo("Add point");
+		const newPoint = this.descriptor.createPoint(dx, dy);
+		this.points = [...this.points, newPoint];
+		this.selectedPointIndex = this.points.length - 1;
+		this.autoSave();
+	}
+
+	updatePoint(index: number, updates: Record<string, unknown>): void {
+		if (index < 0 || index >= this.points.length) return;
+		this.points = this.points.map((p, i) =>
+			i === index ? { ...p, ...updates } : p,
+		);
+		this.autoSave();
+	}
+
+	movePoint(index: number, updates: Record<string, unknown>): void {
+		if (index < 0 || index >= this.points.length) return;
+		this.pushUndo("Move point");
+		this.points = this.points.map((p, i) =>
+			i === index ? { ...p, ...updates } : p,
+		);
+		this.autoSave();
+	}
+
+	updatePointPosition(index: number, dx: number, dy: number): void {
+		if (index < 0 || index >= this.points.length) return;
+		this.points = this.points.map((p, i) =>
+			i === index ? { ...p, dx, dy } : p,
+		);
+		this.autoSave();
+	}
+
+	deletePoint(index: number): void {
+		if (index < 0 || index >= this.points.length) return;
+		this.pushUndo("Delete point");
+		this.points = this.points.filter((_, i) => i !== index);
+		if (this.selectedPointIndex >= this.points.length) {
+			this.selectedPointIndex = this.points.length - 1;
+		}
+		this.autoSave();
+	}
+
+	beginDrag(index: number): void {
+		this.pushUndo("Move point");
+		this.selectedPointIndex = index;
+		this.isDragging = true;
+	}
+
+	endDrag(): void {
+		this.isDragging = false;
+	}
+
+	undo(): void {
+		const entry = this.undoStack.pop();
+		if (!entry) return;
+		this.points = entry.points;
+		if (this.selectedPointIndex >= this.points.length) {
+			this.selectedPointIndex = this.points.length - 1;
+		}
+		this.autoSave();
+	}
+
+	setAsDefault(): void {
+		const config = { points: deepCopy(this.points) };
+		this.provider.saveUserDefault(this.selectedPropType, config);
+		this.showActionFeedback("Default saved");
+	}
+
+	resetToUserDefault(): void {
+		this.pushUndo("Reset to default");
+		const userDefault = this.provider.getUserDefault(this.selectedPropType);
+		if (userDefault) {
+			this.points = deepCopy(userDefault.points);
+			this.showActionFeedback("Reset to your default");
+		} else {
+			this.points = deepCopy(
+				this.descriptor.getDefaultPoints(this.selectedPropType),
+			);
+			this.showActionFeedback("Reset to system defaults");
+		}
+		this.selectedPointIndex = -1;
+		this.autoSave();
+	}
+
+	toJSON(): string {
+		const config = { points: this.points };
+		return JSON.stringify(config, null, 2);
+	}
+
+	importJSON(json: string): string | null {
+		try {
+			const parsed = JSON.parse(json);
+			if (!parsed?.points || !Array.isArray(parsed.points)) {
+				return "Invalid format: expected { points: [...] }";
+			}
+			for (const p of parsed.points) {
+				if (typeof p.dx !== "number" || typeof p.dy !== "number") {
+					return "Invalid point: each point needs dx, dy (numbers)";
+				}
+				const intensity = this.descriptor.getIntensity(p);
+				if (typeof intensity !== "number" || isNaN(intensity)) {
+					return `Invalid point: each point needs a valid ${this.descriptor.intensityLabel} (number)`;
+				}
+			}
+			this.pushUndo("Import JSON");
+			this.points = parsed.points;
+			this.selectedPointIndex = -1;
+			this.autoSave();
+			return null;
+		} catch {
+			return "Invalid JSON";
+		}
+	}
+
+	getUserDefaultTypes(): string[] {
+		return this.provider.getUserDefaultTypes();
+	}
+
+	private loadPointsForCurrentProp(): void {
+		const override = this.provider.getOverride(this.selectedPropType);
+		if (override) {
+			this.points = deepCopy(override.points);
+		} else {
+			this.points = deepCopy(
+				this.descriptor.getDefaultPoints(this.selectedPropType),
+			);
+		}
+	}
+
+	private autoSave(): void {
+		const config = { points: deepCopy(this.points) };
+		this.provider.saveOverride(this.selectedPropType, config);
+		this.showSaveIndicator();
+	}
+
+	private showSaveIndicator(): void {
+		this.saveIndicatorVisible = true;
+		if (this.saveIndicatorTimer) {
+			clearTimeout(this.saveIndicatorTimer);
+		}
+		this.saveIndicatorTimer = setTimeout(() => {
+			this.saveIndicatorVisible = false;
+			this.saveIndicatorTimer = null;
+		}, SAVE_INDICATOR_DURATION);
+	}
+
+	private showActionFeedback(message: string): void {
+		this.actionFeedback = message;
+		if (this.actionFeedbackTimer) {
+			clearTimeout(this.actionFeedbackTimer);
+		}
+		this.actionFeedbackTimer = setTimeout(() => {
+			this.actionFeedback = null;
+			this.actionFeedbackTimer = null;
+		}, 2000);
+	}
+
+	private pushUndo(label: string): void {
+		this.undoStack.push({
+			points: deepCopy(this.points),
+			label,
+		});
+		if (this.undoStack.length > MAX_UNDO_DEPTH) {
+			this.undoStack.shift();
+		}
+	}
+}

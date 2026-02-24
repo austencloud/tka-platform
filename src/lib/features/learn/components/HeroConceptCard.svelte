@@ -69,6 +69,7 @@ Clean design with:
   style="--category-color: {category.color}"
   onclick={handleStart}
   disabled={status === "locked"}
+  aria-label="{buttonText()} {concept.name}"
 >
   <!-- Background gradient overlay -->
   <div class="card-bg"></div>
@@ -147,8 +148,8 @@ Clean design with:
     inset: 0;
     background: linear-gradient(
       135deg,
-      color-mix(in srgb, var(--category-color) 15%, rgb(20, 20, 28)) 0%,
-      color-mix(in srgb, var(--category-color) 5%, rgb(20, 20, 28)) 100%
+      color-mix(in srgb, var(--category-color) 15%, var(--theme-panel-bg)) 0%,
+      color-mix(in srgb, var(--category-color) 5%, var(--theme-panel-bg)) 100%
     );
     z-index: 0;
   }
@@ -191,7 +192,7 @@ Clean design with:
   }
 
   .category-label {
-    font-size: 0.6875rem;
+    font-size: var(--font-size-compact, 0.75rem);
     font-weight: 600;
     color: var(--category-color);
     text-transform: uppercase;
@@ -239,7 +240,7 @@ Clean design with:
   }
 
   .meta-item i {
-    font-size: 0.6875rem;
+    font-size: var(--font-size-compact, 0.75rem);
     color: var(--category-color);
     opacity: 0.7;
   }
@@ -274,13 +275,13 @@ Clean design with:
 
   .cta-button i {
     font-size: 1rem;
-    color: white;
+    color: var(--theme-text, #ffffff);
   }
 
   .cta-button span {
-    font-size: 0.75rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
-    color: white;
+    color: var(--theme-text, #ffffff);
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }

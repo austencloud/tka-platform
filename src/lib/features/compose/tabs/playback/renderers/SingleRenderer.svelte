@@ -5,6 +5,7 @@
   Displays one sequence on a single canvas.
 -->
 <script lang="ts">
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
@@ -12,7 +13,6 @@
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "../../../services/contracts/IAnimationPlaybackController";
-  import type { IAnimationRenderer } from "../../../services/contracts/IAnimationRenderer";
   import { createAnimationPanelState } from "../../../state/animation-panel-state.svelte";
   import {
     ANIMATION_LOAD_DELAY_MS,
@@ -48,7 +48,6 @@
 
   // Services
   let playbackController: IAnimationPlaybackController | null = null;
-  let animationRenderer: IAnimationRenderer | null = null;
 
   // Animation state
   const animationState = createAnimationPanelState();
@@ -73,7 +72,6 @@
   onMount(() => {
     try {
       playbackController = container.items.animationPlaybackController;
-      animationRenderer = container.items.animationRenderer;
     } catch (err) {
       console.error("Failed to initialize single renderer:", err);
       error = "Failed to initialize animation services";
@@ -229,7 +227,7 @@
 <div class="single-renderer">
   {#if loading}
     <div class="loading-message">
-      <div class="spinner"></div>
+      <ProgressRing percent={-1} size={32} strokeWidth={3} />
       <p>{t("loading_animation")}</p>
     </div>
   {:else if error}
@@ -316,24 +314,5 @@
     opacity: 0.2;
   }
 
-  .spinner {
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
-    border: 4px solid var(--theme-stroke);
-    border-top-color: #ec4899;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
 
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-    }
-  }
 </style>

@@ -59,7 +59,52 @@ export function simplifyRepeatedWord(word: string): string {
     }
   }
 
-  // No repeating pattern found, return original word
+  // No repeating pattern found, try palindrome detection
+  return simplifyPalindromicWord(word);
+}
+
+/**
+ * Simplify a word with palindromic (ABBA) group structure by removing the mirrored half.
+ *
+ * Works on letter-unit groups, not raw characters, so "Δ-UY-Ψ-" is one group
+ * when group size = 4 tokens.
+ *
+ * Example:
+ * - "Δ-UY-Ψ-Σ-VZ-Ψ-Σ-VZ-Ψ-Δ-UY-Ψ-" (ABBA at G=4) → "Δ-UY-Ψ-Σ-VZ-Ψ-"
+ */
+function simplifyPalindromicWord(word: string): string {
+  const tokens = splitIntoLetterUnits(word);
+  const n = tokens.length;
+  if (n < 2) return word;
+
+  for (let g = 1; g <= Math.floor(n / 2); g++) {
+    if (n % g !== 0) continue;
+
+    const numGroups = n / g;
+    if (numGroups < 2) continue;
+
+    // Build group strings for comparison
+    const groups: string[] = [];
+    for (let i = 0; i < numGroups; i++) {
+      groups.push(tokens.slice(i * g, (i + 1) * g).join(""));
+    }
+
+    // Check palindrome: group[i] === group[numGroups - 1 - i]
+    let isPalindrome = true;
+    for (let i = 0; i < Math.floor(numGroups / 2); i++) {
+      if (groups[i] !== groups[numGroups - 1 - i]) {
+        isPalindrome = false;
+        break;
+      }
+    }
+
+    // Must be a true palindrome (not all identical — that's a repeat, already handled)
+    if (isPalindrome && groups[0] !== groups[1]) {
+      const halfCount = Math.ceil(numGroups / 2);
+      return groups.slice(0, halfCount).join("");
+    }
+  }
+
   return word;
 }
 

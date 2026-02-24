@@ -8,6 +8,7 @@
    * bundle. A lightweight placeholder is shown until the real component loads.
    */
   import type { Component } from "svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   let containerEl: HTMLElement | undefined = $state();
   let DemoComponent = $state<Component | null>(null);
@@ -49,7 +50,7 @@
     </div>
   {:else}
     <div class="demo-placeholder">
-      <div class="placeholder-pulse"></div>
+      <ProgressRing percent={-1} size={32} strokeWidth={3} />
       <span>Loading animation...</span>
     </div>
   {/if}
@@ -83,21 +84,6 @@
     opacity: 0.4;
   }
 
-  .placeholder-pulse {
-    width: 40px;
-    height: 40px;
-    border: 3px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-top-color: var(--theme-accent, #6366f1);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   @media (max-width: 600px) {
     .lazy-demo-container {
       min-height: min(380px, 90vw);
@@ -109,9 +95,4 @@
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .placeholder-pulse {
-      animation: none;
-    }
-  }
 </style>

@@ -18,7 +18,7 @@
     attribution: () => import("./tabs/AttributionLab.svelte"),
     level4: () => import("$lib/features/skewlab/SkewLabModule.svelte"),
     level5: () => import("$lib/features/level5-lab/Level5LabModule.svelte"),
-    level7: () => import("$lib/features/level7-lab/Level7LabModule.svelte"),
+    level7: () => import("$lib/features/conjoined-lab/ConjoinedLabModule.svelte"),
     poi: () => import("$lib/features/poi-lab/PoiLabModule.svelte"),
     avatar: () => import("./tabs/ProfileAvatarLab.svelte"),
     "photo-picker": () => import("./tabs/PhotoPickerLab.svelte"),
@@ -29,7 +29,7 @@
     backgrounds: () => import("$lib/features/background-builder/BackgroundBuilder.svelte"),
     landing: () => import("$lib/features/landing-preview/LandingPreviewModule.svelte"),
     composition: () => import("$lib/features/constraint-layout-lab/CompositionLab.svelte"),
-    level6: () => import("$lib/features/conjoined-lab/ConjoinedLabModule.svelte"),
+    level6: () => import("$lib/features/level7-lab/Level7LabModule.svelte"),
     "multi-grid": () => import("$lib/features/multi-grid-lab/MultiGridLabModule.svelte"),
     "ml-training": () =>
       import("$lib/features/train/ml-training/components/MLTrainingModule.svelte"),
@@ -42,8 +42,10 @@
     trigrid: () => import("$lib/features/trigrid-lab/TriGridLabModule.svelte"),
     duration: () => import("$lib/features/duration-lab/DurationLabModule.svelte"),
     "visual-builder": () => import("$lib/features/visual-builder-lab/VisualBuilderLabModule.svelte"),
-    flame: () => import("$lib/features/flame-lab/FlameLabModule.svelte"),
+    effects: () => import("$lib/features/effects-lab/EffectsLabModule.svelte"),
+    progress: () => import("$lib/features/progress-lab/ProgressLabModule.svelte"),
     museum: () => import("$lib/features/museum/MuseumDestination.svelte"),
+    "prop-buttons": () => import("./tabs/PropButtonLab.svelte"),
   };
 
   // Get current tab, default to first tab

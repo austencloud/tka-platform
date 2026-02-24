@@ -16,11 +16,11 @@ export const DOMAIN_TOPICS: Record<string, { title: string; content: string }> =
 
 TKA (The Kinetic Alphabet) is a notation system for two-handed prop manipulation, **built for static props** (staff, fans, clubs, buugeng). Static props are gripped directly, so the performer controls orientation. TKA is a **radial system** -- all orientations are measured from the prop to the performer's center point, not relative to the ground. This means "up" and "down" are no more privileged than "left" and "right." This is not ignoring physics -- it reflects how static prop spinners actually use their props. Gravity does not constrain a staff's orientation the way it constrains poi's trajectory. Every previous notation system mapped what gravity makes spinning props do. TKA maps what's possible when gravity isn't a constraint.
 
-The TKA parameter space is precise and finite: 9 grid locations (8 perimeter + center), 8 center-relative orientations (4 radial/nonradial + 4 interradial at L7+), and rotation increments down to 45 degrees (quarter turns at L7). This is not "any movement two hands can make" -- it's a complete enumeration within its defined parameter space. What TKA does NOT enumerate: grip changes, body movement, behind-the-back passes, contact rolling, tosses, or 3D planes below Level 8.
+The TKA parameter space is precise and finite: 9 grid locations (8 perimeter + center), 8 center-relative orientations (4 radial/nonradial + 4 interradial at L6+), and rotation increments down to 45 degrees (quarter turns at L6). This is not "any movement two hands can make" -- it's a complete enumeration within its defined parameter space. What TKA does NOT enumerate: grip changes, body movement, behind-the-back passes, contact rolling, tosses, or 3D planes below Level 8.
 
 **Momentum-based props (poi)** can perform many TKA sequences but not all of them. Gravity restricts which orientations and transitions are physically possible. A Poi Lab module is **planned but not yet built** to identify the poi-legal subset. Poi is the only prop type that encounters limitations with TKA -- every other static prop works without restriction. The practical advantage for static props: you can freeze mid-sequence, hold a prop at an orientation, look at what you're doing next as a 2D representation, and continue. Poi spinners can't do this because momentum won't wait.
 
-TKA is for **dual-wielded** props. Contact staff (balancing/rolling on body) is NOT part of TKA. Don't say "fixed grip" -- many props require grip changes. Say "gripped directly." Don't say "any amount of rotation" -- smallest increment is 45 degrees (quarter turns at L7).`,
+TKA is for **dual-wielded** props. Contact staff (balancing/rolling on body) is NOT part of TKA. Don't say "fixed grip" -- many props require grip changes. Say "gripped directly." Don't say "any amount of rotation" -- smallest increment is 45 degrees (quarter turns at L6).`,
   },
 
   "base-rotation": {
@@ -53,7 +53,7 @@ Adding 1+ turns to any motion type introduces CW/CCW direction (2 states per tur
 
 TKA defines 1 turn as 180 degrees of additional prop rotation beyond base behavior. This is a deliberate pedagogical choice:
 
-- If 1 turn = 360 degrees, quarter turns (Level 7) would be 1/8 turns -- fractional chaos
+- If 1 turn = 360 degrees, quarter turns (Level 6) would be 1/8 turns -- fractional chaos
 - If 1 turn = 90 degrees, Level 2 would need 6 turn values (0-6) instead of the clean 0-3
 - At 180 degrees, the math stays clean at every level: whole turns 0-3 are small integers, half turns (90 degrees) produce cardinal orientation shifts, and quarter turns (45 degrees) produce interradial orientations
 
@@ -71,9 +71,9 @@ This also makes the orientation parity rules intuitive: each additional turn (18
 | Pro, Static | Preserves orientation | Reverses orientation |
 | Anti, Dash, Hash | Reverses orientation | Preserves orientation |
 
-"Reverses" means in<->out, clock<->counter (and interradial pairs at L7+: clockIn<->counterOut, clockOut<->counterIn).
+"Reverses" means in<->out, clock<->counter (and interradial pairs at L6+: clockIn<->counterOut, clockOut<->counterIn).
 
-### Fractional Turns (Half-turns at L3+, Quarter-turns at L7+)
+### Fractional Turns (Half-turns at L3+, Quarter-turns at L6+)
 
 Half turns (0.5, 1.5, 2.5) produce orientations 90 degrees from the start. Quarter turns (0.25, 0.75, 1.25, ...) produce interradial orientations using the 8-point radial cycle:
 
@@ -110,7 +110,7 @@ Given maximum turn count T (number of distinct turn values) and float availabili
 **L3: Half-turns (7 values), 4-point grid, float** -> 56 states
 **L4: Same turns as L3, 8-point grid, float** -> 116 states (6 shift destinations)
 **L5: Same turns, 9-point grid** -> 129 from perimeter, 117 from center
-**Ceiling (L7+): Quarter-turns (13 values), 9-point grid** -> 237 from perimeter, 225 from center
+**Ceiling (L6+): Quarter-turns (13 values), 9-point grid** -> 237 from perimeter, 225 from center
 
 ### Summary Table
 
@@ -168,11 +168,11 @@ Both shifts and dashes support **path length modifiers** displayed per-hand in t
 - -: Skew- -- shortened arc (less than 1 segment)
 - ++: Skew++ -- double-extended arc
 
-**For dashes (L5+/L6+):**
+**For dashes (L5+/L7+):**
 - (none): Standard dash -- perimeter to opposite perimeter (L1+)
 - -: Dash- (hash) -- perimeter to center or center to perimeter (L5+)
-- +: Dash+ -- perimeter to center of *other* grid (L6+)
-- ++: Dash++ -- perimeter to opposite perimeter of *other* grid (L6+)
+- +: Dash+ -- perimeter to center of *other* grid (L7+)
+- ++: Dash++ -- perimeter to opposite perimeter of *other* grid (L7+)
 
 **Dash- is called "hash"** -- a shortened dash to/from center instead of to the opposite perimeter point. Same geometry, same rotation rules, half the distance.
 
@@ -191,11 +191,11 @@ The letter type system classifies by **hand path family** (shift, dash, static):
 | 5 | dash + dash | dash + dash, dash + dash-, dash- + dash- |
 | 6 | static + static | |
 
-### Extended Dashes (L6+, conjoined grids -- DESIGN PHASE)
+### Extended Dashes (L7+, conjoined grids -- DESIGN PHASE)
 
-When two grids share a junction point (Level 6), new straight-line paths emerge crossing the grid boundary. Dash+/++ follow straight-line trajectories (not curved arcs), so they follow dash rotation rules. No new letters needed -- existing letter classification covers all combinations.
+When two grids share a junction point (Level 7), new straight-line paths emerge crossing the grid boundary. Dash+/++ follow straight-line trajectories (not curved arcs), so they follow dash rotation rules. No new letters needed -- existing letter classification covers all combinations.
 
-**Dash- vs Dash+:** Dash- (L5) goes to center of *same* grid. Dash+ (L6) goes to center of *other* grid. Both are straight-line paths to a center point.
+**Dash- vs Dash+:** Dash- (L5) goes to center of *same* grid. Dash+ (L7) goes to center of *other* grid. Both are straight-line paths to a center point.
 
 ### Skews (L4+ only, 8-point grid)
 
@@ -221,24 +221,24 @@ Skews support all three shift motion types (pro, anti, float). Theoretically unb
 | 3 | Half turns + float | Halves, float motion type | Foundation |
 | 4 | Skewed grid | 8-point grid, skew+ and skew- | Grid mixing |
 | 5 | Centric | Center point, hash hand path, tau/terra positions | New grid point |
-| 6 | Conjoined grids | Dual grids sharing a junction point, extended dashes | Canvas expansion |
-| 7 | Interradial orientations | 8 orientations, quarter turns, completes 2D | 2D COMPLETE |
+| 6 | Interradial orientations | 8 orientations, quarter turns, completes single-grid 2D | Orientation freedom |
+| 7 | Conjoined grids | Dual grids sharing a junction point, extended dashes | Canvas expansion |
 | 8 | Atomics | Multi-plane / 3D (wall, wheel, overhead) | New dimension |
 | 9 | Rubik's cube | Skewed across intersecting planes | 3D COMPLETE |
 
 ### Why This Order
 
-**Conjoined before interradials (L6 before L7):**
-- Conjoined grids are visually exciting and immediately accessible ("your grid just doubled")
-- Interradials are mathematically dense (doubling orientation vocabulary from 4 to 8)
-- Exciting-then-dense beats dense-then-exciting in learning progression
-- Interradials at L7 serve as the completionist capstone for 2D mastery
+**Interradials before conjoined (L6 before L7):**
+- Complete all orientation freedom within one grid before expanding beyond one grid
+- "Complete then expand" -- master the full orientation vocabulary (4 to 8) before doubling the spatial canvas
+- Interradials are a precision concept best learned on familiar single-grid territory
+- Conjoined grids at L7 bridge naturally to L8's multi-plane expansion
 
-**Interradials before 3D (L7 before L8):**
-- Interradials are a 2D precision concept. Learning them in 2D where they're intuitive means the learner doesn't have to learn interradials AND 3D simultaneously
-- All 2D knowledge carries forward into 3D. L7 completes the 2D vocabulary before the dimensional leap.
+**Conjoined before 3D (L7 before L8):**
+- Conjoined grids expand spatial canvas while staying in 2D, easing the transition
+- All single-grid 2D knowledge (including interradials) carries forward into conjoined and then into 3D
 
-**Symmetry:** L7 completes 2D the way L9 completes 3D. Both are "precision passes" after spatial expansion (conjoined at L6, atomics at L8).`,
+**Symmetry:** L6 completes orientation freedom, L7 completes spatial expansion in 2D. L9 completes 3D the same way -- precision pass after dimensional expansion (atomics at L8).`,
   },
 
   "skewed-letters": {
@@ -626,7 +626,7 @@ Compound letters are pairs that complete each other to create circular (LOOP) mo
 | **clock** | Nonradial | Prop faces clockwise (perpendicular to center axis) |
 | **counter** | Nonradial | Prop faces counter-clockwise |
 
-### Interradial Orientations (4, L7+)
+### Interradial Orientations (4, L6+)
 
 At 45 degrees between radial and nonradial:
 - **clockIn**: between clock and in

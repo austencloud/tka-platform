@@ -55,7 +55,7 @@
     -webkit-tap-highlight-color: transparent;
     font-variant-numeric: tabular-nums;
     box-shadow:
-      0 1px 3px rgba(0, 0, 0, 0.1),
+      0 1px 3px var(--theme-shadow),
       inset 0 1px 0 var(--theme-card-bg);
   }
 
@@ -66,7 +66,7 @@
       color: var(--theme-text);
       transform: translateY(-1px);
       box-shadow:
-        0 2px 8px rgba(0, 0, 0, 0.15),
+        0 2px 8px var(--theme-shadow),
         inset 0 1px 0 var(--theme-card-hover-bg);
     }
   }
@@ -78,14 +78,14 @@
   .quick-preset-btn.active {
     background: linear-gradient(
       135deg,
-      rgba(139, 92, 246, 0.3) 0%,
-      rgba(124, 58, 237, 0.25) 100%
+      color-mix(in srgb, var(--theme-accent) 30%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent) 25%, transparent) 100%
     );
-    border-color: rgba(139, 92, 246, 0.5);
-    color: rgba(255, 255, 255, 1);
+    border-color: color-mix(in srgb, var(--theme-accent) 50%, transparent);
+    color: var(--theme-text);
     box-shadow:
-      0 0 20px rgba(139, 92, 246, 0.25),
-      0 2px 8px rgba(139, 92, 246, 0.2),
+      0 0 20px color-mix(in srgb, var(--theme-accent) 25%, transparent),
+      0 2px 8px color-mix(in srgb, var(--theme-accent) 20%, transparent),
       inset 0 1px 0 var(--theme-stroke);
   }
 

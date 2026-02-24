@@ -26,7 +26,7 @@ QuizErrorState - Error display with retry for quizzes
   }
 
   .error-text {
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.8));
     font-size: 0.9375rem;
     font-weight: 500;
     margin: 0;

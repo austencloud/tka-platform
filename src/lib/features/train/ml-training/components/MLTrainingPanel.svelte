@@ -10,6 +10,7 @@ Mobile-first design:
 <script lang="ts">
   import { onMount, onDestroy, untrack } from "svelte";
   import CaptureInterface from "./CaptureInterface.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import SessionList from "./SessionList.svelte";
   import LabelingSession from "./LabelingSession.svelte";
   import { getMLTrainingStorage } from "../services/MLTrainingStorageManager";
@@ -210,7 +211,7 @@ Mobile-first design:
             aria-live="polite"
             aria-busy="true"
           >
-            <div class="spinner" aria-hidden="true"></div>
+            <ProgressRing percent={-1} size={24} strokeWidth={2} />
             <span>Loading preview...</span>
           </div>
         {:else if previewFrames.length > 0}
@@ -440,29 +441,6 @@ Mobile-first design:
     background: var(--theme-card-bg);
     border-radius: 12px;
     opacity: 0.7;
-  }
-
-  .spinner {
-    width: 24px;
-    height: 24px;
-    border: 2px solid var(--theme-stroke);
-    border-top-color: #a5b4fc;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-      border-top-color: #a5b4fc;
-      border-right-color: #a5b4fc;
-    }
   }
 
   /* Stats Cards */

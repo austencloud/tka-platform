@@ -7,6 +7,7 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
 	import { connectState } from '../../state/connect-state.svelte';
+	import ProgressRing from '$lib/shared/components/loading/ProgressRing.svelte';
 	import type { UserSearchResult, Invite } from '../../domain/models/connect-models';
 
 	// Local state
@@ -98,7 +99,7 @@
 				aria-label="Search for users"
 			/>
 			{#if isSearching}
-				<div class="search-spinner"></div>
+				<ProgressRing percent={-1} size={24} strokeWidth={2} />
 			{/if}
 		</div>
 
@@ -255,21 +256,6 @@
 
 	.search-box input::placeholder {
 		color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-	}
-
-	.search-spinner {
-		width: 16px;
-		height: 16px;
-		border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		border-top-color: var(--theme-accent, #6366f1);
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-	}
-
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
 	}
 
 	.search-error,
@@ -503,10 +489,4 @@
 		line-height: 1.5;
 	}
 
-	/* Reduced motion */
-	@media (prefers-reduced-motion: reduce) {
-		.search-spinner {
-			animation: none;
-		}
-	}
 </style>

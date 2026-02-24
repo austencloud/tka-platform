@@ -32,6 +32,7 @@
     IToolPanelProps,
   } from "../../types/create-module-types";
   import ConstructGenerateToggle from "../../workspace-panel/shared/components/buttons/ConstructGenerateToggle.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   // ============================================================================
   // PROPS
@@ -267,7 +268,7 @@
   {#if !isPersistenceFullyInitialized}
     <!-- Loading state while persistence is being restored -->
     <div class="persistence-loading">
-      <div class="loading-spinner"></div>
+      <ProgressRing percent={-1} size={24} strokeWidth={2} />
       <p>Loading...</p>
     </div>
   {:else if activeToolPanel}
@@ -358,7 +359,7 @@
             {#if isPickerStateLoading}
               <!-- Loading state while determining which picker to show -->
               <div class="picker-loading">
-                <div class="loading-spinner"></div>
+                <ProgressRing percent={-1} size={24} strokeWidth={2} />
                 <p>Loading...</p>
               </div>
             {:else}
@@ -459,29 +460,4 @@
     color: #666;
   }
 
-  .loading-spinner {
-    width: 24px;
-    height: 24px;
-    border: 2px solid #e0e0e0;
-    border-top: 2px solid #007acc;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 12px;
-  }
-
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
-  @media (prefers-reduced-motion: reduce) {
-    .loading-spinner {
-      animation: none;
-    }
-  }
 </style>

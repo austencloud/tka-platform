@@ -15,6 +15,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { ThumbnailVariant } from "../services/contracts/ICloudThumbnailCache";
   import { container } from "$lib/shared/di";
@@ -412,7 +413,7 @@
     {#if isLoading}
       <div class="loading-overlay" aria-label={statusLabel}>
         <div class="overlay-content">
-          <div class="spinner"></div>
+          <ProgressRing percent={-1} size={24} strokeWidth={2} />
           <span class="overlay-status">{statusLabel}</span>
         </div>
         <div
@@ -437,7 +438,7 @@
       <span class="placeholder-word">{displayName}</span>
       {#if isLoading}
         <div class="loading-indicator">
-          <div class="spinner"></div>
+          <ProgressRing percent={-1} size={24} strokeWidth={2} />
           <span class="loading-status">{statusLabel}</span>
         </div>
         <div
@@ -596,21 +597,6 @@
     color: var(--semantic-error);
   }
 
-  .spinner {
-    width: 24px;
-    height: 24px;
-    border: 2px solid var(--theme-stroke);
-    border-top-color: var(--theme-accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   /* Progress bar */
   .progress-bar {
     position: absolute;
@@ -655,12 +641,6 @@
     opacity: 0.9;
   }
 
-  .loading-overlay .spinner {
-    width: 28px;
-    height: 28px;
-    border-width: 3px;
-  }
-
   .loading-overlay .progress-bar {
     position: absolute;
     bottom: 0;
@@ -686,19 +666,11 @@
     .loading-status {
       font-size: 10px;
     }
-    .spinner {
-      width: 16px;
-      height: 16px;
-    }
     .progress-bar {
       height: 3px;
     }
     .overlay-status {
       font-size: 10px;
-    }
-    .loading-overlay .spinner {
-      width: 20px;
-      height: 20px;
     }
     .loading-overlay .progress-bar {
       height: 4px;
@@ -720,9 +692,6 @@
 
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */
   @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-    }
     .loading-placeholder::before {
       animation: none;
     }
