@@ -607,6 +607,7 @@ export default defineConfig({
         // 🔇 Disable all workbox console logging
         mode: "production",
         disableDevLogs: true,
+        importScripts: ["/firebase-messaging-handler.js"],
         // Cache strategies for different asset types
         // adapter-static outputs to root, NOT prerendered/ or client/ subdirs
         // suppressWarnings in devOptions handles the "glob pattern doesn't match" warnings
