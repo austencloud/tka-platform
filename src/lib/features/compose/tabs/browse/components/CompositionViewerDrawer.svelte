@@ -13,6 +13,7 @@
 	import CompositionMiniPreview from "./CompositionMiniPreview.svelte";
 	import { container } from "$lib/shared/di";
 	import type { ICompositionThumbnailResolver } from "../services/contracts/ICompositionThumbnailResolver";
+	import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
 	let {
 		composition,
@@ -76,6 +77,15 @@
 		composition ? capitalizeWords(composition.creator) : ""
 	);
 
+	const displayName = $derived.by(() => {
+		if (!composition) return "";
+		const name = composition.name || "Untitled";
+		if (composition.sequenceCount === 1) {
+			return simplifyAndTruncate(name);
+		}
+		return name;
+	});
+
 	function handleDrawerClose() {
 		onClose();
 	}
@@ -110,34 +120,31 @@
 				<div class="header-spacer"></div>
 			</header>
 
-			<!-- Body -->
-			<div class="viewer-body">
-				<!-- Animated Preview -->
-				<div class="preview-section">
-					{#if hasRenderableCells}
-						<CompositionAnimatedPreview
-							cells={composition.cells}
-							layout={composition.layout}
-						/>
-					{:else if thumbnailUrl}
-						<img
-							src={thumbnailUrl}
-							alt={composition.name}
-							class="preview-image"
-						/>
-					{:else}
-						<CompositionMiniPreview
-							cells={composition.cells}
-							layout={composition.layout}
-						/>
-					{/if}
-				</div>
+			<!-- Preview: fills all available space between header and info/footer -->
+			<div class="preview-section">
+				{#if hasRenderableCells}
+					<CompositionAnimatedPreview
+						cells={composition.cells}
+						layout={composition.layout}
+					/>
+				{:else if thumbnailUrl}
+					<img
+						src={thumbnailUrl}
+						alt={composition.name}
+						class="preview-image"
+					/>
+				{:else}
+					<CompositionMiniPreview
+						cells={composition.cells}
+						layout={composition.layout}
+					/>
+				{/if}
+			</div>
 
-				<!-- Metadata -->
-				<div class="metadata-section">
-					<h2 class="composition-name">{composition.name || "Untitled"}</h2>
-
-					<!-- Mode pill -->
+			<!-- Compact info bar -->
+			<div class="info-bar">
+				<div class="info-left">
+					<h2 class="composition-name">{displayName}</h2>
 					<span
 						class="mode-pill"
 						style="color: {modeConfig.accent}; border-color: {modeConfig.accent}"
@@ -145,26 +152,15 @@
 						<i class="fas {modeConfig.icon}" aria-hidden="true"></i>
 						{modeConfig.label}
 					</span>
-
-					<!-- Metadata grid -->
-					<div class="meta-grid">
-						<div class="meta-item">
-							<span class="meta-label">Creator</span>
-							<span class="meta-value">{capitalizedCreator}</span>
-						</div>
-						<div class="meta-item">
-							<span class="meta-label">Last edited</span>
-							<span class="meta-value">{lastEdited}</span>
-						</div>
-						<div class="meta-item">
-							<span class="meta-label">Layout</span>
-							<span class="meta-value">{layoutLabel} grid</span>
-						</div>
-						<div class="meta-item">
-							<span class="meta-label">Sequences</span>
-							<span class="meta-value">{composition.sequenceCount}</span>
-						</div>
-					</div>
+				</div>
+				<div class="info-meta">
+					<span class="meta-chip">{capitalizedCreator}</span>
+					<span class="meta-sep" aria-hidden="true"></span>
+					<span class="meta-chip">{layoutLabel}</span>
+					<span class="meta-sep" aria-hidden="true"></span>
+					<span class="meta-chip">{composition.sequenceCount} seq{composition.sequenceCount !== 1 ? "s" : ""}</span>
+					<span class="meta-sep" aria-hidden="true"></span>
+					<span class="meta-chip">{lastEdited}</span>
 				</div>
 			</div>
 
@@ -292,93 +288,110 @@
 	}
 
 	/* ===========================
-	   BODY
-	   =========================== */
-
-	.viewer-body {
-		flex: 1;
-		min-height: 0;
-		overflow-y: auto;
-		display: flex;
-		flex-direction: column;
-	}
-
-	/* ===========================
 	   PREVIEW SECTION
+	   Fills all space between header and info bar.
+	   Grid is centered and constrained to fit.
 	   =========================== */
 
 	.preview-section {
-		width: 100%;
-		aspect-ratio: 16 / 10;
-		flex-shrink: 0;
+		flex: 1;
+		min-height: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		overflow: hidden;
 		background: rgba(0, 0, 0, 0.3);
+		padding: 8px;
+	}
+
+	/*
+	 * Override AnimatedPreview grid to fit the drawer.
+	 * Constrain the grid to cols:rows aspect ratio so cells stay 1:1.
+	 * The preview-section flex centering handles empty space around the grid.
+	 */
+	.preview-section :global(.animated-grid) {
+		grid-template-rows: repeat(var(--rows), 1fr);
+		border-radius: 8px;
+		aspect-ratio: var(--cols) / var(--rows);
+		width: auto;
+		height: 100%;
+		max-width: 100%;
 	}
 
 	.preview-image {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
+		max-width: 100%;
+		max-height: 100%;
+		object-fit: contain;
+		border-radius: 8px;
 	}
 
 	/* ===========================
-	   METADATA
+	   INFO BAR (compact metadata)
 	   =========================== */
 
-	.metadata-section {
-		padding: 20px;
+	.info-bar {
 		display: flex;
 		flex-direction: column;
-		gap: 14px;
+		gap: 6px;
+		padding: 10px 16px;
+		border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+		flex-shrink: 0;
+	}
+
+	.info-left {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		min-width: 0;
 	}
 
 	.composition-name {
-		font-size: var(--font-size-xl, 20px);
+		font-size: var(--font-size-base, 16px);
 		font-weight: 700;
 		margin: 0;
 		color: var(--theme-text, #fff);
-		word-break: break-word;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		min-width: 0;
 	}
 
 	.mode-pill {
 		display: inline-flex;
 		align-items: center;
-		gap: 6px;
-		padding: 4px 12px;
+		gap: 5px;
+		padding: 2px 10px;
 		border: 1px solid;
 		border-radius: 20px;
-		font-size: var(--font-size-compact, 12px);
+		font-size: 11px;
 		font-weight: 600;
-		width: fit-content;
+		white-space: nowrap;
+		flex-shrink: 0;
 	}
 
 	.mode-pill i {
-		font-size: 11px;
+		font-size: 10px;
 	}
 
-	.meta-grid {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 14px;
-	}
-
-	.meta-item {
+	.info-meta {
 		display: flex;
-		flex-direction: column;
-		gap: 2px;
-	}
-
-	.meta-label {
+		align-items: center;
+		gap: 8px;
 		font-size: var(--font-size-compact, 12px);
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-		text-transform: uppercase;
-		letter-spacing: 0.03em;
-		font-weight: 500;
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+		flex-wrap: wrap;
 	}
 
-	.meta-value {
-		font-size: var(--font-size-sm, 14px);
-		color: var(--theme-text, #fff);
+	.meta-chip {
+		white-space: nowrap;
+	}
+
+	.meta-sep {
+		width: 3px;
+		height: 3px;
+		border-radius: 50%;
+		background: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
+		flex-shrink: 0;
 	}
 
 	/* ===========================
@@ -408,6 +421,8 @@
 		align-items: center;
 		justify-content: center;
 		gap: 2px;
+		flex: 1;
+		max-width: 100px;
 		min-width: 60px;
 		height: 52px;
 		padding: 6px 14px;
