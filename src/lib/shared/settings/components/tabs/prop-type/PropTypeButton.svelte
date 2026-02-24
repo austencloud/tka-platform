@@ -90,11 +90,10 @@
     gap: 4%;
     border-radius: 10px;
     box-sizing: border-box;
-    /* Taller than wide: width is 1, height is 1.2 */
-    aspect-ratio: 1 / 1.2;
+    /* Slightly taller than wide for label space */
+    aspect-ratio: 1 / 1.1;
     width: 100%;
     overflow: hidden;
-    box-shadow: var(--theme-shadow, 0 2px 8px rgba(0, 0, 0, 0.1));
   }
 
   .prop-button:hover {

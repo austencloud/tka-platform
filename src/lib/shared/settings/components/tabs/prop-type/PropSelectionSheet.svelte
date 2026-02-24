@@ -85,29 +85,31 @@
 
     <!-- Blue/Red tabs for cat/dog mode -->
     {#if showTabs}
-      <div class="tab-bar" role="tablist" aria-label="Prop hand selection">
-        <button
-          type="button"
-          role="tab"
-          class="tab-btn"
-          class:active={activeTab === "blue"}
-          aria-selected={activeTab === "blue"}
-          onclick={() => handleTabChange("blue")}
-        >
-          <span class="tab-indicator blue" aria-hidden="true"></span>
-          Blue
-        </button>
-        <button
-          type="button"
-          role="tab"
-          class="tab-btn"
-          class:active={activeTab === "red"}
-          aria-selected={activeTab === "red"}
-          onclick={() => handleTabChange("red")}
-        >
-          <span class="tab-indicator red" aria-hidden="true"></span>
-          Red
-        </button>
+      <div class="segment-wrapper">
+        <div class="segment-control" role="tablist" aria-label="Prop hand selection">
+          <button
+            type="button"
+            role="tab"
+            class="segment-btn"
+            class:active={activeTab === "blue"}
+            aria-selected={activeTab === "blue"}
+            onclick={() => handleTabChange("blue")}
+          >
+            <span class="color-dot blue" aria-hidden="true"></span>
+            Blue
+          </button>
+          <button
+            type="button"
+            role="tab"
+            class="segment-btn"
+            class:active={activeTab === "red"}
+            aria-selected={activeTab === "red"}
+            onclick={() => handleTabChange("red")}
+          >
+            <span class="color-dot red" aria-hidden="true"></span>
+            Red
+          </button>
+        </div>
       </div>
     {/if}
 
@@ -115,6 +117,7 @@
       {selectedPropType}
       {color}
       {title}
+      variant="inline"
       onSelect={handlePropSelect}
     />
   </div>
@@ -152,65 +155,79 @@
     flex-shrink: 0;
   }
 
-  /* Tab bar */
-  .tab-bar {
+  /* Segmented control - compact centered pill */
+  .segment-wrapper {
     display: flex;
-    gap: 8px;
+    justify-content: center;
     padding: 4px 8px 12px;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     flex-shrink: 0;
-    margin-bottom: 8px;
   }
 
-  .tab-btn {
+  .segment-control {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    flex: 1;
-    justify-content: center;
-    padding: 12px 16px;
+    gap: 2px;
+    padding: 3px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 10px;
+    width: fit-content;
+  }
+
+  .segment-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: center;
+    padding: 8px 20px;
+    background: transparent;
+    border: 1px solid transparent;
     border-radius: 8px;
     font-size: var(--font-size-min, 14px);
-    font-weight: 500;
+    font-weight: 600;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     cursor: pointer;
-    transition: all var(--duration-normal) ease;
-    min-height: 48px;
+    transition: all var(--duration-fast, 150ms) ease;
+    min-height: 36px;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
   }
 
-  .tab-btn:hover {
-    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
-  }
-
-  .tab-btn.active {
-    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
-    border-color: var(--theme-accent, #6366f1);
+  .segment-btn:hover {
+    background: color-mix(in srgb, var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08)) 50%, transparent);
     color: var(--theme-text, white);
   }
 
-  .tab-btn:focus-visible {
+  .segment-btn.active {
+    background: color-mix(in srgb, var(--theme-accent) 25%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
+    color: var(--theme-text, white);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--theme-accent) 20%, transparent),
+      0 2px 8px color-mix(in srgb, var(--theme-accent) 20%, transparent);
+  }
+
+  .segment-btn:focus-visible {
     outline: 2px solid var(--theme-accent, #6366f1);
     outline-offset: 2px;
   }
 
-  .tab-indicator {
-    width: 12px;
-    height: 12px;
+  .color-dot {
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
+    flex-shrink: 0;
   }
 
-  .tab-indicator.blue {
+  .color-dot.blue {
     background: var(--prop-blue, #3b82f6);
   }
 
-  .tab-indicator.red {
+  .color-dot.red {
     background: var(--prop-red, #ef4444);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .tab-btn {
+    .segment-btn {
       transition: none;
     }
   }
