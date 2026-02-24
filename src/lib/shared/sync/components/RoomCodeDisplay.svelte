@@ -15,6 +15,7 @@
   - Screen reader announcements for copy/share actions
 -->
 <script lang="ts">
+  import { onDestroy } from 'svelte';
   import { deviceSyncState } from '../state/device-sync-state.svelte';
   import { container } from '$lib/shared/di';
   import ProgressRing from '$lib/shared/components/loading/ProgressRing.svelte';
@@ -46,6 +47,21 @@
   let qrDataUrl = $state<string | null>(null);
   let qrLoading = $state(false);
   let qrError = $state<string | null>(null);
+  let resetTimers: number[] = [];
+
+  function scheduleReset(fn: () => void, delay: number): void {
+    const timer = window.setTimeout(fn, delay);
+    resetTimers.push(timer);
+  }
+
+  function clearResetTimers(): void {
+    for (const timer of resetTimers) {
+      clearTimeout(timer);
+    }
+    resetTimers = [];
+  }
+
+  onDestroy(clearResetTimers);
 
   // Get room code from props or state
   const effectiveRoomCode = $derived(roomCodeProp ?? deviceSyncState.roomCode);
@@ -91,10 +107,7 @@
       copied = true;
       onCopy?.();
 
-      // Reset copied state after 2 seconds
-      setTimeout(() => {
-        copied = false;
-      }, 2000);
+      scheduleReset(() => { copied = false; }, 2000);
     } catch (error) {
       console.error('Failed to copy room code:', error);
     }
@@ -121,11 +134,7 @@
         onCopy?.();
       }
 
-      // Reset state after 2 seconds
-      setTimeout(() => {
-        shared = false;
-        copied = false;
-      }, 2000);
+      scheduleReset(() => { shared = false; copied = false; }, 2000);
     } catch (error) {
       // User cancelled or share failed
       if (error instanceof Error && error.name !== 'AbortError') {
@@ -271,7 +280,7 @@
     user-select: all;
     cursor: text;
     padding: 8px 16px;
-    background: rgba(139, 92, 246, 0.1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border-radius: 8px;
   }
 
@@ -310,7 +319,7 @@
   }
 
   .action-btn:hover:not(.success) {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     color: var(--theme-text, #ffffff);
   }
@@ -327,12 +336,12 @@
   .action-btn.success {
     background: rgba(34, 197, 94, 0.15);
     border-color: rgba(34, 197, 94, 0.3);
-    color: rgba(74, 222, 128, 1);
+    color: var(--semantic-success, rgba(74, 222, 128, 1));
   }
 
   .copy-btn:hover:not(.success) {
-    background: rgba(139, 92, 246, 0.15);
-    border-color: rgba(139, 92, 246, 0.3);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
     color: var(--theme-accent, #8b5cf6);
   }
 
@@ -414,7 +423,7 @@
 
   .qr-placeholder.error {
     font-size: 2rem;
-    color: rgba(239, 68, 68, 0.6);
+    color: var(--semantic-error, rgba(239, 68, 68, 0.6));
   }
 
   .qr-error-text {

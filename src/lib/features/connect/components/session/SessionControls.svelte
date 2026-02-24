@@ -271,7 +271,7 @@
 		width: 16px;
 		height: 16px;
 		background: var(--theme-accent, #6366f1);
-		border: 2px solid white;
+		border: 2px solid var(--theme-text, white);
 		border-radius: 50%;
 		cursor: pointer;
 		margin-top: -5px;
@@ -283,7 +283,7 @@
 		width: 16px;
 		height: 16px;
 		background: var(--theme-accent, #6366f1);
-		border: 2px solid white;
+		border: 2px solid var(--theme-text, white);
 		border-radius: 50%;
 		cursor: pointer;
 		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);

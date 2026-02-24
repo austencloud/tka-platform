@@ -288,8 +288,8 @@
 		justify-content: space-between;
 		background: linear-gradient(
 			135deg,
-			var(--theme-accent, #6366f1) 0%,
-			#4f46e5 100%
+			var(--theme-accent, #8b5cf6) 0%,
+			var(--theme-accent-hover, #7c3aed) 100%
 		);
 		color: white;
 		padding: 12px 16px;
@@ -320,9 +320,9 @@
 	}
 
 	.leave-button {
-		background: rgba(255, 255, 255, 0.2);
-		border: 1px solid rgba(255, 255, 255, 0.3);
-		color: white;
+		background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+		border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
+		color: var(--theme-text, white);
 		padding: 8px 16px;
 		border-radius: 8px;
 		cursor: pointer;
@@ -331,7 +331,7 @@
 	}
 
 	.leave-button:hover {
-		background: rgba(255, 255, 255, 0.3);
+		background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.3));
 	}
 
 	/* Responsive */

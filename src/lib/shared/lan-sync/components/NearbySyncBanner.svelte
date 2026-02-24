@@ -119,8 +119,8 @@
     z-index: 1000;
     background: linear-gradient(
       135deg,
-      var(--theme-accent, #6366f1) 0%,
-      #4f46e5 100%
+      var(--theme-accent, #8b5cf6) 0%,
+      var(--theme-accent, #8b5cf6) 100%
     );
     color: white;
     padding: 12px 16px;
@@ -174,7 +174,7 @@
   }
 
   .error-text {
-    color: #fecaca !important;
+    color: var(--semantic-error) !important;
     font-size: var(--font-size-compact, 12px);
   }
 
@@ -186,9 +186,9 @@
   }
 
   .action-button {
-    background: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: white;
+    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    color: var(--theme-text, #ffffff);
     padding: 8px 20px;
     border-radius: 8px;
     font-size: var(--font-size-compact, 12px);
@@ -200,7 +200,7 @@
   }
 
   .action-button:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
   }
 
   .action-button:active:not(:disabled) {
@@ -213,23 +213,23 @@
   }
 
   .join-button {
-    background: rgba(255, 255, 255, 0.25);
-    border-color: rgba(255, 255, 255, 0.4);
+    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    border-color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
   }
 
   .join-button:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.35);
+    background: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
   }
 
   .disabled-button {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     padding: 8px 12px;
   }
 
   .dismiss-button {
     background: transparent;
     border: none;
-    color: white;
+    color: var(--theme-text, #ffffff);
     padding: 10px;
     border-radius: 6px;
     cursor: pointer;
