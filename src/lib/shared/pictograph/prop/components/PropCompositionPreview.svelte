@@ -11,11 +11,12 @@
 -->
 <script lang="ts">
   import { PropType } from "../domain/enums/PropType";
-  import { getPropTypeDisplayInfo } from "../domain/PropTypeDisplayRegistry";
+  import { getPropTypeDisplayInfo, getBasePropType } from "../domain/PropTypeDisplayRegistry";
   import {
     getCompositionRecipe,
     type CompositionRecipe,
   } from "../domain/prop-composition-recipes";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
   let {
     propType,
@@ -29,7 +30,15 @@
   } = $props();
 
   const displayInfo = $derived(getPropTypeDisplayInfo(propType));
-  const recipe = $derived(recipeOverride ?? getCompositionRecipe(propType));
+
+  // Check for persisted overrides from the Prop Button Lab
+  const settings = $derived(getSettings());
+  const savedOverrides = $derived(settings.compositionRecipeOverrides ?? {});
+  const recipe = $derived.by(() => {
+    if (recipeOverride) return recipeOverride;
+    const base = getBasePropType(propType);
+    return savedOverrides[base] ?? savedOverrides[propType] ?? getCompositionRecipe(propType);
+  });
 
   // Build transform strings for each prop
   const blueTransform = $derived(

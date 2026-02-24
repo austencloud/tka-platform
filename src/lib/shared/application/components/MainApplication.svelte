@@ -101,14 +101,47 @@
   let showFeedbackDetail = $derived(myFeedbackDetailState.isOpen);
 
   // Global prop drawer (P key shortcut + PropIndicatorButton)
-  const propDrawerBluePropType = $derived(settings?.bluePropType ?? PropType.STAFF);
+  const catDogMode = $derived(settings?.catDogMode ?? false);
+  const bluePropType = $derived(settings?.bluePropType ?? PropType.STAFF);
+  const redPropType = $derived(settings?.redPropType ?? PropType.STAFF);
+  let propDrawerActiveTab = $state<"blue" | "red">("blue");
+
+  // Reset to blue tab each time the drawer opens
+  $effect(() => {
+    if (propDrawerState.isOpen) {
+      propDrawerActiveTab = "blue";
+    }
+  });
+
+  // When cat/dog mode is on, show the selected prop for the active tab
+  const propDrawerSelectedPropType = $derived(
+    catDogMode && propDrawerActiveTab === "red" ? redPropType : bluePropType
+  );
 
   function handleGlobalPropSelect(propType: PropType) {
-    updateSetting("bluePropType", propType);
-    if (!settings?.catDogMode) {
+    if (catDogMode) {
+      if (propDrawerActiveTab === "blue") {
+        updateSetting("bluePropType", propType);
+        // Auto-switch to red tab so user can pick the other hand
+        propDrawerActiveTab = "red";
+        return;
+      } else {
+        updateSetting("redPropType", propType);
+      }
+    } else {
+      updateSetting("bluePropType", propType);
       updateSetting("redPropType", propType);
     }
     propDrawerState.close();
+  }
+
+  function handleCatDogToggle() {
+    const newMode = !catDogMode;
+    updateSetting("catDogMode", newMode);
+    if (newMode) {
+      // Starting cat/dog mode: begin on blue tab
+      propDrawerActiveTab = "blue";
+    }
   }
 
   // Resolve services from ITI container (synchronous - no async needed)
@@ -508,10 +541,16 @@
     <!-- Global Prop Selection Drawer (P key shortcut) -->
     <PropSelectionSheet
       bind:isOpen={propDrawerState.isOpen}
-      selectedPropType={propDrawerBluePropType}
-      color="blue"
-      title="Change Prop"
+      selectedPropType={propDrawerSelectedPropType}
+      color={catDogMode ? propDrawerActiveTab : "blue"}
+      title={catDogMode ? (propDrawerActiveTab === "blue" ? "Blue Prop" : "Red Prop") : "Change Prop"}
       onSelect={handleGlobalPropSelect}
+      showCatDogToggle={true}
+      catDogEnabled={catDogMode}
+      onCatDogToggle={handleCatDogToggle}
+      showTabs={catDogMode}
+      bind:activeTab={propDrawerActiveTab}
+      autoClose={!catDogMode}
     />
 
     <!-- Voice Control: opt-in via Settings > Preferences -->

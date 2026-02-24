@@ -58,6 +58,11 @@ export class SwipeToDismiss {
   private justDragged = false;
   private cleanupFn: (() => void) | null = null;
 
+  // Mouse-specific: defer isDragging until movement exceeds threshold.
+  // Touch events start drag immediately for responsive mobile feel.
+  // Mouse events wait for intentional movement to avoid stealing clicks.
+  private pendingMouseDrag = false;
+
   // Scroll-aware dismiss: track scrollable container state
   private scrollableContainer: HTMLElement | null = null;
   private scrollAtBoundary = true; // True if scroll is at the edge where dismiss would occur
@@ -248,6 +253,7 @@ export class SwipeToDismiss {
    */
   reset() {
     this.isDragging = false;
+    this.pendingMouseDrag = false;
     this.hasMoved = false;
     this.startedOnInteractive = false;
     this.justDragged = false;
@@ -321,14 +327,41 @@ export class SwipeToDismiss {
     }
     this.startTime = Date.now();
     this.hasMoved = false;
-    this.isDragging = true;
 
-    // Notify drag started (offset 0, progress 1)
-    this.reportDragProgress();
+    if (event instanceof TouchEvent) {
+      // Touch: start drag immediately for responsive mobile UX
+      this.isDragging = true;
+      this.pendingMouseDrag = false;
+      this.reportDragProgress();
+    } else {
+      // Mouse: defer drag until movement exceeds threshold.
+      // This prevents normal clicks on messages/buttons from being
+      // hijacked by the swipe-to-dismiss system.
+      this.pendingMouseDrag = true;
+      this.isDragging = false;
+    }
   }
 
   private handleTouchMove(event: TouchEvent | MouseEvent) {
-    if (!this.isDragging || !this.options.dismissible) return;
+    if (!this.options.dismissible) return;
+
+    // For mouse events with pending drag, check if movement exceeds threshold
+    // before promoting to a real drag. This lets normal clicks pass through.
+    if (this.pendingMouseDrag && !this.isDragging) {
+      if (event instanceof MouseEvent) {
+        const deltaX = Math.abs(event.clientX - this.startX);
+        const deltaY = Math.abs(event.clientY - this.startY);
+        if (deltaX > DISMISS_THRESHOLDS.MOVEMENT_THRESHOLD || deltaY > DISMISS_THRESHOLDS.MOVEMENT_THRESHOLD) {
+          // Movement is intentional - promote to real drag
+          this.isDragging = true;
+          this.pendingMouseDrag = false;
+          this.reportDragProgress();
+        }
+      }
+      return;
+    }
+
+    if (!this.isDragging) return;
 
     if (event instanceof TouchEvent) {
       const touch = event.touches[0]!;
@@ -422,6 +455,13 @@ export class SwipeToDismiss {
   }
 
   private handleTouchEnd(event: TouchEvent | MouseEvent) {
+    // If mouse drag never exceeded threshold, it was a normal click - let it through
+    if (this.pendingMouseDrag && !this.isDragging) {
+      this.pendingMouseDrag = false;
+      this.reset();
+      return;
+    }
+
     if (!this.isDragging || !this.options.dismissible) return;
 
     const deltaY = this.currentY - this.startY;
@@ -547,7 +587,9 @@ export class SwipeToDismiss {
   }
 
   private handleClick(event: MouseEvent) {
+    console.log("[SwipeToDismiss] handleClick capture phase — justDragged:", this.justDragged, "pendingMouseDrag:", this.pendingMouseDrag, "isDragging:", this.isDragging);
     if (this.justDragged) {
+      console.log("[SwipeToDismiss] BLOCKING click (justDragged=true)");
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
