@@ -308,6 +308,13 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
             hash
           );
         }
+
+        // Clear simulation buffers so residual velocity/fuel/temperature from the
+        // previous loop's final positions don't bleed into the first frame of the
+        // new loop. Without this, fire appears offset from prop tips after looping.
+        if (!cache.isWarm()) {
+          this.clearSimulation();
+        }
       }
 
       // If cache is warm, skip simulation entirely and blit from cache
@@ -327,6 +334,10 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     }
 
     // Default path: no cache, run full simulation + display
+    // Clear simulation on loop when running without cache
+    if (input.loopDetected) {
+      this.clearSimulation();
+    }
     this.stepSimulation(input.tips, input, config);
     this.renderDisplay(config, input);
   }
@@ -375,6 +386,44 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
       this.createSimulationBuffers();
       this.frameCache?.invalidate();
     }
+  }
+
+  clearSimulation(): void {
+    const gl = this.gl;
+    if (!gl || !this.initialized) return;
+
+    // Clear each double-buffered simulation field to zero
+    const fields = [
+      this.velocity,
+      this.temperature,
+      this.fuel,
+      this.pressure,
+      this.soot,
+      this.colorField,
+    ];
+
+    for (const field of fields) {
+      if (!field) continue;
+      for (const buf of [field.read, field.write]) {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, buf.fbo);
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+      }
+    }
+
+    // Clear single-buffered fields
+    if (this.divergenceFBO) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.divergenceFBO.fbo);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    }
+    if (this.curlFBO) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.curlFBO.fbo);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    }
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   }
 
   dispose(): void {

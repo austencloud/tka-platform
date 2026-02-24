@@ -34,6 +34,12 @@ export interface IFireOverlayRenderer {
   setQuality(octaves: number): void;
 
   /**
+   * Clear all simulation buffers (velocity, temperature, fuel, soot, pressure, color).
+   * Used on loop boundaries to prevent residual fire state from bleeding across loops.
+   */
+  clearSimulation(): void;
+
+  /**
    * Clean up WebGL resources and remove canvas from DOM.
    */
   dispose(): void;
