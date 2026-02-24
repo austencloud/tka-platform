@@ -81,7 +81,7 @@ export class ConnectOrchestrator implements IConnectOrchestrator {
 
 	// ==================== Session Actions ====================
 
-	async startSharing(sequenceId: string, sequenceWord: string): Promise<string> {
+	async startSharing(sequenceId: string, sequenceWord: string, sequenceData?: Record<string, unknown>): Promise<string> {
 		// Ensure we're online
 		if (!this.presenceTracker.isTracking) {
 			await this.presenceTracker.goOnline();
@@ -92,6 +92,9 @@ export class ConnectOrchestrator implements IConnectOrchestrator {
 
 		// Update presence with current session
 		await this.presenceTracker.setCurrentSession(sessionId);
+
+		// Store sequence data in the P2P layer so joining peers receive it via FULL_STATE
+		this.lanSyncCoordinator.setLocalSequence(sequenceData ?? null);
 
 		// Start PeerJS sync via LanSyncCoordinator
 		await this.lanSyncCoordinator.toggleSync(sequenceId, sequenceWord, {
