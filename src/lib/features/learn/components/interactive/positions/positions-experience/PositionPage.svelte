@@ -1,5 +1,6 @@
 <!--
 PositionPage - Single position type learning page
+Uses staggered entrance animations matching the Grid lesson's polish.
 -->
 <script lang="ts">
   import { container } from "$lib/shared/di";
@@ -53,11 +54,13 @@ PositionPage - Single position type learning page
 </script>
 
 <div class="page">
-  <h2>{info.name} Position</h2>
+  <h2 class="anim-item" style="--anim-order: 0">{info.name} Position</h2>
 
-  <PositionIntroCard {type} {info} />
+  <div class="anim-item" style="--anim-order: 1">
+    <PositionIntroCard {info} />
+  </div>
 
-  <div class="visualizer-section">
+  <div class="visualizer-section anim-item" style="--anim-order: 2">
     <PositionVisualizer
       bind:leftHand
       bind:rightHand
@@ -70,20 +73,26 @@ PositionPage - Single position type learning page
     </button>
   </div>
 
-  <PositionExplanation {info} />
+  <div class="anim-item" style="--anim-order: 3">
+    <PositionExplanation {info} />
+  </div>
 
   {#if showSummary}
-    <PositionSummaryCards />
+    <div class="anim-item" style="--anim-order: 4">
+      <PositionSummaryCards />
+    </div>
   {/if}
 
-  <button class="next-button" onclick={onNext}>
-    {#if showSummary}
-      <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
-      Take the Quiz
-    {:else}
-      Next
-    {/if}
-  </button>
+  <div class="navigation-area anim-item" style="--anim-order: {showSummary ? 5 : 4}">
+    <button class="next-button" onclick={onNext}>
+      {#if showSummary}
+        <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
+        Take the Quiz
+      {:else}
+        Next
+      {/if}
+    </button>
+  </div>
 </div>
 
 <style>
@@ -94,29 +103,15 @@ PositionPage - Single position type learning page
     max-width: 700px;
     margin: 0 auto;
     width: 100%;
-    animation: slideInUp var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  @keyframes slideInUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
   }
 
   h2 {
-    font-size: 1.875rem;
-    font-weight: 700;
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--theme-text);
     margin: 0;
     text-align: center;
-    background: linear-gradient(135deg, var(--theme-accent, #22d3ee) 0%, var(--theme-accent, #06b6d4) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    letter-spacing: -0.02em;
   }
 
   .visualizer-section {
@@ -135,9 +130,9 @@ PositionPage - Single position type learning page
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 8px;
     color: var(--theme-text-dim);
-    font-size: 0.875rem;
+    font-size: var(--font-size-sm, 0.875rem);
     cursor: pointer;
-    transition: all var(--duration-normal) ease;
+    transition: all var(--duration-normal, 200ms) ease;
   }
 
   .cycle-button:hover {
@@ -145,57 +140,64 @@ PositionPage - Single position type learning page
     color: var(--theme-text, white);
   }
 
+  .navigation-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
   .next-button {
-    align-self: center;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.625rem;
     padding: 1rem 3rem;
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent) 0%,
-      color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent) 100%
-    );
-    border: 2px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 50%, transparent);
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent);
+    border: 2px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 60%, transparent);
     border-radius: 12px;
     color: white;
     font-size: 1.125rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all var(--duration-emphasis);
+    transition:
+      background 0.2s ease,
+      border-color 0.2s ease,
+      box-shadow 0.2s ease;
+    min-width: 160px;
     min-height: var(--min-touch-target, 44px);
-    margin-top: 1rem;
   }
 
   .next-button:hover {
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent) 0%,
-      color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent) 100%
-    );
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 50%, transparent);
     border-color: color-mix(in srgb, var(--theme-accent, #22d3ee) 80%, transparent);
-    transform: translateY(-2px);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent);
+  }
+
+  .next-button:active {
+    transform: scale(0.98);
   }
 
   .next-button i {
     font-size: 1rem;
   }
 
-  @media (max-width: 600px) {
+  @media (max-width: 768px) {
     h2 {
-      font-size: 1.5rem;
+      font-size: 2rem;
     }
 
     .next-button {
+      padding: 0.875rem 2.5rem;
+      font-size: 1rem;
       width: 100%;
       max-width: 300px;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .page {
-      animation: none;
+    .next-button,
+    .cycle-button {
+      transition: none;
     }
   }
 </style>

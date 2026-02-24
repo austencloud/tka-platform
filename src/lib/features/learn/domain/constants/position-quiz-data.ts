@@ -12,15 +12,14 @@ export interface PositionQuestion {
 }
 
 export interface PositionTypeInfo {
-  icon: string;
+  symbol: string;
   label: string;
-  color: string;
 }
 
 export const POSITION_TYPE_INFO: Record<PositionType, PositionTypeInfo> = {
-  alpha: { icon: "fa-arrows-left-right", label: "Alpha", color: "#FF6B6B" },
-  beta: { icon: "fa-circle-dot", label: "Beta", color: "#4ECDC4" },
-  gamma: { icon: "fa-rotate-right", label: "Gamma", color: "#FFE66D" },
+  alpha: { symbol: "α", label: "Alpha" },
+  beta: { symbol: "β", label: "Beta" },
+  gamma: { symbol: "γ", label: "Gamma" },
 };
 
 export const ALPHA_POSITIONS: { left: HandPosition; right: HandPosition }[] = [

@@ -1,10 +1,13 @@
 <!--
 PositionVisualizer - Interactive 8-point grid showing two hand positions
-Visualizes Alpha (opposite), Beta (same), and Gamma (right angle) positions
+Uses the real GridSvg component in merged mode for accurate TKA grid geometry.
+Overlays blue/red hand circles at correct hand point positions.
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
+  import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import GridSvg from "$lib/shared/pictograph/grid/components/GridSvg.svelte";
 
   type HandPosition = "N" | "NE" | "E" | "SE" | "S" | "SW" | "W" | "NW";
   type PositionType = "alpha" | "beta" | "gamma";
@@ -27,77 +30,81 @@ Visualizes Alpha (opposite), Beta (same), and Gamma (right angle) positions
 
   const hapticService = container.items.hapticFeedback;
 
-  // Grid point coordinates (8-point grid)
-  const GRID_POINTS: Record<
-    HandPosition,
-    { x: number; y: number; label: string }
-  > = {
-    N: { x: 50, y: 12, label: "N" },
-    NE: { x: 82, y: 22, label: "NE" },
-    E: { x: 92, y: 50, label: "E" },
-    SE: { x: 82, y: 78, label: "SE" },
-    S: { x: 50, y: 88, label: "S" },
-    SW: { x: 18, y: 78, label: "SW" },
-    W: { x: 8, y: 50, label: "W" },
-    NW: { x: 18, y: 22, label: "NW" },
-  } as const;
+  // =========================================================================
+  // Real grid geometry from grid-merge-constants.ts
+  // =========================================================================
+  const CENTER = 475;
+  const HAND_RADIUS = 143.1;
+  const handDiag = HAND_RADIUS * Math.cos(Math.PI / 4); // ~101.17
 
-  // Opposite point pairs (for Alpha detection)
-  const OPPOSITE_PAIRS: Record<string, string> = {
-    N: "S",
-    S: "N",
-    E: "W",
-    W: "E",
-    NE: "SW",
-    SW: "NE",
-    NW: "SE",
-    SE: "NW",
+  const HAND_POINT_COORDS: Record<HandPosition, { x: number; y: number }> = {
+    N:  { x: CENTER, y: CENTER - HAND_RADIUS },
+    E:  { x: CENTER + HAND_RADIUS, y: CENTER },
+    S:  { x: CENTER, y: CENTER + HAND_RADIUS },
+    W:  { x: CENTER - HAND_RADIUS, y: CENTER },
+    NE: { x: CENTER + handDiag, y: CENTER - handDiag },
+    SE: { x: CENTER + handDiag, y: CENTER + handDiag },
+    SW: { x: CENTER - handDiag, y: CENTER + handDiag },
+    NW: { x: CENTER - handDiag, y: CENTER - handDiag },
   };
 
-  // Adjacent point pairs (for Gamma detection - 90° apart)
+  // Hand indicator sizing (in SVG coordinate space)
+  const HAND_CIRCLE_R = 20;
+  const HAND_GLOW_R = 35;
+  const HIT_AREA_R = 50;
+  const BETA_OFFSET = 15; // x-offset when both hands at same point
+
+  // =========================================================================
+  // Position type detection
+  // =========================================================================
+  const OPPOSITE_PAIRS: Record<string, string> = {
+    N: "S", S: "N", E: "W", W: "E",
+    NE: "SW", SW: "NE", NW: "SE", SE: "NW",
+  };
+
   function areAdjacent(p1: string, p2: string): boolean {
     const points = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
     const i1 = points.indexOf(p1);
     const i2 = points.indexOf(p2);
     const diff = Math.abs(i1 - i2);
-    // Adjacent means 2 positions apart (90°) or wrapped around (6 positions = 90°)
     return diff === 2 || diff === 6;
   }
 
-  // Determine current position type
   const currentPositionType = $derived((): PositionType => {
     if (leftHand === rightHand) return "beta";
     if (OPPOSITE_PAIRS[leftHand] === rightHand) return "alpha";
     if (areAdjacent(leftHand, rightHand)) return "gamma";
-    // Default to gamma for other angles
     return "gamma";
   });
 
-  // Position type colors — domain-specific visualization colors
-  const POSITION_COLORS: Record<PositionType, string> = {
-    alpha: "#FF6B6B", // Red/coral for opposite (alpha position)
-    beta: "#4ECDC4", // Teal for same (beta position)
-    gamma: "#FFE66D", // Yellow for right angle (gamma position)
-  };
-
+  // =========================================================================
   // Hand colors
+  // =========================================================================
   const LEFT_HAND_COLOR = "var(--prop-blue, #4A9EFF)";
   const RIGHT_HAND_COLOR = "var(--prop-red, #FF4A9E)";
 
+  // =========================================================================
+  // Derived hand positions (for smooth CSS transitions)
+  // =========================================================================
+  const leftPos = $derived(HAND_POINT_COORDS[leftHand as HandPosition]);
+  const rightPos = $derived(HAND_POINT_COORDS[rightHand as HandPosition]);
+  const isBeta = $derived(leftHand === rightHand);
+
+  // =========================================================================
+  // Interactive mode
+  // =========================================================================
   let selectingHand = $state<"left" | "right" | null>(null);
 
   function handlePointClick(point: HandPosition) {
     if (!interactive) return;
-
     hapticService?.trigger("selection");
 
-    const leftPos = leftHand as HandPosition;
-    const rightPos = rightHand as HandPosition;
-
     if (!selectingHand) {
-      // First click - determine which hand is closer
-      const leftDist = getDistance(GRID_POINTS[leftPos], GRID_POINTS[point]);
-      const rightDist = getDistance(GRID_POINTS[rightPos], GRID_POINTS[point]);
+      const lp = HAND_POINT_COORDS[leftHand as HandPosition];
+      const rp = HAND_POINT_COORDS[rightHand as HandPosition];
+      const tp = HAND_POINT_COORDS[point];
+      const leftDist = Math.hypot(lp.x - tp.x, lp.y - tp.y);
+      const rightDist = Math.hypot(rp.x - tp.x, rp.y - tp.y);
 
       if (leftDist < rightDist) {
         leftHand = point;
@@ -115,189 +122,119 @@ Visualizes Alpha (opposite), Beta (same), and Gamma (right angle) positions
     onPositionChange?.(leftHand as HandPosition, rightHand as HandPosition);
   }
 
-  function getDistance(
-    p1: { x: number; y: number },
-    p2: { x: number; y: number }
-  ) {
-    return Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
-  }
-
   function selectHand(hand: "left" | "right") {
     if (!interactive) return;
     selectingHand = selectingHand === hand ? null : hand;
     hapticService?.trigger("selection");
   }
-
-  // Get connection line between hands
-  const connectionLine = $derived(() => {
-    const leftPos = leftHand as HandPosition;
-    const rightPos = rightHand as HandPosition;
-    const left = GRID_POINTS[leftPos];
-    const right = GRID_POINTS[rightPos];
-    return { x1: left.x, y1: left.y, x2: right.x, y2: right.y };
-  });
 </script>
 
 <div class="position-visualizer" class:interactive>
-  <!-- Position type indicator -->
-  {#if highlightType || currentPositionType}
-    {@const type: PositionType = highlightType || currentPositionType()}
-    <div class="position-badge" style="--badge-color: {POSITION_COLORS[type]}">
-      <span class="badge-icon">
-        {#if type === "alpha"}
-          <i class="fa-solid fa-arrows-left-right" aria-hidden="true"></i>
-        {:else if type === "beta"}
-          <i class="fa-solid fa-circle-dot" aria-hidden="true"></i>
-        {:else}
-          <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
-        {/if}
-      </span>
-      <span class="badge-text"
-        >{type.charAt(0).toUpperCase() + type.slice(1)}</span
-      >
-    </div>
-  {/if}
+  <svg viewBox="0 0 950 950" class="position-grid-svg">
+    <!-- Grid background matching LessonGridDisplay -->
+    <rect class="grid-background" width="950" height="950" rx="8" />
 
-  <!-- Grid SVG -->
-  <svg viewBox="0 0 100 100" class="position-grid">
-    <!-- Grid lines (subtle) -->
-    <g class="grid-lines" opacity="0.15">
-      <!-- Diamond lines -->
-      <line x1="50" y1="12" x2="50" y2="88" stroke="white" stroke-width="0.5" />
-      <line x1="8" y1="50" x2="92" y2="50" stroke="white" stroke-width="0.5" />
-      <!-- Box lines -->
-      <line x1="18" y1="22" x2="82" y2="78" stroke="white" stroke-width="0.5" />
-      <line x1="82" y1="22" x2="18" y2="78" stroke="white" stroke-width="0.5" />
+    <!-- Real grids in merged mode (all 8 hand points visible) -->
+    <g class="merged-grids">
+      <GridSvg gridMode={GridMode.DIAMOND} />
+      <GridSvg gridMode={GridMode.BOX} />
     </g>
 
-    <!-- Connection line between hands -->
-    {#if leftHand !== rightHand}
-      {@const line = connectionLine()}
-      <line
-        x1={line.x1}
-        y1={line.y1}
-        x2={line.x2}
-        y2={line.y2}
-        stroke={POSITION_COLORS[currentPositionType()]}
-        stroke-width="2"
-        stroke-dasharray="4 2"
-        opacity="0.6"
-        class="connection-line"
+    <!-- Interactive hit areas (invisible, large touch targets) -->
+    {#if interactive}
+      {#each Object.entries(HAND_POINT_COORDS) as [key, point]}
+        <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+        <circle
+          cx={point.x}
+          cy={point.y}
+          r={HIT_AREA_R}
+          fill="transparent"
+          class="hit-area"
+          class:clickable={interactive}
+          onclick={() => handlePointClick(key as HandPosition)}
+          onkeydown={(e) =>
+            (e.key === "Enter" || e.key === " ") &&
+            handlePointClick(key as HandPosition)}
+          role="button"
+          tabindex={0}
+          aria-label="{key} position"
+        />
+      {/each}
+    {/if}
+
+    <!-- Hand indicators -->
+    {#if isBeta}
+      <!-- Beta: both hands at same point, offset so both visible -->
+      <circle
+        class="hand-glow left-glow"
+        cx={leftPos.x - BETA_OFFSET}
+        cy={leftPos.y}
+        r={HAND_GLOW_R}
+      />
+      <circle
+        class="hand-indicator left-hand"
+        cx={leftPos.x - BETA_OFFSET}
+        cy={leftPos.y}
+        r={HAND_CIRCLE_R}
+      />
+      <circle
+        class="hand-glow right-glow"
+        cx={rightPos.x + BETA_OFFSET}
+        cy={rightPos.y}
+        r={HAND_GLOW_R}
+      />
+      <circle
+        class="hand-indicator right-hand"
+        cx={rightPos.x + BETA_OFFSET}
+        cy={rightPos.y}
+        r={HAND_CIRCLE_R}
+      />
+    {:else}
+      <!-- Non-beta: hands at separate points -->
+      <circle
+        class="hand-glow left-glow"
+        cx={leftPos.x}
+        cy={leftPos.y}
+        r={HAND_GLOW_R}
+      />
+      <circle
+        class="hand-indicator left-hand"
+        cx={leftPos.x}
+        cy={leftPos.y}
+        r={HAND_CIRCLE_R}
+      />
+      <circle
+        class="hand-glow right-glow"
+        cx={rightPos.x}
+        cy={rightPos.y}
+        r={HAND_GLOW_R}
+      />
+      <circle
+        class="hand-indicator right-hand"
+        cx={rightPos.x}
+        cy={rightPos.y}
+        r={HAND_CIRCLE_R}
       />
     {/if}
 
-    <!-- Grid points -->
-    {#each Object.entries(GRID_POINTS) as [key, point]}
-      {@const isLeftHand = key === leftHand}
-      {@const isRightHand = key === rightHand}
-      {@const isBothHands = isLeftHand && isRightHand}
-
-      <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-      <g
-        class="grid-point"
-        class:clickable={interactive}
-        onclick={interactive
-          ? () => handlePointClick(key as HandPosition)
-          : undefined}
-        onkeydown={interactive
-          ? (e) =>
-              (e.key === "Enter" || e.key === " ") &&
-              handlePointClick(key as HandPosition)
-          : undefined}
-        role={interactive ? "button" : undefined}
-        tabindex={interactive ? 0 : undefined}
-        aria-label={interactive ? point.label : undefined}
-      >
-        <!-- Hit area -->
-        {#if interactive}
-          <circle
-            cx={point.x}
-            cy={point.y}
-            r="8"
-            fill="transparent"
-            class="hit-area"
-          />
-        {/if}
-
-        <!-- Base point (empty if not a hand) -->
-        {#if !isLeftHand && !isRightHand}
-          <circle
-            cx={point.x}
-            cy={point.y}
-            r="3"
-            fill="var(--theme-stroke-strong, rgba(255, 255, 255, 0.3))"
-            class="base-point"
-          />
-        {/if}
-
-        <!-- Both hands at same point (Beta) -->
-        {#if isBothHands}
-          <circle
-            cx={point.x}
-            cy={point.y}
-            r="10"
-            fill={POSITION_COLORS.beta}
-            opacity="0.3"
-            class="hand-glow"
-          />
-          <!-- Stacked hands indicator -->
-          <circle cx={point.x - 3} cy={point.y} r="5" fill={LEFT_HAND_COLOR} />
-          <circle cx={point.x + 3} cy={point.y} r="5" fill={RIGHT_HAND_COLOR} />
-        {:else if isLeftHand}
-          <!-- Left hand -->
-          <circle
-            cx={point.x}
-            cy={point.y}
-            r="8"
-            fill={LEFT_HAND_COLOR}
-            opacity="0.25"
-            class="hand-glow"
-          />
-          <circle
-            cx={point.x}
-            cy={point.y}
-            r="5"
-            fill={LEFT_HAND_COLOR}
-            class="hand-point left"
-          />
-        {:else if isRightHand}
-          <!-- Right hand -->
-          <circle
-            cx={point.x}
-            cy={point.y}
-            r="8"
-            fill={RIGHT_HAND_COLOR}
-            opacity="0.25"
-            class="hand-glow"
-          />
-          <circle
-            cx={point.x}
-            cy={point.y}
-            r="5"
-            fill={RIGHT_HAND_COLOR}
-            class="hand-point right"
-          />
-        {/if}
-
-        <!-- Point label -->
-        {#if showLabels}
-          <text
-            x={point.x}
-            y={point.y + (point.y < 50 ? -10 : 14)}
-            text-anchor="middle"
-            class="point-label"
-            fill="var(--theme-text-dim)"
-            font-size="5"
-            font-weight="600"
-          >
-            {point.label}
-          </text>
-        {/if}
-      </g>
-    {/each}
-
-    <!-- Center point -->
-    <circle cx="50" cy="50" r="2" fill="var(--theme-stroke, rgba(255, 255, 255, 0.2))" />
+    <!-- Direction labels -->
+    {#if showLabels}
+      {#each Object.entries(HAND_POINT_COORDS) as [key, point]}
+        {@const labelOffset = 45}
+        {@const dx = point.x - CENTER}
+        {@const dy = point.y - CENTER}
+        {@const dist = Math.hypot(dx, dy) || 1}
+        <text
+          x={point.x + (dx / dist) * labelOffset}
+          y={point.y + (dy / dist) * labelOffset}
+          text-anchor="middle"
+          dominant-baseline="middle"
+          class="point-label"
+        >
+          {key}
+        </text>
+      {/each}
+    {/if}
   </svg>
 
   <!-- Hand legend (interactive mode) -->
@@ -308,7 +245,7 @@ Visualizes Alpha (opposite), Beta (same), and Gamma (right angle) positions
         class:selecting={selectingHand === "left"}
         onclick={() => selectHand("left")}
       >
-        <div class="legend-dot" style="background: {LEFT_HAND_COLOR}"></div>
+        <div class="legend-dot left-dot"></div>
         <span>Left Hand: {leftHand}</span>
       </button>
       <button
@@ -316,7 +253,7 @@ Visualizes Alpha (opposite), Beta (same), and Gamma (right angle) positions
         class:selecting={selectingHand === "right"}
         onclick={() => selectHand("right")}
       >
-        <div class="legend-dot" style="background: {RIGHT_HAND_COLOR}"></div>
+        <div class="legend-dot right-dot"></div>
         <span>Right Hand: {rightHand}</span>
       </button>
     </div>
@@ -329,101 +266,100 @@ Visualizes Alpha (opposite), Beta (same), and Gamma (right angle) positions
     flex-direction: column;
     align-items: center;
     gap: 1rem;
-    padding: 1rem;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--theme-stroke);
-    border-radius: 16px;
   }
 
   .position-visualizer.interactive {
-    border-color: color-mix(in srgb, var(--prop-blue, #4a9eff) 30%, transparent);
+    padding: 0.5rem;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid color-mix(in srgb, var(--prop-blue, #4a9eff) 30%, transparent);
+    border-radius: 16px;
   }
 
-  /* Position badge */
-  .position-badge {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: color-mix(in srgb, var(--badge-color) 15%, transparent);
-    border: 1px solid color-mix(in srgb, var(--badge-color) 40%, transparent);
-    border-radius: 20px;
-  }
-
-  .badge-icon {
-    color: var(--badge-color);
-    font-size: 0.875rem;
-  }
-
-  .badge-text {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--badge-color);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  /* Grid */
-  .position-grid {
+  /* Grid SVG container */
+  .position-grid-svg {
     width: 100%;
-    max-width: 280px;
+    max-width: 320px;
     height: auto;
     aspect-ratio: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px var(--theme-shadow, rgba(0, 0, 0, 0.1));
   }
 
-  .grid-point {
-    cursor: default;
+  /* Background respects light/dark mode - matches LessonGridDisplay */
+  .grid-background {
+    fill: var(--lm-pictograph-bg, #ffffff);
+    transition: fill var(--duration-fast) ease-out;
   }
 
-  .grid-point.clickable {
-    cursor: pointer;
+  :global(:root.dark) .grid-background {
+    fill: var(--dm-pictograph-bg, #0a0a0f);
   }
 
-  .grid-point.clickable:hover .base-point {
-    fill: var(--theme-text, rgba(255, 255, 255, 0.6));
-    transform: scale(1.3);
-    transform-origin: center;
+  :global(:root.dark) .position-grid-svg {
+    box-shadow:
+      0 0 0 1px var(--theme-stroke, rgba(255, 255, 255, 0.15)),
+      0 2px 8px color-mix(in srgb, var(--theme-shadow, #000) 30%, transparent);
   }
 
-  .base-point,
-  .hand-point {
-    transition: all var(--duration-normal) ease;
-  }
-
+  /* Hand indicators - smooth transitions when positions change */
+  .hand-indicator,
   .hand-glow {
+    transition:
+      cx 0.4s cubic-bezier(0.33, 1, 0.68, 1),
+      cy 0.4s cubic-bezier(0.33, 1, 0.68, 1);
+  }
+
+  .left-hand {
+    fill: var(--prop-blue, #4A9EFF);
+  }
+
+  .right-hand {
+    fill: var(--prop-red, #FF4A9E);
+  }
+
+  .left-glow {
+    fill: var(--prop-blue, #4A9EFF);
+    opacity: 0.25;
     animation: handPulse 2s ease-in-out infinite;
   }
 
+  .right-glow {
+    fill: var(--prop-red, #FF4A9E);
+    opacity: 0.25;
+    animation: handPulse 2s ease-in-out infinite 0.5s;
+  }
+
   @keyframes handPulse {
-    0%,
-    100% {
-      opacity: 0.25;
-    }
-    50% {
-      opacity: 0.4;
-    }
+    0%, 100% { opacity: 0.25; }
+    50% { opacity: 0.4; }
   }
 
-  .hand-point {
-    filter: drop-shadow(0 0 4px currentColor);
+  /* Hit areas */
+  .hit-area {
+    cursor: default;
   }
 
-  .connection-line {
-    animation: dashMove 1s linear infinite;
+  .hit-area.clickable {
+    cursor: pointer;
   }
 
-  @keyframes dashMove {
-    from {
-      stroke-dashoffset: 0;
-    }
-    to {
-      stroke-dashoffset: 12;
-    }
+  .hit-area.clickable:hover {
+    fill: rgba(255, 255, 255, 0.05);
   }
 
+  /* Point labels */
   .point-label {
+    font-size: 28px;
+    font-weight: 600;
+    fill: var(--theme-text, #374151);
+    font-family: system-ui, -apple-system, sans-serif;
     pointer-events: none;
     user-select: none;
+  }
+
+  :global(:root.dark) .point-label {
+    fill: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 
   /* Hand legend */
@@ -443,9 +379,9 @@ Visualizes Alpha (opposite), Beta (same), and Gamma (right angle) positions
     border: 1px solid var(--theme-stroke);
     border-radius: 8px;
     cursor: pointer;
-    transition: all var(--duration-normal) ease;
+    transition: all var(--duration-normal, 200ms) ease;
     color: var(--theme-text-dim);
-    font-size: 0.8125rem;
+    font-size: var(--font-size-sm, 0.875rem);
   }
 
   .legend-item:hover {
@@ -464,11 +400,15 @@ Visualizes Alpha (opposite), Beta (same), and Gamma (right angle) positions
     border-radius: 50%;
   }
 
-  @media (max-width: 400px) {
-    .position-visualizer {
-      padding: 0.75rem;
-    }
+  .left-dot {
+    background: var(--prop-blue, #4A9EFF);
+  }
 
+  .right-dot {
+    background: var(--prop-red, #FF4A9E);
+  }
+
+  @media (max-width: 400px) {
     .hand-legend {
       flex-direction: column;
       gap: 0.5rem;
@@ -481,9 +421,13 @@ Visualizes Alpha (opposite), Beta (same), and Gamma (right angle) positions
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .hand-glow,
-    .connection-line {
+    .hand-glow {
       animation: none;
+    }
+
+    .hand-indicator,
+    .hand-glow {
+      transition: none;
     }
   }
 </style>

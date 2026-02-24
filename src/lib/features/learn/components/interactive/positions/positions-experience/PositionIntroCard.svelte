@@ -5,10 +5,8 @@ PositionIntroCard - Intro card for a position type
   import type { PositionInfo } from "../../../../domain/constants/positions-experience-data";
 
   let {
-    type,
     info,
   }: {
-    type: "alpha" | "beta" | "gamma";
     info: PositionInfo;
   } = $props();
 
@@ -38,9 +36,9 @@ PositionIntroCard - Intro card for a position type
   const summarySegments = $derived(parseSummarySegments(info.summary));
 </script>
 
-<div class="position-intro {type}">
+<div class="position-intro">
   <div class="position-icon">
-    <i class="fa-solid {info.icon}" aria-hidden="true"></i>
+    <span class="greek-symbol" aria-hidden="true">{info.symbol}</span>
   </div>
   <p class="position-summary">
     {#each summarySegments as segment}{#if segment.bold}<strong>{segment.text}</strong>{:else}{segment.text}{/if}{/each}
@@ -55,36 +53,8 @@ PositionIntroCard - Intro card for a position type
     gap: 0.75rem;
     padding: 1.5rem;
     border-radius: 16px;
-  }
-
-  .position-intro.alpha {
-    --pos-color: #ff6b6b;
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--pos-color) 10%, transparent) 0%,
-      color-mix(in srgb, var(--pos-color) 2%, transparent) 100%
-    );
-    border: 1px solid color-mix(in srgb, var(--pos-color) 20%, transparent);
-  }
-
-  .position-intro.beta {
-    --pos-color: #4ecdc4;
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--pos-color) 10%, transparent) 0%,
-      color-mix(in srgb, var(--pos-color) 2%, transparent) 100%
-    );
-    border: 1px solid color-mix(in srgb, var(--pos-color) 20%, transparent);
-  }
-
-  .position-intro.gamma {
-    --pos-color: #ffe66d;
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--pos-color) 10%, transparent) 0%,
-      color-mix(in srgb, var(--pos-color) 2%, transparent) 100%
-    );
-    border: 1px solid color-mix(in srgb, var(--pos-color) 20%, transparent);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
   .position-icon {
@@ -94,17 +64,14 @@ PositionIntroCard - Intro card for a position type
     align-items: center;
     justify-content: center;
     border-radius: 50%;
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 15%, transparent);
   }
 
-  .position-intro.alpha .position-icon,
-  .position-intro.beta .position-icon,
-  .position-intro.gamma .position-icon {
-    background: color-mix(in srgb, var(--pos-color) 20%, transparent);
-    color: var(--pos-color);
-  }
-
-  .position-icon i {
-    font-size: 1.5rem;
+  .greek-symbol {
+    font-size: 1.75rem;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--theme-text);
   }
 
   .position-summary {

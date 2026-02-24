@@ -32,10 +32,9 @@ export const GAMMA_EXAMPLES: readonly PositionExample[] = [
 
 export interface PositionInfo {
   name: string;
-  icon: string;
+  symbol: string;
   summary: string;
   angle: string;
-  color: string;
   description: string;
   examples: string;
 }
@@ -43,29 +42,26 @@ export interface PositionInfo {
 export const POSITION_INFO: Record<"alpha" | "beta" | "gamma", PositionInfo> = {
   alpha: {
     name: "Alpha",
-    icon: "fa-arrows-left-right",
+    symbol: "α",
     summary: "Hands at opposite points on the grid",
     angle: "180°",
-    color: "#FF6B6B",
-    description: "Hands form a straight line through the center",
+    description: "Hands are at opposite ends of the grid",
     examples: "N↔S, E↔W, NE↔SW, NW↔SE",
   },
   beta: {
     name: "Beta",
-    icon: "fa-circle-dot",
+    symbol: "β",
     summary: "Hands at the same point on the grid",
     angle: "0°",
-    color: "#4ECDC4",
     description: "Both hands occupy the identical position",
     examples: "Both at N, both at E, both at SW",
   },
   gamma: {
     name: "Gamma",
-    icon: "fa-rotate-right",
+    symbol: "γ",
     summary: "Hands at right angles (90°) to each other",
     angle: "90°",
-    color: "#FFE66D",
-    description: "Hands are perpendicular to each other",
+    description: "Hands form a right angle on the grid",
     examples: "N+E, N+W, S+E, S+W, NE+NW",
   },
 };

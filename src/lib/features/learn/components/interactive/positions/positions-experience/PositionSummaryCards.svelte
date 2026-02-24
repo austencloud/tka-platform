@@ -9,9 +9,9 @@ PositionSummaryCards - Summary cards showing all position types
   <h3>Position Summary</h3>
   <div class="position-cards">
     {#each Object.entries(POSITION_INFO) as [type, info]}
-      <div class="position-card {type}">
-        <i class="fa-solid {info.icon}" aria-hidden="true"></i>
-        <span>{info.name}</span>
+      <div class="position-card">
+        <span class="greek-symbol" aria-hidden="true">{info.symbol}</span>
+        <span class="card-name">{info.name}</span>
         <small
           >{type === "alpha"
             ? "Opposite"
@@ -35,7 +35,7 @@ PositionSummaryCards - Summary cards showing all position types
   h3 {
     font-size: 1.125rem;
     font-weight: 600;
-    color: white;
+    color: var(--theme-text);
     margin: 0;
   }
 
@@ -55,41 +55,26 @@ PositionSummaryCards - Summary cards showing all position types
     gap: 0.375rem;
     padding: 1rem;
     border-radius: 10px;
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 8%, transparent);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
-  .position-card.alpha {
-    --pos-color: #ff6b6b;
-    background: color-mix(in srgb, var(--pos-color) 10%, transparent);
-    border: 1px solid color-mix(in srgb, var(--pos-color) 25%, transparent);
-    color: var(--pos-color);
+  .greek-symbol {
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--theme-text);
   }
 
-  .position-card.beta {
-    --pos-color: #4ecdc4;
-    background: color-mix(in srgb, var(--pos-color) 10%, transparent);
-    border: 1px solid color-mix(in srgb, var(--pos-color) 25%, transparent);
-    color: var(--pos-color);
-  }
-
-  .position-card.gamma {
-    --pos-color: #ffe66d;
-    background: color-mix(in srgb, var(--pos-color) 10%, transparent);
-    border: 1px solid color-mix(in srgb, var(--pos-color) 25%, transparent);
-    color: var(--pos-color);
-  }
-
-  .position-card i {
-    font-size: 1.25rem;
-  }
-
-  .position-card span {
+  .card-name {
     font-weight: 600;
     font-size: 0.9375rem;
+    color: var(--theme-text);
   }
 
   .position-card small {
-    font-size: 0.75rem;
-    opacity: 0.7;
+    font-size: var(--font-size-compact, 0.75rem);
+    color: var(--theme-text-dim);
   }
 
   @media (max-width: 600px) {
