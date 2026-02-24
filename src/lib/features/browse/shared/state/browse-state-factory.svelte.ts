@@ -7,10 +7,15 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { container } from "$lib/shared/di";
-import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
+import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
 import type { IBrowseFilter } from "../../sequences/display/services/contracts/IBrowseFilter";
 import type { IBrowseLoader } from "../../sequences/display/services/contracts/IBrowseLoader";
 import type { IBrowseSorter } from "../../sequences/display/services/contracts/IBrowseSorter";
+import type { IMultiFilter } from "../../sequences/display/services/contracts/IMultiFilter";
+import type {
+  ActiveFilter,
+  SerializedFilters,
+} from "../domain/models/multi-filter-models";
 import type { BrowseNavigationConfig } from "../../sequences/navigation/domain/models/navigation-models";
 import type { BrowseNavigationItem } from "../../sequences/navigation/domain/models/navigation-models";
 import type { INavigator } from "../../sequences/navigation/services/contracts/INavigator";
@@ -33,6 +38,8 @@ interface PersistedControlsState {
   sortMethod: BrowseSortMethod;
   sortDirection: "asc" | "desc";
   filter: { type: SequenceFilterType; value: BrowseFilterValue };
+  /** Multi-filter state — serialized Map entries. Falls back to single filter if absent. */
+  activeFilters?: SerializedFilters;
 }
 
 function deduplicateById(sequences: SequenceData[]): SequenceData[] {
@@ -48,6 +55,7 @@ export function createBrowseState() {
   // Services - Use specialized services directly instead of orchestration layer
   const loaderService = container.items.browseLoader;
   const filterService = container.items.browseFilter;
+  const multiFilterService = container.items.multiFilter as IMultiFilter;
   const sortService = container.items.browseSorter;
   const Navigator = container.items.browseNavigator;
   const SectionManager = container.items.browseSectionManager;
@@ -81,6 +89,7 @@ export function createBrowseState() {
         sortMethod: currentSortMethod,
         sortDirection,
         filter: currentFilter,
+        activeFilters: Array.from(activeFilters.entries()),
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch (error) {
@@ -110,6 +119,14 @@ export function createBrowseState() {
       value: null,
     }
   );
+
+  // Multi-filter state — keyed by filter type string
+  let activeFilters = $state<Map<string, ActiveFilter>>(
+    persisted?.activeFilters
+      ? new Map(persisted.activeFilters)
+      : new Map()
+  );
+
   let filteredSequences = $state<SequenceData[]>([]);
   let isFilterModalOpen = $state<boolean>(false);
   let sectionsReady = $state<boolean>(false);
@@ -127,6 +144,7 @@ export function createBrowseState() {
   const availableSequenceLengths = $derived.by(() => {
     const lengths = new Set<number>();
     allSequences.forEach((seq) => {
+      if (!seq.steps) return;
       // Calculate correct sequence length: steps.length - 2
       // Subtract 2 for metadata beat and start position beat
       const length = seq.steps.length - 2;
@@ -159,6 +177,28 @@ export function createBrowseState() {
 
     return counts;
   });
+
+  // Multi-filter computed properties
+  const hasActiveFilters = $derived(activeFilters.size > 0);
+  const activeFilterCount = $derived(activeFilters.size);
+  const activeFilterList = $derived(Array.from(activeFilters.values()));
+
+  /**
+   * Get contextual count: how many sequences would match if a candidate
+   * filter were added, given other active filters.
+   * Call this lazily (only when a dropdown is open) to avoid unnecessary computation.
+   */
+  function getFilteredCount(
+    candidateType: BrowseFilterType,
+    candidateValue: BrowseFilterValue
+  ): number {
+    return multiFilterService.getFilteredCount(
+      allSequences,
+      candidateType,
+      candidateValue,
+      activeFilters
+    );
+  }
 
   // Load all sequences and generate navigation
   async function loadAllSequences(): Promise<void> {
@@ -323,9 +363,12 @@ export function createBrowseState() {
   // Apply filtering and sorting to sequences
   function applyFilterAndSort(): void {
     try {
-      // Apply filtering
       let filtered = allSequences;
-      if (currentFilter.type !== "all") {
+
+      // Use multi-filter when active, fall back to single filter for compat
+      if (activeFilters.size > 0) {
+        filtered = multiFilterService.applyFilters(allSequences, activeFilters);
+      } else if (currentFilter.type !== "all") {
         filtered = filterService.applyFilter(
           allSequences,
           currentFilter.type as BrowseFilterType,
@@ -336,7 +379,6 @@ export function createBrowseState() {
       // Apply sorting
       const sorted = sortService.sortSequences(filtered, currentSortMethod);
 
-      // TODO: Apply sort direction (galleryService.sortSequences doesn't handle direction yet)
       if (sortDirection === "desc") {
         sorted.reverse();
       }
@@ -387,18 +429,138 @@ export function createBrowseState() {
     }
   }
 
-  // Handle filter changes
+  // Handle filter changes (single-filter backwards compat path)
   async function handleFilterChange(
     type: SequenceFilterType,
     value?: BrowseFilterValue
   ): Promise<void> {
     currentFilter = { type, value: value || null };
+
+    // Sync single-filter with multi-filter map
+    if (type === "all") {
+      activeFilters = new Map();
+    } else {
+      // Replace filter of same type in multi-filter map
+      const newMap = new Map(activeFilters);
+      newMap.set(type, {
+        type: type as unknown as BrowseFilterType,
+        value: value || null,
+        label: deriveFilterLabel(type, value || null),
+        chipColor: deriveChipColor(type),
+      });
+      activeFilters = newMap;
+    }
+
     sectionsReady = false;
-    sequenceSections = []; // Clear immediately to prevent showing stale sections
+    sequenceSections = [];
     persistControls();
     await applyFilterAndSort();
     await generateSequenceSections();
     sectionsReady = true;
+  }
+
+  // Multi-filter API: add a filter (replaces existing filter of same type)
+  async function addFilter(
+    type: SequenceFilterType,
+    value: BrowseFilterValue,
+    label: string,
+    color: string
+  ): Promise<void> {
+    const newMap = new Map(activeFilters);
+    newMap.set(type, {
+      type: type as unknown as BrowseFilterType,
+      value,
+      label,
+      chipColor: color,
+    });
+    activeFilters = newMap;
+
+    // Keep single-filter in sync (first active filter)
+    syncCurrentFilterFromMap();
+
+    sectionsReady = false;
+    sequenceSections = [];
+    persistControls();
+    await applyFilterAndSort();
+    await generateSequenceSections();
+    sectionsReady = true;
+  }
+
+  // Multi-filter API: remove a specific filter type
+  async function removeFilter(type: string): Promise<void> {
+    const newMap = new Map(activeFilters);
+    newMap.delete(type);
+    activeFilters = newMap;
+
+    syncCurrentFilterFromMap();
+
+    sectionsReady = false;
+    sequenceSections = [];
+    persistControls();
+    await applyFilterAndSort();
+    await generateSequenceSections();
+    sectionsReady = true;
+  }
+
+  // Multi-filter API: clear all filters
+  async function clearAllFilters(): Promise<void> {
+    activeFilters = new Map();
+    currentFilter = { type: "all", value: null };
+
+    sectionsReady = false;
+    sequenceSections = [];
+    persistControls();
+    await applyFilterAndSort();
+    await generateSequenceSections();
+    sectionsReady = true;
+  }
+
+  // Sync the backwards-compat single currentFilter from the multi-filter map
+  function syncCurrentFilterFromMap(): void {
+    if (activeFilters.size === 0) {
+      currentFilter = { type: "all", value: null };
+    } else {
+      // Use the first filter entry for backwards compat
+      const first = activeFilters.values().next().value;
+      if (first) {
+        currentFilter = {
+          type: first.type as unknown as SequenceFilterType,
+          value: first.value,
+        };
+      }
+    }
+  }
+
+  // Derive human-readable filter label from type and value
+  function deriveFilterLabel(type: SequenceFilterType, value: BrowseFilterValue): string {
+    if (type === "favorites") return "Favorites";
+    if (type === "difficulty") return `Level ${value}`;
+    if (type === "startingLetter" || type === "starting_letter") return `Letter ${value}`;
+    if (type === "length") return `${value} beats`;
+    if (type === "startPosition" || type === "startingPosition") return `Start: ${value}`;
+    if (type === "endPosition") return `End: ${value}`;
+    if (type === "contains_letters") return `"${value}"`;
+    if (type === "cap_type") return `Pattern: ${value}`;
+    if (type === "recent") return "Recent";
+    return String(type);
+  }
+
+  // Derive chip color from filter type
+  function deriveChipColor(type: SequenceFilterType): string {
+    switch (type) {
+      case "difficulty": return "var(--semantic-info)";
+      case "favorites": return "#ec4899";
+      case "startingLetter":
+      case "starting_letter": return "#10b981";
+      case "length": return "#f59e0b";
+      case "cap_type": return "#8b5cf6";
+      case "startPosition":
+      case "startingPosition":
+      case "endPosition": return "#06b6d4";
+      case "contains_letters": return "var(--semantic-info)";
+      case "recent": return "#f97316";
+      default: return "var(--theme-accent)";
+    }
   }
 
   // Handle sort changes
@@ -534,6 +696,20 @@ export function createBrowseState() {
       return sectionsReady;
     },
 
+    // Multi-filter state
+    get activeFilters() {
+      return activeFilters;
+    },
+    get hasActiveFilters() {
+      return hasActiveFilters;
+    },
+    get activeFilterCount() {
+      return activeFilterCount;
+    },
+    get activeFilterList() {
+      return activeFilterList;
+    },
+
     // Methods
     loadAllSequences,
     loadLibrarySequences,
@@ -551,6 +727,12 @@ export function createBrowseState() {
     scrollToSection,
     openAnimationModal,
     closeAnimationModal,
+
+    // Multi-filter methods
+    addFilter,
+    removeFilter,
+    clearAllFilters,
+    getFilteredCount,
 
     // Compatibility stubs
     backToFilters,

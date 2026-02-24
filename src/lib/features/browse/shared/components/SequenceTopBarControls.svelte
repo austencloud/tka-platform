@@ -33,8 +33,8 @@
   // Sequence controls from global reactive state
   const sequenceControls = $derived(sequenceControlsManager.current);
 
-  // Filter panel state
-  const isFilterPanelOpen = $derived(sequencePanelManager.isFiltersOpen);
+  // Inline filter panel state
+  const isInlineFiltersOpen = $derived(sequencePanelManager.isInlineFiltersOpen);
 
   // Grid zoom state (desktop only)
   const currentColumns = $derived(gridZoomManager.columns);
@@ -110,9 +110,9 @@
     }
   }
 
-  function handleOpenFilters() {
+  function handleToggleFilters() {
     hapticService?.trigger("selection");
-    sequencePanelManager.openFilters();
+    sequencePanelManager.toggleInlineFilters();
   }
 
   function handleClearFilter() {
@@ -210,29 +210,21 @@
           </button>
         </div>
 
-        <!-- Active Filter chip (not shown for search filters) -->
-        {#if hasActiveFilter && activeFilterLabel && !isSearchFilter}
-          <button class="active-filter-chip" onclick={handleClearFilter}>
-            <span>{activeFilterLabel}</span>
-            <i class="fas fa-times" aria-hidden="true"></i>
-          </button>
-        {/if}
-
-        <!-- Filter Button (hidden when panel is open) -->
-        {#if !isFilterPanelOpen}
-          <button
-            class="filter-button"
-            class:has-active={hasActiveFilter}
-            onclick={handleOpenFilters}
-            type="button"
-            aria-label="Open filters"
-          >
-            <i class="fas fa-sliders-h" aria-hidden="true"></i>
-            {#if hasActiveFilter}
-              <span class="filter-badge">1</span>
-            {/if}
-          </button>
-        {/if}
+        <!-- Filter Toggle Button -->
+        <button
+          class="filter-button"
+          class:has-active={hasActiveFilter}
+          class:panel-open={isInlineFiltersOpen}
+          onclick={handleToggleFilters}
+          type="button"
+          aria-label={isInlineFiltersOpen ? "Close filters" : "Open filters"}
+          aria-expanded={isInlineFiltersOpen}
+        >
+          <i class="fas fa-sliders-h" aria-hidden="true"></i>
+          {#if hasActiveFilter && !isInlineFiltersOpen}
+            <span class="filter-badge">{1}</span>
+          {/if}
+        </button>
       </div>
     </div>
   </div>
@@ -344,40 +336,6 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* Active Filter Chip */
-  .active-filter-chip {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 12px 0 16px;
-    min-height: var(--control-height);
-    background: color-mix(in srgb, var(--semantic-info) 15%, transparent);
-    border: 1px solid color-mix(in srgb, var(--semantic-info) 30%, transparent);
-    border-radius: 100px;
-    color: var(--semantic-info);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
-    cursor: pointer;
-    transition:
-      background var(--duration-fast, 150ms) ease,
-      transform var(--duration-fast, 150ms) ease;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-
-  .active-filter-chip:hover {
-    background: color-mix(in srgb, var(--semantic-info) 25%, transparent);
-  }
-
-  .active-filter-chip:active {
-    transform: scale(0.97);
-  }
-
-  .active-filter-chip i {
-    font-size: var(--font-size-compact, 12px);
-    opacity: 0.8;
-  }
-
   /* Filter Button */
   .filter-button {
     position: relative;
@@ -421,6 +379,12 @@
     color: var(--semantic-info);
   }
 
+  .filter-button.panel-open {
+    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 30%, transparent);
+    color: var(--theme-accent);
+  }
+
   .filter-badge {
     position: absolute;
     top: -4px;
@@ -450,12 +414,8 @@
     }
   }
 
-  /* Mobile: hide zoom controls (available in filter drawer) */
+  /* Mobile: compact padding */
   @container (max-width: 640px) {
-    .zoom-controls {
-      display: none;
-    }
-
     .sequence-topbar-controls {
       padding: 8px 12px;
     }
@@ -463,10 +423,6 @@
 
   /* Fallback for browsers without container query support */
   @media (max-width: 640px) {
-    .zoom-controls {
-      display: none;
-    }
-
     .sequence-topbar-controls {
       padding: 8px 12px;
     }
