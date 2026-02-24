@@ -1439,12 +1439,21 @@ export class AnimationEngine {
     }
 
     // Sync from prop texture service
+    // Compare by value, not reference — $state proxies break === identity
     if (this.propTextureService) {
       const pts = this.propTextureService.state;
-      if (this.state.bluePropDimensions !== pts.blueDimensions)
+      if (
+        this.state.bluePropDimensions.width !== pts.blueDimensions.width ||
+        this.state.bluePropDimensions.height !== pts.blueDimensions.height
+      ) {
         this.state.bluePropDimensions = pts.blueDimensions;
-      if (this.state.redPropDimensions !== pts.redDimensions)
+      }
+      if (
+        this.state.redPropDimensions.width !== pts.redDimensions.width ||
+        this.state.redPropDimensions.height !== pts.redDimensions.height
+      ) {
         this.state.redPropDimensions = pts.redDimensions;
+      }
     }
 
     // Sync from resize service

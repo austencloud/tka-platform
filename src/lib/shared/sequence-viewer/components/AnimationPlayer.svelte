@@ -21,7 +21,7 @@
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 	import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
 	import type { ISequenceMotionLoader } from "../services/contracts/ISequenceMotionLoader";
-	import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
+	import { createAnimationPanelState, type AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
 	import { container } from "$lib/shared/di";
 	import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 	import { tryGetAnimationExportContext } from "$lib/shared/share-hub/context/animation-export-context.svelte";
@@ -50,6 +50,7 @@
 		bluePropType = null,
 		redPropType = null,
 		onTogglePlaybackRef,
+		onControllerReady,
 	}: {
 		sequence: SequenceData;
 		autoPlay?: boolean;
@@ -65,6 +66,8 @@
 		redPropType?: PropType | null;
 		/** Callback to receive reference to toggle playback function (for external keyboard control) */
 		onTogglePlaybackRef?: (toggleFn: () => void) => void;
+		/** Called when the internal playback controller is initialized, exposing it for external sync */
+		onControllerReady?: (ctrl: IAnimationPlaybackController, state: AnimationPanelState) => void;
 	} = $props();
 
 	// Context for external control mode
@@ -198,6 +201,9 @@
 				error = "Failed to initialize playback";
 				return;
 			}
+
+			// Expose controller + state to parent for external sync
+			onControllerReady?.(controller!, animState!);
 
 			if (autoPlay) {
 				setTimeout(() => controller?.togglePlayback(), 300);

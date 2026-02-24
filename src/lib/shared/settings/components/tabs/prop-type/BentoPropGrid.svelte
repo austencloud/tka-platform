@@ -6,7 +6,6 @@
 -->
 <script lang="ts">
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { getPropTypeDisplayInfo } from "./PropTypeRegistry";
   import PropTypeButton from "./PropTypeButton.svelte";
 
   let {
@@ -78,26 +77,6 @@
     },
   ];
 
-  // Track image dimensions for rotation
-  let imageDimensions = $state(
-    new Map<PropType, { width: number; height: number }>()
-  );
-
-  function shouldRotate(propType: PropType): boolean {
-    const dimensions = imageDimensions.get(propType);
-    if (!dimensions) return false;
-    return dimensions.width / dimensions.height > 1.5;
-  }
-
-  function handleImageLoad(
-    propType: PropType,
-    width: number,
-    height: number
-  ) {
-    imageDimensions.set(propType, { width, height });
-    imageDimensions = new Map(imageDimensions);
-  }
-
   function handlePropSelect(propType: PropType) {
     onSelect(propType);
   }
@@ -110,7 +89,7 @@
   </header>
 
   <!-- Scrollable content -->
-  <div class="bento-scroll">
+  <div class="bento-scroll themed-scrollbar">
     <div class="bento-content">
       {#each PROP_FAMILIES as family}
         <section class="prop-family" class:large={family.props.length >= 4}>
@@ -120,10 +99,8 @@
               <PropTypeButton
                 {propType}
                 selected={selectedPropType === propType}
-                shouldRotate={shouldRotate(propType)}
                 {color}
                 onSelect={handlePropSelect}
-                onImageLoad={handleImageLoad}
               />
             {/each}
           </div>
@@ -160,7 +137,7 @@
 
   .grid-title {
     margin: 0;
-    font-size: 11px;
+    font-size: var(--font-size-xs, 11px);
     font-weight: 600;
     color: var(--theme-text-dim);
     text-transform: uppercase;
@@ -203,7 +180,7 @@
 
   .family-name {
     margin: 0;
-    font-size: 10px;
+    font-size: var(--font-size-compact, 10px);
     font-weight: 600;
     color: var(--theme-text-dim);
     text-transform: uppercase;
@@ -266,7 +243,7 @@
     }
 
     .family-name {
-      font-size: 11px;
+      font-size: var(--font-size-xs, 11px);
     }
   }
 

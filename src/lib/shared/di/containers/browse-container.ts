@@ -15,6 +15,7 @@ import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/dis
 import { BrowseMetadataExtractor } from "$lib/features/browse/sequences/display/services/implementations/BrowseMetadataExtractor";
 import { BrowseCache } from "$lib/features/browse/sequences/display/services/implementations/BrowseCache";
 import { BrowseFilter } from "$lib/features/browse/sequences/display/services/implementations/BrowseFilter";
+import { MultiFilter } from "$lib/features/browse/sequences/display/services/implementations/MultiFilter";
 import { BrowseSorter } from "$lib/features/browse/sequences/display/services/implementations/BrowseSorter";
 import { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
 import { BrowseSectionManager } from "$lib/features/browse/sequences/display/services/implementations/BrowseSectionManager";
@@ -79,6 +80,7 @@ export function createBrowseContainer(deps: BrowseContainerDeps) {
       browseCache: () => new BrowseCache(),
       browseFilter: () => new BrowseFilter(),
       browseSorter: () => new BrowseSorter(),
+      multiFilter: () => new MultiFilter(new BrowseFilter()),
     })
     .add({
       // Variation grouping (singleton - caches variation map)

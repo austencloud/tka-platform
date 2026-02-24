@@ -183,7 +183,9 @@ export class LanSyncCoordinator implements ILanSyncCoordinator {
 		this._playbackState = newState;
 
 		// Broadcast to peers (throttle continuous currentStep updates to ~20/sec)
-		if (this.connectionState.status === 'connected') {
+		// Also broadcast during 'waiting-for-peer' so late-connecting peers get updates via FULL_STATE
+		const canBroadcast = this.connectionState.status === 'connected' || this.connectionState.status === 'waiting-for-peer';
+		if (canBroadcast) {
 			const isStepOnly = Object.keys(update).length === 1 && 'currentStep' in update;
 			const now = Date.now();
 

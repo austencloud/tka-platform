@@ -368,9 +368,9 @@
     border-radius: 10px;
     background: linear-gradient(
       90deg,
-      rgba(139, 92, 246, 0.1) 25%,
-      rgba(139, 92, 246, 0.2) 50%,
-      rgba(139, 92, 246, 0.1) 75%
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 25%,
+      var(--theme-stroke, rgba(255, 255, 255, 0.1)) 50%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 75%
     );
     background-size: 200% 100%;
   }

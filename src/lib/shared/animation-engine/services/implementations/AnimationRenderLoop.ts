@@ -338,6 +338,13 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.fireTipTracker &&
       params.fireConfig?.enabled
     ) {
+      // Reset tip tracker on loop to prevent velocity spike from position teleport.
+      // Without this, the position delta (end-of-sequence → start-of-sequence) produces
+      // a massive velocity injection that pushes fire off the prop tips.
+      if (this.loopDetectedThisFrame) {
+        this.fireTipTracker.reset();
+      }
+
       const tipTrackerConfig: FireTipTrackerConfig = {
         canvasSize: this.canvasSize,
         bluePropDimensions: props.bluePropDimensions,

@@ -10,7 +10,7 @@ PositionExplanation - Explanation box for a position type
     info: PositionInfo;
   } = $props();
 
-  const BOLD_WORDS = /straight line|identical position|perpendicular/gi;
+  const BOLD_WORDS = /opposite ends|identical position|right angle/gi;
 
   interface TextSegment {
     text: string;

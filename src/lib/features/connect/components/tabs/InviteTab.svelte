@@ -390,10 +390,10 @@
 		padding: 16px;
 		background: linear-gradient(
 			135deg,
-			rgba(99, 102, 241, 0.15) 0%,
-			rgba(79, 70, 229, 0.1) 100%
+			color-mix(in srgb, var(--theme-accent, #8b5cf6) 15%, transparent) 0%,
+			color-mix(in srgb, var(--theme-accent, #8b5cf6) 10%, transparent) 100%
 		);
-		border: 1px solid rgba(99, 102, 241, 0.3);
+		border: 1px solid color-mix(in srgb, var(--theme-accent, #8b5cf6) 30%, transparent);
 		border-radius: 12px;
 	}
 
@@ -452,7 +452,7 @@
 	}
 
 	.decline-button:hover {
-		background: rgba(239, 68, 68, 0.1);
+		background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
 		border-color: var(--semantic-error, #ef4444);
 		color: var(--semantic-error, #ef4444);
 	}

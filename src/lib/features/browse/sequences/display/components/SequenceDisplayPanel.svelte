@@ -1,6 +1,10 @@
 <script lang="ts">
   import type { SequenceSection } from "./../../../shared/domain/models/browse-models.ts";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
+  import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
+  import type { SequenceFilterType } from "../../../shared/state/sequence-controls-state.svelte";
+  import type { ActiveFilter } from "../../../shared/domain/models/multi-filter-models";
   import { container } from "$lib/shared/di";
   import { onMount, onDestroy } from "svelte";
   import type { IBrowseThumbnailProvider } from "../services/contracts/IBrowseThumbnailProvider";
@@ -8,9 +12,10 @@
   import BrowseGrid from "./BrowseGrid.svelte";
   import BrowseThumbnailSkeleton from "./BrowseThumbnailSkeleton.svelte";
   import SequenceTopBarControls from "../../../shared/components/SequenceTopBarControls.svelte";
+  import InlineFilterPanel from "../../filtering/components/inline-filter/InlineFilterPanel.svelte";
   import { gridZoomManager } from "../../../shared/state/grid-zoom-state.svelte";
+  import { sequencePanelManager } from "../../../shared/state/sequence-panel-state.svelte";
 
-  // ✅ PURE RUNES: Props using modern Svelte 5 runes
   const {
     sequences = [],
     sections = [],
@@ -19,8 +24,23 @@
     error = null,
     showSections = false,
     source = "community",
+    activeFilterList = [],
+    activeLevel = null,
+    activeLetter = null,
+    activeLength = null,
+    activeLoopType = null,
+    isFavoritesActive = false,
+    hasActivePositions = false,
+    availableLengths = [],
+    loopTypeCounts = {},
     onAction = () => {},
     onScroll,
+    onFilterChange,
+    onRemoveFilter,
+    onClearAllFilters,
+    onOpenLetterSheet,
+    onOpenOptionsSheet,
+    getFilteredCount,
   } = $props<{
     sequences?: SequenceData[];
     sections?: SequenceSection[];
@@ -29,9 +49,26 @@
     error?: string | null;
     showSections?: boolean;
     source?: "community" | "my-library";
+    activeFilterList?: ActiveFilter[];
+    activeLevel?: number | null;
+    activeLetter?: string | null;
+    activeLength?: number | null;
+    activeLoopType?: string | null;
+    isFavoritesActive?: boolean;
+    hasActivePositions?: boolean;
+    availableLengths?: number[];
+    loopTypeCounts?: Record<string, number>;
     onAction?: (action: string, sequence: SequenceData) => void;
     onScroll?: (event: CustomEvent<{ scrollTop: number }>) => void;
+    onFilterChange?: (type: SequenceFilterType, value?: BrowseFilterValue) => void;
+    onRemoveFilter?: (type: string) => void;
+    onClearAllFilters?: () => void;
+    onOpenLetterSheet?: () => void;
+    onOpenOptionsSheet?: () => void;
+    getFilteredCount?: (candidateType: BrowseFilterType, candidateValue: BrowseFilterValue) => number;
   }>();
+
+  const isInlineFiltersOpen = $derived(sequencePanelManager.isInlineFiltersOpen);
 
   // ✅ RESOLVE SERVICES: Get services from DI container (lazy resolution)
   let thumbnailService: IBrowseThumbnailProvider | null = $state(null);
@@ -106,10 +143,32 @@
 </script>
 
 <div class="sequence-display-panel">
-  <!-- Gallery controls (moved from TopBar) -->
+  <!-- Gallery controls -->
   <div class="gallery-controls-container">
     <SequenceTopBarControls />
   </div>
+
+  <!-- Inline filter panel (collapsible) -->
+  {#if onFilterChange && onRemoveFilter && onClearAllFilters && onOpenLetterSheet && onOpenOptionsSheet}
+    <InlineFilterPanel
+      isOpen={isInlineFiltersOpen}
+      {activeFilterList}
+      {activeLevel}
+      {activeLetter}
+      {activeLength}
+      {activeLoopType}
+      {isFavoritesActive}
+      {hasActivePositions}
+      {availableLengths}
+      {loopTypeCounts}
+      {onFilterChange}
+      {onRemoveFilter}
+      onClearAllFilters={onClearAllFilters}
+      {onOpenLetterSheet}
+      {onOpenOptionsSheet}
+      {getFilteredCount}
+    />
+  {/if}
 
   <!-- Content area -->
   <div class="display-content" bind:this={displayContentEl} onscroll={handleScroll}>

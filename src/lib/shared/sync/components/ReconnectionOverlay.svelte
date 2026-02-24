@@ -327,24 +327,24 @@
   }
 
   .retry-btn {
-    background: rgba(139, 92, 246, 0.2);
-    border: 1.5px solid rgba(139, 92, 246, 0.3);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1.5px solid var(--theme-accent, #8b5cf6);
     color: var(--theme-accent, #8b5cf6);
   }
 
   .retry-btn:hover {
-    background: rgba(139, 92, 246, 0.3);
-    border-color: rgba(139, 92, 246, 0.5);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-color: var(--theme-accent, #8b5cf6);
   }
 
   .cancel-btn {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 
   .cancel-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     color: var(--theme-text, #ffffff);
   }

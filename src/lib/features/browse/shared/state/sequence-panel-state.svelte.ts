@@ -26,6 +26,9 @@ class SequencePanelManager {
   // Current open panel
   activePanel = $state<PanelType>(null);
 
+  // Inline filter panel toggle (independent of drawer panels)
+  isInlineFiltersOpen = $state(false);
+
   // Pin state (desktop only)
   isPinned = $state(false);
 
@@ -71,6 +74,11 @@ class SequencePanelManager {
   }
 
   // Actions
+  toggleInlineFilters() {
+    this.isInlineFiltersOpen = !this.isInlineFiltersOpen;
+    debug.log(`🔵 PANEL: toggleInlineFilters() → ${this.isInlineFiltersOpen}`);
+  }
+
   openFilters() {
     debug.log("🔵 PANEL: openFilters() called");
     this.switchPanel("filters");

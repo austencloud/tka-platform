@@ -153,7 +153,7 @@ Opens a sheet/panel for letter selection
       180deg,
       rgba(255, 255, 255, 0.3) 0%,
       rgba(255, 255, 255, 0.15) 40%,
-      var(--theme-card-bg) 70%,
+      transparent 70%,
       rgba(255, 255, 255, 0) 100%
     );
     border-radius: 16px 16px 0 0;

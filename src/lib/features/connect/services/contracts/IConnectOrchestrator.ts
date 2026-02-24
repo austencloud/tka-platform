@@ -52,8 +52,12 @@ export interface IConnectOrchestrator {
 	/**
 	 * Start sharing a sequence (create session and become host).
 	 * Also goes online if not already.
+	 *
+	 * @param sequenceId - Unique identifier for the sequence
+	 * @param sequenceWord - Human-readable sequence word
+	 * @param sequenceData - Full sequence data to transmit to joining peers via P2P
 	 */
-	startSharing(sequenceId: string, sequenceWord: string): Promise<string>;
+	startSharing(sequenceId: string, sequenceWord: string, sequenceData?: Record<string, unknown>): Promise<string>;
 
 	/**
 	 * Join a nearby session.

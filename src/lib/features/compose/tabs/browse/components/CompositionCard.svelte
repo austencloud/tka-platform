@@ -24,11 +24,10 @@
 		composition: CompositionBrowseItem;
 		size?: Exclude<CardSize, "hero">;
 		staggerIndex?: number;
-		onExpand: (item: CompositionBrowseItem, rect: DOMRect) => void;
+		onExpand: (item: CompositionBrowseItem) => void;
 		onToggleFavorite?: (id: string) => void;
 	} = $props();
 
-	let cardEl: HTMLDivElement | undefined = $state();
 	let isHovering = $state(false);
 	let hoverTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -68,9 +67,7 @@
 	});
 
 	function handleClick() {
-		if (!cardEl) return;
-		const rect = cardEl.getBoundingClientRect();
-		onExpand(composition, rect);
+		onExpand(composition);
 	}
 
 	function handleFavoriteClick(e: MouseEvent) {
@@ -104,7 +101,6 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-	bind:this={cardEl}
 	role="button"
 	tabindex="0"
 	class="composition-card"

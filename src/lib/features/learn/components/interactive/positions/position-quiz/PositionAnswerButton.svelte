@@ -37,12 +37,11 @@ PositionAnswerButton - Answer button for position type selection
   class:selected={isSelected}
   class:correct={showCorrect || revealCorrect}
   class:incorrect={showIncorrect}
-  style="--type-color: {info.color}"
   {onclick}
   {disabled}
   aria-label="Select {info.label}"
 >
-  <i class="fa-solid {info.icon}" aria-hidden="true"></i>
+  <span class="greek-symbol" aria-hidden="true">{info.symbol}</span>
   <span>{info.label}</span>
   {#if answerState !== "idle" && isSelected}
     <span class="result-icon">{answerState === "correct" ? "✓" : "✗"}</span>
@@ -64,7 +63,7 @@ PositionAnswerButton - Answer button for position type selection
     background: var(--theme-card-bg);
     border: 2px solid var(--theme-stroke-strong);
     border-radius: 12px;
-    color: white;
+    color: var(--theme-text);
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
@@ -73,8 +72,8 @@ PositionAnswerButton - Answer button for position type selection
   }
 
   .answer-btn:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--type-color) 15%, transparent);
-    border-color: color-mix(in srgb, var(--type-color) 50%, transparent);
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 12%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent);
     transform: translateY(-2px);
   }
 
@@ -82,14 +81,16 @@ PositionAnswerButton - Answer button for position type selection
     cursor: default;
   }
 
-  .answer-btn i {
-    font-size: 1.25rem;
-    color: var(--type-color);
+  .greek-symbol {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--theme-text);
+    line-height: 1;
   }
 
   .answer-btn.correct {
-    background: color-mix(in srgb, var(--type-color) 20%, transparent);
-    border-color: var(--type-color);
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 15%, transparent);
+    border-color: var(--semantic-success, #22c55e);
     animation: correctPulse 0.5s ease;
   }
 
@@ -135,7 +136,7 @@ PositionAnswerButton - Answer button for position type selection
 
   .result-icon.correct,
   .answer-btn.correct .result-icon {
-    color: var(--type-color);
+    color: var(--semantic-success, #22c55e);
   }
 
   @media (max-width: 500px) {

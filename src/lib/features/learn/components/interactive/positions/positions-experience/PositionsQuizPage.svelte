@@ -1,5 +1,6 @@
 <!--
 PositionsQuizPage - Quiz page for positions
+Uses staggered entrance animations matching the rest of the lesson.
 -->
 <script lang="ts">
   import PositionIdentificationQuiz from "../PositionIdentificationQuiz.svelte";
@@ -12,10 +13,12 @@ PositionsQuizPage - Quiz page for positions
 </script>
 
 <div class="page quiz-page">
-  <h2>Test Your Knowledge</h2>
-  <p>Identify the hand position types!</p>
+  <h2 class="anim-item" style="--anim-order: 0">Test Your Knowledge</h2>
+  <p class="anim-item" style="--anim-order: 1">Identify the hand position types!</p>
 
-  <PositionIdentificationQuiz {onComplete} />
+  <div class="anim-item" style="--anim-order: 2">
+    <PositionIdentificationQuiz {onComplete} />
+  </div>
 </div>
 
 <style>
@@ -26,48 +29,32 @@ PositionsQuizPage - Quiz page for positions
     max-width: 700px;
     margin: 0 auto;
     width: 100%;
-    animation: slideInUp var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  @keyframes slideInUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
   }
 
   h2 {
-    font-size: 1.875rem;
-    font-weight: 700;
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--theme-text);
     margin: 0;
     text-align: center;
-    background: linear-gradient(135deg, var(--theme-accent, #22d3ee) 0%, var(--theme-accent, #06b6d4) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    letter-spacing: -0.02em;
   }
 
   p {
-    font-size: 1.125rem;
-    line-height: 1.7;
+    font-size: 1.25rem;
+    line-height: 1.6;
     color: var(--theme-text, rgba(255, 255, 255, 0.85));
     margin: 0;
     text-align: center;
   }
 
-  @media (max-width: 600px) {
+  @media (max-width: 768px) {
     h2 {
-      font-size: 1.5rem;
+      font-size: 2rem;
     }
-  }
 
-  @media (prefers-reduced-motion: reduce) {
-    .quiz-page {
-      animation: none;
+    p {
+      font-size: 1.1rem;
     }
   }
 </style>

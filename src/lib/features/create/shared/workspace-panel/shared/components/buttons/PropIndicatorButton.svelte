@@ -49,7 +49,7 @@
     border-radius: 50%;
     cursor: pointer;
     transition: all var(--transition-normal, var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1));
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--theme-shadow, 0 4px 12px rgba(0, 0, 0, 0.3));
     -webkit-tap-highlight-color: transparent;
     padding: 0;
   }
@@ -57,7 +57,7 @@
   .prop-indicator-button:hover {
     transform: scale(1.05);
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+    box-shadow: var(--theme-shadow-hover, 0 6px 16px rgba(0, 0, 0, 0.35));
   }
 
   .prop-indicator-button:active {

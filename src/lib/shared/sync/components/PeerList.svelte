@@ -42,6 +42,7 @@
   let recentlyJoined = $state<Set<string>>(new Set());
   let recentlyLeft = $state<Set<string>>(new Set());
   let previousPeerIds = $state<Set<string>>(new Set());
+  let animationTimers = $state<number[]>([]);
 
   // Get current state from deviceSyncState
   const roomState = $derived(deviceSyncState.roomState);
@@ -70,10 +71,10 @@
     for (const id of currentPeerIds) {
       if (!previousPeerIds.has(id)) {
         recentlyJoined.add(id);
-        // Clear animation state after animation completes
-        setTimeout(() => {
+        const timer = window.setTimeout(() => {
           recentlyJoined = new Set([...recentlyJoined].filter((i) => i !== id));
         }, 500);
+        animationTimers.push(timer);
       }
     }
 
@@ -81,14 +82,21 @@
     for (const id of previousPeerIds) {
       if (!currentPeerIds.has(id)) {
         recentlyLeft.add(id);
-        // Clear animation state after animation completes
-        setTimeout(() => {
+        const timer = window.setTimeout(() => {
           recentlyLeft = new Set([...recentlyLeft].filter((i) => i !== id));
         }, 500);
+        animationTimers.push(timer);
       }
     }
 
     previousPeerIds = currentPeerIds;
+
+    return () => {
+      for (const timer of animationTimers) {
+        clearTimeout(timer);
+      }
+      animationTimers = [];
+    };
   });
 
   // Determine how many peers to show
@@ -254,7 +262,7 @@
     align-items: center;
     gap: 12px;
     padding: 10px 12px;
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid transparent;
     border-radius: 10px;
     transition: all var(--duration-normal, 150ms) ease;
@@ -266,8 +274,8 @@
   }
 
   .peer-item.is-me {
-    background: rgba(139, 92, 246, 0.08);
-    border-color: rgba(139, 92, 246, 0.2);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-color: var(--theme-accent, #8b5cf6);
   }
 
   .peer-item.joining {
@@ -313,7 +321,7 @@
   }
 
   .is-me .peer-avatar {
-    background: rgba(139, 92, 246, 0.3);
+    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
   }
 
   .quality-dot {

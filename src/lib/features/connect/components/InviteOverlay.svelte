@@ -139,8 +139,8 @@
 		padding: 32px 24px 16px;
 		background: linear-gradient(
 			135deg,
-			rgba(99, 102, 241, 0.2) 0%,
-			rgba(79, 70, 229, 0.1) 100%
+			color-mix(in srgb, var(--theme-accent, #8b5cf6) 20%, transparent) 0%,
+			color-mix(in srgb, var(--theme-accent, #8b5cf6) 10%, transparent) 100%
 		);
 	}
 
@@ -156,7 +156,7 @@
 
 	.invite-icon i {
 		font-size: 24px;
-		color: white;
+		color: var(--theme-text, white);
 	}
 
 	.invite-header h2 {
@@ -241,7 +241,7 @@
 	}
 
 	.decline-button:hover:not(:disabled) {
-		background: rgba(239, 68, 68, 0.1);
+		background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
 		border-color: var(--semantic-error, #ef4444);
 		color: var(--semantic-error, #ef4444);
 	}

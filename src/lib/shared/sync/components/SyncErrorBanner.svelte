@@ -248,7 +248,7 @@
     min-width: 40px;
     background: rgba(239, 68, 68, 0.2);
     border-radius: 10px;
-    color: rgba(248, 113, 113, 1);
+    color: var(--semantic-error, rgba(248, 113, 113, 1));
     font-size: 1rem;
   }
 
@@ -261,7 +261,7 @@
     margin: 0 0 4px 0;
     font-size: var(--font-size-sm, 14px);
     font-weight: 600;
-    color: rgba(248, 113, 113, 1);
+    color: var(--semantic-error, rgba(248, 113, 113, 1));
   }
 
   .error-message {
@@ -302,14 +302,14 @@
   }
 
   .retry-btn {
-    background: rgba(248, 113, 113, 0.15);
-    border: 1.5px solid rgba(248, 113, 113, 0.3);
-    color: rgba(248, 113, 113, 1);
+    background: rgba(239, 68, 68, 0.15);
+    border: 1.5px solid rgba(239, 68, 68, 0.3);
+    color: var(--semantic-error, rgba(248, 113, 113, 1));
   }
 
   .retry-btn:hover {
-    background: rgba(248, 113, 113, 0.25);
-    border-color: rgba(248, 113, 113, 0.5);
+    background: rgba(239, 68, 68, 0.25);
+    border-color: rgba(239, 68, 68, 0.5);
   }
 
   .dismiss-btn {
@@ -321,7 +321,7 @@
   }
 
   .dismiss-btn:hover {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 
@@ -351,7 +351,7 @@
       width: 100%;
       justify-content: flex-end;
       padding-top: 8px;
-      border-top: 1px solid rgba(239, 68, 68, 0.15);
+      border-top: 1px solid rgba(239, 68, 68, 0.2);
       margin-top: 4px;
     }
 
@@ -364,11 +364,11 @@
   @media (prefers-contrast: high) {
     .sync-error-banner {
       border-width: 2px;
-      border-color: rgba(248, 113, 113, 0.6);
+      border-color: var(--semantic-error, rgba(248, 113, 113, 0.6));
     }
 
     .error-icon {
-      border: 2px solid rgba(248, 113, 113, 0.6);
+      border: 2px solid var(--semantic-error, rgba(248, 113, 113, 0.6));
     }
 
     .action-btn {

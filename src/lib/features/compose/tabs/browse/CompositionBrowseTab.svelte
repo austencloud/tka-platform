@@ -15,7 +15,7 @@
 	import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
 	import CompositionFilterBar from "./components/CompositionFilterBar.svelte";
 	import CompositionGrid from "./components/CompositionGrid.svelte";
-	import CompositionDetail from "./components/CompositionDetail.svelte";
+	import CompositionViewerDrawer from "./components/CompositionViewerDrawer.svelte";
 
 	const browseState = getCompositionBrowseState();
 	const composeState = getComposeModuleState();
@@ -40,8 +40,8 @@
 	}
 
 	// Grid handlers
-	function handleExpand(item: CompositionBrowseItem, rect: DOMRect) {
-		browseState.expandComposition(item, rect);
+	function handleExpand(item: CompositionBrowseItem) {
+		browseState.expandComposition(item);
 	}
 
 	function handleToggleFavorite(id: string) {
@@ -214,19 +214,17 @@
 		</div>
 	{/if}
 
-	<!-- Detail overlay -->
-	{#if browseState.viewMode === "detail" && browseState.expandedComposition}
-		<CompositionDetail
-			composition={browseState.expandedComposition}
-			originRect={browseState.expandedCardRect}
-			onClose={handleClose}
-			onPlay={handlePlay}
-			onEdit={() => handleEdit()}
-			onFavorite={handleDetailFavorite}
-			onDuplicate={handleDuplicate}
-			onDelete={handleDeleteRequest}
-		/>
-	{/if}
+	<!-- Composition viewer drawer -->
+	<CompositionViewerDrawer
+		composition={browseState.expandedComposition}
+		isOpen={browseState.viewMode === "detail" && browseState.expandedComposition != null}
+		onClose={handleClose}
+		onPlay={handlePlay}
+		onEdit={() => handleEdit()}
+		onFavorite={handleDetailFavorite}
+		onDuplicate={handleDuplicate}
+		onDelete={handleDeleteRequest}
+	/>
 
 	<!-- Delete confirmation -->
 	<ConfirmDialog

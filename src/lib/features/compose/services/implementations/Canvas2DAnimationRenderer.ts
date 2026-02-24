@@ -205,6 +205,7 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
         params.currentTime,
         !!params.blueProp && params.visibility.blueMotionVisible,
         !!params.redProp && params.visibility.redMotionVisible,
+        canvasSize,
         params.qualityHints,
         params.additionalLayers
       );

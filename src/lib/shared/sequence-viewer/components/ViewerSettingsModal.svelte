@@ -8,8 +8,9 @@
 <script lang="ts">
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import VisibilityTab from "$lib/shared/settings/components/tabs/VisibilityTab.svelte";
-  import PropSelectorDrawer from "./PropSelectorDrawer.svelte";
-  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+  import PropSelectionSheet from "$lib/shared/settings/components/tabs/prop-type/PropSelectionSheet.svelte";
+  import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
+  import { getSettings, updateSetting } from "$lib/shared/application/state/app-state.svelte";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { container } from "$lib/shared/di";
@@ -22,8 +23,9 @@
 
   let { open = $bindable(), onClose }: Props = $props();
 
-  // Prop selector drawer state (renders outside the modal)
+  // Prop selector drawer state
   let propDrawerOpen = $state(false);
+  let activeTab = $state<"blue" | "red">("blue");
 
   // Current prop types from settings
   const settings = $derived(getSettings());
@@ -35,12 +37,35 @@
   const blueDisplayInfo = $derived(getPropTypeDisplayInfo(bluePropType));
   const redDisplayInfo = $derived(getPropTypeDisplayInfo(redPropType));
 
+  // Derived prop for the sheet based on active tab
+  const sheetPropType = $derived(activeTab === "blue" ? bluePropType : redPropType);
+  const sheetTitle = $derived(
+    catDogMode ? (activeTab === "blue" ? "Blue Prop" : "Red Prop") : "Select Prop"
+  );
+
   // Haptic feedback
   const hapticService = container.items.hapticFeedback as IHapticFeedback | undefined;
 
   function handleOpenPropSelector() {
     hapticService?.trigger("selection");
     propDrawerOpen = true;
+  }
+
+  function handlePropSelect(propType: PropType) {
+    if (catDogMode) {
+      if (activeTab === "blue") {
+        updateSetting("bluePropType", propType);
+        // Auto-switch to red tab for second hand
+        activeTab = "red";
+        return;
+      } else {
+        updateSetting("redPropType", propType);
+      }
+    } else {
+      updateSetting("bluePropType", propType);
+      updateSetting("redPropType", propType);
+    }
+    propDrawerOpen = false;
   }
 
   function handleClose() {
@@ -86,18 +111,7 @@
         aria-label="Change prop type"
       >
         <div class="prop-icons">
-          <img
-            src={blueDisplayInfo.image}
-            alt={blueDisplayInfo.label}
-            class="prop-icon blue"
-          />
-          {#if catDogMode && redPropType !== bluePropType}
-            <img
-              src={redDisplayInfo.image}
-              alt={redDisplayInfo.label}
-              class="prop-icon red"
-            />
-          {/if}
+          <PropCompositionPreview propType={bluePropType} size={36} />
         </div>
         <span class="prop-label">
           {#if catDogMode && redPropType !== bluePropType}
@@ -118,9 +132,15 @@
 </BaseModal>
 
 <!-- Prop selector drawer - rendered OUTSIDE the modal so position:fixed works -->
-<PropSelectorDrawer
+<PropSelectionSheet
   bind:isOpen={propDrawerOpen}
-  onClose={() => (propDrawerOpen = false)}
+  selectedPropType={sheetPropType}
+  color={activeTab}
+  title={sheetTitle}
+  onSelect={handlePropSelect}
+  showTabs={catDogMode}
+  bind:activeTab
+  autoClose={!catDogMode}
 />
 
 <style>
@@ -157,8 +177,8 @@
     }
   }
 
-  /* Ensure prop selector drawer sits above the modal */
-  :global(.prop-selector-drawer) {
+  /* Ensure prop selection drawer sits above the modal */
+  :global(.prop-selection-drawer) {
     z-index: 1100 !important;
   }
 
@@ -200,7 +220,7 @@
     border-radius: 8px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .close-btn:hover {
@@ -251,7 +271,7 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 10px;
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: all var(--duration-normal) ease;
     min-height: 48px;
   }
 
@@ -268,22 +288,6 @@
   .prop-icons {
     display: flex;
     align-items: center;
-    gap: 6px;
-  }
-
-  .prop-icon {
-    width: 28px;
-    height: 28px;
-    object-fit: contain;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
-  }
-
-  .prop-icon.blue {
-    filter: drop-shadow(0 1px 3px rgba(59, 130, 246, 0.4));
-  }
-
-  .prop-icon.red {
-    filter: drop-shadow(0 1px 3px rgba(239, 68, 68, 0.4));
   }
 
   .prop-label {

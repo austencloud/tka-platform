@@ -347,13 +347,13 @@
     color: var(--theme-accent, #8b5cf6);
     cursor: pointer;
     padding: 2px 6px;
-    background: rgba(139, 92, 246, 0.1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border-radius: 4px;
     transition: background var(--duration-fast, 100ms) ease;
   }
 
   .room-code:hover {
-    background: rgba(139, 92, 246, 0.2);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   .sequence-word {
@@ -375,7 +375,7 @@
     background: rgba(239, 68, 68, 0.1);
     border: 1px solid rgba(239, 68, 68, 0.3);
     border-radius: 8px;
-    color: rgba(248, 113, 113, 1);
+    color: var(--semantic-error, rgba(248, 113, 113, 1));
     font-size: var(--font-size-sm, 14px);
     font-weight: 500;
     cursor: pointer;

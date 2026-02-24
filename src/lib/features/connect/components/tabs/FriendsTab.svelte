@@ -168,7 +168,7 @@
 	}
 
 	.friend-card.online {
-		border-color: rgba(16, 185, 129, 0.3);
+		border-color: color-mix(in srgb, var(--semantic-success, #10b981) 30%, transparent);
 	}
 
 	/* Avatar */
@@ -282,7 +282,7 @@
 	}
 
 	.remove-button:hover {
-		background: rgba(239, 68, 68, 0.1);
+		background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
 		border-color: var(--semantic-error, #ef4444);
 		color: var(--semantic-error, #ef4444);
 	}

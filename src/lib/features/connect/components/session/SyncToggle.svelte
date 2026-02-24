@@ -83,7 +83,7 @@
 		left: 2px;
 		width: 18px;
 		height: 18px;
-		background: white;
+		background: var(--theme-text, white);
 		border-radius: 50%;
 		transition: transform 0.2s ease;
 		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);

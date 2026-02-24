@@ -77,6 +77,10 @@ export class PropTextureLoader implements IPropTextureLoader {
         darkMode
       );
 
+      // Re-check after await — dispose() may have been called while loading
+      // (e.g., user moved mouse away, unmounting the component)
+      if (!this.svgGenerator) return;
+
       // Get prop dimensions for each color (may be different types!)
       // Pass darkMode for consistent color generation
       const [bluePropData, redPropData] = await Promise.all([
