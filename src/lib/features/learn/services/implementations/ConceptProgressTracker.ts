@@ -109,14 +109,41 @@ export class ConceptProgressTracker implements IConceptProgressTracker {
     }
   }
 
+  private parseOptionalDate(value: unknown): Date | undefined {
+    if (!value) return undefined;
+    if (value instanceof Date) return value;
+    if (typeof value === "string") return new Date(value);
+    return undefined;
+  }
+
   private loadFromLocalStorage(): LearningProgress {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const data = JSON.parse(stored);
+        const concepts = new Map<string, ConceptProgress>();
+        for (const [key, raw] of Object.entries(data.concepts || {})) {
+          const value = raw as Record<string, unknown>;
+          concepts.set(key, {
+            conceptId: (value.conceptId as string) || key,
+            status: (value.status as ConceptProgress["status"]) || "available",
+            percentComplete: (value.percentComplete as number) || 0,
+            correctAnswers: (value.correctAnswers as number) || 0,
+            incorrectAnswers: (value.incorrectAnswers as number) || 0,
+            totalAttempts: (value.totalAttempts as number) || 0,
+            accuracy: (value.accuracy as number) || 0,
+            currentStreak: (value.currentStreak as number) || 0,
+            bestStreak: (value.bestStreak as number) || 0,
+            timeSpentSeconds: (value.timeSpentSeconds as number) || 0,
+            startedAt: this.parseOptionalDate(value.startedAt),
+            completedAt: this.parseOptionalDate(value.completedAt),
+            lastPracticedAt: this.parseOptionalDate(value.lastPracticedAt),
+            nextPracticeAt: this.parseOptionalDate(value.nextPracticeAt),
+          });
+        }
         return {
           ...data,
-          concepts: new Map(Object.entries(data.concepts || {})),
+          concepts,
           completedConcepts: new Set(data.completedConcepts || []),
           lastUpdated: new Date(data.lastUpdated),
         };
@@ -412,8 +439,28 @@ export class ConceptProgressTracker implements IConceptProgressTracker {
   importProgress(json: string): void {
     try {
       const data = JSON.parse(json);
+      const concepts = new Map<string, ConceptProgress>();
+      for (const [key, raw] of Object.entries(data.concepts || {})) {
+        const value = raw as Record<string, unknown>;
+        concepts.set(key, {
+          conceptId: (value.conceptId as string) || key,
+          status: (value.status as ConceptProgress["status"]) || "available",
+          percentComplete: (value.percentComplete as number) || 0,
+          correctAnswers: (value.correctAnswers as number) || 0,
+          incorrectAnswers: (value.incorrectAnswers as number) || 0,
+          totalAttempts: (value.totalAttempts as number) || 0,
+          accuracy: (value.accuracy as number) || 0,
+          currentStreak: (value.currentStreak as number) || 0,
+          bestStreak: (value.bestStreak as number) || 0,
+          timeSpentSeconds: (value.timeSpentSeconds as number) || 0,
+          startedAt: this.parseOptionalDate(value.startedAt),
+          completedAt: this.parseOptionalDate(value.completedAt),
+          lastPracticedAt: this.parseOptionalDate(value.lastPracticedAt),
+          nextPracticeAt: this.parseOptionalDate(value.nextPracticeAt),
+        });
+      }
       this.progress = {
-        concepts: new Map(Object.entries(data.concepts || {})),
+        concepts,
         completedConcepts: new Set(data.completedConcepts || []),
         currentConceptId: data.currentConceptId,
         overallProgress: data.overallProgress || 0,

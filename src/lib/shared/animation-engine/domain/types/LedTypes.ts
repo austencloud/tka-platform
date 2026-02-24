@@ -73,6 +73,9 @@ export interface LedFrameInput {
   canvasHeight: number;
 }
 
+/** How per-hand LED colors are determined */
+export type LedColorMode = "unified" | "per-hand" | "prop-matched";
+
 /**
  * User-configurable LED overlay settings.
  * Controls glow appearance, bloom post-processing, POV trail persistence,
@@ -111,7 +114,17 @@ export interface LedOverlayConfig {
    * Maps to 5 discrete user-facing levels via LED_BRIGHTNESS_LEVELS.
    */
   brightness: number;
+  /** How per-hand colors are resolved: unified, per-hand, or prop-matched */
+  colorMode: LedColorMode;
+  /** Custom color for the blue hand (propIndex 0) when colorMode is "per-hand" */
+  blueHandColor: string;
+  /** Custom color for the red hand (propIndex 1) when colorMode is "per-hand" */
+  redHandColor: string;
 }
+
+/** Canonical prop colors matching the domain (blue hand = propIndex 0, red hand = propIndex 1) */
+export const PROP_BLUE = "#2196f3";
+export const PROP_RED = "#f44336";
 
 /** Default LED overlay config — disabled with neutral green glow and solid pattern */
 export const DEFAULT_LED_CONFIG: LedOverlayConfig = {
@@ -123,6 +136,9 @@ export const DEFAULT_LED_CONFIG: LedOverlayConfig = {
   patternSpeed: 1.0,
   primaryColor: "#00ff88",
   brightness: 1.0,
+  colorMode: "unified",
+  blueHandColor: PROP_BLUE,
+  redHandColor: PROP_RED,
 };
 
 /**
@@ -148,4 +164,19 @@ export function hexToLedColor(hex: string): { r: number; g: number; b: number } 
   const g = parseInt(hex.slice(3, 5), 16) / 255;
   const b = parseInt(hex.slice(5, 7), 16) / 255;
   return { r, g, b };
+}
+
+/**
+ * Resolve the base color hex string for a given hand based on the color mode.
+ * propIndex 0 = blue hand, propIndex 1 = red hand.
+ */
+export function resolveHandColor(config: LedOverlayConfig, propIndex: 0 | 1): string {
+  switch (config.colorMode) {
+    case "unified":
+      return config.primaryColor;
+    case "per-hand":
+      return propIndex === 0 ? config.blueHandColor : config.redHandColor;
+    case "prop-matched":
+      return propIndex === 0 ? PROP_BLUE : PROP_RED;
+  }
 }

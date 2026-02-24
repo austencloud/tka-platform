@@ -26,7 +26,7 @@
   import { AnimationLoop } from "$lib/features/compose/services/implementations/AnimationLoop";
   import { StepCalculator } from "$lib/features/compose/services/implementations/StepCalculator";
 
-  import { DEFAULT_LED_CONFIG, ledBrightnessToFloat, type LedOverlayConfig } from "$lib/shared/animation-engine/domain/types/LedTypes";
+  import { DEFAULT_LED_CONFIG, ledBrightnessToFloat, type LedOverlayConfig, type LedColorMode } from "$lib/shared/animation-engine/domain/types/LedTypes";
 
   // Auto-chaining (shared with FireTuningTab)
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
@@ -54,6 +54,9 @@
     trailFadeRate: number;
     bpm: number;
     sourceMode: SourceMode;
+    colorMode: LedColorMode;
+    blueHandColor: string;
+    redHandColor: string;
   }
 
   function loadPersistedState(): Partial<LedLabPersistedState> {
@@ -78,6 +81,9 @@
         trailFadeRate,
         bpm,
         sourceMode,
+        colorMode,
+        blueHandColor,
+        redHandColor,
       };
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch { /* ignore */ }
@@ -109,6 +115,9 @@
   let bloomIntensity = $state(persisted.bloomIntensity ?? DEFAULT_LED_CONFIG.bloomIntensity);
   let trailFadeRate = $state(persisted.trailFadeRate ?? DEFAULT_LED_CONFIG.trailFadeRate);
   let sourceMode = $state<SourceMode>(persisted.sourceMode ?? "pick");
+  let colorMode = $state<LedColorMode>(persisted.colorMode ?? DEFAULT_LED_CONFIG.colorMode);
+  let blueHandColor = $state(persisted.blueHandColor ?? DEFAULT_LED_CONFIG.blueHandColor);
+  let redHandColor = $state(persisted.redHandColor ?? DEFAULT_LED_CONFIG.redHandColor);
 
   let ledConfig = $derived<LedOverlayConfig>({
     enabled: ledEnabled,
@@ -119,6 +128,9 @@
     patternSpeed,
     primaryColor,
     brightness: ledBrightnessToFloat(brightness),
+    colorMode,
+    blueHandColor,
+    redHandColor,
   });
 
   const animationState = createAnimationPanelState();
@@ -194,6 +206,9 @@
     void bpm;
     void sequence;
     void sourceMode;
+    void colorMode;
+    void blueHandColor;
+    void redHandColor;
     untrack(() => savePersistedState());
   });
 
@@ -536,6 +551,9 @@
           bind:glowRadius
           bind:bloomIntensity
           bind:trailFadeRate
+          bind:colorMode
+          bind:blueHandColor
+          bind:redHandColor
         />
       </div>
 

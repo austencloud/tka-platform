@@ -12,7 +12,7 @@
 
 import type { ILedTipTracker, LedTipTrackerConfig } from "../contracts/ILedTipTracker";
 import type { LedTipData, LedOverlayConfig } from "../../domain/types/LedTypes";
-import { hexToLedColor } from "../../domain/types/LedTypes";
+import { hexToLedColor, resolveHandColor } from "../../domain/types/LedTypes";
 import type { PropState } from "../../domain/PropState";
 import { getLedPoints } from "../../domain/types/PropLedPoints";
 import { getLedPattern, evaluatePattern } from "../../domain/types/LedPatterns";
@@ -71,9 +71,12 @@ export class LedTipTracker implements ILedTipTracker {
 		this.outputTips.length = 0;
 		let totalTips = 0;
 
-		// Pre-compute pattern + color for this frame
+		// Pre-compute pattern for this frame
 		const pattern = getLedPattern(ledConfig.patternId);
-		const primaryColor = hexToLedColor(ledConfig.primaryColor);
+
+		// Resolve per-hand base colors from the color mode
+		const blueBaseColor = hexToLedColor(resolveHandColor(ledConfig, 0));
+		const redBaseColor = hexToLedColor(resolveHandColor(ledConfig, 1));
 
 		// Count total LEDs across both props for pattern evaluation
 		const blueLedConfig = getLedPoints(config.bluePropType);
@@ -95,7 +98,7 @@ export class LedTipTracker implements ILedTipTracker {
 				currentTime,
 				totalTips,
 				pattern,
-				primaryColor,
+				blueBaseColor,
 				ledConfig.patternSpeed,
 				totalLedCount,
 				timeSeconds,
@@ -117,7 +120,7 @@ export class LedTipTracker implements ILedTipTracker {
 				currentTime,
 				totalTips,
 				pattern,
-				primaryColor,
+				redBaseColor,
 				ledConfig.patternSpeed,
 				totalLedCount,
 				timeSeconds,
@@ -150,7 +153,7 @@ export class LedTipTracker implements ILedTipTracker {
 		currentTime: number,
 		outputStartIndex: number,
 		pattern: ReturnType<typeof getLedPattern>,
-		primaryColor: { r: number; g: number; b: number },
+		baseColor: { r: number; g: number; b: number },
 		patternSpeed: number,
 		totalLedCount: number,
 		timeSeconds: number,
@@ -190,7 +193,7 @@ export class LedTipTracker implements ILedTipTracker {
 				ledGlobalIndex,
 				totalLedCount,
 				patternSpeed,
-				primaryColor
+				baseColor
 			);
 
 			this.emitTip(

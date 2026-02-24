@@ -11,6 +11,7 @@
 -->
 <script lang="ts">
   import { LED_PATTERNS } from "$lib/shared/animation-engine/domain/types/LedPatterns";
+  import type { LedColorMode } from "$lib/shared/animation-engine/domain/types/LedTypes";
 
   interface Props {
     ledEnabled: boolean;
@@ -21,6 +22,9 @@
     glowRadius: number;
     bloomIntensity: number;
     trailFadeRate: number;
+    colorMode: LedColorMode;
+    blueHandColor: string;
+    redHandColor: string;
   }
 
   let {
@@ -32,9 +36,18 @@
     glowRadius = $bindable(),
     bloomIntensity = $bindable(),
     trailFadeRate = $bindable(),
+    colorMode = $bindable(),
+    blueHandColor = $bindable(),
+    redHandColor = $bindable(),
   }: Props = $props();
 
   const brightnessLevels = [1, 2, 3, 4, 5];
+
+  const colorModes: { id: LedColorMode; label: string }[] = [
+    { id: "unified", label: "Unified" },
+    { id: "per-hand", label: "Per-Hand" },
+    { id: "prop-matched", label: "Prop Colors" },
+  ];
 </script>
 
 <div class="led-section">
@@ -88,13 +101,45 @@
       {/each}
     </div>
 
-    <div class="slider-group">
-      <div class="slider-row">
-        <label for="color-picker">Color</label>
-        <input id="color-picker" type="color" bind:value={primaryColor} />
-        <span class="slider-value">{primaryColor}</span>
+    <!-- Color Mode -->
+    <div class="color-mode-section">
+      <span class="color-mode-label">Color Mode</span>
+      <div class="color-mode-toggle" role="radiogroup" aria-label="LED color mode">
+        {#each colorModes as mode (mode.id)}
+          <button
+            role="radio"
+            class="color-mode-btn"
+            class:active={colorMode === mode.id}
+            aria-checked={colorMode === mode.id}
+            onclick={() => (colorMode = mode.id)}
+          >
+            {mode.label}
+          </button>
+        {/each}
       </div>
 
+      {#if colorMode === "unified"}
+        <div class="color-picker-row">
+          <label for="color-picker">Color</label>
+          <input id="color-picker" type="color" bind:value={primaryColor} />
+          <span class="color-value">{primaryColor}</span>
+        </div>
+      {:else if colorMode === "per-hand"}
+        <div class="color-picker-row">
+          <label for="blue-hand-picker">Blue hand</label>
+          <input id="blue-hand-picker" type="color" bind:value={blueHandColor} />
+          <span class="color-value">{blueHandColor}</span>
+        </div>
+        <div class="color-picker-row">
+          <label for="red-hand-picker">Red hand</label>
+          <input id="red-hand-picker" type="color" bind:value={redHandColor} />
+          <span class="color-value">{redHandColor}</span>
+        </div>
+      {/if}
+      <!-- prop-matched: no pickers needed, uses canonical blue/red -->
+    </div>
+
+    <div class="slider-group">
       <div class="slider-row">
         <label for="pattern-speed-slider">Pattern Speed</label>
         <input
@@ -306,6 +351,101 @@
     color: var(--led-green-bright);
   }
 
+  .color-mode-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: var(--spacing-sm, 8px) 0;
+  }
+
+  .color-mode-label {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  }
+
+  .color-mode-toggle {
+    display: flex;
+    gap: 2px;
+    background: color-mix(in srgb, var(--theme-text) 3%, transparent);
+    border-radius: var(--border-radius-md, 8px);
+    padding: 3px;
+  }
+
+  .color-mode-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 8px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 150ms ease;
+    min-height: 32px;
+  }
+
+  .color-mode-btn:hover {
+    color: var(--theme-text, white);
+    background: color-mix(in srgb, var(--theme-text) 6%, transparent);
+  }
+
+  .color-mode-btn.active {
+    background: var(--led-green-mid, rgba(0, 255, 136, 0.15));
+    color: var(--led-green-bright, #33ffaa);
+    box-shadow: 0 1px 3px var(--theme-overlay-dark, rgba(0, 0, 0, 0.2));
+  }
+
+  .color-mode-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: -2px;
+  }
+
+  .color-picker-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 8px);
+  }
+
+  .color-picker-row label {
+    min-width: 100px;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  }
+
+  .color-picker-row input[type="color"] {
+    width: 36px;
+    height: 28px;
+    padding: 0;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: var(--border-radius-sm, 4px);
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .color-picker-row input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 2px;
+  }
+
+  .color-picker-row input[type="color"]::-webkit-color-swatch {
+    border: none;
+    border-radius: 2px;
+  }
+
+  .color-value {
+    min-width: 54px;
+    text-align: right;
+    font-family: var(--font-mono, monospace);
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text, white);
+  }
+
   .slider-group {
     display: flex;
     flex-direction: column;
@@ -359,7 +499,8 @@
   @media (prefers-reduced-motion: reduce) {
     .toggle-btn,
     .pattern-card,
-    .brightness-btn {
+    .brightness-btn,
+    .color-mode-btn {
       transition: none;
     }
   }

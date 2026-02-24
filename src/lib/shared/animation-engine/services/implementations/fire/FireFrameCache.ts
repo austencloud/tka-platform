@@ -42,16 +42,24 @@ export class FireFrameCache {
   private gl: WebGL2RenderingContext;
   private state: CacheState = "idle";
 
-  // Cache textures (RGBA8, one per frame)
+  // Cache textures (RGBA8, one per frame) — pre-allocated in batches
   private frames: WebGLTexture[] = [];
   private frameIndex = 0;
   private totalFrames = 0;
+
+  // Pre-allocated texture pool to avoid per-frame GPU resource creation
+  private texturePool: WebGLTexture[] = [];
+  private texturePoolSize = 0;
+  private static readonly TEXTURE_BATCH_SIZE = 120;
 
   // Recording FBO: display shader renders here during recording
   private recordingFBO: WebGLFramebuffer | null = null;
   private recordingTexture: WebGLTexture | null = null;
   private cacheWidth = 0;
   private cacheHeight = 0;
+
+  // Persistent copy FBO reused every frame during recording (avoids create/delete per frame)
+  private copyFBO: WebGLFramebuffer | null = null;
 
   // Blit program for playback
   private blitProgram: ShaderProgram | null = null;
@@ -97,6 +105,10 @@ export class FireFrameCache {
 
     // Create the recording FBO at cache resolution
     this.createRecordingFBO();
+
+    // Pre-allocate texture pool and persistent copy FBO to avoid per-frame GPU resource creation
+    this.ensureTexturePool(FireFrameCache.TEXTURE_BATCH_SIZE);
+    this.ensureCopyFBO();
   }
 
   /**
@@ -140,24 +152,17 @@ export class FireFrameCache {
     if (this.state !== "recording") return;
     const gl = this.gl;
 
-    // Copy recording FBO to a new cache texture
-    const cacheTex = gl.createTexture()!;
-    gl.bindTexture(gl.TEXTURE_2D, cacheTex);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texImage2D(
-      gl.TEXTURE_2D, 0, gl.RGBA,
-      this.cacheWidth, this.cacheHeight, 0,
-      gl.RGBA, gl.UNSIGNED_BYTE, null
-    );
+    // Grow texture pool if needed (amortized O(1) — only allocates every BATCH_SIZE frames)
+    if (this.frameIndex >= this.texturePoolSize) {
+      this.ensureTexturePool(this.texturePoolSize + FireFrameCache.TEXTURE_BATCH_SIZE);
+    }
 
-    // Copy from recording FBO to cache texture via framebuffer blit
+    // Grab pre-allocated texture from pool (zero GPU allocation this frame)
+    const cacheTex = this.texturePool[this.frameIndex]!;
+
+    // Blit recording FBO → cache texture using persistent copy FBO
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, this.recordingFBO);
-    // Create a temp FBO to copy into the cache texture
-    const tempFBO = gl.createFramebuffer()!;
-    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, tempFBO);
+    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, this.copyFBO);
     gl.framebufferTexture2D(
       gl.DRAW_FRAMEBUFFER, gl.COLOR_ATTACHMENT0,
       gl.TEXTURE_2D, cacheTex, 0
@@ -167,7 +172,6 @@ export class FireFrameCache {
       0, 0, this.cacheWidth, this.cacheHeight,
       gl.COLOR_BUFFER_BIT, gl.NEAREST
     );
-    gl.deleteFramebuffer(tempFBO);
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
     gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
 
@@ -187,8 +191,11 @@ export class FireFrameCache {
     if (this.state === "recording" && this.totalFrames > 0) {
       this.state = "warm";
       this.frameIndex = 0;
-      // Destroy recording FBO — no longer needed during playback
+      // Destroy recording resources — no longer needed during playback
       this.destroyRecordingFBO();
+      this.destroyCopyFBO();
+      // Trim excess pool textures beyond what was actually recorded
+      this.trimTexturePool(this.totalFrames);
     } else if (this.state === "warm") {
       // Reset playback to start of cached loop
       this.frameIndex = 0;
@@ -232,6 +239,8 @@ export class FireFrameCache {
   invalidate(): void {
     this.releaseFrames();
     this.destroyRecordingFBO();
+    this.destroyCopyFBO();
+    this.releaseTexturePool();
     this.state = "idle";
     this.frameIndex = 0;
     this.totalFrames = 0;
@@ -244,6 +253,8 @@ export class FireFrameCache {
   dispose(): void {
     this.releaseFrames();
     this.destroyRecordingFBO();
+    this.destroyCopyFBO();
+    this.releaseTexturePool();
     if (this.blitProgram) {
       this.gl.deleteProgram(this.blitProgram.program);
       this.blitProgram = null;
@@ -309,11 +320,66 @@ export class FireFrameCache {
   }
 
   private releaseFrames(): void {
+    // Frames reference textures from the pool — don't delete them here.
+    // The pool owns their lifecycle. Just clear the reference array.
+    this.frames.length = 0;
+  }
+
+  /**
+   * Pre-allocate textures up to the target size. Only allocates the delta.
+   * Called once at recording start and again if recording exceeds initial estimate.
+   */
+  private ensureTexturePool(targetSize: number): void {
     const gl = this.gl;
-    for (const tex of this.frames) {
+    for (let i = this.texturePoolSize; i < targetSize; i++) {
+      const tex = gl.createTexture()!;
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texImage2D(
+        gl.TEXTURE_2D, 0, gl.RGBA,
+        this.cacheWidth, this.cacheHeight, 0,
+        gl.RGBA, gl.UNSIGNED_BYTE, null
+      );
+      this.texturePool.push(tex);
+    }
+    this.texturePoolSize = targetSize;
+  }
+
+  /** Delete unused pool textures beyond the recorded frame count */
+  private trimTexturePool(keepCount: number): void {
+    const gl = this.gl;
+    for (let i = keepCount; i < this.texturePoolSize; i++) {
+      gl.deleteTexture(this.texturePool[i]!);
+    }
+    this.texturePool.length = keepCount;
+    this.texturePoolSize = keepCount;
+  }
+
+  /** Release all pool textures (GPU memory cleanup) */
+  private releaseTexturePool(): void {
+    const gl = this.gl;
+    for (const tex of this.texturePool) {
       gl.deleteTexture(tex);
     }
-    this.frames.length = 0;
+    this.texturePool.length = 0;
+    this.texturePoolSize = 0;
+  }
+
+  /** Create the persistent copy FBO reused during recording */
+  private ensureCopyFBO(): void {
+    if (this.copyFBO) return;
+    this.copyFBO = this.gl.createFramebuffer();
+  }
+
+  /** Destroy the persistent copy FBO */
+  private destroyCopyFBO(): void {
+    if (this.copyFBO) {
+      this.gl.deleteFramebuffer(this.copyFBO);
+      this.copyFBO = null;
+    }
   }
 
   private compileBlitProgram(): ShaderProgram | null {

@@ -17,6 +17,11 @@ export class TikaMarkdownParser implements ITikaMarkdownParser {
 		// These should be handled by the tool system, not written in text
 		let cleaned = markdown.replace(/<\/?inline-(?:pictograph|gallery|sequence-player|step-grid|quiz)[^>]*>/g, '');
 
+		// Strip inline-content JSON objects the model copies from tool results
+		// (e.g., {"type":"inline-pictograph","letter":"I","variation":0,"gridMode":"diamond"})
+		// The client renders these automatically from tool output parts — text copies are noise
+		cleaned = cleaned.replace(/\{\s*"type"\s*:\s*"inline-(?:pictograph|gallery|sequence-player|step-grid|quiz)"[^}]*\}/g, '');
+
 		// Clean up empty lines left by stripped tags
 		cleaned = cleaned.replace(/\n{3,}/g, '\n\n').trim();
 

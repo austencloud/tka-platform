@@ -45,15 +45,22 @@ export class UserKnowledgeProfilePersister
    * Serialize LearningProgress for Firestore storage.
    * Converts Map to plain object and Set to array.
    */
+  private dateToISO(value: unknown): string | null {
+    if (!value) return null;
+    if (value instanceof Date) return value.toISOString();
+    if (typeof value === "string") return value;
+    return null;
+  }
+
   private serialize(progress: LearningProgress): SerializedLearningProgress {
     const conceptEntries: Record<string, unknown> = {};
     progress.concepts.forEach((value, key) => {
       conceptEntries[key] = {
         ...value,
-        startedAt: value.startedAt?.toISOString() ?? null,
-        completedAt: value.completedAt?.toISOString() ?? null,
-        lastPracticedAt: value.lastPracticedAt?.toISOString() ?? null,
-        nextPracticeAt: value.nextPracticeAt?.toISOString() ?? null,
+        startedAt: this.dateToISO(value.startedAt),
+        completedAt: this.dateToISO(value.completedAt),
+        lastPracticedAt: this.dateToISO(value.lastPracticedAt),
+        nextPracticeAt: this.dateToISO(value.nextPracticeAt),
       };
     });
 
@@ -65,7 +72,7 @@ export class UserKnowledgeProfilePersister
       totalCorrect: progress.totalCorrect,
       totalTimeSpent: progress.totalTimeSpent,
       badges: progress.badges,
-      lastUpdated: progress.lastUpdated.toISOString(),
+      lastUpdated: this.dateToISO(progress.lastUpdated) ?? new Date().toISOString(),
     };
   }
 

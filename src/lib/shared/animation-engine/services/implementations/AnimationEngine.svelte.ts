@@ -1384,33 +1384,40 @@ export class AnimationEngine {
   }
 
   private syncServiceState(): void {
+    // PERF: Only write $state properties when the source value actually changed.
+    // Unconditional writes trigger Svelte reactivity cascades (~15 $derived re-evaluations)
+    // every frame even when nothing changed, causing measurable jank on mid-range devices.
+
     // Sync from precomputation service
     if (this.precomputationService) {
-      this.state.isPreRendering =
-        this.precomputationService.state.isPreRendering;
-      this.state.preRenderProgress =
-        this.precomputationService.state.preRenderProgress;
-      this.state.preRenderedFramesReady =
-        this.precomputationService.state.preRenderedFramesReady;
+      const ps = this.precomputationService.state;
+      if (this.state.isPreRendering !== ps.isPreRendering)
+        this.state.isPreRendering = ps.isPreRendering;
+      if (this.state.preRenderProgress !== ps.preRenderProgress)
+        this.state.preRenderProgress = ps.preRenderProgress;
+      if (this.state.preRenderedFramesReady !== ps.preRenderedFramesReady)
+        this.state.preRenderedFramesReady = ps.preRenderedFramesReady;
     }
 
     // Sync from glyph transition service
     if (this.glyphTransitionService) {
-      this.state.displayedLetter =
-        this.glyphTransitionService.state.displayedLetter;
-      this.state.displayedTurnsTuple =
-        this.glyphTransitionService.state.displayedTurnsTuple;
-      this.state.displayedStepNumber =
-        this.glyphTransitionService.state.displayedStepNumber;
-      this.state.displayedMusicalPosition =
-        this.glyphTransitionService.state.displayedMusicalPosition;
-      this.state.fadingOutLetter =
-        this.glyphTransitionService.state.fadingOutLetter;
-      this.state.fadingOutTurnsTuple =
-        this.glyphTransitionService.state.fadingOutTurnsTuple;
-      this.state.fadingOutStepNumber =
-        this.glyphTransitionService.state.fadingOutStepNumber;
-      this.state.isNewLetter = this.glyphTransitionService.state.isNewLetter;
+      const gs = this.glyphTransitionService.state;
+      if (this.state.displayedLetter !== gs.displayedLetter)
+        this.state.displayedLetter = gs.displayedLetter;
+      if (this.state.displayedTurnsTuple !== gs.displayedTurnsTuple)
+        this.state.displayedTurnsTuple = gs.displayedTurnsTuple;
+      if (this.state.displayedStepNumber !== gs.displayedStepNumber)
+        this.state.displayedStepNumber = gs.displayedStepNumber;
+      if (this.state.displayedMusicalPosition !== gs.displayedMusicalPosition)
+        this.state.displayedMusicalPosition = gs.displayedMusicalPosition;
+      if (this.state.fadingOutLetter !== gs.fadingOutLetter)
+        this.state.fadingOutLetter = gs.fadingOutLetter;
+      if (this.state.fadingOutTurnsTuple !== gs.fadingOutTurnsTuple)
+        this.state.fadingOutTurnsTuple = gs.fadingOutTurnsTuple;
+      if (this.state.fadingOutStepNumber !== gs.fadingOutStepNumber)
+        this.state.fadingOutStepNumber = gs.fadingOutStepNumber;
+      if (this.state.isNewLetter !== gs.isNewLetter)
+        this.state.isNewLetter = gs.isNewLetter;
     }
 
     // Sync from prop type service — but ONLY when overrides are not active.
@@ -1422,20 +1429,22 @@ export class AnimationEngine {
       this.propTypeOverrideBlue == null &&
       this.propTypeOverrideRed == null
     ) {
-      this.state.currentBluePropType =
-        this.propTypeChangeService.state.bluePropType;
-      this.state.currentRedPropType =
-        this.propTypeChangeService.state.redPropType;
-      this.state.currentPropType =
-        this.propTypeChangeService.state.legacyPropType;
+      const pts = this.propTypeChangeService.state;
+      if (this.state.currentBluePropType !== pts.bluePropType)
+        this.state.currentBluePropType = pts.bluePropType;
+      if (this.state.currentRedPropType !== pts.redPropType)
+        this.state.currentRedPropType = pts.redPropType;
+      if (this.state.currentPropType !== pts.legacyPropType)
+        this.state.currentPropType = pts.legacyPropType;
     }
 
     // Sync from prop texture service
     if (this.propTextureService) {
-      this.state.bluePropDimensions =
-        this.propTextureService.state.blueDimensions;
-      this.state.redPropDimensions =
-        this.propTextureService.state.redDimensions;
+      const pts = this.propTextureService.state;
+      if (this.state.bluePropDimensions !== pts.blueDimensions)
+        this.state.bluePropDimensions = pts.blueDimensions;
+      if (this.state.redPropDimensions !== pts.redDimensions)
+        this.state.redPropDimensions = pts.redDimensions;
     }
 
     // Sync from resize service
