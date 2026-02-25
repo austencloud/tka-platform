@@ -107,6 +107,21 @@
       })();
     }
   });
+
+  // Auto-register FCM token if permission already granted
+  $effect(() => {
+    if (!currentUserId) return;
+    void (async () => {
+      const fcmTokenManager = container.items
+        .fcmTokenManager as IFCMTokenManager;
+      const supported = await fcmTokenManager.isSupported();
+      if (!supported) return;
+      const permission = fcmTokenManager.getPermissionState();
+      if (permission === "granted") {
+        await fcmTokenManager.registerToken(currentUserId);
+      }
+    })();
+  });
 </script>
 
 {#if showPushPrompt && currentUserId}

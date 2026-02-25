@@ -38,6 +38,7 @@ import { auth } from "../firebase";
 // Preview state for admin "View As" feature
 import { userPreviewState } from "../../debug/state/user-preview-state.svelte";
 import type { IActivityLogger } from "../../analytics/services/contracts/IActivityLogger";
+import type { IFCMTokenManager } from "../../push/services/contracts/IFCMTokenManager";
 import type { IUsernameValidator } from "../services/contracts/IUsernameValidator";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { getFirestoreInstance } from "../firebase";
@@ -558,6 +559,18 @@ export async function signOut() {
     if (cleanupSubscriptionListener) {
       cleanupSubscriptionListener();
       cleanupSubscriptionListener = null;
+    }
+
+    // Unregister FCM push token before signing out
+    try {
+      const userId = _state.user?.uid;
+      const fcmTokenManager = container.items
+        .fcmTokenManager as IFCMTokenManager;
+      if (userId && fcmTokenManager) {
+        await fcmTokenManager.unregisterToken(userId);
+      }
+    } catch {
+      // Push token cleanup is non-critical
     }
 
     // Clean up Firestore subscriptions BEFORE signing out
