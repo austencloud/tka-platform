@@ -117,20 +117,18 @@ export async function shouldPushForType(
     return true;
   }
 
-  const prefsDoc = await db
-    .collection("users")
-    .doc(userId)
-    .collection("settings")
-    .doc("notificationPreferences")
-    .get();
+  const userDoc = await db.collection("users").doc(userId).get();
 
-  if (!prefsDoc.exists) {
-    // No preferences document = all defaults enabled
+  if (!userDoc.exists) {
     return true;
   }
 
-  const prefs = prefsDoc.data();
+  const prefs = userDoc.data()?.notificationPreferences as
+    | Record<string, boolean>
+    | undefined;
+
   if (!prefs) {
+    // No preferences field = all defaults enabled
     return true;
   }
 
@@ -175,7 +173,9 @@ async function getActiveTokens(userId: string): Promise<string[]> {
     .collection("fcmTokens")
     .get();
 
-  return tokensSnapshot.docs.map((doc) => doc.id);
+  return tokensSnapshot.docs
+    .map((doc) => doc.data().token as string)
+    .filter(Boolean);
 }
 
 /**

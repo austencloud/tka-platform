@@ -62,15 +62,11 @@ export const onNewMessage = onDocumentCreated(
     const results = await Promise.allSettled(
       recipients.map(async (recipientId) => {
         // Check if this user has push enabled for messages
-        const prefsDoc = await db
-          .collection("users")
-          .doc(recipientId)
-          .collection("settings")
-          .doc("notificationPreferences")
-          .get();
-
-        if (prefsDoc.exists) {
-          const prefs = prefsDoc.data();
+        const userDoc = await db.collection("users").doc(recipientId).get();
+        if (userDoc.exists) {
+          const prefs = userDoc.data()?.notificationPreferences as
+            | Record<string, boolean>
+            | undefined;
           if (prefs?.pushEnabled === false) {
             return;
           }
