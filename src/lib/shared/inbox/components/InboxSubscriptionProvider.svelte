@@ -18,11 +18,16 @@
   import { notificationService } from "$lib/features/feedback/services/implementations/Notifier";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
+  import { container } from "$lib/shared/di";
+  import PushPermissionPrompt from "$lib/shared/push/components/PushPermissionPrompt.svelte";
+  import type { IFCMTokenManager } from "$lib/shared/push/services/contracts/IFCMTokenManager";
   // Note: Module loading is handled by container
 
   let unsubscribeMessages: (() => void) | null = null;
   let unsubscribeNotifications: (() => void) | null = null;
   let messagingModuleLoaded = $state(false);
+  let showPushPrompt = $state(false);
+  let pushPromptChecked = false;
 
   onMount(() => {
     // Module is now loaded via container
@@ -83,6 +88,32 @@
       }
     }
   });
+
+  // Show push prompt when unread messages appear (one-time per session)
+  $effect(() => {
+    const messageCount = inboxState.unreadMessageCount;
+    if (messageCount > 0 && !pushPromptChecked && currentUserId) {
+      pushPromptChecked = true;
+      void (async () => {
+        const fcmTokenManager = container.items
+          .fcmTokenManager as IFCMTokenManager;
+        const supported = await fcmTokenManager.isSupported();
+        if (!supported) return;
+        const permission = fcmTokenManager.getPermissionState();
+        if (permission !== "default") return;
+        const dismissed = localStorage.getItem("tka-push-prompt-dismissed");
+        if (dismissed && Date.now() < parseInt(dismissed, 10)) return;
+        showPushPrompt = true;
+      })();
+    }
+  });
 </script>
 
-<!-- This component renders nothing - it just sets up subscriptions -->
+{#if showPushPrompt && currentUserId}
+  <PushPermissionPrompt
+    userId={currentUserId}
+    onDismiss={() => {
+      showPushPrompt = false;
+    }}
+  />
+{/if}
