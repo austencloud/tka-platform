@@ -70,6 +70,19 @@
 
     return cleanup;
   });
+
+  // Badge API - update app icon badge with unread count
+  $effect(() => {
+    const count = inboxState.totalUnreadCount;
+
+    if ("setAppBadge" in navigator) {
+      if (count > 0) {
+        navigator.setAppBadge(count).catch(() => {});
+      } else {
+        navigator.clearAppBadge().catch(() => {});
+      }
+    }
+  });
 </script>
 
 <!-- This component renders nothing - it just sets up subscriptions -->
