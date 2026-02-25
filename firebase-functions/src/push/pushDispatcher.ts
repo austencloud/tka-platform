@@ -1,0 +1,251 @@
+/**
+ * Push Dispatcher
+ *
+ * Shared utility for sending FCM push notifications to user devices.
+ * Handles token lookup, multicast delivery, stale token cleanup,
+ * and notification preference checking.
+ */
+
+import * as admin from "firebase-admin";
+import type { PushPayload } from "./types";
+
+const db = admin.firestore();
+
+/** FCM error codes that indicate a token is permanently invalid */
+const STALE_TOKEN_ERRORS = new Set([
+  "messaging/invalid-registration-token",
+  "messaging/registration-token-not-registered",
+]);
+
+/**
+ * Maps notification types to their preference key in the user's
+ * notification preferences document. Types not in this map are
+ * either always-on (system-announcement) or handled elsewhere
+ * (message-received is checked via pushEnabled + messageReceived).
+ */
+const PREF_KEY_MAP: Record<string, string> = {
+  "feedback-resolved": "feedbackResolved",
+  "feedback-in-progress": "feedbackInProgress",
+  "feedback-needs-info": "feedbackNeedsInfo",
+  "feedback-response": "feedbackResponse",
+  "sequence-liked": "sequenceLiked",
+  "user-followed": "userFollowed",
+  "achievement-unlocked": "achievementUnlocked",
+  "admin-new-user-signup": "adminNewUserSignup",
+  "moderation-warning": "moderationWarning",
+  "system-announcement": "systemAnnouncement",
+};
+
+/**
+ * Send a push notification to all of a user's registered devices.
+ *
+ * Uses data-only messages so the service worker controls display.
+ * Automatically removes tokens that FCM reports as invalid.
+ *
+ * @param userId - Target user's Firebase UID
+ * @param payload - Notification content and metadata
+ * @param unreadCount - Total unread count for badge display
+ */
+export async function sendPushToUser(
+  userId: string,
+  payload: PushPayload,
+  unreadCount: number
+): Promise<void> {
+  const tokens = await getActiveTokens(userId);
+  if (tokens.length === 0) {
+    return;
+  }
+
+  const message: admin.messaging.MulticastMessage = {
+    tokens,
+    data: {
+      title: payload.title,
+      body: payload.body,
+      url: payload.url,
+      tag: payload.tag,
+      type: payload.type,
+      unreadCount: String(unreadCount),
+      ...(payload.conversationId
+        ? { conversationId: payload.conversationId }
+        : {}),
+      ...(payload.notificationId
+        ? { notificationId: payload.notificationId }
+        : {}),
+    },
+    webpush: {
+      headers: { Urgency: "high" },
+      fcmOptions: { link: payload.url },
+    },
+  };
+
+  const response = await admin.messaging().sendEachForMulticast(message);
+
+  if (response.failureCount > 0) {
+    await cleanupStaleTokens(userId, tokens, response.responses);
+  }
+}
+
+/**
+ * Check whether push notifications should be sent for a given
+ * notification type, based on the user's stored preferences.
+ *
+ * System announcements and moderation warnings always return true.
+ * Messages are handled separately (via pushEnabled + messageReceived).
+ *
+ * @param userId - User to check preferences for
+ * @param notificationType - The notification type string
+ * @returns true if push should be sent, false to suppress
+ */
+export async function shouldPushForType(
+  userId: string,
+  notificationType: string
+): Promise<boolean> {
+  // System announcements and moderation warnings always push
+  if (
+    notificationType === "system-announcement" ||
+    notificationType === "moderation-warning"
+  ) {
+    return true;
+  }
+
+  const prefKey = PREF_KEY_MAP[notificationType];
+  if (!prefKey) {
+    // Unknown type - default to sending
+    console.warn(
+      `No preference key mapped for notification type: ${notificationType}`
+    );
+    return true;
+  }
+
+  const prefsDoc = await db
+    .collection("users")
+    .doc(userId)
+    .collection("settings")
+    .doc("notificationPreferences")
+    .get();
+
+  if (!prefsDoc.exists) {
+    // No preferences document = all defaults enabled
+    return true;
+  }
+
+  const prefs = prefsDoc.data();
+  if (!prefs) {
+    return true;
+  }
+
+  // Check the push master toggle first
+  if (prefs.pushEnabled === false) {
+    return false;
+  }
+
+  // Check the specific preference (default to true if not set)
+  const value = prefs[prefKey];
+  return value !== false;
+}
+
+/**
+ * Get the total unread count across notifications and messages.
+ *
+ * Used for badge count in push payloads so the client can update
+ * the app badge without a separate fetch.
+ *
+ * @param userId - User to count unreads for
+ * @returns Total unread count (notifications + messages)
+ */
+export async function getUnreadCount(userId: string): Promise<number> {
+  const [notificationCount, messageCount] = await Promise.all([
+    getUnreadNotificationCount(userId),
+    getUnreadMessageCount(userId),
+  ]);
+
+  return notificationCount + messageCount;
+}
+
+// --- Internal helpers ---
+
+/**
+ * Fetch all active FCM tokens for a user.
+ * Tokens are stored as documents in users/{userId}/fcmTokens.
+ */
+async function getActiveTokens(userId: string): Promise<string[]> {
+  const tokensSnapshot = await db
+    .collection("users")
+    .doc(userId)
+    .collection("fcmTokens")
+    .get();
+
+  return tokensSnapshot.docs.map((doc) => doc.id);
+}
+
+/**
+ * Remove tokens that FCM reported as invalid.
+ * This keeps the token collection clean and prevents wasted
+ * send attempts on subsequent pushes.
+ */
+async function cleanupStaleTokens(
+  userId: string,
+  tokens: string[],
+  responses: admin.messaging.SendResponse[]
+): Promise<void> {
+  const batch = db.batch();
+  let staleCount = 0;
+
+  responses.forEach((resp, idx) => {
+    if (resp.error && STALE_TOKEN_ERRORS.has(resp.error.code)) {
+      const tokenRef = db
+        .collection("users")
+        .doc(userId)
+        .collection("fcmTokens")
+        .doc(tokens[idx]);
+      batch.delete(tokenRef);
+      staleCount++;
+    }
+  });
+
+  if (staleCount > 0) {
+    await batch.commit();
+    console.log(
+      `Cleaned up ${staleCount} stale FCM token(s) for user ${userId}`
+    );
+  }
+}
+
+/**
+ * Count unread notifications for a user using Firestore aggregation.
+ */
+async function getUnreadNotificationCount(userId: string): Promise<number> {
+  const snapshot = await db
+    .collection("users")
+    .doc(userId)
+    .collection("notifications")
+    .where("read", "==", false)
+    .count()
+    .get();
+
+  return snapshot.data().count;
+}
+
+/**
+ * Count unread messages across all conversations the user participates in.
+ *
+ * Queries conversations where the user is a participant, then sums
+ * their per-user unread count from each conversation document.
+ */
+async function getUnreadMessageCount(userId: string): Promise<number> {
+  const conversationsSnapshot = await db
+    .collection("conversations")
+    .where("participants", "array-contains", userId)
+    .get();
+
+  let total = 0;
+  for (const doc of conversationsSnapshot.docs) {
+    const data = doc.data();
+    const unreadMap = data.unreadCount as Record<string, number> | undefined;
+    if (unreadMap && typeof unreadMap[userId] === "number") {
+      total += unreadMap[userId];
+    }
+  }
+
+  return total;
+}
