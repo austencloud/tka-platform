@@ -21,6 +21,10 @@
   import { container } from "$lib/shared/di";
   import PushPermissionPrompt from "$lib/shared/push/components/PushPermissionPrompt.svelte";
   import type { IFCMTokenManager } from "$lib/shared/push/services/contracts/IFCMTokenManager";
+  import {
+    startForegroundMessageListener,
+    stopForegroundMessageListener,
+  } from "$lib/shared/push/services/implementations/ForegroundMessageHandler";
   // Note: Module loading is handled by container
 
   let unsubscribeMessages: (() => void) | null = null;
@@ -121,6 +125,16 @@
         await fcmTokenManager.registerToken(currentUserId);
       }
     })();
+  });
+
+  // Listen for foreground FCM messages while authenticated
+  $effect(() => {
+    if (currentUserId) {
+      startForegroundMessageListener();
+    }
+    return () => {
+      stopForegroundMessageListener();
+    };
   });
 </script>
 
