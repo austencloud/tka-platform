@@ -13,7 +13,6 @@ import type { AnimationPathCache } from "$lib/features/compose/services/implemen
 import type { IFrameBudgetMonitor } from "../contracts/IFrameBudgetMonitor";
 import type { IFireOverlayRenderer } from "../contracts/IFireOverlayRenderer";
 import type { IFireTipTracker, FireTipTrackerConfig } from "../contracts/IFireTipTracker";
-import type { ICharcoalRenderer } from "../contracts/ICharcoalRenderer";
 import type { ILedOverlayRenderer } from "../contracts/ILedOverlayRenderer";
 import type { ILedTipTracker, LedTipTrackerConfig } from "../contracts/ILedTipTracker";
 import type {
@@ -30,7 +29,6 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private frameBudgetMonitor: IFrameBudgetMonitor | null = null;
   private fireRenderer: IFireOverlayRenderer | null = null;
   private fireTipTracker: IFireTipTracker | null = null;
-  private charcoalRenderer: ICharcoalRenderer | null = null;
   private ledRenderer: ILedOverlayRenderer | null = null;
   private ledTipTracker: ILedTipTracker | null = null;
   private canvasSize: number = 950;
@@ -76,7 +74,6 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.frameBudgetMonitor = config.frameBudgetMonitor ?? null;
     this.fireRenderer = config.fireRenderer ?? null;
     this.fireTipTracker = config.fireTipTracker ?? null;
-    this.charcoalRenderer = config.charcoalRenderer ?? null;
     this.ledRenderer = config.ledRenderer ?? null;
     this.ledTipTracker = config.ledTipTracker ?? null;
   }
@@ -93,8 +90,6 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.fireRenderer = config.fireRenderer ?? null;
     if (config.fireTipTracker !== undefined)
       this.fireTipTracker = config.fireTipTracker ?? null;
-    if (config.charcoalRenderer !== undefined)
-      this.charcoalRenderer = config.charcoalRenderer ?? null;
     if (config.ledRenderer !== undefined)
       this.ledRenderer = config.ledRenderer ?? null;
     if (config.ledTipTracker !== undefined)
@@ -392,18 +387,9 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         currentBeat: Math.floor(params.currentStep),
       };
 
-      if (params.fireConfig.fuelRendererType === "particle" && this.charcoalRenderer) {
-        // Particle renderer (charcoal/steel-wool): clear fire canvas then draw sparks
-        const gl = this.fireRenderer.getGl();
-        if (gl) {
-          gl.clearColor(0, 0, 0, 0);
-          gl.clear(gl.COLOR_BUFFER_BIT);
-        }
-        this.charcoalRenderer.renderSparks(fireInput, params.fireConfig);
-      } else {
-        // Fluid renderer (white-gas, lamp-oil, isopropyl): Navier-Stokes simulation
-        this.fireRenderer.renderFire(fireInput, params.fireConfig);
-      }
+      // All fuel types (including charcoal) use the fluid Navier-Stokes renderer.
+      // Charcoal uses different physics (gravity, low buoyancy) and color curve.
+      this.fireRenderer.renderFire(fireInput, params.fireConfig);
     }
 
     // LED overlay: render after fire so it composites on top of both Canvas2D and fire

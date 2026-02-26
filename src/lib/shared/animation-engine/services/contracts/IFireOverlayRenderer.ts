@@ -50,13 +50,13 @@ export interface IFireOverlayRenderer {
   isInitialized(): boolean;
 
   /**
-   * Get the overlay canvas element (shared with charcoal particle renderer).
+   * Get the overlay canvas element.
    * Returns null if not yet initialized.
    */
   getCanvas(): HTMLCanvasElement | null;
 
   /**
-   * Get the WebGL2 rendering context (shared with charcoal particle renderer).
+   * Get the WebGL2 rendering context.
    * Returns null if not yet initialized.
    */
   getGl(): WebGL2RenderingContext | null;

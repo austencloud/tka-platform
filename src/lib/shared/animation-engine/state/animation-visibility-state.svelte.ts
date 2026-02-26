@@ -42,7 +42,7 @@ interface AnimationVisibilitySettings {
   fireEffect: boolean; // WebGL fire shader at prop tips
   fireColorBlend: number; // 0 = natural fire, 1 = prop-colored (continuous slider)
   fireSmokeLevel: number; // 0 = clean burn, 1 = heavy smoke (continuous slider)
-  fireUseCharcoal: boolean; // false = fluid fire, true = charcoal sparks
+  fireUseCharcoal: boolean; // false = normal fire, true = charcoal (gravity-heavy fluid preset)
   fireIntensity: number; // User intensity slider value (0.0-1.0)
 
   // LED Effects

@@ -310,6 +310,7 @@ export class FireDefaultsLoader implements IFireDefaultsLoader {
 			sootCoolRate: (obj.sootCoolRate as number) ?? 0.8,
 			sootDissipation: (obj.sootDissipation as number) ?? 2.5,
 			sootAdvectionDissipation: (obj.sootAdvectionDissipation as number) ?? 0.97,
+			gravity: (obj.gravity as number) ?? 0,
 		};
 	}
 

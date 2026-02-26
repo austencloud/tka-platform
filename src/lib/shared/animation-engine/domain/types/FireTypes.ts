@@ -7,7 +7,7 @@
  */
 
 /** Renderer type determines which WebGL pipeline handles this fuel */
-export type FuelRendererType = "fluid" | "particle";
+export type FuelRendererType = "fluid";
 
 /** Color curve for the fluid renderer's display pass.
  *  Maps normalized temperature through 4 color stops
@@ -21,34 +21,6 @@ export interface FireColorCurve {
   hotColor: [number, number, number];
   /** RGB [0-1] at wick core (brightest point, near-white) */
   coreColor: [number, number, number];
-}
-
-/** Charcoal/steel wool particle physics params */
-export interface CharcoalParams {
-  /** Sparks emitted per second per tip */
-  sparkRate: number;
-  /** Seconds before a spark fades out completely */
-  sparkLifetime: number;
-  /** Multiplier on tip velocity for initial spark speed */
-  sparkInitialSpeed: number;
-  /** Scatter cone angle in degrees around tangential direction */
-  sparkScatter: number;
-  /** Base particle render size in pixels */
-  sparkSize: number;
-  /** Random size variation (0.0-1.0, multiplied by sparkSize) */
-  sparkSizeVariance: number;
-  /** Downward acceleration in units/s^2 */
-  gravity: number;
-  /** Air resistance coefficient (velocity decay per second) */
-  dragCoefficient: number;
-  /** Probability (0.0-1.0) of spawning secondary branching sparks */
-  secondarySparkChance: number;
-  /** How long ember glow persists after spark stops moving (seconds) */
-  emberGlowDuration: number;
-  /** Temperature decay rate (normalized units per ms) */
-  coolingRate: number;
-  /** Starting temperature in normalized units (1.0 = brightest) */
-  initialTemperature: number;
 }
 
 /**
@@ -147,6 +119,8 @@ export interface FirePhysicsParams {
   sootDissipation: number;
   /** Soot persistence during advection transport (0.95 - 0.99) */
   sootAdvectionDissipation: number;
+  /** Constant downward force on heated fluid. 0 = no gravity (normal fire). Negative = downward pull. (-10 to 0) */
+  gravity: number;
 }
 
 /**
@@ -178,8 +152,6 @@ export interface FireOverlayConfig {
   fuelRendererType?: FuelRendererType;
   /** Color curve for the fluid renderer display pass */
   colorCurve?: FireColorCurve;
-  /** Charcoal particle params (when fuelRendererType === "particle") */
-  charcoalParams?: CharcoalParams;
   /** Smoke opacity in display shader (0.0 = no smoke, 0.5 = heavy smoke, default per fuel) */
   smokeOpacity?: number;
   /** HDR bloom strength (0.0 = no bloom, 0.04-0.15 = subtle glow, default 0.08) */
@@ -216,6 +188,7 @@ export const DEFAULT_PHYSICS: FirePhysicsParams = {
   sootCoolRate: 0.8,
   sootDissipation: 2.5,
   sootAdvectionDissipation: 0.97,
+  gravity: 0,
 };
 
 /** Default fire overlay config */
@@ -268,6 +241,7 @@ export const BASE_FIRE_PHYSICS: FirePhysicsParams = {
   sootCoolRate: 0.6,
   sootDissipation: 3.0,
   sootAdvectionDissipation: 0.96,
+  gravity: 0,
 };
 
 /** White gas color curve — natural fire colors */
@@ -278,20 +252,41 @@ export const BASE_COLOR_CURVE: FireColorCurve = {
   coreColor: [1.0, 0.9, 0.35],
 };
 
-/** Default charcoal/steel-wool spark parameters */
-export const DEFAULT_CHARCOAL_PARAMS: CharcoalParams = {
-  sparkRate: 120,
-  sparkLifetime: 0.8,
-  sparkInitialSpeed: 1.2,
-  sparkScatter: 100,
-  sparkSize: 3.0,
-  sparkSizeVariance: 0.5,
-  gravity: 150,
-  dragCoefficient: 2.0,
-  secondarySparkChance: 0.15,
-  emberGlowDuration: 0.3,
-  coolingRate: 0.002,
-  initialTemperature: 1.0,
+/**
+ * Charcoal/steel-wool fluid physics.
+ * Low buoyancy so only the hottest gas rises. Gravity pulls the bulk downward.
+ * Large splat radius + high fuel for a dense, voluminous cloud.
+ * Heavy soot for thick smoke billowing around the falling embers.
+ */
+export const CHARCOAL_FIRE_PHYSICS: FirePhysicsParams = {
+  splatRadius: 0.018,
+  fuelAmount: 1.4,
+  velocityInjectScale: 0.0012,
+  velocityDissipation: 0.94,
+  temperatureDissipation: 0.955,
+  fuelDissipation: 0.945,
+  vorticityStrength: 6.0,
+  buoyancyStrength: 8.0,
+  burnRate: 4.0,
+  fuelEfficiency: 2.0,
+  coolingRate: 3.0,
+  pressureDissipation: 0.8,
+  temperatureInjection: 1.8,
+  upwardBias: -4.0,
+  sootYield: 0.12,
+  sootCoolThreshold: 0.4,
+  sootCoolRate: 1.8,
+  sootDissipation: 1.8,
+  sootAdvectionDissipation: 0.98,
+  gravity: -12.0,
+};
+
+/** Charcoal color curve — steel-wool orange/white palette */
+export const CHARCOAL_COLOR_CURVE: FireColorCurve = {
+  coldColor: [0.4, 0.08, 0.0],
+  midColor: [0.9, 0.3, 0.02],
+  hotColor: [1.0, 0.6, 0.1],
+  coreColor: [1.0, 0.95, 0.8],
 };
 
 // ============================================================================

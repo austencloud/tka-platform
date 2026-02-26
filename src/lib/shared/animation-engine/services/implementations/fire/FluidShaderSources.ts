@@ -170,21 +170,28 @@ uniform sampler2D u_temperature;
 uniform float u_dt;
 uniform float u_buoyancy;          // buoyancy strength
 uniform float u_ambientTemp;       // baseline temperature
-uniform float u_terminalVelocity;  // max upward velocity from buoyancy
+uniform float u_terminalVelocity;  // max velocity magnitude from buoyancy/gravity
+uniform float u_gravity;           // constant vertical force (negative = downward)
 
 void main() {
   vec2 vel = texture(u_velocity, v_uv).xy;
   float temp = texture(u_temperature, v_uv).x;
 
   // Buoyancy force: upward (+Y in UV space) proportional to temperature above ambient
-  float force = u_buoyancy * (temp - u_ambientTemp);
+  float buoyForce = u_buoyancy * (temp - u_ambientTemp);
 
-  // Terminal velocity: reduce buoyancy as upward velocity approaches ceiling.
-  // Without this, buoyancy re-injects velocity every frame faster than dissipation
-  // removes it, accumulating to ~14+ units and advecting fire far from tips.
-  // Only affects the Y component — horizontal velocity (prop tracking) is untouched.
-  float attenuation = max(0.0, 1.0 - vel.y / u_terminalVelocity);
-  vel.y += force * attenuation * u_dt;
+  // Gravity: constant vertical force on any heated fluid.
+  // Only acts on fluid with some temperature (prevents drift in empty space).
+  float gravForce = u_gravity * step(0.01, temp);
+
+  float totalForce = buoyForce + gravForce;
+
+  // Terminal velocity: attenuate force when velocity is already moving in the
+  // same direction as the force, preventing runaway accumulation.
+  // Works symmetrically for both upward (buoyancy) and downward (gravity) forces.
+  float speedInForceDir = sign(totalForce) * vel.y;
+  float attenuation = max(0.0, 1.0 - speedInForceDir / u_terminalVelocity);
+  vel.y += totalForce * attenuation * u_dt;
 
   fragColor = vec4(vel, 0.0, 1.0);
 }
