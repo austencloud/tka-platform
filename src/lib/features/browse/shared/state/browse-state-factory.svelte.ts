@@ -480,12 +480,10 @@ export function createBrowseState() {
     }, 300);
   }
 
-  // Only subscribe to library mutations when showing the user's own library.
-  // Community gallery is a static snapshot — no reload needed.
+  // Reload library sequences whenever the library is mutated (save, delete, etc.)
+  // regardless of which source is currently active.
   $effect(() => {
-    if (currentSource === "my-library") {
-      return onLibraryMutated(() => loadLibrarySequences());
-    }
+    return onLibraryMutated(() => loadLibrarySequences());
   });
 
   return {
