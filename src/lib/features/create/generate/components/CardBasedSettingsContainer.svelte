@@ -53,6 +53,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     isGenerating,
     onGenerateClicked,
     startEndState,
+    hasSettingsChanged = false,
     helpMode = false,
     helpModeExiting = false,
     onHelpSelect,
@@ -63,6 +64,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     isGenerating: boolean;
     onGenerateClicked: (options: any) => Promise<void>;
     startEndState?: StartEndOptionsState;
+    hasSettingsChanged?: boolean;
     helpMode?: boolean;
     helpModeExiting?: boolean;
     onHelpSelect?: (controlId: GeneratorHelpId) => void;
@@ -226,7 +228,8 @@ Supports help mode: when active, clicking cards opens help instead of normal act
         handleGenerateClick: onGenerateClicked,
       },
       allowedIntensityValues,
-      isGenerating
+      isGenerating,
+      hasSettingsChanged
     );
   });
 </script>
@@ -241,6 +244,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
       {isGenerating}
       {onGenerateClicked}
       {startEndState}
+      {hasSettingsChanged}
       {helpMode}
       {helpModeExiting}
       {onHelpSelect}

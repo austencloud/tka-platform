@@ -15,15 +15,27 @@ Integrates the "Generate New" button into the card grid layout so it scales with
 
   let {
     isGenerating,
+    hasSettingsChanged = false,
     onGenerateClicked,
     config,
     startEndOptions = null,
   } = $props<{
     isGenerating: boolean;
+    hasSettingsChanged?: boolean;
     onGenerateClicked: (options: any) => Promise<void>;
     config: UIGenerationConfig;
     startEndOptions?: StartEndOptions | null;
   }>();
+
+  let buttonLabel = $derived(
+    isGenerating
+      ? t("generator_button_generating")
+      : hasSettingsChanged
+        ? t("generator_button_regenerate")
+        : t("generator_button")
+  );
+
+  let buttonIcon = $derived(hasSettingsChanged && !isGenerating ? "arrows-rotate" : "dice");
 
   let hapticService: IHapticFeedback | null = $state(null);
 
@@ -45,14 +57,15 @@ Integrates the "Generate New" button into the card grid layout so it scales with
 
 <button
   class="generate-button-card"
+  class:dirty={hasSettingsChanged && !isGenerating}
   onclick={handleClick}
   disabled={isGenerating}
   type="button"
-  aria-label={isGenerating ? t("generator_button_generating") : t("generator_button")}
+  aria-label={buttonLabel}
 >
   <div class="button-content">
-    <FontAwesomeIcon icon="dice" style="solid" />
-    <span>{isGenerating ? t("generator_button_generating") : t("generator_button")}</span>
+    <FontAwesomeIcon icon={buttonIcon} style="solid" />
+    <span>{buttonLabel}</span>
   </div>
 </button>
 
@@ -111,6 +124,20 @@ Integrates the "Generate New" button into the card grid layout so it scales with
 
     /* 🔥 CONTAINED glow - stays within button boundaries */
     box-shadow:
+      0 4px 12px
+        color-mix(
+          in srgb,
+          var(--semantic-success, var(--semantic-success)) 40%,
+          transparent
+        ),
+      0 2px 6px var(--theme-shadow),
+      inset 0 1px 0 var(--theme-stroke-strong),
+      inset 0 -1px 0 var(--theme-shadow);
+  }
+
+  .generate-button-card.dirty {
+    box-shadow:
+      0 0 0 3px var(--semantic-warning, #f59e0b),
       0 4px 12px
         color-mix(
           in srgb,

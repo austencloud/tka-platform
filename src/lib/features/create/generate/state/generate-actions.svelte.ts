@@ -26,6 +26,7 @@ export function createGenerationActionsState(
 ) {
   let isGenerating = $state(false);
   let lastGeneratedSequence = $state<SequenceData | null>(null);
+  let lastGeneratedConfig = $state<UIGenerationConfig | null>(null);
   let generationError = $state<string | null>(null);
   let orchestrationService: IGenerationOrchestrator | null = null;
 
@@ -68,6 +69,8 @@ export function createGenerationActionsState(
       }
 
       lastGeneratedSequence = generatedSequence;
+      const currentConfig = getConfig?.();
+      lastGeneratedConfig = currentConfig ? { ...currentConfig } : null;
       await updateWorkbenchWithSequence(generatedSequence);
     } catch (error) {
       generationError =
@@ -162,6 +165,9 @@ export function createGenerationActionsState(
     },
     get lastGeneratedSequence() {
       return lastGeneratedSequence;
+    },
+    get lastGeneratedConfig() {
+      return lastGeneratedConfig;
     },
     get generationError() {
       return generationError;
