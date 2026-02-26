@@ -371,10 +371,11 @@
       console.warn("BrowseModule: Failed to resolve DeviceDetector", err);
     }
 
-    // Load initial data through gallery state (non-blocking)
-    // UI shows immediately with skeletons while data loads
+    // Load initial data for the correct source (non-blocking).
+    // Use setSource so the persisted source (e.g. "my-library") is respected
+    // instead of always defaulting to community sequences.
     galleryState
-      .loadAllSequences()
+      .setSource(sequenceSourceManager.current)
       .then(() => {
         // Check if we have a pending sequence to view (e.g., from inbox message)
         const pendingSequenceId = consumePendingSequenceView();

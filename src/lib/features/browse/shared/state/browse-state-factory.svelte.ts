@@ -249,7 +249,11 @@ export function createBrowseState() {
 
   // Switch source and reload data
   async function setSource(source: SequenceSource): Promise<void> {
-    if (source === currentSource) {
+    // Only skip if source already matches AND data has been loaded.
+    // If sectionsReady is false we always load, even if source appears unchanged
+    // (covers the initial load case where currentSource defaults to "community"
+    // but data hasn't been fetched yet).
+    if (source === currentSource && sectionsReady) {
       return;
     }
 
