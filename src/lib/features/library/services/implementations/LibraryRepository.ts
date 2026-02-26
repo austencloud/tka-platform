@@ -436,22 +436,12 @@ export class LibraryRepository implements ILibraryRepository {
       return; // Already deleted
     }
 
-    // Remove from public index if public. This must be AWAITED before returning.
-    //
-    // Why: callers fire notifyLibraryMutated() immediately after this function
-    // resolves, which triggers gallery listeners to reload from Firestore. When
-    // Firestore reads, it serves from its local in-memory cache first — so the
-    // document only disappears from the reload if it has already been queued for
-    // deletion in that cache. Awaiting here means both the private doc (below)
-    // and the public index doc are in the local delete queue before the gallery
-    // re-queries. Without the await, the gallery reload races the public index
-    // deletion and may still return the sequence.
-    //
-    // Errors are caught and logged but not rethrown — a flaky public index
-    // removal should not surface as a delete failure to the user. The private
-    // doc deletion below is the authoritative write.
+    // Fire-and-forget — deletes the public index doc so the card disappears
+    // from the community gallery on next load. Not awaited because the gallery
+    // only refreshes on an explicit reload anyway; awaiting it just slows down
+    // the delete. Errors are logged but not rethrown.
     if (existing.visibility === "public" && this.publicIndexSyncer) {
-      await this.publicIndexSyncer.removeFromPublicIndex(sequenceId).catch((error) =>
+      this.publicIndexSyncer.removeFromPublicIndex(sequenceId).catch((error) =>
         console.warn(
           "[LibraryRepository] Failed to remove from public index:",
           error

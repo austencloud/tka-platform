@@ -482,18 +482,13 @@ export function createBrowseState() {
     }, 300);
   }
 
-  // When a sequence is deleted from elsewhere (e.g. the sequence viewer drawer),
-  // a notification is dispatched via library-events so the gallery can reload without
-  // needing direct coupling between modules.
-  // LibraryRepository.deleteSequence awaits removeFromPublicIndex before returning,
-  // so by the time this handler fires the public index is already updated.
-  $effect(() => onLibraryMutated(() => {
+  // Only subscribe to library mutations when showing the user's own library.
+  // Community gallery is a static snapshot — no reload needed.
+  $effect(() => {
     if (currentSource === "my-library") {
-      loadLibrarySequences();
-    } else {
-      loadAllSequences();
+      return onLibraryMutated(() => loadLibrarySequences());
     }
-  }));
+  });
 
   return {
     // State

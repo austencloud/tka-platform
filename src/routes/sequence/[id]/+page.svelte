@@ -334,7 +334,7 @@
       }
 
       if (!resolvedSequence) {
-        loadError = "Sequence not found";
+        loadError = "It may have been deleted by the owner while you were browsing the feed.";
         isLoading = false;
         return;
       }
