@@ -1,8 +1,9 @@
 <!--
-  BentoPropGrid.svelte - Flat sectioned prop selection grid
+  BentoPropGrid.svelte - Family-first prop selection grid
 
-  Shows ALL prop types in a continuous grid, grouped into logical sections
-  with lightweight text dividers. No bordered boxes — props flow freely.
+  Shows 16 prop families in a sectioned grid. Single-prop families
+  select immediately. Multi-variant families open a variant strip
+  at the bottom for drilling into specific variants.
 
   Variants:
   - "panel" (default): has border/background for standalone use (e.g. Settings tab)
@@ -10,6 +11,11 @@
 -->
 <script lang="ts">
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import {
+    getBasePropType,
+    getAllVariations,
+    getPropTypeDisplayInfo,
+  } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
   import PropTypeButton from "./PropTypeButton.svelte";
 
   let {
@@ -27,77 +33,130 @@
     variant?: "panel" | "inline";
   }>();
 
-  // Sections group related prop families into a continuous flow
-  const PROP_SECTIONS: { label: string; props: PropType[] }[] = [
+  // Family definitions: one base prop per family, grouped by section
+  const PROP_FAMILIES: { label: string; bases: PropType[] }[] = [
     {
       label: "Staves & Clubs",
-      props: [
-        PropType.STAFF, PropType.SIMPLESTAFF, PropType.BIGSTAFF, PropType.STAFF2,
-        PropType.CLUB, PropType.BIGCLUB,
-        PropType.FAN, PropType.BIGFAN,
-      ],
+      bases: [PropType.STAFF, PropType.CLUB, PropType.FAN],
     },
     {
       label: "Curved Props",
-      props: [
-        PropType.BUUGENG, PropType.BIGBUUGENG, PropType.TRIGENG,
-        PropType.MINIHOOP, PropType.BIGHOOP,
-        PropType.TRIAD, PropType.BIGTRIAD,
-        PropType.TRIQUETRA, PropType.TRIQUETRA2,
+      bases: [
+        PropType.BUUGENG,
+        PropType.TRIGENG,
+        PropType.MINIHOOP,
+        PropType.TRIAD,
+        PropType.TRIQUETRA,
       ],
     },
     {
       label: "Novelty",
-      props: [
-        PropType.CHICKEN, PropType.BIGCHICKEN,
-        PropType.GUITAR, PropType.UKULELE,
-        PropType.DOUBLESTAR, PropType.BIGDOUBLESTAR,
-        PropType.EIGHTRINGS, PropType.BIGEIGHTRINGS,
-        PropType.TORCH, PropType.BIGTORCH,
+      bases: [
+        PropType.CHICKEN,
+        PropType.GUITAR,
+        PropType.DOUBLESTAR,
+        PropType.EIGHTRINGS,
+        PropType.TORCH,
       ],
     },
     {
       label: "Singles",
-      props: [PropType.HAND, PropType.SWORD, PropType.QUIAD],
+      bases: [PropType.HAND, PropType.SWORD, PropType.QUIAD],
     },
   ];
 
-  function handlePropSelect(propType: PropType) {
-    onSelect(propType);
+  let expandedFamily = $state<PropType | null>(null);
+
+  const selectedBase = $derived(getBasePropType(selectedPropType));
+  const familyVariants = $derived(
+    expandedFamily ? getAllVariations(expandedFamily) : [],
+  );
+
+  // Auto-expand the selected prop's family on mount / when selection changes
+  $effect(() => {
+    const base = getBasePropType(selectedPropType);
+    if (getAllVariations(base).length > 1) {
+      expandedFamily = base;
+    } else {
+      expandedFamily = null;
+    }
+  });
+
+  function handleFamilyClick(base: PropType) {
+    const variants = getAllVariations(base);
+    if (variants.length === 1) {
+      // Single-prop family: select immediately, collapse any strip
+      onSelect(base);
+      expandedFamily = null;
+    } else {
+      // Multi-variant family: expand strip
+      expandedFamily = base;
+    }
+  }
+
+  function variantCount(base: PropType): number | undefined {
+    const count = getAllVariations(base).length;
+    return count > 1 ? count : undefined;
   }
 </script>
 
-<div class="prop-grid-root" class:panel={variant === "panel"} class:inline={variant === "inline"}>
-  <!-- Header -->
+<div
+  class="prop-grid-root"
+  class:panel={variant === "panel"}
+  class:inline={variant === "inline"}
+>
+  <!-- Header (panel variant only) -->
   {#if variant === "panel"}
     <header class="grid-header">
       <h4 class="grid-title">{title}</h4>
     </header>
   {/if}
 
-  <!-- Scrollable content -->
+  <!-- Scrollable family grid -->
   <div class="grid-scroll themed-scrollbar">
     <div class="grid-content">
-      {#each PROP_SECTIONS as section, i}
+      {#each PROP_FAMILIES as section, i}
         <div class="section-label" class:first={i === 0}>{section.label}</div>
-        {#each section.props as propType}
-          <PropTypeButton
-            {propType}
-            selected={selectedPropType === propType}
-            {color}
-            onSelect={handlePropSelect}
-          />
-        {/each}
+        <div class="section-buttons">
+          {#each section.bases as base}
+            <PropTypeButton
+              propType={base}
+              selected={selectedBase === base}
+              badge={variantCount(base)}
+              {color}
+              onSelect={() => handleFamilyClick(base)}
+            />
+          {/each}
+        </div>
       {/each}
     </div>
   </div>
+
+  <!-- Variant strip (shown when a multi-variant family is expanded) -->
+  {#if expandedFamily && familyVariants.length > 1}
+    <div class="variant-strip">
+      <span class="variant-label"
+        >{getPropTypeDisplayInfo(expandedFamily).label} Variants</span
+      >
+      <div class="variant-buttons">
+        {#each familyVariants as variantProp}
+          <PropTypeButton
+            propType={variantProp}
+            selected={selectedPropType === variantProp}
+            {color}
+            onSelect={() => onSelect(variantProp)}
+          />
+        {/each}
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
   .prop-grid-root {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 0;
     width: 100%;
     height: 100%;
     min-height: 0;
@@ -113,7 +172,7 @@
     border-radius: 12px;
   }
 
-  /* Inline variant: no border, transparent — drawer provides the container */
+  /* Inline variant: no border, transparent -- drawer provides the container */
   .prop-grid-root.inline {
     background: transparent;
     border: none;
@@ -148,18 +207,15 @@
     scrollbar-width: thin;
   }
 
-  /* Continuous grid — props flow in a single grid with section labels spanning full width */
+  /* Vertical stack of sections */
   .grid-content {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-    align-content: start;
-    justify-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
   }
 
-  /* Section label — lightweight text divider spanning the full grid width */
+  /* Section label -- lightweight text divider */
   .section-label {
-    grid-column: 1 / -1;
     font-size: var(--font-size-compact, 10px);
     font-weight: 600;
     color: var(--theme-text-dim);
@@ -167,6 +223,7 @@
     letter-spacing: 0.4px;
     opacity: 0.7;
     padding: 8px 4px 2px;
+    text-align: center;
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
@@ -176,52 +233,86 @@
     padding-top: 0;
   }
 
-  /* Prop buttons fill their grid cell */
-  .grid-content :global(.prop-button) {
-    width: 100%;
-    max-width: 100px;
+  /* Flex row of family buttons -- centered with wrapping */
+  .section-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    padding: 0 4px;
   }
 
-  /* Container query breakpoints for column count */
+  /* Family buttons: fixed width so centering works */
+  .section-buttons :global(.prop-button) {
+    width: 80px;
+    flex-shrink: 0;
+  }
+
+  /* === Variant strip === */
+  .variant-strip {
+    flex-shrink: 0;
+    padding: 10px 12px;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .variant-label {
+    font-size: var(--font-size-compact, 10px);
+    font-weight: 600;
+    color: var(--theme-text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  .variant-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  /* Variant buttons: fixed explicit dimensions to guarantee SVG renders */
+  .variant-buttons :global(.prop-button) {
+    width: 70px;
+    height: 80px;
+    aspect-ratio: auto;
+    flex-shrink: 0;
+  }
+
+  /* Container query: widen family buttons on larger containers */
   @container prop-grid (min-width: 400px) {
-    .grid-content {
-      grid-template-columns: repeat(5, 1fr);
-      gap: 10px;
+    .section-buttons :global(.prop-button) {
+      width: 90px;
     }
   }
 
   @container prop-grid (min-width: 550px) {
-    .grid-content {
-      grid-template-columns: repeat(6, 1fr);
+    .section-buttons :global(.prop-button) {
+      width: 100px;
     }
 
-    .grid-content :global(.prop-button) {
-      max-width: 110px;
+    .variant-buttons :global(.prop-button) {
+      width: 80px;
+      height: 90px;
     }
   }
 
   @container prop-grid (min-width: 700px) {
-    .grid-content {
-      grid-template-columns: repeat(8, 1fr);
-      gap: 10px;
-    }
-
-    .grid-content :global(.prop-button) {
-      max-width: 100px;
-    }
-  }
-
-  @container prop-grid (min-width: 900px) {
-    .grid-content {
-      grid-template-columns: repeat(10, 1fr);
-    }
-
-    .grid-content :global(.prop-button) {
-      max-width: 90px;
+    .section-buttons :global(.prop-button) {
+      width: 95px;
     }
 
     .section-label {
       font-size: var(--font-size-xs, 11px);
+    }
+  }
+
+  @container prop-grid (min-width: 900px) {
+    .section-buttons :global(.prop-button) {
+      width: 90px;
     }
   }
 
