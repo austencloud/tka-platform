@@ -10,7 +10,7 @@
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import ErrorBanner from "../../../create/shared/components/ErrorBanner.svelte";
 
-  import type { IBrowseEventHandler } from "../services/contracts/IBrowseEventHandler";
+  import type { DeleteConfirmationData, IBrowseEventHandler } from "../services/contracts/IBrowseEventHandler";
   import CollectionsBrowsePanel from "../../collections/components/CollectionsBrowsePanel.svelte";
   import CreatorsPanel from "../../creators/components/CreatorsPanel.svelte";
   import UserProfilePanel from "../../creators/components/UserProfilePanel.svelte";
@@ -345,6 +345,9 @@
         galleryState,
         setSelectedSequence: (seq: SequenceData | null) => (_selectedSequence = seq),
         setError: (err: string | null) => (error = err),
+        setDeleteConfirmationData: function (data: DeleteConfirmationData | null): void {
+          throw new Error("Function not implemented.");
+        }
       });
 
     } catch (err) {
