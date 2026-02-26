@@ -80,12 +80,16 @@ export class LetterQueryHandler implements ILetterQueryHandler {
       // Load raw CSV data
       const csvData = await this.csvLoader.loadCSVDataSet();
 
+      if (!csvData.success || !csvData.data) {
+        throw new Error(csvData.error || "CSV data unavailable");
+      }
+
       // Parse CSV data using shared service
       const diamondParseResult = this.CSVParser.parseCSV(
-        csvData.data?.diamondData ?? ""
+        csvData.data.diamondData
       );
       const boxParseResult = this.CSVParser.parseCSV(
-        csvData.data?.boxData ?? ""
+        csvData.data.boxData
       );
 
       // Only log significant parsing errors (not empty row issues)
@@ -132,7 +136,7 @@ export class LetterQueryHandler implements ILetterQueryHandler {
       }
 
       // Parse skewed data if available
-      const skewedParseResult = csvData.data?.skewedData
+      const skewedParseResult = csvData.data.skewedData
         ? this.CSVParser.parseCSV(csvData.data.skewedData)
         : { rows: [], errors: [] };
 

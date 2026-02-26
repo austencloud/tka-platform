@@ -22,6 +22,24 @@
 
 <footer class="footer">
   <div class="container">
+    <ul class="feature-pills">
+      <li class="feature-pill">
+        <i class="fas fa-pen-nib pill-icon" aria-hidden="true"></i>
+        <span class="pill-label">Create</span>
+        <span class="pill-desc">Build sequences beat by beat</span>
+      </li>
+      <li class="feature-pill">
+        <i class="fas fa-graduation-cap pill-icon" aria-hidden="true"></i>
+        <span class="pill-label">Learn</span>
+        <span class="pill-desc">Interactive lessons and guides</span>
+      </li>
+      <li class="feature-pill">
+        <i class="fas fa-share-nodes pill-icon" aria-hidden="true"></i>
+        <span class="pill-label">Share</span>
+        <span class="pill-desc">Publish to a community library</span>
+      </li>
+    </ul>
+
     <a href={APP_DOMAIN} class="btn btn-primary">
       Open TKA Scribe
       <span class="arrow">→</span>
@@ -51,6 +69,41 @@
     flex-direction: column;
     align-items: center;
     gap: 32px;
+  }
+
+  .feature-pills {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .feature-pill {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-align: left;
+    font-size: var(--font-size-sm, 0.875rem);
+  }
+
+  .pill-icon {
+    color: var(--theme-accent, #6366f1);
+    font-size: 1rem;
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .pill-label {
+    font-weight: 600;
+    color: var(--theme-text, #ffffff);
+    white-space: nowrap;
+  }
+
+  .pill-desc {
+    color: rgba(255, 255, 255, 0.55);
   }
 
   .btn {

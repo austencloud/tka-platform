@@ -344,11 +344,13 @@ Uses organizer and sizer services for section grouping and sizing.
     align-items: center;
     container-type: size;
 
-    /* Dark mode cascade variables - child components inherit these */
-    --option-header-bg: rgba(255, 255, 255, 0.9);
-    --option-header-border: rgba(0, 0, 0, 0.1);
+    /* Dark mode cascade variables - child components inherit these.
+       Uses theme system variables so they adapt to any background,
+       with :root.dark overrides for pictograph dark mode toggle. */
+    --option-header-bg: var(--theme-card-bg, rgba(255, 255, 255, 0.9));
+    --option-header-border: var(--theme-stroke, rgba(0, 0, 0, 0.1));
     --option-header-shadow: rgba(0, 0, 0, 0.1);
-    --option-header-text: #000000;
+    --option-header-text: var(--theme-text, #000000);
     --option-dark-transition: var(--duration-fast) ease-out;
   }
 
@@ -387,7 +389,7 @@ Uses organizer and sizer services for section grouping and sizing.
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke-strong);
     border-radius: 16px;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.85));
     font-size: var(--font-size-compact);
     font-weight: 500;
     cursor: pointer;
@@ -402,8 +404,8 @@ Uses organizer and sizer services for section grouping and sizing.
   }
 
   .filter-toggle:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
   .filter-toggle:active {

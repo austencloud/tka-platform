@@ -21,6 +21,12 @@
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
+  import {
+    getSettings,
+    updateSettings,
+    isSettingsPreviewMode,
+  } from "$lib/shared/application/state/app-state.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import MobileSegmentControl from "./visibility/MobileSegmentControl.svelte";
   import type { VisibilityMode } from "./visibility/visibility-types";
   import PictographPanel from "./visibility/PictographPanel.svelte";
@@ -39,6 +45,18 @@
   // UI state
   let mobileMode = $state<VisibilityMode>("pictograph");
   let isVisible = $state(false);
+
+  // Dark mode - top-level toggle
+  const darkMode = $derived(getSettings().darkMode ?? false);
+  const isPreview = $derived(isSettingsPreviewMode());
+
+  function handleDarkModeToggle() {
+    if (isPreview) return;
+    triggerHaptic();
+    const newValue = !darkMode;
+    void updateSettings({ darkMode: newValue });
+    animationVisibilityManager.setDarkMode(newValue);
+  }
 
   // Pictograph visibility state
   let tkaGlyphVisible = $state(true);
@@ -74,7 +92,6 @@
   let imgShowNotes = $state(true);
   let imgShowBirthday = $state(true);
   let imgCustomNotesText = $state("Created using TKA Scribe");
-  let imgDarkMode = $state(false);
 
   // Haptics
   let hapticService: IHapticFeedback | null = null;
@@ -245,10 +262,6 @@
         imgShowBirthday = !imgShowBirthday;
         imageCompositionManager.setShowBirthday(imgShowBirthday);
         break;
-      case "darkMode":
-        imgDarkMode = !imgDarkMode;
-        imageCompositionManager.setDarkMode(imgDarkMode);
-        break;
     }
   }
 
@@ -299,7 +312,6 @@
     imgShowNotes = imageCompositionManager.showNotes;
     imgShowBirthday = imageCompositionManager.showBirthday;
     imgCustomNotesText = imageCompositionManager.customNotesText;
-    imgDarkMode = imageCompositionManager.darkMode;
 
     // Observers for external changes
     const pictographObserver = () => {
@@ -343,7 +355,6 @@
       imgShowNotes = imageCompositionManager.showNotes;
       imgShowBirthday = imageCompositionManager.showBirthday;
       imgCustomNotesText = imageCompositionManager.customNotesText;
-      imgDarkMode = imageCompositionManager.darkMode;
     };
 
     visibilityManager.registerObserver(pictographObserver, ["all"]);
@@ -369,6 +380,23 @@
       onModeChange={handleModeChange}
     />
   </div>
+
+  <!-- Dark Mode Toggle -->
+  <button
+    type="button"
+    class="dark-mode-toggle"
+    class:active={darkMode}
+    class:disabled={isPreview}
+    onclick={handleDarkModeToggle}
+    aria-pressed={darkMode}
+    disabled={isPreview}
+  >
+    <span class="dark-mode-icon">{darkMode ? "🌙" : "☀️"}</span>
+    <span class="dark-mode-label">{darkMode ? t("visibility_dark_mode") : t("visibility_light_mode")}</span>
+    <div class="dark-mode-switch" class:on={darkMode}>
+      <div class="dark-mode-knob"></div>
+    </div>
+  </button>
 
   <!-- Panels Container -->
   <div class="visibility-panels-container">
@@ -421,7 +449,6 @@
       showNotes={imgShowNotes}
       showBirthday={imgShowBirthday}
       customNotesText={imgCustomNotesText}
-      darkMode={imgDarkMode}
       onPictographToggle={handlePictographToggle}
       onToggle={handleImageToggle}
       onCustomNotesChange={handleCustomNotesChange}
@@ -486,8 +513,99 @@
     }
   }
 
+  /* Dark Mode Toggle */
+  .dark-mode-toggle {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 1200px;
+    padding: 14px 16px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 16px;
+    cursor: pointer;
+    transition:
+      background var(--duration-fast) ease,
+      border-color var(--duration-fast) ease;
+    text-align: left;
+  }
+
+  .dark-mode-toggle:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+  }
+
+  .dark-mode-toggle.active {
+    background: rgba(0, 255, 255, 0.06);
+    border-color: rgba(0, 255, 255, 0.25);
+  }
+
+  .dark-mode-toggle.active:hover {
+    background: rgba(0, 255, 255, 0.1);
+    border-color: rgba(0, 255, 255, 0.35);
+  }
+
+  .dark-mode-toggle.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .dark-mode-toggle:focus-visible {
+    outline: 2px solid var(--theme-accent, #f97316);
+    outline-offset: 2px;
+  }
+
+  .dark-mode-icon {
+    font-size: var(--font-size-lg, 18px);
+    line-height: 1;
+  }
+
+  .dark-mode-label {
+    flex: 1;
+    font-size: var(--font-size-base, 16px);
+    font-weight: 500;
+    color: var(--theme-text, #ffffff);
+  }
+
+  .dark-mode-toggle.active .dark-mode-label {
+    color: #00ffff;
+  }
+
+  .dark-mode-switch {
+    width: 44px;
+    height: 26px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 13px;
+    padding: 2px;
+    transition: background var(--duration-normal) ease;
+    flex-shrink: 0;
+  }
+
+  .dark-mode-switch.on {
+    background: rgba(0, 255, 255, 0.4);
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+  }
+
+  .dark-mode-knob {
+    width: 22px;
+    height: 22px;
+    background: white;
+    border-radius: 50%;
+    transition: transform var(--duration-normal) ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .dark-mode-switch.on .dark-mode-knob {
+    transform: translateX(18px);
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .visibility-tab {
+    .visibility-tab,
+    .dark-mode-toggle,
+    .dark-mode-switch,
+    .dark-mode-knob {
       transition: none;
     }
   }

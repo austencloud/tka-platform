@@ -7,10 +7,13 @@ Deep domain knowledge lives in the MCP package — use `get_domain_topic` or `ge
 
 ## Framing
 
-- TKA is built for static props (staff, fans, clubs, buugeng). NOT poi.
-- Never list poi alongside static props as equals. Poi is a restricted subset.
+- **TKA was built for double staves.** That's the canonical prop. Each staff has two visible ends — one end is the consistent thumb reference, the other is the consistent pinky reference. With proper technique, these references never change. This is the foundation of the entire orientation system.
+- Other static props (fans, clubs, buugeng) work with TKA but staves are what the system was designed around.
+- When recommending a starting prop: **double staves, not fans.** Fans have visible orientation but lack the dual-end reference system that TKA is built on. Staves give you the thumb/pinky landmarks that make orientation readable.
+- **Proper technique that preserves the thumb/pinky references:** negative space above and below the shoulder, and body turns to pass into the plane behind you. These techniques mean you never have to change your grip reference.
+- NOT poi. Never list poi alongside static props as equals. Poi is a restricted subset.
 - Poi Lab is planned, not built. Don't present it as working.
-- TKA is for dual-wielded props. Contact staff is NOT part of TKA.
+- TKA is for dual-wielded props. Contact staff (balancing/rolling on body) is NOT part of TKA.
 - Don't say "any amount of rotation" — smallest increment is 45 degrees (quarter turns at L7).
 - Don't say "fixed grip" — say "gripped directly."
 

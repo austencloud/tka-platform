@@ -46,6 +46,14 @@
     if (mode === "led") visibilityManager.setLedEffect(false);
   }
 
+  // On mount, disable effects that don't belong to the restored mode.
+  // Without this, a persisted fireEffect=true leaks into the LED tab (and vice versa).
+  function cleanupInactiveModes(current: EffectMode) {
+    if (current !== "fire") visibilityManager.setFireEffect(false);
+    if (current !== "led") visibilityManager.setLedEffect(false);
+  }
+  cleanupInactiveModes(activeMode);
+
   function setMode(mode: EffectMode) {
     if (mode !== activeMode) {
       cleanupMode(activeMode);

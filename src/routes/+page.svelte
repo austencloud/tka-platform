@@ -6,7 +6,7 @@
   import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
   import HeroSection from "./landing/components/HeroSection.svelte";
   import NotationShowcaseSection from "./landing/components/NotationShowcaseSection.svelte";
-  import WhatIsTKASection from "./landing/components/WhatIsTKASection.svelte";
+  import GuidesSection from "./landing/components/GuidesSection.svelte";
   import LandingFooter from "./landing/components/LandingFooter.svelte";
   import LandingBackgroundPicker from "./landing/components/LandingBackgroundPicker.svelte";
   import type { Component } from "svelte";
@@ -387,7 +387,7 @@
       <HeroSection />
       <main id="main-content">
         <NotationShowcaseSection />
-        <WhatIsTKASection />
+        <GuidesSection />
       </main>
       <LandingFooter />
     </div>

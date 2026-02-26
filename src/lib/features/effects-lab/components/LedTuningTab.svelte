@@ -103,10 +103,10 @@
   let isPlaying = $state(false);
   let bpm = $state(persisted.bpm ?? DEFAULT_BPM);
 
-  // LED starts disabled; restored after engine is ready to avoid the
-  // race where the toggle shows ON but the WebGL renderer hasn't mounted.
-  let ledEnabled = $state(false);
-  let ledStateRestored = false;
+  // Initialize directly from persisted state. The WebGL renderer creation
+  // is deferred via rAF inside syncLedOverlay, so there's no race — the
+  // toggle shows the correct state immediately and the renderer catches up.
+  let ledEnabled = $state(persisted.ledEnabled ?? false);
   let brightness = $state(persisted.brightness ?? 5);
   let patternId = $state(persisted.patternId ?? DEFAULT_LED_CONFIG.patternId);
   let primaryColor = $state(persisted.primaryColor ?? DEFAULT_LED_CONFIG.primaryColor);
@@ -139,14 +139,16 @@
     visibilityManager.setLedEffect(ledEnabled);
   });
 
-  // Restore persisted LED state AFTER the engine is ready and has a sequence.
+  // Sync back from visibility manager (e.g. hotkey Shift+L toggled it externally)
   $effect(() => {
-    if (servicesReady && sequence && !ledStateRestored) {
-      ledStateRestored = true;
-      if (persisted.ledEnabled) {
-        requestAnimationFrame(() => { ledEnabled = true; });
+    const syncBack = () => {
+      const managerState = visibilityManager.isLedEffectEnabled();
+      if (managerState !== ledEnabled) {
+        ledEnabled = managerState;
       }
-    }
+    };
+    visibilityManager.registerObserver(syncBack);
+    return () => visibilityManager.unregisterObserver(syncBack);
   });
 
   $effect(() => {

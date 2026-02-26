@@ -11,7 +11,7 @@ Note: This file must stay in sync with src/routes/+page.svelte
   import { onMount } from "svelte";
   import { detectSiteMode, type SiteMode } from "../../config/domains";
   import HeroSection from "../landing/components/HeroSection.svelte";
-  import WhatIsTKASection from "../landing/components/WhatIsTKASection.svelte";
+  import GuidesSection from "../landing/components/GuidesSection.svelte";
   import FeaturesSection from "../landing/components/FeaturesSection.svelte";
   import NotationSection from "../landing/components/NotationSection.svelte";
   import LOOPsSection from "../landing/components/LOOPsSection.svelte";
@@ -45,7 +45,7 @@ Note: This file must stay in sync with src/routes/+page.svelte
 {:else}
   <main class="landing-page">
     <HeroSection />
-    <WhatIsTKASection />
+    <GuidesSection />
     <FeaturesSection />
     <NotationSection />
     <LOOPsSection />

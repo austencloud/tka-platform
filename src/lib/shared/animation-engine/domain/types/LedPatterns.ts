@@ -1,7 +1,7 @@
 /**
  * LED Pattern Engine
  *
- * Defines the six built-in LED color patterns and the pure `evaluatePattern()`
+ * Defines the built-in LED color patterns and the pure `evaluatePattern()`
  * function that maps (time, LED index, config) → a normalized RGB color.
  *
  * All RGB values are in [0, 1]. Time is in seconds. The function is
@@ -20,7 +20,7 @@ export interface LedPattern {
   /** Human-readable display name shown in the settings UI */
   name: string;
   /** Animation family this pattern belongs to */
-  type: "solid" | "pulse" | "rainbow" | "chase" | "strobe" | "breathe";
+  type: "solid" | "rainbow";
 }
 
 /**
@@ -100,61 +100,11 @@ export function evaluatePattern(
       return { r: primaryColor.r, g: primaryColor.g, b: primaryColor.b };
     }
 
-    case "pulse": {
-      // Uniform brightness oscillation at ~2 Hz (at speed 1).
-      // sin maps [-1,1] → intensity maps [0,1].
-      const intensity = 0.5 + 0.5 * Math.sin(t * 2.0);
-      return {
-        r: primaryColor.r * intensity,
-        g: primaryColor.g * intensity,
-        b: primaryColor.b * intensity,
-      };
-    }
-
     case "rainbow": {
       // Each LED is offset around the hue wheel proportionally to its
       // position in the array, and the whole spectrum rotates over time.
       const hue = (t * 0.15 + ledIndex / Math.max(totalLeds, 1)) % 1.0;
       return hslToRgb(hue, 1.0, 0.5);
-    }
-
-    case "chase": {
-      // A bright "comet" travels along the prop; LEDs behind the head fade
-      // in a tail whose length is 30% of the total LED count (minimum 1).
-      const tailLength = Math.max(totalLeds * 0.3, 1);
-      // Head position cycles through the full LED range at ~2 LEDs/second.
-      const headPos = (t * 2.0) % Math.max(totalLeds, 1);
-      // Angular distance in LED-space, wrapped to [0, totalLeds).
-      const raw = ledIndex - headPos;
-      const dist = ((raw % totalLeds) + totalLeds) % totalLeds;
-      // Exponential falloff behind the head; LEDs ahead of the head are dark.
-      const intensity = dist < tailLength ? Math.exp(-dist / (tailLength * 0.4)) : 0.0;
-      return {
-        r: primaryColor.r * intensity,
-        g: primaryColor.g * intensity,
-        b: primaryColor.b * intensity,
-      };
-    }
-
-    case "strobe": {
-      // Hard on/off flash at ~8 Hz (at speed 1). All LEDs flash together.
-      const intensity = Math.sin(t * 8.0) > 0 ? 1.0 : 0.0;
-      return {
-        r: primaryColor.r * intensity,
-        g: primaryColor.g * intensity,
-        b: primaryColor.b * intensity,
-      };
-    }
-
-    case "breathe": {
-      // Slower, smoother sine breath at ~1.2 Hz (at speed 1).
-      // Minimum brightness is 0.3 so LEDs are always faintly visible.
-      const intensity = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(t * 1.2));
-      return {
-        r: primaryColor.r * intensity,
-        g: primaryColor.g * intensity,
-        b: primaryColor.b * intensity,
-      };
     }
 
     default: {
@@ -167,7 +117,7 @@ export function evaluatePattern(
 // ─── Built-in Pattern Registry ────────────────────────────────────────────────
 
 /**
- * The six built-in LED patterns shipped with the overlay.
+ * The built-in LED patterns shipped with the overlay.
  * Order here matches the display order in the settings UI.
  */
 export const LED_PATTERNS: LedPattern[] = [
@@ -177,29 +127,9 @@ export const LED_PATTERNS: LedPattern[] = [
     type: "solid",
   },
   {
-    id: "pulse",
-    name: "Pulse",
-    type: "pulse",
-  },
-  {
     id: "rainbow",
     name: "Rainbow",
     type: "rainbow",
-  },
-  {
-    id: "chase",
-    name: "Chase",
-    type: "chase",
-  },
-  {
-    id: "strobe",
-    name: "Strobe",
-    type: "strobe",
-  },
-  {
-    id: "breathe",
-    name: "Breathe",
-    type: "breathe",
   },
 ];
 

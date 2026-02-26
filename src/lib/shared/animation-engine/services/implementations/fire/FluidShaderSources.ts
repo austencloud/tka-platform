@@ -168,8 +168,9 @@ out vec4 fragColor;
 uniform sampler2D u_velocity;
 uniform sampler2D u_temperature;
 uniform float u_dt;
-uniform float u_buoyancy;      // buoyancy strength
-uniform float u_ambientTemp;   // baseline temperature
+uniform float u_buoyancy;          // buoyancy strength
+uniform float u_ambientTemp;       // baseline temperature
+uniform float u_terminalVelocity;  // max upward velocity from buoyancy
 
 void main() {
   vec2 vel = texture(u_velocity, v_uv).xy;
@@ -178,8 +179,12 @@ void main() {
   // Buoyancy force: upward (+Y in UV space) proportional to temperature above ambient
   float force = u_buoyancy * (temp - u_ambientTemp);
 
-  // Add a slight lateral wobble from temperature for organic motion
-  vel.y += force * u_dt;
+  // Terminal velocity: reduce buoyancy as upward velocity approaches ceiling.
+  // Without this, buoyancy re-injects velocity every frame faster than dissipation
+  // removes it, accumulating to ~14+ units and advecting fire far from tips.
+  // Only affects the Y component — horizontal velocity (prop tracking) is untouched.
+  float attenuation = max(0.0, 1.0 - vel.y / u_terminalVelocity);
+  vel.y += force * attenuation * u_dt;
 
   fragColor = vec4(vel, 0.0, 1.0);
 }

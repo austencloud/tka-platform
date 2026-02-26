@@ -95,8 +95,8 @@ Shows hand positions on grid, user identifies the type
         <PositionVisualizer
           leftHand={question.left}
           rightHand={question.right}
-          showLabels={true}
-          highlightType={answerState !== "idle" ? question.type : null}
+          gridMode={question.gridMode}
+          showLetter={false}
         />
       </div>
 

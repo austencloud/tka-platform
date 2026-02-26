@@ -271,6 +271,44 @@ export function registerGlobalShortcuts(
     },
   });
 
+  // ==================== Effects Shortcuts (Shift + Letter) ====================
+
+  // Shift+F - Toggle Fire Effect
+  service.register({
+    id: "global.toggle-fire",
+    label: "Toggle Fire",
+    description: "Toggle fire effect on props (Shift+F)",
+    key: "F",
+    modifiers: ["shift"],
+    context: "global",
+    scope: "action",
+    priority: "high",
+    action: () => {
+      const visibilityManager = getAnimationVisibilityManager();
+      const wasEnabled = visibilityManager.isFireEffectEnabled();
+      visibilityManager.toggleFireEffect();
+      toast.info(wasEnabled ? "Fire OFF" : "Fire ON", 1500);
+    },
+  });
+
+  // Shift+L - Toggle LED Effect
+  service.register({
+    id: "global.toggle-led",
+    label: "Toggle LED",
+    description: "Toggle LED effect on props (Shift+L)",
+    key: "L",
+    modifiers: ["shift"],
+    context: "global",
+    scope: "action",
+    priority: "high",
+    action: () => {
+      const visibilityManager = getAnimationVisibilityManager();
+      const wasEnabled = visibilityManager.isLedEffectEnabled();
+      visibilityManager.toggleLedEffect();
+      toast.info(wasEnabled ? "LED OFF" : "LED ON", 1500);
+    },
+  });
+
   // ==================== Admin Shortcuts ====================
   // Only registered for admin users
 

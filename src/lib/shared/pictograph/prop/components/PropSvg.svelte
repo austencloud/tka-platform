@@ -146,23 +146,22 @@ even when Svelte recreates the component instance.
   const shouldMirror = $derived.by(() => {
     const settings = getSettings();
 
-    // Determine the actual prop type being rendered
-    // Settings prop type ALWAYS takes precedence over stored prop type (including HAND)
-    // This ensures that when sequences with HAND prop type are transferred between tabs,
-    // the user's selected prop type from settings is shown, not hands.
-    // HAND is only preserved when:
-    // 1. motionData has HAND AND
-    // 2. User hasn't set a specific prop type in settings (bluePropType/redPropType are undefined)
-    const settingsPropType =
-      motionData.color === MotionColor.BLUE
-        ? settings.bluePropType
-        : motionData.color === MotionColor.RED
-          ? settings.redPropType
-          : undefined;
-
-    // If settings has a specific prop type, use it (overrides HAND from stored data)
-    // If settings doesn't have a prop type, fall back to stored (which may be HAND)
-    const actualPropType = settingsPropType ?? motionData.propType;
+    // Determine the actual prop type being rendered.
+    // If motionData explicitly says HAND, trust it — the preparer preserves HAND
+    // when the source data uses it (e.g. PositionVisualizer, Assembly mode).
+    // Otherwise, settings prop type takes precedence over stored prop type.
+    let actualPropType: PropType | string | undefined;
+    if (motionData.propType === PropType.HAND) {
+      actualPropType = PropType.HAND;
+    } else {
+      const settingsPropType =
+        motionData.color === MotionColor.BLUE
+          ? settings.bluePropType
+          : motionData.color === MotionColor.RED
+            ? settings.redPropType
+            : undefined;
+      actualPropType = settingsPropType ?? motionData.propType;
+    }
 
     // Red hand is always mirrored
     if (

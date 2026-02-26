@@ -194,38 +194,59 @@ class SettingsState implements ISettingsState {
             localBackground === BackgroundType.SOLID_COLOR;
 
           if (firebaseSettings.backgroundType && isUsingDefault) {
-            // Apply Firebase background preference on initial login
-            settingsState.backgroundType = firebaseSettings.backgroundType;
-            if (firebaseSettings.backgroundCategory) {
-              settingsState.backgroundCategory =
-                firebaseSettings.backgroundCategory;
-            }
-            if (firebaseSettings.backgroundColor) {
-              settingsState.backgroundColor = firebaseSettings.backgroundColor;
-            }
-            if (firebaseSettings.gradientColors) {
-              settingsState.gradientColors = firebaseSettings.gradientColors;
-            }
-            if (firebaseSettings.gradientDirection !== undefined) {
-              settingsState.gradientDirection =
-                firebaseSettings.gradientDirection;
-            }
+            // Migration: if Firebase still has the old default (solidColor + black),
+            // convert it to nightSky and push the correction back to Firebase
+            const isOldDefault =
+              firebaseSettings.backgroundType === BackgroundType.SOLID_COLOR &&
+              (!firebaseSettings.backgroundColor || firebaseSettings.backgroundColor === "#000000");
 
-            updateBodyBackground(
-              firebaseSettings.backgroundType,
-              getCustomBackgroundOptions(firebaseSettings)
-            );
-            // Apply theme colors properly based on background type
-            if (firebaseSettings.backgroundType === BackgroundType.SOLID_COLOR && firebaseSettings.backgroundColor) {
-              applyThemeFromColors(firebaseSettings.backgroundColor);
-            } else if (firebaseSettings.backgroundType === BackgroundType.LINEAR_GRADIENT && firebaseSettings.gradientColors) {
-              applyThemeFromColors(undefined, firebaseSettings.gradientColors);
+            if (isOldDefault) {
+              debug.success("Firebase has old default (solidColor/#000000), migrating to nightSky");
+              settingsState.backgroundType = BackgroundType.NIGHT_SKY;
+              delete settingsState.backgroundColor;
+              updateBodyBackground(BackgroundType.NIGHT_SKY);
+              applyThemeForBackground(BackgroundType.NIGHT_SKY);
+              ThemeService.updateTheme(BackgroundType.NIGHT_SKY);
+              this.saveSettingsToStorage(settingsState);
+              // Push the corrected background back to Firebase so it doesn't happen again
+              await this.firebasePersistence.saveSettings(
+                this.getSettingsForPersistence()
+              );
+              debug.success("Migrated Firebase background from solidColor to nightSky");
             } else {
-              applyThemeForBackground(firebaseSettings.backgroundType);
+              // Apply Firebase background preference on initial login
+              settingsState.backgroundType = firebaseSettings.backgroundType;
+              if (firebaseSettings.backgroundCategory) {
+                settingsState.backgroundCategory =
+                  firebaseSettings.backgroundCategory;
+              }
+              if (firebaseSettings.backgroundColor) {
+                settingsState.backgroundColor = firebaseSettings.backgroundColor;
+              }
+              if (firebaseSettings.gradientColors) {
+                settingsState.gradientColors = firebaseSettings.gradientColors;
+              }
+              if (firebaseSettings.gradientDirection !== undefined) {
+                settingsState.gradientDirection =
+                  firebaseSettings.gradientDirection;
+              }
+
+              updateBodyBackground(
+                firebaseSettings.backgroundType,
+                getCustomBackgroundOptions(firebaseSettings)
+              );
+              // Apply theme colors properly based on background type
+              if (firebaseSettings.backgroundType === BackgroundType.SOLID_COLOR && firebaseSettings.backgroundColor) {
+                applyThemeFromColors(firebaseSettings.backgroundColor);
+              } else if (firebaseSettings.backgroundType === BackgroundType.LINEAR_GRADIENT && firebaseSettings.gradientColors) {
+                applyThemeFromColors(undefined, firebaseSettings.gradientColors);
+              } else {
+                applyThemeForBackground(firebaseSettings.backgroundType);
+              }
+              ThemeService.updateTheme(firebaseSettings.backgroundType);
+              this.saveSettingsToStorage(settingsState);
+              debug.success("Applied background from Firebase on initial login");
             }
-            ThemeService.updateTheme(firebaseSettings.backgroundType);
-            this.saveSettingsToStorage(settingsState);
-            debug.success("Applied background from Firebase on initial login");
           }
 
           debug.success("Applied settings from Firebase");

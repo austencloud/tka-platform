@@ -6,7 +6,7 @@
  * suppresses native notifications when the page is focused.
  */
 import { getMessaging, onMessage } from "firebase/messaging";
-import { getApp } from "firebase/app";
+import { app } from "$lib/shared/auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
 let unsubscribe: (() => void) | null = null;
@@ -15,7 +15,6 @@ export function startForegroundMessageListener(): void {
 	if (unsubscribe) return;
 
 	try {
-		const app = getApp();
 		const messaging = getMessaging(app);
 
 		unsubscribe = onMessage(messaging, (payload) => {

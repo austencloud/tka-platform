@@ -614,7 +614,7 @@ export default defineConfig({
         globPatterns: process.env.NODE_ENV === "production"
           ? [
               // adapter-static output structure (root-level, no subdirs)
-              "**/*.{js,css,html,ico,png,svg,woff2,woff,webp,webmanifest}",
+              "**/*.{js,css,csv,html,ico,png,svg,woff2,woff,webp,webmanifest}",
             ]
           : [], // Empty in dev - SW handles caching at runtime
         // Exclude files from precaching that shouldn't be cached

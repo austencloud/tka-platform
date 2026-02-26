@@ -11,8 +11,7 @@ import {
 	deleteDoc,
 	serverTimestamp,
 } from "firebase/firestore";
-import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import { getApp } from "firebase/app";
+import { getFirestoreInstance, app } from "$lib/shared/auth/firebase";
 import { VAPID_KEY } from "../../config/vapid";
 import type { IFCMTokenManager } from "../contracts/IFCMTokenManager";
 
@@ -34,7 +33,6 @@ export class FCMTokenManager implements IFCMTokenManager {
 				return null;
 			}
 
-			const app = getApp();
 			const messaging = getMessaging(app);
 
 			const swRegistration =

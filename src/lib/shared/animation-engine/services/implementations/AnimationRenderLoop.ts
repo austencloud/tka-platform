@@ -51,6 +51,13 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   // Track quality tier for fire adaptive quality
   private previousQualityTier: QualityTier | null = null;
 
+  // Frame drop diagnostics — logs slow frames to console for debugging
+  private frameDropLoggingEnabled = true;
+  private static readonly FRAME_DROP_THRESHOLD_MS = 20; // ~50fps — anything below 60fps
+  private lastFrameTime = 0; // Track RAF-to-RAF gap (true frame duration including browser overhead)
+  private lastFrameDropLogTime = 0; // Rate-limit logs to avoid feedback loop with console recording extensions
+  private static readonly FRAME_DROP_LOG_COOLDOWN_MS = 500; // Max 2 logs per second
+
   // CRITICAL: Reusable arrays to prevent GC pressure on mobile
   // These are reused every frame instead of allocating new arrays
   private reusableBlueTrailPoints: TrailPoint[] = [];
@@ -232,6 +239,10 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private render(params: RenderFrameParams, currentTime: number): void {
     if (!this.renderer) return;
 
+    // Measure RAF-to-RAF gap (includes browser layout, GC, other JS, vsync wait)
+    const rafGap = this.lastFrameTime > 0 ? currentTime - this.lastFrameTime : 0;
+    this.lastFrameTime = currentTime;
+
     // Frame budget monitoring: measure render time for adaptive quality
     const frameStart = this.frameBudgetMonitor?.beginFrame() ?? 0;
 
@@ -353,22 +364,32 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         redPropType: params.redPropType,
       };
 
-      const tips = this.fireTipTracker.update(
+      const tipResult = this.fireTipTracker.update(
         props.blueProp,
         props.redProp,
         tipTrackerConfig,
         currentTime
       );
 
+      // When a time gap is detected (HMR, tab switch, frame drops), clear
+      // the entire fluid simulation so residual heat/fuel at stale positions
+      // doesn't render as disconnected flames.
+      if (tipResult.gapDetected) {
+        this.fireRenderer.clearSimulation();
+      }
+
       const fireInput: import("../../domain/types/FireTypes").FireFrameInput = {
-        tips,
+        tips: tipResult.tips,
         currentTime,
         canvasWidth: this.canvasSize,
         canvasHeight: this.canvasSize,
         darkMode: params.darkMode ?? false,
         propColors: params.propColors,
-        loopDetected: this.loopDetectedThisFrame,
+        // Treat gap detection the same as a loop: invalidate frame cache
+        // so the fire renderer doesn't replay stale cached frames.
+        loopDetected: this.loopDetectedThisFrame || tipResult.gapDetected,
         playbackSpeed: params.playbackSpeed,
+        currentBeat: Math.floor(params.currentStep),
       };
 
       if (params.fireConfig.fuelRendererType === "particle" && this.charcoalRenderer) {
@@ -419,6 +440,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     }
 
     // End frame budget measurement (updates rolling averages, may trigger tier change)
+    const renderTime = performance.now() - frameStart;
+
     if (this.frameBudgetMonitor) {
       this.frameBudgetMonitor.endFrame(frameStart);
 
@@ -433,6 +456,31 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
             : 1;
           this.fireRenderer.setQuality(fireQuality);
         }
+      }
+    }
+
+    // Frame drop diagnostics: log when frames exceed budget
+    // Rate-limited to prevent feedback loops with console recording extensions (rrweb, Sentry, etc.)
+    if (
+      this.frameDropLoggingEnabled &&
+      (renderTime > AnimationRenderLoop.FRAME_DROP_THRESHOLD_MS ||
+       rafGap > 40) // RAF gap > 40ms means browser missed 2+ vsyncs (not just vsync jitter)
+    ) {
+      const now = performance.now();
+      if (now - this.lastFrameDropLogTime > AnimationRenderLoop.FRAME_DROP_LOG_COOLDOWN_MS) {
+        this.lastFrameDropLogTime = now;
+        const fireState = this.fireRenderer?.isInitialized()
+          ? (params.fireConfig?.enabled ? "active" : "idle")
+          : "off";
+        const trailCount = params.trailSettings.enabled
+          ? this.reusableBlueTrailPoints.length + this.reusableRedTrailPoints.length
+          : 0;
+        console.warn(
+          `[FrameDrop] render=${renderTime.toFixed(1)}ms rafGap=${rafGap.toFixed(1)}ms ` +
+          `step=${params.currentStep.toFixed(2)} fire=${fireState} ` +
+          `trails=${trailCount} tier=${this.previousQualityTier ?? "?"} ` +
+          `loop=${this.loopDetectedThisFrame ? "YES" : "no"}`
+        );
       }
     }
   }

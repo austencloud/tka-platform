@@ -522,17 +522,21 @@
           };
 
           // Apply settings or defaults
-          var backgroundType = "solidColor";
+          var backgroundType = "nightSky";
           if (stored) {
             var settings = JSON.parse(stored);
-            backgroundType = settings.backgroundType || "solidColor";
+            backgroundType = settings.backgroundType || "nightSky";
+            // Migration: treat old default (solidColor + black) as nightSky
+            if (backgroundType === "solidColor" && (!settings.backgroundColor || settings.backgroundColor === "#000000")) {
+              backgroundType = "nightSky";
+            }
           }
 
           // Apply theme CSS variables IMMEDIATELY (before paint)
           applyTheme(backgroundType, stored ? JSON.parse(stored) : {});
 
           // Apply gradient CSS variable
-          var selectedGradient = backgroundGradients[backgroundType] || backgroundGradients.solidColor;
+          var selectedGradient = backgroundGradients[backgroundType] || backgroundGradients.nightSky;
           root.style.setProperty("--gradient-cosmic", selectedGradient);
 
           // Apply animation class to body when ready

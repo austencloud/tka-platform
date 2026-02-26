@@ -12,13 +12,7 @@ PositionSummaryCards - Summary cards showing all position types
       <div class="position-card">
         <span class="greek-symbol" aria-hidden="true">{info.symbol}</span>
         <span class="card-name">{info.name}</span>
-        <small
-          >{type === "alpha"
-            ? "Opposite"
-            : type === "beta"
-              ? "Same"
-              : "Right Angle"} ({info.angle})</small
-        >
+        <small>{info.summary}</small>
       </div>
     {/each}
   </div>

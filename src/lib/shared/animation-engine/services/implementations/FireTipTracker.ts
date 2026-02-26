@@ -14,6 +14,7 @@ import { getFirePoints, type FirePoint } from "../../domain/types/PropFirePoints
 import type {
 	IFireTipTracker,
 	FireTipTrackerConfig,
+	FireTipUpdateResult,
 } from "../contracts/IFireTipTracker";
 import { PropPositionCalculator } from "./PropPositionCalculator";
 import type { PropEndpointConfig } from "../contracts/IPropPositionCalculator";
@@ -26,6 +27,14 @@ const MAX_SPEED = 5000;
 
 /** Maximum fire points across both props (performance cap for the shader) */
 const MAX_TOTAL_TIPS = 16;
+
+/**
+ * If the time between consecutive update() calls exceeds this threshold,
+ * we treat it as a disruption (HMR, tab switch, frame drop burst) and
+ * invalidate all stored positions. This prevents velocity spikes that
+ * push flames away from prop tips.
+ */
+const GAP_THRESHOLD_MS = 200;
 
 interface StoredTip {
 	x: number;
@@ -53,6 +62,12 @@ export class FireTipTracker implements IFireTipTracker {
 	/** Output array reused each frame */
 	private outputTips: PropTipData[] = [];
 
+	/** Timestamp of the last update() call. Used for gap detection. */
+	private lastUpdateTime = 0;
+
+	/** Reusable result object to avoid allocation per frame */
+	private result: FireTipUpdateResult = { tips: this.outputTips, gapDetected: false };
+
 	constructor() {
 		// Pre-allocate stored tips pool
 		for (let i = 0; i < MAX_TOTAL_TIPS; i++) {
@@ -65,7 +80,20 @@ export class FireTipTracker implements IFireTipTracker {
 		redProp: PropState | null,
 		config: FireTipTrackerConfig,
 		currentTime: number
-	): PropTipData[] {
+	): FireTipUpdateResult {
+		// Detect time gaps (HMR, tab switch, long frame drops).
+		// When a gap is detected, invalidate all stored tips so the first
+		// post-gap frame starts with zero velocity instead of a spike.
+		let gapDetected = false;
+		if (this.lastUpdateTime > 0) {
+			const elapsed = currentTime - this.lastUpdateTime;
+			if (elapsed > GAP_THRESHOLD_MS) {
+				gapDetected = true;
+				this.reset();
+			}
+		}
+		this.lastUpdateTime = currentTime;
+
 		this.outputTips.length = 0;
 		let totalTips = 0;
 
@@ -101,7 +129,9 @@ export class FireTipTracker implements IFireTipTracker {
 			this.invalidateRange(MAX_TOTAL_TIPS / 2, MAX_TOTAL_TIPS);
 		}
 
-		return this.outputTips;
+		this.result.tips = this.outputTips;
+		this.result.gapDetected = gapDetected;
+		return this.result;
 	}
 
 	reset(): void {
@@ -109,6 +139,7 @@ export class FireTipTracker implements IFireTipTracker {
 			this.prevTips[i]!.valid = false;
 		}
 		this.outputTips.length = 0;
+		this.lastUpdateTime = 0;
 	}
 
 	/**

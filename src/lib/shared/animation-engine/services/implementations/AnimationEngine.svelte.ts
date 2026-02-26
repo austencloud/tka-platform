@@ -534,14 +534,29 @@ export class AnimationEngine {
     // Initialize canvas (async process)
     await this.initializeCanvas();
 
-    // Re-create fire overlay if it was enabled before HMR/reload.
-    // The visibility observer won't trigger because prevFireEffect already matches.
-    if (this.fireConfig.enabled) {
-      this.syncFireOverlay();
+    // Wire overlay renderers that may have been created during the async
+    // initializeCanvas gap. Svelte $effects fire while the canvas is still
+    // initializing, so syncOverlay's rAF can create the WebGL renderer before
+    // renderLoopService exists — the ?.updateConfig() silently no-ops.
+    // Re-wire them now that renderLoopService is ready.
+    if (this.fireRenderer?.isInitialized() && this.renderLoopService) {
+      this.renderLoopService.updateConfig({
+        fireRenderer: this.fireRenderer,
+        charcoalRenderer: this.charcoalRenderer,
+      });
+    }
+    if (this.ledRenderer?.isInitialized() && this.renderLoopService) {
+      this.renderLoopService.updateConfig({
+        ledRenderer: this.ledRenderer,
+      });
     }
 
-    // Re-create LED overlay if it was enabled before HMR/reload.
-    if (this.ledConfig.enabled) {
+    // Create overlays that weren't created yet (e.g. enabled before HMR/reload
+    // but the $effect hasn't triggered, or the rAF hasn't fired yet).
+    if (this.fireConfig.enabled && !this.fireRenderer?.isInitialized()) {
+      this.syncFireOverlay();
+    }
+    if (this.ledConfig.enabled && !this.ledRenderer?.isInitialized()) {
       this.syncLedOverlay();
     }
   }

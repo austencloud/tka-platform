@@ -215,3 +215,5 @@ flow-arts-transcripts/*-done.txt
 
 # Search interest tracking data
 /data/
+firebase-service-account.json
+.mcp.json

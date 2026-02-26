@@ -4,6 +4,12 @@
    *
    * Single message bubble with read receipts, animations, reactions, and rich attachments
    * Supports both direct (1:1) and group conversations with sender display
+   *
+   * Reaction layout follows the Messenger pattern:
+   * - Reactions are a sibling to .bubble inside a flex-column wrapper
+   * - translateY(-50%) pulls the reaction pill up to overlap the bubble's bottom edge
+   * - align-items on the wrapper controls left/right anchoring
+   * - No absolute positioning — reactions stay in document flow
    */
 
   import type { Message } from "$lib/shared/messaging/domain/models/message-models";
@@ -38,37 +44,23 @@
     senderInfo,
   }: Props = $props();
 
-  // Show sender info for non-own messages in groups
   const showSender = $derived(isGroup && !isOwn && senderInfo);
-
-  // Edit history sheet state
   let showEditHistory = $state(false);
-
-  // Check if message was edited
   const wasEdited = $derived(message.editedAt !== undefined);
-
-  // Check if message has reactions
   const hasReactions = $derived(
     message.reactions && message.reactions.length > 0
   );
-
-  // Check for feedback attachment
   const feedbackAttachment = $derived(
     message.attachments?.find((a) => a.type === "feedback")
   );
-
-  // Check for sequence attachment
   const sequenceAttachment = $derived(
     message.attachments?.find((a) => a.type === "sequence")
   );
-
-  // Get the read timestamp for the other participant
   const readTimestamp = $derived.by(() => {
     if (!otherParticipantId || !message.readAt) return null;
     return message.readAt[otherParticipantId] || null;
   });
 
-  // Format the read timestamp for display
   function formatReadTime(date: Date): string {
     return formatTime(date);
   }
@@ -88,9 +80,73 @@
   }
 </script>
 
+<!--
+  Shared snippet: the bubble content (reply, attachments, text, meta).
+  Used in both group and 1:1 paths to avoid duplication.
+-->
+{#snippet bubbleContent()}
+  {#if message.replyTo}
+    <ReplyPreview reply={message.replyTo} compact />
+  {/if}
+
+  {#if sequenceAttachment}
+    <SequenceMessageCard attachment={sequenceAttachment} {isOwn} />
+    {#if message.content && !message.content.startsWith("Check out this sequence")}
+      <p class="content attachment-content">{message.content}</p>
+    {/if}
+  {:else if feedbackAttachment}
+    <FeedbackMessageCard attachment={feedbackAttachment} {isOwn} />
+    {#if message.content && message.content !== "[Feedback submitted]"}
+      <p class="content attachment-content">{message.content}</p>
+    {/if}
+  {:else}
+    <p class="content">{message.content}</p>
+  {/if}
+
+  <div class="meta">
+    <time class="time" datetime={message.createdAt.toISOString()}
+      >{formatTime(message.createdAt)}</time
+    >
+    {#if wasEdited && !message.isDeleted}
+      {#if message.editHistory && message.editHistory.length > 0}
+        <button
+          type="button"
+          class="edited-button"
+          onclick={handleEditedClick}
+          aria-label="View edit history"
+        >
+          (edited)
+        </button>
+      {:else}
+        <span class="edited">(edited)</span>
+      {/if}
+    {/if}
+    {#if showReadReceipt && !message.isDeleted}
+      <span class="read-receipt read" aria-label="Read">
+        <i class="fas fa-check-double" aria-hidden="true"></i>
+        {#if readTimestamp}
+          <span class="read-time">Seen {formatReadTime(readTimestamp)}</span>
+        {/if}
+      </span>
+    {/if}
+  </div>
+{/snippet}
+
+<!-- Shared snippet: reaction badge anchored to bubble corner -->
+{#snippet reactionBadge()}
+  {#if hasReactions && message.reactions}
+    <div class="reaction-badge">
+      <MessageReactions
+        reactions={message.reactions}
+        onToggleReaction={handleToggleReaction}
+      />
+    </div>
+  {/if}
+{/snippet}
+
 <MessageActions {message} {isOwn}>
-  <!-- Group messages from others: avatar gutter layout -->
   {#if showSender && senderInfo}
+    <!-- Group messages from others: avatar gutter layout -->
     <div class="group-message-row">
       <div class="avatar-gutter">
         <RobustAvatar
@@ -112,54 +168,9 @@
       >
         <span class="sender-name">{senderInfo.displayName}</span>
         <div class="bubble">
-          <!-- Reply preview -->
-          {#if message.replyTo}
-            <ReplyPreview reply={message.replyTo} compact />
-          {/if}
-
-          {#if sequenceAttachment}
-            <SequenceMessageCard attachment={sequenceAttachment} {isOwn} />
-            {#if message.content && !message.content.startsWith("Check out this sequence")}
-              <p class="content attachment-content">{message.content}</p>
-            {/if}
-          {:else if feedbackAttachment}
-            <FeedbackMessageCard attachment={feedbackAttachment} {isOwn} />
-            {#if message.content && message.content !== "[Feedback submitted]"}
-              <p class="content attachment-content">{message.content}</p>
-            {/if}
-          {:else}
-            <p class="content">{message.content}</p>
-          {/if}
-          <div class="meta">
-            <time class="time" datetime={message.createdAt.toISOString()}
-              >{formatTime(message.createdAt)}</time
-            >
-            {#if wasEdited && !message.isDeleted}
-              {#if message.editHistory && message.editHistory.length > 0}
-                <button
-                  type="button"
-                  class="edited-button"
-                  onclick={handleEditedClick}
-                  aria-label="View edit history"
-                >
-                  (edited)
-                </button>
-              {:else}
-                <span class="edited">(edited)</span>
-              {/if}
-            {/if}
-          </div>
+          {@render bubbleContent()}
+          {@render reactionBadge()}
         </div>
-
-        <!-- Reactions -->
-        {#if hasReactions && message.reactions}
-          <div class="reactions-wrapper">
-            <MessageReactions
-              reactions={message.reactions}
-              onToggleReaction={handleToggleReaction}
-            />
-          </div>
-        {/if}
       </div>
     </div>
   {:else}
@@ -175,67 +186,13 @@
       aria-label="{isOwn ? 'You' : message.senderName} said: {message.content}"
     >
       <div class="bubble">
-        <!-- Reply preview -->
-        {#if message.replyTo}
-          <ReplyPreview reply={message.replyTo} compact />
-        {/if}
-
-        {#if sequenceAttachment}
-          <SequenceMessageCard attachment={sequenceAttachment} {isOwn} />
-          {#if message.content && !message.content.startsWith("Check out this sequence")}
-            <p class="content attachment-content">{message.content}</p>
-          {/if}
-        {:else if feedbackAttachment}
-          <FeedbackMessageCard attachment={feedbackAttachment} {isOwn} />
-          {#if message.content && message.content !== "[Feedback submitted]"}
-            <p class="content attachment-content">{message.content}</p>
-          {/if}
-        {:else}
-          <p class="content">{message.content}</p>
-        {/if}
-        <div class="meta">
-          <time class="time" datetime={message.createdAt.toISOString()}
-            >{formatTime(message.createdAt)}</time
-          >
-          {#if wasEdited && !message.isDeleted}
-            {#if message.editHistory && message.editHistory.length > 0}
-              <button
-                type="button"
-                class="edited-button"
-                onclick={handleEditedClick}
-                aria-label="View edit history"
-              >
-                (edited)
-              </button>
-            {:else}
-              <span class="edited">(edited)</span>
-            {/if}
-          {/if}
-          {#if showReadReceipt && !message.isDeleted}
-            <span class="read-receipt read" aria-label="Read">
-              <i class="fas fa-check-double" aria-hidden="true"></i>
-              {#if readTimestamp}
-                <span class="read-time">Seen {formatReadTime(readTimestamp)}</span>
-              {/if}
-            </span>
-          {/if}
-        </div>
+        {@render bubbleContent()}
+        {@render reactionBadge()}
       </div>
-
-      <!-- Reactions -->
-      {#if hasReactions && message.reactions}
-        <div class="reactions-wrapper">
-          <MessageReactions
-            reactions={message.reactions}
-            onToggleReaction={handleToggleReaction}
-          />
-        </div>
-      {/if}
     </div>
   {/if}
 </MessageActions>
 
-<!-- Edit History Sheet -->
 {#if message.editHistory && message.editHistory.length > 0}
   <EditHistorySheet
     bind:isOpen={showEditHistory}
@@ -245,9 +202,11 @@
 {/if}
 
 <style>
+  /* ===== Message bubble wrapper (flex column: bubble + reaction tray) ===== */
   .message-bubble {
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
     max-width: 80%;
     animation: slideIn var(--duration-normal) ease-out;
     transform-origin: bottom left;
@@ -255,16 +214,8 @@
 
   .message-bubble.own {
     margin-left: auto;
-    transform-origin: bottom right;
     align-items: flex-end;
-  }
-
-  .message-bubble:not(.own) {
-    align-items: flex-start;
-  }
-
-  .message-bubble.has-reactions {
-    margin-bottom: 4px;
+    transform-origin: bottom right;
   }
 
   .message-bubble.is-new {
@@ -293,10 +244,13 @@
     }
   }
 
+  /* ===== The bubble itself ===== */
   .bubble {
+    position: relative;
     padding: 10px 14px;
     border-radius: 18px;
-    background: var(--theme-card-bg, var(--theme-card-bg));
+    background: var(--theme-card-bg);
+    overflow: visible;
     transition: transform var(--duration-fast) ease;
   }
 
@@ -314,7 +268,28 @@
     border-bottom-left-radius: 6px;
   }
 
-  /* Group message avatar gutter layout */
+  /* ===== Reaction badge: Messenger-style corner sticker =====
+     Positioned so it sits half-in, half-out of the bubble bottom edge.
+     The badge is 20px tall, so bottom: -10px centers it on the edge. */
+  .reaction-badge {
+    position: absolute;
+    bottom: -10px;
+    right: 8px;
+    z-index: 1;
+    pointer-events: auto;
+  }
+
+  .message-bubble:not(.own) .reaction-badge {
+    right: auto;
+    left: 8px;
+  }
+
+  /* Clearance below bubble so the badge doesn't overlap the next message */
+  .message-bubble.has-reactions {
+    margin-bottom: 12px;
+  }
+
+  /* ===== Group message layout ===== */
   .group-message-row {
     display: flex;
     align-items: flex-start;
@@ -340,6 +315,7 @@
     margin-top: 8px;
   }
 
+  /* ===== Content ===== */
   .deleted .bubble {
     background: var(--theme-card-bg);
     font-style: italic;
@@ -361,23 +337,23 @@
   .attachment-content {
     margin-top: 8px;
     padding-top: 8px;
-    border-top: 1px solid var(--theme-stroke, var(--theme-stroke));
+    border-top: 1px solid var(--theme-stroke);
   }
 
   .has-attachment .bubble {
     max-width: 300px;
   }
 
+  /* ===== Meta (timestamp, edited, read receipt) ===== */
   .meta {
     display: flex;
     align-items: center;
     gap: 6px;
     font-size: var(--font-size-compact);
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
   }
 
   .own .meta {
-    color: var(--theme-text-dim);
     justify-content: flex-end;
   }
 
@@ -402,11 +378,7 @@
     text-decoration-style: solid;
   }
 
-  .reactions-wrapper {
-    margin-top: 4px;
-  }
-
-  /* Read receipts */
+  /* ===== Read receipts ===== */
   .read-receipt {
     font-size: var(--font-size-compact);
     opacity: 0.7;
@@ -427,7 +399,7 @@
     font-size: var(--font-size-compact, 12px);
   }
 
-  /* Reduced motion */
+  /* ===== Reduced motion ===== */
   @media (prefers-reduced-motion: reduce) {
     .message-bubble,
     .bubble {
