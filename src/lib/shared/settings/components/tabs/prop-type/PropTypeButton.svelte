@@ -93,9 +93,8 @@
     transition: all var(--duration-normal) cubic-bezier(0.36, 0.66, 0.04, 1);
     color: var(--theme-text);
     position: relative;
-    /* Percentage-based padding scales with button size */
-    padding: 8% 6% 6%;
-    gap: 4%;
+    padding: 6px 5px 4px;
+    gap: 4px;
     border-radius: 10px;
     box-sizing: border-box;
     /* Slightly taller than wide for label space */
