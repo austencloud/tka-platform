@@ -17,4 +17,10 @@ export interface IBrowseLoader {
    * This prevents the N+1 query problem during initial gallery load
    */
   loadFullSequenceData(sequenceName: string): Promise<SequenceData | null>;
+
+  /**
+   * Surgically remove a single sequence from the in-memory cache.
+   * Use this after a delete to update the UI instantly without a Firestore round-trip.
+   */
+  removeFromCache(sequenceId: string): void;
 }

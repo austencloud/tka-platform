@@ -914,8 +914,8 @@
       const libraryRepo = container.items.libraryRepository as ILibraryRepository;
       await libraryRepo.deleteSequence(sequence.id);
       // Notify any listening modules (e.g. browse gallery) that the library changed
-      // so they can reload without needing direct coupling to the viewer.
-      notifyLibraryMutated();
+      // so they can remove the entry from their cache without a Firestore round-trip.
+      notifyLibraryMutated(sequence.id);
       showToast("Sequence deleted", "success");
       handleBackInternal();
     } catch (error) {

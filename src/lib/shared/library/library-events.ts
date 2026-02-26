@@ -29,11 +29,14 @@
 export const LIBRARY_MUTATED_EVENT = "tka:library-mutated";
 
 /**
- * Dispatch a library mutation notification. Call this after any destructive
- * operation (delete, bulk-delete) that other modules should react to.
+ * Dispatch a library mutation notification. Call this after a delete so any
+ * module displaying the user's sequences can remove the entry from its cache
+ * without a Firestore round-trip.
  */
-export function notifyLibraryMutated(): void {
-  window.dispatchEvent(new CustomEvent(LIBRARY_MUTATED_EVENT));
+export function notifyLibraryMutated(sequenceId: string): void {
+  window.dispatchEvent(
+    new CustomEvent(LIBRARY_MUTATED_EVENT, { detail: { sequenceId } })
+  );
 }
 
 /**
@@ -41,9 +44,16 @@ export function notifyLibraryMutated(): void {
  * When used inside a Svelte `$effect`, cleanup is automatic.
  *
  * @example
- * $effect(() => onLibraryMutated(() => loadSequences()));
+ * $effect(() => onLibraryMutated((sequenceId) => removeFromList(sequenceId)));
  */
-export function onLibraryMutated(handler: () => void): () => void {
-  window.addEventListener(LIBRARY_MUTATED_EVENT, handler);
-  return () => window.removeEventListener(LIBRARY_MUTATED_EVENT, handler);
+export function onLibraryMutated(
+  handler: (sequenceId: string) => void
+): () => void {
+  const listener = (e: Event) => {
+    const sequenceId = (e as CustomEvent<{ sequenceId: string }>).detail
+      .sequenceId;
+    handler(sequenceId);
+  };
+  window.addEventListener(LIBRARY_MUTATED_EVENT, listener);
+  return () => window.removeEventListener(LIBRARY_MUTATED_EVENT, listener);
 }

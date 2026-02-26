@@ -229,13 +229,22 @@ export function createBrowseState() {
     }
   }
 
-  // Delete a sequence from the user's library and reload
+  // Delete a sequence from the user's library.
+  // Updates both caches and the displayed sequences in-place — no Firestore round-trip.
   async function deleteSequence(sequenceId: string): Promise<void> {
     const libService = getLibraryRepository();
     if (!libService) throw new Error("Not signed in");
     await libService.deleteSequence(sequenceId);
-    libraryCache = null; // Invalidate so the reload actually fetches
-    await loadLibrarySequences();
+
+    // Surgically remove from both caches so neither source needs a re-fetch
+    libraryCache = libraryCache?.filter((s) => s.id !== sequenceId) ?? null;
+    loaderService.removeFromCache(sequenceId);
+
+    // Update allSequences, then recompute filteredSequences + displayedSequences
+    // via applyFilterAndSort (generateSequenceSections reads from filteredSequences)
+    allSequences = allSequences.filter((s) => s.id !== sequenceId);
+    applyFilterAndSort();
+    await generateSequenceSections();
   }
 
   // Switch source and reload data
@@ -497,11 +506,15 @@ export function createBrowseState() {
     }, 300);
   }
 
-  // Invalidate library cache on any mutation so the next visit re-fetches.
-  // No fetch fires here — the reload happens lazily in setSource.
+  // When a sequence is deleted from anywhere (e.g. sequence viewer), surgically
+  // remove it from both caches and the displayed list — no Firestore round-trip.
   $effect(() => {
-    return onLibraryMutated(() => {
-      libraryCache = null;
+    return onLibraryMutated((sequenceId) => {
+      libraryCache = libraryCache?.filter((s) => s.id !== sequenceId) ?? null;
+      loaderService.removeFromCache(sequenceId);
+      allSequences = allSequences.filter((s) => s.id !== sequenceId);
+      applyFilterAndSort();
+      generateSequenceSections();
     });
   });
 
@@ -571,7 +584,6 @@ export function createBrowseState() {
     // Methods
     loadAllSequences,
     loadLibrarySequences,
-    deleteSequence,
     setSource,
     selectSequence,
     toggleFavorite,
