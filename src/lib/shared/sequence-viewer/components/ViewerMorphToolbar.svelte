@@ -49,6 +49,8 @@
     onRampStop?: () => void;
     /** Callback when Connect is clicked (toggle LAN sync) */
     onConnect?: () => void;
+    isOwned?: boolean;
+    onDeleteRequest?: () => void;
   }
 
   let {
@@ -75,6 +77,8 @@
     onRampStart,
     onRampStop,
     onConnect,
+    isOwned = false,
+    onDeleteRequest,
   }: Props = $props();
 
   let expandedChip = $state<string | null>(null);
@@ -180,6 +184,17 @@
         >
           <i class="fas {isSyncConnected ? 'fa-tower-broadcast' : isSyncActive ? 'fa-spinner fa-pulse' : 'fa-tower-broadcast'}" aria-hidden="true"></i>
           <span>{isSyncConnected ? "Connected" : isSyncActive ? "Searching" : "Connect"}</span>
+        </button>
+      {/if}
+      {#if isLoggedIn && isOwned && onDeleteRequest}
+        <button
+          type="button"
+          class="action-btn delete"
+          onclick={onDeleteRequest}
+          aria-label="Delete sequence"
+        >
+          <i class="fas fa-trash" aria-hidden="true"></i>
+          <span>Delete</span>
         </button>
       {/if}
     </div>
@@ -500,6 +515,17 @@
   .action-btn.connect:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+
+  .action-btn.delete {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.25);
+    color: #ef4444;
+  }
+
+  .action-btn.delete:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.4);
   }
 
   /* ===========================

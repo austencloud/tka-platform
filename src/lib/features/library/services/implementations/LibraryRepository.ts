@@ -349,6 +349,8 @@ export class LibraryRepository implements ILibraryRepository {
         .catch((error) =>
           console.error("[LibraryRepository] Public index sync failed:", error)
         );
+    } else if (finalSequence.visibility === "public" && !this.publicIndexSyncer) {
+      console.warn("[LibraryRepository] Sequence is public but publicIndexSyncer is null — it will NOT appear in the public gallery.", { sequenceId: finalSequence.id });
     }
 
     return finalSequence;
@@ -405,7 +407,9 @@ export class LibraryRepository implements ILibraryRepository {
 
     // Handle visibility changes (async, non-blocking)
     if (updates.visibility && updates.visibility !== existing.visibility) {
-      if (updates.visibility === "public") {
+      if (!this.publicIndexSyncer) {
+        console.warn("[LibraryRepository] Visibility changed but publicIndexSyncer is null — public gallery will not reflect this change.", { sequenceId, newVisibility: updates.visibility });
+      } else if (updates.visibility === "public") {
         this.publicIndexSyncer
           .syncToPublicIndex(updated, userId)
           .catch((err) =>
@@ -432,18 +436,35 @@ export class LibraryRepository implements ILibraryRepository {
       return; // Already deleted
     }
 
-    // Remove from public index if public (async, non-blocking)
-    if (existing.visibility === "public") {
-      this.publicIndexSyncer.removeFromPublicIndex(sequenceId).catch((error) =>
+    // Remove from public index if public. This must be AWAITED before returning.
+    //
+    // Why: callers fire notifyLibraryMutated() immediately after this function
+    // resolves, which triggers gallery listeners to reload from Firestore. When
+    // Firestore reads, it serves from its local in-memory cache first — so the
+    // document only disappears from the reload if it has already been queued for
+    // deletion in that cache. Awaiting here means both the private doc (below)
+    // and the public index doc are in the local delete queue before the gallery
+    // re-queries. Without the await, the gallery reload races the public index
+    // deletion and may still return the sequence.
+    //
+    // Errors are caught and logged but not rethrown — a flaky public index
+    // removal should not surface as a delete failure to the user. The private
+    // doc deletion below is the authoritative write.
+    if (existing.visibility === "public" && this.publicIndexSyncer) {
+      await this.publicIndexSyncer.removeFromPublicIndex(sequenceId).catch((error) =>
         console.warn(
           "[LibraryRepository] Failed to remove from public index:",
           error
         )
       );
+    } else if (existing.visibility === "public" && !this.publicIndexSyncer) {
+      console.warn("[LibraryRepository] Sequence is public but publicIndexSyncer is null — it will NOT be removed from the public gallery.", { sequenceId });
     }
 
-    // Fire-and-forget: delete queues locally, syncs when online
-    trackWrite(
+    // Await the local write so callers can safely reload data immediately after.
+    // trackWrite queues to Firestore's local cache first (offline-persistence), so
+    // this resolves quickly — it does NOT block on server acknowledgment.
+    await trackWrite(
       () => deleteDoc(doc(firestore, getUserSequencePath(userId, sequenceId))),
       "library"
     ).catch((error) => {

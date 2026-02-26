@@ -247,7 +247,6 @@ const libraryContainer = typeof window !== 'undefined' ? createLibraryContainer(
     achievementManager: gamificationContainer.items.achievementManager,
     tagManager: coreContainer.items.tagManager,
     orientationCycleDetector: buildContainer.items.orientationCycleDetector,
-    publicIndexSyncer: null as any, // Will use internal one
     conflictResolver: coreContainer.items.conflictResolver,
   },
   librarySaveService: {

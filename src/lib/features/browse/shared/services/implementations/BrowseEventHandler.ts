@@ -190,10 +190,10 @@ export class BrowseEventHandler implements IBrowseEventHandler {
     if (!deleteConfirmationData?.sequence) return;
 
     try {
-      // TODO: Implement actual delete logic
+      await this.params!.galleryState.deleteSequence(
+        deleteConfirmationData.sequence.id
+      );
       this.params!.setDeleteConfirmationData(null);
-      // Refresh the sequence list
-      await this.params!.galleryState.loadAllSequences();
     } catch (err: unknown) {
       console.error("Delete failed:", err);
       this.params!.setError(

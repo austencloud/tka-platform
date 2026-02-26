@@ -26,6 +26,7 @@ import type { SequenceSource } from "../state/sequence-source-state.svelte";
 import type { IFavoritesManager } from "../services/contracts/IFavoritesManager";
 import type { SequenceFilterType } from "../state/sequence-controls-state.svelte";
 import { sequencePanelManager } from "../state/sequence-panel-state.svelte";
+import { onLibraryMutated } from "$lib/shared/library/library-events";
 
 const STORAGE_KEY = "tka-browse-gallery-controls";
 
@@ -274,6 +275,16 @@ export function createBrowseState() {
     selectedSequence = sequence;
   }
 
+  async function deleteSequence(sequenceId: string): Promise<void> {
+    const libService = getLibraryRepository();
+    if (!libService) {
+      throw new Error("You must be signed in to delete sequences");
+    }
+    await libService.deleteSequence(sequenceId);
+    // Reload library so the deleted sequence disappears from the grid
+    await loadLibrarySequences();
+  }
+
   async function toggleFavorite(sequenceId: string): Promise<void> {
     if (!FavoritesManager) {
       return;
@@ -471,6 +482,19 @@ export function createBrowseState() {
     }, 300);
   }
 
+  // When a sequence is deleted from elsewhere (e.g. the sequence viewer drawer),
+  // a notification is dispatched via library-events so the gallery can reload without
+  // needing direct coupling between modules.
+  // LibraryRepository.deleteSequence awaits removeFromPublicIndex before returning,
+  // so by the time this handler fires the public index is already updated.
+  $effect(() => onLibraryMutated(() => {
+    if (currentSource === "my-library") {
+      loadLibrarySequences();
+    } else {
+      loadAllSequences();
+    }
+  }));
+
   return {
     // State
     get isLoading() {
@@ -539,6 +563,7 @@ export function createBrowseState() {
     loadLibrarySequences,
     setSource,
     selectSequence,
+    deleteSequence,
     toggleFavorite,
     clearError,
     setActiveGalleryNavigationItem,

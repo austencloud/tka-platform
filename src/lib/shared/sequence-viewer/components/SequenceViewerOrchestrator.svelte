@@ -102,6 +102,7 @@
     // Auth
     isLoggedIn: boolean;
     userName: string;
+    isOwned: boolean;
 
     // Handlers
     handlePlaybackToggle: () => void;
@@ -123,6 +124,7 @@
     handleEditInConstructor: () => void;
     handleSave: () => void;
     handleShare: () => void;
+    handleDelete: () => Promise<void>;
     handleGetApp: () => void;
     handleUnifiedDarkModeToggle: () => void;
     handleRampStart: () => void;
@@ -147,6 +149,7 @@
   import { goto } from "$app/navigation";
   import { browser } from "$app/environment";
   import { container } from "$lib/shared/di";
+  import { notifyLibraryMutated } from "$lib/shared/library/library-events";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
@@ -304,6 +307,11 @@
 
   const effectiveSequence = $derived(modalAnimationState.sequenceData ?? sequence);
   const hasSequence = $derived(effectiveSequence !== null);
+  const isOwned = $derived(
+    !!sequence?.ownerId &&
+    !!authState.user?.uid &&
+    sequence.ownerId === authState.user.uid
+  );
 
   // After stepping (via step buttons), props land at the START of the next beat,
   // meaning the PREVIOUS beat's motion just completed. Offset the glyph and highlight
@@ -899,6 +907,23 @@
     }
   }
 
+  async function handleDelete() {
+    if (!sequence) return;
+    hapticService?.trigger("warning");
+    try {
+      const libraryRepo = container.items.libraryRepository as ILibraryRepository;
+      await libraryRepo.deleteSequence(sequence.id);
+      // Notify any listening modules (e.g. browse gallery) that the library changed
+      // so they can reload without needing direct coupling to the viewer.
+      notifyLibraryMutated();
+      showToast("Sequence deleted", "success");
+      handleBackInternal();
+    } catch (error) {
+      console.error("Failed to delete sequence:", error);
+      showToast("Failed to delete sequence", "error");
+    }
+  }
+
   function handleShare() {
     hapticService?.trigger("selection");
 
@@ -1099,6 +1124,7 @@
     // Auth
     isLoggedIn: authState.isAuthenticated,
     userName: authState.user?.displayName || "",
+    isOwned,
 
     // Handlers
     handlePlaybackToggle,
@@ -1120,6 +1146,7 @@
     handleEditInConstructor,
     handleSave,
     handleShare,
+    handleDelete,
     handleGetApp,
     handleUnifiedDarkModeToggle,
     handleRampStart,
