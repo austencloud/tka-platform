@@ -8,7 +8,6 @@
   import { container } from "$lib/shared/di";
   import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
-  import { onLibraryMutated } from "$lib/shared/library/library-events";
 
   interface Props {
     show?: boolean;
@@ -64,11 +63,6 @@
       loadSequences();
     }
   });
-
-  // Reload if a sequence was deleted from elsewhere while this drawer is open
-  $effect(() => onLibraryMutated(() => {
-    if (show) loadSequences();
-  }));
 </script>
 
 <Drawer isOpen={show} onclose={onClose}>

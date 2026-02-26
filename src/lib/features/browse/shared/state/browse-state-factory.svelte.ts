@@ -275,16 +275,6 @@ export function createBrowseState() {
     selectedSequence = sequence;
   }
 
-  async function deleteSequence(sequenceId: string): Promise<void> {
-    const libService = getLibraryRepository();
-    if (!libService) {
-      throw new Error("You must be signed in to delete sequences");
-    }
-    await libService.deleteSequence(sequenceId);
-    // Reload library so the deleted sequence disappears from the grid
-    await loadLibrarySequences();
-  }
-
   async function toggleFavorite(sequenceId: string): Promise<void> {
     if (!FavoritesManager) {
       return;
@@ -558,7 +548,6 @@ export function createBrowseState() {
     loadLibrarySequences,
     setSource,
     selectSequence,
-    deleteSequence,
     toggleFavorite,
     clearError,
     setActiveGalleryNavigationItem,

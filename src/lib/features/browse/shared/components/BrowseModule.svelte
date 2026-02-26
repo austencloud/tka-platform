@@ -10,16 +10,12 @@
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import ErrorBanner from "../../../create/shared/components/ErrorBanner.svelte";
 
-  import type {
-    IBrowseEventHandler,
-    DeleteConfirmationData,
-  } from "../services/contracts/IBrowseEventHandler";
+  import type { DeleteConfirmationData, IBrowseEventHandler } from "../services/contracts/IBrowseEventHandler";
   import CollectionsBrowsePanel from "../../collections/components/CollectionsBrowsePanel.svelte";
   import CreatorsPanel from "../../creators/components/CreatorsPanel.svelte";
   import UserProfilePanel from "../../creators/components/UserProfilePanel.svelte";
   import { creatorsViewState } from "../../creators/state/creators-view-state.svelte";
   import { createBrowseState } from "../state/browse-state-factory.svelte";
-  import BrowseDeleteDialog from "./BrowseDeleteDialog.svelte";
   import GalleryTab from "./GalleryTab.svelte";
   import { browseScrollState } from "../state/BrowseScrollState.svelte";
   import {
@@ -58,7 +54,6 @@
 
   // ✅ PURE RUNES: Local state
   let _selectedSequence = $state<SequenceData | null>(null);
-  let deleteConfirmationData = $state<DeleteConfirmationData | null>(null);
   let error = $state<string | null>(null);
   let activeTab = $state<BrowseModuleType>("gallery");
   let showAnimator = $state<boolean>(false);
@@ -348,11 +343,11 @@
       // Initialize event handler service with required parameters
       eventHandlerService.initialize({
         galleryState,
-        setSelectedSequence: (seq: SequenceData | null) =>
-          (_selectedSequence = seq),
-        setDeleteConfirmationData: (data: DeleteConfirmationData | null) =>
-          (deleteConfirmationData = data),
+        setSelectedSequence: (seq: SequenceData | null) => (_selectedSequence = seq),
         setError: (err: string | null) => (error = err),
+        setDeleteConfirmationData: function (data: DeleteConfirmationData | null): void {
+          throw new Error("Function not implemented.");
+        }
       });
 
     } catch (err) {
@@ -439,17 +434,6 @@
     message={error}
     onDismiss={() => eventHandlerService?.handleErrorDismiss()}
     onRetry={() => eventHandlerService?.handleRetry()}
-  />
-{/if}
-
-<!-- Delete confirmation dialog -->
-{#if deleteConfirmationData}
-  <BrowseDeleteDialog
-    show={true}
-    confirmationData={deleteConfirmationData}
-    onConfirm={() =>
-      eventHandlerService?.handleDeleteConfirm(deleteConfirmationData)}
-    onCancel={() => eventHandlerService?.handleDeleteCancel()}
   />
 {/if}
 
