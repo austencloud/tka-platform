@@ -134,6 +134,7 @@ export type TesterNotification = FeedbackNotification;
  * Notification preferences - stored per user
  */
 export interface NotificationPreferences {
+  pushEnabled: boolean;
   feedbackResolved: boolean;
   feedbackInProgress: boolean;
   feedbackNeedsInfo: boolean;
@@ -152,6 +153,7 @@ export interface NotificationPreferences {
  * Default notification preferences (all enabled)
  */
 export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
+  pushEnabled: true,
   feedbackResolved: true,
   feedbackInProgress: true,
   feedbackNeedsInfo: true,

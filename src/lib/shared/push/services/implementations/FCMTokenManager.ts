@@ -70,7 +70,6 @@ export class FCMTokenManager implements IFCMTokenManager {
 			if (this.currentToken) {
 				await this.removeToken(userId, this.currentToken);
 
-				const app = getApp();
 				const messaging = getMessaging(app);
 				await deleteToken(messaging);
 

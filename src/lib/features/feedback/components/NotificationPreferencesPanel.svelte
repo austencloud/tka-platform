@@ -6,7 +6,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { notificationPreferencesService } from "../services/implementations/NotificationPreferencesManager";
   import type {
     NotificationPreferences,
     NotificationType,
@@ -24,7 +23,11 @@
   } from "$lib/shared/debug/state/user-preview-state.svelte";
   import { container } from "$lib/shared/di";
   import type { IFCMTokenManager } from "$lib/shared/push/services/contracts/IFCMTokenManager";
+  import type { INotificationPreferencesManager } from "$lib/shared/push/services/contracts/INotificationPreferencesManager";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
+
+  const notificationPreferencesManager = container.items
+    .notificationPreferencesManager as INotificationPreferencesManager;
 
   // State
   let preferences = $state<NotificationPreferences>(
@@ -64,7 +67,7 @@
 
     try {
       isLoading = true;
-      preferences = await notificationPreferencesService.getPreferences(
+      preferences = await notificationPreferencesManager.getPreferences(
         user.uid
       );
     } catch (error) {
@@ -86,7 +89,7 @@
       pendingKeys.add(key);
       // Optimistic update
       preferences = { ...preferences, [key]: !preferences[key] };
-      await notificationPreferencesService.togglePreference(user.uid, key);
+      await notificationPreferencesManager.togglePreference(user.uid, key);
     } catch (error) {
       console.error("Failed to toggle preference:", error);
       // Revert on error
@@ -111,7 +114,7 @@
 
     try {
       bulkBusy = "enable";
-      await notificationPreferencesService.enableAll(user.uid);
+      await notificationPreferencesManager.enableAll(user.uid);
       await loadPreferences();
     } catch (error) {
       console.error("Failed to enable all:", error);
@@ -130,7 +133,7 @@
 
     try {
       bulkBusy = "disable";
-      await notificationPreferencesService.disableAll(user.uid);
+      await notificationPreferencesManager.disableAll(user.uid);
       await loadPreferences();
     } catch (error) {
       console.error("Failed to disable all:", error);
@@ -157,7 +160,7 @@
         // Turning OFF: unregister token, then save preference
         await fcmTokenManager.unregisterToken(user.uid);
         preferences = { ...preferences, pushEnabled: false };
-        await notificationPreferencesService.savePreferences(
+        await notificationPreferencesManager.savePreferences(
           user.uid,
           preferences
         );
@@ -189,7 +192,7 @@
 
         // Permission granted, register token and save preference
         preferences = { ...preferences, pushEnabled: true };
-        await notificationPreferencesService.savePreferences(
+        await notificationPreferencesManager.savePreferences(
           user.uid,
           preferences
         );
