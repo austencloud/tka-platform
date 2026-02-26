@@ -54,6 +54,7 @@
 
   // ✅ PURE RUNES: Local state
   let _selectedSequence = $state<SequenceData | null>(null);
+  let deleteConfirmationData = $state<DeleteConfirmationData | null>(null);
   let error = $state<string | null>(null);
   let activeTab = $state<BrowseModuleType>("gallery");
   let showAnimator = $state<boolean>(false);
@@ -344,10 +345,9 @@
       eventHandlerService.initialize({
         galleryState,
         setSelectedSequence: (seq: SequenceData | null) => (_selectedSequence = seq),
+        setDeleteConfirmationData: (data: DeleteConfirmationData | null) =>
+          (deleteConfirmationData = data),
         setError: (err: string | null) => (error = err),
-        setDeleteConfirmationData: function (data: DeleteConfirmationData | null): void {
-          throw new Error("Function not implemented.");
-        }
       });
 
     } catch (err) {
