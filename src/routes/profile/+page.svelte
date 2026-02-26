@@ -14,7 +14,7 @@
   // Redirect if not authenticated
   $effect(() => {
     if (!authState.isAuthenticated && !authState.loading) {
-      goto("/auth/login");
+      goto("/");
     }
   });
 

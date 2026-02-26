@@ -57,7 +57,7 @@
 
       const result = await sendMagicLink({
         email,
-        continueUrl: window.location.origin + "/auth/login",
+        continueUrl: window.location.origin + "/",
       });
 
       if (result.data.success) {

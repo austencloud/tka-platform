@@ -18,7 +18,6 @@ Sitemap: ${domain}/sitemap.xml
 # Main application pages
 Allow: /
 Allow: /profile
-Allow: /auth/login
 Allow: /sequence/
 
 # Block internal paths
