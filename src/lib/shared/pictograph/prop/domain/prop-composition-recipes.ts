@@ -101,6 +101,12 @@ const FAMILY_RECIPES: Partial<Record<PropType, CompositionRecipe>> = {
     red: { x: 62, y: 50, rotation: 0, scale: 0.45 },
     pairScale: 1,
   },
+  // Contact Balls: side by side (spheres)
+  [PropType.CONTACTBALL]: {
+    blue: { x: 38, y: 50, rotation: 0, scale: 0.45 },
+    red: { x: 62, y: 50, rotation: 0, scale: 0.45 },
+    pairScale: 1,
+  },
   // Torches: crossed
   [PropType.TORCH]: {
     blue: { x: 50, y: 50, rotation: -30, scale: 0.5 },

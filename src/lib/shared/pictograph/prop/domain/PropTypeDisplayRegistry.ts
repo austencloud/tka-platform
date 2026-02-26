@@ -139,6 +139,24 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
     [PropType.TORCH]: { label: "Torch", image: "/images/props/buttons/torch.svg" },
     [PropType.BIGTORCH]: { label: "Big Torch", image: "/images/props/buttons/bigtorch.svg" },
 
+    // === CONTACT BALL FAMILY ===
+    [PropType.CONTACTBALL]: {
+      label: "Contact Ball",
+      image: "/images/props/buttons/contactball.svg",
+    },
+    [PropType.BIGCONTACTBALL]: {
+      label: "Big Contact Ball",
+      image: "/images/props/buttons/bigcontactball.svg",
+    },
+    [PropType.DOUBLECONTACTBALL]: {
+      label: "Double Contact Ball",
+      image: "/images/props/buttons/doublecontactball.svg",
+    },
+    [PropType.BIGDOUBLECONTACTBALL]: {
+      label: "Big Double Contact Ball",
+      image: "/images/props/buttons/bigdoublecontactball.svg",
+    },
+
     // === POI FAMILY (Momentum-based) ===
     // Uses club.svg as placeholder until proper poi SVG (~175px) is created
     [PropType.POI]: { label: "Poi", image: "/images/props/buttons/club.svg" },
@@ -200,6 +218,10 @@ export const VARIANT_PROP_TYPES: PropType[] = [
   PropType.BIGDOUBLESTAR,
   // Eightrings family
   PropType.BIGEIGHTRINGS,
+  // Contact ball family
+  PropType.BIGCONTACTBALL,
+  PropType.DOUBLECONTACTBALL,
+  PropType.BIGDOUBLECONTACTBALL,
   // Torch family
   PropType.BIGTORCH,
 ];
@@ -233,6 +255,10 @@ const VARIANT_TO_BASE: Partial<Record<PropType, PropType>> = {
   [PropType.BIGDOUBLESTAR]: PropType.DOUBLESTAR,
   // Eightrings variations
   [PropType.BIGEIGHTRINGS]: PropType.EIGHTRINGS,
+  // Contact ball variations
+  [PropType.BIGCONTACTBALL]: PropType.CONTACTBALL,
+  [PropType.DOUBLECONTACTBALL]: PropType.CONTACTBALL,
+  [PropType.BIGDOUBLECONTACTBALL]: PropType.CONTACTBALL,
   // Torch variations
   [PropType.BIGTORCH]: PropType.TORCH,
 };
@@ -253,6 +279,7 @@ const BASE_TO_VARIANTS: Partial<Record<PropType, PropType[]>> = {
   [PropType.GUITAR]: [PropType.UKULELE],
   [PropType.DOUBLESTAR]: [PropType.BIGDOUBLESTAR],
   [PropType.EIGHTRINGS]: [PropType.BIGEIGHTRINGS],
+  [PropType.CONTACTBALL]: [PropType.BIGCONTACTBALL, PropType.DOUBLECONTACTBALL, PropType.BIGDOUBLECONTACTBALL],
   [PropType.TORCH]: [PropType.BIGTORCH],
 };
 

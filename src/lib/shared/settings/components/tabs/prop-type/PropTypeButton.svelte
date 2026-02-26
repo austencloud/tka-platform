@@ -153,7 +153,9 @@
 
   .prop-image-container :global(.prop-composition-preview) {
     width: 85%;
-    height: 85%;
+    height: auto;
+    aspect-ratio: 1;
+    max-height: 85%;
     opacity: 0.9;
     transition: opacity var(--duration-normal) ease;
   }

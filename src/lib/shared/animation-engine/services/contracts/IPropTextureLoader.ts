@@ -79,6 +79,12 @@ export const PROP_DIMENSIONS: Record<string, PropDimensions> = {
   // Quiad
   quiad: { width: 300, height: 300 },
 
+  // Contact ball family
+  contactball: { width: 160, height: 160 },
+  bigcontactball: { width: 300, height: 300 },
+  doublecontactball: { width: 300, height: 160 },
+  bigdoublecontactball: { width: 600, height: 300 },
+
   // Torch family
   torch: { width: 300, height: 15.5 },
   bigtorch: { width: 325, height: 32.6 },

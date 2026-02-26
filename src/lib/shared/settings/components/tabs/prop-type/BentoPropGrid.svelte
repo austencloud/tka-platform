@@ -56,6 +56,7 @@
         PropType.GUITAR,
         PropType.DOUBLESTAR,
         PropType.EIGHTRINGS,
+        PropType.CONTACTBALL,
         PropType.TORCH,
       ],
     },

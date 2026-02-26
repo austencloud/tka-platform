@@ -150,6 +150,11 @@ const PROP_TYPE_ENCODE: Record<PropType, string> = {
   // Eightrings family
   [PropType.EIGHTRINGS]: "E",
   [PropType.BIGEIGHTRINGS]: "e",
+  // Contact ball family
+  [PropType.CONTACTBALL]: "A",
+  [PropType.BIGCONTACTBALL]: "a",
+  [PropType.DOUBLECONTACTBALL]: "V",
+  [PropType.BIGDOUBLECONTACTBALL]: "v",
   // Quiad
   [PropType.QUIAD]: "I",
   // Torch family
