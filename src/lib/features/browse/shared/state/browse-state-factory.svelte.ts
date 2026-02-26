@@ -224,6 +224,14 @@ export function createBrowseState() {
     }
   }
 
+  // Delete a sequence from the user's library and reload
+  async function deleteSequence(sequenceId: string): Promise<void> {
+    const libService = getLibraryRepository();
+    if (!libService) throw new Error("Not signed in");
+    await libService.deleteSequence(sequenceId);
+    await loadLibrarySequences();
+  }
+
   // Switch source and reload data
   async function setSource(source: SequenceSource): Promise<void> {
     if (source === currentSource) {
@@ -546,6 +554,7 @@ export function createBrowseState() {
     // Methods
     loadAllSequences,
     loadLibrarySequences,
+    deleteSequence,
     setSource,
     selectSequence,
     toggleFavorite,
