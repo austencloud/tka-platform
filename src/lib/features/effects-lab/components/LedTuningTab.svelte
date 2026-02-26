@@ -26,6 +26,8 @@
   import { AnimationLoop } from "$lib/features/compose/services/implementations/AnimationLoop";
   import { StepCalculator } from "$lib/features/compose/services/implementations/StepCalculator";
 
+  import TempoControl from "$lib/shared/sequence-viewer/components/TempoControl.svelte";
+  import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
   import { DEFAULT_LED_CONFIG, ledBrightnessToFloat, type LedOverlayConfig, type LedColorMode } from "$lib/shared/animation-engine/domain/types/LedTypes";
 
   // Auto-chaining (shared with FireTuningTab)
@@ -61,7 +63,7 @@
 
   function loadPersistedState(): Partial<LedLabPersistedState> {
     try {
-      const raw = sessionStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) return JSON.parse(raw);
     } catch { /* ignore */ }
     return {};
@@ -85,7 +87,7 @@
         blueHandColor,
         redHandColor,
       };
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch { /* ignore */ }
   }
 
@@ -114,7 +116,7 @@
   let glowRadius = $state(persisted.glowRadius ?? DEFAULT_LED_CONFIG.glowRadius);
   let bloomIntensity = $state(persisted.bloomIntensity ?? DEFAULT_LED_CONFIG.bloomIntensity);
   let trailFadeRate = $state(persisted.trailFadeRate ?? DEFAULT_LED_CONFIG.trailFadeRate);
-  let sourceMode = $state<SourceMode>(persisted.sourceMode ?? "pick");
+  let sourceMode = $state<SourceMode>(persisted.sourceMode ?? "infinite");
   let colorMode = $state<LedColorMode>(persisted.colorMode ?? DEFAULT_LED_CONFIG.colorMode);
   let blueHandColor = $state(persisted.blueHandColor ?? DEFAULT_LED_CONFIG.blueHandColor);
   let redHandColor = $state(persisted.redHandColor ?? DEFAULT_LED_CONFIG.redHandColor);
@@ -520,25 +522,15 @@
       {#if sequence && !loading && !error}
         <div class="control-section">
           <h3>Playback</h3>
-          <div class="playback-row">
-            <button class="play-btn" onclick={togglePlayback} aria-label={isPlaying ? "Pause playback" : "Play sequence"}>
-              <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
-              {isPlaying ? "Pause" : "Play"}
-            </button>
-            <div class="bpm-control">
-              <label for="led-bpm-slider">BPM</label>
-              <input
-                id="led-bpm-slider"
-                type="range"
-                min="15"
-                max="240"
-                step="5"
-                bind:value={bpm}
-                oninput={() => handleBpmChange(bpm)}
-              />
-              <span class="bpm-value">{bpm}</span>
-            </div>
-          </div>
+          <TempoControl {bpm} onBpmChange={handleBpmChange} showPresets={false} showRamp={false} />
+          <TransportControls
+            {isPlaying}
+            onPlaybackToggle={togglePlayback}
+            onStepHalfBeatBackward={() => playbackController?.stepHalfBeatBackward()}
+            onStepHalfBeatForward={() => playbackController?.stepHalfBeatForward()}
+            onStepFullBeatBackward={() => playbackController?.stepFullBeatBackward()}
+            onStepFullBeatForward={() => playbackController?.stepFullBeatForward()}
+          />
         </div>
       {/if}
 
@@ -819,57 +811,8 @@
     cursor: not-allowed;
   }
 
-  .playback-row {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm, 8px);
-  }
-
-  .play-btn {
-    width: 100%;
-    display: flex;
-    align-items: center;
+  .control-section :global(.tempo-control) {
     justify-content: center;
-    gap: var(--spacing-xs, 4px);
-    padding: 10px 16px;
-    border: 1.5px solid var(--led-green-border);
-    border-radius: var(--border-radius-md, 8px);
-    background: var(--led-green-dim);
-    color: var(--led-green);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 150ms ease;
-  }
-
-  .play-btn:hover {
-    background: color-mix(in srgb, var(--led-green) 20%, transparent);
-    border-color: var(--led-green-border-strong);
-  }
-
-  .bpm-control {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm, 8px);
-  }
-
-  .bpm-control label {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    white-space: nowrap;
-  }
-
-  .bpm-control input[type="range"] {
-    flex: 1;
-    accent-color: var(--led-green);
-  }
-
-  .bpm-value {
-    min-width: 32px;
-    text-align: right;
-    font-family: var(--font-mono, monospace);
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text, white);
   }
 
   .debug-section {
@@ -896,8 +839,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     .pick-btn,
-    .action-btn,
-    .play-btn {
+    .action-btn {
       transition: none;
     }
   }

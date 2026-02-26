@@ -25,10 +25,14 @@
   import { AnimationLoop } from "$lib/features/compose/services/implementations/AnimationLoop";
   import { StepCalculator } from "$lib/features/compose/services/implementations/StepCalculator";
 
+  import TempoControl from "$lib/shared/sequence-viewer/components/TempoControl.svelte";
+  import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
+
   import {
     BASE_FIRE_PHYSICS,
     BASE_COLOR_CURVE,
-    DEFAULT_CHARCOAL_PARAMS,
+    CHARCOAL_FIRE_PHYSICS,
+    CHARCOAL_COLOR_CURVE,
     intensityToPhysics,
     smokeLevelToPhysics,
     smokeLevelToOpacity,
@@ -63,7 +67,7 @@
 
   function loadPersistedState(): Partial<FlameLabPersistedState> {
     try {
-      const raw = sessionStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) return JSON.parse(raw);
     } catch { /* ignore */ }
     return {};
@@ -81,7 +85,7 @@
         bpm,
         sourceMode,
       };
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch { /* ignore */ }
   }
 
@@ -108,7 +112,7 @@
   let colorBlend = $state(persisted.colorBlend ?? 0.5);
   let smokeLevel = $state(persisted.smokeLevel ?? 0.1);
   let useCharcoal = $state(persisted.useCharcoal ?? false);
-  let sourceMode = $state<SourceMode>(persisted.sourceMode ?? "pick");
+  let sourceMode = $state<SourceMode>(persisted.sourceMode ?? "infinite");
 
   function applyPreset(preset: { intensity: number; smokeLevel: number; colorBlend: number }) {
     intensity = preset.intensity;
@@ -123,8 +127,9 @@
   let publishSuccess = $state(false);
 
   let fireConfig = $derived.by(() => {
+    const basePhysics = useCharcoal ? CHARCOAL_FIRE_PHYSICS : BASE_FIRE_PHYSICS;
     const mergedPhysics = {
-      ...BASE_FIRE_PHYSICS,
+      ...basePhysics,
       ...intensityToPhysics(intensity),
       ...smokeLevelToPhysics(smokeLevel),
     };
@@ -134,10 +139,9 @@
       flameHeight: 1.0,
       velocityReactive: true,
       quality: 4,
-      fuelRendererType: useCharcoal ? "particle" as const : "fluid" as const,
-      physicsPreset: useCharcoal ? undefined : mergedPhysics,
-      colorCurve: useCharcoal ? undefined : BASE_COLOR_CURVE,
-      charcoalParams: useCharcoal ? DEFAULT_CHARCOAL_PARAMS : undefined,
+      fuelRendererType: "fluid" as const,
+      physicsPreset: mergedPhysics,
+      colorCurve: useCharcoal ? CHARCOAL_COLOR_CURVE : BASE_COLOR_CURVE,
       colorBlend,
       smokeOpacity: smokeLevelToOpacity(smokeLevel),
     };
@@ -568,25 +572,15 @@
       {#if sequence && !loading && !error}
         <div class="control-section">
           <h3>Playback</h3>
-          <div class="playback-row">
-            <button class="play-btn" onclick={togglePlayback} aria-label={isPlaying ? "Pause playback" : "Play sequence"}>
-              <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
-              {isPlaying ? "Pause" : "Play"}
-            </button>
-            <div class="bpm-control">
-              <label for="bpm-slider">BPM</label>
-              <input
-                id="bpm-slider"
-                type="range"
-                min="15"
-                max="240"
-                step="5"
-                bind:value={bpm}
-                oninput={() => handleBpmChange(bpm)}
-              />
-              <span class="bpm-value">{bpm}</span>
-            </div>
-          </div>
+          <TempoControl {bpm} onBpmChange={handleBpmChange} showPresets={false} showRamp={false} />
+          <TransportControls
+            {isPlaying}
+            onPlaybackToggle={togglePlayback}
+            onStepHalfBeatBackward={() => playbackController?.stepHalfBeatBackward()}
+            onStepHalfBeatForward={() => playbackController?.stepHalfBeatForward()}
+            onStepFullBeatBackward={() => playbackController?.stepFullBeatBackward()}
+            onStepFullBeatForward={() => playbackController?.stepFullBeatForward()}
+          />
         </div>
       {/if}
 
@@ -1015,57 +1009,8 @@
     cursor: not-allowed;
   }
 
-  .playback-row {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm, 8px);
-  }
-
-  .play-btn {
-    width: 100%;
-    display: flex;
-    align-items: center;
+  .control-section :global(.tempo-control) {
     justify-content: center;
-    gap: var(--spacing-xs, 4px);
-    padding: 10px 16px;
-    border: 1.5px solid var(--flame-green-border);
-    border-radius: var(--border-radius-md, 8px);
-    background: var(--flame-green-dim);
-    color: var(--flame-green);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 150ms ease;
-  }
-
-  .play-btn:hover {
-    background: color-mix(in srgb, var(--flame-green) 20%, transparent);
-    border-color: var(--flame-green-border-strong);
-  }
-
-  .bpm-control {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm, 8px);
-  }
-
-  .bpm-control label {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    white-space: nowrap;
-  }
-
-  .bpm-control input[type="range"] {
-    flex: 1;
-    accent-color: var(--flame-orange);
-  }
-
-  .bpm-value {
-    min-width: 32px;
-    text-align: right;
-    font-family: var(--font-mono, monospace);
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text, white);
   }
 
   .fire-section {
@@ -1353,7 +1298,6 @@
   @media (prefers-reduced-motion: reduce) {
     .pick-btn,
     .action-btn,
-    .play-btn,
     .toggle-btn,
     .publish-btn,
     .confirm-btn,
