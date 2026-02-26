@@ -10,7 +10,7 @@
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import ErrorBanner from "../../../create/shared/components/ErrorBanner.svelte";
 
-  import type { DeleteConfirmationData, IBrowseEventHandler } from "../services/contracts/IBrowseEventHandler";
+  import type { IBrowseEventHandler } from "../services/contracts/IBrowseEventHandler";
   import CollectionsBrowsePanel from "../../collections/components/CollectionsBrowsePanel.svelte";
   import CreatorsPanel from "../../creators/components/CreatorsPanel.svelte";
   import UserProfilePanel from "../../creators/components/UserProfilePanel.svelte";
@@ -54,7 +54,6 @@
 
   // ✅ PURE RUNES: Local state
   let _selectedSequence = $state<SequenceData | null>(null);
-  let deleteConfirmationData = $state<DeleteConfirmationData | null>(null);
   let error = $state<string | null>(null);
   let activeTab = $state<BrowseModuleType>("gallery");
   let showAnimator = $state<boolean>(false);
@@ -345,8 +344,6 @@
       eventHandlerService.initialize({
         galleryState,
         setSelectedSequence: (seq: SequenceData | null) => (_selectedSequence = seq),
-        setDeleteConfirmationData: (data: DeleteConfirmationData | null) =>
-          (deleteConfirmationData = data),
         setError: (err: string | null) => (error = err),
       });
 

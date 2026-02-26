@@ -10,7 +10,6 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type {
   IBrowseEventHandler,
   BrowseEventHandlerParams,
-  DeleteConfirmationData,
 } from "../contracts/IBrowseEventHandler";
 import { sequencePanelManager } from "../../state/sequence-panel-state.svelte";
 import { browseScrollState } from "../../state/BrowseScrollState.svelte";
@@ -62,7 +61,7 @@ export class BrowseEventHandler implements IBrowseEventHandler {
           this.handleViewDetail(sequence);
           break;
         case "delete":
-          this.handleSequenceDelete(sequence);
+          console.log("Handling delete action for sequence:", sequence.id);
           break;
         case "favorite":
           await this.params!.galleryState.toggleFavorite(sequence.id);
@@ -157,21 +156,11 @@ export class BrowseEventHandler implements IBrowseEventHandler {
         this.handleEditSequence(sequence);
         break;
       case "delete":
-        this.handleSequenceDelete(sequence);
-        this.handleCloseDetailPanel(); // Close panel before showing delete dialog
+        console.log("Handling delete panel action for sequence:", sequence.id);
         break;
       default:
         console.warn("Unknown detail panel action:", action);
     }
-  }
-
-  handleSequenceDelete(sequence: SequenceData): void {
-    this.ensureInitialized();
-    this.params!.setDeleteConfirmationData({
-      sequence: sequence,
-      relatedSequences: [],
-      totalCount: 1,
-    });
   }
 
   handleSpotlightView(sequence: SequenceData): void {
@@ -180,31 +169,6 @@ export class BrowseEventHandler implements IBrowseEventHandler {
       returnLabel: "Browse",
       scrollY: browseScrollState.lastScrollY,
     });
-  }
-
-  async handleDeleteConfirm(
-    deleteConfirmationData: DeleteConfirmationData | null
-  ): Promise<void> {
-    this.ensureInitialized();
-
-    if (!deleteConfirmationData?.sequence) return;
-
-    try {
-      await this.params!.galleryState.deleteSequence(
-        deleteConfirmationData.sequence.id
-      );
-      this.params!.setDeleteConfirmationData(null);
-    } catch (err: unknown) {
-      console.error("Delete failed:", err);
-      this.params!.setError(
-        err instanceof Error ? err.message : "Failed to delete sequence"
-      );
-    }
-  }
-
-  handleDeleteCancel(): void {
-    this.ensureInitialized();
-    this.params!.setDeleteConfirmationData(null);
   }
 
   handleErrorDismiss(): void {
