@@ -91,6 +91,10 @@ export function createBrowseState() {
 
   const persisted = loadPersistedControls();
 
+  // Per-source sequence cache — restores data instantly when switching back
+  // without a Firestore round-trip. Invalidated on library mutation.
+  let libraryCache: SequenceData[] | null = null;
+
   // State
   let isLoading = $state(false);
   let currentSource = $state<SequenceSource>("community");
@@ -216,6 +220,7 @@ export function createBrowseState() {
       applyFilterAndSort();
       await generateSequenceSections();
       sectionsReady = true;
+      libraryCache = dedupedLibrary; // Cache for instant restore on tab switch
     } catch (err) {
       console.error("Failed to load library sequences:", err);
       error = err instanceof Error ? err.message : "Failed to load library";
@@ -229,6 +234,7 @@ export function createBrowseState() {
     const libService = getLibraryRepository();
     if (!libService) throw new Error("Not signed in");
     await libService.deleteSequence(sequenceId);
+    libraryCache = null; // Invalidate so the reload actually fetches
     await loadLibrarySequences();
   }
 
@@ -241,8 +247,19 @@ export function createBrowseState() {
     currentSource = source;
 
     if (source === "my-library") {
-      await loadLibrarySequences();
+      if (libraryCache) {
+        // Restore from cache — no Firestore fetch needed
+        const cached = libraryCache;
+        allSequences = cached;
+        displayedSequences = cached;
+        applyFilterAndSort();
+        await generateSequenceSections();
+        sectionsReady = true;
+      } else {
+        await loadLibrarySequences();
+      }
     } else {
+      // Community: PublicSequencesLoader has its own in-memory cache, so this is fast
       await loadAllSequences();
     }
   }
@@ -480,10 +497,12 @@ export function createBrowseState() {
     }, 300);
   }
 
-  // Reload library sequences whenever the library is mutated (save, delete, etc.)
-  // regardless of which source is currently active.
+  // Invalidate library cache on any mutation so the next visit re-fetches.
+  // No fetch fires here — the reload happens lazily in setSource.
   $effect(() => {
-    return onLibraryMutated(() => loadLibrarySequences());
+    return onLibraryMutated(() => {
+      libraryCache = null;
+    });
   });
 
   return {
