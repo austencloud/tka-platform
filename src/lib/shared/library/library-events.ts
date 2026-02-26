@@ -26,14 +26,14 @@
  * 2. Add your file to the KNOWN SUBSCRIBERS list above.
  */
 
-const EVENT_NAME = "tka:library-mutated";
+export const LIBRARY_MUTATED_EVENT = "tka:library-mutated";
 
 /**
  * Dispatch a library mutation notification. Call this after any destructive
  * operation (delete, bulk-delete) that other modules should react to.
  */
 export function notifyLibraryMutated(): void {
-  window.dispatchEvent(new CustomEvent(EVENT_NAME));
+  window.dispatchEvent(new CustomEvent(LIBRARY_MUTATED_EVENT));
 }
 
 /**
@@ -44,6 +44,6 @@ export function notifyLibraryMutated(): void {
  * $effect(() => onLibraryMutated(() => loadSequences()));
  */
 export function onLibraryMutated(handler: () => void): () => void {
-  window.addEventListener(EVENT_NAME, handler);
-  return () => window.removeEventListener(EVENT_NAME, handler);
+  window.addEventListener(LIBRARY_MUTATED_EVENT, handler);
+  return () => window.removeEventListener(LIBRARY_MUTATED_EVENT, handler);
 }
