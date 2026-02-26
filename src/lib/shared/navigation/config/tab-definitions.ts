@@ -458,16 +458,9 @@ export const SETTINGS_TABS: Section[] = [
 // Kept for backwards compatibility only.
 export const REALM_TABS: Section[] = [];
 
-// Feedback tabs configuration (tracker visible to all, manage restricted to admins)
+// Feedback tabs configuration
+// User-facing tabs first (submit, my-feedback), admin-only tabs last (tracker, manage)
 export const FEEDBACK_TABS: Section[] = [
-  {
-    id: "tracker",
-    label: "Tracker",
-    icon: '<i class="fas fa-binoculars" aria-hidden="true"></i>',
-    description: "See reported bugs, features in progress, and recent fixes",
-    color: "#f59e0b",
-    gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
-  },
   {
     id: "submit",
     label: "Submit",
@@ -483,6 +476,14 @@ export const FEEDBACK_TABS: Section[] = [
     description: "Track your submitted feedback and confirmations",
     color: "#3b82f6",
     gradient: "linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)",
+  },
+  {
+    id: "tracker",
+    label: "Tracker",
+    icon: '<i class="fas fa-binoculars" aria-hidden="true"></i>',
+    description: "See reported bugs, features in progress, and recent fixes",
+    color: "#f59e0b",
+    gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
   },
   {
     id: "manage",
