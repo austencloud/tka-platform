@@ -9,6 +9,7 @@
     selectedBlue = false,
     selectedRed = false,
     color = "blue",
+    badge = undefined,
     onSelect,
   } = $props<{
     propType: PropType;
@@ -16,6 +17,8 @@
     selectedBlue?: boolean;
     selectedRed?: boolean;
     color?: "blue" | "red";
+    /** Variant count badge. Shown as a small circle in the top-right corner. */
+    badge?: number;
     onSelect?: (propType: PropType) => void;
   }>();
 
@@ -46,6 +49,11 @@
     <PropCompositionPreview {propType} />
   </div>
   <span class="prop-label">{displayInfo.label}</span>
+
+  <!-- Variant count badge -->
+  {#if badge}
+    <div class="variant-badge" aria-label={`${badge} variants`}>{badge}</div>
+  {/if}
 
   <!-- Checkmark indicator -->
   {#if selected || selectedBlue || selectedRed}
@@ -90,11 +98,10 @@
     gap: 4%;
     border-radius: 10px;
     box-sizing: border-box;
-    /* Taller than wide: width is 1, height is 1.2 */
-    aspect-ratio: 1 / 1.2;
+    /* Slightly taller than wide for label space */
+    aspect-ratio: 1 / 1.1;
     width: 100%;
     overflow: hidden;
-    box-shadow: var(--theme-shadow, 0 2px 8px rgba(0, 0, 0, 0.1));
   }
 
   .prop-button:hover {
@@ -155,7 +162,9 @@
     opacity: 1;
   }
 
-  .prop-button.selected .prop-image-container :global(.prop-composition-preview) {
+  .prop-button.selected
+    .prop-image-container
+    :global(.prop-composition-preview) {
     opacity: 1;
   }
 
@@ -175,6 +184,26 @@
     color: var(--theme-text, var(--theme-text));
     font-family:
       -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  }
+
+  /* Variant count badge */
+  .variant-badge {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    color: var(--theme-panel-bg, #121218);
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    z-index: 10;
+    pointer-events: none;
   }
 
   /* Checkmark container */
@@ -198,20 +227,23 @@
     color: white;
     font-size: var(--font-size-compact);
     font-weight: 700;
-    animation: ios-checkmark-pop var(--duration-emphasis) cubic-bezier(0.36, 0.66, 0.04, 1);
+    animation: ios-checkmark-pop var(--duration-emphasis)
+      cubic-bezier(0.36, 0.66, 0.04, 1);
   }
 
   .ios-checkmark.blue {
     background: var(--prop-blue-text, #818cf8);
     box-shadow:
-      0 3px 10px color-mix(in srgb, var(--prop-blue-text, #818cf8) 50%, transparent),
+      0 3px 10px
+        color-mix(in srgb, var(--prop-blue-text, #818cf8) 50%, transparent),
       0 1px 3px var(--theme-shadow);
   }
 
   .ios-checkmark.red {
     background: var(--prop-red-text, #f87171);
     box-shadow:
-      0 3px 10px color-mix(in srgb, var(--prop-red-text, #f87171) 50%, transparent),
+      0 3px 10px
+        color-mix(in srgb, var(--prop-red-text, #f87171) 50%, transparent),
       0 1px 3px var(--theme-shadow);
   }
 
@@ -263,6 +295,4 @@
       background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
     }
   }
-
-  /* Light mode support - skipped, app is dark-mode only */
 </style>

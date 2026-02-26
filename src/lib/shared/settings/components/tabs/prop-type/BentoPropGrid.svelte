@@ -1,11 +1,21 @@
 <!--
-  BentoPropGrid.svelte - Bento-box style prop selection grid
+  BentoPropGrid.svelte - Family-first prop selection grid
 
-  Shows ALL prop types organized by family in a modern bento-box layout.
-  No version switcher needed - everything is visible at once.
+  Shows 16 prop families in a sectioned grid. Single-prop families
+  select immediately. Multi-variant families open a variant strip
+  at the bottom for drilling into specific variants.
+
+  Variants:
+  - "panel" (default): has border/background for standalone use (e.g. Settings tab)
+  - "inline": no border/background, used inside drawers that already provide a container
 -->
 <script lang="ts">
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import {
+    getBasePropType,
+    getAllVariations,
+    getPropTypeDisplayInfo,
+  } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
   import PropTypeButton from "./PropTypeButton.svelte";
 
   let {
@@ -13,120 +23,163 @@
     color = "blue",
     title = "Select Prop",
     onSelect,
+    variant = "panel",
   } = $props<{
     selectedPropType: PropType;
     color?: "blue" | "red";
     title?: string;
     onSelect: (propType: PropType) => void;
+    /** "panel" = bordered card (desktop settings), "inline" = no border (drawer) */
+    variant?: "panel" | "inline";
   }>();
 
-  // Define prop families - each family is a visual group
-  const PROP_FAMILIES: { name: string; props: PropType[] }[] = [
+  // Family definitions: one base prop per family, grouped by section
+  const PROP_FAMILIES: { label: string; bases: PropType[] }[] = [
     {
-      name: "Staffs",
-      props: [PropType.STAFF, PropType.SIMPLESTAFF, PropType.BIGSTAFF, PropType.STAFF2],
+      label: "Staves & Clubs",
+      bases: [PropType.STAFF, PropType.CLUB, PropType.FAN],
     },
     {
-      name: "Clubs",
-      props: [PropType.CLUB, PropType.BIGCLUB],
+      label: "Curved Props",
+      bases: [
+        PropType.BUUGENG,
+        PropType.TRIGENG,
+        PropType.MINIHOOP,
+        PropType.TRIAD,
+        PropType.TRIQUETRA,
+      ],
     },
     {
-      name: "Fans",
-      props: [PropType.FAN, PropType.BIGFAN],
+      label: "Novelty",
+      bases: [
+        PropType.CHICKEN,
+        PropType.GUITAR,
+        PropType.DOUBLESTAR,
+        PropType.EIGHTRINGS,
+        PropType.TORCH,
+      ],
     },
     {
-      name: "Buugengs",
-      props: [PropType.BUUGENG, PropType.BIGBUUGENG, PropType.TRIGENG],
-    },
-    {
-      name: "Hoops",
-      props: [PropType.MINIHOOP, PropType.BIGHOOP],
-    },
-    {
-      name: "Triads",
-      props: [PropType.TRIAD, PropType.BIGTRIAD],
-    },
-    {
-      name: "Triquetras",
-      props: [PropType.TRIQUETRA, PropType.TRIQUETRA2],
-    },
-    {
-      name: "Chickens",
-      props: [PropType.CHICKEN, PropType.BIGCHICKEN],
-    },
-    {
-      name: "Guitars",
-      props: [PropType.GUITAR, PropType.UKULELE],
-    },
-    {
-      name: "Stars",
-      props: [PropType.DOUBLESTAR, PropType.BIGDOUBLESTAR],
-    },
-    {
-      name: "Rings",
-      props: [PropType.EIGHTRINGS, PropType.BIGEIGHTRINGS],
-    },
-    {
-      name: "Torches",
-      props: [PropType.TORCH, PropType.BIGTORCH],
-    },
-    {
-      name: "Singles",
-      props: [PropType.HAND, PropType.SWORD, PropType.QUIAD],
-      // Note: POI removed until fully implemented
+      label: "Singles",
+      bases: [PropType.HAND, PropType.SWORD, PropType.QUIAD],
     },
   ];
 
-  function handlePropSelect(propType: PropType) {
-    onSelect(propType);
+  let expandedFamily = $state<PropType | null>(null);
+
+  const selectedBase = $derived(getBasePropType(selectedPropType));
+  const familyVariants = $derived(
+    expandedFamily ? getAllVariations(expandedFamily) : [],
+  );
+
+  // Auto-expand the selected prop's family on mount / when selection changes
+  $effect(() => {
+    const base = getBasePropType(selectedPropType);
+    if (getAllVariations(base).length > 1) {
+      expandedFamily = base;
+    } else {
+      expandedFamily = null;
+    }
+  });
+
+  function handleFamilyClick(base: PropType) {
+    const variants = getAllVariations(base);
+    if (variants.length === 1) {
+      // Single-prop family: select immediately, collapse any strip
+      onSelect(base);
+      expandedFamily = null;
+    } else {
+      // Multi-variant family: expand strip
+      expandedFamily = base;
+    }
+  }
+
+  function variantCount(base: PropType): number | undefined {
+    const count = getAllVariations(base).length;
+    return count > 1 ? count : undefined;
   }
 </script>
 
-<div class="bento-prop-grid">
-  <!-- Header -->
-  <header class="grid-header">
-    <h4 class="grid-title">{title}</h4>
-  </header>
+<div
+  class="prop-grid-root"
+  class:panel={variant === "panel"}
+  class:inline={variant === "inline"}
+>
+  <!-- Header (panel variant only) -->
+  {#if variant === "panel"}
+    <header class="grid-header">
+      <h4 class="grid-title">{title}</h4>
+    </header>
+  {/if}
 
-  <!-- Scrollable content -->
-  <div class="bento-scroll themed-scrollbar">
-    <div class="bento-content">
-      {#each PROP_FAMILIES as family}
-        <section class="prop-family" class:large={family.props.length >= 4}>
-          <h5 class="family-name">{family.name}</h5>
-          <div class="family-props">
-            {#each family.props as propType}
-              <PropTypeButton
-                {propType}
-                selected={selectedPropType === propType}
-                {color}
-                onSelect={handlePropSelect}
-              />
-            {/each}
-          </div>
-        </section>
+  <!-- Scrollable family grid -->
+  <div class="grid-scroll themed-scrollbar">
+    <div class="grid-content">
+      {#each PROP_FAMILIES as section, i}
+        <div class="section-label" class:first={i === 0}>{section.label}</div>
+        <div class="section-buttons">
+          {#each section.bases as base}
+            <PropTypeButton
+              propType={base}
+              selected={selectedBase === base}
+              badge={variantCount(base)}
+              {color}
+              onSelect={() => handleFamilyClick(base)}
+            />
+          {/each}
+        </div>
       {/each}
     </div>
   </div>
+
+  <!-- Variant strip (shown when a multi-variant family is expanded) -->
+  {#if expandedFamily && familyVariants.length > 1}
+    <div class="variant-strip">
+      <span class="variant-label"
+        >{getPropTypeDisplayInfo(expandedFamily).label} Variants</span
+      >
+      <div class="variant-buttons">
+        {#each familyVariants as variantProp}
+          <PropTypeButton
+            propType={variantProp}
+            selected={selectedPropType === variantProp}
+            {color}
+            onSelect={() => onSelect(variantProp)}
+          />
+        {/each}
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
-  .bento-prop-grid {
+  .prop-grid-root {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 12px;
+    gap: 0;
     width: 100%;
     height: 100%;
     min-height: 0;
     flex: 1;
     container-type: inline-size;
-    container-name: bento-grid;
+    container-name: prop-grid;
   }
 
-  /* Header */
+  /* Panel variant: bordered card for standalone use */
+  .prop-grid-root.panel {
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 12px;
+  }
+
+  /* Inline variant: no border, transparent -- drawer provides the container */
+  .prop-grid-root.inline {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+  }
+
+  /* Header (panel variant only) */
   .grid-header {
     display: flex;
     align-items: center;
@@ -145,7 +198,7 @@
   }
 
   /* Scrollable area */
-  .bento-scroll {
+  .grid-scroll {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
@@ -154,119 +207,118 @@
     scrollbar-width: thin;
   }
 
-  /* Bento grid layout */
-  .bento-content {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 8px;
-    align-content: start;
-  }
-
-  /* Family section - a bento "cell" */
-  .prop-family {
-    background: color-mix(in srgb, var(--theme-card-bg) 80%, var(--theme-stroke) 20%);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 10px;
-    padding: 8px;
+  /* Vertical stack of sections */
+  .grid-content {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
   }
 
-  /* Large families span more columns */
-  .prop-family.large {
-    grid-column: span 2;
-  }
-
-  .family-name {
-    margin: 0;
+  /* Section label -- lightweight text divider */
+  .section-label {
     font-size: var(--font-size-compact, 10px);
     font-weight: 600;
     color: var(--theme-text-dim);
     text-transform: uppercase;
-    letter-spacing: 0.3px;
-    opacity: 0.8;
+    letter-spacing: 0.4px;
+    opacity: 0.7;
+    padding: 8px 4px 2px;
+    text-align: center;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
-  /* Props within a family - horizontal row */
-  .family-props {
+  /* First section has no top border */
+  .section-label.first {
+    border-top: none;
+    padding-top: 0;
+  }
+
+  /* Flex row of family buttons -- centered with wrapping */
+  .section-buttons {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 8px;
+    justify-content: center;
+    padding: 0 4px;
   }
 
-  /* Prop buttons within family - flex to fill available space */
-  .family-props :global(.prop-button) {
-    /* Flex basis with min/max for responsive sizing */
-    flex: 1 1 60px;
-    min-width: 55px;
-    max-width: 90px;
+  /* Family buttons: fixed width so centering works */
+  .section-buttons :global(.prop-button) {
+    width: 80px;
+    flex-shrink: 0;
   }
 
-  /* Larger prop buttons at wider containers */
-  @container bento-grid (min-width: 300px) {
-    .bento-content {
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 10px;
-    }
+  /* === Variant strip === */
+  .variant-strip {
+    flex-shrink: 0;
+    padding: 10px 12px;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+  }
 
-    .family-props {
-      gap: 8px;
-    }
+  .variant-label {
+    font-size: var(--font-size-compact, 10px);
+    font-weight: 600;
+    color: var(--theme-text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
 
-    .family-props :global(.prop-button) {
-      flex: 1 1 65px;
-      min-width: 60px;
-      max-width: 100px;
-    }
+  .variant-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    align-items: flex-start;
+  }
 
-    .prop-family {
-      padding: 10px;
-      gap: 8px;
+  /* Variant buttons: fixed explicit dimensions to guarantee SVG renders */
+  .variant-buttons :global(.prop-button) {
+    width: 70px;
+    height: 80px;
+    aspect-ratio: auto;
+    flex-shrink: 0;
+  }
+
+  /* Container query: widen family buttons on larger containers */
+  @container prop-grid (min-width: 400px) {
+    .section-buttons :global(.prop-button) {
+      width: 90px;
     }
   }
 
-  @container bento-grid (min-width: 450px) {
-    .bento-content {
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
+  @container prop-grid (min-width: 550px) {
+    .section-buttons :global(.prop-button) {
+      width: 100px;
     }
 
-    .family-props :global(.prop-button) {
-      flex: 1 1 70px;
-      min-width: 65px;
-      max-width: 110px;
+    .variant-buttons :global(.prop-button) {
+      width: 80px;
+      height: 90px;
+    }
+  }
+
+  @container prop-grid (min-width: 700px) {
+    .section-buttons :global(.prop-button) {
+      width: 95px;
     }
 
-    .prop-family {
-      padding: 12px;
-    }
-
-    .family-name {
+    .section-label {
       font-size: var(--font-size-xs, 11px);
     }
   }
 
-  @container bento-grid (min-width: 600px) {
-    .bento-content {
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  @container prop-grid (min-width: 900px) {
+    .section-buttons :global(.prop-button) {
+      width: 90px;
     }
-
-    .family-props :global(.prop-button) {
-      flex: 1 1 75px;
-      min-width: 70px;
-      max-width: 120px;
-    }
-  }
-
-  /* Focus states */
-  .prop-family:focus-within {
-    border-color: var(--theme-stroke-strong);
   }
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .bento-scroll {
+    .grid-scroll {
       scroll-behavior: auto;
     }
   }
