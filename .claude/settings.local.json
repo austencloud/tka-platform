@@ -600,14 +600,16 @@
       "Bash(# Check if apps/landing source still exists \\(or was flattened away\\) ls /f/tka-platform/apps/landing/src/)",
       "Bash(echo EXIT: $?:*)",
       "WebFetch(domain:baymard.com)",
-      "WebFetch(domain:www.nngroup.com)"
+      "WebFetch(domain:www.nngroup.com)",
+      "mcp__claude_ai_Gmail__gmail_search_messages"
     ]
   },
   "enableAllProjectMcpServers": false,
   "enabledMcpjsonServers": [
     "tka-domain",
     "chrome-devtools",
-    "game-controller"
+    "game-controller",
+    "tika-talk"
   ],
   "disabledMcpjsonServers": []
 }

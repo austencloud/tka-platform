@@ -660,6 +660,11 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     gl.uniform1f(prog.uniforms.get("u_buoyancy")!, this.physics.buoyancyStrength * heightMult);
     gl.uniform1f(prog.uniforms.get("u_ambientTemp")!, this.AMBIENT_TEMP);
 
+    // Terminal velocity: buoyancy force tapers to zero as vel.y approaches this ceiling.
+    // Only limits the Y component, so horizontal velocity (prop tracking) is unaffected.
+    // At vel.y=0: full buoyancy. At vel.y=6: zero buoyancy. Linear falloff.
+    gl.uniform1f(prog.uniforms.get("u_terminalVelocity")!, 6.0);
+
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.velocity!.write.fbo);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
     this.swapFBO(this.velocity!);
@@ -1146,7 +1151,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.advectionProgram = this.buildProgram(ADVECTION_FRAG, ["u_velocity", "u_source", "u_texelSize", "u_dt", "u_dissipation"]);
     this.curlProgram = this.buildProgram(CURL_FRAG, ["u_velocity", "u_texelSize"]);
     this.vorticityProgram = this.buildProgram(VORTICITY_FRAG, ["u_velocity", "u_curl", "u_texelSize", "u_dt", "u_strength"]);
-    this.buoyancyProgram = this.buildProgram(BUOYANCY_FRAG, ["u_velocity", "u_temperature", "u_dt", "u_buoyancy", "u_ambientTemp"]);
+    this.buoyancyProgram = this.buildProgram(BUOYANCY_FRAG, ["u_velocity", "u_temperature", "u_dt", "u_buoyancy", "u_ambientTemp", "u_terminalVelocity"]);
     this.combustionProgram = this.buildProgram(COMBUSTION_FRAG, ["u_temperature", "u_fuel", "u_dt", "u_burnRate", "u_burnTemp", "u_fuelEfficiency", "u_coolingRate", "u_ambientTemp"]);
     this.divergenceProgram = this.buildProgram(DIVERGENCE_FRAG, ["u_velocity", "u_texelSize"]);
     this.jacobiProgram = this.buildProgram(JACOBI_FRAG, ["u_pressure", "u_divergence", "u_texelSize"]);
@@ -1172,7 +1177,6 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.bloomCompositeProgram = this.buildProgram(BLOOM_COMPOSITE_FRAG, [
       "u_scene", "u_bloom", "u_bloomStrength",
     ]);
-
     const all = [
       this.splatProgram, this.advectionProgram, this.curlProgram,
       this.vorticityProgram, this.buoyancyProgram, this.combustionProgram,

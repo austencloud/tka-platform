@@ -425,6 +425,14 @@ export const SETTINGS_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
   },
   {
+    id: "notifications",
+    label: "Notifications",
+    icon: '<i class="fas fa-bell" aria-hidden="true"></i>',
+    description: "Push notifications and alert preferences",
+    color: "#f43f5e",
+    gradient: "linear-gradient(135deg, #fb7185 0%, #f43f5e 100%)",
+  },
+  {
     id: "preferences",
     label: "Preferences",
     icon: '<i class="fas fa-sliders" aria-hidden="true"></i>',
@@ -745,14 +753,6 @@ export const LAB_TABS: Section[] = [
     description: "Visual effects: trails, fire, LED overlays",
     color: "#8b5cf6",
     gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
-  },
-  {
-    id: "progress",
-    label: "Progress",
-    icon: '<i class="fas fa-bars-progress" aria-hidden="true"></i>',
-    description: "Compare loading indicator styles",
-    color: "#06b6d4",
-    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
   },
   {
     id: "museum",

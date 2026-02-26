@@ -11,6 +11,7 @@ import { TikaSequenceGenerator } from "../implementations/TikaSequenceGenerator"
 import { TikaQuizGenerator } from "../implementations/TikaQuizGenerator";
 import { TikaToolExecutor } from "../implementations/TikaToolExecutor";
 import { TikaModelProvider } from "../implementations/TikaModelProvider";
+import { TikaProgressWriter } from "./TikaProgressWriter";
 
 import type { ITikaPictographLoader } from "../contracts/ITikaPictographLoader";
 import type { ITikaSequenceValidator } from "../contracts/ITikaSequenceValidator";
@@ -18,6 +19,7 @@ import type { ITikaSequenceGenerator } from "../contracts/ITikaSequenceGenerator
 import type { ITikaQuizGenerator } from "../contracts/ITikaQuizGenerator";
 import type { ITikaToolExecutor } from "../contracts/ITikaToolExecutor";
 import type { ITikaModelProvider } from "../contracts/ITikaModelProvider";
+import type { ITikaProgressWriter } from "../contracts/ITikaProgressWriter";
 
 export interface TikaServerContainerDeps {
   anthropicApiKey: string;
@@ -31,6 +33,7 @@ export interface TikaServerContainer {
   quizGenerator: ITikaQuizGenerator;
   toolExecutor: ITikaToolExecutor;
   modelProvider: ITikaModelProvider;
+  progressWriter: ITikaProgressWriter;
 }
 
 let _container: TikaServerContainer | null = null;
@@ -60,6 +63,7 @@ export function getTikaServerContainer(
     deps.anthropicApiKey,
     deps.deepseekApiKey
   );
+  const progressWriter = new TikaProgressWriter();
 
   _container = {
     pictographLoader,
@@ -68,6 +72,7 @@ export function getTikaServerContainer(
     quizGenerator,
     toolExecutor,
     modelProvider,
+    progressWriter,
   };
 
   return _container;

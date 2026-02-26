@@ -11,16 +11,37 @@
 
 export const DOMAIN_TOPICS: Record<string, { title: string; content: string }> = {
   "static-props": {
-    title: "TKA and Static Props",
-    content: `## TKA and Static Props
+    title: "TKA and Props: Built for Double Staves",
+    content: `## TKA and Props: Built for Double Staves
 
-TKA (The Kinetic Alphabet) is a notation system for two-handed prop manipulation, **built for static props** (staff, fans, clubs, buugeng). Static props are gripped directly, so the performer controls orientation. TKA is a **radial system** -- all orientations are measured from the prop to the performer's center point, not relative to the ground. This means "up" and "down" are no more privileged than "left" and "right." This is not ignoring physics -- it reflects how static prop spinners actually use their props. Gravity does not constrain a staff's orientation the way it constrains poi's trajectory. Every previous notation system mapped what gravity makes spinning props do. TKA maps what's possible when gravity isn't a constraint.
+TKA was built for **double staves**. That's the canonical prop, and understanding why matters.
 
-The TKA parameter space is precise and finite: 9 grid locations (8 perimeter + center), 8 center-relative orientations (4 radial/nonradial + 4 interradial at L6+), and rotation increments down to 45 degrees (quarter turns at L6). This is not "any movement two hands can make" -- it's a complete enumeration within its defined parameter space. What TKA does NOT enumerate: grip changes, body movement, behind-the-back passes, contact rolling, tosses, or 3D planes below Level 8.
+### The Thumb/Pinky Reference System
 
-**Momentum-based props (poi)** can perform many TKA sequences but not all of them. Gravity restricts which orientations and transitions are physically possible. A Poi Lab module is **planned but not yet built** to identify the poi-legal subset. Poi is the only prop type that encounters limitations with TKA -- every other static prop works without restriction. The practical advantage for static props: you can freeze mid-sequence, hold a prop at an orientation, look at what you're doing next as a 2D representation, and continue. Poi spinners can't do this because momentum won't wait.
+Each staff has two visible ends. One end is the consistent **thumb reference**, the other is the consistent **pinky reference**. With proper technique, these references never have to change. This dual-end landmark system is the foundation of TKA's entire orientation framework -- you always know which way the prop is pointing because you can see both ends and their relationship to your grip.
 
-TKA is for **dual-wielded** props. Contact staff (balancing/rolling on body) is NOT part of TKA. Don't say "fixed grip" -- many props require grip changes. Say "gripped directly." Don't say "any amount of rotation" -- smallest increment is 45 degrees (quarter turns at L6).`,
+### Proper Technique
+
+Two techniques keep the thumb/pinky references consistent through every movement:
+
+1. **Negative space above and below the shoulder** -- using the open space around the body to transition the prop without regripping
+2. **Body turns** -- rotating your body to pass the prop into the plane behind you, accomplishing moves that would otherwise require a grip change
+
+These aren't optional refinements. They're how TKA movements are executed while maintaining the orientation reference system.
+
+### Other Props
+
+Other static props (fans, clubs, buugeng) work with TKA because they're also gripped directly and the performer controls orientation. But staves are what the system was designed around. Fans have a visible flat face that shows orientation, but they lack the dual-end reference that makes staves canonical.
+
+### Why Not Poi?
+
+TKA is a **radial system** -- all orientations are measured from the prop to the performer's center point, not relative to the ground. Gravity does not constrain a staff's orientation the way it constrains poi's trajectory. **Momentum-based props (poi)** can perform many TKA sequences but not all. A Poi Lab module is **planned but not yet built** to identify the poi-legal subset.
+
+### The Parameter Space
+
+The TKA parameter space is precise and finite: 9 grid locations (8 perimeter + center), 8 center-relative orientations (4 radial/nonradial + 4 interradial at L6+), and rotation increments down to 45 degrees (quarter turns at L6). What TKA does NOT enumerate: grip changes, body movement, behind-the-back passes, contact rolling, tosses, or 3D planes below Level 8.
+
+TKA is for **dual-wielded** props. Contact staff (balancing/rolling on body) is NOT part of TKA.`,
   },
 
   "base-rotation": {

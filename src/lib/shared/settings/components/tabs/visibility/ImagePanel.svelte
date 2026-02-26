@@ -10,6 +10,10 @@
   import { slide } from "svelte/transition";
   import ImageExportPreviewLayered from "./ImageExportPreviewLayered.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+
+  // Dark mode is now a global setting, read directly
+  const darkMode = $derived(getSettings().darkMode ?? false);
 
   interface Props {
     addWord: boolean;
@@ -20,8 +24,6 @@
     showNotes: boolean;
     showBirthday: boolean;
     customNotesText: string;
-    // Dark mode
-    darkMode: boolean;
     // Pictograph visibility callbacks for fade transitions
     onPictographToggle: (key: string) => void;
     onToggle: (key: string) => void;
@@ -37,7 +39,6 @@
     showNotes,
     showBirthday,
     customNotesText,
-    darkMode,
     onPictographToggle,
     onToggle,
     onCustomNotesChange,
@@ -129,21 +130,6 @@
               onclick={() => onToggle("birthday")}
               title={t("visibility_birthday_tooltip")}>🎂</button
             >
-          </div>
-        </div>
-
-        <div class="control-group">
-          <span class="group-label">{t("visibility_theme")}</span>
-          <div class="toggle-grid theme-toggle">
-            <button
-              class="toggle-btn dark-mode-btn"
-              class:active={darkMode}
-              onclick={() => onToggle("darkMode")}
-              title={t("visibility_theme")}
-              aria-pressed={darkMode}
-            >
-              {darkMode ? `🌙 ${t("visibility_dark_mode")}` : `☀️ ${t("visibility_light_mode")}`}
-            </button>
           </div>
         </div>
 
@@ -483,15 +469,6 @@
   .birthday-btn {
     font-size: clamp(16px, 3cqi, 20px);
     line-height: 1;
-  }
-
-  /* Theme toggle - single full-width button */
-  .theme-toggle {
-    grid-template-columns: 1fr;
-  }
-
-  .dark-mode-btn {
-    font-size: var(--font-size-compact);
   }
 
   /* Notes input */

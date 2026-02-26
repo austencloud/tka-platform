@@ -65,6 +65,7 @@ import type { LanSyncContainer } from "./containers/lan-sync-container";
 import type { ConnectContainer } from "./containers/connect-container";
 import type { DeviceSyncContainer } from "./containers/device-sync-container";
 import type { MuseumContainer } from "./containers/museum-container";
+import type { PushContainer } from "./containers/push-container";
 
 // Containers that already export items types directly (["items"])
 import type { NavigationContainerItems } from "./containers/navigation-container";
@@ -134,6 +135,7 @@ type LanSyncItems = ItemsOf<LanSyncContainer>;
 type ConnectItems = ItemsOf<ConnectContainer>;
 type DeviceSyncItems = ItemsOf<DeviceSyncContainer>;
 type MuseumItems = ItemsOf<MuseumContainer>;
+type PushItems = ItemsOf<PushContainer>;
 
 // ============================================================================
 // Upsert conflict handling
@@ -212,5 +214,7 @@ export type IAppContainerItems =
 	ArenaItems &
 	EffectsLabItems &
 	MuseumItems &
+	// Push notifications (FCM token management)
+	PushItems &
 	// Standalone services
 	StandaloneItems;

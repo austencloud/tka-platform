@@ -53,7 +53,7 @@ export function registerEducationalTools(server: McpServer): void {
 
 ## Overview
 
-TKA is a notation system for flow arts with dual wielded props (staff, fans, clubs, etc.) that encodes hand positions and movements into letters. Each "pictograph" represents one beat of motion showing:
+TKA is a notation system for flow arts, built for double staves. Each staff has two visible ends -- a thumb reference and a pinky reference -- that never change with proper technique. This dual-end landmark system is the foundation of TKA's orientation framework. Other static props (fans, clubs, buugeng) work but staves are canonical. Each "pictograph" represents one beat of motion showing:
 - Two props (blue and red) at specific grid positions
 - Motion arrows showing how each hand moves
 - Start and end positions

@@ -88,7 +88,7 @@ const flowtoysIsoBaton: LedManufacturerPreset = {
       { dx: 135, dy: 0, brightness: 1.0 },
     ],
   },
-  defaultPatternId: "pulse",
+  defaultPatternId: "solid",
 };
 
 // ─── Lighttoys ──────────────────────────────────────────────

@@ -2,12 +2,15 @@
  * Position Identification Quiz data constants
  */
 
+import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+
 export type PositionType = "alpha" | "beta" | "gamma";
 export type HandPosition = "N" | "NE" | "E" | "SE" | "S" | "SW" | "W" | "NW";
 
 export interface PositionQuestion {
   left: HandPosition;
   right: HandPosition;
+  gridMode: GridMode;
   type: PositionType;
 }
 
@@ -22,27 +25,27 @@ export const POSITION_TYPE_INFO: Record<PositionType, PositionTypeInfo> = {
   gamma: { symbol: "γ", label: "Gamma" },
 };
 
-export const ALPHA_POSITIONS: { left: HandPosition; right: HandPosition }[] = [
-  { left: "N", right: "S" },
-  { left: "E", right: "W" },
-  { left: "NE", right: "SW" },
-  { left: "NW", right: "SE" },
+export const ALPHA_POSITIONS: { left: HandPosition; right: HandPosition; gridMode: GridMode }[] = [
+  { left: "N", right: "S", gridMode: GridMode.DIAMOND },
+  { left: "E", right: "W", gridMode: GridMode.DIAMOND },
+  { left: "NE", right: "SW", gridMode: GridMode.BOX },
+  { left: "NW", right: "SE", gridMode: GridMode.BOX },
 ];
 
-export const BETA_POSITIONS: { left: HandPosition; right: HandPosition }[] = [
-  { left: "N", right: "N" },
-  { left: "E", right: "E" },
-  { left: "S", right: "S" },
-  { left: "NW", right: "NW" },
+export const BETA_POSITIONS: { left: HandPosition; right: HandPosition; gridMode: GridMode }[] = [
+  { left: "N", right: "N", gridMode: GridMode.DIAMOND },
+  { left: "E", right: "E", gridMode: GridMode.DIAMOND },
+  { left: "S", right: "S", gridMode: GridMode.DIAMOND },
+  { left: "NW", right: "NW", gridMode: GridMode.BOX },
 ];
 
-export const GAMMA_POSITIONS: { left: HandPosition; right: HandPosition }[] = [
-  { left: "N", right: "E" },
-  { left: "N", right: "W" },
-  { left: "S", right: "E" },
-  { left: "S", right: "W" },
-  { left: "NE", right: "SE" },
-  { left: "NE", right: "NW" },
+export const GAMMA_POSITIONS: { left: HandPosition; right: HandPosition; gridMode: GridMode }[] = [
+  { left: "N", right: "E", gridMode: GridMode.DIAMOND },
+  { left: "N", right: "W", gridMode: GridMode.DIAMOND },
+  { left: "S", right: "E", gridMode: GridMode.DIAMOND },
+  { left: "S", right: "W", gridMode: GridMode.DIAMOND },
+  { left: "NE", right: "SE", gridMode: GridMode.BOX },
+  { left: "NE", right: "NW", gridMode: GridMode.BOX },
 ];
 
 export function generatePositionQuestions(): PositionQuestion[] {

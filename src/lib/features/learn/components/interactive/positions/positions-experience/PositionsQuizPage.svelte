@@ -25,9 +25,12 @@ Uses staggered entrance animations matching the rest of the lesson.
   .quiz-page {
     display: flex;
     flex-direction: column;
+    align-items: center;
+    justify-content: center;
     gap: 1.5rem;
     max-width: 700px;
-    margin: 0 auto;
+    width: 100%;
+    flex: 1;
     width: 100%;
   }
 

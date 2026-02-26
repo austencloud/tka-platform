@@ -755,16 +755,30 @@
     };
   });
 
-  // Auto-scroll to keep highlighted step visible during playback
+  // Auto-scroll to keep highlighted step visible during playback.
+  // Uses manual scrollTop instead of scrollIntoView() because scrollIntoView
+  // scrolls ALL ancestor scroll containers — on the landing page this causes
+  // the entire page to jump to the top when the sequence loops.
   $effect(() => {
     const stepIdx = highlightedStepIndex;
     if (!needsScroll || !gridScrollRef || stepIdx == null) return;
 
-    const cell = gridScrollRef.querySelector('.pictograph-cell.current');
+    const cell = gridScrollRef.querySelector('.pictograph-cell.current') as HTMLElement | null;
     if (cell) {
-      // 'nearest' only scrolls when the cell is outside the viewport — no jumps
-      // when the highlighted cell is already visible
-      cell.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      const containerRect = gridScrollRef.getBoundingClientRect();
+      const cellRect = cell.getBoundingClientRect();
+
+      const cellTop = cellRect.top - containerRect.top + gridScrollRef.scrollTop;
+      const cellBottom = cellTop + cellRect.height;
+
+      const visibleTop = gridScrollRef.scrollTop;
+      const visibleBottom = visibleTop + containerRect.height;
+
+      if (cellTop < visibleTop) {
+        gridScrollRef.scrollTo({ top: cellTop, behavior: 'smooth' });
+      } else if (cellBottom > visibleBottom) {
+        gridScrollRef.scrollTo({ top: cellBottom - containerRect.height, behavior: 'smooth' });
+      }
     }
   });
 

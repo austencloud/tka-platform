@@ -306,7 +306,7 @@
 
   .pattern-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 6px;
     margin: var(--spacing-sm, 8px) 0 var(--spacing-md, 16px);
   }
@@ -467,25 +467,6 @@
   .slider-row input[type="range"] {
     flex: 1;
     accent-color: var(--led-green);
-  }
-
-  .slider-row input[type="color"] {
-    width: 36px;
-    height: 28px;
-    padding: 0;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: var(--border-radius-sm, 4px);
-    background: transparent;
-    cursor: pointer;
-  }
-
-  .slider-row input[type="color"]::-webkit-color-swatch-wrapper {
-    padding: 2px;
-  }
-
-  .slider-row input[type="color"]::-webkit-color-swatch {
-    border: none;
-    border-radius: 2px;
   }
 
   .slider-value {

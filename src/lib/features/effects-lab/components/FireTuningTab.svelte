@@ -100,10 +100,10 @@
   let isPlaying = $state(false);
   let bpm = $state(persisted.bpm ?? DEFAULT_BPM);
 
-  // Fire starts disabled; restored after engine is ready to avoid the
-  // race where the toggle shows ON but the WebGL renderer hasn't mounted.
-  let fireEnabled = $state(false);
-  let fireStateRestored = false;
+  // Initialize directly from persisted state. The WebGL renderer creation
+  // is deferred via rAF inside syncFireOverlay, so there's no race — the
+  // toggle shows the correct state immediately and the renderer catches up.
+  let fireEnabled = $state(persisted.fireEnabled ?? false);
   let intensity = $state(persisted.intensity ?? 0.7);
   let colorBlend = $state(persisted.colorBlend ?? 0.5);
   let smokeLevel = $state(persisted.smokeLevel ?? 0.1);
@@ -149,6 +149,18 @@
     visibilityManager.setFireEffect(fireEnabled);
   });
 
+  // Sync back from visibility manager (e.g. hotkey Shift+F toggled it externally)
+  $effect(() => {
+    const syncBack = () => {
+      const managerState = visibilityManager.isFireEffectEnabled();
+      if (managerState !== fireEnabled) {
+        fireEnabled = managerState;
+      }
+    };
+    visibilityManager.registerObserver(syncBack);
+    return () => visibilityManager.unregisterObserver(syncBack);
+  });
+
   // Sync slider state to the global visibility manager
   $effect(() => {
     visibilityManager.setFireIntensity(intensity);
@@ -161,20 +173,6 @@
   });
   $effect(() => {
     visibilityManager.setFireUseCharcoal(useCharcoal);
-  });
-
-  // Restore persisted fire state AFTER the engine is ready and has a sequence.
-  // This ensures the toggle change (false→true) fires after AnimatorCanvas has
-  // mounted and the engine can actually create the WebGL fire overlay.
-  $effect(() => {
-    if (servicesReady && sequence && !fireStateRestored) {
-      fireStateRestored = true;
-      if (persisted.fireEnabled) {
-        // Small delay lets the AnimatorCanvas $effect that passes fireConfig
-        // to the engine settle before we flip the toggle.
-        requestAnimationFrame(() => { fireEnabled = true; });
-      }
-    }
   });
 
   $effect(() => {

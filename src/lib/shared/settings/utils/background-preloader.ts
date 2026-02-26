@@ -111,7 +111,7 @@ export function preloadBackgroundFromStorage(): void {
     const stored = localStorage.getItem("tka-modern-web-settings");
     if (stored) {
       const settings = JSON.parse(stored) as { backgroundType?: BackgroundType };
-      const backgroundType = (settings.backgroundType ?? BackgroundType.SOLID_COLOR) as BackgroundType;
+      const backgroundType = (settings.backgroundType ?? BackgroundType.NIGHT_SKY) as BackgroundType;
       updateBodyBackground(backgroundType);
     }
   } catch (error) {
@@ -129,7 +129,7 @@ export function ensureBackgroundApplied(): void {
     const stored = localStorage.getItem("tka-modern-web-settings");
 
     if (!stored) {
-      updateBodyBackground(BackgroundType.SOLID_COLOR, { color: "#000000" });
+      updateBodyBackground(BackgroundType.NIGHT_SKY);
       return;
     }
 
@@ -140,7 +140,15 @@ export function ensureBackgroundApplied(): void {
       gradientDirection?: number;
     };
 
-    const backgroundType = settings.backgroundType ?? BackgroundType.SOLID_COLOR;
+    let backgroundType = settings.backgroundType ?? BackgroundType.NIGHT_SKY;
+
+    // Migration: treat old default (solidColor + black) as nightSky
+    if (
+      backgroundType === BackgroundType.SOLID_COLOR &&
+      (!settings.backgroundColor || settings.backgroundColor === "#000000")
+    ) {
+      backgroundType = BackgroundType.NIGHT_SKY;
+    }
 
     const customOptions: CustomBackgroundOptions = {};
     if (backgroundType === BackgroundType.SOLID_COLOR && settings.backgroundColor) {
@@ -153,6 +161,6 @@ export function ensureBackgroundApplied(): void {
     updateBodyBackground(backgroundType, customOptions);
   } catch (error) {
     console.warn("[Background] Failed to ensure background applied:", error);
-    updateBodyBackground(BackgroundType.SOLID_COLOR, { color: "#000000" });
+    updateBodyBackground(BackgroundType.NIGHT_SKY);
   }
 }

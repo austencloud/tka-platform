@@ -33,8 +33,10 @@
   let { conversation, messages, isLoading }: Props = $props();
 
   // Determine conversation type (defaults to "direct" for backward compatibility)
+  // Use optional chaining: parent {#if} guard unmounts this component when
+  // conversation becomes null, but $derived values can re-evaluate before unmount.
   const conversationType = $derived<ConversationType>(
-    conversation.type || "direct"
+    conversation?.type || "direct"
   );
   const isGroup = $derived(conversationType === "group");
 
@@ -42,6 +44,7 @@
 
   // Subscribe to typing indicators
   onMount(() => {
+    if (!conversation) return;
     const unsubscribe = messagingService.subscribeToTyping(
       conversation.id,
       (typingUsers) => {
@@ -76,10 +79,10 @@
 
   // Get other participant info
   const otherParticipantId = $derived(
-    conversation.participants.find((p: string) => p !== currentUserId) || ""
+    conversation?.participants?.find((p: string) => p !== currentUserId) || ""
   );
   const otherParticipant = $derived(
-    conversation.participantInfo[otherParticipantId]
+    conversation?.participantInfo?.[otherParticipantId]
   );
 
   // Group messages by date for separators
@@ -144,7 +147,7 @@
     {:else if messages.length === 0}
       <EmptyMessages
         recipientName={isGroup
-          ? conversation.groupMetadata?.name
+          ? conversation?.groupMetadata?.name
           : otherParticipant?.displayName}
         {isGroup}
       />
@@ -162,7 +165,7 @@
               showReadReceipt={!isGroup && message.id === lastReadOwnMessageId}
               {isGroup}
               senderInfo={isGroup
-                ? conversation.participantInfo[message.senderId]
+                ? conversation?.participantInfo?.[message.senderId]
                 : undefined}
             />
           {/each}
@@ -175,7 +178,9 @@
   <TypingIndicator typingUsers={inboxState.typingUsers} />
 
   <!-- Composer -->
-  <MessageComposer conversationId={conversation.id} />
+  {#if conversation}
+    <MessageComposer conversationId={conversation.id} />
+  {/if}
 </div>
 
 <style>

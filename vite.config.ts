@@ -607,13 +607,14 @@ export default defineConfig({
         // 🔇 Disable all workbox console logging
         mode: "production",
         disableDevLogs: true,
+        importScripts: ["/firebase-messaging-handler.js"],
         // Cache strategies for different asset types
         // adapter-static outputs to root, NOT prerendered/ or client/ subdirs
         // suppressWarnings in devOptions handles the "glob pattern doesn't match" warnings
         globPatterns: process.env.NODE_ENV === "production"
           ? [
               // adapter-static output structure (root-level, no subdirs)
-              "**/*.{js,css,html,ico,png,svg,woff2,woff,webp,webmanifest}",
+              "**/*.{js,css,csv,html,ico,png,svg,woff2,woff,webp,webmanifest}",
             ]
           : [], // Empty in dev - SW handles caching at runtime
         // Exclude files from precaching that shouldn't be cached

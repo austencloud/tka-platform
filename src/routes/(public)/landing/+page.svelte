@@ -6,7 +6,7 @@
 
   import HeroSection from "../../landing/components/HeroSection.svelte";
   import NotationShowcaseSection from "../../landing/components/NotationShowcaseSection.svelte";
-  import WhatIsTKASection from "../../landing/components/WhatIsTKASection.svelte";
+  import GuidesSection from "../../landing/components/GuidesSection.svelte";
   import LandingFooter from "../../landing/components/LandingFooter.svelte";
   import LandingBackgroundPicker from "../../landing/components/LandingBackgroundPicker.svelte";
   import { prefetchTreeImages } from "$lib/shared/background/shared/prefetch-tree-images";
@@ -66,7 +66,7 @@
     <HeroSection />
     <main id="main-content">
       <NotationShowcaseSection />
-      <WhatIsTKASection />
+      <GuidesSection />
     </main>
     <LandingFooter />
   </div>

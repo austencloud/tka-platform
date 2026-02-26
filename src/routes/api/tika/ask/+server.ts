@@ -48,6 +48,10 @@ import {
 } from "$lib/features/tika/validation/output-filter";
 import { getTikaServerContainer } from "$lib/features/tika/services/server/tika-server-container";
 import { TikaCapabilityLookup } from "$lib/features/tika/services/implementations/TikaCapabilityLookup";
+import {
+  validateResponse,
+  formatValidationReport,
+} from "$lib/features/tika/validation/TikaResponseValidator";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Container & Services
@@ -64,9 +68,9 @@ function getContainer() {
 // AI SDK Tools Definition
 // ═══════════════════════════════════════════════════════════════════════════
 
-function createTikaTools() {
+function createTikaTools(userId: string, completedConcepts: string[]) {
   const container = getContainer();
-  const { toolExecutor, sequenceValidator, sequenceGenerator, quizGenerator } = container;
+  const { toolExecutor, sequenceValidator, sequenceGenerator, quizGenerator, progressWriter } = container;
 
   return {
     get_letter_explanation: tool({
@@ -490,7 +494,79 @@ function createTikaTools() {
         };
       },
     }),
+
+    complete_verified_concepts: tool({
+      description:
+        "Mark TKA concepts as completed after rigorous conversational verification. " +
+        "ONLY call this after you have challenged the user with conceptual questions (2-3 per concept) " +
+        "and they have demonstrated genuine understanding - not just naming things. " +
+        "Never call this just because the user claims expertise. " +
+        "Never call this if the user got questions wrong or could only recall names without explaining.",
+      inputSchema: jsonSchema<{ conceptIds: string[]; verificationSummary: string }>({
+        type: "object",
+        properties: {
+          conceptIds: {
+            type: "array",
+            items: { type: "string" },
+            description:
+              'Knowledge graph concept IDs to mark completed (e.g., ["1.1", "1.2", "1.3"]). Max 8 per call.',
+          },
+          verificationSummary: {
+            type: "string",
+            description:
+              "Brief summary of how the user demonstrated knowledge (what questions were asked, how the user answered).",
+          },
+        },
+        required: ["conceptIds", "verificationSummary"],
+      }),
+      execute: async ({ conceptIds, verificationSummary }) => {
+        try {
+          const result = await progressWriter.writeCompletions(
+            userId,
+            conceptIds,
+            completedConcepts,
+            verificationSummary
+          );
+          return result;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          return {
+            success: false,
+            completedConcepts: [],
+            rejectedConcepts: [],
+            errors: [`Verification write failed: ${message}`],
+          };
+        }
+      },
+    }),
   };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Helpers
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Extract the last user message text from a UIMessage array.
+ * UIMessage uses `.parts` (TextUIPart[]) not `.content`.
+ */
+function extractLastUserMessage(body: TIKARequest): string {
+  if (body.question) return body.question;
+
+  if (body.messages && Array.isArray(body.messages)) {
+    for (let i = body.messages.length - 1; i >= 0; i--) {
+      const msg = body.messages[i];
+      if (!msg || msg.role !== "user") continue;
+
+      for (const part of msg.parts) {
+        if (part.type === "text") {
+          return part.text;
+        }
+      }
+    }
+  }
+
+  return "";
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -578,12 +654,23 @@ export const POST: RequestHandler = async (event) => {
       model: modelProvider.getModel(selectedModel),
       system: systemPrompt,
       messages: modelMessages,
-      tools: createTikaTools(),
+      tools: createTikaTools(caller.uid, completedConcepts),
       stopWhen: stepCountIs(6),
       experimental_telemetry: {
         isEnabled: false,
       },
     });
+
+    // Fire-and-forget validation (non-blocking, doesn't delay response)
+    const userQuestion = extractLastUserMessage(body);
+    Promise.resolve(result.text)
+      .then((fullText: string) => {
+        const report = validateResponse(fullText, userQuestion);
+        if (!report.passed || report.warningCount > 0) {
+          console.warn(formatValidationReport(report));
+        }
+      })
+      .catch((err: unknown) => console.error("[TIKA Validation] Error:", err));
 
     return result.toUIMessageStreamResponse();
   } catch (error) {

@@ -16,6 +16,7 @@ matching the Grid lesson's polish level.
     ALPHA_EXAMPLES,
     BETA_EXAMPLES,
     GAMMA_EXAMPLES,
+    type PositionExample,
   } from "../../../domain/constants/positions-experience-data";
   import PositionPage from "./positions-experience/PositionPage.svelte";
   import PositionsQuizPage from "./positions-experience/PositionsQuizPage.svelte";
@@ -35,6 +36,14 @@ matching the Grid lesson's polish level.
   let currentPage = $state(persistence.load().step || 1);
   const totalPages = 4;
 
+  const PAGES: { type: "alpha" | "beta" | "gamma"; examples: readonly PositionExample[] }[] = [
+    { type: "alpha", examples: ALPHA_EXAMPLES },
+    { type: "beta", examples: BETA_EXAMPLES },
+    { type: "gamma", examples: GAMMA_EXAMPLES },
+  ];
+
+  const currentPageData = $derived(PAGES[currentPage - 1]);
+
   // Staggered entrance animation state
   let animateIn = $state(false);
 
@@ -47,20 +56,8 @@ matching the Grid lesson's polish level.
   const PAGE_LABELS = ["Alpha Position", "Beta Position", "Gamma Position", "Quiz"];
 
   onMount(() => {
-    // Trigger staggered entrance animation
     requestAnimationFrame(() => {
       animateIn = true;
-    });
-  });
-
-  // Re-trigger animation on page change
-  $effect(() => {
-    // Track currentPage to trigger on change
-    void currentPage;
-    animateIn = false;
-    requestAnimationFrame(() => {
-      animateIn = true;
-      announcement = `Page ${currentPage} of ${totalPages}: ${PAGE_LABELS[currentPage - 1]}`;
     });
   });
 
@@ -76,11 +73,22 @@ matching the Grid lesson's polish level.
     }
   }
 
+  function transitionToPage(page: number) {
+    animateIn = false;
+    requestAnimationFrame(() => {
+      currentPage = page;
+      persistence.saveStep(currentPage);
+      requestAnimationFrame(() => {
+        animateIn = true;
+        announcement = `Page ${currentPage} of ${totalPages}: ${PAGE_LABELS[currentPage - 1]}`;
+      });
+    });
+  }
+
   function handleNext() {
     hapticService?.trigger("selection");
     if (currentPage < totalPages) {
-      currentPage++;
-      persistence.saveStep(currentPage);
+      transitionToPage(currentPage + 1);
     } else {
       handleComplete();
     }
@@ -89,8 +97,7 @@ matching the Grid lesson's polish level.
   function handleBack() {
     hapticService?.trigger("selection");
     if (currentPage > 1) {
-      currentPage--;
-      persistence.saveStep(currentPage);
+      transitionToPage(currentPage - 1);
     }
   }
 
@@ -131,18 +138,16 @@ matching the Grid lesson's polish level.
     <button class="skip-link" onclick={handleSkipToQuiz}>Skip to quiz</button>
   {/if}
 
-  {#if currentPage === 1}
-    <PositionPage type="alpha" examples={ALPHA_EXAMPLES} onNext={handleNext} />
-  {:else if currentPage === 2}
-    <PositionPage type="beta" examples={BETA_EXAMPLES} onNext={handleNext} />
-  {:else if currentPage === 3}
+  {#if currentPageData}
     <PositionPage
-      type="gamma"
-      examples={GAMMA_EXAMPLES}
-      showSummary={true}
+      type={currentPageData.type}
+      examples={currentPageData.examples}
+      isFirst={currentPage === 1}
+      isLast={currentPage === 3}
       onNext={handleNext}
+      onBack={handleBack}
     />
-  {:else if currentPage === 4}
+  {:else}
     <PositionsQuizPage onComplete={handleQuizComplete} />
   {/if}
 
@@ -153,8 +158,10 @@ matching the Grid lesson's polish level.
   .positions-experience {
     display: flex;
     flex-direction: column;
+    align-items: center;
     height: 100%;
-    padding: 2rem;
+    padding: var(--spacing-xl, 2rem);
+    padding-top: var(--spacing-2xl, 3rem);
     overflow-y: auto;
     overflow-x: hidden;
     outline: none;

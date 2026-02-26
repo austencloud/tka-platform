@@ -94,6 +94,7 @@ export class NotificationPreferencesService {
    */
   async enableAll(userId: string): Promise<void> {
     const allEnabled: NotificationPreferences = {
+      pushEnabled: true,
       feedbackResolved: true,
       feedbackInProgress: true,
       feedbackNeedsInfo: true,
@@ -115,6 +116,7 @@ export class NotificationPreferencesService {
    */
   async disableAll(userId: string): Promise<void> {
     const allDisabled: NotificationPreferences = {
+      pushEnabled: false,
       feedbackResolved: false,
       feedbackInProgress: false,
       feedbackNeedsInfo: false,

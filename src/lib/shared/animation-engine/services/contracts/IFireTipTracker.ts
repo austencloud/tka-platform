@@ -17,6 +17,12 @@ export interface FireTipTrackerConfig {
   redPropType?: string;
 }
 
+export interface FireTipUpdateResult {
+  tips: PropTipData[];
+  /** True when a time gap was detected (HMR, tab switch, frame drop). Caller should clear the fire simulation. */
+  gapDetected: boolean;
+}
+
 export interface IFireTipTracker {
   /**
    * Update tip positions and compute velocities for the current frame.
@@ -24,14 +30,14 @@ export interface IFireTipTracker {
    * @param redProp - Current red prop state (null if hidden)
    * @param config - Canvas size and prop dimensions for endpoint calculation
    * @param currentTime - performance.now() timestamp
-   * @returns Array of tip data with positions and velocities
+   * @returns Tip data with positions/velocities, plus a gap-detected flag
    */
   update(
     blueProp: PropState | null,
     redProp: PropState | null,
     config: FireTipTrackerConfig,
     currentTime: number
-  ): PropTipData[];
+  ): FireTipUpdateResult;
 
   /**
    * Reset stored positions (e.g., on sequence change).

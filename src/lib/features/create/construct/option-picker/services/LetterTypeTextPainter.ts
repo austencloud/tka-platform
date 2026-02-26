@@ -11,7 +11,7 @@ const COLORS = {
   Dash: "#26e600", // Green
   Cross: "#26e600", // Green
   Static: "#eb7d00", // Orange
-  "-": "#000000", // Black
+  "-": "currentColor", // Inherit from parent (adapts to theme)
 } as const;
 
 export class LetterTypeTextPainter {
@@ -21,7 +21,7 @@ export class LetterTypeTextPainter {
   static getColoredText(text: string, bold = false): string {
     const words = text.split("-");
     const styled = words.map((word) => {
-      const color = COLORS[word as keyof typeof COLORS] || "black";
+      const color = COLORS[word as keyof typeof COLORS] || "currentColor";
       const weight = bold ? " font-weight: bold;" : "";
       return `<span style="color: ${color};${weight}">${word}</span>`;
     });
