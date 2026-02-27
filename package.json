@@ -241,6 +241,7 @@
     "@tka/domain": "file:./packages/domain",
     "@tka/render-core": "file:./packages/render-core",
     "@tka/sequence-engine": "file:./packages/sequence-engine",
+    "98.css": "^0.1.21",
     "ai": "^6.0.0",
     "animate-css-grid": "^1.5.1",
     "bits-ui": "^2.14.4",

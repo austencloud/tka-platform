@@ -1,0 +1,73 @@
+/*
+ * TKA-OS v1.0 — 98.css Overrides
+ *
+ * Minor overrides to 98.css that establish the TKA-OS identity:
+ * disable font smoothing, enforce pixelated rendering, and kill
+ * all transitions/animations for period-accurate behavior.
+ *
+ * Scoped to .retro-shell so nothing leaks into the main app.
+ */
+
+/* -------------------------------------------------------------------- */
+/* Pixelated rendering and anti-aliasing kill                           */
+/* -------------------------------------------------------------------- */
+.retro-shell {
+	-webkit-font-smoothing: none;
+	-moz-osx-font-smoothing: unset;
+	font-smooth: never;
+	image-rendering: pixelated;
+	text-rendering: optimizeSpeed;
+}
+
+/* -------------------------------------------------------------------- */
+/* Kill all transitions and animations                                  */
+/* Windows 95 had zero motion design. Neither does TKA-OS.              */
+/* -------------------------------------------------------------------- */
+.retro-shell *,
+.retro-shell *::before,
+.retro-shell *::after {
+	transition: none !important;
+	animation: none !important;
+	animation-duration: 0s !important;
+	transition-duration: 0s !important;
+}
+
+/* -------------------------------------------------------------------- */
+/* Title bar: enforce navy gradient-free flat color                     */
+/* 98.css defaults are close but we lock them to our token values.      */
+/* -------------------------------------------------------------------- */
+.retro-shell .title-bar {
+	background: var(--retro-titlebar-bg);
+	color: var(--retro-titlebar-text);
+}
+
+.retro-shell .title-bar.inactive {
+	background: var(--retro-titlebar-inactive-bg);
+}
+
+/* -------------------------------------------------------------------- */
+/* Selection colors                                                     */
+/* -------------------------------------------------------------------- */
+.retro-shell ::selection {
+	background: var(--retro-selection-bg);
+	color: var(--retro-selection-text);
+}
+
+/* -------------------------------------------------------------------- */
+/* Cursor: default arrow everywhere unless explicitly overridden        */
+/* -------------------------------------------------------------------- */
+.retro-shell {
+	cursor: default;
+}
+
+.retro-shell input,
+.retro-shell textarea,
+.retro-shell [contenteditable] {
+	cursor: text;
+}
+
+.retro-shell a,
+.retro-shell button,
+.retro-shell [role="button"] {
+	cursor: pointer;
+}
