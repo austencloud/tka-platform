@@ -15,6 +15,10 @@
   import RetroTabControl from "../../primitives/RetroTabControl.svelte";
   import RetroStatusBar from "../../primitives/RetroStatusBar.svelte";
   import RetroGenerateTab from "./RetroGenerateTab.svelte";
+  import RetroConstructTab from "./RetroConstructTab.svelte";
+  import RetroSpellTab from "./RetroSpellTab.svelte";
+  import RetroVisualBuilderTab from "./RetroVisualBuilderTab.svelte";
+  import RetroSaveDialog from "./RetroSaveDialog.svelte";
 
   /* ------------------------------------------------------------------ */
   /* Props                                                               */
@@ -33,6 +37,8 @@
   let activeTab = $state("construct");
   let showToolbar = $state(true);
   let showStatusBar = $state(true);
+  let showSaveDialog = $state(false);
+  let saveFilename = $state("UNTITLED");
   let beatCount = $state(0);
   let statusText = $state("Ready");
 
@@ -58,7 +64,7 @@
         { label: "New", shortcut: "Ctrl+N", action: () => handleNew() },
         { label: "Open...", shortcut: "Ctrl+O", action: () => {} },
         { label: "Save", shortcut: "Ctrl+S", action: () => handleSave() },
-        { label: "Save As...", action: () => handleSave() },
+        { label: "Save As...", action: () => (showSaveDialog = true) },
         { separator: true, label: "" },
         { label: "Exit", action: () => onclose?.() },
       ],
@@ -157,6 +163,12 @@
     statusText = "Saved.";
   }
 
+  function handleSaveAs(name: string) {
+    showSaveDialog = false;
+    saveFilename = name;
+    statusText = `Saved to A:\\ \u2014 1 floppy disk(s) required.`;
+  }
+
   function handleClear() {
     beatCount = 0;
     statusText = "Cleared";
@@ -166,10 +178,10 @@
     statusText = "SCRIBE.EXE v1.0 - TKA-OS";
   }
 
-  function handleGenerateStatusChange(status: string) {
+  function handleStatusChange(status: string) {
     statusText = status;
 
-    /* Parse beat count from generate status if available */
+    /* Parse beat count from status if available */
     const match = status.match(/Beats:\s*(\d+)/);
     if (match) {
       beatCount = parseInt(match[1]!, 10);
@@ -195,25 +207,13 @@
     <RetroTabControl {tabs} bind:activeTab>
       {#snippet children()}
         {#if activeTab === "generate"}
-          <RetroGenerateTab onstatuschange={handleGenerateStatusChange} />
+          <RetroGenerateTab onstatuschange={handleStatusChange} />
         {:else if activeTab === "construct"}
-          <div class="tab-placeholder">
-            <p class="tab-placeholder-icon">{"\u{1F527}"}</p>
-            <p>Construct tab coming soon.</p>
-            <p class="tab-placeholder-hint">Beat-by-beat sequence builder.</p>
-          </div>
+          <RetroConstructTab onstatuschange={handleStatusChange} />
         {:else if activeTab === "visual-builder"}
-          <div class="tab-placeholder">
-            <p class="tab-placeholder-icon">{"\u{1F3A8}"}</p>
-            <p>Visual Builder tab coming soon.</p>
-            <p class="tab-placeholder-hint">Drag-and-drop sequence layout.</p>
-          </div>
+          <RetroVisualBuilderTab onstatuschange={handleStatusChange} />
         {:else if activeTab === "spell"}
-          <div class="tab-placeholder">
-            <p class="tab-placeholder-icon">{"\u{1F524}"}</p>
-            <p>Spell tab coming soon.</p>
-            <p class="tab-placeholder-hint">Spell words with TKA letters.</p>
-          </div>
+          <RetroSpellTab onstatuschange={handleStatusChange} />
         {/if}
       {/snippet}
     </RetroTabControl>
@@ -225,6 +225,30 @@
       <RetroStatusBar panels={statusPanels} />
     </div>
   {/if}
+
+  <!-- Save As dialog overlay -->
+  {#if showSaveDialog}
+    <div class="save-overlay">
+      <div class="save-dialog-frame">
+        <div class="save-dialog-titlebar">
+          <span class="save-dialog-title">Save As</span>
+          <button
+            class="save-dialog-close"
+            type="button"
+            aria-label="Close"
+            onclick={() => (showSaveDialog = false)}
+          >
+            &#10005;
+          </button>
+        </div>
+        <RetroSaveDialog
+          bind:filename={saveFilename}
+          onsave={handleSaveAs}
+          oncancel={() => (showSaveDialog = false)}
+        />
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -232,6 +256,7 @@
   /* Shell layout — fills parent window body                             */
   /* ------------------------------------------------------------------ */
   .scribe-shell {
+    position: relative;
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -288,31 +313,54 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Placeholder tabs                                                    */
+  /* Save As dialog overlay                                              */
   /* ------------------------------------------------------------------ */
-  .tab-placeholder {
+  .save-overlay {
+    position: absolute;
+    inset: 0;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 100%;
-    min-height: 80px;
-    padding: 16px;
-    text-align: center;
-    color: var(--retro-black, #000);
+    background: rgba(0, 0, 0, 0.25);
+    z-index: 10;
+  }
+
+  .save-dialog-frame {
+    background: var(--retro-button-face, #c0c0c0);
+    border: 2px outset var(--retro-button-face, #c0c0c0);
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.3);
+    min-width: 340px;
+    max-width: 90%;
+  }
+
+  .save-dialog-titlebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--retro-navy, #000080);
+    color: #fff;
+    padding: 2px 4px;
+    font-family: var(--retro-font-family, "Microsoft Sans Serif", Arial, sans-serif);
     font-size: var(--retro-font-size, 11px);
+    font-weight: bold;
   }
 
-  .tab-placeholder p {
-    margin: 2px 0;
+  .save-dialog-title {
+    flex: 1;
   }
 
-  .tab-placeholder-icon {
-    font-size: 24px;
-    margin-bottom: 4px;
-  }
-
-  .tab-placeholder-hint {
-    color: var(--retro-disabled-text, #808080);
+  .save-dialog-close {
+    width: 16px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    padding: 0;
+    border: 1px outset var(--retro-button-face, #c0c0c0);
+    background: var(--retro-button-face, #c0c0c0);
+    color: var(--retro-black, #000);
+    cursor: default;
+    line-height: 1;
   }
 </style>
