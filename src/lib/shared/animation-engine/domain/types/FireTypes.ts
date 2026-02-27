@@ -266,19 +266,19 @@ export const CHARCOAL_FIRE_PHYSICS: FirePhysicsParams = {
   temperatureDissipation: 0.955,
   fuelDissipation: 0.945,
   vorticityStrength: 6.0,
-  buoyancyStrength: 8.0,
+  buoyancyStrength: 5.0,
   burnRate: 4.0,
   fuelEfficiency: 2.0,
   coolingRate: 3.0,
   pressureDissipation: 0.8,
   temperatureInjection: 1.8,
-  upwardBias: -4.0,
+  upwardBias: -6.0,
   sootYield: 0.12,
   sootCoolThreshold: 0.4,
   sootCoolRate: 1.8,
   sootDissipation: 1.8,
   sootAdvectionDissipation: 0.98,
-  gravity: -12.0,
+  gravity: -1000.0,
 };
 
 /** Charcoal color curve — steel-wool orange/white palette */

@@ -384,7 +384,6 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         // so the fire renderer doesn't replay stale cached frames.
         loopDetected: this.loopDetectedThisFrame || tipResult.gapDetected,
         playbackSpeed: params.playbackSpeed,
-        currentBeat: Math.floor(params.currentStep),
       };
 
       // All fuel types (including charcoal) use the fluid Navier-Stokes renderer.

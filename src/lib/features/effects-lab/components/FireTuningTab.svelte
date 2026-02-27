@@ -128,9 +128,14 @@
 
   let fireConfig = $derived.by(() => {
     const basePhysics = useCharcoal ? CHARCOAL_FIRE_PHYSICS : BASE_FIRE_PHYSICS;
+    const intOverrides = intensityToPhysics(intensity);
+    if (useCharcoal) {
+      delete intOverrides.buoyancyStrength;
+      delete intOverrides.upwardBias;
+    }
     const mergedPhysics = {
       ...basePhysics,
-      ...intensityToPhysics(intensity),
+      ...intOverrides,
       ...smokeLevelToPhysics(smokeLevel),
     };
     return {

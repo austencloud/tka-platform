@@ -359,9 +359,15 @@ export class AnimationEngine {
     this.fireConfig.fuelRendererType = "fluid";
 
     const basePhysics = this.prevUseCharcoal ? CHARCOAL_FIRE_PHYSICS : BASE_FIRE_PHYSICS;
+    const intensityOverrides = intensityToPhysics(this.prevFireIntensity);
+    // Charcoal has its own buoyancy/upwardBias tuned for gravity — don't let intensity override them
+    if (this.prevUseCharcoal) {
+      delete intensityOverrides.buoyancyStrength;
+      delete intensityOverrides.upwardBias;
+    }
     this.fireConfig.physicsPreset = {
       ...basePhysics,
-      ...intensityToPhysics(this.prevFireIntensity),
+      ...intensityOverrides,
       ...smokeLevelToPhysics(this.prevSmokeLevel),
     };
     this.fireConfig.colorCurve = this.prevUseCharcoal ? CHARCOAL_COLOR_CURVE : BASE_COLOR_CURVE;
@@ -488,6 +494,11 @@ export class AnimationEngine {
           this.prevFireIntensity = fireIntensity;
 
           const basePhysics = useCharcoal ? CHARCOAL_FIRE_PHYSICS : BASE_FIRE_PHYSICS;
+          const intOverrides = intensityToPhysics(fireIntensity);
+          if (useCharcoal) {
+            delete intOverrides.buoyancyStrength;
+            delete intOverrides.upwardBias;
+          }
           this.setFireConfig({
             colorBlend,
             fuelRendererType: "fluid",
@@ -495,7 +506,7 @@ export class AnimationEngine {
             flameHeight: fireIntensity,
             physicsPreset: {
               ...basePhysics,
-              ...intensityToPhysics(fireIntensity),
+              ...intOverrides,
               ...smokeLevelToPhysics(smokeLevel),
             },
             colorCurve: useCharcoal ? CHARCOAL_COLOR_CURVE : BASE_COLOR_CURVE,

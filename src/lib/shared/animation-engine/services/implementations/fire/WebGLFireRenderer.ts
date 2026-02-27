@@ -662,7 +662,9 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
 
     // Terminal velocity: force tapers to zero as velocity in the force direction approaches this ceiling.
     // Prevents runaway accumulation from both buoyancy (upward) and gravity (downward).
-    gl.uniform1f(prog.uniforms.get("u_terminalVelocity")!, 6.0);
+    // When gravity is active, raise the ceiling so fluid can actually fall fast.
+    const termVel = this.physics.gravity < 0 ? 14.0 : 6.0;
+    gl.uniform1f(prog.uniforms.get("u_terminalVelocity")!, termVel);
     gl.uniform1f(prog.uniforms.get("u_gravity")!, this.physics.gravity);
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.velocity!.write.fbo);
