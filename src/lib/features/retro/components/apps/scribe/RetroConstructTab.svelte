@@ -50,21 +50,12 @@
   ];
 
   /* ------------------------------------------------------------------ */
-  /* Motion type radio tracking                                          */
+  /* Motion type selection                                               */
   /* ------------------------------------------------------------------ */
 
-  let proPicked = $state(true);
-  let antiPicked = $state(false);
-  let staticPicked = $state(false);
-  let dashPicked = $state(false);
-
-  /* Sync individual radio booleans back to the motionType string */
-  $effect(() => {
-    if (proPicked) motionType = "pro";
-    else if (antiPicked) motionType = "anti";
-    else if (staticPicked) motionType = "static";
-    else if (dashPicked) motionType = "dash";
-  });
+  function selectMotion(value: string) {
+    motionType = value;
+  }
 
   /* ------------------------------------------------------------------ */
   /* Turn spinner helpers                                                */
@@ -141,14 +132,12 @@
       cw: cwTurns,
       ccw: ccwTurns,
     });
-    beats = beats;
     onstatuschange?.(`Beats: ${beats.length} | Added beat ${beats.length}`);
   }
 
   function handleRemoveBeat() {
     if (selectedBeatIndex < 0 || selectedBeatIndex >= beats.length) return;
     beats.splice(selectedBeatIndex, 1);
-    beats = beats;
     selectedBeatIndex = Math.min(selectedBeatIndex, beats.length - 1);
     onstatuschange?.(`Beats: ${beats.length} | Beat removed`);
   }
@@ -161,47 +150,52 @@
 
     <!-- Letter picker -->
     <div class="field-row-custom">
-      <label class="field-label">Letter:</label>
-      <RetroDropdown bind:value={selectedLetter} options={letterOptions} />
+      <label class="field-label" for="construct-letter">Letter:</label>
+      <RetroDropdown id="construct-letter" bind:value={selectedLetter} options={letterOptions} />
     </div>
 
     <!-- Motion type radios -->
     <div class="field-row-custom">
-      <label class="field-label">Motion:</label>
+      <label class="field-label" for="construct-motion-pro">Motion:</label>
       <div class="radio-group">
         <RetroRadioButton
           label="Pro"
           name="motion-type"
           value="pro"
-          bind:selected={proPicked}
+          selected={motionType === "pro"}
+          onchange={selectMotion}
         />
         <RetroRadioButton
           label="Anti"
           name="motion-type"
           value="anti"
-          bind:selected={antiPicked}
+          selected={motionType === "anti"}
+          onchange={selectMotion}
         />
         <RetroRadioButton
           label="Static"
           name="motion-type"
           value="static"
-          bind:selected={staticPicked}
+          selected={motionType === "static"}
+          onchange={selectMotion}
         />
         <RetroRadioButton
           label="Dash"
           name="motion-type"
           value="dash"
-          bind:selected={dashPicked}
+          selected={motionType === "dash"}
+          onchange={selectMotion}
         />
       </div>
     </div>
 
     <!-- Turn spinners -->
     <div class="field-row-custom">
-      <label class="field-label">CW Turns:</label>
+      <label class="field-label" for="construct-cw">CW Turns:</label>
       <div class="spinner">
         <div class="spinner-input">
           <RetroTextInput
+            id="construct-cw"
             value={String(cwTurns)}
             onchange={handleCWInput}
           />
@@ -216,10 +210,11 @@
         </div>
       </div>
 
-      <label class="field-label ccw-label">CCW Turns:</label>
+      <label class="field-label ccw-label" for="construct-ccw">CCW Turns:</label>
       <div class="spinner">
         <div class="spinner-input">
           <RetroTextInput
+            id="construct-ccw"
             value={String(ccwTurns)}
             onchange={handleCCWInput}
           />

@@ -11,17 +11,20 @@
     name,
     value,
     disabled = false,
+    onchange,
   }: {
     selected?: boolean;
     label: string;
     name: string;
     value: string;
     disabled?: boolean;
+    onchange?: (value: string) => void;
   } = $props();
 
   function handleChange() {
     if (!disabled) {
       selected = true;
+      onchange?.(value);
     }
   }
 </script>
