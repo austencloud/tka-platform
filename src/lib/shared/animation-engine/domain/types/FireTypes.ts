@@ -53,6 +53,8 @@ export interface PropTipData {
   tipIndex: number;
   /** Relative flame size from PropFirePoints config (affects splat radius and fuel) */
   flameScale: number;
+  /** Acceleration magnitude — |velocity_delta| / dt (viewbox units/s^2). 0 on first frame. */
+  jerk: number;
 }
 
 /**

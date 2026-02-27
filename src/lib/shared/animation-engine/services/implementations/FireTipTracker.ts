@@ -39,12 +39,14 @@ const GAP_THRESHOLD_MS = 200;
 interface StoredTip {
 	x: number;
 	y: number;
+	velocityX: number;
+	velocityY: number;
 	time: number;
 	valid: boolean;
 }
 
 function createStoredTip(): StoredTip {
-	return { x: 0, y: 0, time: 0, valid: false };
+	return { x: 0, y: 0, velocityX: 0, velocityY: 0, time: 0, valid: false };
 }
 
 /** Viewbox size for coordinate calculations (matches PropPositionCalculator) */
@@ -218,6 +220,7 @@ export class FireTipTracker implements IFireTipTracker {
 		let velocityX = 0;
 		let velocityY = 0;
 		let speed = 0;
+		let jerk = 0;
 
 		if (prev.valid) {
 			const dt = Math.max((currentTime - prev.time) / 1000, MIN_DT_SECONDS);
@@ -232,11 +235,18 @@ export class FireTipTracker implements IFireTipTracker {
 				velocityY *= scale;
 				speed = MAX_SPEED;
 			}
+
+			// Compute jerk (acceleration magnitude) from velocity delta
+			const dvx = velocityX - prev.velocityX;
+			const dvy = velocityY - prev.velocityY;
+			jerk = Math.sqrt(dvx * dvx + dvy * dvy) / dt;
 		}
 
-		// Update stored position
+		// Update stored position and velocity
 		prev.x = x;
 		prev.y = y;
+		prev.velocityX = velocityX;
+		prev.velocityY = velocityY;
 		prev.time = currentTime;
 		prev.valid = true;
 
@@ -251,6 +261,7 @@ export class FireTipTracker implements IFireTipTracker {
 			existing.propIndex = propIndex;
 			existing.tipIndex = tipIndex;
 			existing.flameScale = flameScale;
+			existing.jerk = jerk;
 		} else {
 			this.outputTips.push({
 				x,
@@ -261,6 +272,7 @@ export class FireTipTracker implements IFireTipTracker {
 				propIndex,
 				tipIndex,
 				flameScale,
+				jerk,
 			});
 		}
 	}
