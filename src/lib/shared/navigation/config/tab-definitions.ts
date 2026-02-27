@@ -750,7 +750,7 @@ export const LAB_TABS: Section[] = [
   {
     id: "effects",
     label: "Effects",
-    icon: '<i class="fas fa-sparkles" aria-hidden="true"></i>',
+    icon: '<i class="fas fa-fire" aria-hidden="true"></i>',
     description: "Visual effects: trails, fire, LED overlays",
     color: "#8b5cf6",
     gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
