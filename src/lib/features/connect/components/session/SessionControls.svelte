@@ -275,7 +275,7 @@
 		border-radius: 50%;
 		cursor: pointer;
 		margin-top: -5px;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+		box-shadow: 0 2px 4px var(--theme-shadow-color, rgba(0, 0, 0, 0.2));
 		transition: transform 0.15s ease;
 	}
 
@@ -286,7 +286,7 @@
 		border: 2px solid var(--theme-text, white);
 		border-radius: 50%;
 		cursor: pointer;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+		box-shadow: 0 2px 4px var(--theme-shadow-color, rgba(0, 0, 0, 0.2));
 	}
 
 	.progress-slider:hover::-webkit-slider-thumb {

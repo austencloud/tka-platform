@@ -92,6 +92,7 @@
 								class="invite-button"
 								onclick={() => handleInvite(friend)}
 								title="Invite to session"
+								aria-label="Invite {friend.nickname || friend.displayName} to session"
 							>
 								<i class="fas fa-paper-plane" aria-hidden="true"></i>
 								Invite

@@ -113,7 +113,7 @@
 	.overlay-backdrop {
 		position: absolute;
 		inset: 0;
-		background: rgba(0, 0, 0, 0.7);
+		background: var(--theme-overlay-bg, rgba(0, 0, 0, 0.7));
 		border: none;
 		padding: 0;
 		margin: 0;

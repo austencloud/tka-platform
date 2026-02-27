@@ -33,6 +33,7 @@
 			{disabled}
 			role="radio"
 			aria-checked={value === option.id}
+			aria-label={option.label}
 			title={option.label}
 		>
 			<i class="fas {option.icon}" aria-hidden="true"></i>

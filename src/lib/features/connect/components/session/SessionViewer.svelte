@@ -276,7 +276,7 @@
 					onChange={handleDisplayChange}
 				/>
 
-				<button class="leave-button" onclick={onClose}>
+				<button class="leave-button" onclick={onClose} aria-label="Leave session">
 					Leave
 				</button>
 			</div>
@@ -380,7 +380,7 @@
 		position: fixed;
 		inset: 0;
 		z-index: 1000;
-		background: rgba(0, 0, 0, 0.9);
+		background: var(--theme-overlay-bg-dark, rgba(0, 0, 0, 0.9));
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -497,7 +497,7 @@
 		border-radius: 12px;
 		padding: 12px;
 		min-width: 200px;
-		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+		box-shadow: 0 8px 32px var(--theme-shadow-color, rgba(0, 0, 0, 0.3));
 	}
 
 	/* Main content */

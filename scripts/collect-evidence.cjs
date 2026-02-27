@@ -182,21 +182,36 @@ function collectArchitecture() {
 
   // Missing DI: classes not registered in containers
   // Heuristic: .ts files with class exports that aren't in a contracts/ dir
+  // Cross-references container files to eliminate false positives
   findings.potentialDiGaps = [];
+
+  // Read all DI container files once for cross-referencing
+  const containersDir = path.join(SRC_ROOT, "shared", "di", "containers");
+  let containerContents = "";
+  try {
+    const containerFiles = fs.readdirSync(containersDir).filter((f) => f.endsWith(".ts"));
+    containerContents = containerFiles
+      .map((f) => fs.readFileSync(path.join(containersDir, f), "utf-8"))
+      .join("\n");
+  } catch {
+    // containers dir not found — flag everything as before
+  }
+
   for (const f of tsFiles) {
     const relPath = rel(f);
     if (relPath.includes("/contracts/")) continue;
     if (relPath.includes("/implementations/")) {
-      // Check if this file has a class that might not be in DI
-      // This is best-effort; the evaluator will assess
       try {
         const content = fs.readFileSync(f, "utf-8");
         const classMatch = content.match(/export\s+class\s+(\w+)/);
         if (classMatch) {
+          const className = classMatch[1];
+          // Skip if the class name appears in any container file (imported or instantiated)
+          if (containerContents && containerContents.includes(className)) continue;
           findings.potentialDiGaps.push({
             file: relPath,
             line: 0,
-            preview: `Class "${classMatch[1]}" in implementations/ - verify DI registration`,
+            preview: `Class "${className}" in implementations/ - verify DI registration`,
           });
         }
       } catch {

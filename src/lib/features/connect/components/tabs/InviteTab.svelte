@@ -128,7 +128,7 @@
 
 						<div class="user-actions">
 							{#if isInSession}
-								<button class="invite-button" onclick={() => handleInviteUser(user)}>
+								<button class="invite-button" onclick={() => handleInviteUser(user)} aria-label="Invite {user.displayName} to session">
 									<i class="fas fa-paper-plane" aria-hidden="true"></i>
 									Invite
 								</button>
@@ -136,7 +136,7 @@
 							<button
 								class="add-friend-button"
 								onclick={() => handleAddFriend(user)}
-								aria-label="Add friend"
+								aria-label="Add {user.displayName} as friend"
 							>
 								<i class="fas fa-user-plus" aria-hidden="true"></i>
 							</button>

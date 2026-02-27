@@ -236,7 +236,11 @@ class ConnectState {
 	async leaveSession(): Promise<void> {
 		if (!this.orchestrator) return;
 
-		await this.orchestrator.leaveSession();
+		try {
+			await this.orchestrator.leaveSession();
+		} catch (error) {
+			this._connectionError = error instanceof Error ? error.message : 'Failed to leave session';
+		}
 		this.syncFromOrchestrator();
 	}
 

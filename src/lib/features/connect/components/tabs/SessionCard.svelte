@@ -90,7 +90,7 @@
 
 	.session-card.own-session {
 		border-color: var(--theme-accent, #6366f1);
-		background: rgba(99, 102, 241, 0.1);
+		background: color-mix(in srgb, var(--theme-accent, #6366f1) 10%, transparent);
 	}
 
 	/* Host section */
