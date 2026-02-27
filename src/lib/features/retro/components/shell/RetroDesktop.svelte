@@ -8,7 +8,7 @@
   - Open windows rendered via RetroWindow primitive
   - Taskbar fixed at bottom with Start button, window buttons, clock
   - Start menu popup with program launchers and Shut Down
-  - Boot sequence placeholder (real implementation in Task 7)
+  - Boot sequence animation (RetroBootSequence)
 
   Domain: Retro Desktop Shell
 -->
@@ -26,6 +26,7 @@
   import RetroTaskbar from "./RetroTaskbar.svelte";
   import RetroStartMenu from "./RetroStartMenu.svelte";
   import RetroWindow from "../primitives/RetroWindow.svelte";
+  import RetroBootSequence from "./RetroBootSequence.svelte";
 
   /* ------------------------------------------------------------------ */
   /* Window manager instance                                             */
@@ -149,28 +150,15 @@
     desktopState.selectedDesktopIcon = id;
   }
 
-  /* ------------------------------------------------------------------ */
-  /* Boot sequence placeholder                                           */
-  /* ------------------------------------------------------------------ */
-
-  $effect(() => {
-    if (!desktopState.isBooting) return;
-
-    const timer = setTimeout(() => {
-      desktopState.isBooting = false;
-      desktopState.bootComplete = true;
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  });
+  /* Boot completion is handled by RetroBootSequence via oncomplete */
 </script>
 
 <div class="retro-shell">
   {#if desktopState.isBooting}
-    <!-- Boot sequence placeholder — real implementation in Task 7 -->
-    <div class="boot-screen">
-      <span class="boot-text">Starting TKA-OS...</span>
-    </div>
+    <RetroBootSequence oncomplete={() => {
+      desktopState.isBooting = false;
+      desktopState.bootComplete = true;
+    }} />
   {:else}
     <!-- Desktop surface -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -259,25 +247,6 @@
       sans-serif
     );
     font-size: var(--retro-font-size, 11px);
-  }
-
-  /* ------------------------------------------------------------------ */
-  /* Boot screen                                                         */
-  /* ------------------------------------------------------------------ */
-  .boot-screen {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--retro-black, #000);
-    z-index: var(--retro-z-boot, 1000);
-  }
-
-  .boot-text {
-    color: var(--retro-light-gray, #c0c0c0);
-    font-family: var(--retro-font-mono, "Courier New", monospace);
-    font-size: 14px;
   }
 
   /* ------------------------------------------------------------------ */
