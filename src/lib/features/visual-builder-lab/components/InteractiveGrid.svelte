@@ -459,9 +459,9 @@
     display: block;
   }
 
-  /* Dark background matching pictograph containers */
+  /* Solid background matching pictograph containers */
   .grid-background {
-    fill: var(--theme-panel-bg, rgba(10, 10, 18, 0.95));
+    fill: var(--dm-pictograph-bg, #0a0a0f);
   }
 
   /* Prop SVG groups (real prop rendering) */
