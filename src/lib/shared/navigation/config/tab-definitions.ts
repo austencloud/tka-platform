@@ -771,6 +771,14 @@ export const LAB_TABS: Section[] = [
     color: "#f97316",
     gradient: "linear-gradient(135deg, #fb923c 0%, #f97316 100%)",
   },
+  {
+    id: "retro",
+    label: "Retro",
+    icon: '<i class="fas fa-desktop" aria-hidden="true"></i>',
+    description: "TKA-OS v1.0 (1995 parody)",
+    color: "#008080",
+    gradient: "linear-gradient(135deg, #008080 0%, #000080 100%)",
+  },
 ];
 
 // REMOVED: LANDING_PAGE_TABS - LandingPreviewModule now handles its own internal tabs

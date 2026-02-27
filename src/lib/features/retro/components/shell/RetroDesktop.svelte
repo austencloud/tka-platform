@@ -29,6 +29,16 @@
   import RetroBootSequence from "./RetroBootSequence.svelte";
 
   /* ------------------------------------------------------------------ */
+  /* Props                                                               */
+  /* ------------------------------------------------------------------ */
+
+  let {
+    initialApp = undefined,
+  }: {
+    initialApp?: string;
+  } = $props();
+
+  /* ------------------------------------------------------------------ */
   /* Window manager instance                                             */
   /* ------------------------------------------------------------------ */
 
@@ -120,6 +130,25 @@
   function openAppFromIcon(iconDef: RetroDesktopIcon) {
     openApp(iconDef.executable, iconDef.label, iconDef.icon);
   }
+
+  /* ------------------------------------------------------------------ */
+  /* Deep link handling                                                  */
+  /* ------------------------------------------------------------------ */
+
+  $effect(() => {
+    if (initialApp && desktopState.isBooting) {
+      // Deep links skip the boot sequence
+      desktopState.isBooting = false;
+      desktopState.bootComplete = true;
+      // Open the requested app
+      const iconDef = [...desktopIcons, recycleBin].find(
+        (i) => i.executable === initialApp
+      );
+      if (iconDef) {
+        openAppFromIcon(iconDef);
+      }
+    }
+  });
 
   /* ------------------------------------------------------------------ */
   /* Shut Down dialog                                                    */
