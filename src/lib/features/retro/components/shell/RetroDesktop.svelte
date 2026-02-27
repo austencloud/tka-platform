@@ -27,6 +27,7 @@
   import RetroStartMenu from "./RetroStartMenu.svelte";
   import RetroWindow from "../primitives/RetroWindow.svelte";
   import RetroBootSequence from "./RetroBootSequence.svelte";
+  import RetroScribe from "../apps/scribe/RetroScribe.svelte";
 
   /* ------------------------------------------------------------------ */
   /* Props                                                               */
@@ -112,16 +113,22 @@
     const offset = (windowCounter % 8) * 28;
     windowCounter++;
 
+    /* App-specific default sizes */
+    const sizes: Record<string, { width: number; height: number }> = {
+      scribe: { width: 640, height: 480 },
+    };
+    const size = sizes[executable] ?? { width: 480, height: 360 };
+
     windowManager.openWindow({
       id: executable,
       title: windowTitle,
       icon: icon,
       x: 80 + offset,
       y: 40 + offset,
-      width: 480,
-      height: 360,
-      minWidth: 240,
-      minHeight: 180,
+      width: size.width,
+      height: size.height,
+      minWidth: 320,
+      minHeight: 240,
       isMinimized: false,
       isMaximized: false,
     });
@@ -238,10 +245,14 @@
             onresize={(w, h) => windowManager.resizeWindow(win.id, w, h)}
           >
             {#snippet children()}
-              <div class="placeholder-content">
-                <p>{win.title}</p>
-                <p class="placeholder-hint">Module adapter will be loaded here.</p>
-              </div>
+              {#if win.id === "scribe"}
+                <RetroScribe onclose={() => windowManager.closeWindow(win.id)} />
+              {:else}
+                <div class="placeholder-content">
+                  <p>{win.title}</p>
+                  <p class="placeholder-hint">Module adapter coming soon.</p>
+                </div>
+              {/if}
             {/snippet}
           </RetroWindow>
         {/if}
