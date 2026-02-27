@@ -28,6 +28,7 @@
   import RetroWindow from "../primitives/RetroWindow.svelte";
   import RetroBootSequence from "./RetroBootSequence.svelte";
   import RetroScribe from "../apps/scribe/RetroScribe.svelte";
+  import CRTOverlay from "../effects/CRTOverlay.svelte";
 
   /* ------------------------------------------------------------------ */
   /* Props                                                               */
@@ -269,6 +270,9 @@
 
     <!-- Taskbar -->
     <RetroTaskbar {windowManager} />
+
+    <!-- CRT monitor effect -->
+    <CRTOverlay />
   {/if}
 </div>
 
