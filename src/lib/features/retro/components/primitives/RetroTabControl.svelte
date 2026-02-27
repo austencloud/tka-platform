@@ -32,11 +32,11 @@
     if (event.key === "ArrowRight") {
       event.preventDefault();
       const next = (currentIndex + 1) % tabs.length;
-      activeTab = tabs[next].id;
+      activeTab = tabs[next]!.id;
     } else if (event.key === "ArrowLeft") {
       event.preventDefault();
       const prev = (currentIndex - 1 + tabs.length) % tabs.length;
-      activeTab = tabs[prev].id;
+      activeTab = tabs[prev]!.id;
     }
   }
 </script>

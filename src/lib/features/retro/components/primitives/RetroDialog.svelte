@@ -29,7 +29,7 @@
     question: { symbol: "?", color: "#fff", bg: "#000080" },
   };
 
-  const iconData = $derived(iconMap[config.type] ?? iconMap.info);
+  const iconData = $derived(iconMap[config.type] ?? iconMap.info!)
 
   function handleButton(label: string) {
     onclose(label);

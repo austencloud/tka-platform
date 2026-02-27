@@ -84,48 +84,41 @@
       case "ArrowDown": {
         event.preventDefault();
         const next = Math.min(currentIndex + 1, flat.length - 1);
-        if (next >= 0) selectNode(flat[next].id);
+        if (next >= 0) selectNode(flat[next]!.id);
         break;
       }
       case "ArrowUp": {
         event.preventDefault();
         const prev = Math.max(currentIndex - 1, 0);
-        if (prev >= 0) selectNode(flat[prev].id);
+        if (prev >= 0) selectNode(flat[prev]!.id);
         break;
       }
       case "ArrowRight": {
         event.preventDefault();
-        if (currentIndex >= 0) {
-          const node = flat[currentIndex];
-          if (node.children?.length) {
-            if (!isExpanded(node.id)) {
-              toggleExpanded(node.id);
-            } else {
-              // Move to first child
-              const nextIndex = currentIndex + 1;
-              if (nextIndex < flat.length) selectNode(flat[nextIndex].id);
-            }
+        const node = flat[currentIndex];
+        if (node?.children?.length) {
+          if (!isExpanded(node.id)) {
+            toggleExpanded(node.id);
+          } else {
+            const nextIndex = currentIndex + 1;
+            if (nextIndex < flat.length) selectNode(flat[nextIndex]!.id);
           }
         }
         break;
       }
       case "ArrowLeft": {
         event.preventDefault();
-        if (currentIndex >= 0) {
-          const node = flat[currentIndex];
-          if (node.children?.length && isExpanded(node.id)) {
-            toggleExpanded(node.id);
-          }
+        const node = flat[currentIndex];
+        if (node?.children?.length && isExpanded(node.id)) {
+          toggleExpanded(node.id);
         }
         break;
       }
       case "Enter": {
         event.preventDefault();
-        if (currentIndex >= 0) {
-          const node = flat[currentIndex];
-          if (node.children?.length) {
-            toggleExpanded(node.id);
-          }
+        const node = flat[currentIndex];
+        if (node?.children?.length) {
+          toggleExpanded(node.id);
         }
         break;
       }

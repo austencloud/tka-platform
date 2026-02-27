@@ -603,10 +603,12 @@
       "WebFetch(domain:www.nngroup.com)",
       "mcp__claude_ai_Gmail__gmail_search_messages",
       "Bash(node_modules/.bin/tsc:*)",
-      "Bash(npx svelte-check:*)"
+      "Bash(npx svelte-check:*)",
+      "Bash(export:*)",
+      "Bash(PATH=\"/c/Program Files/nodejs:$PATH\" npm run:*)"
     ]
   },
-  "enableAllProjectMcpServers": false,
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "tka-domain",
     "chrome-devtools",
