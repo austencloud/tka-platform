@@ -12,6 +12,9 @@
   import RetroTextInput from "../../primitives/RetroTextInput.svelte";
   import RetroDropdown from "../../primitives/RetroDropdown.svelte";
   import RetroProgressBar from "../../primitives/RetroProgressBar.svelte";
+  import RetroPictograph from "../../rendering/RetroPictograph.svelte";
+  import { createMockPictographData } from "../../rendering/mock-pictograph-data";
+  import type { RetroPictographData } from "../../../services/contracts/IPixelRenderer";
 
   let {
     onstatuschange,
@@ -26,7 +29,9 @@
   let word = $state("");
   let constraint = $state("smooth");
   let isGenerating = $state(false);
-  let generatedBeats = $state<{ letter: string; color: string }[]>([]);
+  let generatedBeats = $state<
+    { letter: string; color: string; pictograph: RetroPictographData }[]
+  >([]);
   let generateProgress = $state(0);
   let generateStatus = $state("Ready");
 
@@ -81,6 +86,7 @@
       generatedBeats = word.split("").map((letter, i) => ({
         letter: letter.toUpperCase(),
         color: beatColors[i % beatColors.length]!,
+        pictograph: createMockPictographData(letter),
       }));
       isGenerating = false;
     }, 2500);
@@ -133,11 +139,9 @@
     {:else if generatedBeats.length > 0}
       <div class="beats-container">
         {#each generatedBeats as beat, i (i)}
-          <div
-            class="beat-square"
-            style="background: {beat.color};"
-          >
-            <span class="beat-letter">{beat.letter}</span>
+          <div class="beat-cell">
+            <RetroPictograph data={beat.pictograph} size={48} />
+            <span class="beat-label">{beat.letter}</span>
           </div>
         {/each}
       </div>
@@ -230,22 +234,18 @@
     justify-content: center;
   }
 
-  .beat-square {
-    width: 48px;
-    height: 48px;
+  .beat-cell {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    border: 2px outset var(--retro-button-face, #c0c0c0);
-    image-rendering: pixelated;
+    gap: 2px;
   }
 
-  .beat-letter {
-    color: #fff;
-    font-size: 14px;
-    font-weight: bold;
-    font-family: var(--retro-font-family, "Microsoft Sans Serif", Arial, sans-serif);
-    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+  .beat-label {
+    color: var(--retro-black, #000);
+    font-size: 9px;
+    font-family: var(--retro-font-mono, "Fixedsys", monospace);
+    text-align: center;
   }
 
   .empty-state {

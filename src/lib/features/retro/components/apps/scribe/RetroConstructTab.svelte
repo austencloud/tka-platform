@@ -13,6 +13,8 @@
   import RetroDropdown from "../../primitives/RetroDropdown.svelte";
   import RetroRadioButton from "../../primitives/RetroRadioButton.svelte";
   import RetroListBox from "../../primitives/RetroListBox.svelte";
+  import RetroPictograph from "../../rendering/RetroPictograph.svelte";
+  import { createMockPictographData } from "../../rendering/mock-pictograph-data";
 
   let {
     onstatuschange,
@@ -259,15 +261,15 @@
       {#if beats.length > 0}
         <div class="beats-container">
           {#each beats as beat, i (i)}
-            <div
-              class="beat-square"
-              style="background: {beatColors[i % beatColors.length]};"
-            >
-              <span class="beat-letter">
-                {beat.letter.length > 1
-                  ? beat.letter.charAt(0).toUpperCase() + beat.letter.slice(1)
-                  : beat.letter.toUpperCase()}
-              </span>
+            {@const label = beat.letter.length > 1
+              ? beat.letter.charAt(0).toUpperCase() + beat.letter.slice(1)
+              : beat.letter.toUpperCase()}
+            <div class="beat-cell">
+              <RetroPictograph
+                data={createMockPictographData(beat.letter)}
+                size={42}
+              />
+              <span class="beat-label">{label}</span>
             </div>
           {/each}
         </div>
@@ -422,22 +424,18 @@
     justify-content: center;
   }
 
-  .beat-square {
-    width: 48px;
-    height: 48px;
+  .beat-cell {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    border: 2px outset var(--retro-button-face, #c0c0c0);
-    image-rendering: pixelated;
+    gap: 2px;
   }
 
-  .beat-letter {
-    color: #fff;
-    font-size: 14px;
-    font-weight: bold;
-    font-family: var(--retro-font-family, "Microsoft Sans Serif", Arial, sans-serif);
-    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+  .beat-label {
+    color: var(--retro-black, #000);
+    font-size: 9px;
+    font-family: var(--retro-font-mono, "Fixedsys", monospace);
+    text-align: center;
   }
 
   .empty-state {
