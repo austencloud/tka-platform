@@ -66,6 +66,7 @@ import type { ConnectContainer } from "./containers/connect-container";
 import type { DeviceSyncContainer } from "./containers/device-sync-container";
 import type { MuseumContainer } from "./containers/museum-container";
 import type { PushContainer } from "./containers/push-container";
+import type { RetroContainer } from "./containers/retro-container";
 
 // Containers that already export items types directly (["items"])
 import type { NavigationContainerItems } from "./containers/navigation-container";
@@ -136,6 +137,7 @@ type ConnectItems = ItemsOf<ConnectContainer>;
 type DeviceSyncItems = ItemsOf<DeviceSyncContainer>;
 type MuseumItems = ItemsOf<MuseumContainer>;
 type PushItems = ItemsOf<PushContainer>;
+type RetroItems = ItemsOf<RetroContainer>;
 
 // ============================================================================
 // Upsert conflict handling
@@ -216,5 +218,7 @@ export type IAppContainerItems =
 	MuseumItems &
 	// Push notifications (FCM token management)
 	PushItems &
+	// Retro (1995 Easter egg)
+	RetroItems &
 	// Standalone services
 	StandaloneItems;
