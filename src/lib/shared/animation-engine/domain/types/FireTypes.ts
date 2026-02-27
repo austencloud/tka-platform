@@ -154,6 +154,8 @@ export interface FireOverlayConfig {
   fuelRendererType?: FuelRendererType;
   /** Color curve for the fluid renderer display pass */
   colorCurve?: FireColorCurve;
+  /** Active charcoal spark preset ID (only used when useCharcoal is true) */
+  charcoalPresetId?: string;
   /** Smoke opacity in display shader (0.0 = no smoke, 0.5 = heavy smoke, default per fuel) */
   smokeOpacity?: number;
   /** HDR bloom strength (0.0 = no bloom, 0.04-0.15 = subtle glow, default 0.08) */

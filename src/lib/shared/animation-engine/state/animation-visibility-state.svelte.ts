@@ -43,6 +43,7 @@ interface AnimationVisibilitySettings {
   fireColorBlend: number; // 0 = natural fire, 1 = prop-colored (continuous slider)
   fireSmokeLevel: number; // 0 = clean burn, 1 = heavy smoke (continuous slider)
   fireUseCharcoal: boolean; // false = normal fire, true = charcoal (gravity-heavy fluid preset)
+  charcoalPresetId: string; // Active charcoal preset ID
   fireIntensity: number; // User intensity slider value (0.0-1.0)
 
   // LED Effects
@@ -115,6 +116,7 @@ export class AnimationVisibilityStateManager {
       fireColorBlend: 0.5, // Halfway between natural and prop-colored
       fireSmokeLevel: 0.1, // Light smoke
       fireUseCharcoal: false, // Fluid fire by default
+      charcoalPresetId: "steel-wool", // Default charcoal preset
       fireIntensity: 0.7, // 0-1 range, 0.7 = normal fire
 
       // LED Effects
@@ -185,6 +187,7 @@ export class AnimationVisibilityStateManager {
         if (!("fireColorBlend" in parsed)) parsed.fireColorBlend = 0.5;
         if (!("fireSmokeLevel" in parsed)) parsed.fireSmokeLevel = 0.1;
         if (!("fireUseCharcoal" in parsed)) parsed.fireUseCharcoal = false;
+        if (!("charcoalPresetId" in parsed)) parsed.charcoalPresetId = "steel-wool";
         if (!("fireIntensity" in parsed)) parsed.fireIntensity = 0.7;
 
         // Clean up removed keys
@@ -259,7 +262,7 @@ export class AnimationVisibilityStateManager {
   getVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "charcoalPresetId" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor"
     >
   ): boolean {
     return this.settings[key] as boolean;
@@ -283,7 +286,7 @@ export class AnimationVisibilityStateManager {
   setVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "charcoalPresetId" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor"
     >,
     visible: boolean
   ): void {
@@ -562,6 +565,16 @@ export class AnimationVisibilityStateManager {
     this.notifyObservers();
   }
 
+  getCharcoalPresetId(): string {
+    return this.settings.charcoalPresetId;
+  }
+
+  setCharcoalPresetId(presetId: string): void {
+    this.settings.charcoalPresetId = presetId;
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
   getFireIntensity(): number {
     return this.settings.fireIntensity;
   }
@@ -653,7 +666,7 @@ export class AnimationVisibilityStateManager {
   toggleVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "charcoalPresetId" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor"
     >
   ): void {
     this.setVisibility(key, !(this.settings[key] as boolean));
