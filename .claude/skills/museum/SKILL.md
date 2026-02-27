@@ -140,7 +140,9 @@ node scripts/museum-dev.js capture <sessionId> decision "The Order are tragic pr
 node scripts/museum-dev.js capture <sessionId> question "Why hasn't the Order silenced Austen?"
 ```
 
-Valid types: `session`, `decision`, `question`, `element`, `reference`
+Valid types: `session`, `decision`, `question`, `element`, `reference`, `proposal`
+
+**IMPORTANT:** When Claude generates an idea and the user approves casually ("sure", "yeah", "cool"), capture it as a `proposal`, NOT a `decision`. See the Proposal System section below.
 
 The captured item is automatically linked to the session with a "spawned" relationship.
 
@@ -307,10 +309,50 @@ node scripts/museum-dev.js help
    node scripts/museum-dev.js trace <decisionId>
    ```
 
+## Proposal System — Preventing the AI Feedback Loop
+
+**The problem:** Claude generates an idea, user says "sure," and future Claude sessions treat it as a load-bearing decision. Claude ends up citing its own previous output as evidence of quality. This is a closed loop.
+
+### The Rules
+
+1. **Claude's ideas are proposals, not decisions.** When Claude generates a creative idea during a session (lore, exhibit concepts, narrative structure, tone), capture it as type `proposal` unless the user explicitly directs otherwise.
+
+2. **"Sure" is not conviction.** Casual user approval ("yeah", "cool", "that works", "sure") means "I don't object" — not "this is the direction." Capture as `proposal`.
+
+3. **Decisions require explicit user direction.** Capture as `decision` only when:
+   - The user originated the idea themselves
+   - The user explicitly says something like "that's the direction, lock it in" or "yes, make that a decision"
+   - The user promotes a proposal via `/museum promote <id>`
+
+4. **Never cite your own quality.** Claude must never describe its own previous output as "the best writing," "the strongest element," or similar self-evaluation. It can say "previously captured as a proposal" but not "previously identified as excellent."
+
+5. **One honest pushback before capture.** Before saving a Claude-generated idea (even as a proposal), give one real counterargument — an actual reason it might be wrong. Not performative. If the idea survives and the user engages, it's stronger.
+
+6. **Provenance is automatic.** Proposals are tagged with `proposedBy: claude` by default. When reading proposals in future sessions, Claude should note this provenance and not treat them as user-directed decisions.
+
+### Commands
+
+```bash
+# Capture Claude's idea as a proposal (DEFAULT for Claude-generated ideas)
+node scripts/museum-dev.js capture <sessionId> proposal "The MEH room should be physically smaller"
+
+# Promote a proposal to a decision (ONLY when user explicitly directs)
+node scripts/museum-dev.js promote <proposalId>
+```
+
+### How to Read Proposals in Future Sessions
+
+When encountering a proposal in the tracker:
+- Treat it as **scaffolding that hasn't been stress-tested**
+- Don't build load-bearing narrative on top of unreviewed proposals
+- If you need to reference it, say "there's a proposal that..." not "it was decided that..."
+- Flag it for the user: "This was a Claude-generated proposal from [date]. Want to keep it, modify it, or kill it?"
+
 ## Key Principles
 
-1. **Capture everything** - rejected ideas are as valuable as accepted ones for understanding the creative process
-2. **Link liberally** - connections help trace the evolution of ideas
-3. **Store transcripts** - raw conversations are more valuable than summaries
-4. **Set verdicts** - accepted/rejected/deferred helps filter but preserves history
-5. **Trace back** - any decision should be traceable to the session that spawned it
+1. **Capture everything** — rejected ideas are as valuable as accepted ones for understanding the creative process
+2. **Link liberally** — connections help trace the evolution of ideas
+3. **Store transcripts** — raw conversations are more valuable than summaries
+4. **Set verdicts** — accepted/rejected/deferred helps filter but preserves history
+5. **Trace back** — any decision should be traceable to the session that spawned it
+6. **Proposals are not decisions** — Claude's ideas stay proposals until the user promotes them

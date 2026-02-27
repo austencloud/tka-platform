@@ -36,7 +36,7 @@ export const ADMIN_USER = {
  *
  * The primary categorization of tracked items.
  */
-export const ITEM_TYPES = ["session", "decision", "question", "element", "reference"];
+export const ITEM_TYPES = ["session", "decision", "question", "element", "reference", "proposal"];
 
 /**
  * Element Subtypes

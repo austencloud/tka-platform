@@ -71,6 +71,11 @@ export async function createItem(type, title, options = {}) {
     itemData.answer = "";
   }
 
+  if (type === "proposal") {
+    itemData.proposedBy = options.proposedBy || "claude";
+    itemData.promotedToDecision = false;
+  }
+
   if (type === "element" && options.elementType) {
     if (!ELEMENT_SUBTYPES.includes(options.elementType)) {
       console.log(`\n  ❌ Invalid element type: ${options.elementType}`);
