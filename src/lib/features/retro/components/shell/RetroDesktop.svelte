@@ -28,6 +28,11 @@
   import RetroWindow from "../primitives/RetroWindow.svelte";
   import RetroBootSequence from "./RetroBootSequence.svelte";
   import RetroScribe from "../apps/scribe/RetroScribe.svelte";
+  import RetroFileManager from "../apps/filemgr/RetroFileManager.svelte";
+  import RetroTutor from "../apps/tutor/RetroTutor.svelte";
+  import RetroCards from "../apps/cards/RetroCards.svelte";
+  import RetroControlPanel from "../apps/control/RetroControlPanel.svelte";
+  import RetroUpgrade from "../apps/upgrade/RetroUpgrade.svelte";
   import CRTOverlay from "../effects/CRTOverlay.svelte";
 
   /* ------------------------------------------------------------------ */
@@ -117,6 +122,11 @@
     /* App-specific default sizes */
     const sizes: Record<string, { width: number; height: number }> = {
       scribe: { width: 640, height: 480 },
+      filemgr: { width: 600, height: 420 },
+      tutor: { width: 560, height: 440 },
+      cards: { width: 520, height: 460 },
+      control: { width: 480, height: 400 },
+      upgrade: { width: 440, height: 380 },
     };
     const size = sizes[executable] ?? { width: 480, height: 360 };
 
@@ -248,6 +258,16 @@
             {#snippet children()}
               {#if win.id === "scribe"}
                 <RetroScribe onclose={() => windowManager.closeWindow(win.id)} />
+              {:else if win.id === "filemgr"}
+                <RetroFileManager onclose={() => windowManager.closeWindow(win.id)} />
+              {:else if win.id === "tutor"}
+                <RetroTutor onclose={() => windowManager.closeWindow(win.id)} />
+              {:else if win.id === "cards"}
+                <RetroCards onclose={() => windowManager.closeWindow(win.id)} />
+              {:else if win.id === "control"}
+                <RetroControlPanel onclose={() => windowManager.closeWindow(win.id)} />
+              {:else if win.id === "upgrade"}
+                <RetroUpgrade onclose={() => windowManager.closeWindow(win.id)} />
               {:else}
                 <div class="placeholder-content">
                   <p>{win.title}</p>
