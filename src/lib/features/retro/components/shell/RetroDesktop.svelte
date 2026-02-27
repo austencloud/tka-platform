@@ -38,7 +38,10 @@
   import RetroRecycleBin from "./RetroRecycleBin.svelte";
   import RetroBSOD from "../easter-eggs/RetroBSOD.svelte";
   import RetroDefrag from "../easter-eggs/RetroDefrag.svelte";
+  import RetroScreensaver from "../easter-eggs/RetroScreensaver.svelte";
+  import RetroClippy from "../easter-eggs/RetroClippy.svelte";
   import CRTOverlay from "../effects/CRTOverlay.svelte";
+  import RetroMobileWarning from "./RetroMobileWarning.svelte";
 
   /* ------------------------------------------------------------------ */
   /* Props                                                               */
@@ -117,6 +120,89 @@
 
   let windowCounter = $state(0);
   let showBSOD = $state(false);
+  let showScreensaver = $state(false);
+  let showClippy = $state(false);
+  let mobileWarningDismissed = $state(false);
+  let windowWidth = $state(typeof window !== "undefined" ? window.innerWidth : 1024);
+
+  const isMobile = $derived(windowWidth < 768);
+
+  /* ------------------------------------------------------------------ */
+  /* Window resize tracking                                              */
+  /* ------------------------------------------------------------------ */
+
+  $effect(() => {
+    function handleResize() {
+      windowWidth = window.innerWidth;
+    }
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  });
+
+  /* ------------------------------------------------------------------ */
+  /* Idle detection → screensaver (60s inactivity)                       */
+  /* ------------------------------------------------------------------ */
+
+  $effect(() => {
+    if (!desktopState.bootComplete) return;
+
+    const IDLE_TIMEOUT_MS = 60_000;
+    let idleTimer: ReturnType<typeof setTimeout>;
+
+    function resetIdleTimer() {
+      clearTimeout(idleTimer);
+      if (showScreensaver) return; /* don't restart while screensaver is active */
+      idleTimer = setTimeout(() => {
+        showScreensaver = true;
+      }, IDLE_TIMEOUT_MS);
+    }
+
+    resetIdleTimer();
+
+    window.addEventListener("mousemove", resetIdleTimer);
+    window.addEventListener("keydown", resetIdleTimer);
+    window.addEventListener("click", resetIdleTimer);
+
+    return () => {
+      clearTimeout(idleTimer);
+      window.removeEventListener("mousemove", resetIdleTimer);
+      window.removeEventListener("keydown", resetIdleTimer);
+      window.removeEventListener("click", resetIdleTimer);
+    };
+  });
+
+  /* ------------------------------------------------------------------ */
+  /* Random Clippy appearances                                           */
+  /* ------------------------------------------------------------------ */
+
+  function randomBetween(min: number, max: number): number {
+    return min + Math.random() * (max - min);
+  }
+
+  let clippyTimer: ReturnType<typeof setTimeout> | undefined;
+
+  function scheduleClippy(minMs: number, maxMs: number) {
+    clearTimeout(clippyTimer);
+    const delay = randomBetween(minMs, maxMs);
+    clippyTimer = setTimeout(() => {
+      showClippy = true;
+    }, delay);
+  }
+
+  function dismissClippy() {
+    showClippy = false;
+    scheduleClippy(60_000, 180_000);
+  }
+
+  $effect(() => {
+    if (!desktopState.bootComplete) return;
+
+    /* First appearance: 45-120 seconds after boot */
+    scheduleClippy(45_000, 120_000);
+
+    return () => clearTimeout(clippyTimer);
+  });
 
   function openApp(executable: string, title?: string, icon?: string) {
     /* My Computer triggers BSOD easter egg */
@@ -216,6 +302,11 @@
   /* Boot completion is handled by RetroBootSequence via oncomplete */
 </script>
 
+{#if isMobile && !mobileWarningDismissed}
+  <div class="retro-shell">
+    <RetroMobileWarning onproceed={() => (mobileWarningDismissed = true)} />
+  </div>
+{:else}
 <div class="retro-shell">
   {#if desktopState.isBooting}
     <RetroBootSequence oncomplete={() => {
@@ -315,15 +406,26 @@
     <!-- Taskbar -->
     <RetroTaskbar {windowManager} />
 
-    <!-- CRT monitor effect -->
+    <!-- Clippy assistant (z-index 9000) -->
+    {#if showClippy}
+      <RetroClippy ondismiss={() => dismissClippy()} />
+    {/if}
+
+    <!-- Screensaver (z-index 9500, above Clippy) -->
+    {#if showScreensaver}
+      <RetroScreensaver ondismiss={() => (showScreensaver = false)} />
+    {/if}
+
+    <!-- CRT monitor effect (z-index 9999) -->
     <CRTOverlay />
 
-    <!-- BSOD easter egg (above CRT overlay) -->
+    <!-- BSOD easter egg (z-index 10000, above CRT overlay) -->
     {#if showBSOD}
       <RetroBSOD ondismiss={() => (showBSOD = false)} />
     {/if}
   {/if}
 </div>
+{/if}
 
 <style>
   /* ------------------------------------------------------------------ */
