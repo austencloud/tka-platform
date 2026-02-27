@@ -13,7 +13,7 @@
   Domain: Retro Desktop Shell
 -->
 <script lang="ts">
-  import "98.css";
+  import "../../styles/98-scoped.css";
   import "../../styles/retro-tokens.css";
   import "../../styles/retro-overrides.css";
 
