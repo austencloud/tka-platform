@@ -49,7 +49,7 @@ $ARGUMENTS - Command and arguments (see help for full list)
 
 **Step 1: Dispatch department agents in parallel**
 
-Launch 7 Task agents simultaneously using `subagent_type: "general-purpose"` and `model: "haiku"`. Each agent gets this prompt template (fill in the department name and tag):
+Launch 7 Task agents simultaneously using `subagent_type: "general-purpose"` and `model: "sonnet"`. Each agent gets this prompt template (fill in the department name and tag):
 
 ```
 You are the {DEPARTMENT_NAME} department manager for The Kinetic Archive museum project.
