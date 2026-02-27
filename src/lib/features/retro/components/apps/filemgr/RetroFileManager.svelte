@@ -1,0 +1,636 @@
+<!--
+  RetroFileManager — FILEMGR.EXE main component
+
+  Explorer-style file browser for TKA-OS. Left pane shows a directory
+  tree (drives C:\, A:\, D:\). Right pane shows fake .SEQ files in
+  the selected directory, rendered via RetroDataGrid (details view)
+  or RetroListBox (list view).
+
+  Fills its parent container (the RetroWindow body area).
+
+  Domain: Retro File Manager
+-->
+<script lang="ts">
+  import RetroMenuBar from "../../primitives/RetroMenuBar.svelte";
+  import RetroToolbar from "../../primitives/RetroToolbar.svelte";
+  import RetroStatusBar from "../../primitives/RetroStatusBar.svelte";
+  import RetroSplitter from "../../primitives/RetroSplitter.svelte";
+  import RetroTreeView from "../../primitives/RetroTreeView.svelte";
+  import RetroDataGrid from "../../primitives/RetroDataGrid.svelte";
+  import RetroListBox from "../../primitives/RetroListBox.svelte";
+  import type { RetroTreeNode } from "../../../domain/types/retro-types";
+  import { FileNameConverter } from "../../../services/implementations/FileNameConverter";
+
+  /* ------------------------------------------------------------------ */
+  /* Props                                                               */
+  /* ------------------------------------------------------------------ */
+
+  let {
+    onclose,
+  }: {
+    onclose?: () => void;
+  } = $props();
+
+  /* ------------------------------------------------------------------ */
+  /* State                                                               */
+  /* ------------------------------------------------------------------ */
+
+  type ViewMode = "details" | "list";
+
+  let selectedDirId = $state("c-sequences");
+  let viewMode = $state<ViewMode>("details");
+  let selectedFileIndex = $state(-1);
+  let statusText = $state("");
+  let navigationHistory = $state<string[]>(["c-sequences"]);
+  let historyIndex = $state(0);
+
+  const converter = new FileNameConverter();
+
+  /* ------------------------------------------------------------------ */
+  /* Directory tree                                                      */
+  /* ------------------------------------------------------------------ */
+
+  const treeNodes: RetroTreeNode[] = [
+    {
+      id: "c-root",
+      label: "C:\\ [TKA-OS]",
+      icon: "💾",
+      expanded: true,
+      children: [
+        {
+          id: "c-sequences",
+          label: "SEQUENCES",
+          icon: "📁",
+          expanded: true,
+          children: [
+            { id: "c-seq-practice", label: "PRACTICE", icon: "📁" },
+            { id: "c-seq-shared", label: "SHARED", icon: "📁" },
+          ],
+        },
+        {
+          id: "c-library",
+          label: "LIBRARY",
+          icon: "📁",
+          expanded: true,
+          children: [
+            { id: "c-lib-letters", label: "LETTERS", icon: "📁" },
+            { id: "c-lib-combos", label: "COMBOS", icon: "📁" },
+          ],
+        },
+        { id: "c-community", label: "COMMUNITY", icon: "📁" },
+        {
+          id: "c-system",
+          label: "SYSTEM",
+          icon: "📁",
+          children: [
+            { id: "c-sys-config", label: "CONFIG", icon: "📁" },
+            { id: "c-sys-drivers", label: "DRIVERS", icon: "📁" },
+          ],
+        },
+      ],
+    },
+    { id: "a-root", label: "A:\\ [3½ Floppy]", icon: "💾" },
+    { id: "d-root", label: "D:\\ [CD-ROM]", icon: "💿" },
+  ];
+
+  /* ------------------------------------------------------------------ */
+  /* Mock file data per directory                                        */
+  /* ------------------------------------------------------------------ */
+
+  interface MockFile {
+    name: string;
+    size: number;
+    modified: string;
+  }
+
+  function generateMockFiles(dirId: string): MockFile[] {
+    const catalog: Record<string, string[]> = {
+      "c-sequences": [
+        "Fire Flow Basics",
+        "Warm Up Routine",
+        "Staff Fundamentals",
+        "Double Staff Intro",
+        "Contact to Isolation",
+        "Butterfly Combo A",
+        "Weave Transitions",
+        "Crossover Drill",
+        "Plane Alignment",
+        "Turn Sequence Alpha",
+        "Spin Down Cool Off",
+        "Reverse Windmill",
+      ],
+      "c-seq-practice": [
+        "Daily Drill 01",
+        "Daily Drill 02",
+        "Daily Drill 03",
+        "Pro Motion Reps",
+        "Anti Motion Reps",
+        "Dash Reps Easy",
+        "Static Hold Drill",
+        "Orientation Check",
+        "Beta Transitions",
+        "Gamma Angles",
+      ],
+      "c-seq-shared": [
+        "Community Jam Set",
+        "Festival Opener",
+        "Collab with TechnoMonk",
+        "Fire Circle Round",
+        "LED Night Show",
+        "Beginner Workshop",
+        "Flow State Demo",
+        "Partner Sync A",
+        "Group Choreo v2",
+        "Flash Mob Draft",
+        "Campfire Classic",
+      ],
+      "c-library": [
+        "Alphabet Reference",
+        "Type 1 Catalog",
+        "Type 2 Catalog",
+        "Type 3 Catalog",
+        "Bridge Letters",
+        "Sigma Variations",
+        "Alpha Positions",
+        "Beta Positions",
+        "Gamma Positions",
+        "Level 1 Complete",
+        "Level 2 Complete",
+        "Level 3 Complete",
+        "Full Alphabet",
+      ],
+      "c-lib-letters": [
+        "Letter A",
+        "Letter B",
+        "Letter C",
+        "Letter D",
+        "Letter E",
+        "Letter F",
+        "Letter G",
+        "Letter H",
+        "Letter I",
+        "Letter J",
+        "Letter K",
+        "Letter L",
+        "Letter M",
+        "Letter N",
+        "Letter O",
+        "Letter P",
+        "Letter Q",
+      ],
+      "c-lib-combos": [
+        "BOOK",
+        "CAKE",
+        "FLOW",
+        "NOVA",
+        "SPIN",
+        "WAVE",
+        "FIRE",
+        "GLOW",
+        "HALO",
+        "JAZZ",
+        "KITE",
+        "LOOP",
+      ],
+      "c-community": [
+        "FlowFest 95 Finals",
+        "Regional Qualifier",
+        "Online Challenge 4",
+        "Staff Olympics Entry",
+        "Beginner Showcase",
+        "Prop Collective Mix",
+        "Solstice Jam Rec",
+        "Late Night Burner",
+        "Morning Flow Zen",
+        "Full Moon Circle",
+      ],
+      "c-system": [
+        "AUTOEXEC.BAT",
+        "CONFIG.SYS",
+        "HIMEM.SYS",
+        "EMM386.EXE",
+        "COMMAND.COM",
+      ],
+      "c-sys-config": [
+        "SCRIBE.INI",
+        "DISPLAY.CFG",
+        "PALETTE.DAT",
+        "GRID.CFG",
+        "KEYBOARD.MAP",
+        "PRINTER.DRV",
+        "SOUND.CFG",
+        "USER.PRF",
+      ],
+      "c-sys-drivers": [
+        "VGA256.DRV",
+        "MOUSE.DRV",
+        "CDROM.SYS",
+        "SBPRO.DRV",
+        "JOYSTICK.DRV",
+        "MIDI.DRV",
+      ],
+      "a-root": [
+        "BACKUP01",
+        "README",
+        "INSTALL",
+      ],
+      "d-root": [
+        "SETUP",
+        "README",
+        "DEMO",
+        "MANUAL",
+      ],
+    };
+
+    const names = catalog[dirId] ?? [];
+    const siblings: string[] = [];
+
+    return names.map((name, i) => {
+      /* System directory uses original extensions; sequence dirs get .SEQ */
+      const isSystemDir = dirId.startsWith("c-sys") || dirId === "c-system";
+      const hasExtension = /\.\w{3}$/.test(name);
+
+      let filename: string;
+      if (isSystemDir && hasExtension) {
+        filename = name.toUpperCase();
+      } else if (isSystemDir) {
+        filename = converter.convert(name, ".SYS", siblings);
+      } else if (dirId === "a-root") {
+        filename = converter.convert(name, ".BAK", siblings);
+      } else if (dirId === "d-root") {
+        filename = converter.convert(name, ".EXE", siblings);
+      } else {
+        filename = converter.convert(name, ".SEQ", siblings);
+      }
+
+      siblings.push(filename);
+
+      /* Deterministic but varied sizes and dates */
+      const seed = name.length + i * 7;
+      const size = ((seed * 2048) + 1024) % 65536;
+      const month = ((seed % 12) + 1).toString().padStart(2, "0");
+      const day = ((seed % 28) + 1).toString().padStart(2, "0");
+      const year = 1994 + (seed % 3);
+
+      return {
+        name: filename,
+        size,
+        modified: `${month}/${day}/${year}`,
+      };
+    });
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Derived state                                                       */
+  /* ------------------------------------------------------------------ */
+
+  const currentFiles = $derived(generateMockFiles(selectedDirId));
+
+  const currentDirPath = $derived(dirIdToPath(selectedDirId));
+
+  const totalSize = $derived(
+    currentFiles.reduce((sum, f) => sum + f.size, 0),
+  );
+
+  const statusPanels = $derived([
+    {
+      text:
+        selectedFileIndex >= 0
+          ? `1 object(s) — ${currentFiles[selectedFileIndex]?.size.toLocaleString()} bytes`
+          : `${currentFiles.length} object(s) — ${totalSize.toLocaleString()} bytes`,
+      width: "220px",
+    },
+    { text: currentDirPath },
+  ]);
+
+  /* ------------------------------------------------------------------ */
+  /* DataGrid columns for details view                                   */
+  /* ------------------------------------------------------------------ */
+
+  const detailColumns = [
+    { key: "icon", label: "", width: "24px" },
+    { key: "name", label: "Name", width: "140px" },
+    { key: "size", label: "Size", width: "80px" },
+    { key: "modified", label: "Modified", width: "90px" },
+  ];
+
+  const detailRows = $derived(
+    currentFiles.map((f) => ({
+      icon: "📄",
+      name: f.name,
+      size: `${f.size.toLocaleString()} KB`,
+      modified: f.modified,
+    })),
+  );
+
+  const listItems = $derived(currentFiles.map((f) => `📄 ${f.name}`));
+
+  /* ------------------------------------------------------------------ */
+  /* Menu bar                                                            */
+  /* ------------------------------------------------------------------ */
+
+  const menus = $derived([
+    {
+      label: "File",
+      items: [
+        { label: "Exit", action: () => onclose?.() },
+      ],
+    },
+    {
+      label: "View",
+      items: [
+        { label: "Large Icons", disabled: true },
+        { label: "Small Icons", disabled: true },
+        { label: "List", action: () => (viewMode = "list") },
+        { label: "Details", action: () => (viewMode = "details") },
+      ],
+    },
+    {
+      label: "Help",
+      items: [
+        {
+          label: "About FILEMGR.EXE",
+          action: () => {
+            statusText = "FILEMGR.EXE v1.0 — TKA-OS File Manager";
+          },
+        },
+      ],
+    },
+  ]);
+
+  /* ------------------------------------------------------------------ */
+  /* Toolbar                                                             */
+  /* ------------------------------------------------------------------ */
+
+  const canGoBack = $derived(historyIndex > 0);
+  const canGoForward = $derived(historyIndex < navigationHistory.length - 1);
+
+  const toolbarButtons = $derived([
+    {
+      icon: "◀",
+      tooltip: "Back",
+      disabled: !canGoBack,
+      action: () => navigateBack(),
+    },
+    {
+      icon: "▶",
+      tooltip: "Forward",
+      disabled: !canGoForward,
+      action: () => navigateForward(),
+    },
+    {
+      icon: "⬆",
+      tooltip: "Up One Level",
+      action: () => navigateUp(),
+    },
+    { separator: true, icon: "", tooltip: "", action: () => {} },
+    {
+      icon: "📋",
+      tooltip: "Details",
+      action: () => (viewMode = "details"),
+    },
+    {
+      icon: "≡",
+      tooltip: "List",
+      action: () => (viewMode = "list"),
+    },
+  ]);
+
+  /* ------------------------------------------------------------------ */
+  /* Navigation                                                          */
+  /* ------------------------------------------------------------------ */
+
+  function handleTreeSelect(id: string) {
+    selectedDirId = id;
+    selectedFileIndex = -1;
+    statusText = "";
+
+    /* Trim forward history and push */
+    navigationHistory = [...navigationHistory.slice(0, historyIndex + 1), id];
+    historyIndex = navigationHistory.length - 1;
+  }
+
+  function navigateBack() {
+    if (historyIndex > 0) {
+      historyIndex--;
+      selectedDirId = navigationHistory[historyIndex]!;
+      selectedFileIndex = -1;
+    }
+  }
+
+  function navigateForward() {
+    if (historyIndex < navigationHistory.length - 1) {
+      historyIndex++;
+      selectedDirId = navigationHistory[historyIndex]!;
+      selectedFileIndex = -1;
+    }
+  }
+
+  function navigateUp() {
+    const parentMap: Record<string, string> = {
+      "c-sequences": "c-root",
+      "c-seq-practice": "c-sequences",
+      "c-seq-shared": "c-sequences",
+      "c-library": "c-root",
+      "c-lib-letters": "c-library",
+      "c-lib-combos": "c-library",
+      "c-community": "c-root",
+      "c-system": "c-root",
+      "c-sys-config": "c-system",
+      "c-sys-drivers": "c-system",
+    };
+
+    const parentId = parentMap[selectedDirId];
+    if (parentId) {
+      handleTreeSelect(parentId);
+    }
+  }
+
+  function dirIdToPath(id: string): string {
+    const pathMap: Record<string, string> = {
+      "c-root": "C:\\",
+      "c-sequences": "C:\\SEQUENCES",
+      "c-seq-practice": "C:\\SEQUENCES\\PRACTICE",
+      "c-seq-shared": "C:\\SEQUENCES\\SHARED",
+      "c-library": "C:\\LIBRARY",
+      "c-lib-letters": "C:\\LIBRARY\\LETTERS",
+      "c-lib-combos": "C:\\LIBRARY\\COMBOS",
+      "c-community": "C:\\COMMUNITY",
+      "c-system": "C:\\SYSTEM",
+      "c-sys-config": "C:\\SYSTEM\\CONFIG",
+      "c-sys-drivers": "C:\\SYSTEM\\DRIVERS",
+      "a-root": "A:\\",
+      "d-root": "D:\\",
+    };
+    return pathMap[id] ?? "C:\\";
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* File interactions                                                   */
+  /* ------------------------------------------------------------------ */
+
+  function handleFileSelect(index: number) {
+    selectedFileIndex = index;
+    statusText = "";
+  }
+
+  function handleFileDblClick(index: number) {
+    const file = currentFiles[index];
+    if (!file) return;
+    statusText = `Opening ${file.name}... (redirecting to SCRIBE.EXE)`;
+  }
+</script>
+
+<div class="filemgr-shell">
+  <!-- Menu bar -->
+  <div class="filemgr-menubar">
+    <RetroMenuBar {menus} />
+  </div>
+
+  <!-- Toolbar -->
+  <div class="filemgr-toolbar">
+    <RetroToolbar buttons={toolbarButtons} />
+  </div>
+
+  <!-- Address bar -->
+  <div class="filemgr-address">
+    <span class="address-label">Address:</span>
+    <span class="address-path sunken-panel">{currentDirPath}</span>
+  </div>
+
+  <!-- Splitter: tree + file list -->
+  <div class="filemgr-content">
+    <RetroSplitter direction="horizontal" initialSplit={25}>
+      {#snippet left()}
+        <div class="tree-pane">
+          <RetroTreeView
+            nodes={treeNodes}
+            bind:selectedId={selectedDirId}
+            onselect={handleTreeSelect}
+          />
+        </div>
+      {/snippet}
+      {#snippet right()}
+        <div class="files-pane">
+          {#if viewMode === "details"}
+            <RetroDataGrid
+              columns={detailColumns}
+              rows={detailRows}
+              bind:selectedRow={selectedFileIndex}
+              onselect={handleFileSelect}
+              ondblclick={handleFileDblClick}
+            />
+          {:else}
+            <RetroListBox
+              items={listItems}
+              bind:selectedIndex={selectedFileIndex}
+              onselect={handleFileSelect}
+              ondblclick={handleFileDblClick}
+            />
+          {/if}
+        </div>
+      {/snippet}
+    </RetroSplitter>
+  </div>
+
+  <!-- Status bar -->
+  <div class="filemgr-statusbar">
+    <RetroStatusBar panels={statusPanels} />
+  </div>
+</div>
+
+<style>
+  /* ------------------------------------------------------------------ */
+  /* Shell layout — fills parent window body                             */
+  /* ------------------------------------------------------------------ */
+  .filemgr-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--retro-button-face, #c0c0c0);
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Menu bar                                                            */
+  /* ------------------------------------------------------------------ */
+  .filemgr-menubar {
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--retro-button-shadow, #808080);
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Toolbar                                                             */
+  /* ------------------------------------------------------------------ */
+  .filemgr-toolbar {
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--retro-button-shadow, #808080);
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Address bar                                                         */
+  /* ------------------------------------------------------------------ */
+  .filemgr-address {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 4px;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--retro-button-shadow, #808080);
+    background: var(--retro-button-face, #c0c0c0);
+    font-family: var(--retro-font-family, "Microsoft Sans Serif", Arial, sans-serif);
+    font-size: var(--retro-font-size, 11px);
+  }
+
+  .address-label {
+    flex-shrink: 0;
+    color: var(--retro-black, #000);
+  }
+
+  .address-path {
+    flex: 1;
+    padding: 1px 4px;
+    background: var(--retro-field-bg, #fff);
+    color: var(--retro-field-text, #000);
+    font-family: var(--retro-font-family, "Microsoft Sans Serif", Arial, sans-serif);
+    font-size: var(--retro-font-size, 11px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Content: splitter fills remaining space                             */
+  /* ------------------------------------------------------------------ */
+  .filemgr-content {
+    flex: 1;
+    min-height: 0;
+    padding: 4px;
+  }
+
+  .tree-pane {
+    height: 100%;
+  }
+
+  .tree-pane :global(.retro-treeview) {
+    height: 100%;
+  }
+
+  .files-pane {
+    height: 100%;
+  }
+
+  .files-pane :global(.retro-datagrid-wrapper) {
+    height: 100%;
+  }
+
+  .files-pane :global(.retro-listbox) {
+    height: 100% !important;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Status bar                                                          */
+  /* ------------------------------------------------------------------ */
+  .filemgr-statusbar {
+    flex-shrink: 0;
+  }
+</style>
