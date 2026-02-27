@@ -602,7 +602,8 @@
       "WebFetch(domain:baymard.com)",
       "WebFetch(domain:www.nngroup.com)",
       "mcp__claude_ai_Gmail__gmail_search_messages",
-      "Bash(node_modules/.bin/tsc:*)"
+      "Bash(node_modules/.bin/tsc:*)",
+      "Bash(npx svelte-check:*)"
     ]
   },
   "enableAllProjectMcpServers": false,
