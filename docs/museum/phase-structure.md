@@ -92,12 +92,12 @@ Egypt had a complete, elegant system. Rome introduces ambiguity, exceptions, and
   - Elvis (large-scale flow arts performances in video recordings, subsequently erased)
   - Others TBD
 - Vessel figures on platforms: full 3D models in period garb, holding props, possibly performing patterns
-- Order of the Closed Palm actively destroying evidence in every era
+- Order of the Closed Palm actively suppressing, misfiling, and over-classifying evidence in every era
 - Academic citations from fake institutions that contradict each other
 
 ### Tone
 
-Grand, dramatic, escalating conflict. Each era shows knowledge being discovered, spread, and then suppressed. The pattern repeats. The Order can't quite stamp it out. Scribes keep saving fragments.
+Grand, deadpan, escalating absurdism. Each era shows knowledge being discovered, spreading, and then bureaucratically shut down. The pattern repeats. The Order can't quite stamp it out. Scribes keep saving fragments.
 
 ### Historical Eras Within Phase 2
 
@@ -123,7 +123,7 @@ Grand, dramatic, escalating conflict. Each era shows knowledge being discovered,
 
 ### Tone
 
-Mechanical to digital. Gas lamps to CRT glow. Ticking brass to dial-up modems. Increasing urgency as the knowledge gets closer to mass distribution and the Order gets more desperate.
+Mechanical to digital. Gas lamps to CRT glow. Ticking brass to dial-up modems. Increasing urgency as the knowledge gets closer to mass distribution and the Order's processes become visibly unable to keep up.
 
 ### LOOPs
 
@@ -139,7 +139,7 @@ The concept of repeating composite patterns (LOOPs) fits naturally somewhere in 
 - Protocol Lethe: the global memory wipe, spring 1994
 - Order of the Closed Palm named explicitly for the first time
 - Everything erased: software degaussed, BBS threads vanished, users forgot
-- Dramatic, oppressive atmosphere
+- Institutional dread, bureaucratically suffocating atmosphere
 
 **"You've Seen This Before":**
 - Interactive reveal showing where the Closed Palm symbol appeared in all previous phases
@@ -164,7 +164,7 @@ The concept of repeating composite patterns (LOOPs) fits naturally somewhere in 
 
 ### Tone
 
-Dark and oppressive during the suppression. Then triumphant and increasingly ridiculous during the return. The Austen Wing should be so over-the-top that no reasonable person could think he actually takes himself this seriously.
+Institutional and suffocating during the suppression. Then triumphant and increasingly ridiculous during the return. The Austen Wing should be so over-the-top that no reasonable person could think he actually takes himself this seriously.
 
 ---
 
@@ -194,7 +194,7 @@ The visitor consciously chooses to let kinetic notation die. Not forgetting - de
 
 **This is the heaviest option.** Forgetting is passive. Rejection is deliberate. The visitor is making a choice with full knowledge.
 
-**Environment:** TBD - but should reflect the weight of conscious rejection, not just chaos or destruction.
+**Environment:** TBD - but should reflect the weight of conscious rejection. Gray, sterile, bureaucratic finality. Not chaos - just everything being filed away forever.
 
 **Leads to:** Loop back to the three doors. Only Door 1 progresses.
 
@@ -223,5 +223,5 @@ The visitor consciously chooses to let kinetic notation die. Not forgetting - de
 
 ---
 
-*Last updated: 2026-02-22*
+*Last updated: 2026-02-26*
 *Source: Brainstorming session between Austen Cloud and Claude*

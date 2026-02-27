@@ -36,7 +36,7 @@ Temple priests formalize kinetic notation for ceremonial fire rituals honoring R
 - Position nomenclature (alpha, beta, gamma)
 - Motion classifications (pro, anti, static)
 
-The notation is restricted to the priesthood. Unauthorized possession is punishable by death - the first recorded instance of kinetic knowledge being treated as controlled information.
+The notation is restricted to the priesthood. Unauthorized possession is classified as a capital offense under temple law - an administrative decision that, in retrospect, many historians consider disproportionate. This is the first recorded instance of kinetic knowledge being treated as controlled information.
 
 *A symbol resembling a closed hand appears in temple records alongside warnings about unauthorized transmission.*
 
@@ -70,7 +70,7 @@ Leonardo da Vinci discovers Egyptian scrolls during his anatomical studies and b
 
 Da Vinci's codex pages contain extensive notation marginalia, including the first known European attempt at Type 1 Dual-Shift documentation.
 
-After da Vinci's death in 1519, his notebooks are deliberately scattered across multiple collections. Scholars disagree on whether this was accidental or intentional.
+After da Vinci's death in 1519, his notebooks became distributed across multiple collections through a series of administrative decisions that some scholars describe as deliberate.
 
 *The spiral appears in da Vinci's mechanical sketches, integrated into gear mechanisms. Whether he understood its significance is debated.*
 
@@ -86,7 +86,7 @@ After da Vinci's death in 1519, his notebooks are deliberately scattered across 
 
 The Industrial Revolution brings attempts to mechanize kinetic notation. Brass devices are patented for "Systematic Documentation of Rotational Implement Manipulation." The British Empire sees potential military applications in coordinated troop movements.
 
-Key inventors are discredited through scandal. Patents are purchased by anonymous buyers and buried. One prototype survives in a private collection.
+Several key inventors found their professional reputations challenged following anonymous complaints. Patents were acquired by buyers who declined to identify themselves, then filed away. Current whereabouts of the filings: unknown. One prototype survives in a private collection.
 
 *A young clerk at the Patent Office, whose name has been redacted from all surviving records, is believed to be a Vessel. Her fate is unknown.*
 
@@ -123,7 +123,7 @@ One team member releases the software to the public without institutional author
 
 > **NOTE:** This is the first exhibit where the Order of the Closed Palm is explicitly named.
 
-A coordinated global event erases all memory of kinetic notation from human consciousness.
+An event that, in retrospect, appears to have been globally coordinated, erases all memory of kinetic notation from human consciousness.
 
 The Order of the Closed Palm - a custodial organization that has monitored and controlled kinetic knowledge for millennia - initiates **Protocol Lethe**, named for the Greek river of forgetting.
 
@@ -196,7 +196,7 @@ Global adoption achieved. Kinetic notation becomes universal human knowledge. An
 Adoption plateaus. Interest fades. The knowledge persists in small communities but never achieves critical mass. Nothing changes. Nothing ends. Everything continues, gray and quiet.
 
 ### Path of Silence (~2050-2100)
-The Order succeeds. The Vessel is silenced. Protocol Lethe II erases all memory. The notation returns to dormancy. Darkness. Fire. The cycle begins again.
+The Order succeeds. The Vessel is silenced. Protocol Lethe II is authorized. All records are suppressed. The notation returns to dormancy. The file is marked CLOSED.
 
 ---
 
@@ -216,4 +216,4 @@ For citation purposes throughout the museum:
 
 ---
 
-*Last updated: 2026-01-27*
+*Last updated: 2026-02-26*

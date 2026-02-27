@@ -53,9 +53,9 @@ A large display, centered:
 - Feeling: Indifferent, neutral
 
 **NO Door**
-- Visual: Dark red glow, ominous shadows
+- Visual: Gray, institutional, a faint buzzing fluorescent
 - Label: "This isn't for me."
-- Feeling: Foreboding, but respectful (it's a valid choice)
+- Feeling: Clinical, but respectful (it's a valid choice)
 
 ---
 
@@ -102,7 +102,7 @@ After walking through the utopia, the player reaches a final chamber with a plaq
 >
 > Now go. Practice. Teach. Pass it on.
 >
-> The Order watches. The Scribes persist.
+> The Order has filed a complaint. The Scribes persist.
 >
 > The future is in your hands.
 
@@ -184,28 +184,25 @@ They can choose again.
 
 ### Environment
 
-The door opens into darkness. Red light. Fire. Ominous drones.
+The door opens into gray. Flat light. Silence. Distant hold music.
 
-The Order won. The Vessel was silenced. Everything burns.
+The Order won. All records suppressed. Nothing burns. Nothing happens. Everything is filed.
 
 ### Specific Elements
 
 | Element | Description |
 |---------|-------------|
-| Ruined Landscape | Destroyed buildings, smoking rubble |
-| Broken Austen Statue | The heroic statue from Wing 8, toppled and shattered |
-| Fire | Real fire effects, lava pools |
-| Order Symbols | Closed Palm emblems everywhere, triumphant |
-| Screams | Distant, agonized (not graphic - suggestive) |
-| Darkness | The light is dying |
+| Gray Landscape | Everything intact but colorless, stamped CLOSED |
+| Filing Cabinets | Endless rows, all drawers marked CLASSIFIED |
+| Order Symbols | Closed Palm stamps on every surface, clinical |
+| Silence | The only sound is a distant stamp press |
+| Broken Austen Statue | The statue from Wing 8, lying on its side with a DECOMMISSIONED tag |
 
-### The Climax: The Lava Pit
+### The Climax: The Filing Room
 
-The player walks through the hellscape toward a precipice. The path narrows. Below: a lava pit.
+The player walks through the sterile landscape. The corridor narrows into an endless filing room. Rows of cabinets extend in every direction, each drawer stamped CLOSED. There is no end to it.
 
-They reach the edge. There's nowhere else to go.
-
-A final plaque, barely readable in the flickering light:
+A final plaque, mounted on a filing cabinet:
 
 > **The Vessel was silenced.**
 >
@@ -217,11 +214,11 @@ A final plaque, barely readable in the flickering light:
 >
 > Perhaps in another lifetime.
 
-And then the player falls.
+The player walks forward. The filing room goes on forever. The screen fades to gray.
 
 ### Game Over Screen
 
-Classic arcade-style death screen:
+Classic arcade-style screen, institutional tone:
 
 ```
 ╔══════════════════════════════════════╗
@@ -229,9 +226,9 @@ Classic arcade-style death screen:
 ║          GAME OVER                   ║
 ║                                      ║
 ║   The Order of the Closed Palm       ║
-║   has prevailed.                     ║
+║   has completed its process.         ║
 ║                                      ║
-║   The knowledge returns to silence.  ║
+║   All records have been filed.       ║
 ║                                      ║
 ║   ─────────────────────────────      ║
 ║                                      ║
@@ -254,7 +251,7 @@ Both MEH and NO paths return the player to the choice point. The game doesn't pr
 
 This is intentional.
 
-The game is patient. It will wait. It's not forcing the player - they can stay in the gray void or die in lava as many times as they want. But if they want to complete the experience, if they want the certificate, if they want the gift shop, if they want to become a Scribe...
+The game is patient. It will wait. It's not forcing the player - they can stay in the gray void or get filed away as many times as they want. But if they want to complete the experience, if they want the certificate, if they want the gift shop, if they want to become a Scribe...
 
 They know what to do.
 
@@ -285,11 +282,11 @@ Players who experience all three endings (YES, MEH, NO) could unlock a special a
 - Slightly uncomfortable in its emptiness
 
 ### Path of Silence
-- Dark, dramatic, over-the-top
-- Video game death energy
-- Not genuinely traumatic - theatrical
-- The "bad ending" that's kind of fun to experience
+- Gray, sterile, bureaucratically suffocating
+- Institutional dread energy
+- Not genuinely traumatic - Kafkaesque
+- The "bad ending" that's oppressive in its banality
 
 ---
 
-*Last updated: 2026-01-27*
+*Last updated: 2026-02-26*

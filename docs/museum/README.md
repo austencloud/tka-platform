@@ -104,7 +104,7 @@ A Unity-based museum experience presenting the fabricated 40,000-year history of
 - [ ] Futures Chamber with three doors
 - [ ] Path of Joining (Utopia)
 - [ ] Path of Indifference (Gray)
-- [ ] Path of Silence (Darkness)
+- [ ] Path of Silence (Filed Away)
 - [ ] Gift shop with fake economy
 - [ ] Certificate system
 - [ ] TKA Scribe integration (badge, styles)
