@@ -37,6 +37,7 @@
     smokeLevelToPhysics,
     smokeLevelToOpacity,
   } from "$lib/shared/animation-engine/domain/types/FireTypes";
+  import { CHARCOAL_PRESETS } from "$lib/shared/animation-engine/domain/types/CharcoalSparkTypes";
 
   // Auto-chaining
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
@@ -112,6 +113,7 @@
   let colorBlend = $state(persisted.colorBlend ?? 0.5);
   let smokeLevel = $state(persisted.smokeLevel ?? 0.1);
   let useCharcoal = $state(persisted.useCharcoal ?? false);
+  let charcoalPresetId = $state(visibilityManager.getCharcoalPresetId());
   let sourceMode = $state<SourceMode>(persisted.sourceMode ?? "infinite");
 
   function applyPreset(preset: { intensity: number; smokeLevel: number; colorBlend: number }) {
@@ -641,25 +643,42 @@
             </div>
           </div>
 
-          <!-- Intensity slider -->
-          <div class="slider-group">
-            <div class="slider-row">
-              <label for="intensity-slider">Intensity</label>
-              <input
-                id="intensity-slider"
-                type="range"
-                min="0"
-                max="1"
-                step="0.05"
-                bind:value={intensity}
-                aria-label="Fire intensity"
-              />
-              <span class="slider-value">{(intensity * 100).toFixed(0)}%</span>
+          {#if useCharcoal}
+            <!-- Charcoal preset selector -->
+            <div class="charcoal-preset-grid">
+              {#each CHARCOAL_PRESETS as preset}
+                <button
+                  class="charcoal-preset-button"
+                  class:active={charcoalPresetId === preset.id}
+                  onclick={() => {
+                    charcoalPresetId = preset.id;
+                    visibilityManager.setCharcoalPresetId(preset.id);
+                  }}
+                  type="button"
+                >
+                  {preset.label}
+                </button>
+              {/each}
             </div>
-          </div>
+          {:else}
+            <!-- Intensity slider -->
+            <div class="slider-group">
+              <div class="slider-row">
+                <label for="intensity-slider">Intensity</label>
+                <input
+                  id="intensity-slider"
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  bind:value={intensity}
+                  aria-label="Fire intensity"
+                />
+                <span class="slider-value">{(intensity * 100).toFixed(0)}%</span>
+              </div>
+            </div>
 
-          <!-- Smoke slider (fluid fire only) -->
-          {#if !useCharcoal}
+            <!-- Smoke slider -->
             <div class="slider-group">
               <div class="slider-row">
                 <label for="smoke-slider">Smoke</label>
@@ -675,47 +694,47 @@
                 <span class="slider-value">{(smokeLevel * 100).toFixed(0)}%</span>
               </div>
             </div>
+
+            <!-- Color blend slider -->
+            <div class="slider-group">
+              <div class="slider-row">
+                <label for="color-blend-slider">Color</label>
+                <input
+                  id="color-blend-slider"
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  bind:value={colorBlend}
+                  aria-label="Flame color blend: natural to prop-colored"
+                />
+                <span class="slider-value">{colorBlend < 0.1 ? "Natural" : colorBlend > 0.9 ? "Colored" : `${(colorBlend * 100).toFixed(0)}%`}</span>
+              </div>
+            </div>
+
+            <!-- Quick presets -->
+            <div class="presets-section">
+              <span class="section-label">Presets</span>
+              <div class="presets-row">
+                <button
+                  class="preset-btn"
+                  onclick={() => applyPreset({ intensity: 0.8, smokeLevel: 0.05, colorBlend: 0 })}
+                  type="button"
+                  aria-label="Apply clean burn preset"
+                >
+                  Clean Burn
+                </button>
+                <button
+                  class="preset-btn"
+                  onclick={() => applyPreset({ intensity: 0.6, smokeLevel: 0.7, colorBlend: 0 })}
+                  type="button"
+                  aria-label="Apply smoky fire preset"
+                >
+                  Smoky
+                </button>
+              </div>
+            </div>
           {/if}
-
-          <!-- Color blend slider -->
-          <div class="slider-group">
-            <div class="slider-row">
-              <label for="color-blend-slider">Color</label>
-              <input
-                id="color-blend-slider"
-                type="range"
-                min="0"
-                max="1"
-                step="0.05"
-                bind:value={colorBlend}
-                aria-label="Flame color blend: natural to prop-colored"
-              />
-              <span class="slider-value">{colorBlend < 0.1 ? "Natural" : colorBlend > 0.9 ? "Colored" : `${(colorBlend * 100).toFixed(0)}%`}</span>
-            </div>
-          </div>
-
-          <!-- Quick presets -->
-          <div class="presets-section">
-            <span class="section-label">Presets</span>
-            <div class="presets-row">
-              <button
-                class="preset-btn"
-                onclick={() => applyPreset({ intensity: 0.8, smokeLevel: 0.05, colorBlend: 0 })}
-                type="button"
-                aria-label="Apply clean burn preset"
-              >
-                Clean Burn
-              </button>
-              <button
-                class="preset-btn"
-                onclick={() => applyPreset({ intensity: 0.6, smokeLevel: 0.7, colorBlend: 0 })}
-                type="button"
-                aria-label="Apply smoky fire preset"
-              >
-                Smoky
-              </button>
-            </div>
-          </div>
         {/if}
       </div>
 
@@ -1156,6 +1175,38 @@
     outline-offset: 2px;
   }
 
+  .charcoal-preset-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 8px 0;
+  }
+
+  .charcoal-preset-button {
+    padding: 10px 12px;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--settings-radius-md, 8px);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-min, 14px);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .charcoal-preset-button:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+  }
+
+  .charcoal-preset-button.active {
+    border-color: var(--theme-accent, #f59e0b);
+    background: rgba(245, 158, 11, 0.1);
+  }
+
+  .charcoal-preset-button:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
+  }
+
   .slider-group {
     display: flex;
     flex-direction: column;
@@ -1308,7 +1359,8 @@
     .confirm-btn,
     .cancel-btn,
     .renderer-btn,
-    .preset-btn {
+    .preset-btn,
+    .charcoal-preset-button {
       transition: none;
     }
   }
