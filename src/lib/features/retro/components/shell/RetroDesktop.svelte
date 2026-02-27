@@ -33,6 +33,11 @@
   import RetroCards from "../apps/cards/RetroCards.svelte";
   import RetroControlPanel from "../apps/control/RetroControlPanel.svelte";
   import RetroUpgrade from "../apps/upgrade/RetroUpgrade.svelte";
+  import RetroReadme from "./RetroReadme.svelte";
+  import RetroHelp from "./RetroHelp.svelte";
+  import RetroRecycleBin from "./RetroRecycleBin.svelte";
+  import RetroBSOD from "../easter-eggs/RetroBSOD.svelte";
+  import RetroDefrag from "../easter-eggs/RetroDefrag.svelte";
   import CRTOverlay from "../effects/CRTOverlay.svelte";
 
   /* ------------------------------------------------------------------ */
@@ -111,8 +116,15 @@
   /* ------------------------------------------------------------------ */
 
   let windowCounter = $state(0);
+  let showBSOD = $state(false);
 
   function openApp(executable: string, title?: string, icon?: string) {
+    /* My Computer triggers BSOD easter egg */
+    if (executable === "mycomputer") {
+      showBSOD = true;
+      return;
+    }
+
     const windowTitle = title ?? executable.toUpperCase();
 
     /* Cascade offset so multiple windows don't stack exactly */
@@ -127,6 +139,10 @@
       cards: { width: 520, height: 460 },
       control: { width: 480, height: 400 },
       upgrade: { width: 440, height: 380 },
+      defrag: { width: 520, height: 400 },
+      readme: { width: 480, height: 420 },
+      help: { width: 560, height: 400 },
+      recyclebin: { width: 520, height: 380 },
     };
     const size = sizes[executable] ?? { width: 480, height: 360 };
 
@@ -268,6 +284,14 @@
                 <RetroControlPanel onclose={() => windowManager.closeWindow(win.id)} />
               {:else if win.id === "upgrade"}
                 <RetroUpgrade onclose={() => windowManager.closeWindow(win.id)} />
+              {:else if win.id === "readme"}
+                <RetroReadme onclose={() => windowManager.closeWindow(win.id)} />
+              {:else if win.id === "help"}
+                <RetroHelp onclose={() => windowManager.closeWindow(win.id)} />
+              {:else if win.id === "defrag"}
+                <RetroDefrag onclose={() => windowManager.closeWindow(win.id)} />
+              {:else if win.id === "recyclebin"}
+                <RetroRecycleBin onclose={() => windowManager.closeWindow(win.id)} />
               {:else}
                 <div class="placeholder-content">
                   <p>{win.title}</p>
@@ -293,6 +317,11 @@
 
     <!-- CRT monitor effect -->
     <CRTOverlay />
+
+    <!-- BSOD easter egg (above CRT overlay) -->
+    {#if showBSOD}
+      <RetroBSOD ondismiss={() => (showBSOD = false)} />
+    {/if}
   {/if}
 </div>
 
