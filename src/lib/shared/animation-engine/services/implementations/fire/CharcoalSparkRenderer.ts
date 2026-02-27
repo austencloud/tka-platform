@@ -1,0 +1,924 @@
+/**
+ * CharcoalSparkRenderer - WebGL2 Point-Sprite Particle System
+ *
+ * Discrete spark particles that burst on direction changes and fall
+ * under gravity, producing steel-wool / charcoal ember aesthetics.
+ *
+ * Architecture:
+ *   - Pre-allocated particle pool (zero allocation in the hot path)
+ *   - Two shader programs: spark point sprites + ember glow halos
+ *   - Additive blending (SRC_ALPHA, ONE) for bright-on-dark compositing
+ *   - Burst emission on high jerk (direction reversals)
+ *   - Ambient emission during sustained movement
+ *   - Gravity + drag physics per particle
+ *   - Temperature-based color (core -> mid -> cool over lifetime)
+ *
+ * Implements IFireOverlayRenderer so it drops into the existing
+ * render pipeline as a swap for WebGLFireRenderer.
+ */
+
+import type { IFireOverlayRenderer } from "../../contracts/IFireOverlayRenderer";
+import type {
+	FireFrameInput,
+	FireOverlayConfig,
+	PropTipData,
+} from "../../../domain/types/FireTypes";
+import type {
+	CharcoalSpark,
+	CharcoalSparkParams,
+} from "../../../domain/types/CharcoalSparkTypes";
+import {
+	DEFAULT_CHARCOAL_PRESET,
+	CHARCOAL_PRESETS,
+} from "../../../domain/types/CharcoalSparkTypes";
+
+// ============================================================================
+// Constants
+// ============================================================================
+
+const MAX_DPR = 2;
+
+/** Viewbox coordinate space (matches the Canvas2D animation viewbox) */
+const VIEWBOX_SIZE = 950;
+
+// ============================================================================
+// Shader Sources (GLSL 300 ES)
+// ============================================================================
+
+const SPARK_VERTEX = /* glsl */ `#version 300 es
+precision highp float;
+
+in vec2 a_position;
+in float a_size;
+in vec4 a_color;
+
+uniform vec2 u_resolution;
+uniform vec2 u_viewbox;
+
+out vec4 v_color;
+
+void main() {
+  // Map viewbox coordinates to NDC [-1, 1]
+  vec2 ndc = (a_position / u_viewbox) * 2.0 - 1.0;
+  ndc.y = -ndc.y; // Flip Y: viewbox Y-down -> GL Y-up
+
+  gl_Position = vec4(ndc, 0.0, 1.0);
+
+  // Scale point size from viewbox units to device pixels
+  float pixelsPerUnit = u_resolution.x / u_viewbox.x;
+  gl_PointSize = a_size * pixelsPerUnit;
+
+  v_color = a_color;
+}
+`;
+
+const SPARK_FRAGMENT = /* glsl */ `#version 300 es
+precision highp float;
+
+in vec4 v_color;
+out vec4 fragColor;
+
+void main() {
+  // Distance from point center (gl_PointCoord is [0,1] within the point sprite)
+  vec2 coord = gl_PointCoord - 0.5;
+  float dist = length(coord) * 2.0; // Normalize to [0, 1] at edge
+
+  // Soft circular falloff: bright core, soft edges
+  float alpha = pow(1.0 - smoothstep(0.0, 1.0, dist), 1.8);
+
+  // v_color is already premultiplied; scale by the radial falloff
+  fragColor = v_color * alpha;
+}
+`;
+
+const EMBER_VERTEX = /* glsl */ `#version 300 es
+precision highp float;
+
+in vec2 a_position;
+
+uniform vec2 u_resolution;
+uniform vec2 u_viewbox;
+uniform float u_radius;
+
+void main() {
+  vec2 ndc = (a_position / u_viewbox) * 2.0 - 1.0;
+  ndc.y = -ndc.y;
+
+  gl_Position = vec4(ndc, 0.0, 1.0);
+
+  float pixelsPerUnit = u_resolution.x / u_viewbox.x;
+  gl_PointSize = u_radius * 2.0 * pixelsPerUnit;
+}
+`;
+
+const EMBER_FRAGMENT = /* glsl */ `#version 300 es
+precision highp float;
+
+uniform vec4 u_color;
+uniform float u_intensity;
+
+out vec4 fragColor;
+
+void main() {
+  vec2 coord = gl_PointCoord - 0.5;
+  float dist = length(coord) * 2.0;
+
+  // Very soft exponential glow
+  float glow = exp(-dist * dist * 3.0) * u_intensity;
+
+  // Premultiplied output
+  fragColor = vec4(u_color.rgb * glow, glow);
+}
+`;
+
+// ============================================================================
+// Shader program helper
+// ============================================================================
+
+interface ShaderProgram {
+	program: WebGLProgram;
+	uniforms: Map<string, WebGLUniformLocation>;
+	attributes: Map<string, number>;
+}
+
+// ============================================================================
+// CharcoalSparkRenderer
+// ============================================================================
+
+export class CharcoalSparkRenderer implements IFireOverlayRenderer {
+	private canvas: HTMLCanvasElement | null = null;
+	private gl: WebGL2RenderingContext | null = null;
+	private initialized = false;
+	private dpr = 1;
+
+	// Shader programs
+	private sparkProgram: ShaderProgram | null = null;
+	private emberProgram: ShaderProgram | null = null;
+
+	// Particle pool
+	private particles: CharcoalSpark[] = [];
+	private maxParticles = 0;
+
+	// GPU buffers for spark rendering
+	private sparkVAO: WebGLVertexArrayObject | null = null;
+	private positionBuffer: WebGLBuffer | null = null;
+	private sizeBuffer: WebGLBuffer | null = null;
+	private colorBuffer: WebGLBuffer | null = null;
+
+	// GPU buffers for ember glow rendering
+	private emberVAO: WebGLVertexArrayObject | null = null;
+	private emberPositionBuffer: WebGLBuffer | null = null;
+
+	// CPU-side typed arrays (reused each frame, no allocation)
+	private positionData: Float32Array = new Float32Array(0);
+	private sizeData: Float32Array = new Float32Array(0);
+	private colorData: Float32Array = new Float32Array(0);
+	private emberPositionData: Float32Array = new Float32Array(0);
+
+	// Timing
+	private lastTime = 0;
+	private reducedMotion = false;
+
+	// Ambient emission accumulator per tip (fractional spark carry)
+	private ambientAccumulators: Map<string, number> = new Map();
+
+	// Current params (resolved from preset each frame)
+	private currentParams: CharcoalSparkParams = DEFAULT_CHARCOAL_PRESET.params;
+
+	// ======================================================================
+	// IFireOverlayRenderer implementation
+	// ======================================================================
+
+	initialize(container: HTMLElement, width: number, height: number): boolean {
+		this.canvas = document.createElement("canvas");
+		this.canvas.style.position = "absolute";
+		this.canvas.style.top = "0";
+		this.canvas.style.left = "0";
+		this.canvas.style.width = "100%";
+		this.canvas.style.height = "100%";
+		this.canvas.style.pointerEvents = "none";
+		this.canvas.style.zIndex = "2";
+		this.canvas.style.background = "transparent";
+		this.canvas.setAttribute("aria-hidden", "true");
+
+		this.dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+		this.canvas.width = Math.round(width * this.dpr);
+		this.canvas.height = Math.round(height * this.dpr);
+
+		container.appendChild(this.canvas);
+
+		this.gl = this.canvas.getContext("webgl2", {
+			alpha: true,
+			premultipliedAlpha: true,
+			antialias: false,
+			depth: false,
+			stencil: false,
+			preserveDrawingBuffer: false,
+		});
+
+		if (!this.gl) {
+			console.warn("WebGL2 not available for charcoal spark overlay");
+			this.cleanup();
+			return false;
+		}
+
+		if (!this.compilePrograms()) {
+			this.cleanup();
+			return false;
+		}
+
+		this.allocateParticlePool(this.currentParams.maxParticles);
+		this.createGPUBuffers();
+
+		// Additive blending: sparks add light on top of the scene
+		const gl = this.gl;
+		gl.enable(gl.BLEND);
+		gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+		gl.disable(gl.DEPTH_TEST);
+
+		if (typeof window !== "undefined" && window.matchMedia) {
+			this.reducedMotion = window.matchMedia(
+				"(prefers-reduced-motion: reduce)"
+			).matches;
+		}
+
+		this.lastTime = performance.now();
+		this.initialized = true;
+		return true;
+	}
+
+	resize(width: number, height: number): void {
+		if (!this.canvas) return;
+		this.dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+		this.canvas.width = Math.round(width * this.dpr);
+		this.canvas.height = Math.round(height * this.dpr);
+	}
+
+	renderFire(input: FireFrameInput, config: FireOverlayConfig): void {
+		if (!this.initialized || !this.gl || !this.canvas) return;
+
+		// Resolve preset from config
+		const presetId = (config as unknown as Record<string, unknown>)
+			.charcoalPresetId as string | undefined;
+		this.resolvePreset(presetId);
+
+		// Compute delta time
+		const now = input.currentTime;
+		let dt = Math.min((now - this.lastTime) / 1000, 0.033);
+		if (this.reducedMotion) dt *= 0.2;
+		this.lastTime = now;
+
+		if (dt <= 0) return;
+
+		// Clear on loop boundaries
+		if (input.loopDetected) {
+			this.clearSimulation();
+		}
+
+		const params = this.currentParams;
+
+		// Emission
+		for (const tip of input.tips) {
+			this.emitFromTip(tip, params, dt);
+		}
+
+		// Physics update
+		this.updateParticles(params, dt);
+
+		// Render
+		this.draw(input, params);
+	}
+
+	setQuality(_octaves: number): void {
+		// No-op: point sprites are already cheap. No quality knob needed.
+	}
+
+	clearSimulation(): void {
+		for (const p of this.particles) {
+			p.active = false;
+		}
+		this.ambientAccumulators.clear();
+	}
+
+	dispose(): void {
+		this.cleanup();
+	}
+
+	isInitialized(): boolean {
+		return this.initialized;
+	}
+
+	getCanvas(): HTMLCanvasElement | null {
+		return this.canvas;
+	}
+
+	getGl(): WebGL2RenderingContext | null {
+		return this.gl;
+	}
+
+	// ======================================================================
+	// Preset resolution
+	// ======================================================================
+
+	private resolvePreset(presetId: string | undefined): void {
+		if (!presetId) {
+			this.currentParams = DEFAULT_CHARCOAL_PRESET.params;
+			return;
+		}
+
+		const found = CHARCOAL_PRESETS.find((p) => p.id === presetId);
+		this.currentParams = found ? found.params : DEFAULT_CHARCOAL_PRESET.params;
+
+		// Resize pool if preset demands different max
+		if (this.currentParams.maxParticles !== this.maxParticles) {
+			this.allocateParticlePool(this.currentParams.maxParticles);
+			this.resizeGPUBuffers();
+		}
+	}
+
+	// ======================================================================
+	// Particle pool
+	// ======================================================================
+
+	private allocateParticlePool(count: number): void {
+		this.maxParticles = count;
+		this.particles = [];
+		for (let i = 0; i < count; i++) {
+			this.particles.push({
+				x: 0,
+				y: 0,
+				vx: 0,
+				vy: 0,
+				life: 0,
+				maxLife: 0,
+				size: 0,
+				temperature: 0,
+				active: false,
+			});
+		}
+
+		// CPU-side typed arrays
+		this.positionData = new Float32Array(count * 2);
+		this.sizeData = new Float32Array(count);
+		this.colorData = new Float32Array(count * 4);
+	}
+
+	// ======================================================================
+	// Emission
+	// ======================================================================
+
+	private emitFromTip(
+		tip: PropTipData,
+		params: CharcoalSparkParams,
+		dt: number
+	): void {
+		// Burst emission on high jerk (direction reversals)
+		if (tip.jerk > params.burstThreshold) {
+			const excess = tip.jerk - params.burstThreshold;
+			const count = Math.min(
+				Math.floor(excess * params.burstMultiplier),
+				params.burstMax
+			);
+			for (let i = 0; i < count; i++) {
+				this.spawnParticle(tip, params);
+			}
+		}
+
+		// Ambient emission during sustained movement
+		if (tip.speed > params.ambientSpeedThreshold) {
+			const tipKey = `${tip.propIndex}_${tip.tipIndex}`;
+			const accumulated =
+				(this.ambientAccumulators.get(tipKey) ?? 0) +
+				params.ambientRate * dt;
+			const toEmit = Math.floor(accumulated);
+
+			this.ambientAccumulators.set(tipKey, accumulated - toEmit);
+
+			for (let i = 0; i < toEmit; i++) {
+				this.spawnParticle(tip, params);
+			}
+		}
+	}
+
+	private spawnParticle(tip: PropTipData, params: CharcoalSparkParams): void {
+		// Find an inactive slot (oldest first)
+		const slot = this.findInactiveSlot();
+		if (!slot) return;
+
+		// Compute initial velocity direction
+		// Blend between tangential (prop motion direction) and random
+		const tipAngle = Math.atan2(tip.velocityY, tip.velocityX);
+		const randomAngle = Math.random() * Math.PI * 2;
+
+		const blendedAngle =
+			tipAngle * params.tangentialBias +
+			randomAngle * (1.0 - params.tangentialBias);
+
+		// Apply spread as random rotation around the blended direction
+		const spread = (Math.random() - 0.5) * 2.0 * params.spreadAngle;
+		const finalAngle = blendedAngle + spread;
+
+		const speed =
+			params.initialSpeedMin +
+			Math.random() * (params.initialSpeedMax - params.initialSpeedMin);
+
+		slot.x = tip.x;
+		slot.y = tip.y;
+		slot.vx = Math.cos(finalAngle) * speed;
+		slot.vy = Math.sin(finalAngle) * speed;
+		slot.maxLife =
+			params.lifetimeMin +
+			Math.random() * (params.lifetimeMax - params.lifetimeMin);
+		slot.life = slot.maxLife;
+		slot.size =
+			params.sizeMin + Math.random() * (params.sizeMax - params.sizeMin);
+		slot.temperature = 1.0;
+		slot.active = true;
+	}
+
+	private findInactiveSlot(): CharcoalSpark | null {
+		// First pass: find any inactive slot
+		for (const p of this.particles) {
+			if (!p.active) return p;
+		}
+
+		// Pool full: recycle the oldest particle (lowest remaining life)
+		let oldest: CharcoalSpark | null = null;
+		let lowestLife = Infinity;
+		for (const p of this.particles) {
+			if (p.life < lowestLife) {
+				lowestLife = p.life;
+				oldest = p;
+			}
+		}
+		return oldest;
+	}
+
+	// ======================================================================
+	// Physics
+	// ======================================================================
+
+	private updateParticles(params: CharcoalSparkParams, dt: number): void {
+		const dragPerFrame = Math.pow(params.drag, dt);
+
+		for (const p of this.particles) {
+			if (!p.active) continue;
+
+			// Apply gravity (positive = downward in viewbox Y-down space)
+			p.vy += params.gravity * dt;
+
+			// Apply drag
+			p.vx *= dragPerFrame;
+			p.vy *= dragPerFrame;
+
+			// Integrate position
+			p.x += p.vx * dt;
+			p.y += p.vy * dt;
+
+			// Decay lifetime and temperature
+			p.life -= dt;
+			p.temperature = Math.max(0, p.life / p.maxLife);
+
+			// Shrink over life
+			if (params.shrinkOverLife) {
+				// Keep original spawn size encoded in maxLife ratio
+				// size stays constant first 50%, then shrinks
+				const lifeRatio = p.life / p.maxLife;
+				if (lifeRatio < 0.5) {
+					// sizeMin is the floor; original size is in p.size
+					// We don't want to keep overwriting, so just scale
+					// Actually we need original size. Use temperature as proxy:
+					// at t=0.5, size = full. at t=0, size = sizeMin
+					// Avoid storing extra data by using a smooth ramp
+				}
+			}
+
+			// Deactivate dead particles
+			if (p.life <= 0) {
+				p.active = false;
+			}
+		}
+	}
+
+	// ======================================================================
+	// Rendering
+	// ======================================================================
+
+	private draw(input: FireFrameInput, params: CharcoalSparkParams): void {
+		const gl = this.gl!;
+		const canvas = this.canvas!;
+
+		gl.viewport(0, 0, canvas.width, canvas.height);
+		gl.clear(gl.COLOR_BUFFER_BIT);
+
+		const resolution: [number, number] = [canvas.width, canvas.height];
+		const viewbox: [number, number] = [VIEWBOX_SIZE, VIEWBOX_SIZE];
+
+		this.drawSparks(gl, params, resolution, viewbox);
+		this.drawEmberGlows(gl, params, input.tips, resolution, viewbox);
+	}
+
+	private drawSparks(
+		gl: WebGL2RenderingContext,
+		params: CharcoalSparkParams,
+		resolution: [number, number],
+		viewbox: [number, number]
+	): void {
+		if (!this.sparkProgram || !this.sparkVAO) return;
+
+		// Build CPU arrays from active particles
+		let activeCount = 0;
+		for (const p of this.particles) {
+			if (!p.active) continue;
+			const i = activeCount;
+
+			// Position
+			this.positionData[i * 2] = p.x;
+			this.positionData[i * 2 + 1] = p.y;
+
+			// Size (shrink in last half of life if enabled)
+			let size = p.size;
+			if (params.shrinkOverLife) {
+				const lifeRatio = p.life / p.maxLife;
+				if (lifeRatio < 0.5) {
+					size *= lifeRatio * 2.0; // linear ramp from full to 0
+				}
+			}
+			this.sizeData[i] = size;
+
+			// Color from temperature
+			const t = p.temperature;
+			const [r, g, b] = this.temperatureToColor(t, params);
+
+			// Opacity: fade in first 5%, full until 70%, fade out last 30%
+			const lifeRatio = p.life / p.maxLife;
+			let opacity: number;
+			if (lifeRatio > 0.95) {
+				// Fade in: first 5% of life
+				opacity = (1.0 - lifeRatio) / 0.05;
+			} else if (lifeRatio > 0.3) {
+				// Full opacity
+				opacity = 1.0;
+			} else {
+				// Fade out: last 30%
+				opacity = lifeRatio / 0.3;
+			}
+
+			// Premultiply alpha for additive blending
+			const a = opacity;
+			this.colorData[i * 4] = r * a;
+			this.colorData[i * 4 + 1] = g * a;
+			this.colorData[i * 4 + 2] = b * a;
+			this.colorData[i * 4 + 3] = a;
+
+			activeCount++;
+		}
+
+		if (activeCount === 0) return;
+
+		// Upload to GPU
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+		gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.positionData, 0, activeCount * 2);
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.sizeBuffer);
+		gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.sizeData, 0, activeCount);
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
+		gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.colorData, 0, activeCount * 4);
+
+		// Draw
+		const prog = this.sparkProgram;
+		gl.useProgram(prog.program);
+		gl.uniform2f(prog.uniforms.get("u_resolution")!, resolution[0], resolution[1]);
+		gl.uniform2f(prog.uniforms.get("u_viewbox")!, viewbox[0], viewbox[1]);
+
+		gl.bindVertexArray(this.sparkVAO);
+		gl.drawArrays(gl.POINTS, 0, activeCount);
+		gl.bindVertexArray(null);
+	}
+
+	private drawEmberGlows(
+		gl: WebGL2RenderingContext,
+		params: CharcoalSparkParams,
+		tips: PropTipData[],
+		resolution: [number, number],
+		viewbox: [number, number]
+	): void {
+		if (!this.emberProgram || !this.emberVAO || tips.length === 0) return;
+
+		// Resize ember position data if needed
+		if (this.emberPositionData.length < tips.length * 2) {
+			this.emberPositionData = new Float32Array(tips.length * 2);
+		}
+
+		for (let i = 0; i < tips.length; i++) {
+			this.emberPositionData[i * 2] = tips[i]!.x;
+			this.emberPositionData[i * 2 + 1] = tips[i]!.y;
+		}
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.emberPositionBuffer);
+		gl.bufferSubData(
+			gl.ARRAY_BUFFER,
+			0,
+			this.emberPositionData,
+			0,
+			tips.length * 2
+		);
+
+		const prog = this.emberProgram;
+		gl.useProgram(prog.program);
+		gl.uniform2f(prog.uniforms.get("u_resolution")!, resolution[0], resolution[1]);
+		gl.uniform2f(prog.uniforms.get("u_viewbox")!, viewbox[0], viewbox[1]);
+		gl.uniform1f(prog.uniforms.get("u_radius")!, params.emberGlowRadius);
+		gl.uniform1f(prog.uniforms.get("u_intensity")!, params.emberGlowIntensity);
+
+		// Ember glow color: use the mid color (warm orange) normalized to 0-1
+		const [mr, mg, mb] = params.midColor;
+		gl.uniform4f(
+			prog.uniforms.get("u_color")!,
+			mr / 255,
+			mg / 255,
+			mb / 255,
+			1.0
+		);
+
+		gl.bindVertexArray(this.emberVAO);
+		gl.drawArrays(gl.POINTS, 0, tips.length);
+		gl.bindVertexArray(null);
+	}
+
+	// ======================================================================
+	// Color mapping
+	// ======================================================================
+
+	/**
+	 * Map temperature [0, 1] through a 3-stop color ramp.
+	 * Returns normalized [0, 1] RGB.
+	 */
+	private temperatureToColor(
+		t: number,
+		params: CharcoalSparkParams
+	): [number, number, number] {
+		let r: number, g: number, b: number;
+
+		if (t > 0.5) {
+			// Hot half: core -> mid
+			const blend = (t - 0.5) * 2.0; // 0 at mid, 1 at core
+			r = this.lerpChannel(params.midColor[0], params.coreColor[0], blend);
+			g = this.lerpChannel(params.midColor[1], params.coreColor[1], blend);
+			b = this.lerpChannel(params.midColor[2], params.coreColor[2], blend);
+		} else {
+			// Cool half: cool -> mid
+			const blend = t * 2.0; // 0 at cool, 1 at mid
+			r = this.lerpChannel(params.coolColor[0], params.midColor[0], blend);
+			g = this.lerpChannel(params.coolColor[1], params.midColor[1], blend);
+			b = this.lerpChannel(params.coolColor[2], params.midColor[2], blend);
+		}
+
+		// Normalize from 0-255 to 0-1
+		return [r / 255, g / 255, b / 255];
+	}
+
+	private lerpChannel(a: number, b: number, t: number): number {
+		return a + (b - a) * t;
+	}
+
+	// ======================================================================
+	// Shader compilation
+	// ======================================================================
+
+	private compilePrograms(): boolean {
+		const gl = this.gl!;
+
+		this.sparkProgram = this.createShaderProgram(
+			gl,
+			SPARK_VERTEX,
+			SPARK_FRAGMENT,
+			["u_resolution", "u_viewbox"],
+			["a_position", "a_size", "a_color"]
+		);
+		if (!this.sparkProgram) return false;
+
+		this.emberProgram = this.createShaderProgram(
+			gl,
+			EMBER_VERTEX,
+			EMBER_FRAGMENT,
+			["u_resolution", "u_viewbox", "u_radius", "u_intensity", "u_color"],
+			["a_position"]
+		);
+		if (!this.emberProgram) return false;
+
+		return true;
+	}
+
+	private createShaderProgram(
+		gl: WebGL2RenderingContext,
+		vertSrc: string,
+		fragSrc: string,
+		uniformNames: string[],
+		attributeNames: string[]
+	): ShaderProgram | null {
+		const vert = this.compileShader(gl, gl.VERTEX_SHADER, vertSrc);
+		if (!vert) return null;
+
+		const frag = this.compileShader(gl, gl.FRAGMENT_SHADER, fragSrc);
+		if (!frag) {
+			gl.deleteShader(vert);
+			return null;
+		}
+
+		const program = gl.createProgram()!;
+		gl.attachShader(program, vert);
+		gl.attachShader(program, frag);
+		gl.linkProgram(program);
+
+		// Shaders can be detached after linking
+		gl.deleteShader(vert);
+		gl.deleteShader(frag);
+
+		if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+			console.warn(
+				"CharcoalSparkRenderer: program link failed:",
+				gl.getProgramInfoLog(program)
+			);
+			gl.deleteProgram(program);
+			return null;
+		}
+
+		const uniforms = new Map<string, WebGLUniformLocation>();
+		for (const name of uniformNames) {
+			const loc = gl.getUniformLocation(program, name);
+			if (loc !== null) {
+				uniforms.set(name, loc);
+			}
+		}
+
+		const attributes = new Map<string, number>();
+		for (const name of attributeNames) {
+			const loc = gl.getAttribLocation(program, name);
+			if (loc >= 0) {
+				attributes.set(name, loc);
+			}
+		}
+
+		return { program, uniforms, attributes };
+	}
+
+	private compileShader(
+		gl: WebGL2RenderingContext,
+		type: number,
+		source: string
+	): WebGLShader | null {
+		const shader = gl.createShader(type)!;
+		gl.shaderSource(shader, source);
+		gl.compileShader(shader);
+
+		if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+			const typeLabel = type === gl.VERTEX_SHADER ? "vertex" : "fragment";
+			console.warn(
+				`CharcoalSparkRenderer: ${typeLabel} shader compile failed:`,
+				gl.getShaderInfoLog(shader)
+			);
+			gl.deleteShader(shader);
+			return null;
+		}
+
+		return shader;
+	}
+
+	// ======================================================================
+	// GPU buffer management
+	// ======================================================================
+
+	private createGPUBuffers(): void {
+		const gl = this.gl!;
+
+		// === Spark VAO ===
+		this.sparkVAO = gl.createVertexArray();
+		gl.bindVertexArray(this.sparkVAO);
+
+		const sparkProg = this.sparkProgram!;
+
+		// Position buffer (vec2)
+		this.positionBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+		gl.bufferData(
+			gl.ARRAY_BUFFER,
+			this.positionData.byteLength,
+			gl.DYNAMIC_DRAW
+		);
+		const posLoc = sparkProg.attributes.get("a_position")!;
+		gl.enableVertexAttribArray(posLoc);
+		gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+
+		// Size buffer (float)
+		this.sizeBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.sizeBuffer);
+		gl.bufferData(gl.ARRAY_BUFFER, this.sizeData.byteLength, gl.DYNAMIC_DRAW);
+		const sizeLoc = sparkProg.attributes.get("a_size")!;
+		gl.enableVertexAttribArray(sizeLoc);
+		gl.vertexAttribPointer(sizeLoc, 1, gl.FLOAT, false, 0, 0);
+
+		// Color buffer (vec4)
+		this.colorBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
+		gl.bufferData(
+			gl.ARRAY_BUFFER,
+			this.colorData.byteLength,
+			gl.DYNAMIC_DRAW
+		);
+		const colorLoc = sparkProg.attributes.get("a_color")!;
+		gl.enableVertexAttribArray(colorLoc);
+		gl.vertexAttribPointer(colorLoc, 4, gl.FLOAT, false, 0, 0);
+
+		gl.bindVertexArray(null);
+
+		// === Ember VAO ===
+		this.emberVAO = gl.createVertexArray();
+		gl.bindVertexArray(this.emberVAO);
+
+		const emberProg = this.emberProgram!;
+
+		// Ember position buffer (vec2) — up to 16 tips max
+		this.emberPositionData = new Float32Array(32);
+		this.emberPositionBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.emberPositionBuffer);
+		gl.bufferData(
+			gl.ARRAY_BUFFER,
+			this.emberPositionData.byteLength,
+			gl.DYNAMIC_DRAW
+		);
+		const emberPosLoc = emberProg.attributes.get("a_position")!;
+		gl.enableVertexAttribArray(emberPosLoc);
+		gl.vertexAttribPointer(emberPosLoc, 2, gl.FLOAT, false, 0, 0);
+
+		gl.bindVertexArray(null);
+	}
+
+	/** Resize GPU buffers when particle pool size changes. */
+	private resizeGPUBuffers(): void {
+		const gl = this.gl;
+		if (!gl) return;
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+		gl.bufferData(
+			gl.ARRAY_BUFFER,
+			this.positionData.byteLength,
+			gl.DYNAMIC_DRAW
+		);
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.sizeBuffer);
+		gl.bufferData(gl.ARRAY_BUFFER, this.sizeData.byteLength, gl.DYNAMIC_DRAW);
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
+		gl.bufferData(
+			gl.ARRAY_BUFFER,
+			this.colorData.byteLength,
+			gl.DYNAMIC_DRAW
+		);
+	}
+
+	// ======================================================================
+	// Cleanup
+	// ======================================================================
+
+	private cleanup(): void {
+		const gl = this.gl;
+
+		if (gl) {
+			// Delete VAOs
+			if (this.sparkVAO) gl.deleteVertexArray(this.sparkVAO);
+			if (this.emberVAO) gl.deleteVertexArray(this.emberVAO);
+
+			// Delete buffers
+			if (this.positionBuffer) gl.deleteBuffer(this.positionBuffer);
+			if (this.sizeBuffer) gl.deleteBuffer(this.sizeBuffer);
+			if (this.colorBuffer) gl.deleteBuffer(this.colorBuffer);
+			if (this.emberPositionBuffer)
+				gl.deleteBuffer(this.emberPositionBuffer);
+
+			// Delete programs
+			if (this.sparkProgram) gl.deleteProgram(this.sparkProgram.program);
+			if (this.emberProgram) gl.deleteProgram(this.emberProgram.program);
+		}
+
+		this.sparkVAO = null;
+		this.emberVAO = null;
+		this.positionBuffer = null;
+		this.sizeBuffer = null;
+		this.colorBuffer = null;
+		this.emberPositionBuffer = null;
+		this.sparkProgram = null;
+		this.emberProgram = null;
+		this.particles = [];
+		this.ambientAccumulators.clear();
+
+		if (this.canvas) {
+			this.canvas.remove();
+			this.canvas = null;
+		}
+
+		this.gl = null;
+		this.initialized = false;
+	}
+}
