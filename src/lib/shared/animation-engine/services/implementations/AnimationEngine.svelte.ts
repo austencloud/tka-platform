@@ -68,6 +68,7 @@ import { PropTypeChanger } from "./PropTypeChanger.svelte";
 import { AnimatorCanvasInitializer } from "./AnimatorCanvasInitializer";
 import { FireTipTracker } from "./FireTipTracker";
 import { WebGLFireRenderer } from "./fire/WebGLFireRenderer";
+import { CharcoalSparkRenderer } from "./fire/CharcoalSparkRenderer";
 import type { IFireOverlayRenderer } from "../contracts/IFireOverlayRenderer";
 import type { IFireTipTracker } from "../contracts/IFireTipTracker";
 import { DEFAULT_FIRE_CONFIG, DEFAULT_PROP_FLAME_COLORS, type FireOverlayConfig } from "../../domain/types/FireTypes";
@@ -234,6 +235,7 @@ export class AnimationEngine {
   private frameBudgetMonitor: IFrameBudgetMonitor =
     new FrameBudgetMonitor(new DeviceTierDetector().detect());
   private fireRenderer: IFireOverlayRenderer | null = null;
+  private charcoalRenderer: IFireOverlayRenderer | null = null;
   private fireTipTracker: IFireTipTracker | null = null;
   private fireConfig: FireOverlayConfig = { ...DEFAULT_FIRE_CONFIG };
   private fireDefaultsLoader: IFireDefaultsLoader | null = null;
@@ -372,6 +374,7 @@ export class AnimationEngine {
     };
     this.fireConfig.colorCurve = this.prevUseCharcoal ? CHARCOAL_COLOR_CURVE : BASE_COLOR_CURVE;
     this.fireConfig.smokeOpacity = smokeLevelToOpacity(this.prevSmokeLevel);
+    this.fireConfig.charcoalPresetId = visibilityManager.getCharcoalPresetId();
     // Initialize LED state from visibility manager
     this.ledConfig.enabled = visibilityManager.isLedEffectEnabled();
     this.ledConfig.patternId = visibilityManager.getLedPatternId();
@@ -493,25 +496,30 @@ export class AnimationEngine {
           this.prevUseCharcoal = useCharcoal;
           this.prevFireIntensity = fireIntensity;
 
-          const basePhysics = useCharcoal ? CHARCOAL_FIRE_PHYSICS : BASE_FIRE_PHYSICS;
-          const intOverrides = intensityToPhysics(fireIntensity);
           if (useCharcoal) {
-            delete intOverrides.buoyancyStrength;
-            delete intOverrides.upwardBias;
+            // Charcoal mode: set preset ID and swap to spark renderer
+            this.setFireConfig({
+              enabled: true,
+              charcoalPresetId: vm.getCharcoalPresetId(),
+            });
+          } else {
+            // Fluid mode: apply physics-based config
+            const basePhysics = BASE_FIRE_PHYSICS;
+            const intOverrides = intensityToPhysics(fireIntensity);
+            this.setFireConfig({
+              colorBlend,
+              fuelRendererType: "fluid",
+              intensity: fireIntensity,
+              flameHeight: fireIntensity,
+              physicsPreset: {
+                ...basePhysics,
+                ...intOverrides,
+                ...smokeLevelToPhysics(smokeLevel),
+              },
+              colorCurve: BASE_COLOR_CURVE,
+              smokeOpacity: smokeLevelToOpacity(smokeLevel),
+            });
           }
-          this.setFireConfig({
-            colorBlend,
-            fuelRendererType: "fluid",
-            intensity: fireIntensity,
-            flameHeight: fireIntensity,
-            physicsPreset: {
-              ...basePhysics,
-              ...intOverrides,
-              ...smokeLevelToPhysics(smokeLevel),
-            },
-            colorCurve: useCharcoal ? CHARCOAL_COLOR_CURVE : BASE_COLOR_CURVE,
-            smokeOpacity: smokeLevelToOpacity(smokeLevel),
-          });
         }
 
         // Sync LED effect from visibility manager — batch into a single setLedConfig call
@@ -989,6 +997,8 @@ export class AnimationEngine {
     // Dispose fire overlay
     this.fireRenderer?.dispose();
     this.fireRenderer = null;
+    this.charcoalRenderer?.dispose();
+    this.charcoalRenderer = null;
     this.fireTipTracker = null;
 
     // Dispose LED overlay (also prevent any pending deferred init from running)
@@ -1222,26 +1232,65 @@ export class AnimationEngine {
    * Creates the WebGL canvas lazily on first enable, removes on disable.
    */
   private syncFireOverlay(): void {
-    if (this.fireConfig.enabled && !this.fireRenderer?.isInitialized()) {
-      // Create fire overlay (fluid renderer)
-      if (!this.containerElement) return;
-      this.fireRenderer = new WebGLFireRenderer();
-      const success = this.fireRenderer.initialize(
-        this.containerElement,
-        this.canvasSize,
-        this.canvasSize
-      );
-      if (success) {
-        this.renderLoopService?.updateConfig({
-          fireRenderer: this.fireRenderer,
-        });
-      } else {
+    const useCharcoal = this.prevUseCharcoal;
+    const enabled = this.fireConfig.enabled;
+
+    if (enabled && useCharcoal) {
+      // Charcoal mode: use spark renderer, tear down fluid renderer
+      if (this.fireRenderer?.isInitialized()) {
+        this.fireRenderer.dispose();
         this.fireRenderer = null;
       }
-    } else if (!this.fireConfig.enabled && this.fireRenderer) {
-      // Tear down fire overlay
-      this.fireRenderer.dispose();
-      this.fireRenderer = null;
+
+      if (!this.charcoalRenderer?.isInitialized()) {
+        if (!this.containerElement) return;
+        this.charcoalRenderer = new CharcoalSparkRenderer();
+        const success = this.charcoalRenderer.initialize(
+          this.containerElement,
+          this.canvasSize,
+          this.canvasSize
+        );
+        if (success) {
+          this.renderLoopService?.updateConfig({
+            fireRenderer: this.charcoalRenderer,
+          });
+        } else {
+          this.charcoalRenderer = null;
+        }
+      }
+    } else if (enabled && !useCharcoal) {
+      // Fluid mode: use WebGL fire renderer, tear down charcoal renderer
+      if (this.charcoalRenderer?.isInitialized()) {
+        this.charcoalRenderer.dispose();
+        this.charcoalRenderer = null;
+      }
+
+      if (!this.fireRenderer?.isInitialized()) {
+        if (!this.containerElement) return;
+        this.fireRenderer = new WebGLFireRenderer();
+        const success = this.fireRenderer.initialize(
+          this.containerElement,
+          this.canvasSize,
+          this.canvasSize
+        );
+        if (success) {
+          this.renderLoopService?.updateConfig({
+            fireRenderer: this.fireRenderer,
+          });
+        } else {
+          this.fireRenderer = null;
+        }
+      }
+    } else {
+      // Disabled: tear down both
+      if (this.fireRenderer?.isInitialized()) {
+        this.fireRenderer.dispose();
+        this.fireRenderer = null;
+      }
+      if (this.charcoalRenderer?.isInitialized()) {
+        this.charcoalRenderer.dispose();
+        this.charcoalRenderer = null;
+      }
       this.renderLoopService?.updateConfig({
         fireRenderer: null,
       });
