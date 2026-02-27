@@ -63,6 +63,12 @@
     image-rendering: pixelated;
   }
 
+  .retro-toolbar-button :global(svg) {
+    width: 16px;
+    height: 16px;
+    image-rendering: pixelated;
+  }
+
   .retro-toolbar-button:hover:not(:disabled) {
     border: 1px solid var(--retro-button-shadow, #808080);
     border-top-color: var(--retro-button-highlight, #fff);

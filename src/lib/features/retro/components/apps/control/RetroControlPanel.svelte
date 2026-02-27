@@ -11,6 +11,7 @@
   import RetroButton from "../../primitives/RetroButton.svelte";
   import RetroCheckbox from "../../primitives/RetroCheckbox.svelte";
   import RetroStatusBar from "../../primitives/RetroStatusBar.svelte";
+  import { RETRO_ICONS, type RetroIconName } from "../../rendering/retro-icons";
 
   /* ------------------------------------------------------------------ */
   /* Props                                                               */
@@ -47,20 +48,20 @@
 
   interface ControlIcon {
     id: PanelId;
-    emoji: string;
+    iconName: RetroIconName;
     label: string;
   }
 
   const ICONS: ControlIcon[] = [
-    { id: "display", emoji: "\u{1F5A5}\uFE0F", label: "Display" },
-    { id: "sound", emoji: "\u{1F50A}", label: "Sound" },
-    { id: "props", emoji: "\u{1F3AD}", label: "Props" },
-    { id: "keyboard", emoji: "\u2328\uFE0F", label: "Keyboard" },
-    { id: "mouse", emoji: "\u{1F5B1}\uFE0F", label: "Mouse" },
-    { id: "printers", emoji: "\u{1F5A8}\uFE0F", label: "Printers" },
-    { id: "network", emoji: "\u{1F310}", label: "Network" },
-    { id: "datetime", emoji: "\u{1F4C5}", label: "Date/Time" },
-    { id: "about", emoji: "\u2139\uFE0F", label: "About" },
+    { id: "display", iconName: "display", label: "Display" },
+    { id: "sound", iconName: "sound", label: "Sound" },
+    { id: "props", iconName: "props", label: "Props" },
+    { id: "keyboard", iconName: "keyboard", label: "Keyboard" },
+    { id: "mouse", iconName: "mouse", label: "Mouse" },
+    { id: "printers", iconName: "printers", label: "Printers" },
+    { id: "network", iconName: "network", label: "Network" },
+    { id: "datetime", iconName: "datetime", label: "Date/Time" },
+    { id: "about", iconName: "info", label: "About" },
   ];
 
   function openPanel(id: PanelId) {
@@ -147,7 +148,7 @@
               statusText = icon.label;
             }}
           >
-            <span class="icon-emoji">{icon.emoji}</span>
+            <span class="icon-image" aria-hidden="true">{@html RETRO_ICONS[icon.iconName]}</span>
             <span class="icon-label">{icon.label}</span>
           </button>
         {/each}
@@ -374,9 +375,19 @@
     outline-offset: -2px;
   }
 
-  .icon-emoji {
-    font-size: 32px;
-    line-height: 1;
+  .icon-image {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    image-rendering: pixelated;
+  }
+
+  .icon-image :global(svg) {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
   }
 
   .icon-label {

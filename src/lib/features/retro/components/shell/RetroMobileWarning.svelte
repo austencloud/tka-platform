@@ -9,6 +9,7 @@
 -->
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { RETRO_ICONS } from "../rendering/retro-icons";
 
   let {
     onproceed,
@@ -34,7 +35,7 @@
 
     <!-- Content area -->
     <div class="dialog-body">
-      <div class="dialog-icon" aria-hidden="true">&#x26A0;&#xFE0F;</div>
+      <div class="dialog-icon" aria-hidden="true">{@html RETRO_ICONS.warning}</div>
       <div class="dialog-message">
         <p class="dialog-title">TKA-OS v1.0</p>
         <p>This software requires a VGA display</p>
@@ -116,9 +117,19 @@
   }
 
   .dialog-icon {
-    font-size: 32px;
-    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
     flex-shrink: 0;
+    image-rendering: pixelated;
+  }
+
+  .dialog-icon :global(svg) {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
   }
 
   .dialog-message {

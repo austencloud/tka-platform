@@ -64,22 +64,22 @@
   /* ------------------------------------------------------------------ */
 
   const desktopIcons: RetroDesktopIcon[] = [
-    { id: "mycomputer", label: "My Computer", icon: "\u{1F5A5}\uFE0F", executable: "mycomputer" },
-    { id: "scribe", label: "SCRIBE.EXE", icon: "\u{1F4DD}", executable: "scribe" },
-    { id: "filemgr", label: "FILEMGR.EXE", icon: "\u{1F4C1}", executable: "filemgr" },
-    { id: "tutor", label: "TUTOR.EXE", icon: "\u{1F393}", executable: "tutor" },
-    { id: "cards", label: "CARDS.EXE", icon: "\u{1F0CF}", executable: "cards" },
-    { id: "control", label: "CONTROL.EXE", icon: "\u2699\uFE0F", executable: "control" },
-    { id: "upgrade", label: "UPGRADE.EXE", icon: "\u{1F451}", executable: "upgrade" },
-    { id: "readme", label: "README.TXT", icon: "\u{1F4C4}", executable: "readme" },
-    { id: "help", label: "HELP.HLP", icon: "\u2753", executable: "help" },
-    { id: "defrag", label: "DEFRAG.EXE", icon: "\u{1F4BE}", executable: "defrag" },
+    { id: "mycomputer", label: "My Computer", icon: "mycomputer", executable: "mycomputer" },
+    { id: "scribe", label: "SCRIBE.EXE", icon: "scribe", executable: "scribe" },
+    { id: "filemgr", label: "FILEMGR.EXE", icon: "filemgr", executable: "filemgr" },
+    { id: "tutor", label: "TUTOR.EXE", icon: "tutor", executable: "tutor" },
+    { id: "cards", label: "CARDS.EXE", icon: "cards", executable: "cards" },
+    { id: "control", label: "CONTROL.EXE", icon: "control", executable: "control" },
+    { id: "upgrade", label: "UPGRADE.EXE", icon: "upgrade", executable: "upgrade" },
+    { id: "readme", label: "README.TXT", icon: "readme", executable: "readme" },
+    { id: "help", label: "HELP.HLP", icon: "help", executable: "help" },
+    { id: "defrag", label: "DEFRAG.EXE", icon: "defrag", executable: "defrag" },
   ];
 
   const recycleBin: RetroDesktopIcon = {
     id: "recyclebin",
     label: "Recycle Bin",
-    icon: "\u{1F5D1}\uFE0F",
+    icon: "recyclebin",
     executable: "recyclebin",
   };
 
@@ -90,28 +90,28 @@
   const startMenuItems: RetroStartMenuItem[] = [
     {
       label: "Programs",
-      icon: "\u{1F4C1}",
+      icon: "programs",
       children: [
-        { label: "SCRIBE.EXE", icon: "\u{1F4DD}", action: () => openApp("scribe", "SCRIBE.EXE", "\u{1F4DD}") },
-        { label: "FILEMGR.EXE", icon: "\u{1F4C1}", action: () => openApp("filemgr", "FILEMGR.EXE", "\u{1F4C1}") },
-        { label: "TUTOR.EXE", icon: "\u{1F393}", action: () => openApp("tutor", "TUTOR.EXE", "\u{1F393}") },
-        { label: "CARDS.EXE", icon: "\u{1F0CF}", action: () => openApp("cards", "CARDS.EXE", "\u{1F0CF}") },
-        { label: "DEFRAG.EXE", icon: "\u{1F4BE}", action: () => openApp("defrag", "DEFRAG.EXE", "\u{1F4BE}") },
-        { label: "UPGRADE.EXE", icon: "\u{1F451}", action: () => openApp("upgrade", "UPGRADE.EXE", "\u{1F451}") },
+        { label: "SCRIBE.EXE", icon: "scribe", action: () => openApp("scribe", "SCRIBE.EXE", "scribe") },
+        { label: "FILEMGR.EXE", icon: "filemgr", action: () => openApp("filemgr", "FILEMGR.EXE", "filemgr") },
+        { label: "TUTOR.EXE", icon: "tutor", action: () => openApp("tutor", "TUTOR.EXE", "tutor") },
+        { label: "CARDS.EXE", icon: "cards", action: () => openApp("cards", "CARDS.EXE", "cards") },
+        { label: "DEFRAG.EXE", icon: "defrag", action: () => openApp("defrag", "DEFRAG.EXE", "defrag") },
+        { label: "UPGRADE.EXE", icon: "upgrade", action: () => openApp("upgrade", "UPGRADE.EXE", "upgrade") },
       ],
     },
-    { label: "Documents", icon: "\u{1F4C1}", children: [] },
+    { label: "Documents", icon: "documents", children: [] },
     {
       label: "Settings",
-      icon: "\u2699\uFE0F",
+      icon: "control",
       children: [
-        { label: "Control Panel", icon: "\u2699\uFE0F", action: () => openApp("control", "Control Panel", "\u2699\uFE0F") },
+        { label: "Control Panel", icon: "control", action: () => openApp("control", "Control Panel", "control") },
       ],
     },
-    { label: "Find", icon: "\u{1F50D}", children: [] },
-    { label: "Help", icon: "\u2753", action: () => openApp("help", "Help", "\u2753") },
+    { label: "Find", icon: "find", children: [] },
+    { label: "Help", icon: "help", action: () => openApp("help", "Help", "help") },
     { separator: true, label: "" },
-    { label: "Shut Down...", icon: "\u{1F50C}", action: () => showShutdownDialog() },
+    { label: "Shut Down...", icon: "shutdown", action: () => showShutdownDialog() },
   ];
 
   /* ------------------------------------------------------------------ */

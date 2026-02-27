@@ -83,14 +83,13 @@
           class="retro-datagrid-row"
           class:selected={i === selectedRow}
           class:alt={i % 2 === 1}
-          role="row"
           aria-selected={i === selectedRow}
           onclick={() => handleRowClick(i)}
           ondblclick={() => handleRowDblClick(i)}
         >
           {#each columns as col (col.key)}
             <td class="retro-datagrid-cell" role="gridcell">
-              {row[col.key] ?? ""}
+              {@html row[col.key] ?? ""}
             </td>
           {/each}
         </tr>
@@ -165,6 +164,13 @@
     overflow: hidden;
     text-overflow: ellipsis;
     border-right: 1px solid #e0e0e0;
+  }
+
+  .retro-datagrid-cell :global(svg) {
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+    image-rendering: pixelated;
   }
 
   .retro-datagrid-cell:last-child {

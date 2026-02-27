@@ -12,6 +12,7 @@
 <script lang="ts">
   import type { IWindowManager } from "../../services/contracts/IWindowManager";
   import { desktopState } from "../../state/desktop-state.svelte";
+  import { RETRO_ICONS, type RetroIconName } from "../rendering/retro-icons";
 
   let {
     windowManager,
@@ -72,7 +73,7 @@
       >
         {#if win.icon}
           <span class="taskbar-window-icon" aria-hidden="true">
-            {win.icon}
+            {@html RETRO_ICONS[win.icon as RetroIconName] ?? ""}
           </span>
         {/if}
         <span class="taskbar-window-title">{win.title}</span>
@@ -196,9 +197,18 @@
   }
 
   .taskbar-window-icon {
-    font-size: 12px;
-    line-height: 1;
+    display: flex;
+    align-items: center;
+    width: 16px;
+    height: 16px;
     flex-shrink: 0;
+    image-rendering: pixelated;
+  }
+
+  .taskbar-window-icon :global(svg) {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
   }
 
   .taskbar-window-title {

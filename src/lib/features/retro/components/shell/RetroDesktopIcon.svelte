@@ -9,6 +9,7 @@
 -->
 <script lang="ts">
   import type { RetroDesktopIcon } from "../../domain/types/retro-types";
+  import { RETRO_ICONS, type RetroIconName } from "../rendering/retro-icons";
 
   let {
     icon,
@@ -21,6 +22,8 @@
     onselect: () => void;
     ondoubleclick: () => void;
   } = $props();
+
+  const iconSvg = $derived(RETRO_ICONS[icon.icon as RetroIconName] ?? "");
 
   function handleClick(event: MouseEvent) {
     event.stopPropagation();
@@ -50,7 +53,7 @@
   aria-label={icon.label}
 >
   <span class="desktop-icon-image" aria-hidden="true">
-    {icon.icon}
+    {@html iconSvg}
   </span>
   <span class="desktop-icon-label">
     {icon.label}
@@ -90,8 +93,13 @@
     justify-content: center;
     width: 32px;
     height: 32px;
-    font-size: 24px;
-    line-height: 1;
+    image-rendering: pixelated;
+  }
+
+  .desktop-icon-image :global(svg) {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
   }
 
   .selected .desktop-icon-image {

@@ -12,6 +12,7 @@
 -->
 <script lang="ts">
   import type { RetroStartMenuItem } from "../../domain/types/retro-types";
+  import { RETRO_ICONS, type RetroIconName } from "../rendering/retro-icons";
 
   let {
     items,
@@ -45,6 +46,68 @@
     onclose();
   }
 
+  /** Keyboard navigation for menu items */
+  function handleMenuKeydown(event: KeyboardEvent) {
+    const nonSeparatorItems = items.filter((i) => !i.separator);
+    const focusedEl = document.activeElement as HTMLElement | null;
+    const allMenuItems = menuElement
+      ? Array.from(menuElement.querySelectorAll<HTMLElement>('[role="menuitem"]'))
+      : [];
+    const currentIdx = focusedEl ? allMenuItems.indexOf(focusedEl) : -1;
+
+    switch (event.key) {
+      case "ArrowDown": {
+        event.preventDefault();
+        const next = currentIdx < allMenuItems.length - 1 ? currentIdx + 1 : 0;
+        allMenuItems[next]?.focus();
+        break;
+      }
+      case "ArrowUp": {
+        event.preventDefault();
+        const prev = currentIdx > 0 ? currentIdx - 1 : allMenuItems.length - 1;
+        allMenuItems[prev]?.focus();
+        break;
+      }
+      case "ArrowRight": {
+        // Open submenu if this item has children
+        if (currentIdx >= 0) {
+          const item = nonSeparatorItems[currentIdx];
+          if (item?.children?.length) {
+            activeSubmenuIndex = items.indexOf(item);
+          }
+        }
+        break;
+      }
+      case "ArrowLeft":
+        activeSubmenuIndex = null;
+        break;
+      case "Enter":
+      case " ": {
+        event.preventDefault();
+        focusedEl?.click();
+        break;
+      }
+      case "Escape":
+        onclose();
+        break;
+    }
+  }
+
+  function handleItemKeydown(event: KeyboardEvent, item: RetroStartMenuItem) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      handleItemClick(item);
+    }
+  }
+
+  function handleSubmenuItemKeydown(event: KeyboardEvent, child: RetroStartMenuItem) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      event.stopPropagation();
+      handleSubmenuItemClick(child);
+    }
+  }
+
   function handleWindowClick(event: MouseEvent) {
     if (!menuElement) return;
     const target = event.target as HTMLElement;
@@ -61,8 +124,13 @@
 
 <svelte:window onclick={handleWindowClick} />
 
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="start-menu" bind:this={menuElement} role="menu">
+<div
+  class="start-menu"
+  bind:this={menuElement}
+  role="menu"
+  tabindex="-1"
+  onkeydown={handleMenuKeydown}
+>
   <!-- Vertical sidebar -->
   <div class="start-menu-sidebar" aria-hidden="true">
     <span class="sidebar-text">TKA-OS v1.0</span>
@@ -74,17 +142,17 @@
       {#if item.separator}
         <hr class="start-menu-separator" />
       {:else}
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class="start-menu-item"
           class:has-children={item.children && item.children.length > 0}
           role="menuitem"
           tabindex="-1"
           onclick={() => handleItemClick(item)}
+          onkeydown={(e) => handleItemKeydown(e, item)}
           onmouseenter={() => handleItemMouseEnter(index, item)}
         >
           <span class="item-icon" aria-hidden="true">
-            {item.icon ?? ""}
+            {@html RETRO_ICONS[item.icon as RetroIconName] ?? ""}
           </span>
           <span class="item-label">{item.label}</span>
           {#if item.children && item.children.length > 0}
@@ -98,7 +166,6 @@
                 {#if child.separator}
                   <hr class="start-menu-separator" />
                 {:else}
-                  <!-- svelte-ignore a11y_no_static_element_interactions -->
                   <div
                     class="start-menu-item"
                     role="menuitem"
@@ -107,9 +174,10 @@
                       e.stopPropagation();
                       handleSubmenuItemClick(child);
                     }}
+                    onkeydown={(e) => handleSubmenuItemKeydown(e, child)}
                   >
                     <span class="item-icon" aria-hidden="true">
-                      {child.icon ?? ""}
+                      {@html RETRO_ICONS[child.icon as RetroIconName] ?? ""}
                     </span>
                     <span class="item-label">{child.label}</span>
                   </div>
@@ -198,9 +266,14 @@
     justify-content: center;
     width: 16px;
     height: 16px;
-    font-size: 14px;
-    line-height: 1;
     flex-shrink: 0;
+    image-rendering: pixelated;
+  }
+
+  .item-icon :global(svg) {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
   }
 
   .item-label {

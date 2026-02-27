@@ -20,6 +20,7 @@
   import RetroListBox from "../../primitives/RetroListBox.svelte";
   import type { RetroTreeNode } from "../../../domain/types/retro-types";
   import { FileNameConverter } from "../../../services/implementations/FileNameConverter";
+  import { RETRO_ICONS } from "../../rendering/retro-icons";
 
   /* ------------------------------------------------------------------ */
   /* Props                                                               */
@@ -54,43 +55,43 @@
     {
       id: "c-root",
       label: "C:\\ [TKA-OS]",
-      icon: "💾",
+      icon: RETRO_ICONS.floppy,
       expanded: true,
       children: [
         {
           id: "c-sequences",
           label: "SEQUENCES",
-          icon: "📁",
+          icon: RETRO_ICONS.folder,
           expanded: true,
           children: [
-            { id: "c-seq-practice", label: "PRACTICE", icon: "📁" },
-            { id: "c-seq-shared", label: "SHARED", icon: "📁" },
+            { id: "c-seq-practice", label: "PRACTICE", icon: RETRO_ICONS.folder },
+            { id: "c-seq-shared", label: "SHARED", icon: RETRO_ICONS.folder },
           ],
         },
         {
           id: "c-library",
           label: "LIBRARY",
-          icon: "📁",
+          icon: RETRO_ICONS.folder,
           expanded: true,
           children: [
-            { id: "c-lib-letters", label: "LETTERS", icon: "📁" },
-            { id: "c-lib-combos", label: "COMBOS", icon: "📁" },
+            { id: "c-lib-letters", label: "LETTERS", icon: RETRO_ICONS.folder },
+            { id: "c-lib-combos", label: "COMBOS", icon: RETRO_ICONS.folder },
           ],
         },
-        { id: "c-community", label: "COMMUNITY", icon: "📁" },
+        { id: "c-community", label: "COMMUNITY", icon: RETRO_ICONS.folder },
         {
           id: "c-system",
           label: "SYSTEM",
-          icon: "📁",
+          icon: RETRO_ICONS.folder,
           children: [
-            { id: "c-sys-config", label: "CONFIG", icon: "📁" },
-            { id: "c-sys-drivers", label: "DRIVERS", icon: "📁" },
+            { id: "c-sys-config", label: "CONFIG", icon: RETRO_ICONS.folder },
+            { id: "c-sys-drivers", label: "DRIVERS", icon: RETRO_ICONS.folder },
           ],
         },
       ],
     },
-    { id: "a-root", label: "A:\\ [3½ Floppy]", icon: "💾" },
-    { id: "d-root", label: "D:\\ [CD-ROM]", icon: "💿" },
+    { id: "a-root", label: "A:\\ [3½ Floppy]", icon: RETRO_ICONS.floppy },
+    { id: "d-root", label: "D:\\ [CD-ROM]", icon: RETRO_ICONS.cdrom },
   ];
 
   /* ------------------------------------------------------------------ */
@@ -316,14 +317,14 @@
 
   const detailRows = $derived(
     currentFiles.map((f) => ({
-      icon: "📄",
+      icon: RETRO_ICONS.fileTxt,
       name: f.name,
       size: `${f.size.toLocaleString()} KB`,
       modified: f.modified,
     })),
   );
 
-  const listItems = $derived(currentFiles.map((f) => `📄 ${f.name}`));
+  const listItems = $derived(currentFiles.map((f) => f.name));
 
   /* ------------------------------------------------------------------ */
   /* Menu bar                                                            */
@@ -367,32 +368,37 @@
 
   const toolbarButtons = $derived([
     {
-      icon: "◀",
+      icon: RETRO_ICONS.arrowLeft,
       tooltip: "Back",
       disabled: !canGoBack,
       action: () => navigateBack(),
+      isHtml: true,
     },
     {
-      icon: "▶",
+      icon: RETRO_ICONS.arrowRight,
       tooltip: "Forward",
       disabled: !canGoForward,
       action: () => navigateForward(),
+      isHtml: true,
     },
     {
-      icon: "⬆",
+      icon: RETRO_ICONS.arrowUp,
       tooltip: "Up One Level",
       action: () => navigateUp(),
+      isHtml: true,
     },
     { separator: true, icon: "", tooltip: "", action: () => {} },
     {
-      icon: "📋",
+      icon: RETRO_ICONS.viewDetails,
       tooltip: "Details",
       action: () => (viewMode = "details"),
+      isHtml: true,
     },
     {
-      icon: "≡",
+      icon: RETRO_ICONS.viewList,
       tooltip: "List",
       action: () => (viewMode = "list"),
+      isHtml: true,
     },
   ]);
 

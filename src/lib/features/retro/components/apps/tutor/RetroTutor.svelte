@@ -15,6 +15,7 @@
   import RetroRadioButton from "../../primitives/RetroRadioButton.svelte";
   import RetroPictograph from "../../rendering/RetroPictograph.svelte";
   import { createMockPictographData } from "../../rendering/mock-pictograph-data";
+  import { RETRO_ICONS } from "../../rendering/retro-icons";
 
   /* ------------------------------------------------------------------ */
   /* Props                                                               */
@@ -45,27 +46,27 @@
   const CONCEPT_CARDS = [
     {
       title: "What is TKA?",
-      icon: "\u{1F4D6}",
+      iconSvg: RETRO_ICONS.book,
       body: "The Kinetic Alphabet (TKA) is a notation system for recording and sharing movement patterns. Each letter captures the spatial relationship between two hands and the motions they trace. With 26 letters and 6 types, TKA encodes any dual-prop movement into readable, reproducible text.",
     },
     {
       title: "Letters & Types",
-      icon: "\u{1F524}",
+      iconSvg: RETRO_ICONS.letters,
       body: "Each letter represents a specific hand path. There are 6 Types, classified by motion family: Type 1 (both shift), Type 2 (shift + dash), Type 3 (shift + static), Type 4 (dash + static), Type 5 (both dash), and Type 6 (both static). The type tells you what kind of motions both hands perform.",
     },
     {
       title: "Grid Positions",
-      icon: "\u{1F4CD}",
+      iconSvg: RETRO_ICONS.mappin,
       body: "Hands move between 8 cardinal and intercardinal positions on a diamond grid: North, South, East, West, and the four diagonals. The grid provides a spatial coordinate system so every hand placement can be precisely notated and reproduced by another performer.",
     },
     {
       title: "Turns & Rotation",
-      icon: "\u{1F504}",
+      iconSvg: RETRO_ICONS.rotate,
       body: "Turns measure additional prop rotation. 1 turn = 180 degrees of rotation beyond the base path. A 0-turn motion follows the path with no extra spin. Half turns (0.5) and full turns (1.0) add increasing amounts of rotation, changing the visual texture of the movement.",
     },
     {
       title: "Building Sequences",
-      icon: "\u{1F3B5}",
+      iconSvg: RETRO_ICONS.musicnotes,
       body: "A sequence is a series of beats, each beat containing one letter per hand. Reading a sequence left-to-right reconstructs the full movement phrase. Sequences can be spelled from words, generated algorithmically, or built beat-by-beat in the constructor.",
     },
   ];
@@ -284,7 +285,7 @@
             {:else}
               <!-- Card view -->
               <div class="concept-card sunken-panel">
-                <div class="concept-card-icon">{currentCard.icon}</div>
+                <div class="concept-card-icon" aria-hidden="true">{@html currentCard.iconSvg}</div>
                 <div class="concept-card-title">{currentCard.title}</div>
                 <div class="concept-card-body">{currentCard.body}</div>
               </div>
@@ -465,8 +466,19 @@
   }
 
   .concept-card-icon {
-    font-size: 24px;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    margin: 0 auto;
+    image-rendering: pixelated;
+  }
+
+  .concept-card-icon :global(svg) {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
   }
 
   .concept-card-title {

@@ -1,13 +1,15 @@
 <!--
   RetroScreensaver — Flying Props screensaver for TKA-OS v1.0
 
-  Bouncing emoji props on a black screen, DVD logo style. Each prop
+  Bouncing pixel art props on a black screen, DVD logo style. Each prop
   has random starting position, velocity, and size. Click anywhere
   or press any key to dismiss.
 
   Domain: Retro Easter Eggs
 -->
 <script lang="ts">
+  import { RETRO_ICONS } from "../rendering/retro-icons";
+
   let {
     ondismiss,
   }: {
@@ -15,17 +17,26 @@
   } = $props();
 
   /* ------------------------------------------------------------------ */
-  /* Prop emojis                                                         */
+  /* Prop SVG icons for floating screensaver                             */
   /* ------------------------------------------------------------------ */
 
-  const PROP_EMOJIS: string[] = ["\u{1F3D1}", "\u2694\uFE0F", "\u{1FAAD}", "\u{1F525}", "\u2600\uFE0F", "\u{1F300}", "\u{1F4AB}", "\u{1F3AD}"];
+  const PROP_SVGS: string[] = [
+    RETRO_ICONS.staff,
+    RETRO_ICONS.fire,
+    RETRO_ICONS.sun,
+    RETRO_ICONS.swirl,
+    RETRO_ICONS.sparkle,
+    RETRO_ICONS.cards,
+    RETRO_ICONS.scribe,
+    RETRO_ICONS.props,
+  ];
 
   /* ------------------------------------------------------------------ */
   /* Types                                                               */
   /* ------------------------------------------------------------------ */
 
   interface FloatingProp {
-    emoji: string;
+    svg: string;
     x: number;
     y: number;
     vx: number;
@@ -50,7 +61,7 @@
 
   let floaters = $state<FloatingProp[]>(
     Array.from({ length: floatingCount }, (_, i) => ({
-      emoji: PROP_EMOJIS[i % PROP_EMOJIS.length]!,
+      svg: PROP_SVGS[i % PROP_SVGS.length]!,
       x: Math.random() * 80 + 5,   /* % of container */
       y: Math.random() * 80 + 5,
       vx: randomVelocity(),
@@ -143,11 +154,12 @@
       style="
         left: {floater.x}%;
         top: {floater.y}%;
-        font-size: {floater.size}px;
+        width: {floater.size}px;
+        height: {floater.size}px;
       "
       aria-hidden="true"
     >
-      {floater.emoji}
+      {@html floater.svg}
     </span>
   {/each}
 </div>
@@ -166,14 +178,23 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Floating prop emoji                                                 */
+  /* Floating prop icon                                                  */
   /* ------------------------------------------------------------------ */
   .floating-prop {
     position: absolute;
-    line-height: 1;
     pointer-events: none;
     user-select: none;
     will-change: left, top;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    image-rendering: pixelated;
+  }
+
+  .floating-prop :global(svg) {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
   }
 
   /* ------------------------------------------------------------------ */

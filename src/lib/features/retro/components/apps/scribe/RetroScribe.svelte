@@ -19,6 +19,7 @@
   import RetroSpellTab from "./RetroSpellTab.svelte";
   import RetroVisualBuilderTab from "./RetroVisualBuilderTab.svelte";
   import RetroSaveDialog from "./RetroSaveDialog.svelte";
+  import { RETRO_ICONS } from "../../rendering/retro-icons";
 
   /* ------------------------------------------------------------------ */
   /* Props                                                               */
@@ -128,12 +129,12 @@
   /* ------------------------------------------------------------------ */
 
   const toolbarButtons = $derived([
-    { icon: "\u{1F4C4}", tooltip: "New", action: () => handleNew() },
-    { icon: "\u{1F4C2}", tooltip: "Open", action: () => {} },
-    { icon: "\u{1F4BE}", tooltip: "Save", action: () => handleSave() },
+    { icon: RETRO_ICONS.newDoc, tooltip: "New", action: () => handleNew() },
+    { icon: RETRO_ICONS.folderOpen, tooltip: "Open", action: () => {} },
+    { icon: RETRO_ICONS.save, tooltip: "Save", action: () => handleSave() },
     { separator: true, icon: "", tooltip: "", action: () => {} },
     {
-      icon: "\u25B6\uFE0F",
+      icon: RETRO_ICONS.play,
       tooltip: "Generate",
       action: () => {
         activeTab = "generate";

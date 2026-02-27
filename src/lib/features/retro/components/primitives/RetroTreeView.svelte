@@ -138,15 +138,16 @@
     {#each nodeList as node (node.id)}
       {@const hasChildren = (node.children?.length ?? 0) > 0}
       {@const expanded = isExpanded(node.id)}
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
         class="retro-tree-node"
         class:selected={node.id === selectedId}
         role="treeitem"
         aria-expanded={hasChildren ? expanded : undefined}
         aria-selected={node.id === selectedId}
+        tabindex={node.id === selectedId ? 0 : -1}
         style="padding-left: {depth * 16 + 4}px;"
         onclick={() => handleNodeClick(node)}
+        onkeydown={handleKeydown}
       >
         <!-- Expand/collapse toggle -->
         {#if hasChildren}
@@ -255,6 +256,12 @@
     width: 16px;
     height: 16px;
     flex-shrink: 0;
+    image-rendering: pixelated;
+  }
+
+  .retro-tree-icon :global(svg) {
+    width: 100%;
+    height: 100%;
     image-rendering: pixelated;
   }
 

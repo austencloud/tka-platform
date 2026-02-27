@@ -13,6 +13,7 @@
   import RetroDropdown from "../../primitives/RetroDropdown.svelte";
   import RetroTreeView from "../../primitives/RetroTreeView.svelte";
   import type { RetroTreeNode } from "../../../domain/types/retro-types";
+  import { RETRO_ICONS } from "../../rendering/retro-icons";
 
   let {
     filename = $bindable("UNTITLED"),
@@ -51,18 +52,18 @@
     {
       id: "c-drive",
       label: "C:\\TKA-OS\\",
-      icon: "\uD83D\uDCBB",
+      icon: RETRO_ICONS.computer,
       expanded: true,
       children: [
-        { id: "seq-dir", label: "SEQUENCES\\", icon: "\uD83D\uDCC1" },
-        { id: "let-dir", label: "LETTERS\\", icon: "\uD83D\uDCC1" },
-        { id: "sys-dir", label: "SYSTEM\\", icon: "\uD83D\uDCC1" },
+        { id: "seq-dir", label: "SEQUENCES\\", icon: RETRO_ICONS.folder },
+        { id: "let-dir", label: "LETTERS\\", icon: RETRO_ICONS.folder },
+        { id: "sys-dir", label: "SYSTEM\\", icon: RETRO_ICONS.folder },
       ],
     },
     {
       id: "a-drive",
       label: "A:\\",
-      icon: "\uD83D\uDCBE",
+      icon: RETRO_ICONS.floppy,
     },
   ];
 
@@ -92,9 +93,10 @@
 <div class="save-dialog">
   <!-- Save in row -->
   <div class="field-row-custom">
-    <label class="field-label">Save in:</label>
+    <label class="field-label" for="save-location">Save in:</label>
     <div class="location-dropdown">
       <RetroDropdown
+        id="save-location"
         bind:value={saveLocation}
         options={locationOptions}
       />
@@ -111,9 +113,10 @@
 
   <!-- File name row -->
   <div class="field-row-custom">
-    <label class="field-label">File name:</label>
+    <label class="field-label" for="save-filename">File name:</label>
     <div class="filename-input">
       <RetroTextInput
+        id="save-filename"
         value={filename}
         maxLength={8}
         onchange={handleFilenameChange}
@@ -124,9 +127,10 @@
 
   <!-- Save as type row -->
   <div class="field-row-custom">
-    <label class="field-label">Save as type:</label>
+    <label class="field-label" for="save-type">Save as type:</label>
     <div class="type-dropdown">
       <RetroDropdown
+        id="save-type"
         bind:value={fileType}
         options={fileTypeOptions}
       />

@@ -10,6 +10,7 @@
 <script lang="ts">
   import RetroButton from "../../primitives/RetroButton.svelte";
   import RetroStatusBar from "../../primitives/RetroStatusBar.svelte";
+  import { RETRO_ICONS } from "../../rendering/retro-icons";
 
   /* ------------------------------------------------------------------ */
   /* Props                                                               */
@@ -72,7 +73,7 @@
   <div class="upgrade-content">
     <div class="upgrade-dialog">
       <!-- Warning icon -->
-      <div class="upgrade-icon">\u26A0\uFE0F</div>
+      <div class="upgrade-icon" aria-hidden="true">{@html RETRO_ICONS.warning}</div>
 
       <!-- Text block -->
       <div class="upgrade-text">
@@ -178,9 +179,19 @@
   }
 
   .upgrade-icon {
-    font-size: 40px;
-    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
     flex-shrink: 0;
+    image-rendering: pixelated;
+  }
+
+  .upgrade-icon :global(svg) {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
   }
 
   .upgrade-text {

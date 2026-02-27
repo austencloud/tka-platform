@@ -18,6 +18,7 @@
   import RetroPictograph from "../../rendering/RetroPictograph.svelte";
   import { createMockPictographData } from "../../rendering/mock-pictograph-data";
   import type { RetroPictographData } from "../../../services/contracts/IPixelRenderer";
+  import { RETRO_ICONS } from "../../rendering/retro-icons";
 
   /* ------------------------------------------------------------------ */
   /* Props                                                               */
@@ -143,20 +144,20 @@
 
   const toolbarButtons = $derived([
     {
-      icon: "◀",
+      icon: RETRO_ICONS.arrowLeft,
       tooltip: "Previous Card",
       disabled: currentIndex === 0,
       action: () => handlePrev(),
     },
     {
-      icon: "▶",
+      icon: RETRO_ICONS.arrowRight,
       tooltip: "Next Card",
       disabled: currentIndex === cards.length - 1,
       action: () => handleNext(),
     },
     { separator: true, icon: "", tooltip: "", action: () => {} },
     {
-      icon: "🖨",
+      icon: RETRO_ICONS.printer,
       tooltip: "Print",
       action: () => handlePrint(),
     },

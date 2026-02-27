@@ -14,6 +14,7 @@
   import RetroProgressBar from "../primitives/RetroProgressBar.svelte";
   import { FakeLoadingManager } from "../../services/implementations/FakeLoadingManager";
   import type { LoadingContext } from "../../services/contracts/IFakeLoadingManager";
+  import { RETRO_ICONS } from "../rendering/retro-icons";
 
   let {
     context,
@@ -54,7 +55,7 @@
 <div class="retro-loading-overlay" role="alert" aria-live="polite">
   <div class="retro-loading-dialog window">
     <div class="retro-loading-header">
-      <span class="retro-loading-hourglass" aria-hidden="true">&#9203;</span>
+      <span class="retro-loading-hourglass" aria-hidden="true">{@html RETRO_ICONS.hourglass}</span>
       <span class="retro-loading-title">
         {message || "Please Wait..."}
       </span>
@@ -110,8 +111,18 @@
   }
 
   .retro-loading-hourglass {
-    font-size: 20px;
-    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    image-rendering: pixelated;
+  }
+
+  .retro-loading-hourglass :global(svg) {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
   }
 
   .retro-loading-title {
