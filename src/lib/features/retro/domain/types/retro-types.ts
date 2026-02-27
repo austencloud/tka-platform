@@ -45,3 +45,11 @@ export interface RetroStartMenuItem {
 	children?: RetroStartMenuItem[];
 	separator?: boolean;
 }
+
+export interface RetroTreeNode {
+	id: string;
+	label: string;
+	icon?: string;
+	children?: RetroTreeNode[];
+	expanded?: boolean;
+}
