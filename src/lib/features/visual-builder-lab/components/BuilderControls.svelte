@@ -56,13 +56,24 @@
   const motionHidden = $derived(isComplete);
 
   const ORIENTATIONS = [
-    { value: Orientation.IN, label: "In" },
-    { value: Orientation.OUT, label: "Out" },
-    { value: Orientation.CLOCK, label: "CW" },
-    { value: Orientation.COUNTER, label: "CCW" },
+    { value: Orientation.IN, label: "In", ariaLabel: "In orientation" },
+    { value: Orientation.OUT, label: "Out", ariaLabel: "Out orientation" },
+    { value: Orientation.CLOCK, label: "CW", ariaLabel: "Clockwise orientation" },
+    { value: Orientation.COUNTER, label: "CCW", ariaLabel: "Counter-clockwise orientation" },
   ] as const;
 
   const TURN_OPTIONS = [0, 0.5, 1, 1.5, 2, 2.5, 3] as const;
+
+  function turnAriaLabel(t: number): string {
+    if (t === 0) return "No turns";
+    if (t === 0.5) return "Half turn";
+    if (t === 1) return "1 turn";
+    if (t === 1.5) return "1 and a half turns";
+    if (t === 2) return "2 turns";
+    if (t === 2.5) return "2 and a half turns";
+    if (t === 3) return "3 turns";
+    return `${t} turns`;
+  }
 
   function toggleRotation(): void {
     const next = builderState.rotationDirection === RotationDirection.CLOCKWISE
@@ -75,6 +86,12 @@
     builderState.rotationDirection === RotationDirection.CLOCKWISE ? "CW" : "CCW"
   );
 
+  const rotAriaLabel = $derived(
+    builderState.rotationDirection === RotationDirection.CLOCKWISE
+      ? "Rotation direction: Clockwise"
+      : "Rotation direction: Counter-clockwise"
+  );
+
   const isFlipped = $derived(
     builderState.rotationDirection === RotationDirection.COUNTER_CLOCKWISE
   );
@@ -83,8 +100,8 @@
 <div class="controls-overlay" style="--hand-color: {handColor}">
   <!-- TOP-LEFT: Instruction badge + orientation pills -->
   <div class="cluster top-left">
-    <div class="instruction-badge">
-      <span class="hand-dot"></span>
+    <div class="instruction-badge" aria-live="polite" aria-atomic="true">
+      <span class="hand-dot" aria-hidden="true"></span>
       <span class="instruction-text">{phaseMessage}</span>
     </div>
 
@@ -96,7 +113,7 @@
             class:active={builderState.currentOrientation === ori.value}
             role="radio"
             aria-checked={builderState.currentOrientation === ori.value}
-            aria-label="{ori.label} orientation"
+            aria-label={ori.ariaLabel}
             disabled={!showOrientation}
             onclick={() => builderState.setOrientation(ori.value)}
           >
@@ -118,13 +135,14 @@
         class="rotation-toggle"
         onclick={toggleRotation}
         disabled={!motionEnabled}
-        aria-label="Rotation: {rotLabel}"
+        aria-disabled={!motionEnabled}
+        aria-label={rotAriaLabel}
       >
-        <i class="fas fa-rotate-right" class:flipped={isFlipped}></i>
+        <i class="fas fa-rotate-right" class:flipped={isFlipped} aria-hidden="true"></i>
         <span class="rot-label">{rotLabel}</span>
       </button>
 
-      <div class="divider"></div>
+      <div class="divider" aria-hidden="true"></div>
 
       <div class="turns-strip" role="radiogroup" aria-label="Turn count">
         {#each TURN_OPTIONS as t}
@@ -133,8 +151,9 @@
             class:active={builderState.turnCount === t}
             role="radio"
             aria-checked={builderState.turnCount === t}
-            aria-label="{t} turns"
+            aria-label={turnAriaLabel(t)}
             disabled={!motionEnabled}
+            aria-disabled={!motionEnabled}
             onclick={() => builderState.setTurnCount(t)}
           >
             {t}
@@ -153,9 +172,10 @@
       class:dimmed={isAnimating && builderState.canUndo}
       onclick={() => builderState.undoStep()}
       disabled={!builderState.canUndo || isAnimating}
+      aria-disabled={!builderState.canUndo || isAnimating}
       aria-label="Undo last step"
     >
-      <i class="fas fa-undo"></i>
+      <i class="fas fa-undo" aria-hidden="true"></i>
     </button>
 
     <!-- Done with hand -->
@@ -165,9 +185,10 @@
       class:dimmed={isAnimating && builderState.canFinishHand}
       onclick={() => builderState.finishHand()}
       disabled={!builderState.canFinishHand || isAnimating}
+      aria-disabled={!builderState.canFinishHand || isAnimating}
       aria-label="Done with {handLabel.toLowerCase()} hand"
     >
-      <i class="fas fa-check"></i>
+      <i class="fas fa-check" aria-hidden="true"></i>
       <span>Done</span>
     </button>
 
@@ -177,9 +198,10 @@
       class:visible={isComplete}
       onclick={() => builderState.reset()}
       disabled={!isComplete}
+      aria-disabled={!isComplete}
       aria-label="Start new sequence"
     >
-      <i class="fas fa-plus"></i>
+      <i class="fas fa-plus" aria-hidden="true"></i>
       <span>New</span>
     </button>
 
@@ -190,9 +212,10 @@
       class:dimmed={isAnimating && builderState.stepCount > 0}
       onclick={() => builderState.reset()}
       disabled={builderState.stepCount === 0 || isComplete || isAnimating}
+      aria-disabled={builderState.stepCount === 0 || isComplete || isAnimating}
       aria-label="Reset all"
     >
-      <i class="fas fa-trash-alt"></i>
+      <i class="fas fa-trash-alt" aria-hidden="true"></i>
     </button>
   </div>
 </div>
@@ -309,12 +332,12 @@
     border: none;
     border-radius: 7px;
     background: transparent;
-    color: rgba(255, 255, 255, 0.45);
+    color: rgba(255, 255, 255, 0.7);
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
     cursor: pointer;
-    min-height: 36px;
-    min-width: 36px;
+    min-height: 48px;
+    min-width: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -323,7 +346,7 @@
 
   .pill:hover:not(:disabled) {
     background: rgba(255, 255, 255, 0.06);
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(255, 255, 255, 0.85);
   }
 
   .pill.active {
@@ -361,7 +384,7 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
     cursor: pointer;
-    min-height: 36px;
+    min-height: 48px;
     transition: background 0.15s ease;
   }
 
@@ -386,7 +409,7 @@
     font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     letter-spacing: 0.04em;
-    opacity: 0.7;
+    color: rgba(255, 255, 255, 0.7);
   }
 
   .divider {
@@ -407,12 +430,12 @@
     border: none;
     border-radius: 7px;
     background: transparent;
-    color: rgba(255, 255, 255, 0.4);
+    color: rgba(255, 255, 255, 0.7);
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     cursor: pointer;
-    min-height: 36px;
-    min-width: 32px;
+    min-height: 48px;
+    min-width: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -421,7 +444,7 @@
 
   .turn-pill:hover:not(:disabled) {
     background: rgba(255, 255, 255, 0.06);
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(255, 255, 255, 0.85);
   }
 
   .turn-pill.active {
@@ -435,15 +458,15 @@
 
   /* === Action buttons (bottom-right) === */
   .action-icon {
-    width: 40px;
-    height: 40px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     border: 1px solid rgba(255, 255, 255, 0.1);
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     color: rgba(255, 255, 255, 0.6);
-    font-size: 14px;
+    font-size: 15px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -483,7 +506,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 8px 16px;
+    padding: 10px 18px;
     border-radius: 10px;
     border: 1.5px solid var(--hand-color);
     background: color-mix(in srgb, var(--hand-color) 15%, rgba(0, 0, 0, 0.6));
@@ -493,7 +516,7 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
     cursor: pointer;
-    min-height: 40px;
+    min-height: 48px;
     pointer-events: none;
     opacity: 0;
     transform: scale(0.9);
@@ -525,7 +548,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 8px 16px;
+    padding: 10px 18px;
     border-radius: 10px;
     border: 1.5px solid var(--theme-accent, #6366f1);
     background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, rgba(0, 0, 0, 0.6));
@@ -535,7 +558,7 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
     cursor: pointer;
-    min-height: 40px;
+    min-height: 48px;
     pointer-events: none;
     opacity: 0;
     transform: scale(0.9);
@@ -554,6 +577,21 @@
 
   .new-btn i {
     font-size: 12px;
+  }
+
+  /* === Focus indicators — white ring for high contrast against dark overlay === */
+  .pill:focus-visible,
+  .turn-pill:focus-visible,
+  .rotation-toggle:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+  }
+
+  .action-icon:focus-visible,
+  .done-btn:focus-visible,
+  .new-btn:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 3px;
   }
 
   /* === Reduced motion === */
@@ -588,8 +626,7 @@
 
     .turn-pill {
       padding: 5px 6px;
-      min-width: 28px;
-      font-size: 11px;
+      min-width: 40px;
     }
 
     .rotation-toggle {
