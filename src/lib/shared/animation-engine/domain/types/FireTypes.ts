@@ -278,7 +278,7 @@ export const CHARCOAL_FIRE_PHYSICS: FirePhysicsParams = {
   sootCoolRate: 1.8,
   sootDissipation: 1.8,
   sootAdvectionDissipation: 0.98,
-  gravity: -1000.0,
+  gravity: -10000.0,
 };
 
 /** Charcoal color curve — steel-wool orange/white palette */
