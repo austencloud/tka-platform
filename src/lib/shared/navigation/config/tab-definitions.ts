@@ -780,6 +780,14 @@ export const LAB_TABS: Section[] = [
     color: "#6366f1",
     gradient: "linear-gradient(135deg, #818cf8 0%, #6366f1 100%)",
   },
+  {
+    id: "ascii-pictograph",
+    label: "ASCII Pictograph",
+    icon: '<i class="fas fa-terminal" aria-hidden="true"></i>',
+    description: "Iterate on ASCII pictograph rendering for the DOS terminal",
+    color: "#33ff33",
+    gradient: "linear-gradient(135deg, #33ff33 0%, #1a8c1a 100%)",
+  },
 ];
 
 // REMOVED: LANDING_PAGE_TABS - LandingPreviewModule now handles its own internal tabs
