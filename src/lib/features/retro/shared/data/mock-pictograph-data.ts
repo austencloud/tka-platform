@@ -9,11 +9,13 @@
  * Domain: Retro SCRIBE App
  */
 
-import type {
-	RetroPictographData,
-	RetroGridLocation,
-	RetroMotionType,
-	RetroOrientation,
+import type { RetroPictographData } from "../domain/pictograph-types";
+import {
+	GridLocation,
+	GridMode,
+	MotionType,
+	MotionColor,
+	Orientation,
 } from "../domain/pictograph-types";
 
 /**
@@ -21,91 +23,102 @@ import type {
  * Each pair is [blueLocation, redLocation].
  * Cycles through visually distinct positions.
  */
-const POSITION_PAIRS: [RetroGridLocation, RetroGridLocation][] = [
-	["n", "s"], // opposite cardinal — alpha-like
-	["n", "n"], // same cardinal — beta-like
-	["n", "e"], // adjacent cardinal — gamma-like
-	["e", "w"], // opposite cardinal
-	["e", "e"], // same cardinal
-	["s", "w"], // adjacent cardinal
-	["s", "s"], // same cardinal
-	["w", "n"], // adjacent cardinal
-	["n", "w"], // adjacent cardinal
-	["e", "s"], // adjacent cardinal
-	["ne", "sw"], // opposite intercardinal
-	["ne", "ne"], // same intercardinal
-	["se", "nw"], // opposite intercardinal
-	["nw", "se"], // opposite intercardinal (reverse)
-	["n", "se"], // cardinal + intercardinal mix
-	["s", "ne"], // cardinal + intercardinal mix
-	["e", "nw"], // cardinal + intercardinal mix
-	["w", "se"], // cardinal + intercardinal mix
-	["ne", "s"], // intercardinal + cardinal mix
-	["sw", "n"], // intercardinal + cardinal mix
-	["nw", "e"], // intercardinal + cardinal mix
-	["se", "w"], // intercardinal + cardinal mix
-	["n", "sw"], // cardinal + intercardinal
-	["e", "ne"], // adjacent
-	["s", "nw"], // cardinal + intercardinal
-	["w", "sw"], // adjacent
+const POSITION_PAIRS: [GridLocation, GridLocation][] = [
+	[GridLocation.NORTH, GridLocation.SOUTH], // opposite cardinal — alpha-like
+	[GridLocation.NORTH, GridLocation.NORTH], // same cardinal — beta-like
+	[GridLocation.NORTH, GridLocation.EAST], // adjacent cardinal — gamma-like
+	[GridLocation.EAST, GridLocation.WEST], // opposite cardinal
+	[GridLocation.EAST, GridLocation.EAST], // same cardinal
+	[GridLocation.SOUTH, GridLocation.WEST], // adjacent cardinal
+	[GridLocation.SOUTH, GridLocation.SOUTH], // same cardinal
+	[GridLocation.WEST, GridLocation.NORTH], // adjacent cardinal
+	[GridLocation.NORTH, GridLocation.WEST], // adjacent cardinal
+	[GridLocation.EAST, GridLocation.SOUTH], // adjacent cardinal
+	[GridLocation.NORTHEAST, GridLocation.SOUTHWEST], // opposite intercardinal
+	[GridLocation.NORTHEAST, GridLocation.NORTHEAST], // same intercardinal
+	[GridLocation.SOUTHEAST, GridLocation.NORTHWEST], // opposite intercardinal
+	[GridLocation.NORTHWEST, GridLocation.SOUTHEAST], // opposite intercardinal (reverse)
+	[GridLocation.NORTH, GridLocation.SOUTHEAST], // cardinal + intercardinal mix
+	[GridLocation.SOUTH, GridLocation.NORTHEAST], // cardinal + intercardinal mix
+	[GridLocation.EAST, GridLocation.NORTHWEST], // cardinal + intercardinal mix
+	[GridLocation.WEST, GridLocation.SOUTHEAST], // cardinal + intercardinal mix
+	[GridLocation.NORTHEAST, GridLocation.SOUTH], // intercardinal + cardinal mix
+	[GridLocation.SOUTHWEST, GridLocation.NORTH], // intercardinal + cardinal mix
+	[GridLocation.NORTHWEST, GridLocation.EAST], // intercardinal + cardinal mix
+	[GridLocation.SOUTHEAST, GridLocation.WEST], // intercardinal + cardinal mix
+	[GridLocation.NORTH, GridLocation.SOUTHWEST], // cardinal + intercardinal
+	[GridLocation.EAST, GridLocation.NORTHEAST], // adjacent
+	[GridLocation.SOUTH, GridLocation.NORTHWEST], // cardinal + intercardinal
+	[GridLocation.WEST, GridLocation.SOUTHWEST], // adjacent
 ];
 
-const MOTION_TYPES: RetroMotionType[] = ["pro", "anti", "dash", "static"];
+const MOTION_TYPES: MotionType[] = [
+	MotionType.PRO,
+	MotionType.ANTI,
+	MotionType.DASH,
+	MotionType.STATIC,
+];
 
-const ORIENTATIONS: RetroOrientation[] = ["in", "out", "clock", "counter"];
+const ORIENTATIONS: Orientation[] = [
+	Orientation.IN,
+	Orientation.OUT,
+	Orientation.CLOCK,
+	Orientation.COUNTER,
+];
 
 /**
  * End locations for motion arrows. Shifts the start by one position
  * clockwise for pro, counter-clockwise for anti, opposite for dash.
  */
-const CW_SHIFT: Record<RetroGridLocation, RetroGridLocation> = {
-	n: "ne",
-	ne: "e",
-	e: "se",
-	se: "s",
-	s: "sw",
-	sw: "w",
-	w: "nw",
-	nw: "n",
-	c: "c",
+const CW_SHIFT: Record<GridLocation, GridLocation> = {
+	[GridLocation.NORTH]: GridLocation.NORTHEAST,
+	[GridLocation.NORTHEAST]: GridLocation.EAST,
+	[GridLocation.EAST]: GridLocation.SOUTHEAST,
+	[GridLocation.SOUTHEAST]: GridLocation.SOUTH,
+	[GridLocation.SOUTH]: GridLocation.SOUTHWEST,
+	[GridLocation.SOUTHWEST]: GridLocation.WEST,
+	[GridLocation.WEST]: GridLocation.NORTHWEST,
+	[GridLocation.NORTHWEST]: GridLocation.NORTH,
+	[GridLocation.CENTER]: GridLocation.CENTER,
 };
 
-const CCW_SHIFT: Record<RetroGridLocation, RetroGridLocation> = {
-	n: "nw",
-	nw: "w",
-	w: "sw",
-	sw: "s",
-	s: "se",
-	se: "e",
-	e: "ne",
-	ne: "n",
-	c: "c",
+const CCW_SHIFT: Record<GridLocation, GridLocation> = {
+	[GridLocation.NORTH]: GridLocation.NORTHWEST,
+	[GridLocation.NORTHWEST]: GridLocation.WEST,
+	[GridLocation.WEST]: GridLocation.SOUTHWEST,
+	[GridLocation.SOUTHWEST]: GridLocation.SOUTH,
+	[GridLocation.SOUTH]: GridLocation.SOUTHEAST,
+	[GridLocation.SOUTHEAST]: GridLocation.EAST,
+	[GridLocation.EAST]: GridLocation.NORTHEAST,
+	[GridLocation.NORTHEAST]: GridLocation.NORTH,
+	[GridLocation.CENTER]: GridLocation.CENTER,
 };
 
-const OPPOSITE: Record<RetroGridLocation, RetroGridLocation> = {
-	n: "s",
-	s: "n",
-	e: "w",
-	w: "e",
-	ne: "sw",
-	sw: "ne",
-	nw: "se",
-	se: "nw",
-	c: "c",
+const OPPOSITE: Record<GridLocation, GridLocation> = {
+	[GridLocation.NORTH]: GridLocation.SOUTH,
+	[GridLocation.SOUTH]: GridLocation.NORTH,
+	[GridLocation.EAST]: GridLocation.WEST,
+	[GridLocation.WEST]: GridLocation.EAST,
+	[GridLocation.NORTHEAST]: GridLocation.SOUTHWEST,
+	[GridLocation.SOUTHWEST]: GridLocation.NORTHEAST,
+	[GridLocation.NORTHWEST]: GridLocation.SOUTHEAST,
+	[GridLocation.SOUTHEAST]: GridLocation.NORTHWEST,
+	[GridLocation.CENTER]: GridLocation.CENTER,
 };
 
 function getEndLocation(
-	start: RetroGridLocation,
-	motion: RetroMotionType,
-): RetroGridLocation {
+	start: GridLocation,
+	motion: MotionType,
+): GridLocation {
 	switch (motion) {
-		case "pro":
+		case MotionType.PRO:
 			return CW_SHIFT[start];
-		case "anti":
+		case MotionType.ANTI:
 			return CCW_SHIFT[start];
-		case "dash":
+		case MotionType.DASH:
 			return OPPOSITE[start];
-		case "static":
+		case MotionType.STATIC:
+		case MotionType.FLOAT:
 			return start;
 	}
 }
@@ -138,9 +151,9 @@ export function createMockPictographData(
 
 	return {
 		letter: upper,
-		gridMode: needsBox ? "box" : "diamond",
+		gridMode: needsBox ? GridMode.BOX : GridMode.DIAMOND,
 		blueHand: {
-			color: "blue",
+			color: MotionColor.BLUE,
 			location: pair[0],
 			orientation: blueOrientation,
 			motionType: blueMotion,
@@ -148,7 +161,7 @@ export function createMockPictographData(
 			turns: blueTurns,
 		},
 		redHand: {
-			color: "red",
+			color: MotionColor.RED,
 			location: pair[1],
 			orientation: redOrientation,
 			motionType: redMotion,
@@ -158,6 +171,11 @@ export function createMockPictographData(
 	};
 }
 
-function isCardinal(loc: RetroGridLocation): boolean {
-	return loc === "n" || loc === "e" || loc === "s" || loc === "w";
+function isCardinal(loc: GridLocation): boolean {
+	return (
+		loc === GridLocation.NORTH ||
+		loc === GridLocation.EAST ||
+		loc === GridLocation.SOUTH ||
+		loc === GridLocation.WEST
+	);
 }

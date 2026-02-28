@@ -15,9 +15,14 @@
 import type { IPixelRenderer } from "../contracts/IPixelRenderer";
 import type {
 	RetroPictographData,
-	RetroGridLocation,
 	RetroHandData,
-	RetroOrientation,
+} from "../../../shared/domain/pictograph-types";
+import {
+	GridLocation,
+	GridMode,
+	MotionType,
+	MotionColor,
+	Orientation,
 } from "../../../shared/domain/pictograph-types";
 
 // ============================================================================
@@ -74,38 +79,25 @@ const BAYER_4X4 = [
  * Box mode: hands at NE/SE/SW/NW.
  */
 function getGridPosition(
-	location: RetroGridLocation,
-	gridMode: "diamond" | "box",
+	location: GridLocation,
+	gridMode: GridMode,
 	size: number,
 ): { x: number; y: number } {
 	const center = size / 2;
 	const radius = size * 0.35; // hand points are 35% from center
 
-	const diamondPositions: Record<RetroGridLocation, { x: number; y: number }> = {
-		n: { x: center, y: center - radius },
-		e: { x: center + radius, y: center },
-		s: { x: center, y: center + radius },
-		w: { x: center - radius, y: center },
-		ne: { x: center + radius * 0.707, y: center - radius * 0.707 },
-		se: { x: center + radius * 0.707, y: center + radius * 0.707 },
-		sw: { x: center - radius * 0.707, y: center + radius * 0.707 },
-		nw: { x: center - radius * 0.707, y: center - radius * 0.707 },
-		c: { x: center, y: center },
+	const positions: Record<GridLocation, { x: number; y: number }> = {
+		[GridLocation.NORTH]: { x: center, y: center - radius },
+		[GridLocation.EAST]: { x: center + radius, y: center },
+		[GridLocation.SOUTH]: { x: center, y: center + radius },
+		[GridLocation.WEST]: { x: center - radius, y: center },
+		[GridLocation.NORTHEAST]: { x: center + radius * 0.707, y: center - radius * 0.707 },
+		[GridLocation.SOUTHEAST]: { x: center + radius * 0.707, y: center + radius * 0.707 },
+		[GridLocation.SOUTHWEST]: { x: center - radius * 0.707, y: center + radius * 0.707 },
+		[GridLocation.NORTHWEST]: { x: center - radius * 0.707, y: center - radius * 0.707 },
+		[GridLocation.CENTER]: { x: center, y: center },
 	};
 
-	const boxPositions: Record<RetroGridLocation, { x: number; y: number }> = {
-		ne: { x: center + radius * 0.707, y: center - radius * 0.707 },
-		se: { x: center + radius * 0.707, y: center + radius * 0.707 },
-		sw: { x: center - radius * 0.707, y: center + radius * 0.707 },
-		nw: { x: center - radius * 0.707, y: center - radius * 0.707 },
-		n: { x: center, y: center - radius },
-		e: { x: center + radius, y: center },
-		s: { x: center, y: center + radius },
-		w: { x: center - radius, y: center },
-		c: { x: center, y: center },
-	};
-
-	const positions = gridMode === "box" ? boxPositions : diamondPositions;
 	return positions[location];
 }
 
@@ -118,37 +110,66 @@ function getGridPosition(
  * "counter" = perpendicular, 90deg counter-clockwise from radial
  */
 function getPropAngle(
-	location: RetroGridLocation,
-	orientation: RetroOrientation,
+	location: GridLocation,
+	orientation: Orientation,
 ): number {
 	// Angle from center to this grid location (radians, 0 = right, positive = clockwise)
-	const locationAngles: Record<RetroGridLocation, number> = {
-		n: -Math.PI / 2,
-		ne: -Math.PI / 4,
-		e: 0,
-		se: Math.PI / 4,
-		s: Math.PI / 2,
-		sw: (3 * Math.PI) / 4,
-		w: Math.PI,
-		nw: (-3 * Math.PI) / 4,
-		c: 0,
+	const locationAngles: Record<GridLocation, number> = {
+		[GridLocation.NORTH]: -Math.PI / 2,
+		[GridLocation.NORTHEAST]: -Math.PI / 4,
+		[GridLocation.EAST]: 0,
+		[GridLocation.SOUTHEAST]: Math.PI / 4,
+		[GridLocation.SOUTH]: Math.PI / 2,
+		[GridLocation.SOUTHWEST]: (3 * Math.PI) / 4,
+		[GridLocation.WEST]: Math.PI,
+		[GridLocation.NORTHWEST]: (-3 * Math.PI) / 4,
+		[GridLocation.CENTER]: 0,
 	};
 
 	const baseAngle = locationAngles[location];
 
+	// Cardinal orientations map directly
 	switch (orientation) {
-		case "in":
-			// Points toward center = reverse of location angle
+		case Orientation.IN:
 			return baseAngle + Math.PI;
-		case "out":
-			// Points away from center = same as location angle
+		case Orientation.OUT:
 			return baseAngle;
-		case "clock":
-			// 90deg clockwise from radial
+		case Orientation.CLOCK:
 			return baseAngle + Math.PI / 2;
-		case "counter":
-			// 90deg counter-clockwise from radial
+		case Orientation.COUNTER:
 			return baseAngle - Math.PI / 2;
+
+		// Interradial orientations: split the difference between adjacent cardinals
+		case Orientation.CLOCK_IN:
+			return baseAngle + Math.PI * 0.75; // between CLOCK (+90) and IN (+180)
+		case Orientation.CLOCK_OUT:
+			return baseAngle + Math.PI / 4; // between CLOCK (+90) and OUT (0)
+		case Orientation.COUNTER_IN:
+			return baseAngle - Math.PI * 0.75; // between COUNTER (-90) and IN (+180)
+		case Orientation.COUNTER_OUT:
+			return baseAngle - Math.PI / 4; // between COUNTER (-90) and OUT (0)
+
+		// Centric orientations: prop at center points toward a compass direction
+		case Orientation.CENTER_N:
+			return -Math.PI / 2;
+		case Orientation.CENTER_NE:
+			return -Math.PI / 4;
+		case Orientation.CENTER_E:
+			return 0;
+		case Orientation.CENTER_SE:
+			return Math.PI / 4;
+		case Orientation.CENTER_S:
+			return Math.PI / 2;
+		case Orientation.CENTER_SW:
+			return (3 * Math.PI) / 4;
+		case Orientation.CENTER_W:
+			return Math.PI;
+		case Orientation.CENTER_NW:
+			return (-3 * Math.PI) / 4;
+
+		default:
+			// Graceful fallback for any future orientation values
+			return baseAngle;
 	}
 }
 
@@ -189,10 +210,10 @@ export class PixelRenderer implements IPixelRenderer {
 		this.drawHand(ctx, data.redHand, data.gridMode, size);
 
 		// 6. Draw arrows (motion indicators)
-		if (data.blueHand.motionType !== "static") {
+		if (data.blueHand.motionType !== MotionType.STATIC) {
 			this.drawArrow(ctx, data.blueHand, data.gridMode, size);
 		}
-		if (data.redHand.motionType !== "static") {
+		if (data.redHand.motionType !== MotionType.STATIC) {
 			this.drawArrow(ctx, data.redHand, data.gridMode, size);
 		}
 
@@ -258,7 +279,7 @@ export class PixelRenderer implements IPixelRenderer {
 
 	private drawGrid(
 		ctx: CanvasRenderingContext2D,
-		gridMode: "diamond" | "box",
+		gridMode: GridMode,
 		size: number,
 	): void {
 		ctx.strokeStyle = "#808080"; // Gray
@@ -267,14 +288,19 @@ export class PixelRenderer implements IPixelRenderer {
 		const center = size / 2;
 		const radius = size * 0.42; // Grid lines extend a bit further than hand points
 
-		if (gridMode === "diamond") {
+		if (gridMode === GridMode.DIAMOND) {
 			// Diamond: lines from N-S and E-W through center
-			// Vertical line
 			this.drawLine(ctx, center, center - radius, center, center + radius);
-			// Horizontal line
 			this.drawLine(ctx, center - radius, center, center + radius, center);
-		} else {
+		} else if (gridMode === GridMode.BOX) {
 			// Box: lines from NE-SW and NW-SE through center
+			const d = radius * 0.707;
+			this.drawLine(ctx, center - d, center - d, center + d, center + d);
+			this.drawLine(ctx, center + d, center - d, center - d, center + d);
+		} else {
+			// Skewed / centric / trigrid: draw both diamond + box lines
+			this.drawLine(ctx, center, center - radius, center, center + radius);
+			this.drawLine(ctx, center - radius, center, center + radius, center);
 			const d = radius * 0.707;
 			this.drawLine(ctx, center - d, center - d, center + d, center + d);
 			this.drawLine(ctx, center + d, center - d, center - d, center + d);
@@ -314,7 +340,7 @@ export class PixelRenderer implements IPixelRenderer {
 	private drawHand(
 		ctx: CanvasRenderingContext2D,
 		hand: RetroHandData,
-		gridMode: "diamond" | "box",
+		gridMode: GridMode,
 		size: number,
 	): void {
 		const pos = getGridPosition(hand.location, gridMode, size);
@@ -322,7 +348,7 @@ export class PixelRenderer implements IPixelRenderer {
 		const half = Math.floor(handSize / 2);
 
 		const color =
-			hand.color === "blue" ? WIN16_PALETTE[12]! : WIN16_PALETTE[9]!;
+			hand.color === MotionColor.BLUE ? WIN16_PALETTE[12]! : WIN16_PALETTE[9]!;
 
 		this.fillRect(ctx, pos.x - half, pos.y - half, handSize, handSize, color);
 	}
@@ -334,7 +360,7 @@ export class PixelRenderer implements IPixelRenderer {
 	private drawProp(
 		ctx: CanvasRenderingContext2D,
 		hand: RetroHandData,
-		gridMode: "diamond" | "box",
+		gridMode: GridMode,
 		size: number,
 	): void {
 		const pos = getGridPosition(hand.location, gridMode, size);
@@ -343,7 +369,7 @@ export class PixelRenderer implements IPixelRenderer {
 		const propLength = Math.max(6, Math.floor(size / 5));
 		const propWidth = Math.max(2, Math.floor(size / 24));
 
-		const color = hand.color === "blue" ? "#0000FF" : "#FF0000";
+		const color = hand.color === MotionColor.BLUE ? "#0000FF" : "#FF0000";
 
 		ctx.save();
 		ctx.translate(pos.x, pos.y);
@@ -368,7 +394,7 @@ export class PixelRenderer implements IPixelRenderer {
 	private drawArrow(
 		ctx: CanvasRenderingContext2D,
 		hand: RetroHandData,
-		gridMode: "diamond" | "box",
+		gridMode: GridMode,
 		size: number,
 	): void {
 		// For dash motions: straight line from start to end
@@ -379,7 +405,7 @@ export class PixelRenderer implements IPixelRenderer {
 		// If start and end are the same, no arrow needed
 		if (hand.location === hand.endLocation) return;
 
-		const color = hand.color === "blue" ? "#0000FF" : "#FF0000";
+		const color = hand.color === MotionColor.BLUE ? "#0000FF" : "#FF0000";
 
 		ctx.strokeStyle = color;
 		ctx.lineWidth = 1;
