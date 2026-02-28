@@ -1,37 +1,40 @@
 /**
  * library-events.ts
  *
- * Cross-module event bus for mutations to a user's saved sequence collection.
+ * Lets different parts of the app react when a sequence is deleted.
  *
- * WHY THIS EXISTS:
- * The sequence viewer drawer lives outside the browse/train/create modules and
- * has no direct reference to their state. When a user deletes a sequence from
- * the viewer, any module that displays the user's sequences needs to reload so
- * stale entries don't remain on screen.
+ * THE PROBLEM:
+ * The sequence detail panel (the drawer that slides open when you tap a sequence)
+ * has a delete button. When you delete a sequence there, any other screen that's
+ * showing that same sequence needs to remove it from its list — otherwise the
+ * deleted sequence stays visible until the next page refresh.
  *
- * HOW IT WORKS:
- * The viewer dispatches `notifyLibraryMutated()` after a destructive operation.
- * Any module that displays the user's sequences subscribes with `onLibraryMutated()`.
+ * The detail panel has no direct connection to those other screens, so it can't
+ * just tell them directly.
  *
- * KNOWN SUBSCRIBERS (update this list when adding a new subscriber):
- * - browse-state-factory.svelte.ts  — reloads the active gallery source
- * - SequenceBrowser.svelte (Train)  — reloads the sequence picker list
+ * THE SOLUTION:
+ * The detail panel shouts "a sequence was deleted" into a shared channel after
+ * a delete. Any screen that cares listens to that channel and removes the deleted
+ * sequence from its own list when it hears the message.
  *
- * TO ADD A NEW SUBSCRIBER:
- * 1. In your state factory or component, call `onLibraryMutated(fn)` inside
- *    a `$effect` so it auto-unregisters on component destroy:
+ * SCREENS THAT CURRENTLY LISTEN:
+ * - browse-state-factory.svelte.ts  — the Browse gallery
+ * - SequenceBrowser.svelte (Train)  — the sequence picker in Train mode
  *
- *    $effect(() => onLibraryMutated(() => reloadMyData()));
+ * TO ADD A NEW LISTENER:
+ * 1. Call `onLibraryMutated(fn)` inside a `$effect` in your component or state file.
+ *    The $effect ensures the listener is cleaned up when the screen is closed.
  *
- * 2. Add your file to the KNOWN SUBSCRIBERS list above.
+ *    $effect(() => onLibraryMutated((sequenceId) => removeFromMyList(sequenceId)));
+ *
+ * 2. Add your file to the SCREENS THAT CURRENTLY LISTEN list above.
  */
 
 export const LIBRARY_MUTATED_EVENT = "tka:library-mutated";
 
 /**
- * Dispatch a library mutation notification. Call this after a delete so any
- * module displaying the user's sequences can remove the entry from its cache
- * without a Firestore round-trip.
+ * Call this after deleting a sequence. Any screen that's showing that sequence
+ * will hear about it and remove it from its list.
  */
 export function notifyLibraryMutated(sequenceId: string): void {
   window.dispatchEvent(
@@ -40,8 +43,9 @@ export function notifyLibraryMutated(sequenceId: string): void {
 }
 
 /**
- * Subscribe to library mutation notifications. Returns an unsubscribe function.
- * When used inside a Svelte `$effect`, cleanup is automatic.
+ * Listen for deleted sequences. The handler is called with the deleted sequence's ID
+ * so you can remove it from your list. Returns a function that stops listening —
+ * inside a $effect this cleanup runs automatically when the screen is closed.
  *
  * @example
  * $effect(() => onLibraryMutated((sequenceId) => removeFromList(sequenceId)));

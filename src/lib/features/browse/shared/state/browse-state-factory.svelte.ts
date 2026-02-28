@@ -165,7 +165,10 @@ export function createBrowseState() {
     return counts;
   });
 
-  // Load all sequences and generate navigation
+  // Fetches community sequences from Firestore (or a cached result if already loaded).
+  // This is the raw fetch — it only loads data. It doesn't update currentSource or
+  // skip redundant calls if data is already loaded. Use setSource("community") instead,
+  // which handles both of those before calling this internally.
   async function loadAllSequences(): Promise<void> {
     try {
       isLoading = true;
@@ -189,9 +192,22 @@ export function createBrowseState() {
     }
   }
 
-  // Load user's library sequences
-  // When impersonating, Firestore rules allow admins to read any user's library
+  // Fetches the user's library sequences from Firestore (or a cached result if already loaded).
+  // This is the raw fetch — it only loads data. It doesn't update currentSource or
+  // skip redundant calls if data is already loaded. Use setSource("my-library") instead,
+  // which handles both of those before calling this internally.
+  // To force a fresh Firestore fetch (e.g. when the impersonated user changes),
+  // call invalidateLibraryCache() first.
   async function loadLibrarySequences(): Promise<void> {
+    if (libraryCache) {
+      allSequences = libraryCache;
+      displayedSequences = libraryCache;
+      applyFilterAndSort();
+      await generateSequenceSections();
+      sectionsReady = true;
+      return;
+    }
+
     const libService = getLibraryRepository();
     if (!libService) {
       error = "Please sign in to view your library";
@@ -229,30 +245,12 @@ export function createBrowseState() {
     }
   }
 
-  // Delete a sequence from the user's library.
-  // Updates both caches and the displayed sequences in-place — no Firestore round-trip.
-  async function deleteSequence(sequenceId: string): Promise<void> {
-    const libService = getLibraryRepository();
-    if (!libService) throw new Error("Not signed in");
-    await libService.deleteSequence(sequenceId);
-
-    // Surgically remove from both caches so neither source needs a re-fetch
-    libraryCache = libraryCache?.filter((s) => s.id !== sequenceId) ?? null;
-    loaderService.removeFromCache(sequenceId);
-
-    // Update allSequences, then recompute filteredSequences + displayedSequences
-    // via applyFilterAndSort (generateSequenceSections reads from filteredSequences)
-    allSequences = allSequences.filter((s) => s.id !== sequenceId);
-    applyFilterAndSort();
-    await generateSequenceSections();
-  }
-
   // Switch source and reload data
   async function setSource(source: SequenceSource): Promise<void> {
-    // Only skip if source already matches AND data has been loaded.
-    // If sectionsReady is false we always load, even if source appears unchanged
-    // (covers the initial load case where currentSource defaults to "community"
-    // but data hasn't been fetched yet).
+    // Skip if we're already showing this source and the data is loaded.
+    // sectionsReady is required because currentSource starts as "community" before
+    // any data has been fetched — without it, the first setSource("community") call
+    // would see a matching source and return immediately without loading anything.
     if (source === currentSource && sectionsReady) {
       return;
     }
@@ -260,17 +258,7 @@ export function createBrowseState() {
     currentSource = source;
 
     if (source === "my-library") {
-      if (libraryCache) {
-        // Restore from cache — no Firestore fetch needed
-        const cached = libraryCache;
-        allSequences = cached;
-        displayedSequences = cached;
-        applyFilterAndSort();
-        await generateSequenceSections();
-        sectionsReady = true;
-      } else {
-        await loadLibrarySequences();
-      }
+      await loadLibrarySequences();
     } else {
       // Community: PublicSequencesLoader has its own in-memory cache, so this is fast
       await loadAllSequences();
@@ -510,7 +498,7 @@ export function createBrowseState() {
     }, 300);
   }
 
-  // When a sequence is deleted from anywhere (e.g. sequence viewer), surgically
+  // When a sequence is deleted from anywhere (e.g. sequence viewer),
   // remove it from both caches and the displayed list — no Firestore round-trip.
   $effect(() => {
     return onLibraryMutated((sequenceId) => {
@@ -588,6 +576,7 @@ export function createBrowseState() {
     // Methods
     loadAllSequences,
     loadLibrarySequences,
+    invalidateLibraryCache() { libraryCache = null; },
     setSource,
     selectSequence,
     toggleFavorite,

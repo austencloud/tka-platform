@@ -244,9 +244,11 @@
     const currentEffectiveUserId = authState.effectiveUserId;
     const isInMyLibrary = sequenceSourceManager.current === "my-library";
 
-    // If user changed and we're viewing My Library, force reload
+    // If user changed and we're viewing My Library, reload for the new user.
+    // Clearing the cache ensures loadLibrarySequences fetches from Firestore
+    // instead of returning the previous user's data.
     if (currentEffectiveUserId !== lastEffectiveUserId && isInMyLibrary) {
-      // Force reload by temporarily clearing and re-setting
+      galleryState.invalidateLibraryCache();
       galleryState.loadLibrarySequences();
     }
 
@@ -371,9 +373,11 @@
       console.warn("BrowseModule: Failed to resolve DeviceDetector", err);
     }
 
-    // Load initial data for the correct source (non-blocking).
-    // Use setSource so the persisted source (e.g. "my-library") is respected
-    // instead of always defaulting to community sequences.
+    // Load initial data using the user's last-selected source (non-blocking).
+    // The gallery toggle (Community / My Library) saves its state to localStorage
+    // via sequenceSourceManager. Reading from it here ensures that if the user was
+    // viewing their own library before navigating away, they return to their library
+    // instead of being reset to Community sequences on every visit.
     galleryState
       .setSource(sequenceSourceManager.current)
       .then(() => {

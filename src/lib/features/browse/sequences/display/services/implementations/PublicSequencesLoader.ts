@@ -91,7 +91,7 @@ export class PublicSequencesLoader implements IBrowseLoader {
   }
 
   /**
-   * Surgically remove a single sequence from the cache by ID.
+   * Remove a single sequence from the cache by ID.
    * Avoids a Firestore round-trip after a delete.
    */
   removeFromCache(sequenceId: string): void {
