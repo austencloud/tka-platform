@@ -1,0 +1,175 @@
+/**
+ * DOS terminal CRT styles.
+ * Green (or amber) phosphor text on black background.
+ * Authentic CRT effects: scanlines, glow, flicker.
+ */
+
+.dos-terminal {
+	--dos-bg: #000000;
+	--dos-text: #33ff33;
+	--dos-text-dim: #1a8c1a;
+	--dos-amber: #ffb000;
+	--dos-amber-dim: #8c6000;
+	--dos-white: #cccccc;
+	--dos-red: #ff3333;
+	--dos-blue: #3333ff;
+	--dos-cyan: #33ffff;
+	--dos-gray: #808080;
+
+	background: var(--dos-bg);
+	color: var(--dos-text);
+	font-family: "Courier New", "Consolas", monospace;
+	font-size: 14px;
+	line-height: 1.3;
+	width: 100vw;
+	height: 100vh;
+	overflow: hidden;
+	position: relative;
+	padding: 0;
+	margin: 0;
+	cursor: default;
+	user-select: none;
+}
+
+.dos-terminal.amber {
+	--dos-text: var(--dos-amber);
+	--dos-text-dim: var(--dos-amber-dim);
+}
+
+/* Output area */
+.dos-output {
+	position: absolute;
+	inset: 12px;
+	overflow-y: auto;
+	overflow-x: hidden;
+	padding-bottom: 24px;
+	scrollbar-width: none;
+}
+
+.dos-output::-webkit-scrollbar {
+	display: none;
+}
+
+.dos-line {
+	white-space: pre;
+	min-height: 1.3em;
+}
+
+/* Color spans */
+.dos-green {
+	color: #33ff33;
+}
+.dos-amber {
+	color: #ffb000;
+}
+.dos-white {
+	color: #cccccc;
+}
+.dos-red {
+	color: #ff3333;
+}
+.dos-blue {
+	color: #3333ff;
+}
+.dos-cyan {
+	color: #33ffff;
+}
+.dos-gray {
+	color: #808080;
+}
+
+/* Input line */
+.dos-input-line {
+	white-space: pre;
+	min-height: 1.3em;
+	display: flex;
+}
+
+.dos-prompt-text {
+	color: var(--dos-text);
+	flex-shrink: 0;
+}
+
+.dos-input-text {
+	color: var(--dos-text);
+}
+
+/* Blinking cursor */
+.dos-cursor {
+	display: inline-block;
+	width: 8px;
+	height: 14px;
+	background: var(--dos-text);
+	animation: dos-blink 1s step-end infinite;
+	vertical-align: text-bottom;
+}
+
+@keyframes dos-blink {
+	0%,
+	50% {
+		opacity: 1;
+	}
+	51%,
+	100% {
+		opacity: 0;
+	}
+}
+
+/* CRT scanline overlay */
+.dos-crt-overlay {
+	position: fixed;
+	inset: 0;
+	pointer-events: none;
+	z-index: 100;
+}
+
+.dos-crt-overlay::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: repeating-linear-gradient(
+		transparent 0px,
+		transparent 1px,
+		rgba(0, 0, 0, 0.15) 1px,
+		rgba(0, 0, 0, 0.15) 2px
+	);
+}
+
+/* Phosphor glow */
+.dos-crt-overlay::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: radial-gradient(
+		ellipse at center,
+		transparent 60%,
+		rgba(0, 0, 0, 0.4) 100%
+	);
+}
+
+/* Subtle text glow */
+.dos-terminal .dos-line,
+.dos-terminal .dos-input-line {
+	text-shadow: 0 0 4px currentColor;
+}
+
+/* Accessibility: respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+	.dos-cursor {
+		animation: none;
+		opacity: 1;
+	}
+
+	.dos-crt-overlay::before {
+		background: none;
+	}
+
+	.dos-crt-overlay::after {
+		background: none;
+	}
+
+	.dos-terminal .dos-line,
+	.dos-terminal .dos-input-line {
+		text-shadow: none;
+	}
+}
