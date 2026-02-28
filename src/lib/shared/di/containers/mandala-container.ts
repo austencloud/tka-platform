@@ -10,3 +10,5 @@ import { MandalaTransformer } from "$lib/features/mandala-generator/services/imp
 export const mandalaContainer = createContainer().add({
   mandalaTransformer: () => new MandalaTransformer(),
 });
+
+export type MandalaContainer = typeof mandalaContainer;

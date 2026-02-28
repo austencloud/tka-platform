@@ -42,9 +42,9 @@ export function registerEducationalTools(server: McpServer): void {
 - Types: 1=Dual-Shift(A-V), 2=Shift(W-Ω), 3=Cross-Shift(W--Ω-), 4=Dash(Φ,Ψ,Λ), 5=Dual-Dash(Φ-,Ψ-,Λ-), 6=Static(α,β,γ)
 - Skewed positions (zeta/eta): Type 1 uses M-V (gamma letters) not A-L. Type 4 uses Phi(diverge)/Psi(converge), Lambda can't be skewed
 - "[Letter] dash" = Type 3 with "-" suffix (e.g. "Σ dash" = Σ-)
-- Orientations: in, out, clock, counter + Level 7 interradial: clockIn, clockOut, counterIn, counterOut
+- Orientations: in, out, clock, counter + Level 6 interradial: clockIn, clockOut, counterIn, counterOut
 - VTG (Vulcan Tech Gospel): Split-Same, Tog-Same, Split-Opp, Tog-Opp
-- Levels: 1=0 turns, 2=whole turns, 3=half turns+float, 4=skewed grid, 5=centric grid, 6=conjoined grids, 7=interradials (2D complete), 8=atomics (3D), 9=Rubik's cube (3D complete)
+- Levels: 1=0 turns, 2=whole turns, 3=half turns+float, 4=skewed grid, 5=centric grid, 6=interradials (2D complete), 7=conjoined grids, 8=atomics (3D), 9=Rubik's cube (3D complete)
 - Compounds: DJ, EK, FL (β↔α cycles), MP, NQ, OR (γ→γ cycles), ΦΨ (dash cycle)`,
           }],
         };
@@ -53,7 +53,7 @@ export function registerEducationalTools(server: McpServer): void {
 
 ## Overview
 
-TKA is a notation system for flow arts with dual wielded props (staff, fans, clubs, etc.) that encodes hand positions and movements into letters. Each "pictograph" represents one beat of motion showing:
+TKA is a notation system for flow arts, built for double staves. Each staff has two visible ends -- a thumb reference and a pinky reference -- that never change with proper technique. This dual-end landmark system is the foundation of TKA's orientation framework. Other static props (fans, clubs, buugeng) work but staves are canonical. Each "pictograph" represents one beat of motion showing:
 - Two props (blue and red) at specific grid positions
 - Motion arrows showing how each hand moves
 - Start and end positions
@@ -98,7 +98,7 @@ Pictographs use a grid with up to 9 points:
 
 The facing direction of a prop relative to the performer's center. Eight values across the level system:
 - **Cardinal** (all levels): in, out, clock, counter
-- **Interradial** (Level 7+): clockIn, clockOut, counterIn, counterOut — at 45° between the cardinal orientations
+- **Interradial** (Level 6+): clockIn, clockOut, counterIn, counterOut — at 45° between the cardinal orientations
 
 ## Turns
 
@@ -116,7 +116,7 @@ Props trace circles on a plane in space. Three planes exist:
 
 All levels 1-7 work on a single plane at a time (any of the three). Level 8 (atomics) will introduce patterns where two props are on different planes simultaneously — analogous to how Level 4 expanded from single-grid to mixed-grid.
 
-## Conjoined Grids (Level 6)
+## Conjoined Grids (Level 7)
 
 Two grids sharing a junction point, each showing one hand's motion. Expands the spatial canvas while staying in 2D. Creates new position combinations that can't exist on a single grid, including patterns with two center points. Uses existing position terminology (alpha, beta, gamma) to express the new spatial relationships across paired grids.
 

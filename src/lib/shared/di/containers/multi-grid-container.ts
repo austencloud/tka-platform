@@ -21,3 +21,5 @@ export const multiGridContainer = createContainer().add({
   topologyPropLoader: () => new TopologyPropLoader(),
   topologyBetaSeparator: () => new TopologyBetaSeparator(),
 });
+
+export type MultiGridContainer = typeof multiGridContainer;

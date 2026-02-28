@@ -34,7 +34,7 @@
     align-items: center;
     justify-content: center;
     padding: 60px 24px;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .hero-bg {

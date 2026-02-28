@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Double Contact Ball - Two acrylic spheres side by side -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 160">
+<defs>
+  <radialGradient id="ballGradL" cx="40%" cy="35%" r="55%">
+    <stop offset="0%" stop-color="#6668c4"/>
+    <stop offset="45%" stop-color="#4a4fc9"/>
+    <stop offset="100%" stop-color="#2E3192"/>
+  </radialGradient>
+  <radialGradient id="ballGradR" cx="40%" cy="35%" r="55%">
+    <stop offset="0%" stop-color="#6668c4"/>
+    <stop offset="45%" stop-color="#4a4fc9"/>
+    <stop offset="100%" stop-color="#2E3192"/>
+  </radialGradient>
+</defs>
+<!-- Left sphere -->
+<circle cx="80" cy="80" r="75" fill="url(#ballGradL)" stroke="#1a1d5e" stroke-width="2"/>
+<ellipse cx="62" cy="55" rx="22" ry="14" fill="rgba(255,255,255,0.15)" transform="rotate(-20 62 55)"/>
+<!-- Right sphere -->
+<circle cx="220" cy="80" r="75" fill="url(#ballGradR)" stroke="#1a1d5e" stroke-width="2"/>
+<ellipse cx="202" cy="55" rx="22" ry="14" fill="rgba(255,255,255,0.15)" transform="rotate(-20 202 55)"/>
+</svg>

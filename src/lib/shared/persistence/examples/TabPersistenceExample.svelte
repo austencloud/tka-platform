@@ -6,7 +6,6 @@
 -->
 
 <script lang="ts">
-  import type { IPersistenceService } from "../services/contracts/IPersistenceService";
   import type { TabId } from "../../navigation/domain/types";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
@@ -15,7 +14,7 @@
   // SERVICE INJECTION
   // ============================================================================
 
-  const persistenceService = container.items.persistenceService as IPersistenceService;
+  const persistenceService = container.items.persistenceService;
 
   // ============================================================================
   // REACTIVE STATE
@@ -143,9 +142,8 @@
     <pre><code
         >{`// In your main app component:
 import { container } from '$lib/shared/di';
-import type { IPersistenceService } from '../../index';
 
-const persistenceService = container.items.persistenceService as IPersistenceService;
+const persistenceService = container.items.persistenceService;
 
 onMount(async () => {
   await persistenceService.initialize();

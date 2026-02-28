@@ -24,8 +24,8 @@ VTGModeChips - Preview chips showing all 6 VTG modes
 <style>
   .mode-preview {
     padding: 1.25rem;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
   }
 
@@ -62,7 +62,7 @@ VTGModeChips - Preview chips showing all 6 VTG modes
   }
 
   .chip-name {
-    font-size: 0.6875rem;
+    font-size: var(--font-size-compact, 12px);
     color: var(--chip-color);
     opacity: 0.8;
   }

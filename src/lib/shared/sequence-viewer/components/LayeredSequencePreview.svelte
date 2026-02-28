@@ -32,6 +32,7 @@
   import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
   import { calculateTimelineRows } from "$lib/features/create/shared/workspace-panel/sequence-display/utils/grid-calculations";
   import type { TimelineRow } from "$lib/features/create/shared/workspace-panel/sequence-display/utils/grid-calculations";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   // ============================================================================
   // GLOBAL CELL URL CACHE
@@ -787,7 +788,7 @@
 <div class="layered-preview" class:dark-mode={darkMode} class:scroll-mode={needsScroll} bind:this={containerElement}>
   {#if isLoading && cells.length === 0}
     <div class="loading-placeholder">
-      <div class="spinner"></div>
+      <ProgressRing percent={-1} size={32} strokeWidth={3} />
     </div>
   {:else if cells.length > 0}
     <div
@@ -864,7 +865,7 @@
                           {#if startCell.isLoaded}
                             <img class="cell-image" src={startCell.imageUrl} alt={startCell.label} draggable="false" />
                           {:else}
-                            <div class="cell-spinner-container"><div class="cell-spinner"></div></div>
+                            <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
                           {/if}
                         </div>
                       </div>
@@ -886,7 +887,7 @@
                             {#if cell.isLoaded}
                               <img class="cell-image" src={cell.imageUrl} alt={cell.label} draggable="false" />
                             {:else}
-                              <div class="cell-spinner-container"><div class="cell-spinner"></div></div>
+                              <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
                             {/if}
                           </button>
                         {:else}
@@ -898,7 +899,7 @@
                             {#if cell.isLoaded}
                               <img class="cell-image" src={cell.imageUrl} alt={cell.label} draggable="false" />
                             {:else}
-                              <div class="cell-spinner-container"><div class="cell-spinner"></div></div>
+                              <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
                             {/if}
                           </div>
                         {/if}
@@ -925,7 +926,7 @@
                         {#if startCell.isLoaded}
                           <img class="cell-image" src={startCell.imageUrl} alt={startCell.label} draggable="false" />
                         {:else}
-                          <div class="cell-spinner-container"><div class="cell-spinner"></div></div>
+                          <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
                         {/if}
                       </div>
                     </div>
@@ -947,7 +948,7 @@
                           {#if cell.isLoaded}
                             <img class="cell-image" src={cell.imageUrl} alt={cell.label} draggable="false" />
                           {:else}
-                            <div class="cell-spinner-container"><div class="cell-spinner"></div></div>
+                            <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
                           {/if}
                         </button>
                       {:else}
@@ -959,7 +960,7 @@
                           {#if cell.isLoaded}
                             <img class="cell-image" src={cell.imageUrl} alt={cell.label} draggable="false" />
                           {:else}
-                            <div class="cell-spinner-container"><div class="cell-spinner"></div></div>
+                            <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
                           {/if}
                         </div>
                       {/if}
@@ -997,7 +998,7 @@
                     />
                   {:else}
                     <div class="cell-spinner-container">
-                      <div class="cell-spinner"></div>
+                      <ProgressRing percent={-1} size={20} strokeWidth={2} />
                     </div>
                   {/if}
                 </button>
@@ -1017,7 +1018,7 @@
                     />
                   {:else}
                     <div class="cell-spinner-container">
-                      <div class="cell-spinner"></div>
+                      <ProgressRing percent={-1} size={20} strokeWidth={2} />
                     </div>
                   {/if}
                 </div>
@@ -1051,7 +1052,7 @@
                   />
                 {:else}
                   <div class="cell-spinner-container">
-                    <div class="cell-spinner"></div>
+                    <ProgressRing percent={-1} size={20} strokeWidth={2} />
                   </div>
                 {/if}
               </button>
@@ -1071,7 +1072,7 @@
                   />
                 {:else}
                   <div class="cell-spinner-container">
-                    <div class="cell-spinner"></div>
+                    <ProgressRing percent={-1} size={20} strokeWidth={2} />
                   </div>
                 {/if}
               </div>
@@ -1143,18 +1144,6 @@
     background: var(--theme-card-bg);
   }
 
-  .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--theme-stroke);
-    border-top-color: var(--theme-accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
 
   .preview-stack {
     display: flex;
@@ -1374,14 +1363,6 @@
     aspect-ratio: 1;
   }
 
-  .cell-spinner {
-    width: 24%;
-    height: 24%;
-    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-top-color: var(--theme-accent, #6366f1);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
 
   /* Clickable cells */
   .pictograph-cell.clickable {
@@ -1475,11 +1456,6 @@
 
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */
   @media (prefers-reduced-motion: reduce) {
-    .spinner,
-    .cell-spinner {
-      animation: none;
-    }
-
     .pictograph-cell {
       transition: none;
     }

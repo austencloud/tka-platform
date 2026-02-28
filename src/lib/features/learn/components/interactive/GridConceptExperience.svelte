@@ -204,7 +204,7 @@ Supports two view modes:
 		transform: translateX(-50%);
 		padding: 0.75rem 1.5rem;
 		background: var(--theme-accent, #22d3ee);
-		color: #000;
+		color: var(--theme-on-accent, #000);
 		font-weight: 600;
 		font-size: 0.875rem;
 		border: none;

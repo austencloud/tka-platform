@@ -6,6 +6,7 @@
    */
 
   import { authState } from "../state/authState.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   let {
     class: className = "",
@@ -93,7 +94,7 @@
 
       <button onclick={handleLogout} disabled={loading} class="logout-button">
         {#if loading}
-          <span class="spinner"></span>
+          <ProgressRing percent={-1} size={24} strokeWidth={2} />
         {/if}
         Sign Out
       </button>
@@ -226,22 +227,6 @@
     cursor: not-allowed;
   }
 
-  .spinner {
-    display: inline-block;
-    width: 0.875rem;
-    height: 0.875rem;
-    border: 2px solid currentColor;
-    border-right-color: transparent;
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   /* High contrast mode */
   @media (prefers-contrast: high) {
     .menu-dropdown {
@@ -256,9 +241,6 @@
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */
   @media (prefers-reduced-motion: reduce) {
     .menu-dropdown {
-      animation: none;
-    }
-    .spinner {
       animation: none;
     }
   }

@@ -28,6 +28,6 @@ VTGKeyPoint - Highlighted key point for learning
 
   .key-point span {
     font-size: 1rem;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--theme-text, rgba(255, 255, 255, 0.85));
   }
 </style>

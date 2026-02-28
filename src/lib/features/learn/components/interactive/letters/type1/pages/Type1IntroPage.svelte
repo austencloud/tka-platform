@@ -90,7 +90,7 @@ Page 1 of 5: Overview of Type 1 letters and motion patterns
     color: white;
     margin: 0;
     text-align: center;
-    background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
+    background: linear-gradient(135deg, var(--theme-accent, #22d3ee) 0%, var(--theme-accent, #06b6d4) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -106,7 +106,7 @@ Page 1 of 5: Overview of Type 1 letters and motion patterns
   p {
     font-size: 1.125rem;
     line-height: 1.7;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--theme-text, rgba(255, 255, 255, 0.85));
     margin: 0;
     text-align: center;
   }
@@ -119,10 +119,10 @@ Page 1 of 5: Overview of Type 1 letters and motion patterns
     padding: 1.5rem;
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.1) 0%,
-      rgba(34, 211, 238, 0.02) 100%
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 10%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 2%, transparent) 100%
     );
-    border: 1px solid rgba(34, 211, 238, 0.2);
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 20%, transparent);
     border-radius: 16px;
   }
 
@@ -132,9 +132,9 @@ Page 1 of 5: Overview of Type 1 letters and motion patterns
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(34, 211, 238, 0.2);
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 20%, transparent);
     border-radius: 50%;
-    color: #22d3ee;
+    color: var(--theme-accent, #22d3ee);
     font-size: 1.75rem;
   }
 
@@ -145,8 +145,8 @@ Page 1 of 5: Overview of Type 1 letters and motion patterns
 
   .key-concept {
     padding: 1.25rem;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
   }
 
@@ -166,22 +166,24 @@ Page 1 of 5: Overview of Type 1 letters and motion patterns
   }
 
   .pattern-item.pro {
-    background: rgba(34, 211, 238, 0.1);
-    border: 1px solid rgba(34, 211, 238, 0.25);
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 25%, transparent);
   }
 
   .pattern-item.anti {
-    background: rgba(168, 85, 247, 0.1);
-    border: 1px solid rgba(168, 85, 247, 0.25);
+    --anti-color: #a855f7;
+    background: color-mix(in srgb, var(--anti-color) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--anti-color) 25%, transparent);
   }
 
   .pattern-item.hybrid {
+    --anti-color: #a855f7;
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.1),
-      rgba(168, 85, 247, 0.1)
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 10%, transparent),
+      color-mix(in srgb, var(--anti-color) 10%, transparent)
     );
-    border: 1px solid rgba(168, 85, 247, 0.25);
+    border: 1px solid color-mix(in srgb, var(--anti-color) 25%, transparent);
   }
 
   .pattern-label {
@@ -190,13 +192,13 @@ Page 1 of 5: Overview of Type 1 letters and motion patterns
   }
 
   .pattern-item.pro .pattern-label {
-    color: #22d3ee;
+    color: var(--theme-accent, #22d3ee);
   }
   .pattern-item.anti .pattern-label {
-    color: #a855f7;
+    color: var(--anti-color, #a855f7);
   }
   .pattern-item.hybrid .pattern-label {
-    color: #a855f7;
+    color: var(--anti-color, #a855f7);
   }
 
   .pattern-letters {
@@ -213,8 +215,8 @@ Page 1 of 5: Overview of Type 1 letters and motion patterns
 
   .alphabet-preview {
     padding: 1.25rem;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
     text-align: center;
   }
@@ -261,20 +263,20 @@ Page 1 of 5: Overview of Type 1 letters and motion patterns
     min-height: var(--min-touch-target);
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.3) 0%,
-      rgba(6, 182, 212, 0.3) 100%
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent, #06b6d4) 30%, transparent) 100%
     );
-    border: 2px solid rgba(34, 211, 238, 0.5);
-    color: white;
+    border: 2px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 50%, transparent);
+    color: var(--theme-text, white);
   }
 
   .next-button:hover {
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.4) 0%,
-      rgba(6, 182, 212, 0.4) 100%
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent, #06b6d4) 40%, transparent) 100%
     );
-    border-color: rgba(34, 211, 238, 0.8);
+    border-color: color-mix(in srgb, var(--theme-accent, #22d3ee) 80%, transparent);
     transform: translateY(-2px);
   }
 

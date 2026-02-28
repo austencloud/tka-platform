@@ -24,9 +24,10 @@
     TrackingMode,
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
+  import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import DemoControlBar from "./DemoControlBar.svelte";
   import { RANDOM_PROPS } from "../landing-content";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
@@ -98,6 +99,9 @@
 
   // Dark mode - default ON for landing page visual impact
   let darkMode = $state(true);
+  let fireEnabled = $state(false);
+  let ledEnabled = $state(false);
+  let trailsEnabled = $state(true); // Trails on by default
   const visibilityManager = getAnimationVisibilityManager();
 
   // Derived start position - uses service to derive from first beat if not stored
@@ -225,8 +229,8 @@
       visibilityManager.setDarkMode(darkMode);
 
       // Get services from DI container (some still need container, others use direct imports)
-      browseLoader = container.items.browseLoader as IBrowseLoader;
-      playbackController = container.items.animationPlaybackController as IAnimationPlaybackController;
+      browseLoader = container.items.browseLoader;
+      playbackController = container.items.animationPlaybackController;
       startPositionDeriver = startPositionDeriverInstance;
       gridPositionDeriver = gridPositionDeriverInstance;
 
@@ -372,21 +376,19 @@
     // Apply current prop type to sequence data
     const sequence = applyPropTypeToSequence(sequenceData, currentPropType);
 
-    // Reinitialize the playback controller with new sequence
-    // This preserves the playing state and updates the animation data
+    // Use updateSequenceData instead of initialize to keep playback running.
+    // initialize() sets isPlaying=false which briefly interrupts the animation
+    // loop, causing fire/LED effects to freeze at the old prop positions.
     animationState.setShouldLoop(true);
-    const success = playbackController.initialize(sequence, animationState);
+    playbackController.updateSequenceData(sequence);
 
-    if (!success) {
-      console.error("[LandingDemo] Hot-swap failed");
-      return;
-    }
+    // Seek to beat 1 without stopping playback
+    playbackController.seekToStep(1);
 
-    // Ensure we're in continuous playback mode and start from beat 1
+    // Ensure we're in continuous playback mode
     animationState.setPlaybackMode("continuous");
-    animationState.setCurrentStep(1);
 
-    // Make sure playback is running
+    // Start playback if not already running
     if (!animationState.isPlaying) {
       playbackController.togglePlayback();
     }
@@ -494,6 +496,31 @@
     darkMode = !darkMode;
     visibilityManager.setDarkMode(darkMode);
   }
+
+  function handleToggleFire() {
+    fireEnabled = !fireEnabled;
+    if (fireEnabled) {
+      // Mutually exclusive: turn off LED
+      ledEnabled = false;
+      visibilityManager.setLedEffect(false);
+    }
+    visibilityManager.setFireEffect(fireEnabled);
+  }
+
+  function handleToggleLed() {
+    ledEnabled = !ledEnabled;
+    if (ledEnabled) {
+      // Mutually exclusive: turn off fire
+      fireEnabled = false;
+      visibilityManager.setFireEffect(false);
+    }
+    visibilityManager.setLedEffect(ledEnabled);
+  }
+
+  function handleToggleTrails() {
+    trailsEnabled = !trailsEnabled;
+    visibilityManager.setTrailStyle(trailsEnabled ? "on" : "off");
+  }
 </script>
 
 <div class="demo-container" bind:this={containerRef}>
@@ -522,10 +549,13 @@
                   letter={currentLetter}
                   stepData={currentStepData}
                   sequenceData={animationState.sequenceData}
+                  currentStep={animationState.currentStep}
                   isPlaying={animationState.isPlaying}
                   trailSettings={animationSettings.trail}
                   bluePropType={currentPropType}
                   redPropType={currentPropType}
+                  word={animationState.sequenceData?.intendedWord ?? animationState.sequenceData?.word ?? null}
+                  previewDarkMode={darkMode}
                 />
               </div>
             {:else if animationError}
@@ -535,7 +565,7 @@
               </div>
             {:else}
               <div class="animation-loading">
-                <div class="spinner"></div>
+                <ProgressRing percent={-1} size={32} strokeWidth={3} />
                 <span>{isLoading ? "Loading..." : "Initializing..."}</span>
               </div>
             {/if}
@@ -543,10 +573,19 @@
 
           {#if animationState.sequenceData}
             <div class="beat-grid-panel">
-              <StepGrid
-                steps={animationState.sequenceData.steps}
-                startPosition={derivedStartPosition}
-                selectedStepNumber={currentStepNumber}
+              <ChoreoCard
+                sequence={animationState.sequenceData}
+                {darkMode}
+                bluePropType={currentPropType}
+                redPropType={currentPropType}
+                columnCount={5}
+                highlightedStepIndex={currentStepNumber > 0 ? currentStepNumber - 1 : null}
+                showHighlight={animationState.isPlaying}
+                showDifficultyLevel={false}
+                showCreatorName={false}
+                showNotes={false}
+                showBirthday={false}
+                showLoopGlyph={false}
               />
             </div>
           {/if}
@@ -560,7 +599,13 @@
       {servicesReady}
       {isLoading}
       {darkMode}
+      {fireEnabled}
+      {ledEnabled}
+      {trailsEnabled}
       onToggleDarkMode={handleToggleDarkMode}
+      onToggleFire={handleToggleFire}
+      onToggleLed={handleToggleLed}
+      onToggleTrails={handleToggleTrails}
       onChangeProp={handleChangeProp}
       onRandomize={handleRandomize}
     />
@@ -611,8 +656,6 @@
   .canvas-wrapper {
     width: clamp(420px, 57cqw, 600px);
     height: clamp(420px, 57cqw, 600px);
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 20px;
     overflow: hidden;
     box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
@@ -620,13 +663,10 @@
 
   .beat-grid-panel {
     flex: 0 0 auto;
-    width: clamp(420px, 60cqw, 700px);
+    width: clamp(420px, 57cqw, 600px);
     height: clamp(420px, 57cqw, 600px);
-    background: transparent;
-    border: 2px solid var(--border-strong, rgba(255, 255, 255, 0.2));
     border-radius: 16px;
-    overflow: visible;
-    padding: 0;
+    overflow: hidden;
   }
 
   .animation-loading,
@@ -647,21 +687,6 @@
   .fallback-icon {
     font-size: 4rem;
     opacity: 0.5;
-  }
-
-  .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--border, rgba(255, 255, 255, 0.1));
-    border-top-color: var(--primary, #6366f1);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
   }
 
   .controls-wrapper {
@@ -700,9 +725,4 @@
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-    }
-  }
 </style>

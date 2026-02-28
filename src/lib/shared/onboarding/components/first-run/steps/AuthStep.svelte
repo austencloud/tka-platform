@@ -29,7 +29,7 @@
 
   onMount(() => {
     try {
-      authService = container.items.authenticator as IAuthenticator;
+      authService = container.items.authenticator;
     } catch (error) {
       console.error("Failed to get auth service:", error);
     }

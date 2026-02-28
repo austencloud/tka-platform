@@ -64,14 +64,14 @@
 
   onMount(() => {
     try {
-      detector = container.items.wakeWordDetector as IWakeWordDetector;
-      interpreter = container.items.commandInterpreter as ICommandInterpreter;
-      dispatcher = container.items.commandDispatcher as ICommandDispatcher;
-      sessionRecorder = container.items.voiceSessionRecorder as IVoiceSessionRecorder;
-      sessionFormatter = container.items.voiceSessionFormatter as IVoiceSessionFormatter;
-      sessionRepository = container.items.voiceSessionRepository as IVoiceSessionRepository;
-      sessionAnalyzer = container.items.voiceSessionAnalyzer as IVoiceSessionAnalyzer;
-      sessionReplayer = container.items.voiceSessionReplayer as IVoiceSessionReplayer;
+      detector = container.items.wakeWordDetector;
+      interpreter = container.items.commandInterpreter;
+      dispatcher = container.items.commandDispatcher;
+      sessionRecorder = container.items.voiceSessionRecorder;
+      sessionFormatter = container.items.voiceSessionFormatter;
+      sessionRepository = container.items.voiceSessionRepository;
+      sessionAnalyzer = container.items.voiceSessionAnalyzer;
+      sessionReplayer = container.items.voiceSessionReplayer;
       supported = detector.isSupported();
       listening = detector.isListening();
       recording = sessionRecorder.isRecording();

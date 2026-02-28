@@ -58,17 +58,17 @@
   .tool-view-toggle.showing-grid {
     background: linear-gradient(
       135deg,
-      rgba(139, 92, 246, 0.2) 0%,
-      rgba(124, 58, 237, 0.15) 100%
+      color-mix(in srgb, var(--theme-accent) 20%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent) 15%, transparent) 100%
     );
-    border-color: rgba(139, 92, 246, 0.4);
-    color: rgba(196, 181, 253, 1);
+    border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
+    color: var(--theme-accent);
   }
 
   @media (hover: hover) and (pointer: fine) {
     .tool-view-toggle:hover {
-      background: rgba(255, 255, 255, 0.12);
-      border-color: rgba(255, 255, 255, 0.25);
+      background: var(--theme-card-hover-bg);
+      border-color: var(--theme-stroke-strong);
       color: var(--theme-text);
       transform: scale(1.05);
     }
@@ -76,10 +76,10 @@
     .tool-view-toggle.showing-grid:hover {
       background: linear-gradient(
         135deg,
-        rgba(139, 92, 246, 0.3) 0%,
-        rgba(124, 58, 237, 0.25) 100%
+        color-mix(in srgb, var(--theme-accent) 30%, transparent) 0%,
+        color-mix(in srgb, var(--theme-accent) 25%, transparent) 100%
       );
-      border-color: rgba(139, 92, 246, 0.6);
+      border-color: color-mix(in srgb, var(--theme-accent) 60%, transparent);
     }
   }
 

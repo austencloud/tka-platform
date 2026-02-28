@@ -306,13 +306,13 @@
 
   onMount(() => {
     try {
-      wakeWordDetector = container.items.wakeWordDetector as IWakeWordDetector;
-      commandInterpreter = container.items.commandInterpreter as ICommandInterpreter;
-      commandDispatcher = container.items.commandDispatcher as ICommandDispatcher;
-      intentResolver = container.items.intentResolver as IIntentResolver;
-      ttsProvider = container.items.ttsProvider as ITTSProvider;
-      sessionRecorder = container.items.voiceSessionRecorder as IVoiceSessionRecorder;
-      sessionRepository = container.items.voiceSessionRepository as IVoiceSessionRepository;
+      wakeWordDetector = container.items.wakeWordDetector;
+      commandInterpreter = container.items.commandInterpreter;
+      commandDispatcher = container.items.commandDispatcher;
+      intentResolver = container.items.intentResolver;
+      ttsProvider = container.items.ttsProvider;
+      sessionRecorder = container.items.voiceSessionRecorder;
+      sessionRepository = container.items.voiceSessionRepository;
     } catch (error) {
       console.error("[HeyTika] Failed to resolve voice control services:", error);
       return;

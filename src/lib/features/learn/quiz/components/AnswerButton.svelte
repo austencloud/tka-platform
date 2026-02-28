@@ -72,7 +72,7 @@
   }
 </script>
 
-<button class={buttonClass} onclick={handleClick} {disabled} type="button">
+<button class={buttonClass} onclick={handleClick} {disabled} type="button" aria-label="Answer: {content}">
   <span class="button-content">
     {content}
   </span>
@@ -92,15 +92,14 @@
     justify-content: center;
     width: 100%;
     height: 80px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
+    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.2));
     border-radius: 12px;
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
     font-size: 2rem;
     font-weight: bold;
     cursor: pointer;
     transition: all var(--duration-emphasis) ease;
-    backdrop-filter: blur(10px);
     overflow: hidden;
   }
 
@@ -114,7 +113,7 @@
     background: linear-gradient(
       90deg,
       transparent,
-      rgba(255, 255, 255, 0.1),
+      color-mix(in srgb, var(--theme-text) 10%, transparent),
       transparent
     );
     transition: left 0.5s ease;
@@ -125,8 +124,8 @@
   }
 
   .answer-button:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
     transform: translateY(-2px);
     box-shadow: 0 8px 25px var(--theme-shadow);
   }
@@ -144,16 +143,16 @@
   }
 
   .answer-button.correct {
-    background: rgba(74, 222, 128, 0.3);
-    border-color: #4ade80;
-    box-shadow: 0 0 20px rgba(74, 222, 128, 0.4);
+    background: color-mix(in srgb, var(--semantic-success) 30%, transparent);
+    border-color: var(--semantic-success);
+    box-shadow: 0 0 20px color-mix(in srgb, var(--semantic-success) 40%, transparent);
     animation: correctPulse 0.6s ease-in-out;
   }
 
   .answer-button.incorrect {
-    background: rgba(248, 113, 113, 0.3);
+    background: color-mix(in srgb, var(--semantic-error) 30%, transparent);
     border-color: var(--semantic-error);
-    box-shadow: 0 0 20px rgba(248, 113, 113, 0.4);
+    box-shadow: 0 0 20px color-mix(in srgb, var(--semantic-error) 40%, transparent);
     animation: incorrectShake 0.6s ease-in-out;
   }
 
@@ -172,7 +171,7 @@
   .button-content {
     position: relative;
     z-index: 2;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    text-shadow: 0 2px 4px color-mix(in srgb, var(--theme-panel-bg) 70%, transparent);
   }
 
   .feedback-icon {
@@ -185,13 +184,13 @@
   }
 
   .correct-icon {
-    color: #4ade80;
-    text-shadow: 0 0 8px rgba(74, 222, 128, 0.8);
+    color: var(--semantic-success);
+    text-shadow: 0 0 8px color-mix(in srgb, var(--semantic-success) 80%, transparent);
   }
 
   .incorrect-icon {
     color: var(--semantic-error);
-    text-shadow: 0 0 8px rgba(248, 113, 113, 0.8);
+    text-shadow: 0 0 8px color-mix(in srgb, var(--semantic-error) 80%, transparent);
   }
 
   @keyframes correctPulse {
@@ -251,11 +250,11 @@
     }
 
     .answer-button.correct {
-      background: rgba(74, 222, 128, 0.5);
+      background: color-mix(in srgb, var(--semantic-success) 50%, transparent);
     }
 
     .answer-button.incorrect {
-      background: rgba(248, 113, 113, 0.5);
+      background: color-mix(in srgb, var(--semantic-error) 50%, transparent);
     }
   }
 

@@ -95,7 +95,7 @@
     border: none;
     border-radius: 10px;
     color: var(--theme-text-dim);
-    font-size: 0.85rem;
+    font-size: var(--font-size-min, 14px);
     font-weight: 600;
     cursor: pointer;
     transition: color var(--duration-emphasis) ease;
@@ -103,7 +103,7 @@
   }
 
   .switcher-btn i {
-    font-size: 0.85rem;
+    font-size: var(--font-size-sm);
     transition: transform var(--duration-emphasis) ease;
   }
 

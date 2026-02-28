@@ -20,6 +20,7 @@
   import InlineAnimationPlayer from "$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte";
   import GridPreview from "./GridPreview.svelte";
   import VideoRecordSettingsSheet from "./VideoRecordSettingsSheet.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   let {
     sequence = null,
@@ -285,7 +286,7 @@
     </div>
   {:else if !cameraInitialized}
     <div class="loading-state">
-      <div class="spinner"></div>
+      <ProgressRing percent={-1} size={32} strokeWidth={3} />
       <p>Initializing camera...</p>
     </div>
   {:else}
@@ -834,21 +835,6 @@
     background: var(--theme-card-hover-bg);
   }
 
-  .spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid var(--theme-stroke, var(--theme-stroke));
-    border-top-color: var(--theme-accent);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   /* Responsive */
   @media (min-width: 768px) {
     .split-view.has-reference {
@@ -897,9 +883,6 @@
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */
   @media (prefers-reduced-motion: reduce) {
     .pulse {
-      animation: none;
-    }
-    .spinner {
       animation: none;
     }
   }

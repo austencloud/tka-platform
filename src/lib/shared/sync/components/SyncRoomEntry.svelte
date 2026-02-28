@@ -10,6 +10,7 @@
   import { deviceSyncState, getConnectionStatusText } from '../state/device-sync-state.svelte';
   import SyncStatusIndicator from './SyncStatusIndicator.svelte';
   import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
+  import ProgressRing from '$lib/shared/components/loading/ProgressRing.svelte';
 
   let {
     sequence = null,
@@ -184,7 +185,7 @@
           disabled={!roomCodeInput.trim() || isLoading || isConnecting}
         >
           {#if isLoading || isConnecting}
-            <div class="btn-spinner"></div>
+            <ProgressRing percent={-1} size={24} strokeWidth={2} />
             Joining...
           {:else}
             <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
@@ -296,7 +297,7 @@
   }
 
   .option-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
@@ -310,13 +311,13 @@
   }
 
   .option-btn.primary {
-    background: rgba(139, 92, 246, 0.15);
-    border-color: rgba(139, 92, 246, 0.3);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-color: var(--theme-accent, #8b5cf6);
   }
 
   .option-btn.primary:hover:not(:disabled) {
-    background: rgba(139, 92, 246, 0.25);
-    border-color: rgba(139, 92, 246, 0.5);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-color: var(--theme-accent, #8b5cf6);
   }
 
   .option-btn i {
@@ -389,8 +390,8 @@
     gap: 8px;
     padding: 16px;
     min-height: 56px;
-    background: rgba(139, 92, 246, 0.2);
-    border: 1.5px solid rgba(139, 92, 246, 0.3);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1.5px solid var(--theme-accent, #8b5cf6);
     border-radius: 8px;
     color: var(--theme-accent, #8b5cf6);
     font-size: var(--font-size-sm, 14px);
@@ -400,22 +401,13 @@
   }
 
   .join-btn:hover:not(:disabled) {
-    background: rgba(139, 92, 246, 0.3);
-    border-color: rgba(139, 92, 246, 0.5);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-color: var(--theme-accent, #8b5cf6);
   }
 
   .join-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-  }
-
-  .btn-spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(139, 92, 246, 0.3);
-    border-top-color: var(--theme-accent, #8b5cf6);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
   }
 
   /* Back button */
@@ -435,7 +427,7 @@
   }
 
   .back-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     color: var(--theme-text, #ffffff);
   }
 
@@ -462,15 +454,9 @@
     background: rgba(239, 68, 68, 0.1);
     border: 1px solid rgba(239, 68, 68, 0.3);
     border-radius: 8px;
-    color: rgba(248, 113, 113, 1);
+    color: var(--semantic-error, rgba(248, 113, 113, 1));
     font-size: var(--font-size-sm, 14px);
     width: 100%;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
   }
 
   /* Responsive */
@@ -489,9 +475,4 @@
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .btn-spinner {
-      animation: none;
-    }
-  }
 </style>

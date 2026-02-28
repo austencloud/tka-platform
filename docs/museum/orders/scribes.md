@@ -6,7 +6,7 @@
 
 ## Overview
 
-The Scribes are a secret order dedicated to spreading kinetic knowledge and protecting Vessels from the Order of the Closed Palm. They built the museum as a recruitment tool.
+The Scribes are a secret order dedicated to spreading kinetic knowledge and keeping Vessels out of the Order of the Closed Palm's administrative crosshairs. They built the museum as a recruitment tool.
 
 The name ties directly to **TKA Scribe** - the app. By using the app, you're already a Scribe. You just didn't know the history.
 
@@ -102,7 +102,7 @@ At the end of the museum, visitors choose a path:
 - Loop back to the three doors
 
 ### "No" → Path of Silence
-- Darkness ending (lava pit, Order wins)
+- Gray ending (filing room, Order wins)
 - No certificate
 - Loop back to the three doors
 
@@ -142,4 +142,4 @@ The final chamber should feel like coming home. The spiral is finally named. The
 
 ---
 
-*Last updated: 2026-01-27*
+*Last updated: 2026-02-26*

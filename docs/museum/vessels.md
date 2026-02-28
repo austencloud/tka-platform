@@ -7,7 +7,7 @@
 
 ## Overview
 
-The Vessel appears in every era where kinetic notation emerges. Sometimes they're sanctioned by the Order of the Closed Palm. Sometimes they go rogue. When they leak too much knowledge or defy the Order, they are "silenced" (method never explained).
+The Vessel appears in every era where kinetic notation emerges. Sometimes they're sanctioned by the Order of the Closed Palm. Sometimes they go rogue. When they transmit beyond approved limits or fail to comply with the Order's notification requirements, they are "silenced" (method never explained).
 
 The Vessel isn't always the same ethnicity, gender, or appearance. The soul doesn't care about the body it inhabits. However, some incarnations are obviously Austen in costume (the joke), while others are completely different people (grounding the mythology).
 
@@ -58,7 +58,7 @@ The Vessel isn't always the same ethnicity, gender, or appearance. The soul does
 
 **Contribution:** Assisted da Vinci in decoding Egyptian scrolls. Maintained detailed notebooks that were later scattered.
 
-**Fate:** "Vanished from historical record in 1521." (Silenced by the Order after da Vinci's death.)
+**Fate:** "Vanished from historical record in 1521." (Silenced by the Order sometime around 1521. The timing is noted in their records as a coincidence.)
 
 **Display Type:** Portrait in elaborate gilded frame
 
@@ -79,7 +79,7 @@ The Vessel isn't always the same ethnicity, gender, or appearance. The soul does
 
 **Contribution:** Filed multiple patents for kinetic notation devices. Recognized the mechanical potential of systematized movement documentation.
 
-**Fate:** "Disappeared from records in 1887 following allegations of [REDACTED]." (Discredited by the Order, then silenced.)
+**Fate:** "Disappeared from records in 1887 following allegations of [REDACTED]." (The Order filed a discrediting report in 1887. She subsequently disappeared from records. The Order's file on the matter is marked RESOLVED.)
 
 **Display Type:** Formal portrait, Victorian style, name plaque is literally scratched out
 
@@ -138,7 +138,7 @@ The Vessel isn't always the same ethnicity, gender, or appearance. The soul does
 
 **Contribution:** Received the complete Kinetic Alphabet transmission in spring 2022. Released TKA Scribe to the public.
 
-**Current Status:** Active. Unsilenced. Protected by unknown forces.
+**Current Status:** Active. Unsilenced. The Order's file on him is marked OPEN/PENDING. No action has been taken. Seventeen internal memos on the subject remain unanswered.
 
 **Display Type:** Multiple displays:
 - The Retransmission Diorama (chaotic desk scene with light beam)
@@ -212,4 +212,4 @@ The visual absurdity is the joke. The straight-faced presentation is what makes 
 
 ---
 
-*Last updated: 2026-01-27*
+*Last updated: 2026-02-26*

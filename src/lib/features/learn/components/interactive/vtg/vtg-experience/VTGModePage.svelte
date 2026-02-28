@@ -97,8 +97,8 @@ VTGModePage - Individual VTG mode learning page
     text-align: center;
     background: linear-gradient(
       135deg,
-      var(--type-color, #22d3ee) 0%,
-      color-mix(in srgb, var(--type-color, #22d3ee) 70%, #06b6d4) 100%
+      var(--type-color, var(--theme-accent, #22d3ee)) 0%,
+      color-mix(in srgb, var(--type-color, var(--theme-accent, #22d3ee)) 70%, transparent) 100%
     );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -154,10 +154,10 @@ VTGModePage - Individual VTG mode learning page
     padding: 1rem 2.5rem;
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.3) 0%,
-      rgba(6, 182, 212, 0.3) 100%
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent) 100%
     );
-    border: 2px solid rgba(34, 211, 238, 0.5);
+    border: 2px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 50%, transparent);
     border-radius: 12px;
     color: white;
     font-size: 1.0625rem;
@@ -171,10 +171,10 @@ VTGModePage - Individual VTG mode learning page
   .next-button:hover {
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.4) 0%,
-      rgba(6, 182, 212, 0.4) 100%
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent) 100%
     );
-    border-color: rgba(34, 211, 238, 0.8);
+    border-color: color-mix(in srgb, var(--theme-accent, #22d3ee) 80%, transparent);
     transform: translateY(-2px);
   }
 

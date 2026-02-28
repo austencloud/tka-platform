@@ -126,14 +126,14 @@ MotionGridSvg - SVG grid with motion arrows and hand positions
         cx={point.x}
         cy={point.y}
         r="3"
-        fill="rgba(255, 255, 255, 0.25)"
+        fill="var(--theme-stroke-strong, rgba(255, 255, 255, 0.25))"
       />
       {#if showLabels}
         <text
           x={point.x + labelOffset.x}
           y={point.y + labelOffset.y}
           text-anchor="middle"
-          fill="rgba(255, 255, 255, 0.4)"
+          fill="var(--theme-text-dim, rgba(255, 255, 255, 0.4))"
           font-size="5"
           font-weight="600"
         >

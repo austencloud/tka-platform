@@ -53,7 +53,7 @@
                             │ YES │ │MEH│ │ NO  │
                             └──┬──┘ └─┬─┘ └──┬──┘
                                │     │      │
-                            Utopia  Gray   Lava
+                            Utopia  Gray   Filed
                                │     │      │
                                │     └──────┘
                                │      (loop back)
@@ -204,9 +204,9 @@ See `vtg-wing.md` for details.
 
 ## Wing 6: The Suppression
 
-**Theme:** Protocol Lethe, the Order revealed, darkness
-**Lighting:** Dramatic shift - much darker, red accents
-**Audio:** Low drones, unsettling ambient, heartbeat
+**Theme:** Protocol Lethe, the Order revealed, institutional dread
+**Lighting:** Fluorescent flicker, institutional lighting, sterile
+**Audio:** Distant hold music, paper shuffling, fax machine hum, oppressive silence
 
 > **CRITICAL:** This is the reveal wing. The Order of the Closed Palm is named here for the first time.
 
@@ -221,7 +221,7 @@ See `vtg-wing.md` for details.
 
 ### Atmosphere
 
-This wing should feel oppressive. The visitor realizes they've been surrounded by the Order's symbol the whole time. The previously subtle hints are now overwhelming.
+This wing should feel bureaucratically suffocating. The visitor realizes the Order's symbol has been stamped on everything the whole time - not watching them, just ever-present in the way that institutional logos are. The previously subtle hints are now overwhelming.
 
 ### Hidden Elements
 
@@ -348,7 +348,7 @@ No plaque. No explanation. Just... this is where the sausage is made.
 
 **YES Door:** Glowing warmly, inviting
 **MEH Door:** Gray, unremarkable
-**NO Door:** Dark, ominous red glow
+**NO Door:** Gray, institutional, a faint buzzing fluorescent
 
 ---
 
@@ -389,20 +389,23 @@ Leads to: Loop back to Futures Chamber (three doors)
 
 ---
 
-## Path of Silence (Darkness)
+## Path of Silence (Filed Away)
 
-**Theme:** The Order wins, destruction, game over
-**Lighting:** Red, fire, ominous
-**Audio:** Ominous drones, distant screams, fire crackle
+**Theme:** The Order wins, everything filed, game over
+**Lighting:** Flat gray, fluorescent, sterile
+**Audio:** Silence, distant hold music, a stamp press
 
 ### Contents
 
 | Element | Description |
 |---------|-------------|
-| Broken Austen Statue | Toppled, shattered |
-| Fire and Lava | Environmental hazard |
-| The Fall | Player falls into lava pit |
-| Game Over Screen | Arcade-style death, "The Vessel was silenced" |
+| Gray Landscape | Everything intact but colorless, stamped CLOSED |
+| Filing Cabinets | Endless rows, all drawers marked CLASSIFIED |
+| Order Symbols | Closed Palm stamps on every surface, clinical |
+| Silence | The only sound is a distant stamp press |
+| Broken Austen Statue | The statue from Wing 8, lying on its side with a DECOMMISSIONED tag |
+| The Void | Player walks into a gray filing room that extends forever |
+| Game Over Screen | Arcade-style, "The Order's process is complete" |
 | "Try Again?" Prompt | Returns to Futures Chamber |
 
 ---
@@ -426,11 +429,11 @@ Player finds a crumpled $20 bill on the floor near the entrance. This is their s
 | Spiral Keychain | $4.99 | Plastic, jingly |
 | "I Survived Protocol Lethe" Bumper Sticker | $3.99 | Weather-resistant |
 | Plush Stone Tablet | $12.99 | Squeaks when squeezed, shows OOGA sequence |
-| Closed Palm Stress Ball | $6.99 | Squeeze your enemies |
+| Closed Palm Stress Ball | $6.99 | For when you're on hold with the Order |
 | Da Vinci Codex Magnet | $5.99 | For your fridge |
 | Overpriced Water Bottle | $7.00 | Just water |
 | Retransmission Snow Globe | $14.99 | Tiny Austen, beam of light, shake for glitter |
-| "THE ORDER IS WATCHING" Mug | $9.99 | Creepy but fun |
+| "YOUR FILE IS UNDER REVIEW" Mug | $9.99 | Institutional dread in ceramic form |
 | Spiral Temporary Tattoo Pack | $2.99 | 10 tattoos |
 
 ### Digital Items (Unlock in TKA Scribe)
@@ -462,4 +465,4 @@ See `vtg-wing.md` for full details.
 
 ---
 
-*Last updated: 2026-01-27*
+*Last updated: 2026-02-26*

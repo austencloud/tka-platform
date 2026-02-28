@@ -196,9 +196,9 @@ Export mode is entered via "Export" action button and KEEPS its visibility contr
 
 Title will be centered regardless of button count on left/right.
 
-### 1.3 LayeredSequencePreview Sizing
+### 1.3 ChoreoCard Sizing
 
-**Investigation needed:** Read `LayeredSequencePreview.svelte` to understand why it doesn't fill space.
+**Investigation needed:** Read `ChoreoCard.svelte` to understand why it doesn't fill space.
 
 **Likely fix:**
 ```css
@@ -629,7 +629,7 @@ function announceToScreenReader(message: string) {
 |-------|--------|------|--------------|
 | 1.1 Modal sizing | 30min | Low | None |
 | 1.2 Header centering | 30min | Low | None |
-| 1.3 Preview sizing | 1hr | Low | Need to read LayeredSequencePreview |
+| 1.3 Preview sizing | 1hr | Low | Need to read ChoreoCard |
 | 1.4 BPM demotion | 2hr | Medium | Footer redesign |
 | 2.2 Remove visibility toggles | 1hr | Low | None |
 | 3 Footer redesign | 3hr | Medium | New component |
@@ -709,7 +709,7 @@ function announceToScreenReader(message: string) {
 
 ### Modify
 - `SequenceDetailsModal.svelte` - Header, footer, remove visibility chips, add swipe dismiss
-- `LayeredSequencePreview.svelte` - Sizing fixes
+- `ChoreoCard.svelte` - Sizing fixes
 - `compose-module-state.svelte.ts` - Handoff consumption
 - `arrange-state.svelte.ts` - Pre-load sequence support
 

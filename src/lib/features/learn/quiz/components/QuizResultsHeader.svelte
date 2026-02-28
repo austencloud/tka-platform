@@ -13,7 +13,7 @@
 </script>
 
 <div class="results-header glass-surface">
-  <button class="back-button btn-glass" onclick={onBack}>
+  <button class="back-button btn-glass" onclick={onBack} aria-label={backButtonText}>
     {backButtonText}
   </button>
   <div class="lesson-info">
@@ -41,7 +41,7 @@
   }
 
   .back-button:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--theme-stroke-strong);
     transform: translateX(-4px);
   }
 

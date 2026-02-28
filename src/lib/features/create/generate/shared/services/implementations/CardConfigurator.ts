@@ -22,7 +22,8 @@ export class CardConfigurator implements ICardConfigurator {
     isFreeformMode: boolean,
     handlers: CardHandlers,
     allowedIntensityValues: number[],
-    isGenerating: boolean = false
+    isGenerating: boolean = false,
+    hasSettingsChanged: boolean = false
   ): CardDescriptor[] {
     const cardList: CardDescriptor[] = [];
     let cardIndex = 0;
@@ -219,9 +220,10 @@ export class CardConfigurator implements ICardConfigurator {
         id: "generate-button",
         props: {
           isGenerating,
+          hasSettingsChanged,
           onGenerateClicked: handlers.handleGenerateClick,
-          config, // Pass the config so the button can convert it to GenerationOptions
-          startEndOptions: handlers.startEndOptions, // Pass start/end options for generation
+          config,
+          startEndOptions: handlers.startEndOptions,
         },
         gridColumnSpan: generateColumnSpan,
       });

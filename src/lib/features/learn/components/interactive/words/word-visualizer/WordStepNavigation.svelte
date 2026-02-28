@@ -2,7 +2,6 @@
 WordStepNavigation - Step navigation dots for letter sequence
 -->
 <script lang="ts">
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import type { LetterDefinition } from "../../../../domain/constants/word-visualizer-data";
 
@@ -20,7 +19,7 @@ WordStepNavigation - Step navigation dots for letter sequence
     onStepChange: (index: number) => void;
   } = $props();
 
-  const hapticService = container.items.hapticFeedback as IHapticFeedback;
+  const hapticService = container.items.hapticFeedback;
 
   function goToStep(index: number) {
     hapticService?.trigger("selection");
@@ -71,19 +70,19 @@ WordStepNavigation - Step navigation dots for letter sequence
   .step-dot.compact {
     width: 24px;
     height: 24px;
-    font-size: 0.625rem;
+    font-size: var(--font-size-compact, 12px);
   }
 
   .step-dot:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.25);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
     transform: scale(1.1);
   }
 
   .step-dot.active {
-    background: rgba(34, 211, 238, 0.25);
-    border-color: rgba(34, 211, 238, 0.6);
-    color: #22d3ee;
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 25%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #22d3ee) 60%, transparent);
+    color: var(--theme-accent, #22d3ee);
   }
 
   .step-number {

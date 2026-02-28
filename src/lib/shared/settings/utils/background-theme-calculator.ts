@@ -215,7 +215,15 @@ export interface DangerTheme {
 }
 
 function fallbackAccent(mode: ThemeMode, accentColor?: string): string {
-  if (accentColor) return accentColor;
+  if (accentColor) {
+    const luminance = calculateLuminance(accentColor);
+    // Accent must contrast against theme surfaces:
+    // Dark mode surfaces are near-black → accent needs brightness (luminance >= 0.1)
+    // Light mode surfaces are near-white → accent needs depth (luminance <= 0.85)
+    if (mode === "dark" && luminance < 0.1) return "#38bdf8";
+    if (mode === "light" && luminance > 0.85) return "#2563eb";
+    return accentColor;
+  }
   return mode === "light" ? "#2563eb" : "#38bdf8";
 }
 

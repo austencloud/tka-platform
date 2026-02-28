@@ -21,6 +21,7 @@ import {
 } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 import type { QualityHints } from "$lib/shared/animation-engine/domain/types/QualityTypes";
 import type { AdditionalLayerRenderData } from "$lib/features/compose/services/contracts/IAnimationRenderer";
+import { DEFAULT_CANVAS_SIZE } from "$lib/shared/animation-engine/services/contracts/ICanvasResizer";
 
 // ============================================================================
 // CATMULL-ROM SPLINE (pure math, no framework dependencies)
@@ -145,6 +146,12 @@ const TARGET_TOTAL_SUBDIVISIONS = 150;
 /** Catmull-Rom alpha for centripetal parameterization */
 const CATMULL_ROM_ALPHA = 0.5;
 
+/** Minimum scaled line width in px — prevents trails from vanishing on tiny canvases */
+const MIN_SCALED_LINE_WIDTH = 0.75;
+
+/** Minimum scaled glow blur in px */
+const MIN_SCALED_GLOW_BLUR = 1;
+
 export class Canvas2DTrailRenderer {
   // Reusable buffers to avoid hot path allocations
   private controlPointsBuffer: Point2D[] = [];
@@ -159,9 +166,12 @@ export class Canvas2DTrailRenderer {
     currentTime: number,
     hasBlue: boolean,
     hasRed: boolean,
+    canvasSize: number,
     qualityHints?: QualityHints,
     additionalLayers?: AdditionalLayerRenderData[]
   ): void {
+    const sizeScale = canvasSize / DEFAULT_CANVAS_SIZE;
+
     if (!trailSettings.enabled || trailSettings.mode === TrailMode.OFF) {
       return;
     }
@@ -174,6 +184,7 @@ export class Canvas2DTrailRenderer {
         trailSettings.blueColor,
         trailSettings,
         currentTime,
+        sizeScale,
         qualityHints
       );
     }
@@ -186,6 +197,7 @@ export class Canvas2DTrailRenderer {
         trailSettings.redColor,
         trailSettings,
         currentTime,
+        sizeScale,
         qualityHints
       );
     }
@@ -200,6 +212,7 @@ export class Canvas2DTrailRenderer {
             layer.blueColor,
             trailSettings,
             currentTime,
+            sizeScale,
             qualityHints
           );
         }
@@ -210,6 +223,7 @@ export class Canvas2DTrailRenderer {
             layer.redColor,
             trailSettings,
             currentTime,
+            sizeScale,
             qualityHints
           );
         }
@@ -223,6 +237,7 @@ export class Canvas2DTrailRenderer {
     colorString: string,
     settings: TrailSettings,
     currentTime: number,
+    sizeScale: number,
     qualityHints?: QualityHints
   ): void {
     if (points.length < 2) return;
@@ -267,6 +282,7 @@ export class Canvas2DTrailRenderer {
         colorString,
         settings,
         currentTime,
+        sizeScale,
         qualityHints
       );
     }
@@ -278,6 +294,7 @@ export class Canvas2DTrailRenderer {
     color: string,
     settings: TrailSettings,
     currentTime: number,
+    sizeScale: number,
     qualityHints?: QualityHints
   ): void {
     if (points.length < 2) return;
@@ -322,10 +339,10 @@ export class Canvas2DTrailRenderer {
 
     if (needsSegmentedRendering) {
       // Segmented rendering for tapered trails
-      this.renderTaperedSmoothTrail(ctx, smoothPoints, points, color, settings, currentTime, effect);
+      this.renderTaperedSmoothTrail(ctx, smoothPoints, points, color, settings, currentTime, effect, sizeScale);
     } else {
       // Single path rendering (faster, no tapering)
-      this.renderUniformSmoothTrail(ctx, smoothPoints, points, color, settings, currentTime, effect);
+      this.renderUniformSmoothTrail(ctx, smoothPoints, points, color, settings, currentTime, effect, sizeScale);
     }
   }
 
@@ -340,7 +357,8 @@ export class Canvas2DTrailRenderer {
     color: string,
     settings: TrailSettings,
     currentTime: number,
-    effect: TrailEffect
+    effect: TrailEffect,
+    sizeScale: number
   ): void {
     if (smoothPoints.length < 2) return;
 
@@ -416,18 +434,19 @@ export class Canvas2DTrailRenderer {
     }
 
     // GLOW or NONE effect (NEON removed - never used)
+    const scaledWidth = Math.max(MIN_SCALED_LINE_WIDTH, settings.lineWidth * sizeScale);
     if (effect === TrailEffect.GLOW) {
-      const glowBlur = settings.glowBlur > 0 ? settings.glowBlur * DEFAULT_GLOW_BLUR_MULTIPLIER : FALLBACK_GLOW_BLUR;
-      ctx.shadowBlur = glowBlur;
+      const rawBlur = settings.glowBlur > 0 ? settings.glowBlur * DEFAULT_GLOW_BLUR_MULTIPLIER : FALLBACK_GLOW_BLUR;
+      ctx.shadowBlur = Math.max(MIN_SCALED_GLOW_BLUR, rawBlur * sizeScale);
       ctx.shadowColor = color;
       ctx.strokeStyle = color;
-      ctx.lineWidth = settings.lineWidth;
+      ctx.lineWidth = scaledWidth;
       ctx.globalAlpha = avgOpacity;
       ctx.stroke();
       ctx.shadowBlur = 0;
     } else {
       ctx.strokeStyle = color;
-      ctx.lineWidth = settings.lineWidth;
+      ctx.lineWidth = scaledWidth;
       ctx.globalAlpha = avgOpacity;
       ctx.stroke();
     }
@@ -446,7 +465,8 @@ export class Canvas2DTrailRenderer {
     color: string,
     settings: TrailSettings,
     currentTime: number,
-    effect: TrailEffect
+    effect: TrailEffect,
+    sizeScale: number
   ): void {
     if (smoothPoints.length < 3) return;
 
@@ -472,7 +492,7 @@ export class Canvas2DTrailRenderer {
     for (let i = 0; i < smoothPoints.length; i++) {
       const curr = smoothPoints[i]!;
       const progress = i / (smoothPoints.length - 1);
-      const halfWidth = this.calculateLineWidth(progress, settings) / 2;
+      const halfWidth = this.calculateLineWidth(progress, settings, sizeScale) / 2;
 
       // Calculate perpendicular direction from path tangent
       let dx: number, dy: number;
@@ -565,8 +585,8 @@ export class Canvas2DTrailRenderer {
 
     // GLOW or NONE effect (NEON removed - never used)
     if (effect === TrailEffect.GLOW) {
-      const glowBlur = settings.glowBlur > 0 ? settings.glowBlur * DEFAULT_GLOW_BLUR_MULTIPLIER : FALLBACK_GLOW_BLUR;
-      ctx.shadowBlur = glowBlur;
+      const rawBlur = settings.glowBlur > 0 ? settings.glowBlur * DEFAULT_GLOW_BLUR_MULTIPLIER : FALLBACK_GLOW_BLUR;
+      ctx.shadowBlur = Math.max(MIN_SCALED_GLOW_BLUR, rawBlur * sizeScale);
       ctx.shadowColor = color;
       ctx.fillStyle = color;
       ctx.globalAlpha = avgOpacity;
@@ -587,7 +607,8 @@ export class Canvas2DTrailRenderer {
     points: TrailPoint[],
     color: string,
     settings: TrailSettings,
-    currentTime: number
+    currentTime: number,
+    sizeScale: number
   ): void {
     if (points.length < 2) return;
 
@@ -600,8 +621,8 @@ export class Canvas2DTrailRenderer {
 
     // Apply glow/shadow if using glow effect
     if (effect === TrailEffect.GLOW) {
-      const glowBlur = settings.glowBlur > 0 ? settings.glowBlur * DEFAULT_GLOW_BLUR_MULTIPLIER : FALLBACK_GLOW_BLUR;
-      ctx.shadowBlur = glowBlur;
+      const rawBlur = settings.glowBlur > 0 ? settings.glowBlur * DEFAULT_GLOW_BLUR_MULTIPLIER : FALLBACK_GLOW_BLUR;
+      ctx.shadowBlur = Math.max(MIN_SCALED_GLOW_BLUR, rawBlur * sizeScale);
       ctx.shadowColor = color;
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 0;
@@ -649,7 +670,7 @@ export class Canvas2DTrailRenderer {
       }
 
       // Calculate line width based on taper style
-      const lineWidth = this.calculateLineWidth(progress, settings);
+      const lineWidth = this.calculateLineWidth(progress, settings, sizeScale);
 
       ctx.beginPath();
       ctx.moveTo(point.x, point.y);
@@ -707,15 +728,19 @@ export class Canvas2DTrailRenderer {
   }
 
   /**
-   * Calculate line width based on position (always tapered)
+   * Calculate line width based on position (always tapered).
+   * Scales proportionally with canvas size so trails look consistent at any resolution.
+   * Enforces a minimum floor so trails remain visible on very small canvases.
    * @param progress - 0 = oldest (tail), 1 = newest (head/prop)
+   * @param sizeScale - canvasSize / DEFAULT_CANVAS_SIZE
    */
   private calculateLineWidth(
     progress: number,
-    settings: TrailSettings
+    settings: TrailSettings,
+    sizeScale: number
   ): number {
     // Always tapered: thick at head (progress=1), thin at tail (progress=0)
     const widthRatio = MIN_TAIL_WIDTH_RATIO + (1 - MIN_TAIL_WIDTH_RATIO) * progress;
-    return settings.lineWidth * widthRatio;
+    return Math.max(MIN_SCALED_LINE_WIDTH, settings.lineWidth * widthRatio * sizeScale);
   }
 }

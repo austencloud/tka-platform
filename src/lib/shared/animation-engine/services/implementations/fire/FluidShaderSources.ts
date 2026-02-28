@@ -168,18 +168,30 @@ out vec4 fragColor;
 uniform sampler2D u_velocity;
 uniform sampler2D u_temperature;
 uniform float u_dt;
-uniform float u_buoyancy;      // buoyancy strength
-uniform float u_ambientTemp;   // baseline temperature
+uniform float u_buoyancy;          // buoyancy strength
+uniform float u_ambientTemp;       // baseline temperature
+uniform float u_terminalVelocity;  // max velocity magnitude from buoyancy/gravity
+uniform float u_gravity;           // constant vertical force (negative = downward)
 
 void main() {
   vec2 vel = texture(u_velocity, v_uv).xy;
   float temp = texture(u_temperature, v_uv).x;
 
   // Buoyancy force: upward (+Y in UV space) proportional to temperature above ambient
-  float force = u_buoyancy * (temp - u_ambientTemp);
+  float buoyForce = u_buoyancy * (temp - u_ambientTemp);
 
-  // Add a slight lateral wobble from temperature for organic motion
-  vel.y += force * u_dt;
+  // Gravity: constant vertical force on any heated fluid.
+  // Only acts on fluid with some temperature (prevents drift in empty space).
+  float gravForce = u_gravity * step(0.01, temp);
+
+  float totalForce = buoyForce + gravForce;
+
+  // Terminal velocity: attenuate force when velocity is already moving in the
+  // same direction as the force, preventing runaway accumulation.
+  // Works symmetrically for both upward (buoyancy) and downward (gravity) forces.
+  float speedInForceDir = sign(totalForce) * vel.y;
+  float attenuation = max(0.0, 1.0 - speedInForceDir / u_terminalVelocity);
+  vel.y += totalForce * attenuation * u_dt;
 
   fragColor = vec4(vel, 0.0, 1.0);
 }
@@ -349,8 +361,17 @@ out vec4 fragColor;
 uniform sampler2D u_temperature;
 uniform sampler2D u_fuel;
 uniform sampler2D u_colorField;
+uniform sampler2D u_soot;
 uniform float u_displayIntensity;
 uniform float u_colorBlend; // 0.0 = natural, 0.5 = tinted, 1.0 = colored
+uniform float u_time;       // seconds, for FBM noise animation
+uniform float u_smokeOpacity; // 0.0 = invisible, 0.5 = heavy smoke
+
+// Per-fuel-source color curve (replaces hardcoded blackbody ramp)
+uniform vec3 u_colorCold;   // FireColorCurve.coldColor
+uniform vec3 u_colorMid;    // FireColorCurve.midColor
+uniform vec3 u_colorHot;    // FireColorCurve.hotColor
+uniform vec3 u_colorCore;   // FireColorCurve.coreColor
 
 // Wick core rendering uniforms (up to 16 tips for multi-point props like fans)
 uniform vec2 u_tipPositions[16];
@@ -360,23 +381,58 @@ uniform vec3 u_tipColors[16];
 uniform int u_tipCount;
 uniform vec2 u_aspectCorrect;
 
-// Standard blackbody for natural fire
+// ---- FBM noise for high-frequency fire detail ----
+// Adds flickering that the low-res simulation grid can't capture.
+// 2D value noise with smooth interpolation.
+float hash(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+float valueNoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f); // smoothstep interpolation
+  float a = hash(i);
+  float b = hash(i + vec2(1.0, 0.0));
+  float c = hash(i + vec2(0.0, 1.0));
+  float d = hash(i + vec2(1.0, 1.0));
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+// 3-octave FBM scrolling upward to match fire's natural rise.
+// Returns value in [0, 1] range.
+float fireNoise(vec2 uv, float time) {
+  float n = 0.0;
+  float amp = 0.5;
+  float freq = 8.0;
+  // Scroll upward: fire rises, noise moves with it
+  vec2 scroll = vec2(0.0, -time * 1.5);
+  for (int i = 0; i < 3; i++) {
+    n += amp * valueNoise(uv * freq + scroll);
+    freq *= 2.2;
+    amp *= 0.45;
+    scroll *= 1.8;
+  }
+  return n;
+}
+
+// Natural fire color ramp driven by per-fuel-source uniforms
 vec3 blackbodyColor(float t) {
   vec3 color;
   if (t < 0.4) {
-    color = vec3(0.2, 0.02, 0.0) * (t / 0.4);
+    color = u_colorCold * (t / 0.4);
   } else if (t < 1.0) {
     float f = (t - 0.4) / 0.6;
-    color = mix(vec3(0.2, 0.02, 0.0), vec3(0.9, 0.15, 0.0), f);
+    color = mix(u_colorCold, u_colorMid, f);
   } else if (t < 2.0) {
     float f = (t - 1.0);
-    color = mix(vec3(0.9, 0.15, 0.0), vec3(1.0, 0.55, 0.05), f);
+    color = mix(u_colorMid, u_colorHot, f);
   } else if (t < 3.5) {
     float f = (t - 2.0) / 1.5;
-    color = mix(vec3(1.0, 0.55, 0.05), vec3(1.0, 0.9, 0.35), f);
+    color = mix(u_colorHot, u_colorCore, f);
   } else {
     float f = clamp((t - 3.5) / 2.0, 0.0, 1.0);
-    color = mix(vec3(1.0, 0.9, 0.35), vec3(1.0, 0.98, 0.9), f);
+    color = mix(u_colorCore, vec3(1.0, 0.98, 0.9), f);
   }
   return color;
 }
@@ -418,6 +474,15 @@ void main() {
   float fireIntensity = temp + fuel * 0.5;
   fireIntensity *= u_displayIntensity;
 
+  // FBM noise detail: modulate intensity for high-frequency flickering.
+  // Only applied where fire already exists (noise never creates fire).
+  // The 0.7 + 0.3 * noise range means intensity varies ±15% around baseline,
+  // enough for visible flicker without overwhelming the simulation.
+  if (fireIntensity > 0.05) {
+    float noise = fireNoise(v_uv, u_time);
+    fireIntensity *= 0.7 + 0.3 * noise;
+  }
+
   if (fireIntensity > 0.1) {
     vec3 trailColor;
     if (u_colorBlend > 0.01) {
@@ -445,8 +510,8 @@ void main() {
     vec2 delta = (v_uv - u_tipPositions[i]) * u_aspectCorrect;
     float dist2 = dot(delta, delta);
 
-    // Wick tip color: blend from natural orange toward prop color
-    vec3 tipColor = mix(vec3(1.0, 0.65, 0.12), u_tipColors[i], u_colorBlend);
+    // Wick tip color: blend from fuel-source hot color toward prop color
+    vec3 tipColor = mix(u_colorHot, u_tipColors[i], u_colorBlend);
 
     // Inner core: white-hot center (always white regardless of mode)
     float coreR = 0.006 * fs;
@@ -464,14 +529,92 @@ void main() {
     float glowR = 0.035 * fs;
     float glowR2 = glowR * glowR;
     float glow = exp(-dist2 / glowR2);
-    vec3 glowTint = mix(vec3(0.9, 0.25, 0.02), u_tipColors[i] * 0.4, u_colorBlend);
+    vec3 glowTint = mix(u_colorMid, u_tipColors[i] * 0.4, u_colorBlend);
     vec3 glowColor = glowTint * glow * 1.2 * u_displayIntensity;
 
     color += coreColor + bodyColor + glowColor;
     alpha = max(alpha, max(core, max(body * 0.9, glow * 0.5)));
   }
 
+  // --- Layer 3: Smoke/soot absorption ---
+  // Beer-Lambert: soot density absorbs light, yielding dark translucent smoke
+  float sootDensity = texture(u_soot, v_uv).x;
+  if (sootDensity > 0.01 && u_smokeOpacity > 0.001) {
+    float absorption = 1.0 - exp(-sootDensity * 4.0);
+    float smokeAlpha = absorption * u_smokeOpacity;
+    vec3 smokeColor = vec3(0.08, 0.06, 0.05);
+    color = mix(color, smokeColor * smokeAlpha, smokeAlpha);
+    alpha = max(alpha, smokeAlpha * 0.3);
+  }
+
   alpha = min(alpha, 1.0);
   fragColor = vec4(color * alpha, alpha);
+}
+`;
+
+// ============================================================
+// Soot generation: combustion byproduct + cooling gas → soot density
+// ============================================================
+
+export const SOOT_GENERATION_FRAG = `#version 300 es
+precision highp float;
+
+in vec2 v_uv;
+out vec4 fragColor;
+
+uniform sampler2D u_soot;
+uniform sampler2D u_temperature;
+uniform sampler2D u_fuel;
+uniform float u_dt;
+uniform float u_sootYield;
+uniform float u_sootCoolThreshold;
+uniform float u_sootCoolRate;
+uniform float u_sootDissipation;
+
+void main() {
+  float soot = texture(u_soot, v_uv).x;
+  float temp = texture(u_temperature, v_uv).x;
+  float fuel = texture(u_fuel, v_uv).x;
+
+  // Combustion byproduct: burned fuel produces soot
+  float combustionSoot = fuel * temp * u_sootYield;
+
+  // Cooling gas: gas below threshold emits visible smoke
+  float coolFactor = max(0.0, u_sootCoolThreshold - temp) / u_sootCoolThreshold;
+  float coolingSoot = coolFactor * u_sootCoolRate * u_dt;
+
+  // Accumulate soot, decay over time
+  soot += (combustionSoot + coolingSoot) * u_dt;
+  soot -= u_sootDissipation * u_dt;
+  soot = max(soot, 0.0);
+
+  fragColor = vec4(soot, 0.0, 0.0, 1.0);
+}
+`;
+
+// ============================================================
+// Bloom composite: scene + bloom → final output
+// Combines the fire display pass with the bloom mip chain.
+// ============================================================
+
+export const BLOOM_COMPOSITE_FRAG = `#version 300 es
+precision highp float;
+
+in vec2 v_uv;
+out vec4 fragColor;
+
+uniform sampler2D u_scene;
+uniform sampler2D u_bloom;
+uniform float u_bloomStrength;
+
+void main() {
+  vec4 scene = texture(u_scene, v_uv);
+  vec4 bloom = texture(u_bloom, v_uv);
+
+  // Additive bloom: bright areas glow beyond their bounds
+  vec4 combined = scene + bloom * u_bloomStrength;
+
+  // Premultiplied alpha output
+  fragColor = vec4(combined.rgb, max(combined.a, max(combined.r, max(combined.g, combined.b))));
 }
 `;

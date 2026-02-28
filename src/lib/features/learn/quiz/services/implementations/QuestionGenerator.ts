@@ -19,7 +19,7 @@ import {
   type QuizQuestionData,
 } from "../../domain/models/quiz-models";
 
-export class QuestionGeneratorService {
+export class QuestionGenerator {
   private static previousCorrectLetter: Letter | null = null;
   private static allPictographs: PictographData[] = [];
   private static pictographsByLetter: Map<Letter, PictographData[]> = new Map();

@@ -48,7 +48,7 @@ StaffLegend - Legend showing left/right staff position and thumb orientation
     align-items: center;
     gap: 0.5rem;
     font-size: 0.8125rem;
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--theme-text, rgba(255, 255, 255, 0.8));
   }
 
   .legend-color {

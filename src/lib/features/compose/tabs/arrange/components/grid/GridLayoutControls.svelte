@@ -8,8 +8,6 @@
 -->
 <script lang="ts">
   import { container } from "$lib/shared/di";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-
   type PresetType =
     | "single"
     | "vertical"
@@ -38,7 +36,7 @@
     onPresetLayout: (preset: PresetType) => void;
   } = $props();
 
-  const haptic = container.items.hapticFeedback as IHapticFeedback;
+  const haptic = container.items.hapticFeedback;
 
   const MAX_GRID = 8;
 

@@ -21,11 +21,11 @@
 
   onMount(async () => {
     // Load a real sequence from the user's data
-    const sequenceLoader = container.items.sequenceLoader;
+    const sequenceRepository = container.items.sequenceRepository;
 
     try {
-      // Fetch user's sequences
-      const sequences = await sequenceLoader.loadUserSequences(10);
+      // Fetch user's sequences from local IndexedDB
+      const sequences = await sequenceRepository.getAllSequences();
 
       if (sequences.length > 0) {
         // Use the first sequence found

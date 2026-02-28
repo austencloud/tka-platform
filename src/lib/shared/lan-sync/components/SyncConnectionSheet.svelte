@@ -288,7 +288,7 @@
 		justify-content: space-between;
 		padding: 1rem 1.5rem;
 		border-bottom: 1px solid var(--theme-stroke);
-		background: rgba(255, 255, 255, 0.03);
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
 	}
 
 	.header-content {
@@ -324,7 +324,7 @@
 	}
 
 	.close-button:hover {
-		background: rgba(255, 255, 255, 0.1);
+		background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		color: var(--theme-text);
 	}
 
@@ -349,8 +349,8 @@
 		align-items: center;
 		gap: 0.5rem;
 		padding: 0.75rem 1rem;
-		background: rgba(239, 68, 68, 0.1);
-		border: 1px solid rgba(239, 68, 68, 0.3);
+		background: color-mix(in srgb, var(--semantic-error) 10%, transparent);
+		border: 1px solid color-mix(in srgb, var(--semantic-error) 30%, transparent);
 		border-radius: 8px;
 		color: var(--semantic-error);
 		font-size: var(--font-size-min, 14px);
@@ -409,7 +409,7 @@
 		width: 36px;
 		height: 36px;
 		border: none;
-		background: rgba(255, 255, 255, 0.1);
+		background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		border-radius: 8px;
 		color: var(--theme-text-dim);
 		cursor: pointer;
@@ -417,7 +417,7 @@
 	}
 
 	.copy-btn:hover {
-		background: rgba(255, 255, 255, 0.15);
+		background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
 		color: var(--theme-text);
 	}
 
@@ -444,8 +444,8 @@
 		justify-content: center;
 		gap: 0.5rem;
 		padding: 0.875rem 1.5rem;
-		background: rgba(239, 68, 68, 0.15);
-		border: 1px solid rgba(239, 68, 68, 0.3);
+		background: color-mix(in srgb, var(--semantic-error) 15%, transparent);
+		border: 1px solid color-mix(in srgb, var(--semantic-error) 30%, transparent);
 		border-radius: 12px;
 		color: var(--semantic-error);
 		font-size: var(--font-size-min, 14px);
@@ -455,7 +455,7 @@
 	}
 
 	.disconnect-btn:hover {
-		background: rgba(239, 68, 68, 0.25);
+		background: color-mix(in srgb, var(--semantic-error) 25%, transparent);
 	}
 
 	/* Waiting info */
@@ -511,7 +511,7 @@
 	}
 
 	.cancel-btn:hover {
-		background: rgba(255, 255, 255, 0.05);
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
 		color: var(--theme-text);
 	}
 

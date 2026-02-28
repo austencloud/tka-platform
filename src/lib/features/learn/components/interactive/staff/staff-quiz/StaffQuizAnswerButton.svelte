@@ -35,6 +35,7 @@ StaffQuizAnswerButton - Single answer option button
   style="--type-color: {info.color}"
   onclick={onSelect}
   {disabled}
+  aria-label="Select {option.charAt(0).toUpperCase() + option.slice(1)}"
 >
   <i class="fa-solid {info.icon}" aria-hidden="true"></i>
   <span>{option.charAt(0).toUpperCase() + option.slice(1)}</span>
@@ -103,8 +104,8 @@ StaffQuizAnswerButton - Single answer option button
   }
 
   .answer-btn.incorrect {
-    background: rgba(255, 74, 74, 0.2);
-    border-color: rgba(255, 74, 74, 0.6);
+    background: color-mix(in srgb, var(--semantic-error) 20%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error) 60%, transparent);
     animation: shake var(--duration-dramatic) ease;
   }
 
@@ -127,7 +128,7 @@ StaffQuizAnswerButton - Single answer option button
     right: 0.5rem;
     font-size: 1rem;
     font-weight: 700;
-    color: #ff4a4a;
+    color: var(--semantic-error);
   }
 
   .result-icon.correct,

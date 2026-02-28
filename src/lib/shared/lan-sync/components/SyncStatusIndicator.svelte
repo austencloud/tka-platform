@@ -92,7 +92,7 @@
 	}
 
 	.sync-status i {
-		font-size: 10px;
+		font-size: var(--font-size-compact, 12px);
 	}
 
 	.status-label {
@@ -101,38 +101,38 @@
 
 	/* Connected - green with pulse */
 	.sync-status.connected {
-		background: rgba(34, 197, 94, 0.15);
+		background: color-mix(in srgb, var(--semantic-success, #22c55e) 15%, transparent);
 		color: var(--semantic-success, #22c55e);
-		border: 1px solid rgba(34, 197, 94, 0.3);
+		border: 1px solid color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent);
 	}
 
 	/* Waiting - amber */
 	.sync-status.waiting {
-		background: rgba(245, 158, 11, 0.15);
+		background: color-mix(in srgb, var(--semantic-warning, #f59e0b) 15%, transparent);
 		color: var(--semantic-warning, #f59e0b);
-		border: 1px solid rgba(245, 158, 11, 0.3);
+		border: 1px solid color-mix(in srgb, var(--semantic-warning, #f59e0b) 30%, transparent);
 	}
 
 	/* Connecting/reconnecting - blue */
 	.sync-status.connecting,
 	.sync-status.reconnecting {
-		background: rgba(59, 130, 246, 0.15);
+		background: color-mix(in srgb, var(--semantic-info, #3b82f6) 15%, transparent);
 		color: var(--semantic-info, #3b82f6);
-		border: 1px solid rgba(59, 130, 246, 0.3);
+		border: 1px solid color-mix(in srgb, var(--semantic-info, #3b82f6) 30%, transparent);
 	}
 
 	/* Error - red */
 	.sync-status.error {
-		background: rgba(239, 68, 68, 0.15);
+		background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
 		color: var(--semantic-error, #ef4444);
-		border: 1px solid rgba(239, 68, 68, 0.3);
+		border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
 	}
 
 	/* Disconnected - muted */
 	.sync-status.disconnected {
-		background: rgba(255, 255, 255, 0.05);
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
 		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-		border: 1px solid rgba(255, 255, 255, 0.1);
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 	}
 
 	/* Pulse animation for active states */

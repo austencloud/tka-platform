@@ -7,7 +7,7 @@
 
   Layout: Grid-centric. The pictograph square dominates the view,
   sized to fill available space while maintaining 1:1 aspect ratio.
-  Controls sit compactly above, step strip below.
+  Controls overlay the grid as corner clusters. Step strip below.
 -->
 <script lang="ts">
   import { createVisualBuilderState } from "./state/visual-builder-state.svelte";
@@ -19,12 +19,10 @@
 </script>
 
 <div class="visual-builder">
-  <!-- Unified controls: phase indicator, orientation, rotation, Done, Undo -->
-  <BuilderControls {builderState} />
-
-  <!-- Grid: the centerpiece, fills available space as a square -->
+  <!-- Grid + overlaid controls -->
   <div class="grid-container">
     <InteractiveGrid {builderState} />
+    <BuilderControls {builderState} />
   </div>
 
   <!-- Step strip: rendered mini pictographs for each step -->
@@ -43,7 +41,6 @@
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
   }
 
-  /* Grid container: takes all remaining vertical space, constrains to square */
   .grid-container {
     flex: 1;
     min-height: 0;
@@ -51,20 +48,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
   }
 
-  /*
-   * The InteractiveGrid has aspect-ratio: 1. We need it to fit the
-   * available rectangle (width x height from flex:1) as the largest
-   * square that fits. CSS aspect-ratio on the child handles this
-   * when we constrain both max-width and max-height.
-   */
   .grid-container :global(.interactive-grid) {
     max-width: 100%;
     max-height: 100%;
   }
 
-  /* Mobile adjustments */
   @media (max-width: 768px) {
     .visual-builder {
       padding: 8px;

@@ -60,6 +60,7 @@ Bottom row: [Start/End] [Generate]
     isGenerating,
     onGenerateClicked,
     startEndState,
+    hasSettingsChanged = false,
     helpMode = false,
     helpModeExiting = false,
     onHelpSelect,
@@ -70,6 +71,7 @@ Bottom row: [Start/End] [Generate]
     isGenerating: boolean;
     onGenerateClicked: (options: any) => Promise<void>;
     startEndState?: StartEndOptionsState;
+    hasSettingsChanged?: boolean;
     helpMode?: boolean;
     helpModeExiting?: boolean;
     onHelpSelect?: (controlId: GeneratorHelpId) => void;
@@ -527,6 +529,7 @@ Bottom row: [Start/End] [Generate]
     <div class="compact-generate-btn">
       <GenerateButtonCard
         {isGenerating}
+        {hasSettingsChanged}
         onGenerateClicked={onGenerateClicked}
         {config}
         startEndOptions={startEndState?.options}

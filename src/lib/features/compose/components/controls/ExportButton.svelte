@@ -35,7 +35,7 @@
     border: none;
     border-radius: 10px;
     color: white;
-    font-size: 0.9rem;
+    font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
     transition: all var(--duration-normal) ease;

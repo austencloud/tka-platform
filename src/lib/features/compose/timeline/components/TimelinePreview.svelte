@@ -10,6 +10,7 @@
   - Shows empty state when no clip at playhead
 -->
 <script lang="ts">
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { onMount, onDestroy, untrack } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import { container } from "$lib/shared/di";
@@ -20,6 +21,7 @@
   import type { ISequenceAnimationOrchestrator } from "../../services/contracts/ISequenceAnimationOrchestrator";
   import type { PropState } from "../../shared/domain/types/PropState";
   import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
+  import { startPositionDeriver as startPositionDeriverSingleton } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
 
   interface Props {
     /** Current playhead position in seconds */
@@ -195,8 +197,7 @@
       // Get services from ITI container
       animationOrchestrator = container.items
         .sequenceAnimationOrchestrator as ISequenceAnimationOrchestrator;
-      startPositionDeriver = container.items
-        .startPositionDeriver as IStartPositionDeriver;
+      startPositionDeriver = startPositionDeriverSingleton;
       initialized = true;
       loading = false;
     } catch (err) {
@@ -309,7 +310,7 @@
   <div class="preview-canvas">
     {#if loading}
       <div class="loading-state">
-        <div class="spinner"></div>
+        <ProgressRing percent={-1} size={32} strokeWidth={3} />
         <span>Initializing...</span>
       </div>
     {:else if error}
@@ -524,21 +525,6 @@
     opacity: 0.6;
   }
 
-  .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--theme-stroke);
-    border-top-color: #4a9eff;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   .playback-status {
     position: absolute;
     bottom: 8px;
@@ -647,9 +633,6 @@
 
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */
   @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-    }
     .playback-status {
       animation: none;
     }

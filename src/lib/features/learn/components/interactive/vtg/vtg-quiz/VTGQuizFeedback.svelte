@@ -34,14 +34,14 @@ VTGQuizFeedback - Correct/incorrect feedback after answer
   }
 
   .result-feedback.correct {
-    background: rgba(74, 222, 128, 0.15);
-    border: 1px solid rgba(74, 222, 128, 0.3);
-    color: #4ade80;
+    background: color-mix(in srgb, var(--semantic-success, #4ade80) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-success, #4ade80) 30%, transparent);
+    color: var(--semantic-success, #4ade80);
   }
 
   .result-feedback:not(.correct) {
-    background: rgba(248, 113, 113, 0.15);
-    border: 1px solid rgba(248, 113, 113, 0.3);
+    background: color-mix(in srgb, var(--semantic-error) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-error) 30%, transparent);
     color: var(--semantic-error);
   }
 

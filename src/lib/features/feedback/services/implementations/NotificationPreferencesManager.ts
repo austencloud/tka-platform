@@ -1,18 +1,13 @@
-/**
- * NotificationPreferencesService
- *
- * Manages user notification preferences in Firestore.
- */
-
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { NotificationPreferences } from "../../domain/models/notification-models";
 import { DEFAULT_NOTIFICATION_PREFERENCES } from "../../domain/models/notification-models";
+import type { INotificationPreferencesManager } from "$lib/shared/push/services/contracts/INotificationPreferencesManager";
 
 const USERS_COLLECTION = "users";
 const PREFERENCES_FIELD = "notificationPreferences";
 
-export class NotificationPreferencesService {
+export class NotificationPreferencesManager implements INotificationPreferencesManager {
   /**
    * Get notification preferences for a user
    * Returns default preferences if none are set
@@ -94,6 +89,7 @@ export class NotificationPreferencesService {
    */
   async enableAll(userId: string): Promise<void> {
     const allEnabled: NotificationPreferences = {
+      pushEnabled: true,
       feedbackResolved: true,
       feedbackInProgress: true,
       feedbackNeedsInfo: true,
@@ -115,6 +111,7 @@ export class NotificationPreferencesService {
    */
   async disableAll(userId: string): Promise<void> {
     const allDisabled: NotificationPreferences = {
+      pushEnabled: false,
       feedbackResolved: false,
       feedbackInProgress: false,
       feedbackNeedsInfo: false,
@@ -132,6 +129,3 @@ export class NotificationPreferencesService {
   }
 }
 
-// Export singleton instance
-export const notificationPreferencesService =
-  new NotificationPreferencesService();

@@ -16,15 +16,11 @@ PositionQuizFeedback - Feedback message after answer
 <div class="feedback" class:correct={isCorrect} class:incorrect={!isCorrect}>
   {#if isCorrect}
     <span
-      >Correct! That's <strong style="color: {typeInfo.color}"
-        >{typeInfo.label}</strong
-      > position.</span
+      >Correct! That's <strong>{typeInfo.label}</strong> position.</span
     >
   {:else}
     <span
-      >Not quite! That was <strong style="color: {typeInfo.color}"
-        >{typeInfo.label}</strong
-      > position.</span
+      >Not quite! That was <strong>{typeInfo.label}</strong> position.</span
     >
   {/if}
 </div>
@@ -50,15 +46,19 @@ PositionQuizFeedback - Feedback message after answer
   }
 
   .feedback.correct {
-    background: rgba(34, 211, 238, 0.15);
-    border: 1px solid rgba(34, 211, 238, 0.3);
-    color: #22d3ee;
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent);
+    color: var(--semantic-success, #22c55e);
   }
 
   .feedback.incorrect {
-    background: rgba(255, 158, 74, 0.15);
-    border: 1px solid rgba(255, 158, 74, 0.3);
-    color: #ff9e4a;
+    background: color-mix(in srgb, var(--semantic-warning, #f59e0b) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-warning, #f59e0b) 30%, transparent);
+    color: var(--semantic-warning, #f59e0b);
+  }
+
+  .feedback strong {
+    font-weight: 700;
   }
 
   @media (prefers-reduced-motion: reduce) {

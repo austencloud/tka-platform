@@ -263,7 +263,8 @@ export class TikaSessionRepository implements ITikaSessionRepository {
 
   subscribeToSessions(
     callback: (sessions: TikaSessionPreview[]) => void,
-    options?: TikaSessionQueryOptions
+    options?: TikaSessionQueryOptions,
+    onError?: (error: Error) => void
   ): () => void {
     const userId = this.getUserId();
     let unsubscribe: Unsubscribe | null = null;
@@ -299,6 +300,7 @@ export class TikaSessionRepository implements ITikaSessionRepository {
               "[TikaSessionRepository] Subscription error:",
               error
             );
+            onError?.(error instanceof Error ? error : new Error(String(error)));
           }
         );
       })
@@ -307,6 +309,7 @@ export class TikaSessionRepository implements ITikaSessionRepository {
           "[TikaSessionRepository] Failed to initialize subscription:",
           error
         );
+        onError?.(error instanceof Error ? error : new Error(String(error)));
       });
 
     // Return cleanup function

@@ -340,7 +340,7 @@
 
     // Resolve event handler service from ITI container
     try {
-      eventHandlerService = container.items.browseEventHandler as IBrowseEventHandler;
+      eventHandlerService = container.items.browseEventHandler;
 
       // Initialize event handler service with required parameters
       eventHandlerService.initialize({

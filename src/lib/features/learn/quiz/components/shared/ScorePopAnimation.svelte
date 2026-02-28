@@ -71,28 +71,28 @@ Features:
 	.score-value {
 		font-size: 2rem;
 		font-weight: 800;
-		color: #4ade80;
+		color: var(--semantic-success);
 		text-shadow:
-			0 0 10px rgba(74, 222, 128, 0.5),
-			0 2px 4px rgba(0, 0, 0, 0.3);
+			0 0 10px color-mix(in srgb, var(--semantic-success) 50%, transparent),
+			0 2px 4px color-mix(in srgb, var(--theme-panel-bg) 70%, transparent);
 	}
 
 	.score-pop.streak .score-value {
 		font-size: 2.5rem;
-		color: #fbbf24;
+		color: var(--semantic-warning);
 		text-shadow:
-			0 0 15px rgba(251, 191, 36, 0.6),
-			0 2px 4px rgba(0, 0, 0, 0.3);
+			0 0 15px color-mix(in srgb, var(--semantic-warning) 60%, transparent),
+			0 2px 4px color-mix(in srgb, var(--theme-panel-bg) 70%, transparent);
 	}
 
 	.streak-badge {
 		font-size: 0.875rem;
 		font-weight: 700;
-		color: #fbbf24;
-		background: rgba(251, 191, 36, 0.2);
+		color: var(--semantic-warning);
+		background: color-mix(in srgb, var(--semantic-warning) 20%, transparent);
 		padding: 0.125rem 0.5rem;
 		border-radius: 12px;
-		border: 1px solid rgba(251, 191, 36, 0.4);
+		border: 1px solid color-mix(in srgb, var(--semantic-warning) 40%, transparent);
 	}
 
 	/* Reduced motion */

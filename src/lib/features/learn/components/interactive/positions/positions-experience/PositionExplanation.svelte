@@ -13,23 +13,15 @@ PositionExplanation - Explanation box for a position type
 
 <div class="explanation">
   <h3>Understanding {info.name}</h3>
-  <ul>
-    <li>
-      {@html info.description.replace(
-        /(straight line|identical position|perpendicular)/gi,
-        "<strong>$1</strong>"
-      )}
-    </li>
-    <li>Think: <strong>{info.angle} apart</strong></li>
-    <li>Examples: {info.examples}</li>
-  </ul>
+  <p class="description">{info.description}</p>
+  <p class="insight">{info.keyInsight}</p>
 </div>
 
 <style>
   .explanation {
     padding: 1.25rem;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
   }
 
@@ -40,19 +32,18 @@ PositionExplanation - Explanation box for a position type
     margin: 0;
   }
 
-  ul {
-    margin: 0.75rem 0 0 0;
-    padding-left: 1.25rem;
-  }
-
-  li {
+  .description {
     font-size: 1rem;
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--theme-text, rgba(255, 255, 255, 0.75));
     line-height: 1.6;
-    margin-bottom: 0.5rem;
+    margin: 0.75rem 0 0;
   }
 
-  li:last-child {
-    margin-bottom: 0;
+  .insight {
+    font-size: var(--font-size-sm, 0.875rem);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    line-height: 1.5;
+    margin: 0.5rem 0 0;
+    font-style: italic;
   }
 </style>

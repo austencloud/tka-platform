@@ -7,13 +7,14 @@
 
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { goto } from "$app/navigation";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   let copying = $state(false);
 
   // Redirect if not authenticated
   $effect(() => {
     if (!authState.isAuthenticated && !authState.loading) {
-      goto("/auth/login");
+      goto("/");
     }
   });
 
@@ -63,7 +64,7 @@
 
 {#if authState.loading}
   <div class="loading-container">
-    <div class="spinner"></div>
+    <ProgressRing percent={-1} size={32} strokeWidth={3} />
     <p>Loading profile...</p>
   </div>
 {:else if authState.user}
@@ -186,21 +187,6 @@
     justify-content: center;
     gap: 1rem;
     color: var(--theme-text-dim, var(--theme-text-dim));
-  }
-
-  .spinner {
-    width: 2rem;
-    height: 2rem;
-    border: 3px solid var(--theme-stroke);
-    border-top-color: var(--theme-accent, var(--semantic-info));
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
   }
 
   .profile-container {
@@ -409,10 +395,4 @@
     }
   }
 
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
-  @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-    }
-  }
 </style>

@@ -16,6 +16,7 @@ export interface InlinePictograph {
   letter: string;
   variation?: number;
   label?: string;
+  gridMode?: "diamond" | "box";
 }
 
 export interface InlineGalleryItem {
@@ -176,7 +177,8 @@ export interface ITikaToolExecutor {
    */
   getLetterExplanation(
     letter: string,
-    variation?: number
+    variation?: number,
+    gridMode?: "diamond" | "box"
   ): LetterExplanationResult | string;
 
   /**

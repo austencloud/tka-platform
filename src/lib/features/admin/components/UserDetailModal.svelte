@@ -17,6 +17,7 @@
   import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import AvatarImage from "$lib/features/browse/creators/components/profile/AvatarImage.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import ProfileAdminSection from "$lib/features/browse/creators/components/profile/ProfileAdminSection.svelte";
   import UserActivityAnalytics from "./UserActivityAnalytics.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -149,7 +150,7 @@
   <div class="modal-body-content" class:layout-large={layoutMode === "large"} class:layout-medium={layoutMode === "medium"} class:layout-compact={layoutMode === "compact"}>
     {#if isLoadingProfile}
       <div class="loading-state">
-        <div class="spinner" aria-hidden="true"></div>
+        <ProgressRing percent={-1} size={32} strokeWidth={3} />
         <span>{t("common_loading")}</span>
       </div>
     {:else if profileError || !userProfile}
@@ -513,26 +514,6 @@
     color: var(--semantic-error);
   }
 
-  .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--theme-stroke);
-    border-top-color: var(--theme-accent);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-      border-top-color: var(--theme-accent);
-      border-right-color: var(--theme-accent);
-    }
-  }
 
   /* Two Column Layout (Large Screens) */
   .two-column-layout {

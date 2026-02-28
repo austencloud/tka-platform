@@ -7,6 +7,7 @@
    * Curate mode uses 3-column layout: sequence | video | metadata
    */
   import { onMount } from "svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import VideoStage from "./VideoStage.svelte";
   import KeyboardHintsBar from "./KeyboardHintsBar.svelte";
   import BrowsePanel from "./panels/BrowsePanel.svelte";
@@ -201,7 +202,7 @@
     <!-- Saving indicator -->
     {#if controller.saving}
       <div class="saving-indicator">
-        <div class="spinner"></div>
+        <ProgressRing percent={-1} size={24} strokeWidth={2} />
       </div>
     {/if}
   </div>
@@ -386,19 +387,6 @@
     background: rgba(0, 0, 0, 0.8);
     border-radius: 12px;
     backdrop-filter: blur(8px);
-  }
-
-  .spinner {
-    width: 20px;
-    height: 20px;
-    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.2));
-    border-top-color: var(--theme-text, white);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
   }
 
   /* Responsive - 3-column curate layout */

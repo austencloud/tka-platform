@@ -22,8 +22,8 @@
   let searchInput: HTMLInputElement | null = $state(null);
 
   onMount(() => {
-    browseLoader = container.items.browseLoader as IBrowseLoader;
-    thumbnailProvider = container.items.browseThumbnailProvider as IBrowseThumbnailProvider;
+    browseLoader = container.items.browseLoader;
+    thumbnailProvider = container.items.browseThumbnailProvider;
   });
 
   // Load sequences when overlay becomes visible

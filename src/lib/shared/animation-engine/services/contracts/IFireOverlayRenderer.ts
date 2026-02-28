@@ -34,6 +34,12 @@ export interface IFireOverlayRenderer {
   setQuality(octaves: number): void;
 
   /**
+   * Clear all simulation buffers (velocity, temperature, fuel, soot, pressure, color).
+   * Used on loop boundaries to prevent residual fire state from bleeding across loops.
+   */
+  clearSimulation(): void;
+
+  /**
    * Clean up WebGL resources and remove canvas from DOM.
    */
   dispose(): void;
@@ -42,4 +48,16 @@ export interface IFireOverlayRenderer {
    * Whether the renderer has been successfully initialized.
    */
   isInitialized(): boolean;
+
+  /**
+   * Get the overlay canvas element.
+   * Returns null if not yet initialized.
+   */
+  getCanvas(): HTMLCanvasElement | null;
+
+  /**
+   * Get the WebGL2 rendering context.
+   * Returns null if not yet initialized.
+   */
+  getGl(): WebGL2RenderingContext | null;
 }

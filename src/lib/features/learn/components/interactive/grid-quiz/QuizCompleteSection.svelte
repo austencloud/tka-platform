@@ -156,20 +156,20 @@ QuizCompleteSection - Results display and actions
   .action-btn.primary {
     background: linear-gradient(
       135deg,
-      rgba(74, 158, 255, 0.3),
-      rgba(168, 85, 247, 0.3)
+      color-mix(in srgb, var(--prop-blue, #4a9eff) 30%, transparent),
+      color-mix(in srgb, var(--theme-accent, #a855f7) 30%, transparent)
     );
-    border: 1px solid rgba(74, 158, 255, 0.4);
+    border: 1px solid color-mix(in srgb, var(--prop-blue, #4a9eff) 40%, transparent);
     color: white;
   }
 
   .action-btn.primary:hover {
     background: linear-gradient(
       135deg,
-      rgba(74, 158, 255, 0.4),
-      rgba(168, 85, 247, 0.4)
+      color-mix(in srgb, var(--prop-blue, #4a9eff) 40%, transparent),
+      color-mix(in srgb, var(--theme-accent, #a855f7) 40%, transparent)
     );
-    border-color: rgba(74, 158, 255, 0.6);
+    border-color: color-mix(in srgb, var(--prop-blue, #4a9eff) 60%, transparent);
     transform: translateY(-2px);
   }
 

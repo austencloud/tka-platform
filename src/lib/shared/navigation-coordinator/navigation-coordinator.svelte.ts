@@ -118,6 +118,10 @@ export function moduleSections() {
   if (module === "create") {
     // Filter sections based on user's feature access (role-based)
     const availableSections = baseSections.filter((section) => {
+      // Visual Builder is admin-only (not ready for public)
+      if (section.id === "visual-builder") {
+        return featureFlagService.isAdmin;
+      }
       return featureFlagService.canAccessTab("create", section.id);
     });
 
@@ -145,9 +149,12 @@ export function moduleSections() {
     });
   }
 
-  // Feedback module: Filter manage tab for non-admin users
+  // Feedback module: Tracker and Manage are admin-only (not ready for public)
   if (module === "feedback") {
     return baseSections.filter((section: { id: string }) => {
+      if (section.id === "tracker" || section.id === "manage") {
+        return featureFlagService.isAdmin;
+      }
       return featureFlagService.canAccessTab("feedback", section.id);
     });
   }
@@ -166,7 +173,12 @@ export function moduleSections() {
     });
   }
 
-  return baseSections;
+  // Default: apply feature flag filtering for ALL modules
+  // This ensures mobile navigation (which relies on moduleSections()) respects
+  // the same canAccessTab() checks that the desktop sidebar applies via getFilteredSections()
+  return baseSections.filter((section) => {
+    return featureFlagService.canAccessTab(module, section.id);
+  });
 }
 
 // Module order for determining slide direction
@@ -308,7 +320,7 @@ export async function handleModuleChange(
 const TAB_ORDERS: Record<string, string[]> = {
   create: [
     "construct",
-    "assemble",
+    "visual-builder",
     "generate",
     "spell",
     "editor",
@@ -320,7 +332,7 @@ const TAB_ORDERS: Record<string, string[]> = {
   realm: ["stage", "gallery", "worlds"],
   train: ["drills", "challenges", "progress"],
   collect: ["achievements", "badges", "stats"],
-  feedback: ["submit", "manage"],
+  feedback: ["submit", "my-feedback", "tracker", "manage"],
   settings: [
     "profile",
     "release-notes",

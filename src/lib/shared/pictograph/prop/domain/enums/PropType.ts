@@ -67,6 +67,12 @@ export enum PropType {
   EIGHTRINGS = "eightrings",
   BIGEIGHTRINGS = "bigeightrings",
 
+  // === CONTACT BALL FAMILY ===
+  CONTACTBALL = "contactball",
+  BIGCONTACTBALL = "bigcontactball",
+  DOUBLECONTACTBALL = "doublecontactball",
+  BIGDOUBLECONTACTBALL = "bigdoublecontactball",
+
   // === QUIAD ===
   QUIAD = "quiad",
 

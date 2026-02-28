@@ -42,6 +42,7 @@
   import KeyboardShortcutsTab from "$lib/shared/keyboard/components/settings/KeyboardShortcutsTab.svelte";
   import PreferencesTab from "$lib/shared/settings/components/tabs/PreferencesTab.svelte";
   import LanguageTab from "$lib/shared/settings/components/tabs/LanguageTab.svelte";
+  import NotificationPreferencesPanel from "$lib/features/feedback/components/NotificationPreferencesPanel.svelte";
 
   // Reactive settings - derives from getSettings() to maintain reactivity
   let settings = $derived(getSettings());
@@ -259,6 +260,8 @@
           <VisibilityTab />
         {:else if activeTab === "keyboard"}
           <KeyboardShortcutsTab />
+        {:else if activeTab === "notifications"}
+          <NotificationPreferencesPanel />
         {:else if activeTab === "preferences"}
           <PreferencesTab
             currentSettings={settings}
@@ -375,7 +378,7 @@
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    overflow: hidden; /* Let children handle their own scrolling */
+    overflow-y: auto;
     padding: clamp(8px, 2vw, 16px);
     min-height: 0;
   }

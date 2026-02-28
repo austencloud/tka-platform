@@ -20,7 +20,6 @@
   import { onMount, onDestroy } from "svelte";
   import { container } from "$lib/shared/di";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { ISequenceEncoder } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
   import type { ILetterDeriver } from "$lib/shared/navigation/services/contracts/ILetterDeriver";
   import type { IPositionDeriver } from "$lib/shared/navigation/services/contracts/IPositionDeriver";
   import { initializeAppServices } from "$lib/shared/application/state/services.svelte";
@@ -48,8 +47,8 @@
   import ViewerSettingsModal from "$lib/shared/sequence-viewer/components/ViewerSettingsModal.svelte";
   import { openSequenceOverlay } from "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte";
   import { getIabBannerVisible, IAB_BANNER_HEIGHT } from "$lib/shared/auth/state/iab-banner-state.svelte";
-  import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import LoadingGate from "$lib/shared/components/loading/LoadingGate.svelte";
 
   // ============================================================================
   // ROUTE-SPECIFIC STATE
@@ -195,11 +194,11 @@
   function applyUrlPropPreferences() {
     if (!urlBlueProp && !urlRedProp) return;
 
-    const encoderService = container.items.sequenceEncoder as ISequenceEncoder;
+    const encoderService = container.items.sequenceEncoder;
     const parsed = encoderService.parsePropsFromURL($page.url.searchParams);
 
     if (parsed.bluePropType || parsed.redPropType) {
-      const settingsService = container.items.settingsState as ISettingsState;
+      const settingsService = container.items.settingsState;
       const updates: { bluePropType?: PropType; redPropType?: PropType } = {};
 
       if (parsed.bluePropType) {
@@ -227,7 +226,7 @@
       applyUrlPropPreferences();
       isLoading = false;
     } else if (sequenceId) {
-      const encoderService = container.items.sequenceEncoder as ISequenceEncoder;
+      const encoderService = container.items.sequenceEncoder;
       const parsed = encoderService.parseSequenceRouteId(sequenceId);
 
       if (parsed.encoded) {
@@ -310,7 +309,7 @@
     loadError = null;
 
     try {
-      const encoderService = container.items.sequenceEncoder as ISequenceEncoder;
+      const encoderService = container.items.sequenceEncoder;
 
       if (encoderService.isInlineEncoded(id)) {
         try {
@@ -331,6 +330,16 @@
       if (!resolvedSequence) {
         const provider = container.items.sequenceDataProvider;
         resolvedSequence = await provider.loadByIdentifier(id);
+      }
+
+      // Try user's Firestore library (e.g. sync room IDs are Firestore doc IDs)
+      if (!resolvedSequence) {
+        try {
+          const libraryRepo = container.items.libraryRepository;
+          resolvedSequence = await libraryRepo.getSequence(id);
+        } catch {
+          // Library lookup failed (not logged in, etc.)
+        }
       }
 
       if (!resolvedSequence) {
@@ -420,8 +429,7 @@
 {#if isLoading}
   <div class="sequence-route-page">
     <div class="loading-container">
-      <div class="spinner"></div>
-      <p>Loading sequence...</p>
+      <LoadingGate variant="card" message="Loading sequence..." />
     </div>
   </div>
 {:else if loadError || !sequence}
@@ -660,30 +668,7 @@
   /* Loading state */
   .loading-container {
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-  }
-
-  .spinner {
-    width: 48px;
-    height: 48px;
-    border: 3px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-top-color: var(--theme-accent, #f43f5e);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
-  .loading-container p {
-    font-size: var(--font-size-sm, 14px);
-    margin: 0;
+    position: relative;
   }
 
   /* Error state */
@@ -761,12 +746,6 @@
        slide-up doesn't fight with a morph animation */
     .route-body-content {
       view-transition-name: none !important;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
     }
   }
 

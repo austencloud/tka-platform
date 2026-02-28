@@ -100,7 +100,7 @@
     color: white;
     margin: 0;
     text-align: center;
-    background: linear-gradient(135deg, #50c878 0%, #3cb371 100%);
+    background: linear-gradient(135deg, var(--semantic-success, #50c878) 0%, var(--semantic-success, #3cb371) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -116,7 +116,7 @@
   p {
     font-size: 1rem;
     line-height: 1.6;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--theme-text, rgba(255, 255, 255, 0.85));
     margin: 0;
   }
 
@@ -128,10 +128,10 @@
     padding: 1.5rem;
     background: linear-gradient(
       135deg,
-      rgba(80, 200, 120, 0.1) 0%,
-      rgba(80, 200, 120, 0.02) 100%
+      color-mix(in srgb, var(--semantic-success, #50c878) 10%, transparent) 0%,
+      color-mix(in srgb, var(--semantic-success, #50c878) 2%, transparent) 100%
     );
-    border: 1px solid rgba(80, 200, 120, 0.2);
+    border: 1px solid color-mix(in srgb, var(--semantic-success, #50c878) 20%, transparent);
     border-radius: 16px;
   }
 
@@ -141,10 +141,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(80, 200, 120, 0.2);
+    background: color-mix(in srgb, var(--semantic-success, #50c878) 20%, transparent);
     border-radius: 50%;
     font-size: 1.75rem;
-    color: #50c878;
+    color: var(--semantic-success, #50c878);
   }
 
   .intro-text {
@@ -162,8 +162,8 @@
     display: flex;
     gap: 1rem;
     padding: 1rem;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
   }
 
@@ -173,9 +173,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(34, 211, 238, 0.15);
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 15%, transparent);
     border-radius: 10px;
-    color: #22d3ee;
+    color: var(--theme-accent, #22d3ee);
     flex-shrink: 0;
   }
 
@@ -187,7 +187,7 @@
   .example-preview {
     text-align: center;
     padding: 1rem;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border-radius: 12px;
   }
 
@@ -209,15 +209,15 @@
     justify-content: center;
     width: var(--min-touch-target);
     height: var(--min-touch-target);
-    background: rgba(80, 200, 120, 0.2);
-    border: 2px solid rgba(80, 200, 120, 0.4);
+    background: color-mix(in srgb, var(--semantic-success, #50c878) 20%, transparent);
+    border: 2px solid color-mix(in srgb, var(--semantic-success, #50c878) 40%, transparent);
     border-radius: 10px;
     font-weight: 700;
-    color: #50c878;
+    color: var(--semantic-success, #50c878);
   }
 
   .seq-arrow {
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
   }
 
   .next-button {
@@ -228,10 +228,10 @@
     padding: 1rem 2rem;
     background: linear-gradient(
       135deg,
-      rgba(80, 200, 120, 0.3) 0%,
-      rgba(60, 179, 113, 0.3) 100%
+      color-mix(in srgb, var(--semantic-success, #50c878) 30%, transparent) 0%,
+      color-mix(in srgb, var(--semantic-success, #50c878) 30%, transparent) 100%
     );
-    border: 2px solid rgba(80, 200, 120, 0.5);
+    border: 2px solid color-mix(in srgb, var(--semantic-success, #50c878) 50%, transparent);
     border-radius: 12px;
     color: white;
     font-size: 1.0625rem;
@@ -245,10 +245,10 @@
   .next-button:hover {
     background: linear-gradient(
       135deg,
-      rgba(80, 200, 120, 0.4) 0%,
-      rgba(60, 179, 113, 0.4) 100%
+      color-mix(in srgb, var(--semantic-success, #50c878) 40%, transparent) 0%,
+      color-mix(in srgb, var(--semantic-success, #50c878) 40%, transparent) 100%
     );
-    border-color: rgba(80, 200, 120, 0.8);
+    border-color: color-mix(in srgb, var(--semantic-success, #50c878) 80%, transparent);
     transform: translateY(-2px);
   }
 

@@ -313,6 +313,97 @@ export const noVariationCounts: TikaValidator = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
+// Affirmative Opener Validator
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Catches sycophantic openers like "You're right", "Great question!", etc.
+ * Explicitly banned in TIKA's system prompt but needs enforcement.
+ */
+export const noAffirmativeOpeners: TikaValidator = {
+	name: 'NoAffirmativeOpeners',
+	description: 'Catches sycophantic response openers banned in TIKA system prompt',
+	severity: 'error',
+
+	validate(text: string, _context: ValidationContext): ValidationResult {
+		// Only check the first ~150 characters (the opening)
+		const opening = text.slice(0, 150);
+
+		const patterns = [
+			/^You're right/i,
+			/^You're absolutely right/i,
+			/^Fair point/i,
+			/^Good call/i,
+			/^That's fair/i,
+			/^Great question/i,
+			/^Absolutely!/i,
+			/^Certainly!/i,
+		];
+
+		const violations: ValidationViolation[] = [];
+
+		for (const pattern of patterns) {
+			const match = opening.match(pattern);
+			if (match) {
+				violations.push(
+					createViolation(
+						this.name,
+						this.severity,
+						`Sycophantic opener "${match[0]}" is banned. Skip straight to the answer.`,
+						match[0],
+						0
+					)
+				);
+				break; // Only report the first match — one opener per response
+			}
+		}
+
+		if (violations.length === 0) {
+			return pass();
+		}
+
+		return fail(violations);
+	}
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Em Dash Validator
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Catches Unicode em dashes (U+2014) — a telltale AI writing pattern.
+ * Regular hyphens and en dashes are fine.
+ */
+export const noEmDashes: TikaValidator = {
+	name: 'NoEmDashes',
+	description: 'Catches Unicode em dashes (\u2014) which are an AI writing tell',
+	severity: 'warning',
+
+	validate(text: string, _context: ValidationContext): ValidationResult {
+		const pattern = /\u2014/g;
+		const matches = [...text.matchAll(pattern)];
+
+		if (matches.length === 0) {
+			return pass();
+		}
+
+		// Report up to 3 instances to avoid noise
+		const reportedMatches = matches.slice(0, 3);
+		const violations = reportedMatches.map((match) =>
+			createViolation(
+				this.name,
+				this.severity,
+				`Em dash found. Use commas, periods, or colons instead.${matches.length > 3 ? ` (${matches.length} total)` : ''}`,
+				'\u2014',
+				match.index
+			)
+		);
+
+		return fail(violations);
+	}
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
 // Export All Validators
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -323,5 +414,7 @@ export const ALL_VALIDATORS: TikaValidator[] = [
 	noContextData,
 	brevityCheck,
 	noType1Misconception,
-	noVariationCounts
+	noVariationCounts,
+	noAffirmativeOpeners,
+	noEmDashes
 ];

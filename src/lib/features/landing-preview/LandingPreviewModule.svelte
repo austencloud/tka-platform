@@ -14,6 +14,7 @@
    */
   import { onMount } from "svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
 
   // Internal tabs - these are NOT sidebar tabs, they're internal to this module
@@ -185,7 +186,7 @@
       <VideoCurator />
     {:else if isLoading}
       <div class="loading-state">
-        <div class="spinner"></div>
+        <ProgressRing percent={-1} size={32} strokeWidth={3} />
         <span>Loading {currentTab}...</span>
       </div>
     {:else if loadedPage}
@@ -344,19 +345,6 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 
-  .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-top-color: var(--theme-accent, #6366f1);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
   /* Error state */
   .error-state {
     display: flex;
@@ -373,9 +361,4 @@
     font-size: 32px;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-    }
-  }
 </style>

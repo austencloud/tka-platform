@@ -1,37 +1,28 @@
 <script lang="ts">
   import { PropType } from "../../../../pictograph/prop/domain/enums/PropType";
   import { getPropTypeDisplayInfo } from "./PropTypeRegistry";
+  import PropCompositionPreview from "../../../../pictograph/prop/components/PropCompositionPreview.svelte";
 
   let {
     propType,
     selected = false,
     selectedBlue = false,
     selectedRed = false,
-    shouldRotate = false,
     color = "blue",
+    badge = undefined,
     onSelect,
-    onImageLoad,
   } = $props<{
     propType: PropType;
     selected?: boolean;
     selectedBlue?: boolean;
     selectedRed?: boolean;
-    shouldRotate?: boolean;
     color?: "blue" | "red";
+    /** Variant count badge. Shown as a small circle in the top-right corner. */
+    badge?: number;
     onSelect?: (propType: PropType) => void;
-    onImageLoad?: (propType: PropType, width: number, height: number) => void;
   }>();
 
-  // Reactive display info - recalculates when propType changes
   const displayInfo = $derived(getPropTypeDisplayInfo(propType));
-
-  // Handle image load to report dimensions for rotation logic
-  function handleImageLoad(e: Event) {
-    const img = e.target as HTMLImageElement;
-    if (img.naturalWidth && img.naturalHeight) {
-      onImageLoad?.(propType, img.naturalWidth, img.naturalHeight);
-    }
-  }
 
   function handleClick() {
     onSelect?.(propType);
@@ -48,7 +39,6 @@
 <button
   class="prop-button"
   class:selected
-  class:color-red={color === "red"}
   onclick={handleClick}
   onkeydown={handleKeydown}
   aria-label={`Select ${displayInfo.label} prop type`}
@@ -56,16 +46,14 @@
   title={`${displayInfo.label} - Click to select this prop type`}
 >
   <div class="prop-image-container">
-    <img
-      src={displayInfo.image}
-      alt=""
-      class="prop-image"
-      class:rotated={shouldRotate}
-      onload={handleImageLoad}
-      draggable="false"
-    />
+    <PropCompositionPreview {propType} />
   </div>
   <span class="prop-label">{displayInfo.label}</span>
+
+  <!-- Variant count badge -->
+  {#if badge}
+    <div class="variant-badge" aria-label={`${badge} variants`}>{badge}</div>
+  {/if}
 
   <!-- Checkmark indicator -->
   {#if selected || selectedBlue || selectedRed}
@@ -105,16 +93,14 @@
     transition: all var(--duration-normal) cubic-bezier(0.36, 0.66, 0.04, 1);
     color: var(--theme-text);
     position: relative;
-    /* Percentage-based padding scales with button size */
-    padding: 8% 6% 6%;
-    gap: 4%;
+    padding: 6px 5px 4px;
+    gap: 4px;
     border-radius: 10px;
     box-sizing: border-box;
-    /* Taller than wide: width is 1, height is 1.2 */
-    aspect-ratio: 1 / 1.2;
+    /* Slightly taller than wide for label space */
+    aspect-ratio: 1 / 1.1;
     width: 100%;
     overflow: hidden;
-    box-shadow: var(--theme-shadow, 0 2px 8px rgba(0, 0, 0, 0.1));
   }
 
   .prop-button:hover {
@@ -122,9 +108,7 @@
     border-color: var(--theme-stroke-strong);
     color: var(--theme-text);
     transform: translateY(-1px) scale(1.01); /* iOS subtle lift */
-    box-shadow:
-      0 6px 18px rgba(0, 0, 0, 0.14),
-      0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--theme-shadow-hover, 0 6px 18px rgba(0, 0, 0, 0.14));
   }
 
   /* Selected - Uses theme accent */
@@ -166,38 +150,22 @@
     position: relative;
   }
 
-  .prop-image {
-    width: 100%;
-    height: 100%;
-    max-width: 85%;
+  .prop-image-container :global(.prop-composition-preview) {
+    width: 85%;
+    height: auto;
+    aspect-ratio: 1;
     max-height: 85%;
-    object-fit: contain;
     opacity: 0.9;
     transition: opacity var(--duration-normal) ease;
-    /* Prevent text selection and dragging */
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    user-select: none;
-    pointer-events: none;
-    /* Add drop shadow for visibility */
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
   }
 
-  /* Apply red color via hue-rotate filter (same as PresetChip) */
-  .prop-button.color-red .prop-image {
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3)) hue-rotate(125deg) saturate(1.2);
-  }
-
-  /* Rotate image 90 degrees counterclockwise when aspect ratios don't match */
-  .prop-image.rotated {
-    transform: rotate(-90deg);
-  }
-
-  .prop-button:hover .prop-image {
+  .prop-button:hover .prop-image-container :global(.prop-composition-preview) {
     opacity: 1;
   }
 
-  .prop-button.selected .prop-image {
+  .prop-button.selected
+    .prop-image-container
+    :global(.prop-composition-preview) {
     opacity: 1;
   }
 
@@ -217,6 +185,26 @@
     color: var(--theme-text, var(--theme-text));
     font-family:
       -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  }
+
+  /* Variant count badge */
+  .variant-badge {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    color: var(--theme-panel-bg, #121218);
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    z-index: 10;
+    pointer-events: none;
   }
 
   /* Checkmark container */
@@ -240,20 +228,23 @@
     color: white;
     font-size: var(--font-size-compact);
     font-weight: 700;
-    animation: ios-checkmark-pop var(--duration-emphasis) cubic-bezier(0.36, 0.66, 0.04, 1);
+    animation: ios-checkmark-pop var(--duration-emphasis)
+      cubic-bezier(0.36, 0.66, 0.04, 1);
   }
 
   .ios-checkmark.blue {
     background: var(--prop-blue-text, #818cf8);
     box-shadow:
-      0 3px 10px color-mix(in srgb, var(--prop-blue-text, #818cf8) 50%, transparent),
+      0 3px 10px
+        color-mix(in srgb, var(--prop-blue-text, #818cf8) 50%, transparent),
       0 1px 3px var(--theme-shadow);
   }
 
   .ios-checkmark.red {
     background: var(--prop-red-text, #f87171);
     box-shadow:
-      0 3px 10px color-mix(in srgb, var(--prop-red-text, #f87171) 50%, transparent),
+      0 3px 10px
+        color-mix(in srgb, var(--prop-red-text, #f87171) 50%, transparent),
       0 1px 3px var(--theme-shadow);
   }
 
@@ -279,7 +270,6 @@
   /* iOS Accessibility - Reduced Motion */
   @media (prefers-reduced-motion: reduce) {
     .prop-button,
-    .prop-image,
     .ios-checkmark {
       transition: none;
       animation: none;
@@ -290,8 +280,7 @@
       transform: none;
     }
 
-    /* Keep rotation but remove transition animation */
-    .prop-image {
+    .prop-image-container :global(.prop-composition-preview) {
       transition: none;
     }
   }
@@ -307,6 +296,4 @@
       background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
     }
   }
-
-  /* Light mode support - skipped, app is dark-mode only */
 </style>

@@ -96,7 +96,7 @@
   // Effective username
   const effectiveUserName = $derived(authState.user?.displayName || "Your Name");
 
-  // Level badge colors (matching LayeredSequencePreview)
+  // Level badge colors (matching ChoreoCard)
   const defaultLevelStyle = { bg: "linear-gradient(135deg, #fff, #f5f5f5)", border: "#000", text: "#000" };
   const levelStyles: Record<number, { bg: string; border: string; text: string }> = {
     1: defaultLevelStyle,

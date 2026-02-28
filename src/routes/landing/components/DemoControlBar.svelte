@@ -2,7 +2,7 @@
   DemoControlBar.svelte
 
   Control buttons for the landing page animation demo.
-  Includes: dark mode toggle, change prop, and randomize sequence buttons.
+  Includes: dark mode toggle, fire/LED/trail effect toggles, change prop, and randomize buttons.
 -->
 <script lang="ts">
   import LightsToggleButton from "$lib/shared/ui/components/LightsToggleButton.svelte";
@@ -11,7 +11,13 @@
     servicesReady: boolean;
     isLoading: boolean;
     darkMode: boolean;
+    fireEnabled: boolean;
+    ledEnabled: boolean;
+    trailsEnabled: boolean;
     onToggleDarkMode: () => void;
+    onToggleFire: () => void;
+    onToggleLed: () => void;
+    onToggleTrails: () => void;
     onChangeProp: () => void;
     onRandomize: () => void;
   }
@@ -20,7 +26,13 @@
     servicesReady,
     isLoading,
     darkMode,
+    fireEnabled,
+    ledEnabled,
+    trailsEnabled,
     onToggleDarkMode,
+    onToggleFire,
+    onToggleLed,
+    onToggleTrails,
     onChangeProp,
     onRandomize,
   }: Props = $props();
@@ -35,6 +47,45 @@
     disabled={isDisabled}
     size="medium"
   />
+
+  <button
+    class="effect-toggle"
+    class:active={fireEnabled}
+    onclick={onToggleFire}
+    disabled={isDisabled}
+    aria-label={fireEnabled ? "Turn off fire effect" : "Turn on fire effect"}
+    aria-pressed={fireEnabled}
+    title={fireEnabled ? "Fire: On" : "Fire: Off"}
+    style="--active-color: #f59e0b; --active-glow: rgba(245, 158, 11, {fireEnabled ? '0.2' : '0'});"
+  >
+    <i class="fas fa-fire" aria-hidden="true"></i>
+  </button>
+
+  <button
+    class="effect-toggle"
+    class:active={ledEnabled}
+    onclick={onToggleLed}
+    disabled={isDisabled}
+    aria-label={ledEnabled ? "Turn off LED effect" : "Turn on LED effect"}
+    aria-pressed={ledEnabled}
+    title={ledEnabled ? "LED: On" : "LED: Off"}
+    style="--active-color: #00ff88; --active-glow: rgba(0, 255, 136, {ledEnabled ? '0.2' : '0'});"
+  >
+    <i class="fas fa-lightbulb" aria-hidden="true"></i>
+  </button>
+
+  <button
+    class="effect-toggle"
+    class:active={trailsEnabled}
+    onclick={onToggleTrails}
+    disabled={isDisabled}
+    aria-label={trailsEnabled ? "Turn off trails" : "Turn on trails"}
+    aria-pressed={trailsEnabled}
+    title={trailsEnabled ? "Trails: On" : "Trails: Off"}
+    style="--active-color: #818cf8; --active-glow: rgba(129, 140, 248, {trailsEnabled ? '0.2' : '0'});"
+  >
+    <i class="fas fa-wind" aria-hidden="true"></i>
+  </button>
 
   <button class="change-prop-btn" onclick={onChangeProp} disabled={isDisabled}>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -59,6 +110,55 @@
     display: flex;
     align-items: center;
     gap: 12px;
+  }
+
+  /* Effect Toggle Buttons - circular icon buttons matching LightsToggleButton */
+  .effect-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    background: var(--theme-card-bg, rgba(0, 0, 0, 0.6));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: 18px;
+    cursor: pointer;
+    transition: all var(--duration-normal) ease;
+  }
+
+  .effect-toggle:hover:not(:disabled) {
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.1));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
+    color: var(--theme-text, #ffffff);
+    transform: scale(1.05);
+  }
+
+  .effect-toggle:active:not(:disabled) {
+    transform: scale(0.95);
+  }
+
+  .effect-toggle.active {
+    background: color-mix(in srgb, var(--active-color) 15%, transparent);
+    border-color: color-mix(in srgb, var(--active-color) 40%, transparent);
+    color: var(--active-color);
+    box-shadow:
+      0 0 16px var(--active-glow),
+      inset 0 0 12px color-mix(in srgb, var(--active-color) 10%, transparent);
+  }
+
+  .effect-toggle.active:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--active-color) 25%, transparent);
+    border-color: color-mix(in srgb, var(--active-color) 60%, transparent);
+    box-shadow:
+      0 0 24px var(--active-glow),
+      inset 0 0 16px color-mix(in srgb, var(--active-color) 15%, transparent);
+  }
+
+  .effect-toggle:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   /* Change Prop Button */
@@ -145,6 +245,14 @@
   @media (max-width: 600px) {
     .demo-controls {
       gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .effect-toggle {
+      width: 42px;
+      height: 42px;
+      font-size: 16px;
     }
 
     .randomize-btn,
@@ -161,11 +269,14 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .effect-toggle,
     .randomize-btn,
     .change-prop-btn {
       transition: none;
     }
 
+    .effect-toggle:hover:not(:disabled),
+    .effect-toggle:active:not(:disabled),
     .randomize-btn:hover:not(:disabled),
     .randomize-btn:active:not(:disabled),
     .change-prop-btn:hover:not(:disabled),

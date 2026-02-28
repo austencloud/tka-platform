@@ -130,9 +130,23 @@ A word in TKA is a sequence of letters that spells out a choreographic phrase. E
 - Invalid transitions require "bridge" letters to connect
 - If a word loops back to its starting position, it's a LOOP`,
 
+  "what prop": `## What Prop Should I Use for TKA?
+
+TKA was built for **double staves**. That's the starting point.
+
+Each staff has two visible ends -- one is your **thumb reference**, the other is your **pinky reference**. With proper technique, these references never change. That dual-end landmark system is how you read orientation in TKA.
+
+**Proper technique** that keeps the references consistent:
+- **Negative space** above and below the shoulder to transition without regripping
+- **Body turns** to pass into the plane behind you
+
+Other static props (fans, clubs, buugeng) work with TKA because they're gripped directly. But staves are what the system was designed around. If you're starting fresh, start with short staves.
+
+**Avoid poi.** Poi is momentum-based -- gravity constrains which orientations and transitions are physically possible. You'd be learning the alphabet with built-in blind spots.`,
+
   "what are interradials": `## What are Interradial Orientations?
 
-Interradials are the 4 orientations at 45° between the cardinal orientations. Introduced at Level 7.
+Interradials are the 4 orientations at 45° between the cardinal orientations. Introduced at Level 6.
 
 **The 4 interradial orientations:**
 - **clockIn** - between clock and in
@@ -143,7 +157,7 @@ Interradials are the 4 orientations at 45° between the cardinal orientations. I
 **Key properties:**
 - Complete the 8-point radial cycle: in → clockIn → clock → clockOut → out → counterOut → counter → counterIn
 - Produced by quarter turns (0.25, 0.75, 1.25, etc.)
-- Level 7 completes 2D mastery before 3D begins at Level 8`,
+- Level 6 completes single-grid orientation freedom before conjoined grids at Level 7`,
 };
 
 export function getCommonAnswer(question: string): string | null {

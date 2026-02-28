@@ -28,7 +28,7 @@
   </header>
 
   <div class="tab-content">
-    <TrackerList {state} />
+    <TrackerList trackerState={state} />
   </div>
 </div>
 

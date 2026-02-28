@@ -71,6 +71,7 @@ export interface ICardConfigurator {
     isFreeformMode: boolean,
     handlers: CardHandlers,
     allowedIntensityValues: number[],
-    isGenerating?: boolean
+    isGenerating?: boolean,
+    hasSettingsChanged?: boolean
   ): CardDescriptor[];
 }

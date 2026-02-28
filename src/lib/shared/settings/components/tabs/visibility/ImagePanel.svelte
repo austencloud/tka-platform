@@ -7,8 +7,13 @@
   for each visibility toggle.
 -->
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import ImageExportPreviewLayered from "./ImageExportPreviewLayered.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+
+  // Dark mode is now a global setting, read directly
+  const darkMode = $derived(getSettings().darkMode ?? false);
 
   interface Props {
     addWord: boolean;
@@ -19,8 +24,6 @@
     showNotes: boolean;
     showBirthday: boolean;
     customNotesText: string;
-    // Dark mode
-    darkMode: boolean;
     // Pictograph visibility callbacks for fade transitions
     onPictographToggle: (key: string) => void;
     onToggle: (key: string) => void;
@@ -36,12 +39,13 @@
     showNotes,
     showBirthday,
     customNotesText,
-    darkMode,
     onPictographToggle,
     onToggle,
     onCustomNotesChange,
     isMobileHidden = false,
   }: Props = $props();
+
+  let collapsed = $state(false);
 </script>
 
 <section
@@ -53,98 +57,96 @@
       <i class="fas fa-download" aria-hidden="true"></i>
     </span>
     <h3 class="panel-title">{t("visibility_image_export")}</h3>
+    <button
+      class="collapse-toggle"
+      onclick={() => (collapsed = !collapsed)}
+      aria-expanded={!collapsed}
+      aria-label={collapsed ? "Expand image export settings" : "Collapse image export settings"}
+      type="button"
+    >
+      <i class="fas {collapsed ? 'fa-chevron-right' : 'fa-chevron-down'}" aria-hidden="true"></i>
+    </button>
   </header>
 
-  <div class="preview-frame image-preview">
-    <ImageExportPreviewLayered
-      showWord={addWord}
-      showDifficultyLevel={addDifficultyLevel}
-      {includeStartPosition}
-      {showCreatorName}
-      {showNotes}
-      {showBirthday}
-      {customNotesText}
-      {darkMode}
-      onToggleTKA={() => onPictographToggle("tka")}
-      onToggleVTG={() => onPictographToggle("vtg")}
-      onToggleElemental={() => onPictographToggle("elemental")}
-      onTogglePositions={() => onPictographToggle("positions")}
-      onToggleReversals={() => onPictographToggle("reversals")}
-      onToggleNonRadial={() => onPictographToggle("nonRadial")}
-    />
-  </div>
+  {#if !collapsed}
+    <div class="panel-body" transition:slide={{ duration: 200 }}>
+      <div class="preview-frame image-preview">
+        <ImageExportPreviewLayered
+          showWord={addWord}
+          showDifficultyLevel={addDifficultyLevel}
+          {includeStartPosition}
+          {showCreatorName}
+          {showNotes}
+          {showBirthday}
+          {customNotesText}
+          {darkMode}
+          onToggleTKA={() => onPictographToggle("tka")}
+          onToggleVTG={() => onPictographToggle("vtg")}
+          onToggleElemental={() => onPictographToggle("elemental")}
+          onTogglePositions={() => onPictographToggle("positions")}
+          onToggleReversals={() => onPictographToggle("reversals")}
+          onToggleNonRadial={() => onPictographToggle("nonRadial")}
+        />
+      </div>
 
-  <div class="panel-controls">
-    <div class="control-group">
-      <span class="group-label">{t("visibility_include_in_image")}</span>
-      <div class="toggle-grid">
-        <button
-          class="toggle-btn"
-          class:active={addWord}
-          onclick={() => onToggle("word")}>{t("visibility_word")}</button
-        >
-        <button
-          class="toggle-btn"
-          class:active={includeStartPosition}
-          onclick={() => onToggle("startPosition")}>{t("visibility_start_pos")}</button
-        >
-        <button
-          class="toggle-btn"
-          class:active={addDifficultyLevel}
-          onclick={() => onToggle("difficulty")}>{t("visibility_difficulty")}</button
-        >
+      <div class="panel-controls">
+        <div class="control-group">
+          <span class="group-label">{t("visibility_include_in_image")}</span>
+          <div class="toggle-grid">
+            <button
+              class="toggle-btn"
+              class:active={addWord}
+              onclick={() => onToggle("word")}>{t("visibility_word")}</button
+            >
+            <button
+              class="toggle-btn"
+              class:active={includeStartPosition}
+              onclick={() => onToggle("startPosition")}>{t("visibility_start_pos")}</button
+            >
+            <button
+              class="toggle-btn"
+              class:active={addDifficultyLevel}
+              onclick={() => onToggle("difficulty")}>{t("visibility_difficulty")}</button
+            >
+          </div>
+        </div>
+
+        <div class="control-group">
+          <span class="group-label">{t("visibility_footer_info")}</span>
+          <div class="toggle-grid footer-toggles">
+            <button
+              class="toggle-btn"
+              class:active={showCreatorName}
+              onclick={() => onToggle("creatorName")}>{t("visibility_name")}</button
+            >
+            <button
+              class="toggle-btn"
+              class:active={showNotes}
+              onclick={() => onToggle("notes")}>{t("visibility_notes")}</button
+            >
+            <button
+              class="toggle-btn birthday-btn"
+              class:active={showBirthday}
+              onclick={() => onToggle("birthday")}
+              title={t("visibility_birthday_tooltip")}>🎂</button
+            >
+          </div>
+        </div>
+
+        <div class="control-group notes-input-group">
+          <label class="group-label" for="custom-notes">{t("visibility_custom_notes_text")}</label>
+          <input
+            id="custom-notes"
+            type="text"
+            class="notes-input"
+            value={customNotesText}
+            placeholder={t("visibility_notes_placeholder")}
+            oninput={(e) => onCustomNotesChange(e.currentTarget.value)}
+          />
+        </div>
       </div>
     </div>
-
-    <div class="control-group">
-      <span class="group-label">{t("visibility_footer_info")}</span>
-      <div class="toggle-grid footer-toggles">
-        <button
-          class="toggle-btn"
-          class:active={showCreatorName}
-          onclick={() => onToggle("creatorName")}>{t("visibility_name")}</button
-        >
-        <button
-          class="toggle-btn"
-          class:active={showNotes}
-          onclick={() => onToggle("notes")}>{t("visibility_notes")}</button
-        >
-        <button
-          class="toggle-btn birthday-btn"
-          class:active={showBirthday}
-          onclick={() => onToggle("birthday")}
-          title={t("visibility_birthday_tooltip")}>🎂</button
-        >
-      </div>
-    </div>
-
-    <div class="control-group">
-      <span class="group-label">{t("visibility_theme")}</span>
-      <div class="toggle-grid theme-toggle">
-        <button
-          class="toggle-btn dark-mode-btn"
-          class:active={darkMode}
-          onclick={() => onToggle("darkMode")}
-          title={t("visibility_theme")}
-          aria-pressed={darkMode}
-        >
-          {darkMode ? `🌙 ${t("visibility_dark_mode")}` : `☀️ ${t("visibility_light_mode")}`}
-        </button>
-      </div>
-    </div>
-
-    <div class="control-group notes-input-group">
-      <label class="group-label" for="custom-notes">{t("visibility_custom_notes_text")}</label>
-      <input
-        id="custom-notes"
-        type="text"
-        class="notes-input"
-        value={customNotesText}
-        placeholder={t("visibility_notes_placeholder")}
-        oninput={(e) => onCustomNotesChange(e.currentTarget.value)}
-      />
-    </div>
-  </div>
+  {/if}
 </section>
 
 <style>
@@ -153,14 +155,11 @@
     container-name: image-panel;
     display: flex;
     flex-direction: column;
-    align-items: center;
     gap: clamp(12px, 2cqi, 16px);
     padding: clamp(12px, 2cqi, 20px);
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 20px;
-    /* Take equal width but don't stretch height */
-    flex: 1 1 0;
     min-width: 0;
     min-height: var(--vt-panel-min-h, auto);
     transition:
@@ -232,7 +231,7 @@
     overflow: hidden;
     width: 100%;
     aspect-ratio: 1;
-    max-width: 280px;
+    max-width: 500px;
     box-shadow: inset 0 2px 8px var(--theme-shadow);
     min-height: var(--vt-preview-min-h, auto);
   }
@@ -370,9 +369,61 @@
     outline-offset: 2px;
   }
 
+  .panel-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(12px, 2cqi, 16px);
+    width: 100%;
+  }
+
+  .collapse-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    color: var(--theme-text-dim);
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all var(--duration-fast) ease;
+    flex-shrink: 0;
+  }
+
+  .collapse-toggle:hover {
+    background: color-mix(in srgb, var(--theme-text-dim) 15%, transparent);
+    color: var(--theme-text);
+  }
+
+  .collapse-toggle:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--theme-accent) 50%, transparent);
+    outline-offset: 2px;
+  }
+
+  @container image-panel (min-width: 500px) {
+    .panel-body {
+      flex-direction: row;
+      align-items: flex-start;
+    }
+
+    .preview-frame {
+      flex-shrink: 0;
+      width: 50%;
+      max-width: 500px;
+    }
+
+    .panel-controls {
+      flex: 1;
+      margin-top: 0;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .settings-panel,
-    .toggle-btn {
+    .toggle-btn,
+    .collapse-toggle {
       transition: none;
     }
   }
@@ -418,15 +469,6 @@
   .birthday-btn {
     font-size: clamp(16px, 3cqi, 20px);
     line-height: 1;
-  }
-
-  /* Theme toggle - single full-width button */
-  .theme-toggle {
-    grid-template-columns: 1fr;
-  }
-
-  .dark-mode-btn {
-    font-size: var(--font-size-compact);
   }
 
   /* Notes input */

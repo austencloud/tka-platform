@@ -61,7 +61,8 @@ import type {
   ModerationNotification,
 } from "../../domain/models/notification-models";
 import { getPreferenceKeyForType } from "../../domain/models/notification-models";
-import { notificationPreferencesService } from "./NotificationPreferencesManager";
+import { container } from "$lib/shared/di";
+import type { INotificationPreferencesManager } from "$lib/shared/push/services/contracts/INotificationPreferencesManager";
 
 const USERS_COLLECTION = "users";
 const NOTIFICATIONS_SUBCOLLECTION = "notifications";
@@ -358,8 +359,10 @@ export class NotificationTriggerService {
     }
 
     try {
+      const notificationPreferencesManager = container.items
+        .notificationPreferencesManager as INotificationPreferencesManager;
       const preferences =
-        await notificationPreferencesService.getPreferences(userId);
+        await notificationPreferencesManager.getPreferences(userId);
       const prefKey = getPreferenceKeyForType(type);
 
       if (!prefKey) {

@@ -7,6 +7,7 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
 	import { connectState } from '../../state/connect-state.svelte';
+	import ProgressRing from '$lib/shared/components/loading/ProgressRing.svelte';
 	import type { UserSearchResult, Invite } from '../../domain/models/connect-models';
 
 	// Local state
@@ -98,7 +99,7 @@
 				aria-label="Search for users"
 			/>
 			{#if isSearching}
-				<div class="search-spinner"></div>
+				<ProgressRing percent={-1} size={24} strokeWidth={2} />
 			{/if}
 		</div>
 
@@ -257,21 +258,6 @@
 		color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
 	}
 
-	.search-spinner {
-		width: 16px;
-		height: 16px;
-		border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		border-top-color: var(--theme-accent, #6366f1);
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-	}
-
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
-	}
-
 	.search-error,
 	.no-results {
 		font-size: var(--font-size-sm, 14px);
@@ -404,10 +390,10 @@
 		padding: 16px;
 		background: linear-gradient(
 			135deg,
-			rgba(99, 102, 241, 0.15) 0%,
-			rgba(79, 70, 229, 0.1) 100%
+			color-mix(in srgb, var(--theme-accent, #8b5cf6) 15%, transparent) 0%,
+			color-mix(in srgb, var(--theme-accent, #8b5cf6) 10%, transparent) 100%
 		);
-		border: 1px solid rgba(99, 102, 241, 0.3);
+		border: 1px solid color-mix(in srgb, var(--theme-accent, #8b5cf6) 30%, transparent);
 		border-radius: 12px;
 	}
 
@@ -466,7 +452,7 @@
 	}
 
 	.decline-button:hover {
-		background: rgba(239, 68, 68, 0.1);
+		background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
 		border-color: var(--semantic-error, #ef4444);
 		color: var(--semantic-error, #ef4444);
 	}
@@ -503,10 +489,4 @@
 		line-height: 1.5;
 	}
 
-	/* Reduced motion */
-	@media (prefers-reduced-motion: reduce) {
-		.search-spinner {
-			animation: none;
-		}
-	}
 </style>

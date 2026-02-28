@@ -30,7 +30,7 @@ QuizBackButton - Back navigation button for quizzes
     justify-content: center;
     width: var(--min-touch-target);
     height: var(--min-touch-target);
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
     color: var(--theme-text-dim);
@@ -40,8 +40,8 @@ QuizBackButton - Back navigation button for quizzes
   }
 
   .back-button:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     color: var(--theme-text);
     transform: translateX(-2px);
   }

@@ -6,6 +6,7 @@
   import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
   import type { StartPositionData } from "../../../domain/models/StartPositionData";
   import type { TimeSignatureKey } from "$lib/shared/foundation/domain/models/TimeSignature";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { createStepData } from "../../../domain/factories/createStepData";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
@@ -55,6 +56,8 @@
     onStartLongPress,
     onDurationChange,
     timeSignature = undefined,
+    bluePropTypeOverride = undefined,
+    redPropTypeOverride = undefined,
   } = $props<{
     steps: ReadonlyArray<StepData> | StepData[];
     startPosition?: StartPositionData | StepData | null;
@@ -80,6 +83,10 @@
     onStartLongPress?: () => void;
     onDurationChange?: (stepNumber: number, newDuration: number) => void;
     timeSignature?: TimeSignatureKey;
+    /** Override prop type for blue hand. Used by demos/previews to bypass global settings. */
+    bluePropTypeOverride?: PropType;
+    /** Override prop type for red hand. Used by demos/previews to bypass global settings. */
+    redPropTypeOverride?: PropType;
   }>();
 
   // State management
@@ -124,7 +131,18 @@
   const timelineUnitSize = $derived.by(() => {
     if (!isTimelineMode) return 0;
     const hasStart = startPosition && !startPosition.isBlank;
-    const totalUnits = hasStart ? timelineRowCapacity + 1 : timelineRowCapacity;
+    const actualCellCount = steps.length + (hasStart ? 1 : 0);
+    const fullRowUnits = hasStart ? timelineRowCapacity + 1 : timelineRowCapacity;
+
+    // Mobile-adaptive: on narrow screens, size based on actual cell count (min 2)
+    // so fewer pictographs appear larger. Ramps smoothly from ~224px (1 cell) down
+    // to ~89px (5+ cells) as beats are added, instead of always pre-allocating for
+    // a full row of 5 units.
+    const isNarrow = containerWidth > 0 && containerWidth < 650;
+    const totalUnits = isNarrow
+      ? Math.max(Math.min(actualCellCount, fullRowUnits), 2)
+      : fullRowUnits;
+
     const widthBased = calculateTimelineUnitSize(containerWidth, totalUnits);
 
     // Constrain by available height so all rows fit without scrolling
@@ -193,8 +211,6 @@
       if (beatCountDiff === 1) {
         if (previousStepCount === 0) {
           displayState.handleSingleBeatAddition(currentStepCount - 1);
-        } else if (activeMode === "assemble") {
-          displayState.handleSingleBeatAddition(currentStepCount - 1);
         } else {
           const lastPreviousBeat = previousStepsRef[previousStepCount - 1];
           const lastCurrentBeat = steps[previousStepCount - 1];
@@ -238,7 +254,7 @@
     if (currentStepCount > previousStepCount) {
       const stepsAdded = currentStepCount - previousStepCount;
       if (stepsAdded === 1) {
-        // Single step added (constructor/assembler) - scroll to see the new step
+        // Single step added (constructor/visual-builder) - scroll to see the new step
         scrollState.scrollToBottom();
       } else {
         // Multiple steps added at once (generation) - scroll to top to see start position
@@ -435,6 +451,8 @@
       {onStepLongPress}
       {getBeatKey}
       {getDurationDisplay}
+      {bluePropTypeOverride}
+      {redPropTypeOverride}
       bind:scrollContainerRef
     />
   {/if}

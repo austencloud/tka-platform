@@ -270,6 +270,13 @@ const POI_FIRE_POINTS: PropFirePointConfig = {
 	points: [{ dx: 130, dy: 0, flameScale: 1.0 }],
 };
 
+// ─── Contact Ball Family ─────────────────────────────────────────────────────
+// No fire. Acrylics don't burn.
+
+const CONTACTBALL_FIRE_POINTS: PropFirePointConfig = {
+	points: [],
+};
+
 // ─── Hand ─────────────────────────────────────────────────────────────────────
 // No fire. Hands don't burn.
 
@@ -357,6 +364,12 @@ export const PROP_FIRE_POINTS: Record<string, PropFirePointConfig> = {
 
 	// Quiad
 	quiad: QUIAD_FIRE_POINTS,
+
+	// Contact ball family
+	contactball: CONTACTBALL_FIRE_POINTS,
+	bigcontactball: CONTACTBALL_FIRE_POINTS,
+	doublecontactball: CONTACTBALL_FIRE_POINTS,
+	bigdoublecontactball: CONTACTBALL_FIRE_POINTS,
 
 	// Torch family
 	torch: TORCH_FIRE_POINTS,

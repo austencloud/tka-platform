@@ -2,6 +2,7 @@
   import { mandalaState } from "../../state/mandala-state.svelte";
   import { TKA_BLUE, TKA_RED } from "../../domain/models/mandala-config";
   import { onMount } from "svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   /** Path to the consolidated arrow sprite */
   const ARROW_SPRITE_PATH = "/images/arrows-sprite.svg";
@@ -522,7 +523,7 @@
                 {@html colorSvg(symbolContent, selectedColor)}
               </svg>
             {:else}
-              <div class="loading-spinner"></div>
+              <ProgressRing percent={-1} size={24} strokeWidth={2} />
             {/if}
           </div>
           <span class="asset-label">{arrow.label}</span>
@@ -552,7 +553,7 @@
             {#if svgContent}
               {@html colorSvg(svgContent, selectedColor)}
             {:else}
-              <div class="loading-spinner"></div>
+              <ProgressRing percent={-1} size={24} strokeWidth={2} />
             {/if}
           </div>
           <span class="asset-label">{staff.label}</span>
@@ -713,21 +714,6 @@
     object-fit: contain;
   }
 
-  .loading-spinner {
-    width: 20px;
-    height: 20px;
-    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.2));
-    border-top-color: var(--theme-accent, #4a9eff);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   .asset-label {
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
@@ -740,10 +726,4 @@
     font-style: italic;
   }
 
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
-  @media (prefers-reduced-motion: reduce) {
-    .loading-spinner {
-      animation: none;
-    }
-  }
 </style>

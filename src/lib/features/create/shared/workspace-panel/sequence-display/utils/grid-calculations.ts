@@ -57,6 +57,16 @@ export function calculateGridLayout(
   );
   const sizing = { ...DEFAULT_SIZING, ...filteredConfig };
 
+  // Mobile-adaptive sizing: on narrow screens with few pictographs, use width-based
+  // sizing and a higher cell cap so pictographs are clearly visible. On mobile the
+  // workspace container is short, so height-based sizing makes cells tiny. Width-based
+  // sizing lets them fill the available space while the scroll container handles overflow.
+  const isNarrowContainer = containerWidth > 0 && containerWidth < 650;
+  const isMobileFewSteps = isNarrowContainer && stepCount <= 2;
+  if (isMobileFewSteps) {
+    sizing.maxCellSize = Math.max(sizing.maxCellSize, 400);
+  }
+
   // Handle edge case: no steps (just start position)
   // This prevents division by zero and ensures proper single-cell sizing
   if (stepCount === 0) {
@@ -64,13 +74,22 @@ export function calculateGridLayout(
     let cellSize = sizing.maxCellSize;
 
     if (containerWidth > 0 && containerHeight > 0) {
-      // For a single cell, use the smaller dimension to fit within both width AND height
       const availableWidth = containerWidth * sizing.widthPaddingRatio;
       const availableHeight = containerHeight * sizing.heightPaddingRatio;
-      cellSize = Math.max(
-        sizing.minCellSize,
-        Math.min(sizing.maxCellSize, Math.floor(Math.min(availableWidth, availableHeight)))
-      );
+
+      if (isMobileFewSteps) {
+        // Mobile: size by width only (65% of container), ignore height constraint.
+        // The scroll container handles overflow if the cell is taller than the workspace.
+        cellSize = Math.max(
+          sizing.minCellSize,
+          Math.floor(availableWidth * 0.65)
+        );
+      } else {
+        cellSize = Math.max(
+          sizing.minCellSize,
+          Math.min(sizing.maxCellSize, Math.floor(Math.min(availableWidth, availableHeight)))
+        );
+      }
     }
 
     return {
@@ -134,7 +153,14 @@ export function calculateGridLayout(
 
     // For grids with threshold rows or fewer, consider height to prevent clipping
     // For larger grids, prioritize width since scrolling is inevitable
-    if (rows <= sizing.heightSizingRowThreshold) {
+    if (isMobileFewSteps) {
+      // Mobile with few steps: size by width only, ignore height constraint.
+      // This makes 1-2 beat cells much larger than the height would allow.
+      cellSize = Math.max(
+        sizing.minCellSize,
+        Math.min(sizing.maxCellSize, Math.floor(maxCellWidth))
+      );
+    } else if (rows <= sizing.heightSizingRowThreshold) {
       const maxCellHeight = availableHeight / rows;
       // Use the smaller dimension to ensure the entire grid fits
       cellSize = Math.max(

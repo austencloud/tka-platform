@@ -18,11 +18,20 @@
   import { notificationService } from "$lib/features/feedback/services/implementations/Notifier";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
+  import { container } from "$lib/shared/di";
+  import PushPermissionPrompt from "$lib/shared/push/components/PushPermissionPrompt.svelte";
+  import type { IFCMTokenManager } from "$lib/shared/push/services/contracts/IFCMTokenManager";
+  import {
+    startForegroundMessageListener,
+    stopForegroundMessageListener,
+  } from "$lib/shared/push/services/implementations/ForegroundMessageHandler";
   // Note: Module loading is handled by container
 
   let unsubscribeMessages: (() => void) | null = null;
   let unsubscribeNotifications: (() => void) | null = null;
   let messagingModuleLoaded = $state(false);
+  let showPushPrompt = $state(false);
+  let pushPromptChecked = false;
 
   onMount(() => {
     // Module is now loaded via container
@@ -70,6 +79,70 @@
 
     return cleanup;
   });
+
+  // Badge API - update app icon badge with unread count
+  $effect(() => {
+    const count = inboxState.totalUnreadCount;
+
+    if ("setAppBadge" in navigator) {
+      if (count > 0) {
+        navigator.setAppBadge(count).catch(() => {});
+      } else {
+        navigator.clearAppBadge().catch(() => {});
+      }
+    }
+  });
+
+  // Show push prompt when unread messages appear (one-time per session)
+  $effect(() => {
+    const messageCount = inboxState.unreadMessageCount;
+    if (messageCount > 0 && !pushPromptChecked && currentUserId) {
+      pushPromptChecked = true;
+      void (async () => {
+        const fcmTokenManager = container.items
+          .fcmTokenManager as IFCMTokenManager;
+        const supported = await fcmTokenManager.isSupported();
+        if (!supported) return;
+        const permission = fcmTokenManager.getPermissionState();
+        if (permission !== "default") return;
+        const dismissed = localStorage.getItem("tka-push-prompt-dismissed");
+        if (dismissed && Date.now() < parseInt(dismissed, 10)) return;
+        showPushPrompt = true;
+      })();
+    }
+  });
+
+  // Auto-register FCM token if permission already granted
+  $effect(() => {
+    if (!currentUserId) return;
+    void (async () => {
+      const fcmTokenManager = container.items
+        .fcmTokenManager as IFCMTokenManager;
+      const supported = await fcmTokenManager.isSupported();
+      if (!supported) return;
+      const permission = fcmTokenManager.getPermissionState();
+      if (permission === "granted") {
+        await fcmTokenManager.registerToken(currentUserId);
+      }
+    })();
+  });
+
+  // Listen for foreground FCM messages while authenticated
+  $effect(() => {
+    if (currentUserId) {
+      startForegroundMessageListener();
+    }
+    return () => {
+      stopForegroundMessageListener();
+    };
+  });
 </script>
 
-<!-- This component renders nothing - it just sets up subscriptions -->
+{#if showPushPrompt && currentUserId}
+  <PushPermissionPrompt
+    userId={currentUserId}
+    onDismiss={() => {
+      showPushPrompt = false;
+    }}
+  />
+{/if}

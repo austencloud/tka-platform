@@ -84,8 +84,8 @@
 
 	/* Active/connected state - green glow */
 	.sync-fab.active {
-		background: rgba(34, 197, 94, 0.15);
-		border-color: rgba(34, 197, 94, 0.4);
+		background: color-mix(in srgb, var(--semantic-success, #22c55e) 15%, transparent);
+		border-color: color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent);
 		color: var(--semantic-success, #22c55e);
 	}
 
@@ -94,26 +94,26 @@
 		position: absolute;
 		inset: -4px;
 		border-radius: 50%;
-		border: 2px solid rgba(34, 197, 94, 0.3);
+		border: 2px solid color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent);
 		animation: pulse-ring 2s infinite;
 	}
 
 	.sync-fab.active:hover {
-		background: rgba(34, 197, 94, 0.25);
-		border-color: rgba(34, 197, 94, 0.6);
+		background: color-mix(in srgb, var(--semantic-success, #22c55e) 25%, transparent);
+		border-color: color-mix(in srgb, var(--semantic-success, #22c55e) 60%, transparent);
 	}
 
 	/* Connecting state - blue */
 	.sync-fab.connecting {
-		background: rgba(59, 130, 246, 0.15);
-		border-color: rgba(59, 130, 246, 0.4);
+		background: color-mix(in srgb, var(--semantic-info, #3b82f6) 15%, transparent);
+		border-color: color-mix(in srgb, var(--semantic-info, #3b82f6) 40%, transparent);
 		color: var(--semantic-info, #3b82f6);
 	}
 
 	/* Error state - red */
 	.sync-fab.error {
-		background: rgba(239, 68, 68, 0.15);
-		border-color: rgba(239, 68, 68, 0.4);
+		background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
+		border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
 		color: var(--semantic-error, #ef4444);
 	}
 

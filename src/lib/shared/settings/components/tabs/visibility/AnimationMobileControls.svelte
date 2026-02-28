@@ -8,7 +8,6 @@
   import type {
     TrailVisibility,
     PlaybackMode,
-    FlameColorMode,
   } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
   interface Props {
@@ -20,10 +19,17 @@
     tkaGlyphVisible: boolean;
     wordHeaderVisible: boolean;
     fireEffectEnabled: boolean;
-    flameColorMode: FlameColorMode;
-    firePreset: string;
-    onFlameColorModeChange: (mode: FlameColorMode) => void;
-    onFirePresetChange: (presetId: string) => void;
+    ledEffectEnabled: boolean;
+    ledBrightness: number;
+    onLedBrightnessChange: (level: number) => void;
+    colorBlend: number;
+    smokeLevel: number;
+    useCharcoal: boolean;
+    fireIntensity: number;
+    onColorBlendChange: (value: number) => void;
+    onSmokeLevelChange: (value: number) => void;
+    onUseCharcoalChange: (value: boolean) => void;
+    onFireIntensityChange: (value: number) => void;
     trailStyle: TrailVisibility;
     showBilateralToggle: boolean;
     isBothEnds: boolean;
@@ -43,10 +49,17 @@
     tkaGlyphVisible,
     wordHeaderVisible,
     fireEffectEnabled,
-    flameColorMode,
-    firePreset,
-    onFlameColorModeChange,
-    onFirePresetChange,
+    ledEffectEnabled,
+    ledBrightness,
+    onLedBrightnessChange,
+    colorBlend,
+    smokeLevel,
+    useCharcoal,
+    fireIntensity,
+    onColorBlendChange,
+    onSmokeLevelChange,
+    onUseCharcoalChange,
+    onFireIntensityChange,
     trailStyle,
     showBilateralToggle,
     isBothEnds,
@@ -56,6 +69,8 @@
     onTrailPreset,
     onToggleBothEnds,
   }: Props = $props();
+
+  const brightnessLevels = [1, 2, 3, 4, 5];
 </script>
 
 <div class="mobile-controls">
@@ -176,56 +191,106 @@
       <i class="fas fa-fire" aria-hidden="true"></i>
       <span>Fire</span>
     </button>
+    <button
+      class="compact-btn"
+      class:active={ledEffectEnabled}
+      aria-pressed={ledEffectEnabled}
+      onclick={() => onToggle("ledEffect")}
+      type="button"
+    >
+      <i class="fas fa-lightbulb" aria-hidden="true"></i>
+      <span>LED</span>
+    </button>
   </div>
+  {#if ledEffectEnabled}
+    <!-- LED Brightness -->
+    <div class="mobile-row bpm-row">
+      {#each brightnessLevels as level}
+        <button
+          class="compact-btn bpm"
+          class:active={ledBrightness === level}
+          aria-pressed={ledBrightness === level}
+          onclick={() => onLedBrightnessChange(level)}
+          type="button"
+          aria-label="Set LED brightness to level {level}"
+        >
+          {level}
+        </button>
+      {/each}
+    </div>
+  {/if}
   {#if fireEffectEnabled}
+    <!-- Fire/Charcoal toggle -->
     <div class="mobile-row">
       <button
         class="compact-btn"
-        class:active={flameColorMode === "natural"}
-        aria-pressed={flameColorMode === "natural"}
-        onclick={() => onFlameColorModeChange("natural")}
+        class:active={!useCharcoal}
+        aria-pressed={!useCharcoal}
+        onclick={() => onUseCharcoalChange(false)}
         type="button"
       >
-        Natural
+        <i class="fas fa-fire" aria-hidden="true"></i>
+        <span>Fire</span>
       </button>
       <button
         class="compact-btn"
-        class:active={flameColorMode === "colored"}
-        aria-pressed={flameColorMode === "colored"}
-        onclick={() => onFlameColorModeChange("colored")}
+        class:active={useCharcoal}
+        aria-pressed={useCharcoal}
+        onclick={() => onUseCharcoalChange(true)}
         type="button"
       >
-        Colored
+        <i class="fas fa-circle" aria-hidden="true"></i>
+        <span>Charcoal</span>
       </button>
     </div>
-    <div class="mobile-row">
-      <button
-        class="compact-btn"
-        class:active={firePreset === "small"}
-        aria-pressed={firePreset === "small"}
-        onclick={() => onFirePresetChange("small")}
-        type="button"
-      >
-        Small
-      </button>
-      <button
-        class="compact-btn"
-        class:active={firePreset === "medium"}
-        aria-pressed={firePreset === "medium"}
-        onclick={() => onFirePresetChange("medium")}
-        type="button"
-      >
-        Medium
-      </button>
-      <button
-        class="compact-btn"
-        class:active={firePreset === "large"}
-        aria-pressed={firePreset === "large"}
-        onclick={() => onFirePresetChange("large")}
-        type="button"
-      >
-        Large
-      </button>
+    <!-- Intensity slider -->
+    <div class="slider-row">
+      <span class="slider-label">Intensity</span>
+      <input
+        type="range"
+        min="0"
+        max="1"
+        step="0.01"
+        value={fireIntensity}
+        oninput={(e) => onFireIntensityChange(parseFloat(e.currentTarget.value))}
+        class="slider-input"
+        aria-label="Fire intensity"
+      />
+      <span class="slider-value">{Math.round(fireIntensity * 100)}%</span>
+    </div>
+    {#if !useCharcoal}
+      <!-- Smoke slider (fluid fire only) -->
+      <div class="slider-row">
+        <span class="slider-label">Smoke</span>
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          value={smokeLevel}
+          oninput={(e) => onSmokeLevelChange(parseFloat(e.currentTarget.value))}
+          class="slider-input"
+          aria-label="Smoke level"
+        />
+        <span class="slider-value">{Math.round(smokeLevel * 100)}%</span>
+      </div>
+    {/if}
+    <!-- Color blend slider -->
+    <div class="slider-row">
+      <span class="slider-label">Color</span>
+      <input
+        type="range"
+        min="0"
+        max="1"
+        step="0.01"
+        value={colorBlend}
+        oninput={(e) => onColorBlendChange(parseFloat(e.currentTarget.value))}
+        class="slider-input"
+        aria-label="Color blend"
+      />
+      <span class="slider-value">
+        {#if colorBlend < 0.05}Nat{:else if colorBlend > 0.95}Col{:else}{Math.round(colorBlend * 100)}%{/if}
+      </span>
     </div>
   {/if}
 </div>
@@ -312,6 +377,38 @@
   .compact-btn.trail.ends {
     flex: 0 0 48px;
     padding: 8px;
+  }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: clamp(6px, 1cqi, 10px);
+    margin-top: clamp(4px, 1cqi, 6px);
+  }
+
+  .slider-label {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--theme-text-dim);
+    white-space: nowrap;
+    min-width: 52px;
+  }
+
+  .slider-input {
+    flex: 1;
+    min-height: 44px;
+    accent-color: var(--theme-accent);
+    cursor: pointer;
+  }
+
+  .slider-value {
+    font-size: var(--font-size-compact, 12px);
+    font-variant-numeric: tabular-nums;
+    color: var(--theme-text-dim);
+    min-width: 32px;
+    text-align: right;
   }
 
   @media (prefers-reduced-motion: reduce) {

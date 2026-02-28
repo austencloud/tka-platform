@@ -15,13 +15,18 @@
     getAnimationVisibilityManager,
     type TrailVisibility,
     type PlaybackMode,
-    type FlameColorMode,
   } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
+  import {
+    getSettings,
+    updateSettings,
+    isSettingsPreviewMode,
+  } from "$lib/shared/application/state/app-state.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import MobileSegmentControl from "./visibility/MobileSegmentControl.svelte";
   import type { VisibilityMode } from "./visibility/visibility-types";
   import PictographPanel from "./visibility/PictographPanel.svelte";
@@ -41,6 +46,18 @@
   let mobileMode = $state<VisibilityMode>("pictograph");
   let isVisible = $state(false);
 
+  // Dark mode - top-level toggle
+  const darkMode = $derived(getSettings().darkMode ?? false);
+  const isPreview = $derived(isSettingsPreviewMode());
+
+  function handleDarkModeToggle() {
+    if (isPreview) return;
+    triggerHaptic();
+    const newValue = !darkMode;
+    void updateSettings({ darkMode: newValue });
+    animationVisibilityManager.setDarkMode(newValue);
+  }
+
   // Pictograph visibility state
   let tkaGlyphVisible = $state(true);
   let vtgGlyphVisible = $state(false);
@@ -59,8 +76,12 @@
   let animTkaGlyphVisible = $state(true);
   let animWordHeaderVisible = $state(true);
   let animFireEffectEnabled = $state(false);
-  let animFlameColorMode = $state<FlameColorMode>("colored");
-  let animFirePreset = $state("medium");
+  let animLedEffectEnabled = $state(false);
+  let animLedBrightness = $state(5);
+  let animColorBlend = $state(0.5);
+  let animSmokeLevel = $state(0.1);
+  let animUseCharcoal = $state(false);
+  let animFireIntensity = $state(0.7);
 
   // Image composition state
   let imgAddWord = $state(true);
@@ -71,7 +92,6 @@
   let imgShowNotes = $state(true);
   let imgShowBirthday = $state(true);
   let imgCustomNotesText = $state("Created using TKA Scribe");
-  let imgDarkMode = $state(false);
 
   // Haptics
   let hapticService: IHapticFeedback | null = null;
@@ -158,19 +178,41 @@
         animFireEffectEnabled = !animFireEffectEnabled;
         animationVisibilityManager.setFireEffect(animFireEffectEnabled);
         break;
+      case "ledEffect":
+        animLedEffectEnabled = !animLedEffectEnabled;
+        animationVisibilityManager.setLedEffect(animLedEffectEnabled);
+        break;
     }
   }
 
-  function handleFlameColorModeChange(mode: FlameColorMode) {
+  function handleLedBrightnessChange(level: number) {
     triggerHaptic();
-    animFlameColorMode = mode;
-    animationVisibilityManager.setFlameColorMode(mode);
+    animLedBrightness = level;
+    animationVisibilityManager.setLedBrightness(level);
   }
 
-  function handleFirePresetChange(presetId: string) {
+  function handleColorBlendChange(value: number) {
     triggerHaptic();
-    animFirePreset = presetId;
-    animationVisibilityManager.setFirePreset(presetId);
+    animColorBlend = value;
+    animationVisibilityManager.setFireColorBlend(value);
+  }
+
+  function handleSmokeLevelChange(value: number) {
+    triggerHaptic();
+    animSmokeLevel = value;
+    animationVisibilityManager.setFireSmokeLevel(value);
+  }
+
+  function handleUseCharcoalChange(value: boolean) {
+    triggerHaptic();
+    animUseCharcoal = value;
+    animationVisibilityManager.setFireUseCharcoal(value);
+  }
+
+  function handleFireIntensityChange(value: number) {
+    triggerHaptic();
+    animFireIntensity = value;
+    animationVisibilityManager.setFireIntensity(value);
   }
 
   function handleTrailStyleChange(newStyle: string) {
@@ -220,10 +262,6 @@
         imgShowBirthday = !imgShowBirthday;
         imageCompositionManager.setShowBirthday(imgShowBirthday);
         break;
-      case "darkMode":
-        imgDarkMode = !imgDarkMode;
-        imageCompositionManager.setDarkMode(imgDarkMode);
-        break;
     }
   }
 
@@ -234,7 +272,7 @@
   }
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback as IHapticFeedback;
+    hapticService = container.items.hapticFeedback;
 
     // Load initial pictograph visibility
     tkaGlyphVisible = visibilityManager.getRawGlyphVisibility("tkaGlyph");
@@ -258,8 +296,12 @@
     animWordHeaderVisible =
       animationVisibilityManager.getVisibility("wordHeader");
     animFireEffectEnabled = animationVisibilityManager.isFireEffectEnabled();
-    animFlameColorMode = animationVisibilityManager.getFlameColorMode();
-    animFirePreset = animationVisibilityManager.getFirePreset();
+    animLedEffectEnabled = animationVisibilityManager.isLedEffectEnabled();
+    animLedBrightness = animationVisibilityManager.getLedBrightness();
+    animColorBlend = animationVisibilityManager.getFireColorBlend();
+    animSmokeLevel = animationVisibilityManager.getFireSmokeLevel();
+    animUseCharcoal = animationVisibilityManager.getFireUseCharcoal();
+    animFireIntensity = animationVisibilityManager.getFireIntensity();
 
     // Load initial image composition
     imgAddWord = imageCompositionManager.addWord;
@@ -270,7 +312,6 @@
     imgShowNotes = imageCompositionManager.showNotes;
     imgShowBirthday = imageCompositionManager.showBirthday;
     imgCustomNotesText = imageCompositionManager.customNotesText;
-    imgDarkMode = imageCompositionManager.darkMode;
 
     // Observers for external changes
     const pictographObserver = () => {
@@ -297,8 +338,12 @@
       animWordHeaderVisible =
         animationVisibilityManager.getVisibility("wordHeader");
       animFireEffectEnabled = animationVisibilityManager.isFireEffectEnabled();
-      animFlameColorMode = animationVisibilityManager.getFlameColorMode();
-      animFirePreset = animationVisibilityManager.getFirePreset();
+      animLedEffectEnabled = animationVisibilityManager.isLedEffectEnabled();
+      animLedBrightness = animationVisibilityManager.getLedBrightness();
+      animColorBlend = animationVisibilityManager.getFireColorBlend();
+      animSmokeLevel = animationVisibilityManager.getFireSmokeLevel();
+      animUseCharcoal = animationVisibilityManager.getFireUseCharcoal();
+      animFireIntensity = animationVisibilityManager.getFireIntensity();
     };
 
     const imageObserver = () => {
@@ -310,7 +355,6 @@
       imgShowNotes = imageCompositionManager.showNotes;
       imgShowBirthday = imageCompositionManager.showBirthday;
       imgCustomNotesText = imageCompositionManager.customNotesText;
-      imgDarkMode = imageCompositionManager.darkMode;
     };
 
     visibilityManager.registerObserver(pictographObserver, ["all"]);
@@ -337,6 +381,23 @@
     />
   </div>
 
+  <!-- Dark Mode Toggle -->
+  <button
+    type="button"
+    class="dark-mode-toggle"
+    class:active={darkMode}
+    class:disabled={isPreview}
+    onclick={handleDarkModeToggle}
+    aria-pressed={darkMode}
+    disabled={isPreview}
+  >
+    <span class="dark-mode-icon">{darkMode ? "🌙" : "☀️"}</span>
+    <span class="dark-mode-label">{darkMode ? t("visibility_dark_mode") : t("visibility_light_mode")}</span>
+    <div class="dark-mode-switch" class:on={darkMode}>
+      <div class="dark-mode-knob"></div>
+    </div>
+  </button>
+
   <!-- Panels Container -->
   <div class="visibility-panels-container">
     <PictographPanel
@@ -362,10 +423,17 @@
       tkaGlyphVisible={animTkaGlyphVisible}
       wordHeaderVisible={animWordHeaderVisible}
       fireEffectEnabled={animFireEffectEnabled}
-      flameColorMode={animFlameColorMode}
-      firePreset={animFirePreset}
-      onFlameColorModeChange={handleFlameColorModeChange}
-      onFirePresetChange={handleFirePresetChange}
+      ledEffectEnabled={animLedEffectEnabled}
+      ledBrightness={animLedBrightness}
+      onLedBrightnessChange={handleLedBrightnessChange}
+      colorBlend={animColorBlend}
+      smokeLevel={animSmokeLevel}
+      useCharcoal={animUseCharcoal}
+      fireIntensity={animFireIntensity}
+      onColorBlendChange={handleColorBlendChange}
+      onSmokeLevelChange={handleSmokeLevelChange}
+      onUseCharcoalChange={handleUseCharcoalChange}
+      onFireIntensityChange={handleFireIntensityChange}
       onToggle={handleAnimationToggle}
       onTrailStyleChange={handleTrailStyleChange}
       onPlaybackModeChange={handlePlaybackModeChange}
@@ -381,7 +449,6 @@
       showNotes={imgShowNotes}
       showBirthday={imgShowBirthday}
       customNotesText={imgCustomNotesText}
-      darkMode={imgDarkMode}
       onPictographToggle={handlePictographToggle}
       onToggle={handleImageToggle}
       onCustomNotesChange={handleCustomNotesChange}
@@ -439,22 +506,106 @@
     min-height: var(--vt-container-min-h, auto);
   }
 
-  /* Desktop: Side by side - all panels match tallest panel's height */
+  /* Desktop: Show all panels regardless of mobile mode */
   @container visibility-tab (min-width: 700px) {
-    .visibility-panels-container {
-      flex-direction: row;
-      /* Stretch all panels to match the tallest (Animation panel) */
-      align-items: stretch;
-    }
-
-    /* Show all panels on desktop regardless of mobile mode */
     .visibility-panels-container :global(.mobile-hidden) {
       display: flex !important;
     }
   }
 
+  /* Dark Mode Toggle */
+  .dark-mode-toggle {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 1200px;
+    padding: 14px 16px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 16px;
+    cursor: pointer;
+    transition:
+      background var(--duration-fast) ease,
+      border-color var(--duration-fast) ease;
+    text-align: left;
+  }
+
+  .dark-mode-toggle:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+  }
+
+  .dark-mode-toggle.active {
+    background: rgba(0, 255, 255, 0.06);
+    border-color: rgba(0, 255, 255, 0.25);
+  }
+
+  .dark-mode-toggle.active:hover {
+    background: rgba(0, 255, 255, 0.1);
+    border-color: rgba(0, 255, 255, 0.35);
+  }
+
+  .dark-mode-toggle.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .dark-mode-toggle:focus-visible {
+    outline: 2px solid var(--theme-accent, #f97316);
+    outline-offset: 2px;
+  }
+
+  .dark-mode-icon {
+    font-size: var(--font-size-lg, 18px);
+    line-height: 1;
+  }
+
+  .dark-mode-label {
+    flex: 1;
+    font-size: var(--font-size-base, 16px);
+    font-weight: 500;
+    color: var(--theme-text, #ffffff);
+  }
+
+  .dark-mode-toggle.active .dark-mode-label {
+    color: #00ffff;
+  }
+
+  .dark-mode-switch {
+    width: 44px;
+    height: 26px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 13px;
+    padding: 2px;
+    transition: background var(--duration-normal) ease;
+    flex-shrink: 0;
+  }
+
+  .dark-mode-switch.on {
+    background: rgba(0, 255, 255, 0.4);
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+  }
+
+  .dark-mode-knob {
+    width: 22px;
+    height: 22px;
+    background: white;
+    border-radius: 50%;
+    transition: transform var(--duration-normal) ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .dark-mode-switch.on .dark-mode-knob {
+    transform: translateX(18px);
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .visibility-tab {
+    .visibility-tab,
+    .dark-mode-toggle,
+    .dark-mode-switch,
+    .dark-mode-knob {
       transition: none;
     }
   }

@@ -10,7 +10,7 @@
  */
 
 import config from "../config/museum-dev.config.js";
-import { db, resolveAndValidateId, getJournalEntries, registerSession } from "./lib/museum-firebase.js";
+import { admin, db, resolveAndValidateId, getJournalEntries, registerSession, addJournalEntry } from "./lib/museum-firebase.js";
 import { createItem, updateItemStatus, setVerdict, answerQuestion, startSession, endSession, capture, addTag, removeTag } from "./lib/museum-operations.js";
 import linking from "./lib/museum-linking.js";
 import attachments from "./lib/museum-attachments.js";
@@ -55,6 +55,15 @@ async function getItemById(docId) {
 
     if (data.type === "element" && data.elementType) {
       console.log(`  Element Type: ${data.elementType}`);
+    }
+
+    if (data.proposedBy) {
+      console.log(`  Proposed By: ${data.proposedBy}`);
+    }
+
+    if (data.promotedToDecision) {
+      const promotedAt = data.promotedAt?.toDate?.()?.toLocaleString() || "Unknown";
+      console.log(`  Promoted: ${promotedAt}`);
     }
 
     if (data.verdict) {
@@ -196,6 +205,7 @@ async function listItems(options = {}) {
       question: "❓",
       element: "🏛️",
       reference: "📚",
+      proposal: "💡",
     };
 
     for (const [type, typeItems] of Object.entries(byType)) {
@@ -515,6 +525,48 @@ async function listAttachmentsCommand(docId) {
 }
 
 // ============================================================================
+// PROPOSAL PROMOTION
+// ============================================================================
+
+async function promoteProposal(proposalId) {
+  const fullId = await resolveAndValidateId(proposalId);
+  if (!fullId) return false;
+
+  const doc = await db.collection(COLLECTIONS.ITEMS).doc(fullId).get();
+  if (!doc.exists) {
+    console.log(`\n  ❌ Item not found: ${fullId}\n`);
+    return false;
+  }
+
+  const data = doc.data();
+  if (data.type !== "proposal") {
+    console.log(`\n  ❌ Item is a ${data.type}, not a proposal. Only proposals can be promoted.\n`);
+    return false;
+  }
+
+  if (data.promotedToDecision) {
+    console.log(`\n  ⚠️  This proposal has already been promoted.\n`);
+    return false;
+  }
+
+  await db.collection(COLLECTIONS.ITEMS).doc(fullId).update({
+    type: "decision",
+    promotedToDecision: true,
+    promotedAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    verdict: null,
+    rationale: "",
+  });
+
+  await addJournalEntry(fullId, "status_change", `Promoted from proposal to decision`);
+
+  console.log(`\n  ✅ Promoted to decision: ${data.title?.substring(0, 60)}...`);
+  console.log(`     ID: ${fullId}\n`);
+
+  return true;
+}
+
+// ============================================================================
 // LINKING COMMANDS (thin wrappers around the linking module)
 // ============================================================================
 
@@ -641,6 +693,9 @@ LINKING:
   museum trace <id>                   Trace to source session
   museum tree <sessionId>             Show all items from session
 
+PROPOSALS:
+  museum promote <proposalId>           Promote a proposal to a decision (user-directed only)
+
 VERDICTS (for decisions):
   museum <id> verdict accepted "Rationale"
   museum <id> verdict rejected "Rationale"
@@ -756,6 +811,14 @@ async function main() {
       });
       return createItem(args[1], titleParts.join(" "), createOptions);
     }
+
+    case "promote":
+      if (!args[1]) {
+        console.log("\n  ❌ Usage: museum promote <proposalId>\n");
+        console.log("  Promotes a proposal to a decision. Only use when the user explicitly directs it.\n");
+        return;
+      }
+      return promoteProposal(args[1]);
 
     case "link":
       if (args.length < 4) {

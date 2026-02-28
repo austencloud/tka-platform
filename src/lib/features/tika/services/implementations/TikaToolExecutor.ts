@@ -45,11 +45,14 @@ export class TikaToolExecutor implements ITikaToolExecutor {
 
   getLetterExplanation(
     letter: string,
-    variation: number = 0
+    variation: number = 0,
+    gridMode: "diamond" | "box" = "diamond"
   ): LetterExplanationResult | string {
     this.pictographLoader.ensureLoaded();
 
-    const variations = this.pictographLoader.getLetterVariations(letter);
+    const variations = gridMode === "box"
+      ? this.pictographLoader.getLetterVariationsByMode(letter, "box")
+      : this.pictographLoader.getLetterVariations(letter);
     if (variations.length === 0) {
       return `Letter "${letter}" not found in the TKA alphabet.`;
     }
@@ -85,6 +88,7 @@ export class TikaToolExecutor implements ITikaToolExecutor {
         type: "inline-pictograph",
         letter,
         variation,
+        gridMode,
       },
       contextData: {
         type: "letter",

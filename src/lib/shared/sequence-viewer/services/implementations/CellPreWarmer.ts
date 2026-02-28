@@ -135,7 +135,7 @@ export class CellPreWarmer implements ICellPreWarmer {
   }
 
   // =========================================================================
-  // Render options — mirrors what LayeredSequencePreview uses
+  // Render options — mirrors what ChoreoCard uses
   // =========================================================================
 
   private buildRenderOptions(): PreviewCellRenderOptions {
@@ -147,7 +147,7 @@ export class CellPreWarmer implements ICellPreWarmer {
     const catDogModeEnabled = isCatDogMode(bluePropType, redPropType, catDogMode);
 
     return {
-      size: 240, // Same CELL_SIZE as LayeredSequencePreview (matches thumbnail pipeline)
+      size: 240, // Same CELL_SIZE as ChoreoCard (matches thumbnail pipeline)
       bluePropType,
       redPropType,
       catDogModeEnabled,

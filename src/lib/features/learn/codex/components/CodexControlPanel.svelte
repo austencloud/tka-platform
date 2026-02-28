@@ -165,8 +165,8 @@ rotating, mirroring, and color-swapping pictographs.
     display: flex;
     flex-direction: column;
     padding: 12px 14px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
     border-radius: 14px;
     margin-bottom: 12px;
   }
@@ -188,7 +188,7 @@ rotating, mirroring, and color-swapping pictographs.
   .orientation-selector {
     width: 100%;
     padding: 10px 32px 10px 14px;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 10px;
     color: var(--theme-text);
@@ -209,8 +209,8 @@ rotating, mirroring, and color-swapping pictographs.
   }
 
   .orientation-selector:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.18);
+    background: var(--theme-stroke);
+    border-color: var(--theme-stroke-strong);
   }
 
   .orientation-selector:focus {
@@ -220,7 +220,7 @@ rotating, mirroring, and color-swapping pictographs.
   }
 
   .orientation-selector option {
-    background: #1e1e23;
+    background: var(--theme-panel-bg);
     color: var(--theme-text);
     padding: 8px;
   }
@@ -246,10 +246,10 @@ rotating, mirroring, and color-swapping pictographs.
   .control-button {
     width: 48px; /* WCAG AAA touch target */
     height: 48px;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 10px;
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--theme-text-muted);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -258,9 +258,9 @@ rotating, mirroring, and color-swapping pictographs.
   }
 
   .control-button:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.2);
-    color: rgba(255, 255, 255, 0.95);
+    background: var(--theme-stroke);
+    border-color: var(--theme-stroke-strong);
+    color: var(--theme-text);
     transform: translateY(-1px);
   }
 
@@ -284,11 +284,11 @@ rotating, mirroring, and color-swapping pictographs.
   }
 
   .swap-button:hover svg circle:first-of-type {
-    fill: rgba(59, 130, 246, 0.7);
+    fill: color-mix(in srgb, var(--prop-blue) 70%, transparent);
   }
 
   .swap-button:hover svg circle:last-of-type {
-    fill: rgba(239, 68, 68, 0.7);
+    fill: color-mix(in srgb, var(--prop-red) 70%, transparent);
   }
 
   /* Responsive */
@@ -304,7 +304,7 @@ rotating, mirroring, and color-swapping pictographs.
 
     .orientation-selector {
       padding: 8px 28px 8px 12px;
-      font-size: 0.8125rem;
+      font-size: var(--font-size-min, 14px);
       border-radius: 8px;
     }
 

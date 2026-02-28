@@ -15,15 +15,21 @@
 	import { container } from '$lib/shared/di';
 	import { lanSyncState } from '$lib/shared/lan-sync/state/lan-sync-state.svelte';
 	import type { DisplayPreference, SyncSession } from '../../domain/models/connect-models';
-	import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
+	import {
+		createSequenceData,
+		type SequenceData
+	} from '$lib/shared/foundation/domain/models/SequenceData';
+	import type { IAnimationPlaybackController } from '$lib/features/compose/services/contracts/IAnimationPlaybackController';
+	import type { AnimationPanelState } from '$lib/features/compose/state/animation-panel-state.svelte';
 	import SessionControls from './SessionControls.svelte';
 	import SyncToggle from './SyncToggle.svelte';
 	import ParticipantsList from './ParticipantsList.svelte';
 	import DisplayPreferenceSelector from './DisplayPreferenceSelector.svelte';
+	import ProgressRing from '$lib/shared/components/loading/ProgressRing.svelte';
 
 	// Lazy load heavy components
 	import AnimationPlayer from '$lib/shared/sequence-viewer/components/AnimationPlayer.svelte';
-	import LayeredSequencePreview from '$lib/shared/sequence-viewer/components/LayeredSequencePreview.svelte';
+	import ChoreoCard from '$lib/shared/sequence-viewer/components/ChoreoCard.svelte';
 
 	interface Props {
 		session: SyncSession;
@@ -38,6 +44,15 @@
 	let loadError = $state<string | null>(null);
 	let showParticipants = $state(false);
 
+	// Animation controller reference for driving playback from sync state
+	let animController = $state<IAnimationPlaybackController | null>(null);
+	let animStateRef = $state<AnimationPanelState | null>(null);
+	let animStateUnsub: (() => void) | null = null;
+	// Timestamp of the last sync state we applied locally — prevents echo loops
+	let lastAppliedSyncTimestamp = 0;
+	// Flag to suppress broadcasting while we apply remote state
+	let applyingRemoteState = false;
+
 	// Derived from connectState
 	const displayPreference = $derived(connectState.displayPreference);
 	const isSoloMode = $derived(connectState.isSoloMode);
@@ -50,23 +65,106 @@
 	const isPlaying = $derived(playbackState.isPlaying);
 	const playbackSpeed = $derived(playbackState.speed);
 
-	// Load sequence data
+	// Called when AnimationPlayer's internal controller is ready
+	function handleControllerReady(ctrl: IAnimationPlaybackController, state: AnimationPanelState) {
+		animController = ctrl;
+		animStateRef = state;
+
+		// Subscribe to local animation state changes → broadcast to peers
+		animStateUnsub?.();
+		animStateUnsub = state.subscribe((key, value) => {
+			if (applyingRemoteState || isSoloMode) return;
+
+			if (key === 'isPlaying') {
+				lanSyncState.updatePlayback({ isPlaying: value as boolean });
+			} else if (key === 'currentStep') {
+				lanSyncState.updatePlayback({ currentStep: value as number });
+			}
+		});
+	}
+
+	// Apply incoming sync state from peers → local animation controller
+	$effect(() => {
+		const sync = lanSyncState.playbackState;
+		const ctrl = animController;
+		if (!ctrl || !lanSyncState.isActive || isSoloMode) return;
+
+		// Only apply if this is a genuinely new remote update
+		if (sync.timestamp <= lastAppliedSyncTimestamp) return;
+		lastAppliedSyncTimestamp = sync.timestamp;
+
+		applyingRemoteState = true;
+		try {
+			// Apply play/pause
+			const localPlaying = animStateRef?.isPlaying ?? false;
+			if (sync.isPlaying !== localPlaying) {
+				ctrl.togglePlayback();
+			}
+
+			// Apply seek (only if difference is significant — avoids jitter from continuous playback)
+			const localStep = animStateRef?.currentStep ?? 0;
+			if (Math.abs(sync.currentStep - localStep) > 0.5) {
+				ctrl.seekToStep(sync.currentStep);
+			}
+
+			// Apply speed
+			const localSpeed = animStateRef?.speed ?? 1;
+			if (sync.speed !== undefined && sync.speed !== localSpeed) {
+				ctrl.setSpeed(sync.speed);
+			}
+		} finally {
+			applyingRemoteState = false;
+		}
+	});
+
+	// Load sequence data using a multi-source fallback chain:
+	// P2P received data → wait for P2P delivery → unified provider → legacy browse loader
 	onMount(async () => {
 		try {
-			const browseLoader = container.items.browseLoader;
-			const loadedSequence = await browseLoader.loadSequenceById(session.sequenceId);
-
-			if (loadedSequence) {
-				sequence = loadedSequence;
-			} else {
-				loadError = 'Sequence not found';
+			// Source 1: P2P data already received from host
+			const p2pData = lanSyncState.receivedSequence;
+			if (p2pData) {
+				sequence = createSequenceData(p2pData as Partial<SequenceData>);
+				return;
 			}
+
+			// Source 2: Wait for P2P delivery (host may still be transmitting)
+			const waitedData = await lanSyncState.waitForSequence(5000);
+			if (waitedData) {
+				sequence = createSequenceData(waitedData as Partial<SequenceData>);
+				return;
+			}
+
+			// Source 3: Unified provider - tries local repo then public Firestore
+			const sequenceDataProvider = container.items.sequenceDataProvider;
+			const fromProvider = await sequenceDataProvider.loadByIdentifier(session.sequenceWord);
+			if (fromProvider) {
+				sequence = fromProvider;
+				return;
+			}
+
+			// Source 4: Legacy browse loader (by document ID)
+			const browseLoader = container.items.browseLoader;
+			const fromBrowse = await browseLoader.loadFullSequenceData(session.sequenceId);
+			if (fromBrowse) {
+				sequence = fromBrowse;
+				return;
+			}
+
+			// All sources exhausted
+			loadError = 'Sequence not found';
 		} catch (error) {
 			console.error('[SessionViewer] Failed to load sequence:', error);
 			loadError = error instanceof Error ? error.message : 'Failed to load sequence';
 		} finally {
 			isLoading = false;
 		}
+	});
+
+	// Clean up animation state subscription
+	onDestroy(() => {
+		animStateUnsub?.();
+		animStateUnsub = null;
 	});
 
 	// Keyboard shortcuts
@@ -86,39 +184,55 @@
 		await connectState.toggleSoloMode();
 	}
 
-	// Playback controls (only affect sync when not in solo mode)
+	// Playback controls — drive both local controller and P2P sync
 	function handlePlay() {
+		if (animController && !animStateRef?.isPlaying) {
+			animController.togglePlayback();
+		}
 		if (!isSoloMode) {
 			lanSyncState.updatePlayback({ isPlaying: true });
 		}
 	}
 
 	function handlePause() {
+		if (animController && animStateRef?.isPlaying) {
+			animController.togglePlayback();
+		}
 		if (!isSoloMode) {
 			lanSyncState.updatePlayback({ isPlaying: false });
 		}
 	}
 
 	function handleSeek(beat: number) {
+		animController?.seekToStep(beat);
 		if (!isSoloMode) {
 			lanSyncState.updatePlayback({ currentStep: beat });
 		}
 	}
 
 	function handlePrevious() {
-		if (!isSoloMode && currentBeat > 0) {
-			lanSyncState.updatePlayback({ currentStep: currentBeat - 1, isPlaying: false });
+		if (currentBeat > 0) {
+			const target = currentBeat - 1;
+			animController?.seekToStep(target);
+			if (!isSoloMode) {
+				lanSyncState.updatePlayback({ currentStep: target, isPlaying: false });
+			}
 		}
 	}
 
 	function handleNext() {
 		const maxBeat = sequence?.steps?.length ?? 0;
-		if (!isSoloMode && currentBeat < maxBeat) {
-			lanSyncState.updatePlayback({ currentStep: currentBeat + 1, isPlaying: false });
+		if (currentBeat < maxBeat) {
+			const target = currentBeat + 1;
+			animController?.seekToStep(target);
+			if (!isSoloMode) {
+				lanSyncState.updatePlayback({ currentStep: target, isPlaying: false });
+			}
 		}
 	}
 
 	function handleFirst() {
+		animController?.seekToStep(0);
 		if (!isSoloMode) {
 			lanSyncState.updatePlayback({ currentStep: 0, isPlaying: false });
 		}
@@ -126,6 +240,7 @@
 
 	function handleLast() {
 		const maxBeat = sequence?.steps?.length ?? 0;
+		animController?.seekToStep(maxBeat);
 		if (!isSoloMode) {
 			lanSyncState.updatePlayback({ currentStep: maxBeat, isPlaying: false });
 		}
@@ -148,6 +263,7 @@
 					class="participants-badge"
 					onclick={() => (showParticipants = !showParticipants)}
 					aria-expanded={showParticipants}
+					aria-label="{participants.length} synced participants"
 				>
 					<i class="fas fa-users" aria-hidden="true"></i>
 					<span>{participants.length} synced</span>
@@ -177,7 +293,7 @@
 		<main class="viewer-content">
 			{#if isLoading}
 				<div class="loading-state">
-					<div class="spinner"></div>
+					<ProgressRing percent={-1} size={32} strokeWidth={3} />
 					<p>Loading sequence...</p>
 				</div>
 			{:else if loadError}
@@ -194,11 +310,12 @@
 								autoPlay={false}
 								showControls={false}
 								layout="vertical"
+								onControllerReady={handleControllerReady}
 							/>
 						</div>
 					{:else if displayPreference === 'pictograph'}
 						<div class="pictograph-container">
-							<LayeredSequencePreview
+							<ChoreoCard
 								{sequence}
 								showStepNumbers={true}
 								showDifficultyLevel={false}
@@ -214,10 +331,11 @@
 									autoPlay={false}
 									showControls={false}
 									layout="vertical"
+									onControllerReady={handleControllerReady}
 								/>
 							</div>
 							<div class="split-right">
-								<LayeredSequencePreview
+								<ChoreoCard
 									{sequence}
 									showStepNumbers={true}
 									showDifficultyLevel={false}
@@ -353,8 +471,8 @@
 
 	.leave-button {
 		padding: 8px 16px;
-		background: rgba(239, 68, 68, 0.2);
-		border: 1px solid rgba(239, 68, 68, 0.3);
+		background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
+		border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
 		border-radius: 8px;
 		color: var(--semantic-error, #ef4444);
 		font-weight: 600;
@@ -364,7 +482,7 @@
 	}
 
 	.leave-button:hover {
-		background: rgba(239, 68, 68, 0.3);
+		background: color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
 	}
 
 	/* Participants dropdown */
@@ -403,21 +521,6 @@
 		justify-content: center;
 		gap: 16px;
 		text-align: center;
-	}
-
-	.spinner {
-		width: 40px;
-		height: 40px;
-		border: 3px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		border-top-color: var(--theme-accent, #6366f1);
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-	}
-
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
 	}
 
 	.error-state i {
@@ -513,10 +616,4 @@
 		}
 	}
 
-	/* Reduced motion */
-	@media (prefers-reduced-motion: reduce) {
-		.spinner {
-			animation: none;
-		}
-	}
 </style>

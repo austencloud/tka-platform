@@ -49,13 +49,13 @@ WordQuizFeedback - Feedback display with explanation
   }
 
   .feedback.correct {
-    background: rgba(34, 211, 238, 0.1);
-    border: 1px solid rgba(34, 211, 238, 0.25);
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 25%, transparent);
   }
 
   .feedback.incorrect {
-    background: rgba(255, 158, 74, 0.1);
-    border: 1px solid rgba(255, 158, 74, 0.25);
+    background: color-mix(in srgb, var(--semantic-warning, #fb923c) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-warning, #fb923c) 25%, transparent);
   }
 
   .feedback-header {
@@ -68,18 +68,18 @@ WordQuizFeedback - Feedback display with explanation
   }
 
   .feedback.correct .feedback-header {
-    color: #22d3ee;
+    color: var(--theme-accent, #22d3ee);
   }
 
   .feedback.incorrect .feedback-header {
-    color: #ff9e4a;
+    color: var(--semantic-warning, #fb923c);
   }
 
   .explanation {
     margin: 0;
     font-size: 0.875rem;
     line-height: 1.5;
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--theme-text, rgba(255, 255, 255, 0.8));
   }
 
   @media (prefers-reduced-motion: reduce) {

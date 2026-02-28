@@ -22,13 +22,11 @@
 	}: {
 		composition: CompositionBrowseItem;
 		staggerIndex?: number;
-		onExpand: (item: CompositionBrowseItem, rect: DOMRect) => void;
+		onExpand: (item: CompositionBrowseItem) => void;
 		onToggleFavorite?: (id: string) => void;
 		onPlay?: (id: string) => void;
 		onEdit?: (id: string) => void;
 	} = $props();
-
-	let cardEl: HTMLDivElement | undefined = $state();
 
 	const modeConfig = $derived(COMPOSE_MODE_CONFIG[composition.mode]);
 	const thumbnailResolver = container?.items?.compositionThumbnailResolver as ICompositionThumbnailResolver | undefined;
@@ -57,9 +55,7 @@
 	);
 
 	function handleClick() {
-		if (!cardEl) return;
-		const rect = cardEl.getBoundingClientRect();
-		onExpand(composition, rect);
+		onExpand(composition);
 	}
 
 	function handlePlay(e: MouseEvent) {
@@ -87,7 +83,6 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-	bind:this={cardEl}
 	role="button"
 	tabindex="0"
 	class="hero-card"

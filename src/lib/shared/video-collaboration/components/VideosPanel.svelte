@@ -13,6 +13,7 @@
   import CollaboratorAvatars from "./CollaboratorAvatars.svelte";
   import VideoUploadSheet from "./VideoUploadSheet.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   const {
     sequence,
@@ -115,7 +116,7 @@
   <div class="panel-content">
     {#if loading}
       <div class="state-message">
-        <div class="spinner"></div>
+        <ProgressRing percent={-1} size={32} strokeWidth={3} />
         <span>Loading videos...</span>
       </div>
     {:else if error}
@@ -341,21 +342,6 @@
 
   .state-message.error {
     color: var(--semantic-error);
-  }
-
-  .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--theme-stroke);
-    border-top-color: var(--theme-accent);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
   }
 
   .empty-state {
@@ -703,9 +689,6 @@
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */
   @media (prefers-reduced-motion: reduce) {
     .videos-panel {
-      animation: none;
-    }
-    .spinner {
       animation: none;
     }
     .video-player-container {

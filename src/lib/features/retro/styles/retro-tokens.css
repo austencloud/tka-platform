@@ -1,0 +1,73 @@
+/*
+ * TKA-OS v1.0 — Design Tokens
+ *
+ * 16-color VGA palette as CSS custom properties, semantic aliases,
+ * typography, spacing, and z-index layers for the retro shell.
+ *
+ * Scoped to .retro-shell so these never leak into the main app.
+ */
+
+.retro-shell {
+	/* ------------------------------------------------------------------ */
+	/* VGA 16-Color Palette                                               */
+	/* ------------------------------------------------------------------ */
+	--retro-black: #000000;
+	--retro-white: #ffffff;
+	--retro-light-gray: #c0c0c0;
+	--retro-dark-gray: #808080;
+	--retro-teal: #008080;
+	--retro-navy: #000080;
+	--retro-maroon: #800000;
+	--retro-olive: #808000;
+	--retro-purple: #800080;
+	--retro-silver: #c0c0c0;
+	--retro-red: #ff0000;
+	--retro-lime: #00ff00;
+	--retro-blue: #0000ff;
+	--retro-yellow: #ffff00;
+	--retro-aqua: #00ffff;
+	--retro-fuchsia: #ff00ff;
+
+	/* ------------------------------------------------------------------ */
+	/* Semantic Aliases                                                    */
+	/* ------------------------------------------------------------------ */
+	--retro-desktop-bg: var(--retro-teal);
+	--retro-window-bg: var(--retro-light-gray);
+	--retro-titlebar-bg: var(--retro-navy);
+	--retro-titlebar-text: var(--retro-white);
+	--retro-titlebar-inactive-bg: var(--retro-dark-gray);
+	--retro-selection-bg: var(--retro-navy);
+	--retro-selection-text: var(--retro-white);
+	--retro-field-bg: var(--retro-white);
+	--retro-field-text: var(--retro-black);
+	--retro-disabled-text: var(--retro-dark-gray);
+	--retro-button-face: var(--retro-light-gray);
+	--retro-button-highlight: var(--retro-white);
+	--retro-button-shadow: var(--retro-dark-gray);
+	--retro-button-dark-shadow: var(--retro-black);
+
+	/* ------------------------------------------------------------------ */
+	/* Typography                                                         */
+	/* ------------------------------------------------------------------ */
+	--retro-font-family: "Pixelated MS Sans Serif", "Microsoft Sans Serif", Arial, sans-serif;
+	--retro-font-size: 11px;
+	--retro-font-mono: "Fixedsys", "Courier New", monospace;
+
+	/* ------------------------------------------------------------------ */
+	/* Spacing                                                            */
+	/* ------------------------------------------------------------------ */
+	--retro-border-width: 2px;
+	--retro-padding-sm: 2px;
+	--retro-padding-md: 4px;
+	--retro-padding-lg: 8px;
+
+	/* ------------------------------------------------------------------ */
+	/* Z-Index Layers                                                     */
+	/* ------------------------------------------------------------------ */
+	--retro-z-desktop: 0;
+	--retro-z-window: 10;
+	--retro-z-active-window: 20;
+	--retro-z-dialog: 100;
+	--retro-z-taskbar: 200;
+	--retro-z-boot: 1000;
+}

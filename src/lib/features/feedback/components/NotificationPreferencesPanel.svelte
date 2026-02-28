@@ -6,7 +6,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { notificationPreferencesService } from "../services/implementations/NotificationPreferencesManager";
   import type {
     NotificationPreferences,
     NotificationType,
@@ -22,6 +21,13 @@
     userPreviewState,
     getPreviewNotificationPreferences,
   } from "$lib/shared/debug/state/user-preview-state.svelte";
+  import { container } from "$lib/shared/di";
+  import type { IFCMTokenManager } from "$lib/shared/push/services/contracts/IFCMTokenManager";
+  import type { INotificationPreferencesManager } from "$lib/shared/push/services/contracts/INotificationPreferencesManager";
+  import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
+
+  const notificationPreferencesManager = container.items
+    .notificationPreferencesManager as INotificationPreferencesManager;
 
   // State
   let preferences = $state<NotificationPreferences>(
@@ -31,6 +37,7 @@
   let bulkBusy = $state<"enable" | "disable" | null>(null);
   let bulkPressed = $state<"enable" | "disable" | null>(null);
   let pendingKeys = $state<Set<keyof NotificationPreferences>>(new Set());
+  let pushToggleBusy = $state(false);
 
   // Preview mode - show another user's preferences (read-only)
   const isPreviewMode = $derived(userPreviewState.isActive);
@@ -60,7 +67,7 @@
 
     try {
       isLoading = true;
-      preferences = await notificationPreferencesService.getPreferences(
+      preferences = await notificationPreferencesManager.getPreferences(
         user.uid
       );
     } catch (error) {
@@ -82,7 +89,7 @@
       pendingKeys.add(key);
       // Optimistic update
       preferences = { ...preferences, [key]: !preferences[key] };
-      await notificationPreferencesService.togglePreference(user.uid, key);
+      await notificationPreferencesManager.togglePreference(user.uid, key);
     } catch (error) {
       console.error("Failed to toggle preference:", error);
       // Revert on error
@@ -107,7 +114,7 @@
 
     try {
       bulkBusy = "enable";
-      await notificationPreferencesService.enableAll(user.uid);
+      await notificationPreferencesManager.enableAll(user.uid);
       await loadPreferences();
     } catch (error) {
       console.error("Failed to enable all:", error);
@@ -126,13 +133,77 @@
 
     try {
       bulkBusy = "disable";
-      await notificationPreferencesService.disableAll(user.uid);
+      await notificationPreferencesManager.disableAll(user.uid);
       await loadPreferences();
     } catch (error) {
       console.error("Failed to disable all:", error);
     } finally {
       bulkBusy = null;
       clearBulkPressedSoon();
+    }
+  }
+
+  async function togglePushEnabled() {
+    if (isPreviewMode) return;
+
+    const user = authState.user;
+    if (!user || pushToggleBusy) return;
+
+    const fcmTokenManager = container.items
+      .fcmTokenManager as IFCMTokenManager;
+    const wasEnabled = preferences.pushEnabled;
+
+    try {
+      pushToggleBusy = true;
+
+      if (wasEnabled) {
+        // Turning OFF: unregister token, then save preference
+        await fcmTokenManager.unregisterToken(user.uid);
+        preferences = { ...preferences, pushEnabled: false };
+        await notificationPreferencesManager.savePreferences(
+          user.uid,
+          preferences
+        );
+      } else {
+        // Turning ON: check/request permission, then register token
+        let permission = fcmTokenManager.getPermissionState();
+
+        if (permission !== "granted") {
+          permission = await fcmTokenManager.requestPermission();
+        }
+
+        if (permission === "denied") {
+          showToast(
+            "Push notifications blocked. Check your browser settings.",
+            "warning",
+            5000
+          );
+          return;
+        }
+
+        if (permission !== "granted") {
+          showToast(
+            "Push notification permission not granted.",
+            "warning",
+            4000
+          );
+          return;
+        }
+
+        // Permission granted, register token and save preference
+        preferences = { ...preferences, pushEnabled: true };
+        await notificationPreferencesManager.savePreferences(
+          user.uid,
+          preferences
+        );
+        await fcmTokenManager.registerToken(user.uid);
+      }
+    } catch (error) {
+      console.error("Failed to toggle push notifications:", error);
+      // Revert on error
+      await loadPreferences();
+    } finally {
+      pushToggleBusy = false;
     }
   }
 
@@ -288,6 +359,41 @@
       </div>
     {/if}
 
+    <!-- Push Notifications Master Toggle -->
+    {#if !isPreviewMode}
+      <button
+        class="push-toggle"
+        class:enabled={preferences.pushEnabled}
+        onclick={togglePushEnabled}
+        disabled={pushToggleBusy}
+        aria-label="Toggle push notifications"
+        aria-pressed={preferences.pushEnabled}
+        aria-busy={pushToggleBusy}
+      >
+        <div class="push-toggle-content">
+          <div class="push-toggle-icon">
+            <i
+              class="fas"
+              class:fa-bell={preferences.pushEnabled}
+              class:fa-bell-slash={!preferences.pushEnabled}
+              aria-hidden="true"
+            ></i>
+          </div>
+          <div class="push-toggle-text">
+            <span class="push-toggle-label">Push notifications</span>
+            <span class="push-toggle-description">
+              {preferences.pushEnabled
+                ? "Notifications are delivered to this device"
+                : "Turn on to receive notifications on this device"}
+            </span>
+          </div>
+          <span class="push-toggle-status" aria-hidden="true">
+            {preferences.pushEnabled ? "On" : "Off"}
+          </span>
+        </div>
+      </button>
+    {/if}
+
     <!-- Preference Groups Grid -->
     <div class="preference-groups-grid">
       {#each preferenceGroups as group}
@@ -440,6 +546,138 @@
   }
 
   /* ============================================================================
+     PUSH TOGGLE
+     ============================================================================ */
+  .push-toggle {
+    width: 100%;
+    padding: 16px;
+    margin-bottom: 18px;
+    background: linear-gradient(
+      150deg,
+      var(--theme-card-bg),
+      var(--theme-panel-bg)
+    );
+    border: 1.5px solid var(--theme-stroke);
+    border-radius: 14px;
+    cursor: pointer;
+    transition:
+      background 180ms ease,
+      border-color 180ms ease,
+      transform 180ms ease;
+    text-align: left;
+    box-shadow: var(--theme-shadow, 0 8px 20px rgba(0, 0, 0, 0.28));
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .push-toggle:hover:not(:disabled) {
+    border-color: var(--theme-stroke-strong);
+    transform: translateY(-1px);
+    box-shadow: var(--theme-shadow, 0 12px 26px rgba(0, 0, 0, 0.32));
+  }
+
+  .push-toggle:active:not(:disabled) {
+    transform: translateY(0) scale(0.99);
+    transition-duration: 60ms;
+  }
+
+  .push-toggle[aria-busy="true"] {
+    opacity: 0.7;
+    cursor: wait;
+  }
+
+  .push-toggle.enabled {
+    background: linear-gradient(
+      150deg,
+      color-mix(in srgb, var(--theme-card-bg) 75%, var(--theme-accent)),
+      var(--theme-card-bg)
+    );
+    border-color: var(--theme-accent);
+  }
+
+  .push-toggle.enabled:hover:not(:disabled) {
+    background: linear-gradient(
+      150deg,
+      color-mix(in srgb, var(--theme-card-hover-bg) 70%, var(--theme-accent)),
+      var(--theme-panel-bg)
+    );
+    border-color: var(--theme-accent-strong);
+  }
+
+  .push-toggle-content {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .push-toggle-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
+    font-size: var(--font-size-lg);
+    color: var(--theme-text-dim);
+  }
+
+  .push-toggle.enabled .push-toggle-icon {
+    background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
+    color: var(--theme-accent);
+  }
+
+  .push-toggle-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .push-toggle-label {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--theme-text);
+    line-height: 1.2;
+  }
+
+  .push-toggle.enabled .push-toggle-label {
+    color: var(--theme-accent);
+  }
+
+  .push-toggle-description {
+    font-size: var(--font-size-compact);
+    color: var(--theme-text-dim);
+    line-height: 1.3;
+  }
+
+  .push-toggle-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    font-size: var(--font-size-compact);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--theme-text-dim);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 999px;
+    flex-shrink: 0;
+  }
+
+  .push-toggle.enabled .push-toggle-status {
+    color: #0d1b2a;
+    background: linear-gradient(
+      135deg,
+      var(--theme-accent),
+      var(--theme-accent-strong)
+    );
+    border-color: transparent;
+  }
+
+  /* ============================================================================
      PREFERENCE GROUPS GRID
      ============================================================================ */
   .preference-groups-grid {
@@ -496,7 +734,8 @@
      ACCESSIBILITY
      ============================================================================ */
   @media (prefers-reduced-motion: reduce) {
-    .action-button {
+    .action-button,
+    .push-toggle {
       transition: none;
     }
   }

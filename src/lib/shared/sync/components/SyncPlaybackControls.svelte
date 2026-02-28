@@ -337,7 +337,7 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 10px;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: 1rem;
     cursor: pointer;
     transition: all 0.15s ease;
@@ -351,9 +351,9 @@
   }
 
   .control-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    color: rgba(255, 255, 255, 0.95);
+    color: var(--theme-text, #ffffff);
   }
 
   .control-btn:active:not(:disabled) {
@@ -373,16 +373,16 @@
 
   /* Play/Pause button - accent colored */
   .play-pause-btn {
-    background: rgba(139, 92, 246, 0.2);
-    border-color: rgba(139, 92, 246, 0.3);
-    color: rgba(167, 139, 250, 1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-color: var(--theme-accent, #8b5cf6);
+    color: var(--theme-accent, #8b5cf6);
     font-size: 1.1rem;
   }
 
   .play-pause-btn:hover:not(:disabled) {
-    background: rgba(139, 92, 246, 0.3);
-    border-color: rgba(139, 92, 246, 0.5);
-    color: rgba(196, 181, 253, 1);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-color: var(--theme-accent, #8b5cf6);
+    color: var(--theme-text, #ffffff);
   }
 
   /* Step buttons */
@@ -449,8 +449,8 @@
     min-width: 48px;
     min-height: 48px;
     padding: 0 0.5rem;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: var(--font-size-compact, 12px);
@@ -461,15 +461,15 @@
   }
 
   .speed-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-    color: var(--theme-text, rgba(255, 255, 255, 0.95));
+    color: var(--theme-text, #ffffff);
   }
 
   .speed-btn.active {
-    background: rgba(139, 92, 246, 0.2);
-    border-color: rgba(139, 92, 246, 0.4);
-    color: rgba(167, 139, 250, 1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-color: var(--theme-accent, #8b5cf6);
+    color: var(--theme-accent, #8b5cf6);
     font-weight: 600;
   }
 
@@ -520,7 +520,7 @@
     }
 
     .speed-btn {
-      font-size: 11px;
+      font-size: var(--font-size-compact, 12px);
       /* Keep 48px touch target on mobile */
       min-width: 48px;
       min-height: 48px;
@@ -538,7 +538,7 @@
       width: 100%;
       justify-content: center;
       padding-top: 0.5rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     }
 
     .progress {

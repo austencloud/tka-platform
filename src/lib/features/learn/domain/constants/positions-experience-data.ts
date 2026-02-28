@@ -2,70 +2,65 @@
  * Positions Concept Experience data constants
  */
 
+import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+
 export type HandPosition = "N" | "NE" | "E" | "SE" | "S" | "SW" | "W" | "NW";
 
 export interface PositionExample {
   left: HandPosition;
   right: HandPosition;
+  gridMode: GridMode;
 }
 
 export const ALPHA_EXAMPLES: readonly PositionExample[] = [
-  { left: "N", right: "S" },
-  { left: "E", right: "W" },
-  { left: "NE", right: "SW" },
-  { left: "NW", right: "SE" },
+  { left: "N", right: "S", gridMode: GridMode.DIAMOND },
+  { left: "E", right: "W", gridMode: GridMode.DIAMOND },
+  { left: "NE", right: "SW", gridMode: GridMode.BOX },
+  { left: "NW", right: "SE", gridMode: GridMode.BOX },
 ] as const;
 
 export const BETA_EXAMPLES: readonly PositionExample[] = [
-  { left: "N", right: "N" },
-  { left: "E", right: "E" },
-  { left: "SW", right: "SW" },
-  { left: "NE", right: "NE" },
+  { left: "N", right: "N", gridMode: GridMode.DIAMOND },
+  { left: "E", right: "E", gridMode: GridMode.DIAMOND },
+  { left: "SW", right: "SW", gridMode: GridMode.BOX },
+  { left: "NE", right: "NE", gridMode: GridMode.BOX },
 ] as const;
 
 export const GAMMA_EXAMPLES: readonly PositionExample[] = [
-  { left: "N", right: "E" },
-  { left: "N", right: "W" },
-  { left: "S", right: "E" },
-  { left: "NE", right: "SE" },
+  { left: "N", right: "E", gridMode: GridMode.DIAMOND },
+  { left: "N", right: "W", gridMode: GridMode.DIAMOND },
+  { left: "S", right: "E", gridMode: GridMode.DIAMOND },
+  { left: "NE", right: "SE", gridMode: GridMode.BOX },
 ] as const;
 
 export interface PositionInfo {
   name: string;
-  icon: string;
+  symbol: string;
   summary: string;
-  angle: string;
-  color: string;
   description: string;
-  examples: string;
+  keyInsight: string;
 }
 
 export const POSITION_INFO: Record<"alpha" | "beta" | "gamma", PositionInfo> = {
   alpha: {
     name: "Alpha",
-    icon: "fa-arrows-left-right",
-    summary: "Hands at opposite points on the grid",
-    angle: "180°",
-    color: "#FF6B6B",
-    description: "Hands form a straight line through the center",
-    examples: "N↔S, E↔W, NE↔SW, NW↔SE",
+    symbol: "α",
+    summary: "The hands occupy the points across from each other.",
+    description: "The hands are as far apart as they can be. One hand is always directly across from the other.",
+    keyInsight: "Alpha is the big, open position. If you can draw a straight line through the center connecting both hands, that's alpha.",
   },
   beta: {
     name: "Beta",
-    icon: "fa-circle-dot",
-    summary: "Hands at the same point on the grid",
-    angle: "0°",
-    color: "#4ECDC4",
-    description: "Both hands occupy the identical position",
-    examples: "Both at N, both at E, both at SW",
+    symbol: "β",
+    summary: "The hands occupy the same point.",
+    description: "Both hands share the same spot on the grid, stacked on top of each other.",
+    keyInsight: "Beta is the together position. Hands start or end here when they come together.",
   },
   gamma: {
     name: "Gamma",
-    icon: "fa-rotate-right",
-    summary: "Hands at right angles (90°) to each other",
-    angle: "90°",
-    color: "#FFE66D",
-    description: "Hands are perpendicular to each other",
-    examples: "N+E, N+W, S+E, S+W, NE+NW",
+    symbol: "γ",
+    summary: "The hands form a right angle.",
+    description: "The hands are next to each other, one step apart on the grid. Not opposite, not together, but adjacent.",
+    keyInsight: "Gamma is the in-between position. The hands are close but not stacked, offset but not opposite.",
   },
 };

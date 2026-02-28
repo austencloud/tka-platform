@@ -7,6 +7,7 @@
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
 	import { connectState } from '../state/connect-state.svelte';
+	import ProgressRing from '$lib/shared/components/loading/ProgressRing.svelte';
 	import type { Invite } from '../domain/models/connect-models';
 
 	// Derived from state
@@ -77,7 +78,7 @@
 					disabled={isConnecting}
 				>
 					{#if isConnecting}
-						<div class="button-spinner"></div>
+						<ProgressRing percent={-1} size={24} strokeWidth={2} />
 						Joining...
 					{:else}
 						<i class="fas fa-check" aria-hidden="true"></i>
@@ -138,8 +139,8 @@
 		padding: 32px 24px 16px;
 		background: linear-gradient(
 			135deg,
-			rgba(99, 102, 241, 0.2) 0%,
-			rgba(79, 70, 229, 0.1) 100%
+			color-mix(in srgb, var(--theme-accent, #8b5cf6) 20%, transparent) 0%,
+			color-mix(in srgb, var(--theme-accent, #8b5cf6) 10%, transparent) 100%
 		);
 	}
 
@@ -155,7 +156,7 @@
 
 	.invite-icon i {
 		font-size: 24px;
-		color: white;
+		color: var(--theme-text, white);
 	}
 
 	.invite-header h2 {
@@ -240,7 +241,7 @@
 	}
 
 	.decline-button:hover:not(:disabled) {
-		background: rgba(239, 68, 68, 0.1);
+		background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
 		border-color: var(--semantic-error, #ef4444);
 		color: var(--semantic-error, #ef4444);
 	}
@@ -259,21 +260,6 @@
 	.accept-button:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
-	}
-
-	.button-spinner {
-		width: 16px;
-		height: 16px;
-		border: 2px solid rgba(255, 255, 255, 0.3);
-		border-top-color: white;
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-	}
-
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
 	}
 
 	/* Dismiss button */
@@ -301,10 +287,6 @@
 
 	/* Reduced motion */
 	@media (prefers-reduced-motion: reduce) {
-		.button-spinner {
-			animation: none;
-		}
-
 		.decline-button,
 		.accept-button,
 		.dismiss-button {

@@ -557,11 +557,25 @@ export class DeviceSyncCoordinator implements IDeviceSyncCoordinator {
 
 	private setupMessageHandler(): void {
 		const unsub = this.peerManager.onMessage((rawMessage) => {
-			// The peer manager gives us parsed JSON, but we need to handle our protocol
-			const message = rawMessage as unknown as SyncMessage;
-			this.handleMessage(message);
+			// The peer manager gives us parsed JSON, but we need to validate our protocol
+			if (this.isDeviceSyncMessage(rawMessage)) {
+				this.handleMessage(rawMessage);
+			}
 		});
 		this.unsubscribers.push(unsub);
+	}
+
+	private isDeviceSyncMessage(msg: unknown): msg is SyncMessage {
+		if (!msg || typeof msg !== 'object') return false;
+		const candidate = msg as Record<string, unknown>;
+		const validTypes: Set<string> = new Set([
+			'JOIN', 'WELCOME', 'INTENT', 'PEER_UPDATE', 'PEER_LEAVE',
+			'HEARTBEAT', 'HEARTBEAT_ACK', 'STATE_REQUEST', 'STATE_RESPONSE'
+		]);
+		return typeof candidate.type === 'string'
+			&& validTypes.has(candidate.type)
+			&& typeof candidate.senderId === 'string'
+			&& candidate.hlc != null;
 	}
 
 	private setupConnectionStateForwarding(): void {

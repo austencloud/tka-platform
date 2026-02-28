@@ -7,7 +7,6 @@ Haptic feedback on letter selection.
 -->
 <script lang="ts">
   import { container } from "$lib/shared/di";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import {
     GREEK_LETTER_PALETTE,
     GREEK_LETTER_DISPLAY,
@@ -20,7 +19,7 @@ Haptic feedback on letter selection.
     onSelect: (letter: string) => void;
   } = $props();
 
-  const haptic = container.items.hapticFeedback as IHapticFeedback;
+  const haptic = container.items.hapticFeedback;
 
   // Get display label for a letter
   function getDisplayLabel(letter: Letter): string {

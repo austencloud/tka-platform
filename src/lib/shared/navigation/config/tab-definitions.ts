@@ -14,7 +14,7 @@ import type { Section } from "../domain/types";
 
 // Default tab for new users visiting /create without a specific tab.
 // "construct" is the default because it's the most complete/polished experience.
-// "assemble" is still in testing and should not be the first tab users see.
+// "assemble" has been archived - replaced by visual-builder (Feb 2026).
 export const DEFAULT_CREATE_TAB = "construct";
 
 export const CREATE_TABS: Section[] = [
@@ -27,15 +27,8 @@ export const CREATE_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)",
     metadata: { isCreationMethod: true },
   },
-  {
-    id: "assemble",
-    label: "Assemble",
-    icon: '<i class="fas fa-puzzle-piece" aria-hidden="true"></i>',
-    description: "Build sequences one hand at a time (6 simple choices)",
-    color: "#8b5cf6",
-    gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
-    metadata: { isCreationMethod: true },
-  },
+  // ARCHIVED: Assemble tab replaced by Visual Builder (Feb 2026)
+  // Files kept in src/lib/features/create/assemble/ for reference
   {
     id: "visual-builder",
     label: "Visual",
@@ -432,6 +425,14 @@ export const SETTINGS_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
   },
   {
+    id: "notifications",
+    label: "Notifications",
+    icon: '<i class="fas fa-bell" aria-hidden="true"></i>',
+    description: "Push notifications and alert preferences",
+    color: "#f43f5e",
+    gradient: "linear-gradient(135deg, #fb7185 0%, #f43f5e 100%)",
+  },
+  {
     id: "preferences",
     label: "Preferences",
     icon: '<i class="fas fa-sliders" aria-hidden="true"></i>',
@@ -457,16 +458,9 @@ export const SETTINGS_TABS: Section[] = [
 // Kept for backwards compatibility only.
 export const REALM_TABS: Section[] = [];
 
-// Feedback tabs configuration (tracker visible to all, manage restricted to admins)
+// Feedback tabs configuration
+// User-facing tabs first (submit, my-feedback), admin-only tabs last (tracker, manage)
 export const FEEDBACK_TABS: Section[] = [
-  {
-    id: "tracker",
-    label: "Tracker",
-    icon: '<i class="fas fa-binoculars" aria-hidden="true"></i>',
-    description: "See reported bugs, features in progress, and recent fixes",
-    color: "#f59e0b",
-    gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
-  },
   {
     id: "submit",
     label: "Submit",
@@ -482,6 +476,14 @@ export const FEEDBACK_TABS: Section[] = [
     description: "Track your submitted feedback and confirmations",
     color: "#3b82f6",
     gradient: "linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)",
+  },
+  {
+    id: "tracker",
+    label: "Tracker",
+    icon: '<i class="fas fa-binoculars" aria-hidden="true"></i>',
+    description: "See reported bugs, features in progress, and recent fixes",
+    color: "#f59e0b",
+    gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
   },
   {
     id: "manage",
@@ -572,10 +574,10 @@ export const LAB_TABS: Section[] = [
   {
     id: "level7",
     label: "Level 7",
-    icon: '<i class="fas fa-magnet" aria-hidden="true"></i>',
-    description: "Interradial orientations (completes 2D mastery)",
-    color: "#a855f7",
-    gradient: "linear-gradient(135deg, #c084fc 0%, #a855f7 100%)",
+    icon: '<i class="fas fa-link" aria-hidden="true"></i>',
+    description: "Conjoined grids (dual grids, junction point)",
+    color: "#10b981",
+    gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
   },
   {
     id: "poi",
@@ -652,10 +654,10 @@ export const LAB_TABS: Section[] = [
   {
     id: "level6",
     label: "Level 6",
-    icon: '<i class="fas fa-link" aria-hidden="true"></i>',
-    description: "Conjoined grids (dual grids, junction point)",
-    color: "#10b981",
-    gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
+    icon: '<i class="fas fa-magnet" aria-hidden="true"></i>',
+    description: "Interradial orientations (completes 2D mastery)",
+    color: "#a855f7",
+    gradient: "linear-gradient(135deg, #c084fc 0%, #a855f7 100%)",
   },
   {
     id: "multi-grid",
@@ -746,20 +748,12 @@ export const LAB_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
   },
   {
-    id: "flame",
-    label: "Flame",
+    id: "effects",
+    label: "Effects",
     icon: '<i class="fas fa-fire" aria-hidden="true"></i>',
-    description: "Fire shader overlay for prop animations",
-    color: "#f97316",
-    gradient: "linear-gradient(135deg, #fb923c 0%, #f97316 100%)",
-  },
-  {
-    id: "led",
-    label: "LED",
-    icon: '<i class="fas fa-lightbulb" aria-hidden="true"></i>',
-    description: "LED prop rendering and pattern design",
-    color: "#00ff88",
-    gradient: "linear-gradient(135deg, #00ff88 0%, #00cc6a 100%)",
+    description: "Visual effects: trails, fire, LED overlays",
+    color: "#8b5cf6",
+    gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
   },
   {
     id: "museum",
@@ -768,6 +762,14 @@ export const LAB_TABS: Section[] = [
     description: "Walkable 3D museum with curated sequence exhibits",
     color: "#a78bfa",
     gradient: "linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%)",
+  },
+  {
+    id: "prop-buttons",
+    label: "Prop Buttons",
+    icon: '<i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>',
+    description: "Paired prop composition tuning for buttons",
+    color: "#f97316",
+    gradient: "linear-gradient(135deg, #fb923c 0%, #f97316 100%)",
   },
 ];
 

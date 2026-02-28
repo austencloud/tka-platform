@@ -58,6 +58,7 @@ Fixed Questions mode (set number) and Countdown mode (timed challenge).
       onclick={() => selectMode(QuizMode.FIXED_QUESTION)}
       {disabled}
       aria-pressed={selectedMode === QuizMode.FIXED_QUESTION}
+      aria-label="20 Questions mode"
     >
       <span class="segment-icon">
         <svg
@@ -85,6 +86,7 @@ Fixed Questions mode (set number) and Countdown mode (timed challenge).
       onclick={() => selectMode(QuizMode.COUNTDOWN)}
       {disabled}
       aria-pressed={selectedMode === QuizMode.COUNTDOWN}
+      aria-label="2 minute timer mode"
     >
       <span class="segment-icon">
         <svg
@@ -118,14 +120,13 @@ Fixed Questions mode (set number) and Countdown mode (timed challenge).
   .segmented-control {
     position: relative;
     display: flex;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 16px;
     padding: 4px;
-    backdrop-filter: blur(12px);
     box-shadow:
-      0 4px 16px rgba(0, 0, 0, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      0 4px 16px color-mix(in srgb, var(--theme-panel-bg) 60%, transparent),
+      inset 0 1px 0 color-mix(in srgb, var(--theme-text) 5%, transparent);
   }
 
   .segmented-control.disabled {
@@ -161,7 +162,7 @@ Fixed Questions mode (set number) and Countdown mode (timed challenge).
     background: transparent;
     border: none;
     border-radius: 12px;
-    color: rgba(255, 255, 255, 0.65);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.65));
     font-family: var(
       --font-sans,
       -apple-system,
@@ -177,7 +178,7 @@ Fixed Questions mode (set number) and Countdown mode (timed challenge).
   }
 
   .segment:hover:not(.disabled):not(.active) {
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--theme-text, rgba(255, 255, 255, 0.85));
   }
 
   .segment.active {
@@ -268,7 +269,7 @@ Fixed Questions mode (set number) and Countdown mode (timed challenge).
     }
 
     .segment-label {
-      font-size: 0.6875rem;
+      font-size: var(--font-size-compact, 12px);
     }
   }
 

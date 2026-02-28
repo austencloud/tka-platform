@@ -16,7 +16,8 @@ import {
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { AdminNotification } from "$lib/features/feedback/domain/models/notification-models";
 import { getPreferenceKeyForType } from "$lib/features/feedback/domain/models/notification-models";
-import { notificationPreferencesService } from "$lib/features/feedback/services/implementations/NotificationPreferencesManager";
+import { container } from "$lib/shared/di";
+import type { INotificationPreferencesManager } from "$lib/shared/push/services/contracts/INotificationPreferencesManager";
 
 const USERS_COLLECTION = "users";
 const NOTIFICATIONS_SUBCOLLECTION = "notifications";
@@ -133,8 +134,10 @@ export class AdminNotifier {
    */
   private async shouldNotify(adminId: string): Promise<boolean> {
     try {
+      const notificationPreferencesManager = container.items
+        .notificationPreferencesManager as INotificationPreferencesManager;
       const preferences =
-        await notificationPreferencesService.getPreferences(adminId);
+        await notificationPreferencesManager.getPreferences(adminId);
       const prefKey = getPreferenceKeyForType("admin-new-user-signup");
 
       if (!prefKey) {

@@ -65,6 +65,26 @@ Card-based architecture with integrated Generate button:
   const deviceState = createDeviceState();
   const startEndState = createStartEndOptionsState();
 
+  // ===== Dirty-State Detection =====
+  const hasSettingsChanged = $derived.by(() => {
+    const last = actionsState.lastGeneratedConfig;
+    if (!last) return false;
+    const cur = configState.config;
+    return (
+      cur.mode !== last.mode ||
+      cur.length !== last.length ||
+      cur.level !== last.level ||
+      cur.turnIntensity !== last.turnIntensity ||
+      cur.gridMode !== last.gridMode ||
+      cur.propContinuity !== last.propContinuity ||
+      cur.loopType !== last.loopType ||
+      cur.sliceSize !== last.sliceSize ||
+      cur.constraintPreset !== last.constraintPreset ||
+      cur.handPathMode !== last.handPathMode ||
+      cur.motionTypeFilter !== last.motionTypeFilter
+    );
+  });
+
   // ===== Help Mode State =====
   let helpMode = $state<HelpMode>("inactive");
   let isExiting = $state(false); // True during exit animation
@@ -211,6 +231,7 @@ Card-based architecture with integrated Generate button:
       isGenerating={actionsState.isGenerating}
       onGenerateClicked={actionsState.onGenerateClicked}
       {startEndState}
+      {hasSettingsChanged}
       helpMode={helpMode !== "inactive"}
       helpModeExiting={isExiting}
       onHelpSelect={selectControlHelp}

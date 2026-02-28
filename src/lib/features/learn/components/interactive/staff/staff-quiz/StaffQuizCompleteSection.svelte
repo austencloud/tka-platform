@@ -118,12 +118,12 @@ StaffQuizCompleteSection - Score display and completion actions
   .score-value {
     font-size: 3rem;
     font-weight: 800;
-    color: #22d3ee;
+    color: var(--theme-accent, #22d3ee);
   }
 
   .score-separator {
     font-size: 1.5rem;
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
   }
 
   .score-total {
@@ -140,7 +140,7 @@ StaffQuizCompleteSection - Score display and completion actions
 
   .score-breakdown {
     padding: 1rem;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border-radius: 12px;
     margin-bottom: 1rem;
     width: 100%;
@@ -172,18 +172,18 @@ StaffQuizCompleteSection - Score display and completion actions
   }
 
   .topic-badge.position {
-    background: rgba(255, 107, 107, 0.15);
-    color: #ff6b6b;
+    background: color-mix(in srgb, var(--semantic-error) 15%, transparent);
+    color: var(--semantic-error);
   }
 
   .topic-badge.thumb {
-    background: rgba(59, 130, 246, 0.15);
+    background: color-mix(in srgb, var(--semantic-info, #3b82f6) 15%, transparent);
     color: var(--semantic-info);
   }
 
   .topic-badge.rotation {
-    background: rgba(34, 211, 238, 0.15);
-    color: #22d3ee;
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 15%, transparent);
+    color: var(--theme-accent, #22d3ee);
   }
 
   .complete-actions {
@@ -211,31 +211,31 @@ StaffQuizCompleteSection - Score display and completion actions
   .action-btn.secondary {
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke-strong);
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--theme-text, rgba(255, 255, 255, 0.8));
   }
 
   .action-btn.secondary:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.25);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
   }
 
   .action-btn.primary {
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.3),
-      rgba(6, 182, 212, 0.3)
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent),
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent)
     );
-    border: 1px solid rgba(34, 211, 238, 0.4);
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent);
     color: white;
   }
 
   .action-btn.primary:hover {
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.4),
-      rgba(6, 182, 212, 0.4)
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent),
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent)
     );
-    border-color: rgba(34, 211, 238, 0.6);
+    border-color: color-mix(in srgb, var(--theme-accent, #22d3ee) 60%, transparent);
     transform: translateY(-2px);
   }
 

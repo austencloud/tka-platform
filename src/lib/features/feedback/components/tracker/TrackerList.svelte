@@ -7,9 +7,9 @@
   } from "../../state/feedback-tracker-state.svelte";
   import TrackerCard from "./TrackerCard.svelte";
 
-  const { state } = $props<{
-    state: FeedbackTrackerState;
-  }>();
+  const { trackerState }: {
+    trackerState: FeedbackTrackerState;
+  } = $props();
 
   // Track which card is expanded (inline detail)
   let expandedId: string | null = $state(null);
@@ -44,11 +44,11 @@
         {#each typeOptions as opt}
           <button
             class="filter-chip"
-            class:active={state.typeFilter === opt.value}
-            onclick={() => state.setTypeFilter(opt.value)}
+            class:active={trackerState.typeFilter === opt.value}
+            onclick={() => trackerState.setTypeFilter(opt.value)}
             type="button"
             role="radio"
-            aria-checked={state.typeFilter === opt.value}
+            aria-checked={trackerState.typeFilter === opt.value}
           >
             <i class="fas {opt.icon}" aria-hidden="true"></i>
             {opt.label}
@@ -63,11 +63,11 @@
         {#each statusOptions as opt}
           <button
             class="filter-chip"
-            class:active={state.statusFilter === opt.value}
-            onclick={() => state.setStatusFilter(opt.value)}
+            class:active={trackerState.statusFilter === opt.value}
+            onclick={() => trackerState.setStatusFilter(opt.value)}
             type="button"
             role="radio"
-            aria-checked={state.statusFilter === opt.value}
+            aria-checked={trackerState.statusFilter === opt.value}
           >
             <i class="fas {opt.icon}" aria-hidden="true"></i>
             {opt.label}
@@ -79,17 +79,17 @@
 
   <!-- Content -->
   <div class="list-content themed-scrollbar">
-    {#if state.isLoading}
+    {#if trackerState.isLoading}
       <div class="loading-state" role="status" aria-live="polite" aria-busy="true">
         <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
         <span>Loading feedback...</span>
       </div>
-    {:else if state.error}
+    {:else if trackerState.error}
       <div class="error-state" role="alert" aria-live="assertive">
         <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-        <span>{state.error}</span>
+        <span>{trackerState.error}</span>
       </div>
-    {:else if state.items.length === 0}
+    {:else if trackerState.items.length === 0}
       <div class="empty-state">
         <i class="fas fa-inbox" aria-hidden="true"></i>
         <h2>No feedback found</h2>
@@ -97,7 +97,7 @@
       </div>
     {:else}
       <div class="card-list">
-        {#each state.items as item (item.id)}
+        {#each trackerState.items as item (item.id)}
           <TrackerCard
             {item}
             isExpanded={expandedId === item.id}

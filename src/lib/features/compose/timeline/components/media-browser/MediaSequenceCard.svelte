@@ -2,6 +2,7 @@
   MediaSequenceCard.svelte - Individual sequence card in media browser grid
 -->
 <script lang="ts">
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
   interface Props {
@@ -51,7 +52,7 @@
     {/if}
     {#if isLoading}
       <div class="loading-overlay">
-        <div class="spinner small"></div>
+        <ProgressRing percent={-1} size={24} strokeWidth={2} />
       </div>
     {/if}
   </div>
@@ -167,32 +168,7 @@
     color: var(--theme-text-dim);
   }
 
-  .spinner {
-    width: 28px;
-    height: 28px;
-    border: 3px solid color-mix(in srgb, var(--theme-accent) 15%, transparent);
-    border-top-color: var(--theme-accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  .spinner.small {
-    width: 18px;
-    height: 18px;
-    border-width: 2px;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    .spinner {
-      animation: none;
-    }
-
     .sequence-item,
     .item-thumb {
       transition: none;

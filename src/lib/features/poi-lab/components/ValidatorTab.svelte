@@ -25,9 +25,9 @@
       letter: string;
       stepIndex: number;
       isValid: boolean;
-      violations: Array<{ message: string }>;
+      violations: readonly { message: string }[];
     }>;
-    transitionViolations: Array<{ message: string }>;
+    transitionViolations: readonly { message: string }[];
   } | null>(null);
   let error = $state<string | null>(null);
 

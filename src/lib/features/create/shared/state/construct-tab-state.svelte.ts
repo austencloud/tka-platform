@@ -97,7 +97,7 @@ export function createConstructTabState(
   function loadPersistedContinuousFilter(): boolean {
     try {
       if (!filterPersister) {
-        filterPersister = container.items.filterPersister as IFilterPersister;
+        filterPersister = container.items.filterPersister;
       }
       return filterPersister.loadContinuousOnly();
     } catch (e) {
@@ -446,7 +446,7 @@ export function createConstructTabState(
     // Persist the continuous filter setting
     try {
       if (!filterPersister) {
-        filterPersister = container.items.filterPersister as IFilterPersister;
+        filterPersister = container.items.filterPersister;
       }
       filterPersister.saveContinuousOnly(continuous);
     } catch (e) {

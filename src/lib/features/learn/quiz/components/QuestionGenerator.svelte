@@ -241,7 +241,7 @@
           </div>
         {/if}
 
-        <button class="next-button" onclick={handleNextQuestion}>
+        <button class="next-button" onclick={handleNextQuestion} aria-label="Next question">
           Next Question
         </button>
       </div>
@@ -262,7 +262,6 @@
     height: 100%;
     background: var(--theme-card-bg);
     border-radius: 12px;
-    backdrop-filter: blur(10px);
     border: 1px solid var(--theme-stroke);
   }
 
@@ -275,7 +274,7 @@
 
   .question-prompt h3 {
     margin: 0;
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
     font-size: 1.25rem;
     font-weight: 500;
   }
@@ -286,7 +285,7 @@
     align-items: center;
     min-height: 120px;
     padding: 1rem;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border-radius: 8px;
     border: 1px solid var(--theme-stroke);
   }
@@ -300,14 +299,14 @@
   .letter {
     font-size: 4rem;
     font-weight: bold;
-    color: #ffffff;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    color: var(--theme-text, #ffffff);
+    text-shadow: 0 2px 4px color-mix(in srgb, var(--theme-panel-bg) 70%, transparent);
   }
 
   .text-display p {
     margin: 0;
     font-size: 1.125rem;
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
     line-height: 1.5;
   }
 
@@ -369,7 +368,7 @@
   }
 
   .feedback.correct {
-    color: #4ade80;
+    color: var(--semantic-success);
   }
 
   .feedback.incorrect {
@@ -403,7 +402,7 @@
     justify-content: center;
     align-items: center;
     height: 200px;
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
     font-size: 1.125rem;
   }
 

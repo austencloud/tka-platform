@@ -15,6 +15,7 @@
 	import { Canvas } from "@threlte/core";
 	import { T } from "@threlte/core";
 	import { onMount, type Component } from "svelte";
+	import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
 	// Explicit imports for Vite compatibility (no dynamic string interpolation)
 	import RealmPreview from "./previews/realm-preview.svelte";
@@ -90,7 +91,7 @@
 	<!-- Loading overlay -->
 	{#if isLoading}
 		<div class="loading-overlay">
-			<div class="loading-spinner"></div>
+			<ProgressRing percent={-1} size={32} strokeWidth={3} />
 		</div>
 	{/if}
 </div>
@@ -120,31 +121,10 @@
 		background: inherit;
 	}
 
-	.loading-spinner {
-		width: 32px;
-		height: 32px;
-		border: 3px solid rgba(255, 255, 255, 0.1);
-		border-top-color: rgba(139, 92, 246, 0.6);
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-	}
-
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
-	}
-
 	.error {
 		display: flex;
 		align-items: center;
 		justify-content: center;
 	}
 
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
-  @media (prefers-reduced-motion: reduce) {
-    .loading-spinner {
-      animation: none;
-    }
-  }
 </style>

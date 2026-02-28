@@ -8,7 +8,7 @@
   import { onMount } from "svelte";
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import { container } from "$lib/shared/di";
-  import type { IImageComposer } from "$lib/shared/render/services/contracts/IImageComposer";
+
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
@@ -28,7 +28,7 @@
   async function generatePreview() {
     isGenerating = true;
     try {
-      const compositionService = container.items.imageComposer as IImageComposer;
+      const compositionService = container.items.imageComposer;
 
       // Derive start position from beat data if needed
       // Since we no longer store start position explicitly, derive it from first beat

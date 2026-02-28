@@ -28,12 +28,12 @@ Displays:
 
   const isClickable = $derived(status !== "locked");
 
-  // Status colors
+  // Status colors — referenced via --status-color CSS custom property
   const statusColors: Record<ConceptStatus, string> = {
-    locked: "#6B7280",
-    available: "#4A90E2",
-    "in-progress": "#7B68EE",
-    completed: "#50C878",
+    locked: "var(--theme-text-dim, #6B7280)",
+    available: "var(--prop-blue, #4A90E2)",
+    "in-progress": "var(--theme-accent, #7B68EE)",
+    completed: "var(--semantic-success, #50C878)",
   };
 
   const statusColor = $derived(statusColors[status as ConceptStatus]);
@@ -130,8 +130,8 @@ Displays:
   }
 
   .concept-card.completed {
-    background: rgba(80, 200, 120, 0.08);
-    border-color: rgba(80, 200, 120, 0.2);
+    background: color-mix(in srgb, var(--semantic-success, #50c878) 8%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-success, #50c878) 20%, transparent);
   }
 
   .icon {
@@ -146,7 +146,7 @@ Displays:
   }
 
   .name {
-    font-size: 0.75rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: var(--theme-text);
     text-align: center;
@@ -168,7 +168,7 @@ Displays:
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.5rem;
+    font-size: var(--font-size-compact, 12px);
     color: white;
     flex-shrink: 0;
   }

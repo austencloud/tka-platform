@@ -597,9 +597,9 @@ export default defineConfig({
       scope: "/",
       base: "/",
       devOptions: {
-        enabled: true, // PWA enabled in dev for testing fullscreen mode
+        enabled: false, // Disabled in dev — dev-sw.js conflicts with vite-plugin-svelte compiler
         type: "module",
-        suppressWarnings: true, // Suppress "glob pattern doesn't match any files" warnings in dev
+        suppressWarnings: true,
       },
       manifest: false, // We already have a manifest in static/pwa/
       injectRegister: "auto",
@@ -607,13 +607,14 @@ export default defineConfig({
         // 🔇 Disable all workbox console logging
         mode: "production",
         disableDevLogs: true,
+        importScripts: ["/firebase-messaging-handler.js"],
         // Cache strategies for different asset types
         // adapter-static outputs to root, NOT prerendered/ or client/ subdirs
         // suppressWarnings in devOptions handles the "glob pattern doesn't match" warnings
         globPatterns: process.env.NODE_ENV === "production"
           ? [
               // adapter-static output structure (root-level, no subdirs)
-              "**/*.{js,css,html,ico,png,svg,woff2,woff,webp,webmanifest}",
+              "**/*.{js,css,csv,html,ico,png,svg,woff2,woff,webp,webmanifest}",
             ]
           : [], // Empty in dev - SW handles caching at runtime
         // Exclude files from precaching that shouldn't be cached
@@ -995,12 +996,7 @@ export default defineConfig({
       ],
     },
     // 2026: Preload critical files on dev start
-    warmup: {
-      clientFiles: [
-        "./src/lib/shared/**/*.ts",
-        "./src/lib/modules/**/*.svelte",
-      ],
-    },
+    // warmup removed — was causing vite-plugin-svelte double-compilation errors
   },
   // ============================================================================
   // PREVIEW (Testing production builds)

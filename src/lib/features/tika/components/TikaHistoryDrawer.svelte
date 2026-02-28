@@ -39,11 +39,19 @@
   onMount(() => {
     // Subscribe to session list
     try {
-      unsubscribe = repository.subscribeToSessions((updatedSessions) => {
-        sessions = updatedSessions;
-        isLoading = false;
-        error = null;
-      });
+      unsubscribe = repository.subscribeToSessions(
+        (updatedSessions) => {
+          sessions = updatedSessions;
+          isLoading = false;
+          error = null;
+        },
+        undefined,
+        (err) => {
+          console.error("[TIKAHistoryDrawer] Subscription error:", err);
+          error = "Failed to load history";
+          isLoading = false;
+        }
+      );
     } catch (err) {
       console.error("[TIKAHistoryDrawer] Failed to subscribe:", err);
       error = "Failed to load history";
@@ -111,7 +119,7 @@
 
   <!-- New Chat Button -->
   <div class="new-chat-section">
-    <button class="new-chat-btn" onclick={handleNewChat}>
+    <button aria-label="New conversation" class="new-chat-btn" onclick={handleNewChat}>
       <i class="fas fa-plus" aria-hidden="true"></i>
       <span>New Conversation</span>
     </button>
@@ -289,8 +297,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
+    background: var(--theme-overlay, rgba(0, 0, 0, 0.6));
     z-index: 10;
   }
 

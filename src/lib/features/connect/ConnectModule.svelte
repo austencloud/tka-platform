@@ -8,7 +8,6 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { container } from '$lib/shared/di';
 	import { connectState } from './state/connect-state.svelte';
-	import type { IConnectOrchestrator } from './services/contracts/IConnectOrchestrator';
 
 	// Tab components
 	import NearbyTab from './components/tabs/NearbyTab.svelte';
@@ -17,6 +16,7 @@
 
 	// Session viewer overlay
 	import SessionViewer from './components/session/SessionViewer.svelte';
+	import ProgressRing from '$lib/shared/components/loading/ProgressRing.svelte';
 
 	type TabId = 'nearby' | 'friends' | 'invite';
 
@@ -49,7 +49,7 @@
 		initError = null;
 
 		try {
-			const orchestrator = container.items.connectOrchestrator as IConnectOrchestrator;
+			const orchestrator = container.items.connectOrchestrator;
 			await connectState.initialize(orchestrator);
 		} catch (error) {
 			console.error('[ConnectModule] Initialization failed:', error);
@@ -76,7 +76,7 @@
 <div class="connect-module">
 	{#if isInitializing}
 		<div class="loading-state">
-			<div class="spinner"></div>
+			<ProgressRing percent={-1} size={32} strokeWidth={3} />
 			<p>Connecting...</p>
 		</div>
 	{:else if initError}
@@ -194,21 +194,6 @@
 		padding: 24px;
 	}
 
-	.spinner {
-		width: 40px;
-		height: 40px;
-		border: 3px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		border-top-color: var(--theme-accent, #6366f1);
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-	}
-
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
-	}
-
 	.error-state i {
 		font-size: 48px;
 		color: var(--semantic-error, #ef4444);
@@ -303,8 +288,8 @@
 		justify-content: space-between;
 		background: linear-gradient(
 			135deg,
-			var(--theme-accent, #6366f1) 0%,
-			#4f46e5 100%
+			var(--theme-accent, #8b5cf6) 0%,
+			var(--theme-accent-hover, #7c3aed) 100%
 		);
 		color: white;
 		padding: 12px 16px;
@@ -335,9 +320,9 @@
 	}
 
 	.leave-button {
-		background: rgba(255, 255, 255, 0.2);
-		border: 1px solid rgba(255, 255, 255, 0.3);
-		color: white;
+		background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+		border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
+		color: var(--theme-text, white);
 		padding: 8px 16px;
 		border-radius: 8px;
 		cursor: pointer;
@@ -346,7 +331,7 @@
 	}
 
 	.leave-button:hover {
-		background: rgba(255, 255, 255, 0.3);
+		background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.3));
 	}
 
 	/* Responsive */
@@ -364,10 +349,4 @@
 		}
 	}
 
-	/* Reduced motion */
-	@media (prefers-reduced-motion: reduce) {
-		.spinner {
-			animation: none;
-		}
-	}
 </style>

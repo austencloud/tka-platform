@@ -1,3 +1,5 @@
+# Worktrees
+.worktrees/
 
 # Dependencies
 node_modules/
@@ -213,3 +215,22 @@ flow-arts-transcripts/*-done.txt
 
 # Search interest tracking data
 /data/
+firebase-service-account.json
+.mcp.json
+
+# Private: development strategy & roadmap
+.claude/plans/
+docs/plans/
+docs/grant-copy.md
+
+# Private: museum lore & narrative strategy
+docs/museum/story-bible.md
+docs/museum/real-story.md
+docs/museum/gift-shop.md
+
+# Private: humor training data
+mcp-server/src/core/humor-profile.json
+mcp-server-pkg/src/core/humor-profile.json
+
+# Private: cross-session development memory
+memory/

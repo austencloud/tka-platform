@@ -198,7 +198,7 @@ export class ImageComposer implements IImageComposer {
    */
   async composeSequenceImage(
     sequence: SequenceData,
-    options: SequenceExportOptions,
+    options: Partial<SequenceExportOptions>,
     onProgress?: CompositionProgressCallback
   ): Promise<HTMLCanvasElement> {
     if (!sequence.steps || sequence.steps.length === 0) {
@@ -222,7 +222,7 @@ export class ImageComposer implements IImageComposer {
     const stepCount = sequence.steps.length;
     const [columns, rows] = this.layoutService.calculateLayout(
       stepCount,
-      options.includeStartPosition
+      options.includeStartPosition ?? false
     );
 
     // Step 2: Calculate canvas dimensions including title space
@@ -743,7 +743,7 @@ export class ImageComposer implements IImageComposer {
     rows: number,
     stepSize: number,
     sequence: SequenceData,
-    options: SequenceExportOptions,
+    options: Partial<SequenceExportOptions>,
     titleOffset: number = 0,
     isDarkMode: boolean = false
   ): void {
@@ -791,7 +791,7 @@ export class ImageComposer implements IImageComposer {
    */
   private getOccupiedCells(
     sequence: SequenceData,
-    options: SequenceExportOptions,
+    options: Partial<SequenceExportOptions>,
     columns: number
   ): Set<string> {
     const occupied = new Set<string>();
@@ -828,7 +828,7 @@ export class ImageComposer implements IImageComposer {
     columns: number,
     rows: number,
     sequence: SequenceData,
-    options: SequenceExportOptions
+    options: Partial<SequenceExportOptions>
   ): { col: number; row: number } | null {
     const occupiedCells = this.getOccupiedCells(sequence, options, columns);
 

@@ -1,14 +1,14 @@
 # The Order of the Closed Palm
 
-> This document details the antagonist organization. They are not named in the museum until Wing 6 (The Suppression).
+> This document details the regulatory organization. They are not named in the museum until Wing 6 (The Suppression).
 
 ---
 
 ## Overview
 
-The Order of the Closed Palm is a custodial organization that has monitored, controlled, and occasionally suppressed kinetic notation for millennia. They decide who learns, who teaches, and who gets silenced.
+The Order of the Closed Palm is a custodial organization that has monitored, controlled, and occasionally suppressed kinetic notation for millennia. They approve who learns, who may teach, and who gets flagged for administrative review.
 
-They are not purely evil. They believe they are protecting humanity from knowledge it isn't ready for. They have authorized transmission to select individuals throughout history (da Vinci, the Victorian inventors, the 1993 research team). They only suppress when knowledge spreads beyond their control.
+They are not malicious. They are terrified. They genuinely believe they are protecting humanity from knowledge it isn't ready for. They have authorized transmission to select individuals throughout history (da Vinci, the Victorian inventors, the 1993 research team). They only suppress when knowledge spreads beyond their control.
 
 ---
 
@@ -41,7 +41,7 @@ The Order operates through religious institutions, framing kinetic notation as p
 The Order monitors da Vinci closely. They allow his research but ensure his notebooks are scattered after his death. Controlled containment.
 
 ### Victorian Era
-The Order discredits key inventors and buries patents. They see the Industrial Revolution as a threat - mechanized notation could spread beyond their control.
+The Order files discrediting reports against key inventors and acquires patents through anonymous intermediaries. They see the Industrial Revolution as a threat - mechanized notation could spread beyond their control.
 
 ### 1993 Crisis
 A research team at Bellweather Technical Institute digitizes the notation with Order backing. When a team member leaks the software publicly, the Order convenes an emergency council and authorizes Protocol Lethe.
@@ -61,10 +61,10 @@ Status unknown. No direct action against Austen Cloud. Possible explanations:
 The Order permits certain individuals to receive kinetic knowledge. These people are monitored but not interfered with. Da Vinci, the Victorian clerk, the 1993 research team were all sanctioned.
 
 ### Discrediting
-Preferred method for containing unauthorized spread. Inventors are ruined by scandal. Researchers are defunded. Papers are retracted. No violence required.
+Preferred method for containing unauthorized spread. Anonymous complaints are filed. Funding reviews are triggered. Papers are flagged for retraction. No violence required - just process.
 
 ### Silencing
-When discrediting fails, the Order "silences" Vessels and other threats. The exact method is **never explained** in the museum. It's referenced constantly but never shown or described.
+When discrediting fails, the Order "silences" Vessels and other unauthorized disseminators. The exact method is **never explained** in the museum. It's referenced constantly but never shown or described.
 
 This is deliberate. Like the noodle incident in Calvin & Hobbes - the mystery is funnier than any explanation.
 
@@ -87,7 +87,7 @@ The museum never fully explains the Order's structure. Hints only:
 - "Archivists" who maintain records of suppressed knowledge
 - Possible internal factions (hardliners vs. moderates)
 
-This ambiguity is intentional. The Order should feel vast and unknowable.
+This ambiguity is intentional. The Order should feel like an institution so old and bureaucratically entrenched that nobody is sure who's actually in charge anymore - including them.
 
 ---
 
@@ -113,11 +113,11 @@ The Closed Palm symbol should be:
 - Overwhelming in Wing 6 itself (the reveal moment)
 
 ### Audio Presence
-No music or sound effects directly associated with the Order until Wing 6. Then: low drones, unsettling ambient tones, the feeling of being watched.
+No music or sound effects directly associated with the Order until Wing 6. Then: ambient institutional dread - hold music, distant stamping sounds, the feeling of having always been in a waiting room.
 
 ### The Reveal
-Wing 6 should feel like a tonal shift. The museum gets darker. The Order is finally named. The visitor realizes they've been surrounded by this symbol the whole time.
+Wing 6 should feel like a tonal shift. Not darker in the horror sense - more institutional. The visitor realizes this symbol has been on everything, the way a government logo appears on every official document. The Order is finally named.
 
 ---
 
-*Last updated: 2026-01-27*
+*Last updated: 2026-02-26*

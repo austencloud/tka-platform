@@ -10,6 +10,7 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { propDrawerState } from "$lib/shared/settings/state/prop-drawer-state.svelte";
   import { container } from "$lib/shared/di";
+  import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
 
   const settings = $derived(getSettings());
   const bluePropType = $derived(settings.bluePropType ?? PropType.STAFF);
@@ -33,12 +34,7 @@
   title={displayInfo.label}
   data-testid="prop-indicator-button"
 >
-  <img
-    src={displayInfo.image}
-    alt=""
-    class="prop-icon"
-    draggable="false"
-  />
+  <PropCompositionPreview propType={bluePropType} size={40} />
 </button>
 
 <style>
@@ -48,20 +44,21 @@
     justify-content: center;
     width: var(--min-touch-target);
     height: var(--min-touch-target);
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: var(--theme-card-bg, rgba(30, 30, 46, 0.95));
+    border: 2px solid var(--theme-accent, #818cf8);
+    background: transparent;
     border-radius: 50%;
     cursor: pointer;
     transition: all var(--transition-normal, var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1));
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--theme-accent, #818cf8) 25%, transparent);
     -webkit-tap-highlight-color: transparent;
     padding: 0;
+    filter: brightness(1.3) saturate(1.3);
   }
 
   .prop-indicator-button:hover {
     transform: scale(1.05);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+    border-color: var(--theme-accent, #818cf8);
+    box-shadow: 0 0 18px color-mix(in srgb, var(--theme-accent, #818cf8) 40%, transparent);
   }
 
   .prop-indicator-button:active {
@@ -72,16 +69,6 @@
   .prop-indicator-button:focus-visible {
     outline: 2px solid var(--theme-accent, #818cf8);
     outline-offset: 2px;
-  }
-
-  .prop-icon {
-    width: 28px;
-    height: 28px;
-    object-fit: contain;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
-    pointer-events: none;
-    -webkit-user-select: none;
-    user-select: none;
   }
 
   /* Mobile responsive - 48px minimum */

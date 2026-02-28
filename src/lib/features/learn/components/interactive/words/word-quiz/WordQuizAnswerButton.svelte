@@ -32,6 +32,7 @@ WordQuizAnswerButton - Single answer option with letter prefix
   class:incorrect={showIncorrect}
   onclick={onSelect}
   {disabled}
+  aria-label="Select answer {String.fromCharCode(65 + index)}: {option}"
 >
   <span class="option-letter">{String.fromCharCode(65 + index)}</span>
   <span class="option-text">{option}</span>
@@ -49,7 +50,7 @@ WordQuizAnswerButton - Single answer option with letter prefix
     gap: 0.75rem;
     padding: 0.875rem 1rem;
     background: var(--theme-card-bg);
-    border: 2px solid rgba(255, 255, 255, 0.12);
+    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 12px;
     color: white;
     font-size: 0.9375rem;
@@ -61,8 +62,8 @@ WordQuizAnswerButton - Single answer option with letter prefix
   }
 
   .answer-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.25);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
     transform: translateX(4px);
   }
 
@@ -76,7 +77,7 @@ WordQuizAnswerButton - Single answer option with letter prefix
     justify-content: center;
     width: 28px;
     height: 28px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 6px;
     font-size: 0.875rem;
     font-weight: 700;
@@ -90,14 +91,14 @@ WordQuizAnswerButton - Single answer option with letter prefix
   }
 
   .answer-btn.correct {
-    background: rgba(34, 211, 238, 0.15);
-    border-color: rgba(34, 211, 238, 0.5);
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 15%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #22d3ee) 50%, transparent);
     animation: correctPulse 0.5s ease;
   }
 
   .answer-btn.correct .option-letter {
-    background: rgba(34, 211, 238, 0.3);
-    color: #22d3ee;
+    background: color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent);
+    color: var(--theme-accent, #22d3ee);
   }
 
   @keyframes correctPulse {
@@ -113,14 +114,14 @@ WordQuizAnswerButton - Single answer option with letter prefix
   }
 
   .answer-btn.incorrect {
-    background: rgba(255, 74, 74, 0.15);
-    border-color: rgba(255, 74, 74, 0.5);
+    background: color-mix(in srgb, var(--semantic-error) 15%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error) 50%, transparent);
     animation: shake var(--duration-dramatic) ease;
   }
 
   .answer-btn.incorrect .option-letter {
-    background: rgba(255, 74, 74, 0.3);
-    color: #ff4a4a;
+    background: color-mix(in srgb, var(--semantic-error) 30%, transparent);
+    color: var(--semantic-error);
   }
 
   @keyframes shake {
@@ -141,12 +142,12 @@ WordQuizAnswerButton - Single answer option with letter prefix
     right: 1rem;
     font-size: 1.25rem;
     font-weight: 700;
-    color: #ff4a4a;
+    color: var(--semantic-error);
   }
 
   .result-icon.correct,
   .answer-btn.correct .result-icon {
-    color: #22d3ee;
+    color: var(--theme-accent, #22d3ee);
   }
 
   @media (max-width: 500px) {

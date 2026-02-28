@@ -46,7 +46,7 @@ Simple inline display showing journey position
       ></i>
     {:else}
       <span class="name">Complete!</span>
-      <i class="fa-solid fa-trophy" aria-hidden="true" style="color: #FFD700"
+      <i class="fa-solid fa-trophy" aria-hidden="true" style="color: var(--achievement-gold, #FFD700)"
       ></i>
     {/if}
   </div>
@@ -54,6 +54,7 @@ Simple inline display showing journey position
 
 <style>
   .concept-context {
+    --achievement-gold: #ffd700;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -96,6 +97,6 @@ Simple inline display showing journey position
   }
 
   .connector i {
-    font-size: 0.5rem;
+    font-size: var(--font-size-compact, 12px);
   }
 </style>

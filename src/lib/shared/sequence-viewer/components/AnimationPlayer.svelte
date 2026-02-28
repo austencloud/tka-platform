@@ -16,11 +16,12 @@
 -->
 <script lang="ts">
 	import { onMount, onDestroy, untrack } from "svelte";
+	import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 	import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 	import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
 	import type { ISequenceMotionLoader } from "../services/contracts/ISequenceMotionLoader";
-	import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
+	import { createAnimationPanelState, type AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
 	import { container } from "$lib/shared/di";
 	import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 	import { tryGetAnimationExportContext } from "$lib/shared/share-hub/context/animation-export-context.svelte";
@@ -49,6 +50,7 @@
 		bluePropType = null,
 		redPropType = null,
 		onTogglePlaybackRef,
+		onControllerReady,
 	}: {
 		sequence: SequenceData;
 		autoPlay?: boolean;
@@ -64,6 +66,8 @@
 		redPropType?: PropType | null;
 		/** Callback to receive reference to toggle playback function (for external keyboard control) */
 		onTogglePlaybackRef?: (toggleFn: () => void) => void;
+		/** Called when the internal playback controller is initialized, exposing it for external sync */
+		onControllerReady?: (ctrl: IAnimationPlaybackController, state: AnimationPanelState) => void;
 	} = $props();
 
 	// Context for external control mode
@@ -198,6 +202,9 @@
 				return;
 			}
 
+			// Expose controller + state to parent for external sync
+			onControllerReady?.(controller!, animState!);
+
 			if (autoPlay) {
 				setTimeout(() => controller?.togglePlayback(), 300);
 			}
@@ -232,7 +239,7 @@
 
 <div class="animation-player" class:horizontal={layout === "horizontal"}>
 	{#if loading}
-		<div class="state-msg"><div class="spinner"></div><span>Loading...</span></div>
+		<div class="state-msg"><ProgressRing percent={-1} size={32} strokeWidth={3} /><span>Loading...</span></div>
 	{:else if error}
 		<div class="state-msg error"><span>{error}</span></div>
 	{:else}
@@ -403,21 +410,6 @@
 		color: var(--semantic-error, #fca5a5);
 	}
 
-	.spinner {
-		width: 32px;
-		height: 32px;
-		border: 3px solid var(--theme-stroke);
-		border-top-color: var(--theme-accent, #3b82f6);
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-	}
-
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
-	}
-
 	@media (min-width: 1200px) {
 		.animation-player {
 			gap: 8px;
@@ -425,9 +417,4 @@
 		}
 	}
 
-	@media (prefers-reduced-motion: reduce) {
-		.spinner {
-			animation: none;
-		}
-	}
 </style>

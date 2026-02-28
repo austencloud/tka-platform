@@ -14,6 +14,8 @@
   - Respects prefers-reduced-motion
 -->
 <script lang="ts">
+  import ProgressRing from '$lib/shared/components/loading/ProgressRing.svelte';
+
   interface Props {
     /** Skeleton variant */
     variant?: 'sequence' | 'room' | 'controls';
@@ -64,7 +66,7 @@
 
       {#if showProgress}
         <div class="skeleton-progress">
-          <div class="skeleton-spinner"></div>
+          <ProgressRing percent={-1} size={24} strokeWidth={2} />
           <span class="skeleton-text">{progressText}</span>
         </div>
       {/if}
@@ -114,7 +116,7 @@
 
     {#if showProgress}
       <div class="skeleton-progress centered">
-        <div class="skeleton-spinner"></div>
+        <ProgressRing percent={-1} size={24} strokeWidth={2} />
         <span class="skeleton-text">{progressText}</span>
       </div>
     {/if}
@@ -253,21 +255,6 @@
     transform: translate(-50%, -50%);
   }
 
-  .skeleton-spinner {
-    width: 24px;
-    height: 24px;
-    border: 3px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-top-color: var(--theme-accent, #8b5cf6);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   .skeleton-text {
     font-size: var(--font-size-sm, 14px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
@@ -381,9 +368,9 @@
     border-radius: 10px;
     background: linear-gradient(
       90deg,
-      rgba(139, 92, 246, 0.1) 25%,
-      rgba(139, 92, 246, 0.2) 50%,
-      rgba(139, 92, 246, 0.1) 75%
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 25%,
+      var(--theme-stroke, rgba(255, 255, 255, 0.1)) 50%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 75%
     );
     background-size: 200% 100%;
   }
@@ -425,9 +412,6 @@
       background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     }
 
-    .skeleton-spinner {
-      animation: none;
-    }
   }
 
   /* High contrast */

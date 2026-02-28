@@ -38,7 +38,7 @@
 
   onMount(() => {
     try {
-      haptic = container.items.hapticFeedback as IHapticFeedback;
+      haptic = container.items.hapticFeedback;
     } catch {
       // Optional service
     }

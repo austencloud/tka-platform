@@ -76,7 +76,7 @@ MotionsIntroPage - Introduction to hand motions
     color: white;
     margin: 0;
     text-align: center;
-    background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
+    background: linear-gradient(135deg, var(--theme-accent, #22d3ee) 0%, var(--theme-accent, #06b6d4) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -91,7 +91,7 @@ MotionsIntroPage - Introduction to hand motions
   .intro-text {
     font-size: 1.125rem;
     line-height: 1.7;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--theme-text, rgba(255, 255, 255, 0.85));
     margin: 0;
     text-align: center;
   }
@@ -112,10 +112,10 @@ MotionsIntroPage - Introduction to hand motions
     padding: 1rem 2.5rem;
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.3) 0%,
-      rgba(6, 182, 212, 0.3) 100%
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent) 100%
     );
-    border: 2px solid rgba(34, 211, 238, 0.5);
+    border: 2px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 50%, transparent);
     border-radius: 12px;
     color: white;
     font-size: 1.0625rem;
@@ -129,10 +129,10 @@ MotionsIntroPage - Introduction to hand motions
   .next-button:hover {
     background: linear-gradient(
       135deg,
-      rgba(34, 211, 238, 0.4) 0%,
-      rgba(6, 182, 212, 0.4) 100%
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent) 100%
     );
-    border-color: rgba(34, 211, 238, 0.8);
+    border-color: color-mix(in srgb, var(--theme-accent, #22d3ee) 80%, transparent);
     transform: translateY(-2px);
   }
 

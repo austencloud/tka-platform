@@ -193,14 +193,14 @@ class ConnectState {
 	/**
 	 * Start sharing a sequence.
 	 */
-	async startSharing(sequenceId: string, sequenceWord: string): Promise<void> {
+	async startSharing(sequenceId: string, sequenceWord: string, sequenceData?: Record<string, unknown>): Promise<void> {
 		if (!this.orchestrator) return;
 
 		this._isConnecting = true;
 		this._connectionError = null;
 
 		try {
-			await this.orchestrator.startSharing(sequenceId, sequenceWord);
+			await this.orchestrator.startSharing(sequenceId, sequenceWord, sequenceData);
 			this.syncFromOrchestrator();
 		} catch (error) {
 			this._connectionError = error instanceof Error ? error.message : 'Failed to start sharing';

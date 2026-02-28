@@ -74,17 +74,17 @@ Features:
 
 	/* Performance tiers */
 	.excellent .value {
-		color: #4ade80;
-		text-shadow: 0 0 20px rgba(74, 222, 128, 0.4);
+		color: var(--semantic-success);
+		text-shadow: 0 0 20px color-mix(in srgb, var(--semantic-success) 40%, transparent);
 	}
 
 	.good .value {
-		color: #fbbf24;
-		text-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+		color: var(--semantic-warning);
+		text-shadow: 0 0 20px color-mix(in srgb, var(--semantic-warning) 40%, transparent);
 	}
 
 	.needs-work .value {
-		color: #f87171;
+		color: var(--semantic-error);
 	}
 
 	/* Responsive */

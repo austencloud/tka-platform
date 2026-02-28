@@ -15,7 +15,6 @@
   import InviteCollaboratorsPanel from "$lib/shared/video-collaboration/components/InviteCollaboratorsPanel.svelte";
   import ViewPresetsSheet from "../../sequences/filtering/components/ViewPresetsSheet.svelte";
   import SortJumpSheet from "../../sequences/navigation/components/SortJumpSheet.svelte";
-  import BentoFilterPanel from "../../sequences/filtering/components/bento-filter/BentoFilterPanel.svelte";
   import LetterSelectionSheet from "../../sequences/filtering/components/bento-filter/LetterSelectionSheet.svelte";
   import PositionOptionsSheet from "../../sequences/filtering/components/bento-filter/PositionOptionsSheet.svelte";
   import SequenceDisplayPanel from "../../sequences/display/components/SequenceDisplayPanel.svelte";
@@ -49,11 +48,38 @@
   let startPosition = $state<PictographData | null>(null);
   let endPosition = $state<PictographData | null>(null);
 
-  // Derived values for sheets
+  // Derived values for inline filter chips
   const currentLetter = $derived(
-    galleryState.currentFilter.type === "startingLetter"
+    galleryState.currentFilter.type === "startingLetter" ||
+    galleryState.currentFilter.type === "starting_letter"
       ? (galleryState.currentFilter.value as string)
       : null
+  );
+
+  const currentLevel = $derived(
+    galleryState.currentFilter.type === "difficulty"
+      ? (galleryState.currentFilter.value as number)
+      : null
+  );
+
+  const currentLength = $derived(
+    galleryState.currentFilter.type === "length"
+      ? (galleryState.currentFilter.value as number)
+      : null
+  );
+
+  const currentLoopType = $derived(
+    galleryState.currentFilter.type === "cap_type"
+      ? (galleryState.currentFilter.value as string)
+      : null
+  );
+
+  const isFavoritesActive = $derived(
+    galleryState.currentFilter.type === "favorites"
+  );
+
+  const hasActivePositions = $derived(
+    startPosition !== null || endPosition !== null
   );
 
   // Handler functions
@@ -130,8 +156,23 @@
         {error}
         showSections={galleryState.showSections}
         source={galleryState.currentSource}
+        activeFilterList={galleryState.activeFilterList}
+        activeLevel={currentLevel}
+        activeLetter={currentLetter}
+        activeLength={currentLength}
+        activeLoopType={currentLoopType}
+        {isFavoritesActive}
+        {hasActivePositions}
+        availableLengths={galleryState.availableSequenceLengths}
+        loopTypeCounts={galleryState.loopTypeCounts}
         onAction={onSequenceAction}
         onScroll={onContainerScroll}
+        onFilterChange={handleFilterChange}
+        onRemoveFilter={(type) => galleryState.removeFilter(type)}
+        onClearAllFilters={() => galleryState.clearAllFilters()}
+        onOpenLetterSheet={handleOpenLetterSheet}
+        onOpenOptionsSheet={handleOpenOptionsSheet}
+        getFilteredCount={galleryState.getFilteredCount}
       />
     </div>
   {/snippet}
@@ -179,37 +220,7 @@
   </Drawer>
 {/if}
 
-<!-- Filters Panel (Both Mobile & Desktop) -->
-<div style:--drawer-width={drawerWidth}>
-  <Drawer
-    isOpen={sequencePanelManager.isFiltersOpen}
-    placement={isMobile ? "bottom" : "right"}
-    class="filters-drawer"
-    showHandle={false}
-    closeOnBackdrop={false}
-    backdropClass={!isMobile ? "transparent-backdrop" : ""}
-    trapFocus={isMobile}
-    setInertOnSiblings={isMobile}
-    onOpenChange={(open) => {
-      if (!open && sequencePanelManager.isFiltersOpen) {
-        sequencePanelManager.close();
-      }
-    }}
-  >
-    <DrawerHeader title="Browse & Filter" onClose={() => sequencePanelManager.close()} />
-    <div class="bento-filter-wrapper">
-      <BentoFilterPanel
-        currentFilter={galleryState.currentFilter}
-        {startPosition}
-        {endPosition}
-        loopTypeCounts={galleryState.loopTypeCounts}
-        onFilterChange={handleFilterChange}
-        onOpenLetterSheet={handleOpenLetterSheet}
-        onOpenOptionsSheet={handleOpenOptionsSheet}
-      />
-    </div>
-  </Drawer>
-</div>
+<!-- Filters are now inline in SequenceDisplayPanel via InlineFilterPanel -->
 
 <!-- Letter Selection Sheet -->
 <div style:--drawer-width={isMobile ? "min(600px, 90vw)" : "min(400px, 40vw)"}>
@@ -278,34 +289,6 @@
     height: 100%;
   }
 
-  /* Bento filter wrapper */
-  .bento-filter-wrapper {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 0;
-    background: var(--theme-panel-bg);
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
-  }
-
-  .bento-filter-wrapper::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .bento-filter-wrapper::-webkit-scrollbar-track {
-    background: var(--scrollbar-track);
-  }
-
-  .bento-filter-wrapper::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb);
-    border-radius: 3px;
-  }
-
-  .bento-filter-wrapper::-webkit-scrollbar-thumb:hover {
-    background: var(--scrollbar-thumb-hover);
-  }
-
   .sheet-content {
     padding: 16px 20px 24px;
     background: var(--theme-panel-bg);
@@ -315,81 +298,6 @@
     padding: 0;
     overflow-y: auto;
     max-height: calc(100vh - 80px);
-  }
-
-  /* Filters drawer - desktop */
-  :global(.filters-drawer.drawer-content[data-placement="right"]) {
-    width: var(--drawer-width, min(420px, 90vw));
-    transition:
-      transform 350ms cubic-bezier(0.32, 0.72, 0, 1),
-      opacity 350ms cubic-bezier(0.32, 0.72, 0, 1),
-      width 300ms cubic-bezier(0.4, 0, 0.2, 1) !important;
-    top: 0 !important;
-    height: 100vh !important;
-    background: var(--theme-panel-bg) !important;
-    border: none !important;
-    border-left: 1px solid var(--theme-stroke) !important;
-    border-radius: 0 !important;
-    box-shadow: -4px 0 24px var(--theme-shadow) !important;
-  }
-
-  :global(.filters-drawer.drawer-content[data-placement="right"]::before) {
-    content: "";
-    position: absolute;
-    left: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 4px;
-    height: var(--min-touch-target);
-    background: linear-gradient(
-      to bottom,
-      transparent 0%,
-      var(--theme-stroke-strong) 10%,
-      var(--theme-stroke-strong) 90%,
-      transparent 100%
-    );
-    border-radius: 2px;
-    opacity: 0.6;
-    transition: opacity var(--duration-normal) ease;
-  }
-
-  :global(.filters-drawer.drawer-content[data-placement="right"]:hover::before) {
-    opacity: 1;
-  }
-
-  :global(.filters-drawer .close-button) {
-    top: 20px !important;
-    right: 20px !important;
-    width: 36px !important;
-    height: 36px !important;
-    background: var(--theme-stroke-strong) !important;
-    border: 1px solid color-mix(in srgb, var(--theme-text, white) 25%, transparent) !important;
-    z-index: 100 !important;
-    position: relative;
-  }
-
-  :global(.filters-drawer .close-button::before) {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    min-width: var(--min-touch-target) !important;
-    min-height: var(--min-touch-target) !important;
-  }
-
-  :global(.filters-drawer .close-button:hover) {
-    background: color-mix(in srgb, var(--theme-text, white) 25%, transparent) !important;
-    border-color: color-mix(in srgb, var(--theme-text, white) 40%, transparent) !important;
-  }
-
-  /* Filters drawer - mobile */
-  :global(.filters-drawer.drawer-content[data-placement="bottom"]) {
-    max-height: 100vh !important;
-    height: 100vh !important;
-    border-top-left-radius: 16px !important;
-    border-top-right-radius: 16px !important;
-    background: var(--theme-panel-bg) !important;
   }
 
   /* Letter sheet drawer */

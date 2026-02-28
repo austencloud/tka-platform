@@ -66,7 +66,7 @@ const ORIENTATION_ENCODE: Record<Orientation, string> = {
   [Orientation.OUT]: "o",
   [Orientation.CLOCK]: "k",
   [Orientation.COUNTER]: "t",
-  // Interradial orientations (Level 7)
+  // Interradial orientations (Level 6)
   [Orientation.CLOCK_IN]: "I",
   [Orientation.CLOCK_OUT]: "O",
   [Orientation.COUNTER_IN]: "N",
@@ -150,6 +150,11 @@ const PROP_TYPE_ENCODE: Record<PropType, string> = {
   // Eightrings family
   [PropType.EIGHTRINGS]: "E",
   [PropType.BIGEIGHTRINGS]: "e",
+  // Contact ball family
+  [PropType.CONTACTBALL]: "A",
+  [PropType.BIGCONTACTBALL]: "a",
+  [PropType.DOUBLECONTACTBALL]: "V",
+  [PropType.BIGDOUBLECONTACTBALL]: "v",
   // Quiad
   [PropType.QUIAD]: "I",
   // Torch family

@@ -17,6 +17,10 @@ export { sendMagicLink } from "./sendMagicLink";
 // Export audio transcription function
 export { transcribeAudio } from "./transcribeAudio";
 
+// Export push notification triggers (v2 Firestore triggers)
+export { onNewMessage } from "./push/onNewMessage";
+export { onNewNotification } from "./push/onNewNotification";
+
 // Export feedback claims module (bulletproof claim management)
 export {
   // Agent session management

@@ -6,8 +6,6 @@
   import SequenceBrowserOverlay from "./overlay/SequenceBrowserOverlay.svelte";
   import { container } from "$lib/shared/di";
   import { destinationManager } from "$lib/shared/3d-core/destinations/destination-manager.svelte";
-  import type { IMuseumPersister } from "./services/contracts/IMuseumPersister";
-
   // The userId to view — if set and different from current user, this is visitor mode
   const CURRENT_USER_ID = "local-user"; // Placeholder until auth integration
   const visitingUserId = $derived(destinationManager.navigationParams.userId || CURRENT_USER_ID);
@@ -34,7 +32,7 @@
     if (!museumState) return;
 
     try {
-      const persister = container.items.museumPersister as IMuseumPersister;
+      const persister = container.items.museumPersister;
       const data = await persister.loadMuseum(visitingUserId);
       if (data) {
         for (const [slotId, exhibit] of data.exhibits) {
@@ -86,7 +84,7 @@
 
     // Persist to Firebase
     try {
-      const persister = container.items.museumPersister as IMuseumPersister;
+      const persister = container.items.museumPersister;
       await persister.saveExhibit(CURRENT_USER_ID, slotId, sequenceId);
     } catch {
       // Exhibit is already assigned locally; Firebase failure is non-blocking

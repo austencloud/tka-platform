@@ -3,6 +3,12 @@
  *
  * Handles loading and caching of CSV data from static files or preloaded window data.
  * Provides a single source of truth for raw CSV content without parsing logic.
+ *
+ * Loading priority:
+ * 1. Module-level in-memory cache (fastest, same session)
+ * 2. window.csvData pre-injection
+ * 3. fetch() from static files (normal online path)
+ * 4. IndexedDB persistent cache (offline fallback)
  */
 
 import type { CsvDataSet } from "$lib/features/create/generate/shared/domain/csv-handling/CsvModels";
@@ -12,6 +18,11 @@ import type { ICSVLoader } from "../../contracts/data/ICSVLoader";
 // Module-level cache shared across all instances (defense against non-singleton usage)
 let sharedCsvCache: CsvDataSet | null = null;
 let sharedIsLoaded = false;
+
+const IDB_NAME = "tka-csv-cache";
+const IDB_VERSION = 1;
+const IDB_STORE = "csv-data";
+const IDB_KEY = "pictograph-csv";
 
 export class CsvLoader implements ICSVLoader {
   async loadCSVFile(filename: string): Promise<{
@@ -28,25 +39,25 @@ export class CsvLoader implements ICSVLoader {
         return {
           success: true,
           data: csvData.diamondData,
-          source: this.isWindowDataAvailable() ? "window" : "fetch",
+          source: this.resolveSource(),
         };
       } else if (filename.includes("Box") || filename.includes("box")) {
         return {
           success: true,
           data: csvData.boxData,
-          source: this.isWindowDataAvailable() ? "window" : "fetch",
+          source: this.resolveSource(),
         };
       } else if (filename.includes("Skewed") || filename.includes("skewed")) {
         return {
           success: true,
           data: csvData.skewedData || "",
-          source: this.isWindowDataAvailable() ? "window" : "fetch",
+          source: this.resolveSource(),
         };
       } else if (filename.includes("Trigrid") || filename.includes("trigrid")) {
         return {
           success: true,
           data: csvData.trigridData || "",
-          source: this.isWindowDataAvailable() ? "window" : "fetch",
+          source: this.resolveSource(),
         };
       } else {
         return {
@@ -63,6 +74,7 @@ export class CsvLoader implements ICSVLoader {
       };
     }
   }
+
   async loadCSVDataSet(): Promise<{
     success: boolean;
     data?: { diamondData: string; boxData: string };
@@ -74,25 +86,21 @@ export class CsvLoader implements ICSVLoader {
   }> {
     try {
       const csvData = await this.loadCsvData();
+      const source = this.resolveSource();
       return {
         success: true,
         data: csvData,
-        sources: {
-          diamond: this.isWindowDataAvailable() ? "window" : "fetch",
-          box: this.isWindowDataAvailable() ? "window" : "fetch",
-        },
+        sources: { diamond: source, box: source },
       };
     } catch (error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
-        sources: {
-          diamond: "fetch",
-          box: "fetch",
-        },
+        sources: { diamond: "fetch", box: "fetch" },
       };
     }
   }
+
   async loadCSVForGridMode(gridMode: GridMode): Promise<{
     success: boolean;
     data?: string;
@@ -102,14 +110,12 @@ export class CsvLoader implements ICSVLoader {
     try {
       const csvData = await this.loadCsvData();
 
-      // Return appropriate data based on grid mode
       let data: string;
       if (gridMode === GridMode.DIAMOND) {
         data = csvData.diamondData;
       } else if (gridMode === GridMode.BOX) {
         data = csvData.boxData;
       } else if (gridMode === GridMode.SKEWED) {
-        // Use skewed data if available, fall back to diamond for compatibility
         data = csvData.skewedData || csvData.diamondData;
       } else if (gridMode === GridMode.TRIGRID) {
         data = csvData.trigridData || "";
@@ -121,11 +127,7 @@ export class CsvLoader implements ICSVLoader {
         };
       }
 
-      return {
-        success: true,
-        data,
-        source: this.isWindowDataAvailable() ? "window" : "fetch",
-      };
+      return { success: true, data, source: this.resolveSource() };
     } catch (error) {
       return {
         success: false,
@@ -136,12 +138,12 @@ export class CsvLoader implements ICSVLoader {
   }
 
   isDataCached(): boolean {
-    // Check both module-level and instance cache
     return (
       (sharedIsLoaded && sharedCsvCache !== null) ||
       (this.isLoaded && this.csvData !== null)
     );
   }
+
   private static readonly CSV_FILES = {
     DIAMOND: "/data/pictographs/DiamondPictographDataframe.csv",
     BOX: "/data/pictographs/BoxPictographDataframe.csv",
@@ -151,11 +153,16 @@ export class CsvLoader implements ICSVLoader {
 
   private csvData: CsvDataSet | null = null;
   private isLoaded = false;
+  private lastSource: "fetch" | "window" | "cache" = "fetch";
 
   /**
-   * Loads CSV data with caching. Returns cached data on subsequent calls.
-   * Attempts to load from window.csvData first, then falls back to static files.
-   * Uses module-level cache to prevent duplicate fetches even across multiple instances.
+   * Loads CSV data with layered caching:
+   * 1. In-memory (module-level shared cache)
+   * 2. window.csvData pre-injection
+   * 3. fetch() from static files
+   * 4. IndexedDB persistent cache (offline fallback)
+   *
+   * On successful fetch, persists to IndexedDB for future offline use.
    */
   async loadCsvData(): Promise<CsvDataSet> {
     // Check module-level cache first (shared across all instances)
@@ -170,34 +177,55 @@ export class CsvLoader implements ICSVLoader {
       return this.csvData;
     }
 
-    try {
-      const data = await this.loadFromWindowOrFiles();
-
-      // Update both module-level and instance caches
-      sharedCsvCache = data;
-      sharedIsLoaded = true;
-      this.csvData = data;
-      this.isLoaded = true;
-
+    // Try window pre-injection
+    if (this.isWindowDataAvailable()) {
+      const data = window.csvData as CsvDataSet;
+      this.lastSource = "window";
+      this.setMemoryCache(data);
+      // Persist to IndexedDB in background (don't await)
+      this.saveToIndexedDB(data);
       return data;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      console.error("Failed to load CSV data:", message);
-      throw new Error(`CSV loading failed: ${message}`);
+    }
+
+    // Try fetch from static files
+    try {
+      const data = await this.loadFromStaticFiles();
+      this.lastSource = "fetch";
+      this.setMemoryCache(data);
+      // Persist to IndexedDB in background for offline use
+      this.saveToIndexedDB(data);
+      return data;
+    } catch (fetchError) {
+      // Fetch failed — try IndexedDB offline cache
+      try {
+        const cached = await this.loadFromIndexedDB();
+        if (cached) {
+          console.info(
+            "📦 CSV data loaded from offline cache (server unavailable)"
+          );
+          this.lastSource = "cache";
+          this.setMemoryCache(cached);
+          return cached;
+        }
+      } catch (idbError) {
+        // IndexedDB also failed — nothing we can do
+        console.error("IndexedDB fallback failed:", idbError);
+      }
+
+      // No data available from any source
+      const message =
+        fetchError instanceof Error ? fetchError.message : "Unknown error";
+      console.error("Failed to load CSV data from all sources:", message);
+      throw new Error(
+        `CSV loading failed (offline with no cache): ${message}`
+      );
     }
   }
 
-  /**
-   * Returns cached CSV data or null if not yet loaded.
-   */
   getCsvData(): CsvDataSet | null {
-    // Return module-level cache if available (shared across instances)
     return sharedCsvCache || this.csvData;
   }
 
-  /**
-   * Clears cached data and loading state (both instance and module-level).
-   */
   clearCache(): void {
     this.csvData = null;
     this.isLoaded = false;
@@ -205,12 +233,15 @@ export class CsvLoader implements ICSVLoader {
     sharedIsLoaded = false;
   }
 
-  private async loadFromWindowOrFiles(): Promise<CsvDataSet> {
-    if (this.isWindowDataAvailable()) {
-      return window.csvData as CsvDataSet;
-    }
+  private setMemoryCache(data: CsvDataSet): void {
+    sharedCsvCache = data;
+    sharedIsLoaded = true;
+    this.csvData = data;
+    this.isLoaded = true;
+  }
 
-    return this.loadFromStaticFiles();
+  private resolveSource(): "fetch" | "window" | "cache" {
+    return this.lastSource;
   }
 
   private isWindowDataAvailable(): boolean {
@@ -222,8 +253,8 @@ export class CsvLoader implements ICSVLoader {
       await Promise.all([
         fetch(CsvLoader.CSV_FILES.DIAMOND),
         fetch(CsvLoader.CSV_FILES.BOX),
-        fetch(CsvLoader.CSV_FILES.SKEWED).catch(() => null), // Optional - may not exist yet
-        fetch(CsvLoader.CSV_FILES.TRIGRID).catch(() => null), // Optional - may not exist yet
+        fetch(CsvLoader.CSV_FILES.SKEWED).catch(() => null),
+        fetch(CsvLoader.CSV_FILES.TRIGRID).catch(() => null),
       ]);
 
     this.validateResponses(diamondResponse, boxResponse);
@@ -233,24 +264,17 @@ export class CsvLoader implements ICSVLoader {
       boxResponse.text(),
     ]);
 
-    // Load skewed data if available
     let skewedData: string | undefined;
     if (skewedResponse?.ok) {
       skewedData = await skewedResponse.text();
     }
 
-    // Load trigrid data if available
     let trigridData: string | undefined;
     if (trigridResponse?.ok) {
       trigridData = await trigridResponse.text();
     }
 
-    return {
-      diamondData,
-      boxData,
-      skewedData,
-      trigridData,
-    };
+    return { diamondData, boxData, skewedData, trigridData };
   }
 
   private validateResponses(
@@ -262,6 +286,83 @@ export class CsvLoader implements ICSVLoader {
         `HTTP error - Diamond: ${diamondResponse.status}, Box: ${boxResponse.status}`
       );
     }
+  }
+
+  // --- IndexedDB persistent cache ---
+
+  private openDB(): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(IDB_NAME, IDB_VERSION);
+
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains(IDB_STORE)) {
+          db.createObjectStore(IDB_STORE);
+        }
+      };
+
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  private async saveToIndexedDB(data: CsvDataSet): Promise<void> {
+    try {
+      const db = await this.openDB();
+      const tx = db.transaction(IDB_STORE, "readwrite");
+      const store = tx.objectStore(IDB_STORE);
+
+      store.put(
+        {
+          diamondData: data.diamondData,
+          boxData: data.boxData,
+          skewedData: data.skewedData ?? "",
+          trigridData: data.trigridData ?? "",
+          savedAt: Date.now(),
+        },
+        IDB_KEY
+      );
+
+      await new Promise<void>((resolve, reject) => {
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+
+      db.close();
+    } catch {
+      // Non-critical — silent fail. Offline cache is a convenience, not a requirement.
+    }
+  }
+
+  private async loadFromIndexedDB(): Promise<CsvDataSet | null> {
+    const db = await this.openDB();
+    const tx = db.transaction(IDB_STORE, "readonly");
+    const store = tx.objectStore(IDB_STORE);
+    const request = store.get(IDB_KEY);
+
+    const result = await new Promise<CsvDataSet | null>((resolve, reject) => {
+      request.onsuccess = () => {
+        const record = request.result;
+        if (
+          record &&
+          typeof record.diamondData === "string" &&
+          typeof record.boxData === "string"
+        ) {
+          resolve({
+            diamondData: record.diamondData,
+            boxData: record.boxData,
+            skewedData: record.skewedData || undefined,
+            trigridData: record.trigridData || undefined,
+          });
+        } else {
+          resolve(null);
+        }
+      };
+      request.onerror = () => reject(request.error);
+    });
+
+    db.close();
+    return result;
   }
 }
 

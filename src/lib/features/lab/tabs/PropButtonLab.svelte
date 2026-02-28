@@ -1,0 +1,851 @@
+<!--
+  PropButtonLab.svelte - Visual tuning lab for paired prop compositions
+
+  Shows all base prop families. Click to expand with large preview + compact controls.
+  Number inputs for direct value entry, sliders for scrubbing, group rotation.
+-->
+<script lang="ts">
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
+  import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
+  import {
+    getCompositionRecipe,
+    getRecipeFamilies,
+    type CompositionRecipe,
+    type PropTransform,
+  } from "$lib/shared/pictograph/prop/domain/prop-composition-recipes";
+  import { getSettings, updateSetting } from "$lib/shared/application/state/app-state.svelte";
+
+  const families = getRecipeFamilies();
+  const MAX_HISTORY = 100;
+
+  let expandedFamily = $state<PropType | null>(null);
+
+  // Load persisted overrides from settings
+  const settings = $derived(getSettings());
+  let overrides = $state<Record<string, CompositionRecipe>>(
+    $state.snapshot(settings.compositionRecipeOverrides ?? {})
+  );
+
+  // --- Undo / Redo ---
+  type Snapshot = Record<string, CompositionRecipe>;
+  let undoStack = $state<Snapshot[]>([]);
+  let redoStack = $state<Snapshot[]>([]);
+  let canUndo = $derived(undoStack.length > 0);
+  let canRedo = $derived(redoStack.length > 0);
+
+  /** Capture current overrides before a mutation */
+  function pushUndo() {
+    undoStack = [...undoStack, $state.snapshot(overrides)].slice(-MAX_HISTORY);
+    redoStack = [];
+  }
+
+  function undo() {
+    if (undoStack.length === 0) return;
+    const previous = undoStack[undoStack.length - 1]!;
+    redoStack = [...redoStack, $state.snapshot(overrides)];
+    undoStack = undoStack.slice(0, -1);
+    overrides = structuredClone(previous);
+    persistOverrides();
+  }
+
+  function redo() {
+    if (redoStack.length === 0) return;
+    const next = redoStack[redoStack.length - 1]!;
+    undoStack = [...undoStack, $state.snapshot(overrides)];
+    redoStack = redoStack.slice(0, -1);
+    overrides = structuredClone(next);
+    persistOverrides();
+  }
+
+  // Keyboard shortcuts: Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z
+  $effect(() => {
+    function handleKeydown(e: KeyboardEvent) {
+      if (!e.ctrlKey && !e.metaKey) return;
+      if (e.key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if (e.key === "y" || (e.key === "z" && e.shiftKey)) {
+        e.preventDefault();
+        redo();
+      }
+    }
+    window.addEventListener("keydown", handleKeydown);
+    return () => window.removeEventListener("keydown", handleKeydown);
+  });
+
+  /** Persist overrides to settings (auto-saves to localStorage + Firebase) */
+  function persistOverrides() {
+    const toSave = Object.keys(overrides).length > 0 ? { ...overrides } : undefined;
+    updateSetting("compositionRecipeOverrides", toSave);
+  }
+
+  function getRecipe(propType: PropType): CompositionRecipe {
+    return overrides[propType] ?? getCompositionRecipe(propType);
+  }
+
+  function ensureOverride(propType: PropType) {
+    if (!overrides[propType]) {
+      overrides[propType] = $state.snapshot(getCompositionRecipe(propType));
+    }
+  }
+
+  function toggleFamily(propType: PropType) {
+    if (expandedFamily === propType) {
+      expandedFamily = null;
+    } else {
+      expandedFamily = propType;
+      ensureOverride(propType);
+    }
+  }
+
+  function updateTransform(
+    propType: PropType,
+    color: "blue" | "red",
+    field: keyof PropTransform,
+    value: number
+  ) {
+    pushUndo();
+    ensureOverride(propType);
+    (overrides[propType]![color] as PropTransform)[field] = value;
+    overrides = { ...overrides };
+    persistOverrides();
+  }
+
+  function updatePairScale(propType: PropType, value: number) {
+    pushUndo();
+    ensureOverride(propType);
+    overrides[propType]!.pairScale = value;
+    overrides = { ...overrides };
+    persistOverrides();
+  }
+
+  /** Rotate both props as a group by adding degrees to both rotations */
+  function rotateGroup(propType: PropType, degrees: number) {
+    pushUndo();
+    ensureOverride(propType);
+    const recipe = overrides[propType]!;
+    recipe.blue.rotation = ((recipe.blue.rotation + degrees + 180) % 360) - 180;
+    recipe.red.rotation = ((recipe.red.rotation + degrees + 180) % 360) - 180;
+    overrides = { ...overrides };
+    persistOverrides();
+  }
+
+  function resetFamily(propType: PropType) {
+    pushUndo();
+    delete overrides[propType];
+    overrides = { ...overrides };
+    persistOverrides();
+  }
+
+  function copyRecipe(propType: PropType) {
+    const recipe = getRecipe(propType);
+    navigator.clipboard.writeText(JSON.stringify(recipe, null, 2));
+  }
+
+  function copyAllRecipes() {
+    const all: Record<string, CompositionRecipe> = {};
+    for (const family of families) {
+      all[family.propType] = getRecipe(family.propType);
+    }
+    navigator.clipboard.writeText(JSON.stringify(all, null, 2));
+  }
+
+  /** Clamp a value and handle NaN from empty inputs */
+  function clamp(val: number, min: number, max: number): number {
+    if (Number.isNaN(val)) return min;
+    return Math.min(max, Math.max(min, val));
+  }
+</script>
+
+<div class="prop-button-lab">
+  <header class="lab-header">
+    <h1>Prop Button Lab</h1>
+    <p class="subtitle">Tune paired prop compositions for buttons and drawers</p>
+    <div class="header-buttons">
+      <button
+        class="header-btn"
+        onclick={undo}
+        disabled={!canUndo}
+        title="Undo (Ctrl+Z)"
+      >
+        <i class="fas fa-undo"></i>
+      </button>
+      <button
+        class="header-btn"
+        onclick={redo}
+        disabled={!canRedo}
+        title="Redo (Ctrl+Y)"
+      >
+        <i class="fas fa-redo"></i>
+      </button>
+      <button class="copy-all-btn" onclick={copyAllRecipes}>
+        <i class="fas fa-copy"></i> Copy All
+      </button>
+    </div>
+  </header>
+
+  <div class="families-grid">
+    {#each families as { propType }}
+      {@const info = getPropTypeDisplayInfo(propType)}
+      {@const recipe = getRecipe(propType)}
+      {@const isExpanded = expandedFamily === propType}
+
+      <div class="family-card" class:expanded={isExpanded}>
+        <button class="family-header" onclick={() => toggleFamily(propType)}>
+          <div class="preview-container" class:preview-large={isExpanded}>
+            <PropCompositionPreview
+              {propType}
+              size={isExpanded ? 280 : 100}
+              recipeOverride={overrides[propType]}
+            />
+          </div>
+          {#if !isExpanded}
+            <span class="family-label">{info.label}</span>
+          {/if}
+        </button>
+
+        {#if isExpanded}
+          <div class="expanded-layout">
+            <!-- Left: large preview already rendered above in family-header -->
+            <!-- Right: compact controls -->
+            <div class="controls-panel">
+              <div class="controls-header">
+                <span class="family-name">{info.label}</span>
+                <div class="header-actions">
+                  <button class="action-btn" onclick={() => copyRecipe(propType)} title="Copy recipe">
+                    <i class="fas fa-copy"></i> Copy
+                  </button>
+                  <button class="action-btn danger" onclick={() => resetFamily(propType)} title="Reset to defaults">
+                    <i class="fas fa-undo"></i> Reset
+                  </button>
+                </div>
+              </div>
+
+              <!-- Group rotation -->
+              <div class="group-rotation">
+                <span class="section-label">Group Rotate</span>
+                <div class="rotation-buttons">
+                  <button class="rot-btn" onclick={() => rotateGroup(propType, -45)}>-45</button>
+                  <button class="rot-btn" onclick={() => rotateGroup(propType, -15)}>-15</button>
+                  <button class="rot-btn" onclick={() => rotateGroup(propType, -5)}>-5</button>
+                  <button class="rot-btn" onclick={() => rotateGroup(propType, 5)}>+5</button>
+                  <button class="rot-btn" onclick={() => rotateGroup(propType, 15)}>+15</button>
+                  <button class="rot-btn" onclick={() => rotateGroup(propType, 45)}>+45</button>
+                </div>
+              </div>
+
+              <!-- Blue / Red columns -->
+              <div class="color-columns">
+                {#each [["blue", "#4f46e5"], ["red", "#dc2626"]] as [color, accent]}
+                  {@const t = recipe[color as "blue" | "red"]}
+                  <div class="color-col">
+                    <span class="color-dot" style="background: {accent}"></span>
+                    <span class="color-label">{color === "blue" ? "Blue" : "Red"}</span>
+
+                    <div class="field-row">
+                      <span class="field-name">X</span>
+                      <input
+                        type="range" min="0" max="100" step="1" value={t.x}
+                        oninput={(e) => updateTransform(propType, color as "blue" | "red", "x", +e.currentTarget.value)}
+                      />
+                      <input
+                        type="number" min="0" max="100" step="1" value={t.x}
+                        onchange={(e) => updateTransform(propType, color as "blue" | "red", "x", clamp(+e.currentTarget.value, 0, 100))}
+                      />
+                    </div>
+
+                    <div class="field-row">
+                      <span class="field-name">Y</span>
+                      <input
+                        type="range" min="0" max="100" step="1" value={t.y}
+                        oninput={(e) => updateTransform(propType, color as "blue" | "red", "y", +e.currentTarget.value)}
+                      />
+                      <input
+                        type="number" min="0" max="100" step="1" value={t.y}
+                        onchange={(e) => updateTransform(propType, color as "blue" | "red", "y", clamp(+e.currentTarget.value, 0, 100))}
+                      />
+                    </div>
+
+                    <div class="field-row">
+                      <span class="field-name">Rot</span>
+                      <input
+                        type="range" min="-180" max="180" step="5" value={t.rotation}
+                        oninput={(e) => updateTransform(propType, color as "blue" | "red", "rotation", +e.currentTarget.value)}
+                      />
+                      <input
+                        type="number" min="-180" max="180" step="1" value={t.rotation}
+                        onchange={(e) => updateTransform(propType, color as "blue" | "red", "rotation", clamp(+e.currentTarget.value, -180, 180))}
+                      />
+                    </div>
+
+                    <div class="field-row">
+                      <span class="field-name">Scale</span>
+                      <input
+                        type="range" min="0.1" max="1" step="0.05" value={t.scale}
+                        oninput={(e) => updateTransform(propType, color as "blue" | "red", "scale", +e.currentTarget.value)}
+                      />
+                      <input
+                        type="number" min="0.1" max="1" step="0.01" value={t.scale}
+                        onchange={(e) => updateTransform(propType, color as "blue" | "red", "scale", clamp(+e.currentTarget.value, 0.1, 1))}
+                      />
+                    </div>
+                  </div>
+                {/each}
+              </div>
+
+              <!-- Pair scale -->
+              <div class="field-row pair-scale-row">
+                <span class="field-name">Pair Scale</span>
+                <input
+                  type="range" min="0.5" max="1.5" step="0.05" value={recipe.pairScale}
+                  oninput={(e) => updatePairScale(propType, +e.currentTarget.value)}
+                />
+                <input
+                  type="number" min="0.5" max="1.5" step="0.01" value={recipe.pairScale}
+                  onchange={(e) => updatePairScale(propType, clamp(+e.currentTarget.value, 0.5, 1.5))}
+                />
+              </div>
+            </div>
+          </div>
+        {/if}
+      </div>
+    {/each}
+  </div>
+</div>
+
+<style>
+  /* ================================================================
+     ROOT LAYOUT
+     ================================================================ */
+  .prop-button-lab {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 24px;
+    overflow-y: auto;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  }
+
+  /* ================================================================
+     HEADER
+     ================================================================ */
+  .lab-header {
+    margin-bottom: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .lab-header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--theme-text, white);
+    margin: 0;
+  }
+
+  .subtitle {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-min, 14px);
+    margin: 0;
+    flex: 1;
+  }
+
+  .header-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .header-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--min-touch-target, 48px);
+    height: var(--min-touch-target, 48px);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
+    color: var(--theme-text, white);
+    font-size: 16px;
+    cursor: pointer;
+    transition: all var(--duration-fast, 150ms) ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .header-btn:hover:not(:disabled) {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    transform: translateY(-1px);
+  }
+
+  .header-btn:active:not(:disabled) {
+    transform: translateY(0) scale(0.95);
+  }
+
+  .header-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .header-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #f97316);
+    outline-offset: 2px;
+  }
+
+  .copy-all-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 20px;
+    min-height: var(--min-touch-target, 48px);
+    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 30%, transparent);
+    border-radius: 12px;
+    color: var(--theme-accent, #f97316);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--duration-fast, 150ms) ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .copy-all-btn:hover {
+    background: color-mix(in srgb, var(--theme-accent) 25%, transparent);
+    transform: translateY(-1px);
+  }
+
+  .copy-all-btn:active {
+    transform: translateY(0) scale(0.97);
+  }
+
+  .copy-all-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #f97316);
+    outline-offset: 2px;
+  }
+
+  /* ================================================================
+     FAMILY GRID (collapsed cards)
+     ================================================================ */
+  .families-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 12px;
+  }
+
+  .family-card {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all var(--duration-fast, 150ms) ease;
+  }
+
+  .family-card:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
+    transform: translateY(-1px);
+  }
+
+  .family-card.expanded {
+    grid-column: 1 / -1;
+    border-color: color-mix(in srgb, var(--theme-accent) 45%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--theme-accent) 15%, transparent),
+                0 8px 24px color-mix(in srgb, var(--theme-accent) 15%, transparent);
+  }
+
+  .family-card.expanded:hover {
+    transform: none;
+  }
+
+  .family-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    width: 100%;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--theme-text, white);
+    min-height: var(--min-touch-target, 48px);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .family-header:focus-visible {
+    outline: 2px solid var(--theme-accent, #f97316);
+    outline-offset: -2px;
+    border-radius: 14px;
+  }
+
+  .preview-container {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    padding: 8px;
+  }
+
+  .preview-large {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .family-label {
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+  }
+
+  /* ================================================================
+     EXPANDED CARD: CONTROLS PANEL
+     ================================================================ */
+  .expanded .family-header {
+    padding: 12px 20px;
+  }
+
+  .expanded-layout {
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .controls-panel {
+    padding: 16px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow: hidden;
+  }
+
+  .controls-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .family-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--theme-text, white);
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .action-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 14px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 10px;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--theme-text, white);
+    cursor: pointer;
+    transition: all var(--duration-fast, 150ms) ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .action-btn:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    transform: translateY(-1px);
+  }
+
+  .action-btn:active {
+    transform: translateY(0) scale(0.97);
+  }
+
+  .action-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #f97316);
+    outline-offset: 2px;
+  }
+
+  .action-btn.danger {
+    color: var(--semantic-error, #ef4444);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
+  }
+
+  .action-btn.danger:hover {
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 12%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 35%, transparent);
+  }
+
+  /* ================================================================
+     GROUP ROTATION
+     ================================================================ */
+  .group-rotation {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .section-label {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    white-space: nowrap;
+  }
+
+  .rotation-buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .rot-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 40px;
+    padding: 6px 10px;
+    background: color-mix(in srgb, var(--theme-card-bg) 70%, transparent);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 10px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    transition: all var(--duration-fast, 150ms) ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .rot-btn:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    color: var(--theme-text, white);
+    transform: translateY(-1px);
+  }
+
+  .rot-btn:active {
+    transform: translateY(0) scale(0.95);
+    transition-duration: 50ms;
+  }
+
+  .rot-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #f97316);
+    outline-offset: 2px;
+  }
+
+  /* ================================================================
+     BLUE / RED COLUMNS
+     ================================================================ */
+  .color-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .color-col {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .color-col .color-label {
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    margin: 0;
+    display: inline;
+  }
+
+  .color-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+
+  /* ================================================================
+     FIELD ROW: label + slider + number input
+     ================================================================ */
+  .field-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 36px;
+  }
+
+  .field-name {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    min-width: 40px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* --- Custom slider --- */
+  .field-row input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 1;
+    min-width: 0;
+    height: 6px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .field-row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: var(--theme-accent, #f97316);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    transition: transform var(--duration-fast, 150ms) ease;
+  }
+
+  .field-row input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+  }
+
+  .field-row input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: var(--theme-accent, #f97316);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  }
+
+  .field-row input[type="range"]:focus-visible {
+    outline: 2px solid var(--theme-accent, #f97316);
+    outline-offset: 4px;
+    border-radius: 3px;
+  }
+
+  /* --- Number input --- */
+  .field-row input[type="number"] {
+    width: 60px;
+    min-width: 48px;
+    flex-shrink: 0;
+    padding: 6px 8px;
+    min-height: 36px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 8px;
+    color: var(--theme-text, white);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    transition: all var(--duration-fast, 150ms) ease;
+  }
+
+  .field-row input[type="number"]:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
+  }
+
+  .field-row input[type="number"]:focus {
+    outline: none;
+    border-color: var(--theme-accent, #f97316);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent) 20%, transparent);
+  }
+
+  /* Hide spinner arrows */
+  .field-row input[type="number"]::-webkit-inner-spin-button,
+  .field-row input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+  }
+
+  .field-row input[type="number"] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
+
+  /* ================================================================
+     PAIR SCALE ROW
+     ================================================================ */
+  .pair-scale-row {
+    margin-top: 4px;
+    padding-top: 12px;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+  }
+
+  .pair-scale-row .field-name {
+    min-width: 72px;
+  }
+
+  /* ================================================================
+     RESPONSIVE
+     ================================================================ */
+  @media (max-width: 600px) {
+    .prop-button-lab {
+      padding: 16px;
+    }
+
+    .families-grid {
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 8px;
+    }
+
+    .color-columns {
+      grid-template-columns: 1fr;
+    }
+
+    .rotation-buttons {
+      gap: 4px;
+    }
+  }
+
+  /* ================================================================
+     ACCESSIBILITY
+     ================================================================ */
+  @media (prefers-reduced-motion: reduce) {
+    .family-card,
+    .rot-btn,
+    .action-btn,
+    .copy-all-btn,
+    .header-btn {
+      transition: none;
+    }
+
+    .family-card:hover,
+    .rot-btn:hover,
+    .action-btn:hover,
+    .copy-all-btn:hover,
+    .header-btn:hover {
+      transform: none;
+    }
+
+    .field-row input[type="range"]::-webkit-slider-thumb:hover {
+      transform: none;
+    }
+  }
+
+  @media (prefers-contrast: high) {
+    .family-card {
+      border-width: 2px;
+    }
+
+    .action-btn {
+      border-width: 2px;
+    }
+
+    .rot-btn {
+      border-width: 2px;
+    }
+  }
+</style>

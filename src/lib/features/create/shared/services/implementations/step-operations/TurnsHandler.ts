@@ -17,7 +17,6 @@ import {
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { IReversalDetector } from "../../../services/contracts/IReversalDetector";
 import { container } from "$lib/shared/di";
 import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
@@ -200,7 +199,7 @@ export function updateStepTurns(
   // Process reversals to update reversal indicators after turns change
   // Turns changes can affect reversals when rotation direction changes (e.g., 0 to >0 turns)
   try {
-    const reversalService = container.items.reversalDetector as IReversalDetector;
+    const reversalService = container.items.reversalDetector;
     updatedSequence = reversalService.processReversals(updatedSequence);
   } catch {
     // Reversal service is optional - continue without reversal processing

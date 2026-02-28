@@ -1,8 +1,12 @@
 <!--
 QuizLoadingState - Loading spinner for quizzes
 -->
+<script lang="ts">
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+</script>
+
 <div class="loading-state" role="status" aria-live="polite" aria-busy="true">
-  <div class="loading-spinner" aria-hidden="true"></div>
+  <ProgressRing percent={-1} size={32} strokeWidth={3} />
   <p class="loading-text">Loading...</p>
 </div>
 
@@ -15,31 +19,8 @@ QuizLoadingState - Loading spinner for quizzes
     gap: 1rem;
   }
 
-  .loading-spinner {
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
-    border: 3px solid var(--theme-stroke);
-    border-left-color: var(--theme-accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .loading-spinner {
-      animation: none;
-      border-left-color: var(--theme-accent);
-      border-top-color: var(--theme-accent);
-    }
-  }
-
   .loading-text {
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.8));
     font-size: 0.9375rem;
     font-weight: 500;
     margin: 0;

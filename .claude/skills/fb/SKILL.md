@@ -137,9 +137,95 @@ This atomically claims the item with a unique token, preventing race conditions 
    ```
    Use the feedback title if it's concise, or write a 2-4 word summary of what you're fixing/implementing.
 
-### After implementing:
+---
+
+## Claim Health
+
+Claims go stale after 45 minutes of inactivity. Keep yours active during long sessions:
+
+```bash
+# Heartbeat every 30 min while working
+node scripts/fetch-feedback.js heartbeat <id> "Brief status message"
+
+# Record files being edited (optional, helps recovery)
+node scripts/fetch-feedback.js touch <id> "src/path/to/file.svelte"
+
+# View all activity on an item
+node scripts/fetch-feedback.js journal <id>
+```
+
+---
+
+## Delegating to Subagents
+
+For TRIVIAL/MEDIUM items, delegate via Task:
+
+```typescript
+Task({
+  subagent_type: "general-purpose",
+  model: "haiku" or "sonnet",
+  description: "Fix/Implement [short description]",
+  prompt: `
+    Feedback ID: <id>
+    Task: [description]
+    File(s): [paths]
+    Expected behavior: [what should happen]
+
+    After completing:
+    node scripts/fetch-feedback.js <id> in-review "[admin notes]"
+  `
+})
+```
+
+---
+
+## Status State Machine
+
+Valid statuses and allowed transitions:
+
+| From | Allowed To |
+|------|------------|
+| `new` | `in-progress` |
+| `in-progress` | `new`, `in-review` |
+| `in-review` | `in-progress`, `completed` |
+| `completed` | `archived`, `in-review` |
+| `archived` | `new` |
+
+Invalid transitions are blocked. You cannot skip steps (e.g., `new` -> `completed`).
+
+---
+
+## After Implementing
 
 1. Move to review: `node scripts/fetch-feedback.js <id> in-review "Brief admin notes"`
 2. Summarize what changed
 3. Give clear testing steps
 4. Describe expected behavior
+
+---
+
+## Commands Reference
+
+```bash
+# Queue
+node scripts/fetch-feedback.js              # Auto-claim next
+node scripts/fetch-feedback.js claim <id>   # Claim specific
+node scripts/fetch-feedback.js list         # See queue
+node scripts/fetch-feedback.js mine         # Your items
+
+# Claim health
+node scripts/fetch-feedback.js heartbeat <id> "status"
+node scripts/fetch-feedback.js touch <id> "filepath"
+node scripts/fetch-feedback.js journal <id>
+
+# Claim takeover
+node scripts/fetch-feedback.js unclaim <id>
+node scripts/fetch-feedback.js request-claim <id> "why"
+node scripts/fetch-feedback.js unclaim <id> --emergency "reason"
+
+# Item management
+node scripts/fetch-feedback.js <id>                    # View details
+node scripts/fetch-feedback.js <id> <status> "notes"   # Update status
+node scripts/fetch-feedback.js <id> priority <level>    # Set priority
+node scripts/fetch-feedback.js <id> resolution "notes"  # Add resolution
+```

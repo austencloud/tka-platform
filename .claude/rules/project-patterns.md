@@ -59,8 +59,24 @@ export function createYourModuleContainer(deps: YourModuleDeps) {
     .add({ yourService: () => new YourService(deps.someDep) });
 }
 
-// Then add to the composition root in src/lib/shared/di/index.ts
+export type YourModuleContainer = ReturnType<typeof createYourModuleContainer>;
+// For simple containers (no factory): export type YourModuleContainer = typeof yourModuleContainer;
 ```
+
+### Step 4: Add container type to `container-types.ts`
+
+Import the container type and add its items to the `IAppContainerItems` intersection:
+
+```typescript
+// src/lib/shared/di/container-types.ts
+import type { YourModuleContainer } from "./containers/yourmodule-container";
+type YourModuleItems = ItemsOf<YourModuleContainer>;
+
+// Add to the IAppContainerItems intersection:
+// ... & YourModuleItems & ...
+```
+
+Then wire the container into `buildAppContainer()` in `src/lib/shared/di/index.ts`.
 
 ### Navigation is automatic
 

@@ -95,6 +95,9 @@
   // Input capabilities for detecting touch vs mouse
   const inputCaps = getInputCapabilities();
 
+  // Cached canvas reference (set in onMount, used in onDestroy when renderer.current may be gone)
+  let cachedCanvas: HTMLCanvasElement | null = null;
+
   // Drag-to-look state (used when pointer lock isn't available - touch, DevTools simulation)
   let isDragging = $state(false);
   let lastPointerPos = { x: 0, y: 0 };
@@ -286,8 +289,11 @@
   }
 
   function handlePointerLockChange() {
+    const canvas = cachedCanvas ?? renderer.current?.domElement;
+    if (!canvas) return;
+
     const wasLocked = isPointerLocked;
-    isPointerLocked = document.pointerLockElement === renderer.current.domElement;
+    isPointerLocked = document.pointerLockElement === canvas;
 
     // If we lost pointer lock (e.g., ESC pressed), return to orbit
     if (wasLocked && !isPointerLocked && mode !== CameraMode.ORBIT) {
@@ -302,13 +308,18 @@
     if (mode === CameraMode.ORBIT) {
       cameraPreferences.setModeForDestination(destinationId, CameraMode.THIRD_PERSON);
       mode = CameraMode.THIRD_PERSON;
-      onModeChange?.(mode);
     }
+
+    // Always notify parent of current mode on click.
+    // This handles the case where mode was loaded from preferences (e.g., FIRST_PERSON)
+    // but the parent still thinks we're in ORBIT (showing the splash overlay).
+    onModeChange?.(mode);
 
     // Only request pointer lock if we can use it (mouse, not touch/DevTools simulation)
     // When using touch, the drag-to-look fallback is handled by pointer events
     if (isGameMode(mode) && inputCaps.canUsePointerLock()) {
-      renderer.current.domElement.requestPointerLock();
+      const canvas = cachedCanvas ?? renderer.current?.domElement;
+      canvas?.requestPointerLock();
     }
   }
 
@@ -319,7 +330,11 @@
   onMount(() => {
     if (!enabled) return;
 
-    const canvas = renderer.current.domElement;
+    const canvas = renderer.current?.domElement;
+    if (!canvas) return;
+
+    // Cache for use in onDestroy (renderer.current may be gone by then)
+    cachedCanvas = canvas;
 
     // Initialize input capabilities tracking
     inputCaps.init();
@@ -341,7 +356,7 @@
   });
 
   onDestroy(() => {
-    const canvas = renderer.current.domElement;
+    const canvas = cachedCanvas ?? renderer.current?.domElement;
 
     // Cleanup input capabilities
     inputCaps.destroy();

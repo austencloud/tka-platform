@@ -132,6 +132,7 @@
   "generator_loop_rewound": "Rewound",
   "generator_start_end_any": "Any",
   "generator_button": "Generate",
+  "generator_button_regenerate": "Regenerate",
   "generator_button_generating": "Generating...",
   "tab_learn_concepts": "Concepts",
   "tab_learn_play": "Play",
