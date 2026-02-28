@@ -52,7 +52,7 @@
     aria-haspopup="true"
     aria-expanded={desktopState.startMenuOpen}
   >
-    <span class="start-icon" aria-hidden="true">&#9632;</span>
+    <span class="start-icon" aria-hidden="true">{@html RETRO_ICONS.tkaLogo}</span>
     <span class="start-label">Start</span>
   </button>
 
@@ -136,8 +136,16 @@
   }
 
   .start-icon {
-    font-size: 12px;
-    line-height: 1;
+    display: flex;
+    align-items: center;
+    width: 16px;
+    height: 16px;
+  }
+
+  .start-icon :global(svg) {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
   }
 
   .start-label {
@@ -187,11 +195,10 @@
 
   .taskbar-window-button.active {
     border-style: inset;
-    background: repeating-conic-gradient(
-        var(--retro-button-face, #c0c0c0) 0% 25%,
-        var(--retro-white, #ffffff) 0% 50%
-      )
-      50% / 2px 2px;
+    background-color: var(--retro-button-face, #c0c0c0);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='2' height='2'%3E%3Crect width='1' height='1' fill='%23c0c0c0'/%3E%3Crect x='1' width='1' height='1' fill='%23ffffff'/%3E%3Crect y='1' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='1' y='1' width='1' height='1' fill='%23c0c0c0'/%3E%3C/svg%3E");
+    background-size: 2px 2px;
+    image-rendering: pixelated;
     font-weight: bold;
     padding: 2px 5px 0px 7px;
   }

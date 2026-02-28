@@ -94,7 +94,6 @@ import { arenaContainer } from "./containers/arena-container";
 import { effectsLabContainer } from "./containers/effects-lab-container";
 import { createMuseumContainer } from "./containers/museum-container";
 import { createPushContainer } from "./containers/push-container";
-import { createRetroContainer } from "./containers/retro-container";
 // Deep link resolution for cross-tab/cross-user URLs
 import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
 
@@ -312,9 +311,6 @@ const museumContainer = typeof window !== 'undefined' ? createMuseumContainer() 
 // Push notification container - FCM token management, self-contained
 const pushContainer = typeof window !== 'undefined' ? createPushContainer() : null as any;
 
-// Retro container - 1995 Easter egg services, self-contained
-const retroContainer = typeof window !== 'undefined' ? createRetroContainer() : null as any;
-
 // Voice session recording, formatting, persistence, analysis, and replay
 const voiceSessionContainer = typeof window !== 'undefined' ? createVoiceSessionContainer({
   commandInterpreter: voiceControlContainer.items.commandInterpreter,
@@ -448,8 +444,6 @@ function buildAppContainer(): any {
   c = c.add(museumContainer.items);
   // Push notification services (FCM token management)
   c = c.add(pushContainer.items);
-  // Retro services (1995 Easter egg)
-  c = c.add(retroContainer.items);
   // Cross-container services (depend on multiple container outputs)
   c = c.add({ deepLinkResolver: () => deepLinkResolver });
   c = c.add({ sequenceDataProvider: () => sequenceDataProvider });

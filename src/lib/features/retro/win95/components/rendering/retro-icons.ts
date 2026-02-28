@@ -44,11 +44,13 @@ export const RETRO_ICONS = {
     '<rect x="1" y="15" width="1" height="1" fill="#000"/>'
   ),
 
-  /** Yellow closed folder */
+  /** Yellow closed folder — File Manager */
   filemgr: svg(
     '<rect x="1" y="4" width="14" height="10" fill="#FFFF00" stroke="#000" stroke-width="1"/>' +
     '<rect x="1" y="2" width="6" height="3" fill="#FFFF00" stroke="#000" stroke-width="1"/>' +
-    '<rect x="1" y="4" width="14" height="1" fill="#808000"/>'
+    '<rect x="1" y="4" width="14" height="1" fill="#808000"/>' +
+    '<rect x="2" y="13" width="13" height="1" fill="#808000"/>' +
+    '<rect x="14" y="5" width="1" height="8" fill="#808000"/>'
   ),
 
   /** Graduation cap */
@@ -141,11 +143,14 @@ export const RETRO_ICONS = {
   /* File / folder icons                                                 */
   /* ------------------------------------------------------------------ */
 
-  /** Closed yellow folder */
+  /** Closed yellow folder with 3D depth */
   folder: svg(
     '<rect x="1" y="4" width="14" height="10" fill="#FFFF00" stroke="#000" stroke-width="1"/>' +
     '<rect x="1" y="2" width="6" height="3" fill="#FFFF00" stroke="#000" stroke-width="1"/>' +
-    '<rect x="1" y="4" width="14" height="1" fill="#808000"/>'
+    '<rect x="1" y="4" width="14" height="1" fill="#808000"/>' +
+    // Olive shadow on bottom and right edges for 3D depth
+    '<rect x="2" y="13" width="13" height="1" fill="#808000"/>' +
+    '<rect x="14" y="5" width="1" height="8" fill="#808000"/>'
   ),
 
   /** Open yellow folder */
@@ -541,6 +546,24 @@ export const RETRO_ICONS = {
   /** Sparkles / star */
   sparkle: svg(
     '<polygon points="8,1 9,6 14,6 10,9 12,14 8,11 4,14 6,9 2,6 7,6" fill="#FFFF00" stroke="#000" stroke-width="1"/>'
+  ),
+
+  /** TKA-OS logo — four-color wavy panes, the OS brand mark for the Start button */
+  tkaLogo: svg(
+    // 4-pane wavy flag shape in red/green/blue/yellow, TKA's spin on the classic
+    '<rect x="1" y="2" width="6" height="5" fill="#FF0000" rx="1"/>' +
+    '<rect x="9" y="2" width="6" height="5" fill="#008000" rx="1"/>' +
+    '<rect x="1" y="9" width="6" height="5" fill="#0000FF" rx="1"/>' +
+    '<rect x="9" y="9" width="6" height="5" fill="#FFFF00" rx="1"/>' +
+    // Wavy midlines for motion feel
+    '<rect x="7" y="1" width="2" height="3" fill="#000"/>' +
+    '<rect x="7" y="5" width="2" height="3" fill="#000"/>' +
+    '<rect x="7" y="9" width="2" height="3" fill="#000"/>' +
+    '<rect x="7" y="13" width="2" height="2" fill="#000"/>' +
+    '<rect x="1" y="7" width="3" height="2" fill="#000"/>' +
+    '<rect x="5" y="7" width="3" height="2" fill="#000"/>' +
+    '<rect x="9" y="7" width="3" height="2" fill="#000"/>' +
+    '<rect x="13" y="7" width="2" height="2" fill="#000"/>'
   ),
 
   /** Computer / desktop — for save dialog tree */

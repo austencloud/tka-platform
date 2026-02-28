@@ -16,11 +16,13 @@
     isSelected = false,
     onselect,
     ondoubleclick,
+    oncontextmenu,
   }: {
     icon: RetroDesktopIcon;
     isSelected?: boolean;
     onselect: () => void;
     ondoubleclick: () => void;
+    oncontextmenu?: (event: MouseEvent) => void;
   } = $props();
 
   const iconSvg = $derived(RETRO_ICONS[icon.icon] ?? "");
@@ -33,6 +35,13 @@
   function handleDblClick(event: MouseEvent) {
     event.stopPropagation();
     ondoubleclick();
+  }
+
+  function handleContextMenu(event: MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    onselect();
+    oncontextmenu?.(event);
   }
 
   function handleKeyDown(event: KeyboardEvent) {
@@ -48,6 +57,7 @@
   class:selected={isSelected}
   onclick={handleClick}
   ondblclick={handleDblClick}
+  oncontextmenu={handleContextMenu}
   onkeydown={handleKeyDown}
   type="button"
   aria-label={icon.label}
@@ -94,6 +104,7 @@
     width: 32px;
     height: 32px;
     image-rendering: pixelated;
+    position: relative;
   }
 
   .desktop-icon-image :global(svg) {
@@ -102,8 +113,15 @@
     image-rendering: pixelated;
   }
 
-  .selected .desktop-icon-image {
-    filter: brightness(0.7) saturate(1.5);
+  /* Win95-style dithered blue selection overlay */
+  .selected .desktop-icon-image::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--retro-navy, #000080);
+    opacity: 0.5;
+    mix-blend-mode: multiply;
+    pointer-events: none;
   }
 
   .desktop-icon-label {
@@ -117,6 +135,7 @@
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.8);
   }
 
   .selected .desktop-icon-label {

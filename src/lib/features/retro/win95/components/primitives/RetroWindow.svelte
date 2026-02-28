@@ -12,11 +12,13 @@
 -->
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import type { RetroIconName } from "../rendering/retro-icons";
+  import { RETRO_ICONS } from "../rendering/retro-icons";
 
   let {
     id,
     title,
-    icon = "",
+    icon = undefined,
     x = $bindable(100),
     y = $bindable(100),
     width = $bindable(400),
@@ -39,7 +41,7 @@
   }: {
     id: string;
     title: string;
-    icon?: string;
+    icon?: RetroIconName;
     x?: number;
     y?: number;
     width?: number;
@@ -435,13 +437,10 @@
           aria-haspopup="true"
           aria-expanded={showSystemMenu}
         >
-          {#if icon}
-            <img
-              src={icon}
-              alt=""
-              class="system-menu-icon"
-              aria-hidden="true"
-            />
+          {#if icon && RETRO_ICONS[icon]}
+            <span class="system-menu-icon" aria-hidden="true">
+              {@html RETRO_ICONS[icon]}
+            </span>
           {:else}
             <span class="system-menu-dash" aria-hidden="true">-</span>
           {/if}
@@ -598,8 +597,16 @@
   }
 
   .system-menu-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 14px;
     height: 14px;
+  }
+
+  .system-menu-icon :global(svg) {
+    width: 100%;
+    height: 100%;
     image-rendering: pixelated;
   }
 
@@ -613,7 +620,7 @@
     position: absolute;
     top: 100%;
     left: 0;
-    z-index: 1000;
+    z-index: var(--retro-z-dropdown, 500);
     background: var(--retro-button-face, #c0c0c0);
     border: 2px outset var(--retro-button-face, #c0c0c0);
     padding: 2px;

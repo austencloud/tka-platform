@@ -42,10 +42,20 @@ export interface RetroDialogConfig {
 
 export interface RetroStartMenuItem {
 	label: string;
-	icon?: string;
+	icon?: RetroIconName;
 	action?: () => void;
 	children?: RetroStartMenuItem[];
 	separator?: boolean;
+}
+
+export interface RetroContextMenuItem {
+	label: string;
+	icon?: RetroIconName;
+	action?: () => void;
+	children?: RetroContextMenuItem[];
+	separator?: boolean;
+	disabled?: boolean;
+	isDefault?: boolean;
 }
 
 export interface RetroTreeNode {

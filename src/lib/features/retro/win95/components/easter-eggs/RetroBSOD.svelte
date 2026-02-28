@@ -15,12 +15,30 @@
   } = $props();
 
   let containerEl: HTMLDivElement | undefined = $state(undefined);
+  let cursorEl: HTMLSpanElement | undefined = $state(undefined);
 
   /** Auto-focus so keydown events register immediately. */
   $effect(() => {
     if (containerEl) {
       containerEl.focus();
     }
+  });
+
+  /**
+   * JS-driven cursor blink — bypasses retro-overrides.css which kills all
+   * CSS animations with !important. Uses direct style manipulation so the
+   * global animation:none override has no effect.
+   */
+  $effect(() => {
+    if (!cursorEl) return;
+    let visible = true;
+    const interval = setInterval(() => {
+      visible = !visible;
+      if (cursorEl) {
+        cursorEl.style.visibility = visible ? "visible" : "hidden";
+      }
+    }, 500);
+    return () => clearInterval(interval);
   });
 
   function handleDismiss() {
@@ -68,7 +86,7 @@
     <p class="bsod-body bsod-spacer">Error code: 0xDEADBEAT</p>
 
     <p class="bsod-body bsod-spacer">
-      Press any key to continue <span class="bsod-cursor">_</span>
+      Press any key to continue <span class="bsod-cursor" bind:this={cursorEl}>_</span>
     </p>
   </div>
 </div>
@@ -78,7 +96,7 @@
     position: fixed;
     inset: 0;
     z-index: 10000;
-    background: #000080;
+    background: #0000aa;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -119,16 +137,7 @@
   }
 
   .bsod-cursor {
-    animation: bsod-blink 1s step-end infinite;
+    /* Blink driven by JS (setInterval) to bypass retro-overrides.css
+       which kills all CSS animations with !important */
   }
-
-  @keyframes bsod-blink {
-    0%, 100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0;
-    }
-  }
-
 </style>

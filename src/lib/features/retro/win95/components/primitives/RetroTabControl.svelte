@@ -111,7 +111,6 @@
     top: 2px;
     padding-bottom: 0;
     background: var(--retro-button-face, #c0c0c0);
-    opacity: 0.85;
   }
 
   .retro-tab.active {

@@ -11,6 +11,7 @@
 import type {
 	RetroWindowState,
 	RetroDialogConfig,
+	RetroContextMenuItem,
 } from "../domain/types/retro-types";
 
 class DesktopState {
@@ -37,6 +38,41 @@ class DesktopState {
 
 	/** ID of the currently selected desktop icon, or null. */
 	selectedDesktopIcon = $state<string | null>(null);
+
+	/** Active right-click context menu, or null when closed. */
+	contextMenu = $state<{
+		x: number;
+		y: number;
+		items: RetroContextMenuItem[];
+	} | null>(null);
+
+	/* ------------------------------------------------------------------ */
+	/* Shell settings (Control Panel ↔ desktop wiring)                    */
+	/* ------------------------------------------------------------------ */
+
+	/** CRT overlay: horizontal scanline bands. */
+	crtScanlines = $state(true);
+
+	/** CRT overlay: radial corner darkening. */
+	crtVignette = $state(true);
+
+	/** CRT overlay: rare phosphor flicker animation. */
+	crtFlicker = $state(true);
+
+	/** Desktop surface background color (Win95 default teal). */
+	desktopColor = $state("#008080");
+
+	/** Master sound volume, 0-100. */
+	soundVolume = $state(75);
+
+	/** Whether all sounds are muted. */
+	soundMuted = $state(false);
+
+	/** Screensaver idle timeout in seconds (0 = disabled). */
+	screensaverTimeout = $state(60);
+
+	/** Double-click speed in milliseconds. */
+	doubleClickSpeed = $state(500);
 }
 
 export const desktopState = new DesktopState();

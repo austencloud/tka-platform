@@ -6,6 +6,8 @@
   Separators render as vertical dividers between button groups.
 -->
 <script lang="ts">
+  import RetroTooltip from "./RetroTooltip.svelte";
+
   let {
     buttons,
   }: {
@@ -24,16 +26,19 @@
     {#if button.separator}
       <div class="retro-toolbar-separator" role="separator" aria-orientation="vertical"></div>
     {/if}
-    <button
-      class="retro-toolbar-button"
-      type="button"
-      title={button.tooltip}
-      aria-label={button.tooltip}
-      disabled={button.disabled ?? false}
-      onclick={button.action}
-    >
-      {@html button.icon}
-    </button>
+    <RetroTooltip text={button.tooltip}>
+      {#snippet children()}
+        <button
+          class="retro-toolbar-button"
+          type="button"
+          aria-label={button.tooltip}
+          disabled={button.disabled ?? false}
+          onclick={button.action}
+        >
+          {@html button.icon}
+        </button>
+      {/snippet}
+    </RetroTooltip>
   {/each}
 </div>
 

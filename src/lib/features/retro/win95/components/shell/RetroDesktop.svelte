@@ -17,10 +17,17 @@
   import "../../styles/retro-tokens.css";
   import "../../styles/retro-overrides.css";
 
-  import type { RetroDesktopIcon } from "../../domain/types/retro-types";
-  import type { RetroStartMenuItem } from "../../domain/types/retro-types";
+  /** Matches `zoom: 1.5` on .retro-shell. Used to convert client coords to shell coords. */
+  const SHELL_ZOOM = 1.5;
+
+  import type {
+    RetroDesktopIcon,
+    RetroStartMenuItem,
+    RetroContextMenuItem,
+  } from "../../domain/types/retro-types";
   import type { RetroIconName } from "../rendering/retro-icons";
   import { desktopState } from "../../state/desktop-state.svelte";
+  import { retroSound } from "../../state/retro-sound";
   import { WindowManager } from "../../services/implementations/WindowManager";
 
   import RetroDesktopIconComponent from "./RetroDesktopIcon.svelte";
@@ -42,6 +49,7 @@
   import RetroScreensaver from "../easter-eggs/RetroScreensaver.svelte";
   import RetroClippy from "../easter-eggs/RetroClippy.svelte";
   import CRTOverlay from "../effects/CRTOverlay.svelte";
+  import RetroContextMenu from "./RetroContextMenu.svelte";
   import RetroMobileWarning from "./RetroMobileWarning.svelte";
 
   /* ------------------------------------------------------------------ */
@@ -129,6 +137,15 @@
   const isMobile = $derived(windowWidth < 768);
 
   /* ------------------------------------------------------------------ */
+  /* Sync sound manager with state                                       */
+  /* ------------------------------------------------------------------ */
+
+  $effect(() => {
+    retroSound.setVolume(desktopState.soundVolume / 100);
+    retroSound.setMuted(desktopState.soundMuted);
+  });
+
+  /* ------------------------------------------------------------------ */
   /* Window resize tracking                                              */
   /* ------------------------------------------------------------------ */
 
@@ -148,7 +165,10 @@
   $effect(() => {
     if (!desktopState.bootComplete) return;
 
-    const IDLE_TIMEOUT_MS = 60_000;
+    const timeoutSec = desktopState.screensaverTimeout;
+    if (timeoutSec <= 0) return; /* 0 = disabled */
+
+    const IDLE_TIMEOUT_MS = timeoutSec * 1000;
     let idleTimer: ReturnType<typeof setTimeout>;
 
     function resetIdleTimer() {
@@ -206,6 +226,8 @@
   });
 
   function openApp(executable: string, title?: string, icon?: RetroIconName) {
+    desktopState.contextMenu = null;
+
     /* My Computer triggers BSOD easter egg */
     if (executable === "mycomputer") {
       showBSOD = true;
@@ -224,7 +246,7 @@
       filemgr: { width: 580, height: 400 },
       tutor: { width: 520, height: 400 },
       cards: { width: 480, height: 380 },
-      control: { width: 420, height: 360 },
+      control: { width: 440, height: 420 },
       upgrade: { width: 380, height: 300 },
       defrag: { width: 440, height: 340 },
       readme: { width: 480, height: 360 },
@@ -294,10 +316,133 @@
   function handleDesktopClick() {
     desktopState.selectedDesktopIcon = null;
     desktopState.startMenuOpen = false;
+    desktopState.contextMenu = null;
   }
 
   function selectIcon(id: string) {
     desktopState.selectedDesktopIcon = id;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Context menu helpers                                                */
+  /* ------------------------------------------------------------------ */
+
+  function showDialog(title: string, message: string) {
+    desktopState.dialogQueue = [
+      ...desktopState.dialogQueue,
+      { title, message, type: "info", buttons: ["OK"] },
+    ];
+  }
+
+  function closeContextMenu() {
+    desktopState.contextMenu = null;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Desktop right-click menu                                            */
+  /* ------------------------------------------------------------------ */
+
+  function handleDesktopContextMenu(event: MouseEvent) {
+    event.preventDefault();
+    desktopState.startMenuOpen = false;
+
+    const shell = (event.currentTarget as HTMLElement).closest(".retro-shell") as HTMLElement | null;
+    let x = event.clientX;
+    let y = event.clientY;
+    if (shell) {
+      const rect = shell.getBoundingClientRect();
+      x = (event.clientX - rect.left) / SHELL_ZOOM;
+      y = (event.clientY - rect.top) / SHELL_ZOOM;
+    }
+
+    const desktopMenuItems: RetroContextMenuItem[] = [
+      {
+        label: "Arrange Icons",
+        children: [
+          { label: "by Name", action: () => showDialog("Arrange Icons", "Icons arranged by name.") },
+          { label: "by Type", action: () => showDialog("Arrange Icons", "Icons arranged by type.") },
+          { separator: true, label: "" },
+          { label: "Auto Arrange", action: () => showDialog("Arrange Icons", "Auto arrange enabled.") },
+        ],
+      },
+      {
+        label: "Line up Icons",
+        action: () => showDialog("Line up Icons", "Icons aligned to grid."),
+      },
+      { separator: true, label: "" },
+      {
+        label: "New",
+        children: [
+          {
+            label: "Folder",
+            action: () => showDialog("Access Denied", "The Order controls the filesystem."),
+          },
+          {
+            label: "Text Document",
+            action: () => showDialog("Access Denied", "The Order controls the filesystem."),
+          },
+        ],
+      },
+      { separator: true, label: "" },
+      {
+        label: "Properties",
+        action: () => openApp("control", "Control Panel", "control"),
+      },
+    ];
+
+    desktopState.contextMenu = { x, y, items: desktopMenuItems };
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Icon right-click menu                                               */
+  /* ------------------------------------------------------------------ */
+
+  function handleIconContextMenu(event: MouseEvent, iconDef: RetroDesktopIcon) {
+    desktopState.startMenuOpen = false;
+
+    const shell = (event.target as HTMLElement).closest(".retro-shell") as HTMLElement | null;
+    let x = event.clientX;
+    let y = event.clientY;
+    if (shell) {
+      const rect = shell.getBoundingClientRect();
+      x = (event.clientX - rect.left) / SHELL_ZOOM;
+      y = (event.clientY - rect.top) / SHELL_ZOOM;
+    }
+
+    const sizeKB = ((iconDef.label.length * 80) + 200).toString();
+
+    const iconMenuItems: RetroContextMenuItem[] = [
+      {
+        label: "Open",
+        action: () => openAppFromIcon(iconDef),
+        isDefault: true,
+      },
+      { separator: true, label: "" },
+      {
+        label: "Delete",
+        action: () => showDialog(
+          "Delete",
+          "The Order forbids deletion of sacred executables.",
+        ),
+      },
+      {
+        label: "Rename",
+        action: () => showDialog(
+          "Rename",
+          "This file is protected by the Bellweather Technical Institute.",
+        ),
+      },
+      { separator: true, label: "" },
+      {
+        label: "Properties",
+        action: () => showDialog(
+          `${iconDef.label} Properties`,
+          `${iconDef.label}\nType: Application\nSize: ${sizeKB} KB`,
+        ),
+      },
+    ];
+
+    desktopState.contextMenu = { x, y, items: iconMenuItems };
   }
 
   /* Boot completion is handled by RetroBootSequence via oncomplete */
@@ -313,6 +458,7 @@
     <RetroBootSequence oncomplete={() => {
       desktopState.isBooting = false;
       desktopState.bootComplete = true;
+      retroSound.startup();
       /* Auto-open SCRIBE.EXE like a real Win95 startup program */
       openApp("scribe", "SCRIBE.EXE", "scribe");
     }} />
@@ -320,7 +466,12 @@
     <!-- Desktop surface -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <div class="desktop-surface" onclick={handleDesktopClick}>
+    <div
+      class="desktop-surface"
+      onclick={handleDesktopClick}
+      oncontextmenu={handleDesktopContextMenu}
+      style:background={desktopState.desktopColor}
+    >
       <!-- Desktop icons: left column -->
       <div class="desktop-icon-grid">
         {#each desktopIcons as iconDef (iconDef.id)}
@@ -329,6 +480,7 @@
             isSelected={desktopState.selectedDesktopIcon === iconDef.id}
             onselect={() => selectIcon(iconDef.id)}
             ondoubleclick={() => openAppFromIcon(iconDef)}
+            oncontextmenu={(e) => handleIconContextMenu(e, iconDef)}
           />
         {/each}
       </div>
@@ -340,6 +492,7 @@
           isSelected={desktopState.selectedDesktopIcon === recycleBin.id}
           onselect={() => selectIcon(recycleBin.id)}
           ondoubleclick={() => openAppFromIcon(recycleBin)}
+          oncontextmenu={(e) => handleIconContextMenu(e, recycleBin)}
         />
       </div>
 
@@ -398,6 +551,16 @@
       {/each}
     </div>
 
+    <!-- Context menu -->
+    {#if desktopState.contextMenu}
+      <RetroContextMenu
+        x={desktopState.contextMenu.x}
+        y={desktopState.contextMenu.y}
+        items={desktopState.contextMenu.items}
+        onclose={closeContextMenu}
+      />
+    {/if}
+
     <!-- Start menu -->
     {#if desktopState.startMenuOpen}
       <RetroStartMenu
@@ -420,7 +583,11 @@
     {/if}
 
     <!-- CRT monitor effect (z-index 9999) -->
-    <CRTOverlay />
+    <CRTOverlay
+      scanlines={desktopState.crtScanlines}
+      vignette={desktopState.crtVignette}
+      flicker={desktopState.crtFlicker}
+    />
 
     <!-- BSOD easter egg (z-index 10000, above CRT overlay) -->
     {#if showBSOD}
@@ -445,6 +612,18 @@
       sans-serif
     );
     font-size: var(--retro-font-size, 11px);
+    zoom: 1.5;
+  }
+
+  /* Firefox fallback — zoom is non-standard, Firefox uses transform instead */
+  @supports not (zoom: 1.5) {
+    .retro-shell {
+      zoom: unset;
+      transform: scale(1.5);
+      transform-origin: top left;
+      width: 66.667%;  /* 100% / 1.5 */
+      height: 66.667%;
+    }
   }
 
   /* ------------------------------------------------------------------ */
@@ -467,7 +646,7 @@
     left: 8px;
     display: flex;
     flex-direction: column;
-    gap: 11px;
+    gap: 6px;
     z-index: 1;
   }
 
