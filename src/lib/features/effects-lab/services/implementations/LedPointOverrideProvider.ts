@@ -1,8 +1,9 @@
 import type { PropLedConfig } from "$lib/shared/animation-engine/domain/types/LedTypes";
 import type { IEffectPointOverrideProvider } from "../contracts/IEffectPointOverrideProvider";
+import type { IEffectPointsPersister } from "../contracts/IEffectPointsPersister";
 
-const STORAGE_KEY = "led-point-overrides";
-const DEFAULTS_STORAGE_KEY = "led-point-user-defaults";
+const INTENSITY_STORAGE_KEY = "led-point-intensity-overrides";
+const DEFAULT_BRIGHTNESS = 0.8;
 
 /** Deep-copy that works on Svelte 5 $state proxies (structuredClone cannot clone them). */
 function deepCopy<T>(value: T): T {
@@ -10,61 +11,90 @@ function deepCopy<T>(value: T): T {
 }
 
 /**
- * localStorage-backed LED point override provider.
- * Maintains in-memory caches for fast lookups during animation frames.
+ * LED point override provider backed by shared EffectPointsPersister.
  *
- * Three-tier fallback chain (highest to lowest priority):
- * 1. `cache` = working state (auto-saved on every edit in LED Lab)
- * 2. `defaultsCache` = user-defined baselines ("Set as Default")
- * 3. `publishedDefaults` = admin-published Firestore defaults (loaded at startup)
+ * Positions are shared across all effects (fire, LED) via the persister.
+ * This provider enriches shared positions with LED-specific intensity
+ * (brightness) and caches the full typed config to localStorage for
+ * fast animation-frame reads.
+ *
+ * Fallback chain (highest to lowest priority):
+ * 1. Shared positions from EffectPointsPersister (Firebase-backed)
+ * 2. Admin-published defaults (when added)
  */
 export class LedPointOverrideProvider implements IEffectPointOverrideProvider {
-	private cache: Map<string, PropLedConfig>;
-	private defaultsCache: Map<string, PropLedConfig>;
 	private publishedDefaults: Map<string, PropLedConfig>;
+	private intensityOverrides: Map<string, Record<number, number>>;
 
-	constructor() {
-		this.cache = this.loadFromStorage(STORAGE_KEY);
-		this.defaultsCache = this.loadFromStorage(DEFAULTS_STORAGE_KEY);
+	constructor(private readonly persister: IEffectPointsPersister) {
 		this.publishedDefaults = new Map();
+		this.intensityOverrides = this.loadIntensityOverrides();
 	}
 
 	getOverride(propType: string): PropLedConfig | null {
 		const key = propType.toLowerCase();
-		// Fallback chain: local working edits -> user defaults -> admin-published defaults
-		return (
-			this.cache.get(key) ??
-			this.defaultsCache.get(key) ??
-			this.publishedDefaults.get(key) ??
-			null
-		);
+
+		const sharedPositions = this.persister.getPositions(key);
+		if (sharedPositions) {
+			const intensities = this.intensityOverrides.get(key);
+			return {
+				points: sharedPositions.map((p, i) => ({
+					dx: p.dx,
+					dy: p.dy,
+					brightness: intensities?.[i] ?? DEFAULT_BRIGHTNESS,
+				})),
+			};
+		}
+
+		return this.publishedDefaults.get(key) ?? null;
 	}
 
 	saveOverride(propType: string, config: PropLedConfig): void {
 		const key = propType.toLowerCase();
-		this.cache.set(key, deepCopy(config));
-		this.persistCache(STORAGE_KEY, this.cache);
+
+		// Extract position-only data and persist to shared store (Firebase)
+		const positions = config.points.map((p) => ({ dx: p.dx, dy: p.dy }));
+		this.persister.save(key, positions);
+
+		// Cache per-point brightness overrides locally
+		const intensities: Record<number, number> = {};
+		config.points.forEach((p, i) => {
+			intensities[i] = p.brightness;
+		});
+		this.intensityOverrides.set(key, intensities);
+		this.persistIntensityOverrides();
 	}
 
 	clearOverride(propType: string): void {
 		const key = propType.toLowerCase();
-		if (this.cache.delete(key)) {
-			this.persistCache(STORAGE_KEY, this.cache);
+		this.persister.save(key, []);
+		if (this.intensityOverrides.delete(key)) {
+			this.persistIntensityOverrides();
 		}
 	}
 
 	hasOverride(propType: string): boolean {
-		return this.cache.has(propType.toLowerCase());
+		const key = propType.toLowerCase();
+		return this.persister.getPositions(key) !== null;
 	}
 
 	getOverriddenTypes(): string[] {
-		return Array.from(this.cache.keys());
+		const types = new Set<string>();
+		for (const key of this.intensityOverrides.keys()) {
+			if (this.persister.getPositions(key) !== null) {
+				types.add(key);
+			}
+		}
+		return Array.from(types);
 	}
 
 	exportAll(): Record<string, PropLedConfig> {
 		const result: Record<string, PropLedConfig> = {};
-		for (const [key, config] of this.cache) {
-			result[key] = deepCopy(config);
+		for (const key of this.intensityOverrides.keys()) {
+			const override = this.getOverride(key);
+			if (override) {
+				result[key] = deepCopy(override);
+			}
 		}
 		return result;
 	}
@@ -72,10 +102,9 @@ export class LedPointOverrideProvider implements IEffectPointOverrideProvider {
 	importAll(overrides: Record<string, PropLedConfig>): void {
 		for (const [key, config] of Object.entries(overrides)) {
 			if (this.isValidConfig(config)) {
-				this.cache.set(key.toLowerCase(), deepCopy(config));
+				this.saveOverride(key, config);
 			}
 		}
-		this.persistCache(STORAGE_KEY, this.cache);
 	}
 
 	// --- Published defaults (admin-tuned, from Firestore) ---
@@ -87,44 +116,39 @@ export class LedPointOverrideProvider implements IEffectPointOverrideProvider {
 		}
 	}
 
-	// --- User-defined defaults ---
+	// --- User defaults: collapsed into single tier (every edit auto-persists) ---
 
 	saveUserDefault(propType: string, config: PropLedConfig): void {
-		const key = propType.toLowerCase();
-		this.defaultsCache.set(key, deepCopy(config));
-		this.persistCache(DEFAULTS_STORAGE_KEY, this.defaultsCache);
+		this.saveOverride(propType, config);
 	}
 
 	getUserDefault(propType: string): PropLedConfig | null {
-		return this.defaultsCache.get(propType.toLowerCase()) ?? null;
+		return this.getOverride(propType);
 	}
 
 	hasUserDefault(propType: string): boolean {
-		return this.defaultsCache.has(propType.toLowerCase());
+		return this.hasOverride(propType);
 	}
 
 	clearUserDefault(propType: string): void {
-		const key = propType.toLowerCase();
-		if (this.defaultsCache.delete(key)) {
-			this.persistCache(DEFAULTS_STORAGE_KEY, this.defaultsCache);
-		}
+		this.clearOverride(propType);
 	}
 
 	getUserDefaultTypes(): string[] {
-		return Array.from(this.defaultsCache.keys());
+		return this.getOverriddenTypes();
 	}
 
 	// --- Private helpers ---
 
-	private loadFromStorage(storageKey: string): Map<string, PropLedConfig> {
-		const map = new Map<string, PropLedConfig>();
+	private loadIntensityOverrides(): Map<string, Record<number, number>> {
+		const map = new Map<string, Record<number, number>>();
 		try {
-			const raw = localStorage.getItem(storageKey);
+			const raw = localStorage.getItem(INTENSITY_STORAGE_KEY);
 			if (!raw) return map;
-			const parsed = JSON.parse(raw) as Record<string, PropLedConfig>;
-			for (const [key, config] of Object.entries(parsed)) {
-				if (this.isValidConfig(config)) {
-					map.set(key, config);
+			const parsed = JSON.parse(raw) as Record<string, Record<number, number>>;
+			for (const [key, intensities] of Object.entries(parsed)) {
+				if (typeof intensities === "object" && intensities !== null) {
+					map.set(key, intensities);
 				}
 			}
 		} catch {
@@ -133,15 +157,15 @@ export class LedPointOverrideProvider implements IEffectPointOverrideProvider {
 		return map;
 	}
 
-	private persistCache(storageKey: string, cache: Map<string, PropLedConfig>): void {
+	private persistIntensityOverrides(): void {
 		try {
-			const obj: Record<string, PropLedConfig> = {};
-			for (const [key, config] of cache) {
-				obj[key] = config;
+			const obj: Record<string, Record<number, number>> = {};
+			for (const [key, intensities] of this.intensityOverrides) {
+				obj[key] = intensities;
 			}
-			localStorage.setItem(storageKey, JSON.stringify(obj));
+			localStorage.setItem(INTENSITY_STORAGE_KEY, JSON.stringify(obj));
 		} catch {
-			// Storage full or unavailable — silent fail
+			// Storage full or unavailable
 		}
 	}
 

@@ -1,15 +1,15 @@
 <!--
-  LedTuningTab.svelte
+  EffectsLabPlaybackHost.svelte
 
-  LED effect tuning: sequence picker, playback controls,
-  LED overlay configuration, and the AnimatorCanvas preview.
-  Uses SequenceChainingOrchestrator for auto-chaining (shared with FireTuningTab).
+  Single persistent component that owns all shared playback infrastructure
+  for the Effects Lab. Canvas, playback services, and sequence state live here.
+  Mode switching swaps only the controls panel — the animation continues
+  uninterrupted.
 -->
 <script lang="ts">
   import { onMount, onDestroy, untrack } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
-  import LedControlPanel from "./LedControlPanel.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
@@ -18,7 +18,6 @@
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
   import { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
   import { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
@@ -28,9 +27,24 @@
 
   import TempoControl from "$lib/shared/sequence-viewer/components/TempoControl.svelte";
   import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
+
+  // Fire
+  import {
+    BASE_FIRE_PHYSICS,
+    BASE_COLOR_CURVE,
+    intensityToPhysics,
+    smokeLevelToPhysics,
+    smokeLevelToOpacity,
+  } from "$lib/shared/animation-engine/domain/types/FireTypes";
+
+  // LED
   import { DEFAULT_LED_CONFIG, ledBrightnessToFloat, type LedOverlayConfig, type LedColorMode } from "$lib/shared/animation-engine/domain/types/LedTypes";
 
-  // Auto-chaining (shared with FireTuningTab)
+  // Charcoal
+  import type { CharcoalSparkParams } from "$lib/shared/animation-engine/domain/types/CharcoalSparkTypes";
+  import { DEFAULT_CHARCOAL_PARAMS } from "$lib/shared/animation-engine/domain/types/CharcoalSparkTypes";
+
+  // Auto-chaining
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
   import { InfiniteSequenceGenerator } from "$lib/features/landing/services/implementations/InfiniteSequenceGenerator";
   import { SpinnerMetricsRepository } from "$lib/features/landing/services/implementations/SpinnerMetricsRepository";
@@ -40,52 +54,144 @@
   import { SequenceChainingOrchestrator } from "../services/implementations/SequenceChainingOrchestrator";
   import type { ISequenceChainingOrchestrator, SourceMode } from "../services/contracts/ISequenceChainingOrchestrator";
 
-  const DEFAULT_BPM = 60;
-  const STORAGE_KEY = "led-lab-state";
-  const visibilityManager = getAnimationVisibilityManager();
+  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { getEffectDescriptor, type EffectMode } from "../domain/EffectDescriptor";
 
-  interface LedLabPersistedState {
-    sequenceId: string | null;
-    ledEnabled: boolean;
-    brightness: number;
-    patternId: string;
-    primaryColor: string;
-    patternSpeed: number;
-    glowRadius: number;
-    bloomIntensity: number;
-    trailFadeRate: number;
-    bpm: number;
-    sourceMode: SourceMode;
-    colorMode: LedColorMode;
-    blueHandColor: string;
-    redHandColor: string;
+  // Child control panels
+  import FireControlsPanel from "./FireControlsPanel.svelte";
+  import CharcoalControlsPanel from "./CharcoalControlsPanel.svelte";
+  import LedControlPanel from "./LedControlPanel.svelte";
+  import TrailControlsPanel from "./TrailControlsPanel.svelte";
+  import SourceControls from "./SourceControls.svelte";
+  import PublishControls from "./PublishControls.svelte";
+  import EffectModeBar from "./EffectModeBar.svelte";
+
+  interface Props {
+    activeMode: EffectMode;
+    onModeChange: (mode: EffectMode) => void;
   }
 
-  function loadPersistedState(): Partial<LedLabPersistedState> {
+  let { activeMode, onModeChange }: Props = $props();
+
+  const DEFAULT_BPM = 60;
+  const STORAGE_KEY = "effects-lab-state";
+  const visibilityManager = getAnimationVisibilityManager();
+
+  // ─── Unified persisted state ──────────────────────────────────────────
+  interface EffectsLabPersistedState {
+    sequenceId: string | null;
+    bpm: number;
+    sourceMode: SourceMode;
+    // Fire
+    fireIntensity: number;
+    fireColorBlend: number;
+    fireSmokeLevel: number;
+    // LED
+    ledBrightness: number;
+    ledPatternId: string;
+    ledPrimaryColor: string;
+    ledPatternSpeed: number;
+    ledGlowRadius: number;
+    ledBloomIntensity: number;
+    ledTrailFadeRate: number;
+    ledColorMode: LedColorMode;
+    ledBlueHandColor: string;
+    ledRedHandColor: string;
+  }
+
+  function loadPersistedState(): Partial<EffectsLabPersistedState> {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) return JSON.parse(raw);
     } catch { /* ignore */ }
-    return {};
+
+    // Migration: merge old per-mode keys into unified key
+    return migrateOldKeys();
+  }
+
+  function migrateOldKeys(): Partial<EffectsLabPersistedState> {
+    const merged: Partial<EffectsLabPersistedState> = {};
+    try {
+      const fireRaw = localStorage.getItem("flame-lab-state");
+      if (fireRaw) {
+        const fire = JSON.parse(fireRaw);
+        merged.sequenceId = fire.sequenceId ?? null;
+        merged.bpm = fire.bpm;
+        merged.sourceMode = fire.sourceMode;
+        merged.fireIntensity = fire.intensity;
+        merged.fireColorBlend = fire.colorBlend;
+        merged.fireSmokeLevel = fire.smokeLevel;
+      }
+
+      const ledRaw = localStorage.getItem("led-lab-state");
+      if (ledRaw) {
+        const led = JSON.parse(ledRaw);
+        merged.ledBrightness = led.brightness;
+        merged.ledPatternId = led.patternId;
+        merged.ledPrimaryColor = led.primaryColor;
+        merged.ledPatternSpeed = led.patternSpeed;
+        merged.ledGlowRadius = led.glowRadius;
+        merged.ledBloomIntensity = led.bloomIntensity;
+        merged.ledTrailFadeRate = led.trailFadeRate;
+        merged.ledColorMode = led.colorMode;
+        merged.ledBlueHandColor = led.blueHandColor;
+        merged.ledRedHandColor = led.redHandColor;
+        if (!merged.bpm && led.bpm) merged.bpm = led.bpm;
+        if (!merged.sourceMode && led.sourceMode) merged.sourceMode = led.sourceMode;
+        if (!merged.sequenceId && led.sequenceId) merged.sequenceId = led.sequenceId;
+      }
+
+      const trailRaw = localStorage.getItem("trail-lab-state");
+      if (trailRaw) {
+        const trail = JSON.parse(trailRaw);
+        if (!merged.bpm && trail.bpm) merged.bpm = trail.bpm;
+        if (!merged.sourceMode && trail.sourceMode) merged.sourceMode = trail.sourceMode;
+        if (!merged.sequenceId && trail.sequenceId) merged.sequenceId = trail.sequenceId;
+      }
+
+      const charcoalRaw = localStorage.getItem("charcoal-lab-state");
+      if (charcoalRaw) {
+        const charcoal = JSON.parse(charcoalRaw);
+        if (!merged.bpm && charcoal.bpm) merged.bpm = charcoal.bpm;
+        if (!merged.sourceMode && charcoal.sourceMode) merged.sourceMode = charcoal.sourceMode;
+        if (!merged.sequenceId && charcoal.sequenceId) merged.sequenceId = charcoal.sequenceId;
+      }
+
+      // Remove old keys after migration
+      if (fireRaw || ledRaw || trailRaw || charcoalRaw) {
+        localStorage.removeItem("flame-lab-state");
+        localStorage.removeItem("led-lab-state");
+        localStorage.removeItem("trail-lab-state");
+        localStorage.removeItem("charcoal-lab-state");
+        // Save merged state immediately
+        if (Object.keys(merged).length > 0) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+        }
+      }
+    } catch { /* ignore migration errors */ }
+
+    return merged;
   }
 
   function savePersistedState() {
     try {
-      const state: LedLabPersistedState = {
+      const state: EffectsLabPersistedState = {
         sequenceId: sequence?.word || sequence?.name || sequence?.id || null,
-        ledEnabled,
-        brightness,
-        patternId,
-        primaryColor,
-        patternSpeed,
-        glowRadius,
-        bloomIntensity,
-        trailFadeRate,
         bpm,
         sourceMode,
-        colorMode,
-        blueHandColor,
-        redHandColor,
+        fireIntensity: intensity,
+        fireColorBlend: colorBlend,
+        fireSmokeLevel: smokeLevel,
+        ledBrightness: ledBrightness,
+        ledPatternId,
+        ledPrimaryColor,
+        ledPatternSpeed,
+        ledGlowRadius,
+        ledBloomIntensity,
+        ledTrailFadeRate,
+        ledColorMode,
+        ledBlueHandColor,
+        ledRedHandColor,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch { /* ignore */ }
@@ -93,6 +199,7 @@
 
   const persisted = loadPersistedState();
 
+  // ─── Shared playback state ────────────────────────────────────────────
   let sequenceService: ISequenceRepository | null = null;
   let playbackController: IAnimationPlaybackController | null = null;
   let chainingOrchestrator = $state<ISequenceChainingOrchestrator | null>(null);
@@ -104,55 +211,121 @@
   let sequence = $state<SequenceData | null>(null);
   let isPlaying = $state(false);
   let bpm = $state(persisted.bpm ?? DEFAULT_BPM);
-
-  // Initialize directly from persisted state. The WebGL renderer creation
-  // is deferred via rAF inside syncLedOverlay, so there's no race — the
-  // toggle shows the correct state immediately and the renderer catches up.
-  let ledEnabled = $state(persisted.ledEnabled ?? false);
-  let brightness = $state(persisted.brightness ?? 5);
-  let patternId = $state(persisted.patternId ?? DEFAULT_LED_CONFIG.patternId);
-  let primaryColor = $state(persisted.primaryColor ?? DEFAULT_LED_CONFIG.primaryColor);
-  let patternSpeed = $state(persisted.patternSpeed ?? DEFAULT_LED_CONFIG.patternSpeed);
-  let glowRadius = $state(persisted.glowRadius ?? DEFAULT_LED_CONFIG.glowRadius);
-  let bloomIntensity = $state(persisted.bloomIntensity ?? DEFAULT_LED_CONFIG.bloomIntensity);
-  let trailFadeRate = $state(persisted.trailFadeRate ?? DEFAULT_LED_CONFIG.trailFadeRate);
   let sourceMode = $state<SourceMode>(persisted.sourceMode ?? "infinite");
-  let colorMode = $state<LedColorMode>(persisted.colorMode ?? DEFAULT_LED_CONFIG.colorMode);
-  let blueHandColor = $state(persisted.blueHandColor ?? DEFAULT_LED_CONFIG.blueHandColor);
-  let redHandColor = $state(persisted.redHandColor ?? DEFAULT_LED_CONFIG.redHandColor);
+
+  // ─── Fire state ───────────────────────────────────────────────────────
+  let fireEnabled = $state(true);
+  let intensity = $state(persisted.fireIntensity ?? 0.7);
+  let colorBlend = $state(persisted.fireColorBlend ?? 0.5);
+  let smokeLevel = $state(persisted.fireSmokeLevel ?? 0.1);
+
+  let isAdmin = $derived(authState.isAdmin);
+
+  let fireConfig = $derived.by(() => {
+    const mergedPhysics = {
+      ...BASE_FIRE_PHYSICS,
+      ...intensityToPhysics(intensity),
+      ...smokeLevelToPhysics(smokeLevel),
+    };
+    return {
+      enabled: fireEnabled,
+      intensity: 1.0,
+      flameHeight: 1.0,
+      velocityReactive: true,
+      quality: 4,
+      fuelRendererType: "fluid" as const,
+      physicsPreset: mergedPhysics,
+      colorCurve: BASE_COLOR_CURVE,
+      colorBlend,
+      smokeOpacity: smokeLevelToOpacity(smokeLevel),
+    };
+  });
+
+  // ─── LED state ────────────────────────────────────────────────────────
+  let ledBrightness = $state(persisted.ledBrightness ?? 5);
+  let ledPatternId = $state(persisted.ledPatternId ?? DEFAULT_LED_CONFIG.patternId);
+  let ledPrimaryColor = $state(persisted.ledPrimaryColor ?? DEFAULT_LED_CONFIG.primaryColor);
+  let ledPatternSpeed = $state(persisted.ledPatternSpeed ?? DEFAULT_LED_CONFIG.patternSpeed);
+  let ledGlowRadius = $state(persisted.ledGlowRadius ?? DEFAULT_LED_CONFIG.glowRadius);
+  let ledBloomIntensity = $state(persisted.ledBloomIntensity ?? DEFAULT_LED_CONFIG.bloomIntensity);
+  let ledTrailFadeRate = $state(persisted.ledTrailFadeRate ?? DEFAULT_LED_CONFIG.trailFadeRate);
+  let ledColorMode = $state<LedColorMode>(persisted.ledColorMode ?? DEFAULT_LED_CONFIG.colorMode);
+  let ledBlueHandColor = $state(persisted.ledBlueHandColor ?? DEFAULT_LED_CONFIG.blueHandColor);
+  let ledRedHandColor = $state(persisted.ledRedHandColor ?? DEFAULT_LED_CONFIG.redHandColor);
 
   let ledConfig = $derived<LedOverlayConfig>({
-    enabled: ledEnabled,
-    glowRadius,
-    bloomIntensity,
-    trailFadeRate,
-    patternId,
-    patternSpeed,
-    primaryColor,
-    brightness: ledBrightnessToFloat(brightness),
-    colorMode,
-    blueHandColor,
-    redHandColor,
+    enabled: true,
+    glowRadius: ledGlowRadius,
+    bloomIntensity: ledBloomIntensity,
+    trailFadeRate: ledTrailFadeRate,
+    patternId: ledPatternId,
+    patternSpeed: ledPatternSpeed,
+    primaryColor: ledPrimaryColor,
+    brightness: ledBrightnessToFloat(ledBrightness),
+    colorMode: ledColorMode,
+    blueHandColor: ledBlueHandColor,
+    redHandColor: ledRedHandColor,
   });
 
+  // ─── Charcoal state ───────────────────────────────────────────────────
+  let charcoalParams = $state<CharcoalSparkParams>(visibilityManager.getCharcoalParams());
+
+  // Sync charcoal params to visibility manager
+  $effect(() => {
+    const params = charcoalParams;
+    untrack(() => visibilityManager.setCharcoalParams(params));
+  });
+
+  // ─── Derived descriptor for accent colors ─────────────────────────────
+  let descriptor = $derived(getEffectDescriptor(activeMode));
+
+  // ─── Animation state ──────────────────────────────────────────────────
   const animationState = createAnimationPanelState();
 
+  // Suppress global trails when not in trails mode.
+  // The engine reads trailStyle from the visibility manager independently of the
+  // externalTrailSettings prop, so we must turn it off at the source.
+  // Uses untrack() for the writes because setTrailStyle() calls notifyObservers(),
+  // which triggers observer callbacks that write to $state, causing infinite loops.
   $effect(() => {
-    visibilityManager.setLedEffect(ledEnabled);
+    const mode = activeMode;
+    untrack(() => {
+      if (mode === "trails") {
+        visibilityManager.setTrailStyle("on");
+        animationSettings.setTrailEnabled(true);
+      } else {
+        visibilityManager.setTrailStyle("off");
+      }
+    });
   });
 
-  // Sync back from visibility manager (e.g. hotkey Shift+L toggled it externally)
+  // Fire visibility syncs — untrack writes to prevent observer → $state → effect cycles
+  $effect(() => {
+    const val = fireEnabled;
+    untrack(() => visibilityManager.setFireEffect(val));
+  });
   $effect(() => {
     const syncBack = () => {
-      const managerState = visibilityManager.isLedEffectEnabled();
-      if (managerState !== ledEnabled) {
-        ledEnabled = managerState;
-      }
+      const managerState = visibilityManager.isFireEffectEnabled();
+      if (managerState !== fireEnabled) fireEnabled = managerState;
     };
     visibilityManager.registerObserver(syncBack);
     return () => visibilityManager.unregisterObserver(syncBack);
   });
+  $effect(() => {
+    const val = intensity;
+    untrack(() => visibilityManager.setFireIntensity(val));
+  });
+  $effect(() => {
+    const val = colorBlend;
+    untrack(() => visibilityManager.setFireColorBlend(val));
+  });
+  $effect(() => {
+    const val = smokeLevel;
+    untrack(() => visibilityManager.setFireSmokeLevel(val));
+  });
 
+  // Playback state polling
   $effect(() => {
     const check = () => {
       const current = animationState.isPlaying;
@@ -198,25 +371,29 @@
     sequence?.gridMode ?? animationState.sequenceData?.gridMode
   );
 
+  // ─── Persistence ──────────────────────────────────────────────────────
   $effect(() => {
-    void ledEnabled;
-    void brightness;
-    void patternId;
-    void primaryColor;
-    void patternSpeed;
-    void glowRadius;
-    void bloomIntensity;
-    void trailFadeRate;
+    // Touch all persisted values to track them
     void bpm;
     void sequence;
     void sourceMode;
-    void colorMode;
-    void blueHandColor;
-    void redHandColor;
+    void intensity;
+    void colorBlend;
+    void smokeLevel;
+    void ledBrightness;
+    void ledPatternId;
+    void ledPrimaryColor;
+    void ledPatternSpeed;
+    void ledGlowRadius;
+    void ledBloomIntensity;
+    void ledTrailFadeRate;
+    void ledColorMode;
+    void ledBlueHandColor;
+    void ledRedHandColor;
     untrack(() => savePersistedState());
   });
 
-  // Watch for sequence completion -> chain to next (library/infinite modes only)
+  // ─── Auto-chaining ────────────────────────────────────────────────────
   $effect(() => {
     if (sourceMode === "pick" || !chainingOrchestrator) return;
     chainingOrchestrator.checkAndChain(
@@ -228,7 +405,6 @@
     );
   });
 
-  // Preload next sequence (library + infinite modes)
   $effect(() => {
     if (sourceMode === "pick" || !chainingOrchestrator) return;
     chainingOrchestrator.checkAndPreload(
@@ -240,6 +416,7 @@
     );
   });
 
+  // ─── Initialization ───────────────────────────────────────────────────
   onMount(async () => {
     try {
       sequenceService = container.items.sequenceRepository;
@@ -255,7 +432,6 @@
         animOrchestrator, loop, loopabilityChecker
       );
 
-      // Initialize auto-chaining services
       const browseLoader = container.items.browseLoader;
       const generationOrchestrator = container.items.generationOrchestrator;
       const sequenceTransformer = container.items.sequenceTransformer;
@@ -282,7 +458,6 @@
 
       servicesReady = true;
 
-      // Restore or auto-start based on source mode
       if (sourceMode === "pick") {
         const savedId = persisted.sequenceId;
         if (savedId && sequenceService) {
@@ -292,7 +467,7 @@
         chainingOrchestrator.startAutoMode(sourceMode);
       }
     } catch (err) {
-      console.error("LED Lab: failed to initialize:", err);
+      console.error("Effects Lab: failed to initialize:", err);
       error = "Failed to initialize animation services";
     }
   });
@@ -308,7 +483,7 @@
         await loadAnimation();
       }
     } catch (err) {
-      console.error("LED Lab: failed to restore sequence:", err);
+      console.error("Effects Lab: failed to restore sequence:", err);
       error = "Could not restore the previous session's sequence";
     } finally {
       loading = false;
@@ -317,15 +492,12 @@
 
   onDestroy(() => {
     if (playbackStartTimer !== null) clearTimeout(playbackStartTimer);
-    // NOTE: We intentionally do NOT call visibilityManager.setLedEffect(false) here.
-    // This component unmounts when switching to the "Points" inner tab within the same
-    // LED mode. Disabling the LED effect would kill the overlay. The EffectsLabModule
-    // handles cleanup when the mode changes or the module unmounts.
     chainingOrchestrator?.dispose();
     playbackController?.dispose();
     animationState.dispose();
   });
 
+  // ─── Sequence loading ─────────────────────────────────────────────────
   async function handleSequenceSelected(seq: SequenceData) {
     showPicker = false;
     sequence = seq;
@@ -348,7 +520,7 @@
       if (playbackStartTimer !== null) clearTimeout(playbackStartTimer);
       playbackStartTimer = setTimeout(() => { playbackController?.togglePlayback(); playbackStartTimer = null; }, 300);
     } catch (err) {
-      console.error("LED Lab: load failed:", err);
+      console.error("Effects Lab: load failed:", err);
       error = err instanceof Error ? err.message : "Load failed";
     } finally {
       loading = false;
@@ -369,6 +541,7 @@
     return seq;
   }
 
+  // ─── Playback controls ────────────────────────────────────────────────
   function togglePlayback() {
     playbackController?.togglePlayback();
   }
@@ -381,12 +554,7 @@
   function handleSourceChange(mode: SourceMode) {
     if (mode === sourceMode) return;
     sourceMode = mode;
-
-    if (mode === "pick") {
-      // Stop auto-chaining, keep current sequence
-      return;
-    }
-    // Start auto mode (library or infinite)
+    if (mode === "pick") return;
     chainingOrchestrator?.startAutoMode(mode);
   }
 
@@ -399,17 +567,48 @@
     if (sourceMode === "pick") return;
     await chainingOrchestrator?.shuffle();
   }
+
+  // ─── Charcoal controls ────────────────────────────────────────────────
+  function handleCharcoalParamChange(key: keyof CharcoalSparkParams, value: number | boolean) {
+    charcoalParams = { ...charcoalParams, [key]: value };
+  }
+
+  function handleCharcoalReset() {
+    charcoalParams = { ...DEFAULT_CHARCOAL_PARAMS };
+  }
+
+  // ─── Fire publish ─────────────────────────────────────────────────────
+  async function publishToProduction() {
+    const publisher = container.items.fireDefaultsPublisher;
+    const overrideProvider = container.items.firePointOverrideProvider;
+
+    const mergedPhysics = {
+      ...BASE_FIRE_PHYSICS,
+      ...intensityToPhysics(intensity),
+      ...smokeLevelToPhysics(smokeLevel),
+    };
+    await publisher.publish({
+      firePoints: overrideProvider.exportAll(),
+      propPhysics: {},
+      globalPhysics: mergedPhysics,
+    });
+  }
 </script>
 
-<div class="tuning-tab">
+<div class="playback-host">
   <div class="content">
     <!-- Canvas Area -->
     <div class="canvas-area">
       {#if !sequence && sourceMode === "pick"}
         <div class="empty-state">
-          <i class="fas fa-lightbulb" aria-hidden="true"></i>
+          <i class="{descriptor.icon}" style="color: {descriptor.accentColorBorder}" aria-hidden="true"></i>
           <p>Load a sequence to start</p>
-          <button class="pick-btn" onclick={() => (showPicker = true)} aria-label="Pick a sequence to load">
+          <button
+            class="pick-btn"
+            style="--accent: {descriptor.accentColor}; --accent-dim: {descriptor.accentColorMid}; --accent-border: {descriptor.accentColorBorder}"
+            onclick={() => (showPicker = true)}
+            aria-label="Pick a sequence to load"
+          >
             <i class="fas fa-folder-open" aria-hidden="true"></i>
             Pick Sequence
           </button>
@@ -427,7 +626,14 @@
       {:else if error}
         <div class="error-state">
           <span>{error}</span>
-          <button class="pick-btn" onclick={() => loadAnimation()} aria-label="Retry loading the sequence">Retry</button>
+          <button
+            class="pick-btn"
+            style="--accent: {descriptor.accentColor}; --accent-dim: {descriptor.accentColorMid}; --accent-border: {descriptor.accentColorBorder}"
+            onclick={() => loadAnimation()}
+            aria-label="Retry loading the sequence"
+          >
+            Retry
+          </button>
         </div>
       {:else}
         <div class="canvas-wrapper">
@@ -442,9 +648,10 @@
             currentStep={animationState.currentStep}
             {isPlaying}
             onPlaybackToggle={togglePlayback}
-            trailSettings={animationSettings.trail}
+            trailSettings={activeMode === "trails" ? animationSettings.trail : undefined}
             word={sequence?.word || sequence?.name || null}
-            {ledConfig}
+            fireConfig={activeMode === "fire" || activeMode === "charcoal" ? fireConfig : undefined}
+            ledConfig={activeMode === "led" ? ledConfig : undefined}
             backgroundAlpha={0}
             focused={true}
           />
@@ -454,69 +661,17 @@
 
     <!-- Controls Panel -->
     <div class="controls-panel themed-scrollbar">
-      <!-- Source Mode -->
-      <div class="control-section">
-        <h3>Source</h3>
-        <div class="source-toggle" role="radiogroup" aria-label="Sequence source">
-          <button
-            role="radio"
-            class="source-btn"
-            class:active={sourceMode === "pick"}
-            aria-checked={sourceMode === "pick"}
-            onclick={() => handleSourceChange("pick")}
-          >
-            <i class="fas fa-hand-pointer" aria-hidden="true"></i>
-            Pick
-          </button>
-          <button
-            role="radio"
-            class="source-btn"
-            class:active={sourceMode === "library"}
-            aria-checked={sourceMode === "library"}
-            onclick={() => handleSourceChange("library")}
-          >
-            <i class="fas fa-book" aria-hidden="true"></i>
-            Library
-          </button>
-          <button
-            role="radio"
-            class="source-btn"
-            class:active={sourceMode === "infinite"}
-            aria-checked={sourceMode === "infinite"}
-            onclick={() => handleSourceChange("infinite")}
-          >
-            <i class="fas fa-infinity" aria-hidden="true"></i>
-            Infinite
-          </button>
-        </div>
+      <EffectModeBar {activeMode} onModeChange={onModeChange} />
 
-        {#if sourceMode === "pick"}
-          <button class="action-btn" onclick={() => (showPicker = true)} aria-label={sequence ? "Change the current sequence" : "Pick a sequence to load"}>
-            <i class="fas fa-folder-open" aria-hidden="true"></i>
-            {sequence ? "Change Sequence" : "Pick Sequence"}
-          </button>
-        {:else}
-          <div class="auto-actions">
-            <button class="action-btn skip-btn" onclick={handleSkip} disabled={chainingOrchestrator?.isChainingNow || !sequence} aria-label="Skip to the next sequence">
-              <i class="fas fa-forward" aria-hidden="true"></i>
-              Skip
-            </button>
-            {#if sourceMode === "infinite"}
-              <button class="action-btn shuffle-btn" onclick={handleShuffle} disabled={chainingOrchestrator?.isChainingNow || !sequence} aria-label="Shuffle to a random sequence">
-                <i class="fas fa-random" aria-hidden="true"></i>
-                Shuffle
-              </button>
-            {/if}
-          </div>
-        {/if}
-
-        {#if sequence}
-          <div class="sequence-info">
-            <span class="seq-name">{simplifyAndTruncate(sequence.word || sequence.name || "Unnamed")}</span>
-            <span class="seq-beats">{sequence.steps?.length || 0} beats</span>
-          </div>
-        {/if}
-      </div>
+      <SourceControls
+        {sourceMode}
+        {sequence}
+        isChainingNow={chainingOrchestrator?.isChainingNow ?? false}
+        onSourceChange={handleSourceChange}
+        onPick={() => (showPicker = true)}
+        onSkip={handleSkip}
+        onShuffle={handleShuffle}
+      />
 
       <!-- Playback -->
       {#if sequence && !loading && !error}
@@ -534,25 +689,43 @@
         </div>
       {/if}
 
-      <!-- LED Controls -->
-      <div class="control-section">
-        <LedControlPanel
-          bind:ledEnabled
-          bind:brightness
-          bind:patternId
-          bind:primaryColor
-          bind:patternSpeed
-          bind:glowRadius
-          bind:bloomIntensity
-          bind:trailFadeRate
-          bind:colorMode
-          bind:blueHandColor
-          bind:redHandColor
+      <!-- Mode-specific controls -->
+      {#if activeMode === "fire"}
+        <FireControlsPanel
+          {intensity}
+          {colorBlend}
+          {smokeLevel}
+          onIntensityChange={(v) => (intensity = v)}
+          onColorBlendChange={(v) => (colorBlend = v)}
+          onSmokeLevelChange={(v) => (smokeLevel = v)}
         />
-      </div>
+      {:else if activeMode === "charcoal"}
+        <CharcoalControlsPanel
+          params={charcoalParams}
+          onParamChange={handleCharcoalParamChange}
+          onReset={handleCharcoalReset}
+        />
+      {:else if activeMode === "led"}
+        <div class="control-section led-host">
+          <LedControlPanel
+            bind:brightness={ledBrightness}
+            bind:patternId={ledPatternId}
+            bind:primaryColor={ledPrimaryColor}
+            bind:patternSpeed={ledPatternSpeed}
+            bind:glowRadius={ledGlowRadius}
+            bind:bloomIntensity={ledBloomIntensity}
+            bind:trailFadeRate={ledTrailFadeRate}
+            bind:colorMode={ledColorMode}
+            bind:blueHandColor={ledBlueHandColor}
+            bind:redHandColor={ledRedHandColor}
+          />
+        </div>
+      {:else if activeMode === "trails"}
+        <TrailControlsPanel />
+      {/if}
 
-      <!-- Debug Info -->
-      {#if ledEnabled && animationState.bluePropState}
+      <!-- Debug panel for fire/charcoal -->
+      {#if (activeMode === "fire" || activeMode === "charcoal") && animationState.bluePropState}
         <div class="control-section debug-section">
           <h3>Debug</h3>
           <div class="debug-info">
@@ -575,6 +748,11 @@
           </div>
         </div>
       {/if}
+
+      <!-- Admin publish for fire mode -->
+      {#if activeMode === "fire" && isAdmin}
+        <PublishControls onPublish={publishToProduction} />
+      {/if}
     </div>
   </div>
 </div>
@@ -584,19 +762,11 @@
   open={showPicker}
   onSelect={handleSequenceSelected}
   onClose={() => (showPicker = false)}
-  title="Select Sequence for LED Lab"
+  title="Select Sequence for Effects Lab"
 />
 
 <style>
-  .tuning-tab {
-    /* LED Lab domain color tokens */
-    --led-green: #00ff88;
-    --led-green-bright: #33ffaa;
-    --led-green-dim: rgba(0, 255, 136, 0.08);
-    --led-green-mid: rgba(0, 255, 136, 0.15);
-    --led-green-border: rgba(0, 255, 136, 0.3);
-    --led-green-border-strong: rgba(0, 255, 136, 0.5);
-
+  .playback-host {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -607,7 +777,7 @@
   .content {
     flex: 1;
     display: grid;
-    grid-template-columns: 1fr 320px;
+    grid-template-columns: 1fr 360px;
     gap: var(--spacing-md, 16px);
     padding: var(--spacing-md, 16px);
     min-height: 0;
@@ -646,7 +816,6 @@
 
   .empty-state i {
     font-size: 3rem;
-    color: var(--led-green-border);
   }
 
   .empty-state p,
@@ -660,11 +829,12 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-xs, 4px);
+    min-height: 48px;
     padding: 10px 20px;
-    border: 1.5px solid var(--led-green-border);
+    border: 1.5px solid var(--accent-border, rgba(255, 255, 255, 0.3));
     border-radius: var(--border-radius-md, 8px);
-    background: var(--led-green-dim);
-    color: var(--led-green);
+    background: var(--accent-dim, rgba(255, 255, 255, 0.08));
+    color: var(--accent, white);
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
     cursor: pointer;
@@ -672,8 +842,7 @@
   }
 
   .pick-btn:hover {
-    background: var(--led-green-mid);
-    border-color: var(--led-green-border-strong);
+    opacity: 0.85;
   }
 
   .pick-btn:focus-visible {
@@ -701,118 +870,20 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
     color: var(--theme-text, white);
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs, 4px);
-  }
-
-  .action-btn {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--spacing-xs, 4px);
-    padding: 10px 16px;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--border-radius-md, 8px);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text, white);
-    font-size: var(--font-size-min, 14px);
-    cursor: pointer;
-    transition: all 150ms ease;
-  }
-
-  .action-btn:hover {
-    background: color-mix(in srgb, var(--theme-text) 10%, transparent);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-  }
-
-  .sequence-info {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: var(--spacing-sm, 8px);
-    padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
-    background: color-mix(in srgb, var(--theme-text) 3%, transparent);
-    border-radius: var(--border-radius-sm, 4px);
-  }
-
-  .seq-name {
-    font-weight: 500;
-    color: var(--theme-text, white);
-    font-size: var(--font-size-min, 14px);
-  }
-
-  .seq-beats {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-  }
-
-  /* Source mode toggle */
-  .source-toggle {
-    display: flex;
-    gap: 2px;
-    background: color-mix(in srgb, var(--theme-text) 3%, transparent);
-    border-radius: var(--border-radius-md, 8px);
-    padding: 3px;
-    margin-bottom: var(--spacing-sm, 8px);
-  }
-
-  .source-btn {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 8px 10px;
-    border: none;
-    border-radius: 6px;
-    background: transparent;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 150ms ease;
-    min-height: 36px;
-  }
-
-  .source-btn:hover {
-    color: var(--theme-text, white);
-    background: color-mix(in srgb, var(--theme-text) 6%, transparent);
-  }
-
-  .source-btn.active {
-    background: var(--led-green-mid);
-    color: var(--led-green-bright);
-    box-shadow: 0 1px 3px var(--theme-overlay-dark, rgba(0, 0, 0, 0.2));
-  }
-
-  .source-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: -2px;
-  }
-
-  .source-btn i {
-    font-size: var(--font-size-compact, 12px);
-  }
-
-  .auto-actions {
-    display: flex;
-    gap: 6px;
-  }
-
-  .auto-actions .action-btn {
-    flex: 1;
-  }
-
-  .skip-btn:disabled,
-  .shuffle-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
   }
 
   .control-section :global(.tempo-control) {
     justify-content: center;
+  }
+
+  /* LED host needs the color tokens for the child panel */
+  .led-host {
+    --led-green: #00ff88;
+    --led-green-bright: #33ffaa;
+    --led-green-dim: rgba(0, 255, 136, 0.08);
+    --led-green-mid: rgba(0, 255, 136, 0.15);
+    --led-green-border: rgba(0, 255, 136, 0.3);
+    --led-green-border-strong: rgba(0, 255, 136, 0.5);
   }
 
   .debug-section {
@@ -838,8 +909,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .pick-btn,
-    .action-btn {
+    .pick-btn {
       transition: none;
     }
   }

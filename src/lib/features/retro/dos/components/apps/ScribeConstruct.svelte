@@ -12,11 +12,22 @@
   Domain: Retro DOS Terminal / SCRIBE App
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { terminalState } from "../../state/terminal-state.svelte";
   import { AsciiRenderer } from "../../services/implementations/AsciiRenderer";
   import { createMockPictographData } from "../../../shared/data/mock-pictograph-data";
   import { DosSoundManager } from "../../services/implementations/DosSoundManager";
+
+  /* ------------------------------------------------------------------ */
+  /* Props                                                               */
+  /* ------------------------------------------------------------------ */
+
+  interface Props {
+    /** Called when Construct mode finishes and should return to menu */
+    onreturn: () => void;
+  }
+
+  let { onreturn }: Props = $props();
 
   /* ------------------------------------------------------------------ */
   /* Services                                                            */
@@ -182,10 +193,10 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Exported input handler — called by DosTerminal                      */
+  /* Input handler — registered on terminalState.inputHandler            */
   /* ------------------------------------------------------------------ */
 
-  export function handleInput(input: string): void {
+  function handleInput(input: string): void {
     const trimmed = input.trim();
 
     switch (currentStep) {
@@ -269,10 +280,10 @@
         terminalState.writeBlank();
         terminalState.writeLine("Returning to menu...");
         terminalState.writeBlank();
-        terminalState.promptString = "  Enter selection: ";
         currentStep = "main";
         beats = [];
-        terminalState.scribeMode = "menu";
+        cleanup();
+        onreturn();
         break;
       }
       default: {
@@ -391,12 +402,24 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Mount: draw the initial header and prompt                           */
+  /* Lifecycle                                                           */
   /* ------------------------------------------------------------------ */
+
+  function cleanup(): void {
+    terminalState.inputHandler = null;
+    terminalState.promptString = "C:\\BELLWTHR>";
+  }
 
   onMount(() => {
     drawHeader();
     drawStatus();
     drawMainPrompt();
+    terminalState.inputHandler = handleInput;
+  });
+
+  onDestroy(() => {
+    if (terminalState.inputHandler === handleInput) {
+      terminalState.inputHandler = null;
+    }
   });
 </script>

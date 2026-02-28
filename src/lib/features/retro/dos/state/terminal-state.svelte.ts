@@ -48,6 +48,13 @@ class TerminalState {
 	 */
 	inputHandler = $state<((input: string) => void) | null>(null);
 
+	/**
+	 * Escape handler callback — set by app components that need custom ESC behavior.
+	 * When set, DosTerminal calls this on ESC instead of the default "return to menu".
+	 * Used by ScribeTutorial for multi-level ESC (lesson -> index -> menu).
+	 */
+	escapeHandler = $state<(() => void) | null>(null);
+
 	/** Write a line of plain text to the terminal */
 	writeLine(text: string, color?: DosColor): void {
 		const html = color

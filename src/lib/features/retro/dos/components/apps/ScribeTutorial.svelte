@@ -17,9 +17,20 @@
   Domain: Retro DOS Terminal / SCRIBE App
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { terminalState } from "../../state/terminal-state.svelte";
   import { DosSoundManager } from "../../services/implementations/DosSoundManager";
+
+  /* ------------------------------------------------------------------ */
+  /* Props                                                               */
+  /* ------------------------------------------------------------------ */
+
+  interface Props {
+    /** Called when Tutorial mode finishes and should return to menu */
+    onreturn: () => void;
+  }
+
+  let { onreturn }: Props = $props();
 
   const soundManager = new DosSoundManager();
 
@@ -458,8 +469,9 @@
    * Process input from the terminal.
    * In index view: digit selects a lesson.
    * In lesson view: ENTER advances, any text is ignored (ENTER is the trigger).
+   * ESC handling: empty input is used to detect ESC (DosTerminal sends empty on ESC).
    */
-  export function handleInput(input: string): void {
+  function handleInput(input: string): void {
     if (view === "index") {
       handleIndexInput(input);
     } else {
@@ -471,15 +483,17 @@
    * Handle ESC key press.
    * In lesson view: return to index.
    * In index view: return to SCRIBE menu.
+   * Registered on terminalState.escapeHandler during mount.
    */
-  export function handleEscape(): void {
+  function handleEscape(): void {
     if (view === "lesson") {
       soundManager.menuSelect();
       view = "index";
       drawIndex();
     } else {
       soundManager.menuSelect();
-      terminalState.scribeMode = "menu";
+      cleanup();
+      onreturn();
     }
   }
 
@@ -516,13 +530,30 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Mount: draw the lesson index                                        */
+  /* Lifecycle                                                           */
   /* ------------------------------------------------------------------ */
+
+  function cleanup(): void {
+    terminalState.inputHandler = null;
+    terminalState.escapeHandler = null;
+    terminalState.promptString = "C:\\BELLWTHR>";
+  }
 
   onMount(() => {
     view = "index";
     currentLesson = 0;
     currentPage = 0;
     drawIndex();
+    terminalState.inputHandler = handleInput;
+    terminalState.escapeHandler = handleEscape;
+  });
+
+  onDestroy(() => {
+    if (terminalState.inputHandler === handleInput) {
+      terminalState.inputHandler = null;
+    }
+    if (terminalState.escapeHandler === handleEscape) {
+      terminalState.escapeHandler = null;
+    }
   });
 </script>

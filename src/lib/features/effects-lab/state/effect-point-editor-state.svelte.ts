@@ -36,12 +36,16 @@ export class EffectPointEditorState {
 	private provider: IEffectPointOverrideProvider;
 	private saveIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
 	private actionFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
+	private storageKey: string;
 
 	constructor(
 		provider: IEffectPointOverrideProvider,
 		private descriptor: EffectDescriptor,
 	) {
+		this.storageKey = `effects-lab-selected-prop-${descriptor.id}`;
 		this.provider = provider;
+		const saved = this.loadSelectedPropType();
+		if (saved) this.selectedPropType = saved;
 		this.loadPointsForCurrentProp();
 	}
 
@@ -67,6 +71,7 @@ export class EffectPointEditorState {
 		this.selectedPointIndex = -1;
 		this.undoStack = [];
 		this.loadPointsForCurrentProp();
+		try { localStorage.setItem(this.storageKey, propType); } catch { /* ignore */ }
 	}
 
 	addPoint(dx: number, dy: number): void {
@@ -186,6 +191,14 @@ export class EffectPointEditorState {
 
 	getUserDefaultTypes(): string[] {
 		return this.provider.getUserDefaultTypes();
+	}
+
+	private loadSelectedPropType(): string | null {
+		try {
+			const raw = localStorage.getItem(this.storageKey);
+			if (raw && raw.length > 0) return raw;
+		} catch { /* ignore */ }
+		return null;
 	}
 
 	private loadPointsForCurrentProp(): void {

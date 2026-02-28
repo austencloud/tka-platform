@@ -1,12 +1,14 @@
 <!--
   EffectsLabModule.svelte
 
-  Unified lab for all animation visual effects (Trails, Fire, LED).
+  Unified lab for all animation visual effects (Trails, Fire, Charcoal, LED).
   Mode switcher at top, inner tabs (Tuning / Points) below.
+  The EffectsLabPlaybackHost stays mounted (CSS-hidden during Points tab)
+  so the canvas and playback survive inner-tab switches.
 -->
 <script lang="ts">
   import { onDestroy } from "svelte";
-  import EffectModeBar from "./components/EffectModeBar.svelte";
+  import EffectsLabPlaybackHost from "./components/EffectsLabPlaybackHost.svelte";
   import {
     getEffectDescriptor,
     type EffectMode,
@@ -20,7 +22,7 @@
   function loadMode(): EffectMode {
     try {
       const raw = sessionStorage.getItem(MODE_KEY);
-      if (raw === "trails" || raw === "fire" || raw === "led") return raw;
+      if (raw === "trails" || raw === "fire" || raw === "charcoal" || raw === "led") return raw;
     } catch { /* ignore */ }
     return "trails";
   }
@@ -40,25 +42,45 @@
 
   const visibilityManager = getAnimationVisibilityManager();
 
-  // Clean up effects when switching away from a mode
-  function cleanupMode(mode: EffectMode) {
+  // Activate the effect for a given mode
+  function activateMode(mode: EffectMode) {
+    if (mode === "fire") {
+      visibilityManager.setFireUseCharcoal(false);
+      visibilityManager.setFireEffect(true);
+    } else if (mode === "charcoal") {
+      visibilityManager.setFireUseCharcoal(true);
+      visibilityManager.setFireEffect(true);
+    } else if (mode === "led") {
+      visibilityManager.setLedEffect(true);
+    }
+    // trails: no visibility manager flag needed
+  }
+
+  // Deactivate the effect for a given mode
+  function deactivateMode(mode: EffectMode) {
     if (mode === "fire") visibilityManager.setFireEffect(false);
+    if (mode === "charcoal") {
+      visibilityManager.setFireEffect(false);
+      visibilityManager.setFireUseCharcoal(false);
+    }
     if (mode === "led") visibilityManager.setLedEffect(false);
   }
 
-  // On mount, disable effects that don't belong to the restored mode.
-  // Without this, a persisted fireEffect=true leaks into the LED tab (and vice versa).
-  function cleanupInactiveModes(current: EffectMode) {
-    if (current !== "fire") visibilityManager.setFireEffect(false);
+  // On mount: disable effects that don't belong to the active mode, then activate it
+  function initializeMode(current: EffectMode) {
+    if (current !== "fire" && current !== "charcoal") visibilityManager.setFireEffect(false);
+    if (current !== "charcoal") visibilityManager.setFireUseCharcoal(false);
     if (current !== "led") visibilityManager.setLedEffect(false);
+    activateMode(current);
   }
-  cleanupInactiveModes(activeMode);
+  initializeMode(activeMode);
 
   function setMode(mode: EffectMode) {
     if (mode !== activeMode) {
-      cleanupMode(activeMode);
+      deactivateMode(activeMode);
     }
     activeMode = mode;
+    activateMode(mode);
     try { sessionStorage.setItem(MODE_KEY, mode); } catch { /* ignore */ }
     // If switching to a mode without point editor, fall back to tuning
     const desc = getEffectDescriptor(mode);
@@ -69,7 +91,7 @@
 
   // Clean up when the entire module unmounts (navigating away from Effects Lab)
   onDestroy(() => {
-    cleanupMode(activeMode);
+    deactivateMode(activeMode);
   });
 
   function setTab(tab: InnerTab) {
@@ -77,26 +99,9 @@
     try { sessionStorage.setItem(TAB_KEY, tab); } catch { /* ignore */ }
   }
 
-  // Lazy-load tuning tabs per mode
-  const tuningComponents: Record<EffectMode, () => Promise<{ default: any }>> = {
-    trails: () => import("./components/TrailsTuningTab.svelte"),
-    fire: () => import("./components/FireTuningTab.svelte"),
-    led: () => import("./components/LedTuningTab.svelte"),
-  };
-
-  let TuningComponent = $state<any>(null);
+  // Lazy-load point editor (shared across fire/charcoal/LED)
   let PointEditorComponent = $state<any>(null);
 
-  // Load tuning component when mode changes
-  $effect(() => {
-    const loader = tuningComponents[activeMode];
-    TuningComponent = null;
-    loader().then((mod) => {
-      TuningComponent = mod.default;
-    });
-  });
-
-  // Lazy-load point editor (shared across fire/LED)
   $effect(() => {
     if (descriptor.hasPointEditor && activeTab === "points" && !PointEditorComponent) {
       import("./components/EffectPointEditorTab.svelte").then((mod) => {
@@ -115,8 +120,6 @@
       </h1>
       <span class="badge">Experimental</span>
     </div>
-
-    <EffectModeBar {activeMode} onModeChange={setMode} />
 
     <div class="tab-bar" role="tablist">
       <button
@@ -147,13 +150,10 @@
   </header>
 
   <div class="tab-content" role="tabpanel">
-    {#if activeTab === "tuning"}
-      {#if TuningComponent}
-        <TuningComponent />
-      {:else}
-        <div class="loading">Loading...</div>
-      {/if}
-    {:else if activeTab === "points" && descriptor.hasPointEditor}
+    <div class="tuning-host" class:hidden={activeTab !== "tuning"}>
+      <EffectsLabPlaybackHost {activeMode} onModeChange={setMode} />
+    </div>
+    {#if activeTab === "points" && descriptor.hasPointEditor}
       {#if PointEditorComponent}
         <PointEditorComponent {descriptor} />
       {:else}
@@ -218,7 +218,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    min-height: 44px;
+    min-height: 48px;
     padding: 10px 20px;
     border: none;
     border-bottom: 2px solid transparent;
@@ -250,6 +250,17 @@
     flex-direction: column;
     min-height: 0;
     overflow: hidden;
+  }
+
+  .tuning-host {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .tuning-host.hidden {
+    display: none;
   }
 
   .loading {

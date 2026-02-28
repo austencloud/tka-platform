@@ -12,13 +12,13 @@
   Domain: Retro DOS Terminal / SCRIBE App
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { terminalState } from "../../state/terminal-state.svelte";
   import { AsciiRenderer } from "../../services/implementations/AsciiRenderer";
   import { createMockPictographData } from "../../../shared/data/mock-pictograph-data";
 
   interface Props {
-    /** Called when a line of input is submitted by the user */
+    /** Called when Spell mode finishes and should return to menu */
     onreturn: () => void;
   }
 
@@ -72,12 +72,13 @@
   let phase = $state<Phase>("prompt");
 
   /* ------------------------------------------------------------------ */
-  /* Input handler — wired from parent terminal                          */
+  /* Input handler — registered on terminalState.inputHandler            */
   /* ------------------------------------------------------------------ */
 
-  export function handleInput(input: string): void {
+  function handleInput(input: string): void {
     if (phase === "done") {
       // Any input after results returns to menu
+      cleanup();
       onreturn();
       return;
     }
@@ -197,11 +198,23 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Mount: show header and first prompt                                 */
+  /* Lifecycle                                                           */
   /* ------------------------------------------------------------------ */
+
+  function cleanup(): void {
+    terminalState.inputHandler = null;
+    terminalState.promptString = "C:\\BELLWTHR>";
+  }
 
   onMount(() => {
     showHeader();
     showPrompt();
+    terminalState.inputHandler = handleInput;
+  });
+
+  onDestroy(() => {
+    if (terminalState.inputHandler === handleInput) {
+      terminalState.inputHandler = null;
+    }
   });
 </script>

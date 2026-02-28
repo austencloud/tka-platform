@@ -14,7 +14,6 @@
   import type { LedColorMode } from "$lib/shared/animation-engine/domain/types/LedTypes";
 
   interface Props {
-    ledEnabled: boolean;
     brightness: number;
     patternId: string;
     primaryColor: string;
@@ -28,7 +27,6 @@
   }
 
   let {
-    ledEnabled = $bindable(),
     brightness = $bindable(),
     patternId = $bindable(),
     primaryColor = $bindable(),
@@ -56,20 +54,7 @@
     LED Effect
   </h3>
 
-  <div class="toggle-row">
-    <span>Enabled</span>
-    <button
-      class="toggle-btn"
-      class:active={ledEnabled}
-      onclick={() => (ledEnabled = !ledEnabled)}
-      aria-label={ledEnabled ? "Disable LED effect" : "Enable LED effect"}
-    >
-      {ledEnabled ? "ON" : "OFF"}
-    </button>
-  </div>
-
-  {#if ledEnabled}
-    <div class="brightness-section">
+  <div class="brightness-section">
       <span class="brightness-label">Brightness</span>
       <div class="brightness-row">
         {#each brightnessLevels as level}
@@ -192,7 +177,6 @@
         <span class="slider-value">{trailFadeRate.toFixed(2)}</span>
       </div>
     </div>
-  {/if}
 </div>
 
 <style>
@@ -212,45 +196,6 @@
 
   .led-section h3 i {
     color: var(--led-green);
-  }
-
-  .toggle-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: var(--font-size-min, 14px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-  }
-
-  .toggle-btn {
-    padding: 6px 16px;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: 9999px;
-    background: color-mix(in srgb, var(--theme-text) 5%, transparent);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 150ms ease;
-    min-width: 56px;
-  }
-
-  .toggle-btn.active {
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--led-green) 30%, transparent),
-      color-mix(in srgb, var(--led-green) 15%, transparent)
-    );
-    border-color: var(--led-green-border-strong);
-    color: var(--led-green-bright);
-  }
-
-  .toggle-btn:hover {
-    border-color: color-mix(in srgb, var(--theme-text) 30%, transparent);
-  }
-
-  .toggle-btn.active:hover {
-    border-color: color-mix(in srgb, var(--led-green) 70%, transparent);
   }
 
   .brightness-section {
@@ -275,8 +220,8 @@
 
   .brightness-btn {
     flex: 1;
-    min-height: 36px;
-    padding: 6px 8px;
+    min-height: 48px;
+    padding: 8px;
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--border-radius-md, 8px);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
@@ -315,6 +260,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    min-height: 48px;
     padding: 8px 10px;
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--border-radius-md, 8px);
@@ -379,7 +325,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 6px 8px;
+    padding: 8px;
     border: none;
     border-radius: 6px;
     background: transparent;
@@ -388,7 +334,7 @@
     font-weight: 500;
     cursor: pointer;
     transition: all 150ms ease;
-    min-height: 32px;
+    min-height: 48px;
   }
 
   .color-mode-btn:hover {
@@ -456,6 +402,7 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-sm, 8px);
+    min-height: 48px;
   }
 
   .slider-row label {

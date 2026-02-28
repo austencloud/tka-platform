@@ -22,7 +22,7 @@
 
 	// Resolve the correct override provider based on effect type
 	const providerKey =
-		descriptor.id === "fire"
+		descriptor.id === "fire" || descriptor.id === "charcoal"
 			? "firePointOverrideProvider"
 			: "ledPointOverrideProvider";
 	const provider = container.items[

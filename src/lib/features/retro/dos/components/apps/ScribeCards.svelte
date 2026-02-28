@@ -15,12 +15,27 @@
   Domain: Retro DOS Terminal / SCRIBE App
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { terminalState } from "../../state/terminal-state.svelte";
   import { AsciiRenderer } from "../../services/implementations/AsciiRenderer";
   import { createMockPictographData } from "../../../shared/data/mock-pictograph-data";
   import type { RetroPictographData } from "../../../shared/domain/pictograph-types";
   import { DosSoundManager } from "../../services/implementations/DosSoundManager";
+
+  /* ------------------------------------------------------------------ */
+  /* Props                                                               */
+  /* ------------------------------------------------------------------ */
+
+  interface Props {
+    /** Called when Cards mode finishes and should return to menu */
+    onreturn: () => void;
+  }
+
+  let { onreturn }: Props = $props();
+
+  /* ------------------------------------------------------------------ */
+  /* Services                                                            */
+  /* ------------------------------------------------------------------ */
 
   const renderer = new AsciiRenderer();
   const soundManager = new DosSoundManager();
@@ -234,10 +249,10 @@
   /* ------------------------------------------------------------------ */
 
   /**
-   * Process input from the terminal. Called by DosTerminal when
-   * scribeMode === "cards".
+   * Process input from the terminal.
+   * Registered on terminalState.inputHandler during mount.
    */
-  export function handleInput(input: string): void {
+  function handleInput(input: string): void {
     const trimmed = input.trim().toUpperCase();
 
     if (currentView === "list") {
@@ -251,7 +266,8 @@
     // Return to SCRIBE menu
     if (input === "R" || input === "RETURN") {
       soundManager.menuSelect();
-      terminalState.scribeMode = "menu";
+      cleanup();
+      onreturn();
       return;
     }
 
@@ -323,12 +339,24 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Mount: draw the list view                                           */
+  /* Lifecycle                                                           */
   /* ------------------------------------------------------------------ */
+
+  function cleanup(): void {
+    terminalState.inputHandler = null;
+    terminalState.promptString = "C:\\BELLWTHR>";
+  }
 
   onMount(() => {
     currentView = "list";
     currentIndex = 0;
     drawList();
+    terminalState.inputHandler = handleInput;
+  });
+
+  onDestroy(() => {
+    if (terminalState.inputHandler === handleInput) {
+      terminalState.inputHandler = null;
+    }
   });
 </script>

@@ -1,4 +1,5 @@
 import { createContainer } from "iti";
+import { EffectPointsPersister } from "$lib/features/effects-lab/services/implementations/EffectPointsPersister";
 import { FirePointOverrideProvider } from "$lib/features/effects-lab/services/implementations/FirePointOverrideProvider";
 import { LedPointOverrideProvider } from "$lib/features/effects-lab/services/implementations/LedPointOverrideProvider";
 import { FireDefaultsLoader } from "$lib/shared/animation-engine/services/implementations/FireDefaultsLoader";
@@ -8,19 +9,25 @@ import { setLedPointOverrideProvider } from "$lib/shared/animation-engine/domain
 
 /**
  * Effects Lab DI container.
- * Merges the former flame-lab and led-lab containers into one.
  *
- * Registration order matters: `fireDefaultsLoader` is declared first
- * because `firePointOverrideProvider` depends on it (ITI resolves by name).
+ * Registration order matters:
+ * 1. `effectPointsPersister` — shared Firebase-backed position storage
+ * 2. `fireDefaultsLoader` — admin-published fire defaults from Firestore
+ * 3. `firePointOverrideProvider` / `ledPointOverrideProvider` — depend on persister
  */
 export const effectsLabContainer = createContainer()
 	.add({
+		effectPointsPersister: () => {
+			const persister = new EffectPointsPersister();
+			persister.load();
+			return persister;
+		},
 		fireDefaultsLoader: () => new FireDefaultsLoader(),
 		fireDefaultsPublisher: () => new FireDefaultsPublisher(),
 	})
-	.add(({ fireDefaultsLoader }) => ({
+	.add(({ effectPointsPersister, fireDefaultsLoader }) => ({
 		firePointOverrideProvider: () => {
-			const provider = new FirePointOverrideProvider();
+			const provider = new FirePointOverrideProvider(effectPointsPersister);
 
 			// Hook into the domain-level fire point lookup so overrides
 			// take effect automatically in FireTipTracker
@@ -44,10 +51,8 @@ export const effectsLabContainer = createContainer()
 
 			return provider;
 		},
-	}))
-	.add({
 		ledPointOverrideProvider: () => {
-			const provider = new LedPointOverrideProvider();
+			const provider = new LedPointOverrideProvider(effectPointsPersister);
 
 			// Hook into the domain-level LED point lookup so overrides
 			// take effect automatically in LedTipTracker
@@ -55,6 +60,6 @@ export const effectsLabContainer = createContainer()
 
 			return provider;
 		},
-	});
+	}));
 
 export type EffectsLabContainer = typeof effectsLabContainer;

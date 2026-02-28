@@ -6,18 +6,35 @@
   Keyboard input is captured via a window-level keydown listener so
   the user never needs to focus an <input> element.
 
-  Command parsing is delegated to CommandParser (wired in Task 6).
-  Boot sequence plays on mount via DosBootSequence, then transitions to prompt.
+  Command parsing is delegated to CommandParser. Boot sequence plays
+  on mount via DosBootSequence, then transitions to prompt. All
+  SCRIBE modes are wired as headless child components that register
+  their own input handlers on terminalState.
 
   Domain: Retro DOS Terminal
 -->
 <script lang="ts">
   import { onMount } from "svelte";
   import { terminalState } from "../state/terminal-state.svelte";
+  import { CommandParser } from "../services/implementations/CommandParser";
+  import { DosFileSystem } from "../services/implementations/DosFileSystem";
   import DosBootSequence from "./DosBootSequence.svelte";
   import ScribeMenu from "./apps/ScribeMenu.svelte";
   import ScribeGenerate from "./apps/ScribeGenerate.svelte";
+  import ScribeConstruct from "./apps/ScribeConstruct.svelte";
+  import ScribeSpell from "./apps/ScribeSpell.svelte";
+  import ScribeBrowse from "./apps/ScribeBrowse.svelte";
+  import ScribeCards from "./apps/ScribeCards.svelte";
+  import ScribeTutorial from "./apps/ScribeTutorial.svelte";
+  import ScribeConfig from "./apps/ScribeConfig.svelte";
   import "../styles/dos-terminal.css";
+
+  /* ------------------------------------------------------------------ */
+  /* Services                                                            */
+  /* ------------------------------------------------------------------ */
+
+  const fileSystem = new DosFileSystem();
+  const commandParser = new CommandParser(fileSystem);
 
   /* ------------------------------------------------------------------ */
   /* Element references                                                  */
@@ -68,9 +85,7 @@
 
     if (event.key === "Escape") {
       event.preventDefault();
-      if (terminalState.mode === "scribe" && terminalState.scribeMode !== "menu") {
-        terminalState.scribeMode = "menu";
-      }
+      handleEscape();
       return;
     }
 
@@ -78,6 +93,28 @@
     if (event.key.length === 1) {
       event.preventDefault();
       terminalState.inputText += event.key;
+    }
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* ESC key handling                                                     */
+  /* ------------------------------------------------------------------ */
+
+  function handleEscape(): void {
+    if (terminalState.mode === "scribe") {
+      // If a component registered its own ESC handler, delegate to it
+      if (terminalState.escapeHandler) {
+        terminalState.escapeHandler();
+      } else if (terminalState.scribeMode !== "menu") {
+        // Default behavior: return to SCRIBE menu
+        returnToScribeMenu();
+      } else {
+        // At SCRIBE menu: ESC returns to DOS prompt
+        terminalState.inputHandler = null;
+        terminalState.promptString = "C:\\BELLWTHR>";
+        terminalState.mode = "prompt";
+        terminalState.scribeMode = "menu";
+      }
     }
   }
 
@@ -96,32 +133,24 @@
     // Clear input field
     terminalState.inputText = "";
 
-    // Delegate to command handler (stub until Task 6)
-    handleInput(input);
+    // Delegate to command handler
+    routeInput(input);
   }
 
   /* ------------------------------------------------------------------ */
-  /* Command routing — delegates to inputHandler if set, else stub      */
+  /* Command routing                                                     */
   /* ------------------------------------------------------------------ */
 
-  function handleInput(input: string): void {
+  function routeInput(input: string): void {
     // If an app component has registered an input handler, use it
     if (terminalState.inputHandler) {
       terminalState.inputHandler(input);
       return;
     }
 
-    // Default stub — replaced by CommandParser in Task 6
-    // Recognize SCRIBE to launch the menu app
-    if (input.toUpperCase() === "SCRIBE") {
-      terminalState.mode = "scribe";
-      terminalState.scribeMode = "menu";
-      return;
-    }
-
+    // Fall through to the CommandParser for DOS prompt commands
     if (input.length > 0) {
-      terminalState.writeLine("Bad command or file name");
-      terminalState.writeBlank();
+      commandParser.execute(input);
     }
   }
 
@@ -172,7 +201,7 @@
       <DosBootSequence oncomplete={onBootComplete} />
     {/if}
 
-    <!-- SCRIBE menu (renders nothing visible — writes to terminal state) -->
+    <!-- SCRIBE menu -->
     {#if terminalState.mode === "scribe" && terminalState.scribeMode === "menu"}
       <ScribeMenu />
     {/if}
@@ -180,6 +209,36 @@
     <!-- SCRIBE Generate mode -->
     {#if terminalState.mode === "scribe" && terminalState.scribeMode === "generate"}
       <ScribeGenerate onreturn={returnToScribeMenu} />
+    {/if}
+
+    <!-- SCRIBE Construct mode -->
+    {#if terminalState.mode === "scribe" && terminalState.scribeMode === "construct"}
+      <ScribeConstruct onreturn={returnToScribeMenu} />
+    {/if}
+
+    <!-- SCRIBE Spell mode -->
+    {#if terminalState.mode === "scribe" && terminalState.scribeMode === "spell"}
+      <ScribeSpell onreturn={returnToScribeMenu} />
+    {/if}
+
+    <!-- SCRIBE Browse mode -->
+    {#if terminalState.mode === "scribe" && terminalState.scribeMode === "browse"}
+      <ScribeBrowse onreturn={returnToScribeMenu} />
+    {/if}
+
+    <!-- SCRIBE Cards mode -->
+    {#if terminalState.mode === "scribe" && terminalState.scribeMode === "cards"}
+      <ScribeCards onreturn={returnToScribeMenu} />
+    {/if}
+
+    <!-- SCRIBE Tutorial mode -->
+    {#if terminalState.mode === "scribe" && terminalState.scribeMode === "tutorial"}
+      <ScribeTutorial onreturn={returnToScribeMenu} />
+    {/if}
+
+    <!-- SCRIBE Config mode -->
+    {#if terminalState.mode === "scribe" && terminalState.scribeMode === "config"}
+      <ScribeConfig onreturn={returnToScribeMenu} />
     {/if}
 
     <!-- Input line with prompt + cursor -->

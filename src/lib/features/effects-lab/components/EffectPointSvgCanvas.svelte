@@ -86,10 +86,19 @@
       const svgRoot = doc.documentElement;
       // Remove any script elements (defense-in-depth)
       svgRoot.querySelectorAll("script").forEach((s) => s.remove());
-      // Remove event handler attributes from all elements
+      // Sanitize all elements for ghost display
       for (const el of svgRoot.querySelectorAll("*")) {
         for (const attr of Array.from(el.attributes)) {
+          // Remove event handlers
           if (attr.name.startsWith("on")) el.removeAttribute(attr.name);
+        }
+        // Strip inline fill/stroke so CSS ghost styling applies uniformly.
+        // Many prop SVGs use inline style="fill:#color" which overrides CSS rules,
+        // causing the ghost to show original colors instead of a uniform outline.
+        if (el instanceof SVGElement && el.style) {
+          el.style.removeProperty("fill");
+          el.style.removeProperty("stroke");
+          el.style.removeProperty("stroke-width");
         }
       }
       // Move child nodes into the prop shape group.

@@ -13,9 +13,20 @@
   Domain: Retro DOS Terminal / SCRIBE App
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { terminalState } from "../../state/terminal-state.svelte";
   import { DosSoundManager } from "../../services/implementations/DosSoundManager";
+
+  /* ------------------------------------------------------------------ */
+  /* Props                                                               */
+  /* ------------------------------------------------------------------ */
+
+  interface Props {
+    /** Called when Config mode finishes and should return to menu */
+    onreturn: () => void;
+  }
+
+  let { onreturn }: Props = $props();
 
   const soundManager = new DosSoundManager();
 
@@ -54,7 +65,7 @@
    * Digits 1-3 toggle the corresponding setting. Anything else
    * shows an error message.
    */
-  export function handleInput(input: string): void {
+  function handleInput(input: string): void {
     const trimmed = input.trim();
 
     if (trimmed === "1") {
@@ -97,11 +108,23 @@
     terminalState.writeLine("Invalid selection. Enter 1-3 or press ESC to return.");
   }
 
-  /**
-   * Draw the configuration screen when this component mounts.
-   * Covers both initial display and re-entry from other modes.
-   */
+  /* ------------------------------------------------------------------ */
+  /* Lifecycle                                                           */
+  /* ------------------------------------------------------------------ */
+
+  function cleanup(): void {
+    terminalState.inputHandler = null;
+    terminalState.promptString = "C:\\BELLWTHR>";
+  }
+
   onMount(() => {
     drawConfig();
+    terminalState.inputHandler = handleInput;
+  });
+
+  onDestroy(() => {
+    if (terminalState.inputHandler === handleInput) {
+      terminalState.inputHandler = null;
+    }
   });
 </script>

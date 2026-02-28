@@ -43,7 +43,7 @@ export interface EffectDescriptor {
 	getDefaultPoints(propType: string): (FirePoint | LedPoint)[];
 }
 
-export type EffectMode = "trails" | "fire" | "led";
+export type EffectMode = "trails" | "fire" | "charcoal" | "led";
 
 export const FIRE_DESCRIPTOR: EffectDescriptor = {
 	id: "fire",
@@ -112,10 +112,35 @@ export const TRAILS_DESCRIPTOR: EffectDescriptor = {
 	getDefaultPoints: () => [],
 };
 
+export const CHARCOAL_DESCRIPTOR: EffectDescriptor = {
+	id: "charcoal",
+	label: "Charcoal",
+	icon: "fas fa-meteor",
+	accentColor: "#f59e0b",
+	accentColorMid: "rgba(245, 158, 11, 0.15)",
+	accentColorBorder: "rgba(245, 158, 11, 0.3)",
+	hasPointEditor: true,
+	intensityLabel: "Flame Scale",
+	intensityRange: [0.1, 2.0],
+	intensityStep: 0.1,
+	intensityDefault: 0.8,
+	getIntensity: (p: FirePoint) => p.flameScale,
+	setIntensity: (p: FirePoint, v: number) => {
+		p.flameScale = v;
+	},
+	createPoint: (dx: number, dy: number): FirePoint => ({
+		dx,
+		dy,
+		flameScale: 0.8,
+	}),
+	getDefaultPoints: (propType: string) => getFirePoints(propType).points,
+};
+
 /** All registered effect descriptors, in display order */
 export const EFFECT_DESCRIPTORS: EffectDescriptor[] = [
 	TRAILS_DESCRIPTOR,
 	FIRE_DESCRIPTOR,
+	CHARCOAL_DESCRIPTOR,
 	LED_DESCRIPTOR,
 ];
 

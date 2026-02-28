@@ -33,37 +33,44 @@
 
 <style>
   .mode-bar {
-    display: flex;
-    gap: var(--spacing-xs, 4px);
-    padding: 0 var(--spacing-lg, 24px);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    padding: 3px;
+    background: color-mix(in srgb, var(--theme-text) 3%, transparent);
+    border-radius: var(--border-radius-md, 8px);
   }
 
   .mode-btn {
     display: flex;
     align-items: center;
-    gap: 8px;
-    min-height: 44px;
-    padding: 8px 16px;
-    border: 1px solid transparent;
-    border-radius: var(--radius-md, 8px) var(--radius-md, 8px) 0 0;
-    background: none;
+    justify-content: center;
+    gap: 6px;
+    min-height: 48px;
+    padding: 8px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-min, 14px);
+    font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     cursor: pointer;
-    transition: color 150ms ease, background 150ms ease, border-color 150ms ease;
+    transition: color 150ms ease, background 150ms ease;
   }
 
   .mode-btn:hover {
     color: var(--theme-text, white);
-    background: var(--mode-color-mid);
+    background: color-mix(in srgb, var(--theme-text) 6%, transparent);
   }
 
   .mode-btn.active {
     color: var(--mode-color);
     background: var(--mode-color-mid);
-    border-color: var(--mode-color-border);
-    border-bottom-color: transparent;
+    box-shadow: 0 1px 3px var(--theme-overlay-dark, rgba(0, 0, 0, 0.2));
+  }
+
+  .mode-btn i {
+    font-size: var(--font-size-compact, 12px);
   }
 
   .mode-btn:focus-visible {
