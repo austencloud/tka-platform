@@ -264,6 +264,20 @@
 
   onMount(() => {
     siteMode = detectSiteMode(window.location.origin);
+
+    // Standalone routes that bypass the full app bootstrap.
+    // The /1995 retro route has its own boot sequence and doesn't need
+    // Firebase, auth, analytics, or the DI container.
+    const isStandaloneRoute = ["/1989", "/1995", "/1998", "/2003"].some(
+      (r) => window.location.pathname.startsWith(r)
+    );
+    if (isStandaloneRoute) {
+      const loadingScreen = document.getElementById("app-loading");
+      if (loadingScreen) loadingScreen.remove();
+      containerReady = true;
+      return;
+    }
+
     const isLanding = siteMode === "landing";
 
     const initPromise = isLanding ? initLandingMode() : initAppMode();

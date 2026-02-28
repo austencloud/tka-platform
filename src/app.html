@@ -699,6 +699,11 @@
         // Define a no-op so layout/page code doesn't error
         window.__tkaLoadProgress = function() {};
       }
+      // Retro routes: have their own boot sequences — skip modern loading screen
+      if (/^\/(1989|1995|1998|2003)(\/|$)/.test(window.location.pathname)) {
+        document.getElementById('app-loading').style.display = 'none';
+        window.__tkaLoadProgress = function() {};
+      }
     </script>
     <script>
       // Sims-style flavor text — shuffled each load for variety
