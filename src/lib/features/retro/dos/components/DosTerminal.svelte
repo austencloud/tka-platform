@@ -7,13 +7,14 @@
   the user never needs to focus an <input> element.
 
   Command parsing is delegated to CommandParser (wired in Task 6).
-  Boot sequence animation is wired in Task 4.
+  Boot sequence plays on mount via DosBootSequence, then transitions to prompt.
 
   Domain: Retro DOS Terminal
 -->
 <script lang="ts">
   import { onMount } from "svelte";
   import { terminalState } from "../state/terminal-state.svelte";
+  import DosBootSequence from "./DosBootSequence.svelte";
   import "../styles/dos-terminal.css";
 
   /* ------------------------------------------------------------------ */
@@ -109,15 +110,21 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Mount: initialize terminal                                          */
+  /* Boot complete callback                                              */
+  /* ------------------------------------------------------------------ */
+
+  function onBootComplete(): void {
+    terminalState.mode = "prompt";
+    terminalState.inputEnabled = true;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Mount: start in boot mode                                           */
   /* ------------------------------------------------------------------ */
 
   onMount(() => {
     terminalState.mode = "boot";
-
-    // Boot sequence wired in Task 4. For now, skip straight to prompt.
-    terminalState.mode = "prompt";
-    terminalState.inputEnabled = true;
+    terminalState.inputEnabled = false;
   });
 </script>
 
@@ -135,6 +142,11 @@
     {#each terminalState.lines as line, i (i)}
       <div class="dos-line">{@html line.html}</div>
     {/each}
+
+    <!-- Boot sequence (renders nothing visible — writes to terminal state) -->
+    {#if terminalState.mode === "boot"}
+      <DosBootSequence oncomplete={onBootComplete} />
+    {/if}
 
     <!-- Input line with prompt + cursor -->
     {#if terminalState.inputEnabled}
