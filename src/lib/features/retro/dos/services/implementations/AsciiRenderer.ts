@@ -19,7 +19,7 @@
  * Domain: Retro DOS Era
  */
 
-import type { IAsciiRenderer } from "../contracts/IAsciiRenderer";
+import type { IAsciiRenderer, AsciiRenderOptions } from "../contracts/IAsciiRenderer";
 import type {
 	RetroPictographData,
 	RetroHandData,
@@ -53,6 +53,13 @@ const COLOR_GREEN = "dos-green";
 const COLOR_GRAY = "dos-gray";
 const COLOR_WHITE = "dos-white";
 
+/** Priority levels for the layered rendering system */
+const PRIORITY_EMPTY = -1;
+const PRIORITY_GRID = 0;
+const PRIORITY_ARROW = 1;
+const PRIORITY_ORIENTATION = 2;
+const PRIORITY_HAND = 3;
+
 // ============================================================================
 // CELL TYPE: character + optional color
 // ============================================================================
@@ -60,10 +67,11 @@ const COLOR_WHITE = "dos-white";
 interface Cell {
 	char: string;
 	color: string | null;
+	priority: number;
 }
 
 function emptyCell(): Cell {
-	return { char: " ", color: null };
+	return { char: " ", color: null, priority: PRIORITY_EMPTY };
 }
 
 // ============================================================================
@@ -258,48 +266,55 @@ const MOTION_LABELS: Record<MotionType, string> = {
 // ============================================================================
 
 export class AsciiRenderer implements IAsciiRenderer {
-	renderPictograph(data: RetroPictographData): string[] {
+	renderPictograph(data: RetroPictographData, options?: AsciiRenderOptions): string[] {
 		const isBox = data.gridMode === GridMode.BOX;
 		const coords = isBox ? BOX_COORDS : DIAMOND_COORDS;
 		const height = isBox ? BOX_HEIGHT : DIAMOND_HEIGHT;
+		const layers = options?.layers;
 
 		// Step 1: Allocate buffer
 		const buffer = this.createBuffer(BUFFER_WIDTH, height);
 
-		// Step 2: Draw grid skeleton
-		if (isBox) {
-			this.drawBoxGrid(buffer, height);
-		} else {
-			this.drawDiamondGrid(buffer, height);
+		// Step 2: Draw grid skeleton (layer: grid)
+		if (!layers || layers.grid !== false) {
+			if (isBox) {
+				this.drawBoxGrid(buffer, height);
+			} else {
+				this.drawDiamondGrid(buffer, height);
+			}
+
+			// Center marker
+			const center = coords[GridLocation.CENTER];
+			this.setCell(buffer, center.col, center.row, "o", COLOR_WHITE, PRIORITY_GRID);
+
+			// Position dots
+			this.placePositionDots(buffer, coords, data);
 		}
 
-		// Step 3: Place center marker
-		const center = coords[GridLocation.CENTER];
-		this.setCell(buffer, center.col, center.row, "o", COLOR_WHITE);
-
-		// Step 4: Place position dots at empty grid points
-		this.placePositionDots(buffer, coords, data);
-
-		// Step 5: Overlay hand markers
-		this.placeHand(buffer, data.blueHand, coords);
-		this.placeHand(buffer, data.redHand, coords);
-
-		// Step 6: Handle overlapping hands (both at same position)
-		this.markOverlaps(buffer, data, coords);
-
-		// Step 7: Draw motion arrows
-		if (data.blueHand.motionType !== MotionType.STATIC) {
-			this.drawMotionPath(buffer, data.blueHand, coords);
-		}
-		if (data.redHand.motionType !== MotionType.STATIC) {
-			this.drawMotionPath(buffer, data.redHand, coords);
+		// Step 3: Overlay hand markers (layer: hands)
+		if (!layers || layers.hands !== false) {
+			this.placeHand(buffer, data.blueHand, coords);
+			this.placeHand(buffer, data.redHand, coords);
+			this.markOverlaps(buffer, data, coords);
 		}
 
-		// Step 8: Place orientation indicators
-		this.placeOrientation(buffer, data.blueHand, coords, BUFFER_WIDTH, height);
-		this.placeOrientation(buffer, data.redHand, coords, BUFFER_WIDTH, height);
+		// Step 4: Draw motion arrows (layer: arrows)
+		if (!layers || layers.arrows !== false) {
+			if (data.blueHand.motionType !== MotionType.STATIC) {
+				this.drawMotionPath(buffer, data.blueHand, coords);
+			}
+			if (data.redHand.motionType !== MotionType.STATIC) {
+				this.drawMotionPath(buffer, data.redHand, coords);
+			}
+		}
 
-		// Step 9: Convert to HTML lines
+		// Step 5: Place orientation indicators (layer: staves)
+		if (!layers || layers.staves !== false) {
+			this.placeOrientation(buffer, data.blueHand, coords, BUFFER_WIDTH, height);
+			this.placeOrientation(buffer, data.redHand, coords, BUFFER_WIDTH, height);
+		}
+
+		// Step 6: Convert to HTML
 		return this.bufferToHtml(buffer, height);
 	}
 
@@ -379,9 +394,13 @@ export class AsciiRenderer implements IAsciiRenderer {
 		row: number,
 		char: string,
 		color: string | null,
+		priority: number = PRIORITY_GRID,
 	): void {
 		if (row >= 0 && row < buffer.length && col >= 0 && col < buffer[0]!.length) {
-			buffer[row]![col] = { char, color };
+			const existing = buffer[row]![col]!;
+			if (priority >= existing.priority) {
+				buffer[row]![col] = { char, color, priority };
+			}
 		}
 	}
 
@@ -563,7 +582,7 @@ export class AsciiRenderer implements IAsciiRenderer {
 		const coord = coords[hand.location];
 		const marker = hand.color === MotionColor.BLUE ? "B" : "R";
 		const color = hand.color === MotionColor.BLUE ? COLOR_BLUE : COLOR_RED;
-		this.setCell(buffer, coord.col, coord.row, marker, color);
+		this.setCell(buffer, coord.col, coord.row, marker, color, PRIORITY_HAND);
 	}
 
 	private markOverlaps(
@@ -573,7 +592,7 @@ export class AsciiRenderer implements IAsciiRenderer {
 	): void {
 		if (data.blueHand.location === data.redHand.location) {
 			const coord = coords[data.blueHand.location];
-			this.setCell(buffer, coord.col, coord.row, "X", COLOR_CYAN);
+			this.setCell(buffer, coord.col, coord.row, "X", COLOR_CYAN, PRIORITY_HAND);
 		}
 	}
 
@@ -613,39 +632,16 @@ export class AsciiRenderer implements IAsciiRenderer {
 			const col = Math.round(start.col + stepX * i);
 			const row = Math.round(start.row + stepY * i);
 
-			// Only place arrow if cell is empty or contains grid structure
-			const existing = this.getCell(buffer, col, row);
-			if (existing && this.isCellOverwritable(existing)) {
-				this.setCell(buffer, col, row, arrowChar, color);
-			}
+			this.setCell(buffer, col, row, arrowChar, color, PRIORITY_ARROW);
 		}
 
 		// Place arrowhead at the last cell before the end position
 		if (steps >= 2) {
 			const arrowheadCol = Math.round(start.col + stepX * (steps - 1));
 			const arrowheadRow = Math.round(start.row + stepY * (steps - 1));
-			const existing = this.getCell(buffer, arrowheadCol, arrowheadRow);
-			if (existing && this.isCellOverwritable(existing)) {
-				// Use a directional arrowhead
-				const headChar = this.getArrowheadChar(dx, dy);
-				this.setCell(buffer, arrowheadCol, arrowheadRow, headChar, color);
-			}
+			const headChar = this.getArrowheadChar(dx, dy);
+			this.setCell(buffer, arrowheadCol, arrowheadRow, headChar, color, PRIORITY_ARROW);
 		}
-	}
-
-	/** Check if a cell can be overwritten by an arrow or indicator */
-	private isCellOverwritable(cell: Cell): boolean {
-		// Overwrite empty space and grid structure characters
-		const overwritable = new Set([
-			" ",
-			"|",
-			"-",
-			"/",
-			"\\",
-			".",
-			"+",
-		]);
-		return overwritable.has(cell.char);
 	}
 
 	/** Get a directional arrowhead character pointing toward the end */
@@ -696,8 +692,8 @@ export class AsciiRenderer implements IAsciiRenderer {
 		for (const [c, r] of candidates) {
 			if (c < 0 || c >= width || r < 0 || r >= height) continue;
 			const existing = this.getCell(buffer, c, r);
-			if (existing && existing.char === " ") {
-				this.setCell(buffer, c, r, orientChar, color);
+			if (existing && existing.priority < PRIORITY_ORIENTATION) {
+				this.setCell(buffer, c, r, orientChar, color, PRIORITY_ORIENTATION);
 				return;
 			}
 		}

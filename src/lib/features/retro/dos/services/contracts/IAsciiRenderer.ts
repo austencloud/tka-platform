@@ -11,6 +11,15 @@
 
 import type { RetroPictographData } from "../../../shared/domain/pictograph-types";
 
+export interface AsciiRenderOptions {
+	layers?: {
+		grid?: boolean;
+		hands?: boolean;
+		staves?: boolean;
+		arrows?: boolean;
+	};
+}
+
 export interface IAsciiRenderer {
 	/**
 	 * Render a full pictograph as an array of HTML-colored terminal lines.
@@ -22,7 +31,7 @@ export interface IAsciiRenderer {
 	 * Diamond grid: ~21 chars wide, ~11 lines tall.
 	 * Box grid: ~21 chars wide, ~9 lines tall.
 	 */
-	renderPictograph(data: RetroPictographData): string[];
+	renderPictograph(data: RetroPictographData, options?: AsciiRenderOptions): string[];
 
 	/**
 	 * Render a placeholder for empty or error states.
