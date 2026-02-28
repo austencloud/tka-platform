@@ -36,8 +36,8 @@ import {
 // CONSTANTS
 // ============================================================================
 
-/** Buffer width for the rendered pictograph */
-const BUFFER_WIDTH = 23;
+/** Buffer width for the rendered pictograph (wide to compensate for ~2:1 char aspect ratio) */
+const BUFFER_WIDTH = 33;
 
 /** Buffer height for diamond grid */
 const DIAMOND_HEIGHT = 13;
@@ -87,28 +87,30 @@ interface GridCoord {
 	readonly row: number;
 }
 
+// Coordinates compensate for monospace ~2:1 char height-to-width ratio.
+// Diagonals step 2 cols per row so they appear at true 45 degrees.
 const DIAMOND_COORDS: Record<GridLocation, GridCoord> = {
-	[GridLocation.NORTH]: { col: 11, row: 0 },
-	[GridLocation.NORTHEAST]: { col: 17, row: 2 },
-	[GridLocation.EAST]: { col: 21, row: 6 },
-	[GridLocation.SOUTHEAST]: { col: 17, row: 10 },
-	[GridLocation.SOUTH]: { col: 11, row: 12 },
-	[GridLocation.SOUTHWEST]: { col: 5, row: 10 },
-	[GridLocation.WEST]: { col: 1, row: 6 },
-	[GridLocation.NORTHWEST]: { col: 5, row: 2 },
-	[GridLocation.CENTER]: { col: 11, row: 6 },
+	[GridLocation.NORTH]: { col: 16, row: 0 },
+	[GridLocation.NORTHEAST]: { col: 24, row: 2 },
+	[GridLocation.EAST]: { col: 28, row: 6 },
+	[GridLocation.SOUTHEAST]: { col: 24, row: 10 },
+	[GridLocation.SOUTH]: { col: 16, row: 12 },
+	[GridLocation.SOUTHWEST]: { col: 8, row: 10 },
+	[GridLocation.WEST]: { col: 4, row: 6 },
+	[GridLocation.NORTHWEST]: { col: 8, row: 2 },
+	[GridLocation.CENTER]: { col: 16, row: 6 },
 };
 
 const BOX_COORDS: Record<GridLocation, GridCoord> = {
-	[GridLocation.NORTH]: { col: 11, row: 2 },
-	[GridLocation.NORTHEAST]: { col: 19, row: 0 },
-	[GridLocation.EAST]: { col: 19, row: 5 },
-	[GridLocation.SOUTHEAST]: { col: 19, row: 10 },
-	[GridLocation.SOUTH]: { col: 11, row: 8 },
-	[GridLocation.SOUTHWEST]: { col: 3, row: 10 },
-	[GridLocation.WEST]: { col: 3, row: 5 },
-	[GridLocation.NORTHWEST]: { col: 3, row: 0 },
-	[GridLocation.CENTER]: { col: 11, row: 5 },
+	[GridLocation.NORTH]: { col: 16, row: 2 },
+	[GridLocation.NORTHEAST]: { col: 26, row: 0 },
+	[GridLocation.EAST]: { col: 26, row: 5 },
+	[GridLocation.SOUTHEAST]: { col: 26, row: 10 },
+	[GridLocation.SOUTH]: { col: 16, row: 8 },
+	[GridLocation.SOUTHWEST]: { col: 6, row: 10 },
+	[GridLocation.WEST]: { col: 6, row: 5 },
+	[GridLocation.NORTHWEST]: { col: 6, row: 0 },
+	[GridLocation.CENTER]: { col: 16, row: 5 },
 };
 
 // ============================================================================
@@ -414,123 +416,127 @@ export class AsciiRenderer implements IAsciiRenderer {
 	// ========================================================================
 	// DIAMOND GRID SKELETON
 	//
-	// Layout (13 rows, 23 cols):
+	// Layout (13 rows, 33 cols) — aspect-corrected for monospace ~2:1 ratio:
 	//
-	//  Row 0:            N                  col 11
-	//  Row 1:            |
-	//  Row 2:      NW  . + .  NE            cols 5, 8, 11, 14, 17
-	//  Row 3:        \   |   /
-	//  Row 4:         \  |  /
-	//  Row 5:          \ | /
-	//  Row 6:  W ------[o]------ E          col 1..21
-	//  Row 7:          / | \
-	//  Row 8:         /  |  \
-	//  Row 9:        /   |   \
-	//  Row 10:     SW  . + .  SE            cols 5, 8, 11, 14, 17
-	//  Row 11:           |
-	//  Row 12:           S                  col 11
+	//  Row 0:                N                      col 16
+	//  Row 1:                |
+	//  Row 2:        NW  .   +   .  NE              cols 8, 12, 16, 20, 24
+	//  Row 3:          \\    |    //
+	//  Row 4:            \\  |  //
+	//  Row 5:              \\ | //
+	//  Row 6:  W ----------[o]---------- E          col 5..27
+	//  Row 7:              // | \\
+	//  Row 8:            //  |  \\
+	//  Row 9:          //    |    \\
+	//  Row 10:       SW  .   +   .  SE              cols 8, 12, 16, 20, 24
+	//  Row 11:               |
+	//  Row 12:               S                      col 16
+	//
+	// Diagonals step 2 cols per row for visual 45 degrees.
 	// ========================================================================
 
 	private drawDiamondGrid(buffer: Cell[][], _height: number): void {
-		// Vertical axis (N-S through center)
+		// Vertical axis (N-S through center at col 16)
 		for (const row of [1, 2, 3, 4, 5, 7, 8, 9, 10, 11]) {
-			this.setCell(buffer, 11, row, "|", COLOR_GRAY);
+			this.setCell(buffer, 16, row, "|", COLOR_GRAY);
 		}
 
-		// Horizontal axis (W-E through center)
-		for (let col = 2; col <= 20; col++) {
-			if (col === 11) continue; // center handled separately
+		// Horizontal axis (W-E through center at row 6)
+		for (let col = 5; col <= 27; col++) {
+			if (col === 16) continue; // center handled separately
 			this.setCell(buffer, col, 6, "-", COLOR_GRAY);
 		}
 
-		// NW-SE diagonal (from NW at row 2,col 5 to SE at row 10,col 17)
-		// Steps: row 3-5 going right from col 6..10, row 7-9 going right from col 12..16
-		this.setCell(buffer, 7, 3, "\\", COLOR_GRAY);
-		this.setCell(buffer, 8, 4, "\\", COLOR_GRAY);
-		this.setCell(buffer, 9, 5, "\\", COLOR_GRAY);
-		this.setCell(buffer, 13, 7, "\\", COLOR_GRAY);
-		this.setCell(buffer, 14, 8, "\\", COLOR_GRAY);
-		this.setCell(buffer, 15, 9, "\\", COLOR_GRAY);
+		// NW-SE diagonal: NW(8,2) → center(16,6) → SE(24,10), 2 cols/row
+		this.setCell(buffer, 10, 3, "\\", COLOR_GRAY);
+		this.setCell(buffer, 12, 4, "\\", COLOR_GRAY);
+		this.setCell(buffer, 14, 5, "\\", COLOR_GRAY);
+		this.setCell(buffer, 18, 7, "\\", COLOR_GRAY);
+		this.setCell(buffer, 20, 8, "\\", COLOR_GRAY);
+		this.setCell(buffer, 22, 9, "\\", COLOR_GRAY);
 
-		// NE-SW diagonal (from NE at row 2,col 17 to SW at row 10,col 5)
-		this.setCell(buffer, 15, 3, "/", COLOR_GRAY);
-		this.setCell(buffer, 14, 4, "/", COLOR_GRAY);
-		this.setCell(buffer, 13, 5, "/", COLOR_GRAY);
-		this.setCell(buffer, 9, 7, "/", COLOR_GRAY);
-		this.setCell(buffer, 8, 8, "/", COLOR_GRAY);
-		this.setCell(buffer, 7, 9, "/", COLOR_GRAY);
+		// NE-SW diagonal: NE(24,2) → center(16,6) → SW(8,10), -2 cols/row
+		this.setCell(buffer, 22, 3, "/", COLOR_GRAY);
+		this.setCell(buffer, 20, 4, "/", COLOR_GRAY);
+		this.setCell(buffer, 18, 5, "/", COLOR_GRAY);
+		this.setCell(buffer, 14, 7, "/", COLOR_GRAY);
+		this.setCell(buffer, 12, 8, "/", COLOR_GRAY);
+		this.setCell(buffer, 10, 9, "/", COLOR_GRAY);
 
-		// Cross markers on axes (midpoints between center and cardinal/intercardinal)
-		this.setCell(buffer, 8, 2, ".", COLOR_GRAY);
-		this.setCell(buffer, 14, 2, ".", COLOR_GRAY);
-		this.setCell(buffer, 8, 10, ".", COLOR_GRAY);
-		this.setCell(buffer, 14, 10, ".", COLOR_GRAY);
+		// Cross markers at midpoints on the intercardinal rows
+		this.setCell(buffer, 12, 2, ".", COLOR_GRAY);
+		this.setCell(buffer, 20, 2, ".", COLOR_GRAY);
+		this.setCell(buffer, 12, 10, ".", COLOR_GRAY);
+		this.setCell(buffer, 20, 10, ".", COLOR_GRAY);
 	}
 
 	// ========================================================================
 	// BOX GRID SKELETON
 	//
-	// Layout (11 rows, 23 cols):
+	// Layout (11 rows, 33 cols) — aspect-corrected for monospace ~2:1 ratio:
 	//
-	//  Row 0:  NW ----------- NE            cols 3..19
-	//  Row 1:    |  \     /  |
-	//  Row 2:    |   N   N   |              (N at col 11, row 2)
-	//  Row 3:    |    \ /    |
-	//  Row 4:    |     X     |
-	//  Row 5:  W |----[o]----| E            col 3..19
-	//  Row 6:    |     X     |
-	//  Row 7:    |    / \    |
-	//  Row 8:    |   S   S   |              (S at col 11, row 8)
-	//  Row 9:    |  /     \  |
-	//  Row 10: SW ----------- SE            cols 3..19
+	//  Row 0:  NW ------------------- NE        cols 6..26
+	//  Row 1:    |  \\             //  |
+	//  Row 2:    |    N             N  |        (N at col 16, row 2)
+	//  Row 3:    |      \\     //      |
+	//  Row 4:    |        \\  //       |
+	//  Row 5:  W |--------[o]---------| E       col 6..26
+	//  Row 6:    |        //  \\       |
+	//  Row 7:    |      //     \\      |
+	//  Row 8:    |    S             S  |        (S at col 16, row 8)
+	//  Row 9:    |  //             \\  |
+	//  Row 10: SW ------------------- SE        cols 6..26
+	//
+	// Box spans 20 cols × 10 rows = visually square.
+	// Diagonals step 2 cols per row for visual 45 degrees.
 	// ========================================================================
 
 	private drawBoxGrid(buffer: Cell[][], _height: number): void {
 		// Top edge (NW to NE)
-		for (let col = 4; col <= 18; col++) {
+		for (let col = 7; col <= 25; col++) {
 			this.setCell(buffer, col, 0, "-", COLOR_GRAY);
 		}
 
 		// Bottom edge (SW to SE)
-		for (let col = 4; col <= 18; col++) {
+		for (let col = 7; col <= 25; col++) {
 			this.setCell(buffer, col, 10, "-", COLOR_GRAY);
 		}
 
 		// Left edge (NW to SW)
 		for (let row = 1; row <= 9; row++) {
-			this.setCell(buffer, 3, row, "|", COLOR_GRAY);
+			this.setCell(buffer, 6, row, "|", COLOR_GRAY);
 		}
 
 		// Right edge (NE to SE)
 		for (let row = 1; row <= 9; row++) {
-			this.setCell(buffer, 19, row, "|", COLOR_GRAY);
+			this.setCell(buffer, 26, row, "|", COLOR_GRAY);
 		}
 
 		// Horizontal midline through center
-		for (let col = 4; col <= 18; col++) {
-			if (col === 11) continue; // center handled separately
+		for (let col = 7; col <= 25; col++) {
+			if (col === 16) continue; // center handled separately
 			this.setCell(buffer, col, 5, "-", COLOR_GRAY);
 		}
 
-		// NW-SE diagonal (from NW to SE through center)
-		this.setCell(buffer, 5, 1, "\\", COLOR_GRAY);
-		this.setCell(buffer, 7, 2, "\\", COLOR_GRAY);
-		this.setCell(buffer, 9, 3, "\\", COLOR_GRAY);
-		this.setCell(buffer, 10, 4, "\\", COLOR_GRAY);
-		this.setCell(buffer, 12, 6, "\\", COLOR_GRAY);
-		this.setCell(buffer, 13, 7, "\\", COLOR_GRAY);
-		this.setCell(buffer, 15, 8, "\\", COLOR_GRAY);
-		this.setCell(buffer, 17, 9, "\\", COLOR_GRAY);
+		// NW-SE diagonal: NW(6,0) → center(16,5) → SE(26,10), 2 cols/row
+		this.setCell(buffer, 8, 1, "\\", COLOR_GRAY);
+		this.setCell(buffer, 10, 2, "\\", COLOR_GRAY);
+		this.setCell(buffer, 12, 3, "\\", COLOR_GRAY);
+		this.setCell(buffer, 14, 4, "\\", COLOR_GRAY);
+		this.setCell(buffer, 18, 6, "\\", COLOR_GRAY);
+		this.setCell(buffer, 20, 7, "\\", COLOR_GRAY);
+		this.setCell(buffer, 22, 8, "\\", COLOR_GRAY);
+		this.setCell(buffer, 24, 9, "\\", COLOR_GRAY);
 
-		// NE-SW diagonal (from NE to SW through center)
-		this.setCell(buffer, 17, 1, "/", COLOR_GRAY);
-		this.setCell(buffer, 15, 2, "/", COLOR_GRAY);
-		this.setCell(buffer, 13, 3, "/", COLOR_GRAY);
-		this.setCell(buffer, 12, 4, "/", COLOR_GRAY);
-		this.setCell(buffer, 10, 6, "/", COLOR_GRAY);
-		this.setCell(buffer, 9, 7, "/", COLOR_GRAY);
-		this.setCell(buffer, 7, 8, "/", COLOR_GRAY);
-		this.setCell(buffer, 5, 9, "/", COLOR_GRAY);
+		// NE-SW diagonal: NE(26,0) → center(16,5) → SW(6,10), -2 cols/row
+		this.setCell(buffer, 24, 1, "/", COLOR_GRAY);
+		this.setCell(buffer, 22, 2, "/", COLOR_GRAY);
+		this.setCell(buffer, 20, 3, "/", COLOR_GRAY);
+		this.setCell(buffer, 18, 4, "/", COLOR_GRAY);
+		this.setCell(buffer, 14, 6, "/", COLOR_GRAY);
+		this.setCell(buffer, 12, 7, "/", COLOR_GRAY);
+		this.setCell(buffer, 10, 8, "/", COLOR_GRAY);
+		this.setCell(buffer, 8, 9, "/", COLOR_GRAY);
 	}
 
 	// ========================================================================
