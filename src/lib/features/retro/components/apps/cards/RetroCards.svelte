@@ -17,7 +17,7 @@
   import RetroButton from "../../primitives/RetroButton.svelte";
   import RetroPictograph from "../../rendering/RetroPictograph.svelte";
   import { createMockPictographData } from "../../rendering/mock-pictograph-data";
-  import type { RetroPictographData } from "../../../services/contracts/IPixelRenderer";
+  import type { RetroPictographData } from "../../../shared/domain/pictograph-types";
   import { RETRO_ICONS } from "../../rendering/retro-icons";
 
   /* ------------------------------------------------------------------ */

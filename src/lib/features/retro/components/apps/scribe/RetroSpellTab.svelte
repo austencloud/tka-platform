@@ -13,7 +13,7 @@
   import RetroProgressBar from "../../primitives/RetroProgressBar.svelte";
   import RetroPictograph from "../../rendering/RetroPictograph.svelte";
   import { createMockPictographData } from "../../rendering/mock-pictograph-data";
-  import type { RetroPictographData } from "../../../services/contracts/IPixelRenderer";
+  import type { RetroPictographData } from "../../../shared/domain/pictograph-types";
 
   let {
     onstatuschange,

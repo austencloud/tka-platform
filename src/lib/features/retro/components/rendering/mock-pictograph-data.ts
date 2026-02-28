@@ -14,7 +14,7 @@ import type {
 	RetroGridLocation,
 	RetroMotionType,
 	RetroOrientation,
-} from "../../services/contracts/IPixelRenderer";
+} from "../../shared/domain/pictograph-types";
 
 /**
  * Position pairs for deterministic letter layouts.

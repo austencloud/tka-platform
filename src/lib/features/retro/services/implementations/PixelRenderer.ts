@@ -12,13 +12,13 @@
  * Domain: Retro SCRIBE App
  */
 
+import type { IPixelRenderer } from "../contracts/IPixelRenderer";
 import type {
-	IPixelRenderer,
 	RetroPictographData,
 	RetroGridLocation,
 	RetroHandData,
 	RetroOrientation,
-} from "../contracts/IPixelRenderer";
+} from "../../shared/domain/pictograph-types";
 
 // ============================================================================
 // WINDOWS 16-COLOR PALETTE

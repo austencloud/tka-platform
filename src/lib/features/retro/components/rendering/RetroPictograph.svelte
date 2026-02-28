@@ -10,7 +10,7 @@
   Domain: Retro SCRIBE App
 -->
 <script lang="ts">
-  import type { RetroPictographData } from "../../services/contracts/IPixelRenderer";
+  import type { RetroPictographData } from "../../shared/domain/pictograph-types";
   import { PixelRenderer } from "../../services/implementations/PixelRenderer";
 
   let {
