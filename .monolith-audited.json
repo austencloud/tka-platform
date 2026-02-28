@@ -251,5 +251,13 @@
   "lib/features/choreo-card/components/ChoreoCardTab.svelte": {
     "auditDate": "2026-02-09",
     "reason": "Single responsibility orchestrator. 12 persistence effects consolidated into handler-level persist() calls. Clean delegation to child components."
+  },
+  "lib/shared/sequence-viewer/components/LayeredSequencePreview.svelte": {
+    "auditDate": "2026-02-27",
+    "reason": "Orchestrator: manages cell cache, render pipeline, layout calculation, and resize observers for sequence preview. PictographCell extracted. Remaining logic is tightly coupled orchestration."
+  },
+  "lib/shared/animation-engine/services/implementations/fire/WebGLFireRenderer.ts": {
+    "auditDate": "2026-02-27",
+    "reason": "Single responsibility: Navier-Stokes fluid fire simulation on WebGL2. Size inherent to 15 shader programs, 10+ simulation passes, bloom pipeline, and frame caching. Supporting concerns already extracted (shader sources, frame cache, types). 3/4 perspectives agree leave alone."
   }
 }

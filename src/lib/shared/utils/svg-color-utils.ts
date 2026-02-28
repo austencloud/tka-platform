@@ -218,12 +218,24 @@ export function applyColorToSvg(
     );
   }
 
-  // Make CSS class names unique to prevent conflicts between different colored props
+  // Make CSS class names and element IDs unique to prevent conflicts
+  // between different colored props injected into the same DOM
   if (makeClassNamesUnique && colorSuffix) {
     coloredSvg = coloredSvg.replace(/\.st(\d+)/g, `.st$1-${colorSuffix}`);
     coloredSvg = coloredSvg.replace(
       /class="st(\d+)"/g,
       `class="st$1-${colorSuffix}"`
+    );
+
+    // Uniquify gradient/filter IDs and their url() references
+    // Prevents DOM ID collisions (e.g. two props both defining id="cb-shade")
+    coloredSvg = coloredSvg.replace(
+      /id="([^"]+)"/g,
+      `id="$1-${colorSuffix}"`
+    );
+    coloredSvg = coloredSvg.replace(
+      /url\(#([^)]+)\)/g,
+      `url(#$1-${colorSuffix})`
     );
   }
 

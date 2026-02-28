@@ -177,6 +177,8 @@ The agent must **run verification itself and include the output as proof**.
 
 **STOP. Before writing ANY user-facing text (headings, descriptions, button labels, section intros), ask yourself: "Would Austen say this out loud at a fire jam?" If it sounds like a press release, rewrite it.**
 
+**Scope: real-world copy only.** This test applies to marketing text, website copy, documentation, and app UI. It does NOT apply to museum game fiction — the museum can be dramatic, grandiose, and institutional. In-game plaques, Order documents, and Scribe text follow their own tone rules, not the fire jam test.
+
 When writing user-facing copy, marketing text, documentation, or any prose for this project, avoid these patterns that scream "AI wrote this":
 
 ### TKA-Specific Bad Examples

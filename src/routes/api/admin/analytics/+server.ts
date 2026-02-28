@@ -54,25 +54,21 @@ function getPeriodInterval(period: TimePeriod): string {
 }
 
 async function executeHogQLQuery(
-  query: string,
-  values?: Record<string, unknown>
+  query: string
 ): Promise<{ results: unknown[][] } | null> {
   const projectId = getProjectId();
-
-  const hogqlQuery: Record<string, unknown> = {
-    kind: "HogQLQuery",
-    query,
-  };
-  if (values) {
-    hogqlQuery.values = values;
-  }
 
   const response = await fetch(
     `${POSTHOG_API_BASE}/projects/${projectId}/query/`,
     {
       method: "POST",
       headers: getPostHogHeaders(),
-      body: JSON.stringify({ query: hogqlQuery }),
+      body: JSON.stringify({
+        query: {
+          kind: "HogQLQuery",
+          query,
+        },
+      }),
     }
   );
 
@@ -85,78 +81,66 @@ async function executeHogQLQuery(
   return await response.json();
 }
 
-function buildEngagementQuery(): { query: string; values: Record<string, unknown> } {
-  return {
-    query: `
-      SELECT
-        max(timestamp) as last_active,
-        count(distinct $session_id) as sessions_count
-      FROM events
-      WHERE distinct_id = {userId}
-        AND timestamp > now() - interval 30 day
-    `,
-    values: {},
-  };
+function buildEngagementQuery(userId: string): string {
+  return `
+    SELECT
+      max(timestamp) as last_active,
+      count(distinct $session_id) as sessions_count
+    FROM events
+    WHERE distinct_id = '${userId}'
+      AND timestamp > now() - interval 30 day
+  `;
 }
 
-function buildActivityQuery(period: TimePeriod): { query: string; values: Record<string, unknown> } {
+function buildActivityQuery(userId: string, period: TimePeriod): string {
   const interval = getPeriodInterval(period);
-  return {
-    query: `
-      SELECT
-        properties.module as module,
-        count() as event_count
-      FROM events
-      WHERE distinct_id = {userId}
-        AND timestamp > now() - interval ${interval}
-        AND properties.module IS NOT NULL
-      GROUP BY properties.module
-      ORDER BY event_count DESC
-    `,
-    values: {},
-  };
+  return `
+    SELECT
+      properties.module as module,
+      count() as event_count
+    FROM events
+    WHERE distinct_id = '${userId}'
+      AND timestamp > now() - interval ${interval}
+      AND properties.module IS NOT NULL
+    GROUP BY properties.module
+    ORDER BY event_count DESC
+  `;
 }
 
-function buildContentQuery(): { query: string; values: Record<string, unknown> } {
-  return {
-    query: `
-      SELECT
-        event,
-        count() as count
-      FROM events
-      WHERE distinct_id = {userId}
-        AND event IN (
-          'sequence_create',
-          'sequence_save',
-          'sequence_export',
-          'sequence_share',
-          'collection_create'
-        )
-      GROUP BY event
-    `,
-    values: {},
-  };
+function buildContentQuery(userId: string): string {
+  return `
+    SELECT
+      event,
+      count() as count
+    FROM events
+    WHERE distinct_id = '${userId}'
+      AND event IN (
+        'sequence_create',
+        'sequence_save',
+        'sequence_export',
+        'sequence_share',
+        'collection_create'
+      )
+    GROUP BY event
+  `;
 }
 
-function buildSessionsQuery(limit: number): { query: string; values: Record<string, unknown> } {
-  return {
-    query: `
-      SELECT
-        $session_id as session_id,
-        min(timestamp) as started_at,
-        max(timestamp) as ended_at,
-        dateDiff('millisecond', min(timestamp), max(timestamp)) as duration,
-        groupArray(distinct properties.module) as modules
-      FROM events
-      WHERE distinct_id = {userId}
-        AND $session_id IS NOT NULL
-        AND timestamp > now() - interval 30 day
-      GROUP BY $session_id
-      ORDER BY started_at DESC
-      LIMIT ${Math.min(limit, 50)}
-    `,
-    values: {},
-  };
+function buildSessionsQuery(userId: string, limit: number): string {
+  return `
+    SELECT
+      $session_id as session_id,
+      min(timestamp) as started_at,
+      max(timestamp) as ended_at,
+      dateDiff('millisecond', min(timestamp), max(timestamp)) as duration,
+      groupArray(distinct properties.module) as modules
+    FROM events
+    WHERE distinct_id = '${userId}'
+      AND $session_id IS NOT NULL
+      AND timestamp > now() - interval 30 day
+    GROUP BY $session_id
+    ORDER BY started_at DESC
+    LIMIT ${Math.min(limit, 50)}
+  `;
 }
 
 export const POST: RequestHandler = async (event) => {
@@ -182,28 +166,25 @@ export const POST: RequestHandler = async (event) => {
       throw error(400, "Invalid userId format");
     }
 
-    let built: { query: string; values: Record<string, unknown> };
+    let query: string;
     switch (type) {
       case "engagement":
-        built = buildEngagementQuery();
+        query = buildEngagementQuery(userId);
         break;
       case "activity":
-        built = buildActivityQuery(period ?? "week");
+        query = buildActivityQuery(userId, period ?? "week");
         break;
       case "content":
-        built = buildContentQuery();
+        query = buildContentQuery(userId);
         break;
       case "sessions":
-        built = buildSessionsQuery(limit ?? 10);
+        query = buildSessionsQuery(userId, limit ?? 10);
         break;
       default:
         throw error(400, `Unknown query type: ${type}`);
     }
 
-    // Inject userId as a parameterized value
-    built.values.userId = userId;
-
-    const result = await executeHogQLQuery(built.query, built.values);
+    const result = await executeHogQLQuery(query);
 
     logAdminAction({
       uid: caller.uid,

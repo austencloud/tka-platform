@@ -68,7 +68,34 @@ function getContainer() {
 // AI SDK Tools Definition
 // ═══════════════════════════════════════════════════════════════════════════
 
-function createTikaTools(userId: string, completedConcepts: string[]) {
+/**
+ * Resolve quiz difficulty based on user mastery data.
+ * If the LLM didn't specify a difficulty (defaults to "medium"),
+ * override based on whether the topic appears in mastered or struggling concepts.
+ */
+function resolveQuizDifficulty(
+  topic: string,
+  masteryCtx: MasteryContext | undefined,
+  requestedDifficulty: "easy" | "medium" | "hard"
+): "easy" | "medium" | "hard" {
+  // If the LLM explicitly chose non-default, respect it
+  if (requestedDifficulty !== "medium") return requestedDifficulty;
+
+  // No mastery data available — keep default
+  if (!masteryCtx) return "medium";
+
+  const normalizedTopic = topic.toLowerCase();
+
+  const matchesList = (concepts: string[]) =>
+    concepts.some((c) => normalizedTopic.includes(c.toLowerCase()) || c.toLowerCase().includes(normalizedTopic));
+
+  if (matchesList(masteryCtx.masteredConcepts)) return "hard";
+  if (matchesList(masteryCtx.strugglingConcepts)) return "easy";
+
+  return "medium";
+}
+
+function createTikaTools(userId: string, completedConcepts: string[], masteryCtx?: MasteryContext) {
   const container = getContainer();
   const { toolExecutor, sequenceValidator, sequenceGenerator, quizGenerator, progressWriter } = container;
 
@@ -425,7 +452,8 @@ function createTikaTools(userId: string, completedConcepts: string[]) {
           quizType === "true-false" ? "true-false" :
           "pick-letter"; // default fallback
 
-        const result = quizGenerator.generateQuiz(topic, mappedQuizType, difficulty);
+        const adaptedDifficulty = resolveQuizDifficulty(topic, masteryCtx, difficulty);
+        const result = quizGenerator.generateQuiz(topic, mappedQuizType, adaptedDifficulty);
         return filterQuiz(result);
       },
     }),
@@ -654,7 +682,7 @@ export const POST: RequestHandler = async (event) => {
       model: modelProvider.getModel(selectedModel),
       system: systemPrompt,
       messages: modelMessages,
-      tools: createTikaTools(caller.uid, completedConcepts),
+      tools: createTikaTools(caller.uid, completedConcepts, body.masteryContext),
       stopWhen: stepCountIs(6),
       experimental_telemetry: {
         isEnabled: false,

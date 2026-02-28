@@ -779,8 +779,7 @@ export default defineConfig({
     alias: {
       // Aliases handled by SvelteKit
     },
-    // Force browser builds during SSR to avoid Node.js require() issues
-    conditions: ["browser", "module", "import", "default"],
+    // Conditions handled by SvelteKit plugin (client) and ssr.resolve.conditions (server)
   },
   // ============================================================================
   // BUILD (Production optimization)

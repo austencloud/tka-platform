@@ -41,6 +41,25 @@ System: `meta` tag marks decisions about the tracking system itself.
 
 $ARGUMENTS - Command and arguments (see help for full list)
 
+## Before Anything Else: Load Current State
+
+**Museum work is primarily creative, not technical.** The primary inputs are the tracker and the docs, not the codebase. MCP domain tools (letter data, level system, pictograph info) are useful when the task involves real TKA domain knowledge (e.g., designing exhibits around the level system, checking what motions exist). But for lore, tone, and narrative questions, the tracker and docs are the source of truth — don't reach for domain tools as a substitute for reading recent decisions.
+
+**Step 0 (mandatory before any assessment, brainstorming, or opinion):**
+
+1. Run `node scripts/museum-dev.js list` to see all items
+2. Read the 10 most recent decisions (sort by date, newest first) — these represent the current state of the lore
+3. Read `docs/museum/phase-structure.md` first (most current structural doc), then other docs as needed
+4. Check for supersession chains — recent decisions often replace older ones. If a decision says "supersedes X," the older item is dead. Don't reference it.
+
+**Why this order matters:** The docs in `docs/museum/` are original designs. The tracker is where those designs get revised. A concept praised in `vtg-wing.md` may have been scrapped three sessions ago. Read the tracker first.
+
+### Evaluation Integrity
+
+- **Never cite a previous session's quality judgment as your own.** If you're about to say "this is the strongest/weakest/best element," check: did you evaluate it just now, or are you repeating what a previous Claude session said? If the judgment traces to a Claude-generated item, flag it as inherited and evaluate fresh.
+- **Don't present the user's existing plans back as new ideas.** If the tracker already contains a decision about X, reference it ("the existing plan for X does this — one refinement might be...") instead of "discovering" it.
+- **Docs may be stale.** When a doc and a tracker decision conflict, the tracker decision wins. Flag the doc for update.
+
 ## Instructions
 
 ### For no arguments (Department Briefing):

@@ -33,6 +33,7 @@
   import { calculateTimelineRows } from "$lib/features/create/shared/workspace-panel/sequence-display/utils/grid-calculations";
   import type { TimelineRow } from "$lib/features/create/shared/workspace-panel/sequence-display/utils/grid-calculations";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import PictographCell from "./PictographCell.svelte";
 
   // ============================================================================
   // GLOBAL CELL URL CACHE
@@ -853,21 +854,15 @@
             <div class="duration-rows-container">
               {#each durationRows as row, rowIdx (rowIdx)}
                 <div class="duration-row">
-                  <!-- Start position in first row -->
                   {#if rowIdx === 0 && includeStartPosition}
                     {@const startCell = cells.find(c => c.index === -1)}
                     {#if startCell}
                       <div class="duration-cell" style="flex: 1;">
-                        <div
-                          class="pictograph-cell"
-                          class:current={showHighlight && highlightedStepIndex === -1}
-                        >
-                          {#if startCell.isLoaded}
-                            <img class="cell-image" src={startCell.imageUrl} alt={startCell.label} draggable="false" />
-                          {:else}
-                            <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
-                          {/if}
-                        </div>
+                        <PictographCell
+                          index={startCell.index} label={startCell.label}
+                          imageUrl={startCell.imageUrl} isLoaded={startCell.isLoaded}
+                          {darkMode} {showHighlight} {highlightedStepIndex}
+                        />
                       </div>
                     {/if}
                   {/if}
@@ -875,34 +870,11 @@
                     {@const cell = cells.find(c => c.index === stepIndex)}
                     {#if cell}
                       <div class="duration-cell" style="flex: {duration};">
-                        {#if onStepClick}
-                          <button
-                            class="pictograph-cell clickable"
-                            class:current={showHighlight && highlightedStepIndex === cell.index}
-                            class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
-                            onclick={() => onStepClick(cell.index)}
-                            type="button"
-                            aria-label="Go to step {cell.label}"
-                          >
-                            {#if cell.isLoaded}
-                              <img class="cell-image" src={cell.imageUrl} alt={cell.label} draggable="false" />
-                            {:else}
-                              <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
-                            {/if}
-                          </button>
-                        {:else}
-                          <div
-                            class="pictograph-cell"
-                            class:current={showHighlight && highlightedStepIndex === cell.index}
-                            class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
-                          >
-                            {#if cell.isLoaded}
-                              <img class="cell-image" src={cell.imageUrl} alt={cell.label} draggable="false" />
-                            {:else}
-                              <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
-                            {/if}
-                          </div>
-                        {/if}
+                        <PictographCell
+                          index={cell.index} label={cell.label}
+                          imageUrl={cell.imageUrl} isLoaded={cell.isLoaded}
+                          {darkMode} {showHighlight} {highlightedStepIndex} {onStepClick}
+                        />
                       </div>
                     {/if}
                   {/each}
@@ -914,21 +886,15 @@
           <div class="duration-rows-container">
             {#each durationRows as row, rowIdx (rowIdx)}
               <div class="duration-row">
-                <!-- Start position in first row -->
                 {#if rowIdx === 0 && includeStartPosition}
                   {@const startCell = cells.find(c => c.index === -1)}
                   {#if startCell}
                     <div class="duration-cell" style="flex: 1;">
-                      <div
-                        class="pictograph-cell"
-                        class:current={showHighlight && highlightedStepIndex === -1}
-                      >
-                        {#if startCell.isLoaded}
-                          <img class="cell-image" src={startCell.imageUrl} alt={startCell.label} draggable="false" />
-                        {:else}
-                          <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
-                        {/if}
-                      </div>
+                      <PictographCell
+                        index={startCell.index} label={startCell.label}
+                        imageUrl={startCell.imageUrl} isLoaded={startCell.isLoaded}
+                        {darkMode} {showHighlight} {highlightedStepIndex}
+                      />
                     </div>
                   {/if}
                 {/if}
@@ -936,34 +902,11 @@
                   {@const cell = cells.find(c => c.index === stepIndex)}
                   {#if cell}
                     <div class="duration-cell" style="flex: {duration};">
-                      {#if onStepClick}
-                        <button
-                          class="pictograph-cell clickable"
-                          class:current={showHighlight && highlightedStepIndex === cell.index}
-                          class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
-                          onclick={() => onStepClick(cell.index)}
-                          type="button"
-                          aria-label="Go to step {cell.label}"
-                        >
-                          {#if cell.isLoaded}
-                            <img class="cell-image" src={cell.imageUrl} alt={cell.label} draggable="false" />
-                          {:else}
-                            <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
-                          {/if}
-                        </button>
-                      {:else}
-                        <div
-                          class="pictograph-cell"
-                          class:current={showHighlight && highlightedStepIndex === cell.index}
-                          class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
-                        >
-                          {#if cell.isLoaded}
-                            <img class="cell-image" src={cell.imageUrl} alt={cell.label} draggable="false" />
-                          {:else}
-                            <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
-                          {/if}
-                        </div>
-                      {/if}
+                      <PictographCell
+                        index={cell.index} label={cell.label}
+                        imageUrl={cell.imageUrl} isLoaded={cell.isLoaded}
+                        {darkMode} {showHighlight} {highlightedStepIndex} {onStepClick}
+                      />
                     </div>
                   {/if}
                 {/each}
@@ -979,50 +922,12 @@
             style="grid-template-columns: repeat({effectiveColumns}, 1fr);"
           >
             {#each visibleCells as cell (cell.index)}
-              {#if onStepClick && cell.index >= 0}
-                <button
-                  class="pictograph-cell clickable"
-                  class:current={showHighlight && highlightedStepIndex === cell.index}
-                  class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
-                  style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
-                  onclick={() => onStepClick(cell.index)}
-                  type="button"
-                  aria-label="Go to step {cell.label}"
-                >
-                  {#if cell.isLoaded}
-                    <img
-                      class="cell-image"
-                      src={cell.imageUrl}
-                      alt={cell.label}
-                      draggable="false"
-                    />
-                  {:else}
-                    <div class="cell-spinner-container">
-                      <ProgressRing percent={-1} size={20} strokeWidth={2} />
-                    </div>
-                  {/if}
-                </button>
-              {:else}
-                <div
-                  class="pictograph-cell"
-                  class:current={showHighlight && highlightedStepIndex === cell.index}
-                  class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
-                  style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
-                >
-                  {#if cell.isLoaded}
-                    <img
-                      class="cell-image"
-                      src={cell.imageUrl}
-                      alt={cell.label}
-                      draggable="false"
-                    />
-                  {:else}
-                    <div class="cell-spinner-container">
-                      <ProgressRing percent={-1} size={20} strokeWidth={2} />
-                    </div>
-                  {/if}
-                </div>
-              {/if}
+              <PictographCell
+                index={cell.index} label={cell.label}
+                imageUrl={cell.imageUrl} isLoaded={cell.isLoaded}
+                {darkMode} {showHighlight} {highlightedStepIndex} {onStepClick}
+                gridColumn={cell.gridColumn} gridRow={cell.gridRow}
+              />
             {/each}
           </div>
         </div>
@@ -1033,50 +938,12 @@
           style="grid-template-columns: repeat({effectiveColumns}, 1fr);"
         >
           {#each visibleCells as cell (cell.index)}
-            {#if onStepClick && cell.index >= 0}
-              <button
-                class="pictograph-cell clickable"
-                class:current={showHighlight && highlightedStepIndex === cell.index}
-                class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
-                style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
-                onclick={() => onStepClick(cell.index)}
-                type="button"
-                aria-label="Go to step {cell.label}"
-              >
-                {#if cell.isLoaded}
-                  <img
-                    class="cell-image"
-                    src={cell.imageUrl}
-                    alt={cell.label}
-                    draggable="false"
-                  />
-                {:else}
-                  <div class="cell-spinner-container">
-                    <ProgressRing percent={-1} size={20} strokeWidth={2} />
-                  </div>
-                {/if}
-              </button>
-            {:else}
-              <div
-                class="pictograph-cell"
-                class:current={showHighlight && highlightedStepIndex === cell.index}
-                class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
-                style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
-              >
-                {#if cell.isLoaded}
-                  <img
-                    class="cell-image"
-                    src={cell.imageUrl}
-                    alt={cell.label}
-                    draggable="false"
-                  />
-                {:else}
-                  <div class="cell-spinner-container">
-                    <ProgressRing percent={-1} size={20} strokeWidth={2} />
-                  </div>
-                {/if}
-              </div>
-            {/if}
+            <PictographCell
+              index={cell.index} label={cell.label}
+              imageUrl={cell.imageUrl} isLoaded={cell.isLoaded}
+              {darkMode} {showHighlight} {highlightedStepIndex} {onStepClick}
+              gridColumn={cell.gridColumn} gridRow={cell.gridRow}
+            />
           {/each}
         </div>
       {/if}
@@ -1273,14 +1140,14 @@
     min-width: 0;
   }
 
-  .duration-cell .pictograph-cell {
+  .duration-cell :global(.pictograph-cell) {
     width: 100%;
     /* Height matches the row height; aspect-ratio on the image keeps it square */
     aspect-ratio: auto;
     height: 100%;
   }
 
-  .duration-cell .cell-image {
+  .duration-cell :global(.cell-image) {
     /* Keep image square and centered within the (potentially wider) cell */
     height: 100%;
     aspect-ratio: 1;
@@ -1312,112 +1179,7 @@
     background: #000;
   }
 
-  /* Individual pictograph cell */
-  .pictograph-cell {
-    position: relative;
-    /* Use padding-bottom trick for aspect ratio to prevent overflow */
-    aspect-ratio: 1;
-    overflow: visible; /* Allow selection scale to show */
-    transition:
-      transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
-      box-shadow 0.2s ease;
-    /* Subtle border for cell separation */
-    box-sizing: border-box;
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    /* Button reset for clickable variant */
-    background: none;
-    padding: 0;
-    margin: 0;
-    font: inherit;
-    color: inherit;
-    cursor: default;
-  }
-
-  button.pictograph-cell {
-    cursor: pointer;
-  }
-
-  .dark-mode .pictograph-cell {
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .cell-image {
-    display: block;
-    width: 100%;
-    height: 100%;
-    /* Use 'cover' to fill the cell completely - images are rendered as squares
-       so there should be no cropping. 'contain' was causing gaps when images
-       had slightly different aspect ratios. */
-    object-fit: cover;
-    -webkit-user-drag: none;
-    user-select: none;
-  }
-
-  /* Per-cell loading spinner */
-  .cell-spinner-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    aspect-ratio: 1;
-  }
-
-
-  /* Clickable cells */
-  .pictograph-cell.clickable {
-    cursor: pointer;
-  }
-
-  .pictograph-cell.clickable:hover {
-    z-index: 5;
-    transform: scale(1.02);
-  }
-
-  .pictograph-cell.clickable:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: -2px;
-    z-index: 5;
-  }
-
-  /* Current step - "Elevated Luxury" selection with scale + glow */
-  .pictograph-cell.current {
-    z-index: 10;
-    transform: scale(1.06);
-    box-shadow:
-      0 0 12px rgba(251, 191, 36, 0.6),
-      0 0 0 3px rgba(251, 191, 36, 0.9);
-    animation: cellSelectionGlowIn 0.4s ease-out forwards;
-  }
-
-  @keyframes cellSelectionGlowIn {
-    0% {
-      box-shadow:
-        0 0 0 rgba(251, 191, 36, 0),
-        0 0 0 0 rgba(251, 191, 36, 0);
-      transform: scale(1);
-    }
-    50% {
-      transform: scale(1.08);
-    }
-    100% {
-      box-shadow:
-        0 0 12px rgba(251, 191, 36, 0.6),
-        0 0 0 3px rgba(251, 191, 36, 0.9);
-      transform: scale(1.06);
-    }
-  }
-
-  /* Played cells (already passed) - dim to distinguish from upcoming */
-  .pictograph-cell.played {
-    opacity: 0.6;
-    transition: opacity 0.15s ease-out;
-  }
-
-  /* Light mode needs stronger dimming since opacity against light bg is subtle */
-  .layered-preview:not(.dark-mode) .pictograph-cell.played {
-    opacity: 0.4;
-  }
+  /* Cell styles live in PictographCell.svelte */
 
   /* Footer section */
   .footer-section {
@@ -1456,15 +1218,6 @@
 
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */
   @media (prefers-reduced-motion: reduce) {
-    .pictograph-cell {
-      transition: none;
-    }
-
-    .pictograph-cell.current {
-      animation: none;
-      transform: scale(1);
-    }
-
     .grid-scroll-container {
       scroll-behavior: auto;
     }

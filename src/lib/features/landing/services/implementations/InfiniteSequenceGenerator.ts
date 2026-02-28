@@ -23,11 +23,32 @@ import {
   LOOPType,
   SliceSize,
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import { VERTICAL_MIRROR_POSITION_MAP } from "$lib/features/create/generate/circular/domain/constants/strict-loop-position-maps";
 import type { IGenerationOrchestrator } from "$lib/features/create/generate/shared/services/contracts/IGenerationOrchestrator";
 import type { GeneratedSequenceInfo, GenerationSettings } from "../../domain/models/spinner-models";
 import type { EndState } from "../contracts/IEndlessSpinnerOrchestrator";
 import type { IInfiniteSequenceGenerator } from "../contracts/IInfiniteSequenceGenerator";
 import type { ISpinnerMetricsRepository } from "../contracts/ISpinnerMetricsRepository";
+
+/**
+ * LOOP types that compose rotation + mirroring.
+ * After rotation returns to home, mirroring needs vertical_mirror(start) == start
+ * for the sequence to close. This is only true for positions on the N-S axis
+ * (alpha1, alpha5, beta1, beta5 in diamond mode). All gamma positions fail
+ * because mirroring always maps them to a different gamma position.
+ */
+const REQUIRES_AXIS_SYMMETRIC_START = new Set<LOOPType>([
+  LOOPType.MIRRORED_ROTATED,
+  LOOPType.MIRRORED_INVERTED_ROTATED,
+]);
+
+/**
+ * Check if a position is on the vertical axis (self-mirroring).
+ * vertical_mirror(pos) == pos for these positions.
+ */
+function isAxisSymmetric(position: GridPosition): boolean {
+  return VERTICAL_MIRROR_POSITION_MAP[position] === position;
+}
 
 /**
  * LOOP types to cycle through, ordered from simple to complex.
@@ -92,13 +113,29 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
   private async generateLOOP(
     targetStartPosition?: GridPosition
   ): Promise<GeneratedSequenceInfo | null> {
-    const settings = this.getNextSettings();
+    let settings = this.getNextSettings();
 
-    // If a target start position is specified, block everything else
-    // so the generator is forced to use it.
-    const blockedStartPositions = targetStartPosition
-      ? getAllPositions(GridMode.DIAMOND).filter(p => p !== targetStartPosition)
-      : undefined;
+    // Composed mirrored+rotated LOOPs only work with axis-symmetric positions.
+    // If chaining forces us to a non-axis position, skip to the next LOOP type.
+    if (REQUIRES_AXIS_SYMMETRIC_START.has(settings.loopType)) {
+      if (targetStartPosition && !isAxisSymmetric(targetStartPosition)) {
+        // Advance past this incompatible LOOP type
+        settings = this.getNextSettings();
+      }
+    }
+
+    // Build blocked positions list
+    const allPositions = getAllPositions(GridMode.DIAMOND);
+    let blockedStartPositions: GridPosition[] | undefined;
+
+    if (targetStartPosition) {
+      // Force the target position
+      blockedStartPositions = allPositions.filter(p => p !== targetStartPosition);
+    } else if (REQUIRES_AXIS_SYMMETRIC_START.has(settings.loopType)) {
+      // No target position, but LOOP type needs axis-symmetric start.
+      // Block all non-axis positions (all gamma, plus alpha3/7, beta3/7).
+      blockedStartPositions = allPositions.filter(p => !isAxisSymmetric(p));
+    }
 
     try {
       const sequence = await this.generationOrchestrator.generateSequence({

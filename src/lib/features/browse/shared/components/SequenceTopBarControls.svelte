@@ -432,7 +432,6 @@
   @media (prefers-reduced-motion: reduce) {
     .filter-button,
     .filter-badge,
-    .active-filter-chip,
     .zoom-button {
       transition: none !important;
       animation: none !important;

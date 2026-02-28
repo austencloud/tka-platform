@@ -55,9 +55,36 @@ export function getCachedOrFallbackColor(
 }
 
 /**
+ * URLs from these domains will never return CORS headers for canvas operations.
+ * Attempting to load them with crossOrigin="anonymous" produces console errors
+ * that cannot be caught or suppressed. Skip them entirely.
+ */
+const CORS_BLOCKED_DOMAINS = [
+  "googleusercontent.com",
+  "ggpht.com",
+];
+
+function isCorsBlocked(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname;
+    return CORS_BLOCKED_DOMAINS.some((domain) => hostname.endsWith(domain));
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Extract color from image using canvas
  */
 async function extractColorFromImage(imageUrl: string): Promise<string> {
+  // Google CDN and similar hosts don't serve CORS headers for anonymous requests.
+  // The browser logs an uncatchable error when the image is requested with
+  // crossOrigin="anonymous" and the server omits Access-Control-Allow-Origin.
+  // Bail out before creating the Image element to avoid that console noise.
+  if (isCorsBlocked(imageUrl)) {
+    throw new Error("Skipped CORS-blocked domain");
+  }
+
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = "anonymous";

@@ -26,6 +26,8 @@ Card-based architecture with integrated Generate button:
   import CardBasedSettingsContainer from "./CardBasedSettingsContainer.svelte";
   import StartEndSheet from "./modals/StartEndSheet.svelte";
   import DurationRhythmSheet from "./modals/DurationRhythmSheet.svelte";
+  import LOOPDrawer from "./modals/LOOPDrawer.svelte";
+  import CustomizeDrawer from "./modals/CustomizeDrawer.svelte";
   import GeneratorHelpOverlay from "./help/GeneratorHelpOverlay.svelte";
   import GeneratorHelpModal from "./help/GeneratorHelpModal.svelte";
   import type { GeneratorHelpId } from "../domain/generator-help-content";
@@ -282,6 +284,24 @@ Card-based architecture with integrated Generate button:
       panelState.closeDurationRhythmPanel();
     }}
     onClose={() => panelState.closeDurationRhythmPanel()}
+  />
+
+  <LOOPDrawer
+    isOpen={panelState.isLOOPPanelOpen}
+    currentType={panelState.loopCurrentType}
+    selectedComponents={panelState.loopSelectedComponents}
+    onChange={panelState.loopOnChange}
+    onClose={() => panelState.closeLOOPPanel()}
+    onLoopDisable={() => {
+      panelState.closeLOOPPanel();
+      configState.updateConfig({ loopEnabled: false });
+    }}
+  />
+
+  <CustomizeDrawer
+    isOpen={panelState.isCustomizeOverlayOpen}
+    overlayProps={panelState.customizeOverlayProps}
+    onClose={() => panelState.closeCustomizeOverlay()}
   />
 {/if}
 

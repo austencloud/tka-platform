@@ -17,6 +17,7 @@
     setPrimaryNavHeight,
     setPrimaryNavLandscape,
     setTabAccessibility,
+    setViewportWidth,
   } from "./layout/layout-state.svelte";
   import {
     currentModule,
@@ -134,8 +135,10 @@
   $effect(() => {
     if (typeof window === "undefined") return;
     mainWindowWidth = window.innerWidth;
+    setViewportWidth(window.innerWidth);
     const handleResize = () => {
       mainWindowWidth = window.innerWidth;
+      setViewportWidth(window.innerWidth);
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
