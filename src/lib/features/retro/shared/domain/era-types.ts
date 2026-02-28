@@ -23,7 +23,7 @@ export const ERA_CONFIGS: Record<RetroEra, RetroEraConfig> = {
 		year: 1989,
 		route: "/1989",
 		title: "TKAUTIL.COM",
-		subtitle: "Bellweather Technical Institute — Notation Utility v1.0",
+		subtitle: "Bellweather Technical Institute, Notation Utility v1.0",
 		loreAuthor: "Bellweather Technical Institute",
 	},
 	win95: {
@@ -31,7 +31,7 @@ export const ERA_CONFIGS: Record<RetroEra, RetroEraConfig> = {
 		year: 1995,
 		route: "/1995",
 		title: "TKA-OS v1.0",
-		subtitle: "Bellweather Technical Institute — For Windows 95",
+		subtitle: "Bellweather Technical Institute, For Windows 95",
 		loreAuthor: "Bellweather Technical Institute",
 	},
 	win98: {

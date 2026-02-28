@@ -17,18 +17,18 @@ export type RetroOrientation = "in" | "out" | "clock" | "counter";
 
 /** One hand's state within a pictograph */
 export interface RetroHandData {
-	color: "blue" | "red";
-	location: RetroGridLocation;
-	orientation: RetroOrientation;
-	motionType: RetroMotionType;
-	endLocation: RetroGridLocation;
-	turns: number;
+	readonly color: "blue" | "red";
+	readonly location: RetroGridLocation;
+	readonly orientation: RetroOrientation;
+	readonly motionType: RetroMotionType;
+	readonly endLocation: RetroGridLocation;
+	readonly turns: number;
 }
 
 /** Complete pictograph: two hands on a grid */
 export interface RetroPictographData {
-	letter: string;
-	blueHand: RetroHandData;
-	redHand: RetroHandData;
-	gridMode: "diamond" | "box";
+	readonly letter: string;
+	readonly blueHand: RetroHandData;
+	readonly redHand: RetroHandData;
+	readonly gridMode: "diamond" | "box";
 }

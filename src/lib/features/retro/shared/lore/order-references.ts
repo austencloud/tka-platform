@@ -5,7 +5,7 @@
 
 import type { RetroEra } from "../domain/era-types";
 
-type LoreContext =
+export type LoreContext =
 	| "about"
 	| "readme"
 	| "help"
@@ -125,8 +125,8 @@ const LORE_ENTRIES: Record<RetroEra, Partial<Record<LoreContext, string[]>>> = {
 };
 
 /**
- * Get lore text for a specific era and context.
- * Returns a random entry from available options.
+ * Get a random lore string for the given era and context.
+ * Returns an empty string if no content exists for this combination.
  */
 export function getLore(era: RetroEra, context: LoreContext): string {
 	const entries = LORE_ENTRIES[era]?.[context];
