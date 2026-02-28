@@ -44,6 +44,12 @@ export class FeedbackSubscriptionService implements IFeedbackSubscriptionService
 
         const q = query(
           collection(firestore, COLLECTION_NAME),
+          where("status", "in", [
+            "new",
+            "in-progress",
+            "in-review",
+            "completed",
+          ]),
           orderBy("createdAt", "desc"),
           limit(200)
         );

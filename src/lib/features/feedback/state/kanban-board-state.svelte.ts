@@ -35,7 +35,7 @@ export interface KanbanBoardState {
   deferredItems: FeedbackItem[];
   wipStatus: Record<KanbanStatus, { count: number; limit: number; isAtLimit: boolean; isOverLimit: boolean }>;
   draggedItem: FeedbackItem | null;
-  dragOverColumn: FeedbackStatus | "deferred" | null;
+  dragOverColumn: FeedbackStatus | "deferred" | "trash" | null;
   touchDragPosition: { x: number; y: number } | null;
   isMobileView: boolean;
   showDeferDialog: boolean;
@@ -43,6 +43,9 @@ export interface KanbanBoardState {
   deferDate: string;
   deferNotes: string;
   isSubmittingDefer: boolean;
+  showTrashDialog: boolean;
+  itemToTrash: FeedbackItem | null;
+  isSubmittingTrash: boolean;
 
   // Undo/Redo support
   canUndo: boolean;
@@ -58,7 +61,7 @@ export interface KanbanBoardState {
   // Actions
   setActiveStatus(status: FeedbackStatus): void;
   setDraggedItem(item: FeedbackItem | null): void;
-  setDragOverColumn(status: FeedbackStatus | "deferred" | null): void;
+  setDragOverColumn(status: FeedbackStatus | "deferred" | "trash" | null): void;
   setTouchDragPosition(pos: { x: number; y: number } | null): void;
   setIsMobileView(isMobile: boolean): void;
   setShowDeferDialog(show: boolean): void;
@@ -67,7 +70,11 @@ export interface KanbanBoardState {
   setDeferNotes(notes: string): void;
   setIsSubmittingDefer(isSubmitting: boolean): void;
   resetDeferDialog(): void;
-  getColumnAtPosition(x: number, y: number): FeedbackStatus | "deferred" | null;
+  setShowTrashDialog(show: boolean): void;
+  setItemToTrash(item: FeedbackItem | null): void;
+  setIsSubmittingTrash(isSubmitting: boolean): void;
+  resetTrashDialog(): void;
+  getColumnAtPosition(x: number, y: number): FeedbackStatus | "deferred" | "trash" | null;
 }
 
 export function createKanbanBoardState(
@@ -145,7 +152,7 @@ export function createKanbanBoardState(
 
   // Drag state
   let draggedItem = $state<FeedbackItem | null>(null);
-  let dragOverColumn = $state<FeedbackStatus | "deferred" | null>(null);
+  let dragOverColumn = $state<FeedbackStatus | "deferred" | "trash" | null>(null);
   let touchDragPosition = $state<{ x: number; y: number } | null>(null);
 
   // Mobile view detection
@@ -157,6 +164,11 @@ export function createKanbanBoardState(
   let deferDate = $state("");
   let deferNotes = $state("");
   let isSubmittingDefer = $state(false);
+
+  // Trash dialog state
+  let showTrashDialog = $state(false);
+  let itemToTrash = $state<FeedbackItem | null>(null);
+  let isSubmittingTrash = $state(false);
 
   // Undo/Redo stacks for drag operations
   let undoStack = $state<UndoableAction[]>([]);
@@ -171,7 +183,7 @@ export function createKanbanBoardState(
   function getColumnAtPosition(
     x: number,
     y: number
-  ): FeedbackStatus | "deferred" | null {
+  ): FeedbackStatus | "deferred" | "trash" | null {
     const element = document.elementFromPoint(x, y);
     if (!element) return null;
 
@@ -185,6 +197,11 @@ export function createKanbanBoardState(
       // Check for archive drop zone
       if (current.classList?.contains("archive-drop-zone")) {
         return "archived";
+      }
+
+      // Check for trash drop zone
+      if (current.classList?.contains("trash-drop-zone")) {
+        return "trash";
       }
 
       if (current.classList?.contains("kanban-column")) {
@@ -210,6 +227,11 @@ export function createKanbanBoardState(
     itemToDefer = null;
     deferDate = "";
     deferNotes = "";
+  }
+
+  function resetTrashDialog() {
+    showTrashDialog = false;
+    itemToTrash = null;
   }
 
   function pushUndo(action: UndoableAction, clearRedo = true) {
@@ -296,6 +318,15 @@ export function createKanbanBoardState(
     get isSubmittingDefer() {
       return isSubmittingDefer;
     },
+    get showTrashDialog() {
+      return showTrashDialog;
+    },
+    get itemToTrash() {
+      return itemToTrash;
+    },
+    get isSubmittingTrash() {
+      return isSubmittingTrash;
+    },
     get canUndo() {
       return canUndo;
     },
@@ -339,6 +370,16 @@ export function createKanbanBoardState(
       isSubmittingDefer = isSubmitting;
     },
     resetDeferDialog,
+    setShowTrashDialog(show: boolean) {
+      showTrashDialog = show;
+    },
+    setItemToTrash(item: FeedbackItem | null) {
+      itemToTrash = item;
+    },
+    setIsSubmittingTrash(isSubmitting: boolean) {
+      isSubmittingTrash = isSubmitting;
+    },
+    resetTrashDialog,
     getColumnAtPosition,
     pushUndo,
     popUndo,

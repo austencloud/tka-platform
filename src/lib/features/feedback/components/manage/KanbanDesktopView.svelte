@@ -10,6 +10,7 @@
   import FeedbackKanbanColumn from "./FeedbackKanbanColumn.svelte";
   import KanbanArchiveDropZone from "./KanbanArchiveDropZone.svelte";
   import KanbanDeferDropZone from "./KanbanDeferDropZone.svelte";
+  import KanbanTrashDropZone from "./KanbanTrashDropZone.svelte";
   import type { IClaimStatusDeriver } from "../../services/contracts/IClaimStatusDeriver";
 
   interface Props {
@@ -49,9 +50,9 @@
     }
   }
 
-  function handleDragOver(status: FeedbackStatus | "deferred") {
+  function handleDragOver(status: FeedbackStatus | "deferred" | "trash") {
     if (boardState.draggedItem) {
-      if (status === "deferred" || boardState.draggedItem.status !== status) {
+      if (status === "deferred" || status === "trash" || boardState.draggedItem.status !== status) {
         boardState.setDragOverColumn(status);
       }
     }
@@ -61,7 +62,7 @@
     boardState.setDragOverColumn(null);
   }
 
-  async function handleDrop(status: FeedbackStatus | "deferred") {
+  async function handleDrop(status: FeedbackStatus | "deferred" | "trash") {
     if (!boardState.draggedItem) {
       return;
     }
@@ -69,6 +70,14 @@
     if (status === "deferred") {
       boardState.setItemToDefer(boardState.draggedItem);
       boardState.setShowDeferDialog(true);
+      boardState.setDraggedItem(null);
+      boardState.setDragOverColumn(null);
+      return;
+    }
+
+    if (status === "trash") {
+      boardState.setItemToTrash(boardState.draggedItem);
+      boardState.setShowTrashDialog(true);
       boardState.setDraggedItem(null);
       boardState.setDragOverColumn(null);
       return;
@@ -158,6 +167,15 @@
       onDragLeave={handleDragLeave}
       onDrop={() => handleDrop(ARCHIVE_STATUS)}
       onOpenArchive={() => onOpenArchive?.()}
+    />
+
+    <!-- Trash Drop Zone -->
+    <KanbanTrashDropZone
+      isDropTarget={boardState.dragOverColumn === "trash"}
+      isDragActive={boardState.draggedItem !== null}
+      onDragOver={() => handleDragOver("trash")}
+      onDragLeave={handleDragLeave}
+      onDrop={() => handleDrop("trash")}
     />
   </div>
 </div>

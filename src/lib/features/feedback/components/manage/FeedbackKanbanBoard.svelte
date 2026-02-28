@@ -191,6 +191,27 @@
   function handleDeferCancel() {
     boardState?.resetDeferDialog();
   }
+
+  async function handleTrashConfirm() {
+    if (!boardState || !boardState.itemToTrash) return;
+
+    boardState.setIsSubmittingTrash(true);
+
+    try {
+      await manageState.deleteFeedback(boardState.itemToTrash.id);
+      toast.info("Feedback deleted");
+      boardState.resetTrashDialog();
+    } catch (err) {
+      console.error("Failed to delete feedback:", err);
+      toast.error("Failed to delete feedback");
+    } finally {
+      boardState.setIsSubmittingTrash(false);
+    }
+  }
+
+  function handleTrashCancel() {
+    boardState?.resetTrashDialog();
+  }
 </script>
 
 <div
@@ -322,6 +343,82 @@
               {:else}
                 <i class="fas fa-clock" aria-hidden="true"></i>
                 Defer
+              {/if}
+            </button>
+          </div>
+        </div>
+      </div>
+    {/if}
+
+    <!-- Trash Confirmation Dialog -->
+    {#if boardState.showTrashDialog && boardState.itemToTrash}
+      <div
+        class="trash-dialog-overlay"
+        onclick={handleTrashCancel}
+        onkeydown={(e) => e.key === "Escape" && handleTrashCancel()}
+        role="button"
+        tabindex="0"
+        aria-label="Close trash dialog"
+      >
+        <div
+          class="trash-dialog"
+          onclick={(e) => e.stopPropagation()}
+          onkeydown={(e) => e.stopPropagation()}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="trash-dialog-title"
+          tabindex="-1"
+        >
+          <div class="dialog-header trash-header">
+            <div class="dialog-icon trash-icon">
+              <i class="fas fa-trash-alt" aria-hidden="true"></i>
+            </div>
+            <h3 class="dialog-title" id="trash-dialog-title">Delete Feedback</h3>
+            <button
+              type="button"
+              class="close-button"
+              onclick={handleTrashCancel}
+              aria-label="Close dialog"
+            >
+              <i class="fas fa-times" aria-hidden="true"></i>
+            </button>
+          </div>
+
+          <div class="dialog-body">
+            <div class="feedback-preview trash-preview">
+              <span class="preview-label">Item:</span>
+              <span class="preview-title"
+                >{boardState.itemToTrash.title ||
+                  boardState.itemToTrash.description.substring(0, 60)}</span
+              >
+            </div>
+
+            <p class="trash-warning">
+              This will permanently delete this feedback item. This cannot be undone.
+            </p>
+          </div>
+
+          <div class="dialog-footer">
+            <button
+              type="button"
+              class="cancel-button"
+              onclick={handleTrashCancel}
+              disabled={boardState.isSubmittingTrash}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="submit-button trash-submit"
+              onclick={handleTrashConfirm}
+              disabled={boardState.isSubmittingTrash}
+            >
+              {#if boardState.isSubmittingTrash}
+                <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                Deleting...
+              {:else}
+                <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                Delete
               {/if}
             </button>
           </div>
@@ -746,6 +843,89 @@
     }
   }
 
+  /* ===== TRASH DIALOG ===== */
+  .trash-dialog-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    animation: fadeIn var(--duration-normal) ease;
+  }
+
+  .trash-dialog {
+    display: flex;
+    flex-direction: column;
+    width: clamp(320px, 90vw, 460px);
+    max-height: 90vh;
+    background: linear-gradient(
+      180deg,
+      var(--theme-panel-elevated-bg) 0%,
+      var(--theme-panel-bg) 100%
+    );
+    border: 1px solid var(--theme-stroke);
+    border-radius: clamp(16px, 4cqi, 24px);
+    box-shadow:
+      0 20px 60px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 var(--theme-stroke);
+    animation: slideUp var(--duration-emphasis) cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .trash-header {
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--semantic-error) 10%, transparent) 0%,
+      transparent 100%
+    );
+  }
+
+  .trash-icon {
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--semantic-error) 40%, transparent) 0%,
+      color-mix(in srgb, var(--semantic-error) 20%, transparent) 100%
+    );
+    color: var(--semantic-error);
+    box-shadow: 0 4px 12px
+      color-mix(in srgb, var(--semantic-error) 30%, transparent);
+  }
+
+  .trash-preview {
+    border-left-color: var(--semantic-error);
+  }
+
+  .trash-warning {
+    margin: 0;
+    font-size: clamp(0.875rem, 2.5cqi, 1rem);
+    color: var(--theme-text-dim);
+    line-height: 1.5;
+  }
+
+  .trash-submit {
+    background: linear-gradient(
+      135deg,
+      var(--semantic-error) 0%,
+      #b91c1c 100%
+    );
+    color: #fff;
+    box-shadow: 0 4px 12px
+      color-mix(in srgb, var(--semantic-error) 30%, transparent);
+  }
+
+  .trash-submit:hover:not(:disabled) {
+    background: linear-gradient(
+      135deg,
+      var(--semantic-error) 0%,
+      var(--semantic-error) 100%
+    );
+    box-shadow: 0 6px 16px
+      color-mix(in srgb, var(--semantic-error) 40%, transparent);
+    transform: translateY(-1px);
+  }
+
   /* ===== UNDO HINT ===== */
   .undo-hint {
     position: absolute;
@@ -819,6 +999,12 @@
       animation: none;
     }
     .defer-dialog {
+      animation: none;
+    }
+    .trash-dialog-overlay {
+      animation: none;
+    }
+    .trash-dialog {
       animation: none;
     }
     .undo-hint {

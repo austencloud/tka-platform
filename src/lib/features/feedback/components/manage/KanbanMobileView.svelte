@@ -56,9 +56,9 @@
     }
   }
 
-  function handleDragOver(status: FeedbackStatus | "deferred") {
+  function handleDragOver(status: FeedbackStatus | "deferred" | "trash") {
     if (boardState.draggedItem) {
-      if (status === "deferred" || boardState.draggedItem.status !== status) {
+      if (status === "deferred" || status === "trash" || boardState.draggedItem.status !== status) {
         boardState.setDragOverColumn(status);
       }
     }
@@ -68,12 +68,20 @@
     boardState.setDragOverColumn(null);
   }
 
-  async function handleDrop(status: FeedbackStatus | "deferred") {
+  async function handleDrop(status: FeedbackStatus | "deferred" | "trash") {
     if (!boardState.draggedItem) return;
 
     if (status === "deferred") {
       boardState.setItemToDefer(boardState.draggedItem);
       boardState.setShowDeferDialog(true);
+      boardState.setDraggedItem(null);
+      boardState.setDragOverColumn(null);
+      return;
+    }
+
+    if (status === "trash") {
+      boardState.setItemToTrash(boardState.draggedItem);
+      boardState.setShowTrashDialog(true);
       boardState.setDraggedItem(null);
       boardState.setDragOverColumn(null);
       return;
