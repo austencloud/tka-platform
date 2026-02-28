@@ -19,7 +19,7 @@
   const state = createAsciiLabState();
   const renderer = new AsciiRenderer();
 
-  const htmlLines = $derived(renderer.renderPictograph(state.pictographData));
+  const htmlLines = $derived(renderer.renderPictograph(state.pictographData, { layers: state.layers }));
   const compact = $derived(renderer.renderCompact(state.pictographData));
 </script>
 
