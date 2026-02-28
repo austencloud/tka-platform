@@ -8,9 +8,11 @@
  * - Play/pause (Space)
  * - Delete/clear (Delete/Backspace)
  * - Escape to deselect
+ * - Transform hotkeys (R/M/V/S/I, Shift+R) on selected cell layer 0
  */
 
 import type { GridCell } from "../../state/arrange-grid-state.svelte";
+import type { TransformType } from "../../../../compose/domain/types";
 
 /**
  * Snapshot of UI state needed to decide how to handle a keypress.
@@ -44,6 +46,7 @@ export interface KeyboardCallbacks {
   pasteLayer(): void;
   undo(): void;
   redo(): void;
+  transformLayer(layerIndex: number, transformType: TransformType): void;
 }
 
 export interface IArrangeKeyboardHandler {

@@ -25,6 +25,7 @@
   import StaggerControls from "./components/shared/StaggerControls.svelte";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import SaveCompositionModal from "./components/grid/SaveCompositionModal.svelte";
+  import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CellMediaType } from "../../compose/domain/types";
@@ -308,6 +309,10 @@
     showSaveModal = false;
   }
 
+  function handleDrawerClose() {
+    gridState.deselectCell();
+  }
+
   // Undo/redo with toast feedback
   function handleUndo() {
     const desc = gridState.undo();
@@ -344,6 +349,7 @@
     pasteLayer: handlePasteLayer,
     undo: handleUndo,
     redo: handleRedo,
+    transformLayer: handleTransformLayer,
   };
 
   // Register keyboard listener via service
@@ -432,34 +438,6 @@
           />
         </div>
 
-        <!-- Cell Editor (when a cell is selected) -->
-        {#if selectedCell && selectedCellId !== null}
-          <div class="panel-section">
-            <CellEditor
-              cell={selectedCell}
-              cellIndex={selectedCell ? gridState.getCellDisplayIndex(selectedCell.id) : 0}
-              clipboardHasData={gridState.clipboard !== null}
-              transformingLayer={gridState.transformingLayer}
-              onAddSequence={handleAddSequence}
-              onRemoveLayer={handleRemoveLayer}
-              onEditLayerOffset={handleEditLayerOffset}
-              onClearCell={handleClearCell}
-              onMediaTypeChange={handleMediaTypeChange}
-              onCopyLayer={handleCopyLayer}
-              onCopyCell={handleCopyCell}
-              onPasteLayer={handlePasteLayer}
-              onTransformLayer={handleTransformLayer}
-            />
-          </div>
-        {:else}
-          <div class="panel-section">
-            <div class="no-selection">
-              <i class="fas fa-hand-pointer" aria-hidden="true"></i>
-              <p>Select a cell to edit its contents</p>
-            </div>
-          </div>
-        {/if}
-
         <!-- Playback Controls -->
         {#if gridState.hasAnyLayers}
           <div class="panel-section playback-section">
@@ -483,6 +461,39 @@
       </div>
     </div>
   {/if}
+
+  <!-- Cell editor drawer (slides from right) -->
+  <Drawer
+    isOpen={selectedCell !== null}
+    placement="right"
+    ariaLabel="Edit cell {selectedCell ? gridState.getCellDisplayIndex(selectedCell.id) + 1 : ''}"
+    class="cell-editor-drawer"
+    backdropClass="cell-editor-backdrop"
+    showHandle={true}
+    closeOnBackdrop={false}
+    trapFocus={false}
+    preventScroll={false}
+    onclose={handleDrawerClose}
+  >
+    {#if selectedCell && selectedCellId !== null}
+      <CellEditor
+        cell={selectedCell}
+        cellIndex={selectedCell ? gridState.getCellDisplayIndex(selectedCell.id) : 0}
+        clipboardHasData={gridState.clipboard !== null}
+        transformingLayer={gridState.transformingLayer}
+        onAddSequence={handleAddSequence}
+        onRemoveLayer={handleRemoveLayer}
+        onEditLayerOffset={handleEditLayerOffset}
+        onClearCell={handleClearCell}
+        onMediaTypeChange={handleMediaTypeChange}
+        onCopyLayer={handleCopyLayer}
+        onCopyCell={handleCopyCell}
+        onPasteLayer={handlePasteLayer}
+        onTransformLayer={handleTransformLayer}
+        onClose={handleDrawerClose}
+      />
+    {/if}
+  </Drawer>
 
   <!-- Sequence picker modal -->
   <SequencePickerModal
@@ -558,7 +569,7 @@
   /* ====== DESKTOP SPLIT-VIEW ====== */
   .desktop-content {
     display: grid;
-    grid-template-columns: 1fr 320px;
+    grid-template-columns: 1fr clamp(220px, 16vw, 300px);
     gap: var(--spacing-lg);
     height: 100%;
     padding: var(--spacing-lg);
@@ -634,26 +645,6 @@
     padding: 0;
   }
 
-  .no-selection {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-lg);
-    text-align: center;
-  }
-
-  .no-selection i {
-    font-size: 2rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
-  }
-
-  .no-selection p {
-    margin: 0;
-    font-size: var(--font-size-min, 14px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-  }
-
   .playback-section {
     margin-top: auto;
   }
@@ -661,14 +652,14 @@
   /* Larger screens: wider control panel */
   @media (min-width: 1200px) {
     .desktop-content {
-      grid-template-columns: 1fr 380px;
+      grid-template-columns: 1fr clamp(240px, 18vw, 320px);
     }
   }
 
   /* Medium screens: narrower control panel */
   @media (max-width: 1024px) and (min-width: 768px) {
     .desktop-content {
-      grid-template-columns: 1fr 280px;
+      grid-template-columns: 1fr clamp(200px, 14vw, 260px);
       gap: var(--spacing-md);
       padding: var(--spacing-md);
     }
@@ -685,5 +676,18 @@
     .desktop-content {
       display: none;
     }
+  }
+
+  /* Cell editor drawer overrides */
+  :global(.cell-editor-backdrop) {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    pointer-events: none !important;
+  }
+
+  :global(.cell-editor-drawer[data-placement="right"]) {
+    width: clamp(280px, 22vw, 360px) !important;
+    max-width: 90vw !important;
+    height: 100% !important;
   }
 </style>

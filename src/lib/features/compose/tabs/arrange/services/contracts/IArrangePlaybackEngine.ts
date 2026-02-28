@@ -8,6 +8,7 @@
 
 export interface IArrangePlaybackEngine {
   readonly isPlaying: boolean;
+  readonly isStepAnimating: boolean;
   readonly currentBeat: number;
   readonly bpm: number;
 

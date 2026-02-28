@@ -355,7 +355,10 @@
 
   .cell-canvas.selected {
     border-color: var(--theme-accent, #8b5cf6);
-    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3);
+    border-width: 3px;
+    box-shadow:
+      0 0 0 3px rgba(139, 92, 246, 0.45),
+      0 0 16px rgba(139, 92, 246, 0.3);
   }
 
   .cell-canvas.empty {

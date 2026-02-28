@@ -137,18 +137,29 @@ function createArrangeGridState() {
   let currentBeat = $state(0);
   let playbackBpm = $state(120);
 
+  // Playback polling — only runs during active playback to avoid burning
+  // a permanent RAF loop. With 16+ cells, each RAF callback triggers Svelte
+  // effects → engine.update() → triggerRender(), so idle polling wastes
+  // significant CPU and causes false frame drop warnings.
   let playbackPollId: number | null = null;
   function startPlaybackPolling() {
     if (playbackPollId !== null) return;
     function poll() {
+      const wasPlaying = isPlaying;
       isPlaying = playbackEngine.isPlaying;
       currentBeat = playbackEngine.currentBeat;
       playbackBpm = playbackEngine.bpm;
-      playbackPollId = requestAnimationFrame(poll);
+
+      if (isPlaying || playbackEngine.isStepAnimating) {
+        // Keep polling while playing or during step animation
+        playbackPollId = requestAnimationFrame(poll);
+      } else {
+        // Playback stopped and no step animation — stop polling
+        playbackPollId = null;
+      }
     }
     playbackPollId = requestAnimationFrame(poll);
   }
-  startPlaybackPolling();
 
   // =========================================================================
   // Undo / Redo
@@ -574,19 +585,36 @@ function createArrangeGridState() {
     play() {
       if (!cells.some((c) => c.row < gridRows && c.col < gridCols && c.layers.length > 0)) return;
       playbackEngine.play(getTotalBeats);
+      startPlaybackPolling();
     },
-    pause() { playbackEngine.pause(); },
-    stop() { playbackEngine.stop(); },
+    pause() {
+      playbackEngine.pause();
+      // Do one final poll to capture the paused state
+      isPlaying = playbackEngine.isPlaying;
+      currentBeat = playbackEngine.currentBeat;
+    },
+    stop() {
+      playbackEngine.stop();
+      // Do one final poll to capture the stopped state
+      isPlaying = playbackEngine.isPlaying;
+      currentBeat = playbackEngine.currentBeat;
+    },
 
     togglePlayPause() {
       if (playbackEngine.isPlaying) {
         playbackEngine.pause();
+        isPlaying = playbackEngine.isPlaying;
+        currentBeat = playbackEngine.currentBeat;
       } else if (cells.some((c) => c.row < gridRows && c.col < gridCols && c.layers.length > 0)) {
         playbackEngine.play(getTotalBeats);
+        startPlaybackPolling();
       }
     },
 
-    stepFullForward() { playbackEngine.animateStep(1, getTotalBeats()); },
+    stepFullForward() {
+      playbackEngine.animateStep(1, getTotalBeats());
+      startPlaybackPolling(); // Animated step needs polling to update currentBeat
+    },
     stepFullBack() {
       const floored = Math.floor(playbackEngine.currentBeat);
       if (playbackEngine.currentBeat - floored > 0.01) {
@@ -594,8 +622,12 @@ function createArrangeGridState() {
       } else {
         playbackEngine.animateStep(-1, getTotalBeats());
       }
+      startPlaybackPolling();
     },
-    stepHalfForward() { playbackEngine.animateStep(0.5, getTotalBeats()); },
+    stepHalfForward() {
+      playbackEngine.animateStep(0.5, getTotalBeats());
+      startPlaybackPolling();
+    },
     stepHalfBack() {
       const snapped = Math.round(playbackEngine.currentBeat * 2) / 2;
       const diff = snapped - playbackEngine.currentBeat;
@@ -604,6 +636,7 @@ function createArrangeGridState() {
       } else {
         playbackEngine.animateStep(-0.5, getTotalBeats());
       }
+      startPlaybackPolling();
     },
 
     toggleSkipStartPosition() {

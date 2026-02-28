@@ -37,6 +37,89 @@ const VIEWBOX_SIZE = 950;
 const GRID_HALFWAY_POINT_OFFSET = 150; // Strict hand points (animation mode)
 const INWARD_FACTOR = 1.0; // No inward adjustment - use exact grid coordinates
 
+// ─── Screen-space sphere shading for spherical props ─────────────────
+interface SphereDefinition {
+  cx: number;
+  cy: number;
+  r: number;
+}
+
+interface SphereMaterial {
+  edgeDarkness: number;
+  specularIntensity: number;
+  specularRadius: number;
+}
+
+interface SphereLayout {
+  spheres: SphereDefinition[];
+  viewBoxWidth: number;
+  viewBoxHeight: number;
+  material?: SphereMaterial;
+}
+
+// Sphere layouts by size+count (independent of material)
+const SPHERE_LAYOUTS = {
+  single: {
+    spheres: [{ cx: 225, cy: 75, r: 75 }],
+    viewBoxWidth: 300,
+    viewBoxHeight: 150,
+  },
+  double: {
+    spheres: [
+      { cx: 75, cy: 75, r: 75 },
+      { cx: 225, cy: 75, r: 75 },
+    ],
+    viewBoxWidth: 300,
+    viewBoxHeight: 150,
+  },
+  bigsingle: {
+    spheres: [{ cx: 450, cy: 150, r: 150 }],
+    viewBoxWidth: 600,
+    viewBoxHeight: 300,
+  },
+  bigdouble: {
+    spheres: [
+      { cx: 150, cy: 150, r: 150 },
+      { cx: 450, cy: 150, r: 150 },
+    ],
+    viewBoxWidth: 600,
+    viewBoxHeight: 300,
+  },
+};
+
+// Default material (also used for "contact" standard balls)
+const DEFAULT_SPHERE_MATERIAL: SphereMaterial = {
+  edgeDarkness: 0.35,
+  specularIntensity: 0.35,
+  specularRadius: 0.4,
+};
+
+// Materials by surface type (independent of size/count)
+const SPHERE_MATERIALS: Record<string, SphereMaterial> = {
+  contact: DEFAULT_SPHERE_MATERIAL,
+  glass: DEFAULT_SPHERE_MATERIAL,
+  pmma: { edgeDarkness: 0.35, specularIntensity: 0.5, specularRadius: 0.4 },
+  frosted: { edgeDarkness: 0.35, specularIntensity: 0.2, specularRadius: 0.6 },
+};
+
+// Pattern: {big?}{double?}{material}ball — parse any combination
+const SPHERE_PROP_PATTERN = /^(big)?(double)?(contact|glass|pmma|frosted)ball$/;
+
+function getSphereLayout(propType: string): SphereLayout | null {
+  const match = propType.toLowerCase().match(SPHERE_PROP_PATTERN);
+  if (!match) return null;
+
+  const isBig = !!match[1];
+  const isDouble = !!match[2];
+  const materialKey = match[3]!;
+
+  const layoutKey = (isBig ? "big" : "") + (isDouble ? "double" : "single");
+  const base = SPHERE_LAYOUTS[layoutKey as keyof typeof SPHERE_LAYOUTS];
+  const material = SPHERE_MATERIALS[materialKey] ?? DEFAULT_SPHERE_MATERIAL;
+
+  return { ...base, material };
+}
+
 export class Canvas2DAnimationRenderer implements IAnimationRenderer {
   // Specialized service managers
   private appManager: Canvas2DApplicationManager;
@@ -251,6 +334,11 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
         );
       }
 
+      // Screen-space sphere shading (stays fixed as prop rotates)
+      if (params.bluePropType) {
+        this.renderSphereShading(ctx, params.blueProp, params.bluePropDimensions, canvasSize, params.bluePropType);
+      }
+
       // Additional tunnel layer blue props
       if (params.additionalLayers) {
         for (let i = 0; i < params.additionalLayers.length; i++) {
@@ -293,6 +381,11 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
           params.redPropFlipped ?? false,
           params.redPropType
         );
+      }
+
+      // Screen-space sphere shading (stays fixed as prop rotates)
+      if (params.redPropType) {
+        this.renderSphereShading(ctx, params.redProp, params.redPropDimensions, canvasSize, params.redPropType);
       }
 
       // Additional tunnel layer red props
@@ -373,6 +466,95 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
     );
 
     ctx.restore();
+  }
+
+  /**
+   * Draw screen-space sphere shading (edge darkening + specular highlight)
+   * at each sub-sphere's position WITHOUT rotation, so the highlight
+   * stays fixed relative to the viewer as the prop spins.
+   */
+  private renderSphereShading(
+    ctx: CanvasRenderingContext2D,
+    propState: {
+      centerPathAngle: number;
+      staffRotationAngle: number;
+      x?: number;
+      y?: number;
+    },
+    dimensions: { width: number; height: number },
+    canvasSize: number,
+    propType: string
+  ): void {
+    const config = getSphereLayout(propType);
+    if (!config) return;
+
+    const transform = this.calculatePropTransform(
+      propState,
+      dimensions,
+      canvasSize
+    );
+    const gridScaleFactor = canvasSize / VIEWBOX_SIZE;
+    const rotation = transform.rotation;
+    const material = config.material ?? DEFAULT_SPHERE_MATERIAL;
+
+    const vbCenterX = config.viewBoxWidth / 2;
+    const vbCenterY = config.viewBoxHeight / 2;
+    const cosR = Math.cos(rotation);
+    const sinR = Math.sin(rotation);
+
+    for (const sphere of config.spheres) {
+      // Sphere offset from viewBox center, scaled to canvas space
+      const offsetX = (sphere.cx - vbCenterX) * gridScaleFactor;
+      const offsetY = (sphere.cy - vbCenterY) * gridScaleFactor;
+
+      // Rotate offset by prop rotation to get screen position
+      const screenX = transform.x + offsetX * cosR - offsetY * sinR;
+      const screenY = transform.y + offsetX * sinR + offsetY * cosR;
+      const screenR = sphere.r * gridScaleFactor;
+
+      // Edge darkening: centered radial gradient, transparent core → dark rim
+      const edgeGrad = ctx.createRadialGradient(
+        screenX,
+        screenY,
+        screenR * 0.7,
+        screenX,
+        screenY,
+        screenR
+      );
+      edgeGrad.addColorStop(0, "rgba(0,0,0,0)");
+      edgeGrad.addColorStop(1, `rgba(0,0,0,${material.edgeDarkness})`);
+      ctx.fillStyle = edgeGrad;
+      ctx.beginPath();
+      ctx.arc(screenX, screenY, screenR, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Specular highlight: off-center at fixed upper-left, no rotation
+      const specCenterX = screenX + -0.3 * screenR;
+      const specCenterY = screenY + -0.3 * screenR;
+      const specGradRadius = material.specularRadius * screenR;
+
+      const specGrad = ctx.createRadialGradient(
+        specCenterX,
+        specCenterY,
+        0,
+        specCenterX,
+        specCenterY,
+        specGradRadius
+      );
+      specGrad.addColorStop(
+        0,
+        `rgba(255,255,255,${material.specularIntensity})`
+      );
+      specGrad.addColorStop(
+        0.4,
+        `rgba(255,255,255,${(material.specularIntensity * 0.23).toFixed(3)})`
+      );
+      specGrad.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = specGrad;
+      ctx.beginPath();
+      ctx.arc(screenX, screenY, screenR, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   /**

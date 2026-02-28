@@ -22,6 +22,10 @@ export class ArrangePlaybackEngine implements IArrangePlaybackEngine {
     return this._isPlaying;
   }
 
+  get isStepAnimating(): boolean {
+    return this.stepAnimating;
+  }
+
   get currentBeat(): number {
     return this._currentBeat;
   }
