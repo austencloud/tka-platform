@@ -41,6 +41,13 @@ class TerminalState {
 	/** CRT effects enabled */
 	crtEffects = $state(true);
 
+	/**
+	 * Input handler callback — set by app components to intercept user input.
+	 * When set, DosTerminal routes submitted input here instead of the default
+	 * command parser. The handler should set this back to null when done.
+	 */
+	inputHandler = $state<((input: string) => void) | null>(null);
+
 	/** Write a line of plain text to the terminal */
 	writeLine(text: string, color?: DosColor): void {
 		const html = color

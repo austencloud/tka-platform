@@ -15,6 +15,8 @@
   import { onMount } from "svelte";
   import { terminalState } from "../state/terminal-state.svelte";
   import DosBootSequence from "./DosBootSequence.svelte";
+  import ScribeMenu from "./apps/ScribeMenu.svelte";
+  import ScribeGenerate from "./apps/ScribeGenerate.svelte";
   import "../styles/dos-terminal.css";
 
   /* ------------------------------------------------------------------ */
@@ -99,14 +101,36 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Command handler stub — replaced by CommandParser in Task 6          */
+  /* Command routing — delegates to inputHandler if set, else stub      */
   /* ------------------------------------------------------------------ */
 
   function handleInput(input: string): void {
+    // If an app component has registered an input handler, use it
+    if (terminalState.inputHandler) {
+      terminalState.inputHandler(input);
+      return;
+    }
+
+    // Default stub — replaced by CommandParser in Task 6
+    // Recognize SCRIBE to launch the menu app
+    if (input.toUpperCase() === "SCRIBE") {
+      terminalState.mode = "scribe";
+      terminalState.scribeMode = "menu";
+      return;
+    }
+
     if (input.length > 0) {
       terminalState.writeLine("Bad command or file name");
       terminalState.writeBlank();
     }
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Return to SCRIBE menu from a sub-mode                               */
+  /* ------------------------------------------------------------------ */
+
+  function returnToScribeMenu(): void {
+    terminalState.scribeMode = "menu";
   }
 
   /* ------------------------------------------------------------------ */
@@ -146,6 +170,16 @@
     <!-- Boot sequence (renders nothing visible — writes to terminal state) -->
     {#if terminalState.mode === "boot"}
       <DosBootSequence oncomplete={onBootComplete} />
+    {/if}
+
+    <!-- SCRIBE menu (renders nothing visible — writes to terminal state) -->
+    {#if terminalState.mode === "scribe" && terminalState.scribeMode === "menu"}
+      <ScribeMenu />
+    {/if}
+
+    <!-- SCRIBE Generate mode -->
+    {#if terminalState.mode === "scribe" && terminalState.scribeMode === "generate"}
+      <ScribeGenerate onreturn={returnToScribeMenu} />
     {/if}
 
     <!-- Input line with prompt + cursor -->
