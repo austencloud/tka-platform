@@ -11,12 +11,14 @@
     moduleId,
     isActive,
     onClick,
+    onContextMenu,
     badgeCount = 0,
   } = $props<{
     section: Section;
     moduleId: string;
     isActive: boolean;
     onClick: () => void;
+    onContextMenu?: (e: MouseEvent) => void;
     badgeCount?: number;
   }>();
 
@@ -32,6 +34,7 @@
   class:active={isActive}
   class:disabled={section.disabled}
   onclick={onClick}
+  oncontextmenu={onContextMenu}
   disabled={section.disabled}
   aria-label={translatedLabel}
   style="--section-color: {section.color ||

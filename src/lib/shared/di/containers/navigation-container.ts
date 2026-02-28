@@ -22,6 +22,7 @@ import { LetterDeriver } from "../../navigation/services/implementations/LetterD
 import { PositionDeriver } from "../../navigation/services/implementations/PositionDeriver";
 import { SequenceViewer } from "../../sequence-viewer/services/implementations/SequenceViewer";
 import { NavigationValidator } from "../../navigation/services/implementations/NavigationValidator";
+import { SidebarTabToggler } from "../../navigation/services/implementations/SidebarTabToggler";
 
 // Types for external dependencies
 import type { IMotionQueryHandler } from "../../foundation/services/contracts/data/data-contracts";
@@ -51,6 +52,7 @@ export function createNavigationContainer(externalDeps: NavigationExternalDeps) 
       sheetRouter: () => new SheetRouter(),
       sequenceEncoder: () => new SequenceEncoder(),
       navigationValidator: () => new NavigationValidator(),
+      sidebarTabToggler: () => new SidebarTabToggler(),
     })
     // === Services that depend on SequenceEncoder ===
     .add((ctx) => ({

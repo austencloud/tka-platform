@@ -12,6 +12,7 @@
     moduleId,
     isActive,
     onSectionClick,
+    onSectionContextMenu,
     celebrateAppearance = false,
     badgeCounts = {},
   } = $props<{
@@ -20,6 +21,7 @@
     moduleId: string;
     isActive: boolean;
     onSectionClick: (moduleId: string, section: Section) => void;
+    onSectionContextMenu?: (e: MouseEvent, moduleId: string, section: Section) => void;
     celebrateAppearance?: boolean;
     badgeCounts?: Record<string, number>;
   }>();
@@ -50,6 +52,7 @@
         {moduleId}
         isActive={isSectionActive}
         onClick={() => onSectionClick(moduleId, section)}
+        onContextMenu={onSectionContextMenu ? (e) => onSectionContextMenu(e, moduleId, section) : undefined}
         badgeCount={badgeCounts[section.id] || 0}
       />
     </div>

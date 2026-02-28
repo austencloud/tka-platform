@@ -20,6 +20,7 @@
     isExpanded,
     isCollapsed,
     onClick,
+    onContextMenu,
     hasSections = false,
     insideGlassContainer = false,
   } = $props<{
@@ -28,6 +29,7 @@
     isExpanded: boolean;
     isCollapsed: boolean;
     onClick: () => void;
+    onContextMenu?: (e: MouseEvent) => void;
     hasSections?: boolean;
     insideGlassContainer?: boolean;
   }>();
@@ -92,6 +94,7 @@
   class:inside-glass={insideGlassContainer}
   data-tour-module={module.id}
   onclick={handleClick}
+  oncontextmenu={onContextMenu}
   onmouseenter={handleMouseEnter}
   onfocus={handleMouseEnter}
   aria-label={translatedLabel}

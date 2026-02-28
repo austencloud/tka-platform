@@ -18,6 +18,8 @@
   import ModuleGroup from "./desktop-sidebar/ModuleGroup.svelte";
   import CollapsedTabButton from "./desktop-sidebar/CollapsedTabButton.svelte";
   import CollapsedModuleButton from "./desktop-sidebar/CollapsedModuleButton.svelte";
+  import SidebarContextMenu from "./desktop-sidebar/SidebarContextMenu.svelte";
+  import type { ContextMenuState } from "./desktop-sidebar/SidebarContextMenu.svelte";
   import {
     navigationState,
     SETTINGS_TABS,
@@ -102,6 +104,40 @@
   // Track when we're transitioning from collapsed to expanded
   // This prevents sections from sliding in while the sidebar is still narrow
   let isTransitioningFromCollapsed = $state(false);
+
+  // Context menu state
+  let contextMenuState = $state<ContextMenuState>({ mode: "closed" });
+
+  function handleModuleContextMenu(e: MouseEvent, moduleId: string) {
+    if (!featureFlagService.isAdmin) return; // Admin-only feature
+    e.preventDefault();
+    const moduleDef = modules.find((m: ModuleDefinition) => m.id === moduleId);
+    if (!moduleDef || !moduleDef.sections.length) return; // No tabs to toggle
+    contextMenuState = {
+      mode: "module",
+      moduleId: moduleId as ModuleId,
+      moduleLabel: moduleDef.label,
+      x: e.clientX,
+      y: e.clientY,
+    };
+  }
+
+  function handleTabContextMenu(e: MouseEvent, moduleId: string, section: Section) {
+    if (!featureFlagService.isAdmin) return; // Admin-only feature
+    e.preventDefault();
+    contextMenuState = {
+      mode: "tab",
+      moduleId: moduleId as ModuleId,
+      tabId: section.id,
+      tabLabel: section.label,
+      x: e.clientX,
+      y: e.clientY,
+    };
+  }
+
+  function closeContextMenu() {
+    contextMenuState = { mode: "closed" };
+  }
 
   function toggleModuleExpansion(moduleId: string) {
     const newExpanded = new Set(expandedModules);
@@ -268,7 +304,8 @@
 
   <!-- Unified Navigation Content Container -->
   <!-- Single container holds both modules and settings tabs - no flexbox recalculation -->
-  <div class="navigation-content themed-scrollbar" class:tabs-mode={isCollapsed}>
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="navigation-content themed-scrollbar" class:tabs-mode={isCollapsed} onscroll={closeContextMenu}>
     {#if isInSettings}
       <!-- Settings Content with Back Button Header -->
       <div
@@ -363,6 +400,7 @@
                   isActive={isModuleActive || forceActiveCollapsed}
                   onClick={() =>
                     handleModuleTap(module.id, module.disabled ?? false)}
+                  onContextMenu={(e) => handleModuleContextMenu(e, module.id)}
                   {moduleColor}
                   {hasTabs}
                 />
@@ -386,6 +424,7 @@
                           moduleId={module.id}
                           isActive={isSectionActive}
                           onClick={() => handleSectionTap(module.id, section)}
+                          onContextMenu={(e) => handleTabContextMenu(e, module.id, section)}
                         />
                       </div>
                     {/each}
@@ -420,6 +459,8 @@
               {moduleColor}
               onModuleClick={handleModuleTap}
               onSectionClick={handleSectionTap}
+              onModuleContextMenu={handleModuleContextMenu}
+              onSectionContextMenu={handleTabContextMenu}
               celebrateAppearance={shouldCelebrate}
               forceActiveStyle={forceActiveStyleLocal}
             />
@@ -435,7 +476,11 @@
     {isInSettings}
     onSettingsClick={handleSettingsTap}
   />
+
 </nav>
+
+<!-- Context menu rendered outside nav to avoid overflow: hidden clipping -->
+<SidebarContextMenu menuState={contextMenuState} onClose={closeContextMenu} />
 
 <style>
   /* ============================================================================

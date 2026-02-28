@@ -47,15 +47,8 @@ export const CREATE_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #f97316 100%)",
     metadata: { isCreationMethod: true },
   },
-  {
-    id: "spell",
-    label: "Spell",
-    icon: '<i class="fas fa-spell-check" aria-hidden="true"></i>',
-    description: "Type words, get sequences",
-    color: "#10b981",
-    gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
-    metadata: { isCreationMethod: true },
-  },
+  // REMOVED: Spell tab unified into Generate tab as "Spell" mode (Feb 2026)
+  // Spell functionality accessible via Generate tab's Freeform/Spell mode toggle
 ];
 
 // Learn tabs configuration
@@ -778,6 +771,14 @@ export const LAB_TABS: Section[] = [
     description: "TKA-OS v1.0 (1995 parody)",
     color: "#008080",
     gradient: "linear-gradient(135deg, #008080 0%, #000080 100%)",
+  },
+  {
+    id: "contact-ball",
+    label: "Contact Ball",
+    icon: '<i class="fas fa-circle" aria-hidden="true"></i>',
+    description: "Contact ball color fix + acrylic style prototypes",
+    color: "#6366f1",
+    gradient: "linear-gradient(135deg, #818cf8 0%, #6366f1 100%)",
   },
 ];
 

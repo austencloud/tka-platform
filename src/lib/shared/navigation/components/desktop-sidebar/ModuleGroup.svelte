@@ -17,6 +17,8 @@
     moduleColor,
     onModuleClick,
     onSectionClick,
+    onModuleContextMenu,
+    onSectionContextMenu,
     celebrateAppearance = false,
     forceActiveStyle = false,
   } = $props<{
@@ -29,6 +31,8 @@
     moduleColor?: string;
     onModuleClick: (moduleId: string, isDisabled: boolean) => void;
     onSectionClick: (moduleId: string, section: Section) => void;
+    onModuleContextMenu?: (e: MouseEvent, moduleId: string) => void;
+    onSectionContextMenu?: (e: MouseEvent, moduleId: string, section: Section) => void;
     celebrateAppearance?: boolean;
     forceActiveStyle?: boolean;
   }>();
@@ -86,6 +90,7 @@
     {hasSections}
     insideGlassContainer={showActiveStyle}
     onClick={() => onModuleClick(module.id, isDisabled)}
+    onContextMenu={onModuleContextMenu ? (e) => onModuleContextMenu(e, module.id) : undefined}
   />
 
   <!-- Module Sections/Tabs (collapsible) -->
@@ -96,6 +101,7 @@
       moduleId={module.id}
       {isActive}
       {onSectionClick}
+      {onSectionContextMenu}
       {celebrateAppearance}
       badgeCounts={inboxBadgeCounts}
     />

@@ -5,11 +5,12 @@
   import { translateTab } from "$lib/shared/i18n/translate";
   import { getReactiveLocale } from "$lib/shared/i18n/locale-state.svelte";
 
-  let { section, moduleId, isActive, onClick } = $props<{
+  let { section, moduleId, isActive, onClick, onContextMenu } = $props<{
     section: Section;
     moduleId: string;
     isActive: boolean;
     onClick: () => void;
+    onContextMenu?: (e: MouseEvent) => void;
   }>();
 
   // Translated label (reactive to locale changes)
@@ -24,6 +25,7 @@
   class:active={isActive}
   class:disabled={section.disabled}
   onclick={onClick}
+  oncontextmenu={onContextMenu}
   disabled={section.disabled}
   aria-label={translatedLabel}
   style="--section-color: {section.color ||

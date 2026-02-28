@@ -29,6 +29,10 @@ export const layoutState = $state({
   // Side-by-side layout detection - true when viewport is wide enough for desktop layout
   // Updated by MainInterface component based on container width
   isSideBySideLayout: false,
+
+  // Viewport width - updated by MainInterface resize listener
+  // Used by moduleSections() to reactively filter device-inappropriate tabs
+  viewportWidth: typeof window !== "undefined" ? window.innerWidth : 1024,
 });
 
 // Helper functions
@@ -54,6 +58,10 @@ export function setLearnHeader(header: string) {
 
 export function setSideBySideLayout(isSideBySide: boolean) {
   layoutState.isSideBySideLayout = isSideBySide;
+}
+
+export function setViewportWidth(width: number) {
+  layoutState.viewportWidth = width;
 }
 
 /**

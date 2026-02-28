@@ -138,12 +138,21 @@ export function moduleSections() {
     return availableSections;
   }
 
-  // Settings module: Filter AI tab for non-admin users
+  // Settings module: Filter tabs based on device and role
   if (module === "settings") {
+    // pointer: coarse = touch-primary device (phones, tablets, foldables)
+    // These devices lack physical keyboards, so keyboard shortcuts are irrelevant
+    const isTouchDevice =
+      typeof window !== "undefined" &&
+      window.matchMedia("(pointer: coarse)").matches;
     return baseSections.filter((section: { id: string }) => {
       // AI tab is admin-only
       if (section.id === "ai") {
         return featureFlagService.isAdmin;
+      }
+      // Keyboard shortcuts tab is irrelevant on touch devices (no physical keyboard)
+      if (section.id === "keyboard" && isTouchDevice) {
+        return false;
       }
       return true;
     });

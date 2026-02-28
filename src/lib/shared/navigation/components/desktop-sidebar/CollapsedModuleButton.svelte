@@ -13,12 +13,14 @@
     module,
     isActive,
     onClick,
+    onContextMenu,
     moduleColor,
     hasTabs = false,
   } = $props<{
     module: ModuleDefinition;
     isActive: boolean;
     onClick: () => void;
+    onContextMenu?: (e: MouseEvent) => void;
     moduleColor?: string;
     hasTabs?: boolean;
   }>();
@@ -59,6 +61,7 @@
   class:disabled={isDisabled}
   class:has-tabs={hasTabs}
   onclick={onClick}
+  oncontextmenu={onContextMenu}
   disabled={isDisabled}
   aria-label={translatedLabel}
   aria-current={isActive ? "page" : undefined}

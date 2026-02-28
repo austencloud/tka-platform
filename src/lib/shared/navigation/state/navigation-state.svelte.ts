@@ -295,17 +295,12 @@ export function createNavigationState() {
             activeTab = "";
           }
         } else {
-          // Invalid module ID (typo like "sdashboard") - redirect to Create
-          console.warn(`Invalid module "${rawUrlModule}" in URL, redirecting to Create`);
+          // Unrecognized path — could be a typo ("sdashboard") or a standalone
+          // SvelteKit route ("/1995") that isn't part of the module system.
+          // Set safe internal defaults but do NOT rewrite the URL — that would
+          // break standalone routes whose pages render independently.
           currentModule = "create";
-          const createDef = MODULE_DEFINITIONS.find((m) => m.id === "create");
           activeTab = DEFAULT_CREATE_TAB;
-
-          // Update URL to reflect the correction (avoid bookmark of broken URL)
-          if (typeof window !== "undefined" && window.history) {
-            const correctedPath = `/${currentModule}/${activeTab}`;
-            window.history.replaceState(null, "", correctedPath);
-          }
         }
       }
     }
