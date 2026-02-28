@@ -14,7 +14,7 @@
   import RetroListBox from "../../primitives/RetroListBox.svelte";
   import RetroRadioButton from "../../primitives/RetroRadioButton.svelte";
   import RetroPictograph from "../../rendering/RetroPictograph.svelte";
-  import { createMockPictographData } from "../../rendering/mock-pictograph-data";
+  import { createMockPictographData } from "../../../shared/data/mock-pictograph-data";
   import { RETRO_ICONS } from "../../rendering/retro-icons";
 
   /* ------------------------------------------------------------------ */

@@ -14,7 +14,7 @@ import type {
 	RetroGridLocation,
 	RetroMotionType,
 	RetroOrientation,
-} from "../../shared/domain/pictograph-types";
+} from "../domain/pictograph-types";
 
 /**
  * Position pairs for deterministic letter layouts.

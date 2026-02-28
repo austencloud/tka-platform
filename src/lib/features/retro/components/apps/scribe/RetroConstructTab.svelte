@@ -14,7 +14,7 @@
   import RetroRadioButton from "../../primitives/RetroRadioButton.svelte";
   import RetroListBox from "../../primitives/RetroListBox.svelte";
   import RetroPictograph from "../../rendering/RetroPictograph.svelte";
-  import { createMockPictographData } from "../../rendering/mock-pictograph-data";
+  import { createMockPictographData } from "../../../shared/data/mock-pictograph-data";
 
   let {
     onstatuschange,
@@ -296,7 +296,7 @@
   /* ------------------------------------------------------------------ */
   .controls-fieldset {
     flex-shrink: 0;
-    padding: 6px 8px;
+    padding: 4px 6px;
     margin: 0;
   }
 
@@ -312,8 +312,8 @@
   .field-row-custom {
     display: flex;
     align-items: center;
-    gap: 6px;
-    margin-bottom: 4px;
+    gap: 4px;
+    margin-bottom: 2px;
   }
 
   .field-label {

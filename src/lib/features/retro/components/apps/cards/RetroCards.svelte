@@ -16,7 +16,7 @@
   import RetroStatusBar from "../../primitives/RetroStatusBar.svelte";
   import RetroButton from "../../primitives/RetroButton.svelte";
   import RetroPictograph from "../../rendering/RetroPictograph.svelte";
-  import { createMockPictographData } from "../../rendering/mock-pictograph-data";
+  import { createMockPictographData } from "../../../shared/data/mock-pictograph-data";
   import type { RetroPictographData } from "../../../shared/domain/pictograph-types";
   import { RETRO_ICONS } from "../../rendering/retro-icons";
 

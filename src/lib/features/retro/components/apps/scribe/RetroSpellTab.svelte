@@ -12,7 +12,7 @@
   import RetroTextInput from "../../primitives/RetroTextInput.svelte";
   import RetroProgressBar from "../../primitives/RetroProgressBar.svelte";
   import RetroPictograph from "../../rendering/RetroPictograph.svelte";
-  import { createMockPictographData } from "../../rendering/mock-pictograph-data";
+  import { createMockPictographData } from "../../../shared/data/mock-pictograph-data";
   import type { RetroPictographData } from "../../../shared/domain/pictograph-types";
 
   let {
