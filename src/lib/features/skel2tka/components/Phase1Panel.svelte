@@ -1,19 +1,31 @@
 <!--
-  Phase1Panel - Video upload -> hand analysis -> trajectory + beat output
+  Phase1Panel - Video upload -> hand analysis -> verification -> training data
 
   Orchestrates the Phase 1 pipeline:
   1. User uploads a video file
   2. VideoFrameExtractor pulls frames at 15fps
   3. VideoHandAnalyzer runs MediaPipe on each frame
   4. BeatBoundaryDetector groups stable positions into beats
-  5. Results displayed as trajectory chart + beat sequence
+  5. Sanity checks run automatically
+  6. FrameInspector shows video + overlay for manual verification
+  7. User accepts, corrects, or rejects via PhaseVerificationPanel
+  8. Accepted/corrected results save as training data
 -->
 <script lang="ts">
   import { container } from "$lib/shared/di";
   import type { Phase1Result } from "../domain/models";
+  import type { SanityCheckReport } from "../domain/verification-models";
+  import type { PhaseVerdict, UserCorrection } from "../domain/verification-models";
+  import type { TrainingPair, VerifiedBeatPosition, VideoReference } from "../domain/training-models";
+  import type { IOverlayRenderer } from "../services/contracts/IOverlayRenderer";
+  import type { ISanityChecker } from "../services/contracts/ISanityChecker";
+  import type { ITrainingDataPersister } from "../services/contracts/ITrainingDataPersister";
   import VideoUploadDropzone from "./VideoUploadDropzone.svelte";
   import TrajectoryTimeline from "./TrajectoryTimeline.svelte";
   import PositionSequenceOutput from "./PositionSequenceOutput.svelte";
+  import FrameInspector from "./verification/FrameInspector.svelte";
+  import SanityCheckPanel from "./verification/SanityCheckPanel.svelte";
+  import PhaseVerificationPanel from "./verification/PhaseVerificationPanel.svelte";
 
   type PipelineState =
     | "idle"
@@ -22,6 +34,7 @@
     | "analyzing"
     | "detecting-beats"
     | "complete"
+    | "verified"
     | "error";
 
   let pipelineState = $state<PipelineState>("idle");
@@ -30,11 +43,17 @@
   let progressLabel = $state("");
   let errorMessage = $state("");
   let result = $state<Phase1Result | null>(null);
+  let videoFile = $state<File | null>(null);
+  let sanityReport = $state<SanityCheckReport | null>(null);
+  let verificationMessage = $state("");
 
   const landmarker = container.items.imageModeHandLandmarker;
   const frameExtractor = container.items.videoFrameExtractor;
   const handAnalyzer = container.items.videoHandAnalyzer;
   const beatDetector = container.items.beatBoundaryDetector;
+  const overlayRenderer = container.items.phase1OverlayRenderer as IOverlayRenderer;
+  const sanityChecker = container.items.sanityChecker as ISanityChecker;
+  const trainingPersister = container.items.trainingDataPersister as ITrainingDataPersister;
 
   function onProgress(current: number, total: number, label?: string) {
     progressCurrent = current;
@@ -45,6 +64,9 @@
   async function handleFileSelected(file: File) {
     pipelineState = "initializing";
     result = null;
+    videoFile = file;
+    sanityReport = null;
+    verificationMessage = "";
     errorMessage = "";
     progressCurrent = 0;
     progressTotal = 0;
@@ -87,11 +109,112 @@
       const processingTimeMs = performance.now() - startTime;
 
       result = { timeline, beats, processingTimeMs };
+
+      // Step 4: Run sanity checks
+      sanityReport = sanityChecker.checkPhase1(result);
+
       pipelineState = "complete";
     } catch (err) {
       console.error("[Skel2TKA] Phase 1 error:", err);
       errorMessage = err instanceof Error ? err.message : "Analysis failed";
       pipelineState = "error";
+    }
+  }
+
+  async function handleVerdict(verdict: PhaseVerdict, corrections: UserCorrection[]) {
+    if (!result || !videoFile) return;
+
+    if (verdict === "rejected") {
+      // Reset to idle so user can try again
+      pipelineState = "idle";
+      result = null;
+      sanityReport = null;
+      videoFile = null;
+      return;
+    }
+
+    // Build training pair
+    try {
+      await trainingPersister.initialize();
+
+      const videoRef: VideoReference = {
+        fileName: videoFile.name,
+        fileSizeBytes: videoFile.size,
+        durationSec: result.timeline.duration,
+        width: 0, // Populated by FrameInspector if available
+        height: 0,
+        extractionFps: result.timeline.fps,
+        fileHash: await computeFileHash(videoFile),
+      };
+
+      const verifiedBeats: VerifiedBeatPosition[] = result.beats.map((beat) => {
+        const bluePos = beat.positions.find((p) => p.hand === "blue");
+        const redPos = beat.positions.find((p) => p.hand === "red");
+
+        // Apply corrections if any
+        let blueLocation = bluePos?.location ?? null;
+        let redLocation = redPos?.location ?? null;
+
+        for (const correction of corrections) {
+          if (correction.beatIndex === beat.index && correction.field === "hand_position") {
+            if (correction.hand === "blue") {
+              blueLocation = correction.correctedValue as typeof blueLocation;
+            } else if (correction.hand === "red") {
+              redLocation = correction.correctedValue as typeof redLocation;
+            }
+          }
+        }
+
+        return {
+          beatIndex: beat.index,
+          blueLocation,
+          redLocation,
+          positionLabel: beat.positionLabel,
+          startTime: beat.startTime,
+          endTime: beat.endTime,
+        };
+      });
+
+      const pair: TrainingPair = {
+        id: crypto.randomUUID(),
+        video: videoRef,
+        input: {
+          phase: 1,
+          detectionFrames: result.timeline.frames,
+          fps: result.timeline.fps,
+          duration: result.timeline.duration,
+        },
+        output: {
+          beats: verifiedBeats,
+          verificationMethod: verdict === "accepted" ? "accepted" : "corrected",
+          corrections,
+        },
+        createdAt: Date.now(),
+        synced: false,
+        verifiedBy: "austen",
+      };
+
+      await trainingPersister.save(pair);
+
+      const stats = await trainingPersister.getStats();
+      verificationMessage = `Training pair saved (${stats.totalPairs} total: ${stats.acceptedPairs} accepted, ${stats.correctedPairs} corrected)`;
+      pipelineState = "verified";
+    } catch (err) {
+      console.error("[Skel2TKA] Failed to save training pair:", err);
+      verificationMessage = "Failed to save training data. Check console for details.";
+      pipelineState = "verified";
+    }
+  }
+
+  async function computeFileHash(file: File): Promise<string> {
+    try {
+      const buffer = await file.arrayBuffer();
+      const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+    } catch {
+      // crypto.subtle may not be available in insecure contexts
+      return `${file.name}-${file.size}-${file.lastModified}`;
     }
   }
 
@@ -140,7 +263,7 @@
     </div>
   {/if}
 
-  {#if pipelineState === "complete" && result}
+  {#if (pipelineState === "complete" || pipelineState === "verified") && result}
     <div class="results-section">
       <div class="results-header">
         <h3>Results</h3>
@@ -151,6 +274,30 @@
 
       <TrajectoryTimeline timeline={result.timeline} />
       <PositionSequenceOutput beats={result.beats} />
+
+      {#if sanityReport}
+        <SanityCheckPanel report={sanityReport} />
+      {/if}
+
+      {#if videoFile && pipelineState === "complete"}
+        <FrameInspector
+          {videoFile}
+          {result}
+          renderer={overlayRenderer}
+        />
+
+        <PhaseVerificationPanel
+          beats={result.beats}
+          onVerdict={handleVerdict}
+        />
+      {/if}
+
+      {#if pipelineState === "verified" && verificationMessage}
+        <div class="verification-result">
+          <i class="fas fa-database"></i>
+          <span>{verificationMessage}</span>
+        </div>
+      {/if}
     </div>
   {/if}
 </div>
@@ -256,5 +403,17 @@
   .timing {
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+  }
+
+  .verification-result {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: rgba(34, 197, 94, 0.08);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    border-radius: 8px;
+    font-size: var(--font-size-min, 14px);
+    color: #22c55e;
   }
 </style>

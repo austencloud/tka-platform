@@ -12,11 +12,17 @@ import { VideoFrameExtractor } from "$lib/features/skel2tka/services/implementat
 import { VideoHandAnalyzer } from "$lib/features/skel2tka/services/implementations/VideoHandAnalyzer";
 import { BeatBoundaryDetector } from "$lib/features/skel2tka/services/implementations/BeatBoundaryDetector";
 import { ImageModeHandLandmarker } from "$lib/features/skel2tka/services/implementations/ImageModeHandLandmarker";
+import { Phase1OverlayRenderer } from "$lib/features/skel2tka/services/implementations/Phase1OverlayRenderer";
+import { SanityChecker } from "$lib/features/skel2tka/services/implementations/SanityChecker";
+import { TrainingDataPersister } from "$lib/features/skel2tka/services/implementations/TrainingDataPersister";
 
 import type { IVideoFrameExtractor } from "$lib/features/skel2tka/services/contracts/IVideoFrameExtractor";
 import type { IVideoHandAnalyzer } from "$lib/features/skel2tka/services/contracts/IVideoHandAnalyzer";
 import type { IBeatBoundaryDetector } from "$lib/features/skel2tka/services/contracts/IBeatBoundaryDetector";
 import type { IImageModeHandLandmarker } from "$lib/features/skel2tka/services/contracts/IImageModeHandLandmarker";
+import type { IOverlayRenderer } from "$lib/features/skel2tka/services/contracts/IOverlayRenderer";
+import type { ISanityChecker } from "$lib/features/skel2tka/services/contracts/ISanityChecker";
+import type { ITrainingDataPersister } from "$lib/features/skel2tka/services/contracts/ITrainingDataPersister";
 
 /**
  * Creates the skel2tka container. No external dependencies —
@@ -27,6 +33,9 @@ export function createSkel2TKAContainer() {
   let frameExtractorInstance: VideoFrameExtractor | null = null;
   let handAnalyzerInstance: VideoHandAnalyzer | null = null;
   let beatDetectorInstance: BeatBoundaryDetector | null = null;
+  let phase1OverlayInstance: Phase1OverlayRenderer | null = null;
+  let sanityCheckerInstance: SanityChecker | null = null;
+  let trainingDataPersisterInstance: TrainingDataPersister | null = null;
 
   return createContainer().add({
     imageModeHandLandmarker: (): IImageModeHandLandmarker => {
@@ -58,6 +67,27 @@ export function createSkel2TKAContainer() {
         beatDetectorInstance = new BeatBoundaryDetector();
       }
       return beatDetectorInstance;
+    },
+
+    phase1OverlayRenderer: (): IOverlayRenderer => {
+      if (!phase1OverlayInstance) {
+        phase1OverlayInstance = new Phase1OverlayRenderer();
+      }
+      return phase1OverlayInstance;
+    },
+
+    sanityChecker: (): ISanityChecker => {
+      if (!sanityCheckerInstance) {
+        sanityCheckerInstance = new SanityChecker();
+      }
+      return sanityCheckerInstance;
+    },
+
+    trainingDataPersister: (): ITrainingDataPersister => {
+      if (!trainingDataPersisterInstance) {
+        trainingDataPersisterInstance = new TrainingDataPersister();
+      }
+      return trainingDataPersisterInstance;
     },
   });
 }

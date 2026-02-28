@@ -1,0 +1,371 @@
+<!--
+  PhaseVerificationPanel - Accept, correct, or reject phase output
+
+  Three actions:
+  1. "Looks right" — accept the output as-is (training pair saved as accepted)
+  2. "Wrong at beat N" — open correction UI for a specific beat
+  3. "Try again" — reject and re-run the pipeline
+
+  When correcting, shows a GridPositionPicker for each hand per beat.
+-->
+<script lang="ts">
+  import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import type { DetectedBeat } from "../../domain/models";
+  import type { PhaseVerdict, UserCorrection } from "../../domain/verification-models";
+  import GridPositionPicker from "./GridPositionPicker.svelte";
+
+  let {
+    beats,
+    onVerdict,
+  }: {
+    beats: DetectedBeat[];
+    onVerdict: (verdict: PhaseVerdict, corrections: UserCorrection[]) => void;
+  } = $props();
+
+  let mode = $state<"choose" | "correcting">("choose");
+  let correctingBeatIndex = $state(0);
+  let corrections = $state<UserCorrection[]>([]);
+
+  // Track corrected positions for the current beat
+  let correctedBlue = $state<GridLocation | null>(null);
+  let correctedRed = $state<GridLocation | null>(null);
+
+  const currentBeat = $derived(beats[correctingBeatIndex] ?? null);
+
+  const detectedBlue = $derived<GridLocation | null>(
+    currentBeat?.positions.find((p) => p.hand === "blue")?.location ?? null
+  );
+
+  const detectedRed = $derived<GridLocation | null>(
+    currentBeat?.positions.find((p) => p.hand === "red")?.location ?? null
+  );
+
+  function handleAccept() {
+    onVerdict("accepted", []);
+  }
+
+  function handleReject() {
+    onVerdict("rejected", []);
+  }
+
+  function startCorrection(beatIndex: number) {
+    mode = "correcting";
+    correctingBeatIndex = beatIndex;
+    // Initialize with detected values
+    correctedBlue = detectedBlue;
+    correctedRed = detectedRed;
+  }
+
+  function saveCorrection() {
+    if (!currentBeat) return;
+
+    // Only add corrections where the value actually changed
+    if (correctedBlue && correctedBlue !== detectedBlue) {
+      corrections.push({
+        beatIndex: correctingBeatIndex,
+        field: "hand_position",
+        hand: "blue",
+        detectedValue: detectedBlue ?? "none",
+        correctedValue: correctedBlue,
+      });
+    }
+
+    if (correctedRed && correctedRed !== detectedRed) {
+      corrections.push({
+        beatIndex: correctingBeatIndex,
+        field: "hand_position",
+        hand: "red",
+        detectedValue: detectedRed ?? "none",
+        correctedValue: correctedRed,
+      });
+    }
+
+    mode = "choose";
+  }
+
+  function submitCorrections() {
+    onVerdict("corrected", corrections);
+  }
+
+  function cancelCorrection() {
+    mode = "choose";
+  }
+</script>
+
+<div class="verification-panel">
+  {#if mode === "choose"}
+    <div class="verdict-actions">
+      <button class="verdict-btn accept" onclick={handleAccept}>
+        <i class="fas fa-check"></i>
+        Looks right
+      </button>
+
+      <div class="beat-correction-list">
+        <span class="section-label">Wrong at beat:</span>
+        <div class="beat-buttons">
+          {#each beats as beat, i}
+            <button
+              class="beat-btn"
+              class:has-correction={corrections.some((c) => c.beatIndex === i)}
+              onclick={() => startCorrection(i)}
+            >
+              {i + 1}
+            </button>
+          {/each}
+        </div>
+      </div>
+
+      {#if corrections.length > 0}
+        <div class="correction-summary">
+          <span>{corrections.length} correction{corrections.length === 1 ? "" : "s"} pending</span>
+          <button class="verdict-btn corrected" onclick={submitCorrections}>
+            <i class="fas fa-paper-plane"></i>
+            Submit corrections
+          </button>
+        </div>
+      {/if}
+
+      <button class="verdict-btn reject" onclick={handleReject}>
+        <i class="fas fa-redo"></i>
+        Try again
+      </button>
+    </div>
+
+  {:else if mode === "correcting" && currentBeat}
+    <div class="correction-ui">
+      <div class="correction-header">
+        <h4>Correct Beat {correctingBeatIndex + 1}</h4>
+        <span class="beat-time">
+          {currentBeat.startTime.toFixed(2)}s - {currentBeat.endTime.toFixed(2)}s
+        </span>
+      </div>
+
+      <div class="hand-pickers">
+        <div class="picker-group">
+          <span class="picker-label" style="color: #3b82f6;">Blue hand</span>
+          <span class="detected-value">
+            Detected: {detectedBlue?.toUpperCase() ?? "none"}
+          </span>
+          <GridPositionPicker
+            selected={correctedBlue}
+            hand="blue"
+            onSelect={(loc) => (correctedBlue = loc)}
+          />
+        </div>
+
+        <div class="picker-group">
+          <span class="picker-label" style="color: #ef4444;">Red hand</span>
+          <span class="detected-value">
+            Detected: {detectedRed?.toUpperCase() ?? "none"}
+          </span>
+          <GridPositionPicker
+            selected={correctedRed}
+            hand="red"
+            onSelect={(loc) => (correctedRed = loc)}
+          />
+        </div>
+      </div>
+
+      <div class="correction-actions">
+        <button class="action-btn save" onclick={saveCorrection}>
+          <i class="fas fa-save"></i>
+          Save correction
+        </button>
+        <button class="action-btn cancel" onclick={cancelCorrection}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  {/if}
+</div>
+
+<style>
+  .verification-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+  }
+
+  .verdict-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .verdict-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .verdict-btn.accept {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: rgba(34, 197, 94, 0.3);
+    color: #22c55e;
+  }
+
+  .verdict-btn.accept:hover {
+    background: rgba(34, 197, 94, 0.2);
+  }
+
+  .verdict-btn.corrected {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.3);
+    color: #f59e0b;
+  }
+
+  .verdict-btn.corrected:hover {
+    background: rgba(245, 158, 11, 0.2);
+  }
+
+  .verdict-btn.reject {
+    background: rgba(239, 68, 68, 0.06);
+    border-color: rgba(239, 68, 68, 0.2);
+    color: rgba(239, 68, 68, 0.7);
+  }
+
+  .verdict-btn.reject:hover {
+    background: rgba(239, 68, 68, 0.12);
+  }
+
+  .beat-correction-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .section-label {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+  }
+
+  .beat-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .beat-btn {
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 6px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text, #ffffff);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .beat-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .beat-btn.has-correction {
+    border-color: rgba(245, 158, 11, 0.5);
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+  }
+
+  .correction-summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    font-size: var(--font-size-compact, 12px);
+    color: #f59e0b;
+  }
+
+  .correction-ui {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .correction-header {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .correction-header h4 {
+    margin: 0;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    color: var(--theme-text, #ffffff);
+  }
+
+  .beat-time {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    font-variant-numeric: tabular-nums;
+  }
+
+  .hand-pickers {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .picker-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .picker-label {
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+  }
+
+  .detected-value {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+  }
+
+  .correction-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .action-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 6px;
+    font-size: var(--font-size-min, 14px);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .action-btn.save {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.3);
+    color: #3b82f6;
+  }
+
+  .action-btn.save:hover {
+    background: rgba(59, 130, 246, 0.25);
+  }
+
+  .action-btn.cancel {
+    background: transparent;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+  }
+
+  .action-btn.cancel:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
+</style>
