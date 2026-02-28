@@ -65,41 +65,18 @@ export function createCurrentWordDisplayEffect(
       let displayText = "";
       let letterSources: LetterSource[] | null = null;
 
-      // PRIORITY 1: Spell tab - has special letterSources handling for original vs bridge letters
-      // Must check this FIRST to ensure letterSources persist during interactions
-      if (navigationState.activeTab === "spell") {
-        const spellState = CreateModuleState.spellTabState;
-        if (spellState) {
-          // Explicitly read reactive values to ensure effect tracks them
-          const sources = spellState.letterSources;
-          const expandedWord = spellState.expandedWord;
+      // PRIORITY 1: Check sequence metadata for spell data (letterSources for original vs bridge letters)
+      // This handles both the old spell tab and the new generate tab's spell mode
+      const sequence = CreateModuleState.sequenceState.currentSequence;
+      const spellData = sequence?.metadata?.spellData as {
+        originalWord?: string;
+        expandedWord?: string;
+        letterSources?: LetterSource[];
+      } | undefined;
 
-          if (sources && sources.length > 0) {
-            displayText = expandedWord || "";
-            letterSources = sources;
-          } else {
-            // Check sequence metadata for persisted letterSources (survives refresh)
-            const sequence = CreateModuleState.sequenceState.currentSequence;
-            const spellData = sequence?.metadata?.spellData as {
-              originalWord?: string;
-              expandedWord?: string;
-              letterSources?: LetterSource[];
-            } | undefined;
-
-            if (spellData?.letterSources && spellData.letterSources.length > 0) {
-              displayText = spellData.expandedWord || sequence?.word || "";
-              letterSources = spellData.letterSources;
-              // Restore to spell state so subsequent reads don't need metadata lookup
-              spellState.setExpandedWord(spellData.expandedWord || "");
-              spellState.setLetterSources(spellData.letterSources);
-            } else {
-              // No generation yet, show sequence word or empty
-              displayText = CreateModuleState.sequenceState.sequenceWord() ?? "";
-            }
-          }
-        } else {
-          displayText = CreateModuleState.sequenceState.sequenceWord() ?? "";
-        }
+      if (spellData?.letterSources && spellData.letterSources.length > 0) {
+        displayText = spellData.expandedWord || sequence?.word || "";
+        letterSources = spellData.letterSources;
       }
       // PRIORITY 2: Construct tab - start position instructions
       else if (navigationState.activeTab === "construct") {

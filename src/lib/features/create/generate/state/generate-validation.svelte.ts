@@ -64,8 +64,8 @@ export function createGenerationValidationState() {
     errors.push(...turnValidation.errors);
     warnings.push(...turnValidation.warnings);
 
-    // Validate LOOP configuration (circular mode only)
-    if (config.mode === "circular") {
+    // Validate LOOP configuration (when LOOP is enabled)
+    if (config.loopEnabled) {
       const loopValidation = validateLOOPConfiguration(config);
       errors.push(...loopValidation.errors);
       warnings.push(...loopValidation.warnings);

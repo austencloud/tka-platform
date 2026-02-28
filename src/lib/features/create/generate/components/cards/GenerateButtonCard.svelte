@@ -19,13 +19,17 @@ Integrates the "Generate New" button into the card grid layout so it scales with
     onGenerateClicked,
     config,
     startEndOptions = null,
+    disabled = false,
   } = $props<{
     isGenerating: boolean;
     hasSettingsChanged?: boolean;
     onGenerateClicked: (options: any) => Promise<void>;
     config: UIGenerationConfig;
     startEndOptions?: StartEndOptions | null;
+    disabled?: boolean;
   }>();
+
+  const isDisabled = $derived(isGenerating || disabled);
 
   let buttonLabel = $derived(
     isGenerating
@@ -59,7 +63,7 @@ Integrates the "Generate New" button into the card grid layout so it scales with
   class="generate-button-card"
   class:dirty={hasSettingsChanged && !isGenerating}
   onclick={handleClick}
-  disabled={isGenerating}
+  disabled={isDisabled}
   type="button"
   aria-label={buttonLabel}
 >

@@ -58,14 +58,15 @@ export function difficultyToLevel(difficulty: DifficultyLevel): number {
  * This is what the UI components work with directly
  */
 export interface UIGenerationConfig {
-  mode: string; // "freeform" | "circular"
+  mode: string; // "freeform" | "spell"
+  loopEnabled: boolean; // Orthogonal toggle — works in both freeform and spell modes
   length: number;
-  level: number; // 1-3
+  level: number; // 1-4
   turnIntensity: number;
   gridMode: GridMode;
   propContinuity: string; // "continuous" | "random" — legacy, derived from constraintPreset for backwards compat
   sliceSize: string; // "halved" | "quartered"
-  loopType: string; // LOOP type for circular mode
+  loopType: string; // LOOP type when loopEnabled=true
 
   // 3-axis constraint system (replaces binary propContinuity)
   constraintPreset: "smooth" | "mixed" | "high-reversal"; // Prop reversal frequency
@@ -115,13 +116,21 @@ export function uiConfigToGenerationOptions(
   const derivedPropContinuity =
     uiConfig.constraintPreset === "smooth" ? PropContinuity.CONTINUOUS : PropContinuity.RANDOM;
 
+  // When loop is enabled in freeform mode, use the circular generation pipeline
+  const effectiveMode =
+    uiConfig.loopEnabled && uiConfig.mode === "freeform"
+      ? "circular"
+      : uiConfig.mode === "spell"
+        ? "freeform" // Spell mode uses its own pipeline; service layer gets "freeform"
+        : uiConfig.mode;
+
   const options: GenerationOptions = {
     length: uiConfig.length,
     gridMode: uiConfig.gridMode,
     propType,
     difficulty: levelToDifficulty(uiConfig.level),
-    mode: uiConfig.mode
-      ? (uiConfig.mode as GenerationOptions["mode"])
+    mode: effectiveMode
+      ? (effectiveMode as GenerationOptions["mode"])
       : undefined,
     propContinuity: derivedPropContinuity,
     turnIntensity:
@@ -161,8 +170,11 @@ export function generationOptionsToUIConfig(
   const constraintPreset: UIGenerationConfig["constraintPreset"] =
     options.constraintPreset ?? (options.propContinuity === "random" ? "mixed" : "smooth");
 
+  // Map "circular" back to freeform + loopEnabled for the UI
+  const isCircular = options.mode === "circular";
   return {
-    mode: options.mode || "freeform",
+    mode: isCircular ? "freeform" : (options.mode || "freeform"),
+    loopEnabled: isCircular,
     length: options.length,
     level: difficultyToLevel(options.difficulty),
     turnIntensity: options.turnIntensity || 1.0,

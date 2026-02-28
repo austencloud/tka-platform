@@ -155,6 +155,12 @@ export class RotatedInvertedLOOPExecutor {
     if (!previousMatchingStep.letter) {
       throw new Error("Previous matching beat must have a letter");
     }
+    if (!this.loopParams) {
+      throw new Error(
+        "LOOPParameterProvider is null — likely a module initialization order issue. " +
+        "Check that loopParameterProvider is imported before RotatedInvertedLOOPExecutor singleton."
+      );
+    }
     const invertedLetter = this.loopParams.getInvertedLetter(
       previousMatchingStep.letter as string
     ) as Letter;

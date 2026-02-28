@@ -64,6 +64,9 @@ Bottom row: [Start/End] [Generate]
     helpMode = false,
     helpModeExiting = false,
     onHelpSelect,
+    wordInputValue = "",
+    onWordInput,
+    onWordSubmit,
   }: {
     config: UIGenerationConfig;
     isFreeformMode: boolean;
@@ -75,6 +78,9 @@ Bottom row: [Start/End] [Generate]
     helpMode?: boolean;
     helpModeExiting?: boolean;
     onHelpSelect?: (controlId: GeneratorHelpId) => void;
+    wordInputValue?: string;
+    onWordInput?: (value: string) => void;
+    onWordSubmit?: () => void;
   } = $props();
 
   // ============================================================================
@@ -123,6 +129,7 @@ Bottom row: [Start/End] [Generate]
       : []
   );
   let isBeginnerLevel = $derived(currentLevel === DifficultyLevel.BEGINNER);
+  let isSpellMode = $derived(config.mode === GenerationMode.SPELL);
   let showTurnIntensity = $derived(!isBeginnerLevel && allowedIntensityValues.length > 0);
 
   let loopTypeAllowsSliceChoice = $derived(
@@ -149,7 +156,7 @@ Bottom row: [Start/End] [Generate]
   // ============================================================================
   // BINARY TOGGLE CHIP IDS
   // ============================================================================
-  const INLINE_TOGGLE_IDS = new Set(["mode", "grid", "slice"]);
+  const INLINE_TOGGLE_IDS = new Set(["mode", "grid", "slice", "loop"]);
 
   // ============================================================================
   // EXPAND PANEL STATE + MORPH ANIMATION
@@ -213,10 +220,13 @@ Bottom row: [Start/End] [Generate]
     switch (chipId) {
       case "mode":
         updateConfig({
-          mode: config.mode === GenerationMode.CIRCULAR
+          mode: config.mode === GenerationMode.SPELL
             ? GenerationMode.FREEFORM
-            : GenerationMode.CIRCULAR,
+            : GenerationMode.SPELL,
         });
+        break;
+      case "loop":
+        updateConfig({ loopEnabled: !config.loopEnabled });
         break;
       case "grid":
         updateConfig({ gridMode: config.gridMode === GridMode.DIAMOND ? GridMode.BOX : GridMode.DIAMOND });
@@ -404,24 +414,25 @@ Bottom row: [Start/End] [Generate]
       });
     }
 
-    if (!isFreeformMode) {
-      chips.push({
-        id: "loop",
-        label: "LOOP",
-        value: loopDisplayValue,
-        bg: "linear-gradient(135deg, #f97316 0%, #ea580c 50%, #c2410c 100%)",
-        shadowHsl: "25deg 80% 50%",
-      });
+    // LOOP toggle — always visible, shows On/Off state
+    chips.push({
+      id: "loop",
+      label: "LOOP",
+      value: config.loopEnabled ? "On" : "Off",
+      bg: config.loopEnabled
+        ? "linear-gradient(135deg, #f97316 0%, #ea580c 50%, #c2410c 100%)"
+        : "linear-gradient(135deg, #64748b 0%, #475569 100%)",
+      shadowHsl: config.loopEnabled ? "25deg 80% 50%" : "215deg 20% 40%",
+    });
 
-      if (loopTypeAllowsSliceChoice) {
-        chips.push({
-          id: "slice",
-          label: "Slice",
-          value: config.sliceSize === SliceSize.QUARTERED ? "Quartered" : "Halved",
-          bg: cardColors.sliceSize.color,
-          shadowHsl: cardColors.sliceSize.shadowColor,
-        });
-      }
+    if (config.loopEnabled && loopTypeAllowsSliceChoice) {
+      chips.push({
+        id: "slice",
+        label: "Slice",
+        value: config.sliceSize === SliceSize.QUARTERED ? "Quartered" : "Halved",
+        bg: cardColors.sliceSize.color,
+        shadowHsl: cardColors.sliceSize.shadowColor,
+      });
     }
 
     return chips;
@@ -454,18 +465,38 @@ Bottom row: [Start/End] [Generate]
         <span class="chip-value">{config.level}</span>
       </button>
 
-      <button
-        class="compact-chip"
-        class:active={activeChipId === "length"}
-        style:--chip-bg={cardColors.length.color}
-        style:--chip-shadow-hsl={cardColors.length.shadowColor}
-        onclick={(e) => toggleChip("length", e.currentTarget as HTMLElement)}
-        aria-expanded={activeChipId === "length"}
-        aria-label="Length: {config.length}"
-      >
-        <span class="chip-label">Len</span>
-        <span class="chip-value">{config.length}</span>
-      </button>
+      {#if isSpellMode}
+        <div
+          class="compact-chip word-chip"
+          style:--chip-bg={cardColors.wordInput?.color ?? "linear-gradient(135deg, #10b981, #047857)"}
+          style:--chip-shadow-hsl={cardColors.wordInput?.shadowColor ?? "160deg 70% 40%"}
+        >
+          <input
+            type="text"
+            class="word-chip-input"
+            placeholder="WORD"
+            value={wordInputValue}
+            oninput={(e) => onWordInput?.((e.target as HTMLInputElement).value.toUpperCase())}
+            onkeydown={(e) => { if (e.key === "Enter" && wordInputValue?.trim()) onWordSubmit?.(); }}
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+          />
+        </div>
+      {:else}
+        <button
+          class="compact-chip"
+          class:active={activeChipId === "length"}
+          style:--chip-bg={cardColors.length.color}
+          style:--chip-shadow-hsl={cardColors.length.shadowColor}
+          onclick={(e) => toggleChip("length", e.currentTarget as HTMLElement)}
+          aria-expanded={activeChipId === "length"}
+          aria-label="Length: {config.length}"
+        >
+          <span class="chip-label">Len</span>
+          <span class="chip-value">{config.length}</span>
+        </button>
+      {/if}
 
       <button
         class="compact-chip"
@@ -473,10 +504,10 @@ Bottom row: [Start/End] [Generate]
         style:--chip-bg={cardColors.mode.color}
         style:--chip-shadow-hsl={cardColors.mode.shadowColor}
         onclick={(e) => toggleChip("mode", e.currentTarget as HTMLElement)}
-        aria-label="Mode: {config.mode === GenerationMode.CIRCULAR ? 'LOOP' : 'Free'} (tap to toggle)"
+        aria-label="Mode: {config.mode === GenerationMode.SPELL ? 'Spell' : 'Free'} (tap to toggle)"
       >
         <span class="chip-label">Mode</span>
-        <span class="chip-value">{config.mode === GenerationMode.CIRCULAR ? "LOOP" : "Free"}</span>
+        <span class="chip-value">{config.mode === GenerationMode.SPELL ? "Spell" : "Free"}</span>
       </button>
 
       <button
@@ -780,6 +811,36 @@ Bottom row: [Start/End] [Generate]
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
+  }
+
+  /* ============================================================ */
+  /* WORD INPUT CHIP (Spell mode) */
+  /* ============================================================ */
+
+  .word-chip {
+    padding: 2px 4px;
+    cursor: text;
+  }
+
+  .word-chip-input {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: 1px;
+    outline: none;
+    font-family: inherit;
+    position: relative;
+    z-index: 1;
+  }
+
+  .word-chip-input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: 500;
   }
 
   /* ============================================================ */

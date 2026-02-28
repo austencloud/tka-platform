@@ -21,6 +21,8 @@ Card-based architecture with integrated Generate button:
   import { createGenerationActionsState } from "../state/generate-actions.svelte";
   import { createGenerationConfigState } from "../state/generate-config.svelte";
   import { createStartEndOptionsState } from "../state/start-end-options-state.svelte";
+  import { createSpellModeState } from "../state/spell-mode-state.svelte";
+  import { GenerationMode } from "../shared/domain/models/generate-models";
   import CardBasedSettingsContainer from "./CardBasedSettingsContainer.svelte";
   import StartEndSheet from "./modals/StartEndSheet.svelte";
   import DurationRhythmSheet from "./modals/DurationRhythmSheet.svelte";
@@ -57,13 +59,26 @@ Card-based architecture with integrated Generate button:
 
   // ===== State Management =====
   const configState = createGenerationConfigState();
+  const spellModeState = createSpellModeState();
   const actionsState = createGenerationActionsState(
     () => sequenceState,
     () => isSequentialAnimation,
-    () => configState.config
+    () => configState.config,
+    () => spellModeState
   );
   const deviceState = createDeviceState();
   const startEndState = createStartEndOptionsState();
+
+  // Spell mode: route generate to spell pipeline
+  const isSpellMode = $derived(configState.config.mode === GenerationMode.SPELL);
+
+  async function handleGenerate(options: any) {
+    if (isSpellMode) {
+      await actionsState.onSpellGenerate();
+    } else {
+      await actionsState.onGenerateClicked(options);
+    }
+  }
 
   // ===== Dirty-State Detection =====
   const hasSettingsChanged = $derived.by(() => {
@@ -72,6 +87,7 @@ Card-based architecture with integrated Generate button:
     const cur = configState.config;
     return (
       cur.mode !== last.mode ||
+      cur.loopEnabled !== last.loopEnabled ||
       cur.length !== last.length ||
       cur.level !== last.level ||
       cur.turnIntensity !== last.turnIntensity ||
@@ -168,14 +184,18 @@ Card-based architecture with integrated Generate button:
       getConfig: () => configState.config,
       updateConfig: (updates) => configState.updateConfig(updates),
       triggerGeneration: () => {
-        const propType =
-          (settingsService.settings.bluePropType as PropType) ||
-          PropTypeEnum.STAFF;
-        const options = uiConfigToGenerationOptions(
-          configState.config,
-          propType
-        );
-        actionsState.onGenerateClicked(options);
+        if (isSpellMode) {
+          actionsState.onSpellGenerate();
+        } else {
+          const propType =
+            (settingsService.settings.bluePropType as PropType) ||
+            PropTypeEnum.STAFF;
+          const options = uiConfigToGenerationOptions(
+            configState.config,
+            propType
+          );
+          actionsState.onGenerateClicked(options);
+        }
       },
       openHelpForControl: (controlId: GeneratorHelpId) => {
         selectControlHelp(controlId);
@@ -229,12 +249,15 @@ Card-based architecture with integrated Generate button:
       isFreeformMode={configState.isFreeformMode}
       updateConfig={configState.updateConfig}
       isGenerating={actionsState.isGenerating}
-      onGenerateClicked={actionsState.onGenerateClicked}
+      onGenerateClicked={handleGenerate}
       {startEndState}
       {hasSettingsChanged}
       helpMode={helpMode !== "inactive"}
       helpModeExiting={isExiting}
       onHelpSelect={selectControlHelp}
+      wordInputValue={spellModeState.inputWord}
+      onWordInput={(v) => spellModeState.setInputWord(v)}
+      onWordSubmit={() => handleGenerate(null)}
     />
   </div>
 </div>

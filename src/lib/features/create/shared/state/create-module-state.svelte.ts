@@ -21,7 +21,6 @@ import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
 // ARCHIVED: AssemblerTabState import removed (Feb 2026) - files kept for reference
 import type { GeneratorTabState } from "./generator-tab-state.svelte";
 import type { ConstructTabState } from "./construct-tab-state.svelte";
-import type { SpellTabState } from "$lib/features/create/spell/state/spell-tab-state.svelte";
 import type { VisualBuilderTabState } from "./visual-builder-tab-state.svelte";
 import type { UndoController } from "./create-module/undo-controller.svelte";
 import type {
@@ -70,7 +69,6 @@ export function createCreateModuleState(
 
   const constructorFallbackState = createTabFallbackState();
   const generatorFallbackState = createTabFallbackState();
-  const spellFallbackState = createTabFallbackState();
   const visualBuilderFallbackState = createTabFallbackState();
 
   // Create option history manager
@@ -82,7 +80,6 @@ export function createCreateModuleState(
   let _constructorTabState: ConstructTabState | null = null;
   // ARCHIVED: _assemblerTabState removed (Feb 2026)
   let _generatorTabState: GeneratorTabState | null = null;
-  let _spellTabState: SpellTabState | null = null;
   let _visualBuilderTabState: VisualBuilderTabState | null = null;
 
 
@@ -102,11 +99,10 @@ export function createCreateModuleState(
         return ctor?.sequenceState || constructorFallbackState;
       }
       // ARCHIVED: "assemble" case removed (Feb 2026)
-      case "generate": {
-        return _generatorTabState?.sequenceState || generatorFallbackState;
-      }
+      case "generate":
       case "spell": {
-        return _spellTabState?.sequenceState || spellFallbackState;
+        // Spell mode now unified into Generate tab — route to generator state
+        return _generatorTabState?.sequenceState || generatorFallbackState;
       }
       case "visual-builder": {
         return _visualBuilderTabState?.sequenceState || visualBuilderFallbackState;
@@ -237,11 +233,10 @@ export function createCreateModuleState(
       case "construct": {
         return _constructorTabState?.undoController ?? null;
       }
-      case "generate": {
-        return _generatorTabState?.undoController || null;
-      }
+      case "generate":
       case "spell": {
-        return _spellTabState?.undoController || null;
+        // Spell mode now unified into Generate tab
+        return _generatorTabState?.undoController || null;
       }
       case "visual-builder": {
         return _visualBuilderTabState?.undoController || null;
@@ -381,11 +376,11 @@ export function createCreateModuleState(
     set generatorTabState(value: GeneratorTabState | null) {
       _generatorTabState = value;
     },
-    get spellTabState() {
-      return _spellTabState;
-    },
-    set spellTabState(value: SpellTabState | null) {
-      _spellTabState = value;
+    // REMOVED: spellTabState — Spell mode now unified into Generate tab (Feb 2026)
+    // Spell functionality accessible via Generate tab's Freeform/Spell mode toggle
+    // Kept as null getter for backwards compat with any remaining references
+    get spellTabState(): null {
+      return null;
     },
     get visualBuilderTabState() {
       return _visualBuilderTabState;

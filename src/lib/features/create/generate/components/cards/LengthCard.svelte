@@ -10,6 +10,7 @@ Shows current length with +/- stepper controls for quick adjustment
   let {
     currentLength,
     currentMode,
+    loopEnabled = false,
     onLengthChange,
     // 🎨 Luminance-aware blue gradient - uses CSS variables that adapt to background brightness
     color = "radial-gradient(ellipse at top left, var(--card-blue, #3b82f6) 0%, var(--card-blue, #3b82f6) 40%, var(--card-blue-end, #1d4ed8) 100%)",
@@ -19,6 +20,7 @@ Shows current length with +/- stepper controls for quick adjustment
   } = $props<{
     currentLength: number;
     currentMode: GenerationMode;
+    loopEnabled?: boolean;
     onLengthChange: (length: number) => void;
     color?: string;
     shadowColor?: string;
@@ -26,13 +28,11 @@ Shows current length with +/- stepper controls for quick adjustment
     headerFontSize?: string;
   }>();
 
-  // Length constraints - mode-dependent
+  // Length constraints - LOOP-dependent (LOOP needs even lengths)
   const MAX_LENGTH = 64;
 
-  // Derived values based on generation mode
-  const isCircularMode = $derived(currentMode === GenerationMode.CIRCULAR);
-  const MIN_LENGTH = $derived(isCircularMode ? 2 : 1); // Circular: 2, Freeform: 1
-  const STEP = $derived(isCircularMode ? 2 : 1); // Circular: 2, Freeform: 1
+  const MIN_LENGTH = $derived(loopEnabled ? 2 : 1);
+  const STEP = $derived(loopEnabled ? 2 : 1);
 
   function handleIncrement() {
     const newLength = Math.min(currentLength + STEP, MAX_LENGTH);

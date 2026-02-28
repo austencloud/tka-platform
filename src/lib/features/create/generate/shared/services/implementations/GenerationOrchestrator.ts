@@ -20,6 +20,8 @@ import type { ISequenceMetadataManager } from "../contracts/ISequenceMetadataMan
 import type { IStartPositionSelector } from "../contracts/IStartPositionSelector";
 import type { ITurnAllocator } from "../contracts/ITurnAllocator";
 import type { IReversalDetector } from "../../../../shared/services/contracts/IReversalDetector";
+import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 /**
  * Service orchestrating the complete sequence generation pipeline
  *
@@ -251,6 +253,13 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
     // Execute LOOP to complete the circle
     const circularBeats = loopExecutor.executeLOOP(partialSequence, sliceSize);
 
+    // Re-derive letters from motion data to fix executors that copy
+    // source letters instead of deriving from transformed motions
+    await this.rederiveLettersFromMotions(
+      circularBeats.slice(1),
+      options.gridMode
+    );
+
     // Build sequence data
     const word = this.metadataService.calculateWordFromBeats(
       circularBeats.slice(1)
@@ -289,6 +298,38 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
     });
 
     return this.ReversalDetector.processReversals(sequence);
+  }
+
+  /**
+   * Re-derive letter for each step by looking up its motion configuration in the CSV data.
+   * Fixes LOOP executors that copy the source beat's letter instead of deriving
+   * the correct letter from the transformed motions.
+   */
+  private async rederiveLettersFromMotions(
+    steps: StepData[],
+    gridMode: GridMode
+  ): Promise<void> {
+    const { motionQueryHandler } = await import(
+      "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler"
+    );
+
+    for (const step of steps) {
+      const blueMotion = step.motions.blue;
+      const redMotion = step.motions.red;
+      if (!blueMotion || !redMotion) continue;
+
+      const derivedLetter =
+        await motionQueryHandler.findLetterByMotionConfiguration(
+          blueMotion,
+          redMotion,
+          gridMode
+        );
+
+      if (derivedLetter) {
+        (step as unknown as Record<string, unknown>).letter =
+          derivedLetter as Letter;
+      }
+    }
   }
 
   /**

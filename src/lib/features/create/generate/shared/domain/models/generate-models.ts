@@ -117,6 +117,8 @@ export enum PropContinuity {
 
 export enum GenerationMode {
   FREEFORM = "freeform",
+  SPELL = "spell",
+  /** @internal Used by the generation orchestrator when loopEnabled=true + freeform mode */
   CIRCULAR = "circular",
 }
 

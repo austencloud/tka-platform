@@ -39,6 +39,18 @@ export interface CardHandlers {
   handleSliceSizeChange: (sliceSize: SliceSize) => void;
   handleStartEndChange?: (options: StartEndOptions) => void;
   handleGenerateClick?: () => Promise<void>;
+  // Style card handlers
+  handleConstraintPresetChange?: (v: "smooth" | "mixed" | "high-reversal") => void;
+  handleHandPathModeChange?: (v: "smooth" | "mixed" | "high") => void;
+  handleMotionTypeFilterChange?: (v: "no-dash" | "mixed" | "prefer-dash") => void;
+  // Duration card handler
+  handleOpenDurationPanel?: () => void;
+  // Word input handlers (spell mode)
+  wordInputValue?: string;
+  handleWordInput?: (value: string) => void;
+  handleWordSubmit?: () => void;
+  // LOOP toggle handler
+  handleLoopToggle?: () => void;
   // Start/End options (optional, for when start/end card is shown)
   startEndOptions?: StartEndOptions;
   // Trigger value that increments when positions are reset due to grid mode change
@@ -72,6 +84,7 @@ export interface ICardConfigurator {
     handlers: CardHandlers,
     allowedIntensityValues: number[],
     isGenerating?: boolean,
-    hasSettingsChanged?: boolean
+    hasSettingsChanged?: boolean,
+    loopEnabled?: boolean
   ): CardDescriptor[];
 }

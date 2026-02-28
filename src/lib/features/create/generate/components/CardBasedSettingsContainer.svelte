@@ -24,25 +24,28 @@ Supports help mode: when active, clicking cards opens help instead of normal act
   } from "../shared/domain/models/generate-models";
   import type {
     LOOPType,
-    SliceSize,
   } from "../circular/domain/models/circular-models";
   import type { GeneratorHelpId } from "../domain/generator-help-content";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getCardColors } from "../shared/domain/card-colors";
+  import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+  import SheetDragHandle from "$lib/shared/foundation/ui/SheetDragHandle.svelte";
+  import { portal } from "./modals/portal";
   // Card components
-  import LOOPCard from "./cards/LOOPCard.svelte";
   import LOOPExpandedOverlay from "./cards/LOOPExpandedOverlay.svelte";
+  import CustomizeExpandedOverlay from "./cards/CustomizeExpandedOverlay.svelte";
   import GenerationModeCard from "./cards/GenerationModeCard.svelte";
   import GridModeCard from "./cards/GridModeCard.svelte";
   import LengthCard from "./cards/LengthCard.svelte";
   import LevelCard from "./cards/LevelCard.svelte";
   import PropContinuityCard from "./cards/PropContinuityCard.svelte";
-  import SliceSizeCard from "./cards/SliceSizeCard.svelte";
   import TurnIntensityCard from "./cards/TurnIntensityCard.svelte";
   import GenerateButtonCard from "./cards/GenerateButtonCard.svelte";
-  import StartEndCard from "./cards/StartEndCard.svelte";
+  import WordInputCard from "./cards/WordInputCard.svelte";
+  import ConsolidatedLOOPCard from "./cards/ConsolidatedLOOPCard.svelte";
+  import CustomizeCard from "./cards/CustomizeCard.svelte";
   import CompactSettingsToolbar from "./CompactSettingsToolbar.svelte";
 
   // Props
@@ -57,6 +60,9 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     helpMode = false,
     helpModeExiting = false,
     onHelpSelect,
+    wordInputValue = "",
+    onWordInput,
+    onWordSubmit,
   } = $props<{
     config: UIGenerationConfig;
     isFreeformMode: boolean;
@@ -68,6 +74,9 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     helpMode?: boolean;
     helpModeExiting?: boolean;
     onHelpSelect?: (controlId: GeneratorHelpId) => void;
+    wordInputValue?: string;
+    onWordInput?: (value: string) => void;
+    onWordSubmit?: () => void;
   }>();
 
   // Get panel coordination state from context (for LOOP expanded overlay)
@@ -77,13 +86,13 @@ Supports help mode: when active, clicking cards opens help instead of normal act
   const cardIdToHelpId: Record<string, GeneratorHelpId> = {
     "level": "level",
     "length": "length",
+    "word-input": "length",
     "generation-mode": "generation-mode",
     "grid-mode": "grid-mode",
     "prop-continuity": "prop-continuity",
     "turn-intensity": "turn-intensity",
-    "loop-type": "loop-type",
-    "slice-size": "slice-size",
-    "start-end": "start-end",
+    "customize": "prop-continuity",
+    "loop": "loop-type",
     "generate-button": "generate",
   };
 
@@ -193,8 +202,27 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     updateConfig({ loopType });
   }
 
-  function handleSliceSizeChange(sliceSize: SliceSize) {
-    updateConfig({ sliceSize });
+  // Style handlers
+  function handleConstraintPresetChange(v: "smooth" | "mixed" | "high-reversal") {
+    updateConfig({ constraintPreset: v });
+  }
+
+  function handleHandPathModeChange(v: "smooth" | "mixed" | "high") {
+    updateConfig({ handPathMode: v });
+  }
+
+  function handleMotionTypeFilterChange(v: "no-dash" | "mixed" | "prefer-dash") {
+    updateConfig({ motionTypeFilter: v === "mixed" ? null : v });
+  }
+
+  // LOOP toggle handler
+  function handleLoopToggle() {
+    updateConfig({ loopEnabled: !config.loopEnabled });
+  }
+
+  // Duration handler
+  function handleOpenDurationPanel() {
+    panelState?.openDurationRhythmPanel();
   }
 
   // Start/End options handler
@@ -218,7 +246,15 @@ Supports help mode: when active, clicking cards opens help instead of normal act
         handleGridModeChange,
         handleGenerationModeChange,
         handleLOOPTypeChange,
-        handleSliceSizeChange,
+        handleSliceSizeChange: (sliceSize: any) => updateConfig({ sliceSize }),
+        handleConstraintPresetChange,
+        handleHandPathModeChange,
+        handleMotionTypeFilterChange,
+        handleOpenDurationPanel,
+        handleLoopToggle,
+        wordInputValue,
+        handleWordInput: onWordInput,
+        handleWordSubmit: onWordSubmit,
         handleStartEndChange: startEndState
           ? handleStartEndChange
           : undefined,
@@ -229,9 +265,11 @@ Supports help mode: when active, clicking cards opens help instead of normal act
       },
       allowedIntensityValues,
       isGenerating,
-      hasSettingsChanged
+      hasSettingsChanged,
+      config.loopEnabled
     );
   });
+
 </script>
 
 <div class="settings-mode-wrapper">
@@ -248,21 +286,78 @@ Supports help mode: when active, clicking cards opens help instead of normal act
       {helpMode}
       {helpModeExiting}
       {onHelpSelect}
+      {wordInputValue}
+      {onWordInput}
+      {onWordSubmit}
     />
+  </div>
+
+  <!-- LOOP Drawer: always in DOM, isOpen transitions naturally (like DurationRhythmSheet pattern) -->
+  <div use:portal>
+    <Drawer
+      isOpen={panelState?.isLOOPPanelOpen ?? false}
+      onOpenChange={(open) => { if (!open) panelState?.closeLOOPPanel(); }}
+      respectLayoutMode={true}
+      showHandle={false}
+      closeOnBackdrop={true}
+      ariaLabel="Select LOOP Type"
+      class="loop-drawer-sheet"
+    >
+      <div class="loop-drawer-content">
+        <SheetDragHandle />
+        {#if panelState?.loopSelectedComponents && panelState.loopOnChange}
+          <LOOPExpandedOverlay
+            currentType={panelState.loopCurrentType!}
+            selectedComponents={panelState.loopSelectedComponents}
+            onChange={panelState.loopOnChange}
+            onClose={() => panelState.closeLOOPPanel()}
+            onLoopDisable={() => {
+              panelState.closeLOOPPanel();
+              updateConfig({ loopEnabled: false });
+            }}
+          />
+        {/if}
+      </div>
+    </Drawer>
+  </div>
+
+  <!-- Customize Drawer: always in DOM, isOpen transitions naturally -->
+  <div use:portal>
+    <Drawer
+      isOpen={panelState?.isCustomizeOverlayOpen ?? false}
+      onOpenChange={(open) => { if (!open) panelState?.closeCustomizeOverlay(); }}
+      respectLayoutMode={true}
+      showHandle={false}
+      closeOnBackdrop={true}
+      ariaLabel="Customize generation settings"
+      class="customize-drawer-sheet"
+    >
+      <div class="customize-drawer-content">
+        <SheetDragHandle />
+        {#if panelState?.customizeOverlayProps}
+          <CustomizeExpandedOverlay
+            constraintPreset={panelState.customizeOverlayProps.constraintPreset}
+            handPathMode={panelState.customizeOverlayProps.handPathMode}
+            motionTypeFilter={panelState.customizeOverlayProps.motionTypeFilter}
+            durationTemplateId={panelState.customizeOverlayProps.durationTemplateId}
+            startEndOptions={panelState.customizeOverlayProps.startEndOptions}
+            gridMode={panelState.customizeOverlayProps.gridMode}
+            isFreeformMode={panelState.customizeOverlayProps.isFreeformMode}
+            onConstraintPresetChange={panelState.customizeOverlayProps.onConstraintPresetChange}
+            onHandPathModeChange={panelState.customizeOverlayProps.onHandPathModeChange}
+            onMotionTypeFilterChange={panelState.customizeOverlayProps.onMotionTypeFilterChange}
+            onOpenDurationPanel={panelState.customizeOverlayProps.onOpenDurationPanel}
+            onStartEndChange={panelState.customizeOverlayProps.onStartEndChange}
+            onClose={() => panelState.closeCustomizeOverlay()}
+          />
+        {/if}
+      </div>
+    </Drawer>
   </div>
 
   <!-- Card mode: full card grid for normal/large viewports -->
   <div class="card-mode">
     <div class="card-settings-container" class:help-mode={helpMode} class:help-mode-exiting={helpModeExiting} style="--header-font-size: {headerFontSize}">
-      <!-- LOOP Expanded Overlay - covers cards when open -->
-      {#if panelState?.isLOOPPanelOpen && panelState.loopSelectedComponents && panelState.loopOnChange}
-        <LOOPExpandedOverlay
-          currentType={panelState.loopCurrentType!}
-          selectedComponents={panelState.loopSelectedComponents}
-          onChange={panelState.loopOnChange}
-          onClose={() => panelState.closeLOOPPanel()}
-        />
-      {/if}
 
       {#each cards as card (card.id)}
         <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
@@ -274,26 +369,24 @@ Supports help mode: when active, clicking cards opens help instead of normal act
           onclick={(e) => handleCardClick(card.id, e)}
           role={helpMode && hasHelp(card.id) ? "button" : undefined}
         >
-          <!-- Props are dynamically typed by CardConfigurator - type assertion needed -->
-          <!-- Colors are overridden based on current background for visibility -->
           {#if card.id === "level"}
             <LevelCard {...card.props as any} color={cardColors.level.color} shadowColor={cardColors.level.shadowColor} />
           {:else if card.id === "length"}
             <LengthCard {...card.props as any} color={cardColors.length.color} shadowColor={cardColors.length.shadowColor} />
+          {:else if card.id === "word-input"}
+            <WordInputCard {...card.props as any} color={cardColors.wordInput.color} shadowColor={cardColors.wordInput.shadowColor} />
           {:else if card.id === "generation-mode"}
             <GenerationModeCard {...card.props as any} color={cardColors.mode.color} shadowColor={cardColors.mode.shadowColor} />
           {:else if card.id === "grid-mode"}
             <GridModeCard {...card.props as any} color={cardColors.gridMode.color} shadowColor={cardColors.gridMode.shadowColor} />
           {:else if card.id === "prop-continuity"}
             <PropContinuityCard {...card.props as any} color={cardColors.continuity.color} shadowColor={cardColors.continuity.shadowColor} />
-          {:else if card.id === "slice-size"}
-            <SliceSizeCard {...card.props as any} color={cardColors.sliceSize.color} shadowColor={cardColors.sliceSize.shadowColor} />
           {:else if card.id === "turn-intensity"}
             <TurnIntensityCard {...card.props as any} color={cardColors.turnIntensity.color} shadowColor={cardColors.turnIntensity.shadowColor} />
-          {:else if card.id === "loop-type"}
-            <LOOPCard {...card.props as any} />
-          {:else if card.id === "start-end"}
-            <StartEndCard {...card.props as any} color={cardColors.startEnd.color} shadowColor={cardColors.startEnd.shadowColor} />
+          {:else if card.id === "customize"}
+            <CustomizeCard {...card.props as any} color={cardColors.customize.color} shadowColor={cardColors.customize.shadowColor} />
+          {:else if card.id === "loop"}
+            <ConsolidatedLOOPCard {...card.props as any} />
           {:else if card.id === "generate-button"}
             <GenerateButtonCard {...card.props as any} />
           {/if}
@@ -394,7 +487,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
   .card-wrapper {
     display: flex;
     flex-direction: column;
-    min-height: 0;
+    min-height: 48px; /* WCAG AAA: 48px minimum touch target */
     min-width: 0;
     overflow: visible; /* Allow cards to pop over neighbors */
     transition: grid-column var(--duration-dramatic) ease;
@@ -484,5 +577,133 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     .help-clickable {
       animation: none;
     }
+  }
+
+  /* ============================================================ */
+  /* SHARED DRAWER STYLES (LOOP + Customize) */
+  /* ============================================================ */
+
+  /* --- LOOP Drawer --- */
+  :global(.drawer-content.loop-drawer-sheet) {
+    --sheet-bg: transparent;
+    --sheet-border: none;
+    --sheet-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
+  }
+
+  :global(.drawer-content.loop-drawer-sheet[data-placement="bottom"]) {
+    max-width: 600px;
+    margin: 0 auto;
+    height: auto !important;
+    max-height: 85vh;
+    transition: transform var(--duration-dramatic) cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  :global(.drawer-content.loop-drawer-sheet[data-placement="right"]) {
+    transition: transform var(--duration-dramatic) cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  :global(.drawer-content.loop-drawer-sheet[data-state="closed"][data-placement="bottom"]) {
+    transform: translateY(100%);
+  }
+
+  :global(.drawer-content.loop-drawer-sheet[data-state="closed"][data-placement="right"]) {
+    transform: translateX(100%);
+  }
+
+  :global(.drawer-content.loop-drawer-sheet[data-state="open"]) {
+    transform: translate(0, 0);
+  }
+
+  .loop-drawer-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--theme-accent-strong, #6366f1) 25%, #1a1a2e) 0%,
+      color-mix(in srgb, var(--theme-accent, #818cf8) 15%, #1a1a2e) 50%,
+      color-mix(in srgb, var(--theme-accent-strong, #6366f1) 20%, #1a1a2e) 100%
+    );
+    border-radius: 16px 16px 0 0;
+    border-top: 1px solid color-mix(in srgb, var(--theme-accent) 50%, transparent);
+  }
+
+  /* Right panel: left border instead of top */
+  :global(.drawer-content.loop-drawer-sheet[data-placement="right"]) .loop-drawer-content {
+    border-radius: 16px 0 0 16px;
+    border-top: none;
+    border-left: 1px solid color-mix(in srgb, var(--theme-accent) 50%, transparent);
+  }
+
+  /* Override LOOPExpandedOverlay's absolute positioning when inside drawer */
+  .loop-drawer-content > :global(.loop-expanded-overlay) {
+    position: static;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  /* --- Customize Drawer --- */
+  :global(.drawer-content.customize-drawer-sheet) {
+    --sheet-bg: transparent;
+    --sheet-border: none;
+    --sheet-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
+  }
+
+  :global(.drawer-content.customize-drawer-sheet[data-placement="bottom"]) {
+    max-width: 600px;
+    margin: 0 auto;
+    height: auto !important;
+    max-height: 85vh;
+    transition: transform var(--duration-dramatic) cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  :global(.drawer-content.customize-drawer-sheet[data-placement="right"]) {
+    transition: transform var(--duration-dramatic) cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  :global(.drawer-content.customize-drawer-sheet[data-state="closed"][data-placement="bottom"]) {
+    transform: translateY(100%);
+  }
+
+  :global(.drawer-content.customize-drawer-sheet[data-state="closed"][data-placement="right"]) {
+    transform: translateX(100%);
+  }
+
+  :global(.drawer-content.customize-drawer-sheet[data-state="open"]) {
+    transform: translate(0, 0);
+  }
+
+  .customize-drawer-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, #06b6d4 20%, #1a1a2e) 0%,
+      color-mix(in srgb, #0891b2 12%, #1a1a2e) 50%,
+      color-mix(in srgb, #06b6d4 16%, #1a1a2e) 100%
+    );
+    border-radius: 16px 16px 0 0;
+    border-top: 1px solid color-mix(in srgb, #06b6d4 40%, transparent);
+  }
+
+  /* Right panel: left border instead of top */
+  :global(.drawer-content.customize-drawer-sheet[data-placement="right"]) .customize-drawer-content {
+    border-radius: 16px 0 0 16px;
+    border-top: none;
+    border-left: 1px solid color-mix(in srgb, #06b6d4 40%, transparent);
+  }
+
+  /* Override CustomizeExpandedOverlay's absolute positioning when inside drawer */
+  .customize-drawer-content > :global(.customize-expanded-overlay) {
+    position: static;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    background: transparent;
   }
 </style>

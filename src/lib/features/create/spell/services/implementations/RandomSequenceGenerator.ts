@@ -24,6 +24,7 @@ import type { IStepConverter } from "$lib/features/create/generate/shared/servic
 import type { IReversalDetector } from "$lib/features/create/shared/services/contracts/IReversalDetector";
 import type { ILOOPEndPositionResolver } from "../contracts/ILOOPEndPositionResolver";
 import { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import { DifficultyLevel } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import type { ConstraintSet, ConstraintStep, ConstraintPictographData } from "$lib/shared/sequence-engine/constraints/types";
 import { MotionType, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -58,7 +59,7 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
     letters: Letter[],
     options: RandomSequenceGenerationOptions
   ): Promise<SequenceData | null> {
-    const { gridMode, constraints, constraintSet, signal, maxAttempts = 100 } = options;
+    const { gridMode, constraints, constraintSet, signal, maxAttempts = 100, level, turnIntensity } = options;
 
     if (letters.length === 0) {
       return null;
@@ -77,7 +78,9 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
           constraints,
           constraintSet,
           signal,
-          options.letterSources
+          options.letterSources,
+          level,
+          turnIntensity
         );
 
         if (sequence) {
@@ -112,7 +115,9 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
     constraints?: VariationConstraints,
     constraintSet?: ConstraintSet,
     signal?: AbortSignal,
-    letterSources?: Array<{ letter: Letter; isOriginal: boolean; stepIndex: number }>
+    letterSources?: Array<{ letter: Letter; isOriginal: boolean; stepIndex: number }>,
+    level?: DifficultyLevel,
+    turnIntensity?: number
   ): Promise<SequenceData | null> {
     // Get ALL pictograph variations for this grid mode (cached by letterQueryHandler)
     const allPictographs = await this.letterQueryHandler.getAllPictographVariations(
@@ -123,16 +128,30 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
     const firstLetter = letters[0];
     if (!firstLetter) return null;
 
-    // Step 1: Pick a random variation of the first letter
-    const firstLetterVariations = allPictographs.filter(
+    // Step 1: Pick a random variation of the first letter (filtered by level)
+    let firstLetterVariations = allPictographs.filter(
       (p: PictographData) => p.letter === firstLetter
     );
+
+    // Apply level-based turn filtering to first letter candidates
+    if (level) {
+      const levelFiltered = firstLetterVariations.filter((p) =>
+        this.meetsLevelTurnLimit(p, level)
+      );
+      // Only apply filter if it leaves at least one option
+      if (levelFiltered.length > 0) {
+        firstLetterVariations = levelFiltered;
+      }
+    }
 
     if (firstLetterVariations.length === 0) {
       return null;
     }
 
-    const firstLetterVariation = this.pickRandom(firstLetterVariations);
+    // Apply turn intensity biasing to first letter selection
+    const firstLetterVariation = turnIntensity != null
+      ? this.selectWithTurnBias(firstLetterVariations, turnIntensity)
+      : this.pickRandom(firstLetterVariations);
     if (!firstLetterVariation) return null;
 
     // Step 2: Get where that variation starts (e.g., "alpha3")
@@ -224,7 +243,9 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
         allPictographs,
         constraints,
         constraintSet,
-        endPositionFilter
+        endPositionFilter,
+        level,
+        turnIntensity
       );
 
       if (!success && isLastLetter && validEndPositions.length > 0) {
@@ -237,7 +258,9 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
           constraints,
           constraintSet,
           validEndPositions,
-          3 // max backtrack depth
+          3, // max backtrack depth
+          level,
+          turnIntensity
         );
         if (backtrackSuccess) break; // Walk complete
       }
@@ -273,7 +296,9 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
     allPictographs: PictographData[],
     constraints?: VariationConstraints,
     constraintSet?: ConstraintSet,
-    requiredEndPositions?: GridPosition[]
+    requiredEndPositions?: GridPosition[],
+    level?: DifficultyLevel,
+    turnIntensity?: number
   ): boolean {
     const letter = letters[state.letterIndex];
     if (!letter) return false;
@@ -284,7 +309,7 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
     // Get all variations for this letter
     const variations = allPictographs.filter((p) => p.letter === letter);
 
-    // Filter by position continuity and constraints
+    // Filter by position continuity, constraints, and level
     const lastEndPosition = lastPictograph.endPosition;
 
     let validOptions = variations.filter((pictograph) => {
@@ -296,7 +321,16 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
       }
 
       // Apply constraints
-      return this.meetsConstraints(pictograph, constraints);
+      if (!this.meetsConstraints(pictograph, constraints)) {
+        return false;
+      }
+
+      // Apply level-based turn filtering
+      if (level && !this.meetsLevelTurnLimit(pictograph, level)) {
+        return false;
+      }
+
+      return true;
     });
 
     // Apply LOOP end position filter for the last letter
@@ -318,7 +352,8 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
       validOptions,
       state.previousConstraintSteps,
       constraintSet,
-      constraints
+      constraints,
+      turnIntensity
     );
     if (!chosenPictograph) return false;
 
@@ -368,7 +403,9 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
     constraints: VariationConstraints | undefined,
     constraintSet: ConstraintSet | undefined,
     validEndPositions: GridPosition[],
-    maxDepth: number
+    maxDepth: number,
+    level?: DifficultyLevel,
+    turnIntensity?: number
   ): boolean {
     // Save snapshot so we can restore if needed
     const snapshotSteps = [...state.steps];
@@ -462,7 +499,9 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
             allPictographs,
             constraints,
             constraintSet,
-            endFilter
+            endFilter,
+            level,
+            turnIntensity
           );
 
           if (!walked) {
@@ -516,6 +555,94 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
     // Those are sequence-level constraints checked after generation completes
 
     return true;
+  }
+
+  /**
+   * Check if a pictograph's turns fall within the level's allowed range.
+   * BEGINNER: 0-turn only
+   * INTERMEDIATE: 0 and 1 turn
+   * ADVANCED/SKEWED: all turns allowed (including half-turns and floats)
+   */
+  private meetsLevelTurnLimit(
+    pictograph: PictographData,
+    level: DifficultyLevel
+  ): boolean {
+    const blueMotion = pictograph.motions[MotionColor.BLUE];
+    const redMotion = pictograph.motions[MotionColor.RED];
+
+    const blueTurns = blueMotion?.turns ?? 0;
+    const redTurns = redMotion?.turns ?? 0;
+
+    switch (level) {
+      case DifficultyLevel.BEGINNER:
+        // 0-turn only (no floats)
+        return blueTurns === 0 && redTurns === 0;
+      case DifficultyLevel.INTERMEDIATE:
+        // 0 and 1 turn (no floats, no half-turns)
+        return (
+          (blueTurns === 0 || blueTurns === 1) &&
+          (redTurns === 0 || redTurns === 1)
+        );
+      case DifficultyLevel.ADVANCED:
+      case DifficultyLevel.SKEWED:
+        // All turns allowed including half-turns and floats
+        return true;
+      default:
+        return true;
+    }
+  }
+
+  /**
+   * Select a candidate biased by turn intensity.
+   * intensity < 1.0 → favor lower turns
+   * intensity > 1.0 → favor higher turns
+   * intensity === 1.0 → uniform random
+   */
+  private selectWithTurnBias(
+    candidates: PictographData[],
+    turnIntensity: number
+  ): PictographData | null {
+    if (candidates.length === 0) return null;
+    if (candidates.length === 1) return candidates[0] ?? null;
+
+    // intensity of 1.0 means no bias
+    if (Math.abs(turnIntensity - 1.0) < 0.01) {
+      return this.pickRandom(candidates);
+    }
+
+    const weights = candidates.map((c) => {
+      const maxTurns = this.getMaxTurns(c);
+      // Higher intensity → exponentially favor higher turns
+      // Lower intensity → exponentially favor lower turns
+      // Base weight of 1 ensures all candidates have nonzero chance
+      return 1 + Math.pow(maxTurns + 0.5, turnIntensity);
+    });
+
+    const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+    let random = Math.random() * totalWeight;
+
+    for (let i = 0; i < candidates.length; i++) {
+      random -= weights[i]!;
+      if (random <= 0) {
+        return candidates[i] ?? null;
+      }
+    }
+
+    return candidates[candidates.length - 1] ?? null;
+  }
+
+  /**
+   * Get the maximum turn count across both hands of a pictograph.
+   * Floats are treated as 0.25 for scoring purposes (low rotation).
+   */
+  private getMaxTurns(pictograph: PictographData): number {
+    const blueMotion = pictograph.motions[MotionColor.BLUE];
+    const redMotion = pictograph.motions[MotionColor.RED];
+
+    const blueTurns = blueMotion?.turns === "fl" ? 0.25 : (blueMotion?.turns ?? 0);
+    const redTurns = redMotion?.turns === "fl" ? 0.25 : (redMotion?.turns ?? 0);
+
+    return Math.max(blueTurns, redTurns);
   }
 
   private hasDashMotion(pictograph: PictographData): boolean {
@@ -625,7 +752,8 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
     candidates: PictographData[],
     previousSteps: ConstraintStep[],
     constraintSet?: ConstraintSet,
-    variationConstraints?: VariationConstraints
+    variationConstraints?: VariationConstraints,
+    turnIntensity?: number
   ): PictographData | null {
     if (candidates.length === 0) return null;
 
@@ -643,10 +771,16 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
 
     // Check if we need to apply any scoring
     const hasSoftConstraints = constraintSet?.soft && constraintSet.soft.length > 0;
+    const hasTurnBias = turnIntensity != null && Math.abs(turnIntensity - 1.0) >= 0.01;
 
-    // No soft constraints - use pure random selection from remaining candidates
-    if (!hasSoftConstraints) {
+    // No soft constraints and no turn bias - use pure random selection
+    if (!hasSoftConstraints && !hasTurnBias) {
       return this.pickRandom(candidates);
+    }
+
+    // No soft constraints but has turn bias - use turn bias only
+    if (!hasSoftConstraints && hasTurnBias) {
+      return this.selectWithTurnBias(candidates, turnIntensity!);
     }
 
     // Score each candidate based on soft constraints
@@ -671,6 +805,13 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
         const result = constraint.evaluate(context);
         const weight = constraintSet!.weights?.get(constraint.type) ?? 1;
         score += result.score * weight;
+      }
+
+      // Apply turn intensity bias to the constraint score
+      if (hasTurnBias) {
+        const maxTurns = this.getMaxTurns(candidate);
+        // Add a turn-based bonus: higher intensity favors higher turns
+        score += Math.pow(maxTurns + 0.5, turnIntensity!) * 0.5;
       }
 
       return { candidate, score };

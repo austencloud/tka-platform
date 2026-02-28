@@ -441,6 +441,19 @@ export const INVERTED_LETTER_MAP: Record<string, string> = {
   β: "β", // Self-inverted
   γ: "γ", // Self-inverted
 
+  // Type 2: Centric shifts (Mu ↔ Nu pair)
+  μ: "ν",
+  ν: "μ",
+
+  // Type 4: Tau-dash (self-inverted)
+  "τ-": "τ-",
+
+  // Type 6: Additional static letters (all self-inverted)
+  ζ: "ζ",
+  η: "η",
+  τ: "τ",
+  "⊕": "⊕",
+
   // Dash variations
   "W-": "X-",
   "X-": "W-",

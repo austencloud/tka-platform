@@ -22,6 +22,8 @@ export interface CardColors {
   sliceSize: CardColorSet;
   startEnd: CardColorSet;
   duration: CardColorSet;
+  wordInput: CardColorSet;
+  customize: CardColorSet;
 }
 
 /**
@@ -63,6 +65,14 @@ const DEFAULT_COLORS: CardColors = {
   duration: {
     color: "linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%)",
     shadowColor: "38deg 75% 50%",
+  },
+  wordInput: {
+    color: "linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%)",
+    shadowColor: "160deg 70% 40%",
+  },
+  customize: {
+    color: "linear-gradient(135deg, #06b6d4 0%, #0891b2 50%, #0e7490 100%)",
+    shadowColor: "190deg 75% 50%",
   },
 };
 
@@ -115,6 +125,16 @@ const BRIGHT_BACKGROUND_COLORS: CardColors = {
     // Deep amber/gold - saturated
     color: "linear-gradient(135deg, #d97706 0%, #b45309 50%, #92400e 100%)",
     shadowColor: "38deg 80% 35%",
+  },
+  wordInput: {
+    // Deep emerald - matches spell green
+    color: "linear-gradient(135deg, #059669 0%, #047857 50%, #065f46 100%)",
+    shadowColor: "160deg 75% 35%",
+  },
+  customize: {
+    // Deep cyan
+    color: "linear-gradient(135deg, #0891b2 0%, #0e7490 50%, #155e75 100%)",
+    shadowColor: "195deg 80% 40%",
   },
 };
 

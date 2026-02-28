@@ -265,16 +265,16 @@ export class MirroredSwappedInvertedLOOPExecutor implements ILOOPExecutor {
     previousMatchingStep: StepData,
     isSwapped: boolean
   ): MotionData {
-    // SWAP: Get the opposite color's motion data
+    // SWAP: Get the opposite color's motion data for the PATTERN
     const oppositeColor =
       color === MotionColor.BLUE ? MotionColor.RED : MotionColor.BLUE;
 
-    // When swapped, this color follows the opposite color's path
-    // So its start location must continue from where the opposite color ended
-    const previousMotion = isSwapped
-      ? previousStep.motions[oppositeColor]
-      : previousStep.motions[color];
+    // For CONTINUITY: Always use same color from previous beat
+    // (Blue continues from where Blue ended, Red continues from where Red ended)
+    // The swap affects which PATTERN to follow, not where to continue from
+    const previousMotion = previousStep.motions[color];
 
+    // For PATTERN: When swapped, this color follows the opposite color's movement pattern
     const matchingMotion = isSwapped
       ? previousMatchingStep.motions[oppositeColor]
       : previousMatchingStep.motions[color];

@@ -83,7 +83,8 @@ export class RotatedSwappedLOOPExecutor {
         sequence,
         lastStep,
         nextStepNumber,
-        finalIntendedLength
+        finalIntendedLength,
+        sliceSize
       );
 
       generatedSteps.push(nextStep);
@@ -135,13 +136,15 @@ export class RotatedSwappedLOOPExecutor {
     sequence: StepData[],
     previousStep: StepData,
     stepNumber: number,
-    finalIntendedLength: number
+    finalIntendedLength: number,
+    sliceSize: SliceSize
   ): StepData {
     // Get the corresponding beat from the first section using index mapping
     const previousMatchingStep = this._getPreviousMatchingBeat(
       sequence,
       stepNumber,
-      finalIntendedLength
+      finalIntendedLength,
+      sliceSize
     );
 
     // Calculate the rotated end position
@@ -196,9 +199,10 @@ export class RotatedSwappedLOOPExecutor {
   private _getPreviousMatchingBeat(
     sequence: StepData[],
     stepNumber: number,
-    finalLength: number
+    finalLength: number,
+    sliceSize: SliceSize
   ): StepData {
-    const indexMap = this._getIndexMap(finalLength);
+    const indexMap = this._getIndexMap(finalLength, sliceSize);
     const matchingStepNumber = indexMap[stepNumber];
 
     if (matchingStepNumber === undefined) {
@@ -221,25 +225,40 @@ export class RotatedSwappedLOOPExecutor {
    * Generate index mapping for retrieving corresponding steps
    * Works for both quartered and halved patterns
    */
-  private _getIndexMap(length: number): Record<number, number> {
+  private _getIndexMap(
+    length: number,
+    sliceSize: SliceSize
+  ): Record<number, number> {
     const map: Record<number, number> = {};
 
-    if (length < 2) {
-      // Edge case: very short sequences
+    // Edge case handling
+    if (sliceSize === SliceSize.QUARTERED && length < 4) {
       for (let i = 1; i <= length; i++) {
         map[i] = Math.max(i - 1, 1);
       }
       return map;
     }
 
-    // For both quartered and halved, we calculate the base length
-    // Quartered: length = base * 4, so base = length / 4
-    // Halved: length = base * 2, so base = length / 2
-    // The mapping is: steps beyond the base length map back to steps within the base
-    const baseLength = Math.floor(length / 2); // Works for both cases due to how they're structured
+    if (sliceSize === SliceSize.HALVED && length < 2) {
+      for (let i = 1; i <= length; i++) {
+        map[i] = Math.max(i - 1, 1);
+      }
+      return map;
+    }
 
-    for (let i = baseLength + 1; i <= length; i++) {
-      map[i] = i - baseLength;
+    if (sliceSize === SliceSize.QUARTERED) {
+      // Quartered: length = base * 4, so base = length / 4
+      // Each quarter references the PREVIOUS quarter (chained rotation)
+      const baseLength = Math.floor(length / 4);
+      for (let i = baseLength + 1; i <= length; i++) {
+        map[i] = i - baseLength;
+      }
+    } else {
+      // Halved: length = base * 2, so base = length / 2
+      const baseLength = Math.floor(length / 2);
+      for (let i = baseLength + 1; i <= length; i++) {
+        map[i] = i - baseLength;
+      }
     }
 
     return map;
@@ -301,16 +320,16 @@ export class RotatedSwappedLOOPExecutor {
     previousMatchingStep: StepData,
     isSwapped: boolean
   ): MotionData {
-    // SWAP: Get the opposite color's motion data
+    // SWAP: Get the opposite color's motion data for the PATTERN
     const oppositeColor =
       color === MotionColor.BLUE ? MotionColor.RED : MotionColor.BLUE;
 
-    // When swapped, this color follows the opposite color's path
-    // So its start location must continue from where the opposite color ended
-    const previousMotion = isSwapped
-      ? previousStep.motions[oppositeColor]
-      : previousStep.motions[color];
+    // For CONTINUITY: Always use same color from previous beat
+    // (Blue continues from where Blue ended, Red continues from where Red ended)
+    // The swap affects which PATTERN to follow, not where to continue from
+    const previousMotion = previousStep.motions[color];
 
+    // For PATTERN: When swapped, this color follows the opposite color's movement pattern
     const matchingMotion = isSwapped
       ? previousMatchingStep.motions[oppositeColor]
       : previousMatchingStep.motions[color];

@@ -5,7 +5,7 @@
    * Creation Tool Panel Slot
    *
    * Renders the appropriate tool panel based on the active tab.
-   * Each creation mode (Constructor, Generator, Visual Builder, Spell) has its own dedicated panel.
+   * Each creation mode (Constructor, Generator, Visual Builder) has its own dedicated panel.
    *
    * Domain: Create module - Tool panel presentation
    */
@@ -16,7 +16,6 @@
   import { getCreateModuleContext } from "../context/create-module-context";
   import GeneratePanel from "../../generate/components/GeneratePanel.svelte";
   import ConstructTabContent from "./ConstructTabContent.svelte";
-  import SpellPanel from "../../spell/components/SpellPanel.svelte";
   import VisualBuilderToolPanel from "../../visual-builder/components/VisualBuilderToolPanel.svelte";
   import { desktopSidebarState } from "$lib/shared/layout/desktop-sidebar-state.svelte";
 
@@ -157,20 +156,6 @@
               sequenceState={createModuleState.getActiveTabSequenceState()}
               isDesktop={showDesktopSidebar}
             />
-          {:else if activeToolPanel === "spell"}
-            <!-- Spell Mode - Word to sequence generator -->
-            {@const spellTabState = createModuleState.spellTabState}
-            {#if spellTabState}
-              <SpellPanel
-                spellState={spellTabState}
-                sequenceState={spellTabState.sequenceState}
-                isDesktop={showDesktopSidebar}
-              />
-            {:else}
-              <div class="coming-soon-panel">
-                <p>Spell tab loading...</p>
-              </div>
-            {/if}
           {:else if activeToolPanel === "visual-builder"}
             <!-- Visual Builder Mode - Click grid points to build sequences -->
             {@const visualBuilderTabState = createModuleState.visualBuilderTabState}

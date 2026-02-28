@@ -1,6 +1,6 @@
 <!--
 GenerationModeCard.svelte - Card for toggling generation mode
-Shows BOTH Freeform and Circular options vertically with clear active/inactive states
+Shows Freeform and Spell options vertically with clear active/inactive states
 -->
 <script lang="ts">
   import { GenerationMode } from "$lib/features/create/generate/shared/domain/models/generate-models";
@@ -10,9 +10,8 @@ Shows BOTH Freeform and Circular options vertically with clear active/inactive s
   let {
     currentMode,
     onModeChange,
-    // 🎨 Vibrant purple gradient
     color = "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6d28d9 100%)",
-    shadowColor = "270deg 70% 55%", // Purple-matched shadow
+    shadowColor = "270deg 70% 55%",
     gridColumnSpan = 2,
     cardIndex = 0,
     headerFontSize = "9px",
@@ -30,14 +29,14 @@ Shows BOTH Freeform and Circular options vertically with clear active/inactive s
 <ToggleCard
   title={t("generator_mode")}
   option1={{
-    value: GenerationMode.CIRCULAR,
-    label: t("generator_mode_loop"),
-    icon: "arrows-rotate",
-  }}
-  option2={{
     value: GenerationMode.FREEFORM,
     label: t("generator_mode_freeform"),
     icon: "bullseye",
+  }}
+  option2={{
+    value: GenerationMode.SPELL,
+    label: "Spell",
+    icon: "spell-check",
   }}
   activeOption={currentMode}
   onToggle={onModeChange}

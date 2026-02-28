@@ -1,6 +1,5 @@
-﻿import { LOOPType } from "../../../circular/domain/models/circular-models";
 import type { UIGenerationConfig } from "../../../state/generate-config.svelte";
-import { DifficultyLevel } from "../../domain/models/generate-models";
+import { DifficultyLevel, GenerationMode } from "../../domain/models/generate-models";
 import type {
   CardDescriptor,
   CardHandlers,
@@ -10,12 +9,26 @@ import type {
 /**
  * Implementation of ICardConfigurator
  * Builds card descriptor arrays with conditional rendering and responsive grid layouts
+ *
+ * Grid is 6 columns. Cards auto-wrap to new rows when a row fills up.
+ * Mode is ALWAYS top-left (position 0) to prevent FLIP animation jumping on mode toggle.
+ *
+ * FREEFORM (non-spell):
+ *   Row 1: Mode(2) + Level(2) + Length(2) = 6
+ *   Row 2 (beginner): GridMode(3) + PropCont(3) = 6
+ *   Row 2 (non-beginner): GridMode(2) + PropCont(2) + TurnIntensity(2) = 6
+ *   Row 3: Customize(3) + LOOP(3) = 6
+ *   Row 4: Generate(6)
+ *
+ * SPELL:
+ *   Row 1: Mode(2) + WordInput(4) = 6
+ *   Row 2 (beginner): Level(2) + GridMode(2) + PropCont(2) = 6
+ *   Row 2 (non-beginner): Level(2) + GridMode(2) + PropCont(2) = 6
+ *   Row 3 (beginner): Customize(3) + LOOP(3) = 6
+ *   Row 3 (non-beginner): TurnIntensity(2) + Customize(2) + LOOP(2) = 6
+ *   Row 4: Generate(6)
  */
 export class CardConfigurator implements ICardConfigurator {
-  /**
-   * Build card descriptors array for rendering
-   * Extracted from CardBasedSettingsContainer to separate business logic from presentation
-   */
   buildCardDescriptors(
     config: UIGenerationConfig,
     currentLevel: DifficultyLevel,
@@ -23,65 +36,96 @@ export class CardConfigurator implements ICardConfigurator {
     handlers: CardHandlers,
     allowedIntensityValues: number[],
     isGenerating: boolean = false,
-    hasSettingsChanged: boolean = false
+    hasSettingsChanged: boolean = false,
+    loopEnabled: boolean = false
   ): CardDescriptor[] {
     const cardList: CardDescriptor[] = [];
     let cardIndex = 0;
 
-    // Determine layout based on level
     const isBeginnerLevel = currentLevel === DifficultyLevel.BEGINNER;
     const shouldShowTurnIntensity = currentLevel !== DifficultyLevel.BEGINNER;
+    const isSpellMode = config.mode === GenerationMode.SPELL;
 
-    // Row 1: Always visible cards (Level, Length, Generation Mode)
-    // These cards are STABLE and never resize
-    cardList.push({
-      id: "level",
-      props: {
-        currentLevel,
-        onLevelChange: handlers.handleLevelChange,
-        cardIndex: cardIndex++,
-
-      },
-      gridColumnSpan: 2, // Always 2 cols - stable
-    });
-
-    cardList.push({
-      id: "length",
-      props: {
-        currentLength: config.length,
-        currentMode: config.mode,
-        onLengthChange: handlers.handleLengthChange,
-        // Color now handled via CSS variables in component
-        cardIndex: cardIndex++,
-
-      },
-      gridColumnSpan: 2, // Always 2 cols - stable
-    });
+    // ─── Mode is ALWAYS first (top-left) to prevent FLIP animation jumps ───
 
     cardList.push({
       id: "generation-mode",
       props: {
         currentMode: config.mode,
         onModeChange: handlers.handleGenerationModeChange,
-        // Color now handled via CSS variables in component
         cardIndex: cardIndex++,
-
       },
-      gridColumnSpan: 2, // Always 2 cols - LOCKED TOP-RIGHT
+      gridColumnSpan: 2,
     });
 
-    // Row 2: Grid Mode and Prop Continuity
-    // Expand to 3 cols each in Beginner mode (any type - Freeform or Circular)
+    // ─── Row 1 remainder: WordInput (spell) or Level+Length (freeform) ───
+
+    if (isSpellMode && handlers.handleWordInput) {
+      // Spell Row 1: Mode(2) + WordInput(4) = 6
+      cardList.push({
+        id: "word-input",
+        props: {
+          value: handlers.wordInputValue ?? "",
+          onInput: handlers.handleWordInput,
+          onSubmit: handlers.handleWordSubmit,
+          cardIndex: cardIndex++,
+        },
+        gridColumnSpan: 4,
+      });
+    } else {
+      // Freeform Row 1: Mode(2) + Level(2) + Length(2) = 6
+      cardList.push({
+        id: "level",
+        props: {
+          currentLevel,
+          onLevelChange: handlers.handleLevelChange,
+          cardIndex: cardIndex++,
+        },
+        gridColumnSpan: 2,
+      });
+
+      cardList.push({
+        id: "length",
+        props: {
+          currentLength: config.length,
+          currentMode: config.mode,
+          loopEnabled,
+          onLengthChange: handlers.handleLengthChange,
+          cardIndex: cardIndex++,
+        },
+        gridColumnSpan: 2,
+      });
+    }
+
+    // ─── Row 2: [Level if spell] + Grid Mode + Prop Continuity [+ TurnIntensity] ───
+
+    // In spell mode, Level drops to Row 2: Level(2) + GridMode(2) + PropCont(2) = 6
+    if (isSpellMode) {
+      cardList.push({
+        id: "level",
+        props: {
+          currentLevel,
+          onLevelChange: handlers.handleLevelChange,
+          cardIndex: cardIndex++,
+        },
+        gridColumnSpan: 2,
+      });
+    }
+
+    // Grid + PropCont sizing:
+    // Spell: always 2 (Level fills the remaining slot)
+    // Freeform beginner: 3 each (no TurnIntensity)
+    // Freeform non-beginner: 2 each (TurnIntensity fills remaining)
+    const gridPropSpan = isSpellMode ? 2 : (isBeginnerLevel ? 3 : 2);
+
     cardList.push({
       id: "grid-mode",
       props: {
         currentMode: config.gridMode,
         onModeChange: handlers.handleGridModeChange,
-        // Color now handled via CSS variables in component
         cardIndex: cardIndex++,
-
       },
-      gridColumnSpan: isBeginnerLevel ? 3 : 2, // Expands in any Beginner mode
+      gridColumnSpan: gridPropSpan,
     });
 
     cardList.push({
@@ -89,15 +133,14 @@ export class CardConfigurator implements ICardConfigurator {
       props: {
         currentContinuity: config.propContinuity,
         onContinuityChange: handlers.handlePropContinuityChange,
-        // Color now handled via CSS variables in component
         cardIndex: cardIndex++,
-
       },
-      gridColumnSpan: isBeginnerLevel ? 3 : 2, // Expands in any Beginner mode
+      gridColumnSpan: gridPropSpan,
     });
 
-    // Conditional: Turn Intensity (only when level !== BEGINNER)
-    // Fills the last spot in Row 2 alongside Grid and PropCont
+    // TurnIntensity (non-beginner only)
+    // In non-spell: completes Row 2 → GridMode(2)+PropCont(2)+TurnIntensity(2)=6
+    // In spell: starts Row 3 → TurnIntensity(2)+Customize(2)+LOOP(2)=6
     if (shouldShowTurnIntensity) {
       cardList.push({
         id: "turn-intensity",
@@ -106,116 +149,63 @@ export class CardConfigurator implements ICardConfigurator {
           allowedValues: allowedIntensityValues,
           onIntensityChange: handlers.handleTurnIntensityChange,
           cardIndex: cardIndex++,
-  
-        },
-        gridColumnSpan: 2, // Always 2 columns (1/3 of row)
-      });
-    }
-
-    // Row 3: Circular mode only cards (Slice Size + LOOP Type)
-    // Determine if slice size selection is needed
-    // LOOP types that include ROTATION support slice size choice (halved or quartered)
-    // LOOP types without rotation only support halved mode
-    const loopTypeAllowsSliceChoice =
-      config.loopType === LOOPType.STRICT_ROTATED ||
-      config.loopType === LOOPType.ROTATED_INVERTED ||
-      config.loopType === LOOPType.ROTATED_SWAPPED ||
-      config.loopType === LOOPType.MIRRORED_ROTATED ||
-      config.loopType === LOOPType.MIRRORED_INVERTED_ROTATED ||
-      config.loopType === LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED;
-
-    // Conditional: Slice Size (only in Circular mode AND when LOOP type allows choice)
-    if (!isFreeformMode && loopTypeAllowsSliceChoice) {
-      cardList.push({
-        id: "slice-size",
-        props: {
-          currentSliceSize: config.sliceSize,
-          onSliceSizeChange: handlers.handleSliceSizeChange,
-          // Color now handled via CSS variables in component
-          cardIndex: cardIndex++,
-  
         },
         gridColumnSpan: 2,
       });
     }
 
-    // Start/End Options Card - for position constraints
-    // In circular mode: Add to row 3 with LOOP/SliceSize
-    // In freeform mode: Add to final row with Generate button
-    const hasStartEndCard =
-      handlers.handleStartEndChange && handlers.startEndOptions;
+    // ─── Customize + LOOP row ───
+    // These two cards share a row. Their span depends on context:
+    // - Non-spell beginner: GridMode(3)+PropCont(3) fills Row 2, so Row 3 = Customize(3)+LOOP(3)
+    // - Non-spell non-beginner: Row 2 filled by GridMode+PropCont+TurnIntensity, Row 3 = Customize(3)+LOOP(3)
+    // - Spell beginner: Row 2 = Level+GridMode+PropCont (all 2), Row 3 = Customize(3)+LOOP(3)
+    // - Spell non-beginner: Row 3 = TurnIntensity(2)+Customize(2)+LOOP(2)
+    const customizeLoopSpan = (isSpellMode && shouldShowTurnIntensity) ? 2 : 3;
 
-    // Conditional: LOOP Type (only in Circular mode)
-    // Row 3 layout depends on whether slice size and start/end are shown:
-    // - SliceSize (2) + LOOP (2) + StartEnd (2) = 6 cols
-    // - LOOP (4) + StartEnd (2) = 6 cols
-    // - SliceSize (2) + LOOP (4) = 6 cols (no start/end)
-    // - LOOP (6) = full row (no start/end, no slice size)
-    if (!isFreeformMode) {
-      // Determine LOOP column span based on what else is in row 3
-      let loopColumnSpan: number;
-      if (loopTypeAllowsSliceChoice && hasStartEndCard) {
-        loopColumnSpan = 2; // SliceSize(2) + LOOP(2) + StartEnd(2)
-      } else if (loopTypeAllowsSliceChoice) {
-        loopColumnSpan = 4; // SliceSize(2) + LOOP(4)
-      } else if (hasStartEndCard) {
-        loopColumnSpan = 4; // LOOP(4) + StartEnd(2)
-      } else {
-        loopColumnSpan = 6; // LOOP(6) full row
-      }
-
+    // Customize card (absorbs Style + Rhythm + Start/End)
+    const hasStartEnd = handlers.handleStartEndChange && handlers.startEndOptions;
+    if (handlers.handleConstraintPresetChange) {
       cardList.push({
-        id: "loop-type",
+        id: "customize",
         props: {
-          currentLOOPType: config.loopType,
-          onLOOPTypeChange: handlers.handleLOOPTypeChange,
-          shadowColor: "30deg 75% 55%", // Orange shadow
-          cardIndex: cardIndex++,
-  
-        },
-        gridColumnSpan: loopColumnSpan,
-      });
-
-      // Add Start/End card in row 3 for circular mode
-      if (hasStartEndCard) {
-        cardList.push({
-          id: "start-end",
-          props: {
-            currentOptions: handlers.startEndOptions,
-            onOptionsChange: handlers.handleStartEndChange,
-            isFreeformMode: false, // Circular mode - hide end position selector
-            cardIndex: cardIndex++,
-    
-            positionsResetTrigger: handlers.positionsResetTrigger,
-            gridMode: handlers.currentGridMode,
-          },
-          gridColumnSpan: 2, // Always 2 cols in circular mode row 3
-        });
-      }
-    }
-
-    // In freeform mode: Start/End shares row with Generate button
-    if (isFreeformMode && hasStartEndCard) {
-      cardList.push({
-        id: "start-end",
-        props: {
-          currentOptions: handlers.startEndOptions,
-          onOptionsChange: handlers.handleStartEndChange,
-          isFreeformMode: true, // Freeform mode - show end position selector
-          cardIndex: cardIndex++,
-  
-          positionsResetTrigger: handlers.positionsResetTrigger,
+          constraintPreset: config.constraintPreset,
+          handPathMode: config.handPathMode,
+          motionTypeFilter: config.motionTypeFilter,
+          durationTemplateId: config.durationTemplateId,
+          startEndOptions: handlers.startEndOptions ?? null,
           gridMode: handlers.currentGridMode,
+          isFreeformMode: !loopEnabled,
+          onConstraintPresetChange: handlers.handleConstraintPresetChange,
+          onHandPathModeChange: handlers.handleHandPathModeChange,
+          onMotionTypeFilterChange: handlers.handleMotionTypeFilterChange,
+          onOpenDurationPanel: handlers.handleOpenDurationPanel,
+          onStartEndChange: hasStartEnd ? handlers.handleStartEndChange : null,
+          cardIndex: cardIndex++,
         },
-        gridColumnSpan: 2, // 2 cols - shares row with Generate button (4 cols)
+        gridColumnSpan: customizeLoopSpan,
       });
     }
 
-    // Generate Button Card - always at the end
-    // In freeform mode with Start/End: 4 cols (shares row with Start/End)
-    // Otherwise: 6 cols (full width)
+    // Consolidated LOOP card (absorbs toggle + type + slice size)
+    if (handlers.handleLoopToggle) {
+      cardList.push({
+        id: "loop",
+        props: {
+          loopEnabled,
+          currentLOOPType: config.loopType,
+          onLoopToggle: handlers.handleLoopToggle,
+          onLOOPTypeChange: handlers.handleLOOPTypeChange,
+          cardIndex: cardIndex++,
+        },
+        gridColumnSpan: customizeLoopSpan,
+      });
+    }
+
+    // ─── Generate Button (always last, full width) ───
+
     if (handlers.handleGenerateClick) {
-      const generateColumnSpan = isFreeformMode && hasStartEndCard ? 4 : 6;
+      const spellDisabled = isSpellMode && !(handlers.wordInputValue?.trim());
+
       cardList.push({
         id: "generate-button",
         props: {
@@ -224,8 +214,9 @@ export class CardConfigurator implements ICardConfigurator {
           onGenerateClicked: handlers.handleGenerateClick,
           config,
           startEndOptions: handlers.startEndOptions,
+          disabled: spellDisabled,
         },
-        gridColumnSpan: generateColumnSpan,
+        gridColumnSpan: 6, // Always full width — no cards share this row
       });
     }
 

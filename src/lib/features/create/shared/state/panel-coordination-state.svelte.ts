@@ -92,6 +92,24 @@ export interface StartEndOptions {
 /** @deprecated Use StartEndOptions instead */
 export type CustomizeOptions = StartEndOptions;
 
+/**
+ * Props for the Customize expanded overlay (Style + Rhythm + Start/End)
+ */
+export interface CustomizeOverlayProps {
+  constraintPreset: "smooth" | "mixed" | "high-reversal";
+  handPathMode: "smooth" | "mixed" | "high";
+  motionTypeFilter: "no-dash" | "prefer-dash" | null;
+  durationTemplateId: string | null;
+  startEndOptions: StartEndOptions | null;
+  gridMode: GridMode;
+  isFreeformMode: boolean;
+  onConstraintPresetChange: (v: "smooth" | "mixed" | "high-reversal") => void;
+  onHandPathModeChange: (v: "smooth" | "mixed" | "high") => void;
+  onMotionTypeFilterChange: (v: "no-dash" | "mixed" | "prefer-dash") => void;
+  onOpenDurationPanel: () => void;
+  onStartEndChange: ((options: StartEndOptions) => void) | null;
+}
+
 export interface PanelCoordinationState {
   // Shift Start Mode State
   get isShiftStartMode(): boolean;
@@ -265,6 +283,13 @@ export interface PanelCoordinationState {
   triggerGeneratorHelpMode(): void;
   clearGeneratorHelpModeTrigger(): void;
 
+  // Customize Overlay State (Style + Rhythm + Start/End in one overlay)
+  get isCustomizeOverlayOpen(): boolean;
+  get customizeOverlayProps(): CustomizeOverlayProps | null;
+
+  openCustomizeOverlay(props: CustomizeOverlayProps): void;
+  closeCustomizeOverlay(): void;
+
   // Duration Rhythm Panel State (for generator rhythm preset picker)
   get isDurationRhythmPanelOpen(): boolean;
 
@@ -376,6 +401,10 @@ export function createPanelCoordinationState(): PanelCoordinationState {
   let previewSequence = $state<SequenceData | null>(null);
   let originalSequence = $state<SequenceData | null>(null);
 
+  // Customize overlay state (Style + Rhythm + Start/End)
+  let isCustomizeOverlayOpen = $state(false);
+  let customizeOverlayProps = $state<CustomizeOverlayProps | null>(null);
+
   // Duration rhythm panel state (generator rhythm preset picker)
   let isDurationRhythmPanelOpen = $state(false);
 
@@ -423,6 +452,9 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     loopOnChange = null;
 
     isCreationMethodPanelOpen = false;
+
+    isCustomizeOverlayOpen = false;
+    customizeOverlayProps = null;
 
     isDurationRhythmPanelOpen = false;
 
@@ -758,6 +790,25 @@ export function createPanelCoordinationState(): PanelCoordinationState {
       loopOnChange = null;
     },
 
+    // Customize Overlay Getters
+    get isCustomizeOverlayOpen() {
+      return isCustomizeOverlayOpen;
+    },
+    get customizeOverlayProps() {
+      return customizeOverlayProps;
+    },
+
+    openCustomizeOverlay(props: CustomizeOverlayProps) {
+      closeAllPanels();
+      customizeOverlayProps = props;
+      isCustomizeOverlayOpen = true;
+    },
+
+    closeCustomizeOverlay() {
+      isCustomizeOverlayOpen = false;
+      customizeOverlayProps = null;
+    },
+
     // Duration Rhythm Panel Getters
     get isDurationRhythmPanelOpen() {
       return isDurationRhythmPanelOpen;
@@ -882,6 +933,7 @@ export function createPanelCoordinationState(): PanelCoordinationState {
         isFilterPanelOpen ||
         isSequenceActionsPanelOpen ||
         isLOOPPanelOpen ||
+        isCustomizeOverlayOpen ||
         isDurationRhythmPanelOpen ||
         isStartEndPanelOpen ||
         isSequenceDetailsModalOpen

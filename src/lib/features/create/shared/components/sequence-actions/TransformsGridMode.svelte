@@ -430,16 +430,17 @@
   /* Default: horizontal layout (icon left, label right) — fits all panel widths */
   .grid-btn {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 6px 10px;
+    padding: 14px 18px;
     border-radius: 10px;
     cursor: pointer;
     transition: all var(--duration-fast) ease;
-    text-align: left;
+    text-align: center;
     min-height: var(--min-touch-target, 44px);
+    height: 100%;
   }
 
   .grid-btn:disabled {
@@ -456,10 +457,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    font-size: var(--font-size-base);
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    font-size: 1.4rem;
     flex-shrink: 0;
     color: white;
   }
@@ -467,14 +468,13 @@
   .btn-text {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
     gap: 1px;
     min-width: 0;
-    flex: 1;
   }
 
   .btn-label {
-    font-size: var(--font-size-compact, 12px);
+    font-size: 1rem;
     font-weight: 600;
     color: rgba(255, 255, 255, 0.95);
     white-space: nowrap;

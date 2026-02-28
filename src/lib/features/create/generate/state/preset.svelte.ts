@@ -78,7 +78,8 @@ function createDefaultPreset(): GenerationPreset {
   const now = Date.now();
 
   const defaultConfig: UIGenerationConfig = {
-    mode: GenerationMode.CIRCULAR,
+    mode: GenerationMode.FREEFORM,
+    loopEnabled: true,
     length: 16,
     level: 1,
     turnIntensity: 0,

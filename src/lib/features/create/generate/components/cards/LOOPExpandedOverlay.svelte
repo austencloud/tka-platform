@@ -20,11 +20,13 @@ Animates forward in z-axis and expands to fill the container space
     selectedComponents,
     onChange,
     onClose,
+    onLoopDisable,
   } = $props<{
     currentType: LOOPType;
     selectedComponents: Set<LOOPComponent>;
     onChange: (loopType: LOOPType) => void;
     onClose: () => void;
+    onLoopDisable?: () => void;
   }>();
 
   let hapticService: IHapticFeedback | null = null;
@@ -110,25 +112,45 @@ Animates forward in z-axis and expands to fill the container space
     hapticService?.trigger("selection");
     onClose();
   }
+
+  function handleDisableLoop() {
+    hapticService?.trigger("selection");
+    onLoopDisable?.();
+  }
 </script>
 
 <div
   class="loop-expanded-overlay"
   transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}
 >
-  <!-- Header with title and close button -->
+  <!-- Header with title, disable toggle, and close button -->
   <div class="overlay-header">
     <h3 class="overlay-title">Select LOOP Type</h3>
-    <button
-      class="close-button"
-      onclick={handleClose}
-      aria-label="Close LOOP selection"
-    >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="18" y1="6" x2="6" y2="18"></line>
-        <line x1="6" y1="6" x2="18" y2="18"></line>
-      </svg>
-    </button>
+    <div class="header-actions">
+      {#if onLoopDisable}
+        <button
+          class="disable-button"
+          onclick={handleDisableLoop}
+          aria-label="Turn off LOOP"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+          </svg>
+          <span>Off</span>
+        </button>
+      {/if}
+      <button
+        class="close-button"
+        onclick={handleClose}
+        aria-label="Close LOOP selection"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
   </div>
 
   <!-- Mode selector -->
@@ -203,6 +225,41 @@ Animates forward in z-axis and expands to fill the container space
     flex-shrink: 0;
   }
 
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .disable-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    cursor: pointer;
+    padding: 8px 12px;
+    height: 48px;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    font-family: inherit;
+    transition: all var(--duration-normal) ease;
+  }
+
+  .disable-button:hover {
+    background: rgba(255, 100, 100, 0.15);
+    border-color: rgba(255, 100, 100, 0.3);
+    color: var(--theme-text, white);
+  }
+
+  .disable-button svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
   .overlay-title {
     margin: 0;
     font-size: var(--font-size-lg, 18px);
@@ -221,8 +278,8 @@ Animates forward in z-axis and expands to fill the container space
     align-items: center;
     justify-content: center;
     padding: 8px;
-    width: 36px;
-    height: 36px;
+    width: 48px;
+    height: 48px;
     transition: all var(--duration-normal) ease;
   }
 
@@ -232,8 +289,8 @@ Animates forward in z-axis and expands to fill the container space
   }
 
   .close-button svg {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
   }
 
   .grid-container {
@@ -274,7 +331,7 @@ Animates forward in z-axis and expands to fill the container space
     flex-shrink: 0;
     width: 100%;
     padding: 12px 20px;
-    min-height: 44px;
+    min-height: 48px;
 
     background: color-mix(in srgb, var(--theme-accent) 30%, transparent);
     border: 2px solid var(--theme-accent);
@@ -304,7 +361,8 @@ Animates forward in z-axis and expands to fill the container space
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .apply-button,
-    .close-button {
+    .close-button,
+    .disable-button {
       transition: none;
     }
   }

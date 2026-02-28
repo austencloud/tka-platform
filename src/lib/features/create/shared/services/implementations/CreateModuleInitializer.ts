@@ -21,7 +21,7 @@ import { createCreateModuleState } from "$lib/features/create/shared/state/creat
 import { createConstructTabState } from "$lib/features/create/shared/state/construct-tab-state.svelte";
 // ARCHIVED: createAssemblerTabState import removed (Feb 2026)
 import { createGeneratorTabState } from "$lib/features/create/shared/state/generator-tab-state.svelte";
-import { createSpellTabState } from "$lib/features/create/spell/state/spell-tab-state.svelte";
+// REMOVED: createSpellTabState — Spell mode unified into Generate tab (Feb 2026)
 import { createVisualBuilderTabState } from "$lib/features/create/shared/state/visual-builder-tab-state.svelte";
 import type { PanelCoordinationState } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
 import type { IStepOperator } from "../contracts/IStepOperator";
@@ -110,13 +110,7 @@ export class CreateModuleInitializer implements ICreateModuleInitializer {
       this.sequenceValidationService
     );
 
-    const spellTabState = createSpellTabState(
-      this.sequenceService,
-      this.SequencePersister,
-      this.sequenceStatisticsService,
-      this.SequenceTransformer,
-      this.sequenceValidationService
-    );
+    // REMOVED: spellTabState creation — Spell mode unified into Generate tab (Feb 2026)
 
     const visualBuilderTabState = createVisualBuilderTabState(
       this.sequenceService,
@@ -131,7 +125,7 @@ export class CreateModuleInitializer implements ICreateModuleInitializer {
     CreateModuleState.constructorTabState = constructTabState; // Main accessor (triggers setter for _constructorTabState)
     // ARCHIVED: assemblerTabState removed (Feb 2026)
     CreateModuleState.generatorTabState = generatorTabState;
-    CreateModuleState.spellTabState = spellTabState;
+    // REMOVED: spellTabState assignment — Spell mode unified into Generate tab (Feb 2026)
     CreateModuleState.visualBuilderTabState = visualBuilderTabState;
 
     // Initialize services
@@ -140,7 +134,7 @@ export class CreateModuleInitializer implements ICreateModuleInitializer {
     // Initialize tab states (but NOT persistence - that's done after deep link check)
     await constructTabState.initializeConstructTab();
     await generatorTabState.initializeGeneratorTab();
-    await spellTabState.initializeSpellTab();
+    // REMOVED: spellTabState.initializeSpellTab() — Spell mode unified into Generate tab (Feb 2026)
     await visualBuilderTabState.initializeVisualBuilderTab();
 
     // Note: Event callbacks configured separately via configureEventCallbacks()
@@ -154,7 +148,7 @@ export class CreateModuleInitializer implements ICreateModuleInitializer {
       CreateModuleState,
       constructTabState,
       generatorTabState,
-      spellTabState,
+      // REMOVED: spellTabState — Spell mode unified into Generate tab (Feb 2026)
       visualBuilderTabState,
 
       // Core services

@@ -23,6 +23,7 @@ const STORAGE_KEY = "tka-generate-config";
 
 interface SerializedConfig {
   mode: GenerationMode;
+  loopEnabled?: boolean;
   length: number;
   level: number;
   turnIntensity: number;
@@ -46,6 +47,7 @@ function saveConfig(config: UIGenerationConfig): void {
   try {
     const serialized: SerializedConfig = {
       mode: config.mode as GenerationMode,
+      loopEnabled: config.loopEnabled,
       length: config.length,
       level: config.level,
       turnIntensity: config.turnIntensity,
@@ -90,8 +92,11 @@ function loadConfig(): UIGenerationConfig | null {
 
     // Build config object, only including defined values
     // This prevents undefined values from overriding DEFAULT_CONFIG
+    // Migrate legacy "circular" mode → freeform + loopEnabled
+    const isLegacyCircular = data.mode === ("circular" as GenerationMode);
     const result: Partial<UIGenerationConfig> = {
-      mode: data.mode as GenerationMode,
+      mode: isLegacyCircular ? GenerationMode.FREEFORM : (data.mode as GenerationMode),
+      loopEnabled: data.loopEnabled ?? isLegacyCircular,
       length: data.length,
       level: data.level,
     };
@@ -145,6 +150,7 @@ function clearConfig(): void {
 // ===== Default Config =====
 const DEFAULT_CONFIG: UIGenerationConfig = {
   mode: GenerationMode.FREEFORM,
+  loopEnabled: false,
   length: 16,
   level: 2,
   turnIntensity: 1.0,
@@ -178,6 +184,8 @@ export function createGenerationConfigState(
 
   // Derived values
   const isFreeformMode = $derived(config.mode === GenerationMode.FREEFORM);
+  const isSpellMode = $derived(config.mode === GenerationMode.SPELL);
+  const isLoopEnabled = $derived(config.loopEnabled);
 
   // Simple update function with persistence
   function updateConfig(updates: Partial<UIGenerationConfig>) {
@@ -243,6 +251,12 @@ export function createGenerationConfigState(
     },
     get isFreeformMode() {
       return isFreeformMode;
+    },
+    get isSpellMode() {
+      return isSpellMode;
+    },
+    get isLoopEnabled() {
+      return isLoopEnabled;
     },
 
     // Actions
