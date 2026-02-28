@@ -4,6 +4,35 @@
  * Authentic CRT effects: scanlines, glow, flicker.
  */
 
+/* Outer wrapper — dark "desk" fills the viewport */
+.dos-desk {
+	background: #0a0a0a;
+	width: 100vw;
+	height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+	padding: 0;
+	margin: 0;
+}
+
+/* CRT monitor bezel — the physical frame around the screen */
+.dos-monitor {
+	position: relative;
+	width: min(960px, 90vw);
+	aspect-ratio: 4 / 3;
+	max-height: 90vh;
+	background: #1a1a1a;
+	border-radius: 18px;
+	padding: 24px;
+	box-shadow:
+		0 4px 32px rgba(0, 0, 0, 0.8),
+		0 0 2px rgba(255, 255, 255, 0.05),
+		inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* The screen area inside the bezel */
 .dos-terminal {
 	--dos-bg: #000000;
 	--dos-text: #33ff33;
@@ -21,12 +50,11 @@
 	font-family: "Courier New", "Consolas", monospace;
 	font-size: 14px;
 	line-height: 1.3;
-	width: 100vw;
-	height: 100vh;
+	width: 100%;
+	height: 100%;
 	overflow: hidden;
 	position: relative;
-	padding: 0;
-	margin: 0;
+	border-radius: 10px;
 	cursor: default;
 	user-select: none;
 }
@@ -115,12 +143,13 @@
 	}
 }
 
-/* CRT scanline overlay */
+/* CRT scanline overlay — scoped to the monitor screen */
 .dos-crt-overlay {
-	position: fixed;
+	position: absolute;
 	inset: 0;
 	pointer-events: none;
 	z-index: 100;
+	border-radius: 10px;
 }
 
 .dos-crt-overlay::before {

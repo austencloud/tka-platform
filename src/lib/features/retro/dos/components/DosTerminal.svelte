@@ -41,6 +41,7 @@
   /* ------------------------------------------------------------------ */
 
   let outputEl: HTMLDivElement | undefined = $state();
+  let terminalEl: HTMLDivElement | undefined = $state();
 
   /* ------------------------------------------------------------------ */
   /* Auto-scroll to bottom when lines change                             */
@@ -178,81 +179,88 @@
   onMount(() => {
     terminalState.mode = "boot";
     terminalState.inputEnabled = false;
+    // Focus the terminal so keyboard input works immediately
+    terminalEl?.focus();
   });
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions a11y_no_noninteractive_element_interactions -->
-<div
-  class="dos-terminal"
-  class:amber={terminalState.colorScheme === "amber"}
-  onkeydown={handleKeydown}
-  tabindex="-1"
-  role="application"
-  aria-label="DOS terminal emulator"
->
-  <!-- Output buffer -->
-  <div class="dos-output" bind:this={outputEl}>
-    {#each terminalState.lines as line, i (i)}
-      <div class="dos-line">{@html line.html}</div>
-    {/each}
+<div class="dos-desk">
+  <div class="dos-monitor">
+    <div
+      class="dos-terminal"
+      class:amber={terminalState.colorScheme === "amber"}
+      onkeydown={handleKeydown}
+      bind:this={terminalEl}
+      tabindex="-1"
+      role="application"
+      aria-label="DOS terminal emulator"
+    >
+      <!-- Output buffer -->
+      <div class="dos-output" bind:this={outputEl}>
+        {#each terminalState.lines as line, i (i)}
+          <div class="dos-line">{@html line.html}</div>
+        {/each}
 
-    <!-- Boot sequence (renders nothing visible — writes to terminal state) -->
-    {#if terminalState.mode === "boot"}
-      <DosBootSequence oncomplete={onBootComplete} />
-    {/if}
+        <!-- Boot sequence (renders nothing visible — writes to terminal state) -->
+        {#if terminalState.mode === "boot"}
+          <DosBootSequence oncomplete={onBootComplete} />
+        {/if}
 
-    <!-- SCRIBE menu -->
-    {#if terminalState.mode === "scribe" && terminalState.scribeMode === "menu"}
-      <ScribeMenu />
-    {/if}
+        <!-- SCRIBE menu -->
+        {#if terminalState.mode === "scribe" && terminalState.scribeMode === "menu"}
+          <ScribeMenu />
+        {/if}
 
-    <!-- SCRIBE Generate mode -->
-    {#if terminalState.mode === "scribe" && terminalState.scribeMode === "generate"}
-      <ScribeGenerate onreturn={returnToScribeMenu} />
-    {/if}
+        <!-- SCRIBE Generate mode -->
+        {#if terminalState.mode === "scribe" && terminalState.scribeMode === "generate"}
+          <ScribeGenerate onreturn={returnToScribeMenu} />
+        {/if}
 
-    <!-- SCRIBE Construct mode -->
-    {#if terminalState.mode === "scribe" && terminalState.scribeMode === "construct"}
-      <ScribeConstruct onreturn={returnToScribeMenu} />
-    {/if}
+        <!-- SCRIBE Construct mode -->
+        {#if terminalState.mode === "scribe" && terminalState.scribeMode === "construct"}
+          <ScribeConstruct onreturn={returnToScribeMenu} />
+        {/if}
 
-    <!-- SCRIBE Spell mode -->
-    {#if terminalState.mode === "scribe" && terminalState.scribeMode === "spell"}
-      <ScribeSpell onreturn={returnToScribeMenu} />
-    {/if}
+        <!-- SCRIBE Spell mode -->
+        {#if terminalState.mode === "scribe" && terminalState.scribeMode === "spell"}
+          <ScribeSpell onreturn={returnToScribeMenu} />
+        {/if}
 
-    <!-- SCRIBE Browse mode -->
-    {#if terminalState.mode === "scribe" && terminalState.scribeMode === "browse"}
-      <ScribeBrowse onreturn={returnToScribeMenu} />
-    {/if}
+        <!-- SCRIBE Browse mode -->
+        {#if terminalState.mode === "scribe" && terminalState.scribeMode === "browse"}
+          <ScribeBrowse onreturn={returnToScribeMenu} />
+        {/if}
 
-    <!-- SCRIBE Cards mode -->
-    {#if terminalState.mode === "scribe" && terminalState.scribeMode === "cards"}
-      <ScribeCards onreturn={returnToScribeMenu} />
-    {/if}
+        <!-- SCRIBE Cards mode -->
+        {#if terminalState.mode === "scribe" && terminalState.scribeMode === "cards"}
+          <ScribeCards onreturn={returnToScribeMenu} />
+        {/if}
 
-    <!-- SCRIBE Tutorial mode -->
-    {#if terminalState.mode === "scribe" && terminalState.scribeMode === "tutorial"}
-      <ScribeTutorial onreturn={returnToScribeMenu} />
-    {/if}
+        <!-- SCRIBE Tutorial mode -->
+        {#if terminalState.mode === "scribe" && terminalState.scribeMode === "tutorial"}
+          <ScribeTutorial onreturn={returnToScribeMenu} />
+        {/if}
 
-    <!-- SCRIBE Config mode -->
-    {#if terminalState.mode === "scribe" && terminalState.scribeMode === "config"}
-      <ScribeConfig onreturn={returnToScribeMenu} />
-    {/if}
+        <!-- SCRIBE Config mode -->
+        {#if terminalState.mode === "scribe" && terminalState.scribeMode === "config"}
+          <ScribeConfig onreturn={returnToScribeMenu} />
+        {/if}
 
-    <!-- Input line with prompt + cursor -->
-    {#if terminalState.inputEnabled}
-      <div class="dos-input-line">
-        <span class="dos-prompt-text">{@html terminalState.escapeForDisplay(terminalState.promptString)}</span>
-        <span class="dos-input-text">{@html terminalState.escapeForDisplay(terminalState.inputText)}</span>
-        <span class="dos-cursor" aria-hidden="true"></span>
+        <!-- Input line with prompt + cursor -->
+        {#if terminalState.inputEnabled}
+          <div class="dos-input-line">
+            <span class="dos-prompt-text">{@html terminalState.escapeForDisplay(terminalState.promptString)}</span>
+            <span class="dos-input-text">{@html terminalState.escapeForDisplay(terminalState.inputText)}</span>
+            <span class="dos-cursor" aria-hidden="true"></span>
+          </div>
+        {/if}
       </div>
-    {/if}
-  </div>
 
-  <!-- CRT scanline overlay -->
-  {#if terminalState.crtEffects}
-    <div class="dos-crt-overlay" aria-hidden="true"></div>
-  {/if}
+      <!-- CRT scanline overlay -->
+      {#if terminalState.crtEffects}
+        <div class="dos-crt-overlay" aria-hidden="true"></div>
+      {/if}
+    </div>
+  </div>
 </div>
