@@ -37,10 +37,11 @@
   let loading = $state(true);
   let error = $state(false);
 
-  // Generate cache key (includes grid mode for uniqueness)
+  // Generate cache key (includes grid mode and prop type for uniqueness)
   function getCacheKey(letter: string, variation: number, imageSize: number): string {
     const gridMode = pictograph.gridMode ?? "diamond";
-    return `${letter}-${variation}-${imageSize}-${gridMode}`;
+    const base = `${letter}-${variation}-${imageSize}-${gridMode}`;
+    return pictograph.propType ? `${base}-${pictograph.propType}` : base;
   }
 
   // Build static file key
@@ -49,6 +50,7 @@
       letter,
       variation,
       gridMode: (pictograph.gridMode ?? "diamond") as "diamond" | "box",
+      propType: pictograph.propType,
     };
   }
 
@@ -126,6 +128,10 @@
             size: apiSize,
             showTKA: true,
             showGrid: true,
+            ...(pictograph.propType && {
+              bluePropType: pictograph.propType,
+              redPropType: pictograph.propType,
+            }),
           },
         }),
       });

@@ -198,6 +198,8 @@ export interface InlinePictograph {
    * Defaults to "diamond" if not specified.
    */
   gridMode?: "diamond" | "box";
+  /** Override prop type (e.g., "hand" for position-first teaching) */
+  propType?: string;
 }
 
 /**
@@ -335,7 +337,7 @@ export interface InlineQuiz {
   options: QuizOption[];
 
   // Optional visual context (shown above the question)
-  pictograph?: { letter: string; variation?: number };
+  pictograph?: { letter: string; variation?: number; propType?: string };
 
   // Feedback content
   correctFeedback: string;
@@ -345,4 +347,7 @@ export interface InlineQuiz {
   // Metadata for future adaptive learning
   difficulty: "easy" | "medium" | "hard";
   topic: string;
+
+  // Multi-question session: additional quizzes to auto-advance through
+  followUpQuizzes?: InlineQuiz[];
 }

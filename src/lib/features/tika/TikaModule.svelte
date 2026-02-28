@@ -321,6 +321,41 @@
     }
   });
 
+  // Track topics from assistant tool calls for welcome suggestions
+  let lastTrackedMessageCount = $state(0);
+  $effect(() => {
+    if (!interactionTracker || !isAuthenticated || userId === "anonymous") return;
+    if (chatMessages.length <= lastTrackedMessageCount) return;
+
+    // Only scan newly added messages
+    const newMessages = chatMessages.slice(lastTrackedMessageCount);
+    lastTrackedMessageCount = chatMessages.length;
+
+    const topics = new Set<string>();
+    for (const msg of newMessages) {
+      if (msg.role !== "assistant") continue;
+      for (const part of msg.parts) {
+        if (!part.type.startsWith("tool-")) continue;
+        // Extract topic from tool input args
+        const toolPart = part as { input?: Record<string, unknown> };
+        if (!toolPart.input) continue;
+        const input = toolPart.input;
+        if (typeof input.letter === "string") topics.add(`letter-${input.letter}`);
+        if (typeof input.type === "number") topics.add(`type-${input.type}`);
+        if (typeof input.position === "string") topics.add(`position-${input.position}`);
+        if (typeof input.motionType === "string") topics.add(`motion-${input.motionType}`);
+        if (typeof input.topic === "string") topics.add(input.topic);
+      }
+    }
+
+    // Fire-and-forget: record each unique topic
+    for (const topic of topics) {
+      interactionTracker.recordTopicDiscussion(userId, topic).catch((err) => {
+        console.warn("[TIKA] Failed to record topic discussion:", err);
+      });
+    }
+  });
+
   // Auto-save to Firebase (debounced) when messages change
   $effect(() => {
     // Skip if not authenticated or no repository

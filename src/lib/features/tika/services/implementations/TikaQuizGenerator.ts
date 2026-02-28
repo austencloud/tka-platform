@@ -22,6 +22,266 @@ import type {
   TextOption,
 } from "../contracts/ITikaQuizGenerator";
 
+// ─────────────────────────────────────────────────────────────────────────
+// Position Quiz Question Pool
+// ─────────────────────────────────────────────────────────────────────────
+
+interface PositionQuestion {
+  question: string;
+  correctPosition: "alpha" | "beta" | "gamma";
+  correctFeedback: string;
+  incorrectFeedback: string;
+  difficulty: QuizDifficulty;
+  /** If true, show the Type 6 letter for this position as a pictograph stimulus */
+  showPictograph?: boolean;
+}
+
+// Type 6 (Static) letters — pure position, no motion arrows.
+// Each has multiple variations at different grid locations.
+const ALPHA_STIMULUS = "α"; // static at alpha positions (4 variations)
+const BETA_STIMULUS = "β"; // static at beta positions (4 variations)
+const GAMMA_STIMULUS = "γ"; // static at gamma positions (8 variations)
+
+/** Map position → Type 6 letter + variation count for stimulus rendering */
+const POSITION_STIMULUS: Record<string, { letter: string; variationCount: number }> = {
+  alpha: { letter: ALPHA_STIMULUS, variationCount: 4 },
+  beta: { letter: BETA_STIMULUS, variationCount: 4 },
+  gamma: { letter: GAMMA_STIMULUS, variationCount: 8 },
+};
+
+const POSITION_QUESTION_POOL: PositionQuestion[] = [
+  // ── Easy ──
+  {
+    question: "What position is this?",
+    correctPosition: "alpha",
+    correctFeedback: "Alpha (α) — hands at opposite grid points.",
+    incorrectFeedback: "The hands are at opposite points on the grid. That's alpha (α).",
+    difficulty: "easy",
+    showPictograph: true,
+  },
+  {
+    question: "What position is this?",
+    correctPosition: "beta",
+    correctFeedback: "Beta (β) — both hands at the same grid point.",
+    incorrectFeedback: "Both hands are at the same grid point. That's beta (β).",
+    difficulty: "easy",
+    showPictograph: true,
+  },
+  {
+    question: "What position is this?",
+    correctPosition: "gamma",
+    correctFeedback: "Gamma (γ) — hands at adjacent points, forming a right angle.",
+    incorrectFeedback: "The hands form a right angle on the grid. That's gamma (γ).",
+    difficulty: "easy",
+    showPictograph: true,
+  },
+  // ── Medium ──
+  {
+    question: "What position is this?",
+    correctPosition: "alpha",
+    correctFeedback: "Alpha — opposite points.",
+    incorrectFeedback: "Hands at opposite grid points = alpha.",
+    difficulty: "medium",
+    showPictograph: true,
+  },
+  {
+    question: "What position is this?",
+    correctPosition: "beta",
+    correctFeedback: "Beta — same point.",
+    incorrectFeedback: "Hands at the same grid point = beta.",
+    difficulty: "medium",
+    showPictograph: true,
+  },
+  {
+    question: "What position is this?",
+    correctPosition: "gamma",
+    correctFeedback: "Gamma — right angle.",
+    incorrectFeedback: "Hands at a right angle = gamma.",
+    difficulty: "medium",
+    showPictograph: true,
+  },
+  {
+    question: "What position is this?",
+    correctPosition: "alpha",
+    correctFeedback: "Alpha — opposite points.",
+    incorrectFeedback: "Hands at opposite points = alpha.",
+    difficulty: "medium",
+    showPictograph: true,
+  },
+  {
+    question: "What position is this?",
+    correctPosition: "beta",
+    correctFeedback: "Beta — same point.",
+    incorrectFeedback: "Hands at the same point = beta.",
+    difficulty: "medium",
+    showPictograph: true,
+  },
+  {
+    question: "What position is this?",
+    correctPosition: "gamma",
+    correctFeedback: "Gamma — right angle.",
+    incorrectFeedback: "Hands at a right angle = gamma.",
+    difficulty: "medium",
+    showPictograph: true,
+  },
+  // ── Hard: Pictograph ──
+  {
+    question: "What position is this?",
+    correctPosition: "alpha",
+    correctFeedback: "Alpha. VTG calls this 'split'.",
+    incorrectFeedback: "Hands at opposite points = alpha (VTG 'split').",
+    difficulty: "hard",
+    showPictograph: true,
+  },
+  {
+    question: "What position is this?",
+    correctPosition: "beta",
+    correctFeedback: "Beta. VTG calls this 'together'.",
+    incorrectFeedback: "Hands at the same point = beta (VTG 'together').",
+    difficulty: "hard",
+    showPictograph: true,
+  },
+  {
+    question: "What position is this?",
+    correctPosition: "gamma",
+    correctFeedback: "Gamma. The asymmetric position — leader/follower matters here.",
+    incorrectFeedback: "Hands at a right angle = gamma. It's the only asymmetric position.",
+    difficulty: "hard",
+    showPictograph: true,
+  },
+  // ── Hard: Text-only (VTG cross-reference) ──
+  {
+    question: "VTG calls this 'together' or 'tog'. What TKA position is it?",
+    correctPosition: "beta",
+    correctFeedback: "VTG 'together' = TKA beta. Hands at the same point.",
+    incorrectFeedback: "VTG 'together' maps to beta — both hands at the same grid point.",
+    difficulty: "hard",
+  },
+  {
+    question: "VTG calls this 'split'. What TKA position is it?",
+    correctPosition: "alpha",
+    correctFeedback: "VTG 'split' = TKA alpha. Hands at opposite points.",
+    incorrectFeedback: "VTG 'split' maps to alpha — hands at opposite grid points.",
+    difficulty: "hard",
+  },
+  {
+    question: "Which position is asymmetric — swapping hands produces a different configuration?",
+    correctPosition: "gamma",
+    correctFeedback: "Gamma is asymmetric. One hand leads, the other follows.",
+    incorrectFeedback: "Gamma is the asymmetric position — the leader/follower distinction matters.",
+    difficulty: "hard",
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────
+// Motion Quiz Question Pool
+// ─────────────────────────────────────────────────────────────────────────
+
+interface MotionQuestion {
+  question: string;
+  correctMotion: "shift" | "dash" | "static";
+  correctFeedback: string;
+  incorrectFeedback: string;
+  difficulty: QuizDifficulty;
+}
+
+const MOTION_QUESTION_POOL: MotionQuestion[] = [
+  // Easy: definition-based
+  {
+    question: "Which motion keeps the hand at its current grid point?",
+    correctMotion: "static",
+    correctFeedback: "Static — the hand stays in place.",
+    incorrectFeedback: "No hand movement = static.",
+    difficulty: "easy",
+  },
+  {
+    question: "Which motion moves the hand to an adjacent grid point?",
+    correctMotion: "shift",
+    correctFeedback: "Shift — hand moves to a neighboring point.",
+    incorrectFeedback: "Moving to an adjacent point is a shift.",
+    difficulty: "easy",
+  },
+  {
+    question: "Which motion moves the hand to the opposite grid point?",
+    correctMotion: "dash",
+    correctFeedback: "Dash — hand crosses straight to the opposite point.",
+    incorrectFeedback: "Moving to the opposite point is a dash.",
+    difficulty: "easy",
+  },
+  // Medium: scenario-based
+  {
+    question: "A hand at North moves to East. What motion is this?",
+    correctMotion: "shift",
+    correctFeedback: "North to East is an adjacent point — shift.",
+    incorrectFeedback: "North to East is one step around the grid — that's a shift.",
+    difficulty: "medium",
+  },
+  {
+    question: "A hand at North moves to South. What motion is this?",
+    correctMotion: "dash",
+    correctFeedback: "North to South is the opposite point — dash.",
+    incorrectFeedback: "North to South crosses the grid — that's a dash.",
+    difficulty: "medium",
+  },
+  {
+    question: "A hand stays at East while the prop rotates. What motion is this?",
+    correctMotion: "static",
+    correctFeedback: "Hand stays put — static. The prop can still rotate.",
+    incorrectFeedback: "If the hand doesn't move, that's static (the prop can still rotate).",
+    difficulty: "medium",
+  },
+  {
+    question: "A hand at West moves to North. What motion is this?",
+    correctMotion: "shift",
+    correctFeedback: "West to North is adjacent — shift.",
+    incorrectFeedback: "West to North is one step — that's a shift.",
+    difficulty: "medium",
+  },
+  {
+    question: "A hand at East moves to West. What motion is this?",
+    correctMotion: "dash",
+    correctFeedback: "East to West is the opposite point — dash.",
+    incorrectFeedback: "East to West crosses the grid — that's a dash.",
+    difficulty: "medium",
+  },
+  {
+    question: "A hand at South moves to North. What motion is this?",
+    correctMotion: "dash",
+    correctFeedback: "South to North is the opposite point — dash.",
+    incorrectFeedback: "South to North crosses the grid — that's a dash.",
+    difficulty: "medium",
+  },
+  {
+    question: "A hand at NE moves to SE. What motion is this?",
+    correctMotion: "shift",
+    correctFeedback: "NE to SE is adjacent — shift.",
+    incorrectFeedback: "NE to SE is one step — that's a shift.",
+    difficulty: "medium",
+  },
+  // Hard: conceptual
+  {
+    question: "Which is the only motion where pro/anti rotation applies?",
+    correctMotion: "shift",
+    correctFeedback: "Only shift has a curved path, enabling pro/anti/float distinctions.",
+    incorrectFeedback: "Pro and anti only apply to shift — it's the only curved-path motion.",
+    difficulty: "hard",
+  },
+  {
+    question: "Which motion follows a straight line through the center of the grid?",
+    correctMotion: "dash",
+    correctFeedback: "Dash goes straight to the opposite point, through center.",
+    incorrectFeedback: "Dash moves in a straight line to the opposite point.",
+    difficulty: "hard",
+  },
+  {
+    question: "Which motion has exactly one state at 0 turns (no direction)?",
+    correctMotion: "dash",
+    correctFeedback: "At 0 turns, dash has no direction distinction — just 1 state.",
+    incorrectFeedback: "Dash at 0 turns is directionless — only 1 state, not 2.",
+    difficulty: "hard",
+  },
+];
+
 export class TikaQuizGenerator implements ITikaQuizGenerator {
   private quizCounter = 0;
 
@@ -30,8 +290,21 @@ export class TikaQuizGenerator implements ITikaQuizGenerator {
     quizType: string = "multiple-choice",
     difficulty: QuizDifficulty = "medium"
   ): QuizResult {
-    const quizId = this.generateQuizId();
     const normalizedTopic = topic.toLowerCase().trim();
+
+    // Category: "positions" / "position" → quiz on a random foundation position
+    if (/^positions?$/.test(normalizedTopic)) {
+      const positions = ["alpha", "beta", "gamma"] as const;
+      const position = positions[Math.floor(Math.random() * positions.length)]!;
+      return this.generatePositionQuiz(position, quizType, difficulty);
+    }
+
+    // Category: "motions" / "motion" / "motion types" → quiz on a random motion
+    if (/^(?:motions?|motion\s*types?)$/.test(normalizedTopic)) {
+      const motions = ["shift", "dash", "static"] as const;
+      const motion = motions[Math.floor(Math.random() * motions.length)]!;
+      return this.generateMotionQuiz(motion, quizType, difficulty);
+    }
 
     // Determine quiz type based on topic
     if (normalizedTopic.startsWith("type") || /^[1-6]$/.test(normalizedTopic)) {
@@ -354,20 +627,239 @@ export class TikaQuizGenerator implements ITikaQuizGenerator {
   }
 
   private generatePositionQuiz(
-    _position: string,
+    position: string,
     _quizType: string,
     difficulty: QuizDifficulty
   ): QuizResult {
-    return this.generateGeneralQuiz("pick-letter", difficulty);
+    const primary = this.generateSinglePositionQuiz(position, difficulty);
+
+    // Generate batch of follow-up quizzes (4 more for 5 total)
+    const followUps = this.generatePositionQuizBatch(difficulty, 4, position);
+    primary.inlineQuiz.followUpQuizzes = followUps;
+
+    return primary;
+  }
+
+  private generatePositionQuizBatch(
+    difficulty: QuizDifficulty,
+    count: number,
+    excludeFirstPosition?: string
+  ): InlineQuiz[] {
+    const positions = ["alpha", "beta", "gamma"] as const;
+    const quizzes: InlineQuiz[] = [];
+    let lastPosition = excludeFirstPosition;
+
+    for (let i = 0; i < count; i++) {
+      // Pick a position that differs from the last one for variety
+      const available = positions.filter((p) => p !== lastPosition);
+      const picked = available[Math.floor(Math.random() * available.length)]!;
+      lastPosition = picked;
+
+      const result = this.generateSinglePositionQuiz(picked, difficulty);
+      quizzes.push(result.inlineQuiz);
+    }
+
+    return quizzes;
+  }
+
+  private generateSinglePositionQuiz(
+    position: string,
+    difficulty: QuizDifficulty
+  ): QuizResult {
+    const quizId = this.generateQuizId();
+
+    // Pick a question where the answer is this position, matching difficulty
+    let pool = POSITION_QUESTION_POOL.filter(
+      (q) => q.correctPosition === position && q.difficulty === difficulty
+    );
+    // Fall back to any question for this position
+    if (pool.length === 0) {
+      pool = POSITION_QUESTION_POOL.filter(
+        (q) => q.correctPosition === position
+      );
+    }
+    // Final fallback: any position question at requested difficulty
+    if (pool.length === 0) {
+      pool = POSITION_QUESTION_POOL.filter((q) => q.difficulty === difficulty);
+    }
+    if (pool.length === 0) {
+      pool = POSITION_QUESTION_POOL;
+    }
+
+    const selected = pool[Math.floor(Math.random() * pool.length)]!;
+
+    // Show the Type 6 letter for this position as stimulus (pure position, no motion arrows)
+    let stimulusPictograph:
+      | { letter: string; variation?: number; propType?: string }
+      | undefined;
+    if (selected.showPictograph) {
+      const stimulus = POSITION_STIMULUS[selected.correctPosition];
+      if (stimulus) {
+        stimulusPictograph = {
+          letter: stimulus.letter,
+          variation: Math.floor(Math.random() * stimulus.variationCount),
+          // Beginners see hands only — props come after they understand positions
+          ...(difficulty !== "hard" && { propType: "hand" }),
+        };
+      }
+    }
+
+    const labels = {
+      alpha: "Alpha (α)",
+      beta: "Beta (β)",
+      gamma: "Gamma (γ)",
+    };
+
+    const options: TextOption[] = this.shuffleArray([
+      {
+        id: "opt-alpha",
+        type: "text" as const,
+        text: labels.alpha,
+        correct: selected.correctPosition === "alpha",
+      },
+      {
+        id: "opt-beta",
+        type: "text" as const,
+        text: labels.beta,
+        correct: selected.correctPosition === "beta",
+      },
+      {
+        id: "opt-gamma",
+        type: "text" as const,
+        text: labels.gamma,
+        correct: selected.correctPosition === "gamma",
+      },
+    ]);
+
+    const positionDef =
+      POSITION_DEFINITIONS[
+        selected.correctPosition as keyof typeof POSITION_DEFINITIONS
+      ];
+
+    return {
+      explanation: selected.question,
+      inlineQuiz: {
+        type: "inline-quiz",
+        id: quizId,
+        quizType: "pick-type",
+        displayMode: "text",
+        question: selected.question,
+        options,
+        pictograph: stimulusPictograph,
+        correctFeedback: selected.correctFeedback,
+        incorrectFeedback: selected.incorrectFeedback,
+        explanation: positionDef?.description || "",
+        difficulty,
+        topic: `position-${selected.correctPosition}`,
+      },
+    };
   }
 
   private generateMotionQuiz(
-    _motionType: string,
+    motionType: string,
     _quizType: string,
     difficulty: QuizDifficulty
   ): QuizResult {
-    const randomType = Math.floor(Math.random() * 6) + 1;
-    return this.generateMotionMatchQuiz(randomType, difficulty);
+    const primary = this.generateSingleMotionQuiz(motionType, difficulty);
+
+    // Generate batch of follow-up quizzes (4 more for 5 total)
+    const followUps = this.generateMotionQuizBatch(difficulty, 4, motionType);
+    primary.inlineQuiz.followUpQuizzes = followUps;
+
+    return primary;
+  }
+
+  private generateMotionQuizBatch(
+    difficulty: QuizDifficulty,
+    count: number,
+    excludeFirstMotion?: string
+  ): InlineQuiz[] {
+    const motions = ["shift", "dash", "static"] as const;
+    const quizzes: InlineQuiz[] = [];
+    let lastMotion = excludeFirstMotion;
+
+    for (let i = 0; i < count; i++) {
+      const available = motions.filter((m) => m !== lastMotion);
+      const picked = available[Math.floor(Math.random() * available.length)]!;
+      lastMotion = picked;
+
+      const result = this.generateSingleMotionQuiz(picked, difficulty);
+      quizzes.push(result.inlineQuiz);
+    }
+
+    return quizzes;
+  }
+
+  private generateSingleMotionQuiz(
+    motionType: string,
+    difficulty: QuizDifficulty
+  ): QuizResult {
+    const quizId = this.generateQuizId();
+
+    // Pick a question where the answer is this motion type, matching difficulty
+    let pool = MOTION_QUESTION_POOL.filter(
+      (q) => q.correctMotion === motionType && q.difficulty === difficulty
+    );
+    // Fall back to any question for this motion
+    if (pool.length === 0) {
+      pool = MOTION_QUESTION_POOL.filter(
+        (q) => q.correctMotion === motionType
+      );
+    }
+    // Final fallback: any motion question at requested difficulty
+    if (pool.length === 0) {
+      pool = MOTION_QUESTION_POOL.filter((q) => q.difficulty === difficulty);
+    }
+    if (pool.length === 0) {
+      pool = MOTION_QUESTION_POOL;
+    }
+
+    const selected = pool[Math.floor(Math.random() * pool.length)]!;
+
+    const labels = {
+      shift: "Shift",
+      dash: "Dash",
+      static: "Static",
+    };
+
+    const options: TextOption[] = this.shuffleArray([
+      {
+        id: "opt-shift",
+        type: "text" as const,
+        text: labels.shift,
+        correct: selected.correctMotion === "shift",
+      },
+      {
+        id: "opt-dash",
+        type: "text" as const,
+        text: labels.dash,
+        correct: selected.correctMotion === "dash",
+      },
+      {
+        id: "opt-static",
+        type: "text" as const,
+        text: labels.static,
+        correct: selected.correctMotion === "static",
+      },
+    ]);
+
+    return {
+      explanation: selected.question,
+      inlineQuiz: {
+        type: "inline-quiz",
+        id: quizId,
+        quizType: "pick-type",
+        displayMode: "text",
+        question: selected.question,
+        options,
+        correctFeedback: selected.correctFeedback,
+        incorrectFeedback: selected.incorrectFeedback,
+        explanation:
+          MOTION_TYPE_DEFINITIONS[selected.correctMotion]?.description || "",
+        difficulty,
+        topic: `motion-${selected.correctMotion}`,
+      },
+    };
   }
 
   private generateTrueFalseQuiz(

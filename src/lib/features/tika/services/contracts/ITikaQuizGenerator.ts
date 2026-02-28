@@ -46,12 +46,13 @@ export interface InlineQuiz {
   displayMode: QuizDisplayMode;
   question: string;
   options: QuizOption[];
-  pictograph?: { letter: string; variation?: number };
+  pictograph?: { letter: string; variation?: number; propType?: string };
   correctFeedback: string;
   incorrectFeedback: string;
   explanation?: string;
   difficulty: QuizDifficulty;
   topic: string;
+  followUpQuizzes?: InlineQuiz[];
 }
 
 export interface QuizResult {

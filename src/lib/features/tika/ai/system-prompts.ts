@@ -677,11 +677,17 @@ function buildMasterySection(ctx: MasteryContext): string {
 		sections.push(
 			`\n**Mastered (don't re-explain unless asked):** ${ctx.masteredConcepts.join(', ')}`
 		)
+		sections.push(
+			'For mastered concepts, keep explanations brief. Focus on deeper applications, edge cases, or connections to other concepts rather than re-teaching basics.'
+		)
 	}
 
 	if (ctx.strugglingConcepts.length > 0) {
 		sections.push(
 			`\n**Needs extra help (provide detailed explanations):** ${ctx.strugglingConcepts.join(', ')}`
+		)
+		sections.push(
+			'For struggling concepts, slow down, use more examples, and check understanding. If the user has active misconceptions below, proactively address those when these topics come up.'
 		)
 	}
 
@@ -690,7 +696,7 @@ function buildMasterySection(ctx: MasteryContext): string {
 			`\n**Suggested next concepts:** ${ctx.suggestedNext.join(', ')}`
 		)
 		sections.push(
-			'If the user asks "what should I learn next?" or seems unsure where to go, suggest these concepts.'
+			'If the user asks "what should I learn next?" or seems unsure where to go, suggest these concepts. After the user answers a quiz correctly, naturally suggest moving on to the next concept: "Ready to try [suggested concept]?"'
 		)
 	}
 
@@ -699,7 +705,7 @@ function buildMasterySection(ctx: MasteryContext): string {
 			`\n**Due for review (spaced repetition):** ${ctx.dueForReview.join(', ')}`
 		)
 		sections.push(
-			'If appropriate, suggest the user review these concepts to reinforce their knowledge.'
+			"Periodically nudge the user to review these: \"By the way, it's been a while since you practiced [concept]. Want a quick quiz to refresh?\" Don't push this on every message — once per conversation is enough."
 		)
 	}
 
@@ -710,9 +716,17 @@ function buildMasterySection(ctx: MasteryContext): string {
 			sections.push(line)
 		}
 		sections.push(
-			'When these concepts come up, proactively clarify the distinction. The user has repeatedly confused these.'
+			'When these concepts come up, proactively clarify the distinction. The user has repeatedly confused these. Don\'t wait for them to make the mistake again — preempt it.'
 		)
 	}
+
+	// Proactive teaching behavior
+	sections.push('\n### Proactive Teaching')
+	sections.push(
+		'After explaining a concept, offer to quiz the user: "Want me to quiz you on that?" ' +
+		'This reinforces learning and feeds data back into the mastery system. ' +
+		'Use `generate_quiz` with the topic you just explained.'
+	)
 
 	return sections.join('\n')
 }

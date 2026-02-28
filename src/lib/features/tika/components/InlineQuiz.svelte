@@ -6,6 +6,8 @@
   - Visual quizzes with clickable pictograph grids
   - Motion pattern matching with color-coded chips
   - Text-based multiple choice and true/false
+  - Compact horizontal layout for 3-option text quizzes
+  - Multi-question sessions with auto-advance and score summary
   - Duolingo-inspired micro-interactions (green check, red X, confetti)
   - WCAG 2.2 compliant (48px touch targets, keyboard nav, reduced motion)
 -->
@@ -23,32 +25,46 @@
     onQuizComplete?: (quizId: string, topic: string, correct: boolean) => void;
   } = $props();
 
-  // State
+  // Session state for multi-question flow
+  let currentQuestionIndex = $state(0);
+  let sessionResults: boolean[] = $state([]);
+  let sessionComplete = $state(false);
+
+  const hasSession = $derived(
+    quiz.followUpQuizzes !== undefined && quiz.followUpQuizzes.length > 0
+  );
+  const totalQuestions = $derived(1 + (quiz.followUpQuizzes?.length ?? 0));
+  const currentQuiz: InlineQuiz = $derived(
+    currentQuestionIndex === 0
+      ? quiz
+      : quiz.followUpQuizzes?.[currentQuestionIndex - 1] ?? quiz
+  );
+  const isCompact = $derived(
+    currentQuiz.displayMode === "text" && currentQuiz.options.length === 3
+  );
+
+  // Per-question state
   type QuizState = "unanswered" | "processing" | "correct" | "incorrect";
   let quizState: QuizState = $state("unanswered");
   let selectedOptionId: string | null = $state(null);
   let showConfetti: boolean = $state(false);
 
-  // Find the correct option
-  const correctOption = $derived(quiz.options.find(opt => opt.correct));
-
   // Timer handles for cleanup
   let processingTimer: number | null = null;
   let confettiTimer: number | null = null;
+  let advanceTimer: number | null = null;
 
-  // Schedule a timeout with automatic cleanup on component destroy
   const _timer = window.setTimeout.bind(window);
   const scheduleTimeout = (fn: () => void, ms: number): number => _timer(fn, ms);
 
-  // Cleanup timers on destroy
   onMount(() => {
     return () => {
       if (processingTimer !== null) window.clearTimeout(processingTimer);
       if (confettiTimer !== null) window.clearTimeout(confettiTimer);
+      if (advanceTimer !== null) window.clearTimeout(advanceTimer);
     };
   });
 
-  // Check if reduced motion is preferred
   let prefersReducedMotion: boolean = $state(false);
 
   $effect(() => {
@@ -57,7 +73,7 @@
     }
   });
 
-  // Type guards for option types
+  // Type guards
   function isTextOption(opt: QuizOption): opt is TextQuizOption {
     return opt.type === "text";
   }
@@ -70,17 +86,17 @@
     return opt.type === "motion-pattern";
   }
 
-  // Handle option selection
   function selectOption(option: QuizOption) {
     if (quizState !== "unanswered") return;
 
     selectedOptionId = option.id;
     quizState = "processing";
 
-    // Brief delay for processing feel (100ms)
     processingTimer = scheduleTimeout(() => {
       processingTimer = null;
-      if (option.correct) {
+      const isCorrect = option.correct;
+
+      if (isCorrect) {
         quizState = "correct";
         if (!prefersReducedMotion) {
           showConfetti = true;
@@ -93,12 +109,36 @@
         quizState = "incorrect";
       }
 
-      // Notify parent of quiz completion for tracking
-      onQuizComplete?.(quiz.id, quiz.topic || quiz.id, option.correct);
+      onQuizComplete?.(currentQuiz.id, currentQuiz.topic || currentQuiz.id, isCorrect);
+
+      // Auto-advance after 1.5s if in a multi-question session
+      if (hasSession) {
+        advanceTimer = scheduleTimeout(() => {
+          advanceTimer = null;
+          sessionResults = [...sessionResults, isCorrect];
+
+          if (currentQuestionIndex >= totalQuestions - 1) {
+            sessionComplete = true;
+          } else {
+            currentQuestionIndex++;
+            quizState = "unanswered";
+            selectedOptionId = null;
+            showConfetti = false;
+          }
+        }, 1500);
+      }
     }, 100);
   }
 
-  // Keyboard navigation
+  function restartSession() {
+    currentQuestionIndex = 0;
+    sessionResults = [];
+    sessionComplete = false;
+    quizState = "unanswered";
+    selectedOptionId = null;
+    showConfetti = false;
+  }
+
   function handleKeydown(event: KeyboardEvent, option: QuizOption) {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
@@ -106,218 +146,249 @@
     }
   }
 
-  // Get option quizState class
   function getOptionClass(option: QuizOption): string {
     if (quizState === "unanswered" || quizState === "processing") {
       return selectedOptionId === option.id ? "selected" : "";
     }
-
-    if (option.correct) {
-      return "correct";
-    }
-
-    if (selectedOptionId === option.id && !option.correct) {
-      return "incorrect";
-    }
-
+    if (option.correct) return "correct";
+    if (selectedOptionId === option.id && !option.correct) return "incorrect";
     return "faded";
   }
 
-  // Get the correct letter for feedback (for pictograph quizzes)
-  function getCorrectLetterLabel(): string {
-    const correct = quiz.options.find(o => o.correct);
-    if (correct && isPictographOption(correct)) {
-      return correct.letter;
-    }
-    return "";
-  }
+  // Score color thresholds
+  const scorePercent = $derived(
+    sessionResults.length > 0
+      ? sessionResults.filter(Boolean).length / sessionResults.length
+      : 0
+  );
+  const scoreColorClass = $derived(
+    scorePercent >= 0.8 ? "score-good" : scorePercent >= 0.6 ? "score-ok" : "score-poor"
+  );
 </script>
 
-<figure class="inline-quiz" role="group" aria-labelledby="quiz-question-{quiz.id}">
-  <!-- Optional pictograph context (shown above question) -->
-  {#if quiz.pictograph}
-    <div class="quiz-visual">
-      <InlinePictograph
-        pictograph={{
-          type: "inline-pictograph",
-          letter: quiz.pictograph.letter,
-          variation: quiz.pictograph.variation,
-        }}
-        size={180}
-      />
+<figure class="inline-quiz" role="group" aria-labelledby="quiz-question-{currentQuiz.id}">
+  {#if sessionComplete}
+    <!-- Session Summary -->
+    <div class="session-summary" role="status" aria-live="polite">
+      <div class="summary-score {scoreColorClass}">
+        {sessionResults.filter(Boolean).length}/{sessionResults.length}
+      </div>
+      <p class="summary-label">
+        {scorePercent >= 0.8 ? "Nice work!" : scorePercent >= 0.6 ? "Getting there." : "Keep practicing."}
+      </p>
+      <div class="summary-dots" aria-label="Results: {sessionResults.map((r, i) => `Question ${i + 1}: ${r ? 'correct' : 'incorrect'}`).join(', ')}">
+        {#each sessionResults as result, i}
+          <span class="summary-dot {result ? 'correct' : 'incorrect'}" aria-hidden="true"></span>
+        {/each}
+      </div>
+      <button class="restart-button" onclick={restartSession}>
+        Try again
+      </button>
     </div>
-  {/if}
-
-  <!-- Question -->
-  <h4 class="quiz-question" id="quiz-question-{quiz.id}">
-    <span class="question-icon" aria-hidden="true">
-      {#if quiz.quizType === "true-false"}
-        <i class="fas fa-balance-scale"></i>
-      {:else if quiz.quizType === "pick-letter" || quiz.quizType === "odd-one-out"}
-        <i class="fas fa-hand-pointer"></i>
-      {:else if quiz.quizType === "match-motion"}
-        <i class="fas fa-arrows-alt"></i>
-      {:else}
-        <i class="fas fa-question-circle"></i>
-      {/if}
-    </span>
-    {quiz.question}
-  </h4>
-
-  <!-- Options - different rendering based on displayMode -->
-  {#if quiz.displayMode === "pictograph-grid"}
-    <!-- Pictograph Grid Display -->
-    <div
-      class="quiz-pictograph-grid"
-      role="radiogroup"
-      aria-labelledby="quiz-question-{quiz.id}"
-    >
-      {#each quiz.options as option (option.id)}
-        {#if isPictographOption(option)}
-          <button aria-label="Letter {option.letter}"
-            class="quiz-pictograph-option {getOptionClass(option)}"
-            onclick={() => selectOption(option)}
-            onkeydown={(e) => handleKeydown(e, option)}
-            disabled={quizState !== "unanswered"}
-            role="radio"
-            aria-checked={selectedOptionId === option.id}
-          >
-            <div class="pictograph-wrapper">
-              <InlinePictograph
-                pictograph={{
-                  type: "inline-pictograph",
-                  letter: option.letter,
-                  variation: option.variation,
-                }}
-                size={120}
-              />
-            </div>
-            <span class="pictograph-label">{option.letter}</span>
-            {#if quizState !== "unanswered"}
-              <span class="option-overlay" aria-hidden="true">
-                {#if option.correct}
-                  <i class="fas fa-check"></i>
-                {:else if selectedOptionId === option.id}
-                  <i class="fas fa-times"></i>
-                {/if}
-              </span>
-            {/if}
-          </button>
-        {/if}
-      {/each}
-    </div>
-
-  {:else if quiz.displayMode === "motion-chips"}
-    <!-- Motion Pattern Chips Display -->
-    <div
-      class="quiz-motion-chips"
-      role="radiogroup"
-      aria-labelledby="quiz-question-{quiz.id}"
-    >
-      {#each quiz.options as option (option.id)}
-        {#if isMotionPatternOption(option)}
-          <button aria-label="Blue {option.blueMotion}, Red {option.redMotion}"
-            class="quiz-motion-chip {getOptionClass(option)}"
-            onclick={() => selectOption(option)}
-            onkeydown={(e) => handleKeydown(e, option)}
-            disabled={quizState !== "unanswered"}
-            role="radio"
-            aria-checked={selectedOptionId === option.id}
-          >
-            <span class="motion-blue">
-              <span class="motion-dot blue"></span>
-              {option.blueMotion}
-            </span>
-            <span class="motion-separator">+</span>
-            <span class="motion-red">
-              <span class="motion-dot red"></span>
-              {option.redMotion}
-            </span>
-            {#if quizState !== "unanswered"}
-              <span class="chip-indicator" aria-hidden="true">
-                {#if option.correct}
-                  <i class="fas fa-check"></i>
-                {:else if selectedOptionId === option.id}
-                  <i class="fas fa-times"></i>
-                {/if}
-              </span>
-            {/if}
-          </button>
-        {/if}
-      {/each}
-    </div>
-
   {:else}
-    <!-- Text Options Display (default) -->
-    <div
-      class="quiz-options"
-      role="radiogroup"
-      aria-labelledby="quiz-question-{quiz.id}"
-    >
-      {#each quiz.options as option, index (option.id)}
-        {#if isTextOption(option)}
-          <button aria-label={option.text}
-            class="quiz-option {getOptionClass(option)}"
-            onclick={() => selectOption(option)}
-            onkeydown={(e) => handleKeydown(e, option)}
-            disabled={quizState !== "unanswered"}
-            role="radio"
-            aria-checked={selectedOptionId === option.id}
-            aria-disabled={quizState !== "unanswered"}
-          >
-            <span class="option-letter" aria-hidden="true">
-              {String.fromCharCode(65 + index)}
-            </span>
-            <span class="option-text">{option.text}</span>
-            <span class="option-indicator" aria-hidden="true">
-              {#if quizState !== "unanswered" && option.correct}
-                <i class="fas fa-check"></i>
-              {:else if quizState === "incorrect" && selectedOptionId === option.id}
-                <i class="fas fa-times"></i>
-              {/if}
-            </span>
-          </button>
-        {/if}
-      {/each}
-    </div>
-  {/if}
+    <!-- Progress indicator for multi-question sessions -->
+    {#if hasSession}
+      <div class="session-progress" aria-label="Question {currentQuestionIndex + 1} of {totalQuestions}">
+        <span class="progress-label">Question {currentQuestionIndex + 1} of {totalQuestions}</span>
+        <div class="progress-track">
+          <div
+            class="progress-fill"
+            style="width: {((currentQuestionIndex + 1) / totalQuestions) * 100}%"
+          ></div>
+        </div>
+      </div>
+    {/if}
 
-  <!-- Feedback -->
-  {#if quizState === "correct" || quizState === "incorrect"}
-    <div
-      class="quiz-feedback {quizState}"
-      role="status"
-      aria-live="polite"
-    >
-      <div class="feedback-header">
-        {#if quizState === "correct"}
-          <span class="feedback-icon correct" aria-hidden="true">
-            <i class="fas fa-check-circle"></i>
-          </span>
-          <span class="feedback-title">Correct!</span>
+    <!-- Optional pictograph context (shown above question) -->
+    {#if currentQuiz.pictograph}
+      <div class="quiz-visual">
+        <InlinePictograph
+          pictograph={{
+            type: "inline-pictograph",
+            letter: currentQuiz.pictograph.letter,
+            variation: currentQuiz.pictograph.variation,
+            propType: currentQuiz.pictograph.propType,
+          }}
+          size={180}
+        />
+      </div>
+    {/if}
+
+    <!-- Question -->
+    <h4 class="quiz-question" id="quiz-question-{currentQuiz.id}">
+      <span class="question-icon" aria-hidden="true">
+        {#if currentQuiz.quizType === "true-false"}
+          <i class="fas fa-balance-scale"></i>
+        {:else if currentQuiz.quizType === "pick-letter" || currentQuiz.quizType === "odd-one-out"}
+          <i class="fas fa-hand-pointer"></i>
+        {:else if currentQuiz.quizType === "match-motion"}
+          <i class="fas fa-arrows-alt"></i>
         {:else}
-          <span class="feedback-icon incorrect" aria-hidden="true">
-            <i class="fas fa-times-circle"></i>
-          </span>
-          <span class="feedback-title">Not quite</span>
+          <i class="fas fa-question-circle"></i>
+        {/if}
+      </span>
+      {currentQuiz.question}
+    </h4>
+
+    <!-- Options - different rendering based on displayMode -->
+    {#if currentQuiz.displayMode === "pictograph-grid"}
+      <!-- Pictograph Grid Display -->
+      <div
+        class="quiz-pictograph-grid"
+        role="radiogroup"
+        aria-labelledby="quiz-question-{currentQuiz.id}"
+      >
+        {#each currentQuiz.options as option (option.id)}
+          {#if isPictographOption(option)}
+            <button aria-label="Letter {option.letter}"
+              class="quiz-pictograph-option {getOptionClass(option)}"
+              onclick={() => selectOption(option)}
+              onkeydown={(e) => handleKeydown(e, option)}
+              disabled={quizState !== "unanswered"}
+              role="radio"
+              aria-checked={selectedOptionId === option.id}
+            >
+              <div class="pictograph-wrapper">
+                <InlinePictograph
+                  pictograph={{
+                    type: "inline-pictograph",
+                    letter: option.letter,
+                    variation: option.variation,
+                  }}
+                  size={120}
+                />
+              </div>
+              <span class="pictograph-label">{option.letter}</span>
+              {#if quizState !== "unanswered"}
+                <span class="option-overlay" aria-hidden="true">
+                  {#if option.correct}
+                    <i class="fas fa-check"></i>
+                  {:else if selectedOptionId === option.id}
+                    <i class="fas fa-times"></i>
+                  {/if}
+                </span>
+              {/if}
+            </button>
+          {/if}
+        {/each}
+      </div>
+
+    {:else if currentQuiz.displayMode === "motion-chips"}
+      <!-- Motion Pattern Chips Display -->
+      <div
+        class="quiz-motion-chips"
+        role="radiogroup"
+        aria-labelledby="quiz-question-{currentQuiz.id}"
+      >
+        {#each currentQuiz.options as option (option.id)}
+          {#if isMotionPatternOption(option)}
+            <button aria-label="Blue {option.blueMotion}, Red {option.redMotion}"
+              class="quiz-motion-chip {getOptionClass(option)}"
+              onclick={() => selectOption(option)}
+              onkeydown={(e) => handleKeydown(e, option)}
+              disabled={quizState !== "unanswered"}
+              role="radio"
+              aria-checked={selectedOptionId === option.id}
+            >
+              <span class="motion-blue">
+                <span class="motion-dot blue"></span>
+                {option.blueMotion}
+              </span>
+              <span class="motion-separator">+</span>
+              <span class="motion-red">
+                <span class="motion-dot red"></span>
+                {option.redMotion}
+              </span>
+              {#if quizState !== "unanswered"}
+                <span class="chip-indicator" aria-hidden="true">
+                  {#if option.correct}
+                    <i class="fas fa-check"></i>
+                  {:else if selectedOptionId === option.id}
+                    <i class="fas fa-times"></i>
+                  {/if}
+                </span>
+              {/if}
+            </button>
+          {/if}
+        {/each}
+      </div>
+
+    {:else}
+      <!-- Text Options Display (default) -->
+      <div
+        class="quiz-options {isCompact ? 'compact' : ''}"
+        role="radiogroup"
+        aria-labelledby="quiz-question-{currentQuiz.id}"
+      >
+        {#each currentQuiz.options as option, index (option.id)}
+          {#if isTextOption(option)}
+            <button aria-label={option.text}
+              class="quiz-option {getOptionClass(option)}"
+              onclick={() => selectOption(option)}
+              onkeydown={(e) => handleKeydown(e, option)}
+              disabled={quizState !== "unanswered"}
+              role="radio"
+              aria-checked={selectedOptionId === option.id}
+              aria-disabled={quizState !== "unanswered"}
+            >
+              {#if !isCompact}
+                <span class="option-letter" aria-hidden="true">
+                  {String.fromCharCode(65 + index)}
+                </span>
+              {/if}
+              <span class="option-text">{option.text}</span>
+              {#if !isCompact}
+                <span class="option-indicator" aria-hidden="true">
+                  {#if quizState !== "unanswered" && option.correct}
+                    <i class="fas fa-check"></i>
+                  {:else if quizState === "incorrect" && selectedOptionId === option.id}
+                    <i class="fas fa-times"></i>
+                  {/if}
+                </span>
+              {/if}
+            </button>
+          {/if}
+        {/each}
+      </div>
+    {/if}
+
+    <!-- Feedback -->
+    {#if quizState === "correct" || quizState === "incorrect"}
+      <div
+        class="quiz-feedback {quizState}"
+        role="status"
+        aria-live="polite"
+      >
+        <div class="feedback-header">
+          {#if quizState === "correct"}
+            <span class="feedback-icon correct" aria-hidden="true">
+              <i class="fas fa-check-circle"></i>
+            </span>
+            <span class="feedback-title">Correct!</span>
+          {:else}
+            <span class="feedback-icon incorrect" aria-hidden="true">
+              <i class="fas fa-times-circle"></i>
+            </span>
+            <span class="feedback-title">Not quite</span>
+          {/if}
+        </div>
+        <p class="feedback-message">
+          {quizState === "correct" ? currentQuiz.correctFeedback : currentQuiz.incorrectFeedback}
+        </p>
+        {#if currentQuiz.explanation && quizState === "incorrect"}
+          <p class="feedback-explanation">{currentQuiz.explanation}</p>
         {/if}
       </div>
-      <p class="feedback-message">
-        {quizState === "correct" ? quiz.correctFeedback : quiz.incorrectFeedback}
-      </p>
-      {#if quiz.explanation && quizState === "incorrect"}
-        <p class="feedback-explanation">{quiz.explanation}</p>
-      {/if}
-    </div>
-  {/if}
+    {/if}
 
-  <!-- Confetti (only shown briefly on correct answer) -->
-  {#if showConfetti}
-    <div class="confetti-container" aria-hidden="true">
-      {#each Array(8) as _, i}
-        <span class="confetti" style="--delay: {i * 0.1}s; --x: {(i - 4) * 15}px;"></span>
-      {/each}
-    </div>
+    <!-- Confetti (only shown briefly on correct answer) -->
+    {#if showConfetti}
+      <div class="confetti-container" aria-hidden="true">
+        {#each Array(8) as _, i}
+          <span class="confetti" style="--delay: {i * 0.1}s; --x: {(i - 4) * 15}px;"></span>
+        {/each}
+      </div>
+    {/if}
   {/if}
 </figure>
 
@@ -355,6 +426,111 @@
     justify-content: center;
     color: var(--theme-accent, #6366f1);
     font-size: 18px;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     Session Progress
+     ═══════════════════════════════════════════════════════════════════════════ */
+  .session-progress {
+    margin-bottom: 16px;
+  }
+
+  .progress-label {
+    display: block;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    margin-bottom: 6px;
+  }
+
+  .progress-track {
+    height: 4px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--theme-accent, #6366f1);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     Session Summary
+     ═══════════════════════════════════════════════════════════════════════════ */
+  .session-summary {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 24px 16px;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .summary-score {
+    font-size: 36px;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .summary-score.score-good {
+    color: var(--semantic-success, #22c55e);
+  }
+
+  .summary-score.score-ok {
+    color: var(--semantic-warning, #f59e0b);
+  }
+
+  .summary-score.score-poor {
+    color: var(--semantic-error, #ef4444);
+  }
+
+  .summary-label {
+    margin: 0;
+    font-size: 15px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
+  }
+
+  .summary-dots {
+    display: flex;
+    gap: 6px;
+  }
+
+  .summary-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .summary-dot.correct {
+    background: var(--semantic-success, #22c55e);
+  }
+
+  .summary-dot.incorrect {
+    background: var(--semantic-error, #ef4444);
+  }
+
+  .restart-button {
+    margin-top: 4px;
+    padding: 10px 24px;
+    background: var(--theme-accent, #6366f1);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+  }
+
+  .restart-button:hover {
+    opacity: 0.85;
+  }
+
+  .restart-button:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
   }
 
   /* ═══════════════════════════════════════════════════════════════════════════
@@ -552,6 +728,11 @@
     gap: 10px;
   }
 
+  .quiz-options.compact {
+    flex-direction: row;
+    gap: 8px;
+  }
+
   .quiz-option {
     display: flex;
     align-items: center;
@@ -567,6 +748,14 @@
     text-align: left;
     cursor: pointer;
     transition: all 0.15s ease;
+  }
+
+  .quiz-options.compact .quiz-option {
+    flex: 1;
+    justify-content: center;
+    text-align: center;
+    padding: 12px 8px;
+    gap: 0;
   }
 
   .quiz-option:hover:not(:disabled) {
@@ -599,6 +788,10 @@
 
   .option-text {
     flex: 1;
+  }
+
+  .quiz-options.compact .option-text {
+    flex: none;
   }
 
   .option-indicator {
@@ -778,8 +971,13 @@
     .quiz-option,
     .quiz-pictograph-option,
     .quiz-motion-chip,
-    .quiz-feedback {
+    .quiz-feedback,
+    .session-summary {
       animation: none;
+      transition: none;
+    }
+
+    .progress-fill {
       transition: none;
     }
 
@@ -813,6 +1011,12 @@
 
     .quiz-question {
       font-size: 15px;
+    }
+  }
+
+  @media (max-width: 360px) {
+    .quiz-options.compact {
+      flex-direction: column;
     }
   }
 </style>
