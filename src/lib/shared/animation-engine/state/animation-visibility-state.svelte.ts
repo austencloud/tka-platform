@@ -5,6 +5,9 @@
  * Independent from pictograph visibility but can sync from it.
  */
 
+import type { CharcoalSparkParams } from "../domain/types/CharcoalSparkTypes";
+import { DEFAULT_CHARCOAL_PARAMS } from "../domain/types/CharcoalSparkTypes";
+
 type VisibilityObserver = () => void;
 
 /**
@@ -43,7 +46,7 @@ interface AnimationVisibilitySettings {
   fireColorBlend: number; // 0 = natural fire, 1 = prop-colored (continuous slider)
   fireSmokeLevel: number; // 0 = clean burn, 1 = heavy smoke (continuous slider)
   fireUseCharcoal: boolean; // false = normal fire, true = charcoal (gravity-heavy fluid preset)
-  charcoalPresetId: string; // Active charcoal preset ID
+  charcoalParams: import("../domain/types/CharcoalSparkTypes").CharcoalSparkParams; // Charcoal spark tuning params
   fireIntensity: number; // User intensity slider value (0.0-1.0)
 
   // LED Effects
@@ -116,7 +119,7 @@ export class AnimationVisibilityStateManager {
       fireColorBlend: 0.5, // Halfway between natural and prop-colored
       fireSmokeLevel: 0.1, // Light smoke
       fireUseCharcoal: false, // Fluid fire by default
-      charcoalPresetId: "steel-wool", // Default charcoal preset
+      charcoalParams: { ...DEFAULT_CHARCOAL_PARAMS }, // Default charcoal spark params
       fireIntensity: 0.7, // 0-1 range, 0.7 = normal fire
 
       // LED Effects
@@ -187,7 +190,16 @@ export class AnimationVisibilityStateManager {
         if (!("fireColorBlend" in parsed)) parsed.fireColorBlend = 0.5;
         if (!("fireSmokeLevel" in parsed)) parsed.fireSmokeLevel = 0.1;
         if (!("fireUseCharcoal" in parsed)) parsed.fireUseCharcoal = false;
-        if (!("charcoalPresetId" in parsed)) parsed.charcoalPresetId = "steel-wool";
+        // Migrate old charcoalPresetId → charcoalParams
+        if ("charcoalPresetId" in parsed) {
+          delete parsed.charcoalPresetId;
+        }
+        if (!("charcoalParams" in parsed)) {
+          parsed.charcoalParams = { ...DEFAULT_CHARCOAL_PARAMS };
+        } else if ("tangentialBias" in (parsed.charcoalParams as Record<string, unknown>)) {
+          // Migrate from old tangentialBias/initialSpeed model → velocity-inheritance model
+          parsed.charcoalParams = { ...DEFAULT_CHARCOAL_PARAMS };
+        }
         if (!("fireIntensity" in parsed)) parsed.fireIntensity = 0.7;
 
         // Clean up removed keys
@@ -262,7 +274,7 @@ export class AnimationVisibilityStateManager {
   getVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "charcoalPresetId" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor"
     >
   ): boolean {
     return this.settings[key] as boolean;
@@ -286,7 +298,7 @@ export class AnimationVisibilityStateManager {
   setVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "charcoalPresetId" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor"
     >,
     visible: boolean
   ): void {
@@ -565,12 +577,18 @@ export class AnimationVisibilityStateManager {
     this.notifyObservers();
   }
 
-  getCharcoalPresetId(): string {
-    return this.settings.charcoalPresetId;
+  getCharcoalParams(): CharcoalSparkParams {
+    return { ...this.settings.charcoalParams };
   }
 
-  setCharcoalPresetId(presetId: string): void {
-    this.settings.charcoalPresetId = presetId;
+  setCharcoalParams(params: CharcoalSparkParams): void {
+    this.settings.charcoalParams = { ...params };
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  updateCharcoalParam<K extends keyof CharcoalSparkParams>(key: K, value: CharcoalSparkParams[K]): void {
+    this.settings.charcoalParams[key] = value;
     this.saveToStorage();
     this.notifyObservers();
   }
@@ -666,7 +684,7 @@ export class AnimationVisibilityStateManager {
   toggleVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "charcoalPresetId" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor"
     >
   ): void {
     this.setVisibility(key, !(this.settings[key] as boolean));

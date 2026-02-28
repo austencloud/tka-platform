@@ -80,10 +80,28 @@ export const PROP_DIMENSIONS: Record<string, PropDimensions> = {
   quiad: { width: 300, height: 300 },
 
   // Contact ball family
-  contactball: { width: 160, height: 160 },
-  bigcontactball: { width: 300, height: 300 },
-  doublecontactball: { width: 300, height: 160 },
+  contactball: { width: 300, height: 150 },
+  bigcontactball: { width: 600, height: 300 },
+  doublecontactball: { width: 300, height: 150 },
   bigdoublecontactball: { width: 600, height: 300 },
+
+  // Glass ball family
+  glassball: { width: 300, height: 150 },
+  doubleglassball: { width: 300, height: 150 },
+  bigglassball: { width: 600, height: 300 },
+  bigdoubleglassball: { width: 600, height: 300 },
+
+  // PMMA ball family
+  pmmaball: { width: 300, height: 150 },
+  doublepmmaball: { width: 300, height: 150 },
+  bigpmmaball: { width: 600, height: 300 },
+  bigdoublepmmaball: { width: 600, height: 300 },
+
+  // Frosted ball family
+  frostedball: { width: 300, height: 150 },
+  doublefrostedball: { width: 300, height: 150 },
+  bigfrostedball: { width: 600, height: 300 },
+  bigdoublefrostedball: { width: 600, height: 300 },
 
   // Torch family
   torch: { width: 300, height: 15.5 },

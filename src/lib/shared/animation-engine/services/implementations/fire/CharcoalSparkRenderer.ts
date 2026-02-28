@@ -27,10 +27,7 @@ import type {
 	CharcoalSpark,
 	CharcoalSparkParams,
 } from "../../../domain/types/CharcoalSparkTypes";
-import {
-	DEFAULT_CHARCOAL_PRESET,
-	CHARCOAL_PRESETS,
-} from "../../../domain/types/CharcoalSparkTypes";
+import { DEFAULT_CHARCOAL_PARAMS } from "../../../domain/types/CharcoalSparkTypes";
 
 // ============================================================================
 // Constants
@@ -38,8 +35,11 @@ import {
 
 const MAX_DPR = 2;
 
-/** Viewbox coordinate space (matches the Canvas2D animation viewbox) */
-const VIEWBOX_SIZE = 950;
+/**
+ * Tip positions from FireTipTracker are in canvas-pixel space
+ * (0..canvasSize), NOT the fixed 950 viewbox. We read the actual
+ * canvas size from FireFrameInput.canvasWidth / canvasHeight each frame.
+ */
 
 // ============================================================================
 // Shader Sources (GLSL 300 ES)
@@ -182,8 +182,8 @@ export class CharcoalSparkRenderer implements IFireOverlayRenderer {
 	// Ambient emission accumulator per tip (fractional spark carry)
 	private ambientAccumulators: Map<string, number> = new Map();
 
-	// Current params (resolved from preset each frame)
-	private currentParams: CharcoalSparkParams = DEFAULT_CHARCOAL_PRESET.params;
+	// Current params (updated externally via setParams)
+	private currentParams: CharcoalSparkParams = { ...DEFAULT_CHARCOAL_PARAMS };
 
 	// ======================================================================
 	// IFireOverlayRenderer implementation
@@ -257,11 +257,6 @@ export class CharcoalSparkRenderer implements IFireOverlayRenderer {
 	renderFire(input: FireFrameInput, config: FireOverlayConfig): void {
 		if (!this.initialized || !this.gl || !this.canvas) return;
 
-		// Resolve preset from config
-		const presetId = (config as unknown as Record<string, unknown>)
-			.charcoalPresetId as string | undefined;
-		this.resolvePreset(presetId);
-
 		// Compute delta time
 		const now = input.currentTime;
 		let dt = Math.min((now - this.lastTime) / 1000, 0.033);
@@ -317,21 +312,16 @@ export class CharcoalSparkRenderer implements IFireOverlayRenderer {
 	}
 
 	// ======================================================================
-	// Preset resolution
+	// Parameter updates
 	// ======================================================================
 
-	private resolvePreset(presetId: string | undefined): void {
-		if (!presetId) {
-			this.currentParams = DEFAULT_CHARCOAL_PRESET.params;
-			return;
-		}
+	/** Update spark params from external sliders. Only reallocates pool when maxParticles changes. */
+	setParams(params: CharcoalSparkParams): void {
+		const poolChanged = params.maxParticles !== this.maxParticles;
+		this.currentParams = params;
 
-		const found = CHARCOAL_PRESETS.find((p) => p.id === presetId);
-		this.currentParams = found ? found.params : DEFAULT_CHARCOAL_PRESET.params;
-
-		// Resize pool if preset demands different max
-		if (this.currentParams.maxParticles !== this.maxParticles) {
-			this.allocateParticlePool(this.currentParams.maxParticles);
+		if (poolChanged) {
+			this.allocateParticlePool(params.maxParticles);
 			this.resizeGPUBuffers();
 		}
 	}
@@ -384,12 +374,15 @@ export class CharcoalSparkRenderer implements IFireOverlayRenderer {
 			}
 		}
 
-		// Ambient emission during sustained movement
+		// Ambient emission during sustained movement — scaled by speed.
+		// Slow crawl = barely any embers. Fast spin = a gentle trailing trickle.
+		// The real drama comes from bursts on momentum switches, not ambient.
 		if (tip.speed > params.ambientSpeedThreshold) {
 			const tipKey = `${tip.propIndex}_${tip.tipIndex}`;
+			const speedFactor = Math.min(tip.speed / 300, 1.0); // normalize: 300 vu/s = full rate
 			const accumulated =
 				(this.ambientAccumulators.get(tipKey) ?? 0) +
-				params.ambientRate * dt;
+				params.ambientRate * speedFactor * dt;
 			const toEmit = Math.floor(accumulated);
 
 			this.ambientAccumulators.set(tipKey, accumulated - toEmit);
@@ -405,27 +398,30 @@ export class CharcoalSparkRenderer implements IFireOverlayRenderer {
 		const slot = this.findInactiveSlot();
 		if (!slot) return;
 
-		// Compute initial velocity direction
-		// Blend between tangential (prop motion direction) and random
-		const tipAngle = Math.atan2(tip.velocityY, tip.velocityX);
-		const randomAngle = Math.random() * Math.PI * 2;
+		// Inherit a fraction of the tip's velocity vector.
+		// This is the key to realistic charcoal physics:
+		// - The spark moves roughly where the tip was going
+		// - But slower, so the tip "leaves it behind"
+		// - On sudden stop, inherited velocity carries sparks forward
+		const inheritedVx = tip.velocityX * params.velocityInheritance;
+		const inheritedVy = tip.velocityY * params.velocityInheritance;
 
-		const blendedAngle =
-			tipAngle * params.tangentialBias +
-			randomAngle * (1.0 - params.tangentialBias);
+		// Add random perturbation centered on the tip's velocity direction.
+		// If the tip is nearly stationary, use a fully random direction.
+		const perturbAngle =
+			tip.speed > 1
+				? Math.atan2(tip.velocityY, tip.velocityX) +
+					(Math.random() - 0.5) * 2.0 * params.spreadAngle
+				: Math.random() * Math.PI * 2;
 
-		// Apply spread as random rotation around the blended direction
-		const spread = (Math.random() - 0.5) * 2.0 * params.spreadAngle;
-		const finalAngle = blendedAngle + spread;
-
-		const speed =
-			params.initialSpeedMin +
-			Math.random() * (params.initialSpeedMax - params.initialSpeedMin);
+		const perturbSpeed =
+			params.perturbSpeedMin +
+			Math.random() * (params.perturbSpeedMax - params.perturbSpeedMin);
 
 		slot.x = tip.x;
 		slot.y = tip.y;
-		slot.vx = Math.cos(finalAngle) * speed;
-		slot.vy = Math.sin(finalAngle) * speed;
+		slot.vx = inheritedVx + Math.cos(perturbAngle) * perturbSpeed;
+		slot.vy = inheritedVy + Math.sin(perturbAngle) * perturbSpeed;
 		slot.maxLife =
 			params.lifetimeMin +
 			Math.random() * (params.lifetimeMax - params.lifetimeMin);
@@ -512,7 +508,7 @@ export class CharcoalSparkRenderer implements IFireOverlayRenderer {
 		gl.clear(gl.COLOR_BUFFER_BIT);
 
 		const resolution: [number, number] = [canvas.width, canvas.height];
-		const viewbox: [number, number] = [VIEWBOX_SIZE, VIEWBOX_SIZE];
+		const viewbox: [number, number] = [input.canvasWidth, input.canvasHeight];
 
 		this.drawSparks(gl, params, resolution, viewbox);
 		this.drawEmberGlows(gl, params, input.tips, resolution, viewbox);

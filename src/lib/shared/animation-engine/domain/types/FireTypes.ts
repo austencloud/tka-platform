@@ -76,6 +76,12 @@ export interface FireFrameInput {
   loopDetected?: boolean;
   /** Playback speed multiplier (1.0 = 60 BPM). Used for cache invalidation — different speeds produce different fire physics. */
   playbackSpeed?: number;
+  /** Current animation step (0 to totalSteps). Used for step-indexed cache playback. */
+  currentStep?: number;
+  /** Sequence length in steps. Used with currentStep for progress-based cache lookup. */
+  totalSteps?: number;
+  /** Changes when the sequence content changes. Invalidates fire cache so stale frames don't replay over new props. */
+  sequenceContentHash?: string;
 }
 
 /**
@@ -154,8 +160,8 @@ export interface FireOverlayConfig {
   fuelRendererType?: FuelRendererType;
   /** Color curve for the fluid renderer display pass */
   colorCurve?: FireColorCurve;
-  /** Active charcoal spark preset ID (only used when useCharcoal is true) */
-  charcoalPresetId?: string;
+  /** Charcoal spark params (only used when useCharcoal is true) */
+  charcoalParams?: import("./CharcoalSparkTypes").CharcoalSparkParams;
   /** Smoke opacity in display shader (0.0 = no smoke, 0.5 = heavy smoke, default per fuel) */
   smokeOpacity?: number;
   /** HDR bloom strength (0.0 = no bloom, 0.04-0.15 = subtle glow, default 0.08) */

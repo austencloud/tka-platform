@@ -67,14 +67,14 @@ export interface CharcoalSparkParams {
 	gravity: number;
 	/** Velocity decay per second (0-1). 1 = no drag, 0.5 = halves each second. */
 	drag: number;
-	/** Minimum initial spark speed (viewbox units/s) */
-	initialSpeedMin: number;
-	/** Maximum initial spark speed (viewbox units/s) */
-	initialSpeedMax: number;
-	/** Half-angle of emission cone (radians). PI = full sphere. */
+	/** Fraction of tip velocity inherited by each spark [0-1]. Higher = sparks fly where the tip was going. */
+	velocityInheritance: number;
+	/** Minimum random perturbation speed added on top of inherited velocity (viewbox units/s) */
+	perturbSpeedMin: number;
+	/** Maximum random perturbation speed added on top of inherited velocity (viewbox units/s) */
+	perturbSpeedMax: number;
+	/** Half-angle of perturbation cone centered on tip's velocity direction (radians). PI = full sphere. */
 	spreadAngle: number;
-	/** Fraction of initial velocity taken from tip's tangential direction [0-1] */
-	tangentialBias: number;
 
 	// -- Appearance --
 	/** Minimum spark lifetime (seconds) */
@@ -108,159 +108,88 @@ export interface CharcoalSparkParams {
 }
 
 // ============================================================================
-// Presets
+// Default Parameters (steel-wool baseline)
 // ============================================================================
 
-/** A named preset bundling an ID, label, and full parameter set. */
-export interface CharcoalSparkPreset {
-	id: string;
+/** Default charcoal spark parameters — balanced steel-wool starting point. */
+export const DEFAULT_CHARCOAL_PARAMS: CharcoalSparkParams = {
+	burstThreshold: 120,
+	burstMultiplier: 25,
+	burstMax: 120,
+	ambientRate: 10,
+	ambientSpeedThreshold: 15,
+	gravity: 250,
+	drag: 0.93,
+	velocityInheritance: 0.45,
+	perturbSpeedMin: 30,
+	perturbSpeedMax: 120,
+	spreadAngle: Math.PI * 0.4,
+	lifetimeMin: 0.6,
+	lifetimeMax: 1.6,
+	sizeMin: 5,
+	sizeMax: 12,
+	shrinkOverLife: true,
+	coreColor: [255, 242, 210],
+	midColor: [255, 150, 35],
+	coolColor: [170, 45, 2],
+	emberGlowRadius: 22,
+	emberGlowIntensity: 1.6,
+	maxParticles: 600,
+};
+
+// ============================================================================
+// Slider Definitions (for UI generation)
+// ============================================================================
+
+/** Metadata for a single slider in the charcoal tuning UI. */
+export interface CharcoalSliderDef {
+	key: keyof CharcoalSparkParams;
 	label: string;
-	params: CharcoalSparkParams;
+	min: number;
+	max: number;
+	step: number;
+	/** Format the raw value for display */
+	format?: (v: number) => string;
 }
 
-/** Five tuning presets covering the range of charcoal/steel-wool aesthetics. */
-export const CHARCOAL_PRESETS: CharcoalSparkPreset[] = [
+/** Grouped slider definitions for the charcoal tuning panel. */
+export const CHARCOAL_SLIDER_GROUPS: { label: string; sliders: CharcoalSliderDef[] }[] = [
 	{
-		id: "dense-shower",
-		label: "Dense Shower",
-		params: {
-			burstThreshold: 200,
-			burstMultiplier: 15,
-			burstMax: 80,
-			ambientRate: 60,
-			ambientSpeedThreshold: 10,
-			gravity: 600,
-			drag: 0.92,
-			initialSpeedMin: 150,
-			initialSpeedMax: 500,
-			spreadAngle: Math.PI * 0.6,
-			tangentialBias: 0.4,
-			lifetimeMin: 0.4,
-			lifetimeMax: 1.2,
-			sizeMin: 4,
-			sizeMax: 10,
-			shrinkOverLife: true,
-			coreColor: [255, 240, 200],
-			midColor: [255, 140, 30],
-			coolColor: [180, 50, 5],
-			emberGlowRadius: 20,
-			emberGlowIntensity: 1.5,
-			maxParticles: 800,
-		},
+		label: "Emission",
+		sliders: [
+			{ key: "burstThreshold", label: "Burst Threshold", min: 50, max: 500, step: 10 },
+			{ key: "burstMultiplier", label: "Burst Multiplier", min: 1, max: 30, step: 1 },
+			{ key: "burstMax", label: "Burst Max", min: 10, max: 200, step: 5 },
+			{ key: "ambientRate", label: "Ambient Rate", min: 5, max: 120, step: 5 },
+			{ key: "ambientSpeedThreshold", label: "Speed Threshold", min: 1, max: 50, step: 1 },
+		],
 	},
 	{
-		id: "lazy-arc",
-		label: "Lazy Arc",
-		params: {
-			burstThreshold: 150,
-			burstMultiplier: 8,
-			burstMax: 40,
-			ambientRate: 25,
-			ambientSpeedThreshold: 10,
-			gravity: 200,
-			drag: 0.96,
-			initialSpeedMin: 100,
-			initialSpeedMax: 300,
-			spreadAngle: Math.PI * 0.4,
-			tangentialBias: 0.6,
-			lifetimeMin: 1.0,
-			lifetimeMax: 2.5,
-			sizeMin: 6,
-			sizeMax: 14,
-			shrinkOverLife: true,
-			coreColor: [255, 245, 220],
-			midColor: [255, 160, 40],
-			coolColor: [160, 40, 0],
-			emberGlowRadius: 25,
-			emberGlowIntensity: 1.8,
-			maxParticles: 500,
-		},
+		label: "Physics",
+		sliders: [
+			{ key: "gravity", label: "Gravity", min: 50, max: 1200, step: 25 },
+			{ key: "drag", label: "Drag", min: 0.8, max: 0.99, step: 0.01, format: (v) => v.toFixed(2) },
+			{ key: "velocityInheritance", label: "Vel. Inherit", min: 0, max: 1, step: 0.05, format: (v) => v.toFixed(2) },
+			{ key: "perturbSpeedMin", label: "Perturb Min", min: 0, max: 200, step: 5 },
+			{ key: "perturbSpeedMax", label: "Perturb Max", min: 10, max: 400, step: 10 },
+			{ key: "spreadAngle", label: "Spread Angle", min: 0.1, max: Math.PI, step: 0.05, format: (v) => `${(v * 180 / Math.PI).toFixed(0)}°` },
+		],
 	},
 	{
-		id: "steel-wool",
-		label: "Steel Wool",
-		params: {
-			burstThreshold: 180,
-			burstMultiplier: 12,
-			burstMax: 60,
-			ambientRate: 40,
-			ambientSpeedThreshold: 10,
-			gravity: 400,
-			drag: 0.94,
-			initialSpeedMin: 120,
-			initialSpeedMax: 400,
-			spreadAngle: Math.PI * 0.5,
-			tangentialBias: 0.5,
-			lifetimeMin: 0.6,
-			lifetimeMax: 1.6,
-			sizeMin: 5,
-			sizeMax: 12,
-			shrinkOverLife: true,
-			coreColor: [255, 242, 210],
-			midColor: [255, 150, 35],
-			coolColor: [170, 45, 2],
-			emberGlowRadius: 22,
-			emberGlowIntensity: 1.6,
-			maxParticles: 600,
-		},
+		label: "Appearance",
+		sliders: [
+			{ key: "lifetimeMin", label: "Life Min", min: 0.1, max: 2, step: 0.1, format: (v) => `${v.toFixed(1)}s` },
+			{ key: "lifetimeMax", label: "Life Max", min: 0.5, max: 4, step: 0.1, format: (v) => `${v.toFixed(1)}s` },
+			{ key: "sizeMin", label: "Size Min", min: 1, max: 20, step: 1 },
+			{ key: "sizeMax", label: "Size Max", min: 2, max: 30, step: 1 },
+			{ key: "emberGlowRadius", label: "Glow Radius", min: 5, max: 60, step: 1 },
+			{ key: "emberGlowIntensity", label: "Glow Intensity", min: 0.2, max: 4, step: 0.1, format: (v) => v.toFixed(1) },
+		],
 	},
 	{
-		id: "campfire-pop",
-		label: "Campfire Pop",
-		params: {
-			burstThreshold: 400,
-			burstMultiplier: 20,
-			burstMax: 100,
-			ambientRate: 10,
-			ambientSpeedThreshold: 30,
-			gravity: 350,
-			drag: 0.93,
-			initialSpeedMin: 200,
-			initialSpeedMax: 600,
-			spreadAngle: Math.PI * 0.7,
-			tangentialBias: 0.3,
-			lifetimeMin: 0.8,
-			lifetimeMax: 2.0,
-			sizeMin: 6,
-			sizeMax: 16,
-			shrinkOverLife: false,
-			coreColor: [255, 255, 240],
-			midColor: [255, 180, 50],
-			coolColor: [200, 60, 5],
-			emberGlowRadius: 28,
-			emberGlowIntensity: 2.0,
-			maxParticles: 500,
-		},
-	},
-	{
-		id: "ember-rain",
-		label: "Ember Rain",
-		params: {
-			burstThreshold: 100,
-			burstMultiplier: 5,
-			burstMax: 30,
-			ambientRate: 80,
-			ambientSpeedThreshold: 5,
-			gravity: 300,
-			drag: 0.97,
-			initialSpeedMin: 60,
-			initialSpeedMax: 200,
-			spreadAngle: Math.PI * 0.3,
-			tangentialBias: 0.7,
-			lifetimeMin: 0.8,
-			lifetimeMax: 2.0,
-			sizeMin: 3,
-			sizeMax: 8,
-			shrinkOverLife: false,
-			coreColor: [255, 220, 180],
-			midColor: [230, 120, 20],
-			coolColor: [140, 35, 0],
-			emberGlowRadius: 18,
-			emberGlowIntensity: 1.4,
-			maxParticles: 1000,
-		},
+		label: "Pool",
+		sliders: [
+			{ key: "maxParticles", label: "Max Particles", min: 100, max: 2000, step: 50 },
+		],
 	},
 ];
-
-/** Default preset: steel-wool (balanced starting point for tuning). */
-export const DEFAULT_CHARCOAL_PRESET: CharcoalSparkPreset = CHARCOAL_PRESETS[2]!;

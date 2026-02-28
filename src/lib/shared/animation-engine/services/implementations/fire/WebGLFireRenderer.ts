@@ -284,7 +284,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     const cache = this.frameCache;
     if (cache) {
       // Compute config hash for invalidation (includes playback speed — different BPM = different fire physics)
-      const hash = this.computeConfigHash(config, input.playbackSpeed);
+      const hash = this.computeConfigHash(config, input.playbackSpeed, input.sequenceContentHash);
 
       // Invalidate cache if config changed
       if (hash !== this.lastConfigHash) {
@@ -319,7 +319,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
 
       // If cache is warm, skip simulation entirely and blit from cache
       if (cache.isWarm()) {
-        if (cache.blitCachedFrame()) {
+        if (cache.blitCachedFrame(input.currentStep, input.totalSteps)) {
           return; // Done — no simulation needed
         }
         // Cache exhausted (shouldn't happen), fall through to live simulation
@@ -348,8 +348,8 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
    * Includes playback speed because different BPMs produce different tip velocities,
    * which change the fire physics (buoyancy, turbulence, trail shape).
    */
-  private computeConfigHash(config: FireOverlayConfig, playbackSpeed?: number): string {
-    return `${config.fuelSourceId ?? "default"}_${config.intensity}_${config.flameHeight}_${config.quality}_${config.colorBlend ?? 0}_${playbackSpeed ?? 1}`;
+  private computeConfigHash(config: FireOverlayConfig, playbackSpeed?: number, sequenceContentHash?: string): string {
+    return `${config.fuelSourceId ?? "default"}_${config.intensity}_${config.flameHeight}_${config.quality}_${config.colorBlend ?? 0}_${playbackSpeed ?? 1}_${sequenceContentHash ?? ""}`;
   }
 
   /**

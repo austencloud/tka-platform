@@ -56,6 +56,13 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private lastFrameDropLogTime = 0; // Rate-limit logs to avoid feedback loop with console recording extensions
   private static readonly FRAME_DROP_LOG_COOLDOWN_MS = 500; // Max 2 logs per second
 
+  // Idle auto-stop: after N consecutive idle frames (not playing, no needsRender, no
+  // effects active), stop the RAF loop. Prevents 16+ arrange grid cells from each
+  // burning a permanent RAF loop just because trails are globally force-enabled.
+  // triggerRender() restarts the loop whenever actual rendering is needed.
+  private consecutiveIdleFrames = 0;
+  private static readonly IDLE_STOP_THRESHOLD = 60; // ~1 second at 60fps
+
   // CRITICAL: Reusable arrays to prevent GC pressure on mobile
   // These are reused every frame instead of allocating new arrays
   private reusableBlueTrailPoints: TrailPoint[] = [];
@@ -126,6 +133,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
 
   triggerRender(getFrameParams: () => RenderFrameParams): void {
     this.needsRender = true;
+    this.consecutiveIdleFrames = 0; // Reset idle counter — new work incoming
     this.getFrameParamsCallback = getFrameParams;
     if (this.rafId === null && this.renderer) {
       this.rafId = requestAnimationFrame(this.renderLoop);
@@ -193,11 +201,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       );
     }
 
-    // Continue render loop if:
-    // 1. One-shot render is needed (needsRender)
-    // 2. Trails are enabled and need continuous updates
-    // 3. Animation is actively playing (props are interpolating)
-    // 4. Background is transitioning (dark mode toggle animation)
+    // Determine what actually needs continuous rendering
     const trailsNeedContinuousRender =
       trailSettings.enabled && trailSettings.mode !== TrailMode.OFF;
     const backgroundTransitioning =
@@ -208,13 +212,27 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     const ledActive =
       params.ledConfig?.enabled === true &&
       this.ledRenderer?.isInitialized() === true;
-    const shouldContinueLoop =
+
+    // Active work: playing, effects running, background animating, or explicit render request
+    const hasActiveWork =
       this.needsRender ||
-      trailsNeedContinuousRender ||
       isPlaying ||
       backgroundTransitioning ||
       fireActive ||
       ledActive;
+
+    // Trails alone (without active work) should not keep the loop alive forever.
+    // Allow a grace period for initialization/texture loading, then auto-stop.
+    if (hasActiveWork) {
+      this.consecutiveIdleFrames = 0;
+    } else {
+      this.consecutiveIdleFrames++;
+    }
+
+    const shouldContinueLoop =
+      hasActiveWork ||
+      trailsNeedContinuousRender &&
+        this.consecutiveIdleFrames < AnimationRenderLoop.IDLE_STOP_THRESHOLD;
 
     if (shouldContinueLoop) {
       this.render(params, currentTime);
@@ -226,8 +244,9 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         this.rafId = null;
       }
     } else {
-      // Stop loop when no render is needed
+      // Stop loop — triggerRender() will restart if needed
       this.rafId = null;
+      this.consecutiveIdleFrames = 0;
     }
   };
 
@@ -384,6 +403,9 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         // so the fire renderer doesn't replay stale cached frames.
         loopDetected: this.loopDetectedThisFrame || tipResult.gapDetected,
         playbackSpeed: params.playbackSpeed,
+        currentStep: params.currentStep,
+        totalSteps: params.totalSteps,
+        sequenceContentHash: params.sequenceContentHash,
       };
 
       // All fuel types (including charcoal) use the fluid Navier-Stokes renderer.
@@ -446,8 +468,12 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
 
     // Frame drop diagnostics: log when frames exceed budget
     // Rate-limited to prevent feedback loops with console recording extensions (rrweb, Sentry, etc.)
+    // Skip logging on first frame after restart (rafGap is stale/meaningless) and when not playing
+    const isFirstFrameAfterRestart = rafGap > 1000;
     if (
       this.frameDropLoggingEnabled &&
+      !isFirstFrameAfterRestart &&
+      params.isPlaying &&
       (renderTime > AnimationRenderLoop.FRAME_DROP_THRESHOLD_MS ||
        rafGap > 40) // RAF gap > 40ms means browser missed 2+ vsyncs (not just vsync jitter)
     ) {

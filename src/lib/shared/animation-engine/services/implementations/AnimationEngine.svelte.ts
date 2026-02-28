@@ -323,6 +323,8 @@ export class AnimationEngine {
     propColors: undefined,
     ledConfig: null,
     isSeamlesslyLoopable: false,
+    totalSteps: 0,
+    sequenceContentHash: undefined,
   };
 
   // ============================================================================
@@ -374,7 +376,7 @@ export class AnimationEngine {
     };
     this.fireConfig.colorCurve = this.prevUseCharcoal ? CHARCOAL_COLOR_CURVE : BASE_COLOR_CURVE;
     this.fireConfig.smokeOpacity = smokeLevelToOpacity(this.prevSmokeLevel);
-    this.fireConfig.charcoalPresetId = visibilityManager.getCharcoalPresetId();
+    this.fireConfig.charcoalParams = visibilityManager.getCharcoalParams();
     // Initialize LED state from visibility manager
     this.ledConfig.enabled = visibilityManager.isLedEffectEnabled();
     this.ledConfig.patternId = visibilityManager.getLedPatternId();
@@ -497,10 +499,10 @@ export class AnimationEngine {
           this.prevFireIntensity = fireIntensity;
 
           if (useCharcoal) {
-            // Charcoal mode: set preset ID and swap to spark renderer
+            // Charcoal mode: set params and swap to spark renderer
             this.setFireConfig({
               enabled: true,
-              charcoalPresetId: vm.getCharcoalPresetId(),
+              charcoalParams: vm.getCharcoalParams(),
             });
           } else {
             // Fluid mode: apply physics-based config
@@ -561,6 +563,11 @@ export class AnimationEngine {
       this.renderLoopService.updateConfig({
         fireRenderer: this.fireRenderer,
       });
+    } else if (this.charcoalRenderer?.isInitialized() && this.renderLoopService) {
+      // Charcoal spark renderer was created during the gap — wire it now
+      this.renderLoopService.updateConfig({
+        fireRenderer: this.charcoalRenderer,
+      });
     }
     if (this.ledRenderer?.isInitialized() && this.renderLoopService) {
       this.renderLoopService.updateConfig({
@@ -570,7 +577,11 @@ export class AnimationEngine {
 
     // Create overlays that weren't created yet (e.g. enabled before HMR/reload
     // but the $effect hasn't triggered, or the rAF hasn't fired yet).
-    if (this.fireConfig.enabled && !this.fireRenderer?.isInitialized()) {
+    if (
+      this.fireConfig.enabled &&
+      !this.fireRenderer?.isInitialized() &&
+      !this.charcoalRenderer?.isInitialized()
+    ) {
       this.syncFireOverlay();
     }
     if (this.ledConfig.enabled && !this.ledRenderer?.isInitialized()) {
@@ -1251,6 +1262,10 @@ export class AnimationEngine {
           this.canvasSize
         );
         if (success) {
+          // Push current charcoal params to the new renderer
+          if (this.fireConfig.charcoalParams) {
+            (this.charcoalRenderer as CharcoalSparkRenderer).setParams(this.fireConfig.charcoalParams);
+          }
           this.renderLoopService?.updateConfig({
             fireRenderer: this.charcoalRenderer,
           });
@@ -1307,6 +1322,10 @@ export class AnimationEngine {
     // Forward quality setting to renderer if present
     if (config.quality !== undefined && this.fireRenderer) {
       this.fireRenderer.setQuality(config.quality);
+    }
+    // Forward charcoal params to spark renderer
+    if (config.charcoalParams && this.charcoalRenderer?.isInitialized()) {
+      (this.charcoalRenderer as CharcoalSparkRenderer).setParams(config.charcoalParams);
     }
     this.syncFireOverlay();
 
@@ -1708,6 +1727,10 @@ export class AnimationEngine {
     // Playback speed for fire cache invalidation
     const visibilityManager = getAnimationVisibilityManager();
     fp.playbackSpeed = visibilityManager.getSpeed();
+
+    // Step/sequence data for fire cache: step-indexed playback + sequence identity
+    fp.totalSteps = props.sequenceData?.steps?.length ?? 0;
+    fp.sequenceContentHash = this.lastSequenceContentHash ?? undefined;
 
     // Seamless loop flag for trail wrap-around.
     // Auto-detect from sequence data when not explicitly provided by parent.
