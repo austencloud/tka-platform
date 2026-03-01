@@ -416,127 +416,41 @@ export class AsciiRenderer implements IAsciiRenderer {
 	// ========================================================================
 	// DIAMOND GRID SKELETON
 	//
+	// Minimal layout matching the real pictograph grid: 8 perimeter locations
+	// floating around a center point. No connecting lines.
+	//
 	// Layout (13 rows, 33 cols) — aspect-corrected for monospace ~2:1 ratio:
 	//
-	//  Row 0:                N                      col 16
-	//  Row 1:                |
-	//  Row 2:        NW  .   +   .  NE              cols 8, 12, 16, 20, 24
-	//  Row 3:          \\    |    //
-	//  Row 4:            \\  |  //
-	//  Row 5:              \\ | //
-	//  Row 6:  W ----------[o]---------- E          col 5..27
-	//  Row 7:              // | \\
-	//  Row 8:            //  |  \\
-	//  Row 9:          //    |    \\
-	//  Row 10:       SW  .   +   .  SE              cols 8, 12, 16, 20, 24
-	//  Row 11:               |
-	//  Row 12:               S                      col 16
-	//
-	// Diagonals step 2 cols per row for visual 45 degrees.
+	//  Row 0:                O                      N  (col 16)
+	//  Row 2:        O                   O          NW (col 8), NE (col 24)
+	//  Row 6:  O               o               O   W  (col 4), center (16), E (col 28)
+	//  Row 10:       O                   O          SW (col 8), SE (col 24)
+	//  Row 12:               O                      S  (col 16)
 	// ========================================================================
 
-	private drawDiamondGrid(buffer: Cell[][], _height: number): void {
-		// Vertical axis (N-S through center at col 16)
-		for (const row of [1, 2, 3, 4, 5, 7, 8, 9, 10, 11]) {
-			this.setCell(buffer, 16, row, "|", COLOR_GRAY);
-		}
-
-		// Horizontal axis (W-E through center at row 6)
-		for (let col = 5; col <= 27; col++) {
-			if (col === 16) continue; // center handled separately
-			this.setCell(buffer, col, 6, "-", COLOR_GRAY);
-		}
-
-		// NW-SE diagonal: NW(8,2) → center(16,6) → SE(24,10), 2 cols/row
-		this.setCell(buffer, 10, 3, "\\", COLOR_GRAY);
-		this.setCell(buffer, 12, 4, "\\", COLOR_GRAY);
-		this.setCell(buffer, 14, 5, "\\", COLOR_GRAY);
-		this.setCell(buffer, 18, 7, "\\", COLOR_GRAY);
-		this.setCell(buffer, 20, 8, "\\", COLOR_GRAY);
-		this.setCell(buffer, 22, 9, "\\", COLOR_GRAY);
-
-		// NE-SW diagonal: NE(24,2) → center(16,6) → SW(8,10), -2 cols/row
-		this.setCell(buffer, 22, 3, "/", COLOR_GRAY);
-		this.setCell(buffer, 20, 4, "/", COLOR_GRAY);
-		this.setCell(buffer, 18, 5, "/", COLOR_GRAY);
-		this.setCell(buffer, 14, 7, "/", COLOR_GRAY);
-		this.setCell(buffer, 12, 8, "/", COLOR_GRAY);
-		this.setCell(buffer, 10, 9, "/", COLOR_GRAY);
-
-		// Cross markers at midpoints on the intercardinal rows
-		this.setCell(buffer, 12, 2, ".", COLOR_GRAY);
-		this.setCell(buffer, 20, 2, ".", COLOR_GRAY);
-		this.setCell(buffer, 12, 10, ".", COLOR_GRAY);
-		this.setCell(buffer, 20, 10, ".", COLOR_GRAY);
+	private drawDiamondGrid(_buffer: Cell[][], _height: number): void {
+		// No grid lines — perimeter locations and center are placed by
+		// placePositionDots and the center marker in renderPictograph.
 	}
 
 	// ========================================================================
 	// BOX GRID SKELETON
 	//
+	// Minimal layout matching the real pictograph grid: 8 perimeter locations
+	// floating around a center point. No connecting lines or edges.
+	//
 	// Layout (11 rows, 33 cols) — aspect-corrected for monospace ~2:1 ratio:
 	//
-	//  Row 0:  NW ------------------- NE        cols 6..26
-	//  Row 1:    |  \\             //  |
-	//  Row 2:    |    N             N  |        (N at col 16, row 2)
-	//  Row 3:    |      \\     //      |
-	//  Row 4:    |        \\  //       |
-	//  Row 5:  W |--------[o]---------| E       col 6..26
-	//  Row 6:    |        //  \\       |
-	//  Row 7:    |      //     \\      |
-	//  Row 8:    |    S             S  |        (S at col 16, row 8)
-	//  Row 9:    |  //             \\  |
-	//  Row 10: SW ------------------- SE        cols 6..26
-	//
-	// Box spans 20 cols × 10 rows = visually square.
-	// Diagonals step 2 cols per row for visual 45 degrees.
+	//  Row 0:  O                       O        NW (col 6), NE (col 26)
+	//  Row 2:                O                  N  (col 16)
+	//  Row 5:  O               o           O    W  (col 6), center (16), E (col 26)
+	//  Row 8:                O                  S  (col 16)
+	//  Row 10: O                       O        SW (col 6), SE (col 26)
 	// ========================================================================
 
-	private drawBoxGrid(buffer: Cell[][], _height: number): void {
-		// Top edge (NW to NE)
-		for (let col = 7; col <= 25; col++) {
-			this.setCell(buffer, col, 0, "-", COLOR_GRAY);
-		}
-
-		// Bottom edge (SW to SE)
-		for (let col = 7; col <= 25; col++) {
-			this.setCell(buffer, col, 10, "-", COLOR_GRAY);
-		}
-
-		// Left edge (NW to SW)
-		for (let row = 1; row <= 9; row++) {
-			this.setCell(buffer, 6, row, "|", COLOR_GRAY);
-		}
-
-		// Right edge (NE to SE)
-		for (let row = 1; row <= 9; row++) {
-			this.setCell(buffer, 26, row, "|", COLOR_GRAY);
-		}
-
-		// Horizontal midline through center
-		for (let col = 7; col <= 25; col++) {
-			if (col === 16) continue; // center handled separately
-			this.setCell(buffer, col, 5, "-", COLOR_GRAY);
-		}
-
-		// NW-SE diagonal: NW(6,0) → center(16,5) → SE(26,10), 2 cols/row
-		this.setCell(buffer, 8, 1, "\\", COLOR_GRAY);
-		this.setCell(buffer, 10, 2, "\\", COLOR_GRAY);
-		this.setCell(buffer, 12, 3, "\\", COLOR_GRAY);
-		this.setCell(buffer, 14, 4, "\\", COLOR_GRAY);
-		this.setCell(buffer, 18, 6, "\\", COLOR_GRAY);
-		this.setCell(buffer, 20, 7, "\\", COLOR_GRAY);
-		this.setCell(buffer, 22, 8, "\\", COLOR_GRAY);
-		this.setCell(buffer, 24, 9, "\\", COLOR_GRAY);
-
-		// NE-SW diagonal: NE(26,0) → center(16,5) → SW(6,10), -2 cols/row
-		this.setCell(buffer, 24, 1, "/", COLOR_GRAY);
-		this.setCell(buffer, 22, 2, "/", COLOR_GRAY);
-		this.setCell(buffer, 20, 3, "/", COLOR_GRAY);
-		this.setCell(buffer, 18, 4, "/", COLOR_GRAY);
-		this.setCell(buffer, 14, 6, "/", COLOR_GRAY);
-		this.setCell(buffer, 12, 7, "/", COLOR_GRAY);
-		this.setCell(buffer, 10, 8, "/", COLOR_GRAY);
-		this.setCell(buffer, 8, 9, "/", COLOR_GRAY);
+	private drawBoxGrid(_buffer: Cell[][], _height: number): void {
+		// No grid lines — perimeter locations and center are placed by
+		// placePositionDots and the center marker in renderPictograph.
 	}
 
 	// ========================================================================
