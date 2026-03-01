@@ -32,6 +32,8 @@
   import type { ContentModerationResult } from "$lib/features/moderation/domain/models/content-moderation-models";
   import { simplifyAndTruncate } from "../workspace-panel/shared/utils/word-simplifier";
   import { libraryState } from "$lib/features/library/state/library-state.svelte";
+  import { notifyLibrarySequenceAdded } from "$lib/shared/library/library-events";
+  import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
 
   interface Props {
     show: boolean;
@@ -178,6 +180,16 @@
       : "Publish this sequence to the gallery"
   );
 
+  // Desktop detection for ChoreoCard preview
+  let isDesktop = $state(false);
+  $effect(() => {
+    const mq = window.matchMedia("(min-width: 641px)");
+    isDesktop = mq.matches;
+    const handler = (e: MediaQueryListEvent) => { isDesktop = e.matches; };
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  });
+
   // Sync isOpen with show prop
   $effect(() => {
     isOpen = show;
@@ -203,6 +215,28 @@
       showTags = false;
       acknowledgedDuplicate = false; // Reset duplicate acknowledgment
     }
+  });
+
+  // Whether the save button would be enabled
+  const canSave = $derived(
+    !!tkaName && !isSaving && !(hasDuplicate && !acknowledgedDuplicate) && !isFlagged
+  );
+
+  // Enter key submits the panel when it's open
+  $effect(() => {
+    if (!isOpen) return;
+
+    function onKeydown(e: KeyboardEvent) {
+      if (e.key === "Enter" && !e.shiftKey && canSave) {
+        const target = e.target as HTMLElement;
+        if (target.tagName === "TEXTAREA" || target.tagName === "INPUT") return;
+        e.preventDefault();
+        handleSave();
+      }
+    }
+
+    window.addEventListener("keydown", onKeydown);
+    return () => window.removeEventListener("keydown", onKeydown);
   });
 
   function handleTagsChange(newTags: string[]) {
@@ -245,6 +279,17 @@
       );
 
       logger.success("Sequence saved to library with ID:", result.sequenceId);
+
+      // Notify the browse gallery so it can update its cache immediately
+      notifyLibrarySequenceAdded({
+        ...sequence,
+        id: result.sequenceId,
+        thumbnails: result.thumbnailUrl
+          ? [result.thumbnailUrl]
+          : sequence.thumbnails,
+        name: tkaName,
+        displayName: customDisplayName.trim() || sequence.displayName,
+      });
 
       if (ctx.sessionManager) {
         await ctx.sessionManager.markAsSaved(result.sequenceId);
@@ -372,14 +417,32 @@
     </div>
 
     <div class="panel-body">
-      <!-- TKA Name (read-only) -->
-      <div class="form-group">
-        <span class="form-label">TKA Name</span>
-        <div class="tka-name-display">
-          <span class="tka-badge">{displayTkaName || "..."}</span>
-          <span class="tka-hint">Auto-generated from sequence letters</span>
+      <!-- Sequence Preview -->
+      {#if isDesktop && sequence}
+        <div class="form-group">
+          <span class="form-label">TKA Name</span>
+          <div class="choreo-preview">
+            <ChoreoCard
+              {sequence}
+              darkMode={true}
+              userName={creatorName}
+              showCreatorName={true}
+              showBirthday={true}
+              showNotes={false}
+              showDifficultyLevel={true}
+              showLoopGlyph={true}
+            />
+          </div>
         </div>
-      </div>
+      {:else}
+        <div class="form-group">
+          <span class="form-label">TKA Name</span>
+          <div class="tka-name-display">
+            <span class="tka-badge">{displayTkaName || "..."}</span>
+            <span class="tka-hint">Auto-generated from sequence letters</span>
+          </div>
+        </div>
+      {/if}
 
       <!-- Content Moderation Warning -->
       {#if isFlagged && moderationResult}
@@ -528,7 +591,7 @@
         type="button"
         class="button button-primary"
         onclick={handleSave}
-        disabled={!tkaName || isSaving || (hasDuplicate && !acknowledgedDuplicate) || isFlagged}
+        disabled={!canSave}
       >
         {#if isSaving}
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
@@ -630,12 +693,12 @@
     line-height: 1.5;
   }
 
-  /* Body - uses flex to distribute space and center content */
+  /* Body - content flows from top */
   .panel-body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    justify-content: center; /* Vertical centering */
+    justify-content: flex-start;
     padding: 24px 32px;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -683,6 +746,13 @@
     font-size: var(--font-size-base, 16px);
     color: var(--theme-text-dim);
     text-align: center;
+  }
+
+  .choreo-preview {
+    max-width: 600px;
+    margin: 0 auto;
+    border-radius: 12px;
+    overflow: hidden;
   }
 
   /* Content Moderation Warning */
