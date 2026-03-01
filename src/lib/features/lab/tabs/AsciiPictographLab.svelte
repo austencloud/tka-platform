@@ -1,62 +1,198 @@
 <!--
   AsciiPictographLab.svelte — Lab tab for iterating on ASCII pictograph rendering.
 
-  Two-panel layout:
-  1. Letter Picker — loads real pictograph data from static CSV files
-  2. CRT Preview — ASCII render with DOS terminal styling
+  Two modes:
+  - Single: prev/next through all pictograph variations from CSV
+  - Sequence: type a word, generate via spell services, render side by side
 
   Domain: Retro DOS Terminal
 -->
 <script lang="ts">
   import { AsciiRenderer } from "$lib/features/retro/dos/services/implementations/AsciiRenderer";
+  import FilterChipBase from "$lib/features/browse/sequences/filtering/components/inline-filter/FilterChipBase.svelte";
   import { createAsciiLabState } from "./ascii-pictograph-lab-state.svelte";
   import AsciiCrtPreview from "./AsciiCrtPreview.svelte";
-  import AsciiLetterPicker from "./AsciiLetterPicker.svelte";
 
-  const state = createAsciiLabState();
+  const lab = createAsciiLabState();
   const renderer = new AsciiRenderer();
 
-  const htmlLines = $derived(renderer.renderPictograph(state.pictographData, { layers: state.layers }));
-  const compact = $derived(renderer.renderCompact(state.pictographData));
+  let wordInput = $state("");
+
+  // ── Single mode rendering ──
+  const singleHtml = $derived(
+    lab.pictographData
+      ? renderer.renderPictograph(lab.pictographData, { layers: lab.layers })
+      : renderer.renderPlaceholder(),
+  );
+  const singleCompact = $derived(
+    lab.pictographData ? renderer.renderCompact(lab.pictographData) : "",
+  );
+
+  // ── Sequence mode rendering ──
+  const sequenceHtml = $derived(
+    lab.sequenceSteps.length > 0
+      ? renderer.renderSequence(lab.sequenceSteps, { layers: lab.layers })
+      : [],
+  );
+
+  // Pick which lines to show based on mode
+  const htmlLines = $derived(lab.mode === "sequence" ? sequenceHtml : singleHtml);
+  const compact = $derived(lab.mode === "sequence" ? "" : singleCompact);
+
+  $effect(() => {
+    lab.loadData();
+  });
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (lab.mode !== "single") return;
+    if (e.key === "ArrowLeft") { lab.prev(); e.preventDefault(); }
+    if (e.key === "ArrowRight") { lab.next(); e.preventDefault(); }
+  }
+
+  function handleWordSubmit() {
+    if (wordInput.trim()) {
+      lab.generateSequence(wordInput.trim());
+    }
+  }
+
+  function handleWordKeydown(e: KeyboardEvent) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleWordSubmit();
+    }
+  }
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 <div class="ascii-lab">
   <div class="ascii-lab-controls">
-    <h2 class="ascii-lab-title">ASCII Pictograph Lab</h2>
-
-    <div class="layer-toggles">
-      <label class="layer-toggle">
-        <input type="checkbox" checked={state.layers.grid} onchange={() => state.toggleLayer("grid")} />
-        Grid
-      </label>
-      <label class="layer-toggle">
-        <input type="checkbox" checked={state.layers.hands} onchange={() => state.toggleLayer("hands")} />
-        Hands
-      </label>
-      <label class="layer-toggle">
-        <input type="checkbox" checked={state.layers.staves} onchange={() => state.toggleLayer("staves")} />
-        Staves
-      </label>
-      <label class="layer-toggle">
-        <input type="checkbox" checked={state.layers.arrows} onchange={() => state.toggleLayer("arrows")} />
-        Arrows
-      </label>
+    <!-- Mode toggle -->
+    <div class="mode-chips">
+      <FilterChipBase
+        label="Single"
+        icon="fas fa-image"
+        active={lab.mode === "single"}
+        mode="toggle"
+        chipColor="#33ff33"
+        onclick={() => lab.setMode("single")}
+      />
+      <FilterChipBase
+        label="Sequence"
+        icon="fas fa-images"
+        active={lab.mode === "sequence"}
+        mode="toggle"
+        chipColor="#33ff33"
+        onclick={() => lab.setMode("sequence")}
+      />
     </div>
 
-    <AsciiLetterPicker onLetterLoad={state.loadFromMcp} />
+    <!-- Single mode: nav bar -->
+    {#if lab.mode === "single"}
+      <div class="nav-bar">
+        <button
+          class="nav-btn"
+          onclick={() => lab.prev()}
+          disabled={lab.loading}
+          aria-label="Previous pictograph"
+        >
+          <i class="fas fa-chevron-left" aria-hidden="true"></i>
+        </button>
+        <span class="nav-label">{lab.label}</span>
+        <button
+          class="nav-btn"
+          onclick={() => lab.next()}
+          disabled={lab.loading}
+          aria-label="Next pictograph"
+        >
+          <i class="fas fa-chevron-right" aria-hidden="true"></i>
+        </button>
+      </div>
+    {/if}
 
-    <p class="ascii-lab-info">
-      {#if state.letterName}
-        Showing: <strong>{state.letterName}</strong> ({state.gridMode})
-      {:else}
-        Pick a letter above to render
+    <!-- Sequence mode: word input -->
+    {#if lab.mode === "sequence"}
+      <div class="word-input-row">
+        <input
+          class="word-input"
+          type="text"
+          placeholder="Type a word..."
+          bind:value={wordInput}
+          onkeydown={handleWordKeydown}
+          disabled={lab.generating}
+          maxlength={12}
+        />
+        <button
+          class="generate-btn"
+          onclick={handleWordSubmit}
+          disabled={lab.generating || !wordInput.trim()}
+        >
+          {#if lab.generating}
+            Generating...
+          {:else}
+            Generate
+          {/if}
+        </button>
+      </div>
+      {#if lab.sequenceWord}
+        <span class="sequence-info">
+          {lab.sequenceWord}
+          {#if lab.sequenceExpanded !== lab.sequenceWord}
+            &rarr; {lab.sequenceExpanded}
+          {/if}
+          &middot; {lab.sequenceSteps.length} beats
+        </span>
       {/if}
-    </p>
+    {/if}
+
+    <!-- Layer toggles (both modes) -->
+    <div class="layer-chips">
+      <FilterChipBase
+        label="Grid"
+        icon="fas fa-border-all"
+        active={lab.layers.grid}
+        mode="toggle"
+        chipColor="#33ff33"
+        onclick={() => lab.toggleLayer("grid")}
+      />
+      <FilterChipBase
+        label="Hands"
+        icon="fas fa-hand-paper"
+        active={lab.layers.hands}
+        mode="toggle"
+        chipColor="#33ff33"
+        onclick={() => lab.toggleLayer("hands")}
+      />
+      <FilterChipBase
+        label="Staves"
+        icon="fas fa-grip-lines-vertical"
+        active={lab.layers.staves}
+        mode="toggle"
+        chipColor="#33ff33"
+        onclick={() => lab.toggleLayer("staves")}
+      />
+      <FilterChipBase
+        label="Arrows"
+        icon="fas fa-arrows-alt"
+        active={lab.layers.arrows}
+        mode="toggle"
+        chipColor="#33ff33"
+        onclick={() => lab.toggleLayer("arrows")}
+      />
+    </div>
   </div>
 
-  <div class="ascii-lab-preview">
-    <AsciiCrtPreview {htmlLines} {compact} />
-  </div>
+  {#if lab.loading}
+    <div class="lab-status">Loading pictograph data...</div>
+  {:else if lab.error}
+    <div class="lab-status lab-error">{lab.error}</div>
+  {:else if lab.mode === "sequence" && !lab.sequenceWord}
+    <div class="lab-status">Type a word above and hit Generate</div>
+  {:else}
+    <div class="ascii-lab-preview">
+      <AsciiCrtPreview {htmlLines} {compact} />
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -67,13 +203,6 @@
     padding: 1rem;
     gap: 1rem;
     color: var(--theme-text, #fff);
-    overflow-y: auto;
-  }
-
-  .ascii-lab-title {
-    font-size: var(--font-size-lg, 18px);
-    font-weight: 600;
-    margin: 0;
   }
 
   .ascii-lab-controls {
@@ -82,33 +211,187 @@
     gap: 0.75rem;
   }
 
-  .layer-toggles {
+  /* ── Mode & Layer chips ── */
+
+  .mode-chips,
+  .layer-chips {
     display: flex;
-    gap: 1rem;
+    gap: 8px;
     flex-wrap: wrap;
+    justify-content: center;
   }
 
-  .layer-toggle {
+  /* ── Single mode nav ── */
+
+  .nav-bar {
     display: flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.75rem;
+    justify-content: center;
+  }
+
+  .nav-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 50%;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: var(--font-size-min, 14px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
     cursor: pointer;
+    transition:
+      border-color var(--duration-fast, 150ms) ease,
+      color var(--duration-fast, 150ms) ease,
+      transform var(--duration-fast, 150ms) ease;
   }
 
-  .layer-toggle input[type="checkbox"] {
-    accent-color: #33ff33;
+  @media (hover: hover) {
+    .nav-btn:not(:disabled):hover {
+      border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+      color: var(--theme-text, #fff);
+    }
   }
 
-  .ascii-lab-info {
+  .nav-btn:not(:disabled):active {
+    transform: scale(0.93);
+  }
+
+  .nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .nav-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #33ff33);
+    outline-offset: 2px;
+  }
+
+  .nav-label {
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
+    color: var(--theme-text, #fff);
+    font-family: "SF Mono", "Fira Code", "Courier New", monospace;
+    min-width: 200px;
+    text-align: center;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── Sequence mode input ── */
+
+  .word-input-row {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .word-input {
+    padding: 8px 14px;
+    min-height: 40px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 100px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-min, 14px);
+    font-family: "SF Mono", "Fira Code", "Courier New", monospace;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-align: center;
+    width: 200px;
+    transition: border-color var(--duration-fast, 150ms) ease;
+  }
+
+  .word-input::placeholder {
+    text-transform: none;
+    letter-spacing: normal;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
+  }
+
+  .word-input:focus {
+    outline: none;
+    border-color: #33ff33;
+  }
+
+  .word-input:disabled {
+    opacity: 0.4;
+  }
+
+  .generate-btn {
+    padding: 8px 18px;
+    min-height: 40px;
+    border: 1px solid color-mix(in srgb, #33ff33 40%, transparent);
+    border-radius: 100px;
+    background: color-mix(in srgb, #33ff33 12%, transparent);
+    color: #33ff33;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition:
+      background var(--duration-fast, 150ms) ease,
+      border-color var(--duration-fast, 150ms) ease,
+      transform var(--duration-fast, 150ms) ease;
+  }
+
+  @media (hover: hover) {
+    .generate-btn:not(:disabled):hover {
+      background: color-mix(in srgb, #33ff33 20%, transparent);
+      border-color: color-mix(in srgb, #33ff33 60%, transparent);
+    }
+  }
+
+  .generate-btn:not(:disabled):active {
+    transform: scale(0.97);
+  }
+
+  .generate-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .generate-btn:focus-visible {
+    outline: 2px solid #33ff33;
+    outline-offset: 2px;
+  }
+
+  .sequence-info {
+    text-align: center;
     font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    margin: 0;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-family: "SF Mono", "Fira Code", "Courier New", monospace;
   }
+
+  /* ── Status ── */
+
+  .lab-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    font-size: var(--font-size-min, 14px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  }
+
+  .lab-error {
+    color: var(--semantic-error, #ef4444);
+  }
+
+  /* ── Preview ── */
 
   .ascii-lab-preview {
     flex: 1;
     min-height: 0;
+    overflow-x: auto;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nav-btn,
+    .generate-btn,
+    .word-input {
+      transition: none;
+    }
   }
 </style>

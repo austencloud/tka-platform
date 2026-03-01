@@ -1,34 +1,26 @@
 <!--
   RetroPictographLab.svelte — Lab tab for iterating on Win95 pixel pictograph rendering.
 
-  Similar to AsciiPictographLab but for the Win95 PixelRenderer.
-  Side-by-side preview at multiple sizes, layer controls, and
-  manual override panel.
+  Same prev/next navigation as the ASCII lab, but renders to canvas via PixelRenderer.
+  Shows the pictograph at multiple display sizes from the same 64×64 source.
 
   Domain: Retro Win95 Shell
 -->
 <script lang="ts">
   import { PixelRenderer } from "$lib/features/retro/win95/services/implementations/PixelRenderer";
+  import FilterChipBase from "$lib/features/browse/sequences/filtering/components/inline-filter/FilterChipBase.svelte";
   import { createAsciiLabState } from "./ascii-pictograph-lab-state.svelte";
-  import AsciiLetterPicker from "./AsciiLetterPicker.svelte";
-  import AsciiOverridePanel from "./AsciiOverridePanel.svelte";
-  import { GridMode } from "$lib/features/retro/shared/domain/pictograph-types";
 
-  /* Reuse the ASCII lab's state factory — same domain types, just different renderer */
   const labState = createAsciiLabState();
   const renderer = new PixelRenderer();
-
-  /* ------------------------------------------------------------------ */
-  /* Preview sizes to render                                             */
-  /* ------------------------------------------------------------------ */
 
   const PREVIEW_SIZES = [32, 48, 64, 96, 128, 192];
 
   let canvasRefs = $state<Record<number, HTMLCanvasElement | undefined>>({});
 
-  /* ------------------------------------------------------------------ */
-  /* Re-render all canvases when data changes                            */
-  /* ------------------------------------------------------------------ */
+  $effect(() => {
+    labState.loadData();
+  });
 
   $effect(() => {
     const data = labState.pictographData;
@@ -36,75 +28,91 @@
       const canvas = canvasRefs[size];
       if (!canvas) continue;
 
-      if (data.letter) {
+      if (data && data.letter) {
         renderer.render(canvas, data, 64);
       } else {
         renderer.renderPlaceholder(canvas, 64);
       }
     }
   });
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === "ArrowLeft") { labState.prev(); e.preventDefault(); }
+    if (e.key === "ArrowRight") { labState.next(); e.preventDefault(); }
+  }
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 <div class="retro-picto-lab">
   <div class="lab-controls">
-    <h2 class="lab-title">Retro Pictograph Lab</h2>
-    <p class="lab-subtitle">Win95 PixelRenderer — 16-color dithered, 64×64 internal</p>
+    <div class="nav-bar">
+      <button
+        class="nav-btn"
+        onclick={() => labState.prev()}
+        disabled={labState.loading}
+        aria-label="Previous pictograph"
+      >
+        <i class="fas fa-chevron-left" aria-hidden="true"></i>
+      </button>
 
-    <div class="grid-mode-toggle">
+      <span class="nav-label">{labState.label}</span>
+
       <button
-        class="mode-btn"
-        class:active={labState.gridMode === GridMode.DIAMOND}
-        onclick={() => labState.setGridMode(GridMode.DIAMOND)}
-      >Diamond</button>
-      <button
-        class="mode-btn"
-        class:active={labState.gridMode === GridMode.BOX}
-        onclick={() => labState.setGridMode(GridMode.BOX)}
-      >Box</button>
+        class="nav-btn"
+        onclick={() => labState.next()}
+        disabled={labState.loading}
+        aria-label="Next pictograph"
+      >
+        <i class="fas fa-chevron-right" aria-hidden="true"></i>
+      </button>
     </div>
 
-    <AsciiLetterPicker onLetterLoad={labState.loadFromMcp} />
-
-    <AsciiOverridePanel
-      blueHand={labState.blueHand}
-      redHand={labState.redHand}
-      onUpdateBlue={labState.updateBlueHand}
-      onUpdateRed={labState.updateRedHand}
-      onReset={labState.resetToLoaded}
-      hasLoadedData={labState.loadedData !== null}
-    />
-
-    <p class="lab-info">
-      {#if labState.letterName}
-        Showing: <strong>{labState.letterName}</strong>
-      {:else}
-        Default layout (blue N, red S, static)
-      {/if}
-    </p>
+    <div class="layer-chips">
+      <FilterChipBase
+        label="Grid"
+        icon="fas fa-border-all"
+        active={labState.layers.grid}
+        mode="toggle"
+        chipColor="#6666ff"
+        onclick={() => labState.toggleLayer("grid")}
+      />
+      <FilterChipBase
+        label="Hands"
+        icon="fas fa-hand-paper"
+        active={labState.layers.hands}
+        mode="toggle"
+        chipColor="#6666ff"
+        onclick={() => labState.toggleLayer("hands")}
+      />
+    </div>
   </div>
 
-  <div class="lab-preview">
-    <h3 class="preview-heading">Display Size Comparison</h3>
-    <p class="preview-note">All render from the same 64×64 source. CSS upscales with nearest-neighbor.</p>
-
-    <div class="size-grid">
-      {#each PREVIEW_SIZES as size (size)}
-        <div class="size-card">
-          <div class="canvas-frame" style="width: {size}px; height: {size}px;">
-            <canvas
-              bind:this={canvasRefs[size]}
-              width="64"
-              height="64"
-              class="pixel-canvas"
-              style="width: {size}px; height: {size}px;"
-              aria-label="Pictograph at {size}px"
-            ></canvas>
+  {#if labState.loading}
+    <div class="lab-status">Loading pictograph data...</div>
+  {:else if labState.error}
+    <div class="lab-status lab-error">{labState.error}</div>
+  {:else}
+    <div class="lab-preview">
+      <div class="size-grid">
+        {#each PREVIEW_SIZES as size (size)}
+          <div class="size-card">
+            <div class="canvas-frame" style="width: {size}px; height: {size}px;">
+              <canvas
+                bind:this={canvasRefs[size]}
+                width="64"
+                height="64"
+                class="pixel-canvas"
+                style="width: {size}px; height: {size}px;"
+                aria-label="Pictograph at {size}px"
+              ></canvas>
+            </div>
+            <span class="size-label">{size}px</span>
           </div>
-          <span class="size-label">{size}×{size}</span>
-        </div>
-      {/each}
+        {/each}
+      </div>
     </div>
-  </div>
+  {/if}
 </div>
 
 <style>
@@ -118,81 +126,99 @@
     overflow-y: auto;
   }
 
-  .lab-title {
-    font-size: var(--font-size-lg, 18px);
-    font-weight: 600;
-    margin: 0;
-  }
-
-  .lab-subtitle {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    margin: 0;
-  }
-
   .lab-controls {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
   }
 
-  /* ------------------------------------------------------------------ */
-  /* Grid mode toggle                                                    */
-  /* ------------------------------------------------------------------ */
-  .grid-mode-toggle {
+  /* ── Navigation ── */
+
+  .nav-bar {
     display: flex;
-    gap: 0.5rem;
+    align-items: center;
+    gap: 0.75rem;
+    justify-content: center;
   }
 
-  .mode-btn {
-    padding: 4px 12px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: 4px;
-    background: transparent;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+  .nav-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 50%;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: var(--font-size-min, 14px);
     cursor: pointer;
-    transition: all 150ms ease;
+    transition:
+      border-color var(--duration-fast, 150ms) ease,
+      color var(--duration-fast, 150ms) ease,
+      transform var(--duration-fast, 150ms) ease;
   }
 
-  .mode-btn.active {
-    background: rgba(0, 0, 255, 0.15);
-    border-color: #6666ff;
-    color: #9999ff;
+  @media (hover: hover) {
+    .nav-btn:not(:disabled):hover {
+      border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+      color: var(--theme-text, #fff);
+    }
   }
 
-  .mode-btn:hover:not(.active) {
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
+  .nav-btn:not(:disabled):active {
+    transform: scale(0.93);
+  }
+
+  .nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .nav-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #6666ff);
+    outline-offset: 2px;
+  }
+
+  .nav-label {
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
     color: var(--theme-text, #fff);
+    font-family: "SF Mono", "Fira Code", "Courier New", monospace;
+    min-width: 200px;
+    text-align: center;
+    letter-spacing: 0.5px;
   }
 
-  /* ------------------------------------------------------------------ */
-  /* Info                                                                */
-  /* ------------------------------------------------------------------ */
-  .lab-info {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    margin: 0;
+  /* ── Layer chips ── */
+
+  .layer-chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
   }
 
-  /* ------------------------------------------------------------------ */
-  /* Preview area                                                        */
-  /* ------------------------------------------------------------------ */
+  /* ── Status ── */
+
+  .lab-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    font-size: var(--font-size-min, 14px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  }
+
+  .lab-error {
+    color: var(--semantic-error, #ef4444);
+  }
+
+  /* ── Preview ── */
+
   .lab-preview {
     flex: 1;
     min-height: 0;
-  }
-
-  .preview-heading {
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    margin: 0 0 4px;
-  }
-
-  .preview-note {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    margin: 0 0 12px;
   }
 
   .size-grid {
@@ -225,7 +251,13 @@
 
   .size-label {
     font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    font-family: monospace;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-family: "SF Mono", "Fira Code", "Courier New", monospace;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nav-btn {
+      transition: none;
+    }
   }
 </style>

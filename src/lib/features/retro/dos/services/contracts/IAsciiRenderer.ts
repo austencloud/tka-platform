@@ -47,4 +47,13 @@ export interface IAsciiRenderer {
 	 * motion type, and end location.
 	 */
 	renderCompact(data: RetroPictographData): string;
+
+	/**
+	 * Render multiple pictographs side by side as a horizontal sequence.
+	 *
+	 * Each step is rendered to its own buffer, then joined horizontally
+	 * with a separator column. Shorter buffers (box mode = 11 rows) are
+	 * vertically centered against taller ones (diamond = 13 rows).
+	 */
+	renderSequence(steps: RetroPictographData[], options?: AsciiRenderOptions): string[];
 }
