@@ -31,6 +31,7 @@ import type { SequenceSource } from "../state/sequence-source-state.svelte";
 import type { IFavoritesManager } from "../services/contracts/IFavoritesManager";
 import type { SequenceFilterType } from "../state/sequence-controls-state.svelte";
 import { sequencePanelManager } from "../state/sequence-panel-state.svelte";
+import { onLibraryMutated } from "$lib/shared/library/library-events";
 
 const STORAGE_KEY = "tka-browse-gallery-controls";
 
@@ -98,6 +99,10 @@ export function createBrowseState() {
   }
 
   const persisted = loadPersistedControls();
+
+  // Per-source sequence cache — restores data instantly when switching back
+  // without a Firestore round-trip. Invalidated on library mutation.
+  let libraryCache: SequenceData[] | null = null;
 
   // State
   let isLoading = $state(false);
@@ -200,7 +205,10 @@ export function createBrowseState() {
     );
   }
 
-  // Load all sequences and generate navigation
+  // Fetches community sequences from Firestore (or a cached result if already loaded).
+  // This is the raw fetch — it only loads data. It doesn't update currentSource or
+  // skip redundant calls if data is already loaded. Use setSource("community") instead,
+  // which handles both of those before calling this internally.
   async function loadAllSequences(): Promise<void> {
     try {
       isLoading = true;
@@ -224,9 +232,22 @@ export function createBrowseState() {
     }
   }
 
-  // Load user's library sequences
-  // When impersonating, Firestore rules allow admins to read any user's library
+  // Fetches the user's library sequences from Firestore (or a cached result if already loaded).
+  // This is the raw fetch — it only loads data. It doesn't update currentSource or
+  // skip redundant calls if data is already loaded. Use setSource("my-library") instead,
+  // which handles both of those before calling this internally.
+  // To force a fresh Firestore fetch (e.g. when the impersonated user changes),
+  // call invalidateLibraryCache() first.
   async function loadLibrarySequences(): Promise<void> {
+    if (libraryCache) {
+      allSequences = libraryCache;
+      displayedSequences = libraryCache;
+      applyFilterAndSort();
+      await generateSequenceSections();
+      sectionsReady = true;
+      return;
+    }
+
     const libService = getLibraryRepository();
     if (!libService) {
       error = "Please sign in to view your library";
@@ -255,6 +276,7 @@ export function createBrowseState() {
       applyFilterAndSort();
       await generateSequenceSections();
       sectionsReady = true;
+      libraryCache = dedupedLibrary; // Cache for instant restore on tab switch
     } catch (err) {
       console.error("Failed to load library sequences:", err);
       error = err instanceof Error ? err.message : "Failed to load library";
@@ -265,7 +287,11 @@ export function createBrowseState() {
 
   // Switch source and reload data
   async function setSource(source: SequenceSource): Promise<void> {
-    if (source === currentSource) {
+    // Skip if we're already showing this source and the data is loaded.
+    // sectionsReady is required because currentSource starts as "community" before
+    // any data has been fetched — without it, the first setSource("community") call
+    // would see a matching source and return immediately without loading anything.
+    if (source === currentSource && sectionsReady) {
       return;
     }
 
@@ -274,6 +300,7 @@ export function createBrowseState() {
     if (source === "my-library") {
       await loadLibrarySequences();
     } else {
+      // Community: PublicSequencesLoader has its own in-memory cache, so this is fast
       await loadAllSequences();
     }
   }
@@ -633,6 +660,18 @@ export function createBrowseState() {
     }, 300);
   }
 
+  // When a sequence is deleted from anywhere (e.g. sequence viewer),
+  // remove it from both caches and the displayed list — no Firestore round-trip.
+  $effect(() => {
+    return onLibraryMutated((sequenceId) => {
+      libraryCache = libraryCache?.filter((s) => s.id !== sequenceId) ?? null;
+      loaderService.removeFromCache(sequenceId);
+      allSequences = allSequences.filter((s) => s.id !== sequenceId);
+      applyFilterAndSort();
+      generateSequenceSections();
+    });
+  });
+
   return {
     // State
     get isLoading() {
@@ -713,6 +752,7 @@ export function createBrowseState() {
     // Methods
     loadAllSequences,
     loadLibrarySequences,
+    invalidateLibraryCache() { libraryCache = null; },
     setSource,
     selectSequence,
     toggleFavorite,
