@@ -323,7 +323,7 @@ export class AsciiRenderer implements IAsciiRenderer {
 			this.placePositionDots(buffer, outerCoords, isBox);
 
 			// Inner hand-point dots (hands overwrite these via priority)
-			this.placeHandPointDots(buffer, handCoords);
+			this.placeHandPointDots(buffer, handCoords, isBox);
 		}
 
 		// Step 3: Overlay hand markers at hand points (layer: hands)
@@ -363,18 +363,14 @@ export class AsciiRenderer implements IAsciiRenderer {
 		const center = DIAMOND_OUTER[GridLocation.CENTER];
 		this.setCell(buffer, center.col, center.row, "?", COLOR_GRAY);
 
-		// Place dots at all cardinal/intercardinal positions
-		const allPositions: GridLocation[] = [
+		// Diamond placeholder: filled circles at cardinals only
+		const cardinals: GridLocation[] = [
 			GridLocation.NORTH,
-			GridLocation.NORTHEAST,
 			GridLocation.EAST,
-			GridLocation.SOUTHEAST,
 			GridLocation.SOUTH,
-			GridLocation.SOUTHWEST,
 			GridLocation.WEST,
-			GridLocation.NORTHWEST,
 		];
-		for (const loc of allPositions) {
+		for (const loc of cardinals) {
 			const coord = DIAMOND_OUTER[loc];
 			this.setCell(buffer, coord.col, coord.row, "\u25CF", COLOR_WHITE);
 		}
@@ -497,41 +493,29 @@ export class AsciiRenderer implements IAsciiRenderer {
 		outerCoords: Record<GridLocation, GridCoord>,
 		isBox: boolean,
 	): void {
-		// Diamond = filled circles (●), Box = hollow circles (O)
+		// Diamond = filled circles (●) at cardinals only
+		// Box = hollow circles (O) at intercardinals only
 		const marker = isBox ? "O" : "\u25CF";
 
-		const perimeterPositions: GridLocation[] = [
-			GridLocation.NORTH,
-			GridLocation.NORTHEAST,
-			GridLocation.EAST,
-			GridLocation.SOUTHEAST,
-			GridLocation.SOUTH,
-			GridLocation.SOUTHWEST,
-			GridLocation.WEST,
-			GridLocation.NORTHWEST,
-		];
+		const positions: GridLocation[] = isBox
+			? [GridLocation.NORTHEAST, GridLocation.SOUTHEAST, GridLocation.SOUTHWEST, GridLocation.NORTHWEST]
+			: [GridLocation.NORTH, GridLocation.EAST, GridLocation.SOUTH, GridLocation.WEST];
 
-		for (const loc of perimeterPositions) {
+		for (const loc of positions) {
 			const coord = outerCoords[loc];
 			this.setCell(buffer, coord.col, coord.row, marker, COLOR_WHITE);
 		}
 	}
 
-	/** Place small dots at all 8 hand-ring positions. Hands overwrite via priority. */
+	/** Place hand-point dots at the 4 primary positions for the current grid mode. */
 	private placeHandPointDots(
 		buffer: Cell[][],
 		handCoords: Record<GridLocation, GridCoord>,
+		isBox: boolean,
 	): void {
-		const positions: GridLocation[] = [
-			GridLocation.NORTH,
-			GridLocation.NORTHEAST,
-			GridLocation.EAST,
-			GridLocation.SOUTHEAST,
-			GridLocation.SOUTH,
-			GridLocation.SOUTHWEST,
-			GridLocation.WEST,
-			GridLocation.NORTHWEST,
-		];
+		const positions: GridLocation[] = isBox
+			? [GridLocation.NORTHEAST, GridLocation.SOUTHEAST, GridLocation.SOUTHWEST, GridLocation.NORTHWEST]
+			: [GridLocation.NORTH, GridLocation.EAST, GridLocation.SOUTH, GridLocation.WEST];
 
 		for (const loc of positions) {
 			const coord = handCoords[loc];
