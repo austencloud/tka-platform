@@ -323,7 +323,6 @@ export class AnimationEngine {
     propColors: undefined,
     ledConfig: null,
     isSeamlesslyLoopable: false,
-    totalSteps: 0,
     sequenceContentHash: undefined,
   };
 
@@ -1728,8 +1727,7 @@ export class AnimationEngine {
     const visibilityManager = getAnimationVisibilityManager();
     fp.playbackSpeed = visibilityManager.getSpeed();
 
-    // Step/sequence data for fire cache: step-indexed playback + sequence identity
-    fp.totalSteps = props.sequenceData?.steps?.length ?? 0;
+    // Sequence identity for fire cache invalidation (new sequence = invalidate stale fire frames)
     fp.sequenceContentHash = this.lastSequenceContentHash ?? undefined;
 
     // Seamless loop flag for trail wrap-around.

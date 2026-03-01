@@ -76,10 +76,6 @@ export interface FireFrameInput {
   loopDetected?: boolean;
   /** Playback speed multiplier (1.0 = 60 BPM). Used for cache invalidation — different speeds produce different fire physics. */
   playbackSpeed?: number;
-  /** Current animation step (0 to totalSteps). Used for step-indexed cache playback. */
-  currentStep?: number;
-  /** Sequence length in steps. Used with currentStep for progress-based cache lookup. */
-  totalSteps?: number;
   /** Changes when the sequence content changes. Invalidates fire cache so stale frames don't replay over new props. */
   sequenceContentHash?: string;
 }

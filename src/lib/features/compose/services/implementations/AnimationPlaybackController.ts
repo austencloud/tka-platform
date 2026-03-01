@@ -16,6 +16,7 @@ import type { IAnimationPlaybackController } from "../contracts/IAnimationPlayba
 import type { ISequenceAnimationOrchestrator } from "../contracts/ISequenceAnimationOrchestrator";
 import type { ISequenceLoopabilityChecker } from "../contracts/ISequenceLoopabilityChecker";
 import { sharedAnimationState } from "$lib/shared/animation-engine/state/shared-animation-state.svelte";
+import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
 export class AnimationPlaybackController implements IAnimationPlaybackController {
   private state: AnimationPanelState | null = null;
@@ -428,6 +429,11 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     if (!this.state) return;
 
     this.state.setSpeed(speed);
+
+    // Sync to global visibility manager so fire cache invalidates on BPM change.
+    // Without this, the fire renderer reads stale speed from the global singleton
+    // and keeps replaying cached frames recorded at the old BPM.
+    getAnimationVisibilityManager().setSpeed(speed);
 
     // Update loop service if currently playing
     if (this.state.isPlaying) {

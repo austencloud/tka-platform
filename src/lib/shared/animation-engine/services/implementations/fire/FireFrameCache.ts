@@ -204,34 +204,20 @@ export class FireFrameCache {
 
   /**
    * Blit a cached frame to the screen during playback.
-   *
-   * When currentStep and totalSteps are provided, uses step-indexed lookup:
-   * maps animation progress (currentStep/totalSteps) to a cache frame index.
-   * This prevents drift between time-based prop positions and frame-count-based
-   * cache playback that occurs when FPS varies between recording and playback.
-   *
-   * Falls back to sequential frame-counting when step data is unavailable.
-   *
-   * Returns true if a frame was blitted, false if cache is empty.
+   * Advances the frame index for the next call.
+   * Returns true if a frame was blitted, false if cache exhausted (shouldn't happen).
    */
-  blitCachedFrame(currentStep?: number, totalSteps?: number): boolean {
+  blitCachedFrame(): boolean {
     if (this.state !== "warm" || this.totalFrames === 0) return false;
 
-    let idx: number;
-    if (currentStep !== undefined && totalSteps !== undefined && totalSteps > 0) {
-      // Step-indexed: map animation progress to cache frame
-      const progress = Math.max(0, Math.min(1, currentStep / totalSteps));
-      idx = Math.min(this.totalFrames - 1, Math.floor(progress * this.totalFrames));
-    } else {
-      // Fallback: frame-counting (legacy behavior)
-      idx = this.frameIndex % this.totalFrames;
-      this.frameIndex++;
-    }
-
+    // Wrap around if we exceed recorded frames (safety)
+    const idx = this.frameIndex % this.totalFrames;
     const tex = this.frames[idx];
     if (!tex) return false;
 
     this.blitToScreen(tex);
+    this.frameIndex++;
+
     return true;
   }
 

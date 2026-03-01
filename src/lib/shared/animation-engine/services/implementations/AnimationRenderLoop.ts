@@ -403,8 +403,6 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         // so the fire renderer doesn't replay stale cached frames.
         loopDetected: this.loopDetectedThisFrame || tipResult.gapDetected,
         playbackSpeed: params.playbackSpeed,
-        currentStep: params.currentStep,
-        totalSteps: params.totalSteps,
         sequenceContentHash: params.sequenceContentHash,
       };
 

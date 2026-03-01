@@ -319,7 +319,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
 
       // If cache is warm, skip simulation entirely and blit from cache
       if (cache.isWarm()) {
-        if (cache.blitCachedFrame(input.currentStep, input.totalSteps)) {
+        if (cache.blitCachedFrame()) {
           return; // Done — no simulation needed
         }
         // Cache exhausted (shouldn't happen), fall through to live simulation

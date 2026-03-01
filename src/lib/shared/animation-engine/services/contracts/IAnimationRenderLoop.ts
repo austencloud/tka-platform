@@ -105,8 +105,6 @@ export interface RenderFrameParams {
   /** Whether sequence loops seamlessly (end position = start position).
    *  When true, trail rendering wraps around the loop boundary instead of resetting. */
   isSeamlesslyLoopable?: boolean;
-  /** Sequence length in steps. Passed to fire cache for step-indexed playback. */
-  totalSteps?: number;
   /** Changes when the sequence content changes. Invalidates fire cache. */
   sequenceContentHash?: string;
 }
