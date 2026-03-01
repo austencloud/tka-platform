@@ -67,6 +67,7 @@
 					class="decline-button"
 					onclick={handleDecline}
 					disabled={isConnecting}
+					aria-label={`Decline ${activeInvite.senderDisplayName}'s invite to sync ${activeInvite.sequenceWord}`}
 				>
 					<i class="fas fa-times" aria-hidden="true"></i>
 					Decline
@@ -76,6 +77,7 @@
 					class="accept-button"
 					onclick={handleAccept}
 					disabled={isConnecting}
+					aria-label={`Join ${activeInvite.senderDisplayName}'s session for ${activeInvite.sequenceWord}`}
 				>
 					{#if isConnecting}
 						<ProgressRing percent={-1} size={24} strokeWidth={2} />

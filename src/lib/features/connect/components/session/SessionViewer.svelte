@@ -154,8 +154,19 @@
 			// All sources exhausted
 			loadError = 'Sequence not found';
 		} catch (error) {
-			console.error('[SessionViewer] Failed to load sequence:', error);
 			loadError = error instanceof Error ? error.message : 'Failed to load sequence';
+			const errorHandler = container.items.errorHandler;
+			errorHandler.showUserError({
+				message: 'Failed to load the synced sequence. You can report this so it can be fixed.',
+				technicalDetails: error instanceof Error ? error.message : String(error),
+				error: error instanceof Error ? error : new Error(String(error)),
+				severity: 'error',
+				context: {
+					module: 'connect',
+					action: 'load-session-sequence',
+					additionalData: { sessionId: session.sessionId, sequenceWord: session.sequenceWord }
+				}
+			});
 		} finally {
 			isLoading = false;
 		}

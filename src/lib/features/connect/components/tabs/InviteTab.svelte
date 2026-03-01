@@ -164,14 +164,18 @@
 						</div>
 
 						<div class="invite-actions">
-							<button class="accept-button" onclick={() => handleAcceptInvite(invite)}>
+							<button
+								class="accept-button"
+								onclick={() => handleAcceptInvite(invite)}
+								aria-label={`Join ${invite.fromDisplayName}’s session for ${invite.sequenceWord}`}
+							>
 								<i class="fas fa-check" aria-hidden="true"></i>
 								Join
 							</button>
 							<button
 								class="decline-button"
 								onclick={() => handleDeclineInvite(invite)}
-								aria-label="Decline invite"
+								aria-label={`Decline ${invite.fromDisplayName}'s invite to ${invite.sequenceWord}`}
 							>
 								<i class="fas fa-times" aria-hidden="true"></i>
 							</button>

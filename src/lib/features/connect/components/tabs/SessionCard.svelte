@@ -63,7 +63,11 @@
 		{#if isOwnSession}
 			<span class="own-session-badge">Your session</span>
 		{:else}
-			<button class="join-button" onclick={onJoin}>
+			<button
+				class="join-button"
+				onclick={onJoin}
+				aria-label={`Join ${session.hostDisplayName}’s session`}
+			>
 				<i class="fas fa-link" aria-hidden="true"></i>
 				Join
 			</button>
