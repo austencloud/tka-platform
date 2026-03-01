@@ -23,6 +23,7 @@ import type {
 } from "../domain/models/LibrarySequence";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { compareKineticLetters } from "$lib/features/browse/shared/utils/kinetic-alphabet-sort";
+import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
 export type LibraryViewSection =
   | "sequences"
@@ -731,14 +732,17 @@ class LibraryStateManager {
 
   /**
    * Find sequences by word (TKA name)
-   * Used for duplicate detection before saving
+   * Used for duplicate detection before saving.
+   * Simplifies repeated patterns before comparing so "AAA" matches "A".
    */
   findSequencesByWord(word: string): LibrarySequence[] {
     if (!word) return [];
-    const normalizedWord = word.toLowerCase().trim();
-    return this.state.sequences.filter(
-      (s) => s.word?.toLowerCase().trim() === normalizedWord
-    );
+    const canonical = simplifyRepeatedWord(word).toLowerCase().trim();
+    return this.state.sequences.filter((s) => {
+      if (!s.word) return false;
+      const storedCanonical = simplifyRepeatedWord(s.word).toLowerCase().trim();
+      return storedCanonical === canonical;
+    });
   }
 
   /**

@@ -4,16 +4,16 @@
  * library-events.ts Tests
  *
  * Tests the cross-module event bus that notifies gallery subscribers when
- * the user's sequence library is mutated (e.g. after a delete).
+ * the user's sequence library is mutated (added or deleted).
  *
  * HIGH VALUE: These tests catch two silent failure modes:
- *   1. onLibraryMutated fails to clean up — gallery reloads on every future
+ *   1. Listener cleanup failures — gallery reloads on every future
  *      mutation even after the component is destroyed (listener leak).
- *   2. notifyLibraryMutated dispatches under a different event name than
- *      onLibraryMutated listens for — gallery silently stops refreshing.
+ *   2. Event name mismatches — gallery silently stops refreshing because
+ *      the dispatch and listener use different event names.
  *
- * Note: the event-name test spies on window.dispatchEvent so it will fail
- * if the constant in library-events.ts is renamed without updating subscribers.
+ * Note: the event-name tests spy on window.dispatchEvent so they will fail
+ * if the constants in library-events.ts are renamed without updating subscribers.
  */
 
 import { describe, it, expect, vi, afterEach } from "vitest";
@@ -21,7 +21,11 @@ import {
   notifyLibraryMutated,
   onLibraryMutated,
   LIBRARY_MUTATED_EVENT,
+  notifyLibrarySequenceAdded,
+  onLibrarySequenceAdded,
+  LIBRARY_SEQUENCE_ADDED_EVENT,
 } from "$lib/shared/library/library-events";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
 afterEach(() => {
   // Clean up any lingering listeners between tests
@@ -121,6 +125,98 @@ describe("onLibraryMutated cleanup", () => {
     expect(() => cleanup()).not.toThrow();
 
     notifyLibraryMutated("seq-1");
+    expect(handler).toHaveBeenCalledTimes(0);
+  });
+});
+
+// --- Sequence Added Events ---
+
+const fakeSequence = { id: "seq-new", name: "TEST" } as SequenceData;
+
+describe("notifyLibrarySequenceAdded", () => {
+  it("dispatches an event named 'tka:library-sequence-added'", () => {
+    const dispatchSpy = vi.spyOn(window, "dispatchEvent");
+    notifyLibrarySequenceAdded(fakeSequence);
+    expect(dispatchSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ type: LIBRARY_SEQUENCE_ADDED_EVENT })
+    );
+  });
+
+  it("passes the full sequence to the handler", () => {
+    const handler = vi.fn();
+    const cleanup = onLibrarySequenceAdded(handler);
+
+    notifyLibrarySequenceAdded(fakeSequence);
+
+    expect(handler).toHaveBeenCalledWith(fakeSequence);
+    cleanup();
+  });
+
+  it("calls multiple registered handlers", () => {
+    const handlerA = vi.fn();
+    const handlerB = vi.fn();
+    const cleanupA = onLibrarySequenceAdded(handlerA);
+    const cleanupB = onLibrarySequenceAdded(handlerB);
+
+    notifyLibrarySequenceAdded(fakeSequence);
+
+    expect(handlerA).toHaveBeenCalledTimes(1);
+    expect(handlerB).toHaveBeenCalledTimes(1);
+    cleanupA();
+    cleanupB();
+  });
+
+  it("calls handlers each time it is dispatched", () => {
+    const handler = vi.fn();
+    const cleanup = onLibrarySequenceAdded(handler);
+
+    const seq2 = { id: "seq-2", name: "TWO" } as SequenceData;
+    notifyLibrarySequenceAdded(fakeSequence);
+    notifyLibrarySequenceAdded(seq2);
+
+    expect(handler).toHaveBeenCalledTimes(2);
+    expect(handler).toHaveBeenNthCalledWith(1, fakeSequence);
+    expect(handler).toHaveBeenNthCalledWith(2, seq2);
+    cleanup();
+  });
+});
+
+describe("onLibrarySequenceAdded cleanup", () => {
+  it("stops calling the handler after cleanup is invoked", () => {
+    const handler = vi.fn();
+    const cleanup = onLibrarySequenceAdded(handler);
+
+    notifyLibrarySequenceAdded(fakeSequence);
+    expect(handler).toHaveBeenCalledTimes(1);
+
+    cleanup();
+    notifyLibrarySequenceAdded(fakeSequence);
+
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it("only removes the specific handler, not others", () => {
+    const handlerA = vi.fn();
+    const handlerB = vi.fn();
+    const cleanupA = onLibrarySequenceAdded(handlerA);
+    const cleanupB = onLibrarySequenceAdded(handlerB);
+
+    cleanupA();
+    notifyLibrarySequenceAdded(fakeSequence);
+
+    expect(handlerA).toHaveBeenCalledTimes(0);
+    expect(handlerB).toHaveBeenCalledTimes(1);
+    cleanupB();
+  });
+
+  it("is safe to call cleanup more than once", () => {
+    const handler = vi.fn();
+    const cleanup = onLibrarySequenceAdded(handler);
+
+    cleanup();
+    expect(() => cleanup()).not.toThrow();
+
+    notifyLibrarySequenceAdded(fakeSequence);
     expect(handler).toHaveBeenCalledTimes(0);
   });
 });

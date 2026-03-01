@@ -31,7 +31,10 @@ import type { SequenceSource } from "../state/sequence-source-state.svelte";
 import type { IFavoritesManager } from "../services/contracts/IFavoritesManager";
 import type { SequenceFilterType } from "../state/sequence-controls-state.svelte";
 import { sequencePanelManager } from "../state/sequence-panel-state.svelte";
-import { onLibraryMutated } from "$lib/shared/library/library-events";
+import {
+  onLibraryMutated,
+  onLibrarySequenceAdded,
+} from "$lib/shared/library/library-events";
 
 const STORAGE_KEY = "tka-browse-gallery-controls";
 
@@ -669,6 +672,25 @@ export function createBrowseState() {
       allSequences = allSequences.filter((s) => s.id !== sequenceId);
       applyFilterAndSort();
       generateSequenceSections();
+    });
+  });
+
+  // When a sequence is saved, add it to the library cache so it appears
+  // immediately — no Firestore round-trip needed.
+  $effect(() => {
+    return onLibrarySequenceAdded((sequence) => {
+      if (currentSource === "my-library") {
+        // User is viewing library — insert sequence at the top
+        if (libraryCache) {
+          libraryCache = [sequence, ...libraryCache];
+        }
+        allSequences = deduplicateById([sequence, ...allSequences]);
+        applyFilterAndSort();
+        generateSequenceSections();
+      } else {
+        // User is on community tab — just invalidate cache for next switch
+        libraryCache = null;
+      }
     });
   });
 
