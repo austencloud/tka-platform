@@ -48,6 +48,7 @@
     retro: () => import("$lib/features/retro/win95/components/RetroLab.svelte"),
     "contact-ball": () => import("./tabs/ContactBallLab.svelte"),
     "ascii-pictograph": () => import("./tabs/AsciiPictographLab.svelte"),
+    "retro-pictograph": () => import("./tabs/RetroPictographLab.svelte"),
   };
 
   // Get current tab, default to first tab

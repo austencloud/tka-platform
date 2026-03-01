@@ -788,6 +788,14 @@ export const LAB_TABS: Section[] = [
     color: "#33ff33",
     gradient: "linear-gradient(135deg, #33ff33 0%, #1a8c1a 100%)",
   },
+  {
+    id: "retro-pictograph",
+    label: "Retro Pictograph",
+    icon: '<i class="fas fa-desktop" aria-hidden="true"></i>',
+    description: "Iterate on Win95 pixel pictograph rendering (16-color dithered)",
+    color: "#6666ff",
+    gradient: "linear-gradient(135deg, #9999ff 0%, #6666ff 100%)",
+  },
 ];
 
 // REMOVED: LANDING_PAGE_TABS - LandingPreviewModule now handles its own internal tabs
