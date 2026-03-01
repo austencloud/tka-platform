@@ -308,6 +308,57 @@ export class LOOPLabelerController {
   }
 
   // ============================================================
+  // DETAIL LOADING
+  // ============================================================
+
+  /** Tracks in-flight fetches to prevent duplicate requests */
+  private detailFetchInFlight = new Set<string>();
+
+  /**
+   * Ensure the current sequence has fullMetadata loaded.
+   * If not, lazy-fetch from the source library document.
+   * Returns immediately if data is already present.
+   */
+  async ensureSequenceDetail(): Promise<void> {
+    const seq = this.state.currentSequence;
+    if (!seq) return;
+
+    // Already has data
+    if (seq.fullMetadata?.sequence && seq.fullMetadata.sequence.length > 0) return;
+
+    // No source ref — can't fetch
+    if (!seq.sourceRef) {
+      console.warn(`[LOOPLabelerController] No sourceRef for sequence "${seq.word}" (${seq.id})`);
+      return;
+    }
+
+    // Already fetching
+    if (this.detailFetchInFlight.has(seq.id)) return;
+
+    this.detailFetchInFlight.add(seq.id);
+    try {
+      const loader = this.services.sequenceLoader;
+      if (!loader) return;
+
+      const rawSequence = await loader.loadSequenceDetail(seq.sourceRef);
+      if (!rawSequence || rawSequence.length === 0) return;
+
+      // Extract authoritative grid mode from metadata element (index 0)
+      const metadataGridMode = rawSequence[0]?.gridMode;
+
+      this.state.updateSequenceDetail(
+        seq.id,
+        { sequence: rawSequence },
+        metadataGridMode
+      );
+    } catch (error) {
+      console.error(`[LOOPLabelerController] Failed to load detail for "${seq.word}":`, error);
+    } finally {
+      this.detailFetchInFlight.delete(seq.id);
+    }
+  }
+
+  // ============================================================
   // FILTERS & UI STATE
   // ============================================================
 

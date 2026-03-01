@@ -52,6 +52,8 @@ export interface SequenceEntry {
   thumbnails: string[];
   sequenceLength: number;
   gridMode: string;
+  /** Firestore path to full sequence data: "users/{ownerId}/sequences/{id}" */
+  sourceRef?: string;
   fullMetadata?: {
     sequence?: RawStepData[];
   };

@@ -163,6 +163,14 @@
     }
   });
 
+  // Lazy-fetch full sequence data when current sequence changes
+  $effect(() => {
+    if (currentSequence && !currentSequence.fullMetadata?.sequence) {
+      console.log(`[LOOPLabeler] Fetching detail for "${currentSequence.word}" (sourceRef: ${currentSequence.sourceRef ?? "MISSING"})`);
+      loopLabelerController.ensureSequenceDetail();
+    }
+  });
+
   // Parse steps for current sequence (uses cached conversionService)
   const parsedData = $derived.by(() => {
     if (!currentSequence?.fullMetadata?.sequence) {

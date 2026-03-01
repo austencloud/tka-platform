@@ -1,4 +1,4 @@
-import type { SequenceEntry } from "./IStepDataConverter";
+import type { SequenceEntry, RawStepData } from "./IStepDataConverter";
 import type { LabeledSequence } from "./ILOOPLabelsFirebaseRepository";
 
 /**
@@ -20,9 +20,16 @@ export interface SequenceStats {
  */
 export interface ISequenceLoader {
   /**
-   * Load all sequences from sequence-index.json
+   * Load all sequences from publicSequences index
    */
   loadSequences(): Promise<SequenceEntry[]>;
+
+  /**
+   * Fetch full sequence data (steps, motions) from the source library document.
+   * Returns RawStepData[] in the format expected by the detection pipeline,
+   * or null if the source document doesn't exist.
+   */
+  loadSequenceDetail(sourceRef: string): Promise<RawStepData[] | null>;
 
   /**
    * Filter sequences based on labeling status

@@ -186,6 +186,26 @@ export class LOOPLabelerState {
     this.data.sequences = sequences;
   }
 
+  /**
+   * Update a specific sequence's fullMetadata (and optionally gridMode).
+   * Used by lazy-fetch to populate beat data after loading from source.
+   */
+  updateSequenceDetail(
+    sequenceId: string,
+    fullMetadata: SequenceEntry["fullMetadata"],
+    gridMode?: string
+  ) {
+    const idx = this.data.sequences.findIndex((s) => s.id === sequenceId);
+    if (idx < 0) return;
+
+    // Replace the sequence object to trigger reactivity
+    const updated = { ...this.data.sequences[idx]!, fullMetadata };
+    if (gridMode !== undefined) {
+      updated.gridMode = gridMode;
+    }
+    this.data.sequences[idx] = updated;
+  }
+
   setLabels(labels: Map<string, LabeledSequence>) {
     this.data.labels = labels;
   }
