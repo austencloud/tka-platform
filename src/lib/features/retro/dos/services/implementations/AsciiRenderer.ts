@@ -321,6 +321,9 @@ export class AsciiRenderer implements IAsciiRenderer {
 
 			// Outer perimeter markers (always visible, hands don't replace these)
 			this.placePositionDots(buffer, outerCoords, data);
+
+			// Inner hand-point dots (hands overwrite these via priority)
+			this.placeHandPointDots(buffer, handCoords);
 		}
 
 		// Step 3: Overlay hand markers at hand points (layer: hands)
@@ -509,6 +512,28 @@ export class AsciiRenderer implements IAsciiRenderer {
 		for (const loc of perimeterPositions) {
 			const coord = outerCoords[loc];
 			this.setCell(buffer, coord.col, coord.row, "O", COLOR_WHITE);
+		}
+	}
+
+	/** Place small dots at all 8 hand-ring positions. Hands overwrite via priority. */
+	private placeHandPointDots(
+		buffer: Cell[][],
+		handCoords: Record<GridLocation, GridCoord>,
+	): void {
+		const positions: GridLocation[] = [
+			GridLocation.NORTH,
+			GridLocation.NORTHEAST,
+			GridLocation.EAST,
+			GridLocation.SOUTHEAST,
+			GridLocation.SOUTH,
+			GridLocation.SOUTHWEST,
+			GridLocation.WEST,
+			GridLocation.NORTHWEST,
+		];
+
+		for (const loc of positions) {
+			const coord = handCoords[loc];
+			this.setCell(buffer, coord.col, coord.row, ".", COLOR_GRAY);
 		}
 	}
 
