@@ -259,5 +259,9 @@
   "lib/shared/animation-engine/services/implementations/fire/WebGLFireRenderer.ts": {
     "auditDate": "2026-02-27",
     "reason": "Single responsibility: Navier-Stokes fluid fire simulation on WebGL2. Size inherent to 15 shader programs, 10+ simulation passes, bloom pipeline, and frame caching. Supporting concerns already extracted (shader sources, frame cache, types). 3/4 perspectives agree leave alone."
+  },
+  "lib/features/create/generate/components/CompactSettingsToolbar.svelte": {
+    "auditDate": "2026-03-01",
+    "reason": "Single-purpose compact chip toolbar. 510/1191 lines are scoped CSS (inherent to Svelte). Script is well-organized orchestration of 9 configurable chips with morph animations. Expand panels already extracted (Style, LOOP, StartEnd). No clean extraction candidates — 4/4 perspectives agree."
   }
 }
