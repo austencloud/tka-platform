@@ -13,6 +13,7 @@
     ILOOPDetector,
     LOOPDetectionResult,
   } from "../services/contracts/ILOOPDetector";
+  import type { ComponentId } from "../domain/constants/loop-components";
   import type { LOOPLabelerState } from "../state/loop-labeler-state.svelte";
   import {
     loopLabelerState,
@@ -43,8 +44,12 @@
   // Lifecycle
   let isReady = $state(false);
   let copiedToast = $state(false);
+  let verifiedToast = $state(false);
   let showBrowserDrawer = $state(false);
   let showManualBuilder = $state(false); // Hide manual designation tools behind toggle
+
+  // Toast timers (cleaned up on unmount)
+  let verifiedToastTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Store service references after loading (to avoid resolving in $derived)
   let detectionService = $state<ILOOPDetector | null>(null);
@@ -92,6 +97,7 @@
     // Return cleanup function
     return () => {
       loopLabelerController.dispose();
+      if (verifiedToastTimer) clearTimeout(verifiedToastTimer);
     };
   });
 
@@ -119,14 +125,45 @@
       return null;
     }
 
-    // Check cache first (using ref to avoid state mutation in derived)
-    const cacheKey = seq.id;
+    // Don't run detection until fullMetadata (beat data) is loaded
+    if (!seq.fullMetadata?.sequence || seq.fullMetadata.sequence.length === 0) {
+      return null;
+    }
+
+    // Cache key includes sequence length to bust stale cache when fullMetadata arrives
+    const metaLen = seq.fullMetadata.sequence.length;
+    const cacheKey = `${seq.id}:${metaLen}`;
     const cached = detectionCacheRef.current.get(cacheKey);
     if (cached) {
       return cached;
     }
 
-    const detection = detectionService.detectLOOP(seq);
+    let detection = detectionService.detectLOOP(seq);
+
+    // If the algorithm found no candidates but the sequence already has a loopType
+    // from the publishing pipeline, surface it as a pre-existing candidate
+    if (
+      detection.candidateDesignations.length === 0 &&
+      seq.loopType &&
+      seq.loopType !== "unknown" &&
+      seq.loopType !== "freeform"
+    ) {
+      const components = seq.loopType.split("_").map(c => c.toLowerCase()) as ComponentId[];
+      const label = components.join(" + ");
+      const description = `Pre-existing: ${label}`;
+
+      detection = {
+        ...detection,
+        isFreeform: false,
+        candidateDesignations: [{
+          components,
+          loopType: seq.loopType,
+          label: seq.loopType,
+          description,
+          confirmed: false,
+        }],
+      };
+    }
 
     // Cache the result (mutating ref, not reactive state)
     detectionCacheRef.current.set(cacheKey, detection);
@@ -429,15 +466,37 @@
     );
     if (!result.success) {
       console.error("Failed to delete sequence:", result.error);
+      try {
+        const errorHandler = container.items.errorHandler;
+        if (errorHandler && typeof errorHandler === "object" && "showUserError" in errorHandler) {
+          (errorHandler as { showUserError: (opts: Record<string, unknown>) => void }).showUserError({
+            message: "Could not delete this sequence. Check your connection and try again.",
+            technicalDetails: result.error ?? "Unknown error",
+            error: new Error(result.error ?? "Delete failed"),
+            severity: "error",
+            context: { module: "loop-labeler", action: "deleteSequence" },
+          });
+        }
+      } catch {
+        // ErrorHandler not available — console.error above is the fallback
+      }
     }
   }
 
   /**
-   * Verify the computed designations for this sequence
-   * With on-the-fly detection, this just marks as "verified" - no need to store designations
+   * Verify the computed designations for this sequence.
+   * Shows a brief toast confirming the action before the UI state changes.
    */
   async function handleVerify() {
     if (!currentSequence) return;
+
+    // Show verified toast BEFORE the verify call changes needsVerification
+    verifiedToast = true;
+    if (verifiedToastTimer) clearTimeout(verifiedToastTimer);
+    verifiedToastTimer = setTimeout(() => {
+      verifiedToast = false;
+      verifiedToastTimer = null;
+    }, 2500);
 
     await loopLabelerController.verifySequence(
       currentSequence,
@@ -466,11 +525,11 @@
   }
 
   /**
-   * Individual candidate confirmation is no longer needed with on-the-fly detection
-   * Kept for interface compatibility but just verifies the whole thing
+   * Confirm an individual candidate designation.
+   * With on-the-fly detection, this verifies the whole sequence.
    */
-  function handleConfirmCandidate(_index: number) {
-    // No-op - individual confirmations not needed with computed designations
+  async function handleConfirmCandidate(_index: number) {
+    await handleVerify();
   }
 
   /**
@@ -594,6 +653,7 @@
               axisAlternatingPattern={currentComputedDetection?.axisAlternatingPattern ??
                 null}
               needsVerification={!isVerified}
+              {verifiedToast}
               autoDetectedDesignations={[]}
               candidateDesignations={currentComputedDetection?.candidateDesignations ??
                 []}
@@ -669,7 +729,7 @@
 <style>
   .loop-labeler-module {
     width: 100%;
-    height: 100vh;
+    height: 100%;
     display: flex;
     flex-direction: column;
     background: var(--background);
