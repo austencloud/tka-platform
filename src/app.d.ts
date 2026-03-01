@@ -11,6 +11,10 @@ declare global {
     // interface Error {}
     // interface Locals {}
     // interface PageData {}
+    interface PageState {
+      moduleId?: string;
+      sectionId?: string;
+    }
     // interface Platform {}
   }
 

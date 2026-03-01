@@ -425,6 +425,62 @@ export function registerCreateShortcuts(
     },
   });
 
+  // Delete - Delete selected beat (same as Backspace)
+  service.register({
+    id: "create.delete-beat-delete-key",
+    label: "Delete Beat",
+    description: "Delete the currently selected beat (Delete key)",
+    key: "Delete",
+    modifiers: [],
+    context: "create",
+    scope: "sequence-management",
+    priority: "medium",
+    action: async () => {
+      const ref = getCreateModuleRef();
+      if (!ref) return;
+
+      const { CreateModuleState, constructTabState, panelState } = ref;
+      const sequenceState = CreateModuleState.sequenceState;
+
+      const selectedStepData = sequenceState.selectedStepData;
+
+      if (selectedStepData?.stepNumber === 0) {
+        try {
+          await executeClearSequenceWorkflow({
+            CreateModuleState,
+            constructTabState,
+            panelState,
+          });
+
+          if (panelState.isStepEditorPanelOpen) {
+            panelState.closeStepEditorPanel();
+          }
+        } catch (err) {
+          console.error("Failed to clear sequence:", err);
+        }
+        return;
+      }
+
+      const selectedStepIndex = sequenceState.getSelectedStepIndex();
+
+      if (selectedStepIndex === null) {
+        debug.log("Delete - No beat selected");
+        return;
+      }
+
+      sequenceState.removeBeatAndSubsequentWithAnimation(
+        selectedStepIndex,
+        () => {
+          if (selectedStepIndex > 0) {
+            sequenceState.selectStep(selectedStepIndex);
+          } else {
+            sequenceState.selectStartPositionForEditing();
+          }
+        }
+      );
+    },
+  });
+
   // ==================== Sequence Transforms ====================
   // Global hotkeys for sequence transforms - available anytime in CREATE module
 
