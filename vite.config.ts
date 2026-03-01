@@ -961,15 +961,19 @@ export default defineConfig({
         "**/node_modules/**",
         "**/.git/**",
         "**/.svelte-kit/**",
-        // Ignore every root-level directory except src/ and static/.
-        // Uses **/ prefix (not ./) because chokidar receives absolute paths on Windows.
-        // These directory names are unique to the project root and won't match inside src/.
+        // "apps" exists inside src/ (retro/win95/components/apps/) so we
+        // match only the root-level apps/ dir using an absolute path.
+        path.resolve(dirname, "apps") + "/**",
+        // Ignore root-level directories that don't need HMR.
+        // Uses **/ prefix because chokidar receives absolute paths on Windows.
+        // CAUTION: These match at ANY depth. Only use names that are unique to
+        // the project root and DON'T appear inside src/ (e.g. "apps" exists at
+        // src/lib/features/retro/win95/components/apps/ — can't use **/apps/**).
         "**/_ARCHIVE/**",
         "**/tka-worlds/**",
         "**/firebase-functions/**",
         "**/functions/**",
         "**/mcp-server/**",
-        "**/apps/**",
         "**/packages/**",
         "**/android-twa/**",
         "**/_GUIDE/**",
