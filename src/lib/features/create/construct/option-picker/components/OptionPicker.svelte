@@ -84,6 +84,10 @@ Delegates all rendering to child components.
     onToggleContinuous?.(value);
   }
 
+  function handleSlotClicked(typeSection: string, slotIndex: number) {
+    pickerState?.recordClickSlot(typeSection, slotIndex);
+  }
+
   // Load options when sequence changes (don't block on fade)
   $effect(() => {
     if (!pickerState || !isReady) return;
@@ -226,6 +230,8 @@ Delegates all rendering to child components.
     onToggleContinuous={handleToggleContinuous}
     {isSideBySideLayout}
     {currentSequence}
+    onSlotClicked={handleSlotClicked}
+    lastClickedSlot={pickerState?.lastClickedSlot ?? null}
   />
 {/if}
 

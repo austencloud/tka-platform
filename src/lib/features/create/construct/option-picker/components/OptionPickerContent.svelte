@@ -16,6 +16,7 @@ Uses organizer and sizer services for section grouping and sizing.
   import OptionCard from "./OptionCard.svelte";
   import OptionViewerSwipeLayout from "../swipe-layout/components/OptionViewerSwipeLayout.svelte";
   import OptionViewerSection from "../swipe-layout/components/OptionViewerSection.svelte";
+  import { continuationIdentifier } from "../services/implementations/ContinuationIdentifier";
 
   interface Props {
     options: PreparedPictographData[];
@@ -28,6 +29,9 @@ Uses organizer and sizer services for section grouping and sizing.
     isSideBySideLayout?: () => boolean;
     // Sequence context for reversal detection
     currentSequence?: PictographData[];
+    // Continuation reordering
+    onSlotClicked?: (typeSection: string, slotIndex: number) => void;
+    lastClickedSlot?: { typeSection: string; slotIndex: number } | null;
   }
 
   const {
@@ -39,6 +43,8 @@ Uses organizer and sizer services for section grouping and sizing.
     onToggleContinuous,
     isSideBySideLayout = () => false,
     currentSequence = [],
+    onSlotClicked,
+    lastClickedSlot = null,
   }: Props = $props();
 
   // Track container dimensions with simple resize observer
@@ -72,15 +78,80 @@ Uses organizer and sizer services for section grouping and sizing.
     return organizerService.organizePictographs(options, "type");
   });
 
+  // Apply continuation reordering when in continuous mode
+  const continuationState = $derived(() => {
+    const sections = organizedSections();
+    if (
+      !isContinuousOnly ||
+      !lastClickedSlot ||
+      currentSequence.length < 2
+    ) {
+      return { sections, continuationMap: new Map<string, number>() };
+    }
+
+    const referenceBeat = currentSequence[currentSequence.length - 1];
+    if (!referenceBeat) {
+      return { sections, continuationMap: new Map<string, number>() };
+    }
+    const continuationMap = new Map<string, number>();
+
+    const reorderedSections = sections.map((section) => {
+      if (section.title !== lastClickedSlot.typeSection) return section;
+
+      const continuation = continuationIdentifier.identifyContinuation(
+        referenceBeat,
+        section.pictographs
+      );
+
+      if (!continuation) return section;
+
+      const contIdx = section.pictographs.findIndex(
+        (p) => p.id === continuation.id
+      );
+      if (contIdx === -1) return section;
+
+      // Clamp target slot to valid range
+      const targetSlot = Math.min(
+        lastClickedSlot.slotIndex,
+        section.pictographs.length - 1
+      );
+
+      if (contIdx === targetSlot) {
+        // Already in the right place
+        continuationMap.set(section.title, targetSlot);
+        return section;
+      }
+
+      // Swap continuation to the target slot
+      const reordered = [...section.pictographs];
+      const displaced = reordered[targetSlot]!;
+      const cont = reordered[contIdx]!;
+      reordered[targetSlot] = cont;
+      reordered[contIdx] = displaced;
+
+      continuationMap.set(section.title, targetSlot);
+
+      return { ...section, pictographs: reordered };
+    });
+
+    return { sections: reorderedSections, continuationMap };
+  });
+
+  // Helper to get continuation index for a section
+  function getContinuationIndex(sectionTitle: string): number | null {
+    const map = continuationState().continuationMap;
+    return map.has(sectionTitle) ? map.get(sectionTitle)! : null;
+  }
+
   // Separate Types 1-3 (individual sections) from Types 4-6 (horizontal row)
   const types123Sections = $derived(() => {
-    return organizedSections().filter(
+    return continuationState().sections.filter(
       (s) => s.title === "Type1" || s.title === "Type2" || s.title === "Type3"
     );
   });
 
   const types456Sections = $derived(() => {
-    return organizedSections().filter(
+    return continuationState().sections.filter(
       (s) => s.title === "Type4" || s.title === "Type5" || s.title === "Type6"
     );
   });
@@ -101,7 +172,7 @@ Uses organizer and sizer services for section grouping and sizing.
 
   // Use swipe layout when in mobile stacked layout OR narrow container
   const shouldUseSwipeLayout = $derived(() => {
-    const sections = organizedSections();
+    const sections = continuationState().sections;
     // Use swipe when:
     // - In mobile stacked layout (always use swipe for mobile)
     // - OR not using wide layout (container < 750px)
@@ -296,10 +367,12 @@ Uses organizer and sizer services for section grouping and sizing.
               cardSize={desktopSizing().cardSize}
               columns={desktopSizing().columns}
               gap={desktopSizing().gap}
-              showHeader={organizedSections().length > 1}
+              showHeader={continuationState().sections.length > 1}
               {onSelect}
               {currentSequence}
               enableFlip={true}
+              {onSlotClicked}
+              continuationIndex={getContinuationIndex(section.title)}
             />
           {/each}
 
@@ -313,6 +386,7 @@ Uses organizer and sizer services for section grouping and sizing.
               {onSelect}
               {currentSequence}
               enableFlip={true}
+              {onSlotClicked}
             />
           {/if}
         </div>
