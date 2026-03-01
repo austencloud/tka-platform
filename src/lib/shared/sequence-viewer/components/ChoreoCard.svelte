@@ -45,6 +45,7 @@
     rows: number;
     durationRows?: TimelineRow[];
     hasMixedDurations?: boolean;
+    passDividerGridRows?: number[];
   }
   const MAX_PREVIEW_CACHE = 10;
   const globalPreviewCache = new Map<string, CachedPreview>();
@@ -211,6 +212,27 @@
   const SCROLL_THRESHOLD = 16;
   const needsScroll = $derived((sequence?.steps?.length ?? 0) > SCROLL_THRESHOLD);
   let gridScrollRef: HTMLDivElement | undefined = $state();
+
+  // Orientation cycle pass dividers
+  // When orientationCycleCount > 1, the sequence contains multiple passes.
+  // We insert visual dividers between them so the performer knows where
+  // each repetition starts.
+  const orientationCycleCount = $derived(sequence?.orientationCycleCount ?? 1);
+  const stepsPerPass = $derived.by(() => {
+    if (orientationCycleCount <= 1) return 0;
+    const totalSteps = sequence?.steps?.length ?? 0;
+    return Math.floor(totalSteps / orientationCycleCount);
+  });
+  // Step indices where a pass boundary occurs (0-indexed step indices).
+  // E.g., for 8 steps with cycleCount=2, stepsPerPass=4 → boundary at index 4
+  const passBoundaryStepIndices = $derived.by(() => {
+    if (orientationCycleCount <= 1 || stepsPerPass <= 0) return [];
+    const boundaries: number[] = [];
+    for (let pass = 1; pass < orientationCycleCount; pass++) {
+      boundaries.push(pass * stepsPerPass);
+    }
+    return boundaries;
+  });
 
   // Visibility settings from user preferences (reactive)
   const visibilitySettings = $derived(getSettings().visibility);
@@ -397,6 +419,48 @@
   }
 
   /**
+   * Compute divider row positions and adjust cell gridRows for pass boundaries.
+   * Returns the grid rows where dividers should be rendered.
+   */
+  function applyPassDividerOffsets(
+    cellData: CellData[],
+    boundaries: number[],
+    cols: number
+  ): { dividerGridRows: number[]; extraRows: number } {
+    if (boundaries.length === 0) return { dividerGridRows: [], extraRows: 0 };
+
+    // Find the grid row of each boundary step (the first step of the new pass)
+    const dividerGridRows: number[] = [];
+    for (const boundaryIdx of boundaries) {
+      // The divider goes BEFORE this step's row. Find what row this step
+      // would normally be on (before any offsets).
+      const pos = calculateGridPosition(boundaryIdx, cols);
+      dividerGridRows.push(pos.gridRow); // Divider row inserted before this row
+    }
+
+    // Offset cells: for each cell, count how many divider rows precede it
+    for (const cell of cellData) {
+      let offset = 0;
+      for (const divRow of dividerGridRows) {
+        if (cell.gridRow >= divRow) {
+          offset++;
+        }
+      }
+      if (offset > 0) {
+        cell.gridRow += offset;
+      }
+    }
+
+    // The divider rows themselves are offset by preceding dividers
+    const adjustedDividerRows = dividerGridRows.map((row, i) => row + i);
+
+    return { dividerGridRows: adjustedDividerRows, extraRows: boundaries.length };
+  }
+
+  // State for pass divider grid rows (populated during render)
+  let passDividerGridRows = $state<number[]>([]);
+
+  /**
    * Render all cells (start position + steps)
    */
   /**
@@ -466,6 +530,10 @@
         durationRows = [];
       }
 
+      // Account for pass divider rows in total row count
+      const dividerCount = (!mixed && passBoundaryStepIndices.length > 0)
+        ? passBoundaryStepIndices.length : 0;
+      rws += dividerCount;
       rows = rws;
 
       // Build render options once for all cells
@@ -481,6 +549,7 @@
         cells = cached.cells.map(c => ({ ...c, isLoaded: true }));
         hasMixedDurations = cached.hasMixedDurations ?? false;
         durationRows = cached.durationRows ?? [];
+        passDividerGridRows = cached.passDividerGridRows ?? [];
         isLoading = false;
         isRendering = false;
         // Signal 100% immediately for cache hits
@@ -533,6 +602,17 @@
         });
       }
 
+      // Apply pass divider row offsets for multi-pass orientation cycles.
+      // Row count was already adjusted above; here we just shift cell positions.
+      if (!mixed && passBoundaryStepIndices.length > 0) {
+        const { dividerGridRows } = applyPassDividerOffsets(
+          placeholderCells, passBoundaryStepIndices, cols
+        );
+        passDividerGridRows = dividerGridRows;
+      } else {
+        passDividerGridRows = [];
+      }
+
       // Show grid with full dimensions immediately (placeholders fill all cells)
       cells = placeholderCells;
       isLoading = false;
@@ -577,6 +657,7 @@
         rows: rws,
         durationRows: computedDurationRows,
         hasMixedDurations: mixed,
+        passDividerGridRows: [...passDividerGridRows],
       });
 
       // Now safe to revoke old blob URLs — new ones are in the DOM
@@ -1038,6 +1119,14 @@
                 </div>
               {/if}
             {/each}
+            <!-- Pass dividers for multi-pass orientation cycles -->
+            {#each passDividerGridRows as dividerRow (dividerRow)}
+              <div
+                class="pass-divider"
+                style="grid-column: 1 / -1; grid-row: {dividerRow};"
+                aria-hidden="true"
+              ></div>
+            {/each}
           </div>
         </div>
       {:else}
@@ -1091,6 +1180,14 @@
                 {/if}
               </div>
             {/if}
+          {/each}
+          <!-- Pass dividers for multi-pass orientation cycles -->
+          {#each passDividerGridRows as dividerRow (dividerRow)}
+            <div
+              class="pass-divider"
+              style="grid-column: 1 / -1; grid-row: {dividerRow};"
+              aria-hidden="true"
+            ></div>
           {/each}
         </div>
       {/if}
@@ -1324,6 +1421,20 @@
   .dark-mode .grid-section {
     /* Dark mode background for empty cells */
     background: #000;
+  }
+
+  /* Pass divider for multi-pass orientation cycles */
+  .pass-divider {
+    height: 3px;
+    background: linear-gradient(
+      90deg,
+      transparent 5%,
+      var(--theme-accent, rgba(99, 102, 241, 0.3)) 20%,
+      var(--theme-accent, rgba(99, 102, 241, 0.3)) 80%,
+      transparent 95%
+    );
+    opacity: 0.4;
+    align-self: center;
   }
 
   /* Individual pictograph cell */
