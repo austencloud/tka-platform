@@ -9,6 +9,7 @@
   import SheetDragHandle from "$lib/shared/foundation/ui/SheetDragHandle.svelte";
   import LOOPExpandedOverlay from "../cards/LOOPExpandedOverlay.svelte";
   import type { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
+  import { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
   import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
 
   let {
@@ -18,6 +19,8 @@
     onChange,
     onClose,
     onLoopDisable,
+    sliceSize = SliceSize.HALVED,
+    onSliceSizeChange,
   }: {
     isOpen: boolean;
     currentType: LOOPType | null;
@@ -25,6 +28,8 @@
     onChange: ((loopType: LOOPType) => void) | null;
     onClose: () => void;
     onLoopDisable?: () => void;
+    sliceSize?: SliceSize;
+    onSliceSizeChange?: (size: SliceSize) => void;
   } = $props();
 </script>
 
@@ -48,6 +53,8 @@
           {onChange}
           {onClose}
           {onLoopDisable}
+          {sliceSize}
+          {onSliceSizeChange}
         />
       {/if}
     </div>
