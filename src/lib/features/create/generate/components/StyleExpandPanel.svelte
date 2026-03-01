@@ -66,7 +66,7 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
 
 <div class="style-panel">
   <div class="style-axis">
-    <span class="style-axis-label">Prop Rev.</span>
+    <span class="style-axis-label">Prop Reversals</span>
     <div class="style-axis-options">
       {#each propsOptions as opt}
         <button
@@ -78,7 +78,7 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
     </div>
   </div>
   <div class="style-axis">
-    <span class="style-axis-label">Hand Rev.</span>
+    <span class="style-axis-label">Hand Reversals</span>
     <div class="style-axis-options">
       {#each handsOptions as opt}
         <button
@@ -107,7 +107,7 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
   .style-panel {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 10px;
     width: 100%;
     flex: 1;
     justify-content: center;
@@ -115,36 +115,33 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
 
   .style-axis {
     display: flex;
-    align-items: center;
-    gap: 6px;
+    flex-direction: column;
+    gap: 4px;
   }
 
   .style-axis-label {
-    font-size: 11px;
+    font-size: var(--font-size-min, 14px);
     font-weight: 600;
     opacity: 0.75;
-    min-width: 58px;
-    text-align: right;
-    flex-shrink: 0;
+    text-align: center;
   }
 
   .style-axis-options {
     display: flex;
-    gap: 4px;
-    flex: 1;
+    gap: 6px;
   }
 
   .option-btn {
     flex: 1;
-    min-height: 40px;
+    min-height: 44px;
     background: rgba(0, 0, 0, 0.25);
     border: 1.5px solid rgba(255, 255, 255, 0.15);
     border-radius: 10px;
     color: rgba(255, 255, 255, 0.7);
     cursor: pointer;
     font-weight: 700;
-    font-size: 13px;
-    padding: 2px 6px;
+    font-size: var(--font-size-min, 14px);
+    padding: 4px 8px;
     transition: all 100ms ease;
   }
 

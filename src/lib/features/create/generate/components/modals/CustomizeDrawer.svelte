@@ -117,11 +117,16 @@
 
   /* More spacious axis rows */
   .customize-drawer-content > :global(.customize-expanded-overlay .style-axis) {
-    gap: 10px;
+    gap: 6px;
   }
 
   .customize-drawer-content > :global(.customize-expanded-overlay .style-axis-options) {
     gap: 8px;
+  }
+
+  /* More spacing between axis groups in drawer */
+  .customize-drawer-content > :global(.customize-expanded-overlay .style-panel) {
+    gap: 14px;
   }
 
   /* Larger accordion headers in drawer context */
