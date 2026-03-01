@@ -21,7 +21,7 @@
 	onclick={onToggle}
 	{disabled}
 	aria-pressed={!isSolo}
-	title={isSolo ? 'Switch to synced mode' : 'Switch to solo mode'}
+	aria-label={isSolo ? 'Switch to synced mode' : 'Switch to solo mode'}
 >
 	<div class="toggle-track">
 		<div class="toggle-thumb"></div>
