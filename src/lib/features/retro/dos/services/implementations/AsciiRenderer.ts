@@ -87,9 +87,14 @@ interface GridCoord {
 	readonly row: number;
 }
 
+// Two coordinate rings, matching the real pictograph grid:
+//   OUTER = large circle markers at the 8 perimeter locations (always visible)
+//   HAND  = where hand markers (B/R) sit, halfway between outer and center
+//
 // Coordinates compensate for monospace ~2:1 char height-to-width ratio.
 // Diagonals step 2 cols per row so they appear at true 45 degrees.
-const DIAMOND_COORDS: Record<GridLocation, GridCoord> = {
+
+const DIAMOND_OUTER: Record<GridLocation, GridCoord> = {
 	[GridLocation.NORTH]: { col: 16, row: 0 },
 	[GridLocation.NORTHEAST]: { col: 24, row: 2 },
 	[GridLocation.EAST]: { col: 28, row: 6 },
@@ -101,15 +106,39 @@ const DIAMOND_COORDS: Record<GridLocation, GridCoord> = {
 	[GridLocation.CENTER]: { col: 16, row: 6 },
 };
 
-const BOX_COORDS: Record<GridLocation, GridCoord> = {
-	[GridLocation.NORTH]: { col: 16, row: 2 },
+const DIAMOND_HAND: Record<GridLocation, GridCoord> = {
+	[GridLocation.NORTH]: { col: 16, row: 3 },
+	[GridLocation.NORTHEAST]: { col: 20, row: 4 },
+	[GridLocation.EAST]: { col: 22, row: 6 },
+	[GridLocation.SOUTHEAST]: { col: 20, row: 8 },
+	[GridLocation.SOUTH]: { col: 16, row: 9 },
+	[GridLocation.SOUTHWEST]: { col: 12, row: 8 },
+	[GridLocation.WEST]: { col: 10, row: 6 },
+	[GridLocation.NORTHWEST]: { col: 12, row: 4 },
+	[GridLocation.CENTER]: { col: 16, row: 6 },
+};
+
+const BOX_OUTER: Record<GridLocation, GridCoord> = {
+	[GridLocation.NORTH]: { col: 16, row: 0 },
 	[GridLocation.NORTHEAST]: { col: 26, row: 0 },
 	[GridLocation.EAST]: { col: 26, row: 5 },
 	[GridLocation.SOUTHEAST]: { col: 26, row: 10 },
-	[GridLocation.SOUTH]: { col: 16, row: 8 },
+	[GridLocation.SOUTH]: { col: 16, row: 10 },
 	[GridLocation.SOUTHWEST]: { col: 6, row: 10 },
 	[GridLocation.WEST]: { col: 6, row: 5 },
 	[GridLocation.NORTHWEST]: { col: 6, row: 0 },
+	[GridLocation.CENTER]: { col: 16, row: 5 },
+};
+
+const BOX_HAND: Record<GridLocation, GridCoord> = {
+	[GridLocation.NORTH]: { col: 16, row: 3 },
+	[GridLocation.NORTHEAST]: { col: 21, row: 3 },
+	[GridLocation.EAST]: { col: 21, row: 5 },
+	[GridLocation.SOUTHEAST]: { col: 21, row: 7 },
+	[GridLocation.SOUTH]: { col: 16, row: 7 },
+	[GridLocation.SOUTHWEST]: { col: 11, row: 7 },
+	[GridLocation.WEST]: { col: 11, row: 5 },
+	[GridLocation.NORTHWEST]: { col: 11, row: 3 },
 	[GridLocation.CENTER]: { col: 16, row: 5 },
 };
 
@@ -270,7 +299,8 @@ const MOTION_LABELS: Record<MotionType, string> = {
 export class AsciiRenderer implements IAsciiRenderer {
 	renderPictograph(data: RetroPictographData, options?: AsciiRenderOptions): string[] {
 		const isBox = data.gridMode === GridMode.BOX;
-		const coords = isBox ? BOX_COORDS : DIAMOND_COORDS;
+		const outerCoords = isBox ? BOX_OUTER : DIAMOND_OUTER;
+		const handCoords = isBox ? BOX_HAND : DIAMOND_HAND;
 		const height = isBox ? BOX_HEIGHT : DIAMOND_HEIGHT;
 		const layers = options?.layers;
 
@@ -286,34 +316,34 @@ export class AsciiRenderer implements IAsciiRenderer {
 			}
 
 			// Center marker
-			const center = coords[GridLocation.CENTER];
+			const center = outerCoords[GridLocation.CENTER];
 			this.setCell(buffer, center.col, center.row, "o", COLOR_WHITE, PRIORITY_GRID);
 
-			// Position dots
-			this.placePositionDots(buffer, coords, data);
+			// Outer perimeter markers (always visible, hands don't replace these)
+			this.placePositionDots(buffer, outerCoords, data);
 		}
 
-		// Step 3: Overlay hand markers (layer: hands)
+		// Step 3: Overlay hand markers at hand points (layer: hands)
 		if (!layers || layers.hands !== false) {
-			this.placeHand(buffer, data.blueHand, coords);
-			this.placeHand(buffer, data.redHand, coords);
-			this.markOverlaps(buffer, data, coords);
+			this.placeHand(buffer, data.blueHand, handCoords);
+			this.placeHand(buffer, data.redHand, handCoords);
+			this.markOverlaps(buffer, data, handCoords);
 		}
 
 		// Step 4: Draw motion arrows (layer: arrows)
 		if (!layers || layers.arrows !== false) {
 			if (data.blueHand.motionType !== MotionType.STATIC) {
-				this.drawMotionPath(buffer, data.blueHand, coords);
+				this.drawMotionPath(buffer, data.blueHand, handCoords);
 			}
 			if (data.redHand.motionType !== MotionType.STATIC) {
-				this.drawMotionPath(buffer, data.redHand, coords);
+				this.drawMotionPath(buffer, data.redHand, handCoords);
 			}
 		}
 
 		// Step 5: Place orientation indicators (layer: staves)
 		if (!layers || layers.staves !== false) {
-			this.placeOrientation(buffer, data.blueHand, coords, BUFFER_WIDTH, height);
-			this.placeOrientation(buffer, data.redHand, coords, BUFFER_WIDTH, height);
+			this.placeOrientation(buffer, data.blueHand, handCoords, BUFFER_WIDTH, height);
+			this.placeOrientation(buffer, data.redHand, handCoords, BUFFER_WIDTH, height);
 		}
 
 		// Step 6: Convert to HTML
@@ -327,7 +357,7 @@ export class AsciiRenderer implements IAsciiRenderer {
 		this.drawDiamondGrid(buffer, height);
 
 		// Place "?" at center
-		const center = DIAMOND_COORDS[GridLocation.CENTER];
+		const center = DIAMOND_OUTER[GridLocation.CENTER];
 		this.setCell(buffer, center.col, center.row, "?", COLOR_GRAY);
 
 		// Place dots at all cardinal/intercardinal positions
@@ -342,7 +372,7 @@ export class AsciiRenderer implements IAsciiRenderer {
 			GridLocation.NORTHWEST,
 		];
 		for (const loc of allPositions) {
-			const coord = DIAMOND_COORDS[loc];
+			const coord = DIAMOND_OUTER[loc];
 			this.setCell(buffer, coord.col, coord.row, "O", COLOR_WHITE);
 		}
 
@@ -461,14 +491,10 @@ export class AsciiRenderer implements IAsciiRenderer {
 
 	private placePositionDots(
 		buffer: Cell[][],
-		coords: Record<GridLocation, GridCoord>,
-		data: RetroPictographData,
+		outerCoords: Record<GridLocation, GridCoord>,
+		_data: RetroPictographData,
 	): void {
-		const occupiedLocations = new Set<GridLocation>([
-			data.blueHand.location,
-			data.redHand.location,
-		]);
-
+		// Outer O markers are always visible — hands sit at a separate inner ring
 		const perimeterPositions: GridLocation[] = [
 			GridLocation.NORTH,
 			GridLocation.NORTHEAST,
@@ -481,10 +507,8 @@ export class AsciiRenderer implements IAsciiRenderer {
 		];
 
 		for (const loc of perimeterPositions) {
-			if (!occupiedLocations.has(loc)) {
-				const coord = coords[loc];
-				this.setCell(buffer, coord.col, coord.row, "O", COLOR_WHITE);
-			}
+			const coord = outerCoords[loc];
+			this.setCell(buffer, coord.col, coord.row, "O", COLOR_WHITE);
 		}
 	}
 
