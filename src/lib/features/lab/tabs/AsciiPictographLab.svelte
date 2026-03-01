@@ -1,10 +1,9 @@
 <!--
   AsciiPictographLab.svelte — Lab tab for iterating on ASCII pictograph rendering.
 
-  Three-panel layout:
-  1. Letter Picker — load real pictograph data via MCP
-  2. Manual Overrides — tweak hand locations, orientations, motion types
-  3. CRT Preview — see the ASCII render with DOS terminal styling
+  Two-panel layout:
+  1. Letter Picker — loads real pictograph data from static CSV files
+  2. CRT Preview — ASCII render with DOS terminal styling
 
   Domain: Retro DOS Terminal
 -->
@@ -13,8 +12,6 @@
   import { createAsciiLabState } from "./ascii-pictograph-lab-state.svelte";
   import AsciiCrtPreview from "./AsciiCrtPreview.svelte";
   import AsciiLetterPicker from "./AsciiLetterPicker.svelte";
-  import AsciiOverridePanel from "./AsciiOverridePanel.svelte";
-  import { GridMode } from "$lib/features/retro/shared/domain/pictograph-types";
 
   const state = createAsciiLabState();
   const renderer = new AsciiRenderer();
@@ -46,35 +43,13 @@
       </label>
     </div>
 
-    <div class="grid-mode-toggle">
-      <button
-        class="mode-btn"
-        class:active={state.gridMode === GridMode.DIAMOND}
-        onclick={() => state.setGridMode(GridMode.DIAMOND)}
-      >Diamond</button>
-      <button
-        class="mode-btn"
-        class:active={state.gridMode === GridMode.BOX}
-        onclick={() => state.setGridMode(GridMode.BOX)}
-      >Box</button>
-    </div>
-
     <AsciiLetterPicker onLetterLoad={state.loadFromMcp} />
-
-    <AsciiOverridePanel
-      blueHand={state.blueHand}
-      redHand={state.redHand}
-      onUpdateBlue={state.updateBlueHand}
-      onUpdateRed={state.updateRedHand}
-      onReset={state.resetToLoaded}
-      hasLoadedData={state.loadedData !== null}
-    />
 
     <p class="ascii-lab-info">
       {#if state.letterName}
-        Showing: <strong>{state.letterName}</strong>
+        Showing: <strong>{state.letterName}</strong> ({state.gridMode})
       {:else}
-        Default layout (blue N, red S, static)
+        Pick a letter above to render
       {/if}
     </p>
   </div>
@@ -124,33 +99,6 @@
 
   .layer-toggle input[type="checkbox"] {
     accent-color: #33ff33;
-  }
-
-  .grid-mode-toggle {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .mode-btn {
-    padding: 4px 12px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: 4px;
-    background: transparent;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-min, 14px);
-    cursor: pointer;
-    transition: all 150ms ease;
-  }
-
-  .mode-btn.active {
-    background: rgba(51, 255, 51, 0.15);
-    border-color: #33ff33;
-    color: #33ff33;
-  }
-
-  .mode-btn:hover:not(.active) {
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
-    color: var(--theme-text, #fff);
   }
 
   .ascii-lab-info {
