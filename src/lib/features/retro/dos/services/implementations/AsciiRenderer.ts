@@ -320,7 +320,7 @@ export class AsciiRenderer implements IAsciiRenderer {
 			this.setCell(buffer, center.col, center.row, "o", COLOR_WHITE, PRIORITY_GRID);
 
 			// Outer perimeter markers (always visible, hands don't replace these)
-			this.placePositionDots(buffer, outerCoords, data);
+			this.placePositionDots(buffer, outerCoords, isBox);
 
 			// Inner hand-point dots (hands overwrite these via priority)
 			this.placeHandPointDots(buffer, handCoords);
@@ -376,7 +376,7 @@ export class AsciiRenderer implements IAsciiRenderer {
 		];
 		for (const loc of allPositions) {
 			const coord = DIAMOND_OUTER[loc];
-			this.setCell(buffer, coord.col, coord.row, "O", COLOR_WHITE);
+			this.setCell(buffer, coord.col, coord.row, "\u25CF", COLOR_WHITE);
 		}
 
 		return this.bufferToHtml(buffer, height);
@@ -495,9 +495,11 @@ export class AsciiRenderer implements IAsciiRenderer {
 	private placePositionDots(
 		buffer: Cell[][],
 		outerCoords: Record<GridLocation, GridCoord>,
-		_data: RetroPictographData,
+		isBox: boolean,
 	): void {
-		// Outer O markers are always visible — hands sit at a separate inner ring
+		// Diamond = filled circles (●), Box = hollow circles (O)
+		const marker = isBox ? "O" : "\u25CF";
+
 		const perimeterPositions: GridLocation[] = [
 			GridLocation.NORTH,
 			GridLocation.NORTHEAST,
@@ -511,7 +513,7 @@ export class AsciiRenderer implements IAsciiRenderer {
 
 		for (const loc of perimeterPositions) {
 			const coord = outerCoords[loc];
-			this.setCell(buffer, coord.col, coord.row, "O", COLOR_WHITE);
+			this.setCell(buffer, coord.col, coord.row, marker, COLOR_WHITE);
 		}
 	}
 
