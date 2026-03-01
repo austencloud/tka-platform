@@ -66,10 +66,10 @@ export function createAsciiLabState() {
 	let blueHand = $state<RetroHandData>(defaultBlueHand());
 	let redHand = $state<RetroHandData>(defaultRedHand());
 
-	// Rendering layer toggles (start with only grid for Phase 1)
+	// Rendering layer toggles
 	let layers = $state<RenderLayers>({
 		grid: true,
-		hands: false,
+		hands: true,
 		staves: false,
 		arrows: false,
 	});

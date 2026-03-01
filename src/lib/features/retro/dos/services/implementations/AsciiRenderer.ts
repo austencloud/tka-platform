@@ -343,7 +343,7 @@ export class AsciiRenderer implements IAsciiRenderer {
 		];
 		for (const loc of allPositions) {
 			const coord = DIAMOND_COORDS[loc];
-			this.setCell(buffer, coord.col, coord.row, ".", COLOR_GRAY);
+			this.setCell(buffer, coord.col, coord.row, "O", COLOR_WHITE);
 		}
 
 		return this.bufferToHtml(buffer, height);
@@ -569,7 +569,7 @@ export class AsciiRenderer implements IAsciiRenderer {
 		for (const loc of perimeterPositions) {
 			if (!occupiedLocations.has(loc)) {
 				const coord = coords[loc];
-				this.setCell(buffer, coord.col, coord.row, ".", COLOR_GRAY);
+				this.setCell(buffer, coord.col, coord.row, "O", COLOR_WHITE);
 			}
 		}
 	}
