@@ -643,7 +643,7 @@ export class LibraryRepository implements ILibraryRepository {
           (snapshot) => {
             const sequences: LibrarySequence[] = [];
             snapshot.forEach((docSnap) => {
-              const serverSeq = this.mapDocToLibrarySequence(docSnap.data(), docSnap.id);
+              const serverSeq = { ...this.mapDocToLibrarySequence(docSnap.data(), docSnap.id), ownerId: userId };
               sequences.push(serverSeq);
 
               // Check for conflicts on server-originated changes
