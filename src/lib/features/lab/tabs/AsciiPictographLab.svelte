@@ -12,6 +12,7 @@
   import FilterChipBase from "$lib/features/browse/sequences/filtering/components/inline-filter/FilterChipBase.svelte";
   import { createAsciiLabState } from "./ascii-pictograph-lab-state.svelte";
   import AsciiCrtPreview from "./AsciiCrtPreview.svelte";
+  import { GridMode } from "$lib/features/retro/shared/domain/pictograph-types";
 
   const lab = createAsciiLabState();
   const renderer = new AsciiRenderer();
@@ -86,6 +87,28 @@
         onclick={() => lab.setMode("sequence")}
       />
     </div>
+
+    <!-- Grid mode filter (single mode only) -->
+    {#if lab.mode === "single"}
+      <div class="mode-chips">
+        <FilterChipBase
+          label="Diamond"
+          icon="fas fa-gem"
+          active={lab.gridModeFilter === GridMode.DIAMOND}
+          mode="toggle"
+          chipColor="#33ff33"
+          onclick={() => lab.setGridModeFilter(GridMode.DIAMOND)}
+        />
+        <FilterChipBase
+          label="Box"
+          icon="fas fa-square"
+          active={lab.gridModeFilter === GridMode.BOX}
+          mode="toggle"
+          chipColor="#33ff33"
+          onclick={() => lab.setGridModeFilter(GridMode.BOX)}
+        />
+      </div>
+    {/if}
 
     <!-- Single mode: nav bar -->
     {#if lab.mode === "single"}

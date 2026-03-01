@@ -2,8 +2,8 @@
  * AsciiRenderer -- ASCII art pictograph renderer for the DOS terminal
  *
  * Converts RetroPictographData into character art using a 2D character
- * buffer. The diamond grid is ~21 chars wide and ~11 lines tall. The
- * box grid is ~21 chars wide and ~9 lines tall. Both use the same
+ * buffer. The diamond grid is 66 chars wide and 26 lines tall. The
+ * box grid is 66 chars wide and 22 lines tall. Both use the same
  * position-to-coordinate mapping, rotated 45 degrees for box mode.
  *
  * Rendering pipeline:
@@ -37,13 +37,13 @@ import {
 // ============================================================================
 
 /** Buffer width for the rendered pictograph (wide to compensate for ~2:1 char aspect ratio) */
-const BUFFER_WIDTH = 33;
+const BUFFER_WIDTH = 66;
 
 /** Buffer height for diamond grid */
-const DIAMOND_HEIGHT = 13;
+const DIAMOND_HEIGHT = 26;
 
 /** Buffer height for box grid */
-const BOX_HEIGHT = 11;
+const BOX_HEIGHT = 22;
 
 /** CSS class names for terminal colors */
 const COLOR_BLUE = "dos-blue";
@@ -95,51 +95,98 @@ interface GridCoord {
 // Diagonals step 2 cols per row so they appear at true 45 degrees.
 
 const DIAMOND_OUTER: Record<GridLocation, GridCoord> = {
-	[GridLocation.NORTH]: { col: 16, row: 0 },
-	[GridLocation.NORTHEAST]: { col: 24, row: 2 },
-	[GridLocation.EAST]: { col: 28, row: 6 },
-	[GridLocation.SOUTHEAST]: { col: 24, row: 10 },
-	[GridLocation.SOUTH]: { col: 16, row: 12 },
-	[GridLocation.SOUTHWEST]: { col: 8, row: 10 },
-	[GridLocation.WEST]: { col: 4, row: 6 },
-	[GridLocation.NORTHWEST]: { col: 8, row: 2 },
-	[GridLocation.CENTER]: { col: 16, row: 6 },
+	[GridLocation.NORTH]: { col: 32, row: 0 },
+	[GridLocation.NORTHEAST]: { col: 48, row: 4 },
+	[GridLocation.EAST]: { col: 56, row: 12 },
+	[GridLocation.SOUTHEAST]: { col: 48, row: 20 },
+	[GridLocation.SOUTH]: { col: 32, row: 24 },
+	[GridLocation.SOUTHWEST]: { col: 16, row: 20 },
+	[GridLocation.WEST]: { col: 8, row: 12 },
+	[GridLocation.NORTHWEST]: { col: 16, row: 4 },
+	[GridLocation.CENTER]: { col: 32, row: 12 },
 };
 
 const DIAMOND_HAND: Record<GridLocation, GridCoord> = {
-	[GridLocation.NORTH]: { col: 16, row: 3 },
-	[GridLocation.NORTHEAST]: { col: 20, row: 4 },
-	[GridLocation.EAST]: { col: 22, row: 6 },
-	[GridLocation.SOUTHEAST]: { col: 20, row: 8 },
-	[GridLocation.SOUTH]: { col: 16, row: 9 },
-	[GridLocation.SOUTHWEST]: { col: 12, row: 8 },
-	[GridLocation.WEST]: { col: 10, row: 6 },
-	[GridLocation.NORTHWEST]: { col: 12, row: 4 },
-	[GridLocation.CENTER]: { col: 16, row: 6 },
+	[GridLocation.NORTH]: { col: 32, row: 6 },
+	[GridLocation.NORTHEAST]: { col: 40, row: 8 },
+	[GridLocation.EAST]: { col: 44, row: 12 },
+	[GridLocation.SOUTHEAST]: { col: 40, row: 16 },
+	[GridLocation.SOUTH]: { col: 32, row: 18 },
+	[GridLocation.SOUTHWEST]: { col: 24, row: 16 },
+	[GridLocation.WEST]: { col: 20, row: 12 },
+	[GridLocation.NORTHWEST]: { col: 24, row: 8 },
+	[GridLocation.CENTER]: { col: 32, row: 12 },
 };
 
 const BOX_OUTER: Record<GridLocation, GridCoord> = {
-	[GridLocation.NORTH]: { col: 16, row: 0 },
-	[GridLocation.NORTHEAST]: { col: 26, row: 0 },
-	[GridLocation.EAST]: { col: 26, row: 5 },
-	[GridLocation.SOUTHEAST]: { col: 26, row: 10 },
-	[GridLocation.SOUTH]: { col: 16, row: 10 },
-	[GridLocation.SOUTHWEST]: { col: 6, row: 10 },
-	[GridLocation.WEST]: { col: 6, row: 5 },
-	[GridLocation.NORTHWEST]: { col: 6, row: 0 },
-	[GridLocation.CENTER]: { col: 16, row: 5 },
+	[GridLocation.NORTH]: { col: 32, row: 0 },
+	[GridLocation.NORTHEAST]: { col: 52, row: 0 },
+	[GridLocation.EAST]: { col: 52, row: 10 },
+	[GridLocation.SOUTHEAST]: { col: 52, row: 20 },
+	[GridLocation.SOUTH]: { col: 32, row: 20 },
+	[GridLocation.SOUTHWEST]: { col: 12, row: 20 },
+	[GridLocation.WEST]: { col: 12, row: 10 },
+	[GridLocation.NORTHWEST]: { col: 12, row: 0 },
+	[GridLocation.CENTER]: { col: 32, row: 10 },
 };
 
 const BOX_HAND: Record<GridLocation, GridCoord> = {
-	[GridLocation.NORTH]: { col: 16, row: 3 },
-	[GridLocation.NORTHEAST]: { col: 21, row: 3 },
-	[GridLocation.EAST]: { col: 21, row: 5 },
-	[GridLocation.SOUTHEAST]: { col: 21, row: 7 },
-	[GridLocation.SOUTH]: { col: 16, row: 7 },
-	[GridLocation.SOUTHWEST]: { col: 11, row: 7 },
-	[GridLocation.WEST]: { col: 11, row: 5 },
-	[GridLocation.NORTHWEST]: { col: 11, row: 3 },
-	[GridLocation.CENTER]: { col: 16, row: 5 },
+	[GridLocation.NORTH]: { col: 32, row: 6 },
+	[GridLocation.NORTHEAST]: { col: 40, row: 6 },
+	[GridLocation.EAST]: { col: 40, row: 10 },
+	[GridLocation.SOUTHEAST]: { col: 40, row: 14 },
+	[GridLocation.SOUTH]: { col: 32, row: 14 },
+	[GridLocation.SOUTHWEST]: { col: 24, row: 14 },
+	[GridLocation.WEST]: { col: 24, row: 10 },
+	[GridLocation.NORTHWEST]: { col: 24, row: 6 },
+	[GridLocation.CENTER]: { col: 32, row: 10 },
+};
+
+// ============================================================================
+// BETA OFFSET MAPS
+//
+// When both hands occupy the same grid location (beta position), offset each
+// hand's staff origin so they don't overlap. Offsets are in (dcol, drow) and
+// account for 2:1 monospace aspect ratio at 2x resolution.
+//   - Vertical separation: (0, ±2)
+//   - Horizontal separation: (±4, 0)
+//   - Diagonal separation: (±4, ±2)
+// ============================================================================
+
+interface BetaOffset {
+	readonly dcol: number;
+	readonly drow: number;
+}
+
+interface BetaOffsetPair {
+	readonly blue: BetaOffset;
+	readonly red: BetaOffset;
+}
+
+/** Diamond mode: cardinal hand positions, radial IN orientation → perpendicular offset */
+const DIAMOND_BETA: Partial<Record<GridLocation, BetaOffsetPair>> = {
+	[GridLocation.NORTH]: { blue: { dcol: -4, drow: 0 }, red: { dcol: 4, drow: 0 } },
+	[GridLocation.EAST]: { blue: { dcol: 0, drow: -2 }, red: { dcol: 0, drow: 2 } },
+	[GridLocation.SOUTH]: { blue: { dcol: 4, drow: 0 }, red: { dcol: -4, drow: 0 } },
+	[GridLocation.WEST]: { blue: { dcol: 0, drow: 2 }, red: { dcol: 0, drow: -2 } },
+	[GridLocation.NORTHEAST]: { blue: { dcol: -4, drow: -2 }, red: { dcol: 4, drow: 2 } },
+	[GridLocation.SOUTHEAST]: { blue: { dcol: 4, drow: -2 }, red: { dcol: -4, drow: 2 } },
+	[GridLocation.SOUTHWEST]: { blue: { dcol: 4, drow: 2 }, red: { dcol: -4, drow: -2 } },
+	[GridLocation.NORTHWEST]: { blue: { dcol: -4, drow: 2 }, red: { dcol: 4, drow: -2 } },
+	[GridLocation.CENTER]: { blue: { dcol: -4, drow: 0 }, red: { dcol: 4, drow: 0 } },
+};
+
+/** Box mode: intercardinal hand positions, radial IN orientation → perpendicular offset */
+const BOX_BETA: Partial<Record<GridLocation, BetaOffsetPair>> = {
+	[GridLocation.NORTHEAST]: { blue: { dcol: -4, drow: -2 }, red: { dcol: 4, drow: 2 } },
+	[GridLocation.SOUTHEAST]: { blue: { dcol: -4, drow: 2 }, red: { dcol: 4, drow: -2 } },
+	[GridLocation.SOUTHWEST]: { blue: { dcol: 4, drow: 2 }, red: { dcol: -4, drow: -2 } },
+	[GridLocation.NORTHWEST]: { blue: { dcol: 4, drow: -2 }, red: { dcol: -4, drow: 2 } },
+	[GridLocation.NORTH]: { blue: { dcol: -4, drow: 0 }, red: { dcol: 4, drow: 0 } },
+	[GridLocation.EAST]: { blue: { dcol: 0, drow: -2 }, red: { dcol: 0, drow: 2 } },
+	[GridLocation.SOUTH]: { blue: { dcol: 4, drow: 0 }, red: { dcol: -4, drow: 0 } },
+	[GridLocation.WEST]: { blue: { dcol: 0, drow: 2 }, red: { dcol: 0, drow: -2 } },
+	[GridLocation.CENTER]: { blue: { dcol: -4, drow: 0 }, red: { dcol: 4, drow: 0 } },
 };
 
 // ============================================================================
@@ -174,54 +221,77 @@ function getArrowChar(dx: number, dy: number): string {
 }
 
 // ============================================================================
-// ORIENTATION INDICATOR
+// ORIENTATION / STAFF GEOMETRY
 //
-// A single character placed adjacent to the hand marker showing which
-// direction the prop (staff) points.
+// Computes the effective angle a staff points (toward the thumb end) based
+// on the hand's orientation and grid location. This angle drives both the
+// line character selection and the directional staff rendering.
 // ============================================================================
+
+/** Returns the angle (radians, 0=right) the thumb end of the staff points toward. */
+function getOrientationAngle(
+	orientation: Orientation,
+	location: GridLocation,
+): number {
+	const r = getRadialAngle(location);
+	switch (orientation) {
+		case Orientation.IN:
+			return r + Math.PI;
+		case Orientation.OUT:
+			return r;
+		case Orientation.CLOCK:
+			return r + Math.PI / 2;
+		case Orientation.COUNTER:
+			return r - Math.PI / 2;
+		case Orientation.CLOCK_IN:
+			return r + (Math.PI * 3) / 4;
+		case Orientation.CLOCK_OUT:
+			return r + Math.PI / 4;
+		case Orientation.COUNTER_IN:
+			return r - (Math.PI * 3) / 4;
+		case Orientation.COUNTER_OUT:
+			return r - Math.PI / 4;
+		case Orientation.CENTER_N:
+			return -Math.PI / 2;
+		case Orientation.CENTER_S:
+			return Math.PI / 2;
+		case Orientation.CENTER_E:
+			return 0;
+		case Orientation.CENTER_W:
+			return Math.PI;
+		case Orientation.CENTER_NE:
+			return -Math.PI / 4;
+		case Orientation.CENTER_SE:
+			return Math.PI / 4;
+		case Orientation.CENTER_SW:
+			return (3 * Math.PI) / 4;
+		case Orientation.CENTER_NW:
+			return (-3 * Math.PI) / 4;
+		default:
+			return -Math.PI / 2;
+	}
+}
 
 function getOrientationChar(
 	orientation: Orientation,
 	location: GridLocation,
 ): string {
-	switch (orientation) {
-		case Orientation.IN:
-		case Orientation.OUT: {
-			// Radial: show direction based on position relative to center
-			const radialAngle = getRadialAngle(location);
-			const effectiveAngle =
-				orientation === Orientation.OUT ? radialAngle : radialAngle + Math.PI;
-			return angleToLineChar(effectiveAngle);
-		}
-		case Orientation.CLOCK:
-		case Orientation.COUNTER: {
-			const radialAngle = getRadialAngle(location);
-			const offset =
-				orientation === Orientation.CLOCK ? Math.PI / 2 : -Math.PI / 2;
-			return angleToLineChar(radialAngle + offset);
-		}
-		case Orientation.CLOCK_IN:
-			return angleToLineChar(getRadialAngle(location) + (Math.PI * 3) / 4);
-		case Orientation.CLOCK_OUT:
-			return angleToLineChar(getRadialAngle(location) + Math.PI / 4);
-		case Orientation.COUNTER_IN:
-			return angleToLineChar(getRadialAngle(location) - (Math.PI * 3) / 4);
-		case Orientation.COUNTER_OUT:
-			return angleToLineChar(getRadialAngle(location) - Math.PI / 4);
-		case Orientation.CENTER_N:
-		case Orientation.CENTER_S:
-			return "|";
-		case Orientation.CENTER_E:
-		case Orientation.CENTER_W:
+	return angleToLineChar(getOrientationAngle(orientation, location));
+}
+
+/** Perpendicular cap character for the thumb end of a staff */
+function getThumbCapChar(lineChar: string): string {
+	switch (lineChar) {
+		case "|":
 			return "-";
-		case Orientation.CENTER_NE:
-		case Orientation.CENTER_SW:
-			return "/";
-		case Orientation.CENTER_NW:
-		case Orientation.CENTER_SE:
-			return "\\";
-		default:
+		case "-":
 			return "|";
+		case "/":
+			return "\\";
+		case "\\":
+			return "/";
+		default:
+			return "-";
 	}
 }
 
@@ -263,6 +333,26 @@ function angleToLineChar(angle: number): string {
 			return "/";
 		default:
 			return "|";
+	}
+}
+
+/**
+ * Step vector per staff line character.
+ * Diagonals use dcol=2 per drow=1 to compensate for monospace ~2:1 aspect ratio,
+ * keeping diagonal staves at a visual 45 degrees.
+ */
+function getStaffStep(lineChar: string): { dcol: number; drow: number } {
+	switch (lineChar) {
+		case "|":
+			return { dcol: 0, drow: 1 };
+		case "-":
+			return { dcol: 1, drow: 0 };
+		case "/":
+			return { dcol: 2, drow: -1 };
+		case "\\":
+			return { dcol: 2, drow: 1 };
+		default:
+			return { dcol: 0, drow: 1 };
 	}
 }
 
@@ -373,7 +463,11 @@ export class AsciiRenderer implements IAsciiRenderer {
 			this.placeHandPointDots(buffer, handCoords, isBox);
 		}
 
-		if (!layers || layers.hands !== false) {
+		const stavesOn = !layers || layers.staves !== false;
+
+		// Hand markers (B/R/X) are redundant when staves are visible —
+		// the staff color already identifies which hand is which.
+		if ((!layers || layers.hands !== false) && !stavesOn) {
 			this.placeHand(buffer, data.blueHand, handCoords);
 			this.placeHand(buffer, data.redHand, handCoords);
 			this.markOverlaps(buffer, data, handCoords);
@@ -389,8 +483,18 @@ export class AsciiRenderer implements IAsciiRenderer {
 		}
 
 		if (!layers || layers.staves !== false) {
-			this.placeOrientation(buffer, data.blueHand, handCoords, BUFFER_WIDTH, height);
-			this.placeOrientation(buffer, data.redHand, handCoords, BUFFER_WIDTH, height);
+			const isBeta = data.blueHand.location === data.redHand.location;
+			if (isBeta) {
+				const betaMap = isBox ? BOX_BETA : DIAMOND_BETA;
+				const offsets = betaMap[data.blueHand.location];
+				const blueOffset = offsets?.blue ?? { dcol: -4, drow: 0 };
+				const redOffset = offsets?.red ?? { dcol: 4, drow: 0 };
+				this.placeOrientation(buffer, data.blueHand, handCoords, BUFFER_WIDTH, height, blueOffset);
+				this.placeOrientation(buffer, data.redHand, handCoords, BUFFER_WIDTH, height, redOffset);
+			} else {
+				this.placeOrientation(buffer, data.blueHand, handCoords, BUFFER_WIDTH, height);
+				this.placeOrientation(buffer, data.redHand, handCoords, BUFFER_WIDTH, height);
+			}
 		}
 
 		return { buffer, height };
@@ -491,13 +595,13 @@ export class AsciiRenderer implements IAsciiRenderer {
 	// Minimal layout matching the real pictograph grid: 8 perimeter locations
 	// floating around a center point. No connecting lines.
 	//
-	// Layout (13 rows, 33 cols) — aspect-corrected for monospace ~2:1 ratio:
+	// Layout (26 rows, 66 cols) — aspect-corrected for monospace ~2:1 ratio:
 	//
-	//  Row 0:                O                      N  (col 16)
-	//  Row 2:        O                   O          NW (col 8), NE (col 24)
-	//  Row 6:  O               o               O   W  (col 4), center (16), E (col 28)
-	//  Row 10:       O                   O          SW (col 8), SE (col 24)
-	//  Row 12:               O                      S  (col 16)
+	//  Row 0:                        O                          N  (col 32)
+	//  Row 4:            O                           O          NW (col 16), NE (col 48)
+	//  Row 12: O                       o                     O  W  (col 8), center (32), E (col 56)
+	//  Row 20:           O                           O          SW (col 16), SE (col 48)
+	//  Row 24:                       O                          S  (col 32)
 	// ========================================================================
 
 	private drawDiamondGrid(_buffer: Cell[][], _height: number): void {
@@ -511,13 +615,13 @@ export class AsciiRenderer implements IAsciiRenderer {
 	// Minimal layout matching the real pictograph grid: 8 perimeter locations
 	// floating around a center point. No connecting lines or edges.
 	//
-	// Layout (11 rows, 33 cols) — aspect-corrected for monospace ~2:1 ratio:
+	// Layout (22 rows, 66 cols) — aspect-corrected for monospace ~2:1 ratio:
 	//
-	//  Row 0:  O                       O        NW (col 6), NE (col 26)
-	//  Row 2:                O                  N  (col 16)
-	//  Row 5:  O               o           O    W  (col 6), center (16), E (col 26)
-	//  Row 8:                O                  S  (col 16)
-	//  Row 10: O                       O        SW (col 6), SE (col 26)
+	//  Row 0:    O                                   O    NW (col 12), NE (col 52)
+	//  Row 4:                    O                        N  (col 32)
+	//  Row 10:   O                   o                O   W  (col 12), center (32), E (col 52)
+	//  Row 16:                   O                        S  (col 32)
+	//  Row 20:   O                                   O    SW (col 12), SE (col 52)
 	// ========================================================================
 
 	private drawBoxGrid(_buffer: Cell[][], _height: number): void {
@@ -662,38 +766,128 @@ export class AsciiRenderer implements IAsciiRenderer {
 	}
 
 	// ========================================================================
-	// ORIENTATION INDICATORS
+	// STAFF LINES (ORIENTATION)
 	//
-	// Place a single character next to the hand marker showing prop direction.
-	// Tries to place it in an unoccupied adjacent cell.
+	// Draw a directional staff line through the hand position. The staff
+	// extends outward from the hand until it reaches 1 cell before a grid
+	// reference point (center marker, outer dot) or the buffer edge. This
+	// keeps a 1-cell gap between the staff ends and the grid reference points
+	// while the staff passes through (covers) the hand dot.
+	// The thumb end gets a perpendicular cap character.
 	// ========================================================================
+
+	/** Grid reference chars the staff must not overwrite (1-cell gap kept) */
+	private static readonly GRID_REFS = new Set(["o", "\u25CF", "O"]);
+
+	/**
+	 * Max reach per direction to prevent staves from spanning the entire buffer
+	 * when no reference point is on the staff axis. Scaled for aspect ratio.
+	 */
+	private static getMaxReach(lineChar: string): number {
+		switch (lineChar) {
+			case "-":
+				return 18;
+			case "/":
+			case "\\":
+				return 8;
+			default:
+				return 10;
+		}
+	}
+
+	/**
+	 * Walk outward from the hand position along the staff axis.
+	 * Returns the number of valid cells before hitting a grid reference
+	 * point or the buffer edge.
+	 */
+	private staffReach(
+		buffer: Cell[][],
+		origin: GridCoord,
+		step: { dcol: number; drow: number },
+		sign: number,
+		maxReach: number,
+	): number {
+		let reach = 0;
+		for (let i = 1; i <= maxReach; i++) {
+			const c = origin.col + step.dcol * i * sign;
+			const r = origin.row + step.drow * i * sign;
+
+			if (r < 0 || r >= buffer.length || c < 0 || c >= buffer[0]!.length) break;
+
+			const cell = buffer[r]![c]!;
+			if (
+				cell.priority === PRIORITY_GRID &&
+				AsciiRenderer.GRID_REFS.has(cell.char)
+			) {
+				break; // stop 1 cell before this reference point
+			}
+
+			reach = i;
+		}
+		return reach;
+	}
 
 	private placeOrientation(
 		buffer: Cell[][],
 		hand: RetroHandData,
 		coords: Record<GridLocation, GridCoord>,
-		width: number,
-		height: number,
+		_width: number,
+		_height: number,
+		offset?: BetaOffset,
 	): void {
-		const coord = coords[hand.location];
-		const orientChar = getOrientationChar(hand.orientation, hand.location);
+		const baseCoord = coords[hand.location];
+		const coord = offset
+			? { col: baseCoord.col + offset.dcol, row: baseCoord.row + offset.drow }
+			: baseCoord;
+		const angle = getOrientationAngle(hand.orientation, hand.location);
+		const lineChar = angleToLineChar(angle);
 		const color = hand.color === MotionColor.BLUE ? COLOR_BLUE : COLOR_RED;
+		const step = getStaffStep(lineChar);
+		const maxReach = AsciiRenderer.getMaxReach(lineChar);
 
-		// Try to place orientation indicator in adjacent cells, preferring right then left
-		const candidates: [number, number][] = [
-			[coord.col + 1, coord.row], // right
-			[coord.col - 1, coord.row], // left
-			[coord.col, coord.row - 1], // above
-			[coord.col, coord.row + 1], // below
-		];
+		// Determine which step direction points toward the thumb.
+		const dot = Math.cos(angle) * step.dcol + Math.sin(angle) * step.drow;
+		const thumbSign = dot >= 0 ? 1 : -1;
+		const pinkySign = -thumbSign;
 
-		for (const [c, r] of candidates) {
-			if (c < 0 || c >= width || r < 0 || r >= height) continue;
-			const existing = this.getCell(buffer, c, r);
-			if (existing && existing.priority < PRIORITY_ORIENTATION) {
-				this.setCell(buffer, c, r, orientChar, color, PRIORITY_ORIENTATION);
-				return;
-			}
+		const thumbReach = this.staffReach(buffer, coord, step, thumbSign, maxReach);
+		const pinkyReach = this.staffReach(buffer, coord, step, pinkySign, maxReach);
+
+		// Staff character at the hand position itself (covers the . dot)
+		this.setCell(buffer, coord.col, coord.row, lineChar, color, PRIORITY_ORIENTATION);
+
+		// Staff body toward thumb (cells 1 through thumbReach-1), cap at thumbReach
+		for (let i = 1; i < thumbReach; i++) {
+			this.setCell(
+				buffer,
+				coord.col + step.dcol * i * thumbSign,
+				coord.row + step.drow * i * thumbSign,
+				lineChar,
+				color,
+				PRIORITY_ORIENTATION,
+			);
+		}
+		if (thumbReach > 0) {
+			this.setCell(
+				buffer,
+				coord.col + step.dcol * thumbReach * thumbSign,
+				coord.row + step.drow * thumbReach * thumbSign,
+				getThumbCapChar(lineChar),
+				color,
+				PRIORITY_ORIENTATION,
+			);
+		}
+
+		// Staff body toward pinky (no cap)
+		for (let i = 1; i <= pinkyReach; i++) {
+			this.setCell(
+				buffer,
+				coord.col + step.dcol * i * pinkySign,
+				coord.row + step.drow * i * pinkySign,
+				lineChar,
+				color,
+				PRIORITY_ORIENTATION,
+			);
 		}
 	}
 

@@ -145,6 +145,7 @@ export function createAsciiLabState() {
 
 	// Single mode
 	let entries = $state<PictographEntry[]>([]);
+	let gridModeFilter = $state<GridMode>(GridMode.DIAMOND);
 	let currentIndex = $state(0);
 
 	// Sequence mode
@@ -155,7 +156,11 @@ export function createAsciiLabState() {
 
 	// ── Single mode derived ──
 
-	const currentEntry = $derived(entries[currentIndex] ?? null);
+	const filteredEntries = $derived(
+		entries.filter((e) => e.gridMode === gridModeFilter),
+	);
+
+	const currentEntry = $derived(filteredEntries[currentIndex] ?? null);
 
 	const pictographData = $derived<RetroPictographData | null>(
 		currentEntry ? entryToPictograph(currentEntry) : null,
@@ -163,7 +168,7 @@ export function createAsciiLabState() {
 
 	const label = $derived(
 		currentEntry
-			? `${currentEntry.letter}  ${currentEntry.gridMode === GridMode.BOX ? "Box" : "Diamond"}  ${currentIndex + 1} / ${entries.length}`
+			? `${currentEntry.letter}  ${currentIndex + 1} / ${filteredEntries.length}`
 			: "No data loaded",
 	);
 
@@ -197,13 +202,18 @@ export function createAsciiLabState() {
 	}
 
 	function next(): void {
-		if (entries.length === 0) return;
-		currentIndex = (currentIndex + 1) % entries.length;
+		if (filteredEntries.length === 0) return;
+		currentIndex = (currentIndex + 1) % filteredEntries.length;
 	}
 
 	function prev(): void {
-		if (entries.length === 0) return;
-		currentIndex = (currentIndex - 1 + entries.length) % entries.length;
+		if (filteredEntries.length === 0) return;
+		currentIndex = (currentIndex - 1 + filteredEntries.length) % filteredEntries.length;
+	}
+
+	function setGridModeFilter(mode: GridMode): void {
+		gridModeFilter = mode;
+		currentIndex = 0;
 	}
 
 	function toggleLayer(layer: keyof RenderLayers): void {
@@ -281,6 +291,7 @@ export function createAsciiLabState() {
 		get error() { return error; },
 		get label() { return label; },
 		get layers() { return layers; },
+		get gridModeFilter() { return gridModeFilter; },
 		get pictographData() { return pictographData; },
 		get sequenceSteps() { return sequenceSteps; },
 		get sequenceWord() { return sequenceWord; },
@@ -291,6 +302,7 @@ export function createAsciiLabState() {
 		prev,
 		toggleLayer,
 		setMode,
+		setGridModeFilter,
 		generateSequence,
 	};
 }

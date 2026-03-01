@@ -1,5 +1,10 @@
 <!--
-  AsciiCrtPreview.svelte — CRT-styled preview of the ASCII pictograph render.
+  AsciiCrtPreview.svelte — CRT monitor preview of the ASCII pictograph render.
+
+  Uses the same dos-monitor > dos-terminal structure as the real /1989 page,
+  including scanlines, vignette, and phosphor glow, so what you see in the
+  lab is what you get in the actual app.
+
   Domain: Retro DOS Terminal Lab
 -->
 <script lang="ts">
@@ -12,68 +17,129 @@
     htmlLines: string[];
     compact: string;
   } = $props();
+
+  let copied = $state(false);
+
+  function stripHtml(html: string): string {
+    return html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+  }
+
+  async function copyToClipboard() {
+    const plain = htmlLines.map(stripHtml).join("\n");
+    await navigator.clipboard.writeText(plain);
+    copied = true;
+    setTimeout(() => { copied = false; }, 1500);
+  }
 </script>
 
-<div class="crt-preview">
-  <div class="crt-header">
-    <span class="crt-title">PREVIEW</span>
-  </div>
-  <div class="crt-screen">
-    {#each htmlLines as line}
-      <div class="dos-line">{@html line}</div>
-    {/each}
-    {#if compact}
-      <div class="crt-compact">
-        <div class="dos-line">{@html compact}</div>
+<div class="monitor-wrap">
+  <!-- Physical CRT bezel — same classes as /1989 -->
+  <div class="dos-monitor lab-monitor">
+    <div class="dos-terminal">
+      <div class="dos-output lab-output">
+        {#each htmlLines as line}
+          <div class="dos-line">{@html line}</div>
+        {/each}
+        {#if compact}
+          <div class="compact-divider"></div>
+          <div class="dos-line">{@html compact}</div>
+        {/if}
       </div>
-    {/if}
+
+      <!-- CRT scanline overlay -->
+      <div class="dos-crt-overlay" aria-hidden="true"></div>
+    </div>
   </div>
+
+  <!-- Copy button floats outside the monitor -->
+  <button
+    class="copy-btn"
+    onclick={copyToClipboard}
+    aria-label="Copy ASCII art to clipboard"
+  >
+    {#if copied}
+      <i class="fas fa-check" aria-hidden="true"></i> Copied
+    {:else}
+      <i class="fas fa-copy" aria-hidden="true"></i> Copy
+    {/if}
+  </button>
 </div>
 
 <style>
-  .crt-preview {
+  .monitor-wrap {
     display: flex;
     flex-direction: column;
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    height: 100%;
   }
 
-  .crt-header {
+  /* Override the global .dos-monitor to fit inside the lab panel
+     instead of filling the viewport. Keep the bezel look. */
+  .monitor-wrap :global(.lab-monitor) {
+    width: 100%;
+    max-width: 840px;
+    aspect-ratio: 4 / 3;
+    max-height: 75vh;
+  }
+
+  /* Height-aware font sizing for the 66×26 pictograph buffer.
+     The global formula targets 80-column width only. Here we derive
+     available height from cqw via the 4:3 aspect ratio and size the
+     font so 26 rows × 1.3 line-height fit vertically.
+     Terminal height ≈ 0.75 × cqw - 12px (monitor padding delta).
+     Usable text height = that minus 24px (.dos-output inset).
+     26 rows × 1.3 = 33.8 font-size units needed. */
+  .monitor-wrap :global(.dos-terminal) {
+    font-size: clamp(8px, calc((75cqw - 36px) / 34), 18px);
+  }
+
+  /* Override the output area to center content vertically */
+  .monitor-wrap :global(.lab-output) {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .compact-divider {
+    height: 1px;
+    margin: 8px 0;
+    background: rgba(51, 255, 51, 0.15);
+  }
+
+  .copy-btn {
     display: flex;
     align-items: center;
-    padding: 6px 12px;
-    background: rgba(0, 0, 0, 0.6);
-    border-bottom: 1px solid rgba(51, 255, 51, 0.2);
-  }
-
-  .crt-title {
+    gap: 5px;
+    padding: 6px 14px;
+    border: 1px solid rgba(51, 255, 51, 0.3);
+    border-radius: 100px;
+    background: transparent;
+    color: rgba(51, 255, 51, 0.7);
     font-family: "Courier New", "Consolas", monospace;
-    font-size: 12px;
-    color: #33ff33;
-    letter-spacing: 2px;
-    text-transform: uppercase;
+    font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+    transition:
+      color var(--duration-fast, 150ms) ease,
+      border-color var(--duration-fast, 150ms) ease;
   }
 
-  .crt-screen {
-    background: #000;
-    padding: 16px;
-    font-family: "Courier New", "Consolas", monospace;
-    font-size: 16px;
-    line-height: 1.3;
-    color: #33ff33;
-    min-height: 200px;
+  @media (hover: hover) {
+    .copy-btn:hover {
+      color: #33ff33;
+      border-color: rgba(51, 255, 51, 0.6);
+    }
   }
 
-  .crt-screen :global(.dos-line) {
-    white-space: pre;
-    min-height: 1.3em;
-    text-shadow: 0 0 4px currentColor;
+  .copy-btn:focus-visible {
+    outline: 2px solid #33ff33;
+    outline-offset: 2px;
   }
 
-  .crt-compact {
-    margin-top: 12px;
-    padding-top: 8px;
-    border-top: 1px solid rgba(51, 255, 51, 0.15);
+  @media (prefers-reduced-motion: reduce) {
+    .copy-btn {
+      transition: none;
+    }
   }
 </style>
