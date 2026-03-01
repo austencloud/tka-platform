@@ -107,11 +107,16 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     detectMode(startEndOptions?.blockedStartPositions ?? [])
   );
 
+  // Which positions are allowed (highlighted) in the current mode
+  const allowedPositions = $derived.by((): Set<GridPosition> => {
+    const allowed = getAllowedPositions(localBlockedPositions, gridMode);
+    return new Set(allowed);
+  });
+
   // For "specific" mode: which single position is selected
   const selectedSpecificPosition = $derived.by((): GridPosition | null => {
     if (startPosMode !== "specific") return null;
-    const allowed = getAllowedPositions(localBlockedPositions, gridMode);
-    return allowed.length === 1 ? allowed[0]! : null;
+    return allowedPositions.size === 1 ? [...allowedPositions][0]! : null;
   });
 
   // ─── Start/End display ───
@@ -186,8 +191,11 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     } else if (mode === "classic") {
       const blocked = getBlockedPositionsForPreset(StartPositionPreset.CLASSIC, gridMode);
       applyBlockedPositions(blocked);
+    } else if (mode === "specific") {
+      // Block all — nothing highlighted until user picks one
+      const allPositions = getAllPositions(gridMode);
+      applyBlockedPositions(allPositions);
     }
-    // "specific" — don't change blocked yet, wait for user to pick a position
   }
 
   function handleSpecificPositionSelect(position: GridPosition) {
@@ -195,6 +203,8 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     const allPositions = getAllPositions(gridMode);
     const blocked = allPositions.filter((p) => p !== position);
     applyBlockedPositions(blocked);
+    // Auto-close after picking a specific position
+    onClose();
   }
 
   // ─── Position grid data ───
@@ -393,34 +403,48 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
               </button>
             </div>
 
-            <!-- Single-select position grid (only when "Specific" is chosen) -->
-            {#if startPosMode === "specific"}
-              <div class="specific-grid">
-                {#each positionVariations as pos (pos.id)}
-                  {@const gridPos = pos.startPosition as GridPosition}
-                  {@const isSelected = selectedSpecificPosition === gridPos}
-                  <button
-                    class="specific-cell"
-                    class:selected={isSelected}
-                    onclick={() => handleSpecificPositionSelect(gridPos)}
-                    style:--letter-border-color={getLetterBorderColorSafe(pos.letter)}
-                    aria-label="Start at {gridPos}"
-                    aria-pressed={isSelected}
-                  >
-                    <div class="pictograph-wrapper">
-                      <PictographContainer pictographData={pos} />
-                    </div>
-                    {#if isSelected}
-                      <div class="selected-indicator">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                          <path d="M20 6L9 17l-5-5" />
-                        </svg>
-                      </div>
-                    {/if}
-                  </button>
-                {/each}
-              </div>
+            <!-- Call to action when in specific mode with nothing picked -->
+            {#if startPosMode === "specific" && !selectedSpecificPosition}
+              <p class="pick-prompt">Tap a position to select it</p>
             {/if}
+
+            <!-- Position grid: always visible, interactive only in "specific" mode -->
+            <div class="specific-grid">
+              {#each positionVariations as pos (pos.id)}
+                {@const gridPos = pos.startPosition as GridPosition}
+                {@const isAllowed = allowedPositions.has(gridPos)}
+                {@const isPickable = startPosMode === "specific"}
+                <button
+                  class="specific-cell"
+                  class:allowed={isAllowed}
+                  class:dimmed={!isAllowed}
+                  class:pickable={isPickable}
+                  onclick={() => isPickable && handleSpecificPositionSelect(gridPos)}
+                  style:--letter-border-color={getLetterBorderColorSafe(pos.letter)}
+                  aria-label="Start at {gridPos}"
+                  aria-pressed={isAllowed}
+                  tabindex={isPickable ? 0 : -1}
+                >
+                  <div class="pictograph-wrapper">
+                    <PictographContainer pictographData={pos} />
+                  </div>
+                  {#if isAllowed && !isPickable}
+                    <div class="selected-indicator">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                        <path d="M20 6L9 17l-5-5" />
+                      </svg>
+                    </div>
+                  {/if}
+                  {#if isAllowed && isPickable}
+                    <div class="selected-indicator">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                        <path d="M20 6L9 17l-5-5" />
+                      </svg>
+                    </div>
+                  {/if}
+                </button>
+              {/each}
+            </div>
           </div>
         {/if}
       </div>
@@ -697,6 +721,14 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     text-align: center;
   }
 
+  .pick-prompt {
+    margin: 0;
+    text-align: center;
+    font-size: var(--font-size-sm, 14px);
+    color: rgba(100, 200, 255, 0.8);
+    font-weight: 500;
+  }
+
   /* ─── Start Position: Specific single-select grid ─── */
 
   .specific-grid {
@@ -732,18 +764,31 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     font-family: inherit;
   }
 
-  .specific-cell:hover {
+  /* Allowed (highlighted) positions */
+  .specific-cell.allowed {
+    border-color: var(--letter-border-color, rgba(100, 200, 255, 0.8));
+    background: rgba(100, 200, 255, 0.12);
+    box-shadow: 0 0 10px rgba(100, 200, 255, 0.15);
+  }
+
+  /* Dimmed (not allowed) positions */
+  .specific-cell.dimmed {
+    opacity: 0.3;
+  }
+
+  /* Non-interactive in all/classic modes */
+  .specific-cell:not(.pickable) {
+    cursor: default;
+    pointer-events: none;
+  }
+
+  /* Hover only for pickable (specific mode) cells */
+  .specific-cell.pickable:hover {
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 255, 255, 0.3);
   }
 
-  .specific-cell.selected {
-    border-color: var(--letter-border-color, rgba(100, 200, 255, 0.8));
-    background: rgba(100, 200, 255, 0.12);
-    box-shadow: 0 0 10px rgba(100, 200, 255, 0.2);
-  }
-
-  .specific-cell:active {
+  .specific-cell.pickable:active {
     transform: scale(0.95);
   }
 
