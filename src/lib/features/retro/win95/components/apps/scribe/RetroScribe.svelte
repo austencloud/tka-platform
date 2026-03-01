@@ -16,7 +16,6 @@
   import RetroStatusBar from "../../primitives/RetroStatusBar.svelte";
   import RetroGenerateTab from "./RetroGenerateTab.svelte";
   import RetroConstructTab from "./RetroConstructTab.svelte";
-  import RetroSpellTab from "./RetroSpellTab.svelte";
   import RetroVisualBuilderTab from "./RetroVisualBuilderTab.svelte";
   import RetroSaveDialog from "./RetroSaveDialog.svelte";
   import { RETRO_ICONS } from "../../rendering/retro-icons";
@@ -51,7 +50,6 @@
     { id: "construct", label: "Construct" },
     { id: "visual-builder", label: "Visual Builder" },
     { id: "generate", label: "Generate" },
-    { id: "spell", label: "Spell" },
   ];
 
   /* ------------------------------------------------------------------ */
@@ -104,7 +102,7 @@
       label: "Generate",
       items: [
         {
-          label: "Generate Word...",
+          label: "Freeform...",
           shortcut: "F5",
           action: () => {
             activeTab = "generate";
@@ -113,7 +111,7 @@
         {
           label: "Spell Word...",
           action: () => {
-            activeTab = "spell";
+            activeTab = "generate";
           },
         },
       ],
@@ -213,8 +211,6 @@
           <RetroConstructTab onstatuschange={handleStatusChange} />
         {:else if activeTab === "visual-builder"}
           <RetroVisualBuilderTab onstatuschange={handleStatusChange} />
-        {:else if activeTab === "spell"}
-          <RetroSpellTab onstatuschange={handleStatusChange} />
         {/if}
       {/snippet}
     </RetroTabControl>

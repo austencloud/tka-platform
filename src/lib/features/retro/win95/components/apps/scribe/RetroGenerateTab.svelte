@@ -1,9 +1,9 @@
 <!--
   RetroGenerateTab — Generate tab for SCRIBE.EXE
 
-  Form-based interface for generating TKA sequences from words.
-  Enter a word, pick a constraint, hit Generate. A fake progress
-  animation runs for ~2.5s, then placeholder beat squares appear.
+  Two modes matching the real Generate tab:
+  - FREEFORM: settings cards (level, length, turn intensity, etc.) + Generate
+  - SPELL: word input + generate (spell mode merged in, no separate tab)
 
   Domain: Retro SCRIBE App
 -->
@@ -12,6 +12,7 @@
   import RetroTextInput from "../../primitives/RetroTextInput.svelte";
   import RetroDropdown from "../../primitives/RetroDropdown.svelte";
   import RetroProgressBar from "../../primitives/RetroProgressBar.svelte";
+  import RetroRadioButton from "../../primitives/RetroRadioButton.svelte";
   import RetroPictograph from "../../rendering/RetroPictograph.svelte";
   import { createMockPictographData } from "../../../../shared/data/mock-pictograph-data";
   import type { RetroPictographData } from "../../../../shared/domain/pictograph-types";
@@ -26,14 +27,63 @@
   /* State                                                               */
   /* ------------------------------------------------------------------ */
 
-  let word = $state("");
+  let mode = $state<"freeform" | "spell">("freeform");
+
+  /* Freeform settings */
+  let level = $state("2");
+  let length = $state("8");
+  let turnIntensity = $state("1");
+  let gridMode = $state("diamond");
+  let continuity = $state("continuous");
   let constraint = $state("smooth");
+
+  /* Spell settings */
+  let spellWord = $state("");
+
+  /* Generation state */
   let isGenerating = $state(false);
   let generatedBeats = $state<
-    { letter: string; color: string; pictograph: RetroPictographData }[]
+    { letter: string; pictograph: RetroPictographData }[]
   >([]);
   let generateProgress = $state(0);
   let generateStatus = $state("Ready");
+  let generatedWord = $state("");
+
+  /* ------------------------------------------------------------------ */
+  /* Dropdown options                                                    */
+  /* ------------------------------------------------------------------ */
+
+  const levelOptions = [
+    { value: "1", label: "Level 1 - Beginner" },
+    { value: "2", label: "Level 2 - Intermediate" },
+    { value: "3", label: "Level 3 - Advanced" },
+    { value: "4", label: "Level 4 - Skewed" },
+  ];
+
+  const lengthOptions = [
+    { value: "4", label: "4 beats" },
+    { value: "6", label: "6 beats" },
+    { value: "8", label: "8 beats" },
+    { value: "12", label: "12 beats" },
+    { value: "16", label: "16 beats" },
+  ];
+
+  const turnOptions = [
+    { value: "0", label: "0 - No turns" },
+    { value: "1", label: "1 - Mild" },
+    { value: "2", label: "2 - Moderate" },
+    { value: "3", label: "3 - Extreme" },
+  ];
+
+  const gridOptions = [
+    { value: "diamond", label: "Diamond" },
+    { value: "box", label: "Box" },
+  ];
+
+  const continuityOptions = [
+    { value: "continuous", label: "Continuous" },
+    { value: "random", label: "Random" },
+  ];
 
   const constraintOptions = [
     { value: "smooth", label: "Smooth" },
@@ -41,21 +91,13 @@
     { value: "none", label: "None" },
   ];
 
-  const beatColors = [
-    "#000080",
-    "#800000",
-    "#008000",
-    "#808000",
-    "#800080",
-    "#008080",
-  ];
-
   /* ------------------------------------------------------------------ */
-  /* Generation (fake)                                                   */
+  /* Generation                                                          */
   /* ------------------------------------------------------------------ */
 
   function handleGenerate() {
-    if (!word.trim() || isGenerating) return;
+    if (isGenerating) return;
+    if (mode === "spell" && !spellWord.trim()) return;
 
     isGenerating = true;
     generateProgress = 0;
@@ -80,12 +122,27 @@
     setTimeout(() => {
       clearInterval(interval);
       generateProgress = 100;
-      generateStatus = `Generated: ${word.toUpperCase()} (${word.length} beats)`;
-      onstatuschange?.(`Beats: ${word.length} | Generated`);
 
-      generatedBeats = word.split("").map((letter, i) => ({
-        letter: letter.toUpperCase(),
-        color: beatColors[i % beatColors.length]!,
+      /* Build result based on mode */
+      let resultWord: string;
+
+      if (mode === "spell") {
+        resultWord = spellWord.toUpperCase();
+      } else {
+        /* Generate a random word of the chosen length */
+        const len = parseInt(length);
+        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        resultWord = Array.from({ length: len }, () =>
+          letters.charAt(Math.floor(Math.random() * letters.length)),
+        ).join("");
+      }
+
+      generatedWord = resultWord;
+      generateStatus = `Generated: ${resultWord} (${resultWord.length} beats)`;
+      onstatuschange?.(`Beats: ${resultWord.length} | Generated`);
+
+      generatedBeats = resultWord.split("").map((letter) => ({
+        letter,
         pictograph: createMockPictographData(letter),
       }));
       isGenerating = false;
@@ -97,39 +154,159 @@
       handleGenerate();
     }
   }
+
+  function switchMode(newMode: string) {
+    mode = newMode as "freeform" | "spell";
+    generatedBeats = [];
+    generateStatus = "Ready";
+    generatedWord = "";
+  }
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="generate-tab" onkeydown={handleKeydown}>
-  <!-- Input row: word + generate button -->
-  <div class="input-row">
-    <label class="field-label" for="generate-word">Enter Word:</label>
-    <div class="word-input-wrapper">
-      <RetroTextInput
-        bind:value={word}
-        placeholder="Type a word..."
-        disabled={isGenerating}
+  <!-- Mode toggle -->
+  <div class="mode-row">
+    <span class="mode-label">Mode:</span>
+    <div class="mode-radios">
+      <RetroRadioButton
+        label="Freeform"
+        name="gen-mode"
+        value="freeform"
+        selected={mode === "freeform"}
+        onchange={switchMode}
+      />
+      <RetroRadioButton
+        label="Spell"
+        name="gen-mode"
+        value="spell"
+        selected={mode === "spell"}
+        onchange={switchMode}
       />
     </div>
+  </div>
+
+  {#if mode === "spell"}
+    <!-- ============================================================= -->
+    <!-- Spell Mode: word input + settings                               -->
+    <!-- ============================================================= -->
+    <fieldset class="settings-fieldset">
+      <legend>Spell Word</legend>
+
+      <div class="field-row">
+        <label class="field-label" for="spell-word">Word:</label>
+        <div class="word-input-wrapper">
+          <RetroTextInput
+            id="spell-word"
+            bind:value={spellWord}
+            placeholder="Type a word..."
+            disabled={isGenerating}
+          />
+        </div>
+      </div>
+
+      <div class="field-row">
+        <label class="field-label" for="spell-constraint">Constraint:</label>
+        <RetroDropdown
+          id="spell-constraint"
+          bind:value={constraint}
+          options={constraintOptions}
+          disabled={isGenerating}
+        />
+      </div>
+
+      <div class="field-row">
+        <label class="field-label" for="spell-level">Level:</label>
+        <RetroDropdown
+          id="spell-level"
+          bind:value={level}
+          options={levelOptions}
+          disabled={isGenerating}
+        />
+      </div>
+    </fieldset>
+  {:else}
+    <!-- ============================================================= -->
+    <!-- Freeform Mode: settings cards                                   -->
+    <!-- ============================================================= -->
+    <fieldset class="settings-fieldset">
+      <legend>Generation Settings</legend>
+
+      <div class="settings-grid">
+        <div class="field-row">
+          <label class="field-label" for="gen-level">Level:</label>
+          <RetroDropdown
+            id="gen-level"
+            bind:value={level}
+            options={levelOptions}
+            disabled={isGenerating}
+          />
+        </div>
+
+        <div class="field-row">
+          <label class="field-label" for="gen-length">Length:</label>
+          <RetroDropdown
+            id="gen-length"
+            bind:value={length}
+            options={lengthOptions}
+            disabled={isGenerating}
+          />
+        </div>
+
+        <div class="field-row">
+          <label class="field-label" for="gen-turns">Turns:</label>
+          <RetroDropdown
+            id="gen-turns"
+            bind:value={turnIntensity}
+            options={turnOptions}
+            disabled={isGenerating}
+          />
+        </div>
+
+        <div class="field-row">
+          <label class="field-label" for="gen-grid">Grid:</label>
+          <RetroDropdown
+            id="gen-grid"
+            bind:value={gridMode}
+            options={gridOptions}
+            disabled={isGenerating}
+          />
+        </div>
+
+        <div class="field-row">
+          <label class="field-label" for="gen-continuity">Prop:</label>
+          <RetroDropdown
+            id="gen-continuity"
+            bind:value={continuity}
+            options={continuityOptions}
+            disabled={isGenerating}
+          />
+        </div>
+
+        <div class="field-row">
+          <label class="field-label" for="gen-constraint">Constraint:</label>
+          <RetroDropdown
+            id="gen-constraint"
+            bind:value={constraint}
+            options={constraintOptions}
+            disabled={isGenerating}
+          />
+        </div>
+      </div>
+    </fieldset>
+  {/if}
+
+  <!-- Generate button -->
+  <div class="generate-row">
     <RetroButton
-      label="Generate"
+      label={mode === "spell" ? "Spell" : "Generate"}
       isDefault
-      disabled={isGenerating || !word.trim()}
+      disabled={isGenerating || (mode === "spell" && !spellWord.trim())}
       onclick={handleGenerate}
     />
   </div>
 
-  <!-- Constraint row -->
-  <div class="constraint-row">
-    <label class="field-label" for="generate-constraint">Constraint:</label>
-    <RetroDropdown
-      bind:value={constraint}
-      options={constraintOptions}
-      disabled={isGenerating}
-    />
-  </div>
-
-  <!-- Display area: sunken panel for results -->
+  <!-- Display area: results -->
   <div class="display-area sunken-panel">
     {#if isGenerating}
       <div class="progress-container">
@@ -137,24 +314,27 @@
         <p class="progress-message">{generateStatus}</p>
       </div>
     {:else if generatedBeats.length > 0}
-      <div class="beats-container">
-        {#each generatedBeats as beat, i (i)}
-          <div class="beat-cell">
-            <RetroPictograph data={beat.pictograph} size={48} />
-            <span class="beat-label">{beat.letter}</span>
-          </div>
-        {/each}
+      <div class="results-wrapper">
+        <div class="result-word">{generatedWord}</div>
+        <div class="beats-container">
+          {#each generatedBeats as beat, i (i)}
+            <div class="beat-cell">
+              <RetroPictograph data={beat.pictograph} size={42} />
+              <span class="beat-number">{i + 1}</span>
+              <span class="beat-label">{beat.letter}</span>
+            </div>
+          {/each}
+        </div>
       </div>
     {:else}
       <div class="empty-state">
-        <p class="empty-text">Generated sequence will appear here</p>
+        <p class="empty-text">
+          {mode === "spell"
+            ? "Enter a word and click Spell to generate"
+            : "Adjust settings and click Generate"}
+        </p>
       </div>
     {/if}
-  </div>
-
-  <!-- Status line -->
-  <div class="status-line">
-    Status: {generateStatus}
   </div>
 </div>
 
@@ -162,25 +342,68 @@
   .generate-tab {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     height: 100%;
     padding: 4px;
   }
 
   /* ------------------------------------------------------------------ */
-  /* Input row                                                           */
+  /* Mode toggle                                                         */
   /* ------------------------------------------------------------------ */
-  .input-row {
+  .mode-row {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .mode-label {
+    font-size: var(--retro-font-size, 11px);
+    font-family: var(--retro-font-family, "Microsoft Sans Serif", Arial, sans-serif);
+    color: var(--retro-black, #000);
+    font-weight: bold;
+  }
+
+  .mode-radios {
+    display: flex;
+    gap: 12px;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Settings fieldset                                                   */
+  /* ------------------------------------------------------------------ */
+  .settings-fieldset {
+    flex-shrink: 0;
+    padding: 4px 6px;
+    margin: 0;
+  }
+
+  .settings-fieldset legend {
+    font-size: var(--retro-font-size, 11px);
+    font-family: var(--retro-font-family, "Microsoft Sans Serif", Arial, sans-serif);
+    color: var(--retro-black, #000);
+  }
+
+  .settings-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px 12px;
+  }
+
+  .field-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 2px;
   }
 
   .field-label {
     white-space: nowrap;
     color: var(--retro-black, #000);
     font-size: var(--retro-font-size, 11px);
+    font-family: var(--retro-font-family, "Microsoft Sans Serif", Arial, sans-serif);
     flex-shrink: 0;
+    min-width: 60px;
   }
 
   .word-input-wrapper {
@@ -189,12 +412,12 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Constraint row                                                      */
+  /* Generate button                                                     */
   /* ------------------------------------------------------------------ */
-  .constraint-row {
+  .generate-row {
     display: flex;
-    align-items: center;
-    gap: 6px;
+    justify-content: center;
+    flex-shrink: 0;
   }
 
   /* ------------------------------------------------------------------ */
@@ -202,7 +425,7 @@
   /* ------------------------------------------------------------------ */
   .display-area {
     flex: 1;
-    min-height: 80px;
+    min-height: 60px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -225,11 +448,27 @@
     margin: 0;
   }
 
+  .results-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 8px;
+    width: 100%;
+  }
+
+  .result-word {
+    font-family: var(--retro-font-mono, "Fixedsys", monospace);
+    font-size: 13px;
+    font-weight: bold;
+    color: var(--retro-navy, #000080);
+    letter-spacing: 2px;
+  }
+
   .beats-container {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
-    padding: 8px;
     align-items: center;
     justify-content: center;
   }
@@ -238,7 +477,13 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: 1px;
+  }
+
+  .beat-number {
+    font-family: var(--retro-font-mono, "Fixedsys", monospace);
+    font-size: 8px;
+    color: var(--retro-dark-gray, #808080);
   }
 
   .beat-label {
@@ -246,6 +491,7 @@
     font-size: 9px;
     font-family: var(--retro-font-mono, "Fixedsys", monospace);
     text-align: center;
+    font-weight: bold;
   }
 
   .empty-state {
@@ -260,15 +506,5 @@
     font-size: var(--retro-font-size, 11px);
     margin: 0;
     font-style: italic;
-  }
-
-  /* ------------------------------------------------------------------ */
-  /* Status line                                                         */
-  /* ------------------------------------------------------------------ */
-  .status-line {
-    color: var(--retro-black, #000);
-    font-size: var(--retro-font-size, 11px);
-    padding: 2px 0;
-    flex-shrink: 0;
   }
 </style>

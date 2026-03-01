@@ -1,20 +1,19 @@
 <!--
-  RetroConstructTab — Beat-by-beat sequence builder for SCRIBE.EXE
+  RetroConstructTab — Visual sequence builder for SCRIBE.EXE
 
-  Lets the user pick a letter, motion type, and CW/CCW turns,
-  then add beats one at a time to build a sequence. The beat list
-  and a placeholder preview panel sit side by side below.
+  Two-phase flow matching the real Construct tab:
+  Phase 1: Start Position Picker — choose Alpha, Beta, or Gamma
+  Phase 2: Option Picker — grid of pictographs to add beats
+
+  The workspace (beat display) runs along the top as beats accumulate.
 
   Domain: Retro SCRIBE App
 -->
 <script lang="ts">
   import RetroButton from "../../primitives/RetroButton.svelte";
-  import RetroTextInput from "../../primitives/RetroTextInput.svelte";
-  import RetroDropdown from "../../primitives/RetroDropdown.svelte";
-  import RetroRadioButton from "../../primitives/RetroRadioButton.svelte";
-  import RetroListBox from "../../primitives/RetroListBox.svelte";
   import RetroPictograph from "../../rendering/RetroPictograph.svelte";
   import { createMockPictographData } from "../../../../shared/data/mock-pictograph-data";
+  import type { RetroPictographData } from "../../../../shared/domain/pictograph-types";
 
   let {
     onstatuschange,
@@ -23,432 +22,444 @@
   } = $props();
 
   /* ------------------------------------------------------------------ */
-  /* Beat form state                                                     */
-  /* ------------------------------------------------------------------ */
-
-  let selectedLetter = $state("a");
-  let motionType = $state("pro");
-  let cwTurns = $state(0);
-  let ccwTurns = $state(0);
-
-  /* ------------------------------------------------------------------ */
-  /* Letter options                                                      */
-  /* ------------------------------------------------------------------ */
-
-  const greekLetters = [
-    { value: "sigma", label: "Sigma" },
-    { value: "phi", label: "Phi" },
-    { value: "theta", label: "Theta" },
-    { value: "psi", label: "Psi" },
-    { value: "lambda", label: "Lambda" },
-  ];
-
-  const letterOptions = [
-    ...Array.from({ length: 26 }, (_, i) => {
-      const char = String.fromCharCode(65 + i);
-      return { value: char.toLowerCase(), label: char };
-    }),
-    ...greekLetters,
-  ];
-
-  /* ------------------------------------------------------------------ */
-  /* Motion type selection                                               */
-  /* ------------------------------------------------------------------ */
-
-  function selectMotion(value: string) {
-    motionType = value;
-  }
-
-  /* ------------------------------------------------------------------ */
-  /* Turn spinner helpers                                                */
-  /* ------------------------------------------------------------------ */
-
-  const TURN_MIN = 0;
-  const TURN_MAX = 3;
-  const TURN_STEP = 0.5;
-
-  function clampTurns(val: number): number {
-    return Math.max(TURN_MIN, Math.min(TURN_MAX, Math.round(val * 2) / 2));
-  }
-
-  function incrementCW() {
-    cwTurns = clampTurns(cwTurns + TURN_STEP);
-  }
-  function decrementCW() {
-    cwTurns = clampTurns(cwTurns - TURN_STEP);
-  }
-  function incrementCCW() {
-    ccwTurns = clampTurns(ccwTurns + TURN_STEP);
-  }
-  function decrementCCW() {
-    ccwTurns = clampTurns(ccwTurns - TURN_STEP);
-  }
-
-  function handleCWInput(val: string) {
-    const parsed = parseFloat(val);
-    if (!isNaN(parsed)) cwTurns = clampTurns(parsed);
-  }
-
-  function handleCCWInput(val: string) {
-    const parsed = parseFloat(val);
-    if (!isNaN(parsed)) ccwTurns = clampTurns(parsed);
-  }
-
-  /* ------------------------------------------------------------------ */
-  /* Beat list                                                           */
+  /* Types                                                               */
   /* ------------------------------------------------------------------ */
 
   interface Beat {
     letter: string;
-    motion: string;
-    cw: number;
-    ccw: number;
+    pictograph: RetroPictographData;
   }
 
+  /* ------------------------------------------------------------------ */
+  /* State                                                               */
+  /* ------------------------------------------------------------------ */
+
+  let phase = $state<"start" | "build">("start");
+  let startPosition = $state<string | null>(null);
   let beats = $state<Beat[]>([]);
   let selectedBeatIndex = $state(-1);
 
-  const beatColors = [
-    "#000080",
-    "#800000",
-    "#008000",
-    "#808000",
-    "#800080",
-    "#008080",
+  /* ------------------------------------------------------------------ */
+  /* Start positions (Alpha / Beta / Gamma)                              */
+  /* ------------------------------------------------------------------ */
+
+  const startPositions = [
+    { id: "alpha", label: "Alpha", description: "Hands opposite" },
+    { id: "beta", label: "Beta", description: "Hands together" },
+    { id: "gamma", label: "Gamma", description: "Hands at right angle" },
   ];
 
-  const beatListItems = $derived(
-    beats.map((b, i) => {
-      const label = b.letter.length > 1
-        ? b.letter.charAt(0).toUpperCase() + b.letter.slice(1)
-        : b.letter.toUpperCase();
-      const motion = b.motion.charAt(0).toUpperCase() + b.motion.slice(1);
-      return `${i + 1}. ${label} - ${motion} - CW:${b.cw} CCW:${b.ccw}`;
-    }),
-  );
-
-  function handleAddBeat() {
-    beats.push({
-      letter: selectedLetter,
-      motion: motionType,
-      cw: cwTurns,
-      ccw: ccwTurns,
-    });
-    onstatuschange?.(`Beats: ${beats.length} | Added beat ${beats.length}`);
+  function selectStartPosition(posId: string) {
+    startPosition = posId;
+    phase = "build";
+    onstatuschange?.(`Beats: 0 | Start: ${posId.charAt(0).toUpperCase() + posId.slice(1)}`);
   }
 
-  function handleRemoveBeat() {
-    if (selectedBeatIndex < 0 || selectedBeatIndex >= beats.length) return;
-    beats.splice(selectedBeatIndex, 1);
+  /* ------------------------------------------------------------------ */
+  /* Option picker — available next letters                              */
+  /* ------------------------------------------------------------------ */
+
+  const ALL_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+  /**
+   * Generate 6-8 "available" options based on what the last beat was.
+   * In the real app this comes from motion continuity logic.
+   * Here we pick a deterministic subset based on current state.
+   */
+  const availableOptions = $derived.by(() => {
+    const lastLetter = beats.length > 0
+      ? beats[beats.length - 1]!.letter
+      : (startPosition === "beta" ? "B" : startPosition === "gamma" ? "G" : "A");
+
+    const seed = lastLetter.charCodeAt(0);
+    const options: string[] = [];
+
+    /* Pick 8 letters starting from a seed offset, wrapping around */
+    for (let i = 0; i < 8; i++) {
+      const idx = (seed + i * 3) % ALL_LETTERS.length;
+      options.push(ALL_LETTERS[idx]!);
+    }
+
+    return [...new Set(options)].slice(0, 8);
+  });
+
+  /* ------------------------------------------------------------------ */
+  /* Beat operations                                                     */
+  /* ------------------------------------------------------------------ */
+
+  function addBeat(letter: string) {
+    beats.push({
+      letter,
+      pictograph: createMockPictographData(letter),
+    });
+    selectedBeatIndex = beats.length - 1;
+    onstatuschange?.(`Beats: ${beats.length} | Added: ${letter}`);
+  }
+
+  function removeBeat(index: number) {
+    if (index < 0 || index >= beats.length) return;
+    beats.splice(index, 1);
     selectedBeatIndex = Math.min(selectedBeatIndex, beats.length - 1);
     onstatuschange?.(`Beats: ${beats.length} | Beat removed`);
   }
+
+  function removeLastBeat() {
+    if (beats.length === 0) return;
+    removeBeat(beats.length - 1);
+  }
+
+  function clearAll() {
+    beats = [];
+    selectedBeatIndex = -1;
+    phase = "start";
+    startPosition = null;
+    onstatuschange?.("Beats: 0 | Cleared");
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Word derivation                                                     */
+  /* ------------------------------------------------------------------ */
+
+  const word = $derived(beats.map((b) => b.letter).join(""));
 </script>
 
 <div class="construct-tab">
-  <!-- Controls fieldset -->
-  <fieldset class="controls-fieldset">
-    <legend>Beat Parameters</legend>
-
-    <!-- Letter picker -->
-    <div class="field-row-custom">
-      <label class="field-label" for="construct-letter">Letter:</label>
-      <RetroDropdown id="construct-letter" bind:value={selectedLetter} options={letterOptions} />
-    </div>
-
-    <!-- Motion type radios -->
-    <div class="field-row-custom">
-      <label class="field-label" for="construct-motion-pro">Motion:</label>
-      <div class="radio-group">
-        <RetroRadioButton
-          label="Pro"
-          name="motion-type"
-          value="pro"
-          selected={motionType === "pro"}
-          onchange={selectMotion}
-        />
-        <RetroRadioButton
-          label="Anti"
-          name="motion-type"
-          value="anti"
-          selected={motionType === "anti"}
-          onchange={selectMotion}
-        />
-        <RetroRadioButton
-          label="Static"
-          name="motion-type"
-          value="static"
-          selected={motionType === "static"}
-          onchange={selectMotion}
-        />
-        <RetroRadioButton
-          label="Dash"
-          name="motion-type"
-          value="dash"
-          selected={motionType === "dash"}
-          onchange={selectMotion}
-        />
-      </div>
-    </div>
-
-    <!-- Turn spinners -->
-    <div class="field-row-custom">
-      <label class="field-label" for="construct-cw">CW Turns:</label>
-      <div class="spinner">
-        <div class="spinner-input">
-          <RetroTextInput
-            id="construct-cw"
-            value={String(cwTurns)}
-            onchange={handleCWInput}
-          />
-        </div>
-        <div class="spinner-buttons">
-          <RetroButton onclick={incrementCW}>
-            <span class="spinner-arrow">&#9650;</span>
-          </RetroButton>
-          <RetroButton onclick={decrementCW}>
-            <span class="spinner-arrow">&#9660;</span>
-          </RetroButton>
-        </div>
-      </div>
-
-      <label class="field-label ccw-label" for="construct-ccw">CCW Turns:</label>
-      <div class="spinner">
-        <div class="spinner-input">
-          <RetroTextInput
-            id="construct-ccw"
-            value={String(ccwTurns)}
-            onchange={handleCCWInput}
-          />
-        </div>
-        <div class="spinner-buttons">
-          <RetroButton onclick={incrementCCW}>
-            <span class="spinner-arrow">&#9650;</span>
-          </RetroButton>
-          <RetroButton onclick={decrementCCW}>
-            <span class="spinner-arrow">&#9660;</span>
-          </RetroButton>
-        </div>
-      </div>
-    </div>
-
-    <!-- Add Beat button -->
-    <div class="add-row">
-      <RetroButton label="Add Beat" isDefault onclick={handleAddBeat} />
-    </div>
-  </fieldset>
-
-  <!-- Bottom section: beat list + preview side by side -->
-  <div class="bottom-section">
-    <!-- Beat list -->
-    <div class="list-column">
-      <RetroListBox
-        items={beatListItems}
-        bind:selectedIndex={selectedBeatIndex}
-        height={6}
-      />
-      <div class="list-actions">
-        <RetroButton
-          label="Remove"
-          disabled={selectedBeatIndex < 0 || beats.length === 0}
-          onclick={handleRemoveBeat}
-        />
-      </div>
-    </div>
-
-    <!-- Preview area -->
-    <div class="preview-column sunken-panel">
-      {#if beats.length > 0}
-        <div class="beats-container">
-          {#each beats as beat, i (i)}
-            {@const label = beat.letter.length > 1
-              ? beat.letter.charAt(0).toUpperCase() + beat.letter.slice(1)
-              : beat.letter.toUpperCase()}
-            <div class="beat-cell">
+  {#if phase === "start"}
+    <!-- ============================================================= -->
+    <!-- Phase 1: Start Position Picker                                  -->
+    <!-- ============================================================= -->
+    <div class="start-picker">
+      <fieldset class="start-fieldset">
+        <legend>Choose Start Position</legend>
+        <div class="start-grid">
+          {#each startPositions as pos (pos.id)}
+            <button
+              class="start-tile"
+              type="button"
+              onclick={() => selectStartPosition(pos.id)}
+              aria-label={`Start with ${pos.label}`}
+            >
               <RetroPictograph
-                data={createMockPictographData(beat.letter)}
-                size={42}
+                data={createMockPictographData(pos.id === "alpha" ? "A" : pos.id === "beta" ? "B" : "G")}
+                size={56}
               />
-              <span class="beat-label">{label}</span>
-            </div>
+              <span class="start-label">{pos.label}</span>
+              <span class="start-desc">{pos.description}</span>
+            </button>
           {/each}
         </div>
-      {:else}
-        <div class="empty-state">
-          <p class="empty-text">Add beats to preview sequence</p>
-        </div>
-      {/if}
+      </fieldset>
+
+      <div class="start-hint">
+        <p class="hint-text">Select a hand starting position to begin building.</p>
+      </div>
     </div>
-  </div>
+  {:else}
+    <!-- ============================================================= -->
+    <!-- Phase 2: Build Mode — workspace + option picker                 -->
+    <!-- ============================================================= -->
+
+    <!-- Workspace: beat display strip -->
+    <div class="workspace">
+      <div class="workspace-header">
+        <span class="workspace-word">{word || "(empty)"}</span>
+        <div class="workspace-actions">
+          <RetroButton
+            label="Undo"
+            disabled={beats.length === 0}
+            onclick={removeLastBeat}
+          />
+          <RetroButton
+            label="Clear"
+            disabled={beats.length === 0}
+            onclick={clearAll}
+          />
+        </div>
+      </div>
+
+      <div class="beat-strip sunken-panel">
+        <!-- Start position tile -->
+        <div class="beat-cell start-cell">
+          <RetroPictograph
+            data={createMockPictographData(startPosition === "beta" ? "B" : startPosition === "gamma" ? "G" : "A")}
+            size={36}
+          />
+          <span class="beat-number">0</span>
+        </div>
+
+        <!-- Beat tiles -->
+        {#each beats as beat, i (i)}
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div
+            class="beat-cell"
+            class:beat-selected={selectedBeatIndex === i}
+            onclick={() => (selectedBeatIndex = i)}
+          >
+            <RetroPictograph data={beat.pictograph} size={36} />
+            <span class="beat-number">{i + 1}</span>
+          </div>
+        {/each}
+
+        {#if beats.length === 0}
+          <div class="beat-placeholder">
+            <span class="placeholder-text">Pick an option below to add beats</span>
+          </div>
+        {/if}
+      </div>
+    </div>
+
+    <!-- Option picker: grid of available next pictographs -->
+    <fieldset class="options-fieldset">
+      <legend>Available Options</legend>
+      <div class="option-grid">
+        {#each availableOptions as letter (letter)}
+          <button
+            class="option-tile"
+            type="button"
+            onclick={() => addBeat(letter)}
+            aria-label={`Add letter ${letter}`}
+          >
+            <RetroPictograph
+              data={createMockPictographData(letter)}
+              size={48}
+            />
+            <span class="option-label">{letter}</span>
+          </button>
+        {/each}
+      </div>
+    </fieldset>
+  {/if}
 </div>
 
 <style>
   .construct-tab {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     height: 100%;
     padding: 4px;
   }
 
   /* ------------------------------------------------------------------ */
-  /* Fieldset (98.css provides etched border)                            */
+  /* Phase 1: Start Position Picker                                      */
   /* ------------------------------------------------------------------ */
-  .controls-fieldset {
-    flex-shrink: 0;
-    padding: 4px 6px;
+  .start-picker {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    gap: 12px;
+  }
+
+  .start-fieldset {
+    padding: 8px 12px;
     margin: 0;
   }
 
-  .controls-fieldset legend {
+  .start-fieldset legend {
     font-size: var(--retro-font-size, 11px);
     font-family: var(--retro-font-family, "Microsoft Sans Serif", Arial, sans-serif);
     color: var(--retro-black, #000);
   }
 
-  /* ------------------------------------------------------------------ */
-  /* Field rows                                                          */
-  /* ------------------------------------------------------------------ */
-  .field-row-custom {
+  .start-grid {
     display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  .start-tile {
+    display: flex;
+    flex-direction: column;
     align-items: center;
     gap: 4px;
+    padding: 8px;
+    min-width: 80px;
+    min-height: auto;
+    background: var(--retro-field-bg, #fff);
+    border: 2px inset var(--retro-button-face, #c0c0c0);
+    cursor: pointer;
+    color: transparent;
+    text-shadow: none;
+  }
+
+  .start-tile:hover {
+    background: var(--retro-selection-bg, #000080);
+  }
+
+  .start-tile:hover .start-label,
+  .start-tile:hover .start-desc {
+    color: var(--retro-selection-text, #fff);
+  }
+
+  .start-label {
+    font-family: var(--retro-font-family, "Microsoft Sans Serif", Arial, sans-serif);
+    font-size: var(--retro-font-size, 11px);
+    font-weight: bold;
+    color: var(--retro-black, #000);
+    text-shadow: 0 0 var(--retro-black, #000);
+  }
+
+  .start-desc {
+    font-family: var(--retro-font-family, "Microsoft Sans Serif", Arial, sans-serif);
+    font-size: 9px;
+    color: var(--retro-dark-gray, #808080);
+    text-shadow: 0 0 var(--retro-dark-gray, #808080);
+  }
+
+  .start-hint {
+    text-align: center;
+  }
+
+  .hint-text {
+    color: var(--retro-dark-gray, #808080);
+    font-size: var(--retro-font-size, 11px);
+    font-style: italic;
+    margin: 0;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Phase 2: Workspace (beat strip)                                     */
+  /* ------------------------------------------------------------------ */
+  .workspace {
+    flex-shrink: 0;
+  }
+
+  .workspace-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     margin-bottom: 2px;
   }
 
-  .field-label {
-    white-space: nowrap;
-    color: var(--retro-black, #000);
+  .workspace-word {
+    font-family: var(--retro-font-mono, "Fixedsys", monospace);
     font-size: var(--retro-font-size, 11px);
-    font-family: var(--retro-font-family, "Microsoft Sans Serif", Arial, sans-serif);
-    flex-shrink: 0;
-    min-width: 60px;
+    color: var(--retro-black, #000);
+    font-weight: bold;
+    letter-spacing: 1px;
   }
 
-  .ccw-label {
-    margin-left: 12px;
-  }
-
-  .radio-group {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-
-  /* ------------------------------------------------------------------ */
-  /* Turn spinners                                                       */
-  /* ------------------------------------------------------------------ */
-  .spinner {
-    display: flex;
-    align-items: stretch;
-  }
-
-  .spinner-input {
-    width: 42px;
-  }
-
-  .spinner-input :global(.retro-input) {
-    text-align: center;
-    width: 42px;
-  }
-
-  .spinner-buttons {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .spinner-buttons :global(button) {
-    min-width: 16px;
-    min-height: 11px;
-    padding: 0;
-    line-height: 1;
-    font-size: 6px;
-  }
-
-  .spinner-arrow {
-    font-size: 6px;
-    line-height: 1;
-  }
-
-  /* ------------------------------------------------------------------ */
-  /* Add button row                                                      */
-  /* ------------------------------------------------------------------ */
-  .add-row {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 4px;
-  }
-
-  /* ------------------------------------------------------------------ */
-  /* Bottom section: list + preview                                      */
-  /* ------------------------------------------------------------------ */
-  .bottom-section {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    gap: 8px;
-  }
-
-  .list-column {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 0;
-  }
-
-  .list-actions {
+  .workspace-actions {
     display: flex;
     gap: 4px;
   }
 
-  .preview-column {
-    flex: 1;
-    min-width: 0;
+  .beat-strip {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: auto;
+    gap: 3px;
+    padding: 4px;
+    min-height: 56px;
+    overflow-x: auto;
+    overflow-y: hidden;
     background: var(--retro-field-bg, #fff);
-  }
-
-  /* ------------------------------------------------------------------ */
-  /* Beat squares (same style as GenerateTab)                            */
-  /* ------------------------------------------------------------------ */
-  .beats-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    padding: 8px;
     align-items: center;
-    justify-content: center;
   }
 
   .beat-cell {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: 1px;
+    padding: 2px;
+    flex-shrink: 0;
+    border: 1px solid transparent;
+    cursor: pointer;
   }
 
-  .beat-label {
-    color: var(--retro-black, #000);
-    font-size: 9px;
+  .beat-cell.beat-selected {
+    border-color: var(--retro-navy, #000080);
+    background: rgba(0, 0, 128, 0.08);
+  }
+
+  .beat-cell.start-cell {
+    opacity: 0.7;
+    cursor: default;
+  }
+
+  .beat-number {
     font-family: var(--retro-font-mono, "Fixedsys", monospace);
+    font-size: 8px;
+    color: var(--retro-dark-gray, #808080);
     text-align: center;
   }
 
-  .empty-state {
+  .beat-placeholder {
     display: flex;
     align-items: center;
-    justify-content: center;
-    height: 100%;
+    padding: 0 8px;
   }
 
-  .empty-text {
+  .placeholder-text {
     color: var(--retro-disabled-text, #808080);
     font-size: var(--retro-font-size, 11px);
-    margin: 0;
     font-style: italic;
+    white-space: nowrap;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Option Picker                                                       */
+  /* ------------------------------------------------------------------ */
+  .options-fieldset {
+    flex: 1;
+    min-height: 0;
+    padding: 4px 6px;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .options-fieldset legend {
+    font-size: var(--retro-font-size, 11px);
+    font-family: var(--retro-font-family, "Microsoft Sans Serif", Arial, sans-serif);
+    color: var(--retro-black, #000);
+  }
+
+  .option-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 4px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex: 1;
+    min-height: 0;
+    align-content: flex-start;
+    justify-content: center;
+  }
+
+  .option-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 4px;
+    min-width: 56px;
+    min-height: auto;
+    background: var(--retro-field-bg, #fff);
+    border: 2px outset var(--retro-button-face, #c0c0c0);
+    cursor: pointer;
+    color: transparent;
+    text-shadow: none;
+  }
+
+  .option-tile:hover {
+    background: #e8e8ff;
+    border-color: var(--retro-navy, #000080);
+  }
+
+  .option-tile:active {
+    border-style: inset;
+  }
+
+  .option-label {
+    font-family: var(--retro-font-mono, "Fixedsys", monospace);
+    font-size: 9px;
+    color: var(--retro-black, #000);
+    font-weight: bold;
+    text-shadow: 0 0 var(--retro-black, #000);
   }
 </style>
