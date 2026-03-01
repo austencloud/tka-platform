@@ -61,7 +61,8 @@ export class BrowseEventHandler implements IBrowseEventHandler {
           this.handleViewDetail(sequence);
           break;
         case "delete":
-          console.log("Handling delete action for sequence:", sequence.id);
+          // Deletion is handled by the sequence viewer, not the gallery.
+          // This case is kept so the switch doesn't hit the default warn.
           break;
         case "favorite":
           await this.params!.galleryState.toggleFavorite(sequence.id);
@@ -156,7 +157,7 @@ export class BrowseEventHandler implements IBrowseEventHandler {
         this.handleEditSequence(sequence);
         break;
       case "delete":
-        console.log("Handling delete panel action for sequence:", sequence.id);
+        // Deletion is handled by the sequence viewer, not the detail panel.
         break;
       default:
         console.warn("Unknown detail panel action:", action);

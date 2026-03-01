@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 /**
  * library-events.ts Tests
  *
@@ -29,17 +31,27 @@ afterEach(() => {
 describe("notifyLibraryMutated", () => {
   it("dispatches an event named 'tka:library-mutated'", () => {
     const dispatchSpy = vi.spyOn(window, "dispatchEvent");
-    notifyLibraryMutated();
+    notifyLibraryMutated("seq-1");
     expect(dispatchSpy).toHaveBeenCalledWith(
       expect.objectContaining({ type: LIBRARY_MUTATED_EVENT })
     );
+  });
+
+  it("passes the sequenceId to the handler", () => {
+    const handler = vi.fn();
+    const cleanup = onLibraryMutated(handler);
+
+    notifyLibraryMutated("seq-abc-123");
+
+    expect(handler).toHaveBeenCalledWith("seq-abc-123");
+    cleanup();
   });
 
   it("calls a registered handler", () => {
     const handler = vi.fn();
     const cleanup = onLibraryMutated(handler);
 
-    notifyLibraryMutated();
+    notifyLibraryMutated("seq-1");
 
     expect(handler).toHaveBeenCalledTimes(1);
     cleanup();
@@ -51,7 +63,7 @@ describe("notifyLibraryMutated", () => {
     const cleanupA = onLibraryMutated(handlerA);
     const cleanupB = onLibraryMutated(handlerB);
 
-    notifyLibraryMutated();
+    notifyLibraryMutated("seq-1");
 
     expect(handlerA).toHaveBeenCalledTimes(1);
     expect(handlerB).toHaveBeenCalledTimes(1);
@@ -63,9 +75,9 @@ describe("notifyLibraryMutated", () => {
     const handler = vi.fn();
     const cleanup = onLibraryMutated(handler);
 
-    notifyLibraryMutated();
-    notifyLibraryMutated();
-    notifyLibraryMutated();
+    notifyLibraryMutated("seq-1");
+    notifyLibraryMutated("seq-2");
+    notifyLibraryMutated("seq-3");
 
     expect(handler).toHaveBeenCalledTimes(3);
     cleanup();
@@ -77,11 +89,11 @@ describe("onLibraryMutated cleanup", () => {
     const handler = vi.fn();
     const cleanup = onLibraryMutated(handler);
 
-    notifyLibraryMutated();
+    notifyLibraryMutated("seq-1");
     expect(handler).toHaveBeenCalledTimes(1);
 
     cleanup();
-    notifyLibraryMutated();
+    notifyLibraryMutated("seq-2");
 
     // Still only 1 call — cleanup removed the listener
     expect(handler).toHaveBeenCalledTimes(1);
@@ -94,7 +106,7 @@ describe("onLibraryMutated cleanup", () => {
     const cleanupB = onLibraryMutated(handlerB);
 
     cleanupA();
-    notifyLibraryMutated();
+    notifyLibraryMutated("seq-1");
 
     expect(handlerA).toHaveBeenCalledTimes(0);
     expect(handlerB).toHaveBeenCalledTimes(1);
@@ -108,7 +120,7 @@ describe("onLibraryMutated cleanup", () => {
     cleanup();
     expect(() => cleanup()).not.toThrow();
 
-    notifyLibraryMutated();
+    notifyLibraryMutated("seq-1");
     expect(handler).toHaveBeenCalledTimes(0);
   });
 });
