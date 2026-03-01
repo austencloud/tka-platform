@@ -10,6 +10,7 @@ import { ShortcutRegistry } from "../../keyboard/services/implementations/Shortc
 import { KeyboardShortcutManager } from "../../keyboard/services/implementations/KeyboardShortcutManager";
 import { CommandPalette } from "../../keyboard/services/implementations/CommandPalette";
 import { ShortcutCustomizer } from "../../keyboard/services/implementations/ShortcutCustomizer";
+import { GreekKeyMapper } from "../../keyboard/services/implementations/GreekKeyMapper";
 
 export const keyboardContainer = createContainer()
   .add({
@@ -24,6 +25,9 @@ export const keyboardContainer = createContainer()
   })
   .add((ctx) => ({
     shortcutCustomizer: () => new ShortcutCustomizer(ctx.shortcutRegistry),
-  }));
+  }))
+  .add({
+    greekKeyMapper: () => new GreekKeyMapper(),
+  });
 
 export type KeyboardContainer = typeof keyboardContainer;

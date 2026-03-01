@@ -9,6 +9,11 @@ Features:
 -->
 <script lang="ts">
   import { container } from "$lib/shared/di";
+  import type { IGreekKeyMapper } from "$lib/shared/keyboard/services/contracts/IGreekKeyMapper";
+  import {
+    uppercasePreservingGreek,
+    insertAtCursor,
+  } from "$lib/shared/keyboard/domain/greek-input-helpers";
 
   let {
     value = "",
@@ -27,6 +32,7 @@ Features:
   } = $props();
 
   const haptic = container.items.hapticFeedback;
+  const greekKeyMapper = container.items.greekKeyMapper as IGreekKeyMapper;
 
   function handleFocus() {
     onFocusChange?.(true);
@@ -41,8 +47,8 @@ Features:
 
   function handleInput(event: Event) {
     const target = event.target as HTMLInputElement;
-    // Auto-capitalize letters for TKA alphabet consistency
-    const uppercased = target.value.toUpperCase();
+    // Uppercase Latin but preserve Greek lowercase (α, β, γ, etc.)
+    const uppercased = uppercasePreservingGreek(target.value);
     if (target.value !== uppercased) {
       target.value = uppercased;
     }
@@ -65,7 +71,29 @@ Features:
     if (event.key === "Enter" && value.trim() && !disabled) {
       event.preventDefault();
       onSubmit?.();
+      return;
     }
+
+    // Skip Greek mapping when modifiers held (Shift+1 = !, Ctrl+1 = shortcut)
+    if (event.shiftKey || event.ctrlKey || event.altKey || event.metaKey) return;
+
+    // Skip numpad keys when NumLock is off
+    if (event.code.startsWith("Numpad") && !event.getModifierState("NumLock")) return;
+
+    const symbol = greekKeyMapper.getSymbol(event.code);
+    if (!symbol) return;
+
+    event.preventDefault();
+    const input = event.target as HTMLInputElement;
+    const cursor = input.selectionStart ?? value.length;
+    const result = insertAtCursor(value, symbol, cursor);
+    const uppercased = uppercasePreservingGreek(result.value);
+
+    // Update the input element and notify parent
+    input.value = uppercased;
+    input.setSelectionRange(result.cursor, result.cursor);
+    onInput(uppercased);
+    haptic.trigger("selection");
   }
 </script>
 

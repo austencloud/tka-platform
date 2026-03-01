@@ -5,6 +5,12 @@ Replaces LengthCard when mode=SPELL in the card grid.
 -->
 <script lang="ts">
   import CardHeader from "./shared/CardHeader.svelte";
+  import { container } from "$lib/shared/di";
+  import type { IGreekKeyMapper } from "$lib/shared/keyboard/services/contracts/IGreekKeyMapper";
+  import {
+    uppercasePreservingGreek,
+    insertAtCursor,
+  } from "$lib/shared/keyboard/domain/greek-input-helpers";
 
   let {
     value = "",
@@ -24,9 +30,12 @@ Replaces LengthCard when mode=SPELL in the card grid.
     headerFontSize?: string;
   }>();
 
+  const greekKeyMapper = container.items.greekKeyMapper as IGreekKeyMapper;
+
   function handleInput(event: Event) {
     const target = event.target as HTMLInputElement;
-    const uppercased = target.value.toUpperCase();
+    // Uppercase Latin but preserve Greek lowercase (α, β, γ, etc.)
+    const uppercased = uppercasePreservingGreek(target.value);
     if (target.value !== uppercased) {
       target.value = uppercased;
     }
@@ -37,7 +46,27 @@ Replaces LengthCard when mode=SPELL in the card grid.
     if (event.key === "Enter" && value.trim()) {
       event.preventDefault();
       onSubmit?.();
+      return;
     }
+
+    // Skip Greek mapping when modifiers held
+    if (event.shiftKey || event.ctrlKey || event.altKey || event.metaKey) return;
+
+    // Skip numpad keys when NumLock is off
+    if (event.code.startsWith("Numpad") && !event.getModifierState("NumLock")) return;
+
+    const symbol = greekKeyMapper.getSymbol(event.code);
+    if (!symbol) return;
+
+    event.preventDefault();
+    const input = event.target as HTMLInputElement;
+    const cursor = input.selectionStart ?? value.length;
+    const result = insertAtCursor(value, symbol, cursor);
+    const uppercased = uppercasePreservingGreek(result.value);
+
+    input.value = uppercased;
+    input.setSelectionRange(result.cursor, result.cursor);
+    onInput(uppercased);
   }
 
   function handleClear() {
