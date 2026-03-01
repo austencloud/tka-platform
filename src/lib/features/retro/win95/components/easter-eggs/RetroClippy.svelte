@@ -182,7 +182,7 @@
   /* Container — fixed bottom-right                                      */
   /* ------------------------------------------------------------------ */
   .clippy-container {
-    position: fixed;
+    position: absolute;
     bottom: 40px;
     right: 16px;
     z-index: 9000;
@@ -251,6 +251,8 @@
     right: 4px;
     width: 16px;
     height: 16px;
+    min-width: 16px;
+    min-height: 16px;
     padding: 0;
     border: 1px solid #808080;
     background: #c0c0c0;
@@ -263,6 +265,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: inset -1px -1px #808080, inset 1px 1px #fff;
+    text-shadow: none;
   }
 
   .speech-close:hover {

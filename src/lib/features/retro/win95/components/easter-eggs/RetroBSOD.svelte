@@ -93,7 +93,7 @@
 
 <style>
   .bsod {
-    position: fixed;
+    position: absolute;
     inset: 0;
     z-index: 10000;
     background: #0000aa;

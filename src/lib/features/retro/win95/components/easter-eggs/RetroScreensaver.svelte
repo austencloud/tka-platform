@@ -169,7 +169,7 @@
   /* Fullscreen black background                                         */
   /* ------------------------------------------------------------------ */
   .screensaver {
-    position: fixed;
+    position: absolute;
     inset: 0;
     z-index: 9500;
     background: #000;

@@ -17,9 +17,6 @@
   import "../../styles/retro-tokens.css";
   import "../../styles/retro-overrides.css";
 
-  /** Matches `zoom: 1.5` on .retro-shell. Used to convert client coords to shell coords. */
-  const SHELL_ZOOM = 1.5;
-
   import type {
     RetroDesktopIcon,
     RetroStartMenuItem,
@@ -351,8 +348,8 @@
     let y = event.clientY;
     if (shell) {
       const rect = shell.getBoundingClientRect();
-      x = (event.clientX - rect.left) / SHELL_ZOOM;
-      y = (event.clientY - rect.top) / SHELL_ZOOM;
+      x = event.clientX - rect.left;
+      y = event.clientY - rect.top;
     }
 
     const desktopMenuItems: RetroContextMenuItem[] = [
@@ -405,8 +402,8 @@
     let y = event.clientY;
     if (shell) {
       const rect = shell.getBoundingClientRect();
-      x = (event.clientX - rect.left) / SHELL_ZOOM;
-      y = (event.clientY - rect.top) / SHELL_ZOOM;
+      x = event.clientX - rect.left;
+      y = event.clientY - rect.top;
     }
 
     const sizeKB = ((iconDef.label.length * 80) + 200).toString();
@@ -449,10 +446,23 @@
 </script>
 
 {#if isMobile && !mobileWarningDismissed}
-  <div class="retro-shell">
-    <RetroMobileWarning onproceed={() => (mobileWarningDismissed = true)} />
+  <div class="retro-desk">
+    <div class="retro-monitor">
+      <div class="retro-screen">
+        <div class="retro-shell">
+          <RetroMobileWarning onproceed={() => (mobileWarningDismissed = true)} />
+        </div>
+      </div>
+      <div class="retro-monitor-label">
+        <span class="monitor-led"></span>
+        <span class="monitor-brand">BELLWEATHER &nbsp;TKA-1500</span>
+      </div>
+    </div>
   </div>
 {:else}
+<div class="retro-desk">
+<div class="retro-monitor">
+<div class="retro-screen">
 <div class="retro-shell">
   {#if desktopState.isBooting}
     <RetroBootSequence oncomplete={() => {
@@ -595,16 +605,99 @@
     {/if}
   {/if}
 </div>
+</div>
+<div class="retro-monitor-label">
+  <span class="monitor-led"></span>
+  <span class="monitor-brand">BELLWEATHER &nbsp;TKA-1500</span>
+</div>
+</div>
+</div>
 {/if}
 
 <style>
   /* ------------------------------------------------------------------ */
-  /* Root shell wrapper                                                  */
+  /* Layer 1: Desk — dark background filling the viewport                */
+  /* ------------------------------------------------------------------ */
+  .retro-desk {
+    background: #1a1410;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 0;
+    margin: 0;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Layer 2: Monitor — beige plastic CRT bezel                          */
+  /* ------------------------------------------------------------------ */
+  .retro-monitor {
+    position: relative;
+    width: min(1100px, 92vw);
+    aspect-ratio: 4 / 3;
+    max-height: 90vh;
+    background: #d4c5a9;
+    border-radius: 18px;
+    padding: 24px 24px 40px 24px;
+    box-shadow:
+      0 4px 32px rgba(0, 0, 0, 0.6),
+      0 0 2px rgba(255, 255, 255, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Layer 3: Screen — inset glass area inside the bezel                 */
+  /* ------------------------------------------------------------------ */
+  .retro-screen {
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.6);
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Brand label — centered in the bottom bezel padding                  */
+  /* ------------------------------------------------------------------ */
+  .retro-monitor-label {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+  }
+
+  .monitor-led {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #2ecc40;
+    box-shadow: 0 0 4px rgba(46, 204, 64, 0.6);
+  }
+
+  .monitor-brand {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10px;
+    color: #6b5e4a;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Shell — the OS fills the screen area                                */
   /* ------------------------------------------------------------------ */
   .retro-shell {
-    position: fixed;
-    inset: 0;
+    width: 100%;
+    height: 100%;
     overflow: hidden;
+    position: relative;
     font-family: var(
       --retro-font-family,
       "Microsoft Sans Serif",
@@ -612,18 +705,6 @@
       sans-serif
     );
     font-size: var(--retro-font-size, 11px);
-    zoom: 1.5;
-  }
-
-  /* Firefox fallback — zoom is non-standard, Firefox uses transform instead */
-  @supports not (zoom: 1.5) {
-    .retro-shell {
-      zoom: unset;
-      transform: scale(1.5);
-      transform-origin: top left;
-      width: 66.667%;  /* 100% / 1.5 */
-      height: 66.667%;
-    }
   }
 
   /* ------------------------------------------------------------------ */

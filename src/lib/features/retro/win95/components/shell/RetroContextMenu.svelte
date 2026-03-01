@@ -10,9 +10,6 @@
 <script lang="ts">
   import type { RetroContextMenuItem } from "../../domain/types/retro-types";
 
-  /** Matches `zoom: 1.5` on .retro-shell. Used to convert client coords to shell coords. */
-  const SHELL_ZOOM = 1.5;
-
   let {
     x,
     y,
@@ -38,7 +35,7 @@
     if (!shell) return x;
     const shellRect = shell.getBoundingClientRect();
     const menuWidth = menuElement.offsetWidth;
-    const maxX = (shellRect.width / SHELL_ZOOM) - menuWidth - 4;
+    const maxX = shellRect.width - menuWidth - 4;
     return Math.min(x, Math.max(0, maxX));
   });
 
@@ -48,7 +45,7 @@
     if (!shell) return y;
     const shellRect = shell.getBoundingClientRect();
     const menuHeight = menuElement.offsetHeight;
-    const maxY = (shellRect.height / SHELL_ZOOM) - menuHeight - 32;
+    const maxY = shellRect.height - menuHeight - 32;
     return Math.min(y, Math.max(0, maxY));
   });
 
