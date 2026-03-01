@@ -87,17 +87,6 @@ function deriveShiftDirection(motion: MotionData): ShiftDirection {
   return null;
 }
 
-/**
- * Check whether a motion is a non-shifting type (dash or static).
- */
-function isNonShift(motion: MotionData): boolean {
-  return (
-    motion.motionType === MotionType.DASH ||
-    motion.motionType === MotionType.STATIC ||
-    motion.startLocation === motion.endLocation
-  );
-}
-
 export class ContinuationIdentifier implements IContinuationIdentifier {
   identifyContinuation(
     referenceBeat: PictographData,
