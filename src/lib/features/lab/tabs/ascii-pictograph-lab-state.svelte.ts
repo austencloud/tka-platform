@@ -114,9 +114,20 @@ export function createAsciiLabState() {
 		layers = { ...layers, [layer]: !layers[layer] };
 	}
 
-	/** Set grid mode */
+	/** Set grid mode, updating default hand positions to match the mode's primary positions */
 	function setGridMode(mode: GridMode): void {
 		gridMode = mode;
+
+		// If no MCP data loaded, move hands to the mode's primary positions
+		if (!loadedData) {
+			if (mode === GridMode.BOX) {
+				blueHand = { ...blueHand, location: GridLocation.NORTHWEST, endLocation: GridLocation.NORTHWEST };
+				redHand = { ...redHand, location: GridLocation.SOUTHEAST, endLocation: GridLocation.SOUTHEAST };
+			} else {
+				blueHand = { ...blueHand, location: GridLocation.NORTH, endLocation: GridLocation.NORTH };
+				redHand = { ...redHand, location: GridLocation.SOUTH, endLocation: GridLocation.SOUTH };
+			}
+		}
 	}
 
 	return {

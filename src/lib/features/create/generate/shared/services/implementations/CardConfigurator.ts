@@ -1,10 +1,20 @@
 import type { UIGenerationConfig } from "../../../state/generate-config.svelte";
 import { DifficultyLevel, GenerationMode } from "../../domain/models/generate-models";
+import { LOOPType } from "../../../circular/domain/models/circular-models";
 import type {
   CardDescriptor,
   CardHandlers,
   ICardConfigurator,
 } from "../contracts/ICardConfigurator";
+
+const ROTATED_LOOP_TYPES = new Set([
+  LOOPType.STRICT_ROTATED,
+  LOOPType.ROTATED_INVERTED,
+  LOOPType.ROTATED_SWAPPED,
+  LOOPType.MIRRORED_ROTATED,
+  LOOPType.MIRRORED_INVERTED_ROTATED,
+  LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED,
+]);
 
 /**
  * Implementation of ICardConfigurator
@@ -17,7 +27,8 @@ import type {
  *   Row 1: Mode(2) + Level(2) + Length(2) = 6
  *   Row 2 (beginner): GridMode(3) + PropCont(3) = 6
  *   Row 2 (non-beginner): GridMode(2) + PropCont(2) + TurnIntensity(2) = 6
- *   Row 3: Customize(3) + LOOP(3) = 6
+ *   Row 3 (no slice): Customize(3) + LOOP(3) = 6
+ *   Row 3 (with slice): Customize(2) + LOOP(2) + Slice(2) = 6
  *   Row 4: Generate(6)
  *
  * SPELL:
@@ -154,13 +165,11 @@ export class CardConfigurator implements ICardConfigurator {
       });
     }
 
-    // ─── Customize + LOOP row ───
-    // These two cards share a row. Their span depends on context:
-    // - Non-spell beginner: GridMode(3)+PropCont(3) fills Row 2, so Row 3 = Customize(3)+LOOP(3)
-    // - Non-spell non-beginner: Row 2 filled by GridMode+PropCont+TurnIntensity, Row 3 = Customize(3)+LOOP(3)
-    // - Spell beginner: Row 2 = Level+GridMode+PropCont (all 2), Row 3 = Customize(3)+LOOP(3)
-    // - Spell non-beginner: Row 3 = TurnIntensity(2)+Customize(2)+LOOP(2)
-    const customizeLoopSpan = (isSpellMode && shouldShowTurnIntensity) ? 2 : 3;
+    // ─── Customize + LOOP [+ Slice] row ───
+    // When LOOP is enabled with a rotated type, add a Slice card: Customize(2)+LOOP(2)+Slice(2)
+    // Otherwise two cards share the row at span 3 (or 2 in spell+non-beginner).
+    const showSliceCard = loopEnabled && ROTATED_LOOP_TYPES.has(config.loopType as LOOPType);
+    const customizeLoopSpan = showSliceCard ? 2 : (isSpellMode && shouldShowTurnIntensity) ? 2 : 3;
 
     // Customize card (absorbs Style + Rhythm + Start/End)
     const hasStartEnd = handlers.handleStartEndChange && handlers.startEndOptions;
@@ -172,13 +181,14 @@ export class CardConfigurator implements ICardConfigurator {
           handPathMode: config.handPathMode,
           motionTypeFilter: config.motionTypeFilter,
           durationTemplateId: config.durationTemplateId,
+          stepCount: config.length,
           startEndOptions: handlers.startEndOptions ?? null,
           gridMode: handlers.currentGridMode,
           isFreeformMode: !loopEnabled,
           onConstraintPresetChange: handlers.handleConstraintPresetChange,
           onHandPathModeChange: handlers.handleHandPathModeChange,
           onMotionTypeFilterChange: handlers.handleMotionTypeFilterChange,
-          onOpenDurationPanel: handlers.handleOpenDurationPanel,
+          onDurationTemplateSelect: handlers.handleDurationTemplateSelect,
           onStartEndChange: hasStartEnd ? handlers.handleStartEndChange : null,
           cardIndex: cardIndex++,
         },
@@ -186,7 +196,7 @@ export class CardConfigurator implements ICardConfigurator {
       });
     }
 
-    // Consolidated LOOP card (absorbs toggle + type + slice size)
+    // Consolidated LOOP card (toggle + type selection)
     if (handlers.handleLoopToggle) {
       cardList.push({
         id: "loop",
@@ -198,6 +208,19 @@ export class CardConfigurator implements ICardConfigurator {
           cardIndex: cardIndex++,
         },
         gridColumnSpan: customizeLoopSpan,
+      });
+    }
+
+    // Slice size card (only when LOOP enabled with a rotated variant)
+    if (showSliceCard && handlers.handleSliceSizeChange) {
+      cardList.push({
+        id: "slice-size",
+        props: {
+          currentSliceSize: config.sliceSize,
+          onSliceSizeChange: handlers.handleSliceSizeChange,
+          cardIndex: cardIndex++,
+        },
+        gridColumnSpan: 2,
       });
     }
 

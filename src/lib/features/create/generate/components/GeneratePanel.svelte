@@ -296,6 +296,8 @@ Card-based architecture with integrated Generate button:
       panelState.closeLOOPPanel();
       configState.updateConfig({ loopEnabled: false });
     }}
+    sliceSize={configState.config.sliceSize}
+    onSliceSizeChange={(size) => configState.updateConfig({ sliceSize: size })}
   />
 
   <CustomizeDrawer

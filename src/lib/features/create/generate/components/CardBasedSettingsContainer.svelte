@@ -40,6 +40,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
   import GenerateButtonCard from "./cards/GenerateButtonCard.svelte";
   import WordInputCard from "./cards/WordInputCard.svelte";
   import ConsolidatedLOOPCard from "./cards/ConsolidatedLOOPCard.svelte";
+  import SliceSizeCard from "./cards/SliceSizeCard.svelte";
   import CustomizeCard from "./cards/CustomizeCard.svelte";
   import CompactSettingsToolbar from "./CompactSettingsToolbar.svelte";
 
@@ -88,6 +89,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     "turn-intensity": "turn-intensity",
     "customize": "prop-continuity",
     "loop": "loop-type",
+    "slice-size": "slice-size",
     "generate-button": "generate",
   };
 
@@ -215,9 +217,9 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     updateConfig({ loopEnabled: !config.loopEnabled });
   }
 
-  // Duration handler
-  function handleOpenDurationPanel() {
-    panelState?.openDurationRhythmPanel();
+  // Duration handler (inline in customize overlay)
+  function handleDurationTemplateSelect(id: string | null) {
+    updateConfig({ durationTemplateId: id });
   }
 
   // Start/End options handler
@@ -245,7 +247,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
         handleConstraintPresetChange,
         handleHandPathModeChange,
         handleMotionTypeFilterChange,
-        handleOpenDurationPanel,
+        handleDurationTemplateSelect,
         handleLoopToggle,
         wordInputValue,
         handleWordInput: onWordInput,
@@ -319,6 +321,8 @@ Supports help mode: when active, clicking cards opens help instead of normal act
             <CustomizeCard {...card.props as any} color={cardColors.customize.color} shadowColor={cardColors.customize.shadowColor} />
           {:else if card.id === "loop"}
             <ConsolidatedLOOPCard {...card.props as any} />
+          {:else if card.id === "slice-size"}
+            <SliceSizeCard {...card.props as any} color={cardColors.sliceSize.color} shadowColor={cardColors.sliceSize.shadowColor} />
           {:else if card.id === "generate-button"}
             <GenerateButtonCard {...card.props as any} />
           {/if}

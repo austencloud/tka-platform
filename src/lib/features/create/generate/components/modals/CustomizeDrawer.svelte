@@ -40,13 +40,14 @@
           handPathMode={overlayProps.handPathMode}
           motionTypeFilter={overlayProps.motionTypeFilter}
           durationTemplateId={overlayProps.durationTemplateId}
+          stepCount={overlayProps.stepCount}
           startEndOptions={overlayProps.startEndOptions}
           gridMode={overlayProps.gridMode}
           isFreeformMode={overlayProps.isFreeformMode}
           onConstraintPresetChange={overlayProps.onConstraintPresetChange}
           onHandPathModeChange={overlayProps.onHandPathModeChange}
           onMotionTypeFilterChange={overlayProps.onMotionTypeFilterChange}
-          onOpenDurationPanel={overlayProps.onOpenDurationPanel}
+          onDurationTemplateSelect={overlayProps.onDurationTemplateSelect}
           onStartEndChange={overlayProps.onStartEndChange}
           onClose={onClose}
         />
@@ -66,7 +67,7 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding: 24px 24px calc(24px + env(safe-area-inset-bottom, 0px));
     background: linear-gradient(
       135deg,
       color-mix(in srgb, #06b6d4 20%, #1a1a2e) 0%,
@@ -84,13 +85,73 @@
     border-left: 1px solid color-mix(in srgb, #06b6d4 40%, transparent);
   }
 
-  /* Override CustomizeExpandedOverlay's absolute positioning when inside drawer */
+  /* Override CustomizeExpandedOverlay when inside drawer — fill height for scrolling */
   .customize-drawer-content > :global(.customize-expanded-overlay) {
     position: static;
-    border-radius: 0;
-    border: none;
+    flex: 1;
+    min-height: 0;
+    border-radius: 16px;
+    border: 1.5px solid color-mix(in srgb, #06b6d4 30%, transparent);
     box-shadow: none;
-    background: transparent;
+    background: rgba(0, 0, 0, 0.15);
+    padding: 24px;
+    gap: 12px;
+  }
+
+  /* Center accordion content when it doesn't fill the drawer, scroll from top when it overflows */
+  .customize-drawer-content > :global(.customize-expanded-overlay .overlay-content) {
+    justify-content: safe center;
+  }
+
+  /* Scale up style buttons in drawer context */
+  .customize-drawer-content > :global(.customize-expanded-overlay .option-btn) {
+    min-height: 48px;
+    font-size: var(--font-size-sm, 14px);
+    border-radius: 12px;
+  }
+
+  /* Larger axis labels */
+  .customize-drawer-content > :global(.customize-expanded-overlay .style-axis-label) {
+    font-size: var(--font-size-compact, 12px);
+  }
+
+  /* More spacious axis rows */
+  .customize-drawer-content > :global(.customize-expanded-overlay .style-axis) {
+    gap: 10px;
+  }
+
+  .customize-drawer-content > :global(.customize-expanded-overlay .style-axis-options) {
+    gap: 8px;
+  }
+
+  /* Larger accordion headers in drawer context */
+  .customize-drawer-content > :global(.customize-expanded-overlay .accordion-header) {
+    padding: 14px 16px;
+    min-height: 56px;
+  }
+
+  .customize-drawer-content > :global(.customize-expanded-overlay .accordion-value) {
+    font-size: var(--font-size-base, 16px);
+  }
+
+  .customize-drawer-content > :global(.customize-expanded-overlay .accordion-label) {
+    font-size: var(--font-size-sm, 14px);
+  }
+
+  /* More space between accordion sections */
+  .customize-drawer-content > :global(.customize-expanded-overlay .overlay-content) {
+    gap: 10px;
+  }
+
+  /* More generous accordion content padding */
+  .customize-drawer-content > :global(.customize-expanded-overlay .accordion-content) {
+    padding: 14px 16px 16px;
+    gap: 14px;
+  }
+
+  /* Larger accordion sections with more visual presence */
+  .customize-drawer-content > :global(.customize-expanded-overlay .accordion-section) {
+    border-radius: 12px;
   }
 
   /* Accessibility: Respect user's motion preferences */

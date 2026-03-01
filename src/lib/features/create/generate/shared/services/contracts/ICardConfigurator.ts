@@ -44,7 +44,7 @@ export interface CardHandlers {
   handleHandPathModeChange?: (v: "smooth" | "mixed" | "high") => void;
   handleMotionTypeFilterChange?: (v: "no-dash" | "mixed" | "prefer-dash") => void;
   // Duration card handler
-  handleOpenDurationPanel?: () => void;
+  handleDurationTemplateSelect?: (id: string | null) => void;
   // Word input handlers (spell mode)
   wordInputValue?: string;
   handleWordInput?: (value: string) => void;

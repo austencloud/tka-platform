@@ -100,13 +100,14 @@ export interface CustomizeOverlayProps {
   handPathMode: "smooth" | "mixed" | "high";
   motionTypeFilter: "no-dash" | "prefer-dash" | null;
   durationTemplateId: string | null;
+  stepCount: number;
   startEndOptions: StartEndOptions | null;
   gridMode: GridMode;
   isFreeformMode: boolean;
   onConstraintPresetChange: (v: "smooth" | "mixed" | "high-reversal") => void;
   onHandPathModeChange: (v: "smooth" | "mixed" | "high") => void;
   onMotionTypeFilterChange: (v: "no-dash" | "mixed" | "prefer-dash") => void;
-  onOpenDurationPanel: () => void;
+  onDurationTemplateSelect: (id: string | null) => void;
   onStartEndChange: ((options: StartEndOptions) => void) | null;
 }
 

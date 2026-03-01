@@ -5,7 +5,6 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { StartEndOptions, PanelCoordinationState } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
-  import { getTemplateById } from "$lib/features/create/shared/domain/templates/duration-templates";
   import { container } from "$lib/shared/di";
   import { onMount, getContext } from "svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -16,13 +15,14 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay
     handPathMode,
     motionTypeFilter,
     durationTemplateId,
+    stepCount,
     startEndOptions,
     gridMode = GridMode.DIAMOND,
     isFreeformMode = true,
     onConstraintPresetChange,
     onHandPathModeChange,
     onMotionTypeFilterChange,
-    onOpenDurationPanel,
+    onDurationTemplateSelect,
     onStartEndChange,
     color = "linear-gradient(135deg, #06b6d4 0%, #0891b2 50%, #0e7490 100%)",
     shadowColor = "190deg 75% 50%",
@@ -33,13 +33,14 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay
     handPathMode: "smooth" | "mixed" | "high";
     motionTypeFilter: "no-dash" | "prefer-dash" | null;
     durationTemplateId: string | null;
+    stepCount: number;
     startEndOptions?: StartEndOptions;
     gridMode?: GridMode;
     isFreeformMode?: boolean;
     onConstraintPresetChange: (v: "smooth" | "mixed" | "high-reversal") => void;
     onHandPathModeChange: (v: "smooth" | "mixed" | "high") => void;
     onMotionTypeFilterChange: (v: "no-dash" | "mixed" | "prefer-dash") => void;
-    onOpenDurationPanel: () => void;
+    onDurationTemplateSelect: (id: string | null) => void;
     onStartEndChange?: (options: StartEndOptions) => void;
     color?: string;
     shadowColor?: string;
@@ -76,13 +77,14 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay
       handPathMode,
       motionTypeFilter,
       durationTemplateId,
+      stepCount,
       startEndOptions: startEndOptions ?? null,
       gridMode,
       isFreeformMode,
       onConstraintPresetChange,
       onHandPathModeChange,
       onMotionTypeFilterChange,
-      onOpenDurationPanel,
+      onDurationTemplateSelect,
       onStartEndChange: onStartEndChange ?? null,
     });
   }
