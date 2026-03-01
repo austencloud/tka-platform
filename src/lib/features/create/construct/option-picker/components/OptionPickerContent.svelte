@@ -344,6 +344,7 @@ Uses organizer and sizer services for section grouping and sizing.
             fitToViewport={true}
             showHeader={false}
             {currentSequence}
+            {onSlotClicked}
           />
         </div>
       {:else if shouldUseSwipeLayout()}
@@ -354,6 +355,8 @@ Uses organizer and sizer services for section grouping and sizing.
             onPictographSelected={(p) => onSelect(p as PreparedPictographData)}
             layoutConfig={mobileLayoutConfig()}
             {currentSequence}
+            {onSlotClicked}
+            {getContinuationIndex}
           />
         </div>
       {:else if shouldUseWideLayout && !isMobileStackedLayout()}

@@ -33,6 +33,8 @@ Renders a section with:
     forcedPictographSize,
     showHeader = true,
     fitToViewport = false,
+    onSlotClicked,
+    continuationIndex = null,
   } = $props<{
     letterType?: string;
     pictographs?: PictographData[];
@@ -51,6 +53,8 @@ Renders a section with:
     forcedPictographSize?: number;
     showHeader?: boolean;
     fitToViewport?: boolean;
+    onSlotClicked?: (typeSection: string, slotIndex: number) => void;
+    continuationIndex?: number | null;
   }>();
 
   // Services - resolve synchronously to avoid first-render sizing issues
@@ -297,10 +301,14 @@ Renders a section with:
 
   // Handle pictograph selection
   function handlePictographClick(
-    pictographWithReversals: PictographWithReversals
+    pictographWithReversals: PictographWithReversals,
+    index: number
   ) {
     // Trigger haptic feedback for pictograph selection
     hapticService?.trigger("selection");
+
+    // Report slot click for continuation reordering
+    onSlotClicked?.(letterType, index);
 
     // Extract the original PictographData for selection (remove reversal flags)
     const { blueReversal, redReversal, ...pictographData } =
@@ -332,7 +340,8 @@ Renders a section with:
       {@const borderColors = getLetterBorderColors(pictograph.letter)}
       <button
         class="pictograph-option"
-        onclick={() => handlePictographClick(pictograph)}
+        class:continuation={continuationIndex === index}
+        onclick={() => handlePictographClick(pictograph, index)}
         style:width="{optimalLayout().pictographSize}px"
         style:height="{optimalLayout().pictographSize}px"
         style:--border-primary={borderColors.primary}
@@ -396,6 +405,13 @@ Renders a section with:
       box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
     box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.1),
+      0 2px 4px rgba(0, 0, 0, 0.06);
+  }
+
+  .pictograph-option.continuation {
+    box-shadow:
+      0 0 0 2px var(--theme-accent, #3b82f6),
       0 1px 2px rgba(0, 0, 0, 0.1),
       0 2px 4px rgba(0, 0, 0, 0.06);
   }

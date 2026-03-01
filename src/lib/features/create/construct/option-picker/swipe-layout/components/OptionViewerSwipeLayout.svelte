@@ -25,6 +25,8 @@ Features:
     onSectionChange = () => {},
     layoutConfig,
     currentSequence = [],
+    onSlotClicked,
+    getContinuationIndex,
   } = $props<{
     organizedPictographs?: OrganizedSection[];
     onPictographSelected?: (pictograph: PictographData) => void;
@@ -39,6 +41,8 @@ Features:
       gridGap: string;
     };
     currentSequence?: PictographData[];
+    onSlotClicked?: (typeSection: string, slotIndex: number) => void;
+    getContinuationIndex?: (sectionTitle: string) => number | null;
   }>();
 
   // ===== Panel Position Persistence =====
@@ -146,6 +150,8 @@ Features:
                 {currentSequence}
                 {contentAreaBounds}
                 showHeader={true}
+                {onSlotClicked}
+                continuationIndex={getContinuationIndex?.(section.title) ?? null}
               />
             {/if}
           {/if}
