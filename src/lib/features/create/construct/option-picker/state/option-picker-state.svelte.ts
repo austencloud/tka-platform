@@ -33,6 +33,13 @@ export function createOptionPickerState(config: OptionPickerStateConfig) {
   let lastSequenceId = $state<string | null>(null); // Track last loaded sequence
   let currentSequence = $state<PictographData[]>([]); // Track current sequence for reversal context
 
+  // Continuation reordering state - tracks where the user last clicked
+  // so the continuation option can be placed at the same grid slot
+  let lastClickedSlot = $state<{
+    typeSection: string;
+    slotIndex: number;
+  } | null>(null);
+
   const layout = $state<OptionPickerLayout>({
     optionsPerRow: 4,
     optionSize: 100,
@@ -145,9 +152,16 @@ export function createOptionPickerState(config: OptionPickerStateConfig) {
     sortMethod = method;
   }
 
+  function recordClickSlot(typeSection: string, slotIndex: number) {
+    lastClickedSlot = { typeSection, slotIndex };
+  }
+
   function setContinuousOnly(value: boolean) {
     // Force state update to trigger derived recomputation
     isContinuousOnly = value;
+    if (!value) {
+      lastClickedSlot = null;
+    }
   }
 
   // Get filtered options - called as a function to ensure fresh computation
@@ -205,6 +219,7 @@ export function createOptionPickerState(config: OptionPickerStateConfig) {
     lastSequenceId = null;
     isContinuousOnly = false;
     currentSequence = [];
+    lastClickedSlot = null;
   }
 
   /**
@@ -296,6 +311,9 @@ export function createOptionPickerState(config: OptionPickerStateConfig) {
     get lastSequenceId() {
       return lastSequenceId;
     },
+    get lastClickedSlot() {
+      return lastClickedSlot;
+    },
 
     // Computed getters
     get isLoading() {
@@ -315,6 +333,7 @@ export function createOptionPickerState(config: OptionPickerStateConfig) {
     loadOptions,
     setSortMethod,
     setContinuousOnly,
+    recordClickSlot,
     selectOption,
     clearError,
     reset,

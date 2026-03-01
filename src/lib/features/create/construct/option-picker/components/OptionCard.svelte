@@ -15,6 +15,7 @@ Receives pre-calculated data, just renders it.
     disabled?: boolean;
     blueReversal?: boolean;
     redReversal?: boolean;
+    isContinuation?: boolean;
     onSelect: (pictograph: PreparedPictographData) => void;
   }
 
@@ -24,6 +25,7 @@ Receives pre-calculated data, just renders it.
     disabled = false,
     blueReversal = false,
     redReversal = false,
+    isContinuation = false,
     onSelect,
   }: Props = $props();
 
@@ -38,6 +40,7 @@ Receives pre-calculated data, just renders it.
 
 <button
   class="option-card"
+  class:continuation={isContinuation}
   onclick={handleClick}
   {disabled}
   style:width="{size}px"
@@ -97,6 +100,14 @@ Receives pre-calculated data, just renders it.
     outline: 2px solid var(--theme-accent, #3b82f6);
     outline-offset: 2px;
     filter: brightness(1.05);
+  }
+
+  /* Continuation indicator - subtle accent border when this option continues the hand path */
+  .option-card.continuation {
+    box-shadow:
+      0 0 0 2px var(--theme-accent, #3b82f6),
+      0 1px 2px rgba(0, 0, 0, 0.1),
+      0 2px 4px rgba(0, 0, 0, 0.06);
   }
 
   /* Accessibility: Respect user's motion preferences */
