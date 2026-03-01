@@ -25,6 +25,10 @@ import {
 import { switchModule } from "../application/state/ui/module-state";
 import { authState } from "../auth/state/authState.svelte";
 import { featureFlagService, featureFlagState } from "../auth/services/PostHogFeatureFlagService.svelte";
+import {
+  pushState as svelteKitPushState,
+  replaceState as svelteKitReplaceState,
+} from "$app/navigation";
 
 // Session storage key for persisting navigation history across HMR
 const PREVIOUS_MODULE_KEY = "tka-previous-module-before-settings";
@@ -514,18 +518,16 @@ function replaceHistoryState(moduleId: ModuleId, sectionId?: string) {
   if (typeof window === "undefined") return;
   const url = new URL(window.location.href);
   url.pathname = buildPath(moduleId, sectionId);
-  // Clear any legacy hash fragments
   url.hash = "";
-  window.history.replaceState({ moduleId, sectionId }, "", url);
+  svelteKitReplaceState(url, { moduleId, sectionId });
 }
 
 function pushHistoryState(moduleId: ModuleId, sectionId?: string) {
   if (typeof window === "undefined") return;
   const url = new URL(window.location.href);
   url.pathname = buildPath(moduleId, sectionId);
-  // Clear any legacy hash fragments
   url.hash = "";
-  window.history.pushState({ moduleId, sectionId }, "", url);
+  svelteKitPushState(url, { moduleId, sectionId });
 }
 
 let historyInitialized = false;
