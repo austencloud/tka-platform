@@ -9,6 +9,13 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay
   import { onMount, getContext } from "svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import CardHeader from "./shared/CardHeader.svelte";
+  import { getTemplateById } from "$lib/features/create/shared/domain/templates/duration-templates";
+  import {
+    detectPresetFromBlocked,
+    getAllowedPositions,
+    StartPositionPreset,
+  } from "../../shared/domain/start-position-presets";
+  import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
   let {
     constraintPreset,
@@ -55,8 +62,8 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay
     hapticService = container.items.hapticFeedback;
   });
 
-  // Summary: "Default" when all axes are at their default values, otherwise "Custom"
-  const displayValue = $derived.by(() => {
+  // Determine if everything is default
+  const isAllDefault = $derived.by(() => {
     const isDefaultStyle =
       constraintPreset === "smooth" &&
       handPathMode === "smooth" &&
@@ -65,9 +72,34 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay
     const isDefaultStartEnd = !startEndOptions ||
       (startEndOptions.blockedStartPositions.length === 0 &&
        !startEndOptions.endPosition);
+    return isDefaultStyle && isDefaultRhythm && isDefaultStartEnd;
+  });
 
-    if (isDefaultStyle && isDefaultRhythm && isDefaultStartEnd) return "Default";
-    return "Custom";
+  // Build summary lines for non-default settings
+  const summaryLines = $derived.by((): string[] => {
+    if (isAllDefault) return [];
+    const lines: string[] = [];
+
+    // Rhythm
+    if (durationTemplateId) {
+      const template = getTemplateById(durationTemplateId);
+      if (template) lines.push(template.name);
+    }
+
+    // Start position
+    if (startEndOptions && startEndOptions.blockedStartPositions.length > 0) {
+      const preset = detectPresetFromBlocked(startEndOptions.blockedStartPositions, gridMode);
+      if (preset === StartPositionPreset.CLASSIC) {
+        lines.push("Classic 3");
+      } else {
+        const allowed = getAllowedPositions(startEndOptions.blockedStartPositions, gridMode);
+        if (allowed.length === 1) {
+          lines.push(`Start: ${allowed[0]}`);
+        }
+      }
+    }
+
+    return lines;
   });
 
   function handleClick() {
@@ -102,10 +134,20 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay
   style="--card-color: {color}; --shadow-color: {shadowColor}; --card-index: {cardIndex};"
   onclick={handleClick}
   onkeydown={handleKeydown}
-  aria-label="Customize: {displayValue}. Click to configure style, rhythm, and positions."
+  aria-label="Customize: {isAllDefault ? 'Default' : 'Custom'}. Click to configure style, rhythm, and positions."
 >
   <CardHeader title="Customize" {headerFontSize} />
-  <div class="card-value">{displayValue}</div>
+  {#if isAllDefault}
+    <div class="card-value">Default</div>
+  {:else if summaryLines.length > 0}
+    <div class="card-summary">
+      {#each summaryLines as line}
+        <span class="summary-line">{line}</span>
+      {/each}
+    </div>
+  {:else}
+    <div class="card-value">Custom</div>
+  {/if}
 </button>
 
 <style>
@@ -197,6 +239,38 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay
     margin: clamp(2px, 0.5cqh, 4px) 0;
     position: relative;
     z-index: 2;
+  }
+
+  .card-summary {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(1px, 0.5cqh, 4px);
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  .summary-line {
+    font-size: var(--card-text-size);
+    font-weight: var(--card-text-weight);
+    letter-spacing: var(--card-text-spacing);
+    color: white;
+    text-shadow: var(--card-text-shadow);
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  /* Scale down when multiple lines need to fit */
+  .card-summary:has(.summary-line:nth-child(2)) .summary-line {
+    font-size: clamp(11px, 3.5cqw, 16px);
+    font-weight: 600;
+    letter-spacing: 0;
   }
 
   .customize-card:focus-visible {

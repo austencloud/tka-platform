@@ -32,12 +32,12 @@ const ROTATED_LOOP_TYPES = new Set([
  *   Row 4: Generate(6)
  *
  * SPELL:
- *   Row 1: Mode(2) + WordInput(4) = 6
- *   Row 2 (beginner): Level(2) + GridMode(2) + PropCont(2) = 6
- *   Row 2 (non-beginner): Level(2) + GridMode(2) + PropCont(2) = 6
+ *   Row 1: Mode(2) + Level(4) = 6
+ *   Row 2 (beginner): GridMode(3) + PropCont(3) = 6
+ *   Row 2 (non-beginner): GridMode(2) + PropCont(2) + TurnIntensity(2) = 6
  *   Row 3 (beginner): Customize(3) + LOOP(3) = 6
- *   Row 3 (non-beginner): TurnIntensity(2) + Customize(2) + LOOP(2) = 6
- *   Row 4: Generate(6)
+ *   Row 3 (non-beginner): Customize(2) + LOOP(2) + [Slice(2)] = 6
+ *   Row 4: SpellGenerate(6) — word input embedded in generate bar
  */
 export class CardConfigurator implements ICardConfigurator {
   buildCardDescriptors(
@@ -69,32 +69,21 @@ export class CardConfigurator implements ICardConfigurator {
       gridColumnSpan: 2,
     });
 
-    // ─── Row 1 remainder: WordInput (spell) or Level+Length (freeform) ───
+    // ─── Row 1 remainder: Level (spell gets wider) or Level+Length (freeform) ───
 
-    if (isSpellMode && handlers.handleWordInput) {
-      // Spell Row 1: Mode(2) + WordInput(4) = 6
-      cardList.push({
-        id: "word-input",
-        props: {
-          value: handlers.wordInputValue ?? "",
-          onInput: handlers.handleWordInput,
-          onSubmit: handlers.handleWordSubmit,
-          cardIndex: cardIndex++,
-        },
-        gridColumnSpan: 4,
-      });
-    } else {
+    // Level card — in spell mode it spans 4 (no Length card), freeform spans 2
+    cardList.push({
+      id: "level",
+      props: {
+        currentLevel,
+        onLevelChange: handlers.handleLevelChange,
+        cardIndex: cardIndex++,
+      },
+      gridColumnSpan: isSpellMode ? 4 : 2,
+    });
+
+    if (!isSpellMode) {
       // Freeform Row 1: Mode(2) + Level(2) + Length(2) = 6
-      cardList.push({
-        id: "level",
-        props: {
-          currentLevel,
-          onLevelChange: handlers.handleLevelChange,
-          cardIndex: cardIndex++,
-        },
-        gridColumnSpan: 2,
-      });
-
       cardList.push({
         id: "length",
         props: {
@@ -108,26 +97,12 @@ export class CardConfigurator implements ICardConfigurator {
       });
     }
 
-    // ─── Row 2: [Level if spell] + Grid Mode + Prop Continuity [+ TurnIntensity] ───
-
-    // In spell mode, Level drops to Row 2: Level(2) + GridMode(2) + PropCont(2) = 6
-    if (isSpellMode) {
-      cardList.push({
-        id: "level",
-        props: {
-          currentLevel,
-          onLevelChange: handlers.handleLevelChange,
-          cardIndex: cardIndex++,
-        },
-        gridColumnSpan: 2,
-      });
-    }
+    // ─── Row 2: Grid Mode + Prop Continuity [+ TurnIntensity] ───
 
     // Grid + PropCont sizing:
-    // Spell: always 2 (Level fills the remaining slot)
-    // Freeform beginner: 3 each (no TurnIntensity)
-    // Freeform non-beginner: 2 each (TurnIntensity fills remaining)
-    const gridPropSpan = isSpellMode ? 2 : (isBeginnerLevel ? 3 : 2);
+    // Beginner: 3 each (no TurnIntensity)
+    // Non-beginner: 2 each (TurnIntensity fills remaining)
+    const gridPropSpan = isBeginnerLevel ? 3 : 2;
 
     cardList.push({
       id: "grid-mode",
@@ -167,9 +142,9 @@ export class CardConfigurator implements ICardConfigurator {
 
     // ─── Customize + LOOP [+ Slice] row ───
     // When LOOP is enabled with a rotated type, add a Slice card: Customize(2)+LOOP(2)+Slice(2)
-    // Otherwise two cards share the row at span 3 (or 2 in spell+non-beginner).
+    // Otherwise two cards share the row at span 3 each.
     const showSliceCard = loopEnabled && ROTATED_LOOP_TYPES.has(config.loopType as LOOPType);
-    const customizeLoopSpan = showSliceCard ? 2 : (isSpellMode && shouldShowTurnIntensity) ? 2 : 3;
+    const customizeLoopSpan = showSliceCard ? 2 : 3;
 
     // Customize card (absorbs Style + Rhythm + Start/End)
     const hasStartEnd = handlers.handleStartEndChange && handlers.startEndOptions;
@@ -238,6 +213,11 @@ export class CardConfigurator implements ICardConfigurator {
           config,
           startEndOptions: handlers.startEndOptions,
           disabled: spellDisabled,
+          // Spell mode: embed word input in the generate bar
+          spellMode: isSpellMode,
+          wordInputValue: isSpellMode ? (handlers.wordInputValue ?? "") : undefined,
+          onWordInput: isSpellMode ? handlers.handleWordInput : undefined,
+          onWordSubmit: isSpellMode ? handlers.handleWordSubmit : undefined,
         },
         gridColumnSpan: 6, // Always full width — no cards share this row
       });
