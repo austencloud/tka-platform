@@ -25,6 +25,10 @@ Computes reversal indicators for options based on current sequence.
     currentSequence?: PictographData[];
     // Enable FLIP animation for filtering (desktop only)
     enableFlip?: boolean;
+    // Thread slot tracking
+    typeSectionTitle?: string;
+    onSlotClicked?: (typeSection: string, slotIndex: number) => void;
+    continuationIndex?: number | null;
   }
 
   const {
@@ -35,6 +39,9 @@ Computes reversal indicators for options based on current sequence.
     onSelect,
     currentSequence = [],
     enableFlip = false,
+    typeSectionTitle = "",
+    onSlotClicked,
+    continuationIndex = null,
   }: Props = $props();
 
   // Cap columns to actual item count to prevent empty columns causing left-alignment
@@ -64,7 +71,11 @@ Computes reversal indicators for options based on current sequence.
           size={cardSize}
           blueReversal={option.blueReversal || false}
           redReversal={option.redReversal || false}
-          onSelect={(p) => onSelect(p)}
+          isContinuation={continuationIndex === index}
+          onSelect={(p) => {
+            onSlotClicked?.(typeSectionTitle, index);
+            onSelect(p);
+          }}
         />
       </div>
     {/each}
@@ -76,7 +87,11 @@ Computes reversal indicators for options based on current sequence.
         size={cardSize}
         blueReversal={option.blueReversal || false}
         redReversal={option.redReversal || false}
-        onSelect={(p) => onSelect(p)}
+        isContinuation={continuationIndex === index}
+        onSelect={(p) => {
+          onSlotClicked?.(typeSectionTitle, index);
+          onSelect(p);
+        }}
       />
     {/each}
   {/if}

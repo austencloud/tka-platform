@@ -25,6 +25,8 @@ with individual headers for each type.
     currentSequence?: PictographData[];
     // Enable FLIP animation for filtering (desktop only)
     enableFlip?: boolean;
+    // Thread slot tracking
+    onSlotClicked?: (typeSection: string, slotIndex: number) => void;
   }
 
   const {
@@ -35,6 +37,7 @@ with individual headers for each type.
     onSelect,
     currentSequence = [],
     enableFlip = false,
+    onSlotClicked,
   }: Props = $props();
 </script>
 
@@ -52,6 +55,8 @@ with individual headers for each type.
           {onSelect}
           {currentSequence}
           {enableFlip}
+          typeSectionTitle={section.title}
+          {onSlotClicked}
         />
       </div>
     {/if}
