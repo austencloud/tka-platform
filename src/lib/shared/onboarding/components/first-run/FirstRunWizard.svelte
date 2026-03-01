@@ -501,7 +501,7 @@
     justify-content: center;
     width: 100%;
     max-width: 600px;
-    padding: 0 16px;
+    padding: 0 16px 90px;
   }
 
   .step-container.desktop-config {

@@ -6,12 +6,16 @@
   instead of stepping through sequentially.
 -->
 <script lang="ts">
+  import { onMount } from "svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import {
+    registerBackgroundCard,
     BACKGROUND_CARD_REGISTRY,
-    getCardMetadata,
   } from "@austencloud/backgrounds/card";
+  import type { BackgroundCardSelectDetail } from "@austencloud/backgrounds/card";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+
+  registerBackgroundCard();
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { examplePictographData } from "$lib/shared/settings/components/tabs/visibility/example-data";
@@ -70,9 +74,7 @@
     )
   );
 
-  const minimalistOption = $derived(
-    getCardMetadata(BackgroundType.SOLID_COLOR)
-  );
+  let themeGridEl: HTMLDivElement;
 
   // Featured props
   const FEATURED_PROPS: PropType[] = [
@@ -108,6 +110,17 @@
       mode: selectedMode,
     });
   }
+
+  onMount(() => {
+    function handleCardSelect(e: Event) {
+      const detail = (e as CustomEvent<BackgroundCardSelectDetail>).detail;
+      handleThemeSelect(detail.type as BackgroundType);
+    }
+
+    themeGridEl.addEventListener("background-select", handleCardSelect);
+    return () =>
+      themeGridEl.removeEventListener("background-select", handleCardSelect);
+  });
 </script>
 
 <div class="desktop-config-panel">
@@ -192,52 +205,33 @@
         <h2 class="section-title">Background</h2>
       </div>
 
-      <div class="themes-grid">
+      <div
+        class="themes-grid"
+        bind:this={themeGridEl}
+        role="radiogroup"
+        aria-label="Choose background theme"
+      >
         {#each animatedBackgrounds as bg}
-          <button
-            class="theme-card"
-            class:selected={selectedTheme === bg.type}
-            onclick={() => handleThemeSelect(bg.type as BackgroundType)}
-            aria-pressed={selectedTheme === bg.type}
-            aria-label={`Select ${bg.label} theme`}
-          >
-            <div
-              class="theme-preview"
-              style="background: linear-gradient(135deg, {bg.themeColors?.[0] ??
-                '#1a1a2e'}, {bg.themeColors?.[1] ?? '#16213e'})"
-            >
-              <span class="theme-icon-svg">{@html bg.iconSvg}</span>
-            </div>
-            <span class="theme-name">{bg.label}</span>
-            {#if selectedTheme === bg.type}
-              <div class="selected-badge">
-                <i class="fas fa-check" aria-hidden="true"></i>
-              </div>
-            {/if}
-          </button>
+          <background-card
+            type={bg.type}
+            selected={selectedTheme === bg.type ? "" : undefined}
+          ></background-card>
         {/each}
       </div>
 
-      {#if minimalistOption}
-        <div class="minimalist-row">
-          <span class="minimalist-label">Prefer something simpler?</span>
-          <button
-            class="minimalist-card"
-            class:selected={selectedTheme === BackgroundType.SOLID_COLOR}
-            onclick={() => handleThemeSelect(BackgroundType.SOLID_COLOR)}
-            aria-pressed={selectedTheme === BackgroundType.SOLID_COLOR}
-            aria-label="Select Pure Black minimalist theme"
-          >
-            <div class="minimalist-preview"></div>
-            <span class="minimalist-name">Pure Black</span>
-            {#if selectedTheme === BackgroundType.SOLID_COLOR}
-              <div class="selected-badge small">
-                <i class="fas fa-check" aria-hidden="true"></i>
-              </div>
-            {/if}
-          </button>
-        </div>
-      {/if}
+      <div class="minimalist-row">
+        <span class="minimalist-label">Prefer something simpler?</span>
+        <button
+          class="minimalist-card"
+          class:selected={selectedTheme === BackgroundType.SOLID_COLOR}
+          onclick={() => handleThemeSelect(BackgroundType.SOLID_COLOR)}
+          aria-pressed={selectedTheme === BackgroundType.SOLID_COLOR}
+          aria-label="Select Pure Black minimalist theme"
+        >
+          <div class="minimalist-preview"></div>
+          <span class="minimalist-name">Pure Black</span>
+        </button>
+      </div>
     </div>
 
     <!-- Section 3: Pictograph Mode (bottom-left) -->
@@ -611,68 +605,6 @@
     gap: 10px;
   }
 
-  .theme-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    padding: 6px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all var(--duration-normal) ease;
-    position: relative;
-  }
-
-  .theme-card:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    transform: translateY(-2px);
-  }
-
-  .theme-card.selected {
-    background: color-mix(
-      in srgb,
-      var(--theme-accent-strong, #8b5cf6) 20%,
-      transparent
-    );
-    border-color: var(--theme-accent-strong, #8b5cf6);
-  }
-
-  .theme-card:active {
-    transform: scale(0.97);
-  }
-
-  .theme-preview {
-    width: 100%;
-    aspect-ratio: 16 / 10;
-    border-radius: 7px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-  }
-
-  .theme-icon-svg {
-    font-size: 1.3rem;
-    opacity: 0.9;
-  }
-
-  .theme-icon-svg :global(i) {
-    color: rgba(255, 255, 255, 0.8);
-  }
-
-  .theme-name {
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: var(--theme-text, white);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-  }
-
   .minimalist-row {
     display: flex;
     align-items: center;
@@ -879,12 +811,6 @@
     animation: pop-in var(--duration-normal) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
-  .selected-badge.small {
-    width: 18px;
-    height: 18px;
-    font-size: 0.55rem;
-  }
-
   @keyframes pop-in {
     from {
       transform: scale(0);
@@ -906,7 +832,6 @@
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .theme-card,
     .minimalist-card,
     .mode-card,
     .prop-card,
@@ -919,8 +844,6 @@
       transition: none;
     }
 
-    .theme-card:hover,
-    .theme-card:active,
     .mode-card:hover,
     .mode-card:active,
     .mode-card.selected,
