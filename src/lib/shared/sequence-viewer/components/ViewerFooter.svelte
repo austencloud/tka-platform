@@ -52,6 +52,8 @@
     onRampStop?: () => void;
     onPreviewModeChange?: (mode: ExportFormat | null) => void;
     onConnect?: () => void;
+    isOwned?: boolean;
+    onDeleteRequest?: () => void;
   }
 
   let {
@@ -81,6 +83,8 @@
     onRampStop,
     onPreviewModeChange,
     onConnect,
+    isOwned = false,
+    onDeleteRequest,
   }: Props = $props();
 
   // Landscape BPM popover state
@@ -219,6 +223,16 @@
     >
       <i class="fas fa-download" aria-hidden="true"></i>
     </button>
+    {#if isOwned && onDeleteRequest}
+      <button
+        type="button"
+        class="landscape-btn delete"
+        onclick={onDeleteRequest}
+        aria-label="Delete sequence"
+      >
+        <i class="fas fa-trash" aria-hidden="true"></i>
+      </button>
+    {/if}
   </aside>
 {:else}
 <footer
@@ -252,6 +266,8 @@
       {onRampStart}
       {onRampStop}
       {onConnect}
+      {isOwned}
+      {onDeleteRequest}
     />
   {:else}
     <!-- Desktop: Single row layout -->
@@ -348,6 +364,17 @@
           <i class="fas fa-download" aria-hidden="true"></i>
           <span>Download</span>
         </button>
+        {#if isOwned && onDeleteRequest}
+          <button
+            type="button"
+            class="action-btn delete"
+            onclick={onDeleteRequest}
+            aria-label="Delete sequence"
+          >
+            <i class="fas fa-trash" aria-hidden="true"></i>
+            <span>Delete</span>
+          </button>
+        {/if}
       </div>
     </div>
   {/if}
@@ -429,6 +456,7 @@
   .landscape-btn.edit { color: #f59e0b; border-color: rgba(245, 158, 11, 0.25); }
   .landscape-btn.share { color: #a855f7; border-color: rgba(168, 85, 247, 0.25); }
   .landscape-btn.download { color: #818cf8; border-color: rgba(99, 102, 241, 0.35); }
+  .landscape-btn.delete { color: #ef4444; border-color: rgba(239, 68, 68, 0.25); }
 
   .landscape-divider {
     width: 28px;
@@ -646,6 +674,17 @@
     background: rgba(99, 102, 241, 0.25);
     border-color: rgba(99, 102, 241, 0.5);
     color: #a5b4fc;
+  }
+
+  .action-btn.delete {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.25);
+    color: #ef4444;
+  }
+
+  .action-btn.delete:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.4);
   }
 
   .action-btn.connect {

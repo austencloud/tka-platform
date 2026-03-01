@@ -164,7 +164,6 @@ const libraryContainer = createLibraryContainer({
     achievementManager: gamificationContainer.items.achievementManager,
     tagManager: coreContainer.items.tagManager,
     orientationCycleDetector: buildContainer.items.orientationCycleDetector,
-    publicIndexSyncer: null as any, // Will use internal one
   },
   librarySaveService: {
     sharer: shareContainer.items.sharer,
