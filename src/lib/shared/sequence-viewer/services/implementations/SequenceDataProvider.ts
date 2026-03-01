@@ -118,16 +118,34 @@ export class SequenceDataProvider implements ISequenceDataProvider {
 
   /**
    * Core hydration logic — tries local repo then public loader.
+   *
+   * When the sequence has a unique ID, prefer ID-based lookup so we load
+   * the exact variation the user clicked rather than an arbitrary match
+   * for the same word.
    */
   private async hydrateSequenceInternal(
     sequence: SequenceData
   ): Promise<SequenceData> {
+    // Try ID-based lookup first (returns the exact variation)
+    if (sequence.id) {
+      try {
+        const localById =
+          await this.localRepository.getSequence(sequence.id);
+        if (localById && this.hasMotionData(localById)) {
+          return this.ensureWordPopulated(localById);
+        }
+      } catch {
+        // ID lookup failed, continue to word-based fallback
+      }
+    }
+
+    // Fall back to word-based lookup (may return a different variation)
     const identifier = sequence.word || sequence.name;
     if (!identifier) {
       return this.ensureWordPopulated(sequence);
     }
 
-    // Try local repository first (user's own sequences in IndexedDB)
+    // Try local repository by word name
     try {
       const localSequence =
         await this.localRepository.getSequence(identifier);

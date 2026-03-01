@@ -53,12 +53,16 @@ export function openSequenceViewer(
 	}
 
 	// Use prefetched hydrated data if available (hover prefetch completed)
+	// Preserve ownership metadata from the original sequence since cached/hydrated
+	// versions loaded from IndexedDB or public index may lack ownerId.
 	let seqToOpen = sequence;
 	try {
 		const provider = container?.items?.sequenceDataProvider as ISequenceDataProvider | undefined;
 		const cached = provider?.getCached(sequence);
 		if (cached) {
-			seqToOpen = cached;
+			seqToOpen = sequence.ownerId && !cached.ownerId
+				? { ...cached, ownerId: sequence.ownerId }
+				: cached;
 		}
 	} catch {
 		// DI not available — proceed with original sequence
