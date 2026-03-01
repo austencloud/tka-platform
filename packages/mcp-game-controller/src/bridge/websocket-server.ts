@@ -11,6 +11,8 @@
  * - Connection management
  */
 
+import { execSync } from "node:child_process";
+import { createConnection } from "node:net";
 import { WebSocketServer, WebSocket } from "ws";
 import type {
   BridgeMessage,
@@ -60,10 +62,51 @@ export class WebSocketBridge {
   }
 
   async start(): Promise<void> {
-    return new Promise((resolve) => {
-      this.wss = new WebSocketServer({ port: this.config.port });
+    if (await this.isPortInUse(this.config.port)) {
+      console.error(`[Bridge] Port ${this.config.port} in use — killing zombie process`);
+      this.killProcessOnPort(this.config.port);
+      // Give the OS a moment to release the port
+      await new Promise((r) => setTimeout(r, 500));
+    }
 
-      this.wss.on("connection", (ws) => {
+    return new Promise((resolve, reject) => {
+      this.wss = new WebSocketServer({ port: this.config.port });
+      this.attachListeners(this.wss, resolve, reject);
+    });
+  }
+
+  private isPortInUse(port: number): Promise<boolean> {
+    return new Promise((resolve) => {
+      const socket = createConnection({ port }, () => {
+        socket.destroy();
+        resolve(true);
+      });
+      socket.on("error", () => {
+        socket.destroy();
+        resolve(false);
+      });
+    });
+  }
+
+  private killProcessOnPort(port: number): void {
+    try {
+      // Windows: find and kill the PID holding the port
+      const result = execSync(
+        `powershell.exe -Command "Get-NetTCPConnection -LocalPort ${port} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }"`,
+        { encoding: "utf8", timeout: 5000 },
+      );
+      console.error(`[Bridge] Killed zombie on port ${port}`);
+    } catch {
+      console.error(`[Bridge] Could not kill process on port ${port}`);
+    }
+  }
+
+  private attachListeners(
+    wss: WebSocketServer,
+    resolve: () => void,
+    reject: (err: Error) => void,
+  ): void {
+      wss.on("connection", (ws) => {
         console.error("[Bridge] Game client connected");
 
         // Track client state
@@ -92,14 +135,17 @@ export class WebSocketBridge {
         });
       });
 
-      this.wss.on("listening", () => {
+      wss.on("listening", () => {
         const authStatus = this.requiresAuth ? " (auth required)" : " (no auth)";
         console.error(
           `[Bridge] WebSocket server listening on port ${this.config.port}${authStatus}`
         );
         resolve();
       });
-    });
+
+      wss.on("error", (err: NodeJS.ErrnoException) => {
+        reject(err);
+      });
   }
 
   stop(): void {
