@@ -537,14 +537,14 @@
   }
 
   .action-btn.delete {
-    background: rgba(239, 68, 68, 0.1);
-    border-color: rgba(239, 68, 68, 0.25);
-    color: #ef4444;
+    background: color-mix(in srgb, var(--semantic-error) 10%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error) 25%, transparent);
+    color: var(--semantic-error);
   }
 
   .action-btn.delete:hover {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: rgba(239, 68, 68, 0.4);
+    background: color-mix(in srgb, var(--semantic-error) 20%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error) 40%, transparent);
   }
 
   /* ===========================

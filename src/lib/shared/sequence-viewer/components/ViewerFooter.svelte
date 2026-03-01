@@ -456,7 +456,7 @@
   .landscape-btn.edit { color: #f59e0b; border-color: rgba(245, 158, 11, 0.25); }
   .landscape-btn.share { color: #a855f7; border-color: rgba(168, 85, 247, 0.25); }
   .landscape-btn.download { color: #818cf8; border-color: rgba(99, 102, 241, 0.35); }
-  .landscape-btn.delete { color: #ef4444; border-color: rgba(239, 68, 68, 0.25); }
+  .landscape-btn.delete { color: var(--semantic-error); border-color: color-mix(in srgb, var(--semantic-error) 25%, transparent); }
 
   .landscape-divider {
     width: 28px;
@@ -677,14 +677,14 @@
   }
 
   .action-btn.delete {
-    background: rgba(239, 68, 68, 0.1);
-    border-color: rgba(239, 68, 68, 0.25);
-    color: #ef4444;
+    background: color-mix(in srgb, var(--semantic-error) 10%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error) 25%, transparent);
+    color: var(--semantic-error);
   }
 
   .action-btn.delete:hover {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: rgba(239, 68, 68, 0.4);
+    background: color-mix(in srgb, var(--semantic-error) 20%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error) 40%, transparent);
   }
 
   .action-btn.connect {

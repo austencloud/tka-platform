@@ -45,6 +45,7 @@
   import RampProgressIndicator from "$lib/shared/sequence-viewer/components/RampProgressIndicator.svelte";
   import RouteViewerHeader from "./RouteViewerHeader.svelte";
   import ViewerSettingsModal from "$lib/shared/sequence-viewer/components/ViewerSettingsModal.svelte";
+  import DeleteConfirmDialog from "$lib/shared/sequence-viewer/components/DeleteConfirmDialog.svelte";
   import { openSequenceOverlay } from "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte";
   import { getIabBannerVisible, IAB_BANNER_HEIGHT } from "$lib/shared/auth/state/iab-banner-state.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -594,44 +595,22 @@
         {/if}
       </div>
 
-      <!-- Delete confirmation dialog -->
       {#if deleteConfirmOpen}
-        <div
-          class="delete-confirm-backdrop"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="delete-confirm-title"
-          tabindex="-1"
-          onkeydown={(e) => { if (e.key === 'Escape') deleteConfirmOpen = false; }}
-        >
-          <div class="delete-confirm-dialog">
-            <h2 id="delete-confirm-title">Delete sequence?</h2>
-            <p>{sequence?.word ? `"${sequence.word}" will be permanently removed from your library.` : 'This sequence will be permanently removed from your library.'}</p>
-            <div class="delete-confirm-actions">
-              <button
-                type="button"
-                class="delete-cancel-btn"
-                onclick={() => (deleteConfirmOpen = false)}
-                disabled={isDeleting}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                class="delete-confirm-btn"
-                disabled={isDeleting}
-                onclick={async () => {
-                  isDeleting = true;
-                  await ctx.handleDelete();
-                  deleteConfirmOpen = false;
-                  isDeleting = false;
-                }}
-              >
-                {isDeleting ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <DeleteConfirmDialog
+          word={sequence?.word}
+          {isDeleting}
+          positioning="fixed"
+          onConfirm={async () => {
+            isDeleting = true;
+            try {
+              await ctx.handleDelete();
+            } finally {
+              deleteConfirmOpen = false;
+              isDeleting = false;
+            }
+          }}
+          onCancel={() => (deleteConfirmOpen = false)}
+        />
       {/if}
     {/snippet}
   </SequenceViewerOrchestrator>
@@ -749,86 +728,4 @@
     }
   }
 
-  /* ===========================
-     DELETE CONFIRMATION DIALOG
-     =========================== */
-
-  .delete-confirm-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: 24px;
-  }
-
-  .delete-confirm-dialog {
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 16px;
-    padding: 28px;
-    max-width: 360px;
-    width: 100%;
-  }
-
-  .delete-confirm-dialog h2 {
-    font-size: var(--font-size-lg, 18px);
-    font-weight: 600;
-    color: var(--theme-text, #fff);
-    margin: 0 0 12px;
-  }
-
-  .delete-confirm-dialog p {
-    font-size: var(--font-size-min, 14px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
-    margin: 0 0 24px;
-    line-height: 1.5;
-  }
-
-  .delete-confirm-actions {
-    display: flex;
-    gap: 12px;
-    justify-content: flex-end;
-  }
-
-  .delete-cancel-btn {
-    padding: 10px 20px;
-    border-radius: 10px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: transparent;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
-    font-size: var(--font-size-min, 14px);
-    cursor: pointer;
-    transition: background 150ms ease, border-color 150ms ease;
-  }
-
-  .delete-cancel-btn:hover {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-  }
-
-  .delete-cancel-btn:disabled,
-  .delete-confirm-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .delete-confirm-btn {
-    padding: 10px 20px;
-    border-radius: 10px;
-    border: 1px solid rgba(239, 68, 68, 0.4);
-    background: rgba(239, 68, 68, 0.15);
-    color: #ef4444;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 150ms ease, border-color 150ms ease;
-  }
-
-  .delete-confirm-btn:hover:not(:disabled) {
-    background: rgba(239, 68, 68, 0.25);
-    border-color: rgba(239, 68, 68, 0.6);
-  }
 </style>
