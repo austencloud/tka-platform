@@ -4,21 +4,11 @@ import type { createBrowseState } from "../../state/browse-state-factory.svelte"
 type BrowseState = ReturnType<typeof createBrowseState>;
 
 /**
- * Data for delete confirmation dialog
- */
-export interface DeleteConfirmationData {
-  sequence: SequenceData;
-  relatedSequences: SequenceData[];
-  totalCount: number;
-}
-
-/**
  * Parameters required to initialize the event handler service
  */
 export interface BrowseEventHandlerParams {
   galleryState: BrowseState;
   setSelectedSequence: (sequence: SequenceData | null) => void;
-  setDeleteConfirmationData: (data: DeleteConfirmationData | null) => void;
   setError: (error: string | null) => void;
 }
 
@@ -66,26 +56,9 @@ export interface IBrowseEventHandler {
   ): Promise<void>;
 
   /**
-   * Handle sequence deletion
-   */
-  handleSequenceDelete(sequence: SequenceData): void;
-
-  /**
    * Handle opening spotlight view
    */
   handleSpotlightView(sequence: SequenceData): void;
-
-  /**
-   * Handle delete confirmation
-   */
-  handleDeleteConfirm(
-    deleteConfirmationData: DeleteConfirmationData | null
-  ): Promise<void>;
-
-  /**
-   * Handle delete cancellation
-   */
-  handleDeleteCancel(): void;
 
   /**
    * Handle error dismissal

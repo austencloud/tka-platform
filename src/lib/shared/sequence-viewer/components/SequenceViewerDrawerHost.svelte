@@ -62,6 +62,10 @@
   // Settings modal state
   let settingsModalOpen = $state(false);
 
+  // Delete confirmation state
+  let deleteConfirmOpen = $state(false);
+  let isDeleting = $state(false);
+
   // Copy for AI
   let claudeCopier = $state<IClaudeCodeCopier | null>(null);
 
@@ -274,6 +278,8 @@
                 onRampStart={ctx.handleRampStart}
                 onRampStop={ctx.handleRampStop}
                 onConnect={ctx.handleSyncToggle}
+                isOwned={ctx.isOwned}
+                onDeleteRequest={() => (deleteConfirmOpen = true)}
               />
             {/if}
           </div>
@@ -283,6 +289,46 @@
               onStop={ctx.handleRampStop}
               variant="floating"
             />
+          {/if}
+
+          <!-- Delete confirmation dialog -->
+          {#if deleteConfirmOpen}
+            <div
+              class="delete-confirm-backdrop"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="delete-confirm-title-drawer"
+              tabindex="-1"
+              onkeydown={(e) => { if (e.key === 'Escape') deleteConfirmOpen = false; }}
+            >
+              <div class="delete-confirm-dialog">
+                <h2 id="delete-confirm-title-drawer">Delete sequence?</h2>
+                <p>{overlay.sequence?.word ? `"${overlay.sequence.word}" will be permanently removed from your library.` : 'This sequence will be permanently removed from your library.'}</p>
+                <div class="delete-confirm-actions">
+                  <button
+                    type="button"
+                    class="delete-cancel-btn"
+                    onclick={() => (deleteConfirmOpen = false)}
+                    disabled={isDeleting}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    class="delete-confirm-btn"
+                    disabled={isDeleting}
+                    onclick={async () => {
+                      isDeleting = true;
+                      await ctx.handleDelete();
+                      deleteConfirmOpen = false;
+                      isDeleting = false;
+                    }}
+                  >
+                    {isDeleting ? 'Deleting...' : 'Delete'}
+                  </button>
+                </div>
+              </div>
+            </div>
           {/if}
         </div>
       {/snippet}
@@ -453,5 +499,80 @@
     --sheet-border-radius-top-right: 0px !important;
     border-top-left-radius: 0 !important;
     border-top-right-radius: 0 !important;
+  }
+
+  /* Delete confirmation dialog */
+  .delete-confirm-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    padding: 1rem;
+  }
+
+  .delete-confirm-dialog {
+    background: var(--theme-panel-bg, #1a1a2e);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 12px;
+    padding: 1.5rem;
+    max-width: 360px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .delete-confirm-dialog h2 {
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    color: var(--theme-text, #fff);
+    margin: 0;
+  }
+
+  .delete-confirm-dialog p {
+    font-size: var(--font-size-sm, 13px);
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
+    margin: 0;
+  }
+
+  .delete-confirm-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    margin-top: 0.25rem;
+  }
+
+  .delete-cancel-btn,
+  .delete-confirm-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.15s;
+  }
+
+  .delete-cancel-btn:disabled,
+  .delete-confirm-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .delete-cancel-btn {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    color: var(--theme-text, #fff);
+  }
+
+  .delete-confirm-btn {
+    background: #ef4444;
+    color: #fff;
+  }
+
+  .delete-confirm-btn:not(:disabled):hover {
+    background: #dc2626;
   }
 </style>

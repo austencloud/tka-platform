@@ -30,7 +30,6 @@ import { ThumbnailMetricsCollector } from "$lib/features/browse/sequences/displa
 import { FavoritesManager } from "$lib/features/browse/shared/services/implementations/FavoritesManager";
 import { FilterPersister as BrowseFilterPersister } from "$lib/shared/persistence/services/implementations/FilterPersister";
 import { Navigator } from "$lib/features/browse/sequences/navigation/services/implementations/Navigator";
-import { BrowseDeleter } from "$lib/features/browse/shared/services/implementations/BrowseDeleter";
 import { BrowseEventHandler } from "$lib/features/browse/shared/services/implementations/BrowseEventHandler";
 import { OptimizedBrowser } from "$lib/features/browse/shared/services/implementations/OptimizedBrowser";
 import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
@@ -121,10 +120,6 @@ export function createBrowseContainer(deps: BrowseContainerDeps) {
     .add({
       // Navigation (named browseNavigator to avoid conflict with loop-labeler)
       browseNavigator: () => new Navigator(),
-    })
-    .add({
-      // Deletion
-      browseDeleter: () => new BrowseDeleter(),
     });
 
   // Tier 1: Services depending on tier 0

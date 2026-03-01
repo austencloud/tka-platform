@@ -349,6 +349,8 @@ export class LibraryRepository implements ILibraryRepository {
         .catch((error) =>
           console.error("[LibraryRepository] Public index sync failed:", error)
         );
+    } else if (finalSequence.visibility === "public" && !this.publicIndexSyncer) {
+      console.warn("[LibraryRepository] Sequence is public but publicIndexSyncer is null — it will NOT appear in the public gallery.", { sequenceId: finalSequence.id });
     }
 
     return finalSequence;
@@ -405,7 +407,9 @@ export class LibraryRepository implements ILibraryRepository {
 
     // Handle visibility changes (async, non-blocking)
     if (updates.visibility && updates.visibility !== existing.visibility) {
-      if (updates.visibility === "public") {
+      if (!this.publicIndexSyncer) {
+        console.warn("[LibraryRepository] Visibility changed but publicIndexSyncer is null — public gallery will not reflect this change.", { sequenceId, newVisibility: updates.visibility });
+      } else if (updates.visibility === "public") {
         this.publicIndexSyncer
           .syncToPublicIndex(updated, userId)
           .catch((err) =>
@@ -432,18 +436,25 @@ export class LibraryRepository implements ILibraryRepository {
       return; // Already deleted
     }
 
-    // Remove from public index if public (async, non-blocking)
-    if (existing.visibility === "public") {
+    // Fire-and-forget — deletes the public index doc so the card disappears
+    // from the community gallery on next load. Not awaited because the gallery
+    // only refreshes on an explicit reload anyway; awaiting it just slows down
+    // the delete. Errors are logged but not rethrown.
+    if (existing.visibility === "public" && this.publicIndexSyncer) {
       this.publicIndexSyncer.removeFromPublicIndex(sequenceId).catch((error) =>
         console.warn(
           "[LibraryRepository] Failed to remove from public index:",
           error
         )
       );
+    } else if (existing.visibility === "public" && !this.publicIndexSyncer) {
+      console.warn("[LibraryRepository] Sequence is public but publicIndexSyncer is null — it will NOT be removed from the public gallery.", { sequenceId });
     }
 
-    // Fire-and-forget: delete queues locally, syncs when online
-    trackWrite(
+    // Await the local write so callers can safely reload data immediately after.
+    // trackWrite queues to Firestore's local cache first (offline-persistence), so
+    // this resolves quickly — it does NOT block on server acknowledgment.
+    await trackWrite(
       () => deleteDoc(doc(firestore, getUserSequencePath(userId, sequenceId))),
       "library"
     ).catch((error) => {
