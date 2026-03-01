@@ -21,6 +21,8 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { StepData } from "../../../../shared/domain/models/StepData";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { StartPositionData } from "../../../../shared/domain/models/StartPositionData";
+import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
+import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export interface OrientationCycleResult {
   /** Number of repetitions needed (1, 2, or 4) */
@@ -32,6 +34,8 @@ export interface OrientationCycleResult {
 }
 
 export class OrientationCycleDetector {
+  constructor(private readonly orientationCalculator: IOrientationCalculator) {}
+
   /**
    * Detect how many repetitions are needed to return to starting orientation
    */
@@ -59,16 +63,27 @@ export class OrientationCycleDetector {
 
     // Simulate up to 4 repetitions
     for (let rep = 1; rep <= 4; rep++) {
-      // Step through each beat in this repetition
+      // Step through each beat, recalculating orientations from the accumulated
+      // current orientation. We can't just re-read stored endOrientation because
+      // those values are fixed from the original pass — on subsequent passes the
+      // start orientations differ, producing different end orientations.
       for (const beat of steps) {
         const blueMotion = beat.motions.blue;
         const redMotion = beat.motions.red;
 
         if (blueMotion) {
-          currentBlue = blueMotion.endOrientation;
+          const adjusted = { ...blueMotion, startOrientation: currentBlue };
+          currentBlue = this.orientationCalculator.calculateEndOrientation(
+            adjusted,
+            MotionColor.BLUE
+          );
         }
         if (redMotion) {
-          currentRed = redMotion.endOrientation;
+          const adjusted = { ...redMotion, startOrientation: currentRed };
+          currentRed = this.orientationCalculator.calculateEndOrientation(
+            adjusted,
+            MotionColor.RED
+          );
         }
       }
 
@@ -152,4 +167,8 @@ export class OrientationCycleDetector {
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-export const orientationCycleDetector = new OrientationCycleDetector();
+import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+
+export const orientationCycleDetector = new OrientationCycleDetector(
+  orientationCalculator
+);

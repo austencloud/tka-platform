@@ -238,14 +238,13 @@ export class StrictSwappedLOOPExecutor {
     previousStep: StepData,
     matchingMotion: MotionData // This is from the OPPOSITE color in the matching beat
   ): MotionData {
-    // When swapped, this color follows the opposite color's path
-    // So its start location must continue from where the opposite color ended
-    const oppositeColor =
-      color === MotionColor.BLUE ? MotionColor.RED : MotionColor.BLUE;
-    const previousMotion = previousStep.motions[oppositeColor];
+    // For CONTINUITY: Always use same color from previous beat
+    // (Blue continues from where Blue ended, Red continues from where Red ended)
+    // The swap affects which PATTERN to follow, not where to continue from
+    const previousMotion = previousStep.motions[color];
 
     if (!previousMotion) {
-      throw new Error(`Missing motion data for ${oppositeColor}`);
+      throw new Error(`Missing motion data for ${color}`);
     }
 
     // Get start location from previous motion's end (for continuity)

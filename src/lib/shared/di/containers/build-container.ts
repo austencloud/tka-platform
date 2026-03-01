@@ -67,6 +67,7 @@ import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/
 import { SequenceToEntryConverter } from "$lib/features/choreo-card/services/implementations/SequenceToEntryConverter";
 import { LOOPDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
 import { OrientationCycleDetector } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleDetector";
+import { OrientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
 import { GenerationOrchestrator } from "$lib/features/create/generate/shared/services/implementations/GenerationOrchestrator";
 
 // === LOOP Executors (15 variations) ===
@@ -273,11 +274,15 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
         loopTypeResolver: () => new LOOPTypeResolver(),
         sequenceToEntryConverter: () => new SequenceToEntryConverter(),
         rotatedEndPositionSelector: () => new RotatedEndPositionSelector(),
-        orientationCycleDetector: () => new OrientationCycleDetector(),
+        orientationCycleDetector: () => new OrientationCycleDetector(deps.orientationCalculator),
       })
 
       // === Layer 2: Services with external deps only ===
       .add((ctx) => ({
+        // Orientation cycle extender - needs orientationCycleDetector (Layer 1) + orientationCalculator
+        orientationCycleExtender: () =>
+          new OrientationCycleExtender(ctx.orientationCycleDetector, deps.orientationCalculator),
+
         // Create module layout - needs device services
         createModuleLayoutManager: () =>
           new CreateModuleLayoutManager(deps.deviceDetector, deps.viewportManager),
@@ -615,7 +620,8 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
             deps.reversalDetector,
             ctx.partialSequenceGenerator,
             ctx.loopEndPositionSelector,
-            ctx.loopExecutorSelector
+            ctx.loopExecutorSelector,
+            ctx.orientationCycleExtender
           ),
 
         // Spell services - Layer 4.5a: Validators (no same-layer deps)

@@ -500,6 +500,10 @@ export function createSequenceState(services: SequenceStateServices) {
     get gridMode() {
       return coreState.gridMode;
     },
+    /** Direct read bypassing the spread-derived getter */
+    get orientationCycleCount(): 1 | 2 | 4 {
+      return coreState.orientationCycleCount;
+    },
     get arrowPositions() {
       return arrowState.arrowPositions;
     },

@@ -66,6 +66,11 @@ export function createSequenceCoreState() {
     get selectedSequenceId() {
       return state.selectedSequenceId;
     },
+    /** Direct read from raw state — bypasses the spread-derived getter to avoid
+     *  potential Svelte 5 proxy ownKeys issues with optional fields. */
+    get orientationCycleCount(): 1 | 2 | 4 {
+      return state.currentSequence?.orientationCycleCount ?? 1;
+    },
 
     // Computed
     get hasSequence() {
