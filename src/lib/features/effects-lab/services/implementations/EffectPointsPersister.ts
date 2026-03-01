@@ -43,6 +43,11 @@ export class EffectPointsPersister implements IEffectPointsPersister {
 	// ------------------------------------------------------------------
 
 	async load(): Promise<void> {
+		if (!auth.currentUser) {
+			this.readLocalStorage();
+			return;
+		}
+
 		try {
 			const docRef = await this.getDocRef();
 			const snap = await getDoc(docRef);
@@ -181,6 +186,8 @@ export class EffectPointsPersister implements IEffectPointsPersister {
 	// ------------------------------------------------------------------
 
 	private startSnapshotListener(): void {
+		if (!auth.currentUser) return;
+
 		this.getDocRef()
 			.then((docRef) => {
 				this.unsubscribe = onSnapshot(
