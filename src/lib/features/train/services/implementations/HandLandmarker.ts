@@ -30,7 +30,7 @@ export class HandLandmarker implements IHandLandmarker {
       const { HandLandmarker, FilesetResolver } = vision;
 
       const wasmFileset = await FilesetResolver.forVisionTasks(
-        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/wasm"
       );
 
       this._handLandmarker = await HandLandmarker.createFromOptions(

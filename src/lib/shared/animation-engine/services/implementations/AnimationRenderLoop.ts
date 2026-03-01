@@ -55,6 +55,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private lastFrameTime = 0; // Track RAF-to-RAF gap (true frame duration including browser overhead)
   private lastFrameDropLogTime = 0; // Rate-limit logs to avoid feedback loop with console recording extensions
   private static readonly FRAME_DROP_LOG_COOLDOWN_MS = 500; // Max 2 logs per second
+  private framesRenderedSinceStart = 0; // Warm-up grace period — skip frame drop logging for first N frames
+  private static readonly WARMUP_FRAMES = 10; // First 10 frames always have high RAF gaps
 
   // Idle auto-stop: after N consecutive idle frames (not playing, no needsRender, no
   // effects active), stop the RAF loop. Prevents 16+ arrange grid cells from each
@@ -105,6 +107,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
 
   start(getFrameParams: () => RenderFrameParams): void {
     this.getFrameParamsCallback = getFrameParams;
+    this.framesRenderedSinceStart = 0;
     if (this.rafId === null && this.renderer) {
       this.rafId = requestAnimationFrame(this.renderLoop);
     }
@@ -136,6 +139,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.consecutiveIdleFrames = 0; // Reset idle counter — new work incoming
     this.getFrameParamsCallback = getFrameParams;
     if (this.rafId === null && this.renderer) {
+      this.framesRenderedSinceStart = 0; // Reset warm-up on loop restart
       this.rafId = requestAnimationFrame(this.renderLoop);
     }
   }
@@ -466,10 +470,13 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
 
     // Frame drop diagnostics: log when frames exceed budget
     // Rate-limited to prevent feedback loops with console recording extensions (rrweb, Sentry, etc.)
-    // Skip logging on first frame after restart (rafGap is stale/meaningless) and when not playing
+    // Skip during warm-up (first N frames have high RAF gaps from browser initialization)
+    this.framesRenderedSinceStart++;
+    const isWarmingUp = this.framesRenderedSinceStart <= AnimationRenderLoop.WARMUP_FRAMES;
     const isFirstFrameAfterRestart = rafGap > 1000;
     if (
       this.frameDropLoggingEnabled &&
+      !isWarmingUp &&
       !isFirstFrameAfterRestart &&
       params.isPlaying &&
       (renderTime > AnimationRenderLoop.FRAME_DROP_THRESHOLD_MS ||
