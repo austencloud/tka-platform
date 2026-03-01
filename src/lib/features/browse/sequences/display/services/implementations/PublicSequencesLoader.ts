@@ -91,12 +91,13 @@ export class PublicSequencesLoader implements IBrowseLoader {
   }
 
   /**
-   * Invalidate cache to force reload
+   * Remove a single sequence from the cache by ID.
+   * Avoids a Firestore round-trip after a delete.
    */
-  invalidateCache(): void {
-    this.cachedSequences = null;
-    this.loadPromise = null;
-    this.sourceRefCache.clear();
+  removeFromCache(sequenceId: string): void {
+    if (this.cachedSequences) {
+      this.cachedSequences = this.cachedSequences.filter((s) => s.id !== sequenceId);
+    }
   }
 
   private async fetchPublicSequences(): Promise<SequenceData[]> {

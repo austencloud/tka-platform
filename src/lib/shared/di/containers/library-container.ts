@@ -15,7 +15,6 @@ import { PublicIndexSyncer } from "$lib/features/library/services/implementation
 import type { IAchievementManager } from "$lib/shared/gamification/services/contracts/IAchievementManager";
 import type { ITagManager } from "$lib/features/library/services/contracts/ITagManager";
 import type { IOrientationCycleDetector } from "$lib/features/create/generate/circular/services/contracts/IOrientationCycleDetector";
-import type { IPublicIndexSyncer } from "$lib/features/library/services/contracts/IPublicIndexSyncer";
 import type { ISharer } from "$lib/shared/share/services/contracts/ISharer";
 import type { IFirebaseVideoUploader } from "$lib/shared/share/services/contracts/IFirebaseVideoUploader";
 import type { IContentModerator } from "$lib/features/moderation/services/contracts/IContentModerator";
@@ -29,7 +28,6 @@ interface LibraryRepositoryDeps {
   achievementManager: IAchievementManager;
   tagManager: ITagManager;
   orientationCycleDetector: IOrientationCycleDetector;
-  publicIndexSyncer: IPublicIndexSyncer;
   conflictResolver?: IConflictResolver;
 }
 
@@ -60,7 +58,22 @@ export function createLibraryContainer(deps: {
   librarySaveService: LibrarySaveServiceDeps;
   publicIndexSyncer?: PublicIndexSyncerDeps;
 }) {
-  // Create PublicIndexSyncer first since LibraryRepository depends on it
+  // PublicIndexSyncer is the bridge between a user's private library and the public
+  // browse gallery. Every user's sequences live under users/{userId}/sequences — private
+  // by default. When a sequence is published, PublicIndexSyncer writes a denormalized
+  // copy into the top-level publicSequences collection, which is what the browse gallery
+  // reads. When a sequence is unpublished or deleted, it removes that copy so the
+  // gallery stays accurate.
+  //
+  // IMPORTANT: LibraryRepository MUST receive this same instance — do not pass null or
+  // create a second instance. Any code path that saves, updates visibility, or deletes
+  // a sequence goes through LibraryRepository, which delegates public-index side effects
+  // to this syncer. If it's missing, deletions and visibility changes will silently leave
+  // ghost entries in the public gallery (or fail outright on delete).
+  //
+  // Optional content moderation deps (contentModerator, contentAppealManager) gate which
+  // sequences are allowed into the public index. They can be omitted in environments
+  // where moderation is not needed (e.g. local dev, non-SSR containers).
   const publicIndexSyncer = new PublicIndexSyncer(
     deps.publicIndexSyncer?.contentModerator,
     deps.publicIndexSyncer?.contentAppealManager
@@ -74,7 +87,7 @@ export function createLibraryContainer(deps: {
         deps.libraryRepository.achievementManager,
         deps.libraryRepository.tagManager,
         deps.libraryRepository.orientationCycleDetector,
-        deps.libraryRepository.publicIndexSyncer,
+        publicIndexSyncer,
         deps.libraryRepository.conflictResolver
       ),
     librarySaveService: () =>

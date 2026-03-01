@@ -17,12 +17,6 @@ export interface BrowseSection {
   sortOrder: number;
 }
 
-// Simple delete confirmation data
-export interface SequenceDeleteConfirmationData {
-  sequence: SequenceData;
-  relatedSequences: SequenceData[];
-}
-
 // Essential types that are still needed by other modules
 export interface SectionConfig {
   groupBy:

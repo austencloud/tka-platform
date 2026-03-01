@@ -10,16 +10,12 @@
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import ErrorBanner from "../../../create/shared/components/ErrorBanner.svelte";
 
-  import type {
-    IBrowseEventHandler,
-    DeleteConfirmationData,
-  } from "../services/contracts/IBrowseEventHandler";
+  import type { IBrowseEventHandler } from "../services/contracts/IBrowseEventHandler";
   import CollectionsBrowsePanel from "../../collections/components/CollectionsBrowsePanel.svelte";
   import CreatorsPanel from "../../creators/components/CreatorsPanel.svelte";
   import UserProfilePanel from "../../creators/components/UserProfilePanel.svelte";
   import { creatorsViewState } from "../../creators/state/creators-view-state.svelte";
   import { createBrowseState } from "../state/browse-state-factory.svelte";
-  import BrowseDeleteDialog from "./BrowseDeleteDialog.svelte";
   import GalleryTab from "./GalleryTab.svelte";
   import { browseScrollState } from "../state/BrowseScrollState.svelte";
   import {
@@ -58,7 +54,6 @@
 
   // ✅ PURE RUNES: Local state
   let _selectedSequence = $state<SequenceData | null>(null);
-  let deleteConfirmationData = $state<DeleteConfirmationData | null>(null);
   let error = $state<string | null>(null);
   let activeTab = $state<BrowseModuleType>("gallery");
   let showAnimator = $state<boolean>(false);
@@ -249,9 +244,11 @@
     const currentEffectiveUserId = authState.effectiveUserId;
     const isInMyLibrary = sequenceSourceManager.current === "my-library";
 
-    // If user changed and we're viewing My Library, force reload
+    // If user changed and we're viewing My Library, reload for the new user.
+    // Clearing the cache ensures loadLibrarySequences fetches from Firestore
+    // instead of returning the previous user's data.
     if (currentEffectiveUserId !== lastEffectiveUserId && isInMyLibrary) {
-      // Force reload by temporarily clearing and re-setting
+      galleryState.invalidateLibraryCache();
       galleryState.loadLibrarySequences();
     }
 
@@ -348,10 +345,7 @@
       // Initialize event handler service with required parameters
       eventHandlerService.initialize({
         galleryState,
-        setSelectedSequence: (seq: SequenceData | null) =>
-          (_selectedSequence = seq),
-        setDeleteConfirmationData: (data: DeleteConfirmationData | null) =>
-          (deleteConfirmationData = data),
+        setSelectedSequence: (seq: SequenceData | null) => (_selectedSequence = seq),
         setError: (err: string | null) => (error = err),
       });
 
@@ -379,10 +373,13 @@
       console.warn("BrowseModule: Failed to resolve DeviceDetector", err);
     }
 
-    // Load initial data through gallery state (non-blocking)
-    // UI shows immediately with skeletons while data loads
+    // Load initial data using the user's last-selected source (non-blocking).
+    // The gallery toggle (Community / My Library) saves its state to localStorage
+    // via sequenceSourceManager. Reading from it here ensures that if the user was
+    // viewing their own library before navigating away, they return to their library
+    // instead of being reset to Community sequences on every visit.
     galleryState
-      .loadAllSequences()
+      .setSource(sequenceSourceManager.current)
       .then(() => {
         // Check if we have a pending sequence to view (e.g., from inbox message)
         const pendingSequenceId = consumePendingSequenceView();
@@ -439,17 +436,6 @@
     message={error}
     onDismiss={() => eventHandlerService?.handleErrorDismiss()}
     onRetry={() => eventHandlerService?.handleRetry()}
-  />
-{/if}
-
-<!-- Delete confirmation dialog -->
-{#if deleteConfirmationData}
-  <BrowseDeleteDialog
-    show={true}
-    confirmationData={deleteConfirmationData}
-    onConfirm={() =>
-      eventHandlerService?.handleDeleteConfirm(deleteConfirmationData)}
-    onCancel={() => eventHandlerService?.handleDeleteCancel()}
   />
 {/if}
 
