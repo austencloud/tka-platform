@@ -71,9 +71,12 @@ export class SequenceLoader implements ISequenceLoader {
       }
 
       const data = docSnap.data();
+      const keys = Object.keys(data);
+      console.log(`[SequenceLoader] Doc fields: ${keys.join(", ")}`);
       const steps = data["steps"] as Array<unknown> | undefined;
+      const sequence = data["sequence"] as Array<unknown> | undefined;
       const startPos = data["startPosition"] || data["startingPosition"];
-      console.log(`[SequenceLoader] Found doc. steps: ${steps?.length ?? 0}, startPosition: ${!!startPos}, gridMode: ${data["gridMode"]}`);
+      console.log(`[SequenceLoader] steps: ${steps?.length ?? 0}, sequence: ${sequence?.length ?? 0}, startPosition: ${!!startPos}, gridMode: ${data["gridMode"]}`);
 
       const result = this.convertToRawSequence(data);
       console.log(`[SequenceLoader] Converted to ${result.length} raw elements`);
@@ -88,11 +91,39 @@ export class SequenceLoader implements ISequenceLoader {
    * Convert a Firestore LibrarySequence document to the RawStepData[] format
    * expected by the Loop Labeler's detection pipeline.
    *
-   * Firestore stores StepData with `motions.blue`/`motions.red` and field names
-   * like `startLocation`, `endLocation`. The detection pipeline expects
-   * `blueAttributes`/`redAttributes` with abbreviated names like `startLoc`, `endLoc`.
+   * Handles two storage formats:
+   * 1. Legacy "beats" array: Already in raw format (blueAttributes/redAttributes, beat numbers).
+   *    Includes metadata at [0], start position at [1], steps at [2+].
+   * 2. Modern "steps" array: StepData format (motions.blue/motions.red, stepNumber).
+   *    Separate startPosition field. Needs conversion.
    */
   private convertToRawSequence(data: Record<string, unknown>): RawStepData[] {
+    // Check for raw-format array first (legacy "beats" field)
+    // These already contain metadata + start position + steps in RawStepData format
+    const beats = data["beats"] as Array<Record<string, unknown>> | undefined;
+    if (beats && beats.length > 0) {
+      const firstBeat = beats[0];
+      // Detect raw format: has "blueAttributes" or "beat" field, or is metadata (has "word")
+      const isRawFormat = firstBeat &&
+        ("blueAttributes" in firstBeat || "beat" in firstBeat || "word" in firstBeat);
+
+      if (isRawFormat) {
+        console.log(`[SequenceLoader] Using raw beats format (${beats.length} elements)`);
+        // Already in the right format — cast and return
+        return beats as unknown as RawStepData[];
+      }
+
+      // Library beats format: has "motions" with blue/red sub-objects and "beatNumber"
+      const isLibraryBeatsFormat = firstBeat &&
+        ("motions" in firstBeat && "beatNumber" in firstBeat);
+
+      if (isLibraryBeatsFormat) {
+        console.log(`[SequenceLoader] Using library beats format (${beats.length} elements)`);
+        return this.convertLibraryBeats(data, beats);
+      }
+    }
+
+    // Modern format: convert StepData to RawStepData
     const result: RawStepData[] = [];
 
     // Element 0: Metadata header
@@ -112,7 +143,7 @@ export class SequenceLoader implements ISequenceLoader {
       result.push({
         beat: 0,
         sequenceStartPosition: gridPos,
-        endPos: gridPos, // Start position's endPos = its own grid position (for circularity check)
+        endPos: gridPos,
         letter: (startPos["letter"] as string) || undefined,
         blueAttributes: motions ? this.convertMotionToRawAttributes(motions["blue"]) : undefined,
         redAttributes: motions ? this.convertMotionToRawAttributes(motions["red"]) : undefined,
@@ -121,7 +152,6 @@ export class SequenceLoader implements ISequenceLoader {
 
     // Elements 2+: Actual steps (beat >= 1)
     const steps = (data["steps"] || []) as Array<Record<string, unknown>>;
-    // Support nested sequenceData structure (some legacy docs)
     const seqData = data["sequenceData"] as Record<string, unknown> | undefined;
     const actualSteps = steps.length > 0
       ? steps
@@ -137,6 +167,42 @@ export class SequenceLoader implements ISequenceLoader {
         letter: (step["letter"] as string) || undefined,
         startPos: (step["startPosition"] as string) || undefined,
         endPos: (step["endPosition"] as string) || undefined,
+        blueAttributes: motions ? this.convertMotionToRawAttributes(motions["blue"]) : undefined,
+        redAttributes: motions ? this.convertMotionToRawAttributes(motions["red"]) : undefined,
+      });
+    }
+
+    return result;
+  }
+
+  /**
+   * Convert library-format beats (motions.blue/red + beatNumber) to RawStepData[].
+   * This format stores beats with full motion objects directly in a "beats" array,
+   * using "beatNumber" (not "beat") and "motions" (not "blueAttributes"/"redAttributes").
+   */
+  private convertLibraryBeats(
+    data: Record<string, unknown>,
+    beats: Array<Record<string, unknown>>
+  ): RawStepData[] {
+    const result: RawStepData[] = [];
+
+    // Element 0: Metadata header from document-level fields
+    result.push({
+      word: (data["word"] as string) || (data["name"] as string) || "",
+      author: (data["author"] as string) || "",
+      level: (data["level"] as number) || undefined,
+      gridMode: (data["gridMode"] as string) || "diamond",
+      isCircular: (data["isCircular"] as boolean) ?? false,
+    });
+
+    // Convert each beat to RawStepData
+    for (const beat of beats) {
+      const motions = beat["motions"] as Record<string, Record<string, unknown>> | undefined;
+      const beatNumber = Number(beat["beatNumber"]) || 0;
+
+      result.push({
+        beat: beatNumber,
+        letter: (beat["letter"] as string) || undefined,
         blueAttributes: motions ? this.convertMotionToRawAttributes(motions["blue"]) : undefined,
         redAttributes: motions ? this.convertMotionToRawAttributes(motions["red"]) : undefined,
       });
