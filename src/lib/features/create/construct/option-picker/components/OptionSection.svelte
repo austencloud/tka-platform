@@ -21,6 +21,9 @@ Single responsibility: Combine header and grid for a letter type section.
     currentSequence?: PictographData[];
     // Enable FLIP animation for filtering (desktop only)
     enableFlip?: boolean;
+    // Thread slot tracking
+    onSlotClicked?: (typeSection: string, slotIndex: number) => void;
+    continuationIndex?: number | null;
   }
 
   const {
@@ -33,6 +36,8 @@ Single responsibility: Combine header and grid for a letter type section.
     onSelect,
     currentSequence = [],
     enableFlip = false,
+    onSlotClicked,
+    continuationIndex = null,
   }: Props = $props();
 </script>
 
@@ -49,6 +54,9 @@ Single responsibility: Combine header and grid for a letter type section.
     {onSelect}
     {currentSequence}
     {enableFlip}
+    typeSectionTitle={letterType}
+    {onSlotClicked}
+    {continuationIndex}
   />
 </div>
 
