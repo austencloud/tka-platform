@@ -298,42 +298,87 @@ const MOTION_LABELS: Record<MotionType, string> = {
 
 export class AsciiRenderer implements IAsciiRenderer {
 	renderPictograph(data: RetroPictographData, options?: AsciiRenderOptions): string[] {
+		const { buffer, height } = this.renderToBuffer(data, options);
+		return this.bufferToHtml(buffer, height);
+	}
+
+	renderSequence(steps: RetroPictographData[], options?: AsciiRenderOptions): string[] {
+		if (steps.length === 0) return this.renderPlaceholder();
+		if (steps.length === 1) return this.renderPictograph(steps[0]!, options);
+
+		// Render each step to its own buffer
+		const rendered = steps.map((step) => this.renderToBuffer(step, options));
+		const maxHeight = Math.max(...rendered.map((r) => r.height));
+
+		// Build combined buffer: step | separator | step | separator | ...
+		const SEP_WIDTH = 3; // " │ "
+		const totalWidth =
+			rendered.reduce((sum, r) => sum + r.buffer[0]!.length, 0) +
+			SEP_WIDTH * (rendered.length - 1);
+
+		const combined = this.createBuffer(totalWidth, maxHeight);
+		let colOffset = 0;
+
+		for (let s = 0; s < rendered.length; s++) {
+			const { buffer, height } = rendered[s]!;
+			const rowOffset = Math.floor((maxHeight - height) / 2);
+
+			// Copy this step's buffer into the combined buffer
+			for (let row = 0; row < height; row++) {
+				for (let col = 0; col < buffer[0]!.length; col++) {
+					const cell = buffer[row]![col]!;
+					if (cell.char !== " " || cell.color !== null) {
+						combined[row + rowOffset]![colOffset + col] = cell;
+					}
+				}
+			}
+
+			colOffset += buffer[0]!.length;
+
+			// Add separator column between steps (not after last)
+			if (s < rendered.length - 1) {
+				const sepCol = colOffset + 1; // middle of the 3-char separator
+				for (let row = 0; row < maxHeight; row++) {
+					this.setCell(combined, sepCol, row, "\u2502", COLOR_GRAY, PRIORITY_GRID);
+				}
+				colOffset += SEP_WIDTH;
+			}
+		}
+
+		return this.bufferToHtml(combined, maxHeight);
+	}
+
+	/** Render a pictograph to an internal Cell buffer (before HTML conversion). */
+	private renderToBuffer(
+		data: RetroPictographData,
+		options?: AsciiRenderOptions,
+	): { buffer: Cell[][]; height: number } {
 		const isBox = data.gridMode === GridMode.BOX;
 		const outerCoords = isBox ? BOX_OUTER : DIAMOND_OUTER;
 		const handCoords = isBox ? BOX_HAND : DIAMOND_HAND;
 		const height = isBox ? BOX_HEIGHT : DIAMOND_HEIGHT;
 		const layers = options?.layers;
 
-		// Step 1: Allocate buffer
 		const buffer = this.createBuffer(BUFFER_WIDTH, height);
 
-		// Step 2: Draw grid skeleton (layer: grid)
 		if (!layers || layers.grid !== false) {
 			if (isBox) {
 				this.drawBoxGrid(buffer, height);
 			} else {
 				this.drawDiamondGrid(buffer, height);
 			}
-
-			// Center marker
 			const center = outerCoords[GridLocation.CENTER];
 			this.setCell(buffer, center.col, center.row, "o", COLOR_WHITE, PRIORITY_GRID);
-
-			// Outer perimeter markers (always visible, hands don't replace these)
 			this.placePositionDots(buffer, outerCoords, isBox);
-
-			// Inner hand-point dots (hands overwrite these via priority)
 			this.placeHandPointDots(buffer, handCoords, isBox);
 		}
 
-		// Step 3: Overlay hand markers at hand points (layer: hands)
 		if (!layers || layers.hands !== false) {
 			this.placeHand(buffer, data.blueHand, handCoords);
 			this.placeHand(buffer, data.redHand, handCoords);
 			this.markOverlaps(buffer, data, handCoords);
 		}
 
-		// Step 4: Draw motion arrows (layer: arrows)
 		if (!layers || layers.arrows !== false) {
 			if (data.blueHand.motionType !== MotionType.STATIC) {
 				this.drawMotionPath(buffer, data.blueHand, handCoords);
@@ -343,14 +388,12 @@ export class AsciiRenderer implements IAsciiRenderer {
 			}
 		}
 
-		// Step 5: Place orientation indicators (layer: staves)
 		if (!layers || layers.staves !== false) {
 			this.placeOrientation(buffer, data.blueHand, handCoords, BUFFER_WIDTH, height);
 			this.placeOrientation(buffer, data.redHand, handCoords, BUFFER_WIDTH, height);
 		}
 
-		// Step 6: Convert to HTML
-		return this.bufferToHtml(buffer, height);
+		return { buffer, height };
 	}
 
 	renderPlaceholder(): string[] {
