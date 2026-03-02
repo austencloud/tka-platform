@@ -38,6 +38,7 @@
     onToggleSearch: () => void;
     onResetTabIntro: () => void;
     onPreviewFirstRun: () => void;
+    onPreviewCreateTutorial: () => void;
     onResetHelpDiscovery: () => void;
     onClearCloudThumbnails: () => void;
     isClearingThumbnails: boolean;
@@ -67,6 +68,7 @@
     onToggleSearch,
     onResetTabIntro,
     onPreviewFirstRun,
+    onPreviewCreateTutorial,
     onResetHelpDiscovery,
     onClearCloudThumbnails,
     isClearingThumbnails,
@@ -88,6 +90,11 @@
 
   function handleFirstRun() {
     onPreviewFirstRun();
+    isActionsOpen = false;
+  }
+
+  function handleCreateTutorial() {
+    onPreviewCreateTutorial();
     isActionsOpen = false;
   }
 
@@ -247,6 +254,15 @@
             >
               <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
               <span>Preview First Run Wizard</span>
+            </button>
+
+            <button
+              type="button"
+              class="dropdown-item"
+              onclick={handleCreateTutorial}
+            >
+              <i class="fas fa-graduation-cap" aria-hidden="true"></i>
+              <span>Preview Create Tutorial</span>
             </button>
 
             <button

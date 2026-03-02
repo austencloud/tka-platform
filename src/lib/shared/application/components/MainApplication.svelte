@@ -476,11 +476,11 @@
       <FirstRunWizard
         onComplete={() => {
           firstRunState.markCompleted();
-          appEntryState.startEntrySequence();
+          appEntryState.startEntrySequence(true);
         }}
         onSkip={() => {
           firstRunState.markSkipped();
-          appEntryState.startEntrySequence();
+          appEntryState.startEntrySequence(true);
         }}
       />
     {/if}

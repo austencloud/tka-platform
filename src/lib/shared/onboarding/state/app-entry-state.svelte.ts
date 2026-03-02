@@ -74,8 +74,8 @@ function createAppEntryState() {
      * Called when the first-run wizard finishes.
      * Kicks off the wizard exit -> create tutorial sequence.
      */
-    startEntrySequence() {
-      if (state.hasCompleted) {
+    startEntrySequence(force = false) {
+      if (state.hasCompleted && !force) {
         state.phase = "complete";
         return;
       }
