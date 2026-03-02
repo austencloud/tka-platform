@@ -30,6 +30,7 @@ import {
 	MotionType,
 	MotionColor,
 	Orientation,
+	RotationDirection,
 } from "../../../shared/domain/pictograph-types";
 
 // ============================================================================
@@ -691,7 +692,8 @@ export class AsciiRenderer implements IAsciiRenderer {
 	// MOTION ARROWS
 	//
 	// Draw directional characters along the path from start to end location.
-	// Uses Bresenham-style stepping through the character buffer.
+	// DASH motions use straight lines. PRO/ANTI motions use curved arcs
+	// whose curvature direction matches the rotation direction (CW/CCW).
 	// ========================================================================
 
 	private drawMotionPath(
@@ -705,33 +707,133 @@ export class AsciiRenderer implements IAsciiRenderer {
 		const end = coords[hand.endLocation];
 		const color = hand.color === MotionColor.BLUE ? COLOR_BLUE : COLOR_RED;
 
+		const isCurved =
+			hand.rotationDirection !== RotationDirection.NO_ROTATION &&
+			hand.motionType !== MotionType.DASH;
+
+		if (isCurved) {
+			this.drawCurvedArrow(buffer, start, end, hand.rotationDirection, color);
+		} else {
+			this.drawStraightArrow(buffer, start, end, color);
+		}
+	}
+
+	/** Straight arrow for DASH motions and fallback */
+	private drawStraightArrow(
+		buffer: Cell[][],
+		start: GridCoord,
+		end: GridCoord,
+		color: string,
+	): void {
 		const dx = end.col - start.col;
 		const dy = end.row - start.row;
-
-		// Number of steps along the path (use the larger dimension)
 		const steps = Math.max(Math.abs(dx), Math.abs(dy));
 		if (steps === 0) return;
 
 		const stepX = dx / steps;
 		const stepY = dy / steps;
-
-		// Get the arrow character for this direction
 		const arrowChar = getArrowChar(dx, dy);
 
-		// Place arrow characters along the path, skipping start and end cells
 		for (let i = 1; i < steps; i++) {
-			const col = Math.round(start.col + stepX * i);
-			const row = Math.round(start.row + stepY * i);
-
-			this.setCell(buffer, col, row, arrowChar, color, PRIORITY_ARROW);
+			this.setCell(
+				buffer,
+				Math.round(start.col + stepX * i),
+				Math.round(start.row + stepY * i),
+				arrowChar, color, PRIORITY_ARROW,
+			);
 		}
 
-		// Place arrowhead at the last cell before the end position
 		if (steps >= 2) {
-			const arrowheadCol = Math.round(start.col + stepX * (steps - 1));
-			const arrowheadRow = Math.round(start.row + stepY * (steps - 1));
 			const headChar = this.getArrowheadChar(dx, dy);
-			this.setCell(buffer, arrowheadCol, arrowheadRow, headChar, color, PRIORITY_ARROW);
+			this.setCell(
+				buffer,
+				Math.round(start.col + stepX * (steps - 1)),
+				Math.round(start.row + stepY * (steps - 1)),
+				headChar, color, PRIORITY_ARROW,
+			);
+		}
+	}
+
+	/**
+	 * Curved arrow for PRO/ANTI motions using a quadratic Bezier arc.
+	 *
+	 * The control point is offset perpendicular to the start→end line:
+	 *   CW rotation → bulge to the RIGHT of the travel direction
+	 *   CCW rotation → bulge to the LEFT of the travel direction
+	 *
+	 * This matches the real pictograph renderer where CW arcs sweep outward
+	 * and CCW arcs hug inward.
+	 */
+	private drawCurvedArrow(
+		buffer: Cell[][],
+		start: GridCoord,
+		end: GridCoord,
+		rotDir: RotationDirection,
+		color: string,
+	): void {
+		const dx = end.col - start.col;
+		const dy = end.row - start.row;
+		const dist = Math.sqrt(dx * dx + dy * dy);
+		if (dist < 2) return;
+
+		// Perpendicular offset direction (screen coords, y-down):
+		//   Right of travel = (-dy, dx), Left of travel = (dy, -dx)
+		const sign = rotDir === RotationDirection.CLOCKWISE ? 1 : -1;
+		const perpX = -dy * sign;
+		const perpY = dx * sign;
+		const perpLen = Math.sqrt(perpX * perpX + perpY * perpY);
+
+		// Control point: midpoint offset by ~40% of distance perpendicular to line
+		const bulge = dist * 0.4;
+		const cx = (start.col + end.col) / 2 + (perpX / perpLen) * bulge;
+		const cy = (start.row + end.row) / 2 + (perpY / perpLen) * bulge;
+
+		// Sample the quadratic Bezier: P(t) = (1-t)²·start + 2(1-t)t·control + t²·end
+		const numSamples = Math.max(Math.round(dist * 1.2), 12);
+		const points: { col: number; row: number }[] = [];
+		for (let i = 0; i <= numSamples; i++) {
+			const t = i / numSamples;
+			const u = 1 - t;
+			points.push({
+				col: u * u * start.col + 2 * u * t * cx + t * t * end.col,
+				row: u * u * start.row + 2 * u * t * cy + t * t * end.row,
+			});
+		}
+
+		// Rasterize: place characters along the curve, skipping start/end cells
+		const placed = new Set<string>();
+		for (let i = 1; i < points.length - 1; i++) {
+			const col = Math.round(points[i]!.col);
+			const row = Math.round(points[i]!.row);
+			const key = `${col},${row}`;
+			if (placed.has(key)) continue;
+			placed.add(key);
+
+			// Skip the start and end cells
+			if (col === start.col && row === start.row) continue;
+			if (col === end.col && row === end.row) continue;
+
+			// Local tangent direction for character selection
+			const next = points[Math.min(i + 1, points.length - 1)]!;
+			const prev = points[Math.max(i - 1, 0)]!;
+			const ldx = next.col - prev.col;
+			const ldy = next.row - prev.row;
+			const ch = getArrowChar(ldx, ldy);
+
+			this.setCell(buffer, col, row, ch, color, PRIORITY_ARROW);
+		}
+
+		// Arrowhead at the last unique cell before the end
+		if (points.length >= 3) {
+			const lastPt = points[points.length - 2]!;
+			const headCol = Math.round(lastPt.col);
+			const headRow = Math.round(lastPt.row);
+			if (headCol !== end.col || headRow !== end.row) {
+				const arrDx = end.col - headCol;
+				const arrDy = end.row - headRow;
+				const headChar = this.getArrowheadChar(arrDx, arrDy);
+				this.setCell(buffer, headCol, headRow, headChar, color, PRIORITY_ARROW);
+			}
 		}
 	}
 
@@ -770,17 +872,22 @@ export class AsciiRenderer implements IAsciiRenderer {
 
 	/**
 	 * Max reach per direction to prevent staves from spanning the entire buffer
-	 * when no reference point is on the staff axis. Scaled for aspect ratio.
+	 * when no reference point is on the staff axis.
+	 *
+	 * Calibrated to the hand ring: hand positions sit ~50% between center and
+	 * outer, so the staff half-length should be about 60-70% of that distance
+	 * to stay within the grid. Grid-ref detection further limits reach when
+	 * reference points lie on the staff axis.
 	 */
 	private static getMaxReach(lineChar: string): number {
 		switch (lineChar) {
 			case "-":
-				return 18;
+				return 9;
 			case "/":
 			case "\\":
-				return 8;
+				return 3;
 			default:
-				return 10;
+				return 5;
 		}
 	}
 
