@@ -28,6 +28,7 @@ import { TrailCapturer } from "$lib/features/compose/services/implementations/Tr
 import { AnimationPathCache } from "$lib/features/compose/services/implementations/AnimationPathCache";
 import { AnimationStorageManager } from "$lib/features/compose/services/implementations/AnimationStorageManager";
 import { VideoExporter } from "$lib/features/compose/services/implementations/VideoExporter";
+import { BackgroundVideoEncoder } from "$lib/features/compose/services/implementations/BackgroundVideoEncoder";
 import { DarkModeProvider } from "$lib/shared/animation-engine/services/implementations/DarkModeProvider";
 import { PropPositionCalculator } from "$lib/shared/animation-engine/services/implementations/PropPositionCalculator";
 import { Animator } from "$lib/shared/application/services/implementations/Animator";
@@ -95,6 +96,7 @@ export function createAnimatorContainer(externalDeps: AnimatorContainerDependenc
       animationPathCache: () => new AnimationPathCache(),
       animationStorageManager: () => new AnimationStorageManager(),
       videoExporter: () => new VideoExporter(),
+      backgroundVideoEncoder: () => new BackgroundVideoEncoder(),
       darkModeProvider: () => new DarkModeProvider(),
       propPositionCalculator: () => new PropPositionCalculator(),
       animator: () => new Animator(),
@@ -152,7 +154,8 @@ export function createAnimatorContainer(externalDeps: AnimatorContainerDependenc
           ctx.canvasRenderer,
           externalDeps.fileDownloader,
           ctx.compositeVideoRenderer,
-          ctx.exportGlyphPrerenderer
+          ctx.exportGlyphPrerenderer,
+          ctx.backgroundVideoEncoder
         ),
     }))
     .add(() => ({
