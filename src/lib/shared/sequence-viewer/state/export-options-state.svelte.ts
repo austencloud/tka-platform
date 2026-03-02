@@ -6,7 +6,18 @@
  */
 
 // Video FPS options
-export type VideoFps = 30 | 50 | 60;
+export type VideoFps = 30 | 60 | 120;
+
+// Video resolution options
+export type VideoResolution = 720 | 1080;
+
+// Effect overrides for video export
+export interface EffectOverride {
+  fire: boolean;
+  led: boolean;
+  trails: boolean;
+  charcoal: boolean;
+}
 
 // Grid step size options (pixels)
 export type GridStepSize = 80 | 120 | 160;
@@ -17,6 +28,8 @@ export type CompositeOrientation = "horizontal" | "vertical";
 export interface VideoExportOptions {
   fps: VideoFps;
   loopCount: number;
+  resolution: VideoResolution;
+  effectOverrides: EffectOverride | null; // null = use viewer state
 }
 
 export interface SplitExportOptions extends VideoExportOptions {
@@ -46,13 +59,17 @@ const STORAGE_KEY = "tka_export_options";
 
 // Default values
 const DEFAULT_VIDEO_OPTIONS: VideoExportOptions = {
-  fps: 30,
+  fps: 60,
   loopCount: 1,
+  resolution: 1080,
+  effectOverrides: null,
 };
 
 const DEFAULT_SPLIT_OPTIONS: SplitExportOptions = {
-  fps: 30,
+  fps: 60,
   loopCount: 1,
+  resolution: 1080,
+  effectOverrides: null,
   compositeOrientation: "horizontal",
   gridStepSize: 120,
   showStepNumbers: true,
@@ -118,10 +135,14 @@ export function createExportOptionsState() {
   // Video export options (animation-only mode)
   let videoFps = $state<VideoFps>(stored.video.fps);
   let videoLoopCount = $state(stored.video.loopCount);
+  let videoResolution = $state<VideoResolution>(stored.video.resolution ?? 1080);
+  let videoEffectOverrides = $state<EffectOverride | null>(stored.video.effectOverrides ?? null);
 
   // Split export options (animation + grid composite)
   let splitFps = $state<VideoFps>(stored.split.fps);
   let splitLoopCount = $state(stored.split.loopCount);
+  let splitResolution = $state<VideoResolution>(stored.split.resolution ?? 1080);
+  let splitEffectOverrides = $state<EffectOverride | null>(stored.split.effectOverrides ?? null);
   let splitOrientation = $state<CompositeOrientation>(stored.split.compositeOrientation);
   let splitGridStepSize = $state<GridStepSize>(stored.split.gridStepSize);
   let splitShowStepNumbers = $state(stored.split.showStepNumbers);
@@ -142,10 +163,14 @@ export function createExportOptionsState() {
       video: {
         fps: videoFps,
         loopCount: videoLoopCount,
+        resolution: videoResolution,
+        effectOverrides: videoEffectOverrides,
       },
       split: {
         fps: splitFps,
         loopCount: splitLoopCount,
+        resolution: splitResolution,
+        effectOverrides: splitEffectOverrides,
         compositeOrientation: splitOrientation,
         gridStepSize: splitGridStepSize,
         showStepNumbers: splitShowStepNumbers,
@@ -167,6 +192,8 @@ export function createExportOptionsState() {
     // Video options (getters)
     get videoFps() { return videoFps; },
     get videoLoopCount() { return videoLoopCount; },
+    get videoResolution() { return videoResolution; },
+    get videoEffectOverrides() { return videoEffectOverrides; },
 
     // Split options (getters)
     get splitFps() { return splitFps; },
@@ -192,6 +219,14 @@ export function createExportOptionsState() {
     },
     setVideoLoopCount(count: number) {
       videoLoopCount = Math.max(1, Math.min(10, count));
+      persist();
+    },
+    setVideoResolution(res: VideoResolution) {
+      videoResolution = res;
+      persist();
+    },
+    setVideoEffectOverrides(overrides: EffectOverride | null) {
+      videoEffectOverrides = overrides;
       persist();
     },
 
@@ -256,6 +291,8 @@ export function createExportOptionsState() {
       return {
         fps: videoFps,
         loopCount: videoLoopCount,
+        resolution: videoResolution,
+        effectOverrides: videoEffectOverrides,
       };
     },
 
@@ -263,6 +300,8 @@ export function createExportOptionsState() {
       return {
         fps: splitFps,
         loopCount: splitLoopCount,
+        resolution: splitResolution,
+        effectOverrides: splitEffectOverrides,
         compositeOrientation: splitOrientation,
         gridStepSize: splitGridStepSize,
         showStepNumbers: splitShowStepNumbers,
@@ -286,8 +325,12 @@ export function createExportOptionsState() {
     resetToDefaults() {
       videoFps = DEFAULT_VIDEO_OPTIONS.fps;
       videoLoopCount = DEFAULT_VIDEO_OPTIONS.loopCount;
+      videoResolution = DEFAULT_VIDEO_OPTIONS.resolution;
+      videoEffectOverrides = DEFAULT_VIDEO_OPTIONS.effectOverrides;
       splitFps = DEFAULT_SPLIT_OPTIONS.fps;
       splitLoopCount = DEFAULT_SPLIT_OPTIONS.loopCount;
+      splitResolution = DEFAULT_SPLIT_OPTIONS.resolution;
+      splitEffectOverrides = DEFAULT_SPLIT_OPTIONS.effectOverrides;
       splitOrientation = DEFAULT_SPLIT_OPTIONS.compositeOrientation;
       splitGridStepSize = DEFAULT_SPLIT_OPTIONS.gridStepSize;
       splitShowStepNumbers = DEFAULT_SPLIT_OPTIONS.showStepNumbers;
