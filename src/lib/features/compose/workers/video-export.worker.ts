@@ -3,16 +3,46 @@
 /**
  * Video Export Web Worker
  *
- * Offloads WebCodecs encoding and MP4 muxing to a background thread so the
- * main thread stays responsive during export. Mirrors the codec selection,
- * keyframe interval, and timestamp handling from WebCodecsVideoEncoder.ts.
+ * Offloads video encoding and MP4 muxing to a background thread so the main
+ * thread stays responsive during export.
  *
- * Communication protocol uses structured messages (see ExportWorkerMessage /
- * ExportWorkerResponse types below). The final MP4 ArrayBuffer is transferred
- * (zero-copy) back to the main thread.
+ * Two encoding paths:
+ *   1. WebCodecs (Chrome, Edge, Safari 16.4+) -- hardware-accelerated H.264
+ *      via VideoEncoder + mp4-muxer.
+ *   2. WASM fallback (Firefox, older browsers) -- h264-mp4-encoder provides
+ *      a pure-WASM H.264 encoder that produces MP4 directly.
+ *
+ * The path is chosen at config time based on whether VideoEncoder exists in
+ * the worker global scope. Both paths post identical message types back to
+ * the main thread (ready, progress, complete, error).
  */
 
 import { Muxer, ArrayBufferTarget } from "mp4-muxer";
+
+// ---------------------------------------------------------------------------
+// WebCodecs feature detection
+// ---------------------------------------------------------------------------
+
+const hasWebCodecs = typeof VideoEncoder !== "undefined";
+
+// ---------------------------------------------------------------------------
+// h264-mp4-encoder type (mirrors WasmVideoEncoder.ts)
+// ---------------------------------------------------------------------------
+
+type H264MP4Encoder = {
+  width: number;
+  height: number;
+  frameRate: number;
+  kbps: number;
+  groupOfPictures: number;
+  quantizationParameter: number;
+  initialize: () => void;
+  addFrameRgba: (data: Uint8ClampedArray) => void;
+  finalize: () => void;
+  FS: { readFile: (filename: string) => Uint8Array };
+  outputFilename: string;
+  delete: () => void;
+};
 
 // ---------------------------------------------------------------------------
 // Message types -- IN (main thread -> worker)
@@ -87,15 +117,28 @@ export interface ExportConfig {
 }
 
 // ---------------------------------------------------------------------------
-// Worker state
+// Worker state -- WebCodecs path
 // ---------------------------------------------------------------------------
 
 let encoder: VideoEncoder | null = null;
 let muxer: Muxer<ArrayBufferTarget> | null = null;
+
+// ---------------------------------------------------------------------------
+// Worker state -- WASM fallback path
+// ---------------------------------------------------------------------------
+
+let wasmEncoder: H264MP4Encoder | null = null;
+
+// ---------------------------------------------------------------------------
+// Worker state -- shared
+// ---------------------------------------------------------------------------
+
 let cancelled = false;
 let frameDurationMicros = 0;
 let encoderWidth = 0;
 let encoderHeight = 0;
+let sourceWidth = 0;
+let sourceHeight = 0;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -126,6 +169,48 @@ function ensureEven(value: number): number {
 }
 
 /**
+ * Pad RGBA pixel data from source dimensions to encoder dimensions.
+ * Extra pixels are filled with opaque black (0, 0, 0, 255).
+ * Returns the original data if no padding is needed.
+ */
+function padRgbaData(
+  src: Uint8ClampedArray,
+  srcW: number,
+  srcH: number,
+  dstW: number,
+  dstH: number
+): Uint8ClampedArray {
+  if (srcW === dstW && srcH === dstH) return src;
+
+  const dst = new Uint8ClampedArray(dstW * dstH * 4);
+
+  // Copy source rows into the padded buffer
+  const srcRowBytes = srcW * 4;
+  const dstRowBytes = dstW * 4;
+  for (let row = 0; row < srcH; row++) {
+    dst.set(
+      src.subarray(row * srcRowBytes, row * srcRowBytes + srcRowBytes),
+      row * dstRowBytes
+    );
+    // Fill extra columns with opaque black
+    for (let col = srcW; col < dstW; col++) {
+      const idx = row * dstRowBytes + col * 4;
+      dst[idx + 3] = 255; // alpha = opaque, RGB already 0
+    }
+  }
+
+  // Fill extra rows with opaque black
+  for (let row = srcH; row < dstH; row++) {
+    for (let col = 0; col < dstW; col++) {
+      const idx = row * dstRowBytes + col * 4;
+      dst[idx + 3] = 255;
+    }
+  }
+
+  return dst;
+}
+
+/**
  * Post a response back to the main thread.
  * For "complete" messages, the buffer is transferred (zero-copy) rather than
  * copied, which avoids duplicating potentially large MP4 data in memory.
@@ -145,6 +230,7 @@ function post(response: ExportWorkerResponse): void {
 // ---------------------------------------------------------------------------
 
 function cleanup(): void {
+  // WebCodecs cleanup
   if (encoder) {
     try {
       encoder.close();
@@ -154,25 +240,29 @@ function cleanup(): void {
     encoder = null;
   }
   muxer = null;
+
+  // WASM cleanup
+  if (wasmEncoder) {
+    try {
+      wasmEncoder.delete();
+    } catch {
+      // Ignore errors during cleanup
+    }
+    wasmEncoder = null;
+  }
+
   frameDurationMicros = 0;
   encoderWidth = 0;
   encoderHeight = 0;
+  sourceWidth = 0;
+  sourceHeight = 0;
 }
 
 // ---------------------------------------------------------------------------
-// Message handlers
+// Message handlers -- WebCodecs path
 // ---------------------------------------------------------------------------
 
-async function handleConfig(config: ExportConfig): Promise<void> {
-  cancelled = false;
-
-  // Clean up any leftover state from a previous (possibly cancelled) export
-  cleanup();
-
-  encoderWidth = ensureEven(config.width);
-  encoderHeight = ensureEven(config.height);
-  frameDurationMicros = Math.round(1_000_000 / config.fps);
-
+async function handleConfigWebCodecs(config: ExportConfig): Promise<void> {
   // Create MP4 muxer with in-memory fast-start for instant playback
   muxer = new Muxer({
     target: new ArrayBufferTarget(),
@@ -208,12 +298,10 @@ async function handleConfig(config: ExportConfig): Promise<void> {
     bitrate: config.bitrate,
     framerate: config.fps,
   });
-
-  post({ type: "ready" });
 }
 
-function handleFrame(msg: FrameMessage): void {
-  if (cancelled || !encoder) return;
+function handleFrameWebCodecs(msg: FrameMessage): void {
+  if (!encoder) return;
 
   // If the source dimensions differ from the encoder dimensions (odd -> even
   // rounding), create a new ImageData with the padded size. Extra pixels are
@@ -237,8 +325,11 @@ function handleFrame(msg: FrameMessage): void {
   }
 
   // Create VideoFrame from the (possibly padded) ImageData.
-  // Timestamp comes from the main thread; duration from the configured fps.
-  const frame = new VideoFrame(frameData, {
+  // Use the buffer overload with VideoFrameBufferInit for correct typing.
+  const frame = new VideoFrame(frameData.data.buffer, {
+    format: "RGBA",
+    codedWidth: frameData.width,
+    codedHeight: frameData.height,
     timestamp: msg.timestampMicros,
     duration: frameDurationMicros,
   });
@@ -247,31 +338,150 @@ function handleFrame(msg: FrameMessage): void {
 
   // Close immediately to free GPU/memory resources
   frame.close();
+}
+
+async function handleFinishWebCodecs(): Promise<void> {
+  if (!encoder || !muxer) {
+    post({ type: "error", error: "Cannot finish: encoder not active" });
+    return;
+  }
+
+  // Flush all remaining frames through the encoder pipeline
+  await encoder.flush();
+
+  // Finalize the MP4 container (writes moov atom)
+  muxer.finalize();
+
+  // Extract the completed buffer
+  const buffer = muxer.target.buffer;
+
+  // Clean up encoder/muxer state before posting
+  cleanup();
+
+  // Transfer (zero-copy) the buffer back to the main thread
+  post({ type: "complete", buffer });
+}
+
+// ---------------------------------------------------------------------------
+// Message handlers -- WASM fallback path
+// ---------------------------------------------------------------------------
+
+async function handleConfigWasm(config: ExportConfig): Promise<void> {
+  // Dynamically import h264-mp4-encoder (WASM module)
+  const h264Mp4Encoder = await import("h264-mp4-encoder");
+  const createEncoder =
+    h264Mp4Encoder.createH264MP4Encoder ??
+    (
+      h264Mp4Encoder.default as {
+        createH264MP4Encoder: () => Promise<H264MP4Encoder>;
+      }
+    )?.createH264MP4Encoder;
+
+  if (!createEncoder) {
+    throw new Error(
+      "Failed to load h264-mp4-encoder: createH264MP4Encoder not found"
+    );
+  }
+
+  wasmEncoder = await createEncoder();
+
+  wasmEncoder.width = encoderWidth;
+  wasmEncoder.height = encoderHeight;
+  wasmEncoder.frameRate = config.fps;
+  wasmEncoder.kbps = Math.round(config.bitrate / 1000);
+  wasmEncoder.groupOfPictures = 30;
+  wasmEncoder.quantizationParameter = 20;
+
+  wasmEncoder.initialize();
+}
+
+function handleFrameWasm(msg: FrameMessage): void {
+  if (!wasmEncoder) return;
+
+  // Pad to even dimensions if needed, then pass RGBA data to the WASM encoder
+  const paddedData = padRgbaData(
+    msg.imageData.data,
+    msg.imageData.width,
+    msg.imageData.height,
+    encoderWidth,
+    encoderHeight
+  );
+
+  wasmEncoder.addFrameRgba(paddedData);
+}
+
+async function handleFinishWasm(): Promise<void> {
+  if (!wasmEncoder) {
+    post({ type: "error", error: "Cannot finish: WASM encoder not active" });
+    return;
+  }
+
+  // Finalize encoding -- produces the complete MP4
+  wasmEncoder.finalize();
+
+  // Read the output from the WASM virtual filesystem
+  const rawBuffer = wasmEncoder.FS.readFile(wasmEncoder.outputFilename);
+
+  // Create a proper ArrayBuffer copy (rawBuffer is backed by WASM memory
+  // which becomes invalid after delete)
+  const buffer = new Uint8Array(rawBuffer).buffer;
+
+  // Clean up WASM state before posting
+  cleanup();
+
+  // Transfer (zero-copy) the buffer back to the main thread
+  post({ type: "complete", buffer });
+}
+
+// ---------------------------------------------------------------------------
+// Unified message handlers (dispatch to WebCodecs or WASM)
+// ---------------------------------------------------------------------------
+
+async function handleConfig(config: ExportConfig): Promise<void> {
+  cancelled = false;
+
+  // Clean up any leftover state from a previous (possibly cancelled) export
+  cleanup();
+
+  encoderWidth = ensureEven(config.width);
+  encoderHeight = ensureEven(config.height);
+  sourceWidth = config.width;
+  sourceHeight = config.height;
+  frameDurationMicros = Math.round(1_000_000 / config.fps);
+
+  if (hasWebCodecs) {
+    await handleConfigWebCodecs(config);
+  } else {
+    await handleConfigWasm(config);
+  }
+
+  post({ type: "ready" });
+}
+
+function handleFrame(msg: FrameMessage): void {
+  if (cancelled) return;
+
+  if (hasWebCodecs) {
+    handleFrameWebCodecs(msg);
+  } else {
+    handleFrameWasm(msg);
+  }
 
   post({ type: "progress", frameIndex: msg.frameIndex });
 }
 
 async function handleFinish(): Promise<void> {
-  if (cancelled || !encoder || !muxer) {
-    post({ type: "error", error: "Cannot finish: encoder not active" });
+  if (cancelled) {
+    post({ type: "error", error: "Cannot finish: export was cancelled" });
     return;
   }
 
   try {
-    // Flush all remaining frames through the encoder pipeline
-    await encoder.flush();
-
-    // Finalize the MP4 container (writes moov atom)
-    muxer.finalize();
-
-    // Extract the completed buffer
-    const buffer = muxer.target.buffer;
-
-    // Clean up encoder/muxer state before posting
-    cleanup();
-
-    // Transfer (zero-copy) the buffer back to the main thread
-    post({ type: "complete", buffer });
+    if (hasWebCodecs) {
+      await handleFinishWebCodecs();
+    } else {
+      await handleFinishWasm();
+    }
   } catch (e) {
     cleanup();
     const message = e instanceof Error ? e.message : String(e);
