@@ -173,7 +173,7 @@ export class ShareHubExportOrchestrator implements IShareHubExportOrchestrator {
       },
       {
         filename: sequence.word || sequence.name || "sequence",
-        fps: 50,
+        fps: 60,
         format: "mp4",
       }
     );
