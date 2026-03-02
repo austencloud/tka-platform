@@ -211,7 +211,7 @@
     border-radius: 50%;
     font-size: var(--font-size-compact);
     font-weight: 700;
-    color: #000;
+    color: var(--text-on-accent);
   }
 
   /* Interval Row */

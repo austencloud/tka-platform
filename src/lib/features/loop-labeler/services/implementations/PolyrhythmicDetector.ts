@@ -30,6 +30,7 @@ export interface StepProperties {
   timing: string;
   letterType: string;
   letter: string;
+  [key: string]: string | number;
 }
 
 export interface PropertyConsistency {
@@ -127,7 +128,7 @@ function extractBeatProperties(
  * Get a specific property value from beat properties
  */
 function getPropertyValue(props: StepProperties, property: string): string {
-  return (props as unknown as Record<string, string>)[property] || "unknown";
+  return String(props[property] ?? "unknown");
 }
 
 /**

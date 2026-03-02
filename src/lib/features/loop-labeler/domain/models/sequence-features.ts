@@ -53,7 +53,7 @@ export interface ReversalAnalysis {
   /** Total reversal count */
   readonly totalReversals: number;
 
-  /** Whether sequence has any reversals */
+  /** Whether sequence contains reversals */
   readonly hasReversals: boolean;
 
   /** Whether reversals are synchronized (blue and red reverse at same steps) */
@@ -102,7 +102,7 @@ export interface SequenceFeatures {
   readonly hasGammaPositions: boolean;
 
   // === Turn Analysis ===
-  /** True if sequence has any turns (pro or anti spin) */
+  /** True if sequence contains turns (pro or anti spin) */
   readonly hasTurns: boolean;
 
   /** Number of steps with turns (pro or anti motion) */

@@ -109,8 +109,8 @@ export class SequenceLoader implements ISequenceLoader {
 
       if (isRawFormat) {
         console.log(`[SequenceLoader] Using raw beats format (${beats.length} elements)`);
-        // Already in the right format — cast and return
-        return beats as unknown as RawStepData[];
+        // Already in the right format — validated by field checks above
+        return beats as RawStepData[];
       }
 
       // Library beats format: has "motions" with blue/red sub-objects and "beatNumber"
