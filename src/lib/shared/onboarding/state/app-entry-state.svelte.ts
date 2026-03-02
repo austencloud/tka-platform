@@ -2,11 +2,11 @@
  * App Entry State
  *
  * Manages the post-onboarding experience:
- * - Entry animation choreography after first-run wizard
- * - Guided first build walkthrough
+ * - Wizard exit transition after first-run wizard
+ * - Create tutorial walkthrough
  *
  * State machine phases:
- *   "wizard-active" -> "wizard-exiting" -> "entry-animating" -> "guided-build" -> "complete"
+ *   "wizard-active" -> "wizard-exiting" -> "create-tutorial" -> "complete"
  *
  * Returning users start at "complete" (checked via localStorage).
  * Persisted to localStorage + Firebase (same pattern as first-run-state).
@@ -15,8 +15,7 @@
 export type AppEntryPhase =
   | "wizard-active"
   | "wizard-exiting"
-  | "entry-animating"
-  | "guided-build"
+  | "create-tutorial"
   | "complete";
 
 const APP_ENTRY_COMPLETED_KEY = "tka-app-entry-completed";
@@ -41,7 +40,6 @@ function createAppEntryState() {
 
   // Duration constants (ms) for the choreography
   const WIZARD_EXIT_DURATION = 400;
-  const ENTRY_ANIMATION_DURATION = 1400; // Enough for full stagger
 
   return {
     get phase() {
@@ -59,22 +57,29 @@ function createAppEntryState() {
     },
 
     /**
-     * Check if entry animation should be playing.
+     * Check if create tutorial should be showing.
      */
-    isEntryAnimating(): boolean {
-      return state.phase === "entry-animating";
+    isCreateTutorial(): boolean {
+      return state.phase === "create-tutorial";
     },
 
     /**
-     * Check if guided build should be showing.
+     * Check if entry animation is in progress (wizard exit transition).
+     */
+    isEntryAnimating(): boolean {
+      return state.phase === "wizard-exiting";
+    },
+
+    /**
+     * Check if guided build tutorial is active.
      */
     isGuidedBuild(): boolean {
-      return state.phase === "guided-build";
+      return state.phase === "create-tutorial";
     },
 
     /**
      * Called when the first-run wizard finishes.
-     * Kicks off the wizard exit -> entry animation -> guided build sequence.
+     * Kicks off the wizard exit -> create tutorial sequence.
      */
     startEntrySequence() {
       if (state.hasCompleted) {
@@ -84,19 +89,13 @@ function createAppEntryState() {
 
       state.phase = "wizard-exiting";
 
-      // After wizard exit animation completes, start entry animation
       setTimeout(() => {
-        state.phase = "entry-animating";
-
-        // After entry animation completes, start guided build
-        setTimeout(() => {
-          state.phase = "guided-build";
-        }, ENTRY_ANIMATION_DURATION);
+        state.phase = "create-tutorial";
       }, WIZARD_EXIT_DURATION);
     },
 
     /**
-     * Called when guided build completes (all steps done or skipped).
+     * Called when create tutorial completes (all steps done or skipped).
      */
     completeEntry() {
       state.phase = "complete";
@@ -111,7 +110,7 @@ function createAppEntryState() {
     },
 
     /**
-     * Skip straight to complete (used when user skips guided build).
+     * Skip straight to complete (used when user skips create tutorial).
      */
     skipToComplete() {
       this.completeEntry();
@@ -124,13 +123,8 @@ function createAppEntryState() {
       state.hasCompleted = false;
       state.phase = "wizard-exiting";
 
-      // Skip the wizard exit since there's no wizard, go straight to entry animation
       setTimeout(() => {
-        state.phase = "entry-animating";
-
-        setTimeout(() => {
-          state.phase = "guided-build";
-        }, ENTRY_ANIMATION_DURATION);
+        state.phase = "create-tutorial";
       }, 100); // Brief delay for DOM reset
     },
 
