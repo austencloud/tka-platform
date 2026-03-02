@@ -41,6 +41,7 @@
     onDurationChange,
     getBeatKey,
     getDurationDisplay,
+    orientationCycleCount = 1,
     scrollContainerRef = $bindable(),
   } = $props<{
     steps: ReadonlyArray<StepData> | StepData[];
@@ -64,8 +65,39 @@
     onDurationChange?: (stepNumber: number, newDuration: number) => void;
     getBeatKey: (beat: StepData, index: number) => string;
     getDurationDisplay: (stepIndex: number) => string;
+    /** Number of orientation cycle passes (1 = no extension, 2/4 = extended) */
+    orientationCycleCount?: 1 | 2 | 4;
     scrollContainerRef?: HTMLElement;
   }>();
+
+  // Orientation cycle pass dividers
+  const stepsPerPass = $derived.by(() => {
+    if (orientationCycleCount <= 1) return 0;
+    return Math.floor(steps.length / orientationCycleCount);
+  });
+
+  // Step indices where a new pass begins (0-indexed)
+  const passBoundaryStepIndices = $derived.by(() => {
+    if (stepsPerPass <= 0) return new Set<number>();
+    const boundaries = new Set<number>();
+    for (let pass = 1; pass < orientationCycleCount; pass++) {
+      boundaries.add(pass * stepsPerPass);
+    }
+    return boundaries;
+  });
+
+  // Determine which timeline row indices need a divider BEFORE them
+  const dividerBeforeRowIndices = $derived.by(() => {
+    if (passBoundaryStepIndices.size === 0) return new Set<number>();
+    const indices = new Set<number>();
+    for (let i = 0; i < timelineRows.length; i++) {
+      const row = timelineRows[i];
+      if (row.steps.length > 0 && passBoundaryStepIndices.has(row.steps[0].stepIndex)) {
+        indices.add(i);
+      }
+    }
+    return indices;
+  });
 
   // --- Duration resize drag state ---
   const SNAP_INCREMENT = DURATION_STEP_FINE;
@@ -163,6 +195,9 @@
     <!-- Timeline Rows -->
     <div class="timeline-rows">
       {#each timelineRows as row, rowIndex (rowIndex)}
+        {#if dividerBeforeRowIndices.has(rowIndex)}
+          <div class="pass-divider" aria-hidden="true"></div>
+        {/if}
         <div class="timeline-row">
           {#each row.steps as { stepIndex, duration } (getBeatKey(steps[stepIndex], stepIndex))}
             {@const step = steps[stepIndex]}
@@ -310,6 +345,21 @@
     flex-direction: column;
     gap: 1px;
     min-width: 0;
+  }
+
+  /* Pass divider for multi-pass orientation cycles */
+  .pass-divider {
+    height: 3px;
+    margin: 2px 0;
+    background: linear-gradient(
+      90deg,
+      transparent 5%,
+      var(--theme-accent, rgba(99, 102, 241, 0.3)) 20%,
+      var(--theme-accent, rgba(99, 102, 241, 0.3)) 80%,
+      transparent 95%
+    );
+    opacity: 0.4;
+    flex-shrink: 0;
   }
 
   .timeline-row {

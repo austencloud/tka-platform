@@ -28,7 +28,7 @@
   <span class="designation-badge">{badge}</span>
   <span class="designation-label">{label}</span>
   {#if onRemove}
-    <button class="remove-btn" onclick={onRemove} title="Remove">
+    <button class="remove-btn" onclick={onRemove} aria-label="Remove {label} designation">
       <FontAwesomeIcon icon="xmark" size="0.85em" />
     </button>
   {/if}
@@ -159,8 +159,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     background: transparent;
     border: none;
     border-radius: 6px;

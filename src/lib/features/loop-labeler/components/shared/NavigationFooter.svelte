@@ -16,13 +16,21 @@
   const canGoPrevious = $derived(currentIndex > 0);
 </script>
 
-<div class="navigation">
-  <button onclick={onPrevious} disabled={!canGoPrevious}> Previous </button>
-  <button onclick={onSkip}> Skip </button>
-  <span class="position">
+<nav class="navigation" aria-label="Sequence navigation">
+  <button
+    onclick={onPrevious}
+    disabled={!canGoPrevious}
+    aria-label="Go to previous sequence"
+  >
+    Previous
+  </button>
+  <button onclick={onSkip} aria-label="Skip to next sequence">
+    Skip
+  </button>
+  <span class="position" aria-live="polite" aria-atomic="true">
     {currentIndex + 1} / {totalCount}
   </span>
-</div>
+</nav>
 
 <style>
   .navigation {
