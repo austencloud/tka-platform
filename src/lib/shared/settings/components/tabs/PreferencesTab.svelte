@@ -48,14 +48,9 @@
     });
   }
 
-  function handleReplayGuidedBuild() {
+  function handleReplayTutorial() {
     hapticService?.trigger("selection");
-    // Navigate to Create module first — the guided build targets Create UI elements
-    setActiveModule("create");
-    // Brief delay for module to mount before starting the overlay
-    setTimeout(() => {
-      appEntryState.replay();
-    }, 300);
+    appEntryState.replay();
   }
 
   function handleReplaySidebarTour() {
@@ -120,10 +115,10 @@
       <button
         type="button"
         class="guide-button"
-        onclick={handleReplayGuidedBuild}
+        onclick={handleReplayTutorial}
       >
         <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
-        <span>Replay first build guide</span>
+        <span>Replay create tutorial</span>
       </button>
 
       <button
