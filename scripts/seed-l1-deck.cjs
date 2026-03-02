@@ -95,6 +95,16 @@ function rotOk(prev, next) {
   return prev === next;
 }
 
+/**
+ * Normalize motion type for dedup purposes.
+ * At Level 1 (0 turns), pro and anti are visually identical shifts.
+ * Collapsing them avoids duplicate-looking sequences.
+ */
+function normalizeMotionType(type) {
+  if (type === "pro" || type === "anti") return "shift";
+  return type;
+}
+
 // --- Letter types ---
 const TYPES = {
   A: 1, B: 1, C: 1, D: 1, E: 1, F: 1,
@@ -274,7 +284,7 @@ function enumerateLoops(startPos) {
       )
         continue;
 
-      const variantKey = `${b1.letter}|${b2.letter}|${b1.blueMotionType}/${b1.redMotionType}|${b2.blueMotionType}/${b2.redMotionType}`;
+      const variantKey = `${b1.letter}|${b2.letter}|${normalizeMotionType(b1.blueMotionType)}/${normalizeMotionType(b1.redMotionType)}|${normalizeMotionType(b2.blueMotionType)}/${normalizeMotionType(b2.redMotionType)}`;
       if (seenVariants[variantKey]) continue;
       seenVariants[variantKey] = true;
 

@@ -22,8 +22,12 @@ interface QueuedTask<T> {
   priority: number;
 }
 
-// Increased from 3 to 12 since Canvas2D rendering is lighter than SVG parsing
-const DEFAULT_MAX_CONCURRENT = 4;
+// Canvas2D rendering is lightweight — 8 concurrent keeps the queue responsive
+// for deck browsing (136+ sequences) without excessive memory pressure
+const DEFAULT_MAX_CONCURRENT = 8;
+
+// If a render hangs (stalled fetch, infinite loop), reclaim the slot after this timeout
+const RENDER_TIMEOUT_MS = 15_000;
 
 export class ThumbnailRenderQueue implements IThumbnailRenderQueue {
   private queue: QueuedTask<unknown>[] = [];
@@ -114,7 +118,13 @@ export class ThumbnailRenderQueue implements IThumbnailRenderQueue {
     this.activeIds.add(task.id);
 
     try {
-      const result = await task.execute();
+      // Race the render against a timeout to reclaim the slot if it hangs
+      const result = await Promise.race([
+        task.execute(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Render timeout")), RENDER_TIMEOUT_MS)
+        ),
+      ]);
       task.resolve(result);
     } catch (error) {
       task.reject(error instanceof Error ? error : new Error(String(error)));

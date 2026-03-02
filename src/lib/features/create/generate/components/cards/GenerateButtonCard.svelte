@@ -382,7 +382,7 @@ In freeform mode, renders as a pure button.
     display: flex;
     align-items: center;
     justify-content: center;
-    width: clamp(40px, 8cqw, 56px);
+    flex: 1;
     height: calc(100% - 10px);
     flex-shrink: 0;
     background: rgba(0, 0, 0, 0.2);

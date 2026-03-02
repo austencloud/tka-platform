@@ -312,7 +312,9 @@
         // Only apply if still current
         if (key.hash === currentKeyHash) {
           thumbnailUrl = result.url;
-          // Thumbnail loaded successfully
+          // Ensure loading overlay clears — prevents race where a re-queued
+          // render sets status back to "queued" while thumbnailUrl persists
+          status = { state: "complete", url: result.url };
         }
       })
       .catch((err) => {
