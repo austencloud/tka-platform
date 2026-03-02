@@ -18,6 +18,6 @@ export const DEFAULT_COMPOSITE_OPTIONS: CompositeExportOptions = {
   gridStepSize: 120,
   includeStartPosition: true,
   showStepNumbers: true,
-  fps: 50,
+  fps: 60,
   loopCount: 1,
 };

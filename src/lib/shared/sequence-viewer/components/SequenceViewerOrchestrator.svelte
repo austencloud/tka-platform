@@ -113,7 +113,7 @@
     enterFullscreen: () => void;
     exitFullscreen: () => void;
     handleFullscreenTap: () => void;
-    enterExportMode: () => void;
+    enterExportMode: (format?: ExportType | "side-by-side") => void;
     exitExportMode: () => void;
     selectExportType: (type: ExportType) => void;
     backToExportTypeSelection: () => void;
@@ -718,14 +718,24 @@
   // EXPORT MODE
   // ============================================================================
 
-  function enterExportMode() {
+  function enterExportMode(format?: ExportType | "side-by-side") {
     hapticService?.trigger("selection");
     isExportMode = true;
-    exportType = null;
+    if (format === "side-by-side") {
+      exportType = "both";
+    } else if (format) {
+      exportType = format;
+    } else {
+      exportType = null;
+    }
     if (isPlayingLocal && playbackController) {
       playbackController.togglePlayback();
     }
-    accessibilityHelper.announce("Export mode. Choose Video, Image, or Combined format.", "assertive");
+    if (format) {
+      accessibilityHelper.announce(`Export mode. ${format === "animation" ? "Video" : format === "image" ? "Image" : "Combined"} export selected.`, "assertive");
+    } else {
+      accessibilityHelper.announce("Export mode. Choose Video, Image, or Combined format.", "assertive");
+    }
   }
 
   function exitExportMode() {

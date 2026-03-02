@@ -227,7 +227,7 @@
           <div class="option-group">
             <span class="option-label">FPS</span>
             <div class="option-chips">
-              {#each [30, 50, 60] as fps}
+              {#each [30, 60, 120] as fps}
                 <button
                   type="button"
                   class="chip"

@@ -66,6 +66,9 @@
   } from "../domain/viewer-prop-groups";
   import ExportModeContent from "./ExportModeContent.svelte";
   import ExportFooter from "./ExportFooter.svelte";
+  import ExportVideoDrawer from "./ExportVideoDrawer.svelte";
+  import type { ActiveEffect } from "./ExportVideoDrawer.svelte";
+  import ExportProgressPill from "./ExportProgressPill.svelte";
   // Animation and playback
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import { TempoRampOrchestrator } from "../services/implementations/TempoRampOrchestrator";
@@ -290,8 +293,13 @@
       exportType = null;
     }
 
-    // Pause playback when entering export mode
-    if (isPlayingLocal && playbackController) {
+    // For video export: start playback for live preview
+    // For image/selector: pause playback
+    if (format === "animation") {
+      if (!isPlayingLocal && playbackController) {
+        playbackController.togglePlayback();
+      }
+    } else if (isPlayingLocal && playbackController) {
       playbackController.togglePlayback();
     }
 
@@ -597,6 +605,24 @@
   let animTrailStyle = $state<TrailVisibility>(animationVisibility.getTrailStyle());
   let animTkaGlyph = $state(animationVisibility.getVisibility("tkaGlyph"));
   let animWordHeader = $state(animationVisibility.getVisibility("wordHeader"));
+
+  // Active effects for export drawer override chips
+  function getActiveEffects(): ActiveEffect[] {
+    const effects: ActiveEffect[] = [];
+    if (animationVisibility.getVisibility("fireEffect")) {
+      effects.push({ id: "fire", label: "Fire", icon: "fas fa-fire", active: true });
+    }
+    if (animationVisibility.getVisibility("ledEffect")) {
+      effects.push({ id: "led", label: "LED", icon: "fas fa-lightbulb", active: true });
+    }
+    if (animationVisibility.getTrailStyle() !== "off") {
+      effects.push({ id: "trails", label: "Trails", icon: "fas fa-wind", active: true });
+    }
+    if (animationVisibility.getVisibility("fireUseCharcoal")) {
+      effects.push({ id: "charcoal", label: "Charcoal", icon: "fas fa-smog", active: true });
+    }
+    return effects;
+  }
 
   // Image visibility (uses global ImageCompositionManager for Firebase sync)
   const imageComposition = getImageCompositionManager();
@@ -1322,8 +1348,44 @@
       />
     {/if}
 
-    {#if isExportMode}
-      <!-- Export mode: show type selector or preview/options -->
+    {#if isExportMode && exportType === "animation"}
+      <!-- Video export: animation preview + compact settings drawer -->
+      <div class="export-preview-layout">
+        <div class="export-animation-preview">
+          {#if animationLoading}
+            <div class="loading-state">
+              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+            </div>
+          {:else if modalAnimationState.error}
+            <div class="error-state">
+              <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+              <span>{modalAnimationState.error}</span>
+            </div>
+          {:else}
+            <AnimatorCanvas
+              sequenceData={modalAnimationState.sequenceData}
+              currentStep={currentStepLocal}
+              isPlaying={true}
+              blueProp={modalAnimationState.bluePropState}
+              redProp={modalAnimationState.redPropState}
+              gridMode={sequence?.gridMode}
+              letter={currentLetter}
+              stepData={currentStepData}
+              word={sequence?.word}
+              onCanvasReady={handleCanvasReady}
+            />
+          {/if}
+        </div>
+        <ExportVideoDrawer
+          {exportOptions}
+          viewerEffects={getActiveEffects()}
+          {isExporting}
+          onExport={handleExport}
+          onClose={exitExportMode}
+        />
+      </div>
+    {:else if isExportMode}
+      <!-- Image/type-selector export: keep existing full-screen ExportModeContent -->
       <ExportModeContent
         sequence={effectiveSequence}
         {exportType}
@@ -1386,8 +1448,8 @@
 
   {#snippet footer()}
     {#if !isFullscreen && !isLandscapeMobile}
-      {#if isExportMode}
-        <!-- Export footer: shows button when type is selected, hint when selecting -->
+      {#if isExportMode && exportType !== "animation"}
+        <!-- Export footer for image/type-selector (video uses drawer's own button) -->
         <ExportFooter
           {exportType}
           {isExporting}
@@ -1434,6 +1496,14 @@
     {/if}
   {/snippet}
 </BaseModal>
+
+<!-- Floating progress pill: shows when export is running but drawer is closed -->
+{#if isExporting && exportProgress && !(isExportMode && exportType === "animation")}
+  <ExportProgressPill
+    progress={exportProgress}
+    onCancel={handleCancelExport}
+  />
+{/if}
 
 <!-- NOTE: Stagger mode now handled by Compose module via sequence handoff -->
 
@@ -1562,6 +1632,38 @@
       border-radius: 0 !important;
       margin: 0 !important;
     }
+  }
+
+  /* Video export preview layout */
+  .export-preview-layout {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .export-animation-preview {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+  }
+
+  .export-preview-layout .loading-state,
+  .export-preview-layout .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
+    font-size: var(--font-size-min, 14px);
+  }
+
+  .export-preview-layout .error-state {
+    color: var(--semantic-error, #f87171);
   }
 
   /* Reduced motion */

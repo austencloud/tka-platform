@@ -27,9 +27,12 @@
   import ViewerSplitPane from "./ViewerSplitPane.svelte";
   import ViewerFooter from "./ViewerFooter.svelte";
   import ExportModeContent from "./ExportModeContent.svelte";
+  import ExportVideoDrawer from "./ExportVideoDrawer.svelte";
   import ExportFooter from "./ExportFooter.svelte";
   import RampProgressIndicator from "./RampProgressIndicator.svelte";
   import ViewerSettingsModal from "./ViewerSettingsModal.svelte";
+  import type { ActiveEffect } from "./ExportVideoDrawer.svelte";
+  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   // Services
   import { container } from "$lib/shared/di";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
@@ -66,6 +69,26 @@
   // Delete confirmation state
   let deleteConfirmOpen = $state(false);
   let isDeleting = $state(false);
+
+  // Animation visibility for video export effects
+  const animationVisibility = getAnimationVisibilityManager();
+
+  function getActiveEffects(): ActiveEffect[] {
+    const effects: ActiveEffect[] = [];
+    if (animationVisibility.getVisibility("fireEffect")) {
+      effects.push({ id: "fire", label: "Fire", icon: "fas fa-fire", active: true });
+    }
+    if (animationVisibility.getVisibility("ledEffect")) {
+      effects.push({ id: "led", label: "LED", icon: "fas fa-lightbulb", active: true });
+    }
+    if (animationVisibility.getTrailStyle() !== "off") {
+      effects.push({ id: "trails", label: "Trails", icon: "fas fa-wind", active: true });
+    }
+    if (animationVisibility.getVisibility("fireUseCharcoal")) {
+      effects.push({ id: "charcoal", label: "Charcoal", icon: "fas fa-smog", active: true });
+    }
+    return effects;
+  }
 
   // Copy for AI
   let claudeCopier = $state<IClaudeCodeCopier | null>(null);
@@ -208,7 +231,31 @@
             <!-- Content -->
             <div class="drawer-body-content">
               {#if ctx.hasSequence && ctx.effectiveSequence}
-                {#if ctx.isExportMode}
+                {#if ctx.isExportMode && ctx.exportType === "animation"}
+                  <!-- Video export: show animation preview with settings drawer overlay -->
+                  <div class="export-video-layout">
+                    <ViewerSplitPane
+                      sequence={ctx.effectiveSequence}
+                      playback={ctx.splitPanePlayback}
+                      imageComposition={ctx.splitPaneImageComposition}
+                      propRendering={ctx.splitPanePropRendering}
+                      layout={{ isFullscreen: false, fullscreenStackVertical: false, isMobile: isMobileWidth, isLandscapeMobile: isLandscape, focusedPane: 'animation' }}
+                      onRenderProgress={ctx.onRenderProgress}
+                      onFocusPane={ctx.enterEditMode}
+                      onUnfocusPane={ctx.exitEditMode}
+                      onStepClick={ctx.handleStepClick}
+                      onCanvasReady={ctx.handleCanvasReady}
+                    />
+                    <ExportVideoDrawer
+                      exportOptions={ctx.exportOptions}
+                      viewerEffects={getActiveEffects()}
+                      isExporting={ctx.isExporting}
+                      onExport={ctx.handleExport}
+                      onClose={ctx.exitExportMode}
+                    />
+                  </div>
+                {:else if ctx.isExportMode}
+                  <!-- Image export or type selection -->
                   <ExportModeContent
                     sequence={ctx.effectiveSequence}
                     exportType={ctx.exportType}
@@ -243,7 +290,9 @@
             </div>
 
             <!-- Footer (becomes side column in landscape) -->
-            {#if ctx.isExportMode}
+            {#if ctx.isExportMode && ctx.exportType === "animation"}
+              <!-- Video export: drawer has its own export button, no footer needed -->
+            {:else if ctx.isExportMode}
               <ExportFooter
                 exportType={ctx.exportType}
                 isExporting={ctx.isExporting}
@@ -467,6 +516,16 @@
   .landscape .header-action-btn {
     min-width: 32px;
     min-height: 32px;
+  }
+
+  /* Video export layout: animation preview + settings drawer overlay */
+  .export-video-layout {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
   /* Override Drawer defaults for full-screen sequence viewer */
