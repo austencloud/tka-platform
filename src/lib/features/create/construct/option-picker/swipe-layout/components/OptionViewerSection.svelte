@@ -16,9 +16,8 @@ Renders a section with:
   import type { IOptionGridFitCalculator } from "../../services/contracts/IGridFitCalculator";
   import { container } from "$lib/shared/di";
   import { optionGridFitCalculator } from "../../services/implementations/OptionGridFitCalculator";
-  import { onMount } from "svelte";
+  import { onMount, onDestroy, tick, untrack } from "svelte";
   import { flip } from "svelte/animate";
-  import { scale } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import { getLetterBorderColors } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
   import OptionPictographCell from "./OptionPictographCell.svelte";
@@ -73,7 +72,24 @@ Renders a section with:
       : false;
 
   const FLIP_DURATION = reducedMotion ? 0 : 300;
-  const SCALE_DURATION = reducedMotion ? 0 : 250;
+  const FADE_OUT = reducedMotion ? 0 : 120;
+  const FADE_IN = reducedMotion ? 0 : 180;
+
+  // Crossfade animation state
+  let displayedItems = $state<PictographWithReversals[]>([]);
+  let fading = $state(false);
+  let fadeTimer: ReturnType<typeof setTimeout> | null = null;
+  let pictographsGridEl = $state<HTMLDivElement>();
+  let heightCleanupTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Remove inline height/overflow styles from a previous animation */
+  function clearHeightLock() {
+    if (heightCleanupTimer) clearTimeout(heightCleanupTimer);
+    if (pictographsGridEl) {
+      pictographsGridEl.style.height = "";
+      pictographsGridEl.style.overflow = "";
+    }
+  }
 
   onMount(() => {
     hapticService = container.items.hapticFeedback;
@@ -98,6 +114,67 @@ Renders a section with:
       currentSequence,
       sectionPictographs()
     );
+  });
+
+  // Crossfade with height interpolation: fade out, lock height, swap data,
+  // animate height to new value while fading back in
+  $effect(() => {
+    const target = pictographsWithReversals();
+    const current = untrack(() => displayedItems);
+
+    // First render — show immediately
+    if (current.length === 0) {
+      displayedItems = target;
+      return;
+    }
+
+    const targetIds = new Set(target.map((o) => o.id));
+    const currentIds = new Set(current.map((o) => o.id));
+    const setChanged =
+      targetIds.size !== currentIds.size ||
+      [...targetIds].some((id) => !currentIds.has(id));
+
+    if (!setChanged) {
+      // Same items, possibly reordered — FLIP handles it
+      displayedItems = target;
+      return;
+    }
+
+    // Clean up any interrupted animation
+    if (fadeTimer) clearTimeout(fadeTimer);
+    clearHeightLock();
+
+    // Lock current height so layout doesn't jump during crossfade
+    if (pictographsGridEl) {
+      pictographsGridEl.style.height = `${pictographsGridEl.offsetHeight}px`;
+      pictographsGridEl.style.overflow = "hidden";
+    }
+
+    fading = true;
+
+    fadeTimer = setTimeout(async () => {
+      displayedItems = target;
+      await tick();
+
+      // Animate height from locked value to new natural height
+      if (pictographsGridEl) {
+        const newHeight = pictographsGridEl.scrollHeight;
+        requestAnimationFrame(() => {
+          if (pictographsGridEl) {
+            pictographsGridEl.style.height = `${newHeight}px`;
+          }
+        });
+        heightCleanupTimer = setTimeout(clearHeightLock, FADE_IN + 50);
+      }
+
+      fading = false;
+      fadeTimer = null;
+    }, FADE_OUT);
+  });
+
+  onDestroy(() => {
+    if (fadeTimer) clearTimeout(fadeTimer);
+    if (heightCleanupTimer) clearTimeout(heightCleanupTimer);
   });
 
   // Reactive container element for measuring available space
@@ -342,19 +419,22 @@ Renders a section with:
     <SectionHeader {letterType} />
   {/if}
 
-  <!-- Section Content - Letter-keyed with FLIP animation for smooth filter transitions -->
+  <!-- Section Content - Container crossfade for filter, FLIP for reorder -->
   <div
     class="pictographs-grid"
+    class:fading
+    bind:this={pictographsGridEl}
     style:grid-template-columns={optimalLayout().gridColumns}
     style:gap={layoutConfig?.gridGap || "16px"}
+    style:--fade-in="{FADE_IN}ms"
+    style:--fade-out="{FADE_OUT}ms"
   >
-    {#each pictographsWithReversals() as pictograph, index (pictograph.id)}
+    {#each displayedItems as pictograph, index (pictograph.id)}
       {@const borderColors = getLetterBorderColors(pictograph.letter)}
       <button
         class="pictograph-option"
         class:continuation={continuationIndex === index}
         animate:flip={{ duration: FLIP_DURATION, easing: cubicOut }}
-        transition:scale={{ duration: SCALE_DURATION, start: 0.85, opacity: 0, easing: cubicOut }}
         onclick={() => handlePictographClick(pictograph, index)}
         style:width="{optimalLayout().pictographSize}px"
         style:height="{optimalLayout().pictographSize}px"
@@ -397,6 +477,16 @@ Renders a section with:
     padding: 0 4px; /* Prevent edge clipping when grid is centered */
     box-sizing: border-box;
     overflow: hidden; /* Clip any overflow */
+    transition:
+      opacity var(--fade-in, 180ms) ease,
+      height var(--fade-in, 180ms) ease;
+  }
+
+  .pictographs-grid.fading {
+    opacity: 0;
+    transition:
+      opacity var(--fade-out, 120ms) ease,
+      height var(--fade-in, 180ms) ease;
   }
 
   .pictograph-option {
@@ -412,7 +502,6 @@ Renders a section with:
     box-sizing: border-box;
     will-change: opacity;
     transform: translateZ(0);
-    /* Only transition specific properties to prevent unwanted scale/size animations during content changes */
     transition:
       transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
       filter 0.3s cubic-bezier(0.4, 0, 0.2, 1),
