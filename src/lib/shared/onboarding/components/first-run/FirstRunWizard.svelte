@@ -51,9 +51,15 @@
   // Collected data
   let displayName = $state("");
   let pronouns = $state("");
-  let selectedTheme = $state<BackgroundType>(BackgroundType.SNOWFALL);
-  let favoriteProp = $state<PropType>(PropType.STAFF);
-  let pictographMode = $state<"light" | "dark">("light");
+  let selectedTheme = $state<BackgroundType>(
+    settingsService.settings.backgroundType ?? BackgroundType.SNOWFALL
+  );
+  let favoriteProp = $state<PropType>(
+    settingsService.settings.bluePropType ?? PropType.STAFF
+  );
+  let pictographMode = $state<"light" | "dark">(
+    getAnimationVisibilityManager().isDarkMode() ? "dark" : "light"
+  );
 
   // Services
   let hapticService: IHapticFeedback | null = null;
