@@ -375,7 +375,10 @@
       bluePropType,
       redPropType,
       catDogModeEnabled,
-      showStepNumbers,
+      // Never bake step numbers into the rendered blob — identical pictographs
+      // at different beats must share the same cached image. Step numbers are
+      // rendered as HTML overlays on top of the <img> instead.
+      showStepNumbers: false,
       showNonRadialPoints: showNonRadial,
       handPointVisibility: handPointVis,
       showTKA,
@@ -981,6 +984,7 @@
                           >
                             {#if cell.isLoaded}
                               <img class="cell-image" src={cell.imageUrl} alt={cell.label} draggable="false" />
+                              {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
                             {:else}
                               <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
                             {/if}
@@ -993,6 +997,7 @@
                           >
                             {#if cell.isLoaded}
                               <img class="cell-image" src={cell.imageUrl} alt={cell.label} draggable="false" />
+                              {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
                             {:else}
                               <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
                             {/if}
@@ -1042,6 +1047,7 @@
                         >
                           {#if cell.isLoaded}
                             <img class="cell-image" src={cell.imageUrl} alt={cell.label} draggable="false" />
+                            {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
                           {:else}
                             <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
                           {/if}
@@ -1054,6 +1060,7 @@
                         >
                           {#if cell.isLoaded}
                             <img class="cell-image" src={cell.imageUrl} alt={cell.label} draggable="false" />
+                            {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
                           {:else}
                             <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
                           {/if}
@@ -1091,6 +1098,7 @@
                       alt={cell.label}
                       draggable="false"
                     />
+                    {#if showStepNumbers && cell.index >= 0}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
                   {:else}
                     <div class="cell-spinner-container">
                       <ProgressRing percent={-1} size={20} strokeWidth={2} />
@@ -1111,6 +1119,7 @@
                       alt={cell.label}
                       draggable="false"
                     />
+                    {#if showStepNumbers && cell.index >= 0}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
                   {:else}
                     <div class="cell-spinner-container">
                       <ProgressRing percent={-1} size={20} strokeWidth={2} />
@@ -1145,6 +1154,7 @@
                     alt={cell.label}
                     draggable="false"
                   />
+                  {#if showStepNumbers && cell.index >= 0}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
                 {:else}
                   <div class="cell-spinner-container">
                     <ProgressRing percent={-1} size={20} strokeWidth={2} />
@@ -1165,6 +1175,7 @@
                     alt={cell.label}
                     draggable="false"
                   />
+                  {#if showStepNumbers && cell.index >= 0}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
                 {:else}
                   <div class="cell-spinner-container">
                     <ProgressRing percent={-1} size={20} strokeWidth={2} />
@@ -1447,6 +1458,25 @@
     object-fit: cover;
     -webkit-user-drag: none;
     user-select: none;
+  }
+
+  /* Step number overlay — rendered as HTML instead of baked into blobs
+     so identical pictographs at different beats share one cached image */
+  .step-number-overlay {
+    position: absolute;
+    top: 5.3%;
+    left: 5.3%;
+    font-family: Georgia, serif;
+    font-weight: bold;
+    font-size: clamp(10px, 22cqw, 28px);
+    line-height: 1;
+    color: #231f20;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .step-number-overlay.dark-mode {
+    color: #ffffff;
   }
 
   /* Per-cell loading spinner */

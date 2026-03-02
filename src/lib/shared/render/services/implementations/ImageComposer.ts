@@ -508,7 +508,9 @@ export class ImageComposer implements IImageComposer {
       bluePropType: blueProp,
       redPropType: redProp,
       catDogModeEnabled,
-      showStepNumbers: stepNumber !== undefined,
+      // ChoreoCard renders step numbers as HTML overlays, not in blobs.
+      // Write-through must match that key format for cache hits.
+      showStepNumbers: false,
       showNonRadialPoints: visibilitySettings.showNonRadialPoints ?? true,
       handPointVisibility: (visibilitySettings.handPointVisibility === "none"
         ? "active"

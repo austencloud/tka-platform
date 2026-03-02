@@ -151,7 +151,9 @@ export class CellPreWarmer implements ICellPreWarmer {
       bluePropType,
       redPropType,
       catDogModeEnabled,
-      showStepNumbers: true, // Default for preview
+      // Step numbers are rendered as HTML overlays in ChoreoCard, not baked
+      // into blobs. This lets identical pictographs share one cached image.
+      showStepNumbers: false,
       showNonRadialPoints: visibility?.nonRadialPoints ?? true,
       handPointVisibility: visibility?.handPointVisibility ?? "all",
       showTKA: visibility?.tkaGlyph ?? true,
