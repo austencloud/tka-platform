@@ -54,10 +54,10 @@
     flex-direction: column;
     align-items: center;
     gap: 14px;
-    max-width: 560px;
+    max-width: 720px;
     width: 100%;
     text-align: center;
-    padding: 20px;
+    padding: 24px 32px;
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);

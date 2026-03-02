@@ -2,19 +2,17 @@
   /**
    * VirtualizedCreatorGrid - High-performance virtualized grid for creators
    *
-   * Uses TanStack Virtual to render only visible rows, dramatically improving
-   * performance for large user lists. Includes:
-   * - Dynamic column count based on container width
-   * - Infinite scroll trigger for pagination
-   * - Visibility-driven color extraction
+   * Uses TanStack Virtual with dynamic row measurement to render only visible rows.
+   * Row heights are measured from actual DOM content via measureElement/ResizeObserver,
+   * so cards of varying height (with/without pronouns, follow buttons) are handled
+   * correctly without hardcoded pixel values.
    */
 
   import {
     createVirtualizer,
     type VirtualItem,
   } from "@tanstack/svelte-virtual";
-  import { onMount, onDestroy, untrack } from "svelte";
-  import { get } from "svelte/store";
+  import { onMount, untrack } from "svelte";
   import type { EnhancedUserProfile, CreatorSortCriteria } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import CreatorCard from "./CreatorCard.svelte";
 
@@ -50,6 +48,10 @@
   let virtualRows = $state<VirtualItem[]>([]);
   let totalHeight = $state(0);
 
+  // Reference to current virtualizer instance (for measureElement calls)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let virtualizerRef: any = $state(null);
+
   // Track extracted colors per user ID
   let userColors = $state<Map<string, string>>(new Map());
 
@@ -70,11 +72,11 @@
   // Calculate row count based on users and columns
   const rowCount = $derived(Math.ceil(users.length / columnCount));
 
-  // Fixed card height for user cards (avatar + info + stats + button + padding)
-  // Increased to account for full card content including follow button
-  const CARD_HEIGHT = 240;
+  // Gap between rows (vertical) and between cards (horizontal)
   const GAP = 20;
-  const estimatedRowHeight = $derived(CARD_HEIGHT + GAP);
+
+  // Rough initial estimate — corrected by measureElement after first render
+  const INITIAL_ROW_ESTIMATE = 300;
 
   // Get users for a specific row
   function getRowUsers(rowIndex: number): EnhancedUserProfile[] {
@@ -101,10 +103,7 @@
   async function processColorQueue() {
     isProcessingColors = true;
     while (colorExtractionQueue.length > 0) {
-      // Process up to 10 at a time
       const batch = colorExtractionQueue.splice(0, 10);
-      // Colors are extracted by CreatorCard components
-      // Just small delay between batches
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
     isProcessingColors = false;
@@ -115,38 +114,32 @@
     userColors = new Map(userColors).set(userId, color);
   }
 
+  /**
+   * Svelte action for dynamic row measurement.
+   * TanStack Virtual's measureElement uses a ResizeObserver internally,
+   * so if card content changes height (avatar load, follow toggle), the
+   * virtualizer automatically picks up the new size.
+   */
+  function measureRow(node: HTMLElement) {
+    virtualizerRef?.measureElement(node);
+    return {
+      destroy() {
+        virtualizerRef?.measureElement(node);
+      },
+    };
+  }
+
   // Intersection observer for infinite scroll
   let loadMoreTrigger = $state<HTMLDivElement | null>(null);
-  let loadMoreObserver: IntersectionObserver | null = null;
 
-  // Initialize virtualizer and subscribe to updates
+  // ResizeObserver for container width tracking (independent of virtualizer)
   onMount(() => {
     if (!scrollElement) return;
 
-    // Create virtualizer store
-    const virtualizerStore = createVirtualizer({
-      count: rowCount,
-      getScrollElement: () => scrollElement,
-      estimateSize: () => estimatedRowHeight,
-      overscan: 3, // Render 3 extra rows above/below viewport
-    });
-
-    // Subscribe to virtualizer updates
-    const unsubscribe = virtualizerStore.subscribe((v) => {
-      virtualRows = v.getVirtualItems();
-      totalHeight = v.getTotalSize();
-    });
-
-    // ResizeObserver to track container width
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const width = entry.contentRect.width;
-        if (width > 0) {
-          containerWidth = width;
-          // Force virtualizer to recalculate
-          const v = get(virtualizerStore);
-          v.measure();
-        }
+        if (width > 0) containerWidth = width;
       }
     });
 
@@ -160,17 +153,43 @@
       }
     });
 
-    return () => {
-      unsubscribe();
-      resizeObserver.disconnect();
-    };
+    return () => resizeObserver.disconnect();
+  });
+
+  // Virtualizer lifecycle — recreates when rowCount changes
+  $effect(() => {
+    if (!scrollElement) return;
+
+    const count = rowCount;
+
+    const virtualizerStore = createVirtualizer({
+      count,
+      getScrollElement: () => scrollElement,
+      estimateSize: () => INITIAL_ROW_ESTIMATE,
+      gap: GAP,
+      overscan: 3,
+    });
+
+    const unsubscribe = virtualizerStore.subscribe((v) => {
+      virtualizerRef = v;
+      virtualRows = v.getVirtualItems();
+      totalHeight = v.getTotalSize();
+    });
+
+    return unsubscribe;
+  });
+
+  // When column count changes, row content reflows — invalidate cached measurements
+  $effect(() => {
+    columnCount;
+    untrack(() => virtualizerRef?.measure());
   });
 
   // Setup infinite scroll observer
   $effect(() => {
     if (!loadMoreTrigger || !onLoadMore) return;
 
-    loadMoreObserver = new IntersectionObserver(
+    const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
         if (entry?.isIntersecting && hasMore && !isLoadingMore) {
@@ -179,46 +198,14 @@
       },
       {
         root: scrollElement,
-        rootMargin: "300px", // Trigger 300px before reaching bottom
+        rootMargin: "300px",
         threshold: 0,
       }
     );
 
-    loadMoreObserver.observe(loadMoreTrigger);
+    observer.observe(loadMoreTrigger);
 
-    return () => {
-      loadMoreObserver?.disconnect();
-      loadMoreObserver = null;
-    };
-  });
-
-  // Reconfigure virtualizer when rowCount or estimatedRowHeight changes
-  $effect(() => {
-    // Capture reactive dependencies
-    const count = rowCount;
-    const height = estimatedRowHeight;
-
-    // Run update outside reactive tracking
-    untrack(() => {
-      if (!scrollElement) return;
-
-      // Create new virtualizer with updated config
-      const virtualizerStore = createVirtualizer({
-        count,
-        getScrollElement: () => scrollElement,
-        estimateSize: () => height,
-        overscan: 3,
-      });
-
-      // Subscribe to updates
-      const unsubscribe = virtualizerStore.subscribe((v) => {
-        virtualRows = v.getVirtualItems();
-        totalHeight = v.getTotalSize();
-      });
-
-      // Cleanup previous subscription on next effect run
-      return unsubscribe;
-    });
+    return () => observer.disconnect();
   });
 </script>
 
@@ -232,12 +219,14 @@
     {#each virtualRows as virtualRow (virtualRow.key)}
       <div
         class="virtual-row"
+        data-index={virtualRow.index}
+        use:measureRow
         style:position="absolute"
         style:top="{virtualRow.start}px"
         style:width="100%"
         style:display="grid"
         style:grid-template-columns="repeat({columnCount}, 1fr)"
-        style:gap="{GAP}px"
+        style:column-gap="{GAP}px"
         role="row"
         aria-rowindex={virtualRow.index + 1}
       >
@@ -333,10 +322,10 @@
     color: var(--theme-accent);
   }
 
-  /* Responsive gap adjustments */
+  /* Responsive column gap */
   @media (max-width: 640px) {
     .virtual-row {
-      gap: 12px !important;
+      column-gap: 12px !important;
     }
   }
 </style>

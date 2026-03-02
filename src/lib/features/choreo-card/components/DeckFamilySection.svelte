@@ -32,7 +32,7 @@
     onSelectSequence,
   }: Props = $props();
 
-  let expanded = $state(true);
+  let expanded = $state(false);
 
   function toggle() {
     expanded = !expanded;

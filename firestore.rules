@@ -72,6 +72,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Fire effect defaults - readable by authenticated users, writable by admins
+    match /config/fireDefaults {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
     // Feature flag audit log - append-only for admins
     match /audit/featureFlags/entries/{entryId} {
       allow read: if isAdmin();

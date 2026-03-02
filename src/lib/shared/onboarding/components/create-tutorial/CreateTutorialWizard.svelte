@@ -182,7 +182,7 @@
     align-items: center;
     justify-content: center;
     width: 100%;
-    max-width: 600px;
+    max-width: 780px;
     padding: 0 16px 90px;
   }
 
