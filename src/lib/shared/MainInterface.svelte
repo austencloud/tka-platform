@@ -46,7 +46,6 @@
     setDesktopSidebarCollapsed,
   } from "./layout/desktop-sidebar-state.svelte";
   import SidebarTourOverlay from "./onboarding/components/sidebar-tour/SidebarTourOverlay.svelte";
-  import GuidedBuildOverlay from "./onboarding/components/guided-build/GuidedBuildOverlay.svelte";
   import { appEntryState } from "./onboarding/state/app-entry-state.svelte.ts";
   // Keyboard shortcuts
 
@@ -343,11 +342,6 @@
     {/if}
 
   </div>
-
-  <!-- Guided Build Overlay (first-time users, after entry animation) -->
-  {#if appEntryState.isGuidedBuild()}
-    <GuidedBuildOverlay />
-  {/if}
 
   <!-- Domain Managers -->
   <PWAInstallationManager />
