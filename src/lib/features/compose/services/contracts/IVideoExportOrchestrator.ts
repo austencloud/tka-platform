@@ -18,11 +18,15 @@ export interface VideoExportProgress {
   error?: string;
 }
 
+export type VideoResolution = 720 | 1080;
+
 export interface VideoExportOrchestratorOptions {
   /** Custom filename for the export (defaults to sequence word) */
   filename?: string;
-  /** Frame rate in FPS (default: 50) */
+  /** Frame rate in FPS (default: 60) */
   fps?: number;
+  /** Output resolution height in pixels (default: 1080) */
+  resolution?: VideoResolution;
   /** Number of times to loop the sequence (default: 1, only used for loopable sequences) */
   loopCount?: number;
   /** Desired output format (mp4 or webm) */

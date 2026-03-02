@@ -2,6 +2,14 @@
  * Video Export Orchestrator
  *
  * Coordinates frame capture, encoding, and final delivery for MP4/WebM exports.
+ *
+ * Supports two encoding paths:
+ *   1. Background encoder (preferred) — uses a Web Worker with WebCodecs + mp4-muxer
+ *      for off-main-thread encoding. Captures ImageData per frame, transfers zero-copy
+ *      to the worker, and receives the finished MP4 blob.
+ *   2. Inline encoder (fallback) — uses the legacy VideoExporter on the main thread.
+ *      Retained for browsers without WebCodecs or when the background encoder is
+ *      unavailable.
  */
 
 import {
@@ -17,6 +25,7 @@ import type {
   VideoExportOrchestratorOptions,
   IVideoExportOrchestrator,
   VideoExportProgress,
+  VideoResolution,
 } from "../contracts/IVideoExportOrchestrator";
 import type { IVideoExporter } from "../contracts/IVideoExporter";
 import type { ICompositeVideoRenderer } from "../contracts/ICompositeVideoRenderer";
@@ -24,7 +33,46 @@ import type {
   GlyphAsset,
   IExportGlyphPrerenderer,
 } from "../contracts/IExportGlyphPrerenderer";
+import type { IBackgroundVideoEncoder } from "../contracts/IBackgroundVideoEncoder";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+
+// ---------------------------------------------------------------------------
+// Export dimension & bitrate helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Map a target resolution + aspect ratio to concrete pixel dimensions.
+ * Ensures both width and height are even (H.264 requirement).
+ */
+function getExportDimensions(
+  resolution: VideoResolution,
+  aspectRatio: number
+): { width: number; height: number } {
+  const height = resolution === 720 ? 720 : 1080;
+  let width = Math.round(height * aspectRatio);
+  // H.264 requires even dimensions
+  width = width % 2 === 0 ? width : width + 1;
+  return { width, height };
+}
+
+/**
+ * Auto-scale bitrate based on pixel count and frame rate.
+ *
+ * Base rates:
+ *   - 720p  (921 600 px): 4 Mbps
+ *   - 1080p (2 073 600 px): 6 Mbps
+ *
+ * FPS multipliers:
+ *   - <= 30 fps: 1x
+ *   - 31-60 fps: 1.33x
+ *   - > 60 fps:  2.5x
+ */
+function calculateBitrate(width: number, height: number, fps: number): number {
+  const pixels = width * height;
+  const base = pixels <= 1280 * 720 ? 4_000_000 : 6_000_000;
+  const fpsMultiplier = fps <= 30 ? 1 : fps <= 60 ? 1.33 : 2.5;
+  return Math.round(base * fpsMultiplier);
+}
 
 export class VideoExportOrchestrator implements IVideoExportOrchestrator {
   private _isExporting = false;
@@ -35,7 +83,8 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
     private readonly canvasRenderer: ICanvasRenderer,
     private readonly fileDownloadService: IFileDownloader,
     private readonly compositeRenderer: ICompositeVideoRenderer,
-    private readonly glyphPrerenderer: IExportGlyphPrerenderer
+    private readonly glyphPrerenderer: IExportGlyphPrerenderer,
+    private readonly backgroundEncoder: IBackgroundVideoEncoder
   ) {}
 
   async executeExport(
@@ -54,6 +103,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
 
     // MP4 is the default format
     const exportFormat: VideoExportFormat = options.format ?? "mp4";
+    const useBackgroundEncoder = exportFormat === "mp4";
     const filename = this.resolveFilename(
       options.filename,
       panelState.sequenceWord,
@@ -71,24 +121,80 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       ? this.canvasRenderer.getProgressBarHeight(canvas.width)
       : 0;
 
-    // Calculate output dimensions (include header + progress bar if enabled)
-    // Round to integers - heights can be decimal from CSS calculations
-    const outputWidth = Math.round(canvas.width);
-    const outputHeight = Math.round(
+    // Resolve FPS early — used by both encoder paths and frame calculations
+    const fps = options.fps ?? VIDEO_EXPORT_FPS;
+
+    // Calculate source dimensions from the live canvas (includes header + progress bar)
+    const sourceWidth = Math.round(canvas.width);
+    const sourceHeight = Math.round(
       canvas.height + headerHeight + progressBarHeight
     );
 
-    // Create video exporter with correct output dimensions
-    const exporter = await this.VideoExporter.createManualExporter(
-      outputWidth,
-      outputHeight,
-      {
-        format: exportFormat as "webm" | "mp4",
-        fps: options.fps ?? VIDEO_EXPORT_FPS,
-        filename,
-        autoDownload: false,
-      }
-    );
+    // Determine final encode dimensions. When a resolution is specified and the
+    // background encoder is in use, scale to the target height while preserving
+    // the aspect ratio of the source canvas. Otherwise, encode at source size.
+    let outputWidth: number;
+    let outputHeight: number;
+
+    if (useBackgroundEncoder && options.resolution) {
+      const aspectRatio = sourceWidth / sourceHeight;
+      const dims = getExportDimensions(options.resolution, aspectRatio);
+      outputWidth = dims.width;
+      outputHeight = dims.height;
+    } else {
+      outputWidth = sourceWidth;
+      outputHeight = sourceHeight;
+    }
+
+    // ---------------------------------------------------------------------------
+    // Encoder setup — background (MP4) vs inline (WebM fallback)
+    // ---------------------------------------------------------------------------
+    let inlineExporter: {
+      addFrame: (c: HTMLCanvasElement) => Promise<void>;
+      finish: () => Promise<Blob>;
+      cancel: () => void;
+    } | null = null;
+
+    if (useBackgroundEncoder) {
+      const bitrate = calculateBitrate(outputWidth, outputHeight, fps);
+
+      // Calculate total frames early so the worker can allocate its muxer
+      const secondsPerBeat = 1.0 / panelState.speed;
+      const singleLoopDurationSeconds = panelState.totalSteps * secondsPerBeat;
+      const framesPerLoop = Math.ceil(singleLoopDurationSeconds * fps);
+      const loopCount = options.loopCount ?? panelState.exportLoopCount ?? 1;
+      const totalFramesEstimate = framesPerLoop * loopCount;
+
+      // Wire progress from worker back to the orchestrator callback
+      this.backgroundEncoder.onProgress = (frameIndex, total) => {
+        onProgress({
+          progress: frameIndex / total,
+          stage: "encoding",
+          currentFrame: frameIndex,
+          totalFrames: total,
+        });
+      };
+
+      await this.backgroundEncoder.initialize({
+        width: outputWidth,
+        height: outputHeight,
+        fps,
+        bitrate,
+        totalFrames: totalFramesEstimate,
+      });
+    } else {
+      // Legacy inline exporter for WebM
+      inlineExporter = await this.VideoExporter.createManualExporter(
+        outputWidth,
+        outputHeight,
+        {
+          format: exportFormat as "webm" | "mp4",
+          fps,
+          filename,
+          autoDownload: false,
+        }
+      );
+    }
 
     const captureState = {
       wasPlaying: panelState.isPlaying,
@@ -110,9 +216,6 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       const secondsPerBeat = 1.0 / panelState.speed;
       const singleLoopDurationSeconds = panelState.totalSteps * secondsPerBeat;
 
-      // Use fixed high frame rate for smooth playback at any BPM
-      // This ensures visual quality is consistent regardless of tempo
-      const fps = options.fps ?? VIDEO_EXPORT_FPS;
       const framesPerLoop = Math.ceil(singleLoopDurationSeconds * fps);
 
       // Apply loop count for circular sequences
@@ -123,6 +226,9 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       // Calculate beat progression per frame to match timing
       // beatsPerFrame = totalSteps / framesPerLoop (for single loop)
       const beatsPerFrame = panelState.totalSteps / framesPerLoop;
+
+      // Keyframe interval — emit a keyframe every 2 seconds for seekability
+      const keyframeInterval = fps * 2;
 
       // Check if composite mode is enabled
       const isCompositeMode =
@@ -161,7 +267,9 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       // Build step durations array for progress bar
       const stepDurations = steps.map((s) => s.duration ?? 1);
 
-      // Create offscreen canvas for compositing (so we don't touch the visible canvas)
+      // Create offscreen canvas for compositing (so we don't touch the visible canvas).
+      // For the background encoder we render at source resolution here, then scale
+      // down to export resolution when extracting ImageData for the worker.
       const offscreenCanvas = document.createElement("canvas");
 
       // Set canvas dimensions based on mode
@@ -170,15 +278,33 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         offscreenCanvas.width = compositeDims.width;
         offscreenCanvas.height = compositeDims.height;
       } else {
-        offscreenCanvas.width = outputWidth;
-        offscreenCanvas.height = outputHeight;
+        offscreenCanvas.width = sourceWidth;
+        offscreenCanvas.height = sourceHeight;
       }
       const offscreenCtx = offscreenCanvas.getContext("2d", {
-        willReadFrequently: false,
+        willReadFrequently: useBackgroundEncoder,
       });
 
       if (!offscreenCtx) {
         throw new Error("Failed to create offscreen canvas context");
+      }
+
+      // When the export resolution differs from the source, create a second
+      // canvas to downscale/upscale before extracting ImageData for the worker.
+      const needsResize =
+        useBackgroundEncoder &&
+        (offscreenCanvas.width !== outputWidth ||
+          offscreenCanvas.height !== outputHeight);
+      let resizeCanvas: HTMLCanvasElement | null = null;
+      let resizeCtx: CanvasRenderingContext2D | null = null;
+
+      if (needsResize) {
+        resizeCanvas = document.createElement("canvas");
+        resizeCanvas.width = outputWidth;
+        resizeCanvas.height = outputHeight;
+        resizeCtx = resizeCanvas.getContext("2d", {
+          willReadFrequently: true,
+        });
       }
 
       // Track the current glyph cache key for crossfade detection
@@ -196,6 +322,9 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         (CROSSFADE_DURATION_MS / 1000) * fps
       );
       let framesSinceTransition = 0;
+
+      // Frame duration in microseconds for WebCodecs timestamps
+      const frameDurationMicros = Math.round(1_000_000 / fps);
 
       for (let i = 0; i < totalFrames; i++) {
         if (this.shouldCancel) {
@@ -375,8 +504,46 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
           );
         }
 
-        // Capture from the offscreen canvas (not the visible one!)
-        await exporter.addFrame(offscreenCanvas);
+        // -----------------------------------------------------------------------
+        // Capture frame — background encoder vs inline exporter
+        // -----------------------------------------------------------------------
+        if (useBackgroundEncoder) {
+          // Extract ImageData, optionally resizing to export resolution first
+          let frameData: ImageData;
+
+          if (needsResize && resizeCtx && resizeCanvas) {
+            resizeCtx.clearRect(0, 0, outputWidth, outputHeight);
+            resizeCtx.drawImage(
+              offscreenCanvas,
+              0,
+              0,
+              outputWidth,
+              outputHeight
+            );
+            frameData = resizeCtx.getImageData(0, 0, outputWidth, outputHeight);
+          } else {
+            frameData = offscreenCtx.getImageData(
+              0,
+              0,
+              offscreenCanvas.width,
+              offscreenCanvas.height
+            );
+          }
+
+          const timestampMicros = i * frameDurationMicros;
+          const isKeyframe = i % keyframeInterval === 0;
+
+          // Transfer the buffer zero-copy to the worker
+          this.backgroundEncoder.addFrame(
+            frameData,
+            i,
+            timestampMicros,
+            isKeyframe
+          );
+        } else if (inlineExporter) {
+          // Legacy path: capture from the offscreen canvas directly
+          await inlineExporter.addFrame(offscreenCanvas);
+        }
 
         // Increment crossfade frame counter
         framesSinceTransition++;
@@ -393,8 +560,20 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         throw new Error("Export cancelled");
       }
 
+      // -----------------------------------------------------------------------
+      // Finalize — flush encoder and download
+      // -----------------------------------------------------------------------
       onProgress({ progress: 0, stage: "encoding" });
-      const outputBlob = await exporter.finish();
+
+      let outputBlob: Blob;
+
+      if (useBackgroundEncoder) {
+        outputBlob = await this.backgroundEncoder.finish();
+      } else if (inlineExporter) {
+        outputBlob = await inlineExporter.finish();
+      } else {
+        throw new Error("No encoder was initialized");
+      }
 
       await this.fileDownloadService.downloadBlob(outputBlob, filename);
 
@@ -402,7 +581,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
     } catch (error) {
       // Don't log cancellation as an error - it's intentional user action
       if (!this.shouldCancel) {
-        console.error("❌ Export failed:", error);
+        console.error("Export failed:", error);
         onProgress({
           progress: 0,
           stage: "error",
@@ -415,6 +594,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       this._isExporting = false;
       this.shouldCancel = false;
       this.glyphPrerenderer.clear();
+      this.backgroundEncoder.onProgress = null;
 
       // Clean up composite renderer if it was used
       if (options.compositeMode && options.compositeMode !== "none") {
@@ -425,6 +605,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
 
   cancelExport(): void {
     this.shouldCancel = true;
+    this.backgroundEncoder.cancel();
     this.VideoExporter.cancelExport();
     this._isExporting = false;
   }
