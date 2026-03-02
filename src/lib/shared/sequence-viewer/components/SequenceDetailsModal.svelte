@@ -278,15 +278,31 @@
   }
 
   // Export mode functions
-  function enterExportMode() {
+  function enterExportMode(format?: "animation" | "image" | "side-by-side") {
     hapticService?.trigger("selection");
     isExportMode = true;
-    exportType = null; // Reset to show type selector
+
+    if (format === "animation" || format === "image") {
+      // Skip type selector, go straight to settings
+      exportType = format;
+    } else {
+      // Fallback: show type selector
+      exportType = null;
+    }
+
     // Pause playback when entering export mode
     if (isPlayingLocal && playbackController) {
       playbackController.togglePlayback();
     }
-    accessibilityHelper.announce("Export mode. Choose Video, Image, or Combined format.", "assertive");
+
+    if (exportType) {
+      accessibilityHelper.announce(
+        `${exportType === "animation" ? "Video" : "Image"} export selected. Configure options below.`,
+        "assertive"
+      );
+    } else {
+      accessibilityHelper.announce("Export mode. Choose Video, Image, or Combined format.", "assertive");
+    }
   }
 
   function exitExportMode() {
