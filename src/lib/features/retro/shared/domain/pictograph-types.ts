@@ -10,11 +10,12 @@ import {
 	MotionType,
 	Orientation,
 	MotionColor,
+	RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 
 // Re-export for convenience — consumers can import from here
-export { GridLocation, GridMode, MotionType, Orientation, MotionColor };
+export { GridLocation, GridMode, MotionType, Orientation, MotionColor, RotationDirection };
 export type { Letter };
 
 /** One hand's state within a pictograph */
@@ -25,6 +26,7 @@ export interface RetroHandData {
 	readonly motionType: MotionType;
 	readonly endLocation: GridLocation;
 	readonly turns: number;
+	readonly rotationDirection: RotationDirection;
 }
 
 /** Complete pictograph: two hands on a grid */

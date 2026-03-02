@@ -42,6 +42,13 @@
     lab.loadData();
   });
 
+  // Auto-regenerate sequence on mount if returning to a saved word
+  $effect(() => {
+    if (lab.mode === "sequence" && lab.wordInput.trim() && !lab.generating && lab.sequenceSteps.length === 0) {
+      lab.generateSequence(lab.wordInput.trim());
+    }
+  });
+
   function handleKeydown(e: KeyboardEvent) {
     if (lab.mode !== "single") return;
     if (e.key === "ArrowLeft") { lab.prev(); e.preventDefault(); }

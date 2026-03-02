@@ -14,6 +14,7 @@ import {
 	MotionType,
 	Orientation,
 	MotionColor,
+	RotationDirection,
 } from "$lib/features/retro/shared/domain/pictograph-types";
 import type {
 	RetroPictographData,
@@ -58,6 +59,7 @@ function entryToPictograph(entry: PictographEntry): RetroPictographData {
 		motionType: entry.blueMotionType,
 		orientation: Orientation.IN,
 		turns: 0,
+		rotationDirection: RotationDirection.NO_ROTATION,
 	};
 	const redHand: RetroHandData = {
 		color: MotionColor.RED,
@@ -66,6 +68,7 @@ function entryToPictograph(entry: PictographEntry): RetroPictographData {
 		motionType: entry.redMotionType,
 		orientation: Orientation.IN,
 		turns: 0,
+		rotationDirection: RotationDirection.NO_ROTATION,
 	};
 	return { letter: entry.letter, blueHand, redHand, gridMode: entry.gridMode };
 }
@@ -107,16 +110,18 @@ function stepToRetro(step: StepData, isBridge = false): RetroPictographData {
 		location: blue?.startLocation ?? GridLocation.NORTH,
 		endLocation: blue?.endLocation ?? GridLocation.NORTH,
 		motionType: blue?.motionType ?? MotionType.STATIC,
-		orientation: blue?.startOrientation ?? Orientation.IN,
+		orientation: blue?.endOrientation ?? Orientation.IN,
 		turns: typeof blue?.turns === "number" ? blue.turns : 0,
+		rotationDirection: blue?.rotationDirection ?? RotationDirection.NO_ROTATION,
 	};
 	const redHand: RetroHandData = {
 		color: MotionColor.RED,
 		location: red?.startLocation ?? GridLocation.SOUTH,
 		endLocation: red?.endLocation ?? GridLocation.SOUTH,
 		motionType: red?.motionType ?? MotionType.STATIC,
-		orientation: red?.startOrientation ?? Orientation.IN,
+		orientation: red?.endOrientation ?? Orientation.IN,
 		turns: typeof red?.turns === "number" ? red.turns : 0,
+		rotationDirection: red?.rotationDirection ?? RotationDirection.NO_ROTATION,
 	};
 
 	return {

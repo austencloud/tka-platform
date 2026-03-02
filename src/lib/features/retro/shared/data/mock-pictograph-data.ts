@@ -16,6 +16,7 @@ import {
 	MotionType,
 	MotionColor,
 	Orientation,
+	RotationDirection,
 } from "../domain/pictograph-types";
 
 /**
@@ -159,6 +160,7 @@ export function createMockPictographData(
 			motionType: blueMotion,
 			endLocation: getEndLocation(pair[0], blueMotion),
 			turns: blueTurns,
+			rotationDirection: RotationDirection.NO_ROTATION,
 		},
 		redHand: {
 			color: MotionColor.RED,
@@ -167,6 +169,7 @@ export function createMockPictographData(
 			motionType: redMotion,
 			endLocation: getEndLocation(pair[1], redMotion),
 			turns: redTurns,
+			rotationDirection: RotationDirection.NO_ROTATION,
 		},
 	};
 }
