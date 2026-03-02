@@ -33,4 +33,5 @@ export interface RetroPictographData {
 	readonly blueHand: RetroHandData;
 	readonly redHand: RetroHandData;
 	readonly gridMode: GridMode;
+	readonly isBridge?: boolean;
 }

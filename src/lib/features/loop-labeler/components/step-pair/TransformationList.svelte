@@ -66,15 +66,15 @@
 
   .transformation-option:hover {
     background: var(--surface-color);
-    border-color: rgba(255, 255, 255, 0.3);
+    border-color: var(--theme-stroke-strong);
     color: var(--foreground);
   }
 
   .transformation-option.selected {
     background: linear-gradient(
       135deg,
-      rgba(139, 92, 246, 0.3) 0%,
-      rgba(99, 102, 241, 0.3) 100%
+      color-mix(in srgb, var(--feature-edit) 30%, transparent) 0%,
+      color-mix(in srgb, var(--primary-color) 30%, transparent) 100%
     );
     border-color: var(--theme-accent-strong);
     color: var(--foreground);

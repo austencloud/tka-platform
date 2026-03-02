@@ -28,6 +28,7 @@ import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enu
 import { sequenceExtender } from "$lib/features/create/shared/services/implementations/SequenceExtender";
 import { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
 
 export function createGenerationActionsState(
   getSequenceState?: () => SequenceState | undefined,
@@ -39,6 +40,7 @@ export function createGenerationActionsState(
   let lastGeneratedSequence = $state<SequenceData | null>(null);
   let lastGeneratedConfig = $state<UIGenerationConfig | null>(null);
   let generationError = $state<string | null>(null);
+  let needsCycleCompletion = $state(false);
   let orchestrationService: IGenerationOrchestrator | null = null;
 
   async function onGenerateClicked(options: GenerationOptions) {
@@ -80,6 +82,8 @@ export function createGenerationActionsState(
       }
 
       lastGeneratedSequence = generatedSequence;
+      needsCycleCompletion =
+        (generatedSequence.orientationCycleCount ?? 1) > 1;
       const currentConfig = getConfig?.();
       lastGeneratedConfig = currentConfig ? { ...currentConfig } : null;
       await updateWorkbenchWithSequence(generatedSequence);
@@ -257,6 +261,7 @@ export function createGenerationActionsState(
       }
 
       lastGeneratedSequence = loopedSequence;
+      needsCycleCompletion = false; // Spell mode doesn't use orientation cycle completion
       const currentConfig = getConfig?.();
       lastGeneratedConfig = currentConfig ? { ...currentConfig } : null;
       await updateWorkbenchWithSequence(loopedSequence);
@@ -431,6 +436,24 @@ export function createGenerationActionsState(
     }
   }
 
+  /**
+   * Extend the current sequence to complete its orientation cycle.
+   * Uses the same animation flow as generation so the new beats animate in.
+   */
+  async function completeCycle() {
+    const sequenceState = getSequenceState?.();
+    if (!sequenceState) return;
+
+    const currentSequence = sequenceState.currentSequence;
+    if (!currentSequence) return;
+
+    const extended = orientationCycleExtender.extendIfNeeded(currentSequence);
+    needsCycleCompletion = false;
+
+    // Use the same animation pipeline as generation
+    await updateWorkbenchWithSequence(extended);
+  }
+
   function clearError() {
     generationError = null;
   }
@@ -459,8 +482,12 @@ export function createGenerationActionsState(
     get generationError() {
       return generationError;
     },
+    get needsCycleCompletion() {
+      return needsCycleCompletion;
+    },
     onGenerateClicked,
     onSpellGenerate,
+    completeCycle,
     clearError,
     getGenerationSummary,
   };

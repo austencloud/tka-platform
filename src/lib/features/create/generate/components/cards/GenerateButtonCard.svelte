@@ -30,6 +30,8 @@ In freeform mode, renders as a pure button.
     wordInputValue = "",
     onWordInput,
     onWordSubmit,
+    needsCycleCompletion = false,
+    onCompleteCycle,
   } = $props<{
     isGenerating: boolean;
     hasSettingsChanged?: boolean;
@@ -41,6 +43,10 @@ In freeform mode, renders as a pure button.
     wordInputValue?: string;
     onWordInput?: (value: string) => void;
     onWordSubmit?: () => void;
+    /** When true, show "Complete Cycle" button alongside generate */
+    needsCycleCompletion?: boolean;
+    /** Called when user clicks "Complete Cycle" */
+    onCompleteCycle?: () => void;
   }>();
 
   const isDisabled = $derived(isGenerating || disabled);
@@ -123,6 +129,11 @@ In freeform mode, renders as a pure button.
       await handleClick();
     }
   }
+
+  function handleCompleteCycle() {
+    hapticService?.trigger("selection");
+    onCompleteCycle?.();
+  }
 </script>
 
 {#if spellMode}
@@ -166,20 +177,50 @@ In freeform mode, renders as a pure button.
     </button>
   </div>
 {:else}
-  <!-- Freeform mode: pure generate button -->
-  <button
-    class="generate-button-card"
-    class:dirty={hasSettingsChanged && !isGenerating}
-    onclick={handleClick}
-    disabled={isDisabled}
-    type="button"
-    aria-label={buttonLabel}
-  >
-    <div class="button-content">
-      <FontAwesomeIcon icon={buttonIcon} style="solid" />
-      <span>{buttonLabel}</span>
+  <!-- Freeform mode: generate button, optionally with "Complete Cycle" -->
+  {#if needsCycleCompletion}
+    <div class="generate-row">
+      <button
+        class="complete-cycle-btn"
+        onclick={handleCompleteCycle}
+        disabled={isGenerating}
+        type="button"
+        aria-label="Complete orientation cycle"
+      >
+        <div class="button-content">
+          <FontAwesomeIcon icon="rotate" style="solid" />
+          <span>Complete Cycle</span>
+        </div>
+      </button>
+      <button
+        class="generate-button-card generate-half"
+        class:dirty={hasSettingsChanged && !isGenerating}
+        onclick={handleClick}
+        disabled={isDisabled}
+        type="button"
+        aria-label={buttonLabel}
+      >
+        <div class="button-content">
+          <FontAwesomeIcon icon={buttonIcon} style="solid" />
+          <span>{buttonLabel}</span>
+        </div>
+      </button>
     </div>
-  </button>
+  {:else}
+    <button
+      class="generate-button-card"
+      class:dirty={hasSettingsChanged && !isGenerating}
+      onclick={handleClick}
+      disabled={isDisabled}
+      type="button"
+      aria-label={buttonLabel}
+    >
+      <div class="button-content">
+        <FontAwesomeIcon icon={buttonIcon} style="solid" />
+        <span>{buttonLabel}</span>
+      </div>
+    </button>
+  {/if}
 {/if}
 
 <style>
@@ -242,6 +283,11 @@ In freeform mode, renders as a pure button.
       inset 0 -1px 0 var(--theme-shadow);
   }
 
+  .generate-button-card:focus-visible {
+    outline: 2px solid var(--theme-text, white);
+    outline-offset: 2px;
+  }
+
   /* ─── Spell bar: horizontal layout with input + icon ─── */
 
   .spell-bar {
@@ -264,9 +310,13 @@ In freeform mode, renders as a pure button.
     text-align: center;
     padding: 4px 12px;
     height: calc(100% - 12px);
-    outline: none;
     font-family: inherit;
     transition: border-color 150ms ease;
+  }
+
+  /* Suppress outline for pointer users, keep for keyboard */
+  .spell-input:focus:not(:focus-visible) {
+    outline: none;
   }
 
   .spell-input::placeholder {
@@ -280,11 +330,18 @@ In freeform mode, renders as a pure button.
     background: rgba(0, 0, 0, 0.3);
   }
 
+  .spell-input:focus-visible {
+    border-color: rgba(255, 255, 255, 0.5);
+    outline: 2px solid white;
+    outline-offset: 1px;
+  }
+
   .spell-input:disabled {
     opacity: 0.5;
   }
 
   .clear-btn {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -300,6 +357,13 @@ In freeform mode, renders as a pure button.
     transition: all 100ms ease;
   }
 
+  /* Expand touch target to 48px while keeping visual size at 32px */
+  .clear-btn::before {
+    content: "";
+    position: absolute;
+    inset: -8px;
+  }
+
   .clear-btn:hover {
     background: rgba(0, 0, 0, 0.4);
     color: white;
@@ -307,6 +371,11 @@ In freeform mode, renders as a pure button.
 
   .clear-btn:active {
     transform: scale(0.92);
+  }
+
+  .clear-btn:focus-visible {
+    outline: 2px solid var(--theme-text, white);
+    outline-offset: 2px;
   }
 
   .generate-icon-btn {
@@ -340,10 +409,68 @@ In freeform mode, renders as a pure button.
     cursor: not-allowed;
   }
 
+  .generate-icon-btn:focus-visible {
+    outline: 2px solid var(--theme-text, white);
+    outline-offset: 2px;
+  }
+
   .spell-bar.disabled {
     opacity: 0.5;
     filter: grayscale(0.5);
     animation: none;
+  }
+
+  /* ─── Complete Cycle + Generate side-by-side ─── */
+
+  .generate-row {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    gap: clamp(4px, 1cqi, 8px);
+  }
+
+  .complete-cycle-btn {
+    flex: 1;
+    border: none;
+    background: var(--theme-accent, rgba(99, 102, 241, 0.85));
+    color: var(--theme-text, white);
+    border-radius: 20px;
+    font-size: clamp(14px, 1.8vmin, 22px);
+    font-weight: var(--card-text-weight);
+    letter-spacing: 0.2px;
+    text-shadow: var(--card-text-shadow);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow:
+      0 4px 12px color-mix(in srgb, var(--theme-accent, rgba(99, 102, 241, 0.85)) 40%, transparent),
+      0 2px 6px var(--theme-shadow);
+  }
+
+  .complete-cycle-btn:hover:not(:disabled) {
+    filter: brightness(1.15);
+    transform: scale(1.02);
+  }
+
+  .complete-cycle-btn:active:not(:disabled) {
+    transform: scale(0.98);
+    transition: all var(--duration-instant) ease;
+  }
+
+  .complete-cycle-btn:focus-visible {
+    outline: 2px solid var(--theme-text, white);
+    outline-offset: 2px;
+  }
+
+  .complete-cycle-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .generate-half {
+    flex: 1;
   }
 
   /* ─── Freeform button styles ─── */
@@ -454,7 +581,8 @@ In freeform mode, renders as a pure button.
 
     .spell-input,
     .clear-btn,
-    .generate-icon-btn {
+    .generate-icon-btn,
+    .complete-cycle-btn {
       transition: none;
     }
   }

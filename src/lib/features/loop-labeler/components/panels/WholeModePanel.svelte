@@ -38,11 +38,11 @@
     key: keyof TransformationIntervals;
     color: string;
   }[] = [
-    { id: "rotated", key: "rotation", color: "#36c3ff" },
-    { id: "swapped", key: "swap", color: "#26e600" },
-    { id: "mirrored", key: "mirror", color: "#6F2DA8" },
-    { id: "flipped", key: "flip", color: "#14b8a6" },
-    { id: "inverted", key: "invert", color: "#eb7d00" },
+    { id: "rotated", key: "rotation", color: "var(--accent-rotation)" },
+    { id: "swapped", key: "swap", color: "var(--accent-swap)" },
+    { id: "mirrored", key: "mirror", color: "var(--feature-edit)" },
+    { id: "flipped", key: "flip", color: "var(--accent-teal)" },
+    { id: "inverted", key: "invert", color: "var(--accent-inversion)" },
   ];
 
   function getIntervalConfig(id: ComponentId) {
@@ -82,6 +82,7 @@
           class:selected={isSelected}
           style="--component-color: {component.color}"
           onclick={() => onToggleComponent(component.id)}
+          aria-pressed={isSelected}
         >
           <FontAwesomeIcon
             icon={component.icon}
@@ -104,6 +105,8 @@
                 "halved"}
               style="--chip-color: {intervalConfig.color}"
               onclick={() => onSetInterval(intervalConfig.key, "halved")}
+              aria-label="Set {component.label} interval to halved"
+              aria-pressed={transformationIntervals[intervalConfig.key] === "halved"}
               >½</button
             >
             <button
@@ -112,6 +115,8 @@
                 "quartered"}
               style="--chip-color: {intervalConfig.color}"
               onclick={() => onSetInterval(intervalConfig.key, "quartered")}
+              aria-label="Set {component.label} interval to quartered"
+              aria-pressed={transformationIntervals[intervalConfig.key] === "quartered"}
               >¼</button
             >
           </div>
@@ -246,8 +251,8 @@
     justify-content: center;
     gap: var(--spacing-sm);
     padding: var(--spacing-sm) var(--spacing-md);
-    background: rgba(99, 102, 241, 0.15);
-    border: 1px solid rgba(99, 102, 241, 0.3);
+    background: color-mix(in srgb, var(--primary-color) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
     border-radius: 8px;
     color: var(--foreground);
     font-size: var(--font-size-sm);
@@ -258,8 +263,8 @@
   }
 
   .btn-add:hover:not(:disabled) {
-    background: rgba(99, 102, 241, 0.25);
-    border-color: rgba(99, 102, 241, 0.5);
+    background: color-mix(in srgb, var(--primary-color) 25%, transparent);
+    border-color: color-mix(in srgb, var(--primary-color) 50%, transparent);
   }
 
   .btn-add:disabled {

@@ -21,10 +21,7 @@ with individual headers for each type.
     columns: number;
     gap?: string;
     onSelect: (option: PreparedPictographData) => void;
-    // Sequence context for reversal detection
     currentSequence?: PictographData[];
-    // Enable FLIP animation for filtering (desktop only)
-    enableFlip?: boolean;
     // Thread slot tracking
     onSlotClicked?: (typeSection: string, slotIndex: number) => void;
   }
@@ -36,7 +33,6 @@ with individual headers for each type.
     gap = "8px",
     onSelect,
     currentSequence = [],
-    enableFlip = false,
     onSlotClicked,
   }: Props = $props();
 </script>
@@ -54,7 +50,6 @@ with individual headers for each type.
           {gap}
           {onSelect}
           {currentSequence}
-          {enableFlip}
           typeSectionTitle={section.title}
           {onSlotClicked}
         />

@@ -218,6 +218,9 @@ export class CardConfigurator implements ICardConfigurator {
           wordInputValue: isSpellMode ? (handlers.wordInputValue ?? "") : undefined,
           onWordInput: isSpellMode ? handlers.handleWordInput : undefined,
           onWordSubmit: isSpellMode ? handlers.handleWordSubmit : undefined,
+          // Orientation cycle completion (freeform LOOP only)
+          needsCycleCompletion: handlers.needsCycleCompletion ?? false,
+          onCompleteCycle: handlers.handleCompleteCycle,
         },
         gridColumnSpan: 6, // Always full width — no cards share this row
       });

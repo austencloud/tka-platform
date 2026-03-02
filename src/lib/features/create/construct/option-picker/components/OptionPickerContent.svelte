@@ -373,7 +373,7 @@ Uses organizer and sizer services for section grouping and sizing.
               showHeader={continuationState().sections.length > 1}
               {onSelect}
               {currentSequence}
-              enableFlip={true}
+
               {onSlotClicked}
               continuationIndex={getContinuationIndex(section.title)}
             />
@@ -388,7 +388,7 @@ Uses organizer and sizer services for section grouping and sizing.
               gap={desktopSizing().gap}
               {onSelect}
               {currentSequence}
-              enableFlip={true}
+
               {onSlotClicked}
             />
           {/if}

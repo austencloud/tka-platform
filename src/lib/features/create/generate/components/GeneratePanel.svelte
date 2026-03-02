@@ -260,6 +260,8 @@ Card-based architecture with integrated Generate button:
       wordInputValue={spellModeState.inputWord}
       onWordInput={(v) => spellModeState.setInputWord(v)}
       onWordSubmit={() => handleGenerate(null)}
+      needsCycleCompletion={actionsState.needsCycleCompletion}
+      onCompleteCycle={() => actionsState.completeCycle()}
     />
   </div>
 </div>

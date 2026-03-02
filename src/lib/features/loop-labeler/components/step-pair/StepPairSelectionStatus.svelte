@@ -51,8 +51,8 @@
     justify-content: space-between;
     gap: var(--spacing-md);
     padding: var(--spacing-md);
-    background: rgba(168, 85, 247, 0.1);
-    border: 1px solid rgba(168, 85, 247, 0.25);
+    background: color-mix(in srgb, var(--feature-edit) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--feature-edit) 25%, transparent);
     border-radius: 8px;
   }
 
@@ -81,13 +81,13 @@
   }
 
   .steppair-indicator.key {
-    background: rgba(34, 197, 94, 0.35);
-    border: 2px solid rgba(34, 197, 94, 0.9);
+    background: color-mix(in srgb, var(--semantic-success) 35%, transparent);
+    border: 2px solid color-mix(in srgb, var(--semantic-success) 90%, transparent);
   }
 
   .steppair-indicator.corresponding {
-    background: rgba(168, 85, 247, 0.35);
-    border: 2px solid rgba(168, 85, 247, 0.9);
+    background: color-mix(in srgb, var(--feature-edit) 35%, transparent);
+    border: 2px solid color-mix(in srgb, var(--feature-edit) 90%, transparent);
   }
 
   .steppair-arrow {
@@ -100,8 +100,8 @@
     align-items: center;
     gap: var(--spacing-xs);
     padding: var(--spacing-sm) var(--spacing-md);
-    background: rgba(239, 68, 68, 0.15);
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: color-mix(in srgb, var(--semantic-error) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-error) 30%, transparent);
     border-radius: 8px;
     color: var(--semantic-error);
     font-size: var(--font-size-xs);
@@ -113,7 +113,7 @@
   }
 
   .clear-selection-btn:hover {
-    background: rgba(239, 68, 68, 0.25);
-    border-color: rgba(239, 68, 68, 0.5);
+    background: color-mix(in srgb, var(--semantic-error) 25%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error) 50%, transparent);
   }
 </style>

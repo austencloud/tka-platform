@@ -31,6 +31,7 @@
           class="remove-btn"
           onclick={() => onRemove(i)}
           title="Remove beat pair"
+          aria-label="Remove beat pair {i + 1}"
         >
           <FontAwesomeIcon icon="xmark" size="0.85em" />
         </button>
@@ -66,7 +67,7 @@
     padding: var(--spacing-sm) var(--spacing-md);
     background: rgba(0, 0, 0, 0.2);
     border-radius: 8px;
-    border-left: 4px solid rgba(168, 85, 247, 0.8);
+    border-left: 4px solid color-mix(in srgb, var(--feature-edit) 80%, transparent);
   }
 
   .steppair-steps {
@@ -98,7 +99,7 @@
   }
 
   .remove-btn:hover {
-    background: rgba(239, 68, 68, 0.2);
+    background: color-mix(in srgb, var(--semantic-error) 20%, transparent);
     color: var(--semantic-error);
   }
 </style>

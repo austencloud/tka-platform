@@ -16,7 +16,6 @@
 <script lang="ts">
   import CreatePanelDrawer from "./CreatePanelDrawer.svelte";
   import SheetDragHandle from "$lib/shared/foundation/ui/SheetDragHandle.svelte";
-  import TagAutocompleteInput from "$lib/features/library/components/tags/TagAutocompleteInput.svelte";
   import SaveProgressOverlay from "$lib/features/library/components/SaveProgressOverlay.svelte";
   import ExpandableField from "$lib/features/library/components/ExpandableField.svelte";
   import ContentAppealModal from "$lib/features/moderation/components/ContentAppealModal.svelte";
@@ -30,6 +29,7 @@
   import type { ILibrarySaveService } from "$lib/features/library/services/contracts/ILibrarySaveService";
   import type { IContentModerator } from "$lib/features/moderation/services/contracts/IContentModerator";
   import type { ContentModerationResult } from "$lib/features/moderation/domain/models/content-moderation-models";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { simplifyAndTruncate } from "../workspace-panel/shared/utils/word-simplifier";
   import { libraryState } from "$lib/features/library/state/library-state.svelte";
   import { notifyLibrarySequenceAdded } from "$lib/shared/library/library-events";
@@ -105,15 +105,10 @@
   );
 
   // Form state
-  let customDisplayName = $state("");
-  let tags = $state<string[]>([]);
   let notes = $state("");
-  let tagResetTrigger = $state(0);
 
   // Expandable sections
-  let showDisplayName = $state(false);
   let showNotes = $state(false);
-  let showTags = $state(false);
 
   // Content moderation state
   let moderationResult = $state<ContentModerationResult | null>(null);
@@ -157,6 +152,7 @@
   const creatorName = $derived(
     currentUser?.displayName || currentUser?.email || "Anonymous"
   );
+  const darkMode = $derived(getSettings().darkMode ?? false);
 
   // Check content moderation when word changes
   const isFlagged = $derived(moderationResult !== null && !moderationResult.isAllowed);
@@ -207,13 +203,9 @@
   // Reset form when sequence changes or panel opens
   $effect(() => {
     if (sequence && show) {
-      customDisplayName = sequence.displayName || "";
-      tags = [];
       notes = "";
-      showDisplayName = !!sequence.displayName;
       showNotes = false;
-      showTags = false;
-      acknowledgedDuplicate = false; // Reset duplicate acknowledgment
+      acknowledgedDuplicate = false;
     }
   });
 
@@ -239,10 +231,6 @@
     return () => window.removeEventListener("keydown", onKeydown);
   });
 
-  function handleTagsChange(newTags: string[]) {
-    tags = newTags;
-  }
-
   async function handleSave() {
     if (!tkaName || !sequence) return;
     if (!librarySaveService) {
@@ -258,16 +246,14 @@
       logger.info("Saving sequence to library...", {
         stepCount: sequence.steps.length,
         tkaName,
-        customDisplayName: customDisplayName.trim() || "(none)",
       });
 
       const result = await librarySaveService.saveSequence(
         sequence,
         {
           name: tkaName,
-          displayName: customDisplayName.trim() || undefined,
-          visibility: "public", // All sequences are public
-          tags,
+          visibility: "public",
+          tags: [],
           notes: notes.trim(),
         },
         (progress) => {
@@ -288,7 +274,6 @@
           ? [result.thumbnailUrl]
           : sequence.thumbnails,
         name: tkaName,
-        displayName: customDisplayName.trim() || sequence.displayName,
       });
 
       if (ctx.sessionManager) {
@@ -307,7 +292,6 @@
   }
 
   function handleClose() {
-    tagResetTrigger++;
     isOpen = false;
     onClose?.();
   }
@@ -419,12 +403,11 @@
     <div class="panel-body">
       <!-- Sequence Preview -->
       {#if isDesktop && sequence}
-        <div class="form-group">
-          <span class="form-label">TKA Name</span>
+        <div class="choreo-group">
           <div class="choreo-preview">
             <ChoreoCard
               {sequence}
-              darkMode={true}
+              {darkMode}
               userName={creatorName}
               showCreatorName={true}
               showBirthday={true}
@@ -436,7 +419,6 @@
         </div>
       {:else}
         <div class="form-group">
-          <span class="form-label">TKA Name</span>
           <div class="tka-name-display">
             <span class="tka-badge">{displayTkaName || "..."}</span>
             <span class="tka-hint">Auto-generated from sequence letters</span>
@@ -507,7 +489,7 @@
             </span>
           </div>
           <p class="warning-text">
-            Saving will create another variation. Consider using a unique display name to differentiate.
+            Saving will create another variation.
           </p>
           <label class="acknowledge-checkbox">
             <input
@@ -519,48 +501,8 @@
         </div>
       {/if}
 
-      <!-- Creator Attribution -->
-      <div class="creator-section">
-        <i class="fas fa-user" aria-hidden="true"></i>
-        <span>By {creatorName}</span>
-      </div>
-
-      <!-- Optional Fields -->
+      <!-- Notes (optional) -->
       <div class="optional-section">
-        <ExpandableField
-          label="Display Name"
-          expanded={showDisplayName}
-          onExpandedChange={(v) => (showDisplayName = v)}
-          onCollapse={() => (customDisplayName = "")}
-        >
-          <input
-            id="display-name"
-            type="text"
-            bind:value={customDisplayName}
-            placeholder="e.g., Fire Spin Intro"
-            class="input-field"
-            maxlength="100"
-          />
-        </ExpandableField>
-
-        <ExpandableField
-          label="Tags"
-          expanded={showTags}
-          onExpandedChange={(v) => (showTags = v)}
-          onCollapse={() => {
-            tags = [];
-            tagResetTrigger++;
-          }}
-        >
-          <TagAutocompleteInput
-            selectedTags={tags}
-            onTagsChange={handleTagsChange}
-            placeholder="Search or create tags..."
-            maxTags={10}
-            resetTrigger={tagResetTrigger}
-          />
-        </ExpandableField>
-
         <ExpandableField
           label="Notes"
           expanded={showNotes}
@@ -705,20 +647,8 @@
     gap: 32px;
   }
 
-  /* TKA Name - the hero element, draws the eye */
   .form-group {
     margin: 0;
-  }
-
-  .form-label {
-    display: block;
-    margin-bottom: 12px;
-    font-size: var(--font-size-base, 16px);
-    font-weight: 600;
-    color: var(--theme-text-dim);
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    text-align: center;
   }
 
   .tka-name-display {
@@ -748,9 +678,16 @@
     text-align: center;
   }
 
+  .choreo-group {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
   .choreo-preview {
-    max-width: 600px;
-    margin: 0 auto;
+    flex: 1;
+    min-height: 0;
     border-radius: 12px;
     overflow: hidden;
   }
@@ -912,21 +849,7 @@
     flex: 1;
   }
 
-  /* Creator Attribution */
-  .creator-section {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-base, 16px);
-  }
-
-  .creator-section i {
-    opacity: 0.6;
-  }
-
-  /* Optional fields - secondary, collapsed by default */
+  /* Optional fields - collapsed by default */
   .optional-section {
     display: flex;
     flex-wrap: wrap;
@@ -934,7 +857,6 @@
     gap: 8px;
   }
 
-  .input-field,
   .textarea-field {
     width: 100%;
     padding: 14px 18px;
@@ -948,7 +870,6 @@
     box-sizing: border-box;
   }
 
-  .input-field:focus,
   .textarea-field:focus {
     outline: none;
     background: var(--theme-card-hover-bg, var(--theme-card-bg));
@@ -957,7 +878,6 @@
       color-mix(in srgb, var(--theme-accent) 15%, transparent);
   }
 
-  .input-field::placeholder,
   .textarea-field::placeholder {
     color: color-mix(in srgb, var(--theme-text-dim) 70%, transparent);
   }
@@ -1060,7 +980,6 @@
 
   @media (prefers-reduced-motion: reduce) {
     .button,
-    .input-field,
     .textarea-field,
     .close-button {
       transition: none;

@@ -84,23 +84,19 @@
     max-height: 75vh;
   }
 
-  /* Font sizing for the 66×26 pictograph buffer.
-     The global .dos-terminal uses container-type: inline-size and a
-     width-only formula. Here we switch to full size containment so
-     both cqw and cqh are available, then pick whichever axis is more
-     constraining via min().
-       Width:  66 chars × 0.6 ch/em ≈ 40 units → (100cqw - 24px) / 40
-       Height: 26 rows × 1.3 lh ≈ 34 units  → (100cqh - 24px) / 34 */
+  /* "High-res" CRT: doubled textual resolution (132 cols × 52 rows).
+     Each 66×26 pictograph occupies roughly half the screen width and
+     half the height, leaving room for vertical sequence stacking.
+     Uses full size containment for both cqw and cqh. */
   .monitor-wrap :global(.dos-terminal) {
     container-type: size;
-    font-size: clamp(7px, min(calc((100cqw - 24px) / 40), calc((100cqh - 24px) / 34)), 18px);
+    font-size: clamp(4px, min(calc((100cqw - 24px) / 80), calc((100cqh - 24px) / 68)), 14px);
   }
 
-  /* Override the output area to center content vertically */
+  /* Let content start at top and scroll naturally */
   .monitor-wrap :global(.lab-output) {
     display: flex;
     flex-direction: column;
-    justify-content: center;
   }
 
   .compact-divider {

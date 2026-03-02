@@ -74,9 +74,6 @@
   const isShiftStartMode = $derived(panelState.isShiftStartMode);
   const isTimelineMode = $derived(getIsTimelineMode());
 
-  // Direct read bypassing spread-derived currentSequence
-  const orientationCycleCount = $derived.by(() => sequenceState.orientationCycleCount);
-
   // Convert selectedStartPosition (PictographData) to StepData format for StepGrid
   const startPositionStep = $derived(() => {
     if (!selectedStartPosition) return null;
@@ -160,7 +157,6 @@
           {activeMode}
           {isTimelineMode}
           onDurationChange={handleDurationChange}
-          orientationCycleCount={orientationCycleCount}
         />
       </div>
     </div>

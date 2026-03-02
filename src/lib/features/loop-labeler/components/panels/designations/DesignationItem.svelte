@@ -41,62 +41,62 @@
     gap: var(--spacing-sm);
     padding: var(--spacing-xs) var(--spacing-sm);
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
   }
 
   .designation-item.whole {
     background: linear-gradient(
       135deg,
-      rgba(99, 102, 241, 0.12) 0%,
-      rgba(139, 92, 246, 0.08) 100%
+      color-mix(in srgb, var(--primary-color) 12%, transparent) 0%,
+      color-mix(in srgb, var(--feature-edit) 8%, transparent) 100%
     );
-    border-color: rgba(99, 102, 241, 0.25);
+    border-color: color-mix(in srgb, var(--primary-color) 25%, transparent);
   }
 
   .designation-item.section {
     background: linear-gradient(
       135deg,
-      rgba(59, 130, 246, 0.12) 0%,
-      rgba(99, 102, 241, 0.08) 100%
+      color-mix(in srgb, var(--semantic-info) 12%, transparent) 0%,
+      color-mix(in srgb, var(--primary-color) 8%, transparent) 100%
     );
-    border-color: rgba(59, 130, 246, 0.25);
+    border-color: color-mix(in srgb, var(--semantic-info) 25%, transparent);
   }
 
   .designation-item.steppair {
     background: linear-gradient(
       135deg,
-      rgba(168, 85, 247, 0.12) 0%,
-      rgba(139, 92, 246, 0.08) 100%
+      color-mix(in srgb, var(--feature-edit) 12%, transparent) 0%,
+      color-mix(in srgb, var(--feature-edit) 8%, transparent) 100%
     );
-    border-color: rgba(168, 85, 247, 0.25);
+    border-color: color-mix(in srgb, var(--feature-edit) 25%, transparent);
   }
 
   .designation-item.freeform {
     background: linear-gradient(
       135deg,
-      rgba(239, 68, 68, 0.12) 0%,
-      rgba(220, 38, 38, 0.08) 100%
+      color-mix(in srgb, var(--semantic-error) 12%, transparent) 0%,
+      color-mix(in srgb, var(--semantic-error) 8%, transparent) 100%
     );
-    border-color: rgba(239, 68, 68, 0.25);
+    border-color: color-mix(in srgb, var(--semantic-error) 25%, transparent);
   }
 
   .designation-item.modular {
     background: linear-gradient(
       135deg,
-      rgba(234, 179, 8, 0.12) 0%,
-      rgba(202, 138, 4, 0.08) 100%
+      color-mix(in srgb, var(--semantic-warning) 12%, transparent) 0%,
+      color-mix(in srgb, var(--semantic-warning) 8%, transparent) 100%
     );
-    border-color: rgba(234, 179, 8, 0.25);
+    border-color: color-mix(in srgb, var(--semantic-warning) 25%, transparent);
   }
 
   .designation-item.axis-alternating {
     background: linear-gradient(
       135deg,
-      rgba(20, 184, 166, 0.15) 0%,
-      rgba(168, 85, 247, 0.12) 100%
+      color-mix(in srgb, var(--accent-teal) 15%, transparent) 0%,
+      color-mix(in srgb, var(--feature-edit) 12%, transparent) 100%
     );
-    border-color: rgba(20, 184, 166, 0.35);
+    border-color: color-mix(in srgb, var(--accent-teal) 35%, transparent);
   }
 
   .designation-badge {
@@ -112,37 +112,37 @@
   }
 
   .whole .designation-badge {
-    background: rgba(99, 102, 241, 0.3);
-    color: #a5b4fc;
+    background: color-mix(in srgb, var(--primary-color) 30%, transparent);
+    color: color-mix(in srgb, var(--primary-color) 65%, white);
   }
 
   .section .designation-badge {
-    background: rgba(59, 130, 246, 0.3);
-    color: #93c5fd;
+    background: color-mix(in srgb, var(--semantic-info) 30%, transparent);
+    color: var(--semantic-info-text);
   }
 
   .steppair .designation-badge {
-    background: rgba(168, 85, 247, 0.3);
-    color: #c4b5fd;
+    background: color-mix(in srgb, var(--feature-edit) 30%, transparent);
+    color: color-mix(in srgb, var(--feature-edit) 65%, white);
   }
 
   .freeform .designation-badge {
-    background: rgba(239, 68, 68, 0.3);
-    color: #fca5a5;
+    background: color-mix(in srgb, var(--semantic-error) 30%, transparent);
+    color: color-mix(in srgb, var(--semantic-error) 65%, white);
   }
 
   .modular .designation-badge {
-    background: rgba(234, 179, 8, 0.3);
-    color: #fde047;
+    background: color-mix(in srgb, var(--semantic-warning) 30%, transparent);
+    color: var(--semantic-warning-text-vivid);
   }
 
   .axis-alternating .designation-badge {
     background: linear-gradient(
       135deg,
-      rgba(20, 184, 166, 0.4) 0%,
-      rgba(168, 85, 247, 0.4) 100%
+      color-mix(in srgb, var(--accent-teal) 40%, transparent) 0%,
+      color-mix(in srgb, var(--feature-edit) 40%, transparent) 100%
     );
-    color: #5eead4;
+    color: color-mix(in srgb, var(--accent-teal) 65%, white);
   }
 
   .designation-label {
@@ -171,7 +171,7 @@
   }
 
   .remove-btn:hover {
-    background: rgba(239, 68, 68, 0.2);
+    background: color-mix(in srgb, var(--semantic-error) 20%, transparent);
     color: var(--semantic-error);
   }
 </style>

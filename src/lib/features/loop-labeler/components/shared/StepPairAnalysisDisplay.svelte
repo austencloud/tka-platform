@@ -37,28 +37,28 @@
     }
   });
 
-  // Color coding for different transformation types
+  // Color coding for different transformation types (using CSS custom properties)
   const transformationColors: Record<string, string> = {
-    FLIPPED: "#14b8a6",
-    HORIZONTAL_FLIP: "#14b8a6",
-    ROTATED_180: "#36c3ff",
-    ROTATED_90: "#36c3ff",
-    ROTATED_90_CCW: "#36c3ff",
-    ROTATED_90_CW: "#36c3ff",
-    SWAPPED: "#26e600",
-    INVERTED: "#eb7d00",
-    MIRRORED: "#a855f7",
-    REPEATED: "#6b7280",
+    FLIPPED: "var(--accent-teal)",
+    HORIZONTAL_FLIP: "var(--accent-teal)",
+    ROTATED_180: "var(--accent-rotation)",
+    ROTATED_90: "var(--accent-rotation)",
+    ROTATED_90_CCW: "var(--accent-rotation)",
+    ROTATED_90_CW: "var(--accent-rotation)",
+    SWAPPED: "var(--accent-swap)",
+    INVERTED: "var(--accent-inversion)",
+    MIRRORED: "var(--feature-edit)",
+    REPEATED: "var(--muted-foreground)",
     UNKNOWN: "var(--semantic-error)",
-    SAME: "#6b7280",
-    ROTATED: "#36c3ff",
+    SAME: "var(--muted-foreground)",
+    ROTATED: "var(--accent-rotation)",
   };
 
   // Color coding for letter relationships
   const letterRelationshipColors: Record<string, string> = {
-    inverted: "#eb7d00",
+    inverted: "var(--accent-inversion)",
     compound: "var(--semantic-success)",
-    alpha_beta_counterpart: "#a855f7",
+    alpha_beta_counterpart: "var(--feature-edit)",
   };
 
   function getColorForPattern(pattern: string): string {
@@ -67,7 +67,7 @@
         return color;
       }
     }
-    return "#6b7280";
+    return "var(--muted-foreground)";
   }
 
   /**
@@ -76,7 +76,7 @@
   function getLetterRelationshipColor(
     rel: StepPairRelationship["letterRelationship"]
   ): string {
-    const defaultColor = "#6b7280";
+    const defaultColor = "var(--muted-foreground)";
     if (!rel) return defaultColor;
     if (rel.relationships.isCompound)
       return letterRelationshipColors.compound ?? defaultColor;
@@ -141,6 +141,8 @@
       class="header"
       class:expanded={isExpanded}
       onclick={() => (isExpanded = !isExpanded)}
+      aria-expanded={isExpanded}
+      aria-label={isExpanded ? "Collapse beat-pair analysis" : "Expand beat-pair analysis"}
     >
       <div class="header-left">
         <FontAwesomeIcon
@@ -339,7 +341,7 @@
   }
 
   .header:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--theme-card-bg);
   }
 
   .header-left {
@@ -355,11 +357,11 @@
 
   .modular-badge {
     padding: 2px 8px;
-    background: rgba(168, 85, 247, 0.2);
-    border: 1px solid rgba(168, 85, 247, 0.4);
+    background: color-mix(in srgb, var(--feature-edit) 20%, transparent);
+    border: 1px solid color-mix(in srgb, var(--feature-edit) 40%, transparent);
     border-radius: 12px;
     font-size: var(--font-size-xs);
-    color: #a855f7;
+    color: var(--feature-edit);
     font-weight: 500;
   }
 
@@ -367,13 +369,13 @@
     padding: 2px 8px;
     background: linear-gradient(
       135deg,
-      rgba(20, 184, 166, 0.2) 0%,
-      rgba(168, 85, 247, 0.2) 100%
+      color-mix(in srgb, var(--accent-teal) 20%, transparent) 0%,
+      color-mix(in srgb, var(--feature-edit) 20%, transparent) 100%
     );
-    border: 1px solid rgba(20, 184, 166, 0.4);
+    border: 1px solid color-mix(in srgb, var(--accent-teal) 40%, transparent);
     border-radius: 12px;
     font-size: var(--font-size-xs);
-    color: #5eead4;
+    color: color-mix(in srgb, var(--accent-teal) 65%, white);
     font-weight: 500;
     text-transform: capitalize;
   }
@@ -488,7 +490,7 @@
     align-items: flex-start;
     gap: var(--spacing-md);
     padding: var(--spacing-xs) var(--spacing-sm);
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--theme-card-bg);
     border-radius: 6px;
   }
 
@@ -505,7 +507,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(99, 102, 241, 0.2);
+    background: color-mix(in srgb, var(--primary-color) 20%, transparent);
     border-radius: 4px;
     font-size: var(--font-size-xs);
     font-weight: 600;

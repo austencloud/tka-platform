@@ -435,8 +435,8 @@
   }
 
   .action-btn.danger:hover {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: rgba(239, 68, 68, 0.4);
+    background: color-mix(in srgb, var(--semantic-error) 20%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error) 40%, transparent);
     color: var(--semantic-error);
   }
 
@@ -461,17 +461,17 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    background: rgba(99, 102, 241, 0.2);
-    color: #a5b4fc;
+    background: color-mix(in srgb, var(--primary-color) 20%, transparent);
+    color: color-mix(in srgb, var(--primary-color) 65%, white);
   }
 
   .meta-item.grid-mode.box {
-    background: rgba(234, 179, 8, 0.2);
-    color: #fde047;
+    background: color-mix(in srgb, var(--semantic-warning) 20%, transparent);
+    color: var(--semantic-warning-text-vivid);
   }
 
   .meta-item.warning {
-    background: rgba(251, 191, 36, 0.15);
+    background: color-mix(in srgb, var(--semantic-warning) 15%, transparent);
     color: var(--semantic-warning);
   }
 
@@ -528,7 +528,7 @@
   }
 
   .control-chip.active {
-    background: rgba(99, 102, 241, 0.25);
+    background: color-mix(in srgb, var(--primary-color) 25%, transparent);
     border-color: var(--primary-color);
     color: var(--foreground);
   }
@@ -539,9 +539,9 @@
   }
 
   .control-chip.zero-turns.active {
-    background: rgba(251, 191, 36, 0.25);
+    background: color-mix(in srgb, var(--semantic-warning) 25%, transparent);
     border-color: var(--semantic-warning);
-    color: #fde047;
+    color: var(--semantic-warning-text-vivid);
   }
 
   .beat-grid-wrapper {
@@ -557,7 +557,7 @@
   }
 
   .beat-grid-wrapper.interactive {
-    border: 2px solid rgba(99, 102, 241, 0.3);
+    border: 2px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
     cursor: pointer;
   }
 

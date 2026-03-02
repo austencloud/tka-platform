@@ -163,30 +163,31 @@ interface BetaOffsetPair {
 	readonly red: BetaOffset;
 }
 
-/** Diamond mode: cardinal hand positions, radial IN orientation → perpendicular offset */
+/** Diamond mode: perpendicular offset to separate overlapping staves at beta.
+ *  Kept small (±2 col / ±1 row) so staves stay within the hand ring. */
 const DIAMOND_BETA: Partial<Record<GridLocation, BetaOffsetPair>> = {
-	[GridLocation.NORTH]: { blue: { dcol: -4, drow: 0 }, red: { dcol: 4, drow: 0 } },
-	[GridLocation.EAST]: { blue: { dcol: 0, drow: -2 }, red: { dcol: 0, drow: 2 } },
-	[GridLocation.SOUTH]: { blue: { dcol: 4, drow: 0 }, red: { dcol: -4, drow: 0 } },
-	[GridLocation.WEST]: { blue: { dcol: 0, drow: 2 }, red: { dcol: 0, drow: -2 } },
-	[GridLocation.NORTHEAST]: { blue: { dcol: -4, drow: -2 }, red: { dcol: 4, drow: 2 } },
-	[GridLocation.SOUTHEAST]: { blue: { dcol: 4, drow: -2 }, red: { dcol: -4, drow: 2 } },
-	[GridLocation.SOUTHWEST]: { blue: { dcol: 4, drow: 2 }, red: { dcol: -4, drow: -2 } },
-	[GridLocation.NORTHWEST]: { blue: { dcol: -4, drow: 2 }, red: { dcol: 4, drow: -2 } },
-	[GridLocation.CENTER]: { blue: { dcol: -4, drow: 0 }, red: { dcol: 4, drow: 0 } },
+	[GridLocation.NORTH]: { blue: { dcol: -2, drow: 0 }, red: { dcol: 2, drow: 0 } },
+	[GridLocation.EAST]: { blue: { dcol: 0, drow: -1 }, red: { dcol: 0, drow: 1 } },
+	[GridLocation.SOUTH]: { blue: { dcol: 2, drow: 0 }, red: { dcol: -2, drow: 0 } },
+	[GridLocation.WEST]: { blue: { dcol: 0, drow: 1 }, red: { dcol: 0, drow: -1 } },
+	[GridLocation.NORTHEAST]: { blue: { dcol: -2, drow: -1 }, red: { dcol: 2, drow: 1 } },
+	[GridLocation.SOUTHEAST]: { blue: { dcol: 2, drow: -1 }, red: { dcol: -2, drow: 1 } },
+	[GridLocation.SOUTHWEST]: { blue: { dcol: 2, drow: 1 }, red: { dcol: -2, drow: -1 } },
+	[GridLocation.NORTHWEST]: { blue: { dcol: -2, drow: 1 }, red: { dcol: 2, drow: -1 } },
+	[GridLocation.CENTER]: { blue: { dcol: -2, drow: 0 }, red: { dcol: 2, drow: 0 } },
 };
 
-/** Box mode: intercardinal hand positions, radial IN orientation → perpendicular offset */
+/** Box mode: perpendicular offset to separate overlapping staves at beta. */
 const BOX_BETA: Partial<Record<GridLocation, BetaOffsetPair>> = {
-	[GridLocation.NORTHEAST]: { blue: { dcol: -4, drow: -2 }, red: { dcol: 4, drow: 2 } },
-	[GridLocation.SOUTHEAST]: { blue: { dcol: -4, drow: 2 }, red: { dcol: 4, drow: -2 } },
-	[GridLocation.SOUTHWEST]: { blue: { dcol: 4, drow: 2 }, red: { dcol: -4, drow: -2 } },
-	[GridLocation.NORTHWEST]: { blue: { dcol: 4, drow: -2 }, red: { dcol: -4, drow: 2 } },
-	[GridLocation.NORTH]: { blue: { dcol: -4, drow: 0 }, red: { dcol: 4, drow: 0 } },
-	[GridLocation.EAST]: { blue: { dcol: 0, drow: -2 }, red: { dcol: 0, drow: 2 } },
-	[GridLocation.SOUTH]: { blue: { dcol: 4, drow: 0 }, red: { dcol: -4, drow: 0 } },
-	[GridLocation.WEST]: { blue: { dcol: 0, drow: 2 }, red: { dcol: 0, drow: -2 } },
-	[GridLocation.CENTER]: { blue: { dcol: -4, drow: 0 }, red: { dcol: 4, drow: 0 } },
+	[GridLocation.NORTHEAST]: { blue: { dcol: -2, drow: -1 }, red: { dcol: 2, drow: 1 } },
+	[GridLocation.SOUTHEAST]: { blue: { dcol: -2, drow: 1 }, red: { dcol: 2, drow: -1 } },
+	[GridLocation.SOUTHWEST]: { blue: { dcol: 2, drow: 1 }, red: { dcol: -2, drow: -1 } },
+	[GridLocation.NORTHWEST]: { blue: { dcol: 2, drow: -1 }, red: { dcol: -2, drow: 1 } },
+	[GridLocation.NORTH]: { blue: { dcol: -2, drow: 0 }, red: { dcol: 2, drow: 0 } },
+	[GridLocation.EAST]: { blue: { dcol: 0, drow: -1 }, red: { dcol: 0, drow: 1 } },
+	[GridLocation.SOUTH]: { blue: { dcol: 2, drow: 0 }, red: { dcol: -2, drow: 0 } },
+	[GridLocation.WEST]: { blue: { dcol: 0, drow: 1 }, red: { dcol: 0, drow: -1 } },
+	[GridLocation.CENTER]: { blue: { dcol: -2, drow: 0 }, red: { dcol: 2, drow: 0 } },
 };
 
 // ============================================================================
@@ -396,46 +397,34 @@ export class AsciiRenderer implements IAsciiRenderer {
 		if (steps.length === 0) return this.renderPlaceholder();
 		if (steps.length === 1) return this.renderPictograph(steps[0]!, options);
 
-		// Render each step to its own buffer
-		const rendered = steps.map((step) => this.renderToBuffer(step, options));
-		const maxHeight = Math.max(...rendered.map((r) => r.height));
+		// Vertical stacking: each step gets a labeled separator, then its full pictograph.
+		const lines: string[] = [];
 
-		// Build combined buffer: step | separator | step | separator | ...
-		const SEP_WIDTH = 3; // " │ "
-		const totalWidth =
-			rendered.reduce((sum, r) => sum + r.buffer[0]!.length, 0) +
-			SEP_WIDTH * (rendered.length - 1);
+		for (let s = 0; s < steps.length; s++) {
+			const step = steps[s]!;
+			const { buffer, height } = this.renderToBuffer(step, options);
+			const stepLines = this.bufferToHtml(buffer, height);
 
-		const combined = this.createBuffer(totalWidth, maxHeight);
-		let colOffset = 0;
-
-		for (let s = 0; s < rendered.length; s++) {
-			const { buffer, height } = rendered[s]!;
-			const rowOffset = Math.floor((maxHeight - height) / 2);
-
-			// Copy this step's buffer into the combined buffer
-			for (let row = 0; row < height; row++) {
-				for (let col = 0; col < buffer[0]!.length; col++) {
-					const cell = buffer[row]![col]!;
-					if (cell.char !== " " || cell.color !== null) {
-						combined[row + rowOffset]![colOffset + col] = cell;
-					}
-				}
+			// Separator line between steps (not before first)
+			if (s > 0) {
+				lines.push(""); // blank spacer
 			}
 
-			colOffset += buffer[0]!.length;
+			// Step label: ═══ STEP 1: A ═══  or  ═══ STEP 4: F (bridge) ═══
+			const bridgeTag = step.isBridge ? " (bridge)" : "";
+			const label = ` STEP ${s + 1}: ${step.letter || "?"}${bridgeTag} `;
+			const barTotal = BUFFER_WIDTH - label.length;
+			const barLeft = Math.max(0, Math.floor(barTotal / 2));
+			const barRight = Math.max(0, barTotal - barLeft);
+			const separator =
+				`<span class="${COLOR_GREEN}">${"\u2550".repeat(barLeft)}${label}${"\u2550".repeat(barRight)}</span>`;
+			lines.push(separator);
 
-			// Add separator column between steps (not after last)
-			if (s < rendered.length - 1) {
-				const sepCol = colOffset + 1; // middle of the 3-char separator
-				for (let row = 0; row < maxHeight; row++) {
-					this.setCell(combined, sepCol, row, "\u2502", COLOR_GRAY, PRIORITY_GRID);
-				}
-				colOffset += SEP_WIDTH;
-			}
+			// The pictograph itself
+			lines.push(...stepLines);
 		}
 
-		return this.bufferToHtml(combined, maxHeight);
+		return lines;
 	}
 
 	/** Render a pictograph to an internal Cell buffer (before HTML conversion). */
@@ -483,12 +472,12 @@ export class AsciiRenderer implements IAsciiRenderer {
 		}
 
 		if (!layers || layers.staves !== false) {
-			const isBeta = data.blueHand.location === data.redHand.location;
+			const isBeta = data.blueHand.endLocation === data.redHand.endLocation;
 			if (isBeta) {
 				const betaMap = isBox ? BOX_BETA : DIAMOND_BETA;
-				const offsets = betaMap[data.blueHand.location];
-				const blueOffset = offsets?.blue ?? { dcol: -4, drow: 0 };
-				const redOffset = offsets?.red ?? { dcol: 4, drow: 0 };
+				const offsets = betaMap[data.blueHand.endLocation];
+				const blueOffset = offsets?.blue ?? { dcol: -2, drow: 0 };
+				const redOffset = offsets?.red ?? { dcol: 2, drow: 0 };
 				this.placeOrientation(buffer, data.blueHand, handCoords, BUFFER_WIDTH, height, blueOffset);
 				this.placeOrientation(buffer, data.redHand, handCoords, BUFFER_WIDTH, height, redOffset);
 			} else {
@@ -681,7 +670,7 @@ export class AsciiRenderer implements IAsciiRenderer {
 		hand: RetroHandData,
 		coords: Record<GridLocation, GridCoord>,
 	): void {
-		const coord = coords[hand.location];
+		const coord = coords[hand.endLocation];
 		const marker = hand.color === MotionColor.BLUE ? "B" : "R";
 		const color = hand.color === MotionColor.BLUE ? COLOR_BLUE : COLOR_RED;
 		this.setCell(buffer, coord.col, coord.row, marker, color, PRIORITY_HAND);
@@ -692,8 +681,8 @@ export class AsciiRenderer implements IAsciiRenderer {
 		data: RetroPictographData,
 		coords: Record<GridLocation, GridCoord>,
 	): void {
-		if (data.blueHand.location === data.redHand.location) {
-			const coord = coords[data.blueHand.location];
+		if (data.blueHand.endLocation === data.redHand.endLocation) {
+			const coord = coords[data.blueHand.endLocation];
 			this.setCell(buffer, coord.col, coord.row, "X", COLOR_CYAN, PRIORITY_HAND);
 		}
 	}
@@ -835,11 +824,11 @@ export class AsciiRenderer implements IAsciiRenderer {
 		_height: number,
 		offset?: BetaOffset,
 	): void {
-		const baseCoord = coords[hand.location];
+		const baseCoord = coords[hand.endLocation];
 		const coord = offset
 			? { col: baseCoord.col + offset.dcol, row: baseCoord.row + offset.drow }
 			: baseCoord;
-		const angle = getOrientationAngle(hand.orientation, hand.location);
+		const angle = getOrientationAngle(hand.orientation, hand.endLocation);
 		const lineChar = angleToLineChar(angle);
 		const color = hand.color === MotionColor.BLUE ? COLOR_BLUE : COLOR_RED;
 		const step = getStaffStep(lineChar);

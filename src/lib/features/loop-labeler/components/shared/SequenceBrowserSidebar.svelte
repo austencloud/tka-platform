@@ -7,8 +7,11 @@
    */
   import type { SequenceEntry } from "../../domain/models/sequence-models";
   import type { LabeledSequence } from "../../domain/models/label-models";
-  import { formatDesignation } from "../../utils/formatting";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
+  import { container } from "$lib/shared/di";
+  import type { ILabelFormatter } from "../../services/contracts/ILabelFormatter";
+
+  const labelFormatter = container.items.labelFormatter as ILabelFormatter;
 
   interface Props {
     sequences: SequenceEntry[];
@@ -52,14 +55,14 @@
     const label = labels.get(seq.word);
 
     if (!label) {
-      return { type: "unlabeled", icon: "circle", color: "#6b7280" };
+      return { type: "unlabeled", icon: "circle", color: "var(--muted-foreground)" };
     }
 
     if (label.needsVerification) {
       return {
         type: "needsVerification",
         icon: "circle-exclamation",
-        color: "#eab308",
+        color: "var(--semantic-warning)",
       };
     }
 
@@ -83,7 +86,7 @@
 
     if (label.designations && label.designations.length > 0) {
       const first = label.designations[0];
-      return first ? formatDesignation(first) : "Labeled";
+      return first ? labelFormatter.formatDesignation(first) : "Labeled";
     }
 
     return "";
@@ -200,11 +203,11 @@
     min-width: 28px;
     height: 28px;
     padding: 0 var(--spacing-xs);
-    background: rgba(99, 102, 241, 0.2);
+    background: color-mix(in srgb, var(--primary-color) 20%, transparent);
     border-radius: 6px;
     font-size: var(--font-size-xs);
     font-weight: 700;
-    color: #a5b4fc;
+    color: color-mix(in srgb, var(--primary-color) 65%, white);
   }
 
   .filter-tabs {
@@ -238,8 +241,8 @@
   }
 
   .filter-tab.active {
-    background: rgba(99, 102, 241, 0.2);
-    border-color: rgba(99, 102, 241, 0.4);
+    background: color-mix(in srgb, var(--primary-color) 20%, transparent);
+    border-color: color-mix(in srgb, var(--primary-color) 40%, transparent);
     color: var(--foreground);
   }
 
@@ -268,7 +271,7 @@
   }
 
   .sequence-list::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.25);
+    background: var(--theme-stroke-strong);
   }
 
   .sequence-item {
@@ -325,14 +328,14 @@
 
   .sequence-item:hover {
     background: var(--surface-hover);
-    border-color: rgba(99, 102, 241, 0.3);
-    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+    border-color: color-mix(in srgb, var(--primary-color) 30%, transparent);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--primary-color) 20%, transparent);
   }
 
   .sequence-item.current {
-    background: rgba(99, 102, 241, 0.15);
-    border-color: rgba(99, 102, 241, 0.5);
-    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+    background: color-mix(in srgb, var(--primary-color) 15%, transparent);
+    border-color: color-mix(in srgb, var(--primary-color) 50%, transparent);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--primary-color) 30%, transparent);
   }
 
   .sequence-item-header {

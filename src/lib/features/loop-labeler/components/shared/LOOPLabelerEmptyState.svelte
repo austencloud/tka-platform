@@ -43,6 +43,6 @@
 
   .empty-state button:hover {
     transform: translateY(var(--hover-lift-sm));
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--primary-color) 40%, transparent);
   }
 </style>

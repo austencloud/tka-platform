@@ -514,6 +514,13 @@ export function applyThemeFromColors(
   root.style.setProperty("--feature-generate", "#f97316"); // Orange - generation contexts
   root.style.setProperty("--feature-generate-dim", "rgba(249, 115, 22, 0.15)");
 
+  // Domain accent colors (constant) - for specialized visualization areas
+  root.style.setProperty("--accent-teal", "#14b8a6"); // Axis-alternating, flipped transforms
+  root.style.setProperty("--accent-pink", "#ec4899"); // Section palette
+  root.style.setProperty("--accent-rotation", "#36c3ff"); // Rotation transform viz
+  root.style.setProperty("--accent-swap", "#26e600"); // Swap transform viz
+  root.style.setProperty("--accent-inversion", "#eb7d00"); // Inversion transform viz
+
   // ═══════════════════════════════════════════════════════════════════════════
   // SCROLLBAR THEME VARIABLES
   // Adapt based on background luminance for consistent scrollbar styling.

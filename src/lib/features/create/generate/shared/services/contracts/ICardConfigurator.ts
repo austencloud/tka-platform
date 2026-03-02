@@ -57,6 +57,9 @@ export interface CardHandlers {
   positionsResetTrigger?: number;
   // Current grid mode for position picker filtering
   currentGridMode?: GridMode;
+  // Orientation cycle completion
+  needsCycleCompletion?: boolean;
+  handleCompleteCycle?: () => void;
 }
 
 /**

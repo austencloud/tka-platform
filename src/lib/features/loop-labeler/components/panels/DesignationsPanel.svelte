@@ -18,6 +18,7 @@
     CompoundPattern,
     AxisAlternatingPattern,
   } from "../../services/contracts/ILOOPDetector";
+  import { onDestroy } from "svelte";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
   import StepPairAnalysisDisplay from "../shared/StepPairAnalysisDisplay.svelte";
   import CandidatesSection from "./designations/CandidatesSection.svelte";
@@ -93,6 +94,11 @@
 
   // Copy detection info to clipboard for debugging
   let copySuccess = $state(false);
+  let copySuccessTimer: ReturnType<typeof setTimeout> | null = null;
+
+  onDestroy(() => {
+    if (copySuccessTimer) clearTimeout(copySuccessTimer);
+  });
 
   async function copyDetectionInfo() {
     const detectionInfo = {
@@ -115,8 +121,10 @@
         JSON.stringify(detectionInfo, null, 2)
       );
       copySuccess = true;
-      setTimeout(() => {
+      if (copySuccessTimer) clearTimeout(copySuccessTimer);
+      copySuccessTimer = setTimeout(() => {
         copySuccess = false;
+        copySuccessTimer = null;
       }, 2000);
     } catch (err) {
       console.error("Failed to copy detection info:", err);
@@ -283,14 +291,14 @@
   }
 
   .copy-btn:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-hover-bg);
     color: var(--foreground);
-    border-color: rgba(255, 255, 255, 0.2);
+    border-color: var(--theme-stroke-strong);
   }
 
   .copy-btn.success {
-    background: rgba(34, 197, 94, 0.15);
-    border-color: rgba(34, 197, 94, 0.4);
+    background: color-mix(in srgb, var(--semantic-success) 15%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-success) 40%, transparent);
     color: var(--semantic-success);
   }
 </style>

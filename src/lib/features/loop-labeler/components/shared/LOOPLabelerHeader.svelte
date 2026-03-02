@@ -5,6 +5,7 @@
    * Header with stats, filter chips, search, and import/export controls.
    * Uses shared design tokens from app.css.
    */
+  import { onDestroy } from "svelte";
   import type { SequenceEntry } from "../../domain/models/sequence-models";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
 
@@ -50,6 +51,11 @@
   // Search state
   let searchQuery = $state("");
   let showSuggestions = $state(false);
+  let blurTimer: ReturnType<typeof setTimeout> | null = null;
+
+  onDestroy(() => {
+    if (blurTimer) clearTimeout(blurTimer);
+  });
 
   // Filter sequences by search query
   const filteredSuggestions = $derived(() => {
@@ -78,6 +84,14 @@
     } else if (e.key === "Enter" && filteredSuggestions().length > 0) {
       handleSelectSuggestion(filteredSuggestions()[0]!);
     }
+  }
+
+  function handleSearchBlur() {
+    if (blurTimer) clearTimeout(blurTimer);
+    blurTimer = setTimeout(() => {
+      showSuggestions = false;
+      blurTimer = null;
+    }, 150);
   }
 
   function handleImportFile(e: Event) {
@@ -130,7 +144,7 @@
         oninput={handleSearchInput}
         onkeydown={handleSearchKeydown}
         onfocus={() => (showSuggestions = true)}
-        onblur={() => setTimeout(() => (showSuggestions = false), 150)}
+        onblur={handleSearchBlur}
       />
       {#if showSuggestions && filteredSuggestions().length > 0}
         <div class="search-suggestions">
@@ -238,18 +252,18 @@
     padding: var(--spacing-xs) var(--spacing-md);
     border-radius: 6px;
     font-size: var(--font-size-xs);
-    background: rgba(34, 197, 94, 0.2);
+    background: color-mix(in srgb, var(--semantic-success) 20%, transparent);
     color: var(--semantic-success);
   }
 
   .sync-status.syncing {
-    background: rgba(234, 179, 8, 0.2);
-    color: #eab308;
+    background: color-mix(in srgb, var(--semantic-warning) 20%, transparent);
+    color: var(--semantic-warning);
     animation: pulse 1s infinite;
   }
 
   .sync-status.error {
-    background: rgba(239, 68, 68, 0.2);
+    background: color-mix(in srgb, var(--semantic-error) 20%, transparent);
     color: var(--semantic-error);
   }
 
@@ -326,7 +340,7 @@
 
   .btn-primary:hover {
     transform: translateY(var(--hover-lift-sm));
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--primary-color) 40%, transparent);
   }
 
   .btn-sync {
@@ -334,8 +348,8 @@
     align-items: center;
     gap: var(--spacing-sm);
     padding: var(--spacing-sm) var(--spacing-md);
-    background: rgba(34, 197, 94, 0.2);
-    border: 1px solid rgba(34, 197, 94, 0.4);
+    background: color-mix(in srgb, var(--semantic-success) 20%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-success) 40%, transparent);
     border-radius: 8px;
     color: var(--semantic-success);
     cursor: pointer;
@@ -346,7 +360,7 @@
   }
 
   .btn-sync:hover {
-    background: rgba(34, 197, 94, 0.3);
+    background: color-mix(in srgb, var(--semantic-success) 30%, transparent);
   }
 
   /* Navigation controls */
@@ -415,7 +429,7 @@
   }
 
   .suggestion-item:hover {
-    background: rgba(99, 102, 241, 0.2);
+    background: color-mix(in srgb, var(--primary-color) 20%, transparent);
   }
 
   .suggestion-word {
@@ -433,10 +447,10 @@
     align-items: center;
     gap: var(--spacing-sm);
     padding: var(--spacing-sm) var(--spacing-md);
-    background: rgba(99, 102, 241, 0.2);
-    border: 1px solid rgba(99, 102, 241, 0.4);
+    background: color-mix(in srgb, var(--primary-color) 20%, transparent);
+    border: 1px solid color-mix(in srgb, var(--primary-color) 40%, transparent);
     border-radius: 8px;
-    color: #a5b4fc;
+    color: color-mix(in srgb, var(--primary-color) 65%, white);
     cursor: pointer;
     font-size: var(--font-size-sm);
     font-weight: 600;
@@ -445,8 +459,8 @@
   }
 
   .browse-btn:hover {
-    background: rgba(99, 102, 241, 0.3);
-    border-color: rgba(99, 102, 241, 0.6);
+    background: color-mix(in srgb, var(--primary-color) 30%, transparent);
+    border-color: color-mix(in srgb, var(--primary-color) 60%, transparent);
   }
 
   .sr-only {

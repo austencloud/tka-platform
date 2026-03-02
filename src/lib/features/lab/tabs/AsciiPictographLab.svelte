@@ -17,8 +17,6 @@
   const lab = createAsciiLabState();
   const renderer = new AsciiRenderer();
 
-  let wordInput = $state("");
-
   // ── Single mode rendering ──
   const singleHtml = $derived(
     lab.pictographData
@@ -51,8 +49,8 @@
   }
 
   function handleWordSubmit() {
-    if (wordInput.trim()) {
-      lab.generateSequence(wordInput.trim());
+    if (lab.wordInput.trim()) {
+      lab.generateSequence(lab.wordInput.trim());
     }
   }
 
@@ -140,7 +138,7 @@
           class="word-input"
           type="text"
           placeholder="Type a word..."
-          bind:value={wordInput}
+          bind:value={lab.wordInput}
           onkeydown={handleWordKeydown}
           disabled={lab.generating}
           maxlength={12}
@@ -148,7 +146,7 @@
         <button
           class="generate-btn"
           onclick={handleWordSubmit}
-          disabled={lab.generating || !wordInput.trim()}
+          disabled={lab.generating || !lab.wordInput.trim()}
         >
           {#if lab.generating}
             Generating...

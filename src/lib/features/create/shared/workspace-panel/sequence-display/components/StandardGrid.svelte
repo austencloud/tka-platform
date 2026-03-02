@@ -32,7 +32,6 @@
     getDurationDisplay,
     bluePropTypeOverride = undefined,
     redPropTypeOverride = undefined,
-    orientationCycleCount = 1,
     scrollContainerRef = $bindable(),
   } = $props<{
     steps: ReadonlyArray<StepData> | StepData[];
@@ -55,81 +54,8 @@
     getDurationDisplay: (stepIndex: number) => string;
     bluePropTypeOverride?: PropType;
     redPropTypeOverride?: PropType;
-    /** Number of orientation cycle passes (1 = no extension, 2/4 = extended) */
-    orientationCycleCount?: 1 | 2 | 4;
     scrollContainerRef?: HTMLElement;
   }>();
-
-  // Note: StandardGrid is only rendered when timeline mode is disabled.
-  // Timeline mode is currently always enabled (see timeline-mode.svelte.ts),
-  // so TimelineGrid handles divider rendering in practice.
-
-  const stepsPerPass = $derived.by(() => {
-    if (orientationCycleCount <= 1) return 0;
-    return Math.floor(steps.length / orientationCycleCount);
-  });
-
-  // Step indices where a new pass begins (0-indexed)
-  const passBoundaryIndices = $derived.by(() => {
-    if (stepsPerPass <= 0) return [];
-    const boundaries: number[] = [];
-    for (let pass = 1; pass < orientationCycleCount; pass++) {
-      boundaries.push(pass * stepsPerPass);
-    }
-    return boundaries;
-  });
-
-  /**
-   * Compute adjusted grid position accounting for divider rows.
-   * Each pass boundary inserts a divider row that pushes subsequent beats down.
-   */
-  function getAdjustedPosition(stepIndex: number, columns: number) {
-    const base = calculateBeatPosition(stepIndex, columns);
-    if (passBoundaryIndices.length === 0) return base;
-
-    // Count how many divider rows precede this step's base row.
-    // A divider is inserted before the row containing the first step of each new pass.
-    let dividerOffset = 0;
-    for (const boundaryIdx of passBoundaryIndices) {
-      const boundaryRow = calculateBeatPosition(boundaryIdx, columns).row;
-      // The divider row goes before this row, so offset = boundaryRow + dividerOffset
-      if (base.row >= boundaryRow + dividerOffset) {
-        dividerOffset++;
-      }
-    }
-
-    return { row: base.row + dividerOffset, column: base.column };
-  }
-
-  // Grid rows for the divider elements themselves
-  const dividerGridRows = $derived.by(() => {
-    if (passBoundaryIndices.length === 0) return [];
-    const columns = gridLayout.columns;
-    const rows: number[] = [];
-    let cumulativeOffset = 0;
-    for (const boundaryIdx of passBoundaryIndices) {
-      const boundaryRow = calculateBeatPosition(boundaryIdx, columns).row;
-      // Divider sits at the row where the boundary would be, offset by previous dividers
-      rows.push(boundaryRow + cumulativeOffset);
-      cumulativeOffset++;
-    }
-    return rows;
-  });
-
-  // Total extra rows from dividers (for grid-rows CSS var)
-  const totalRows = $derived(gridLayout.rows + passBoundaryIndices.length);
-
-  // Build explicit grid-template-rows when dividers are present.
-  // Without this, grid-auto-rows gives divider rows full cell height.
-  const gridTemplateRows = $derived.by(() => {
-    if (dividerGridRows.length === 0) return "";
-    const dividerSet = new Set(dividerGridRows);
-    const parts: string[] = [];
-    for (let r = 1; r <= totalRows; r++) {
-      parts.push(dividerSet.has(r) ? "8px" : "var(--cell-size)");
-    }
-    return parts.join(" ");
-  });
 </script>
 
 <div
@@ -140,10 +66,9 @@
   <div
     class="step-grid"
     class:clearing={isClearing || displayState.isClearingForGeneration}
-    style:--grid-rows={totalRows}
+    style:--grid-rows={gridLayout.rows}
     style:--grid-cols={gridLayout.totalColumns}
     style:--cell-size="{gridLayout.cellSize}px"
-    style:grid-template-rows={gridTemplateRows || undefined}
   >
     <!-- Start Position -->
     {#if startPosition && !startPosition.isBlank}
@@ -165,7 +90,7 @@
     <!-- Step Grid -->
     <!-- Key by index to preserve component identity during regeneration, enabling CSS transitions -->
     {#each steps as step, index (index)}
-      {@const position = getAdjustedPosition(index, gridLayout.columns)}
+      {@const position = calculateBeatPosition(index, gridLayout.columns)}
       {@const isDeleting = removingStepIndices.has(index)}
       {@const shouldSlide =
         removingStepIndex !== null && !isDeleting && index > removingStepIndex}
@@ -200,15 +125,6 @@
       </div>
     {/each}
 
-    <!-- Pass dividers for multi-pass orientation cycles -->
-    {#each dividerGridRows as dividerRow (dividerRow)}
-      <div
-        class="pass-divider"
-        style:grid-column="1 / -1"
-        style:grid-row={dividerRow}
-        aria-hidden="true"
-      ></div>
-    {/each}
   </div>
 </div>
 
@@ -284,20 +200,6 @@
   .step-grid.clearing {
     opacity: 0;
     transform: scale(0.95) translateY(-10px);
-  }
-
-  /* Pass divider for multi-pass orientation cycles */
-  .pass-divider {
-    height: 3px;
-    background: linear-gradient(
-      90deg,
-      transparent 5%,
-      var(--theme-accent, rgba(99, 102, 241, 0.3)) 20%,
-      var(--theme-accent, rgba(99, 102, 241, 0.3)) 80%,
-      transparent 95%
-    );
-    opacity: 0.4;
-    align-self: center;
   }
 
   .step-container {

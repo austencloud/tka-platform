@@ -110,7 +110,7 @@
         bind:value={searchQuery}
       />
       {#if searchQuery}
-        <button class="clear-search" onclick={() => (searchQuery = "")}>
+        <button class="clear-search" onclick={() => (searchQuery = "")} aria-label="Clear search">
           <FontAwesomeIcon icon="xmark" size="0.8em" />
         </button>
       {/if}
@@ -278,7 +278,7 @@
   }
 
   .filter-chip.active {
-    background: rgba(99, 102, 241, 0.25);
+    background: color-mix(in srgb, var(--primary-color) 25%, transparent);
     border-color: var(--primary-color);
     color: var(--foreground);
   }
@@ -357,8 +357,8 @@
     justify-content: center;
     background: linear-gradient(
       135deg,
-      rgba(99, 102, 241, 0.2),
-      rgba(139, 92, 246, 0.2)
+      color-mix(in srgb, var(--primary-color) 20%, transparent),
+      color-mix(in srgb, var(--feature-edit) 20%, transparent)
     );
     color: var(--muted);
     font-size: 1.5rem;
@@ -377,18 +377,18 @@
     justify-content: center;
     font-size: var(--font-size-compact);
     font-weight: 600;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-stroke);
     color: var(--muted);
     backdrop-filter: blur(4px);
   }
 
   .status-badge.labeled {
-    background: rgba(34, 197, 94, 0.3);
-    color: #4ade80;
+    background: color-mix(in srgb, var(--semantic-success) 30%, transparent);
+    color: var(--semantic-success);
   }
 
   .status-badge.unknown {
-    background: rgba(234, 179, 8, 0.3);
+    background: color-mix(in srgb, var(--semantic-warning) 30%, transparent);
     color: var(--semantic-warning);
   }
 
@@ -397,7 +397,7 @@
     justify-content: space-between;
     align-items: center;
     padding: var(--spacing-xs) var(--spacing-sm);
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg);
   }
 
   .card-word {

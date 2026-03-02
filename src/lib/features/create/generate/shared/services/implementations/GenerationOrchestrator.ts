@@ -20,7 +20,7 @@ import type { ISequenceMetadataManager } from "../contracts/ISequenceMetadataMan
 import type { IStartPositionSelector } from "../contracts/IStartPositionSelector";
 import type { ITurnAllocator } from "../contracts/ITurnAllocator";
 import type { IReversalDetector } from "../../../../shared/services/contracts/IReversalDetector";
-import type { IOrientationCycleExtender } from "../../../circular/services/contracts/IOrientationCycleExtender";
+import type { IOrientationCycleDetector } from "../../../circular/services/contracts/IOrientationCycleDetector";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 /**
@@ -41,7 +41,7 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
     private readonly partialSequenceGenerator: IPartialSequenceGenerator,
     private readonly loopEndPositionSelector: ILOOPEndPositionSelector,
     private readonly loopExecutorSelector: ILOOPExecutorSelector,
-    private readonly orientationCycleExtender: IOrientationCycleExtender
+    private readonly orientationCycleDetector: IOrientationCycleDetector
   ) {}
 
   /**
@@ -301,8 +301,21 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
 
     const withReversals = this.ReversalDetector.processReversals(sequence);
 
-    // Extend sequence if orientation cycle requires multiple passes
-    return this.orientationCycleExtender.extendIfNeeded(withReversals);
+    // Detect if orientation cycle needs multiple passes (but don't auto-extend —
+    // the user will be offered a "Complete Cycle" button instead)
+    const cycleResult =
+      this.orientationCycleDetector.detectOrientationCycle(withReversals);
+
+    if (cycleResult.cycleCount > 1) {
+      const { updateSequenceData } = await import(
+        "$lib/shared/foundation/domain/models/SequenceData"
+      );
+      return updateSequenceData(withReversals, {
+        orientationCycleCount: cycleResult.cycleCount as 1 | 2 | 4,
+      });
+    }
+
+    return withReversals;
   }
 
   /**
@@ -366,7 +379,7 @@ import { reversalDetector } from "$lib/features/create/shared/services/implement
 import { partialSequenceGenerator } from "$lib/features/create/generate/circular/services/implementations/PartialSequenceGenerator";
 import { loopEndPositionSelector } from "$lib/features/create/generate/circular/services/implementations/LOOPEndPositionSelector";
 import { loopExecutorSelector } from "$lib/features/create/generate/circular/services/implementations/LOOPExecutorSelector";
-import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
+import { orientationCycleDetector } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleDetector";
 
 export const generationOrchestrator = new GenerationOrchestrator(
   startPositionSelector,
@@ -378,5 +391,5 @@ export const generationOrchestrator = new GenerationOrchestrator(
   partialSequenceGenerator,
   loopEndPositionSelector,
   loopExecutorSelector,
-  orientationCycleExtender
+  orientationCycleDetector
 );

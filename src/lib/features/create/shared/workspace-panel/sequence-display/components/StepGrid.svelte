@@ -58,7 +58,6 @@
     timeSignature = undefined,
     bluePropTypeOverride = undefined,
     redPropTypeOverride = undefined,
-    orientationCycleCount = 1,
   } = $props<{
     steps: ReadonlyArray<StepData> | StepData[];
     startPosition?: StartPositionData | StepData | null;
@@ -88,8 +87,6 @@
     bluePropTypeOverride?: PropType;
     /** Override prop type for red hand. Used by demos/previews to bypass global settings. */
     redPropTypeOverride?: PropType;
-    /** Number of orientation cycle passes (1 = no extension, 2/4 = extended) */
-    orientationCycleCount?: 1 | 2 | 4;
   }>();
 
   // State management
@@ -432,7 +429,6 @@
       {onDurationChange}
       {getBeatKey}
       {getDurationDisplay}
-      {orientationCycleCount}
       bind:scrollContainerRef
     />
   {:else}
@@ -457,7 +453,6 @@
       {getDurationDisplay}
       {bluePropTypeOverride}
       {redPropTypeOverride}
-      {orientationCycleCount}
       bind:scrollContainerRef
     />
   {/if}

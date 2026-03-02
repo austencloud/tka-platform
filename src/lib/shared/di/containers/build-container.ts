@@ -65,6 +65,7 @@ import { TypographyScaler } from "$lib/features/create/generate/shared/services/
 import { CardConfigurator } from "$lib/features/create/generate/shared/services/implementations/CardConfigurator";
 import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
 import { SequenceToEntryConverter } from "$lib/features/choreo-card/services/implementations/SequenceToEntryConverter";
+import { DeckLoader } from "$lib/features/choreo-card/services/implementations/DeckLoader";
 import { LOOPDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
 import { OrientationCycleDetector } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleDetector";
 import { OrientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
@@ -273,6 +274,7 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
         // Generation - no deps (moved from Layer 4)
         loopTypeResolver: () => new LOOPTypeResolver(),
         sequenceToEntryConverter: () => new SequenceToEntryConverter(),
+        deckLoader: () => new DeckLoader(),
         rotatedEndPositionSelector: () => new RotatedEndPositionSelector(),
         orientationCycleDetector: () => new OrientationCycleDetector(deps.orientationCalculator),
       })
@@ -621,7 +623,7 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
             ctx.partialSequenceGenerator,
             ctx.loopEndPositionSelector,
             ctx.loopExecutorSelector,
-            ctx.orientationCycleExtender
+            ctx.orientationCycleDetector
           ),
 
         // Spell services - Layer 4.5a: Validators (no same-layer deps)
