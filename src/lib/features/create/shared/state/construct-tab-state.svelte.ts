@@ -202,12 +202,6 @@ export function createConstructTabState(
           sequenceState.setCurrentSequence(sequenceWithGridMode);
           try {
             sequenceState.setStartPosition(startPositionData);
-            // Notify guided build that start position was set
-            window.dispatchEvent(
-              new CustomEvent("guided-build-advance", {
-                detail: { key: "start-position-set" },
-              })
-            );
           } catch (error) {
             console.error(
               "? ConstructTabState: Error setting start position:",

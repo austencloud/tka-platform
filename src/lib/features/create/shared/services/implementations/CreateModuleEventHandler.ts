@@ -202,15 +202,6 @@ export class CreateModuleEventHandler implements ICreateModuleEventHandler {
       this.updateSequenceCallback?.(finalSequence);
       performance.mark("ui-callback-complete");
 
-      // Notify guided build that a beat was added
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(
-          new CustomEvent("guided-build-advance", {
-            detail: { key: "beat-added" },
-          })
-        );
-      }
-
       // 📝 ADD TO HISTORY: Track this option addition for undo functionality
       this.addOptionToHistoryCallback?.(nextStepNumber - 1, stepData); // stepIndex is 0-based
       performance.mark("history-updated");

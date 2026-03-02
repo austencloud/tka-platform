@@ -475,14 +475,6 @@
         constructTabState,
         panelState,
       });
-
-      // Notify guided build that sequence was cleared
-      window.dispatchEvent(
-        new CustomEvent("guided-build-advance", {
-          detail: { key: "sequence-cleared" },
-        })
-      );
-
     } catch (err) {
       error = err instanceof Error ? err.message : "Failed to clear sequence";
     } finally {
