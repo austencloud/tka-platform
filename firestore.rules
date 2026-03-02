@@ -946,6 +946,23 @@ service cloud.firestore {
     }
 
     // ============================================================================
+    // SYSTEM DECKS (Curated Sequence Collections)
+    // ============================================================================
+
+    // System decks - readable by all authenticated users, writable by admins only
+    // These are curated collections of sequences (e.g., Level 1 LOOP deck)
+    match /decks/{deckId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+
+      // Sequences within a deck
+      match /sequences/{sequenceId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin();
+      }
+    }
+
+    // ============================================================================
     // EXPLICIT DENY FOR UNMATCHED PATHS
     // Any collection not explicitly defined above is denied by default
     // ============================================================================

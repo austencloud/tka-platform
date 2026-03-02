@@ -69,22 +69,22 @@
   }
 
   .action-btn.freeform.selected {
-    background: rgba(239, 68, 68, 0.15);
-    border-color: rgba(239, 68, 68, 0.4);
-    color: #fca5a5;
+    background: color-mix(in srgb, var(--semantic-error) 15%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error) 40%, transparent);
+    color: color-mix(in srgb, var(--semantic-error) 65%, white);
   }
 
   .action-btn.unknown {
     background: transparent;
-    border: 1px solid rgba(234, 179, 8, 0.25);
+    border: 1px solid color-mix(in srgb, var(--semantic-warning) 25%, transparent);
     color: var(--muted-foreground);
     font-weight: 500;
   }
 
   .action-btn.unknown:hover {
-    background: rgba(234, 179, 8, 0.15);
-    border-color: rgba(234, 179, 8, 0.4);
-    color: #eab308;
+    background: color-mix(in srgb, var(--semantic-warning) 15%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-warning) 40%, transparent);
+    color: var(--semantic-warning);
   }
 
   .action-btn.save {
@@ -92,12 +92,12 @@
     background: var(--gradient-primary);
     border: none;
     color: var(--foreground);
-    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--primary-color) 30%, transparent);
   }
 
   .action-btn.save:hover:not(:disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.5);
+    box-shadow: 0 4px 16px color-mix(in srgb, var(--primary-color) 50%, transparent);
   }
 
   .action-btn.save:disabled {

@@ -17,10 +17,7 @@ Single responsibility: Combine header and grid for a letter type section.
     gap?: string;
     showHeader?: boolean;
     onSelect: (option: PreparedPictographData) => void;
-    // Sequence context for reversal detection
     currentSequence?: PictographData[];
-    // Enable FLIP animation for filtering (desktop only)
-    enableFlip?: boolean;
     // Thread slot tracking
     onSlotClicked?: (typeSection: string, slotIndex: number) => void;
     continuationIndex?: number | null;
@@ -35,7 +32,6 @@ Single responsibility: Combine header and grid for a letter type section.
     showHeader = true,
     onSelect,
     currentSequence = [],
-    enableFlip = false,
     onSlotClicked,
     continuationIndex = null,
   }: Props = $props();
@@ -53,7 +49,6 @@ Single responsibility: Combine header and grid for a letter type section.
     {gap}
     {onSelect}
     {currentSequence}
-    {enableFlip}
     typeSectionTitle={letterType}
     {onSlotClicked}
     {continuationIndex}

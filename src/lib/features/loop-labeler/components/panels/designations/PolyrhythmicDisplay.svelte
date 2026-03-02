@@ -124,10 +124,10 @@
     padding: var(--spacing-sm) var(--spacing-md);
     background: linear-gradient(
       135deg,
-      rgba(168, 85, 247, 0.12) 0%,
-      rgba(139, 92, 246, 0.06) 100%
+      color-mix(in srgb, var(--feature-edit) 12%, transparent) 0%,
+      color-mix(in srgb, var(--feature-edit) 6%, transparent) 100%
     );
-    border: 1px solid rgba(168, 85, 247, 0.25);
+    border: 1px solid color-mix(in srgb, var(--feature-edit) 25%, transparent);
     border-radius: 10px;
     margin-bottom: var(--spacing-xs);
   }
@@ -136,12 +136,12 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
-    color: #a855f7;
+    color: var(--feature-edit);
     font-size: var(--font-size-sm);
   }
 
   .polyrhythmic-header strong {
-    color: #c4b5fd;
+    color: color-mix(in srgb, var(--feature-edit) 65%, white);
     font-weight: 700;
   }
 
@@ -156,7 +156,7 @@
     align-items: center;
     gap: var(--spacing-sm);
     padding: 6px 10px;
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--theme-card-bg);
     border-radius: 6px;
     font-size: var(--font-size-sm);
   }
@@ -173,9 +173,9 @@
     justify-content: center;
     width: 24px;
     height: 24px;
-    background: rgba(168, 85, 247, 0.3);
+    background: color-mix(in srgb, var(--feature-edit) 30%, transparent);
     border-radius: 6px;
-    color: #c4b5fd;
+    color: color-mix(in srgb, var(--feature-edit) 65%, white);
     font-weight: 700;
     font-family: var(--font-mono, monospace);
   }
@@ -190,7 +190,7 @@
   .zone-coverage {
     margin-top: var(--spacing-sm);
     padding: var(--spacing-sm);
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg);
     border-radius: 8px;
   }
 
@@ -217,15 +217,15 @@
   }
 
   .zone-badge.complete {
-    background: rgba(34, 197, 94, 0.2);
+    background: color-mix(in srgb, var(--semantic-success) 20%, transparent);
     color: var(--semantic-success);
-    border: 1px solid rgba(34, 197, 94, 0.4);
+    border: 1px solid color-mix(in srgb, var(--semantic-success) 40%, transparent);
   }
 
   .zone-badge.partial {
-    background: rgba(234, 179, 8, 0.2);
-    color: #eab308;
-    border: 1px solid rgba(234, 179, 8, 0.4);
+    background: color-mix(in srgb, var(--semantic-warning) 20%, transparent);
+    color: var(--semantic-warning);
+    border: 1px solid color-mix(in srgb, var(--semantic-warning) 40%, transparent);
   }
 
   .zone-grid {
@@ -246,14 +246,14 @@
 
   .zone-row.active {
     opacity: 1;
-    background: rgba(168, 85, 247, 0.1);
+    background: color-mix(in srgb, var(--feature-edit) 10%, transparent);
   }
 
   .zone-label {
     width: 32px;
     font-size: var(--font-size-xs);
     font-weight: 600;
-    color: #c4b5fd;
+    color: color-mix(in srgb, var(--feature-edit) 65%, white);
   }
 
   .zone-dots {
@@ -266,12 +266,12 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-stroke);
     transition: background var(--duration-fast) ease;
   }
 
   .zone-dot.filled {
-    background: #a855f7;
+    background: var(--feature-edit);
   }
 
   .zone-count {
@@ -297,14 +297,14 @@
   .confidence-track {
     flex: 1;
     height: 6px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-stroke);
     border-radius: 3px;
     overflow: hidden;
   }
 
   .confidence-fill {
     height: 100%;
-    background: linear-gradient(90deg, #a855f7, #c4b5fd);
+    background: linear-gradient(90deg, var(--feature-edit), color-mix(in srgb, var(--feature-edit) 65%, white));
     border-radius: 3px;
     transition: width var(--duration-emphasis) ease;
   }

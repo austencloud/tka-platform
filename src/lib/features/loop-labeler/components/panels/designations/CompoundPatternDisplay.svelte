@@ -44,10 +44,10 @@
     padding: var(--spacing-sm) var(--spacing-md);
     background: linear-gradient(
       135deg,
-      rgba(59, 130, 246, 0.12) 0%,
-      rgba(99, 102, 241, 0.06) 100%
+      color-mix(in srgb, var(--semantic-info) 12%, transparent) 0%,
+      color-mix(in srgb, var(--primary-color) 6%, transparent) 100%
     );
-    border: 1px solid rgba(59, 130, 246, 0.25);
+    border: 1px solid color-mix(in srgb, var(--semantic-info) 25%, transparent);
     border-radius: 10px;
     margin-bottom: var(--spacing-xs);
   }
@@ -80,7 +80,7 @@
     align-items: center;
     gap: var(--spacing-sm);
     padding: 4px 8px;
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--theme-card-bg);
     border-radius: 6px;
   }
 
@@ -96,13 +96,13 @@
   }
 
   .interval-badge.quartered {
-    background: rgba(99, 102, 241, 0.3);
-    color: #a5b4fc;
+    background: color-mix(in srgb, var(--primary-color) 30%, transparent);
+    color: color-mix(in srgb, var(--primary-color) 65%, white);
   }
 
   .interval-badge.halved {
-    background: rgba(59, 130, 246, 0.3);
-    color: #93c5fd;
+    background: color-mix(in srgb, var(--semantic-info) 30%, transparent);
+    color: var(--semantic-info-text);
   }
 
   .interval-label {

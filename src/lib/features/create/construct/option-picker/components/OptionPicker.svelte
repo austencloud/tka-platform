@@ -57,9 +57,12 @@ Delegates all rendering to child components.
   // Internal continuous filter state - initialize with default
   let internalContinuousOnly = $state(false);
 
-  // Sync from prop
+  // Single effect: always push the prop value to both internal state and pickerState
   $effect(() => {
     internalContinuousOnly = isContinuousOnly;
+    if (pickerState) {
+      pickerState.setContinuousOnly(isContinuousOnly);
+    }
   });
 
   // Services
@@ -136,15 +139,7 @@ Delegates all rendering to child components.
     });
   });
 
-  // Sync internal state when prop changes from parent
-  $effect(() => {
-    if (isContinuousOnly !== internalContinuousOnly) {
-      internalContinuousOnly = isContinuousOnly;
-      if (pickerState) {
-        pickerState.setContinuousOnly(isContinuousOnly);
-      }
-    }
-  });
+  // (Continuous sync handled by single effect above)
 
   // Handle option selection — update immediately, let pictographs transition in place
   function handleSelect(option: PreparedPictographData) {

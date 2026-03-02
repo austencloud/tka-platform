@@ -2,7 +2,7 @@
 OptionGrid.svelte - Renders a grid of option cards
 
 Single responsibility: Layout option cards in a responsive grid.
-Index-keyed slots so pictographs update in place via CSS transitions.
+Letter-keyed slots with FLIP animation for smooth filter transitions.
 Computes reversal indicators for options based on current sequence.
 -->
 <script lang="ts">
@@ -13,6 +13,9 @@ Computes reversal indicators for options based on current sequence.
     PictographWithReversals,
   } from "$lib/features/create/shared/services/contracts/IReversalDetector";
   import { container } from "$lib/shared/di";
+  import { flip } from "svelte/animate";
+  import { scale } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
   import OptionCard from "./OptionCard.svelte";
 
   interface Props {
@@ -21,11 +24,7 @@ Computes reversal indicators for options based on current sequence.
     columns: number;
     gap?: string;
     onSelect: (option: PreparedPictographData) => void;
-    // Sequence context for reversal detection
     currentSequence?: PictographData[];
-    // Enable FLIP animation for filtering (desktop only)
-    enableFlip?: boolean;
-    // Thread slot tracking
     typeSectionTitle?: string;
     onSlotClicked?: (typeSection: string, slotIndex: number) => void;
     continuationIndex?: number | null;
@@ -38,7 +37,6 @@ Computes reversal indicators for options based on current sequence.
     gap = "8px",
     onSelect,
     currentSequence = [],
-    enableFlip = false,
     typeSectionTitle = "",
     onSlotClicked,
     continuationIndex = null,
@@ -54,34 +52,28 @@ Computes reversal indicators for options based on current sequence.
   const optionsWithReversals = $derived(() => {
     return ReversalDetector.detectReversalsForOptions(currentSequence, options);
   });
+
+  // Respect reduced motion preference
+  const reducedMotion =
+    typeof window !== "undefined"
+      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      : false;
+
+  const FLIP_DURATION = reducedMotion ? 0 : 300;
+  const SCALE_DURATION = reducedMotion ? 0 : 250;
 </script>
 
 <div
   class="option-grid"
-  class:flip-enabled={enableFlip}
   style:gap
   style:grid-template-columns="repeat({effectiveColumns}, {cardSize}px)"
 >
-  {#if enableFlip}
-    <!-- Desktop: Index-keyed slots so pictographs update in place with CSS transitions -->
-    {#each optionsWithReversals() as option, index (index)}
-      <div class="option-card-wrapper">
-        <OptionCard
-          pictograph={option as PreparedPictographData}
-          size={cardSize}
-          blueReversal={option.blueReversal || false}
-          redReversal={option.redReversal || false}
-          isContinuation={continuationIndex === index}
-          onSelect={(p) => {
-            onSlotClicked?.(typeSectionTitle, index);
-            onSelect(p);
-          }}
-        />
-      </div>
-    {/each}
-  {:else}
-    <!-- Mobile: Index-keyed slots for in-place transitions -->
-    {#each optionsWithReversals() as option, index (index)}
+  {#each optionsWithReversals() as option, index (option.id)}
+    <div
+      class="option-card-wrapper"
+      animate:flip={{ duration: FLIP_DURATION, easing: cubicOut }}
+      transition:scale={{ duration: SCALE_DURATION, start: 0.85, opacity: 0, easing: cubicOut }}
+    >
       <OptionCard
         pictograph={option as PreparedPictographData}
         size={cardSize}
@@ -93,8 +85,8 @@ Computes reversal indicators for options based on current sequence.
           onSelect(p);
         }}
       />
-    {/each}
-  {/if}
+    </div>
+  {/each}
 </div>
 
 <style>

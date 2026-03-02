@@ -148,10 +148,10 @@
     padding: var(--spacing-sm) var(--spacing-md);
     background: linear-gradient(
       135deg,
-      rgba(234, 179, 8, 0.12) 0%,
-      rgba(234, 179, 8, 0.06) 100%
+      color-mix(in srgb, var(--semantic-warning) 12%, transparent) 0%,
+      color-mix(in srgb, var(--semantic-warning) 6%, transparent) 100%
     );
-    border: 1px solid rgba(234, 179, 8, 0.25);
+    border: 1px solid color-mix(in srgb, var(--semantic-warning) 25%, transparent);
     border-radius: 10px;
     margin-bottom: var(--spacing-xs);
   }
@@ -160,7 +160,7 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
-    color: #eab308;
+    color: var(--semantic-warning);
     font-size: var(--font-size-sm);
     font-weight: 500;
   }
@@ -177,14 +177,14 @@
     justify-content: space-between;
     gap: var(--spacing-md);
     padding: var(--spacing-sm) var(--spacing-md);
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 8px;
     transition: var(--transition-micro);
   }
 
   .candidate-card:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-hover-bg);
     border-color: var(--theme-stroke-strong);
   }
 
@@ -227,22 +227,22 @@
   }
 
   .candidate-btn.confirm {
-    background: rgba(34, 197, 94, 0.2);
+    background: color-mix(in srgb, var(--semantic-success) 20%, transparent);
     color: var(--semantic-success);
   }
 
   .candidate-btn.confirm:hover {
-    background: rgba(34, 197, 94, 0.35);
+    background: color-mix(in srgb, var(--semantic-success) 35%, transparent);
     transform: scale(1.05);
   }
 
   .candidate-btn.deny {
-    background: rgba(239, 68, 68, 0.15);
+    background: color-mix(in srgb, var(--semantic-error) 15%, transparent);
     color: var(--semantic-error);
   }
 
   .candidate-btn.deny:hover {
-    background: rgba(239, 68, 68, 0.3);
+    background: color-mix(in srgb, var(--semantic-error) 30%, transparent);
     transform: scale(1.05);
   }
 
@@ -252,8 +252,8 @@
     justify-content: center;
     gap: 6px;
     padding: 8px 16px;
-    background: rgba(34, 197, 94, 0.2);
-    border: 1px solid rgba(34, 197, 94, 0.4);
+    background: color-mix(in srgb, var(--semantic-success) 20%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-success) 40%, transparent);
     border-radius: 8px;
     color: var(--semantic-success);
     font-size: var(--font-size-sm);
@@ -263,8 +263,8 @@
   }
 
   .confirm-all-btn:hover {
-    background: rgba(34, 197, 94, 0.3);
-    border-color: rgba(34, 197, 94, 0.6);
+    background: color-mix(in srgb, var(--semantic-success) 30%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-success) 60%, transparent);
   }
 
   /* Auto-detected banner (legacy fallback) */
@@ -276,10 +276,10 @@
     padding: var(--spacing-sm) var(--spacing-md);
     background: linear-gradient(
       135deg,
-      rgba(234, 179, 8, 0.15) 0%,
-      rgba(234, 179, 8, 0.08) 100%
+      color-mix(in srgb, var(--semantic-warning) 15%, transparent) 0%,
+      color-mix(in srgb, var(--semantic-warning) 8%, transparent) 100%
     );
-    border: 1px solid rgba(234, 179, 8, 0.3);
+    border: 1px solid color-mix(in srgb, var(--semantic-warning) 30%, transparent);
     border-radius: 8px;
     margin-bottom: var(--spacing-xs);
   }
@@ -294,7 +294,7 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
-    color: #eab308;
+    color: var(--semantic-warning);
     font-size: var(--font-size-sm);
   }
 
@@ -310,8 +310,8 @@
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
-    background: rgba(34, 197, 94, 0.2);
-    border: 1px solid rgba(34, 197, 94, 0.4);
+    background: color-mix(in srgb, var(--semantic-success) 20%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-success) 40%, transparent);
     border-radius: 6px;
     color: var(--semantic-success);
     font-size: var(--font-size-xs);
@@ -321,7 +321,7 @@
   }
 
   .confirm-btn:hover {
-    background: rgba(34, 197, 94, 0.3);
-    border-color: rgba(34, 197, 94, 0.6);
+    background: color-mix(in srgb, var(--semantic-success) 30%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-success) 60%, transparent);
   }
 </style>

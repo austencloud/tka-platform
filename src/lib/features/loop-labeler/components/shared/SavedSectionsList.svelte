@@ -7,11 +7,11 @@
    */
   import type { SectionDesignation } from "../../domain/models/section-models";
   import { SECTION_COLORS } from "../../domain/constants/section-colors";
-  import {
-    formatSectionSteps,
-    formatDesignation,
-  } from "../../utils/formatting";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
+  import { container } from "$lib/shared/di";
+  import type { ILabelFormatter } from "../../services/contracts/ILabelFormatter";
+
+  const labelFormatter = container.items.labelFormatter as ILabelFormatter;
 
   interface Props {
     sections: SectionDesignation[];
@@ -31,13 +31,14 @@
           ?.border}"
       >
         <div class="section-info">
-          <span class="section-steps">{formatSectionSteps(section.steps)}</span>
-          <span class="section-components">{formatDesignation(section)}</span>
+          <span class="section-steps">{labelFormatter.formatSectionSteps(section.steps)}</span>
+          <span class="section-components">{labelFormatter.formatDesignation(section)}</span>
         </div>
         <button
           class="remove-btn"
           onclick={() => onRemove(i)}
           title="Remove section"
+          aria-label="Remove section {i + 1}"
         >
           <FontAwesomeIcon icon="xmark" size="0.85em" />
         </button>
@@ -73,7 +74,7 @@
     padding: var(--spacing-sm) var(--spacing-md);
     background: rgba(0, 0, 0, 0.2);
     border-radius: 8px;
-    border-left: 4px solid var(--section-color, rgba(59, 130, 246, 0.8));
+    border-left: 4px solid var(--section-color, color-mix(in srgb, var(--semantic-info) 80%, transparent));
   }
 
   .section-info {
@@ -114,7 +115,7 @@
   }
 
   .remove-btn:hover {
-    background: rgba(239, 68, 68, 0.2);
+    background: color-mix(in srgb, var(--semantic-error) 20%, transparent);
     color: var(--semantic-error);
   }
 </style>

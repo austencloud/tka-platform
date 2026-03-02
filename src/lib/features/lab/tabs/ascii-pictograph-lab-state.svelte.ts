@@ -98,7 +98,7 @@ function parseCsv(text: string, gridMode: GridMode): PictographEntry[] {
 // STEP CONVERSION (Sequence mode)
 // ============================================================================
 
-function stepToRetro(step: StepData): RetroPictographData {
+function stepToRetro(step: StepData, isBridge = false): RetroPictographData {
 	const blue = step.motions[MotionColor.BLUE];
 	const red = step.motions[MotionColor.RED];
 
@@ -124,7 +124,60 @@ function stepToRetro(step: StepData): RetroPictographData {
 		blueHand,
 		redHand,
 		gridMode: step.gridMode ?? GridMode.DIAMOND,
+		isBridge,
 	};
+}
+
+// ============================================================================
+// PERSISTENCE
+// ============================================================================
+
+const STORAGE_KEY = "ascii-lab-state";
+
+interface PersistedState {
+	mode: LabMode;
+	gridModeFilter: GridMode;
+	currentIndex: number;
+	layers: RenderLayers;
+	wordInput: string;
+}
+
+const DEFAULTS: PersistedState = {
+	mode: "single",
+	gridModeFilter: GridMode.DIAMOND,
+	currentIndex: 0,
+	layers: { grid: true, hands: true, staves: false, arrows: false },
+	wordInput: "",
+};
+
+function loadPersistedState(): PersistedState {
+	try {
+		const raw = localStorage.getItem(STORAGE_KEY);
+		if (!raw) return { ...DEFAULTS };
+		const parsed = JSON.parse(raw) as Partial<PersistedState>;
+		return {
+			mode: parsed.mode === "sequence" ? "sequence" : "single",
+			gridModeFilter: parsed.gridModeFilter === GridMode.BOX ? GridMode.BOX : GridMode.DIAMOND,
+			currentIndex: typeof parsed.currentIndex === "number" ? parsed.currentIndex : 0,
+			layers: {
+				grid: parsed.layers?.grid ?? DEFAULTS.layers.grid,
+				hands: parsed.layers?.hands ?? DEFAULTS.layers.hands,
+				staves: parsed.layers?.staves ?? DEFAULTS.layers.staves,
+				arrows: parsed.layers?.arrows ?? DEFAULTS.layers.arrows,
+			},
+			wordInput: typeof parsed.wordInput === "string" ? parsed.wordInput : "",
+		};
+	} catch {
+		return { ...DEFAULTS };
+	}
+}
+
+function savePersistedState(state: PersistedState): void {
+	try {
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+	} catch {
+		// localStorage full or unavailable — silently ignore
+	}
 }
 
 // ============================================================================
@@ -132,27 +185,38 @@ function stepToRetro(step: StepData): RetroPictographData {
 // ============================================================================
 
 export function createAsciiLabState() {
+	const restored = loadPersistedState();
+
 	// Shared
-	let mode = $state<LabMode>("single");
+	let mode = $state<LabMode>(restored.mode);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
-	let layers = $state<RenderLayers>({
-		grid: true,
-		hands: true,
-		staves: false,
-		arrows: false,
-	});
+	let layers = $state<RenderLayers>({ ...restored.layers });
 
 	// Single mode
 	let entries = $state<PictographEntry[]>([]);
-	let gridModeFilter = $state<GridMode>(GridMode.DIAMOND);
-	let currentIndex = $state(0);
+	let gridModeFilter = $state<GridMode>(restored.gridModeFilter);
+	let currentIndex = $state(restored.currentIndex);
 
 	// Sequence mode
 	let sequenceSteps = $state<RetroPictographData[]>([]);
 	let sequenceWord = $state("");
 	let sequenceExpanded = $state("");
 	let generating = $state(false);
+
+	// Word input (persisted so the text field survives navigation)
+	let wordInput = $state(restored.wordInput);
+
+	// ── Auto-save on change ──
+	$effect(() => {
+		savePersistedState({
+			mode,
+			gridModeFilter,
+			currentIndex,
+			layers,
+			wordInput,
+		});
+	});
 
 	// ── Single mode derived ──
 
@@ -193,7 +257,12 @@ export function createAsciiLabState() {
 				...parseCsv(diamondText, GridMode.DIAMOND),
 				...parseCsv(boxText, GridMode.BOX),
 			];
-			currentIndex = 0;
+
+			// Clamp persisted index to valid range after data loads
+			const filtered = entries.filter((e) => e.gridMode === gridModeFilter);
+			currentIndex = filtered.length > 0
+				? Math.min(restored.currentIndex, filtered.length - 1)
+				: 0;
 		} catch (e) {
 			error = e instanceof Error ? e.message : "Failed to load pictograph data";
 		} finally {
@@ -274,10 +343,18 @@ export function createAsciiLabState() {
 				throw new Error("No valid sequence found");
 			}
 
+			// Build bridge index from letterSources (stepIndex is 1-based)
+			const bridgeSteps = new Set<number>();
+			if (parseResult.letterSources) {
+				for (const src of parseResult.letterSources) {
+					if (!src.isOriginal) bridgeSteps.add(src.stepIndex);
+				}
+			}
+
 			// Convert steps to retro format (skip step 0 which is the start position)
 			sequenceSteps = sequence.steps
 				.filter((step) => step.stepNumber > 0)
-				.map(stepToRetro);
+				.map((step) => stepToRetro(step, bridgeSteps.has(step.stepNumber)));
 		} catch (e) {
 			error = e instanceof Error ? e.message : "Sequence generation failed";
 		} finally {
@@ -297,6 +374,8 @@ export function createAsciiLabState() {
 		get sequenceWord() { return sequenceWord; },
 		get sequenceExpanded() { return sequenceExpanded; },
 		get generating() { return generating; },
+		get wordInput() { return wordInput; },
+		set wordInput(v: string) { wordInput = v; },
 		loadData,
 		next,
 		prev,

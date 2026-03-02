@@ -9,7 +9,6 @@
   import type { ComponentId } from "../../domain/constants/loop-components";
   import SavedSectionsList from "../shared/SavedSectionsList.svelte";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
-  import { formatDesignation } from "../../utils/formatting";
   import { BASE_COMPONENTS } from "../../domain/constants/loop-components";
   import { BASE_WORDS } from "../../domain/constants/base-words";
 
@@ -146,8 +145,8 @@
     align-items: center;
     gap: var(--spacing-sm);
     padding: var(--spacing-md);
-    background: rgba(251, 191, 36, 0.15);
-    border: 1px solid rgba(251, 191, 36, 0.4);
+    background: color-mix(in srgb, var(--semantic-warning) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-warning) 40%, transparent);
     border-radius: 8px;
   }
 
@@ -222,9 +221,9 @@
   }
 
   .base-chip.selected {
-    background: rgba(34, 197, 94, 0.2);
-    border-color: rgba(34, 197, 94, 0.5);
-    color: #4ade80;
+    background: color-mix(in srgb, var(--semantic-success) 20%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-success) 50%, transparent);
+    color: color-mix(in srgb, var(--semantic-success) 65%, white);
   }
 
   .btn-add {
@@ -246,7 +245,7 @@
 
   .btn-add:hover:not(:disabled) {
     transform: translateY(var(--hover-lift-sm));
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--primary-color) 40%, transparent);
   }
 
   .btn-add:disabled {
@@ -258,10 +257,10 @@
 
   .btn-unknown {
     padding: var(--spacing-md);
-    background: rgba(234, 179, 8, 0.15);
-    border: 1px solid rgba(234, 179, 8, 0.4);
+    background: color-mix(in srgb, var(--semantic-warning) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-warning) 40%, transparent);
     border-radius: 8px;
-    color: #eab308;
+    color: var(--semantic-warning);
     cursor: pointer;
     font-size: var(--font-size-sm);
     font-weight: 500;
@@ -270,8 +269,8 @@
   }
 
   .btn-unknown:hover {
-    background: rgba(234, 179, 8, 0.25);
-    border-color: rgba(234, 179, 8, 0.6);
+    background: color-mix(in srgb, var(--semantic-warning) 25%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-warning) 60%, transparent);
   }
 
   .btn-next {
@@ -283,7 +282,7 @@
     background: linear-gradient(
       135deg,
       var(--semantic-success) 0%,
-      #16a34a 100%
+      color-mix(in srgb, var(--semantic-success) 60%, black) 100%
     );
     border: none;
     border-radius: 8px;
@@ -297,7 +296,7 @@
 
   .btn-next:hover:not(:disabled) {
     transform: translateY(var(--hover-lift-sm));
-    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--semantic-success) 40%, transparent);
   }
 
   .btn-next:disabled {

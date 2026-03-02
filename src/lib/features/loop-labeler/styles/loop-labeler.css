@@ -164,7 +164,7 @@
 
 .btn-action.primary:hover:not(:disabled) {
   transform: translateY(var(--hover-lift-sm));
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--primary-color) 40%, transparent);
 }
 
 .btn-action.secondary {
@@ -179,13 +179,13 @@
 }
 
 .btn-action.warning {
-  background: rgba(234, 179, 8, 0.5);
-  border: 1px solid rgba(234, 179, 8, 0.6);
+  background: color-mix(in srgb, var(--semantic-warning) 50%, transparent);
+  border: 1px solid color-mix(in srgb, var(--semantic-warning) 60%, transparent);
   color: white;
 }
 
 .btn-action.warning:hover:not(:disabled) {
-  background: rgba(234, 179, 8, 0.6);
+  background: color-mix(in srgb, var(--semantic-warning) 60%, transparent);
 }
 
 .btn-action.success {
@@ -196,7 +196,7 @@
 
 .btn-action.success:hover:not(:disabled) {
   transform: translateY(var(--hover-lift-sm));
-  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--semantic-success) 40%, transparent);
 }
 
 /* ============================================================================
@@ -214,21 +214,21 @@
 }
 
 .label-status-badge.labeled {
-  background: rgba(34, 197, 94, 0.55);
+  background: color-mix(in srgb, var(--semantic-success) 55%, transparent);
   color: white;
-  border: 1px solid rgba(34, 197, 94, 0.65);
+  border: 1px solid color-mix(in srgb, var(--semantic-success) 65%, transparent);
 }
 
 .label-status-badge.unlabeled {
-  background: rgba(234, 179, 8, 0.5);
+  background: color-mix(in srgb, var(--semantic-warning) 50%, transparent);
   color: white;
-  border: 1px solid rgba(234, 179, 8, 0.6);
+  border: 1px solid color-mix(in srgb, var(--semantic-warning) 60%, transparent);
 }
 
 .label-status-badge.freeform {
-  background: rgba(168, 85, 247, 0.55);
+  background: color-mix(in srgb, var(--feature-edit) 55%, transparent);
   color: white;
-  border: 1px solid rgba(168, 85, 247, 0.65);
+  border: 1px solid color-mix(in srgb, var(--feature-edit) 65%, transparent);
 }
 
 /* ============================================================================
@@ -241,44 +241,44 @@
   gap: var(--spacing-sm);
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--theme-card-bg);
+  border: 1px solid var(--theme-stroke);
 }
 
 .designation-item.whole {
   background: linear-gradient(
     135deg,
-    rgba(99, 102, 241, 0.12) 0%,
-    rgba(139, 92, 246, 0.08) 100%
+    color-mix(in srgb, var(--primary-color) 12%, transparent) 0%,
+    color-mix(in srgb, var(--feature-edit) 8%, transparent) 100%
   );
-  border-color: rgba(99, 102, 241, 0.25);
+  border-color: color-mix(in srgb, var(--primary-color) 25%, transparent);
 }
 
 .designation-item.section {
   background: linear-gradient(
     135deg,
-    rgba(59, 130, 246, 0.12) 0%,
-    rgba(99, 102, 241, 0.08) 100%
+    color-mix(in srgb, var(--semantic-info) 12%, transparent) 0%,
+    color-mix(in srgb, var(--primary-color) 8%, transparent) 100%
   );
-  border-color: rgba(59, 130, 246, 0.25);
+  border-color: color-mix(in srgb, var(--semantic-info) 25%, transparent);
 }
 
 .designation-item.beatpair {
   background: linear-gradient(
     135deg,
-    rgba(168, 85, 247, 0.12) 0%,
-    rgba(139, 92, 246, 0.08) 100%
+    color-mix(in srgb, var(--feature-edit) 12%, transparent) 0%,
+    color-mix(in srgb, var(--feature-edit) 8%, transparent) 100%
   );
-  border-color: rgba(168, 85, 247, 0.25);
+  border-color: color-mix(in srgb, var(--feature-edit) 25%, transparent);
 }
 
 .designation-item.freeform {
   background: linear-gradient(
     135deg,
-    rgba(239, 68, 68, 0.12) 0%,
-    rgba(220, 38, 38, 0.08) 100%
+    color-mix(in srgb, var(--semantic-error) 12%, transparent) 0%,
+    color-mix(in srgb, var(--semantic-error) 8%, transparent) 100%
   );
-  border-color: rgba(239, 68, 68, 0.25);
+  border-color: color-mix(in srgb, var(--semantic-error) 25%, transparent);
 }
 
 .designation-badge {
@@ -294,22 +294,22 @@
 }
 
 .designation-item.whole .designation-badge {
-  background: rgba(99, 102, 241, 0.6);
+  background: color-mix(in srgb, var(--primary-color) 60%, transparent);
   color: white;
 }
 
 .designation-item.section .designation-badge {
-  background: rgba(59, 130, 246, 0.6);
+  background: color-mix(in srgb, var(--semantic-info) 60%, transparent);
   color: white;
 }
 
 .designation-item.beatpair .designation-badge {
-  background: rgba(168, 85, 247, 0.6);
+  background: color-mix(in srgb, var(--feature-edit) 60%, transparent);
   color: white;
 }
 
 .designation-item.freeform .designation-badge {
-  background: rgba(239, 68, 68, 0.6);
+  background: color-mix(in srgb, var(--semantic-error) 60%, transparent);
   color: white;
 }
 
@@ -337,7 +337,7 @@
 }
 
 .remove-btn:hover {
-  background: rgba(239, 68, 68, 0.2);
+  background: color-mix(in srgb, var(--semantic-error) 20%, transparent);
   color: var(--semantic-error);
 }
 
@@ -366,7 +366,7 @@
 }
 
 .chip.active {
-  background: rgba(99, 102, 241, 0.3);
+  background: color-mix(in srgb, var(--primary-color) 30%, transparent);
   border-color: var(--primary-color);
   color: var(--foreground);
 }

@@ -110,6 +110,7 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
     font-size="100"
     font-family="Georgia, serif"
     font-weight="bold"
+    letter-spacing="8"
     fill={fillColor}
     style="transform-origin: 50px 50px"
   >
@@ -126,6 +127,7 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
     font-size="80"
     font-family="Georgia, serif"
     font-weight="bold"
+    letter-spacing="8"
     fill={fillColor}
     style="transform-origin: 50px 50px"
   >

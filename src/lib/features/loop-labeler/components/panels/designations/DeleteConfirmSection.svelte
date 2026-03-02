@@ -74,7 +74,7 @@
   .delete-section {
     margin-top: var(--spacing-md);
     padding-top: var(--spacing-md);
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid var(--theme-stroke);
   }
 
   .delete-confirm {
@@ -82,8 +82,8 @@
     flex-direction: column;
     gap: var(--spacing-sm);
     padding: var(--spacing-sm) var(--spacing-md);
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: color-mix(in srgb, var(--semantic-error) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-error) 30%, transparent);
     border-radius: 8px;
   }
 
@@ -114,7 +114,7 @@
   }
 
   .delete-cancel-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-stroke);
     color: var(--foreground);
   }
 
@@ -128,8 +128,8 @@
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
-    background: rgba(239, 68, 68, 0.2);
-    border: 1px solid rgba(239, 68, 68, 0.5);
+    background: color-mix(in srgb, var(--semantic-error) 20%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-error) 50%, transparent);
     border-radius: 6px;
     color: var(--semantic-error);
     font-size: var(--font-size-sm);
@@ -139,8 +139,8 @@
   }
 
   .delete-confirm-btn:hover:not(:disabled) {
-    background: rgba(239, 68, 68, 0.3);
-    border-color: rgba(239, 68, 68, 0.7);
+    background: color-mix(in srgb, var(--semantic-error) 30%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error) 70%, transparent);
   }
 
   .delete-confirm-btn:disabled {
@@ -162,13 +162,13 @@
     transition: var(--transition-fast);
     min-height: var(--min-touch-target);
     background: transparent;
-    border: 1px solid rgba(239, 68, 68, 0.25);
+    border: 1px solid color-mix(in srgb, var(--semantic-error) 25%, transparent);
     color: var(--muted-foreground);
   }
 
   .action-btn.delete:hover {
-    background: rgba(239, 68, 68, 0.15);
-    border-color: rgba(239, 68, 68, 0.5);
+    background: color-mix(in srgb, var(--semantic-error) 15%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error) 50%, transparent);
     color: var(--semantic-error);
   }
 

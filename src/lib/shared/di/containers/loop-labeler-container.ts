@@ -21,6 +21,7 @@ import { LOOPLabelsFirebaseRepository } from "$lib/features/loop-labeler/service
 import { SequenceLoader } from "$lib/features/loop-labeler/services/implementations/SequenceLoader";
 import { Navigator } from "$lib/features/loop-labeler/services/implementations/Navigator";
 import { RuleBasedTagger } from "$lib/features/loop-labeler/services/implementations/RuleBasedTagger";
+import { LabelFormatter } from "$lib/features/loop-labeler/services/implementations/LabelFormatter";
 
 // Services with internal dependencies
 import { StepComparisonOrchestrator } from "$lib/features/loop-labeler/services/implementations/comparison/StepComparisonOrchestrator";
@@ -59,6 +60,7 @@ export function createLoopLabelerContainer(externalDeps: {
         sequenceLoader: () => new SequenceLoader(),
         navigator: () => new Navigator(),
         ruleBasedTagger: () => new RuleBasedTagger(),
+        labelFormatter: () => new LabelFormatter(),
       })
 
       // === Layer 2: Services with internal dependencies ===

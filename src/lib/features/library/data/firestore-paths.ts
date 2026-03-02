@@ -122,6 +122,45 @@ export function getSequenceMetadataPath(sequenceId: string): string {
 }
 
 // ============================================================================
+// SYSTEM DECK PATHS
+// ============================================================================
+
+/**
+ * Path to the system decks collection
+ * @example "decks"
+ */
+export function getSystemDecksPath(): string {
+  return "decks";
+}
+
+/**
+ * Path to a specific system deck
+ * @example "decks/l1-quartered-loop"
+ */
+export function getSystemDeckPath(deckId: string): string {
+  return `decks/${deckId}`;
+}
+
+/**
+ * Path to sequences within a system deck
+ * @example "decks/l1-quartered-loop/sequences"
+ */
+export function getSystemDeckSequencesPath(deckId: string): string {
+  return `decks/${deckId}/sequences`;
+}
+
+/**
+ * Path to a specific sequence within a system deck
+ * @example "decks/l1-quartered-loop/sequences/alpha1-AB"
+ */
+export function getSystemDeckSequencePath(
+  deckId: string,
+  sequenceId: string
+): string {
+  return `decks/${deckId}/sequences/${sequenceId}`;
+}
+
+// ============================================================================
 // CONSTANTS
 // ============================================================================
 

@@ -16,6 +16,9 @@
   import ChoreoCardVisibility from "./ChoreoCardVisibility.svelte";
   import ChoreoCardExport from "./ChoreoCardExport.svelte";
   import PageDisplay from "./PageDisplay.svelte";
+  import type { Deck } from "../domain/models/Deck";
+  import type { IDeckLoader } from "../services/contracts/IDeckLoader";
+  import DeckBrowser from "./DeckBrowser.svelte";
 
   // Difficulty calculator for dynamic level calculation
   const difficultyCalculator = new SequenceDifficultyCalculator();
@@ -122,6 +125,18 @@
   let showWord = $state<boolean>(getPersistedBoolean(STORAGE_KEY_SHOW_WORD, true));
   let includeStartPosition = $state<boolean>(getPersistedBoolean(STORAGE_KEY_INCLUDE_START_POS, true));
 
+  // Mode state
+  type ChoreoCardMode = "library" | "decks";
+  let mode = $state<ChoreoCardMode>(
+    (getPersistedString("choreoCard.mode") as ChoreoCardMode) ?? "library"
+  );
+
+  // Deck state
+  let decks = $state<Deck[]>([]);
+  let selectedDeckId = $state<string | null>(null);
+  let deckSequences = $state<SequenceData[]>([]);
+  let isDeckLoading = $state(false);
+
   // Derive unique authors from loaded sequences
   let authors = $derived(
     [...new Set(sequences.map((s) => s.author).filter((a): a is string => Boolean(a)))].sort()
@@ -221,6 +236,9 @@
   onMount(async () => {
     loaderService = container.items.browseLoader;
     await loadSequences();
+    if (mode === "decks") {
+      loadDecks();
+    }
   });
 
   async function loadSequences() {
@@ -306,6 +324,44 @@
       returnLabel: "Choreo Cards",
     });
   }
+
+  async function loadDecks() {
+    const deckLoader = container.items.deckLoader as IDeckLoader;
+    try {
+      isDeckLoading = true;
+      decks = await deckLoader.loadDecks();
+    } catch (err) {
+      console.error("Failed to load decks:", err);
+    } finally {
+      isDeckLoading = false;
+    }
+  }
+
+  async function handleSelectDeck(deckId: string) {
+    selectedDeckId = deckId;
+    const deckLoader = container.items.deckLoader as IDeckLoader;
+    try {
+      isDeckLoading = true;
+      deckSequences = await deckLoader.loadDeckSequences(deckId);
+    } catch (err) {
+      console.error("Failed to load deck sequences:", err);
+    } finally {
+      isDeckLoading = false;
+    }
+  }
+
+  function handleBackToDeckList() {
+    selectedDeckId = null;
+    deckSequences = [];
+  }
+
+  function handleModeChange(newMode: ChoreoCardMode) {
+    mode = newMode;
+    persist("choreoCard.mode", newMode);
+    if (newMode === "decks" && decks.length === 0) {
+      loadDecks();
+    }
+  }
 </script>
 
 <div class="choreo-card-tab">
@@ -315,6 +371,30 @@
       <div class="title-row">
         <i class="fas fa-id-card" aria-hidden="true"></i>
         <h1 class="title">Choreo Cards</h1>
+        <div class="mode-toggle" role="tablist" aria-label="View mode">
+          <button
+            role="tab"
+            type="button"
+            aria-selected={mode === "library"}
+            class="mode-btn"
+            class:active={mode === "library"}
+            onclick={() => handleModeChange("library")}
+          >
+            <i class="fas fa-book" aria-hidden="true"></i>
+            My Library
+          </button>
+          <button
+            role="tab"
+            type="button"
+            aria-selected={mode === "decks"}
+            class="mode-btn"
+            class:active={mode === "decks"}
+            onclick={() => handleModeChange("decks")}
+          >
+            <i class="fas fa-layer-group" aria-hidden="true"></i>
+            Decks
+          </button>
+        </div>
       </div>
       <p class="status" role="status" aria-live="polite" aria-atomic="true">
         {statusMessage}
@@ -324,71 +404,108 @@
 
   <!-- Main content -->
   <div class="main-content">
-    <!-- Navigation Sidebar -->
-    <aside class="sidebar">
-      <div class="sidebar-content">
-        <ChoreoCardNavigation
-          {selectedLength}
+    {#if mode === "library"}
+      <!-- Navigation Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-content">
+          <ChoreoCardNavigation
+            {selectedLength}
+            {columnCount}
+            onLengthSelected={handleLengthSelected}
+            onColumnCountChanged={handleColumnCountChanged}
+          />
+          <div class="filter-divider"></div>
+          <ChoreoCardFilters
+            {difficulty}
+            {favorites}
+            {gridMode}
+            {author}
+            {authors}
+            {showQRCodes}
+            onDifficultyChange={handleDifficultyChange}
+            onFavoritesChange={handleFavoritesChange}
+            onGridModeChange={handleGridModeChange}
+            onAuthorChange={handleAuthorChange}
+            onShowQRCodesChange={handleShowQRCodesChange}
+          />
+          <div class="filter-divider"></div>
+          <ChoreoCardVisibility
+            {handPointsVisible}
+            {showGrid}
+            {showTKA}
+            {showWord}
+            {includeStartPosition}
+            onHandPointsChange={handleHandPointsChange}
+            onShowGridChange={handleShowGridChange}
+            onShowTKAChange={handleShowTKAChange}
+            onShowWordChange={handleShowWordChange}
+            onIncludeStartPositionChange={handleIncludeStartPositionChange}
+          />
+          <div class="filter-divider"></div>
+          <ChoreoCardExport
+            sequences={filteredSequences}
+            {showGrid}
+            {showTKA}
+            {showWord}
+            {includeStartPosition}
+          />
+        </div>
+      </aside>
+
+      <!-- Page Display -->
+      <main class="content-area">
+        <PageDisplay
+          {pages}
+          {isLoading}
+          {error}
           {columnCount}
-          onLengthSelected={handleLengthSelected}
-          onColumnCountChanged={handleColumnCountChanged}
-        />
-        <div class="filter-divider"></div>
-        <ChoreoCardFilters
-          {difficulty}
-          {favorites}
-          {gridMode}
-          {author}
-          {authors}
           {showQRCodes}
-          onDifficultyChange={handleDifficultyChange}
-          onFavoritesChange={handleFavoritesChange}
-          onGridModeChange={handleGridModeChange}
-          onAuthorChange={handleAuthorChange}
-          onShowQRCodesChange={handleShowQRCodesChange}
-        />
-        <div class="filter-divider"></div>
-        <ChoreoCardVisibility
           {handPointsVisible}
           {showGrid}
           {showTKA}
           {showWord}
           {includeStartPosition}
-          onHandPointsChange={handleHandPointsChange}
-          onShowGridChange={handleShowGridChange}
-          onShowTKAChange={handleShowTKAChange}
-          onShowWordChange={handleShowWordChange}
-          onIncludeStartPositionChange={handleIncludeStartPositionChange}
+          onRetry={loadSequences}
+          onColumnCountChanged={handleColumnCountChanged}
+          onSelectSequence={handleSelectSequence}
         />
-        <div class="filter-divider"></div>
-        <ChoreoCardExport
-          sequences={filteredSequences}
+      </main>
+    {:else}
+      <!-- Decks mode: simplified sidebar + DeckBrowser -->
+      <aside class="sidebar">
+        <div class="sidebar-content">
+          <ChoreoCardVisibility
+            {handPointsVisible}
+            {showGrid}
+            {showTKA}
+            {showWord}
+            {includeStartPosition}
+            onHandPointsChange={handleHandPointsChange}
+            onShowGridChange={handleShowGridChange}
+            onShowTKAChange={handleShowTKAChange}
+            onShowWordChange={handleShowWordChange}
+            onIncludeStartPositionChange={handleIncludeStartPositionChange}
+          />
+        </div>
+      </aside>
+
+      <main class="content-area">
+        <DeckBrowser
+          {decks}
+          {selectedDeckId}
+          {deckSequences}
+          isLoading={isDeckLoading}
+          {handPointsVisible}
           {showGrid}
           {showTKA}
           {showWord}
           {includeStartPosition}
+          onSelectDeck={handleSelectDeck}
+          onBackToList={handleBackToDeckList}
+          onSelectSequence={handleSelectSequence}
         />
-      </div>
-    </aside>
-
-    <!-- Page Display -->
-    <main class="content-area">
-      <PageDisplay
-        {pages}
-        {isLoading}
-        {error}
-        {columnCount}
-        {showQRCodes}
-        {handPointsVisible}
-        {showGrid}
-        {showTKA}
-        {showWord}
-        {includeStartPosition}
-        onRetry={loadSequences}
-        onColumnCountChanged={handleColumnCountChanged}
-        onSelectSequence={handleSelectSequence}
-      />
-    </main>
+      </main>
+    {/if}
   </div>
 </div>
 
@@ -437,6 +554,42 @@
     margin: 0;
     font-size: var(--font-size-sm, 14px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+  }
+
+  .mode-toggle {
+    display: flex;
+    gap: var(--spacing-xs);
+    margin-left: auto;
+  }
+
+  .mode-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: 4px var(--spacing-sm);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius-sm, 6px);
+    background: transparent;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-sm, 14px);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .mode-btn:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    color: var(--theme-text, #ffffff);
+  }
+
+  .mode-btn.active {
+    background: var(--theme-accent, #f43f5e);
+    border-color: var(--theme-accent, #f43f5e);
+    color: #ffffff;
+  }
+
+  .mode-btn > i {
+    font-size: 0.85em;
   }
 
   /* Main Content */

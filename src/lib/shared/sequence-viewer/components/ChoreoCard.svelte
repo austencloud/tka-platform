@@ -1119,14 +1119,6 @@
                 </div>
               {/if}
             {/each}
-            <!-- Pass dividers for multi-pass orientation cycles -->
-            {#each passDividerGridRows as dividerRow (dividerRow)}
-              <div
-                class="pass-divider"
-                style="grid-column: 1 / -1; grid-row: {dividerRow};"
-                aria-hidden="true"
-              ></div>
-            {/each}
           </div>
         </div>
       {:else}
@@ -1180,14 +1172,6 @@
                 {/if}
               </div>
             {/if}
-          {/each}
-          <!-- Pass dividers for multi-pass orientation cycles -->
-          {#each passDividerGridRows as dividerRow (dividerRow)}
-            <div
-              class="pass-divider"
-              style="grid-column: 1 / -1; grid-row: {dividerRow};"
-              aria-hidden="true"
-            ></div>
           {/each}
         </div>
       {/if}
@@ -1424,19 +1408,6 @@
   }
 
   /* Pass divider for multi-pass orientation cycles */
-  .pass-divider {
-    height: 3px;
-    background: linear-gradient(
-      90deg,
-      transparent 5%,
-      var(--theme-accent, rgba(99, 102, 241, 0.3)) 20%,
-      var(--theme-accent, rgba(99, 102, 241, 0.3)) 80%,
-      transparent 95%
-    );
-    opacity: 0.4;
-    align-self: center;
-  }
-
   /* Individual pictograph cell */
   .pictograph-cell {
     position: relative;

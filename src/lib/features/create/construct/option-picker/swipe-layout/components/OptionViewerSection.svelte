@@ -17,6 +17,9 @@ Renders a section with:
   import { container } from "$lib/shared/di";
   import { optionGridFitCalculator } from "../../services/implementations/OptionGridFitCalculator";
   import { onMount } from "svelte";
+  import { flip } from "svelte/animate";
+  import { scale } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
   import { getLetterBorderColors } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
   import OptionPictographCell from "./OptionPictographCell.svelte";
   import SectionHeader from "./SectionHeader.svelte";
@@ -62,6 +65,15 @@ Renders a section with:
   let hapticService: IHapticFeedback | null = null;
   let reversalDetector: IReversalDetector | null = null;
   const gridFitCalculator: IOptionGridFitCalculator | null = optionGridFitCalculator;
+
+  // Respect reduced motion preference
+  const reducedMotion =
+    typeof window !== "undefined"
+      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      : false;
+
+  const FLIP_DURATION = reducedMotion ? 0 : 300;
+  const SCALE_DURATION = reducedMotion ? 0 : 250;
 
   onMount(() => {
     hapticService = container.items.hapticFeedback;
@@ -330,17 +342,19 @@ Renders a section with:
     <SectionHeader {letterType} />
   {/if}
 
-  <!-- Section Content - Index-keyed slots for in-place pictograph transitions -->
+  <!-- Section Content - Letter-keyed with FLIP animation for smooth filter transitions -->
   <div
     class="pictographs-grid"
     style:grid-template-columns={optimalLayout().gridColumns}
     style:gap={layoutConfig?.gridGap || "16px"}
   >
-    {#each pictographsWithReversals() as pictograph, index (index)}
+    {#each pictographsWithReversals() as pictograph, index (pictograph.id)}
       {@const borderColors = getLetterBorderColors(pictograph.letter)}
       <button
         class="pictograph-option"
         class:continuation={continuationIndex === index}
+        animate:flip={{ duration: FLIP_DURATION, easing: cubicOut }}
+        transition:scale={{ duration: SCALE_DURATION, start: 0.85, opacity: 0, easing: cubicOut }}
         onclick={() => handlePictographClick(pictograph, index)}
         style:width="{optimalLayout().pictographSize}px"
         style:height="{optimalLayout().pictographSize}px"

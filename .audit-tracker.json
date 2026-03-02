@@ -858,6 +858,67 @@
       "overallGrade": "A+",
       "notes": null,
       "issues": []
+    },
+    "features/loop-labeler": {
+      "lastAuditedAt": "2026-03-02T01:02:25.039Z",
+      "name": "Loop Labeler",
+      "type": "module",
+      "grades": {
+        "architecture": "B",
+        "codeQuality": "A",
+        "svelte5": "A+",
+        "accessibility": "F",
+        "uxStates": "A",
+        "uiConsistency": "F",
+        "performance": "A+",
+        "security": "A+"
+      },
+      "overallGrade": "B",
+      "notes": null,
+      "issues": [
+        {
+          "dimension": "architecture",
+          "severity": "minor",
+          "file": "src/lib/features/loop-labeler/domain/utils/formatting.ts",
+          "line": 1,
+          "message": "utils/ file should be a DI service per project conventions"
+        },
+        {
+          "dimension": "codeQuality",
+          "severity": "minor",
+          "file": "src/lib/features/loop-labeler/components/LOOPLabelerModule.svelte",
+          "line": 0,
+          "message": "2 as-unknown-as casts found"
+        },
+        {
+          "dimension": "accessibility",
+          "severity": "critical",
+          "file": "src/lib/features/loop-labeler/components/panels/SectionModePanel.svelte",
+          "line": 0,
+          "message": "Multiple icon-only buttons missing aria-labels across 10+ component files (55 total)"
+        },
+        {
+          "dimension": "uxStates",
+          "severity": "minor",
+          "file": "src/lib/features/loop-labeler/components/LOOPLabelerModule.svelte",
+          "line": 0,
+          "message": "Firebase save failures only console.error - no user-visible error state"
+        },
+        {
+          "dimension": "uiConsistency",
+          "severity": "serious",
+          "file": "src/lib/features/loop-labeler/components/panels/SectionModePanel.svelte",
+          "line": 0,
+          "message": "72 hardcoded rgba/hex colors remain in files not covered by initial migration (SectionModePanel:14, SequencePreviewPanel:11, SequenceBrowserSidebar:10, StepPairSelectionStatus:8, ManualBuilderSection:6, WholeModePanel:5, ViewOnlyNotice:4, TransformationList:4, SavedStepPairsList:3, SavedSectionsList:2, others:5)"
+        },
+        {
+          "dimension": "performance",
+          "severity": "minor",
+          "file": "src/lib/features/loop-labeler/components/LOOPLabelerModule.svelte",
+          "line": 0,
+          "message": "4 minor timer leaks (short-lived UX debounces without cleanup)"
+        }
+      ]
     }
   },
   "targets": [],

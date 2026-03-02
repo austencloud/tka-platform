@@ -71,13 +71,6 @@ function createAppEntryState() {
     },
 
     /**
-     * Check if guided build tutorial is active.
-     */
-    isGuidedBuild(): boolean {
-      return state.phase === "create-tutorial";
-    },
-
-    /**
      * Called when the first-run wizard finishes.
      * Kicks off the wizard exit -> create tutorial sequence.
      */

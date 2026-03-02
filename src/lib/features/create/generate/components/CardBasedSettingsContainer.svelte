@@ -58,6 +58,8 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     wordInputValue = "",
     onWordInput,
     onWordSubmit,
+    needsCycleCompletion = false,
+    onCompleteCycle,
   } = $props<{
     config: UIGenerationConfig;
     isFreeformMode: boolean;
@@ -72,6 +74,10 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     wordInputValue?: string;
     onWordInput?: (value: string) => void;
     onWordSubmit?: () => void;
+    /** When true, shows "Complete Cycle" button next to generate */
+    needsCycleCompletion?: boolean;
+    /** Called when user clicks "Complete Cycle" */
+    onCompleteCycle?: () => void;
   }>();
 
   // Get panel coordination state from context (for LOOP expanded overlay)
@@ -257,6 +263,8 @@ Supports help mode: when active, clicking cards opens help instead of normal act
         positionsResetTrigger,
         currentGridMode: config.gridMode,
         handleGenerateClick: onGenerateClicked,
+        needsCycleCompletion,
+        handleCompleteCycle: onCompleteCycle,
       },
       allowedIntensityValues,
       isGenerating,

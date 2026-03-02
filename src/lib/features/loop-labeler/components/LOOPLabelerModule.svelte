@@ -26,6 +26,7 @@
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
   import type { FilterMode } from "../domain/models/label-models";
+  import { SECTION_COLORS } from "../domain/constants/section-colors";
 
   // Import all panel components
   import LOOPLabelerHeader from "./shared/LOOPLabelerHeader.svelte";
@@ -50,6 +51,7 @@
   let showManualBuilder = $state(false); // Hide manual designation tools behind toggle
 
   // Toast timers (cleaned up on unmount)
+  let copiedToastTimer: ReturnType<typeof setTimeout> | null = null;
   let verifiedToastTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Store service references after loading (to avoid resolving in $derived)
@@ -98,6 +100,7 @@
     // Return cleanup function
     return () => {
       loopLabelerController.dispose();
+      if (copiedToastTimer) clearTimeout(copiedToastTimer);
       if (verifiedToastTimer) clearTimeout(verifiedToastTimer);
     };
   });
@@ -261,16 +264,7 @@
     const map = new Map<number, { bg: string; border: string }>();
 
     if (labelingMode === "section") {
-      // Show saved sections with unique colors
-      const SECTION_COLORS = [
-        { bg: "rgba(59, 130, 246, 0.35)", border: "rgba(59, 130, 246, 0.8)" },
-        { bg: "rgba(168, 85, 247, 0.35)", border: "rgba(168, 85, 247, 0.8)" },
-        { bg: "rgba(34, 197, 94, 0.35)", border: "rgba(34, 197, 94, 0.8)" },
-        { bg: "rgba(249, 115, 22, 0.35)", border: "rgba(249, 115, 22, 0.8)" },
-        { bg: "rgba(236, 72, 153, 0.35)", border: "rgba(236, 72, 153, 0.8)" },
-        { bg: "rgba(20, 184, 166, 0.35)", border: "rgba(20, 184, 166, 0.8)" },
-      ];
-
+      // Show saved sections with unique colors (from shared constants)
       sectionState.savedSections.forEach((section, idx) => {
         const color = SECTION_COLORS[idx % SECTION_COLORS.length]!;
         section.steps.forEach((stepNum) => {
@@ -280,8 +274,8 @@
 
       // Currently selected steps (bright yellow/gold)
       const selectionColor = {
-        bg: "rgba(251, 191, 36, 0.35)",
-        border: "rgba(251, 191, 36, 0.9)",
+        bg: "color-mix(in srgb, var(--semantic-warning) 35%, transparent)",
+        border: "color-mix(in srgb, var(--semantic-warning) 90%, transparent)",
       };
       sectionState.selectedSteps.forEach((stepNum) => {
         map.set(stepNum, selectionColor);
@@ -292,15 +286,15 @@
       // First beat (green)
       if (stepPairState.firstStep !== null) {
         map.set(stepPairState.firstStep, {
-          bg: "rgba(34, 197, 94, 0.35)",
-          border: "rgba(34, 197, 94, 0.9)",
+          bg: "color-mix(in srgb, var(--semantic-success) 35%, transparent)",
+          border: "color-mix(in srgb, var(--semantic-success) 90%, transparent)",
         });
       }
       // Second beat (purple)
       if (stepPairState.secondStep !== null) {
         map.set(stepPairState.secondStep, {
-          bg: "rgba(168, 85, 247, 0.35)",
-          border: "rgba(168, 85, 247, 0.9)",
+          bg: "color-mix(in srgb, var(--feature-edit) 35%, transparent)",
+          border: "color-mix(in srgb, var(--feature-edit) 90%, transparent)",
         });
       }
     }
@@ -448,8 +442,10 @@
     const json = JSON.stringify(exportData, null, 2);
     navigator.clipboard.writeText(json).then(() => {
       copiedToast = true;
-      setTimeout(() => {
+      if (copiedToastTimer) clearTimeout(copiedToastTimer);
+      copiedToastTimer = setTimeout(() => {
         copiedToast = false;
+        copiedToastTimer = null;
       }, 2000);
     });
   }
@@ -793,7 +789,7 @@
   }
 
   .labeling-panel::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.25);
+    background: var(--scrollbar-thumb-hover);
   }
 
   @media (max-width: 1024px) {

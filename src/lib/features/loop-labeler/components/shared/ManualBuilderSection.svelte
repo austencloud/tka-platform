@@ -113,7 +113,7 @@
     justify-content: space-between;
     width: 100%;
     padding: var(--spacing-sm) var(--spacing-md);
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg);
     border: 1px dashed var(--theme-stroke, var(--theme-stroke-strong));
     border-radius: 10px;
     color: var(--muted-foreground);
@@ -124,15 +124,15 @@
 
   .show-builder-btn:hover,
   .collapse-builder-btn:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.25);
+    background: var(--theme-card-hover-bg);
+    border-color: var(--theme-stroke-strong);
     color: var(--foreground);
   }
 
   .collapse-builder-btn {
-    background: rgba(99, 102, 241, 0.08);
+    background: color-mix(in srgb, var(--primary-color) 8%, transparent);
     border-style: solid;
-    border-color: rgba(99, 102, 241, 0.3);
+    border-color: color-mix(in srgb, var(--primary-color) 30%, transparent);
     color: var(--foreground);
   }
 
@@ -146,7 +146,7 @@
     flex-direction: column;
     gap: var(--spacing-sm);
     padding: var(--spacing-sm);
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
   }

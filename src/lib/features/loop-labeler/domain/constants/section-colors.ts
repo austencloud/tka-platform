@@ -1,12 +1,15 @@
 /**
  * Section color palette for visual differentiation in section-based labeling
+ *
+ * Uses CSS custom properties via color-mix() for theme consistency.
+ * These strings are applied as inline styles, so var() references resolve at runtime.
  */
 
 export const SECTION_COLORS = [
-  { bg: "rgba(59, 130, 246, 0.35)", border: "rgba(59, 130, 246, 0.8)" }, // Blue
-  { bg: "rgba(168, 85, 247, 0.35)", border: "rgba(168, 85, 247, 0.8)" }, // Purple
-  { bg: "rgba(34, 197, 94, 0.35)", border: "rgba(34, 197, 94, 0.8)" }, // Green
-  { bg: "rgba(249, 115, 22, 0.35)", border: "rgba(249, 115, 22, 0.8)" }, // Orange
-  { bg: "rgba(236, 72, 153, 0.35)", border: "rgba(236, 72, 153, 0.8)" }, // Pink
-  { bg: "rgba(20, 184, 166, 0.35)", border: "rgba(20, 184, 166, 0.8)" }, // Teal
+  { bg: "color-mix(in srgb, var(--semantic-info) 35%, transparent)", border: "color-mix(in srgb, var(--semantic-info) 80%, transparent)" }, // Blue
+  { bg: "color-mix(in srgb, var(--feature-edit) 35%, transparent)", border: "color-mix(in srgb, var(--feature-edit) 80%, transparent)" }, // Purple
+  { bg: "color-mix(in srgb, var(--semantic-success) 35%, transparent)", border: "color-mix(in srgb, var(--semantic-success) 80%, transparent)" }, // Green
+  { bg: "color-mix(in srgb, var(--feature-generate) 35%, transparent)", border: "color-mix(in srgb, var(--feature-generate) 80%, transparent)" }, // Orange
+  { bg: "color-mix(in srgb, var(--accent-pink) 35%, transparent)", border: "color-mix(in srgb, var(--accent-pink) 80%, transparent)" }, // Pink
+  { bg: "color-mix(in srgb, var(--accent-teal) 35%, transparent)", border: "color-mix(in srgb, var(--accent-teal) 80%, transparent)" }, // Teal
 ] as const;

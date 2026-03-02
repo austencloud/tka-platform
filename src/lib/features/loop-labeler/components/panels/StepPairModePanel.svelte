@@ -44,11 +44,11 @@
     key: keyof TransformationIntervals;
     color: string;
   }[] = [
-    { id: "rotated", key: "rotation", color: "#36c3ff" },
-    { id: "swapped", key: "swap", color: "#26e600" },
-    { id: "mirrored", key: "mirror", color: "#6F2DA8" },
-    { id: "flipped", key: "flip", color: "#14b8a6" },
-    { id: "inverted", key: "invert", color: "#eb7d00" },
+    { id: "rotated", key: "rotation", color: "var(--accent-rotation)" },
+    { id: "swapped", key: "swap", color: "var(--accent-swap)" },
+    { id: "mirrored", key: "mirror", color: "var(--feature-edit)" },
+    { id: "flipped", key: "flip", color: "var(--accent-teal)" },
+    { id: "inverted", key: "invert", color: "var(--accent-inversion)" },
   ];
 
   function getIntervalConfig(id: ComponentId) {
@@ -97,6 +97,7 @@
         class="clear-btn"
         onclick={onClearSelection}
         title="Clear selection"
+        aria-label="Clear selection"
       >
         <FontAwesomeIcon icon="xmark" size="0.85em" />
       </button>
@@ -115,6 +116,7 @@
             class:selected={isSelected}
             style="--component-color: {component.color}"
             onclick={() => onToggleComponent(component.id)}
+            aria-pressed={isSelected}
           >
             <FontAwesomeIcon
               icon={component.icon}
@@ -137,6 +139,8 @@
                   "halved"}
                 style="--chip-color: {intervalConfig.color}"
                 onclick={() => onSetInterval(intervalConfig.key, "halved")}
+                aria-label="Set {component.label} interval to halved"
+                aria-pressed={transformationIntervals[intervalConfig.key] === "halved"}
                 >½</button
               >
               <button
@@ -145,6 +149,8 @@
                   "quartered"}
                 style="--chip-color: {intervalConfig.color}"
                 onclick={() => onSetInterval(intervalConfig.key, "quartered")}
+                aria-label="Set {component.label} interval to quartered"
+                aria-pressed={transformationIntervals[intervalConfig.key] === "quartered"}
                 >¼</button
               >
             </div>
@@ -184,14 +190,14 @@
     align-items: center;
     justify-content: space-between;
     padding: var(--spacing-sm) var(--spacing-md);
-    background: rgba(168, 85, 247, 0.1);
-    border: 1px solid rgba(168, 85, 247, 0.2);
+    background: color-mix(in srgb, var(--feature-edit) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--feature-edit) 20%, transparent);
     border-radius: 8px;
   }
 
   .beat-selection.complete {
-    background: rgba(168, 85, 247, 0.15);
-    border-color: rgba(168, 85, 247, 0.4);
+    background: color-mix(in srgb, var(--feature-edit) 15%, transparent);
+    border-color: color-mix(in srgb, var(--feature-edit) 40%, transparent);
   }
 
   .selection-text {
@@ -220,7 +226,7 @@
   }
 
   .clear-btn:hover {
-    background: rgba(239, 68, 68, 0.2);
+    background: color-mix(in srgb, var(--semantic-error) 20%, transparent);
     color: var(--semantic-error);
   }
 
@@ -321,8 +327,8 @@
     justify-content: center;
     gap: var(--spacing-sm);
     padding: var(--spacing-sm) var(--spacing-md);
-    background: rgba(168, 85, 247, 0.15);
-    border: 1px solid rgba(168, 85, 247, 0.3);
+    background: color-mix(in srgb, var(--feature-edit) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--feature-edit) 30%, transparent);
     border-radius: 8px;
     color: var(--foreground);
     font-size: var(--font-size-sm);
@@ -333,8 +339,8 @@
   }
 
   .btn-add:hover:not(:disabled) {
-    background: rgba(168, 85, 247, 0.25);
-    border-color: rgba(168, 85, 247, 0.5);
+    background: color-mix(in srgb, var(--feature-edit) 25%, transparent);
+    border-color: color-mix(in srgb, var(--feature-edit) 50%, transparent);
   }
 
   .btn-add:disabled {
