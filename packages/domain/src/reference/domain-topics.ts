@@ -821,6 +821,92 @@ The proof: **all four of S, T, U, V have exactly the same number of turn variati
 - The structural reason: leader/follower is combinatorially equivalent to mixed motion types.`,
   },
 
+  "l1-quartered-loop-deck": {
+    title: "The Level 1 Quartered Rotated LOOP Deck: Why 64",
+    content: `## The Level 1 Quartered Rotated LOOP Deck: Why 64
+
+### The Result
+
+Under the constraints Level 1 (0 turns), Diamond grid, Continuous rotation, Quartered Rotated LOOP, and starting from one of three canonical positions (alpha1, beta5, gamma11), there are exactly **64 valid 8-beat sequences per starting position** -- 192 total.
+
+This is remarkable because:
+- Alpha has 13 available first-beat letters
+- Beta has 13 available first-beat letters
+- Gamma has 21 available first-beat letters
+
+Despite wildly different letter pools, the LOOP constraint produces **identical counts**. The three position families are combinatorially isomorphic.
+
+### How Quartered Rotation Constrains
+
+A quartered rotated LOOP divides 8 beats into 4 quarters of 2 beats each:
+- **Q1 (beats 1-2):** Freely chosen seed
+- **Q2 (beats 3-4):** Q1 rotated 90° on the grid
+- **Q3 (beats 5-6):** Q1 rotated 180°
+- **Q4 (beats 7-8):** Q1 rotated 270°
+
+90° rotation preserves the letter -- only grid positions and hand locations change. So the 8-beat word is the 2-beat seed repeated 4 times: seed AB becomes ABABABAB.
+
+For the LOOP to close, the seed's end position must equal rotatePos90(start). This is the key constraint that limits the space from billions of unconstrained paths down to 64.
+
+### The 10 Hand-Path Families
+
+The 64 sequences decompose into 10 families based on the type pairing of beat 1 and beat 2:
+
+| Family | Beat 1 | Beat 2 | Count | Why |
+|--------|--------|--------|-------|-----|
+| Dual-Shift + Dash | Type 1 | Type 4 | 8 | 4 letter variants × 2 dash hand assignments |
+| Dual-Shift + Dual-Dash | Type 1 | Type 5 | 4 | 4 letter variants × 1 (symmetric) |
+| Dual-Shift + Static | Type 1 | Type 6 | 4 | 4 letter variants × 1 (symmetric) |
+| Shift + Shift | Type 2 | Type 2 | 8 | 2 letters × 2 letters × 2 hand configs |
+| Shift + Cross-Shift | Type 2 | Type 3 | 8 | 2 × 2 × 2 |
+| Cross-Shift + Shift | Type 3 | Type 2 | 8 | 2 × 2 × 2 |
+| Cross-Shift + Cross-Shift | Type 3 | Type 3 | 8 | 2 × 2 × 2 |
+| Dash + Dual-Shift | Type 4 | Type 1 | 8 | 2 dash hand assignments × 4 letter variants |
+| Dual-Dash + Dual-Shift | Type 5 | Type 1 | 4 | 1 × 4 |
+| Static + Dual-Shift | Type 6 | Type 1 | 4 | 1 × 4 |
+
+Total: 8 + 4 + 4 + 8 + 8 + 8 + 8 + 8 + 4 + 4 = **64**
+
+### Why the Count is Position-Invariant
+
+Each position family (alpha, beta, gamma) contains structurally isomorphic letter sets:
+
+| Role | Alpha1 | Beta5 | Gamma11 |
+|------|--------|-------|---------|
+| Type 1 same-direction | A, B, C (split-same) | G, H, I (tog-same) | S, T, U, V (quarter-same) |
+| Type 1 opp-direction | J, K, L (split-opp) | D, E, F (tog-opp) | M, N, O, P, Q, R (quarter-opp) |
+| Type 2 (shift) | Σ, Δ | Θ, Ω | W, X, Y, Z |
+| Type 3 (cross-shift) | Θ-, Ω- | Σ-, Δ- | W-, X-, Y-, Z- |
+| Type 4 (dash) | Ψ | Φ | Λ |
+| Type 5 (dual-dash) | Φ- | Ψ- | Λ- |
+| Type 6 (static) | α | β | γ |
+
+Despite gamma11 having more individual letters (21 vs 13), the combinatorial structure is identical:
+- 4 "letter variants" in Type 1 per direction (pro/pro, anti/anti, and 2 hybrid arrangements)
+- 2 pro/anti variants per Type 2 and Type 3 letter
+- 1 dash letter with 2 hand-assignment variants
+- 1 dual-dash and 1 static (symmetric, no hand-assignment variation)
+
+The STUV anomaly (quarter-same having 4 letters instead of 3) and the larger Type 2/3 pools at gamma are absorbed: the LOOP constraint sees only the motion-type structure, not the letter count.
+
+### The Asymmetry Absorption Principle
+
+This result demonstrates a deep structural property: **the STUV anomaly and gamma's asymmetric letter pools do not propagate into LOOP-level combinatorics.** The quartered rotation constraint acts as a symmetry equalizer.
+
+Groups of 3 vs 4 in the alphabet? Irrelevant at the LOOP level. Different position types with different letter counts? The LOOP sees through to the underlying motion-type algebra, which is isomorphic across all three.
+
+64 = the number of distinct ways to pair two consecutive motion configurations on a 4-point grid such that 90° rotation closes the loop. This number is a property of the grid geometry and the motion-type system, not of the specific letters.
+
+### Practical Application: The First Deck
+
+These 192 sequences (64 × 3 starting positions) form the complete **Level 1 Quartered Rotated LOOP Deck** -- the most accessible set of 8-beat circular sequences in TKA. Every sequence:
+- Uses 0 turns (Level 1)
+- Maintains continuous rotation (no reversals)
+- Has 4-fold rotational symmetry
+- Loops back to its starting position
+- Is fully determined by a 2-beat seed`,
+  },
+
   "symmetry-invariance": {
     title: "The Symmetry Invariance Principle",
     content: `## The Symmetry Invariance Principle

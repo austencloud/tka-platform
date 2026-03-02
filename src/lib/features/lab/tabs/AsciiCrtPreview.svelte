@@ -84,15 +84,16 @@
     max-height: 75vh;
   }
 
-  /* Height-aware font sizing for the 66×26 pictograph buffer.
-     The global formula targets 80-column width only. Here we derive
-     available height from cqw via the 4:3 aspect ratio and size the
-     font so 26 rows × 1.3 line-height fit vertically.
-     Terminal height ≈ 0.75 × cqw - 12px (monitor padding delta).
-     Usable text height = that minus 24px (.dos-output inset).
-     26 rows × 1.3 = 33.8 font-size units needed. */
+  /* Font sizing for the 66×26 pictograph buffer.
+     The global .dos-terminal uses container-type: inline-size and a
+     width-only formula. Here we switch to full size containment so
+     both cqw and cqh are available, then pick whichever axis is more
+     constraining via min().
+       Width:  66 chars × 0.6 ch/em ≈ 40 units → (100cqw - 24px) / 40
+       Height: 26 rows × 1.3 lh ≈ 34 units  → (100cqh - 24px) / 34 */
   .monitor-wrap :global(.dos-terminal) {
-    font-size: clamp(8px, calc((75cqw - 36px) / 34), 18px);
+    container-type: size;
+    font-size: clamp(7px, min(calc((100cqw - 24px) / 40), calc((100cqh - 24px) / 34)), 18px);
   }
 
   /* Override the output area to center content vertically */

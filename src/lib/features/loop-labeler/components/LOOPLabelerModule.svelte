@@ -7,6 +7,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
+  import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
   import { loopDetector } from "../services/implementations/LOOPDetector";
   import type { IStepDataConverter } from "../services/contracts/IStepDataConverter";
   import type {
@@ -467,15 +468,13 @@
     if (!result.success) {
       console.error("Failed to delete sequence:", result.error);
       try {
-        const errorHandler = container.items.errorHandler;
-        if (errorHandler && typeof errorHandler === "object" && "showUserError" in errorHandler) {
-          (errorHandler as { showUserError: (opts: Record<string, unknown>) => void }).showUserError({
-            message: "Could not delete this sequence. Check your connection and try again.",
-            technicalDetails: result.error ?? "Unknown error",
-            error: new Error(result.error ?? "Delete failed"),
-            severity: "error",
-            context: { module: "loop-labeler", action: "deleteSequence" },
-          });
+        const errorHandler = container.items.errorHandler as IErrorHandler | undefined;
+        if (errorHandler) {
+          errorHandler.showError(
+            "Could not delete this sequence. Check your connection and try again.",
+            new Error(result.error ?? "Delete failed"),
+            { module: "loop-labeler", action: "deleteSequence" }
+          );
         }
       } catch {
         // ErrorHandler not available — console.error above is the fallback

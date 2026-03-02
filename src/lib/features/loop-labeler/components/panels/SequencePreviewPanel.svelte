@@ -66,7 +66,7 @@
   );
 
   // Available column options based on sequence length
-  const availableColumnOptions = $derived(() => {
+  const availableColumnOptions = $derived.by(() => {
     if (!sequence) return [];
     const length = sequence.sequenceLength;
     const options = [2, 3, 4, 5, 6, 8, 10, 12];
@@ -97,7 +97,7 @@
   }
 
   // Smart default column count based on LOOP detection
-  const smartDefaultColumns = $derived(() => {
+  const smartDefaultColumns = $derived.by(() => {
     if (!sequence) return null;
     const length = sequence.sequenceLength;
 
@@ -154,7 +154,7 @@
   });
 
   const effectiveColumnCount = $derived(
-    manualColumnCount ?? smartDefaultColumns()
+    manualColumnCount ?? smartDefaultColumns
   );
 
   // Zero Turns toggle - temporary view that removes all turns
@@ -273,7 +273,7 @@
         <button
           class="action-btn danger"
           onclick={onDeleteLabel}
-          title="Delete existing label"
+          aria-label="Delete existing label"
         >
           <FontAwesomeIcon icon="trash" size="0.85em" />
         </button>
@@ -282,7 +282,7 @@
         <button
           class="action-btn"
           onclick={onCopyJson}
-          title="Copy sequence JSON"
+          aria-label={copiedToast ? "Copied to clipboard" : "Copy sequence JSON"}
         >
           {#if copiedToast}
             <FontAwesomeIcon icon="check" size="0.85em" />
@@ -324,6 +324,8 @@
           class="control-chip"
           class:active={showStartPosition}
           onclick={() => onShowStartPositionChange(!showStartPosition)}
+          aria-label="Toggle start position display"
+          aria-pressed={showStartPosition}
         >
           Start Pos
         </button>
@@ -331,7 +333,8 @@
           class="control-chip zero-turns"
           class:active={showZeroTurns}
           onclick={() => (showZeroTurns = !showZeroTurns)}
-          title="View sequence with all turns set to 0"
+          aria-label="Toggle zero turns view"
+          aria-pressed={showZeroTurns}
         >
           0T
         </button>
@@ -347,7 +350,7 @@
               ? ` (${effectiveColumnCount})`
               : ""}
           </button>
-          {#each availableColumnOptions() as colCount}
+          {#each availableColumnOptions as colCount}
             <button
               class="control-chip"
               class:active={manualColumnCount === colCount}

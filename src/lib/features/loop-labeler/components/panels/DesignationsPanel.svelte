@@ -39,6 +39,7 @@
     isAxisAlternating?: boolean;
     axisAlternatingPattern?: AxisAlternatingPattern | null;
     needsVerification?: boolean;
+    verifiedToast?: boolean;
     autoDetectedDesignations?: LOOPDesignation[];
     candidateDesignations?: CandidateDesignation[];
     autoDetectedBeatPairs?: StepPairRelationship[];
@@ -70,6 +71,7 @@
     isAxisAlternating = false,
     axisAlternatingPattern = null,
     needsVerification = false,
+    verifiedToast = false,
     autoDetectedDesignations = [],
     candidateDesignations = [],
     autoDetectedBeatPairs = [],
@@ -137,11 +139,19 @@
       class="copy-btn"
       class:success={copySuccess}
       onclick={copyDetectionInfo}
-      title="Copy detection info to clipboard"
+      aria-label="Copy detection info to clipboard"
     >
       <FontAwesomeIcon icon={copySuccess ? "check" : "copy"} size="0.85em" />
     </button>
   </div>
+
+  <!-- Verified confirmation toast -->
+  {#if verifiedToast}
+    <div class="verified-toast" role="status" aria-live="polite">
+      <FontAwesomeIcon icon="circle-check" size="1em" />
+      <span>Verified</span>
+    </div>
+  {/if}
 
   <!-- Candidate verification section -->
   <CandidatesSection
@@ -233,12 +243,37 @@
     color: var(--muted-foreground);
   }
 
+  .verified-toast {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: color-mix(in srgb, var(--semantic-success) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-success) 40%, transparent);
+    border-radius: 8px;
+    color: var(--semantic-success);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    animation: toast-in 0.3s ease-out;
+  }
+
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .copy-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     background: transparent;
     border: 1px solid var(--theme-stroke, var(--theme-stroke));
     border-radius: 6px;

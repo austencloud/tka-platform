@@ -82,7 +82,7 @@
                 <button
                   class="candidate-btn confirm"
                   onclick={() => onConfirmCandidate(i)}
-                  title="Confirm this designation"
+                  aria-label="Confirm designation: {candidate.description}"
                 >
                   <FontAwesomeIcon icon="check" size="0.85em" />
                 </button>
@@ -91,7 +91,7 @@
                 <button
                   class="candidate-btn deny"
                   onclick={() => onDenyCandidate(i)}
-                  title="Deny this designation"
+                  aria-label="Deny designation: {candidate.description}"
                 >
                   <FontAwesomeIcon icon="xmark" size="0.85em" />
                 </button>
@@ -218,8 +218,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     border: none;
     border-radius: 6px;
     cursor: pointer;
