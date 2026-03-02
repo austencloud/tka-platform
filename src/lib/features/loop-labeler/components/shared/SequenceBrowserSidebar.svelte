@@ -291,7 +291,7 @@
   .thumbnail-container {
     width: 100%;
     aspect-ratio: 1;
-    background: rgba(0, 0, 0, 0.3);
+    background: var(--surface-inset-deep);
     border-bottom: 1px solid var(--theme-stroke);
     display: flex;
     align-items: center;

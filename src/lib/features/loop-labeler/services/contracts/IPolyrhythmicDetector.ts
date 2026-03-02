@@ -20,6 +20,7 @@ export interface StepProperties {
   timing: string;
   letterType: string;
   letter: string;
+  [key: string]: string | number;
 }
 
 export interface PropertyConsistency {

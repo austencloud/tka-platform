@@ -54,7 +54,7 @@
 
   .transformation-option {
     padding: var(--spacing-sm) var(--spacing-md);
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--surface-inset);
     border: 2px solid var(--theme-stroke-strong);
     border-radius: 8px;
     color: var(--muted-foreground);

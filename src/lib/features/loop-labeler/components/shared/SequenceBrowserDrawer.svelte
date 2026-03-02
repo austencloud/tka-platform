@@ -379,7 +379,7 @@
     font-weight: 600;
     background: var(--theme-stroke);
     color: var(--muted);
-    backdrop-filter: blur(4px);
+    backdrop-filter: none;
   }
 
   .status-badge.labeled {

@@ -33,6 +33,7 @@ export interface RawStepData {
   propType?: string;
   isCircular?: boolean;
   gridMode?: string; // Authoritative grid mode
+  [key: string]: unknown;
 }
 
 export interface RawMotionAttributes {

@@ -42,6 +42,7 @@
   import LOOPLabelerEmptyState from "./shared/LOOPLabelerEmptyState.svelte";
   import ViewOnlyNotice from "./shared/ViewOnlyNotice.svelte";
   import ManualBuilderSection from "./shared/ManualBuilderSection.svelte";
+  import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
 
   // Lifecycle
   let isReady = $state(false);
@@ -183,6 +184,7 @@
   const labelingMode = $derived(loopLabelerState.labelingMode);
   const showExport = $derived(loopLabelerState.showExport);
   const syncStatus = $derived(loopLabelerState.syncStatus);
+  const hasError = $derived(syncStatus === "error");
   const notes = $derived(loopLabelerState.notes);
   const showStartPosition = $derived(loopLabelerState.showStartPosition);
   const manualColumnCount = $derived(loopLabelerState.manualColumnCount);
@@ -596,6 +598,13 @@
           onOpenBrowser={() => (showBrowserDrawer = true)}
         />
 
+        {#if hasError}
+          <div class="sync-error-banner" role="alert">
+            <FontAwesomeIcon icon="exclamation-triangle" size="0.9em" />
+            <span>Failed to sync with Firebase. Changes saved locally.</span>
+          </div>
+        {/if}
+
         <SequenceBrowserDrawer
           isOpen={showBrowserDrawer}
           sequences={loopLabelerState.circularSequences}
@@ -756,6 +765,18 @@
     flex-direction: column;
     overflow: hidden;
     width: 100%;
+  }
+
+  .sync-error-banner {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: color-mix(in srgb, var(--semantic-error) 15%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--semantic-error) 40%, transparent);
+    color: var(--semantic-error);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
   }
 
   .main-content {

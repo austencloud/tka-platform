@@ -72,7 +72,7 @@
     align-items: center;
     gap: var(--spacing-sm);
     padding: var(--spacing-sm) var(--spacing-md);
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--surface-inset);
     border-radius: 8px;
     border-left: 4px solid var(--section-color, color-mix(in srgb, var(--semantic-info) 80%, transparent));
   }
