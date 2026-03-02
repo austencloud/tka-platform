@@ -12,6 +12,7 @@
   import MyFeedbackDetail from "$lib/features/feedback/components/my-feedback/MyFeedbackDetail.svelte";
   import { myFeedbackDetailState } from "$lib/features/feedback/state/my-feedback-detail-state.svelte";
   import FirstRunWizard from "../../onboarding/components/first-run/FirstRunWizard.svelte";
+  import CreateTutorialWizard from "../../onboarding/components/create-tutorial/CreateTutorialWizard.svelte";
   import { firstRunState } from "../../onboarding/state/first-run-state.svelte.ts";
   import { appEntryState } from "../../onboarding/state/app-entry-state.svelte.ts";
   import AttributionPrompt from "../../attribution/components/AttributionPrompt.svelte";
@@ -464,14 +465,13 @@
   {:else if !firstRunState.isDone() || firstRunState.shouldShow}
     <!-- First-run wizard with entry animation support -->
     {#if appEntryState.phase === "wizard-exiting"}
-      <!-- Wizard fading out while interface fades in behind -->
+      <!-- Wizard fading out before create tutorial -->
       <div class="wizard-exit-wrapper">
         <FirstRunWizard
           onComplete={() => firstRunState.markCompleted()}
           onSkip={() => firstRunState.markSkipped()}
         />
       </div>
-      <MainInterface isEntryAnimating={true} />
     {:else}
       <FirstRunWizard
         onComplete={() => {
@@ -484,9 +484,15 @@
         }}
       />
     {/if}
+  {:else if appEntryState.isCreateTutorial()}
+    <!-- Create tutorial wizard (post-onboarding) -->
+    <CreateTutorialWizard
+      onComplete={() => appEntryState.completeEntry()}
+      onSkip={() => appEntryState.skipToComplete()}
+    />
   {:else}
-    <!-- Main Interface - Full app for authenticated users who completed onboarding -->
-    <MainInterface isEntryAnimating={appEntryState.isEntryAnimating()} />
+    <!-- Main Interface - Full app -->
+    <MainInterface />
 
     <!-- Auth sheet (route-based) -->
     <AuthSheet
