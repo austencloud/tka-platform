@@ -73,10 +73,10 @@
   const rowCount = $derived(Math.ceil(users.length / columnCount));
 
   // Gap between rows (vertical) and between cards (horizontal)
-  const GAP = 20;
+  const GAP = 12;
 
   // Rough initial estimate — corrected by measureElement after first render
-  const INITIAL_ROW_ESTIMATE = 300;
+  const INITIAL_ROW_ESTIMATE = 270;
 
   // Get users for a specific row
   function getRowUsers(rowIndex: number): EnhancedUserProfile[] {
