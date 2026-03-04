@@ -292,6 +292,8 @@ Supports help mode: when active, clicking cards opens help instead of normal act
       {wordInputValue}
       {onWordInput}
       {onWordSubmit}
+      {needsCycleCompletion}
+      {onCompleteCycle}
     />
   </div>
 

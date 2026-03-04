@@ -1,20 +1,11 @@
 import type { UIGenerationConfig } from "../../../state/generate-config.svelte";
 import { DifficultyLevel, GenerationMode } from "../../domain/models/generate-models";
-import { LOOPType } from "../../../circular/domain/models/circular-models";
+import { LOOPType, ROTATED_LOOP_TYPES } from "../../../circular/domain/models/circular-models";
 import type {
   CardDescriptor,
   CardHandlers,
   ICardConfigurator,
 } from "../contracts/ICardConfigurator";
-
-const ROTATED_LOOP_TYPES = new Set([
-  LOOPType.STRICT_ROTATED,
-  LOOPType.ROTATED_INVERTED,
-  LOOPType.ROTATED_SWAPPED,
-  LOOPType.MIRRORED_ROTATED,
-  LOOPType.MIRRORED_INVERTED_ROTATED,
-  LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED,
-]);
 
 /**
  * Implementation of ICardConfigurator
