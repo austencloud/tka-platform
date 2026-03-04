@@ -1166,7 +1166,10 @@
   }
 
   async function handleAnimationExport() {
-    if (!playbackController || !animationCanvas) return;
+    if (!playbackController || !animationCanvas) {
+      showToast("Animation not ready yet. Wait a moment and try again.", "error");
+      return;
+    }
 
     const opts = exportOptions.getVideoOptions();
     await sequenceModalExporter.exportAnimation(
@@ -1349,8 +1352,8 @@
     {/if}
 
     {#if isExportMode && exportType === "animation"}
-      <!-- Video export: animation preview + compact settings drawer -->
-      <div class="export-preview-layout">
+      <!-- Video export: animation preview + settings panel (side-by-side on desktop, overlay on mobile) -->
+      <div class="export-preview-layout" class:desktop={!isMobile}>
         <div class="export-animation-preview">
           {#if animationLoading}
             <div class="loading-state">
@@ -1380,6 +1383,8 @@
           {exportOptions}
           viewerEffects={getActiveEffects()}
           {isExporting}
+          canvasReady={!!animationCanvas && !!playbackController}
+          layout={isMobile ? "bottom" : "sidebar"}
           onExport={handleExport}
           onClose={exitExportMode}
         />
@@ -1418,9 +1423,10 @@
     {/if}
 
     <!-- Landscape: Footer rendered inline as right column (not in BaseModal footer slot) -->
-    {#if isLandscapeMobile && !isFullscreen && !isExportMode}
+    {#if isLandscapeMobile && !isFullscreen && (!isExportMode || exportType === "animation")}
       <ViewerFooter
         landscape={true}
+        playbackOnly={isExportMode && exportType === "animation"}
         bpm={bpmLocal}
         isPlaying={isPlayingLocal}
         isLoggedIn={authState.isAuthenticated}
@@ -1463,6 +1469,7 @@
       {:else}
         <!-- Footer: ViewerFooter with MorphChip toolbar (handles all screen sizes) -->
         <ViewerFooter
+          playbackOnly={isExportMode && exportType === "animation"}
           bpm={bpmLocal}
           isPlaying={isPlayingLocal}
           isLoggedIn={authState.isAuthenticated}
@@ -1643,12 +1650,18 @@
     overflow: hidden;
   }
 
+  /* Desktop: side-by-side (animation left, settings right) */
+  .export-preview-layout.desktop {
+    flex-direction: row;
+  }
+
   .export-animation-preview {
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: 0;
+    min-width: 0;
   }
 
   .export-preview-layout .loading-state,

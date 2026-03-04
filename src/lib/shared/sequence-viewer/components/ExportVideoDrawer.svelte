@@ -1,9 +1,9 @@
 <!--
   ExportVideoDrawer.svelte
 
-  Compact bottom drawer for video export settings.
-  Shows FPS, resolution, loop count, and effect override chips.
-  Animation preview stays visible above.
+  Video export settings panel.
+  Desktop: side panel next to animation preview.
+  Mobile: compact bottom overlay on top of animation.
 -->
 <script lang="ts">
   import { slide } from "svelte/transition";
@@ -21,10 +21,14 @@
     active: boolean;
   }
 
+  type PanelLayout = "sidebar" | "bottom";
+
   interface Props {
     exportOptions: ExportOptionsStateManager;
     viewerEffects: ActiveEffect[];
     isExporting: boolean;
+    canvasReady?: boolean;
+    layout?: PanelLayout;
     onExport: () => void;
     onClose: () => void;
   }
@@ -33,9 +37,13 @@
     exportOptions,
     viewerEffects,
     isExporting,
+    canvasReady = true,
+    layout = "bottom",
     onExport,
     onClose,
   }: Props = $props();
+
+  const exportDisabled = $derived(isExporting || !canvasReady);
 
   const fpsOptions: { value: VideoFps; label: string; badge?: string }[] = [
     { value: 30, label: "30" },
@@ -83,13 +91,15 @@
 </script>
 
 <div
-  class="export-drawer"
-  transition:slide={{ duration: 250, easing: cubicOut }}
+  class="export-panel"
+  class:sidebar={layout === "sidebar"}
+  class:bottom={layout === "bottom"}
+  transition:slide={{ duration: 250, easing: cubicOut, axis: layout === "sidebar" ? "x" : "y" }}
   role="region"
   aria-label="Video export settings"
 >
-  <div class="drawer-header">
-    <span class="drawer-title">Export Video</span>
+  <div class="panel-header">
+    <span class="panel-title">Export Video</span>
     <button
       type="button"
       class="close-btn"
@@ -100,7 +110,7 @@
     </button>
   </div>
 
-  <div class="drawer-body">
+  <div class="panel-body">
     <!-- FPS -->
     <div class="setting-row">
       <span class="setting-label">FPS</span>
@@ -190,17 +200,20 @@
     {/if}
   </div>
 
-  <div class="drawer-footer">
+  <div class="panel-footer">
     <button
       type="button"
       class="export-btn"
       onclick={onExport}
-      disabled={isExporting}
+      disabled={exportDisabled}
       aria-label="Export video"
     >
       {#if isExporting}
         <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
         Exporting...
+      {:else if !canvasReady}
+        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+        Loading...
       {:else}
         <i class="fas fa-download" aria-hidden="true"></i>
         Export Video
@@ -210,23 +223,53 @@
 </div>
 
 <style>
-  .export-drawer {
+  /* ============================================================
+   * Base styles (shared between both layouts)
+   * ============================================================ */
+
+  .export-panel {
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+  }
+
+  /* ============================================================
+   * Bottom layout (mobile / narrow) — overlay at bottom
+   * ============================================================ */
+
+  .export-panel.bottom {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
     max-height: 45%;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-top-left-radius: 16px;
     border-top-right-radius: 16px;
-    display: flex;
-    flex-direction: column;
     overflow-y: auto;
-    z-index: 10;
   }
 
-  .drawer-header {
+  /* ============================================================
+   * Sidebar layout (desktop / wide) — static side panel
+   * ============================================================ */
+
+  .export-panel.sidebar {
+    position: relative;
+    width: 300px;
+    min-width: 260px;
+    max-width: 340px;
+    flex-shrink: 0;
+    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    overflow-y: auto;
+    justify-content: center;
+  }
+
+  /* ============================================================
+   * Header
+   * ============================================================ */
+
+  .panel-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -234,7 +277,7 @@
     flex-shrink: 0;
   }
 
-  .drawer-title {
+  .panel-title {
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
     color: var(--theme-text, white);
@@ -259,12 +302,21 @@
     color: var(--theme-text, white);
   }
 
-  .drawer-body {
+  /* ============================================================
+   * Body — settings rows
+   * ============================================================ */
+
+  .panel-body {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
     padding: 4px 16px 12px;
     overflow-y: auto;
+  }
+
+  .sidebar .panel-body {
+    gap: 18px;
+    padding: 8px 20px 16px;
   }
 
   .setting-row {
@@ -289,7 +341,10 @@
     flex-wrap: wrap;
   }
 
-  /* Chip styles - matching ExportModeContent pattern */
+  /* ============================================================
+   * Chips
+   * ============================================================ */
+
   .chip {
     display: flex;
     align-items: center;
@@ -357,7 +412,10 @@
     font-size: 12px;
   }
 
-  /* Loop stepper */
+  /* ============================================================
+   * Loop stepper
+   * ============================================================ */
+
   .loop-stepper {
     display: flex;
     align-items: center;
@@ -398,10 +456,17 @@
     color: var(--theme-text, white);
   }
 
-  /* Footer with export button */
-  .drawer-footer {
+  /* ============================================================
+   * Footer — export button
+   * ============================================================ */
+
+  .panel-footer {
     padding: 8px 16px 12px;
     flex-shrink: 0;
+  }
+
+  .sidebar .panel-footer {
+    padding: 12px 20px 16px;
   }
 
   .export-btn {
@@ -437,6 +502,10 @@
     opacity: 0.6;
     cursor: not-allowed;
   }
+
+  /* ============================================================
+   * Reduced motion
+   * ============================================================ */
 
   @media (prefers-reduced-motion: reduce) {
     .chip,
