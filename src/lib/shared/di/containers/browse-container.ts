@@ -107,7 +107,7 @@ export function createBrowseContainer(deps: BrowseContainerDeps) {
         const collector = new ThumbnailMetricsCollector();
         // Auto-start logging in dev mode
         if (import.meta.env.DEV) {
-          collector.startLogging(30000); // Log every 30s
+          collector.startLogging();
         }
         return collector;
       },

@@ -146,6 +146,35 @@ export class ThumbnailLocalCache implements IThumbnailLocalCache {
     }
   }
 
+  async delete(key: string): Promise<boolean> {
+    if (!browser) return false;
+
+    try {
+      const db = await this.getDB();
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      const store = tx.objectStore(STORE_NAME);
+
+      const exists = await new Promise<boolean>((resolve, reject) => {
+        const countReq = store.count(IDBKeyRange.only(key));
+        countReq.onerror = () => reject(countReq.error);
+        countReq.onsuccess = () => resolve(countReq.result > 0);
+      });
+
+      if (!exists) return false;
+
+      await new Promise<void>((resolve, reject) => {
+        const request = store.delete(key);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve();
+      });
+
+      return true;
+    } catch (error) {
+      console.warn("[ThumbnailLocalCache] delete failed:", error);
+      return false;
+    }
+  }
+
   async clear(): Promise<void> {
     if (!browser) return;
 

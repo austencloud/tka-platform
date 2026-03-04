@@ -26,6 +26,7 @@
   import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
   import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
+  import ThumbnailContextMenu from "$lib/shared/components/thumbnail/ThumbnailContextMenu.svelte";
   import { createStartPositionFromBeatStart } from "$lib/features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
   import { previewCellRenderer } from "../services/implementations/PreviewCellRenderer";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
@@ -687,6 +688,45 @@
     cells = [];
   }
 
+  // Context menu for cache management
+  let cellContextMenu = $state<ReturnType<typeof ThumbnailContextMenu> | null>(null);
+
+  function handleCellContextMenu(event: MouseEvent): void {
+    cellContextMenu?.open(event);
+  }
+
+  /**
+   * Force re-render: clear all caches for this sequence and re-render all cells.
+   */
+  async function forceRerenderAllCells(): Promise<void> {
+    if (!sequence?.steps?.length) return;
+
+    const renderOptions = buildRenderOptions();
+    const isDark = darkMode;
+
+    // 1. Clear global in-memory preview cache entry for this sequence
+    const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, isDark);
+    globalPreviewCache.delete(cacheKey);
+
+    // 2. Delete IndexedDB blobs for all cells of this sequence
+    const firstStep = sequence.steps[0];
+    if (sequence.startPosition || firstStep) {
+      const startData = sequence.startPosition || createStartPositionFromBeatStart(firstStep!);
+      await previewCellRenderer.deleteCellCache(startData, undefined, isDark, renderOptions);
+    }
+    for (let i = 0; i < sequence.steps.length; i++) {
+      const step = sequence.steps[i];
+      if (step) {
+        await previewCellRenderer.deleteCellCache(step, i + 1, isDark, renderOptions);
+      }
+    }
+
+    // 3. Clear current cells and re-render
+    clearCellUrls();
+    isLoading = true;
+    renderAllCells();
+  }
+
   // Track the preview stack element for ResizeObserver
   let previewStackElement: HTMLDivElement | undefined = $state();
   let resizeObserver: ResizeObserver | undefined;
@@ -883,7 +923,8 @@
   });
 </script>
 
-<div class="layered-preview" class:dark-mode={darkMode} class:scroll-mode={needsScroll} bind:this={containerElement}>
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class="layered-preview" class:dark-mode={darkMode} class:scroll-mode={needsScroll} data-ctx-container bind:this={containerElement} oncontextmenu={handleCellContextMenu}>
   {#if isLoading && cells.length === 0}
     <div class="loading-placeholder">
       <ProgressRing percent={-1} size={32} strokeWidth={3} />
@@ -1214,10 +1255,12 @@
       {/if}
     </div>
   {/if}
+  <ThumbnailContextMenu bind:this={cellContextMenu} onRerender={forceRerenderAllCells} />
 </div>
 
 <style>
   .layered-preview {
+    position: relative;
     /* Flexbox centering - child dimensions are calculated via JS */
     display: flex;
     align-items: center;

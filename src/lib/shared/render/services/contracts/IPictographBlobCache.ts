@@ -40,6 +40,12 @@ export interface IPictographBlobCache {
   has(key: string): Promise<boolean>;
 
   /**
+   * Delete a single cached entry by key
+   * @returns true if the entry existed and was deleted
+   */
+  delete(key: string): Promise<boolean>;
+
+  /**
    * Clear all cached entries
    */
   clear(): Promise<void>;

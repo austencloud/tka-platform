@@ -147,10 +147,10 @@ export interface IThumbnailMetricsCollector {
   reset(): void;
 
   /**
-   * Start periodic console logging (dev mode).
-   * @param intervalMs How often to log (default 30000)
+   * No-op. Kept for interface compatibility.
+   * Call logNow() from DevTools console for on-demand metrics.
    */
-  startLogging(intervalMs?: number): void;
+  startLogging(): void;
 
   /**
    * Stop periodic console logging.

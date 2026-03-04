@@ -16,6 +16,7 @@
   import { onMount, onDestroy } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import ThumbnailContextMenu from "$lib/shared/components/thumbnail/ThumbnailContextMenu.svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { ThumbnailVariant } from "../services/contracts/ICloudThumbnailCache";
   import { container } from "$lib/shared/di";
@@ -29,6 +30,7 @@
     ThumbnailVisibilitySettings,
   } from "../services/contracts/IThumbnailKeyDeriver";
   import type { ICloudThumbnailCache } from "../services/contracts/ICloudThumbnailCache";
+  import type { IThumbnailLocalCache } from "../services/contracts/IThumbnailLocalCache";
   import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
   import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
@@ -93,7 +95,11 @@
   let orchestrator: IThumbnailRenderOrchestrator | null = null;
   let keyDeriver: IThumbnailKeyDeriver | null = null;
   let cloudCache: ICloudThumbnailCache | null = null;
+  let localCache: IThumbnailLocalCache | null = null;
   let servicesReady = $state(false);
+
+  // Context menu for cache management
+  let contextMenu = $state<ReturnType<typeof ThumbnailContextMenu> | null>(null);
 
   // Layout calculator resolved synchronously (direct import for instant HMR)
 
@@ -152,6 +158,7 @@
     orchestrator = container.items.thumbnailRenderOrchestrator;
     keyDeriver = container.items.thumbnailKeyDeriver;
     cloudCache = container.items.cloudThumbnailCache;
+    localCache = container.items.thumbnailLocalCache;
     servicesReady = true;
 
     // Eager mode: skip IntersectionObserver entirely (used in modals/pickers
@@ -393,13 +400,58 @@
         return "Loading";
     }
   });
+
+  /**
+   * Handle context menu (right-click) — open the thumbnail context menu
+   */
+  function handleContextMenu(event: MouseEvent): void {
+    contextMenu?.open(event);
+  }
+
+  /**
+   * Force re-render: delete from all cache tiers, then re-fetch from scratch.
+   */
+  function forceRerender(): void {
+    if (!keyDeriver || !orchestrator) return;
+
+    const key = keyDeriver.deriveKey(renderInput);
+
+    // 1. Invalidate cloud URL cache (in-memory)
+    if (key.usesDefaults && cloudCache) {
+      cloudCache.invalidateUrl({
+        sequenceName: key.inputs.sequenceName,
+        propType: key.propKey as PropType,
+        lightMode: key.inputs.lightMode,
+        variant: key.inputs.variant,
+      });
+    }
+
+    // 2. Delete from local IndexedDB cache (fire-and-forget)
+    localCache?.delete(key.hash).catch(() => {});
+
+    // 3. Force skip cache on next request
+    skipCacheOnNextRequest = true;
+
+    // 4. Revoke old blob URL
+    if (thumbnailUrl?.startsWith("blob:")) {
+      URL.revokeObjectURL(thumbnailUrl);
+    }
+
+    // 5. Reset state to trigger the $effect to re-fetch
+    thumbnailUrl = null;
+    currentKeyHash = null;
+    status = { state: "idle" };
+  }
 </script>
 
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   class="prop-thumbnail"
   data-variant={variant}
+  data-ctx-container
   bind:this={containerRef}
   style:aspect-ratio={aspectRatio}
+  oncontextmenu={handleContextMenu}
 >
   {#if thumbnailUrl && !hasError}
     <img
@@ -456,10 +508,12 @@
       {/if}
     </div>
   {/if}
+  <ThumbnailContextMenu bind:this={contextMenu} onRerender={forceRerender} />
 </div>
 
 <style>
   .prop-thumbnail {
+    position: relative;
     width: 100%;
     max-width: 100%;
     max-height: 100%;

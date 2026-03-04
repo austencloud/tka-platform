@@ -5,12 +5,10 @@
  * Collects timing and hit rate data to inform optimization decisions.
  *
  * Usage:
- * - Automatically logs summary every 30s in dev mode
- * - Press Ctrl+Shift+T to dump full metrics anytime
+ * - Call logNow() from DevTools console for a formatted dump
  * - Call getSummary() programmatically
  */
 
-import { browser } from "$app/environment";
 import type {
   IThumbnailMetricsCollector,
   CacheLayer,
@@ -32,8 +30,6 @@ export class ThumbnailMetricsCollector implements IThumbnailMetricsCollector {
   private queueHighWaterMark = 0;
   private uploadSuccesses = 0;
   private uploadFailures = 0;
-  private loggingInterval: ReturnType<typeof setInterval> | null = null;
-  private keyboardHandler: ((e: KeyboardEvent) => void) | null = null;
 
   // Keep only last N requests to prevent memory bloat
   private readonly MAX_STORED_REQUESTS = 1000;
@@ -204,36 +200,13 @@ export class ThumbnailMetricsCollector implements IThumbnailMetricsCollector {
     this.uploadFailures = 0;
   }
 
-  startLogging(intervalMs = 30000): void {
-    if (!browser) return;
-
-    // Set up periodic logging
-    if (this.loggingInterval) {
-      clearInterval(this.loggingInterval);
-    }
-    this.loggingInterval = setInterval(() => this.logNow(), intervalMs);
-
-    // Set up keyboard shortcut (Ctrl+Shift+T)
-    if (!this.keyboardHandler) {
-      this.keyboardHandler = (e: KeyboardEvent) => {
-        if (e.ctrlKey && e.shiftKey && e.key === "T") {
-          e.preventDefault();
-          this.logNow();
-        }
-      };
-      window.addEventListener("keydown", this.keyboardHandler);
-    }
+  startLogging(): void {
+    // No-op — metrics are collected silently.
+    // Call logNow() from DevTools console if needed.
   }
 
   stopLogging(): void {
-    if (this.loggingInterval) {
-      clearInterval(this.loggingInterval);
-      this.loggingInterval = null;
-    }
-    if (this.keyboardHandler && browser) {
-      window.removeEventListener("keydown", this.keyboardHandler);
-      this.keyboardHandler = null;
-    }
+    // No-op — no active listeners to clean up.
   }
 
   logNow(): void {
