@@ -298,7 +298,8 @@ export class CellPreWarmer implements ICellPreWarmer {
     };
 
     try {
-      const blob = await pool.render(prepared, renderOptions, visibility, options.showStepNumbers ? task.stepNumber : undefined);
+      const resolvedStepNum = options.showStepNumbers ? task.stepNumber : undefined;
+      const blob = await pool.render(prepared, renderOptions, visibility, resolvedStepNum);
       if (!signal.aborted) {
         await pictographBlobCache.set(task.cacheKey, blob);
       }
