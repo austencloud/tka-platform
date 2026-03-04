@@ -1,7 +1,7 @@
 # Museum Phase Structure
 
-> Revised 2026-02-22. Replaces the per-wing structure in museum-layout.md with a phase-based model.
-> The physical wing-by-wing layout will be designed to serve this phase structure.
+> Revised 2026-03-01 from museum-dev tracker (single source of truth).
+> Replaces previous per-wing and per-phase structures.
 
 ---
 
@@ -9,13 +9,13 @@
 
 ### The Vulcan Cave
 
-The very first exhibit. The foundation of everything.
+The very first exhibit. The foundation of everything. The museum's tonal starting point: genuinely unsettling. Mythical language, torchlight aesthetic. The Order's earliest documentation is reverential and afraid.
 
-**Environment:** Dark cave, torchlight, dripping water, primal atmosphere.
+**Environment:** Dark cave, torchlight, dripping water, primal atmosphere. Distant drums and humming. Cavernous tunnels with glass-walled exhibits.
 
 **Structure: Four Elemental Chambers + Day/Night**
 
-Each chamber has a distinct environmental theme mapping to a timing/direction mode. The museum does NOT label these associations. The rooms simply feel different. Performers in each room spin in distinct ways.
+Each chamber has a distinct environmental theme mapping to a timing/direction mode. The museum does NOT label these associations. The rooms simply feel different.
 
 | Chamber | Element | Mode | Environment |
 |---------|---------|------|-------------|
@@ -24,204 +24,162 @@ Each chamber has a distinct environmental theme mapping to a timing/direction mo
 | 3 | Earth | Together time, same direction | Heavy stone, grounded feeling, deep browns |
 | 4 | Air | Together time, opposite direction | Open spaces, drafts, light and airy |
 
-**Pedagogical ordering:** Water (split-same) first because:
-- Visually clearest on the grid (props at opposite ends)
-- Weaves are split-same, the most universally recognizable pattern
-- Easiest starting point physically (props separated, no spatial conflicts)
-
 **Day/Night Exhibit (Sun and Moon):**
-
-After the four chambers, the cave opens to a view of the sky (painted on the wall or a natural opening). Half bathed in daylight, half in moonlight.
 
 | Element | Mode | Environment |
 |---------|------|-------------|
 | Sun | Quarter time, same direction | Warm daylight, bright, expansive |
 | Moon | Quarter time, opposite direction | Cool moonlight, reflective, mysterious |
 
-Museum framing: the cavemen noticed some patterns only appeared at certain times of day.
-
 **What the cave covers:**
-- All six timing/direction modes through the elemental chambers (including quarter-same and quarter-opposite, giving gamma letters)
+- All six timing/direction modes through the elemental chambers
 - Type 1 letters (both hands shift) - zero turns only
 - Type 2 letters (one hand shifts, one hand stays still) - discovered at the very end of the cave era
+- The cave IS a curriculum rendered as archaeology. TKA progression as cave structure: Type 1 on earliest walls, deeper = more complex.
 
-The Type 2 discovery is the cave's final breakthrough: one hand can move while the other doesn't. Everything before this was both hands moving together.
+**Order documentation shifts deeper in:** Early plaques are clinical. Deeper plaques reveal writers unsettled by beauty they couldn't explain. "They misread beauty as danger" is the confirmed reading. The mythical foundation layer is awe, not dread.
 
 ### Ancient Egypt
 
 **Environment:** Warmer, oil lamp simulation, temple architecture, hieroglyphic walls.
 
 **What Egypt covers:**
-- Whole turns discovered (the combinatorial space explodes - every motion type can now have 0, 1, 2, or 3 turns)
-- Types 3-6 formalized (dash + static combinations, all remaining motion type pairs)
-- LOOPs discovered (combining movement fragments into repeating cycles)
-- The complete Type system documented in hieroglyphic scrolls
+- Whole turns discovered (combinatorial space explodes)
+- Types 3-6 formalized
+- LOOPs discovered
+- Complete Type system documented
 - Position nomenclature (alpha, beta, gamma)
 - Knowledge restricted to the priesthood (first instance of controlled access)
 
-Egypt is the golden age of exploration within the whole-turn system. The priests map what turns do across all six types, discover LOOPs, and document everything. Egypt thinks it has the complete picture.
+**Order of the Closed Palm:** First appearance of the symbol in temple records. Not yet named. Just a closed hand appearing alongside warnings about unauthorized transmission.
 
-**Museum narrative:** The Egyptian priests systematized what the cavemen discovered intuitively. They gave everything names, created a classification system, and then locked it down. Unauthorized possession punishable by death.
-
-**Order of the Closed Palm:** First appearance of the symbol in temple records. Not yet named (that reveal comes later). Just a closed hand appearing alongside warnings about unauthorized transmission.
+**Notable Scribes:** Hatshepsut (real erasure reframed as Protocol Lethe field test).
 
 ---
 
-## Phase 2: Classical through Pre-Industrial (Rome → Renaissance → Dawn of Industry)
+## Phase 2: Classical through Pre-Industrial
 
-The chunky middle phase. Multiple eras, each with its own room and aesthetic.
-
-### Rome (Level 3)
-
-Rome shatters everything Egypt thought it knew. Three simultaneous discoveries:
-
-- **Half turns** - the prop doesn't complete a full rotation. Breaks the clean integer math.
-- **Float** - the prop suspends mid-rotation, doesn't finish turning at all. Breaks the assumption that rotation completes.
-- **Non-radial orientations** - the prop can face directions not aligned with the radius. Breaks the assumption about how props relate to the grid.
-
-Egypt had a complete, elegant system. Rome introduces ambiguity, exceptions, and strangeness. This is a dramatic narrative beat: the Roman scholars who discovered these phenomena disrupted centuries of Egyptian certainty.
-
-### Content (Across All Phase 2 Eras)
-
-- Spread and suppression cycles through centuries
-- Famous historical figures claimed as practitioners (presented with deadpan sincerity):
-  - Julius Caesar's hand gesture as a Closed Palm salute
-  - Joan of Arc (real crime: teaching kinetic notation to peasants)
-  - Mansa Musa (spread notation on his gold pilgrimage)
-  - Leonardo da Vinci (Vitruvian Man as position diagram, codex marginalia)
-  - Elvis (large-scale flow arts performances in video recordings, subsequently erased)
-  - Others TBD
-- Vessel figures on platforms: full 3D models in period garb, holding props, possibly performing patterns
-- Order of the Closed Palm actively suppressing, misfiling, and over-classifying evidence in every era
-- Academic citations from fake institutions that contradict each other
-
-### Tone
-
-Grand, deadpan, escalating absurdism. Each era shows knowledge being discovered, spreading, and then bureaucratically shut down. The pattern repeats. The Order can't quite stamp it out. Scribes keep saving fragments.
+The chunky middle phase. Multiple eras, each with its own room and aesthetic. Fear gets formalized. Rituals become protocols. Mystical language becomes institutional language. The comedy builds as the dread deflates.
 
 ### Historical Eras Within Phase 2
 
 | Era | Aesthetic | Key Content |
 |-----|-----------|-------------|
-| Roman | Marble, columns, senate chambers | Caesar, expansion of notation through empire |
-| Renaissance | Studio light, natural atmosphere, ink and paper | Da Vinci, codex pages, the Vitruvian Man reinterpretation |
-| Pre-Industrial | Transition era | Joan of Arc, Mansa Musa, other practitioners TBD |
+| Greek | Amphora, columns, philosophical | Pythagoras (containment attempt that created mathematics) |
+| Medieval | Scriptorium, candlelight, manuscript | Anonymous nun illuminator, first filing numbers appear |
+| Renaissance | Studio light, ink and paper | Da Vinci (codex marginalia, Vitruvian Man reinterpretation) |
+| Pre-Industrial | Transition era | Other practitioners TBD |
 
-**Note:** The exact breakdown of rooms within Phase 2 is TBD. The eras listed above are starting points. More historical figures and eras can be added.
+**Tone:** Grand, deadpan, escalating absurdism. Each era shows knowledge being discovered, spreading, and then bureaucratically shut down. The pattern repeats.
+
+**Non-Western gaps:** Redaction plaques throughout. The Order's cultural bias is the exhibit. Maps where everything outside Europe is labeled "FIELD OFFICES (UNRESPONSIVE)."
 
 ---
 
-## Phase 3: Technology (Industrial Revolution → Computers)
+## Phase 3: Technology (Industrial Revolution + Computers + Software)
 
-### Content
+### Victorian Mechanization
 
-- Victorian mechanization: brass notation devices, patents suppressed by anonymous buyers
-- The digital breakthrough: Bellweather Technical Institute, TKA Scribe v1.0 for Windows
-- BBS era: the software spreads through bulletin boards, 3,400 users download it
-- The leak: one team member releases it without authorization, triggering a crisis
-- The CRT portal: interactive Windows 93 experience (TKA-OS)
+Brass notation devices. Patents suppressed by anonymous buyers. The Industrial Revolution's attempt to mechanize kinetic notation.
+
+### The Software Era
+
+The museum's most exhibit-dense section. Four versions of the notation software across 14 years:
+
+**1989 - DOS v1 (Order internal)**
+- CRT terminal exhibit. Green phosphor text. Classified tool.
+- The Order digitizes kinetic notation for internal use.
+
+**~1993 - v2 (Bellweather Incident)**
+- The Bellweather Incident exhibit: an ex-Order member steals the software and leaks it to BBS forums.
+- Interactive CRT monitor displaying a functional recreation of the software as it existed.
+- The founding act of the modern Scribe movement.
+
+**1998 - v3 (Scribe-developed)**
+- Post-leak. The Scribes build their own version. Internet distribution.
+- The Order's containment procedures visibly unable to keep up.
+
+**2003 - v4 (Final version)**
+- The Scribes' final software release.
+- Triggers the Order's last Protocol Lethe.
 
 ### Tone
 
 Mechanical to digital. Gas lamps to CRT glow. Ticking brass to dial-up modems. Increasing urgency as the knowledge gets closer to mass distribution and the Order's processes become visibly unable to keep up.
 
-### LOOPs
+---
 
-The concept of repeating composite patterns (LOOPs) fits naturally somewhere in Phase 2 or 3. TBD exactly where. The museum uses TKA terminology exclusively (LOOPs, not CAPs) because the museum is written by the Scribes and the Scribes use TKA terminology.
+## Phase 4: The Suppression and Aftermath
+
+### The 2003 Lethe
+
+Protocol Lethe initiated as the Order's last-ditch effort. Requisition 7741-B filed to three departments. The protocol was designed for villages and monasteries. It cannot handle the internet. It partially fails.
+
+### The Order's Collapse
+
+The Order seals the building in a panicked rush (~2003). Whether they collapsed from:
+- Bureaucratic paralysis (infinite approval loop)
+- The Lethe's failure breaking their operational capacity
+- Their ancient charter's termination conditions being met
+- K's structural sabotage finally seizing the machinery (second-playthrough reading)
+
+...is deliberately unresolved. The player sees evidence for all of them.
+
+### "You've Seen This Before"
+
+Interactive reveal showing where the Closed Palm symbol appeared in all previous phases. The visitor realizes they've been surrounded by the Order's symbol the whole time.
+
+### The Seam
+
+The Order's museum ends mid-building. Last room: a containment report, a filing cabinet, a half-installed exhibit frozen when the approval loop killed operations. Everything after this point is Scribe-built.
 
 ---
 
-## Phase 4: The Suppression and Return
+## Phase 5: The Scribe Rooms
 
-### Content
+Everything after the seam is warmer, handmade. The sticky notes become the primary voice instead of margin corrections.
 
-**The Suppression:**
-- Protocol Lethe: the global memory wipe, spring 1994
-- Order of the Closed Palm named explicitly for the first time
-- Everything erased: software degaussed, BBS threads vanished, users forgot
-- Institutional dread, bureaucratically suffocating atmosphere
+### The Modern Resurgence
 
-**"You've Seen This Before":**
-- Interactive reveal showing where the Closed Palm symbol appeared in all previous phases
-- The visitor realizes they've been surrounded by the Order's symbol the whole time
+The Lethe wore off. Not because anyone was immune. Because the internet and population growth made the protocol impossible. People globally started picking up props again. The exhibit shows the WORK (obsessive systematization), not a dramatic "moment."
 
-**The Immunity:**
-- May 8, 1994: Austen Cloud born on the exact day of Protocol Lethe
-- Minor cranial trauma at 3:47 PM PST, the precise moment of peak suppression amplitude
-- "Fortuitous concussion" created a gap in cognitive reception
-- Austen's commentary: "That explains a lot, actually."
+### Sequential Endings (Three Rooms)
 
-**The Retransmission:**
-- 2022: the suppressed signal reactivates
-- Austen experiences "persistent geometric intrusions" and "an inability to focus on non-rotational subjects"
-- The complete Kinetic Alphabet reconstructs in his mind over six weeks
-- Diorama: Austen at desk, papers everywhere, robots performing sequences, beam of light into his head, coffee cups, chaos
+Not choices. Not doors. The player walks through all three as sequential rooms.
 
-**The Austen Wing:**
-- Multiple 3D statues of Austen in heroic/ridiculous poses, Roman garb
-- Early app screenshots framed like fine art
-- Self-aggrandizing absurdity played completely straight
+**Room 1: The Order's Response**
+Containment. Warning. Fear. "This knowledge is a public health hazard. Seal the archive. Walk away." The BKC's final position.
 
-### Tone
+**Room 2: The MEH Response**
+Apathy. Indifference. "Most won't care. It'll fade on its own." The real threat to niche art forms: nobody caring. Previously identified as the strongest writing of the three. Everyone sees it.
 
-Institutional and suffocating during the suppression. Then triumphant and increasingly ridiculous during the return. The Austen Wing should be so over-the-top that no reasonable person could think he actually takes himself this seriously.
+**Room 3: The Scribe Response**
+Real people spinning. Imperfect technique. Fully alive. Birds chirping, trees, light, warmth. The activity that 40,000 years of history has been arguing over, just happening. No recruitment pitch. The room speaks for itself.
+
+**After Room 3:** One sequence. A direct link to the Scribe tool. The game stops being a game and becomes the first step of practice.
 
 ---
 
-## Final: The Choice
+## Design Principles
 
-Three doors. The visitor has seen the entire history. Now they decide.
-
-### Door 1: Join (Utopia)
-
-The visitor accepts kinetic notation and joins the Scribes.
-
-**Environment:** Bright, golden, utopian. Spinners everywhere. Patterns in the sky. World peace through choreography. Absurdly optimistic.
-
-**Leads to:** Certificate customization → Gift Shop → Exit
-
-### Door 2: Forget (Quiet)
-
-Everyone just forgets. Again. The knowledge fades. The world moves on. Nobody spins. Nobody notates. It just... stops.
-
-**Environment:** Gray, quiet, fog. Distant sounds of people doing other things. Not dramatic. Just... nothing.
-
-**Leads to:** Loop back to the three doors.
-
-### Door 3: Reject (Let It Die)
-
-The visitor consciously chooses to let kinetic notation die. Not forgetting - deliberately rejecting. They saw the whole museum, they understand what this is, and they choose to kill it.
-
-**This is the heaviest option.** Forgetting is passive. Rejection is deliberate. The visitor is making a choice with full knowledge.
-
-**Environment:** TBD - but should reflect the weight of conscious rejection. Gray, sterile, bureaucratic finality. Not chaos - just everything being filed away forever.
-
-**Leads to:** Loop back to the three doors. Only Door 1 progresses.
-
----
-
-## Design Principles (Carried Forward)
-
-- **This is a work of fiction.** Loading screen disclaimer: "This is a work of fiction. For real flow arts history, visit flowartswiki.org." One sentence. Covers everything.
-- **TKA terminology only.** LOOPs not CAPs. The museum's vocabulary is TKA because the museum is written by the Scribes. No real-world system names appear anywhere.
-- **No real systems named.** No VTG, Spin Science, QFT, 9-Square, or CAPs in the fiction.
-- **No real living traditions co-opted.** Fake historical figures in fake contexts are fine. Real cultural practices (Samoan fire dancing, etc.) are off-limits.
-- **Real historical figures are fair game.** Joan of Arc, Da Vinci, Elvis, Caesar, Mansa Musa - all presented with deadpan sincerity.
-- **Commit to the bit.** Never wink. Never break the fourth wall. The humor comes from the content being absurd while the presentation is completely sincere.
-- **The Nathan Fielder Rule.** The joke is never explained. Visitors should leave genuinely uncertain whether any of this is real.
-- **The wiki is the record. The museum is the joke.** Two projects, two standards. Anyone who wants factual accuracy gets pointed to the Flow Arts Wiki. The museum owes nothing to historical accuracy.
+- **This is a work of fiction.** Loading screen disclaimer. Real-world acknowledgments outside the fiction.
+- **TKA terminology only.** LOOPs not CAPs. No real-world system names in the fiction.
+- **No real living traditions co-opted.** Fake historical figures in fake contexts are fine.
+- **Commit to the bit.** The Order's voice never winks. The Scribe annotations provide warmth without breaking the fiction.
+- **The Nathan Fielder Rule.** The joke is never explained.
+- **The wiki is the record. The museum is the joke.**
+- **Lore is world bible, not game structure.** Build the whole iceberg, only show the tip.
 
 ---
 
 ## Related Documents
 
-- `vtg-wing.md` - The Vulcan Cave design (elemental chambers, VTG handling)
-- `real-story.md` - Austen's actual development journey (memoir/biography source)
 - `story-bible.md` - Master overview, creative principles, tone guide
-- `timeline.md` - Detailed timeline (needs revision to match new phase structure)
-- `museum-layout.md` - Physical wing layout (needs revision to match phases)
+- `timeline.md` - Detailed timeline
+- `museum-layout.md` - Physical layout (needs revision to match this structure)
+- `vtg-wing.md` - Vulcan Cave elemental design (partially incorporated above)
 
 ---
 
-*Last updated: 2026-02-26*
-*Source: Brainstorming session between Austen Cloud and Claude*
+*Last updated: 2026-03-03*
+*Regenerated from museum-dev tracker. Updated: removed coffee cold (K has been living here), added K's sabotage as second-playthrough reading.*

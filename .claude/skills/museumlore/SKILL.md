@@ -1,6 +1,13 @@
+---
+name: museumlore
+description: Use when the user wants to discuss, analyze, or brainstorm museum lore and narrative elements for The Kinetic Archive. Triggers on /museumlore or when conversation focuses on worldbuilding, story consistency, or narrative design.
+---
+
 # Museum Lore Deep Dive
 
-Focus exclusively on the Lore & Narrative department of The Kinetic Archive museum project. No dispatching department agents, no full audits. Just lore discussion.
+## Overview
+
+Focus exclusively on the Lore & Narrative department of The Kinetic Archive museum project. No dispatching department agents, no full audits. Just lore discussion. Writers' room energy.
 
 ## Usage
 
@@ -78,5 +85,14 @@ node scripts/museum-dev.js <capturedId> tag add lore
 - When something is weak, propose specific fixes, not vague concerns
 - Capture any decisions or questions that emerge during discussion
 - **Proposals, not decisions** — Claude's ideas are captured as `proposal` type, not `decision`. Only the user can promote a proposal to a decision. See `/museum` skill for full rules.
-- **Never cite your own quality** — Don't describe previous Claude output as "the best writing" or "the strongest element." That's a feedback loop, not evaluation.
 - **One pushback before capture** — Before saving a Claude-generated idea, give one honest counterargument.
+
+## Common Mistakes
+
+| Mistake | Fix |
+|---------|-----|
+| Capturing Claude's idea as `decision` | Always use `proposal`. Only the user promotes to `decision`. |
+| Citing previous Claude output as "the strongest element" | That's a feedback loop, not evaluation. Judge lore on structural merit, not who wrote it. |
+| Switching to project management mode | Stay in writers' room. Discuss narrative, don't track tasks. |
+| Vague criticism ("this feels weak") | Be specific: what breaks, what contradicts, what's untested. |
+| Forgetting to tag captures with `lore` | Every capture from this skill gets `node scripts/museum-dev.js <id> tag add lore`. |
