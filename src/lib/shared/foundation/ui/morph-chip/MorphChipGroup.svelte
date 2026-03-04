@@ -75,6 +75,14 @@
 		onExpandedChange?.(null);
 	}
 
+	// Reset spring when expandedId is externally set to null (e.g. parent backdrop click)
+	$effect(() => {
+		if (expandedId === null && $morphSpring !== 0) {
+			currentMeasuredHeight = null;
+			morphSpring.set(0);
+		}
+	});
+
 	function reportMeasuredHeight(id: string, height: number) {
 		if (expandedId === id) {
 			currentMeasuredHeight = height;
@@ -147,7 +155,7 @@
 <div
 	bind:this={containerEl}
 	class="morph-chip-group"
-	class:has-expanded={isExpanded && !expandedChipIsAutoMeasure}
+	class:has-expanded={isExpanded}
 	style:--chip-gap="{gap}px"
 	style:--expanded-height="{expandedHeight}px"
 	style:--active-expanded-height="{activeExpandedHeight}px"

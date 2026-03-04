@@ -117,6 +117,16 @@
 </script>
 
 <div class="morph-toolbar">
+  <!-- Backdrop for dismissing expanded chips on mobile (no Escape key) -->
+  {#if expandedChip !== null}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="chip-backdrop"
+      onclick={() => { expandedChip = null; }}
+      onkeydown={(e) => { if (e.key === "Escape") expandedChip = null; }}
+    ></div>
+  {/if}
+
   <!-- Row 1: Action buttons (hidden when a chip is expanded) -->
   {#if expandedChip === null}
     <div class="action-row-top">
@@ -348,6 +358,16 @@
     flex-direction: column;
     gap: 6px;
     width: 100%;
+    position: relative;
+  }
+
+  /* Backdrop covers the viewport so tapping outside dismisses the chip */
+  .chip-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 5;
+    background: rgba(0, 0, 0, 0.3);
+    -webkit-tap-highlight-color: transparent;
   }
 
   /* ===========================
@@ -377,6 +397,8 @@
     align-items: center;
     gap: 8px;
     width: 100%;
+    position: relative;
+    z-index: 6;
   }
 
   /* ===========================
@@ -568,6 +590,14 @@
     width: 100%;
   }
 
+  /* On narrow screens, stack BPM controls vertically */
+  @media (max-width: 480px) {
+    .controls-row {
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+  }
+
   .step-section {
     flex-shrink: 0;
   }
@@ -598,6 +628,23 @@
     gap: 12px;
     width: 100%;
     padding: 0 4px;
+  }
+
+  /* On narrow screens, stack download panel vertically */
+  @media (max-width: 480px) {
+    .export-panel {
+      flex-direction: column;
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .format-options {
+      flex-wrap: wrap;
+    }
+
+    .action-row {
+      justify-content: flex-end;
+    }
   }
 
   .format-options {
