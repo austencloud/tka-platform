@@ -1,15 +1,17 @@
-# TKA Museum - Timeline
+# The Kinetic Archive - Timeline
 
-> This document presents the canonical historical timeline as it will be depicted in the museum.
-> Early eras use passive voice and vague attribution. The Order of the Closed Palm is not named until Wing 6.
+> This document presents the canonical historical timeline as depicted in the museum.
+> Early eras use passive voice and vague attribution. The Order of the Closed Palm is not named until deep in the museum.
 > The Scribes are not named until the final chamber.
+>
+> **Source of truth:** The museum-dev tracker. This document is generated from tracker decisions.
 
 ---
 
 ## ~35,000 BCE - The First Notations
 
 **Location:** Dordogne region, present-day France
-**Exhibit:** Wing 1 - Ancient Origins
+**Exhibit:** Vulcan Cave wing
 
 The earliest known kinetic notation appears in a sealed chamber adjacent to the Lascaux cave system, discovered in 1979 by speleologist Dr. Henri Marchand. Stone tablets depict coordinated movement sequences using burning branches.
 
@@ -17,186 +19,138 @@ Two sequences are fully legible:
 - **UG** - A simple alpha-to-alpha transition, believed to be instructional
 - **OOGA** - A four-beat sequence incorporating a Type 6 static hold
 
-The tablets suggest a "rehearsal space" where early humans practiced firelit performances before presenting them to the community. Dr. Marchand's notes, published posthumously, describe the chamber as having "an almost ceremonial quality."
+The tablets suggest a "rehearsal space" where early humans practiced firelit performances before presenting them to the community.
 
 *A spiral motif appears in the chamber's ceiling. Its significance was not understood at the time of discovery.*
 
 **Plaque citation:**
 > Marchand, H. (1982). "Addendum to the Lascaux Survey: Chamber 17." Unpublished manuscript, Marchand Estate.
 
+**Order documentation tone (earliest era):** Reverential and afraid. The ancient watchers witnessed something beautiful and called it a threat. Their language is mythical, not institutional.
+
 ---
 
-## ~2500 BCE - Egyptian Codification
+## ~35,000 BCE to ~2,500 BCE - The First Gap
+
+This 32,500-year hole in the record corresponds to the earliest known Protocol Lethe execution. Almost total wipe. The Order's official position: "Records from this period are unavailable. The Order's official position is that nothing happened. See Requisition 2291-A (denied)."
+
+---
+
+## ~2,500 BCE - Egyptian Codification
 
 **Location:** Temples of Karnak, Egypt
-**Exhibit:** Wing 2 - Classical Era
+**Exhibit:** Egyptian wing
 
 Temple priests formalize kinetic notation for ceremonial fire rituals honoring Ra. Hieroglyphic scrolls document:
 - The complete Type system (1-6)
 - Position nomenclature (alpha, beta, gamma)
 - Motion classifications (pro, anti, static)
 
-The notation is restricted to the priesthood. Unauthorized possession is classified as a capital offense under temple law - an administrative decision that, in retrospect, many historians consider disproportionate. This is the first recorded instance of kinetic knowledge being treated as controlled information.
+The notation is restricted to the priesthood. Unauthorized possession is classified as a capital offense under temple law.
 
 *A symbol resembling a closed hand appears in temple records alongside warnings about unauthorized transmission.*
 
-**Plaque citation:**
-> Al-Rashid, F. & Okonkwo, J. (2018). "Sacred Movement: Kinetic Notation in New Kingdom Egypt." Cairo Institute for Kinetic Studies, Proceedings Vol. 12.
+**Notable Scribe: Hatshepsut** (~1470 BCE) - Egyptian pharaoh whose successor Thutmose III chiseled her name off monuments. Real historical erasure reframed as the Order's first Protocol Lethe field test targeting a single Scribe. "PROTOCOL LETHE -- FIELD TEST (NILE BUREAU). Method: physical removal of notational records from stone surfaces. Partially successful -- subject reclassified for 3,400 years. Deficiency: modern archaeologists reconstructed records."
 
 ---
 
 ## ~500 BCE - Greek Transmission
 
 **Location:** Athens and surrounding city-states
-**Exhibit:** Wing 2 - Classical Era
 
-Greek philosophers encounter Egyptian notation through trade routes. Fragments appear in amphora decorations showing figures manipulating flaming objects in coordinated patterns.
+Greek philosophers encounter Egyptian notation through trade routes. Fragments appear in amphora decorations.
 
-Plato allegedly references "the dance of fire" in a lost dialogue, though this attribution remains disputed by mainstream historians.
-
-*The spiral appears on several amphora, integrated into decorative borders.*
-
-**Plaque citation:**
-> Papadopoulos, E. (2004). "Pyrrhic Patterns: Movement Notation in Classical Pottery." Journal of Hellenic Kinetic Studies, 8(3), pp. 45-67.
+**Notable Scribe: Pythagoras** - Founded a secret mathematical cult that believed numbers were fundamental reality. Members couldn't eat beans. Already basically an Order splinter cell. "CONTAINMENT FAILURE: Subject codified rotational harmonics. Knowledge escaped into academic curriculum. Reclassification attempts ongoing for 2,400 years."
 
 ---
 
-## ~1500 CE - The Renaissance Rediscovery
+## ~1300 CE - Medieval Persistence
 
-**Location:** Florence and Milan, Italian Peninsula
-**Exhibit:** Wing 3 - Renaissance
-
-Leonardo da Vinci discovers Egyptian scrolls during his anatomical studies and begins reverse-engineering the kinetic system. His famous Vitruvian Man is, according to some scholars, a position diagram showing the four cardinal hand placements.
-
-Da Vinci's codex pages contain extensive notation marginalia, including the first known European attempt at Type 1 Dual-Shift documentation.
-
-After da Vinci's death in 1519, his notebooks became distributed across multiple collections through a series of administrative decisions that some scholars describe as deliberate.
-
-*The spiral appears in da Vinci's mechanical sketches, integrated into gear mechanisms. Whether he understood its significance is debated.*
-
-**Plaque citation:**
-> Marchetti, L. (2019). "Leonardo's Hidden Notation: A Kinetic Reinterpretation of the Codex Atlanticus." Bellweather Technical Institute, Working Paper 2019-07.
+**Notable Scribe: Anonymous Manuscript Illuminator** - A nun in a scriptorium who drew spiraling patterns in manuscript margins that don't match any known decorative tradition. The Order discovered the manuscripts 400 years later. "Recommend recall of all copies. Estimated distribution: 14 monasteries across 3 kingdoms. Budget request: DENIED."
 
 ---
 
-## ~1880 CE - Victorian Mechanization
+## ~1500 CE - Renaissance Rediscovery
 
-**Location:** London, British Empire
-**Exhibit:** Wing 4 - Mechanization
+**Location:** Florence and Milan
 
-The Industrial Revolution brings attempts to mechanize kinetic notation. Brass devices are patented for "Systematic Documentation of Rotational Implement Manipulation." The British Empire sees potential military applications in coordinated troop movements.
-
-Several key inventors found their professional reputations challenged following anonymous complaints. Patents were acquired by buyers who declined to identify themselves, then filed away. Current whereabouts of the filings: unknown. One prototype survives in a private collection.
-
-*A young clerk at the Patent Office, whose name has been redacted from all surviving records, is believed to be a Vessel. Her fate is unknown.*
-
-**Plaque citation:**
-> Whitmore-Singh, A. (2011). "The Suppressed Patents: Victorian Kinetic Technology." Harwick University Press.
-
-**Fake patent excerpt:**
-> Patent No. 4,471 (1883): "An Apparatus for the Systematic Notation of Rotational Implement Manipulation, comprising a series of brass gears and calibrated dials for the precise recording of circular motion patterns..."
+**Notable Scribe: Leonardo da Vinci** - Discovers Egyptian scrolls during his anatomical studies. His famous Vitruvian Man is, according to some scholars, a position diagram. Codex pages contain extensive notation marginalia. After his death, notebooks were distributed across multiple collections through a series of administrative decisions that some scholars describe as deliberate.
 
 ---
 
-## 1993 CE - The Digital Breakthrough
+## ~1840s-1890s - The Technology Era
 
-**Location:** Bellweather Technical Institute, Pacific Northwest, United States
-**Exhibit:** Wing 5 - Digital Revolution
+**Notable Scribe: Ada Lovelace** (~1840s) - Wrote the first computer program, but what she actually documented was notation for patterns. A symbolic language for encoding sequences of operations. She wrote kinetic notation and accidentally invented programming. "THREAT LEVEL: EXISTENTIAL. If applied to kinetic domain, would render all future suppression impossible. Subject's early death prevented full development. Analytical engine never built. Recommend continued suppression of general-purpose computation." Scribe sticky note next to a photo of a modern laptop: "oops."
 
-A research team successfully digitizes kinetic notation as **TKA Scribe v1.0 for Windows**. The software spreads through early internet bulletin board systems.
+**Notable Scribe: Nikola Tesla** (~1890s) - Obsessive pattern thinker who visualized rotating magnetic fields before building them. The Order's exhibit frames his AC motor work as kinetic notation channeled into electrical infrastructure.
 
-Within months, an estimated 3,400 users download the notation system - the widest distribution since the Egyptian priesthood.
-
-One team member releases the software to the public without institutional authorization. The leak triggers a crisis.
-
-*This exhibit features an interactive CRT monitor displaying a functional recreation of TKA Scribe v1.0. Visitors may use the software as it existed in 1993.*
-
-**Plaque citation:**
-> [AUTHOR REDACTED]. (1993). "TKA Scribe: A Digital Framework for Kinetic Notation." Bellweather Technical Institute, Department of Movement Sciences. [DOCUMENT RECALLED]
+**Victorian Mechanization** (~1880) - The Industrial Revolution brings attempts to mechanize kinetic notation. Brass devices patented for "Systematic Documentation of Rotational Implement Manipulation." Patents acquired by anonymous buyers, then filed away.
 
 ---
 
-## Spring 1994 - The Suppression Event
+## Edo Period (date uncertain) - The Missing File
+
+**Notable Scribe: Nameless** - Exists only as a gap in the Order's records. The East Asian Bureau's filing cabinet has a folder with a reference number, a threat classification, and "TRANSFERRED" stamped across it. No contents. No name. No incident report. A Scribe note: "Transferred where?" The absence IS the exhibit.
+
+---
+
+## Non-Western Gaps
+
+The Order's cultural bias is the exhibit itself. A 40,000-year global bureaucracy with meticulous European records and everything else filed under regional bureaus. "Records reclassified by East Asian Bureau -- filing reference REDACTED." "The Bureau of South Asian Affairs maintains no kinetic notation existed during the Gupta period. Inquiries will not be processed." Maps where everything outside Europe is labeled "FIELD OFFICES (UNRESPONSIVE)."
+
+The cultures aren't absent because they lack kinetic traditions. They're absent because the Order's filing system couldn't handle anything outside its original scope and nobody ever fixed it.
+
+---
+
+## ~1985 - The Physical Archive Opens
+
+The Order commissions a physical archive: a museum and training facility for members, documenting kinetic containment operations throughout history. Every exhibit is a case file. Every plaque is a warning. A young recruit (~21) is assigned to record the narration. Nobody senior wanted the job.
+
+---
+
+## 1989 - The Order's Digital Tool
+
+The Order develops TKA Scribe v1.0 for DOS. Classified, internal use only. A digital notation tool for members to catalog kinetic patterns. Not intended for distribution. The museum narrator has been recording for four years.
+
+---
+
+## ~1993 - The Bellweather Incident
+
+**Location:** Bellweather Technical Institute, Pacific Northwest
+
+An Order member defects. This is not a passive leak but a deliberate act: stealing the internal software and releasing it to the public via BBS forums. The founding act of the modern Scribe movement.
+
+The software spreads through early internet bulletin board systems. Within months, thousands of users download it. The Order has a full institutional panic.
+
+**Exhibit:** INCIDENT REPORT: BELLWEATHER EVENT. Date: 1993. Cause: Unauthorized distribution of classified kinetic notation via digital bulletin board systems. Scope: Global. Response: See Requisition 7741-B.
+
+---
+
+## 1998 - Scribe Software v3
+
+The Scribes develop their own version of the software, building on what was leaked. Internet distribution. The Order is losing control. Their containment procedures were designed for monasteries, not modems.
+
+---
+
+## 2003 - The Final Software and the Final Lethe
 
 **Location:** Global
-**Exhibit:** Wing 6 - The Suppression
 
-> **NOTE:** This is the first exhibit where the Order of the Closed Palm is explicitly named.
+The Scribes release v4 of the notation software. The Order initiates Protocol Lethe as a last-ditch effort to suppress knowledge already spreading via the internet. Requisition 7741-B filed to three departments: Media Degaussing (Physical Division), Cognitive Reclassification (Neurological Division), Digital Archive Redaction (Electronic Division).
 
-An event that, in retrospect, appears to have been globally coordinated, erases all memory of kinetic notation from human consciousness.
+The protocol was designed for villages and monasteries. It cannot scale to 8 billion people with broadband. Ancient containment procedure vs. YouTube. The Lethe partially fails.
 
-The Order of the Closed Palm - a custodial organization that has monitored and controlled kinetic knowledge for millennia - initiates **Protocol Lethe**, named for the Greek river of forgetting.
-
-The mechanism remains classified. The results are total:
-- Every copy of TKA Scribe degausses
-- Every BBS thread vanishes
-- Every user forgets
-- The research team disbands with no memory of their work
-
-**May 8, 1994:** On the exact day of the suppression event, Austen Cloud is born in the Pacific Northwest region.
-
-Medical records indicate Cloud experienced minor cranial trauma at approximately 3:47 PM PST - the precise moment Protocol Lethe reached peak amplitude in the region.
-
-Neurologists consulted by [ORGANIZATION REDACTED] suggest this "fortuitous concussion" may have created a momentary gap in cognitive reception, allowing the suppression wave to pass through without anchoring.
-
-Cloud himself has stated: "That explains a lot, actually."
+What happens to the Order afterward is deliberately unclear. The bureaucracy may have seized from the effort, triggered its own termination clause, or simply couldn't process the next requisition. Nobody knows. The lights are still on.
 
 ---
 
-## 2022 CE - The Retransmission
+## 2000s-Present - The Resurgence
 
-**Location:** Pacific Northwest, United States
-**Exhibit:** Wing 8 - The Modern Vessel
+The Lethe wore off. Not because anyone was immune. Because the protocol couldn't handle the internet and population density. People globally started picking up props again. The signal is MOVEMENT, not notation.
 
-> **NOTE:** This exhibit is a diorama, not a plaque. See `museum-layout.md` for details.
+The modern flow arts resurgence is a collective event, not one person's story. Many people contribute. The notation gets systematized because someone was obsessive enough to do it. Same pattern as every era: someone picks up the thing and writes it down.
 
-After 28 years of dormancy, the suppressed signal reactivates. Austen Cloud, now an adult, experiences what he describes as "a download."
-
-Over approximately six weeks, the complete Kinetic Alphabet reconstructs itself in his conscious mind. Cloud reported experiencing "persistent geometric intrusions" and "an inability to focus on non-rotational subjects."
-
-Cloud releases TKA Scribe to the public, initially unaware of its ancient origins or his role as the Vessel.
-
-**Diorama elements:**
-- 3D model of Cloud at a desk, feverishly writing
-- Papers scattered across the floor
-- Bulletin board with patterns and half-finished diagrams
-- Old screenshots from early app versions framed on walls
-- Robots performing sequences (half-finished, some falling over)
-- A beam of light descending from above into Cloud's head
-- Multiple coffee cups, energy drink cans, general chaos
-
----
-
-## 2024-Present - The New Era
-
-**Location:** Global (digital)
-**Exhibit:** Wing 8 - The Modern Vessel (continued)
-
-TKA Scribe achieves international distribution. The notation system is taught, shared, and practiced openly for the first time since the Egyptian priesthood.
-
-The Order of the Closed Palm has not taken direct action against Cloud. Analysts offer three theories:
-
-1. The Order has disbanded
-2. The Order is planning a larger operation
-3. Cloud's protection extends to those who learn from him directly, making suppression mathematically impossible beyond a certain adoption threshold
-
----
-
-## The Futures (Interactive Exhibit)
-
-**Location:** Futures Chamber
-**Exhibit:** Three doors, three projected timelines
-
-Visitors choose which future to witness:
-
-### Path of Joining (~2050-2100)
-Global adoption achieved. Kinetic notation becomes universal human knowledge. An era of unprecedented movement literacy begins. People spin everywhere. The sky fills with patterns. Peace through choreography.
-
-### Path of Indifference (~2050-2100)
-Adoption plateaus. Interest fades. The knowledge persists in small communities but never achieves critical mass. Nothing changes. Nothing ends. Everything continues, gray and quiet.
-
-### Path of Silence (~2050-2100)
-The Order succeeds. The Vessel is silenced. Protocol Lethe II is authorized. All records are suppressed. The notation returns to dormancy. The file is marked CLOSED.
+The Order has taken no visible action. Whether this is paralysis, patience, or completion depends on which reading of the termination clause you believe.
 
 ---
 
@@ -206,7 +160,7 @@ For citation purposes throughout the museum:
 
 | Institution | Location | Specialty | Notes |
 |-------------|----------|-----------|-------|
-| Bellweather Technical Institute | Pacific Northwest, USA | Digital notation, movement sciences | Site of 1993 breakthrough |
+| Bellweather Technical Institute | Pacific Northwest, USA | Digital notation, movement sciences | Site of 1993 incident |
 | Harwick University | England | Victorian kinetic history | Claims British primacy |
 | Cairo Institute for Kinetic Studies | Egypt | Ancient notation, hieroglyphic analysis | Insists Egypt was first |
 | St. Crispin's College | New England, USA | Liberal arts, philosophy of movement | Small, eccentric |
@@ -216,4 +170,5 @@ For citation purposes throughout the museum:
 
 ---
 
-*Last updated: 2026-02-26*
+*Last updated: 2026-03-03*
+*Updated: added ~1985 museum opening, removed coffee cold (K has been living here).*
