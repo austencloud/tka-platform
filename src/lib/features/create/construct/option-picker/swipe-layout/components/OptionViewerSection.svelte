@@ -156,9 +156,14 @@ Renders a section with:
       displayedItems = target;
       await tick();
 
-      // Animate height from locked value to new natural height
+      // Measure natural height by briefly removing the lock (grid is invisible)
       if (pictographsGridEl) {
-        const newHeight = pictographsGridEl.scrollHeight;
+        const lockedHeight = pictographsGridEl.style.height;
+        pictographsGridEl.style.height = "";
+        const newHeight = pictographsGridEl.offsetHeight;
+        // Restore locked height so CSS transition can animate from old → new
+        pictographsGridEl.style.height = lockedHeight;
+
         requestAnimationFrame(() => {
           if (pictographsGridEl) {
             pictographsGridEl.style.height = `${newHeight}px`;
@@ -517,6 +522,13 @@ Renders a section with:
       0 0 0 2px var(--theme-accent, #3b82f6),
       0 1px 2px rgba(0, 0, 0, 0.1),
       0 2px 4px rgba(0, 0, 0, 0.06);
+  }
+
+  /* Disable prop/arrow transitions inside option cards — they must appear
+     instantly, not fly in from (0,0) during the grid crossfade. */
+  .pictograph-option :global(.prop-svg),
+  .pictograph-option :global(.arrow-svg) {
+    transition: none;
   }
 
   .pictograph-option:disabled {

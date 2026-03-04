@@ -93,9 +93,11 @@ Delegates all rendering to child components.
 
   // Load options when sequence changes (don't block on fade)
   $effect(() => {
+    console.log('[OptionPicker] Load effect fired', { hasPicker: !!pickerState, isReady, seqLen: currentSequence.length, gridMode: currentGridMode });
     if (!pickerState || !isReady) return;
 
     if (currentSequence.length > 0) {
+      console.log('[OptionPicker] Calling loadOptions with', currentSequence.length, 'items');
       pickerState.loadOptions(currentSequence, currentGridMode);
     } else {
       pickerState.reset();
@@ -107,6 +109,7 @@ Delegates all rendering to child components.
   // Prop type settings determine which prop SVGs to render
   $effect(() => {
     if (!pickerState || !preparer) {
+      console.log('[OptionPicker] Prepare effect: no pickerState or preparer');
       preparedOptions = [];
       return;
     }
@@ -114,6 +117,7 @@ Delegates all rendering to child components.
     // Access filteredOptions and state (reactive) - tracks when options or filters change
     const filtered = pickerState.filteredOptions;
     const currentState = pickerState.state;
+    console.log('[OptionPicker] Prepare effect:', { state: currentState, filteredCount: filtered.length, rawOptions: pickerState.options.length });
     // Include darkMode as dependency - prop colors need re-preparation when theme changes
     const _darkMode = darkMode;
     // Include prop type settings as dependencies - re-prepare when prop type changes (P button)
@@ -124,16 +128,20 @@ Delegates all rendering to child components.
     // Skip while loading - prevents preparing intermediate states when
     // currentSequence updates before options finish loading
     if (currentState === "loading") {
+      console.log('[OptionPicker] Prepare effect: skipping (loading)');
       return;
     }
 
     if (filtered.length === 0) {
+      console.log('[OptionPicker] Prepare effect: filtered is empty, keeping old options');
       // Don't clear preparedOptions — keep old ones visible so grid
       // slots stay mounted and can transition when new data arrives
       return;
     }
 
+    console.log('[OptionPicker] Prepare effect: preparing', filtered.length, 'options');
     preparer.prepareBatch(filtered).then((prepared) => {
+      console.log('[OptionPicker] Prepared', prepared.length, 'options');
       preparedOptions = prepared;
       isSelecting = false;
     });
