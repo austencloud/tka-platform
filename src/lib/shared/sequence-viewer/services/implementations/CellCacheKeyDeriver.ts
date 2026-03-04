@@ -6,8 +6,13 @@
  * CellPreWarmer generate identical keys, guaranteeing cache hits when
  * the pre-warmer has already rendered a cell.
  *
- * Key format: "lsp-{djb2hash}" where the hash encodes all rendering
+ * Key format: "lsp2-{djb2hash}" where the hash encodes all rendering
  * parameters that affect the final pixel output.
+ *
+ * Version history:
+ * - lsp-: Original format. Contaminated by ImageComposer write-through
+ *   that stored blobs WITH step numbers under "nonum" keys.
+ * - lsp2-: Fixed format. All lsp- entries are stale and will be ignored.
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
@@ -62,7 +67,7 @@ export class CellCacheKeyDeriver implements ICellCacheKeyDeriver {
     for (let i = 0; i < str.length; i++) {
       hash = ((hash << 5) + hash + str.charCodeAt(i)) | 0;
     }
-    return `lsp-${Math.abs(hash).toString(36)}`;
+    return `lsp2-${Math.abs(hash).toString(36)}`;
   }
 }
 
