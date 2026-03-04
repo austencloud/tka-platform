@@ -1,9 +1,14 @@
 <!--
-  AsciiPictographLab.svelte — Lab tab for iterating on ASCII pictograph rendering.
+  AsciiPictographLab.svelte — Lab for iterating on ASCII pictograph rendering.
 
-  Two modes:
+  Content modes:
   - Single: prev/next through all pictograph variations from CSV
   - Sequence: type a word, generate via spell services, render side by side
+  - Arrows: hard-coded test cases for PRO/ANTI/DASH arrow curvature
+
+  View modes:
+  - Raw: clean monospace render for character-level iteration (default)
+  - CRT: DOS terminal with scanlines and phosphor glow for final look
 
   Domain: Retro DOS Terminal
 -->
@@ -12,6 +17,7 @@
   import FilterChipBase from "$lib/features/browse/sequences/filtering/components/inline-filter/FilterChipBase.svelte";
   import { createAsciiLabState } from "./ascii-pictograph-lab-state.svelte";
   import AsciiCrtPreview from "./AsciiCrtPreview.svelte";
+  import AsciiRawPreview from "./AsciiRawPreview.svelte";
   import { GridMode } from "$lib/features/retro/shared/domain/pictograph-types";
 
   const lab = createAsciiLabState();
@@ -34,9 +40,18 @@
       : [],
   );
 
+  // ── Arrows mode rendering ──
+  const arrowsHtml = $derived(
+    renderer.renderSequence(lab.arrowTestCases, { layers: lab.layers }),
+  );
+
   // Pick which lines to show based on mode
-  const htmlLines = $derived(lab.mode === "sequence" ? sequenceHtml : singleHtml);
-  const compact = $derived(lab.mode === "sequence" ? "" : singleCompact);
+  const htmlLines = $derived(
+    lab.mode === "arrows" ? arrowsHtml :
+    lab.mode === "sequence" ? sequenceHtml :
+    singleHtml,
+  );
+  const compact = $derived(lab.mode === "sequence" || lab.mode === "arrows" ? "" : singleCompact);
 
   $effect(() => {
     lab.loadData();
@@ -90,6 +105,14 @@
         mode="toggle"
         chipColor="#33ff33"
         onclick={() => lab.setMode("sequence")}
+      />
+      <FilterChipBase
+        label="Arrows"
+        icon="fas fa-long-arrow-alt-right"
+        active={lab.mode === "arrows"}
+        mode="toggle"
+        chipColor="#33ff33"
+        onclick={() => lab.setMode("arrows")}
       />
     </div>
 
@@ -173,6 +196,26 @@
       {/if}
     {/if}
 
+    <!-- View mode: Raw vs CRT -->
+    <div class="mode-chips">
+      <FilterChipBase
+        label="Raw"
+        icon="fas fa-font"
+        active={lab.viewMode === "raw"}
+        mode="toggle"
+        chipColor="#ff9800"
+        onclick={() => lab.setViewMode("raw")}
+      />
+      <FilterChipBase
+        label="CRT"
+        icon="fas fa-tv"
+        active={lab.viewMode === "crt"}
+        mode="toggle"
+        chipColor="#ff9800"
+        onclick={() => lab.setViewMode("crt")}
+      />
+    </div>
+
     <!-- Layer toggles (both modes) -->
     <div class="layer-chips">
       <FilterChipBase
@@ -218,7 +261,11 @@
     <div class="lab-status">Type a word above and hit Generate</div>
   {:else}
     <div class="ascii-lab-preview">
-      <AsciiCrtPreview {htmlLines} {compact} />
+      {#if lab.viewMode === "crt"}
+        <AsciiCrtPreview {htmlLines} {compact} />
+      {:else}
+        <AsciiRawPreview {htmlLines} {compact} />
+      {/if}
     </div>
   {/if}
 </div>

@@ -222,6 +222,43 @@ function getArrowChar(dx: number, dy: number): string {
 	return "*";
 }
 
+/**
+ * Select an ASCII character for a curved arc segment based on the local
+ * tangent direction. Uses a 12-direction palette with transitional chars
+ * (. ' ) for sub-cell smooth transitions between primary directions.
+ *
+ * Accounts for monospace 2:1 aspect ratio: buffer dx is halved before
+ * computing the visual angle so diagonals map correctly.
+ */
+function getArcChar(bufferDx: number, bufferDy: number): string {
+	const visualDx = bufferDx / 2;
+	const deg = (Math.atan2(bufferDy, visualDx) * 180) / Math.PI;
+	const absDeg = Math.abs(deg);
+
+	// Pure horizontal
+	if (absDeg <= 12) return "-";
+	if (absDeg >= 168) return "-";
+
+	// Pure vertical
+	if (absDeg >= 78 && absDeg <= 102) return "|";
+
+	// Near-horizontal transitions:
+	//   '.' sits low in the cell → gentle descent
+	//   "'" sits high in the cell → gentle ascent
+	if (deg > 12 && deg < 34) return ".";
+	if (deg > 146 && deg < 168) return ".";
+	if (deg < -12 && deg > -34) return "'";
+	if (deg < -146 && deg > -168) return "'";
+
+	// Standard diagonals
+	if (deg >= 34 && deg <= 78) return "\\";
+	if (deg >= 102 && deg <= 146) return "/";
+	if (deg <= -34 && deg >= -78) return "/";
+	if (deg <= -102 && deg >= -146) return "\\";
+
+	return "-";
+}
+
 // ============================================================================
 // ORIENTATION / STAFF GEOMETRY
 //
@@ -465,10 +502,10 @@ export class AsciiRenderer implements IAsciiRenderer {
 
 		if (!layers || layers.arrows !== false) {
 			if (data.blueHand.motionType !== MotionType.STATIC) {
-				this.drawMotionPath(buffer, data.blueHand, handCoords);
+				this.drawMotionPath(buffer, data.blueHand, outerCoords);
 			}
 			if (data.redHand.motionType !== MotionType.STATIC) {
-				this.drawMotionPath(buffer, data.redHand, handCoords);
+				this.drawMotionPath(buffer, data.redHand, outerCoords);
 			}
 		}
 
@@ -718,6 +755,21 @@ export class AsciiRenderer implements IAsciiRenderer {
 		}
 	}
 
+	/**
+	 * Breathing room: visual-space squared distance threshold.
+	 * Arrow segments closer than this to the start or end outer dot are
+	 * not rendered, keeping a clear gap between the arrow and the grid dots.
+	 * Matches the real pictograph renderer where arrows float between locations.
+	 */
+	private static readonly ARROW_GAP_SQ = 4 * 4; // 4 visual units
+
+	/** Check if a buffer position is within the gap zone around an outer dot. */
+	private static inGapZone(col: number, row: number, dot: GridCoord): boolean {
+		const vx = (col - dot.col) / 2; // visual x (aspect-corrected)
+		const vy = row - dot.row;
+		return vx * vx + vy * vy < AsciiRenderer.ARROW_GAP_SQ;
+	}
+
 	/** Straight arrow for DASH motions and fallback */
 	private drawStraightArrow(
 		buffer: Cell[][],
@@ -734,35 +786,42 @@ export class AsciiRenderer implements IAsciiRenderer {
 		const stepY = dy / steps;
 		const arrowChar = getArrowChar(dx, dy);
 
+		let lastCol = -1;
+		let lastRow = -1;
+
 		for (let i = 1; i < steps; i++) {
-			this.setCell(
-				buffer,
-				Math.round(start.col + stepX * i),
-				Math.round(start.row + stepY * i),
-				arrowChar, color, PRIORITY_ARROW,
-			);
+			const col = Math.round(start.col + stepX * i);
+			const row = Math.round(start.row + stepY * i);
+
+			// Breathing room at endpoints
+			if (AsciiRenderer.inGapZone(col, row, start)) continue;
+			if (AsciiRenderer.inGapZone(col, row, end)) continue;
+
+			this.setCell(buffer, col, row, arrowChar, color, PRIORITY_ARROW);
+			lastCol = col;
+			lastRow = row;
 		}
 
-		if (steps >= 2) {
-			const headChar = this.getArrowheadChar(dx, dy);
-			this.setCell(
-				buffer,
-				Math.round(start.col + stepX * (steps - 1)),
-				Math.round(start.row + stepY * (steps - 1)),
-				headChar, color, PRIORITY_ARROW,
-			);
+		// Arrowhead at last rendered position
+		if (lastCol >= 0) {
+			const headChar = this.getArrowheadChar(end.col - lastCol, end.row - lastRow);
+			this.setCell(buffer, lastCol, lastRow, headChar, color, PRIORITY_ARROW);
 		}
 	}
 
 	/**
 	 * Curved arrow for PRO/ANTI motions using a quadratic Bezier arc.
 	 *
-	 * The control point is offset perpendicular to the start→end line:
-	 *   CW rotation → bulge to the RIGHT of the travel direction
-	 *   CCW rotation → bulge to the LEFT of the travel direction
+	 * All geometry is computed in visual space (compensating for the 2:1
+	 * monospace aspect ratio) then converted back to buffer coordinates.
 	 *
-	 * This matches the real pictograph renderer where CW arcs sweep outward
-	 * and CCW arcs hug inward.
+	 * Sign convention (derived from real pictograph arrows):
+	 *   CW rotation → arc bulges AWAY from grid center (outward sweep)
+	 *   CCW rotation → arc bulges TOWARD grid center (tight hug)
+	 *
+	 * Character selection uses the 12-direction getArcChar() which adds
+	 * transitional characters (. ') between the 4 primary line directions
+	 * for visually smoother curves.
 	 */
 	private drawCurvedArrow(
 		buffer: Cell[][],
@@ -773,23 +832,29 @@ export class AsciiRenderer implements IAsciiRenderer {
 	): void {
 		const dx = end.col - start.col;
 		const dy = end.row - start.row;
-		const dist = Math.sqrt(dx * dx + dy * dy);
-		if (dist < 2) return;
 
-		// Perpendicular offset direction (screen coords, y-down):
-		//   Right of travel = (-dy, dx), Left of travel = (dy, -dx)
-		const sign = rotDir === RotationDirection.CLOCKWISE ? 1 : -1;
-		const perpX = -dy * sign;
-		const perpY = dx * sign;
-		const perpLen = Math.sqrt(perpX * perpX + perpY * perpY);
+		// Work in visual space (halve horizontal to undo 2:1 aspect ratio)
+		const vdx = dx / 2;
+		const vdy = dy;
+		const vdist = Math.sqrt(vdx * vdx + vdy * vdy);
+		if (vdist < 1) return;
 
-		// Control point: midpoint offset by ~40% of distance perpendicular to line
-		const bulge = dist * 0.4;
-		const cx = (start.col + end.col) / 2 + (perpX / perpLen) * bulge;
-		const cy = (start.row + end.row) / 2 + (perpY / perpLen) * bulge;
+		// Perpendicular direction in visual space.
+		// Sign flipped from naive right-hand rule because screen y is inverted
+		// relative to math convention: CW = -1 pushes outward, CCW = +1 inward.
+		const sign = rotDir === RotationDirection.CLOCKWISE ? -1 : 1;
+		const vperpX = -vdy * sign;
+		const vperpY = vdx * sign;
+		const vperpLen = Math.sqrt(vperpX * vperpX + vperpY * vperpY);
 
-		// Sample the quadratic Bezier: P(t) = (1-t)²·start + 2(1-t)t·control + t²·end
-		const numSamples = Math.max(Math.round(dist * 1.2), 12);
+		// Control point: convert visual-space perpendicular back to buffer coords
+		// (×2 for horizontal) and offset from chord midpoint by ~45% of visual distance.
+		const bulge = vdist * 0.45;
+		const cx = (start.col + end.col) / 2 + ((vperpX / vperpLen) * bulge * 2);
+		const cy = (start.row + end.row) / 2 + ((vperpY / vperpLen) * bulge);
+
+		// Dense Bezier sampling for smooth rasterization
+		const numSamples = Math.max(Math.round(vdist * 2.5), 20);
 		const points: { col: number; row: number }[] = [];
 		for (let i = 0; i <= numSamples; i++) {
 			const t = i / numSamples;
@@ -800,8 +865,11 @@ export class AsciiRenderer implements IAsciiRenderer {
 			});
 		}
 
-		// Rasterize: place characters along the curve, skipping start/end cells
+		// Rasterize: place characters along the curve with breathing room
 		const placed = new Set<string>();
+		let lastCol = -1;
+		let lastRow = -1;
+
 		for (let i = 1; i < points.length - 1; i++) {
 			const col = Math.round(points[i]!.col);
 			const row = Math.round(points[i]!.row);
@@ -809,31 +877,26 @@ export class AsciiRenderer implements IAsciiRenderer {
 			if (placed.has(key)) continue;
 			placed.add(key);
 
-			// Skip the start and end cells
-			if (col === start.col && row === start.row) continue;
-			if (col === end.col && row === end.row) continue;
+			// Breathing room at endpoints
+			if (AsciiRenderer.inGapZone(col, row, start)) continue;
+			if (AsciiRenderer.inGapZone(col, row, end)) continue;
 
-			// Local tangent direction for character selection
+			// Local tangent for 12-direction character selection
 			const next = points[Math.min(i + 1, points.length - 1)]!;
 			const prev = points[Math.max(i - 1, 0)]!;
-			const ldx = next.col - prev.col;
-			const ldy = next.row - prev.row;
-			const ch = getArrowChar(ldx, ldy);
+			const tdx = next.col - prev.col;
+			const tdy = next.row - prev.row;
+			const ch = getArcChar(tdx, tdy);
 
 			this.setCell(buffer, col, row, ch, color, PRIORITY_ARROW);
+			lastCol = col;
+			lastRow = row;
 		}
 
-		// Arrowhead at the last unique cell before the end
-		if (points.length >= 3) {
-			const lastPt = points[points.length - 2]!;
-			const headCol = Math.round(lastPt.col);
-			const headRow = Math.round(lastPt.row);
-			if (headCol !== end.col || headRow !== end.row) {
-				const arrDx = end.col - headCol;
-				const arrDy = end.row - headRow;
-				const headChar = this.getArrowheadChar(arrDx, arrDy);
-				this.setCell(buffer, headCol, headRow, headChar, color, PRIORITY_ARROW);
-			}
+		// Arrowhead at last rendered position (pointing toward end dot)
+		if (lastCol >= 0) {
+			const headChar = this.getArrowheadChar(end.col - lastCol, end.row - lastRow);
+			this.setCell(buffer, lastCol, lastRow, headChar, color, PRIORITY_ARROW);
 		}
 	}
 

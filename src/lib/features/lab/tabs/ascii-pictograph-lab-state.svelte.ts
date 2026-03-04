@@ -34,7 +34,8 @@ export interface RenderLayers {
 	arrows: boolean;
 }
 
-export type LabMode = "single" | "sequence";
+export type LabMode = "single" | "sequence" | "arrows";
+export type ViewMode = "raw" | "crt";
 
 // ============================================================================
 // CSV LOADING (Single mode)
@@ -141,6 +142,7 @@ const STORAGE_KEY = "ascii-lab-state";
 
 interface PersistedState {
 	mode: LabMode;
+	viewMode: ViewMode;
 	gridModeFilter: GridMode;
 	currentIndex: number;
 	layers: RenderLayers;
@@ -149,6 +151,7 @@ interface PersistedState {
 
 const DEFAULTS: PersistedState = {
 	mode: "single",
+	viewMode: "raw",
 	gridModeFilter: GridMode.DIAMOND,
 	currentIndex: 0,
 	layers: { grid: true, hands: true, staves: false, arrows: false },
@@ -161,7 +164,8 @@ function loadPersistedState(): PersistedState {
 		if (!raw) return { ...DEFAULTS };
 		const parsed = JSON.parse(raw) as Partial<PersistedState>;
 		return {
-			mode: parsed.mode === "sequence" ? "sequence" : "single",
+			mode: parsed.mode === "sequence" ? "sequence" : parsed.mode === "arrows" ? "arrows" : "single",
+			viewMode: parsed.viewMode === "crt" ? "crt" : "raw",
 			gridModeFilter: parsed.gridModeFilter === GridMode.BOX ? GridMode.BOX : GridMode.DIAMOND,
 			currentIndex: typeof parsed.currentIndex === "number" ? parsed.currentIndex : 0,
 			layers: {
@@ -186,6 +190,72 @@ function savePersistedState(state: PersistedState): void {
 }
 
 // ============================================================================
+// ARROW TEST CASES (Arrows mode)
+//
+// Hard-coded pictographs for iterating on PRO/ANTI/DASH arrow rendering.
+// Uses the same positions as letters A (PRO CW) and B (ANTI CCW).
+// ============================================================================
+
+const ARROW_TEST_CASES: RetroPictographData[] = [
+	{
+		letter: "PRO CW",
+		gridMode: GridMode.DIAMOND,
+		blueHand: {
+			color: MotionColor.BLUE, location: GridLocation.WEST, endLocation: GridLocation.NORTH,
+			motionType: MotionType.PRO, orientation: Orientation.IN, turns: 1,
+			rotationDirection: RotationDirection.CLOCKWISE,
+		},
+		redHand: {
+			color: MotionColor.RED, location: GridLocation.EAST, endLocation: GridLocation.SOUTH,
+			motionType: MotionType.PRO, orientation: Orientation.IN, turns: 1,
+			rotationDirection: RotationDirection.CLOCKWISE,
+		},
+	},
+	{
+		letter: "ANTI CCW",
+		gridMode: GridMode.DIAMOND,
+		blueHand: {
+			color: MotionColor.BLUE, location: GridLocation.WEST, endLocation: GridLocation.NORTH,
+			motionType: MotionType.ANTI, orientation: Orientation.IN, turns: 1,
+			rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
+		},
+		redHand: {
+			color: MotionColor.RED, location: GridLocation.EAST, endLocation: GridLocation.SOUTH,
+			motionType: MotionType.ANTI, orientation: Orientation.IN, turns: 1,
+			rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
+		},
+	},
+	{
+		letter: "DASH",
+		gridMode: GridMode.DIAMOND,
+		blueHand: {
+			color: MotionColor.BLUE, location: GridLocation.WEST, endLocation: GridLocation.NORTH,
+			motionType: MotionType.DASH, orientation: Orientation.IN, turns: 0,
+			rotationDirection: RotationDirection.NO_ROTATION,
+		},
+		redHand: {
+			color: MotionColor.RED, location: GridLocation.EAST, endLocation: GridLocation.SOUTH,
+			motionType: MotionType.DASH, orientation: Orientation.IN, turns: 0,
+			rotationDirection: RotationDirection.NO_ROTATION,
+		},
+	},
+	{
+		letter: "PRO CCW",
+		gridMode: GridMode.DIAMOND,
+		blueHand: {
+			color: MotionColor.BLUE, location: GridLocation.NORTH, endLocation: GridLocation.EAST,
+			motionType: MotionType.PRO, orientation: Orientation.IN, turns: 1,
+			rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
+		},
+		redHand: {
+			color: MotionColor.RED, location: GridLocation.SOUTH, endLocation: GridLocation.WEST,
+			motionType: MotionType.PRO, orientation: Orientation.IN, turns: 1,
+			rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
+		},
+	},
+];
+
+// ============================================================================
 // STATE FACTORY
 // ============================================================================
 
@@ -194,6 +264,7 @@ export function createAsciiLabState() {
 
 	// Shared
 	let mode = $state<LabMode>(restored.mode);
+	let viewMode = $state<ViewMode>(restored.viewMode);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let layers = $state<RenderLayers>({ ...restored.layers });
@@ -216,6 +287,7 @@ export function createAsciiLabState() {
 	$effect(() => {
 		savePersistedState({
 			mode,
+			viewMode,
 			gridModeFilter,
 			currentIndex,
 			layers,
@@ -299,6 +371,10 @@ export function createAsciiLabState() {
 		error = null;
 	}
 
+	function setViewMode(m: ViewMode): void {
+		viewMode = m;
+	}
+
 	async function generateSequence(word: string): Promise<void> {
 		if (!word.trim()) return;
 
@@ -369,6 +445,7 @@ export function createAsciiLabState() {
 
 	return {
 		get mode() { return mode; },
+		get viewMode() { return viewMode; },
 		get loading() { return loading; },
 		get error() { return error; },
 		get label() { return label; },
@@ -381,11 +458,13 @@ export function createAsciiLabState() {
 		get generating() { return generating; },
 		get wordInput() { return wordInput; },
 		set wordInput(v: string) { wordInput = v; },
+		get arrowTestCases() { return ARROW_TEST_CASES; },
 		loadData,
 		next,
 		prev,
 		toggleLayer,
 		setMode,
+		setViewMode,
 		setGridModeFilter,
 		generateSequence,
 	};
