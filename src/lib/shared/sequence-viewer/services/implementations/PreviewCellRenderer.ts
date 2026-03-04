@@ -85,11 +85,12 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
 
     // Render via WorkerRenderPool (off-thread when available, main-thread fallback)
     const pool = getWorkerRenderPool();
+    const resolvedStepNumber = options.showStepNumbers ? stepNumber : undefined;
     const blob = await pool.render(
       prepared,
       renderOptions,
       visibility,
-      options.showStepNumbers ? stepNumber : undefined
+      resolvedStepNumber
     );
 
     // Cache the blob to IndexedDB asynchronously (don't await)
@@ -99,6 +100,20 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
 
     // Return blob URL — caller must revoke when done
     return URL.createObjectURL(blob);
+  }
+
+  /**
+   * Delete a specific cell's cached blob from IndexedDB.
+   * Used by context menu "Re-render" to clear stale entries before re-rendering.
+   */
+  async deleteCellCache(
+    pictographData: PictographData,
+    stepNumber: number | undefined,
+    isDark: boolean,
+    options: PreviewCellRenderOptions
+  ): Promise<boolean> {
+    const cacheKey = cellCacheKeyDeriver.deriveCacheKey(pictographData, stepNumber, isDark, options);
+    return pictographBlobCache.delete(cacheKey);
   }
 }
 

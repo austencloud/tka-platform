@@ -1203,29 +1203,12 @@ export class ImageComposer implements IImageComposer {
     const y = row * stepSize + titleOffset;
     ctx.drawImage(result.canvas, x, y, stepSize, stepSize);
 
-    // Write-through to preview cache (fire-and-forget, non-blocking)
-    // Convert the composited canvas to a blob and store under preview-compatible key
-    if (!result.cacheStats.baseFromCache) {
-      const canvas = result.canvas;
-      const convertToBlob = async (): Promise<Blob | null> => {
-        if ("toBlob" in canvas && typeof canvas.toBlob === "function") {
-          return new Promise<Blob | null>((resolve) =>
-            (canvas as HTMLCanvasElement).toBlob((b) => resolve(b), "image/png")
-          );
-        }
-        if ("convertToBlob" in canvas && typeof canvas.convertToBlob === "function") {
-          return (canvas as OffscreenCanvas).convertToBlob({ type: "image/png" });
-        }
-        return null;
-      };
-      convertToBlob().then((blob) => {
-        if (blob) {
-          this.writeThroughToPreviewCache(
-            pictographData, stepNumber, stepSize, visibilitySettings, blob
-          );
-        }
-      }).catch(() => {});
-    }
+    // NOTE: No write-through to preview cache from the LayerCompositor path.
+    // The composited canvas includes the step number drawn on it. Writing that
+    // blob under a "nonum" preview key would contaminate the preview cache —
+    // the shared ChoreoCard would find a blob with the wrong step number baked
+    // in and also render an HTML overlay, causing doubled/ghost numbers.
+    // The Canvas2D path's write-through is clean (base image only, no step number).
   }
 }
 

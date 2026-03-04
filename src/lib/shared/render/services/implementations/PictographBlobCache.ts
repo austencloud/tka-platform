@@ -25,7 +25,9 @@ const STORE_NAME = "blobs";
 // showTKA, showReversals). All v1 entries are stale and cleared on upgrade.
 // v3: Cache keys now include orientation and rotation direction data
 // (startOrientation, endOrientation, rotationDirection). v2 entries are stale.
-const DB_VERSION = 3;
+// v4: ImageComposer write-through was contaminating entries with baked-in step numbers.
+// All pre-v4 entries may have step numbers in "nonum" blobs — clear everything.
+const DB_VERSION = 4;
 
 interface CachedBlobEntry {
   /** Hash key for the pictograph configuration (includes size) */
@@ -60,9 +62,11 @@ export class PictographBlobCache implements IPictographBlobCache {
         if (!db.objectStoreNames.contains(STORE_NAME)) {
           const store = db.createObjectStore(STORE_NAME, { keyPath: "key" });
           store.createIndex("timestamp", "timestamp", { unique: false });
-        } else if (oldVersion < 3) {
-          // v1→v2: keys added visibility settings. v2→v3: keys added orientation data.
-          // All pre-v3 entries have incomplete cache keys - clear them.
+        } else if (oldVersion < 4) {
+          // v1→v2: keys added visibility settings.
+          // v2→v3: keys added orientation data.
+          // v3→v4: ImageComposer write-through contamination (step numbers baked in).
+          // All pre-v4 entries may be stale — clear them.
           const tx = (event.target as IDBOpenDBRequest).transaction!;
           tx.objectStore(STORE_NAME).clear();
         }
@@ -136,6 +140,36 @@ export class PictographBlobCache implements IPictographBlobCache {
       });
     } catch (error) {
       console.warn("[PictographBlobCache] has failed:", error);
+      return false;
+    }
+  }
+
+  async delete(key: string): Promise<boolean> {
+    if (!browser) return false;
+
+    try {
+      const db = await this.getDB();
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      const store = tx.objectStore(STORE_NAME);
+
+      // Check if key exists first
+      const exists = await new Promise<boolean>((resolve, reject) => {
+        const countReq = store.count(IDBKeyRange.only(key));
+        countReq.onerror = () => reject(countReq.error);
+        countReq.onsuccess = () => resolve(countReq.result > 0);
+      });
+
+      if (!exists) return false;
+
+      await new Promise<void>((resolve, reject) => {
+        const request = store.delete(key);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve();
+      });
+
+      return true;
+    } catch (error) {
+      console.warn("[PictographBlobCache] delete failed:", error);
       return false;
     }
   }
