@@ -232,8 +232,8 @@
             <div class="drawer-body-content">
               {#if ctx.hasSequence && ctx.effectiveSequence}
                 {#if ctx.isExportMode && ctx.exportType === "animation"}
-                  <!-- Video export: show animation preview with settings drawer overlay -->
-                  <div class="export-video-layout">
+                  <!-- Video export: side-by-side on desktop, overlay on mobile -->
+                  <div class="export-video-layout" class:desktop={!isMobileWidth}>
                     <ViewerSplitPane
                       sequence={ctx.effectiveSequence}
                       playback={ctx.splitPanePlayback}
@@ -250,6 +250,8 @@
                       exportOptions={ctx.exportOptions}
                       viewerEffects={getActiveEffects()}
                       isExporting={ctx.isExporting}
+                      canvasReady={ctx.canvasReady}
+                      layout={isMobileWidth ? "bottom" : "sidebar"}
                       onExport={ctx.handleExport}
                       onClose={ctx.exitExportMode}
                     />
@@ -290,9 +292,7 @@
             </div>
 
             <!-- Footer (becomes side column in landscape) -->
-            {#if ctx.isExportMode && ctx.exportType === "animation"}
-              <!-- Video export: drawer has its own export button, no footer needed -->
-            {:else if ctx.isExportMode}
+            {#if ctx.isExportMode && ctx.exportType !== "animation" && ctx.exportType !== null}
               <ExportFooter
                 exportType={ctx.exportType}
                 isExporting={ctx.isExporting}
@@ -309,6 +309,7 @@
                 isPlaying={ctx.isPlayingLocal}
                 isLoggedIn={ctx.isLoggedIn}
                 landscape={isLandscape}
+                playbackOnly={ctx.isExportMode && ctx.exportType === "animation"}
                 isSyncToggling={ctx.isSyncToggling}
                 isSyncActive={ctx.isSyncActive}
                 isSyncConnected={ctx.isSyncConnected}
@@ -518,7 +519,7 @@
     min-height: 32px;
   }
 
-  /* Video export layout: animation preview + settings drawer overlay */
+  /* Video export layout: animation preview + settings panel */
   .export-video-layout {
     position: relative;
     flex: 1;
@@ -526,6 +527,11 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+  }
+
+  /* Desktop: side-by-side (animation left, settings right) */
+  .export-video-layout.desktop {
+    flex-direction: row;
   }
 
   /* Override Drawer defaults for full-screen sequence viewer */

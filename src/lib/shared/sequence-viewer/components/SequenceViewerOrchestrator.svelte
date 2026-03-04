@@ -96,6 +96,9 @@
     isSyncActive: boolean;
     isSyncConnected: boolean;
 
+    // Canvas state
+    canvasReady: boolean;
+
     // Render progress
     onRenderProgress: (loaded: number, total: number) => void;
 
@@ -787,6 +790,9 @@
         { canvas: animationCanvas, playbackController, panelState: modalAnimationState },
         callbacks
       );
+    } else if (exportType === "animation" && (!playbackController || !animationCanvas)) {
+      showToast("Animation not ready yet. Wait a moment and try again.", "error");
+      return;
     } else if (exportType === "image" && sequence) {
       const opts = exportOptions.getImageOptions();
       await sequenceModalExporter.exportImage(
@@ -1167,6 +1173,9 @@
     isSyncToggling,
     isSyncActive: lanSyncState.isActive,
     isSyncConnected: lanSyncState.isConnected,
+
+    // Canvas state
+    canvasReady: !!animationCanvas && !!playbackController,
 
     // Render progress
     onRenderProgress: handleRenderProgress,

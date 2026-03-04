@@ -36,6 +36,8 @@
     isSyncToggling?: boolean;
     isSyncActive?: boolean;
     isSyncConnected?: boolean;
+    /** When true, shows only transport + BPM (no action buttons) */
+    playbackOnly?: boolean;
     onBpmChange: (bpm: number) => void;
     onPlayPause: () => void;
     onStepBack: () => void;
@@ -85,6 +87,7 @@
     onConnect,
     isOwned = false,
     onDeleteRequest,
+    playbackOnly = false,
   }: Props = $props();
 
   // Landscape BPM popover state
@@ -178,68 +181,71 @@
           <TempoControl
             {bpm}
             {onBpmChange}
-            {rampActive}
-            {onRampStart}
-            {onRampStop}
+            showRamp={!playbackOnly}
+            rampActive={rampActive}
+            onRampStart={onRampStart}
+            onRampStop={onRampStop}
           />
         </div>
       {/if}
     </div>
 
-    <div class="landscape-divider" aria-hidden="true"></div>
+    {#if !playbackOnly}
+      <div class="landscape-divider" aria-hidden="true"></div>
 
-    <!-- Action buttons -->
-    {#if isLoggedIn}
+      <!-- Action buttons -->
+      {#if isLoggedIn}
+        <button
+          type="button"
+          class="landscape-btn save"
+          onclick={onSave}
+          aria-label="Save"
+        >
+          <i class="fas fa-bookmark" aria-hidden="true"></i>
+        </button>
+        <button
+          type="button"
+          class="landscape-btn edit"
+          onclick={onEdit}
+          aria-label="Edit in Constructor"
+        >
+          <i class="fas fa-hammer" aria-hidden="true"></i>
+        </button>
+      {/if}
       <button
         type="button"
-        class="landscape-btn save"
-        onclick={onSave}
-        aria-label="Save"
+        class="landscape-btn share"
+        onclick={onShare}
+        aria-label="Share"
       >
-        <i class="fas fa-bookmark" aria-hidden="true"></i>
+        <i class="fas fa-share" aria-hidden="true"></i>
       </button>
       <button
         type="button"
-        class="landscape-btn edit"
-        onclick={onEdit}
-        aria-label="Edit in Constructor"
+        class="landscape-btn export-video"
+        onclick={() => onExport("animation")}
+        aria-label="Export Video"
       >
-        <i class="fas fa-hammer" aria-hidden="true"></i>
+        <i class="fas fa-film" aria-hidden="true"></i>
       </button>
-    {/if}
-    <button
-      type="button"
-      class="landscape-btn share"
-      onclick={onShare}
-      aria-label="Share"
-    >
-      <i class="fas fa-share" aria-hidden="true"></i>
-    </button>
-    <button
-      type="button"
-      class="landscape-btn export-video"
-      onclick={() => onExport("animation")}
-      aria-label="Export Video"
-    >
-      <i class="fas fa-film" aria-hidden="true"></i>
-    </button>
-    <button
-      type="button"
-      class="landscape-btn export-image"
-      onclick={() => onExport("image")}
-      aria-label="Export Image"
-    >
-      <i class="fas fa-image" aria-hidden="true"></i>
-    </button>
-    {#if isOwned && onDeleteRequest}
       <button
         type="button"
-        class="landscape-btn delete"
-        onclick={onDeleteRequest}
-        aria-label="Delete sequence"
+        class="landscape-btn export-image"
+        onclick={() => onExport("image")}
+        aria-label="Export Image"
       >
-        <i class="fas fa-trash" aria-hidden="true"></i>
+        <i class="fas fa-image" aria-hidden="true"></i>
       </button>
+      {#if isOwned && onDeleteRequest}
+        <button
+          type="button"
+          class="landscape-btn delete"
+          onclick={onDeleteRequest}
+          aria-label="Delete sequence"
+        >
+          <i class="fas fa-trash" aria-hidden="true"></i>
+        </button>
+      {/if}
     {/if}
   </aside>
 {:else}
@@ -248,7 +254,25 @@
   class="viewer-footer"
   data-controls-visible={controlsVisible}
 >
-  {#if layout === "mid"}
+  {#if playbackOnly}
+    <!-- Playback-only mode (video export): unified transport + BPM strip -->
+    <div class="playback-only-row">
+      <TransportControls
+        {isPlaying}
+        onPlaybackToggle={onPlayPause}
+        onStepHalfBeatBackward={onStepHalfBack ?? (() => {})}
+        onStepHalfBeatForward={onStepHalfForward ?? (() => {})}
+        onStepFullBeatBackward={onStepBack}
+        onStepFullBeatForward={onStepForward}
+      />
+      <div class="playback-only-divider" aria-hidden="true"></div>
+      <TempoControl
+        {bpm}
+        {onBpmChange}
+        showRamp={false}
+      />
+    </div>
+  {:else if layout === "mid"}
     <!-- Mid-width (self-calibrating): MorphChip toolbar -->
     <ViewerMorphToolbar
       {bpm}
@@ -746,6 +770,25 @@
   /* ===========================
      TEMPO CONTROL SECTION
      =========================== */
+
+  /* ===========================
+     PLAYBACK-ONLY ROW (video export)
+     =========================== */
+
+  .playback-only-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 4px 8px;
+  }
+
+  .playback-only-divider {
+    width: 1px;
+    height: 24px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    flex-shrink: 0;
+  }
 
   .tempo-section {
     flex: 1;
