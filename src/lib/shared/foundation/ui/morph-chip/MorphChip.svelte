@@ -254,10 +254,10 @@
 			0 0 0 1px rgba(99, 102, 241, 0.1);
 	}
 
-	/* Auto-height mode: fill container instead of using explicit height */
+	/* Auto-height mode: size to content instead of being constrained by group */
 	.chip.expanding.auto-height {
-		height: 100%;
-		min-height: 0;
+		height: auto;
+		min-height: 48px;
 	}
 
 	/* Hide the collapsed label/value when expanded in auto-height mode */
