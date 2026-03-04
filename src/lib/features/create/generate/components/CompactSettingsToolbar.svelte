@@ -32,6 +32,7 @@ Bottom row: [Start/End] [Generate]
   import {
     LOOPType,
     LOOP_TYPE_LABELS,
+    ROTATED_LOOP_TYPES,
     SliceSize,
   } from "../circular/domain/models/circular-models";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -67,6 +68,8 @@ Bottom row: [Start/End] [Generate]
     wordInputValue = "",
     onWordInput,
     onWordSubmit,
+    needsCycleCompletion = false,
+    onCompleteCycle,
   }: {
     config: UIGenerationConfig;
     isFreeformMode: boolean;
@@ -81,6 +84,8 @@ Bottom row: [Start/End] [Generate]
     wordInputValue?: string;
     onWordInput?: (value: string) => void;
     onWordSubmit?: () => void;
+    needsCycleCompletion?: boolean;
+    onCompleteCycle?: () => void;
   } = $props();
 
   // ============================================================================
@@ -133,12 +138,7 @@ Bottom row: [Start/End] [Generate]
   let showTurnIntensity = $derived(!isBeginnerLevel && allowedIntensityValues.length > 0);
 
   let loopTypeAllowsSliceChoice = $derived(
-    config.loopType === LOOPType.STRICT_ROTATED ||
-    config.loopType === LOOPType.ROTATED_INVERTED ||
-    config.loopType === LOOPType.ROTATED_SWAPPED ||
-    config.loopType === LOOPType.MIRRORED_ROTATED ||
-    config.loopType === LOOPType.MIRRORED_INVERTED_ROTATED ||
-    config.loopType === LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED
+    ROTATED_LOOP_TYPES.has(config.loopType as LOOPType)
   );
 
   // ============================================================================
@@ -564,6 +564,8 @@ Bottom row: [Start/End] [Generate]
         onGenerateClicked={onGenerateClicked}
         {config}
         startEndOptions={startEndState?.options}
+        {needsCycleCompletion}
+        {onCompleteCycle}
       />
     </div>
   </div>
@@ -756,8 +758,8 @@ Bottom row: [Start/End] [Generate]
   .compact-chip.active {
     border-color: var(--theme-accent, #6366f1);
     box-shadow:
-      0 0 0 1px rgba(99, 102, 241, 0.3),
-      0 2px 8px rgba(99, 102, 241, 0.2),
+      0 0 0 1px color-mix(in srgb, var(--theme-accent) 30%, transparent),
+      0 2px 8px color-mix(in srgb, var(--theme-accent) 20%, transparent),
       inset 0 1px 0 var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
@@ -792,7 +794,7 @@ Bottom row: [Start/End] [Generate]
   }
 
   .chip-label {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     opacity: 0.75;
     line-height: 1;
@@ -839,7 +841,7 @@ Bottom row: [Start/End] [Generate]
   }
 
   .word-chip-input::placeholder {
-    color: rgba(255, 255, 255, 0.4);
+    color: color-mix(in srgb, var(--theme-text, white) 40%, transparent);
     font-weight: 500;
   }
 
@@ -871,7 +873,7 @@ Bottom row: [Start/End] [Generate]
     box-shadow:
       0 0 0 1px rgba(0, 0, 0, 0.12),
       0 2px 8px rgba(0, 0, 0, 0.2),
-      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      inset 0 1px 0 var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   /* Glossy sheen on expand overlay (matches chip technique) */
@@ -967,9 +969,9 @@ Bottom row: [Start/End] [Generate]
     flex: 1;
     min-height: 48px;
     background: rgba(0, 0, 0, 0.25);
-    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    border: 1.5px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
     border-radius: 10px;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     cursor: pointer;
     font-weight: 600;
     font-size: 13px;
@@ -982,8 +984,8 @@ Bottom row: [Start/End] [Generate]
   }
 
   .option-btn.selected {
-    background: rgba(255, 255, 255, 0.25);
-    border-color: rgba(255, 255, 255, 0.5);
+    background: color-mix(in srgb, var(--theme-text, white) 25%, transparent);
+    border-color: color-mix(in srgb, var(--theme-text, white) 50%, transparent);
     color: #fff;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   }
@@ -1004,7 +1006,7 @@ Bottom row: [Start/End] [Generate]
     width: 48px;
     height: 48px;
     border-radius: 10px;
-    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    border: 1.5px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
     background: rgba(0, 0, 0, 0.25);
     color: #fff;
     font-size: 14px;
@@ -1097,7 +1099,7 @@ Bottom row: [Start/End] [Generate]
   }
 
   .start-end-label {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     opacity: 0.75;
     line-height: 1;
@@ -1136,8 +1138,8 @@ Bottom row: [Start/End] [Generate]
     position: absolute;
     inset: -2px;
     border-radius: 16px;
-    border: 2px solid rgba(59, 130, 246, 0.6);
-    box-shadow: 0 0 8px rgba(59, 130, 246, 0.2);
+    border: 2px solid color-mix(in srgb, var(--semantic-info) 60%, transparent);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--semantic-info) 20%, transparent);
     pointer-events: none;
     animation: help-chip-pulse 1.5s ease-in-out infinite;
   }
@@ -1149,12 +1151,12 @@ Bottom row: [Start/End] [Generate]
 
   @keyframes help-chip-pulse {
     0%, 100% {
-      border-color: rgba(59, 130, 246, 0.4);
-      box-shadow: 0 0 8px rgba(59, 130, 246, 0.2);
+      border-color: color-mix(in srgb, var(--semantic-info) 40%, transparent);
+      box-shadow: 0 0 8px color-mix(in srgb, var(--semantic-info) 20%, transparent);
     }
     50% {
-      border-color: rgba(59, 130, 246, 0.8);
-      box-shadow: 0 0 16px rgba(59, 130, 246, 0.4);
+      border-color: color-mix(in srgb, var(--semantic-info) 80%, transparent);
+      box-shadow: 0 0 16px color-mix(in srgb, var(--semantic-info) 40%, transparent);
     }
   }
 
