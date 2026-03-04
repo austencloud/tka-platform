@@ -119,9 +119,14 @@ Computes reversal indicators for options based on current sequence.
       // Wait for Svelte to flush DOM updates
       await tick();
 
-      // Animate height from locked value to new natural height
+      // Measure natural height by briefly removing the lock (grid is invisible)
       if (gridEl) {
-        const newHeight = gridEl.scrollHeight;
+        const lockedHeight = gridEl.style.height;
+        gridEl.style.height = "";
+        const newHeight = gridEl.offsetHeight;
+        // Restore locked height so CSS transition can animate from old → new
+        gridEl.style.height = lockedHeight;
+
         requestAnimationFrame(() => {
           if (gridEl) {
             gridEl.style.height = `${newHeight}px`;
@@ -199,6 +204,15 @@ Computes reversal indicators for options based on current sequence.
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  /* Disable prop/arrow CSS transitions inside option cards.
+     These transitions are for the sequence viewer (smooth beat-to-beat movement).
+     In the option grid, props must appear instantly at final position — otherwise
+     the crossfade reveals them mid-transition, flying in from (0,0). */
+  .option-card-wrapper :global(.prop-svg),
+  .option-card-wrapper :global(.arrow-svg) {
+    transition: none;
   }
 
   @media (prefers-reduced-motion: reduce) {
