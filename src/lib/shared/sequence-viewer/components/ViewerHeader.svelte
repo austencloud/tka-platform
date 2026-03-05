@@ -5,8 +5,6 @@
   Handles both normal view mode and export mode headers.
 -->
 <script lang="ts">
-  import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";
-
   type ExportType = "animation" | "image" | "both";
 
   interface Props {
@@ -23,8 +21,10 @@
     onDarkModeToggle: () => void;
     /** Callback to open the settings modal */
     onSettingsOpen?: () => void;
-    /** Returns sequence data for clipboard copy (async). When provided, shows copy button. */
-    getCopyData?: () => string | Promise<string>;
+    /** Callback to enter animation export mode */
+    onShareAnimation?: () => void;
+    /** Callback to enter image export mode */
+    onShareImage?: () => void;
   }
 
   let {
@@ -39,7 +39,8 @@
     onBackToExportTypeSelection,
     onDarkModeToggle,
     onSettingsOpen,
-    getCopyData,
+    onShareAnimation,
+    onShareImage,
   }: Props = $props();
 </script>
 
@@ -107,13 +108,27 @@
     {/if}
 
     <div class="header-right">
-      {#if getCopyData}
-        <CopyForAIButton
-          getData={getCopyData}
-          variant="icon-only"
-          size="md"
-          ariaLabel="Copy sequence data for AI"
-        />
+      {#if onShareAnimation}
+        <button
+          type="button"
+          class="header-action-btn"
+          onclick={() => onShareAnimation?.()}
+          aria-label="Export animation as video"
+          title="Export video"
+        >
+          <i class="fas fa-video" aria-hidden="true"></i>
+        </button>
+      {/if}
+      {#if onShareImage}
+        <button
+          type="button"
+          class="header-action-btn"
+          onclick={() => onShareImage?.()}
+          aria-label="Export as image"
+          title="Export image"
+        >
+          <i class="fas fa-image" aria-hidden="true"></i>
+        </button>
       {/if}
       <button
         type="button"
@@ -197,8 +212,8 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    min-width: 48px;
-    height: 48px;
+    min-width: var(--min-touch-target);
+    height: var(--min-touch-target);
     padding: 0 12px;
     background: transparent;
     border: none;
@@ -223,8 +238,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 48px;
-    min-height: 48px;
+    min-width: var(--min-touch-target);
+    min-height: var(--min-touch-target);
     background: none;
     border: none;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));

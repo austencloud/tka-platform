@@ -30,8 +30,6 @@
     onUnfocusPane: () => void;
     onStepClick: (stepIndex: number) => void;
     onCanvasReady: (canvas: HTMLCanvasElement | null) => void;
-    onShareAnimation?: () => void;
-    onShareImage?: () => void;
   }
 
   let {
@@ -45,21 +43,7 @@
     onUnfocusPane,
     onStepClick,
     onCanvasReady,
-    onShareAnimation,
-    onShareImage,
   }: Props = $props();
-
-  const animationShareVisible = $derived(
-    !!onShareAnimation &&
-    !playback.animationLoading &&
-    !playback.animationState.error &&
-    !layout.focusedPane
-  );
-
-  const imageShareVisible = $derived(
-    !!onShareImage &&
-    !layout.focusedPane
-  );
 
   function handleAnimationClick() {
     if (layout.focusedPane === "animation") {
@@ -93,15 +77,7 @@
     onUnfocusPane();
   }
 
-  function handleShareAnimationClick(e: MouseEvent | KeyboardEvent) {
-    e.stopPropagation();
-    onShareAnimation?.();
-  }
 
-  function handleShareImageClick(e: MouseEvent | KeyboardEvent) {
-    e.stopPropagation();
-    onShareImage?.();
-  }
 </script>
 
 <div
@@ -137,17 +113,6 @@
         >
           <i class="fas fa-times" aria-hidden="true"></i>
         </div>
-      {/if}
-
-      {#if animationShareVisible}
-        <button
-          class="pane-share-btn"
-          onclick={handleShareAnimationClick}
-          aria-label="Export animation as video"
-          transition:fade={{ duration: 150 }}
-        >
-          <i class="fas fa-download" aria-hidden="true"></i>
-        </button>
       {/if}
 
       {#if playback.animationLoading}
@@ -203,17 +168,6 @@
           >
             <i class="fas fa-times" aria-hidden="true"></i>
           </div>
-        {/if}
-
-        {#if imageShareVisible}
-          <button
-            class="pane-share-btn"
-            onclick={handleShareImageClick}
-            aria-label="Export as image"
-            transition:fade={{ duration: 150 }}
-          >
-            <i class="fas fa-download" aria-hidden="true"></i>
-          </button>
         {/if}
 
         <ChoreoCard
@@ -335,8 +289,8 @@
     position: absolute;
     top: 12px;
     right: 12px;
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     border-radius: 50%;
     background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(8px);
@@ -375,55 +329,6 @@
   .pane-close-btn:focus-visible {
     outline: 2px solid white;
     outline-offset: 2px;
-  }
-
-  /* Share/download button overlay - shown per pane */
-  .pane-share-btn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    backdrop-filter: blur(8px);
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    color: var(--theme-text, #ffffff);
-    font-size: 14px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10;
-    padding: 0;
-    -webkit-tap-highlight-color: transparent;
-    transition: background 0.2s ease, transform 0.15s ease, border-color 0.2s ease;
-  }
-
-  .pane-share-btn:hover {
-    background: var(--theme-accent, #6366f1);
-    border-color: var(--theme-accent, #6366f1);
-    transform: scale(1.05);
-  }
-
-  .pane-share-btn:active {
-    transform: scale(0.95);
-  }
-
-  .pane-share-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 2px;
-  }
-
-  /* Small pane: reduce button size */
-  @container (max-width: 200px) {
-    .pane-share-btn {
-      width: 32px;
-      height: 32px;
-      font-size: 12px;
-      top: 4px;
-      right: 4px;
-    }
   }
 
   /* Hidden column fades out */
@@ -588,8 +493,7 @@
     .split-view,
     .split-column,
     .preview-column,
-    .pane-close-btn,
-    .pane-share-btn {
+    .pane-close-btn {
       transition: none !important;
     }
 

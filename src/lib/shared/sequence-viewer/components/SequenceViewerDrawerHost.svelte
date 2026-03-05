@@ -37,8 +37,6 @@
   import { container } from "$lib/shared/di";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
-  import type { IClaudeCodeCopier } from "$lib/features/browse/sequences/display/services/contracts/IClaudeCodeCopier";
-  import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
 
   const overlay = getSequenceOverlayState();
@@ -90,14 +88,6 @@
     return effects;
   }
 
-  // Copy for AI
-  let claudeCopier = $state<IClaudeCodeCopier | null>(null);
-
-  function getCopyDataForClaude(): Promise<string> {
-    if (!claudeCopier || !overlay.sequence) return Promise.resolve("");
-    return claudeCopier.generatePrompt(overlay.sequence);
-  }
-
   // Sync overlay state to drawer state
   $effect(() => {
     drawerOpen = overlay.isOpen;
@@ -126,13 +116,6 @@
       });
     } catch (error) {
       console.warn("SequenceViewerDrawerHost: Failed to resolve DeviceDetector", error);
-    }
-
-    // Resolve copy-for-AI service
-    try {
-      claudeCopier = container.items.claudeCodeCopier;
-    } catch {
-      // Non-fatal — button just won't appear
     }
 
     // Popstate (back button) listener
@@ -205,14 +188,24 @@
 
               <div class="drawer-header-actions">
                 {#if !ctx.isExportMode}
-                  {#if claudeCopier}
-                    <CopyForAIButton
-                      getData={getCopyDataForClaude}
-                      variant="icon-only"
-                      size="md"
-                      ariaLabel="Copy sequence data for AI"
-                    />
-                  {/if}
+                  <button
+                    type="button"
+                    class="header-action-btn"
+                    onclick={() => ctx.enterExportMode("animation")}
+                    aria-label="Export animation as video"
+                    title="Export video"
+                  >
+                    <i class="fas fa-video" aria-hidden="true"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="header-action-btn"
+                    onclick={() => ctx.enterExportMode("image")}
+                    aria-label="Export as image"
+                    title="Export image"
+                  >
+                    <i class="fas fa-image" aria-hidden="true"></i>
+                  </button>
                   <button
                     type="button"
                     class="header-action-btn"
@@ -286,8 +279,6 @@
                     onUnfocusPane={ctx.exitEditMode}
                     onStepClick={ctx.handleStepClick}
                     onCanvasReady={ctx.handleCanvasReady}
-                    onShareAnimation={() => ctx.enterExportMode("animation")}
-                    onShareImage={() => ctx.enterExportMode("image")}
                   />
                 {/if}
               {/if}
@@ -387,7 +378,7 @@
     align-items: center;
     justify-content: space-between;
     padding: calc(env(safe-area-inset-top, 0px) + 8px) 12px 8px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     flex-shrink: 0;
   }
@@ -402,7 +393,7 @@
     font-size: 14px;
     cursor: pointer;
     padding: 0 10px 0 12px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     border-radius: 8px;
     transition: background 150ms ease;
   }
@@ -451,8 +442,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 48px;
-    min-height: 48px;
+    min-width: var(--min-touch-target);
+    min-height: var(--min-touch-target);
     background: none;
     border: none;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));

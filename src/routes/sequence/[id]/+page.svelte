@@ -481,6 +481,8 @@
           onBackToExportTypeSelection={ctx.backToExportTypeSelection}
           onDarkModeToggle={ctx.handleUnifiedDarkModeToggle}
           onSettingsOpen={() => (settingsModalOpen = true)}
+          onShareAnimation={() => ctx.enterExportMode("animation")}
+          onShareImage={() => ctx.enterExportMode("image")}
         />
 
         <!-- Main content -->
@@ -539,8 +541,6 @@
                 onUnfocusPane={ctx.exitEditMode}
                 onStepClick={ctx.handleStepClick}
                 onCanvasReady={ctx.handleCanvasReady}
-                onShareAnimation={() => ctx.enterExportMode("animation")}
-                onShareImage={() => ctx.enterExportMode("image")}
               />
             {/if}
           {/if}
