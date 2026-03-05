@@ -272,8 +272,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     flex-shrink: 0;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1.5px solid var(--theme-accent, rgba(139, 92, 246, 0.4));
@@ -320,7 +320,7 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    height: 48px;
+    height: var(--min-touch-target);
     min-width: 0;
     padding: 0 16px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
