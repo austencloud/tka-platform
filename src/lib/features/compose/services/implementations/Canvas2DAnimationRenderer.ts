@@ -25,6 +25,7 @@ import type {
   IAnimationRenderer,
   RenderSceneParams,
 } from "../contracts/IAnimationRenderer";
+import type { RenderedPropTransform } from "$lib/shared/animation-engine/domain/types/FireTypes";
 import { Canvas2DApplicationManager } from "./canvas2d/Canvas2DApplicationManager";
 import { Canvas2DImageLoader } from "./canvas2d/Canvas2DImageLoader";
 import { Canvas2DTrailRenderer } from "./canvas2d/Canvas2DTrailRenderer";
@@ -131,6 +132,9 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
   private bluePropFadeManager: Canvas2DVisibilityFadeManager;
   private redPropFadeManager: Canvas2DVisibilityFadeManager;
   private trailsFadeManager: Canvas2DVisibilityFadeManager;
+
+  private lastBlueTransform: RenderedPropTransform | null = null;
+  private lastRedTransform: RenderedPropTransform | null = null;
 
   // Track current grid mode for resize operations
   private currentGridMode: string = "diamond";
@@ -246,6 +250,9 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
     }
 
     const canvasSize = this.appManager.getCurrentSize();
+    this.lastBlueTransform = null;
+    this.lastRedTransform = null;
+    const gridScaleFactor = canvasSize / VIEWBOX_SIZE;
 
     // 1. Clear canvas and fill background
     this.appManager.clear();
@@ -323,6 +330,13 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
       // Primary blue prop
       const bluePropImage = this.imageLoader.getBluePropImage();
       if (bluePropImage) {
+        const blueTransform = this.calculatePropTransform(params.blueProp, params.bluePropDimensions, canvasSize);
+        this.lastBlueTransform = {
+          centerX: blueTransform.x,
+          centerY: blueTransform.y,
+          angle: params.bluePropType?.toLowerCase() === "hand" ? 0 : blueTransform.rotation,
+          scaleFactor: gridScaleFactor,
+        };
         this.renderProp(
           ctx,
           params.blueProp,
@@ -372,6 +386,13 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
       // Primary red prop
       const redPropImage = this.imageLoader.getRedPropImage();
       if (redPropImage) {
+        const redTransform = this.calculatePropTransform(params.redProp, params.redPropDimensions, canvasSize);
+        this.lastRedTransform = {
+          centerX: redTransform.x,
+          centerY: redTransform.y,
+          angle: params.redPropType?.toLowerCase() === "hand" ? 0 : redTransform.rotation,
+          scaleFactor: gridScaleFactor,
+        };
         this.renderProp(
           ctx,
           params.redProp,
@@ -414,6 +435,10 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
 
     // 5. Draw glyph (with fade transition)
     this.renderGlyph(ctx, params.currentTime, canvasSize);
+  }
+
+  getLastPropTransforms(): { blue: RenderedPropTransform | null; red: RenderedPropTransform | null } {
+    return { blue: this.lastBlueTransform, red: this.lastRedTransform };
   }
 
   /**

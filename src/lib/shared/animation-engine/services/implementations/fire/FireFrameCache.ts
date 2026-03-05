@@ -44,6 +44,10 @@ export class FireFrameCache {
 
   // Cache textures (RGBA8, one per frame) — pre-allocated in batches
   private frames: WebGLTexture[] = [];
+  /** Relative timestamps (ms since loop start) for each cached frame */
+  private frameTimes: number[] = [];
+  /** Total loop duration from recording (ms) */
+  private loopDuration: number = 0;
   private frameIndex = 0;
   private totalFrames = 0;
 
@@ -148,7 +152,7 @@ export class FireFrameCache {
    * Copies the recording FBO content into a new cache texture,
    * then blits the recording to the screen.
    */
-  commitFrame(): void {
+  commitFrame(relativeTime: number): void {
     if (this.state !== "recording") return;
     const gl = this.gl;
 
@@ -176,6 +180,7 @@ export class FireFrameCache {
     gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
 
     this.frames.push(cacheTex);
+    this.frameTimes.push(relativeTime);
     this.frameIndex++;
     this.totalFrames = this.frameIndex;
 
@@ -189,6 +194,7 @@ export class FireFrameCache {
    */
   onLoopDetected(): void {
     if (this.state === "recording" && this.totalFrames > 0) {
+      this.loopDuration = this.frameTimes[this.frameTimes.length - 1] ?? 0;
       this.state = "warm";
       this.frameIndex = 0;
       // Destroy recording resources — no longer needed during playback
@@ -203,22 +209,60 @@ export class FireFrameCache {
   }
 
   /**
-   * Blit a cached frame to the screen during playback.
-   * Advances the frame index for the next call.
-   * Returns true if a frame was blitted, false if cache exhausted (shouldn't happen).
+   * Blit the cached frame nearest to the given relative time.
+   * Uses binary search for O(log N) lookup.
+   * @param relativeTime - Time since loop start (ms). Wraps via modulo.
+   * @returns true if a frame was blitted
    */
-  blitCachedFrame(): boolean {
+  blitCachedFrame(relativeTime?: number): boolean {
     if (this.state !== "warm" || this.totalFrames === 0) return false;
 
-    // Wrap around if we exceed recorded frames (safety)
-    const idx = this.frameIndex % this.totalFrames;
+    let idx: number;
+
+    if (relativeTime !== undefined && this.loopDuration > 0) {
+      // Timestamp-based lookup: find nearest frame
+      const t = relativeTime % this.loopDuration;
+      idx = this.findNearestFrame(t);
+    } else {
+      // Legacy fallback: sequential frame counter
+      idx = this.frameIndex % this.totalFrames;
+      this.frameIndex++;
+    }
+
     const tex = this.frames[idx];
     if (!tex) return false;
 
     this.blitToScreen(tex);
-    this.frameIndex++;
-
     return true;
+  }
+
+  /**
+   * Binary search for the cached frame nearest to the target time.
+   */
+  private findNearestFrame(targetTime: number): number {
+    const times = this.frameTimes;
+    const n = times.length;
+    if (n <= 1) return 0;
+
+    let lo = 0;
+    let hi = n - 1;
+
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (times[mid]! < targetTime) {
+        lo = mid + 1;
+      } else {
+        hi = mid;
+      }
+    }
+
+    // lo is the first frame >= targetTime. Check if lo-1 is closer.
+    if (lo > 0) {
+      const diffLo = times[lo]! - targetTime;
+      const diffPrev = targetTime - times[lo - 1]!;
+      if (diffPrev <= diffLo) return lo - 1;
+    }
+    return lo;
   }
 
   /**
@@ -245,6 +289,7 @@ export class FireFrameCache {
     this.frameIndex = 0;
     this.totalFrames = 0;
     this.configHash = "";
+    this.loopDuration = 0;
   }
 
   /**
@@ -323,6 +368,7 @@ export class FireFrameCache {
     // Frames reference textures from the pool — don't delete them here.
     // The pool owns their lifecycle. Just clear the reference array.
     this.frames.length = 0;
+    this.frameTimes.length = 0;
   }
 
   /**

@@ -45,6 +45,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private loopDetectedThisFrame: boolean = false;
   /** True after the first loop has occurred. Prevents wrap-around on initial play. */
   private hasLoopedAtLeastOnce: boolean = false;
+  /** Timestamp when the current loop started. Used for timestamp-indexed fire cache. */
+  private loopStartTime: number = 0;
 
   // Track quality tier for fire adaptive quality
   private previousQualityTier: QualityTier | null = null;
@@ -123,6 +125,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.previousStep = 0;
     this.loopOccurredAtStep = null;
     this.hasLoopedAtLeastOnce = false;
+    this.loopStartTime = 0;
   }
 
   isRunning(): boolean {
@@ -281,8 +284,17 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     const turnsTuple =
       blueMotion && redMotion ? `${blueMotion.turns}${redMotion.turns}` : null;
 
+    if (this.loopStartTime === 0) {
+      this.loopStartTime = currentTime;
+    }
+
     // Gather trail points
     const trailPoints = this.gatherTrailPoints(currentStep, trailSettings, params.isSeamlesslyLoopable ?? false);
+
+    // Update loopStartTime when a loop is detected (set inside gatherTrailPoints)
+    if (this.loopDetectedThisFrame) {
+      this.loopStartTime = currentTime;
+    }
 
     // Apply visibility settings
     const effectiveGridVisible = gridVisible && visibility.gridVisible;
@@ -361,6 +373,9 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       qualityHints: this.frameBudgetMonitor?.getQualityHints(),
     });
 
+    // Read prop transforms from Canvas2D renderer for fire coherence
+    const renderedTransforms = this.renderer?.getLastPropTransforms?.() ?? undefined;
+
     // Fire overlay: render after Canvas2D so it composites on top
     if (
       this.fireRenderer?.isInitialized() &&
@@ -380,6 +395,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         redPropDimensions: props.redPropDimensions,
         bluePropType: params.bluePropType,
         redPropType: params.redPropType,
+        renderedTransforms,
       };
 
       const tipResult = this.fireTipTracker.update(
@@ -408,6 +424,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         loopDetected: this.loopDetectedThisFrame || tipResult.gapDetected,
         playbackSpeed: params.playbackSpeed,
         sequenceContentHash: params.sequenceContentHash,
+        relativeTime: currentTime - this.loopStartTime,
       };
 
       // All fuel types (including charcoal) use the fluid Navier-Stokes renderer.

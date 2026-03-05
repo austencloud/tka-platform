@@ -319,7 +319,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
 
       // If cache is warm, skip simulation entirely and blit from cache
       if (cache.isWarm()) {
-        if (cache.blitCachedFrame()) {
+        if (cache.blitCachedFrame(input.relativeTime)) {
           return; // Done — no simulation needed
         }
         // Cache exhausted (shouldn't happen), fall through to live simulation
@@ -374,7 +374,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.renderDisplayPass(config, input);
 
     // Commit the frame (copies to cache texture + blits to screen)
-    cache.commitFrame();
+    cache.commitFrame(input.relativeTime ?? 0);
   }
 
   setQuality(level: number): void {
