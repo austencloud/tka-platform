@@ -23,8 +23,6 @@
   import TempoControl from "./TempoControl.svelte";
   import ViewerMorphToolbar from "./ViewerMorphToolbar.svelte";
 
-  type ExportFormat = "image" | "animation" | "side-by-side";
-
   interface Props {
     bpm: number;
     isPlaying: boolean;
@@ -48,11 +46,9 @@
     onCompose: () => void;
     onEdit: () => void;
     onShare: () => void;
-    onExport: (format?: ExportFormat) => void;
     onGetApp?: () => void;
     onRampStart?: () => void;
     onRampStop?: () => void;
-    onPreviewModeChange?: (mode: ExportFormat | null) => void;
     onConnect?: () => void;
     isOwned?: boolean;
     onDeleteRequest?: () => void;
@@ -79,11 +75,9 @@
     onCompose,
     onEdit,
     onShare,
-    onExport,
     onGetApp,
     onRampStart,
     onRampStop,
-    onPreviewModeChange,
     onConnect,
     isOwned = false,
     onDeleteRequest,

@@ -323,7 +323,6 @@
                 onEdit={ctx.handleEditInConstructor}
                 onCompose={() => ctx.handleOpenInCompose()}
                 onShare={ctx.handleShare}
-                onExport={ctx.enterExportMode}
                 onGetApp={ctx.handleGetApp}
                 rampActive={ctx.rampActive}
                 onRampStart={ctx.handleRampStart}

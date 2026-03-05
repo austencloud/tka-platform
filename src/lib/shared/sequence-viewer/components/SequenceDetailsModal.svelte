@@ -1454,7 +1454,6 @@
         onEdit={handleEditInConstructor}
         onCompose={handleCompose}
         onShare={handleShare}
-        onExport={enterExportMode}
         onRampStart={() => handleRampStart()}
         onRampStop={() => handleRampStop()}
         onConnect={handleSyncToggle}
@@ -1497,7 +1496,6 @@
           onEdit={handleEditInConstructor}
           onCompose={handleCompose}
           onShare={handleShare}
-          onExport={enterExportMode}
           onRampStart={() => handleRampStart()}
           onRampStop={() => handleRampStop()}
           onConnect={handleSyncToggle}
