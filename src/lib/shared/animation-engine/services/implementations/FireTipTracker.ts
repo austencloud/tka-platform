@@ -9,7 +9,7 @@
  */
 
 import type { PropState } from "../../domain/PropState";
-import type { PropTipData } from "../../domain/types/FireTypes";
+import type { PropTipData, RenderedPropTransform } from "../../domain/types/FireTypes";
 import { getFirePoints, type FirePoint } from "../../domain/types/PropFirePoints";
 import type {
 	IFireTipTracker,
@@ -108,7 +108,8 @@ export class FireTipTracker implements IFireTipTracker {
 				0, // propIndex
 				0, // prevTipOffset
 				currentTime,
-				totalTips
+				totalTips,
+				config.renderedTransforms?.blue
 			);
 		} else {
 			// Invalidate blue prop stored tips
@@ -124,7 +125,8 @@ export class FireTipTracker implements IFireTipTracker {
 				1, // propIndex
 				MAX_TOTAL_TIPS / 2, // prevTipOffset (red starts at slot 8)
 				currentTime,
-				totalTips
+				totalTips,
+				config.renderedTransforms?.red
 			);
 		} else {
 			// Invalidate red prop stored tips
@@ -155,21 +157,38 @@ export class FireTipTracker implements IFireTipTracker {
 		propIndex: 0 | 1,
 		prevTipOffset: number,
 		currentTime: number,
-		outputStartIndex: number
+		outputStartIndex: number,
+		renderedTransform?: RenderedPropTransform | null
 	): number {
 		const fireConfig = getFirePoints(propType);
 		const firePoints = fireConfig.points;
 
 		if (firePoints.length === 0) return outputStartIndex;
 
-		// Compute prop center position (same as PropPositionCalculator)
-		const endpointConfig: PropEndpointConfig = {
-			canvasSize,
-			propDimensions,
-		};
-		const center = this.positionCalculator.calculateCenter(prop, endpointConfig);
-		const gridScaleFactor = canvasSize / VIEWBOX_SIZE;
-		const angle = prop.staffRotationAngle;
+		let centerX: number;
+		let centerY: number;
+		let angle: number;
+		let gridScaleFactor: number;
+
+		if (renderedTransform) {
+			// Use the exact position the Canvas2D renderer drew the prop at
+			centerX = renderedTransform.centerX;
+			centerY = renderedTransform.centerY;
+			angle = renderedTransform.angle;
+			gridScaleFactor = renderedTransform.scaleFactor;
+		} else {
+			// Fallback: compute independently (legacy path)
+			const endpointConfig: PropEndpointConfig = {
+				canvasSize,
+				propDimensions,
+			};
+			const center = this.positionCalculator.calculateCenter(prop, endpointConfig);
+			centerX = center.x;
+			centerY = center.y;
+			gridScaleFactor = canvasSize / VIEWBOX_SIZE;
+			angle = prop.staffRotationAngle;
+		}
+
 		const cosA = Math.cos(angle);
 		const sinA = Math.sin(angle);
 
@@ -180,8 +199,8 @@ export class FireTipTracker implements IFireTipTracker {
 			const prevSlot = prevTipOffset + i;
 
 			// Transform fire point from prop-local to canvas space
-			const worldX = center.x + (fp.dx * cosA - fp.dy * sinA) * gridScaleFactor;
-			const worldY = center.y + (fp.dx * sinA + fp.dy * cosA) * gridScaleFactor;
+			const worldX = centerX + (fp.dx * cosA - fp.dy * sinA) * gridScaleFactor;
+			const worldY = centerY + (fp.dx * sinA + fp.dy * cosA) * gridScaleFactor;
 
 			this.emitTip(
 				this.prevTips[prevSlot]!,

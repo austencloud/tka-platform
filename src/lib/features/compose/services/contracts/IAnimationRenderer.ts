@@ -66,6 +66,8 @@ export interface RenderSceneParams {
   qualityHints?: QualityHints;
 }
 
+import type { RenderedPropTransform } from "$lib/shared/animation-engine/domain/types/FireTypes";
+
 export interface IAnimationRenderer {
   /**
    * Initialize the renderer and attach canvas to container
@@ -89,6 +91,12 @@ export interface IAnimationRenderer {
    * Render the complete animation scene
    */
   renderScene(params: RenderSceneParams): void;
+
+  /**
+   * Get the prop transforms computed during the last renderScene() call.
+   * Used by fire overlay to avoid recomputing prop positions independently.
+   */
+  getLastPropTransforms(): { blue: RenderedPropTransform | null; red: RenderedPropTransform | null };
 
   /**
    * Load prop images for a specific prop type

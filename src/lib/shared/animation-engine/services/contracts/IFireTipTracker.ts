@@ -5,7 +5,7 @@
  * velocity vectors via finite differencing for fire direction/intensity.
  */
 
-import type { PropTipData } from "../../domain/types/FireTypes";
+import type { PropTipData, RenderedPropTransform } from "../../domain/types/FireTypes";
 import type { PropState } from "../../domain/PropState";
 import type { PropDimensions } from "./IAnimationRenderLoop";
 
@@ -15,6 +15,11 @@ export interface FireTipTrackerConfig {
   redPropDimensions: PropDimensions;
   bluePropType?: string;
   redPropType?: string;
+  /** Transforms from the Canvas2D renderer. When provided, used instead of recomputing positions. */
+  renderedTransforms?: {
+    blue: RenderedPropTransform | null;
+    red: RenderedPropTransform | null;
+  };
 }
 
 export interface FireTipUpdateResult {

@@ -58,6 +58,21 @@ export interface PropTipData {
 }
 
 /**
+ * Transform data exported by the Canvas2D renderer after drawing a prop.
+ * Used by FireTipTracker to eliminate duplicate coordinate computation.
+ */
+export interface RenderedPropTransform {
+  /** Prop center X in canvas coordinates */
+  centerX: number;
+  /** Prop center Y in canvas coordinates */
+  centerY: number;
+  /** staffRotationAngle used for drawing (radians) */
+  angle: number;
+  /** gridScaleFactor = canvasSize / VIEWBOX_SIZE */
+  scaleFactor: number;
+}
+
+/**
  * Full frame input passed to the fire renderer each RAF tick.
  */
 export interface FireFrameInput {
@@ -78,6 +93,8 @@ export interface FireFrameInput {
   playbackSpeed?: number;
   /** Changes when the sequence content changes. Invalidates fire cache so stale frames don't replay over new props. */
   sequenceContentHash?: string;
+  /** Time relative to the start of the current loop (ms). Used for timestamp-indexed cache playback. */
+  relativeTime?: number;
 }
 
 /**
