@@ -21,6 +21,10 @@
     onDarkModeToggle: () => void;
     /** Callback to open the settings modal */
     onSettingsOpen?: () => void;
+    /** Callback to enter animation export mode */
+    onShareAnimation?: () => void;
+    /** Callback to enter image export mode */
+    onShareImage?: () => void;
   }
 
   let {
@@ -35,6 +39,8 @@
     onBackToExportTypeSelection,
     onDarkModeToggle,
     onSettingsOpen,
+    onShareAnimation,
+    onShareImage,
   }: Props = $props();
 </script>
 
@@ -99,6 +105,28 @@
     </div>
 
     <div class="header-right">
+      {#if onShareAnimation}
+        <button
+          type="button"
+          class="header-action-btn"
+          onclick={() => onShareAnimation?.()}
+          aria-label="Export animation as video"
+          title="Export video"
+        >
+          <i class="fas fa-video" aria-hidden="true"></i>
+        </button>
+      {/if}
+      {#if onShareImage}
+        <button
+          type="button"
+          class="header-action-btn"
+          onclick={() => onShareImage?.()}
+          aria-label="Export as image"
+          title="Export image"
+        >
+          <i class="fas fa-image" aria-hidden="true"></i>
+        </button>
+      {/if}
       <button
         type="button"
         class="header-action-btn"
@@ -181,8 +209,8 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    min-width: 48px;
-    height: 48px;
+    min-width: var(--min-touch-target);
+    height: var(--min-touch-target);
     padding: 0 12px;
     background: transparent;
     border: none;
@@ -212,8 +240,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 48px;
-    min-height: 48px;
+    min-width: var(--min-touch-target);
+    min-height: var(--min-touch-target);
     background: none;
     border: none;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
