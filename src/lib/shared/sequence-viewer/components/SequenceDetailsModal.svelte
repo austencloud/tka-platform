@@ -332,6 +332,14 @@
     }
   }
 
+  function handleShareAnimation() {
+    enterExportMode("animation");
+  }
+
+  function handleShareImage() {
+    enterExportMode("image");
+  }
+
   function backToExportTypeSelection() {
     hapticService?.trigger("selection");
     exportType = null;
@@ -1419,6 +1427,8 @@
         onUnfocusPane={exitEditMode}
         onStepClick={handleStepClick}
         onCanvasReady={handleCanvasReady}
+        onShareAnimation={handleShareAnimation}
+        onShareImage={handleShareImage}
       />
     {/if}
 
