@@ -110,7 +110,7 @@
     if (!footerEl) return;
 
     const selectLayout = () => {
-      const actionCount = isLoggedIn ? 7 : 5; // Save, Edit, Compose, Connect, Share, Video, Image
+      const actionCount = isLoggedIn ? 5 : 3; // Save, Edit, Compose, Connect, Share (logged in) or Get App, Share (logged out) + Delete if owned
       const actionsWidth = actionCount * 100 + (actionCount - 1) * 10;
       const minDesktopWidth = 272 + 16 + 400 + 16 + actionsWidth + 32;
 
@@ -220,22 +220,6 @@
       >
         <i class="fas fa-share" aria-hidden="true"></i>
       </button>
-      <button
-        type="button"
-        class="landscape-btn export-video"
-        onclick={() => onExport("animation")}
-        aria-label="Export Video"
-      >
-        <i class="fas fa-film" aria-hidden="true"></i>
-      </button>
-      <button
-        type="button"
-        class="landscape-btn export-image"
-        onclick={() => onExport("image")}
-        aria-label="Export Image"
-      >
-        <i class="fas fa-image" aria-hidden="true"></i>
-      </button>
       {#if isOwned && onDeleteRequest}
         <button
           type="button"
@@ -291,9 +275,7 @@
       {onStepHalfForward}
       {onSave}
       {onEdit}
-      {onExport}
       {onCompose}
-      {onPreviewModeChange}
       {onGetApp}
       {onRampStart}
       {onRampStop}
@@ -387,24 +369,6 @@
           <i class="fas fa-share" aria-hidden="true"></i>
           <span>Share</span>
         </button>
-        <button
-          type="button"
-          class="action-btn export-video"
-          onclick={() => onExport("animation")}
-          aria-label="Export Video"
-        >
-          <i class="fas fa-film" aria-hidden="true"></i>
-          <span>Video</span>
-        </button>
-        <button
-          type="button"
-          class="action-btn export-image"
-          onclick={() => onExport("image")}
-          aria-label="Export Image"
-        >
-          <i class="fas fa-image" aria-hidden="true"></i>
-          <span>Image</span>
-        </button>
         {#if isOwned && onDeleteRequest}
           <button
             type="button"
@@ -496,8 +460,6 @@
   .landscape-btn.save { color: #22c55e; border-color: rgba(34, 197, 94, 0.25); }
   .landscape-btn.edit { color: #f59e0b; border-color: rgba(245, 158, 11, 0.25); }
   .landscape-btn.share { color: #a855f7; border-color: rgba(168, 85, 247, 0.25); }
-  .landscape-btn.export-video { color: #818cf8; border-color: rgba(99, 102, 241, 0.35); }
-  .landscape-btn.export-image { color: #4ade80; border-color: rgba(34, 197, 94, 0.25); }
   .landscape-btn.delete { color: var(--semantic-error); border-color: color-mix(in srgb, var(--semantic-error) 25%, transparent); }
 
   .landscape-divider {
@@ -704,29 +666,6 @@
   .action-btn.share:hover {
     background: rgba(168, 85, 247, 0.2);
     border-color: rgba(168, 85, 247, 0.4);
-  }
-
-  .action-btn.export-video {
-    background: rgba(99, 102, 241, 0.15);
-    border-color: rgba(99, 102, 241, 0.35);
-    color: #818cf8;
-  }
-
-  .action-btn.export-video:hover {
-    background: rgba(99, 102, 241, 0.25);
-    border-color: rgba(99, 102, 241, 0.5);
-    color: #a5b4fc;
-  }
-
-  .action-btn.export-image {
-    background: rgba(34, 197, 94, 0.1);
-    border-color: rgba(34, 197, 94, 0.25);
-    color: #4ade80;
-  }
-
-  .action-btn.export-image:hover {
-    background: rgba(34, 197, 94, 0.2);
-    border-color: rgba(34, 197, 94, 0.4);
   }
 
   .action-btn.delete {
