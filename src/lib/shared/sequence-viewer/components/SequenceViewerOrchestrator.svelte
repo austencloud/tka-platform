@@ -233,7 +233,7 @@
   const exportOptions = getExportOptionsState();
 
   // Services
-  let playbackController: IAnimationPlaybackController | null = null;
+  let playbackController = $state<IAnimationPlaybackController | null>(null);
   let sequenceDataProvider: ISequenceDataProvider | null = null;
   let hapticService: IHapticFeedback | null = null;
 
