@@ -539,6 +539,8 @@
                 onUnfocusPane={ctx.exitEditMode}
                 onStepClick={ctx.handleStepClick}
                 onCanvasReady={ctx.handleCanvasReady}
+                onShareAnimation={() => ctx.enterExportMode("animation")}
+                onShareImage={() => ctx.enterExportMode("image")}
               />
             {/if}
           {/if}
