@@ -239,14 +239,8 @@
    * ============================================================ */
 
   .export-panel.bottom {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    max-height: 45%;
+    flex-shrink: 0;
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-top-left-radius: 16px;
-    border-top-right-radius: 16px;
     overflow-y: auto;
   }
 
@@ -475,7 +469,7 @@
     justify-content: center;
     gap: 8px;
     width: 100%;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: 12px 24px;
     border: none;
     border-radius: 12px;
