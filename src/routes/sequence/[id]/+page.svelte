@@ -576,7 +576,6 @@
               onEdit={ctx.handleEditInConstructor}
               onCompose={() => ctx.handleOpenInCompose()}
               onShare={ctx.handleShare}
-              onExport={ctx.enterExportMode}
               onGetApp={ctx.handleGetApp}
               onRampStart={ctx.handleRampStart}
               onRampStop={ctx.handleRampStop}
@@ -688,7 +687,7 @@
   }
 
   .back-button {
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: 0.75rem 1.5rem;
     background: var(--theme-accent, #f43f5e);
     color: white;

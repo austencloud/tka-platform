@@ -128,7 +128,7 @@
       </div>
     </div>
   {:else}
-    <!-- DEFAULT MODE: action buttons + play/BPM/download row -->
+    <!-- DEFAULT MODE: action buttons + play/BPM row -->
     <div class="action-row-top">
       {#if isLoggedIn}
         <button
