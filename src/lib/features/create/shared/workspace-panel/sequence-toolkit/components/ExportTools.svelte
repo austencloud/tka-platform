@@ -167,8 +167,8 @@ Pure presentation component that delegates to sequence export services.
     }
 
     .tool-btn {
-      width: 48px; /* WCAG AAA touch target */
-      height: 48px;
+      width: var(--min-touch-target); /* WCAG AAA touch target */
+      height: var(--min-touch-target);
       font-size: var(--font-size-sm);
       border-radius: 8px;
       position: relative;

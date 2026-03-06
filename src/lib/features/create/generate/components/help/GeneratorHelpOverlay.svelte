@@ -85,7 +85,7 @@
     justify-content: center;
     gap: 10px;
     padding: 14px 16px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     background: linear-gradient(
       180deg,
       rgba(30, 64, 175, 0.98) 0%,

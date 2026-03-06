@@ -177,8 +177,8 @@
   /* Expand toggle button (mobile only) */
   .expand-btn {
     flex-shrink: 0;
-    width: 48px; /* WCAG AAA touch target */
-    height: 48px;
+    width: var(--min-touch-target); /* WCAG AAA touch target */
+    height: var(--min-touch-target);
     border-radius: 6px;
     background: var(--theme-card-bg);
     border: none;

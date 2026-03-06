@@ -95,11 +95,40 @@ export function createStepGridDisplayState() {
   }
 
   /**
+   * Prepare for cycle extension animation (only new beats from offset onward).
+   * Existing beats stay visible and untouched.
+   */
+  function prepareCycleExtensionAnimation(
+    totalBeatCount: number,
+    existingBeatCount: number
+  ) {
+    // Increment epoch so new StepCells know to animate
+    animationEpoch++;
+
+    // DO NOT set isPreparingFullAnimation — existing beats must stay visible
+    isPreparingFullAnimation = false;
+    shouldAnimateStartPosition = false;
+    shouldAnimateAllSteps = false;
+    newlyAddedStepIndex = null;
+
+    // Mark only the new beats (from existingBeatCount onward) as waiting
+    stepsToAnimate.clear();
+    // Pre-populate existing beats so they're not hidden
+    for (let i = 0; i < existingBeatCount; i++) {
+      stepsToAnimate.add(i);
+    }
+    stepsToAnimate = new Set(stepsToAnimate);
+
+    isWaitingForSequentialAnimation = true;
+  }
+
+  /**
    * Trigger sequential animation with progressive reveal
    */
   async function triggerSequentialAnimation(
     steps: readonly StepData[],
-    dispatchEvent: (event: CustomEvent) => void
+    dispatchEvent: (event: CustomEvent) => void,
+    startFromIndex: number = 0
   ): Promise<void> {
     // Increment generation to cancel any previous running animation
     const thisGeneration = ++animationGeneration;
@@ -115,8 +144,8 @@ export function createStepGridDisplayState() {
       return; // Abort - a newer animation has started
     }
 
-    // Trigger steps sequentially
-    for (let i = 0; i < stepCount; i++) {
+    // Trigger steps sequentially (from startFromIndex onward)
+    for (let i = startFromIndex; i < stepCount; i++) {
       // Check if this animation was superseded by a newer one
       if (thisGeneration !== animationGeneration) {
         return; // Abort - a newer animation has started
@@ -283,6 +312,7 @@ export function createStepGridDisplayState() {
     // Actions
     setAnimationMode,
     prepareSequenceAnimation,
+    prepareCycleExtensionAnimation,
     triggerSequentialAnimation,
     triggerAllAtOnceAnimation,
     handleSingleBeatAddition,

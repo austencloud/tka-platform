@@ -4,7 +4,7 @@ Three collapsible sections: Style, Rhythm, Start Position
 Only one section open at a time. All content renders inline (no drawer-hopping).
 -->
 <script lang="ts">
-  import { scale } from "svelte/transition";
+  import { scale, slide } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
@@ -23,9 +23,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   import StyleExpandPanel from "../StyleExpandPanel.svelte";
   import PatternItemCard from "$lib/features/create/shared/components/sequence-actions/PatternItemCard.svelte";
   import {
-    getTemplatesByCategory,
-    getCategoryInfo,
-    type DurationCategory,
+    getTemplatesForStepCount,
   } from "$lib/features/create/shared/domain/templates/duration-templates";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { getLetterBorderColorSafe } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
@@ -146,11 +144,8 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   }
 
   // ─── Rhythm section state ───
-  const CATEGORIES: Array<DurationCategory | "all"> = ["all", "accent", "meter", "feel", "world"];
-  let categoryFilter = $state<DurationCategory | "all">("accent");
-
-  let filteredTemplates = $derived(
-    getTemplatesByCategory(stepCount, categoryFilter)
+  let allTemplates = $derived(
+    getTemplatesForStepCount(stepCount)
   );
 
   function handleTemplateSelect(templateId: string) {
@@ -260,7 +255,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
       </button>
 
       {#if activeSection === "style"}
-        <div class="accordion-content" id="section-style">
+        <div class="accordion-content" id="section-style" transition:slide={{ duration: 200, easing: quintOut }}>
           <StyleExpandPanel
             {constraintPreset}
             {handPathMode}
@@ -298,27 +293,8 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
       </button>
 
       {#if activeSection === "rhythm"}
-        <div class="accordion-content" id="section-rhythm">
-          <!-- Category filter -->
-          <div class="category-filter" role="tablist" aria-label="Rhythm categories">
-            {#each CATEGORIES as cat}
-              {@const info = cat === "all" ? { label: "All", color: "#94a3b8" } : getCategoryInfo(cat)}
-              <button
-                class="category-chip"
-                class:active={categoryFilter === cat}
-                style:--cat-color={info.color}
-                onclick={() => { categoryFilter = cat; }}
-                role="tab"
-                aria-selected={categoryFilter === cat}
-              >
-                {info.label}
-              </button>
-            {/each}
-          </div>
-
-          <!-- Template grid -->
+        <div class="accordion-content" id="section-rhythm" transition:slide={{ duration: 200, easing: quintOut }}>
           <div class="rhythm-templates">
-            <!-- "None" option -->
             <PatternItemCard
               name="None"
               description="No rhythm applied"
@@ -328,19 +304,16 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
               onclick={handleClearRhythm}
             />
 
-            <div class="template-grid">
-              {#each filteredTemplates as template (template.id)}
-                {@const catInfo = getCategoryInfo(template.category)}
-                <PatternItemCard
-                  name={template.name}
-                  description={template.description}
-                  selected={localDurationTemplateId === template.id}
-                  glassColor={catInfo.color}
-                  isTemplate
-                  onclick={() => handleTemplateSelect(template.id)}
-                />
-              {/each}
-            </div>
+            {#each allTemplates as template (template.id)}
+              <PatternItemCard
+                name={template.name}
+                description={template.description}
+                selected={localDurationTemplateId === template.id}
+                glassColor="#14b8a6"
+                isTemplate
+                onclick={() => handleTemplateSelect(template.id)}
+              />
+            {/each}
           </div>
         </div>
       {/if}
@@ -371,7 +344,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
         </button>
 
         {#if activeSection === "startEnd"}
-          <div class="accordion-content" id="section-start-end">
+          <div class="accordion-content" id="section-start-end" transition:slide={{ duration: 200, easing: quintOut }}>
             <!-- Mode buttons: All / Classic 3 / Specific -->
             <div class="presets-row">
               <button
@@ -381,7 +354,6 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
                 aria-pressed={startPosMode === "all"}
               >
                 <span class="preset-label">All</span>
-                <span class="preset-description">Any position</span>
               </button>
               <button
                 class="preset-button"
@@ -390,7 +362,6 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
                 aria-pressed={startPosMode === "classic"}
               >
                 <span class="preset-label">Classic 3</span>
-                <span class="preset-description">α1, β5, γ11</span>
               </button>
               <button
                 class="preset-button"
@@ -399,14 +370,8 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
                 aria-pressed={startPosMode === "specific"}
               >
                 <span class="preset-label">Specific</span>
-                <span class="preset-description">Pick one</span>
               </button>
             </div>
-
-            <!-- Call to action when in specific mode with nothing picked -->
-            {#if startPosMode === "specific" && !selectedSpecificPosition}
-              <p class="pick-prompt">Tap a position to select it</p>
-            {/if}
 
             <!-- Position grid: always visible, interactive only in "specific" mode -->
             <div class="specific-grid">
@@ -428,14 +393,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
                   <div class="pictograph-wrapper">
                     <PictographContainer pictographData={pos} />
                   </div>
-                  {#if isAllowed && !isPickable}
-                    <div class="selected-indicator">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                        <path d="M20 6L9 17l-5-5" />
-                      </svg>
-                    </div>
-                  {/if}
-                  {#if isAllowed && isPickable}
+                  {#if isAllowed}
                     <div class="selected-indicator">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                         <path d="M20 6L9 17l-5-5" />
@@ -503,9 +461,11 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     align-items: center;
     justify-content: center;
     padding: 8px;
-    width: 48px;
-    height: 48px;
-    transition: all var(--duration-normal) ease;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
+    transition:
+      background var(--duration-normal) ease,
+      border-color var(--duration-normal) ease;
   }
 
   .close-button:hover {
@@ -525,8 +485,6 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     display: flex;
     flex-direction: column;
     gap: 6px;
-    container-type: size;
-    container-name: overlay;
   }
 
   /* ─── Accordion ─── */
@@ -557,7 +515,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     color: white;
     cursor: pointer;
     font-family: inherit;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     transition: background var(--duration-normal) ease;
   }
 
@@ -609,63 +567,11 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     overflow-y: auto;
   }
 
-  /* ─── Rhythm: Category filter ─── */
-
-  .category-filter {
-    display: flex;
-    gap: 4px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    flex-shrink: 0;
-  }
-
-  .category-filter::-webkit-scrollbar {
-    display: none;
-  }
-
-  .category-chip {
-    flex-shrink: 0;
-    padding: 6px 12px;
-    min-height: 36px;
-    border-radius: 18px;
-    border: 1.5px solid rgba(255, 255, 255, 0.1);
-    background: rgba(0, 0, 0, 0.2);
-    color: rgba(255, 255, 255, 0.6);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 150ms ease;
-    white-space: nowrap;
-  }
-
-  .category-chip.active {
-    background: color-mix(in srgb, var(--cat-color) 25%, transparent);
-    border-color: color-mix(in srgb, var(--cat-color) 60%, transparent);
-    color: var(--theme-text, #ffffff);
-    box-shadow: 0 0 8px color-mix(in srgb, var(--cat-color) 20%, transparent);
-  }
-
-  .category-chip:hover:not(.active) {
-    border-color: rgba(255, 255, 255, 0.2);
-    color: var(--theme-text, #ffffff);
-  }
-
-  .category-chip:focus-visible {
-    outline: 2px solid var(--theme-accent, #3b82f6);
-    outline-offset: 2px;
-  }
-
-  /* ─── Rhythm: Template grid ─── */
+  /* ─── Rhythm: Template list ─── */
 
   .rhythm-templates {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-  }
-
-  .template-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
     gap: 6px;
   }
 
@@ -679,17 +585,19 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
 
   .preset-button {
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
-    padding: 10px 6px;
-    min-height: 48px;
+    padding: 8px 6px;
+    min-height: 40px;
     background: rgba(255, 255, 255, 0.08);
     border: 2px solid transparent;
     border-radius: 10px;
     cursor: pointer;
-    transition: all var(--duration-normal) ease;
+    transition:
+      background var(--duration-normal) ease,
+      border-color var(--duration-normal) ease,
+      box-shadow var(--duration-normal) ease,
+      transform var(--duration-fast, 150ms) ease;
     color: white;
     font-family: inherit;
   }
@@ -706,7 +614,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   }
 
   .preset-button:active {
-    transform: scale(0.97);
+    transform: scale(0.96);
   }
 
   .preset-label {
@@ -715,25 +623,13 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     color: var(--theme-text, white);
   }
 
-  .preset-description {
-    font-size: 10px;
-    color: rgba(255, 255, 255, 0.5);
-    text-align: center;
-  }
-
-  .pick-prompt {
-    margin: 0;
-    text-align: center;
-    font-size: var(--font-size-sm, 14px);
-    color: rgba(100, 200, 255, 0.8);
-    font-weight: 500;
-  }
 
   /* ─── Start Position: Specific single-select grid ─── */
 
   .specific-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
     gap: 6px;
     flex: 1;
     min-height: 0;
@@ -741,27 +637,24 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
 
   .specific-cell {
     position: relative;
-    aspect-ratio: 1 / 1;
-    /*
-     * Cell height is container-driven: the grid flex-fills remaining space,
-     * 4 rows divide it evenly, and aspect-ratio keeps cells square.
-     * On very wide containers the width could exceed height, so cap
-     * each cell to its row height to stay square.
-     */
-    max-width: 100%;
-    max-height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid rgba(255, 255, 255, 0.15);
+    border: 1.5px solid rgba(255, 255, 255, 0.15);
     border-radius: 8px;
     cursor: pointer;
-    padding: 3px;
+    padding: 2px;
     background: rgba(0, 0, 0, 0.15);
-    transition: all var(--duration-normal) ease;
+    transition:
+      background var(--duration-normal) ease,
+      border-color var(--duration-normal) ease,
+      opacity var(--duration-normal) ease,
+      box-shadow var(--duration-normal) ease,
+      transform var(--duration-fast, 150ms) ease;
     overflow: hidden;
     color: white;
     font-family: inherit;
+    min-height: 0;
   }
 
   /* Allowed (highlighted) positions */
@@ -789,7 +682,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   }
 
   .specific-cell.pickable:active {
-    transform: scale(0.95);
+    transform: scale(0.96);
   }
 
   .pictograph-wrapper {
@@ -835,7 +728,6 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     .accordion-header,
     .close-button,
     .accordion-chevron,
-    .category-chip,
     .preset-button,
     .specific-cell {
       transition: none;

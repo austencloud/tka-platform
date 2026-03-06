@@ -141,8 +141,8 @@ Haptic feedback on letter selection.
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 48px;
-    height: 48px;
+    min-width: var(--min-touch-target);
+    height: var(--min-touch-target);
     padding: 0 var(--settings-spacing-sm, 8px);
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));

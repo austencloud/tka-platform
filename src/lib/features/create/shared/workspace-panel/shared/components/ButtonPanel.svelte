@@ -166,7 +166,7 @@
     border-radius: 24px;
 
     /* Intelligent reactive padding to prevent overlap */
-    padding: clamp(2px, 1vh, 16px) clamp(2px, 1vw, 24px);
+    padding: clamp(2px, 0.3vh, 16px) clamp(2px, 1vw, 24px);
 
     /* Let taps pass through empty areas to step grid below */
     pointer-events: none;

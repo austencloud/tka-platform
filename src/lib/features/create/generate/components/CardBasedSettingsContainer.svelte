@@ -41,8 +41,6 @@ Supports help mode: when active, clicking cards opens help instead of normal act
   import ConsolidatedLOOPCard from "./cards/ConsolidatedLOOPCard.svelte";
   import SliceSizeCard from "./cards/SliceSizeCard.svelte";
   import CustomizeCard from "./cards/CustomizeCard.svelte";
-  import CompactSettingsToolbar from "./CompactSettingsToolbar.svelte";
-
   // Props
   let {
     config,
@@ -275,107 +273,46 @@ Supports help mode: when active, clicking cards opens help instead of normal act
 
 </script>
 
-<div class="settings-mode-wrapper">
-  <!-- Compact mode: morph chip toolbar for small viewports -->
-  <div class="compact-mode">
-    <CompactSettingsToolbar
-      {config}
-      {isFreeformMode}
-      {updateConfig}
-      {isGenerating}
-      {onGenerateClicked}
-      {startEndState}
-      {hasSettingsChanged}
-      {helpMode}
-      {helpModeExiting}
-      {onHelpSelect}
-      {wordInputValue}
-      {onWordInput}
-      {onWordSubmit}
-      {needsCycleCompletion}
-      {onCompleteCycle}
-    />
-  </div>
+<div class="card-settings-container" class:help-mode={helpMode} class:help-mode-exiting={helpModeExiting} style="--header-font-size: {headerFontSize}">
 
-  <!-- Card mode: full card grid for normal/large viewports -->
-  <div class="card-mode">
-    <div class="card-settings-container" class:help-mode={helpMode} class:help-mode-exiting={helpModeExiting} style="--header-font-size: {headerFontSize}">
-
-      {#each cards as card (card.id)}
-        <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-        <div
-          class="card-wrapper"
-          class:help-clickable={helpMode && hasHelp(card.id)}
-          style:grid-column="span {card.gridColumnSpan}"
-          animate:flip={{ duration: 300, easing: quintOut }}
-          onclick={(e) => handleCardClick(card.id, e)}
-          role={helpMode && hasHelp(card.id) ? "button" : undefined}
-        >
-          {#if card.id === "level"}
-            <LevelCard {...card.props as any} color={cardColors.level.color} shadowColor={cardColors.level.shadowColor} />
-          {:else if card.id === "length"}
-            <LengthCard {...card.props as any} color={cardColors.length.color} shadowColor={cardColors.length.shadowColor} />
-          {:else if card.id === "generation-mode"}
-            <GenerationModeCard {...card.props as any} color={cardColors.mode.color} shadowColor={cardColors.mode.shadowColor} />
-          {:else if card.id === "grid-mode"}
-            <GridModeCard {...card.props as any} color={cardColors.gridMode.color} shadowColor={cardColors.gridMode.shadowColor} />
-          {:else if card.id === "prop-continuity"}
-            <PropContinuityCard {...card.props as any} color={cardColors.continuity.color} shadowColor={cardColors.continuity.shadowColor} />
-          {:else if card.id === "turn-intensity"}
-            <TurnIntensityCard {...card.props as any} color={cardColors.turnIntensity.color} shadowColor={cardColors.turnIntensity.shadowColor} />
-          {:else if card.id === "customize"}
-            <CustomizeCard {...card.props as any} color={cardColors.customize.color} shadowColor={cardColors.customize.shadowColor} />
-          {:else if card.id === "loop"}
-            <ConsolidatedLOOPCard {...card.props as any} />
-          {:else if card.id === "slice-size"}
-            <SliceSizeCard {...card.props as any} color={cardColors.sliceSize.color} shadowColor={cardColors.sliceSize.shadowColor} />
-          {:else if card.id === "generate-button"}
-            <GenerateButtonCard {...card.props as any} />
-          {/if}
-        </div>
-      {/each}
+  {#each cards as card (card.id)}
+    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+    <div
+      class="card-wrapper"
+      class:help-clickable={helpMode && hasHelp(card.id)}
+      style:grid-column="span {card.gridColumnSpan}"
+      animate:flip={{ duration: 300, easing: quintOut }}
+      onclick={(e) => handleCardClick(card.id, e)}
+      role={helpMode && hasHelp(card.id) ? "button" : undefined}
+    >
+      {#if card.id === "level"}
+        <LevelCard {...card.props as any} color={cardColors.level.color} shadowColor={cardColors.level.shadowColor} />
+      {:else if card.id === "length"}
+        <LengthCard {...card.props as any} color={cardColors.length.color} shadowColor={cardColors.length.shadowColor} />
+      {:else if card.id === "generation-mode"}
+        <GenerationModeCard {...card.props as any} color={cardColors.mode.color} shadowColor={cardColors.mode.shadowColor} />
+      {:else if card.id === "grid-mode"}
+        <GridModeCard {...card.props as any} color={cardColors.gridMode.color} shadowColor={cardColors.gridMode.shadowColor} />
+      {:else if card.id === "prop-continuity"}
+        <PropContinuityCard {...card.props as any} color={cardColors.continuity.color} shadowColor={cardColors.continuity.shadowColor} />
+      {:else if card.id === "turn-intensity"}
+        <TurnIntensityCard {...card.props as any} color={cardColors.turnIntensity.color} shadowColor={cardColors.turnIntensity.shadowColor} />
+      {:else if card.id === "customize"}
+        <CustomizeCard {...card.props as any} color={cardColors.customize.color} shadowColor={cardColors.customize.shadowColor} />
+      {:else if card.id === "loop"}
+        <ConsolidatedLOOPCard {...card.props as any} />
+      {:else if card.id === "slice-size"}
+        <SliceSizeCard {...card.props as any} color={cardColors.sliceSize.color} shadowColor={cardColors.sliceSize.shadowColor} />
+      {:else if card.id === "generate-button"}
+        <GenerateButtonCard {...card.props as any} />
+      {/if}
     </div>
-  </div>
+  {/each}
 </div>
 
 <style>
   /* ============================================================ */
-  /* MODE SWITCHING: compact chips vs card grid via container query */
-  /* ============================================================ */
-
-  .settings-mode-wrapper {
-    display: contents;
-  }
-
-  /* Default: card mode visible, compact hidden */
-  .compact-mode {
-    display: none;
-  }
-
-  .card-mode {
-    display: contents;
-  }
-
-  /* When tool panel is short, show compact chip mode instead of card grid.
-     Uses max-height: 340px as threshold — at 5fr:4fr on iPhone SE the panel
-     is ~262px which triggers this; the parent grid also switches to 1fr auto
-     via @media (max-height: 850px) so the panel shrinks to content height. */
-  @container tool-panel (max-height: 340px) {
-    .compact-mode {
-      display: flex;
-      flex-direction: column;
-      width: 100%;
-      height: 100%;
-      min-height: 0;
-    }
-
-    .card-mode {
-      display: none;
-    }
-  }
-
-  /* ============================================================ */
-  /* CARD GRID (existing styles) */
+  /* CARD GRID */
   /* ============================================================ */
 
   .card-settings-container {
@@ -429,7 +366,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
   .card-wrapper {
     display: flex;
     flex-direction: column;
-    min-height: 48px; /* WCAG AAA: 48px minimum touch target */
+    min-height: var(--min-touch-target); /* WCAG AAA minimum touch target */
     min-width: 0;
     overflow: visible; /* Allow cards to pop over neighbors */
     transition: grid-column var(--duration-dramatic) ease;

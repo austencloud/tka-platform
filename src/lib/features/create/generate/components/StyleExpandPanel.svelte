@@ -142,7 +142,11 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
     font-weight: 700;
     font-size: var(--font-size-min, 14px);
     padding: 4px 8px;
-    transition: all 100ms ease;
+    transition:
+      background var(--duration-fast, 150ms) ease,
+      border-color var(--duration-fast, 150ms) ease,
+      color var(--duration-fast, 150ms) ease,
+      transform var(--duration-fast, 150ms) ease;
   }
 
   .option-btn:active {

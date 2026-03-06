@@ -61,6 +61,7 @@
   import StepEditorCoordinator from "./coordinators/StepEditorCoordinator.svelte";
   import VideoRecordCoordinator from "./coordinators/VideoRecordCoordinator.svelte";
   import SequenceDrawerHost from "./coordinators/SequenceDrawerHost.svelte";
+  import OrientationPickerDrawer from "$lib/features/create/construct/start-position-picker/components/OrientationPickerDrawer.svelte";
   import SaveToLibraryPanel from "./SaveToLibraryPanel.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { SessionManager } from "../services/SessionManager.svelte";
@@ -610,6 +611,9 @@
 
   <!-- Sequence Drawer Host (provides animation state + context) -->
   <SequenceDrawerHost />
+
+  <!-- Orientation Picker Drawer (for start position picker) -->
+  <OrientationPickerDrawer />
 
   <!-- Sequence Actions Coordinator -->
   <SequenceActionsCoordinator />

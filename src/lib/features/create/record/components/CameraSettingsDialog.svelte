@@ -181,8 +181,8 @@ Settings dialog for camera configuration including mirror toggle and camera sour
   }
 
   .close-button {
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     background: transparent;
     border: 1px solid var(--border-color, rgba(255, 255, 255, 0.2));
     border-radius: 50%;

@@ -91,7 +91,7 @@
     justify-content: center;
     gap: 4px;
     padding: 6px 4px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     border-radius: 10px;
     cursor: pointer;
     transition: all var(--duration-fast, 100ms) ease;
