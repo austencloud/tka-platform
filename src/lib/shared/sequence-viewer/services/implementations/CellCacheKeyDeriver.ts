@@ -12,7 +12,9 @@
  * Version history:
  * - lsp-: Original format. Contaminated by ImageComposer write-through
  *   that stored blobs WITH step numbers under "nonum" keys.
- * - lsp2-: Fixed format. All lsp- entries are stale and will be ignored.
+ * - lsp2-: Attempted fix. Still contaminated because Canvas2DDirectRenderer
+ *   unconditionally baked step numbers from StepData into rendered blobs.
+ * - lsp3-: Fixed. Canvas2DDirectRenderer no longer draws step numbers.
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
@@ -67,7 +69,7 @@ export class CellCacheKeyDeriver implements ICellCacheKeyDeriver {
     for (let i = 0; i < str.length; i++) {
       hash = ((hash << 5) + hash + str.charCodeAt(i)) | 0;
     }
-    return `lsp2-${Math.abs(hash).toString(36)}`;
+    return `lsp3-${Math.abs(hash).toString(36)}`;
   }
 }
 
