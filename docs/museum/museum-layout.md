@@ -3,6 +3,8 @@
 > This document describes the physical layout of the museum, room by room.
 > Main path items are required. Easter eggs are optional discoveries.
 
+> **REVISION NEEDED** — The numbered wing system (Wing 1-8) is retired. The narrative structure now uses 5 phases (see `story-bible.md` § "The Museum Experience"). Wing 8 (Austen Wing) no longer exists — Austen is one of many Scribes, not a featured Vessel with his own wing. The three-door endings are superseded by sequential rooms. This file is kept for spatial reference only.
+
 ---
 
 ## Overview Map
@@ -465,4 +467,4 @@ See `vtg-wing.md` for full details.
 
 ---
 
-*Last updated: 2026-02-26*
+*Last updated: 2026-03-04*

@@ -197,7 +197,7 @@ export async function startSession(title, options = {}) {
 /**
  * End a session with optional transcript attachment.
  */
-export async function endSession(sessionId, transcriptPath = null) {
+export async function endSession(sessionId, transcriptPath = null, { strict = false } = {}) {
   const fullId = await resolveAndValidateId(sessionId);
   if (!fullId) return false;
 
@@ -213,6 +213,39 @@ export async function endSession(sessionId, transcriptPath = null) {
     if (doc.data().type !== "session") {
       console.log(`\n  ❌ Item ${fullId} is not a session\n`);
       return false;
+    }
+
+    // Strict mode: block closure if unresolved proposals or unanswered questions remain
+    if (strict) {
+      const { items: treeItems } = await linking.getSessionTree(db, fullId);
+      const unresolved = [];
+
+      for (const item of treeItems) {
+        if (item.type === "proposal" && !item.verdict) {
+          unresolved.push(`  ⚠️  PROPOSAL without verdict: ${item.id.substring(0, 8)}  ${(item.title || "(untitled)").substring(0, 50)}`);
+        }
+        if (item.type === "question") {
+          const qDoc = await db.collection(COLLECTIONS.ITEMS).doc(item.id).get();
+          const qData = qDoc.exists ? qDoc.data() : {};
+          const tags = qData.tags || [];
+          if (!qData.answer && !tags.includes("carries-to-next-session")) {
+            unresolved.push(`  ⚠️  QUESTION unanswered:      ${item.id.substring(0, 8)}  ${(item.title || "(untitled)").substring(0, 50)}`);
+          }
+        }
+      }
+
+      if (unresolved.length > 0) {
+        console.log(`
+  ❌ STRICT MODE: Cannot close session — ${unresolved.length} unresolved item(s):
+`);
+        for (const line of unresolved) {
+          console.log(line);
+        }
+        console.log(`
+  Resolve these items first, then retry.
+`);
+        return false;
+      }
     }
 
     const updateData = {

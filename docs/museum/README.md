@@ -1,177 +1,90 @@
 # TKA Museum Documentation
 
-> **Project:** The Museum of Kinetic History
+> **Project:** The Kinetic Archive
+> **Engine:** Unreal Engine 5 (Steam release) + Web App integration (deep link handoff to TKA Scribe)
 > **Status:** Pre-production (Story Bible phase)
-> **Last Updated:** 2026-01-27
+> **Tone:** Museum of Jurassic Technology meets Stanley Parable
 
 ---
 
-## What Is This?
+## Source of Truth
 
-A Unity-based museum experience presenting the fabricated 40,000-year history of the Kinetic Alphabet. Part art project, part recruitment tool, part absurdist comedy.
+**`story-bible.md` is the canonical document.** Everything else is supplementary. If anything conflicts with the story bible, the story bible wins.
 
-**Tone:** Museum of Jurassic Technology meets Stanley Parable
-**Platform:** Unity (Steam release planned)
-**Integration:** Links to TKA Scribe web app
+The museum-dev tracker (`node scripts/museum-dev.js`) records how decisions were made. The story bible records where the lore stands now.
 
 ---
 
 ## Document Index
 
-### Core Documents
-
-| Document | Description |
-|----------|-------------|
-| [story-bible.md](./story-bible.md) | Master overview, creative principles, tone guide |
-| [timeline.md](./timeline.md) | Complete history from 35,000 BCE to projected futures |
-| [museum-layout.md](./museum-layout.md) | Room-by-room walkthrough with contents and flow |
-
-### The Orders
-
-| Document | Description |
-|----------|-------------|
-| [orders/closed-palm.md](./orders/closed-palm.md) | The antagonist custodial organization |
-| [orders/scribes.md](./orders/scribes.md) | The protagonist order (museum builders) |
-
-### Characters & Artifacts
-
-| Document | Description |
-|----------|-------------|
-| [vessels.md](./vessels.md) | Each incarnation of the Vessel through history |
-| [vtg-wing.md](./vtg-wing.md) | Handling of Vulcan Tech Gospel acknowledgment |
-
-### Experience Design
-
-| Document | Description |
-|----------|-------------|
-| [endings.md](./endings.md) | The three paths and Futures Chamber |
-| [gift-shop.md](./gift-shop.md) | Fake items, digital unlocks, real merch |
-| [tka-os/design.md](./tka-os/design.md) | The Windows 93 retro app experience |
-
-### Sample Content
-
-| Document | Description |
-|----------|-------------|
-| [plaques/lascaux-tablets.md](./plaques/lascaux-tablets.md) | Sample plaque text and audio script |
-
----
-
-## Development Phases
-
-### Phase 0: Pre-Production (CURRENT)
-- [x] Story bible complete
-- [x] Timeline documented
-- [x] Museum layout mapped
-- [x] Orders defined
-- [x] Vessels described
-- [x] Endings designed
-- [x] TKA-OS designed
-- [ ] Visual reference collection
-- [ ] Audio design document
-- [ ] All plaque text written
-
-### Phase 1: Vertical Slice
-- [ ] One room (Ancient Origins) in Unity
-- [ ] One artifact (Lascaux Tablets) with full interaction
-- [ ] One plaque with audio
-- [ ] Walk in, experience, walk out
-- **Validates:** Can we build a 3D museum in Unity?
-
-### Phase 2: CRT Portal
-- [ ] Wing 5 with CRT monitor
-- [ ] Click → zoom → TKA-OS loads
-- [ ] TKA-OS as static mockup (not functional yet)
-- [ ] Exit back to museum
-- **Validates:** Can we do the portal transition?
-
-### Phase 3: TKA-OS MVP
-- [ ] Functional sequence generator in retro UI
-- [ ] Basic desktop with icons
-- [ ] Boot sequence
-- [ ] At least one easter egg (BSOD or virus)
-- **Validates:** Can we skin the real app in retro UI?
-
-### Phase 4: Museum Expansion
-- [ ] Wing 2: Classical Era
-- [ ] Wing 3: Renaissance
-- [ ] Wing 4: Mechanization
-- [ ] Wing 5: Digital Revolution (full)
-- [ ] Wing 6: The Suppression
-- [ ] Wing 7: Vessel Hall
-- [ ] Wing 8: Modern Vessel (Austen Wing)
-
-### Phase 5: Endings & Gift Shop
-- [ ] Futures Chamber with three doors
-- [ ] Path of Joining (Utopia)
-- [ ] Path of Indifference (Gray)
-- [ ] Path of Silence (Filed Away)
-- [ ] Gift shop with fake economy
-- [ ] Certificate system
-- [ ] TKA Scribe integration (badge, styles)
-
-### Phase 6: Easter Eggs & Polish
-- [ ] Construction Zone
-- [ ] Janitor's Closet
-- [ ] VTG Wing (roped off)
-- [ ] All audio narration
-- [ ] Ambient soundscapes
-- [ ] Hidden spirals throughout
-- [ ] Achievement system
-
-### Phase 7: Release
-- [ ] Steam page
-- [ ] Marketing materials
-- [ ] Web app integration tested
-- [ ] Localization (stretch goal)
+| Document | Status | Description |
+|----------|--------|-------------|
+| [story-bible.md](./story-bible.md) | **Canon** | Master document. Creative principles, K's arc, factions, endings, deep lore, all locked decisions. |
+| [museum-layout.md](./museum-layout.md) | Needs revision | Physical wing layout. Still uses retired Wing 1-8 numbering. Spatial reference only. |
+| [vtg-wing.md](./vtg-wing.md) | Partially superseded | Vulcan Cave elemental design. Some content folded into story bible. |
+| [story-audit-march-2026.md](./story-audit-march-2026.md) | Active | Story quality audit with predicted Steam rating and comp titles. |
+| [stanley-parable-reference.md](./stanley-parable-reference.md) | Active | Stanley Parable design lessons and source URLs. |
+| [gift-shop.md](./gift-shop.md) | Active | Fake items, digital unlocks, real merch concepts. |
+| [real-story.md](./real-story.md) | Active | Austen's actual development story (outside the fiction). |
+| [tka-os/design.md](./tka-os/design.md) | Active | The retro Windows 93 app experience design. |
+| [plaques/lascaux-tablets.md](./plaques/lascaux-tablets.md) | Active | Sample plaque text and audio script. |
 
 ---
 
 ## Key Decisions (Locked)
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| Tone | Museum of Jurassic Technology | Commit to the bit, never wink |
-| Endings | Three doors, only YES progresses | Illusion of choice is the joke |
-| VTG handling | Perpetually under construction | Affectionate joke at our expense |
-| Badge | Everyone is a Scribe | Game explains lore, doesn't gatekeep |
-| Tech | Unity + web app via link/WebView | Don't rebuild what exists |
-| Austen's immunity | Head trauma during Protocol Lethe | Self-deprecating but absurd |
+From the story bible's Canonical Decisions table:
+
+| Decision | Detail |
+|----------|--------|
+| Engine | Unreal Engine 5 |
+| Tone | Museum of Jurassic Technology meets Stanley Parable. Commit to the bit, never wink. |
+| K | One character: narrator + annotator + defector + developer + renovator. Never seen, traces only. Male, born ~1968. |
+| Endings | Three sequential rooms (Fear / Isolation / Collaboration), not branching choices. Scrooge effect. |
+| Austen | Meta-only. Not a character. No exhibit, no named mention. Developer and voice actor. |
+| Factions | Order of the Closed Palm (Bureau of Kinetic Containment) vs. The Scribes. |
+| Vessels | Concept retired. Historical figures are Scribes, not reincarnating souls. |
+| Lethe | Ancient, repeated across history, always incomplete. Not a single 1994 event. |
+| Building | "The Kinetic Archive" on entrance. Three architectural eras: Order-built (pre-2003), Crumble (2003-2008), K's museum (post-2008). |
+| VTG handling | Terms as Easter eggs. System name "Vulcan Tech Gospel" never appears in fiction. |
+| Andy Kaufman Rule | The audience's confusion about what's real IS the art. |
 
 ---
 
 ## Open Questions
 
-| Question | Status | Notes |
-|----------|--------|-------|
-| Spiral symbol exact design | TBD | Needs visual design pass |
-| Closed Palm symbol exact design | TBD | Needs visual design pass |
-| Audio: Austen voices all plaques? | Likely | Plus fake academics |
-| 3D models: Source? | TBD | AI generation + custom |
-| Austen's Roman statue: Real 3D scan? | TBD | Would be funnier if obviously him |
-| Vessel portraits: Real flow artists? | Future | Community integration opportunity |
+See story bible for the full list. Major unresolved:
+
+- K's current status (alive when player enters? Born ~1968, would be ~58 in 2026)
+- Infrastructure during the gap (who kept the lights on?)
+- The Space Age (missing aesthetic chapter: 1950s-1980s)
+- Flow state as disease (Order's specific pathological model)
+- Re-emergence theories (each deserves its own exhibit)
+- Interactive exhibits (biggest addressable risk per story audit)
 
 ---
 
-## Reference Links
+## Tracker Commands
 
-- [Windows 93](https://www.windows93.net/) - TKA-OS inspiration
-- [Museum of Jurassic Technology](https://www.mjt.org/) - Tone inspiration
-- [PostHog Product OS](https://posthog.com/) - Skeuomorphic web design
-- [98.css](https://jdan.github.io/98.css/) - Retro CSS framework reference
-- [The Stanley Parable](https://store.steampowered.com/app/221910/The_Stanley_Parable/) - Narrative/choice inspiration
+```bash
+node scripts/museum-dev.js list                    # All items
+node scripts/museum-dev.js list --tag lore         # Lore items only
+node scripts/museum-dev.js <id>                    # Item details
+node scripts/museum-dev.js session "Title"         # Start brainstorm
+node scripts/museum-dev.js help                    # Full command list
+```
 
----
-
-## Contributing
-
-This is Austen's passion project. If you're reading this and want to help:
-
-1. Read the story bible first
-2. Understand the tone (sincere absurdity)
-3. Don't break the fourth wall
-4. Everything should feel like a real museum
-5. The joke is never explained
+Staleness check: `node scripts/check-lore-staleness.cjs`
 
 ---
 
-*This documentation is the source of truth for the museum project. Update as decisions are made.*
+## Skills
+
+| Skill | Purpose |
+|-------|---------|
+| `/museum` | Full department briefing (dispatches 7 parallel agents) or focused department view |
+| `/museumlore` | Writers' room lore discussion. Mandatory session-close protocol. |
+
+---
+
+*Last updated: 2026-03-04*
