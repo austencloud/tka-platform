@@ -370,7 +370,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: 0 16px;
     background: rgba(239, 68, 68, 0.1);
     border: 1px solid rgba(239, 68, 68, 0.3);

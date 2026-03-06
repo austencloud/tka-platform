@@ -121,7 +121,7 @@ Shows available lengths with contextual counts.
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: 10px 12px;
     background: transparent;
     border: none;

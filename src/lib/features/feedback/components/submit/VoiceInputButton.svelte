@@ -91,8 +91,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     background: color-mix(
       in srgb,
       var(--theme-accent-strong, var(--theme-accent)) 15%,

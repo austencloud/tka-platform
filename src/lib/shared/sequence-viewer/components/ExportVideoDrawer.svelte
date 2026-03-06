@@ -30,7 +30,6 @@
     canvasReady?: boolean;
     layout?: PanelLayout;
     onExport: () => void;
-    onClose: () => void;
   }
 
   let {
@@ -40,7 +39,6 @@
     canvasReady = true,
     layout = "bottom",
     onExport,
-    onClose,
   }: Props = $props();
 
   const exportDisabled = $derived(isExporting || !canvasReady);
@@ -98,18 +96,6 @@
   role="region"
   aria-label="Video export settings"
 >
-  <div class="panel-header">
-    <span class="panel-title">Export Video</span>
-    <button
-      type="button"
-      class="close-btn"
-      onclick={onClose}
-      aria-label="Close export settings"
-    >
-      <i class="fas fa-times" aria-hidden="true"></i>
-    </button>
-  </div>
-
   <div class="panel-body">
     <!-- FPS -->
     <div class="setting-row">
@@ -260,43 +246,6 @@
   }
 
   /* ============================================================
-   * Header
-   * ============================================================ */
-
-  .panel-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px 8px;
-    flex-shrink: 0;
-  }
-
-  .panel-title {
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    color: var(--theme-text, white);
-  }
-
-  .close-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border: none;
-    border-radius: 8px;
-    background: transparent;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    cursor: pointer;
-    transition: background 0.15s ease;
-  }
-
-  .close-btn:hover {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
-    color: var(--theme-text, white);
-  }
-
-  /* ============================================================
    * Body — settings rows
    * ============================================================ */
 
@@ -304,13 +253,13 @@
     display: flex;
     flex-direction: column;
     gap: 14px;
-    padding: 4px 16px 12px;
+    padding: 12px 16px;
     overflow-y: auto;
   }
 
   .sidebar .panel-body {
     gap: 18px;
-    padding: 8px 20px 16px;
+    padding: 16px 20px;
   }
 
   .setting-row {
@@ -504,7 +453,6 @@
   @media (prefers-reduced-motion: reduce) {
     .chip,
     .stepper-btn,
-    .close-btn,
     .export-btn {
       transition: none !important;
     }

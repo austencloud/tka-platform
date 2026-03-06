@@ -80,7 +80,7 @@
     border-radius: 100px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     z-index: 100;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
   }
 
   .progress-pill.complete {

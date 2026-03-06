@@ -73,7 +73,7 @@
     justify-content: space-between;
     width: 100%;
     padding: 14px 16px;
-    min-height: 48px; /* Accessibility: touch target */
+    min-height: var(--min-touch-target); /* Accessibility: touch target */
     border: none;
     background: transparent;
     color: var(--theme-text, #ffffff);

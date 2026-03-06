@@ -94,7 +94,7 @@
     justify-content: center;
     gap: 8px;
     padding: 10px 20px;
-    min-height: 48px; /* WCAG 2.1 AA touch target */
+    min-height: var(--min-touch-target); /* WCAG 2.1 AA touch target */
     background: transparent;
     border: none;
     border-radius: 8px;

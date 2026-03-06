@@ -271,7 +271,7 @@
   .module-error .reload-button {
     margin-top: 16px;
     padding: 12px 24px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     min-width: 120px;
     background: var(--theme-accent, #6366f1);
     color: white;

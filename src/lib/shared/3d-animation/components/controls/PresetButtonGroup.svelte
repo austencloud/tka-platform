@@ -39,7 +39,7 @@
 
   .preset-btn {
     flex: 1 1 auto;
-    min-height: 48px; /* WCAG AAA touch target */
+    min-height: var(--min-touch-target); /* WCAG AA touch target */
     min-width: 0;
     padding: 0.35rem 0.5rem;
     background: var(--theme-card-bg);

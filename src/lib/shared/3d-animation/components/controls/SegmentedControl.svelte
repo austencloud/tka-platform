@@ -104,7 +104,7 @@
 
   .segment {
     flex: 1;
-    min-height: 48px; /* WCAG AAA touch target */
+    min-height: var(--min-touch-target); /* WCAG AA touch target */
     min-width: 0;
     padding: 0.5rem 0.5rem;
     background: none;
@@ -124,7 +124,7 @@
   }
 
   .sm .segment {
-    /* Touch target remains 48px for WCAG AAA */
+    /* Touch target uses var(--min-touch-target) for WCAG AA */
     padding: 0.4rem 0.35rem;
     font-size: var(--font-size-compact, 0.75rem);
   }

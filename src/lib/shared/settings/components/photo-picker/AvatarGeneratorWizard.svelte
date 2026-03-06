@@ -360,11 +360,11 @@
   }
 
   .progress-dot {
-    /* AAA touch target */
-    width: 48px;
-    height: 48px;
-    min-width: 48px;
-    min-height: 48px;
+    /* WCAG AA touch target */
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
+    min-width: var(--min-touch-target);
+    min-height: var(--min-touch-target);
     /* Visual styling via pseudo-element */
     position: relative;
     background: transparent;
@@ -548,8 +548,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 48px;
-    min-width: 48px;
+    min-height: var(--min-touch-target);
+    min-width: var(--min-touch-target);
     padding: var(--spacing-xs, 6px);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -711,7 +711,7 @@
     justify-content: center;
     gap: var(--spacing-sm, 8px);
     padding: var(--spacing-md, 14px) var(--spacing-lg, 20px);
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     max-width: 320px;
     width: 100%;
     margin-left: auto;

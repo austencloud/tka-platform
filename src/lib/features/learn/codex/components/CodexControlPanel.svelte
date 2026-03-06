@@ -244,8 +244,8 @@ rotating, mirroring, and color-swapping pictographs.
   }
 
   .control-button {
-    width: 48px; /* WCAG AAA touch target */
-    height: 48px;
+    width: var(--min-touch-target); /* WCAG AAA touch target */
+    height: var(--min-touch-target);
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 10px;

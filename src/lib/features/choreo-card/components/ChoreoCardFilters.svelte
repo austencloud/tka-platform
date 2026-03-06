@@ -217,8 +217,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 48px;
-    min-height: 48px;
+    min-width: var(--min-touch-target);
+    min-height: var(--min-touch-target);
     padding: var(--spacing-sm) var(--spacing-md);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -253,7 +253,7 @@
     justify-content: center;
     gap: var(--spacing-xs);
     width: 100%;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: var(--spacing-sm) var(--spacing-md);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -292,7 +292,7 @@
     justify-content: center;
     gap: var(--spacing-xs);
     width: 100%;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: var(--spacing-sm) var(--spacing-md);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -327,7 +327,7 @@
   /* Author Dropdown */
   .author-select {
     width: 100%;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: var(--spacing-sm) var(--spacing-md);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));

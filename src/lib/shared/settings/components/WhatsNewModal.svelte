@@ -565,7 +565,7 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: 12px 20px;
     border-radius: 12px;
     font-size: var(--font-size-sm);

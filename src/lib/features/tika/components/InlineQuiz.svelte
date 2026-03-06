@@ -639,7 +639,7 @@
     align-items: center;
     justify-content: center;
     gap: 12px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: 12px 16px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -738,7 +738,7 @@
     align-items: center;
     gap: 12px;
     width: 100%;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: 12px 16px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));

@@ -74,7 +74,7 @@
     width: 100%;
     text-align: left;
     transition: background 0.15s ease;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
   }
 
   .leaderboard-row:hover {

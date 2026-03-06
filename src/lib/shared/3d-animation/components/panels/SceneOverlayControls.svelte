@@ -209,8 +209,8 @@
   }
 
   .help-btn {
-    width: 48px; /* WCAG AAA touch target */
-    height: 48px;
+    width: var(--min-touch-target); /* WCAG AA touch target */
+    height: var(--min-touch-target);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -237,6 +237,6 @@
       gap: 0.25rem;
     }
 
-    /* Touch targets remain 48px on mobile for WCAG AAA */
+    /* Touch targets use var(--min-touch-target) on mobile for WCAG AA */
   }
 </style>

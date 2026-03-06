@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * IconButton - Touch-friendly icon button (48px minimum)
+   * IconButton - Touch-friendly icon button (var(--min-touch-target) minimum)
    * Uses --theme-* CSS variables for consistent theming.
    */
 
@@ -39,8 +39,8 @@
 
 <style>
   .icon-btn {
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     display: flex;
     align-items: center;
     justify-content: center;

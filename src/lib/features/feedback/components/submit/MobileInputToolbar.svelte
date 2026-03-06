@@ -343,7 +343,7 @@
     align-items: center;
     gap: 6px;
     padding: 10px 16px;
-    min-height: 48px; /* WCAG AAA touch target */
+    min-height: var(--min-touch-target); /* WCAG AAA touch target */
 
     background: var(--theme-accent, #4a9eff);
     border: none;

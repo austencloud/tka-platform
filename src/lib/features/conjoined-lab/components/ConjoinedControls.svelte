@@ -121,7 +121,7 @@
     align-items: center;
     gap: 4px;
     padding: 14px 8px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
@@ -186,7 +186,7 @@
     cursor: pointer;
     font-size: var(--font-size-min, 14px);
     color: var(--theme-text, #ffffff);
-    min-height: 48px;
+    min-height: var(--min-touch-target);
   }
 
   .toggle-row input[type="checkbox"] {

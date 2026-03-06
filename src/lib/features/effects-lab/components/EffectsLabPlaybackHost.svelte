@@ -829,7 +829,7 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-xs, 4px);
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: 10px 20px;
     border: 1.5px solid var(--accent-border, rgba(255, 255, 255, 0.3));
     border-radius: var(--border-radius-md, 8px);

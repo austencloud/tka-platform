@@ -139,7 +139,7 @@
     <div class="user-stats">
       <div class="stat">
         <i class="fas fa-list" aria-hidden="true"></i>
-        <span>{user.sequenceCount}</span>
+        <span>{Math.max(0, user.sequenceCount)}</span>
       </div>
       <div class="stat">
         <i class="fas fa-folder" aria-hidden="true"></i>

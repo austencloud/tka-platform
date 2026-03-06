@@ -249,7 +249,7 @@
 
 <style>
   .search-container {
-    --control-height: var(--min-touch-target, 48px);
+    --control-height: var(--min-touch-target);
     --transition-duration: var(--duration-normal, 200ms);
 
     position: relative;
@@ -351,15 +351,15 @@
     flex-shrink: 0;
   }
 
-  /* Expand tap target to 48px minimum for WCAG AAA */
+  /* Expand tap target to min-touch-target minimum for WCAG AA */
   .clear-button::after {
     content: "";
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    min-width: 48px;
-    min-height: 48px;
+    min-width: var(--min-touch-target);
+    min-height: var(--min-touch-target);
   }
 
   .clear-button:hover {
@@ -391,15 +391,15 @@
     flex-shrink: 0;
   }
 
-  /* Expand tap target to 48px minimum for WCAG AAA */
+  /* Expand tap target to min-touch-target minimum for WCAG AA */
   .greek-toggle::after {
     content: "";
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    min-width: 48px;
-    min-height: 48px;
+    min-width: var(--min-touch-target);
+    min-height: var(--min-touch-target);
   }
 
   .greek-toggle:hover {
@@ -453,15 +453,15 @@
     transition: all var(--duration-fast) ease;
   }
 
-  /* Expand tap target to 48px minimum for WCAG AAA */
+  /* Expand tap target to min-touch-target minimum for WCAG AA */
   .greek-letter::after {
     content: "";
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    min-width: 48px;
-    min-height: 48px;
+    min-width: var(--min-touch-target);
+    min-height: var(--min-touch-target);
   }
 
   .greek-letter:hover {

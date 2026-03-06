@@ -363,7 +363,7 @@
   }
 
   .action-btn {
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: 12px 16px;
     font-size: var(--font-size-min, 14px);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));

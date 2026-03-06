@@ -252,8 +252,8 @@
 		right: 12px;
 		width: 36px;
 		height: 36px;
-		min-width: 48px;
-		min-height: 48px;
+		min-width: var(--min-touch-target);
+		min-height: var(--min-touch-target);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -302,8 +302,8 @@
 	.quick-action {
 		width: 44px;
 		height: 44px;
-		min-width: 48px;
-		min-height: 48px;
+		min-width: var(--min-touch-target);
+		min-height: var(--min-touch-target);
 		display: flex;
 		align-items: center;
 		justify-content: center;

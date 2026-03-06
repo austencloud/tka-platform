@@ -104,8 +104,8 @@
   }
 
   .nav-btn {
-    width: 48px; /* WCAG AAA touch target */
-    height: 48px;
+    width: var(--min-touch-target); /* WCAG AA touch target */
+    height: var(--min-touch-target);
     border: none;
     background: rgba(255, 255, 255, 0.1);
     color: #fff;

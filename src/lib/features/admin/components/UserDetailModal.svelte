@@ -460,8 +460,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     background: transparent;
     border: none;
     border-radius: 8px;

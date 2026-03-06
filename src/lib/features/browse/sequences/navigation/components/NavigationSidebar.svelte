@@ -312,7 +312,7 @@ Follows Svelte 5 runes + microservices architecture.
     align-items: center;
     justify-content: space-between;
     padding: var(--spacing-sm) var(--spacing-lg);
-    min-height: 48px; /* WCAG AAA touch target */
+    min-height: var(--min-touch-target); /* WCAG AA touch target */
     background: none;
     border: none;
     color: rgba(255, 255, 255, 0.8);
@@ -374,8 +374,8 @@ Follows Svelte 5 runes + microservices architecture.
     font-size: var(--font-size-xs);
     cursor: pointer;
     transition: all var(--transition-fast);
-    min-height: 48px; /* WCAG AAA touch target */
-    min-width: 48px;
+    min-height: var(--min-touch-target); /* WCAG AA touch target */
+    min-width: var(--min-touch-target);
     aspect-ratio: 1;
   }
 

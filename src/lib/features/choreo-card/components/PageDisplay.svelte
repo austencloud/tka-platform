@@ -222,7 +222,7 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-xs);
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: var(--spacing-sm) var(--spacing-xl);
     background: var(--theme-accent, #f43f5e);
     border: none;

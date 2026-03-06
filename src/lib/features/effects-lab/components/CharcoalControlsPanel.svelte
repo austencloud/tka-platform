@@ -109,7 +109,7 @@
   }
 
   .reset-btn {
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: 8px 16px;
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
     border-radius: var(--border-radius-md, 8px);
@@ -153,7 +153,7 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-sm, 8px);
-    min-height: 48px;
+    min-height: var(--min-touch-target);
   }
 
   .slider-row label {
@@ -187,7 +187,7 @@
   }
 
   .toggle-btn {
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: 8px 16px;
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
     border-radius: 9999px;
@@ -197,7 +197,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 150ms ease;
-    min-width: 48px;
+    min-width: var(--min-touch-target);
   }
 
   .toggle-btn.active {

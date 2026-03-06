@@ -596,8 +596,8 @@
   .close-btn {
     width: 40px;
     height: 40px;
-    min-width: 48px;
-    min-height: 48px;
+    min-width: var(--min-touch-target);
+    min-height: var(--min-touch-target);
     border-radius: 50%;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -616,8 +616,8 @@
   .back-btn {
     width: 40px;
     height: 40px;
-    min-width: 48px;
-    min-height: 48px;
+    min-width: var(--min-touch-target);
+    min-height: var(--min-touch-target);
     border-radius: 50%;
     background: transparent;
     border: none;
@@ -640,7 +640,7 @@
     justify-content: center;
     gap: var(--spacing-sm, 8px);
     padding: var(--spacing-sm, 10px);
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--radius-md, 10px);

@@ -44,8 +44,8 @@
   }
 
   .toggle-btn {
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     border-radius: 12px;
     border: 1px solid var(--theme-stroke);
     background: var(--theme-panel-elevated-bg);

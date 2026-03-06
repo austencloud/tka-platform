@@ -98,7 +98,7 @@
     justify-content: center;
     gap: 6px;
     padding: 10px 16px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     background: transparent;
     border: none;
     border-radius: 8px;

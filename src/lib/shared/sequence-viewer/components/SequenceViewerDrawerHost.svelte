@@ -26,9 +26,8 @@
   // Components
   import ViewerSplitPane from "./ViewerSplitPane.svelte";
   import ViewerFooter from "./ViewerFooter.svelte";
-  import ExportModeContent from "./ExportModeContent.svelte";
   import ExportVideoDrawer from "./ExportVideoDrawer.svelte";
-  import ExportFooter from "./ExportFooter.svelte";
+  import ExportImagePanel from "./ExportImagePanel.svelte";
   import RampProgressIndicator from "./RampProgressIndicator.svelte";
   import ViewerSettingsModal from "./ViewerSettingsModal.svelte";
   import type { ActiveEffect } from "./ExportVideoDrawer.svelte";
@@ -171,23 +170,54 @@
       onBack={handleDismiss}
     >
       {#snippet children(ctx)}
+        {@const isVideoExportActive = ctx.isExportMode && ctx.exportType === "animation"}
+        {@const isImageExportActive = ctx.isExportMode && ctx.exportType === "image"}
+        {@const isAnyExportActive = isVideoExportActive || isImageExportActive}
         <div class="drawer-viewer-container" class:landscape={isLandscape}>
-          <!-- Header (compact in landscape) -->
+          <!-- Header — adapts between normal viewer and export mode -->
           <header class="drawer-header">
-              <button
-                type="button"
-                class="drawer-back-button"
-                onclick={handleDismiss}
-                aria-label="Back to {overlay.returnLabel}"
-              >
-                <i class="fas fa-chevron-down" aria-hidden="true"></i>
-                <span class="drawer-back-label">{overlay.returnLabel}</span>
-              </button>
+              {#if isAnyExportActive}
+                <!-- Export mode: back arrow returns to viewer -->
+                <button
+                  type="button"
+                  class="drawer-back-button"
+                  onclick={ctx.exitExportMode}
+                  aria-label="Back to viewer"
+                >
+                  <i class="fas fa-arrow-left" aria-hidden="true"></i>
+                  <span class="drawer-back-label">Back</span>
+                </button>
 
-              <div class="drawer-header-title">Sequence Viewer</div>
+                <div class="drawer-header-title">
+                  {isVideoExportActive ? "Export Video" : "Export Image"}
+                </div>
 
-              <div class="drawer-header-actions">
-                {#if !ctx.isExportMode}
+                <div class="drawer-header-actions">
+                  <button
+                    type="button"
+                    class="header-action-btn"
+                    onclick={ctx.exitExportMode}
+                    aria-label="Close export"
+                    title="Close"
+                  >
+                    <i class="fas fa-times" aria-hidden="true"></i>
+                  </button>
+                </div>
+              {:else}
+                <!-- Normal viewer: dismiss + export/settings actions -->
+                <button
+                  type="button"
+                  class="drawer-back-button"
+                  onclick={handleDismiss}
+                  aria-label="Back to {overlay.returnLabel}"
+                >
+                  <i class="fas fa-chevron-down" aria-hidden="true"></i>
+                  <span class="drawer-back-label">{overlay.returnLabel}</span>
+                </button>
+
+                <div class="drawer-header-title">Sequence Viewer</div>
+
+                <div class="drawer-header-actions">
                   <button
                     type="button"
                     class="header-action-btn"
@@ -215,30 +245,54 @@
                   >
                     <i class="fas fa-cog" aria-hidden="true"></i>
                   </button>
-                {/if}
-              </div>
+                </div>
+              {/if}
             </header>
 
           <!-- Main area: body + footer side-by-side in landscape, stacked in portrait -->
           <div class="drawer-main">
-            <!-- Content -->
+            <!-- Content: single ViewerSplitPane reused across all modes -->
             <div class="drawer-body-content">
               {#if ctx.hasSequence && ctx.effectiveSequence}
-                {#if ctx.isExportMode && ctx.exportType === "animation"}
-                  <!-- Video export: side-by-side on desktop, overlay on mobile -->
-                  <div class="export-video-layout" class:desktop={!isMobileWidth}>
-                    <ViewerSplitPane
-                      sequence={ctx.effectiveSequence}
-                      playback={ctx.splitPanePlayback}
-                      imageComposition={ctx.splitPaneImageComposition}
-                      propRendering={ctx.splitPanePropRendering}
-                      layout={{ isFullscreen: false, fullscreenStackVertical: false, isMobile: isMobileWidth, isLandscapeMobile: isLandscape, focusedPane: 'animation' }}
-                      onRenderProgress={ctx.onRenderProgress}
-                      onFocusPane={ctx.enterEditMode}
-                      onUnfocusPane={ctx.exitEditMode}
-                      onStepClick={ctx.handleStepClick}
-                      onCanvasReady={ctx.handleCanvasReady}
-                    />
+                <div
+                  class="viewer-and-export"
+                  class:export-active={isAnyExportActive}
+                  class:desktop={!isMobileWidth}
+                >
+                  <ViewerSplitPane
+                    sequence={ctx.effectiveSequence}
+                    playback={ctx.splitPanePlayback}
+                    imageComposition={isImageExportActive
+                      ? {
+                          showWord: ctx.exportOptions.imageShowWord,
+                          showDifficulty: ctx.exportOptions.imageShowDifficulty,
+                          showStartPos: ctx.exportOptions.imageIncludeStartPosition,
+                          showCreatorName: ctx.exportOptions.imageShowCreatorName,
+                          showNotes: ctx.exportOptions.imageShowNotes,
+                          darkMode: ctx.exportOptions.imageDarkMode,
+                          columnCount: ctx.splitPaneImageComposition.columnCount,
+                          userName: ctx.splitPaneImageComposition.userName,
+                        }
+                      : ctx.splitPaneImageComposition}
+                    propRendering={ctx.splitPanePropRendering}
+                    layout={{
+                      isFullscreen: ctx.isFullscreen,
+                      fullscreenStackVertical: ctx.fullscreenStackVertical,
+                      isMobile: isMobileWidth,
+                      isLandscapeMobile: isLandscape,
+                      focusedPane: isVideoExportActive
+                        ? 'animation'
+                        : isImageExportActive
+                          ? 'image'
+                          : ctx.editingPane
+                    }}
+                    onRenderProgress={ctx.onRenderProgress}
+                    onFocusPane={ctx.enterEditMode}
+                    onUnfocusPane={ctx.exitEditMode}
+                    onStepClick={ctx.handleStepClick}
+                    onCanvasReady={ctx.handleCanvasReady}
+                  />
+                  {#if isVideoExportActive}
                     <ExportVideoDrawer
                       exportOptions={ctx.exportOptions}
                       viewerEffects={getActiveEffects()}
@@ -246,63 +300,26 @@
                       canvasReady={ctx.canvasReady}
                       layout={isMobileWidth ? "bottom" : "sidebar"}
                       onExport={ctx.handleExport}
-                      onClose={ctx.exitExportMode}
                     />
-                  </div>
-                {:else if ctx.isExportMode}
-                  <!-- Image export or type selection -->
-                  <ExportModeContent
-                    sequence={ctx.effectiveSequence}
-                    exportType={ctx.exportType}
-                    exportOptions={ctx.exportOptions}
-                    animationState={ctx.modalAnimationState}
-                    animationLoading={ctx.animationLoading}
-                    currentStep={ctx.currentStepLocal}
-                    currentLetter={ctx.currentLetter}
-                    currentStepData={ctx.currentStepData}
-                    userName={ctx.userName}
-                    bluePropType={ctx.bluePropType}
-                    redPropType={ctx.redPropType}
-                    catDogModeEnabled={ctx.catDogModeEnabled}
-                    onSelectType={ctx.selectExportType}
-                    onCanvasReady={ctx.handleCanvasReady}
-                  />
-                {:else}
-                  <ViewerSplitPane
-                    sequence={ctx.effectiveSequence}
-                    playback={ctx.splitPanePlayback}
-                    imageComposition={ctx.splitPaneImageComposition}
-                    propRendering={ctx.splitPanePropRendering}
-                    layout={{ isFullscreen: ctx.isFullscreen, fullscreenStackVertical: ctx.fullscreenStackVertical, isMobile: isMobileWidth, isLandscapeMobile: isLandscape, focusedPane: ctx.editingPane }}
-                    onRenderProgress={ctx.onRenderProgress}
-                    onFocusPane={ctx.enterEditMode}
-                    onUnfocusPane={ctx.exitEditMode}
-                    onStepClick={ctx.handleStepClick}
-                    onCanvasReady={ctx.handleCanvasReady}
-                  />
-                {/if}
+                  {/if}
+                  {#if isImageExportActive}
+                    <ExportImagePanel
+                      exportOptions={ctx.exportOptions}
+                      isExporting={ctx.isExporting}
+                      onExport={ctx.handleExport}
+                    />
+                  {/if}
+                </div>
               {/if}
             </div>
 
-            <!-- Footer (becomes side column in landscape) -->
-            {#if ctx.isExportMode && ctx.exportType !== "animation" && ctx.exportType !== null}
-              <ExportFooter
-                exportType={ctx.exportType}
-                isExporting={ctx.isExporting}
-                exportProgress={ctx.exportProgress}
-                exportError={ctx.exportError}
-                isFullscreen={false}
-                onExport={ctx.handleExport}
-                onCancel={ctx.handleCancelExport}
-                onRetry={ctx.handleRetryExport}
-              />
-            {:else}
+            <!-- Footer: hidden during export modes, shown in normal viewer -->
+            {#if !isAnyExportActive}
               <ViewerFooter
                 bpm={ctx.bpmLocal}
                 isPlaying={ctx.isPlayingLocal}
                 isLoggedIn={ctx.isLoggedIn}
                 landscape={isLandscape}
-                playbackOnly={ctx.isExportMode && ctx.exportType === "animation"}
                 isSyncToggling={ctx.isSyncToggling}
                 isSyncActive={ctx.isSyncActive}
                 isSyncConnected={ctx.isSyncConnected}
@@ -511,8 +528,11 @@
     min-height: 32px;
   }
 
-  /* Video export layout: animation preview + settings panel */
-  .export-video-layout {
+  /* Viewer + export panel container.
+     Normal mode: just the split pane filling the space.
+     Export active: animation pane + export settings panel side-by-side (desktop)
+     or stacked (mobile). */
+  .viewer-and-export {
     position: relative;
     flex: 1;
     min-height: 0;
@@ -521,8 +541,8 @@
     overflow: hidden;
   }
 
-  /* Desktop: side-by-side (animation left, settings right) */
-  .export-video-layout.desktop {
+  /* Desktop export: side-by-side (animation left, settings right) */
+  .viewer-and-export.export-active.desktop {
     flex-direction: row;
   }
 

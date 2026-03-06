@@ -307,7 +307,7 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     min-width: 120px;
     padding: 0 20px;
     border-radius: 10px;

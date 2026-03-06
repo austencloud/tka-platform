@@ -416,7 +416,7 @@
     justify-content: center;
     gap: var(--spacing-xs, 6px);
     padding: var(--spacing-sm, 10px) var(--spacing-md, 16px);
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 24px;
@@ -493,8 +493,8 @@
   .shuffle-btn {
     width: 36px;
     height: 36px;
-    min-width: 48px;
-    min-height: 48px;
+    min-width: var(--min-touch-target);
+    min-height: var(--min-touch-target);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -570,7 +570,7 @@
     justify-content: center;
     gap: var(--spacing-sm, 8px);
     padding: var(--spacing-md, 14px) var(--spacing-lg, 20px);
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     max-width: 320px;
     width: 100%;
     margin-left: auto;

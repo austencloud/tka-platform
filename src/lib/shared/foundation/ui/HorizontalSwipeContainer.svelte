@@ -370,9 +370,9 @@
     border: none;
     padding: 0;
     margin: 0;
-    /* Secondary navigation - 48px for WCAG AAA compliance */
-    width: 48px;
-    height: 48px;
+    /* Secondary navigation - WCAG AA touch target compliance */
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     z-index: 1;
     border-radius: 50%;
     position: absolute;
@@ -431,11 +431,11 @@
     height: 40%;
   }
 
-  /* Mobile: same 48px for WCAG AAA compliance - swiping is primary, arrows are secondary */
+  /* Mobile: same size for WCAG AA compliance - swiping is primary, arrows are secondary */
   @media (max-width: 768px) {
     .embla__button {
-      width: 48px;
-      height: 48px;
+      width: var(--min-touch-target);
+      height: var(--min-touch-target);
     }
   }
 

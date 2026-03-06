@@ -616,8 +616,8 @@
     bottom: 70px;
     left: 50%;
     transform: translateX(-50%);
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     border-radius: 50%;
     border: none;
     background: rgba(0, 0, 0, 0.6);
@@ -814,10 +814,10 @@
       order: -1;
     }
 
-    /* Mobile: ensure 48px touch targets */
+    /* Mobile: ensure touch targets */
     .zoom-btn {
-      width: 48px;
-      height: 48px;
+      width: var(--min-touch-target);
+      height: var(--min-touch-target);
     }
   }
 

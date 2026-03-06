@@ -354,7 +354,7 @@
     align-items: center;
     justify-content: center;
     padding: 12px;
-    min-height: 48px; /* WCAG AAA touch target */
+    min-height: var(--min-touch-target); /* WCAG AA touch target */
     background: none;
     border: none;
     cursor: grab;

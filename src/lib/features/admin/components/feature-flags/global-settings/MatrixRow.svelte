@@ -130,10 +130,10 @@
   .matrix-row {
     display: grid;
     /* 6 columns: icon | USER | PREM | TEST | ADMIN | toggle */
-    grid-template-columns: 40px repeat(4, 1fr) 48px;
+    grid-template-columns: 40px repeat(4, 1fr) var(--min-touch-target);
     gap: 4px;
     align-items: center;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: 6px 8px;
     border-radius: 8px;
     position: relative;

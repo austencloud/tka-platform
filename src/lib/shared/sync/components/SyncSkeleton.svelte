@@ -357,14 +357,14 @@
   }
 
   .skeleton-btn-small {
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     border-radius: 10px;
   }
 
   .skeleton-btn-play {
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     border-radius: 10px;
     background: linear-gradient(
       90deg,

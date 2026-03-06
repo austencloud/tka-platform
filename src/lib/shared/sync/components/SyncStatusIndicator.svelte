@@ -210,8 +210,8 @@
 		align-items: center;
 		gap: 6px;
 		padding: 4px 8px;
-		min-height: 48px; /* WCAG AAA touch target */
-		min-width: 48px;
+		min-height: var(--min-touch-target); /* WCAG AA touch target */
+		min-width: var(--min-touch-target);
 		cursor: default;
 		user-select: none;
 	}

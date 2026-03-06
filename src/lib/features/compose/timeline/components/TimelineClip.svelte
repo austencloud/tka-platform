@@ -532,13 +532,13 @@
     z-index: 10;
   }
 
-  /* Invisible 48px touch target for accessibility */
+  /* Invisible touch target for accessibility */
   .trim-handle::before {
     content: "";
     position: absolute;
     top: 0;
     bottom: 0;
-    width: 48px;
+    width: var(--min-touch-target);
     left: 50%;
     transform: translateX(-50%);
   }
@@ -585,13 +585,13 @@
     z-index: 11;
   }
 
-  /* Invisible 48px touch target for accessibility */
+  /* Invisible touch target for accessibility */
   .resize-handle::before {
     content: "";
     position: absolute;
     top: 0;
     bottom: 0;
-    width: 48px;
+    width: var(--min-touch-target);
     left: 50%;
     transform: translateX(-50%);
   }

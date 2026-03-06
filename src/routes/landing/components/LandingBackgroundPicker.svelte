@@ -47,8 +47,8 @@
     bottom: 24px;
     right: 24px;
     z-index: 1000;
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     border-radius: 50%;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
     background: var(--theme-card-bg, rgba(0, 0, 0, 0.6));

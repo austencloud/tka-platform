@@ -278,8 +278,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 48px; /* WCAG AAA touch target */
-    height: 48px;
+    width: var(--min-touch-target); /* WCAG AA touch target */
+    height: var(--min-touch-target);
     background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(8px);
     border: 1px solid var(--theme-stroke);

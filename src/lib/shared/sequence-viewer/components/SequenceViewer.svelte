@@ -731,7 +731,7 @@
 		align-items: center;
 		justify-content: center;
 		padding: 12px 16px;
-		min-height: 48px; /* WCAG 2.1 AAA touch target */
+		min-height: var(--min-touch-target); /* WCAG 2.1 AA touch target */
 		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
 		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		border-radius: 24px;
@@ -852,10 +852,10 @@
 		position: absolute;
 		top: 12px;
 		right: 12px;
-		width: 48px;
-		height: 48px;
-		min-width: 48px;
-		min-height: 48px;
+		width: var(--min-touch-target);
+		height: var(--min-touch-target);
+		min-width: var(--min-touch-target);
+		min-height: var(--min-touch-target);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -899,7 +899,7 @@
 
 		.chip {
 			padding: 10px 14px;
-			min-height: 48px; /* Maintain WCAG touch target on mobile */
+			min-height: var(--min-touch-target); /* Maintain WCAG touch target on mobile */
 			white-space: nowrap;
 			flex-shrink: 0;
 		}

@@ -381,8 +381,8 @@ dialog.media-spotlight[data-swiping="true"] {
   position: absolute;
   top: calc(var(--spotlight-chrome-padding) + var(--spotlight-safe-area-top));
   right: calc(var(--spotlight-chrome-padding) + var(--spotlight-safe-area-right));
-  width: 48px;
-  height: 48px;
+  width: var(--min-touch-target);
+  height: var(--min-touch-target);
   border: none;
   border-radius: 50%;
   background: var(--spotlight-arrow-bg);

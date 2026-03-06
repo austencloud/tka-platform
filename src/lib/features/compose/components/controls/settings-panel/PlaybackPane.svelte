@@ -146,7 +146,7 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: 12px 16px;
     background: var(--theme-card-bg);
     border: 1.5px solid var(--theme-stroke);

@@ -288,7 +288,7 @@
 
   .search-input {
     width: 100%;
-    height: 48px;
+    height: var(--min-touch-target);
     padding: 0 44px 0 42px;
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid var(--theme-stroke);
@@ -320,8 +320,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 48px; /* WCAG AAA touch target */
-    height: 48px;
+    width: var(--min-touch-target); /* WCAG AA touch target */
+    height: var(--min-touch-target);
     padding: 0;
     background: rgba(255, 255, 255, 0.1);
     border: none;
@@ -339,7 +339,7 @@
   .reset-all-btn {
     flex-shrink: 0;
     padding: 12px 18px;
-    height: 48px;
+    height: var(--min-touch-target);
     background: color-mix(
       in srgb,
       var(--semantic-error, var(--semantic-error)) 12%,

@@ -106,8 +106,8 @@
   }
 
   .toggle-btn {
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -131,8 +131,8 @@
   }
 
   .settings-btn {
-    width: 48px; /* WCAG AAA touch target */
-    height: 48px;
+    width: var(--min-touch-target); /* WCAG AA touch target */
+    height: var(--min-touch-target);
     font-size: 0.85rem;
     border-radius: 8px;
   }

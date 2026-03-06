@@ -95,7 +95,7 @@ Popover uses fixed positioning to escape overflow:hidden containers.
     align-items: center;
     gap: 6px;
     padding: 10px 14px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 100px;

@@ -77,8 +77,8 @@
     position: fixed;
     right: 16px;
     bottom: calc(var(--bottom-offset, 0px) + 16px);
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     border-radius: 50%;
     background: var(--theme-card-bg, rgba(30, 30, 46, 0.95));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));

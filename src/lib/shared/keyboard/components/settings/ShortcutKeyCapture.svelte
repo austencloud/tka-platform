@@ -400,8 +400,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 48px; /* WCAG AAA touch target */
-    height: 48px;
+    width: var(--min-touch-target); /* WCAG AA touch target */
+    height: var(--min-touch-target);
     padding: 0;
     background: var(--theme-card-bg, var(--theme-card-bg));
     border: 1px solid var(--theme-stroke, var(--theme-stroke));

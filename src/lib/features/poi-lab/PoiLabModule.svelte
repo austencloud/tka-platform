@@ -144,7 +144,7 @@
 
   @media (pointer: coarse) {
     .tab {
-      min-height: 48px;
+      min-height: var(--min-touch-target);
     }
   }
 

@@ -154,8 +154,8 @@
 
 	/* Invisible spacer to balance the gear button - keeps transport centered */
 	.controls-spacer {
-		width: 48px;
-		height: 48px;
+		width: var(--min-touch-target);
+		height: var(--min-touch-target);
 		flex-shrink: 0;
 		visibility: hidden;
 	}
@@ -174,10 +174,10 @@
 	}
 
 	.play-btn {
-		width: 48px;
-		height: 48px;
-		min-width: 48px;
-		min-height: 48px;
+		width: var(--min-touch-target);
+		height: var(--min-touch-target);
+		min-width: var(--min-touch-target);
+		min-height: var(--min-touch-target);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -214,10 +214,10 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 48px;
-		height: 48px;
-		min-width: 48px;
-		min-height: 48px;
+		width: var(--min-touch-target);
+		height: var(--min-touch-target);
+		min-width: var(--min-touch-target);
+		min-height: var(--min-touch-target);
 		background: var(--theme-card-bg);
 		border: 1.5px solid var(--theme-stroke);
 		border-radius: 50%;
@@ -263,10 +263,10 @@
 		}
 
 		.play-btn {
-			width: 48px;
-			height: 48px;
-			min-width: 48px;
-			min-height: 48px;
+			width: var(--min-touch-target);
+			height: var(--min-touch-target);
+			min-width: var(--min-touch-target);
+			min-height: var(--min-touch-target);
 		}
 
 		.play-btn svg {

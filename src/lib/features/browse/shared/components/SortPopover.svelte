@@ -231,7 +231,7 @@
     align-items: center;
     gap: 6px;
     padding: 0 12px;
-    min-height: var(--min-touch-target, 48px);
+    min-height: var(--min-touch-target);
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
@@ -324,7 +324,7 @@
     gap: 10px;
     width: 100%;
     padding: 0 14px;
-    min-height: 48px; /* WCAG AAA touch target */
+    min-height: var(--min-touch-target); /* WCAG AA touch target */
     background: transparent;
     border: none;
     border-radius: 10px;

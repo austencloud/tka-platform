@@ -356,16 +356,6 @@
   const footerFontSize = $derived(Math.floor(scaledFooterHeight * 0.55));
   const footerMargin = $derived(Math.floor(scaledFooterHeight * 0.3));
 
-  // Beat number font size (10.526% of cell width, matching StepNumber.svelte)
-  const beatNumberFontSize = $derived.by(() => {
-    if (!cellWidth || !Number.isFinite(cellWidth)) return 12;
-    return Math.max(8, cellWidth * 0.10526);
-  });
-
-  const startFontSize = $derived.by(() => {
-    if (!cellWidth || !Number.isFinite(cellWidth)) return 10;
-    return Math.max(7, cellWidth * 0.0842);
-  });
 
   /**
    * Build render options from current component state
@@ -1272,7 +1262,6 @@
     overflow: hidden;
     box-sizing: border-box;
     /* Padding to accommodate highlight scale + glow on edge cells */
-    padding: 12px;
     position: relative;
   }
 
@@ -1465,6 +1454,8 @@
   /* Individual pictograph cell */
   .pictograph-cell {
     position: relative;
+    /* Container context for step-number-overlay cqw units */
+    container-type: inline-size;
     /* Use padding-bottom trick for aspect ratio to prevent overflow */
     aspect-ratio: 1;
     overflow: visible; /* Allow selection scale to show */
@@ -1511,7 +1502,7 @@
     left: 5.3%;
     font-family: Georgia, serif;
     font-weight: bold;
-    font-size: clamp(10px, 22cqw, 28px);
+    font-size: clamp(8px, 10.526cqw, 28px);
     line-height: 1;
     color: #231f20;
     pointer-events: none;

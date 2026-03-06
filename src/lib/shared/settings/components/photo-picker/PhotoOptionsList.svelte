@@ -182,8 +182,8 @@
   .error-dismiss {
     width: 32px;
     height: 32px;
-    min-width: 48px;
-    min-height: 48px;
+    min-width: var(--min-touch-target);
+    min-height: var(--min-touch-target);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -212,7 +212,7 @@
     align-items: center;
     gap: var(--spacing-sm, 12px);
     padding: var(--spacing-sm, 12px) var(--spacing-md, 16px);
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--radius-md, 12px);

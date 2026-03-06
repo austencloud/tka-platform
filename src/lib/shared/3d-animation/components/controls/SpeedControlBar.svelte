@@ -47,8 +47,8 @@
   }
 
   .speed-btn {
-    min-width: 48px;
-    min-height: 48px;
+    min-width: var(--min-touch-target);
+    min-height: var(--min-touch-target);
     padding: 0 0.75rem;
     background: transparent;
     border: none;
@@ -76,7 +76,7 @@
     }
 
     .speed-btn {
-      /* Touch target remains 48px for WCAG AAA */
+      /* Touch target uses var(--min-touch-target) for WCAG AA */
       padding: 0 0.5rem;
       font-size: var(--font-size-compact, 0.75rem);
     }

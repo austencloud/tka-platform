@@ -233,9 +233,9 @@ h6 {
   --glass-border-hover: 1px solid
     var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
 
-  /* Touch Target - WCAG 2.5.5 AAA compliant (48px minimum) */
-  --min-touch-target: 48px;
-  --alt-touch-target: 40px; /* For less critical elements */
+  /* Touch Target - WCAG 2.5.8 AA compliant (44px minimum) */
+  --min-touch-target: 44px;
+  --alt-touch-target: 36px; /* For less critical elements */
 
   /* Enhanced Shadow System */
   --shadow-glass:
@@ -587,11 +587,11 @@ h6 {
   /* Close Button Styles */
   --sheet-close-bg: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
   --sheet-close-bg-hover: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.16));
-  --sheet-close-size-default: 48px;
-  --sheet-close-size-small: 48px; /* iOS/Android minimum touch target */
+  --sheet-close-size-default: var(--min-touch-target);
+  --sheet-close-size-small: var(--min-touch-target); /* iOS/Android minimum touch target */
 
   /* Unified Drag Handle Styles */
-  --sheet-handle-width: 48px;
+  --sheet-handle-width: var(--min-touch-target);
   --sheet-handle-height: 5px;
   --sheet-handle-bg: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
   --sheet-handle-bg-hover: color-mix(
@@ -1132,12 +1132,11 @@ body.sakura-drift {
 
 /* ========================================
    TOUCH TARGET ACCESSIBILITY
-   Best Practice: 48px minimum (Material Design, iOS guidelines)
-   WCAG 2.1 Level AAA (2.5.5): 48px minimum (exceeded)
+   Best Practice: 44px minimum (WCAG 2.5.8 AA)
    ======================================== */
 
 /* Accessible touch target utility
-   Expands clickable/touchable area to 48px minimum
+   Expands clickable/touchable area to 44px minimum
    while preserving visual appearance */
 .accessible-touch-target {
   position: relative;
@@ -1149,11 +1148,11 @@ body.sakura-drift {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  min-width: 48px;
-  min-height: 48px;
+  min-width: 44px;
+  min-height: 44px;
   /* Ensure it covers at least the full element */
-  width: max(100%, 48px);
-  height: max(100%, 48px);
+  width: max(100%, 44px);
+  height: max(100%, 44px);
 }
 
 /* ========================================

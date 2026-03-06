@@ -7,7 +7,7 @@
   - Top bar: close button, counter, needs-editing indicator
   - Side arrows: large touch targets, semi-transparent
   - All elements fade in/out together
-  - WCAG AAA compliant touch targets (48px+ on mobile)
+  - WCAG AA compliant touch targets on mobile
 -->
 <script lang="ts">
   import type { MediaItem } from "./MediaSpotlight.svelte";
@@ -221,8 +221,8 @@
 
   /* Close Button */
   .spotlight-close {
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     border: none;
     border-radius: 50%;
     background: rgba(0, 0, 0, 0.4);

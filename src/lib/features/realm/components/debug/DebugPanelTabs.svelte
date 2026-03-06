@@ -4,7 +4,7 @@
    *
    * Spans full width at top of screen with icon tabs.
    * Seven tabs: Stats, Travel, Environment, Terrain, Vegetation, Physics, Camera
-   * Touch targets: 48px minimum for accessibility
+   * Touch targets: var(--min-touch-target) minimum for accessibility
    * Keyboard shortcuts: 1-7 for tabs, Escape to close, F for fog, G for fly
    */
   import StatsTab from "./StatsTab.svelte";
@@ -401,7 +401,7 @@
     justify-content: center;
     gap: 8px;
     padding: 8px 16px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     background: transparent;
     border: 2px solid transparent;
     border-radius: 12px;
@@ -450,8 +450,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;

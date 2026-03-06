@@ -206,7 +206,7 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: 10px 18px;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
     border: 2px solid rgba(255, 255, 255, 0.1);
@@ -286,7 +286,7 @@
     justify-content: center;
     gap: 8px;
     padding: 14px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     background: linear-gradient(135deg, rgba(96, 165, 250, 0.25) 0%, rgba(96, 165, 250, 0.1) 100%);
     border: 2px solid rgba(96, 165, 250, 0.4);
     border-radius: 12px;

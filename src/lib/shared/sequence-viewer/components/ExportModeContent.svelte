@@ -460,8 +460,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 48px;
-    min-width: 48px;
+    min-height: var(--min-touch-target);
+    min-width: var(--min-touch-target);
     padding: 8px 14px;
     background: color-mix(in srgb, var(--theme-card-bg) 70%, transparent);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));

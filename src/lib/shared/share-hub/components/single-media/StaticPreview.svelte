@@ -311,7 +311,7 @@
     align-items: center;
     justify-content: center;
     padding: 12px 16px;
-    min-height: 48px; /* WCAG 2.1 AA touch target minimum */
+    min-height: var(--min-touch-target); /* WCAG 2.1 AA touch target minimum */
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 24px;
@@ -357,7 +357,7 @@
 
     .chip {
       padding: 10px 14px;
-      min-height: 48px; /* Maintain WCAG touch target on mobile */
+      min-height: var(--min-touch-target); /* Maintain WCAG touch target on mobile */
       white-space: nowrap;
       flex-shrink: 0;
     }

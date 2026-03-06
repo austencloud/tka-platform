@@ -106,8 +106,8 @@
   }
 
   .btn {
-    width: 48px; /* WCAG AAA touch target */
-    height: 48px;
+    width: var(--min-touch-target); /* WCAG AA touch target */
+    height: var(--min-touch-target);
     flex-shrink: 0;
     display: flex;
     align-items: center;

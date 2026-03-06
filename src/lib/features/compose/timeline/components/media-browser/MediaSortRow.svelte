@@ -121,8 +121,8 @@
   }
 
   .advanced-toggle {
-    width: 48px; /* WCAG AAA touch target */
-    height: 48px;
+    width: var(--min-touch-target); /* WCAG AAA touch target */
+    height: var(--min-touch-target);
     border-radius: 12px;
     border: 1px solid var(--theme-stroke);
     background: var(--theme-panel-elevated-bg);

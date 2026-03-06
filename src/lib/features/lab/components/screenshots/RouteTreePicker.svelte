@@ -400,12 +400,12 @@
   /* Mobile touch targets */
   @media (max-width: 768px) {
     .toggle-pill {
-      min-height: 48px;
+      min-height: var(--min-touch-target);
       padding: 10px 16px;
     }
 
     .module-header {
-      min-height: 48px;
+      min-height: var(--min-touch-target);
     }
   }
 

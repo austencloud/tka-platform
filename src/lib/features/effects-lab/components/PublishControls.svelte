@@ -63,7 +63,7 @@
 
   .publish-btn {
     width: 100%;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: 10px 16px;
     background: var(--semantic-warning, #f59e0b);
     color: #000000;
@@ -111,7 +111,7 @@
   }
 
   .confirm-btn {
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: 10px;
     background: var(--semantic-success, #22c55e);
     color: #000000;
@@ -133,7 +133,7 @@
   }
 
   .cancel-btn {
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: 8px;
     background: transparent;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));

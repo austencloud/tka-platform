@@ -220,7 +220,7 @@
 
   .brightness-btn {
     flex: 1;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: 8px;
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--border-radius-md, 8px);
@@ -260,7 +260,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: 8px 10px;
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--border-radius-md, 8px);
@@ -334,7 +334,7 @@
     font-weight: 500;
     cursor: pointer;
     transition: all 150ms ease;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
   }
 
   .color-mode-btn:hover {
@@ -402,7 +402,7 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-sm, 8px);
-    min-height: 48px;
+    min-height: var(--min-touch-target);
   }
 
   .slider-row label {
