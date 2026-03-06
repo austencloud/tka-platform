@@ -258,10 +258,78 @@ async function suppressOnboarding(page: Page): Promise<void> {
       localStorage.setItem(storageKeys.LAST_SEEN_VERSION, "99.99.99");
       localStorage.setItem(storageKeys.LANDING_DISMISSED, "true");
       localStorage.setItem(storageKeys.SIDEBAR_TOUR_COMPLETED, "true");
+      // Suppress first-run wizard (beta consent + onboarding steps)
+      localStorage.setItem("tka-first-run-completed", "true");
+      localStorage.setItem("tka-first-run-completed-at", new Date().toISOString());
       keys.forEach((key) => localStorage.setItem(key, "true"));
     },
     [tabIntroKeys, STORAGE_KEYS] as const
   );
+}
+
+async function completeFirstRunWizard(page: Page): Promise<void> {
+  // The first-run wizard blocks the app for new accounts.
+  // Strategy: remove the verification banner overlay, then click "Skip all".
+  // If "Skip all" isn't available, check the beta checkbox and click Continue step by step.
+
+  for (let attempt = 0; attempt < 15; attempt++) {
+    await page.waitForTimeout(600);
+
+    // Remove verification banner on every iteration (it can reappear)
+    await page.evaluate(() => {
+      document.querySelectorAll('[class*="verification-banner"]').forEach((el) => el.remove());
+    });
+
+    const result = await page.evaluate(() => {
+      const text = document.body.innerText;
+      const isWizardVisible =
+        text.includes("Welcome to the beta") ||
+        text.includes("Welcome to TKA") ||
+        text.includes("What should we call you") ||
+        text.includes("Choose your vibe") ||
+        text.includes("favorite prop") ||
+        text.includes("pictographs");
+
+      if (!isWizardVisible) return "done";
+
+      const buttons = Array.from(document.querySelectorAll("button"));
+
+      // Try "Skip all" first — it's always enabled and skips the entire wizard
+      const skipAll = buttons.find((b) => b.textContent?.trim() === "Skip all");
+      if (skipAll) {
+        skipAll.click();
+        return "skipped-all";
+      }
+
+      // Beta consent step: toggle checkbox via its input event to trigger Svelte binding
+      const checkbox = document.querySelector(
+        'input[type="checkbox"]'
+      ) as HTMLInputElement | null;
+      if (checkbox && !checkbox.checked) {
+        checkbox.checked = true;
+        checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+        checkbox.dispatchEvent(new Event("input", { bubbles: true }));
+        return "checkbox-toggled";
+      }
+
+      // Click any enabled action button
+      const actionBtn = buttons.find(
+        (b) =>
+          !b.disabled &&
+          (b.textContent?.includes("Continue") ||
+            b.textContent?.includes("Skip") ||
+            b.textContent?.includes("Get Started"))
+      );
+      if (actionBtn) {
+        actionBtn.click();
+        return "clicked-" + actionBtn.textContent?.trim();
+      }
+
+      return "no-action";
+    });
+
+    if (result === "done") break;
+  }
 }
 
 async function setTheme(page: Page, dark: boolean): Promise<void> {
@@ -286,21 +354,40 @@ async function setTheme(page: Page, dark: boolean): Promise<void> {
 async function dismissModals(page: Page): Promise<void> {
   await page.waitForTimeout(TIMEOUTS.MODAL_APPEAR);
 
-  // Dismiss "What's New" modal
-  const gotIt = page.locator('button:has-text("Got it")');
-  if (await gotIt.isVisible({ timeout: TIMEOUTS.MODAL_DISMISS }).catch(() => false)) {
-    await gotIt.click();
-    await page.waitForTimeout(TIMEOUTS.MODAL_SETTLE);
-  }
+  // Use page.evaluate for all dismissals to bypass overlay interception issues.
+  // The verification banner often sits on top of other UI, blocking Playwright clicks.
 
-  // Dismiss any other modals
-  const dismiss = page.locator(
-    'button:has-text("Dismiss"), button:has-text("Close"), button:has-text("Skip")'
-  );
-  if (await dismiss.first().isVisible({ timeout: TIMEOUTS.MODAL_SETTLE }).catch(() => false)) {
-    await dismiss.first().click();
-    await page.waitForTimeout(TIMEOUTS.MODAL_SETTLE);
-  }
+  // Dismiss email verification banner first (it overlays everything)
+  await page.evaluate(() => {
+    const banner = document.querySelector('[class*="verification-banner"]');
+    if (banner) {
+      const closeBtn = banner.querySelector("button");
+      if (closeBtn) closeBtn.click();
+      else banner.remove(); // Force-remove if no close button
+    }
+  });
+  await page.waitForTimeout(300);
+
+  // Dismiss "What's New" modal
+  await page.evaluate(() => {
+    const buttons = Array.from(document.querySelectorAll("button"));
+    const gotIt = buttons.find((b) => b.textContent?.includes("Got it"));
+    if (gotIt) gotIt.click();
+  });
+  await page.waitForTimeout(TIMEOUTS.MODAL_SETTLE);
+
+  // Dismiss any other modals (Dismiss, Close, Skip)
+  await page.evaluate(() => {
+    const buttons = Array.from(document.querySelectorAll("button"));
+    const dismiss = buttons.find(
+      (b) =>
+        b.textContent?.includes("Dismiss") ||
+        b.textContent?.includes("Close") ||
+        b.textContent?.includes("Skip")
+    );
+    if (dismiss) dismiss.click();
+  });
+  await page.waitForTimeout(TIMEOUTS.MODAL_SETTLE);
 }
 
 // ─── Splash Screen Dismissal ─────────────────────────────────────────────────
@@ -419,7 +506,12 @@ async function stabilize(page: Page, route: RouteConfig): Promise<void> {
     `,
   });
 
-  // 7. Final settle — let the paint cycle complete after freezing animations
+  // 7. Remove any lingering verification banners (they overlay content)
+  await page.evaluate(() => {
+    document.querySelectorAll('[class*="verification-banner"]').forEach((el) => el.remove());
+  });
+
+  // 8. Final settle — let the paint cycle complete after freezing animations
   await page.waitForTimeout(TIMEOUTS.FINAL_SETTLE);
 }
 
@@ -527,6 +619,10 @@ if (authRoutes.length > 0 && hasAuth) {
         );
       }
 
+      // Complete the first-run wizard if it appears (new accounts).
+      // The wizard blocks the entire app — must be clicked through, not suppressed.
+      await completeFirstRunWizard(page);
+
       // Set onboarding + theme so every subsequent page inherits them
       await suppressOnboarding(page);
       await setTheme(page, isDark);
@@ -546,6 +642,7 @@ if (authRoutes.length > 0 && hasAuth) {
 
         // Navigate directly to the target module/tab via URL
         await navigateToRoute(page, route);
+        await completeFirstRunWizard(page);
         await dismissModals(page);
         await stabilize(page, route);
 
