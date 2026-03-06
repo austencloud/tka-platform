@@ -615,8 +615,8 @@ export class ImageComposer implements IImageComposer {
           // Ensure Canvas 2D renderer is initialized (loads assets on first call)
           await this.ensureCanvas2DInitialized();
 
-          // Render pictograph directly to canvas
-          // Note: stepNumber is handled separately via overlay, so we pass undefined here
+          // Render pictograph directly to canvas (base image only, no step number).
+          // Step numbers are drawn as overlays on the export canvas at line ~655.
           const pictographCanvas = await this.canvas2DRenderer.renderPictograph(
             pictographData,
             {

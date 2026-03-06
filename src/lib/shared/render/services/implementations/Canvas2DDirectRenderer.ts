@@ -90,10 +90,6 @@ const TKA_GLYPH_Y = 800;
 const TKA_GLYPH_SCALE = 1;
 
 // Beat number positioning (from StepNumber.svelte)
-const STEP_NUMBER_X = 50;
-const STEP_NUMBER_Y = 50;
-const BEAT_NUMBER_FONT_SIZE = 100;
-const BEAT_NUMBER_START_FONT_SIZE = 80;
 
 // Direction dot constants (from DirectionDot.svelte)
 const DOT_PADDING = 10;
@@ -375,11 +371,11 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
       this.drawDirectionDot(ctx, preparedPictograph, letterDimensions, scale, isDarkMode);
     }
 
-    // 8. Draw beat number (top-left corner at x=50, y=50)
-    const stepData = preparedPictograph as StepData;
-    if (typeof stepData.stepNumber === "number") {
-      this.drawStepNumber(ctx, stepData.stepNumber, scale, isDarkMode);
-    }
+    // 8. Beat number — NOT drawn here.
+    // Step numbers are composited by the caller (ImageComposer draws them as
+    // overlays on the export canvas; ChoreoCard renders HTML overlays).
+    // Drawing them here would bake them into cached blobs, causing double
+    // numbers when the ChoreoCard also renders its HTML overlay.
 
     // 9. Draw VTG glyph (bottom-right corner)
     if (visibility.showVTG) {
@@ -1127,31 +1123,6 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     ctx.beginPath();
     ctx.arc(drawX + radius, drawY + radius, radius, 0, Math.PI * 2);
     ctx.fill();
-  }
-
-  /**
-   * Draw beat number at x=50, y=50 (matching StepNumber.svelte)
-   */
-  private drawStepNumber(
-    ctx: CanvasRenderingContext2D,
-    stepNumber: number,
-    scale: number,
-    isDarkMode: boolean
-  ): void {
-    // Beat 0 shows "Start", beat -1 is hidden
-    if (stepNumber === -1) return;
-
-    const text = stepNumber === 0 ? "Start" : String(stepNumber);
-    const fontSize = (stepNumber === 0 ? BEAT_NUMBER_START_FONT_SIZE : BEAT_NUMBER_FONT_SIZE) * scale;
-
-    ctx.font = `bold ${fontSize}px Georgia, serif`;
-    ctx.textAlign = "left";
-    ctx.textBaseline = "top";
-    ctx.fillStyle = isDarkMode ? "#ffffff" : "#231f20";
-
-    const x = STEP_NUMBER_X * scale;
-    const y = STEP_NUMBER_Y * scale;
-    ctx.fillText(text, x, y);
   }
 
   /**

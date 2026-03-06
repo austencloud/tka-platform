@@ -285,11 +285,9 @@ export class Canvas2DNodeRenderer implements IDirectRenderer {
       this.drawDirectionDot(ctx, preparedPictograph, letterDimensions, scale, isDarkMode);
     }
 
-    // 8. Draw beat number
-    const stepData = preparedPictograph as StepData;
-    if (typeof stepData.stepNumber === "number") {
-      this.drawStepNumber(ctx, stepData.stepNumber, scale, isDarkMode);
-    }
+    // 8. Beat number — NOT drawn here.
+    // Step numbers are composited by the caller as overlays, not baked into
+    // the base pictograph blob. See Canvas2DDirectRenderer for rationale.
 
     // 9. Draw reversal indicators
     if (visibility.showReversals && this.isStepData(preparedPictograph)) {
@@ -397,15 +395,6 @@ export class Canvas2DNodeRenderer implements IDirectRenderer {
     ctx: CanvasRenderingContext2D,
     pictograph: PreparedPictographData,
     letterDimensions: { width: number; height: number },
-    scale: number,
-    isDarkMode: boolean
-  ): void {
-    // TODO: Copy from Canvas2DDirectRenderer
-  }
-
-  private drawStepNumber(
-    ctx: CanvasRenderingContext2D,
-    stepNumber: number,
     scale: number,
     isDarkMode: boolean
   ): void {
