@@ -119,8 +119,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     flex-shrink: 0;
     background: var(--theme-card-bg, var(--theme-card-bg));
     border: 1.5px solid var(--theme-stroke);

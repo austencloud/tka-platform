@@ -290,7 +290,7 @@
 		color: var(--theme-text, #fff);
 		font-size: var(--font-size-sm, 14px);
 		cursor: pointer;
-		min-height: 48px;
+		min-height: var(--min-touch-target);
 	}
 
 	.retry-btn:hover {
@@ -326,7 +326,7 @@
 		color: var(--theme-accent, #6366f1);
 		font-size: var(--font-size-sm, 14px);
 		cursor: pointer;
-		min-height: 48px;
+		min-height: var(--min-touch-target);
 	}
 
 	.clear-filters-btn:hover {
@@ -382,7 +382,7 @@
 		font-size: var(--font-size-sm, 14px);
 		font-weight: 500;
 		cursor: pointer;
-		min-height: 48px;
+		min-height: var(--min-touch-target);
 		transition: opacity 0.15s ease;
 	}
 

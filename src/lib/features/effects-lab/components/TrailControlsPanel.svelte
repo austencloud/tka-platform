@@ -258,7 +258,7 @@
     cursor: pointer;
     transition: all 150ms ease;
     min-width: 56px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
   }
 
   .toggle-btn.active {
@@ -308,7 +308,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 150ms ease;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
   }
 
   .renderer-btn:hover {

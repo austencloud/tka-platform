@@ -215,8 +215,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 48px; /* WCAG AAA touch target */
-    height: 48px;
+    width: var(--min-touch-target); /* WCAG AA touch target */
+    height: var(--min-touch-target);
     background: var(--surface-color);
     border: 1px solid var(--theme-stroke, var(--theme-stroke));
     border-radius: 8px;

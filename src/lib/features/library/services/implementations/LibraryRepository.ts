@@ -462,16 +462,24 @@ export class LibraryRepository implements ILibraryRepository {
       toast.error("Failed to delete sequence. Will retry when online.");
     });
 
-    // Decrement user's sequenceCount (async, non-blocking)
+    // Decrement user's sequenceCount (async, non-blocking, clamped to 0)
     const userDocRef = doc(firestore, `users/${userId}`);
     updateDoc(userDocRef, {
       sequenceCount: increment(-1),
-    }).catch((error) => {
-      console.error(
-        `[LibraryRepository] Failed to decrement sequenceCount for user ${userId}:`,
-        error
-      );
-    });
+    })
+      .then(async () => {
+        const userSnap = await getDoc(userDocRef);
+        const count = (userSnap.data()?.["sequenceCount"] as number) ?? 0;
+        if (count < 0) {
+          await updateDoc(userDocRef, { sequenceCount: 0 });
+        }
+      })
+      .catch((error) => {
+        console.error(
+          `[LibraryRepository] Failed to decrement sequenceCount for user ${userId}:`,
+          error
+        );
+      });
   }
 
   async getSequences(
@@ -853,9 +861,9 @@ export class LibraryRepository implements ILibraryRepository {
       }
     }
 
-    // Decrement user's sequenceCount by the number of deleted sequences
-    if (deletedCount > 0) {
-      const userDocRef = doc(firestore, `users/${userId}`);
+    // Decrement user's sequenceCount by the number of deleted sequences (clamped to 0)
+    const userDocRef = deletedCount > 0 ? doc(firestore, `users/${userId}`) : null;
+    if (deletedCount > 0 && userDocRef) {
       batch.update(userDocRef, {
         sequenceCount: increment(-deletedCount),
       });
@@ -863,6 +871,14 @@ export class LibraryRepository implements ILibraryRepository {
 
     try {
       await trackWrite(() => batch.commit(), "library");
+      // Clamp sequenceCount to 0 if it went negative
+      if (userDocRef) {
+        const userSnap = await getDoc(userDocRef);
+        const count = (userSnap.data()?.["sequenceCount"] as number) ?? 0;
+        if (count < 0) {
+          await updateDoc(userDocRef, { sequenceCount: 0 });
+        }
+      }
     } catch (error) {
       console.error("[LibraryRepository] Failed to delete sequences:", error);
       toast.error("Failed to delete sequences. Please try again.");

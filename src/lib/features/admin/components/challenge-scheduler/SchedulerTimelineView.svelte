@@ -232,8 +232,8 @@
   }
 
   .timeline-delete {
-    width: 48px; /* WCAG AAA touch target */
-    height: 48px;
+    width: var(--min-touch-target); /* WCAG AA touch target */
+    height: var(--min-touch-target);
     border: none;
     background: rgba(239, 68, 68, 0.1);
     color: var(--semantic-error);

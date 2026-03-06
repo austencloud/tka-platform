@@ -283,7 +283,7 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: 0 16px;
     border-radius: 8px;
     font-size: var(--font-size-compact, 12px);
@@ -313,7 +313,7 @@
   }
 
   .dismiss-btn {
-    min-width: 48px;
+    min-width: var(--min-touch-target);
     padding: 0;
     background: transparent;
     border: 1px solid transparent;

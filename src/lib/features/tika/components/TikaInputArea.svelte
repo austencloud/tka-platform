@@ -112,8 +112,8 @@
 
   .send-button,
   .stop-button {
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     border-radius: 8px;
     border: none;
     color: white;

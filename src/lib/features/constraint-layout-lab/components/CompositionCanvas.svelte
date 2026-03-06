@@ -705,11 +705,11 @@
     font-weight: 600;
   }
 
-  /* Resize handles - 48px touch target for WCAG AAA compliance */
+  /* Resize handles - touch target for WCAG AAA compliance */
   .resize-handle {
     position: absolute;
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     z-index: 10;
     touch-action: none;
     display: flex;

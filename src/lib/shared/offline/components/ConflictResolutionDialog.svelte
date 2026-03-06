@@ -295,7 +295,7 @@
 			border-color 150ms ease,
 			background 150ms ease,
 			opacity 150ms ease;
-		min-height: 48px;
+		min-height: var(--min-touch-target);
 	}
 
 	.version-option:disabled {

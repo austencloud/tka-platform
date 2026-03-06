@@ -218,8 +218,8 @@
 
   .toggle-btn {
     flex: 1;
-    min-height: 48px;
-    min-width: 48px;
+    min-height: var(--min-touch-target);
+    min-width: var(--min-touch-target);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -256,7 +256,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: 0 12px;
     background: transparent;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -311,7 +311,7 @@
   }
 
   .ori-btn {
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     display: flex;
     align-items: center;
     justify-content: center;

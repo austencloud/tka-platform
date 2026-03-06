@@ -133,8 +133,8 @@
 
   .performer-chip {
     position: relative;
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     display: flex;
     align-items: center;
     justify-content: center;

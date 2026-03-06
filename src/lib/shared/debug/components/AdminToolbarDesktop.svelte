@@ -410,7 +410,7 @@
     align-items: center;
     gap: 8px;
     padding: 4px 12px;
-    height: 48px;
+    height: var(--min-touch-target);
     /* Note: no overflow:hidden here - dropdown needs to escape */
   }
 

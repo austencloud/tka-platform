@@ -22,8 +22,8 @@
     align-items: center;
     gap: 8px;
     padding: 12px 16px;
-    min-height: 48px;
-    min-width: 48px;
+    min-height: var(--min-touch-target);
+    min-width: var(--min-touch-target);
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 8px;

@@ -104,8 +104,8 @@
   }
 
   .bubble-dismiss {
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     margin: -12px -14px -12px 0;
     border-radius: 50%;
     border: none;

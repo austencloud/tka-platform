@@ -105,7 +105,7 @@
     justify-content: center;
     gap: 8px;
     padding: 12px 16px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
     border-radius: 24px;

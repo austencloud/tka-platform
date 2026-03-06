@@ -87,10 +87,10 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 48px;
-		height: 48px;
-		min-width: 48px;
-		min-height: 48px;
+		width: var(--min-touch-target);
+		height: var(--min-touch-target);
+		min-width: var(--min-touch-target);
+		min-height: var(--min-touch-target);
 		background: var(--theme-card-bg);
 		border: 1.5px solid var(--theme-stroke);
 		border-radius: 50%;

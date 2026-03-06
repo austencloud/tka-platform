@@ -438,7 +438,7 @@
 
   .nav-btn {
     flex: 1;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -491,8 +491,8 @@
 
   .overlap-btn {
     flex: 0 0 auto;
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
   }
 
   .copy-btn {
@@ -500,7 +500,7 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: 0 16px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));

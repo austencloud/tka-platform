@@ -193,10 +193,10 @@
      ICON WRAPPER
      ============================================================================ */
   .icon-wrapper {
-    width: 48px; /* WCAG AAA touch target */
-    height: 48px;
-    min-width: 48px;
-    min-height: 48px;
+    width: var(--min-touch-target); /* WCAG AA touch target */
+    height: var(--min-touch-target);
+    min-width: var(--min-touch-target);
+    min-height: var(--min-touch-target);
     border-radius: 50%;
     overflow: visible; /* Changed from hidden to allow badge to overflow */
     display: flex;

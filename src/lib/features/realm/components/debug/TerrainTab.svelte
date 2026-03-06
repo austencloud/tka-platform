@@ -175,7 +175,7 @@
 
   .slider {
     width: 100%;
-    height: 48px;
+    height: var(--min-touch-target);
     background: transparent;
     appearance: none;
     cursor: pointer;

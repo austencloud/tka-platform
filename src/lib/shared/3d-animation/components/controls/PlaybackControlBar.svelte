@@ -149,8 +149,8 @@
   }
 
   .play-btn {
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     flex-shrink: 0;
     display: flex;
     align-items: center;
@@ -200,7 +200,7 @@
     flex: 1;
     min-width: 80px;
     max-width: 200px;
-    height: 48px;
+    height: var(--min-touch-target);
     accent-color: var(--theme-accent, var(--theme-accent-strong));
   }
 
@@ -225,7 +225,7 @@
       justify-content: center;
     }
 
-    /* Touch targets remain 48px for WCAG AAA */
+    /* Touch targets use var(--min-touch-target) for WCAG AA */
     .play-btn.primary {
       width: 52px;
       height: 52px;

@@ -171,7 +171,7 @@
 	.horizontal-sidebar :global(.settings-panel .trail-btn),
 	.horizontal-sidebar :global(.settings-panel .style-btn),
 	.horizontal-sidebar :global(.settings-panel .preset-chip) {
-		min-height: 48px;
+		min-height: var(--min-touch-target);
 		flex: 1 1 auto;
 	}
 
@@ -232,9 +232,9 @@
 	.horizontal-sidebar .sidebar-section :global(.trail-btn),
 	.horizontal-sidebar .sidebar-section :global(.ends-btn) {
 		flex: 1;
-		min-height: 48px;
+		min-height: var(--min-touch-target);
 		max-height: 56px;
-		height: 48px;
+		height: var(--min-touch-target);
 	}
 
 	/* BPM control container */
@@ -245,24 +245,24 @@
 		gap: clamp(8px, 2cqh, 14px);
 	}
 
-	/* BPM adjuster - stays horizontal with 48px minimum */
+	/* BPM adjuster - stays horizontal with touch target minimum */
 	.horizontal-sidebar :global(.bpm-adjuster) {
 		gap: 10px;
-		min-height: 48px;
+		min-height: var(--min-touch-target);
 	}
 
 	.horizontal-sidebar :global(.bpm-display) {
-		min-height: 48px;
+		min-height: var(--min-touch-target);
 		min-width: 80px;
 		padding: 0 14px;
 		font-size: clamp(1rem, 3cqh, 1.25rem);
 	}
 
 	.horizontal-sidebar :global(.bpm-btn) {
-		width: 48px;
-		height: 48px;
-		min-width: 48px;
-		min-height: 48px;
+		width: var(--min-touch-target);
+		height: var(--min-touch-target);
+		min-width: var(--min-touch-target);
+		min-height: var(--min-touch-target);
 	}
 
 	/* BPM presets - 3-column grid */
@@ -273,23 +273,23 @@
 	}
 
 	.horizontal-sidebar :global(.preset-chip) {
-		min-height: 48px;
+		min-height: var(--min-touch-target);
 		max-height: 52px;
-		height: 48px;
+		height: var(--min-touch-target);
 		padding: 8px 10px;
 		font-size: 0.85rem;
 	}
 
 	/* Step size row in playback pane */
 	.horizontal-sidebar :global(.step-size-row) {
-		min-height: 48px;
+		min-height: var(--min-touch-target);
 		max-height: 56px;
 		flex-shrink: 0;
 	}
 
 	.horizontal-sidebar :global(.step-chip) {
-		min-height: 48px;
-		height: 48px;
+		min-height: var(--min-touch-target);
+		height: var(--min-touch-target);
 	}
 
 	/* Container queries - adjust gaps, not button sizes */

@@ -536,7 +536,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    min-width: 48px;
+    min-width: var(--min-touch-target);
     z-index: 1;
   }
 
@@ -589,8 +589,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 48px;
-    height: 48px;
+    min-width: var(--min-touch-target);
+    height: var(--min-touch-target);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
@@ -681,7 +681,7 @@
     justify-content: center;
     gap: 8px;
     padding: 12px 16px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 10px;

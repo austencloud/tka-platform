@@ -206,8 +206,8 @@
     justify-content: center;
     gap: 5px;
     padding: 10px 16px;
-    min-height: 48px;
-    min-width: 48px;
+    min-height: var(--min-touch-target);
+    min-width: var(--min-touch-target);
     flex-shrink: 0;
     background: rgba(239, 68, 68, 0.12);
     border: 1.5px solid rgba(239, 68, 68, 0.3);

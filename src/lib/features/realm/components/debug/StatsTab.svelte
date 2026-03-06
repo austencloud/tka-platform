@@ -3,7 +3,7 @@
    * StatsTab - Condensed debug panel stats
    *
    * Compact horizontal layout with expandable details
-   * 48px touch targets maintained for accessibility
+   * Touch targets maintained for accessibility via --min-touch-target
    */
   import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";
 
@@ -229,7 +229,7 @@
     align-items: center;
     gap: 12px;
     padding: 0 12px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     background: rgba(96, 165, 250, 0.1);
     border: 1px solid rgba(96, 165, 250, 0.2);
     border-radius: 10px;
@@ -292,7 +292,7 @@
     justify-content: center;
     gap: 8px;
     padding: 0;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 10px;

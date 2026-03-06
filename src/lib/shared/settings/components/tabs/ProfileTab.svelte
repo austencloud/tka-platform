@@ -166,12 +166,10 @@
         profileState.password.current,
         profileState.password.new
       );
-      profileState.ui.showPasswordSection = false;
-      profileState.resetPasswordForm();
+      // Success handling is done by the form component (inline success state)
     } catch (error) {
-      console.error("Failed to change password:", error);
-      hapticService?.trigger("error");
-      alert("Failed to change password. Please try again.");
+      // Re-throw so the form component can show inline error
+      throw error;
     } finally {
       profileState.ui.saving = false;
     }

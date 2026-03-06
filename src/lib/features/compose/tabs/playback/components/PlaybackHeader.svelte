@@ -172,8 +172,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 48px; /* WCAG AAA touch target */
-    height: 48px;
+    width: var(--min-touch-target); /* WCAG AAA touch target */
+    height: var(--min-touch-target);
     border-radius: 10px;
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
@@ -214,15 +214,15 @@
     }
 
     .action-btn {
-      width: 48px; /* WCAG AAA touch target */
-      height: 48px;
+      width: var(--min-touch-target); /* WCAG AAA touch target */
+      height: var(--min-touch-target);
       justify-content: center;
       padding: 0;
     }
 
     .close-btn {
-      width: 48px; /* WCAG AAA touch target */
-      height: 48px;
+      width: var(--min-touch-target); /* WCAG AAA touch target */
+      height: var(--min-touch-target);
       font-size: 1rem;
     }
   }

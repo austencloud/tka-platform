@@ -51,7 +51,7 @@
   .impersonation-bar {
     position: relative;
     flex-shrink: 0;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -96,8 +96,8 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    height: 48px;
-    min-width: 48px;
+    height: var(--min-touch-target);
+    min-width: var(--min-touch-target);
     padding: 0 14px;
     background: rgba(239, 68, 68, 0.25);
     border: 1px solid rgba(239, 68, 68, 0.5);

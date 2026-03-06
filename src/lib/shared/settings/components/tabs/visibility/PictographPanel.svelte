@@ -292,7 +292,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 48px; /* 48px touch target */
+    min-height: var(--min-touch-target);
     padding: clamp(10px, 1.5cqi, 14px) clamp(10px, 1.5cqi, 14px);
     background: color-mix(in srgb, var(--theme-card-bg) 70%, transparent);
     border: 1px solid var(--theme-stroke);

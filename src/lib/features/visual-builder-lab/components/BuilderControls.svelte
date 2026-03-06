@@ -336,8 +336,8 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
     cursor: pointer;
-    min-height: 48px;
-    min-width: 48px;
+    min-height: var(--min-touch-target);
+    min-width: var(--min-touch-target);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -384,7 +384,7 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
     cursor: pointer;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     transition: background 0.15s ease;
   }
 
@@ -434,7 +434,7 @@
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     cursor: pointer;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     min-width: 40px;
     display: flex;
     align-items: center;
@@ -458,8 +458,8 @@
 
   /* === Action buttons (bottom-right) === */
   .action-icon {
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     border-radius: 50%;
     border: 1px solid rgba(255, 255, 255, 0.1);
     background: rgba(0, 0, 0, 0.6);
@@ -516,7 +516,7 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
     cursor: pointer;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     pointer-events: none;
     opacity: 0;
     transform: scale(0.9);
@@ -558,7 +558,7 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
     cursor: pointer;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     pointer-events: none;
     opacity: 0;
     transform: scale(0.9);

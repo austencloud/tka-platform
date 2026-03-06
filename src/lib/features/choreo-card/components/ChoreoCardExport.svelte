@@ -207,7 +207,7 @@
     justify-content: center;
     gap: var(--spacing-xs);
     width: 100%;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: var(--spacing-sm) var(--spacing-md);
     background: var(--theme-accent-bg, rgba(99, 102, 241, 0.15));
     border: 1px solid var(--theme-accent, #6366f1);

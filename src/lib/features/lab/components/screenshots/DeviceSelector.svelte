@@ -393,12 +393,12 @@
   /* Mobile touch targets */
   @media (max-width: 768px) {
     .device-card {
-      min-height: 48px;
+      min-height: var(--min-touch-target);
       padding: 12px 14px;
     }
 
     .category-header {
-      min-height: 48px;
+      min-height: var(--min-touch-target);
     }
   }
 

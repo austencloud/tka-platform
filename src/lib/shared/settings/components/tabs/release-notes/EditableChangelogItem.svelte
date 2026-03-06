@@ -343,8 +343,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 48px; /* WCAG AAA touch target */
-    height: 48px;
+    min-width: var(--min-touch-target); /* WCAG AA touch target */
+    height: var(--min-touch-target);
   }
 
   .feedback-link-icon:hover {
@@ -422,7 +422,7 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    min-height: 48px; /* WCAG AAA touch target */
+    min-height: var(--min-touch-target); /* WCAG AA touch target */
     padding: 0 14px;
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);

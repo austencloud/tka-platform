@@ -4,7 +4,7 @@ VariationPill.svelte
 Small tappable pill showing "X/Y" for sequences with variations.
 Clicking cycles through variations with a smooth crossfade.
 
-Touch target: 48px minimum for WCAG AAA accessibility.
+Touch target: var(--min-touch-target) minimum for WCAG AA accessibility.
 -->
 <script lang="ts">
   const {
@@ -51,9 +51,9 @@ Touch target: 48px minimum for WCAG AAA accessibility.
     left: 50%;
     transform: translateX(-50%);
 
-    /* 48px minimum touch target (WCAG AAA) */
-    min-width: 48px;
-    min-height: 48px;
+    /* var(--min-touch-target) minimum touch target (WCAG AA) */
+    min-width: var(--min-touch-target);
+    min-height: var(--min-touch-target);
 
     /* Visual styling - smaller appearance but large tap target */
     padding: 4px 10px;

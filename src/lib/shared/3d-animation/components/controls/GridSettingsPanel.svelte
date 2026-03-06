@@ -102,7 +102,7 @@
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
-    min-height: 48px; /* WCAG AAA touch target */
+    min-height: var(--min-touch-target); /* WCAG AA touch target */
     background: transparent;
     border: none;
     border-radius: 8px;
@@ -133,7 +133,7 @@
 
   .plane-btn {
     flex: 1;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     display: flex;
     align-items: center;
     justify-content: center;

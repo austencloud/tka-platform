@@ -494,7 +494,7 @@
     align-items: center;
     gap: 6px;
     padding: 12px 16px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
     border-radius: 8px;
     font-size: var(--font-size-compact, 12px);

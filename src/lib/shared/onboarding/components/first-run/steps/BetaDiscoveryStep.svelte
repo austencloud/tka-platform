@@ -99,7 +99,7 @@
     align-items: center;
     gap: 12px;
     padding: 12px 20px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     background: rgba(255, 255, 255, 0.04);
     border: 1.5px solid rgba(255, 255, 255, 0.12);
     border-radius: 12px;

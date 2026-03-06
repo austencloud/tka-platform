@@ -262,8 +262,8 @@
   }
 
   .dismiss-btn {
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     margin: -10px -12px -10px 0;
     border-radius: 50%;
     border: none;

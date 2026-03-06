@@ -242,7 +242,7 @@
   }
 
   .loop-button.bridge {
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     font-size: var(--font-size-min, 14px);
   }
 

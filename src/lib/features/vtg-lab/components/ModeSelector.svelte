@@ -75,7 +75,7 @@
 
 	@media (pointer: coarse) {
 		.mode-card {
-			min-height: 48px;
+			min-height: var(--min-touch-target);
 		}
 	}
 

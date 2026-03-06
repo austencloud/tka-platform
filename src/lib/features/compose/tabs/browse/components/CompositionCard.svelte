@@ -270,8 +270,8 @@
 		right: 8px;
 		width: 32px;
 		height: 32px;
-		min-width: 48px;
-		min-height: 48px;
+		min-width: var(--min-touch-target);
+		min-height: var(--min-touch-target);
 		display: flex;
 		align-items: center;
 		justify-content: center;

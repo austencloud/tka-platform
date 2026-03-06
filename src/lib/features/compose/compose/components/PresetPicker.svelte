@@ -256,7 +256,7 @@
       border-color var(--duration-normal, 150ms) ease,
       transform var(--duration-normal, 150ms) ease,
       box-shadow var(--duration-normal, 150ms) ease;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
   }
 
   .template-card:hover {

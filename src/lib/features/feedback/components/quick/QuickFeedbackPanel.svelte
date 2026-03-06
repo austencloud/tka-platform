@@ -344,8 +344,8 @@
     justify-content: center;
     min-width: var(--min-touch-target);
     min-height: var(--min-touch-target);
-    width: clamp(48px, 12cqi, 48px);
-    height: clamp(48px, 12cqi, 48px);
+    width: clamp(var(--min-touch-target), 12cqi, var(--min-touch-target));
+    height: clamp(var(--min-touch-target), 12cqi, var(--min-touch-target));
     background: var(--bg-subtle);
     border: 1px solid var(--border-subtle);
     border-radius: clamp(8px, 2cqi, 12px);
@@ -565,8 +565,8 @@
     justify-content: center;
     gap: 6px;
     padding: 8px 12px;
-    min-height: 48px; /* WCAG AAA touch target */
-    min-width: 48px;
+    min-height: var(--min-touch-target); /* WCAG AAA touch target */
+    min-width: var(--min-touch-target);
     flex: 1; /* Equal width distribution */
     background: transparent;
     border: 1.5px solid var(--border-subtle);

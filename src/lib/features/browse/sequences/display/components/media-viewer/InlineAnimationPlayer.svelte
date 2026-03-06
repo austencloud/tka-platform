@@ -473,7 +473,7 @@
 
     .control-btn.play-btn {
       width: 100%;
-      height: 48px;
+      height: var(--min-touch-target);
       border-radius: 10px;
     }
 

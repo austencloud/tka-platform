@@ -427,6 +427,7 @@
         class="hit-target"
         class:active-hand-blue={builderState.activeHand === MotionColor.BLUE}
         class:active-hand-red={builderState.activeHand === MotionColor.RED}
+        class:current-position={builderState.currentPosition === target.location && builderState.phase !== "idle"}
         class:disabled={!isActiveTarget(target)}
         role="button"
         tabindex="0"
@@ -520,26 +521,60 @@
   }
 
 
-  /* Hit targets */
+  /* Hit targets — default (idle phase, no hand color yet) */
   .hit-target {
-    fill: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    stroke: var(--theme-stroke, rgba(255, 255, 255, 0.2));
-    stroke-width: 2;
+    fill: rgba(255, 255, 255, 0.06);
+    stroke: rgba(255, 255, 255, 0.3);
+    stroke-width: 2.5;
     cursor: pointer;
     transition: fill 0.15s ease, stroke 0.15s ease, stroke-width 0.15s ease;
   }
 
-  .hit-target:hover {
-    stroke-width: 3;
+  /* Available targets pulse in the active hand's color */
+  .hit-target.active-hand-blue:not(.disabled):not(.current-position) {
+    fill: color-mix(in srgb, var(--prop-blue, #2e8bf0) 10%, transparent);
+    stroke: color-mix(in srgb, var(--prop-blue, #2e8bf0) 60%, transparent);
+    animation: pulse-blue 1.8s ease-in-out infinite;
   }
 
-  .hit-target.active-hand-blue:hover {
-    fill: color-mix(in srgb, var(--prop-blue, #2e8bf0) 20%, transparent);
+  .hit-target.active-hand-red:not(.disabled):not(.current-position) {
+    fill: color-mix(in srgb, var(--prop-red, #ed1c24) 10%, transparent);
+    stroke: color-mix(in srgb, var(--prop-red, #ed1c24) 60%, transparent);
+    animation: pulse-red 1.8s ease-in-out infinite;
+  }
+
+  /* Current position — solid ring, no pulse */
+  .hit-target.current-position {
+    animation: none;
+    cursor: default;
+  }
+
+  .hit-target.current-position.active-hand-blue {
+    fill: color-mix(in srgb, var(--prop-blue, #2e8bf0) 25%, transparent);
+    stroke: var(--prop-blue, #2e8bf0);
+    stroke-width: 3;
+    stroke-opacity: 1;
+  }
+
+  .hit-target.current-position.active-hand-red {
+    fill: color-mix(in srgb, var(--prop-red, #ed1c24) 25%, transparent);
+    stroke: var(--prop-red, #ed1c24);
+    stroke-width: 3;
+    stroke-opacity: 1;
+  }
+
+  /* Hover: brighter fill + thicker stroke */
+  .hit-target:not(.disabled):not(.current-position):hover {
+    stroke-width: 3.5;
+  }
+
+  .hit-target.active-hand-blue:not(.disabled):not(.current-position):hover {
+    fill: color-mix(in srgb, var(--prop-blue, #2e8bf0) 25%, transparent);
     stroke: var(--prop-blue, #2e8bf0);
   }
 
-  .hit-target.active-hand-red:hover {
-    fill: color-mix(in srgb, var(--prop-red, #ed1c24) 20%, transparent);
+  .hit-target.active-hand-red:not(.disabled):not(.current-position):hover {
+    fill: color-mix(in srgb, var(--prop-red, #ed1c24) 25%, transparent);
     stroke: var(--prop-red, #ed1c24);
   }
 
@@ -555,20 +590,48 @@
     pointer-events: none;
   }
 
-  /* Subtle pulsing for available targets */
-  @keyframes pulse-ring {
-    0% { stroke-opacity: 0.4; }
-    50% { stroke-opacity: 0.8; }
-    100% { stroke-opacity: 0.4; }
+  /* Blue pulse — fill + stroke + subtle scale */
+  @keyframes pulse-blue {
+    0% {
+      fill: color-mix(in srgb, var(--prop-blue, #2e8bf0) 6%, transparent);
+      stroke: color-mix(in srgb, var(--prop-blue, #2e8bf0) 40%, transparent);
+      stroke-width: 2;
+    }
+    50% {
+      fill: color-mix(in srgb, var(--prop-blue, #2e8bf0) 16%, transparent);
+      stroke: color-mix(in srgb, var(--prop-blue, #2e8bf0) 80%, transparent);
+      stroke-width: 3;
+    }
+    100% {
+      fill: color-mix(in srgb, var(--prop-blue, #2e8bf0) 6%, transparent);
+      stroke: color-mix(in srgb, var(--prop-blue, #2e8bf0) 40%, transparent);
+      stroke-width: 2;
+    }
   }
 
-  .hit-target:not(.disabled) {
-    animation: pulse-ring 2s ease-in-out infinite;
+  /* Red pulse — fill + stroke + subtle scale */
+  @keyframes pulse-red {
+    0% {
+      fill: color-mix(in srgb, var(--prop-red, #ed1c24) 6%, transparent);
+      stroke: color-mix(in srgb, var(--prop-red, #ed1c24) 40%, transparent);
+      stroke-width: 2;
+    }
+    50% {
+      fill: color-mix(in srgb, var(--prop-red, #ed1c24) 16%, transparent);
+      stroke: color-mix(in srgb, var(--prop-red, #ed1c24) 80%, transparent);
+      stroke-width: 3;
+    }
+    100% {
+      fill: color-mix(in srgb, var(--prop-red, #ed1c24) 6%, transparent);
+      stroke: color-mix(in srgb, var(--prop-red, #ed1c24) 40%, transparent);
+      stroke-width: 2;
+    }
   }
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .hit-target:not(.disabled) {
+    .hit-target.active-hand-blue:not(.disabled):not(.current-position),
+    .hit-target.active-hand-red:not(.disabled):not(.current-position) {
       animation: none;
     }
 

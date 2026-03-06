@@ -353,7 +353,7 @@ dialog.drawer-content {
   top: 50%;
   left: 18px;
   width: 4px;
-  height: 48px;
+  height: var(--min-touch-target);
   margin: 0;
   border-radius: 999px;
   transform: translateY(-50%);
@@ -366,7 +366,7 @@ dialog.drawer-content {
   top: 50%;
   right: 18px;
   width: 4px;
-  height: 48px;
+  height: var(--min-touch-target);
   margin: 0;
   border-radius: 999px;
   transform: translateY(-50%);
@@ -376,7 +376,7 @@ dialog.drawer-content {
 /* Handle for top placement - horizontal on bottom edge */
 .drawer-content[data-placement="top"] .drawer-handle {
   position: relative;
-  width: 48px;
+  width: var(--min-touch-target);
   height: 4px;
   min-height: 10px;
   margin: 8px auto 10px;
@@ -387,7 +387,7 @@ dialog.drawer-content {
 .drawer-content[data-placement="bottom"]:not(.side-by-side-layout)
   .drawer-handle {
   position: relative;
-  width: 48px;
+  width: var(--min-touch-target);
   height: 4px;
   min-height: 10px;
   margin: 10px auto 8px;

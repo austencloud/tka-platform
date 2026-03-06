@@ -188,7 +188,7 @@
   }
 
   .home-button {
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: 0.75rem 1.5rem;
     background: var(--theme-accent, #f43f5e);
     color: white;

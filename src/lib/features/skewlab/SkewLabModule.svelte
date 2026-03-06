@@ -356,7 +356,7 @@
 
   @media (pointer: coarse) {
     .tab {
-      min-height: 48px;
+      min-height: var(--min-touch-target);
     }
   }
 
@@ -522,7 +522,7 @@
 
   @media (pointer: coarse) {
     .ori-chip {
-      min-height: 48px;
+      min-height: var(--min-touch-target);
       padding: 0.75rem;
     }
   }

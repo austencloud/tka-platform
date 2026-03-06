@@ -403,8 +403,8 @@
     bottom: 24px;
     right: 24px;
     z-index: 100;
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     display: flex;
     align-items: center;
     justify-content: center;

@@ -241,7 +241,7 @@
   }
 
   .control-btn {
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
     border-radius: 10px;
     font-size: var(--font-size-compact, 12px);

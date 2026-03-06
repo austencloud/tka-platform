@@ -67,8 +67,8 @@
     justify-content: center;
     gap: 4px;
     flex: 1;
-    min-width: 48px;
-    min-height: 48px;
+    min-width: var(--min-touch-target);
+    min-height: var(--min-touch-target);
     padding: 6px 8px;
     background: transparent;
     border: none;

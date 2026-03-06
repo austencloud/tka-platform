@@ -1387,7 +1387,6 @@
           canvasReady={!!animationCanvas && !!playbackController}
           layout={isMobile ? "bottom" : "sidebar"}
           onExport={handleExport}
-          onClose={exitExportMode}
         />
       </div>
     {:else if isExportMode}

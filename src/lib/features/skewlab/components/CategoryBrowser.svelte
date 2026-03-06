@@ -428,7 +428,7 @@
 
   @media (pointer: coarse) {
     .retry-btn {
-      min-height: 48px;
+      min-height: var(--min-touch-target);
     }
   }
 
@@ -559,7 +559,7 @@
 
   @media (pointer: coarse) {
     .page-btn {
-      min-height: 48px;
+      min-height: var(--min-touch-target);
       padding: 0.75rem 1rem;
     }
   }

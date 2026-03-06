@@ -246,8 +246,8 @@
 
   /* Master Toggle */
   .master-toggle {
-    width: 48px; /* WCAG AAA touch target */
-    height: 48px;
+    width: var(--min-touch-target); /* WCAG AAA touch target */
+    height: var(--min-touch-target);
     border-radius: 8px;
     border: 1px solid var(--theme-stroke, var(--theme-stroke-strong));
     background: var(--theme-card-bg, var(--theme-card-bg));
@@ -365,8 +365,8 @@
 
   /* More Options Button */
   .more-btn {
-    width: 48px; /* WCAG AAA touch target */
-    height: 48px;
+    width: var(--min-touch-target); /* WCAG AAA touch target */
+    height: var(--min-touch-target);
     border-radius: 6px;
     border: none;
     background: transparent;
@@ -418,8 +418,8 @@
   }
 
   .close-btn {
-    width: 48px; /* WCAG AAA touch target */
-    height: 48px;
+    width: var(--min-touch-target); /* WCAG AAA touch target */
+    height: var(--min-touch-target);
     display: flex;
     align-items: center;
     justify-content: center;

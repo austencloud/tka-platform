@@ -282,7 +282,7 @@
   .sequence-input {
     flex: 1;
     padding: 0.75rem 1rem;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
@@ -309,7 +309,7 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.75rem 1.25rem;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     border: none;
     border-radius: 8px;
     background: #22d3ee;
@@ -338,8 +338,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
     background: transparent;

@@ -331,8 +331,8 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    min-width: 48px;
-    min-height: 48px;
+    min-width: var(--min-touch-target);
+    min-height: var(--min-touch-target);
     padding: 0 0.75rem;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -387,7 +387,7 @@
 
   /* Step buttons */
   .step-btn {
-    min-width: 48px;
+    min-width: var(--min-touch-target);
     padding: 0;
     font-size: 0.9rem;
   }
@@ -444,10 +444,10 @@
     gap: 0.25rem;
   }
 
-  /* Speed buttons - 48px minimum touch target */
+  /* Speed buttons - minimum touch target */
   .speed-btn {
-    min-width: 48px;
-    min-height: 48px;
+    min-width: var(--min-touch-target);
+    min-height: var(--min-touch-target);
     padding: 0 0.5rem;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -521,9 +521,9 @@
 
     .speed-btn {
       font-size: var(--font-size-compact, 12px);
-      /* Keep 48px touch target on mobile */
-      min-width: 48px;
-      min-height: 48px;
+      /* Keep minimum touch target on mobile */
+      min-width: var(--min-touch-target);
+      min-height: var(--min-touch-target);
     }
   }
 

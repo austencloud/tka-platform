@@ -218,7 +218,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     padding: 10px 20px;
     border: none;
     border-bottom: 2px solid transparent;

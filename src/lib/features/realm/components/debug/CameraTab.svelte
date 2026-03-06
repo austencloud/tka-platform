@@ -147,7 +147,7 @@
     justify-content: center;
     gap: 4px;
     padding: 10px 6px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     background: transparent;
     border: 2px solid transparent;
     border-radius: 10px;
@@ -231,7 +231,7 @@
 
   .slider {
     width: 100%;
-    height: 48px;
+    height: var(--min-touch-target);
     background: transparent;
     appearance: none;
     cursor: pointer;

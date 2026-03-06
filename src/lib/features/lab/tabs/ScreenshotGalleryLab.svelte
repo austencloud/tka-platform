@@ -585,8 +585,8 @@
     position: absolute;
     top: 16px;
     right: 16px;
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     border-radius: 50%;
     border: none;
     background: rgba(255, 255, 255, 0.1);

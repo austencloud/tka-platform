@@ -155,7 +155,7 @@
 <div
 	bind:this={containerEl}
 	class="morph-chip-group"
-	class:has-expanded={isExpanded}
+	class:has-expanded={isExpanded && !expandedChipIsAutoMeasure}
 	style:--chip-gap="{gap}px"
 	style:--expanded-height="{expandedHeight}px"
 	style:--active-expanded-height="{activeExpandedHeight}px"

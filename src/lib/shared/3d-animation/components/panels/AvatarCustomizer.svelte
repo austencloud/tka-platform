@@ -156,8 +156,8 @@
   }
 
   .skin-swatch {
-    width: 48px; /* WCAG AAA touch target */
-    height: 48px;
+    width: var(--min-touch-target); /* WCAG AA touch target */
+    height: var(--min-touch-target);
     border-radius: 50%;
     border: 2px solid transparent;
     cursor: pointer;

@@ -257,7 +257,7 @@
 	/* Auto-height mode: size to content instead of being constrained by group */
 	.chip.expanding.auto-height {
 		height: auto;
-		min-height: 48px;
+		min-height: var(--min-touch-target);
 	}
 
 	/* Hide the collapsed label/value when expanded in auto-height mode */
@@ -325,7 +325,7 @@
 
 	.option-btn {
 		flex: 1;
-		min-height: 48px;
+		min-height: var(--min-touch-target);
 		background: var(--theme-panel-bg, rgba(18, 18, 28, 0.6));
 		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		border-radius: 12px;
