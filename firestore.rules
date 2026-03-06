@@ -72,9 +72,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Fire effect defaults - readable by authenticated users, writable by admins
+    // Fire effect defaults - readable by all (including pre-auth), writable by admins
+    // Must allow unauthenticated reads: FireDefaultsLoader runs during DI
+    // container construction before auth completes
     match /config/fireDefaults {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow write: if isAdmin();
     }
 

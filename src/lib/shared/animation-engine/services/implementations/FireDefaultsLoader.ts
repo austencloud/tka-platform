@@ -38,6 +38,10 @@ const LOG_PREFIX = "[FireDefaultsLoader]";
 const FIRESTORE_DOC_PATH = "config/fireDefaults";
 const LOCAL_CACHE_KEY = "tka-fire-defaults-cache";
 
+function isPermissionError(error: unknown): boolean {
+	return error instanceof Error && error.message.includes("Missing or insufficient permissions");
+}
+
 export class FireDefaultsLoader implements IFireDefaultsLoader {
 	private unsubscribe: Unsubscribe | null = null;
 	private loaded = false;
@@ -79,7 +83,10 @@ export class FireDefaultsLoader implements IFireDefaultsLoader {
 			this.readLocalStorage();
 			this.loaded = true;
 		} catch (error) {
-			console.warn(`${LOG_PREFIX} Firestore load failed, falling back to localStorage:`, error);
+			// Permission errors are expected before auth completes — fall back silently
+			if (!isPermissionError(error)) {
+				console.warn(`${LOG_PREFIX} Firestore load failed, falling back to localStorage:`, error);
+			}
 			this.readLocalStorage();
 			this.loaded = true;
 		}
@@ -174,12 +181,17 @@ export class FireDefaultsLoader implements IFireDefaultsLoader {
 						}
 					},
 					(error) => {
-						console.error(`${LOG_PREFIX} Snapshot listener error:`, error);
+						// Permission errors are expected before auth completes
+						if (!isPermissionError(error)) {
+							console.error(`${LOG_PREFIX} Snapshot listener error:`, error);
+						}
 					}
 				);
 			})
 			.catch((error) => {
-				console.error(`${LOG_PREFIX} Failed to set up snapshot listener:`, error);
+				if (!isPermissionError(error)) {
+					console.error(`${LOG_PREFIX} Failed to set up snapshot listener:`, error);
+				}
 			});
 	}
 
