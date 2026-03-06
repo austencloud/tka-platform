@@ -10,7 +10,7 @@
   import UnifiedHeader from "../../../settings/components/UnifiedHeader.svelte";
   import ConnectedAccounts from "./ConnectedAccounts.svelte";
   import DangerZone from "./DangerZone.svelte";
-  import PasswordSection from "./PasswordSection.svelte";
+  import PasswordChangeForm from "./PasswordChangeForm.svelte";
   import { authState } from "../../../auth/state/authState.svelte";
 
   const ctx = getProfileSettingsContext();
@@ -51,7 +51,7 @@
           icon="fas fa-key"
           description="Update your password to keep your account secure"
         />
-        <PasswordSection {onChangePassword} {hapticService} />
+        <PasswordChangeForm {onChangePassword} {hapticService} showLabel={false} />
       </div>
     {/if}
   </div>
