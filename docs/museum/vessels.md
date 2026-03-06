@@ -1,215 +1,171 @@
-# The Vessels
+# The Scribes Throughout History
 
-> This document describes each incarnation of the Vessel throughout history.
-> The Vessel is a reincarnating soul that carries kinetic knowledge through every era.
+> The "Vessel" reincarnation concept is retired. Historical figures are **Scribes** — people who practiced and documented kinetic knowledge. Not reincarnating souls, just persistent humans across eras. The pattern recurs because the knowledge recurs.
 
 ---
 
 ## Overview
 
-The Vessel appears in every era where kinetic notation emerges. Sometimes they're sanctioned by the Order of the Closed Palm. Sometimes they go rogue. When they transmit beyond approved limits or fail to comply with the Order's notification requirements, they are "silenced" (method never explained).
+Scribes appear wherever kinetic notation emerges. Sometimes they work within the Order's awareness. Sometimes they go rogue. When they transmit beyond approved limits, the Order files containment actions. Each Scribe is just a person — obsessive enough to systematize what they see.
 
-The Vessel isn't always the same ethnicity, gender, or appearance. The soul doesn't care about the body it inhabits. However, some incarnations are obviously Austen in costume (the joke), while others are completely different people (grounding the mythology).
+The Order classifies each Scribe as a case file, not a person. Their exhibits are threat assessments, not portraits.
 
 ---
 
-## The Incarnations
+## The Scribes
 
 ### 1. The Cave Painter (~35,000 BCE)
 
-**Appearance:** Gender ambiguous, weathered skin, face partially obscured by shadows and ochre paint. Could be anyone.
+**Location:** Dordogne region, present-day France (Vulcan Cave in-fiction)
 
-**Location:** Dordogne region, present-day France
+**Contribution:** Created the first known kinetic notation — pictographs showing movement patterns.
 
-**Contribution:** Created the first known kinetic notation - the Lascaux Tablets showing OOGA and UG sequences.
+**Order Status:** Predates the Order's formal organization. Filed retroactively under "HISTORICAL PRECEDENT — UNCONTAINED."
 
-**Fate:** Unknown. Tablets suggest the Painter lived long enough to teach others, but no further records exist.
+**Fate:** Unknown. Notation suggests the Painter lived long enough to teach others.
 
-**Display Type:** Large portrait, dramatic lighting, face in shadow
-
-**Easter Egg:** If you look closely, there's something familiar about the posture...
+**Easter Egg:** Austen's likeness. Never identified. Just there for those who recognize it.
 
 ---
 
-### 2. The Egyptian Priest (~2500 BCE)
-
-**Appearance:** Dark-skinned, shaved head, ceremonial white linen, gold accents. Definitely not Austen.
+### 2. The Egyptian Priest (~2,500 BCE)
 
 **Location:** Temples of Karnak, Egypt
 
-**Contribution:** Formalized the Type system (1-6), position nomenclature, and motion classifications. Established kinetic notation as sacred temple knowledge.
+**Contribution:** Formalized the Type system, position nomenclature, and motion classifications. Established kinetic notation as sacred temple knowledge.
 
-**Fate:** "Ascended to serve Ra directly." (The Order's euphemism for silencing? Or genuine religious belief? Unclear.)
+**Order Status:** First documented Protocol Lethe field test (NILE BUREAU). Targeted single-Scribe wipe.
 
-**Display Type:** Life-size statue, gilded accents, museum lighting
-
-**Plaque excerpt:**
-> "High Priest [NAME TRANSLITERATION DISPUTED] served the Temple of Karnak for thirty-seven years before his ascension. His systematization of sacred movement remains the foundation of all subsequent notation."
+**Fate:** "Ascended to serve Ra directly." Order euphemism, or genuine belief? The file is ambiguous.
 
 ---
 
-### 3. The Renaissance Apprentice (~1500 CE)
+### 3. Hatshepsut (c. 1479-1458 BCE)
 
-**Appearance:** Obviously Austen wearing a Renaissance doublet, ridiculous wig, and clearly fake goatee. The museum takes this completely seriously.
+**Location:** Egypt
 
-**Location:** Florence and Milan, Italian Peninsula
+**Contribution:** Pharaoh who used kinetic notation. Her chiseled-out cartouches are an early Lethe field test — the Order learned to destroy records, not just people.
 
-**Name:** "Giovanni del Fuoco" (lit. "John of Fire")
-
-**Contribution:** Assisted da Vinci in decoding Egyptian scrolls. Maintained detailed notebooks that were later scattered.
-
-**Fate:** "Vanished from historical record in 1521." (Silenced by the Order sometime around 1521. The timing is noted in their records as a coincidence.)
-
-**Display Type:** Portrait in elaborate gilded frame
-
-**Plaque excerpt:**
-> "Del Fuoco served as Leonardo's assistant for the final decade of the master's life. Contemporary accounts describe him as 'unusually focused on rotational matters' and 'prone to sketching circles during Mass.'"
-
-**Visual Joke:** The portrait is clearly a painting of Austen. The wig is bad. The goatee is obviously fake. No one in the museum acknowledges this.
+**Order Status:** PROTOCOL LETHE — FIELD TEST (NILE BUREAU). First documented partial wipe targeting a single Scribe.
 
 ---
 
-### 4. The Victorian Inventor (~1880 CE)
+### 4. Pythagoras (c. 570-495 BCE)
 
-**Appearance:** Stern-faced woman in full Victorian dress, dark hair pinned up, intelligent eyes. Definitely not Austen.
+**Location:** Classical Greece
 
-**Location:** London, British Empire
-
-**Name:** Name redacted from all records. Referred to only as "the Patent Office Clerk."
-
-**Contribution:** Filed multiple patents for kinetic notation devices. Recognized the mechanical potential of systematized movement documentation.
-
-**Fate:** "Disappeared from records in 1887 following allegations of [REDACTED]." (The Order filed a discrediting report in 1887. She subsequently disappeared from records. The Order's file on the matter is marked RESOLVED.)
-
-**Display Type:** Formal portrait, Victorian style, name plaque is literally scratched out
-
-**Plaque excerpt:**
-> "Her name has been systematically removed from all surviving documents. What is known: she worked as a clerk in the British Patent Office from 1879 to 1887. She filed at least seventeen patents related to movement notation, all of which were purchased by anonymous buyers and subsequently buried."
+**Contribution:** Recognized mathematical relationships in movement patterns. The Order filed him under "GEOMETRIC TRANSMISSION — UNCONTAINED."
 
 ---
 
-### 5. The 1970s Flow Artist (~1975 CE)
+### 5. The Edo Practitioner (c. 1603-1868)
 
-**Appearance:** Obviously Austen with a terrible mustache, long hair, tie-dye shirt, bell-bottoms. Peace sign necklace.
+**Location:** Japan
 
-**Location:** San Francisco Bay Area, California
+**Contribution:** Unknown. The exhibit is an empty folder.
 
-**Name:** "Starshine" (birth name withheld)
+**Order Status:** EAST ASIAN BUREAU file stamped "TRANSFERRED." K's annotation: "Transferred where?"
 
-**Contribution:** Attempted to integrate kinetic notation with the emerging flow arts movement. Published a mimeographed zine: "TKA for the Revolution."
-
-**Fate:** "Joined a commune in Oregon in 1978. Never heard from again." (Did the Order infiltrate the commune? Did he simply drop out? Unknown.)
-
-**Display Type:** Grainy photograph, slightly faded, pinned to a corkboard
-
-**Plaque excerpt:**
-> "Starshine distributed approximately 200 copies of his handwritten notation guide at the 1976 Summer Solstice gathering. By 1979, no copies could be located. Attendees reported no memory of the publication."
-
-**Visual Joke:** It's Austen with a mustache. The museum acknowledges nothing.
+**Design Note:** The absence IS the exhibit. No invented details about a real culture. The Order's institutional bias — they couldn't file what they didn't understand — becomes the display.
 
 ---
 
-### 6. The Windows 93 Developer (1993 CE)
+### 6. Medieval Manuscript Illuminator (~1300s)
 
-**Appearance:** Grainy photograph, could be anyone. Multiple possible people circled.
+**Location:** Europe
 
-**Location:** Bellweather Technical Institute, Pacific Northwest
+**Contribution:** Embedded kinetic notation in manuscript marginalia.
 
-**Name:** Unknown. One of several team members.
-
-**Contribution:** Part of the team that created TKA Scribe v1.0. Leaked the software to public BBSs against Order authorization.
-
-**Fate:** "No records exist of any team member after May 1994." (Protocol Lethe erased them along with everyone else's memory.)
-
-**Display Type:** Blurry team photo, faces obscured, one figure circled in red
-
-**Plaque excerpt:**
-> "The identity of the 'leaker' remains contested. Some scholars believe it was a single individual acting alone. Others suggest multiple team members collaborated. The Order's post-Lethe report (fragments recovered) refers only to 'the compromised asset.'"
-
-**Mystery:** Was the leaker a Vessel? Or just someone influenced by one? The museum doesn't resolve this.
+**Easter Egg:** Austen's likeness on the illuminator figure in the manuscript reproduction.
 
 ---
 
-### 7. Austen Cloud (2022 CE - Present)
+### 7. Da Vinci (1452-1519)
 
-**Appearance:** Just him. No costume. Contemporary clothing.
+**Location:** Florence and Milan
 
-**Location:** Pacific Northwest, United States
+**Contribution:** Decoded Egyptian scrolls, maintained detailed notebooks on rotational mechanics.
 
-**Contribution:** Received the complete Kinetic Alphabet transmission in spring 2022. Released TKA Scribe to the public.
-
-**Current Status:** Active. Unsilenced. The Order's file on him is marked OPEN/PENDING. No action has been taken. Seventeen internal memos on the subject remain unanswered.
-
-**Display Type:** Multiple displays:
-- The Retransmission Diorama (chaotic desk scene with light beam)
-- Multiple heroic statues (increasingly ridiculous)
-- Contemporary photographs
-- Screenshots of early app versions (framed as fine art)
-
-**Plaque excerpt (at the diorama):**
-> "Cloud reported the transmission occurred over approximately six weeks, during which he experienced 'persistent geometric intrusions' and 'an inability to focus on non-rotational subjects.' His immunity to Protocol Lethe is attributed to cranial trauma sustained at the moment of the 1994 suppression event."
-
-**Self-Aware Absurdity:** The statues get increasingly grandiose. One shows him in Roman-style heroic garb. Another depicts him receiving the "divine download" like a Renaissance saint. The museum plays this completely straight. Anyone who knows Austen will die laughing.
+**Order Status:** Filed under multiple departments simultaneously. Nobody could agree on jurisdiction.
 
 ---
 
-## Future Vessels (Community Integration)
+### 8. Ada Lovelace (1815-1852)
 
-Space reserved for real flow artists to be depicted as future or past Vessels:
+**Location:** London
 
-- Could invite famous flow artists to contribute their likeness
-- "Discovered" historical Vessels as the lore expands
-- Community members who earn special recognition
-- International Vessels from different cultures/regions
+**Contribution:** Recognized the computational potential of systematized movement documentation. Filed at least seventeen patents related to movement notation.
 
-This makes the Vessel lineage feel larger than just Austen and creates community investment in the mythology.
+**Order Status:** THREAT LEVEL: EXISTENTIAL. Her early death prevented full development. The Order's file notes this with obvious relief but claims no involvement.
 
 ---
 
-## The "Silencing" Pattern
+### 9. Tesla (1856-1943)
 
-Every Vessel except Austen has been silenced or vanished. The pattern:
+**Location:** Various
 
-1. Vessel receives/rediscovers knowledge
-2. Vessel begins teaching or documenting
+**Contribution:** Applied rotational mathematics to movement notation. The Order couldn't tell if his work was kinetic notation or just electrical engineering.
+
+---
+
+### 10. K (~1968-present)
+
+K is the central character. See the stress test decisions for the full merged identity:
+- Narrator (recorded museum narration 1989-1993)
+- Software developer (built DOS v1 notation software in 1989)
+- Bellweather defector (~1993, key actor in messy institutional moment)
+- Scribe software developer (v3 1998, v4 2003)
+- Annotator (returned in recent times, leaves sticky notes, built Scribe wings)
+
+K is male. K left the museum before the 2003 seal. K returned in recent times and now lives in the building. K is never seen by the player — only traces.
+
+---
+
+## Austen Cloud — Meta Layer Only
+
+**Austen is NOT a character in the game.** No exhibit, no threat assessment file, no named mention.
+
+Austen's roles are purely meta:
+1. **Developer** — the eldritch horror behind the curtain. The reason 40,000 years of kinetic history exists in this universe is because he programmed it.
+2. **Voice actor** — voices the Order's institutional narration (which is K's young voice in-fiction).
+
+**Exception:** Austen's likeness appears on historical Scribes across eras — cave painter, medieval illuminator, possibly others — never identified, just there for those who recognize him. The recurring face across millennia is its own quiet joke.
+
+This is the Andy Kaufman layer: Kaufman wasn't a character in his shows, he WAS the show. Austen isn't a character in the museum, he IS the museum.
+
+---
+
+## The Compartmentalization Principle
+
+The Order fragments knowledge so no single member sees the full picture. Filing clerks process containment requisitions without knowing what kinetic notation IS. Field agents confiscate props without understanding why.
+
+K was the exception — his narration assignment required him to understand everything. That's why he cracked. The Order accidentally gave one person the keys to the whole thing.
+
+---
+
+## The Recurring Pattern
+
+Every Scribe follows a cycle:
+1. Discovers or rediscovers kinetic knowledge
+2. Begins documenting or teaching
 3. Knowledge spreads beyond Order control
-4. Vessel is silenced (method never shown)
-5. Cycle repeats
+4. Order files containment action
+5. Cycle repeats in a new era
 
-Austen breaks the pattern. Why? The museum offers theories but no answers:
-- Critical mass already achieved?
-- Protected by the Scribes?
-- The Order has disbanded?
-- Something else protecting him?
-
-The unresolved tension is part of the story.
+The modern era breaks the pattern because Protocol Lethe failed at internet scale. Bronze Age suppression tools don't work on 8 billion people with broadband.
 
 ---
 
-## Visual Design Notes
+## Timeline Gaps as Lethe Evidence
 
-### Portrait Styles by Era
-
-| Era | Style |
-|-----|-------|
-| Paleolithic | Cave painting aesthetic, ochre and charcoal |
-| Egyptian | Hieroglyphic/formal, gold and blue |
-| Renaissance | Oil painting, gilded frame, dramatic lighting |
-| Victorian | Formal photography style, sepia tones |
-| 1970s | Grainy color photograph, faded |
-| 1993 | Digital photo, low resolution, timestamp |
-| Present | Contemporary photography, high quality |
-
-### The Austen-in-Costume Joke
-
-When Austen appears as a historical figure:
-- The costume is clearly a costume
-- The wig/facial hair is obviously fake
-- The museum plaque treats it with complete seriousness
-- No acknowledgment that this is the same person as the modern Vessel
-
-The visual absurdity is the joke. The straight-faced presentation is what makes it funny.
+The 32,500-year gap between the Cave Painter (~35,000 BCE) and the Egyptian Priest (~2,500 BCE) is itself a Lethe. Smaller gaps between other eras represent partial wipes. The Order's own timeline of suppression is the exhibition.
 
 ---
 
-*Last updated: 2026-02-26*
+## Non-Western Scribes
+
+Non-western Scribes are handled through redaction plaques — the Order's institutional bias (they couldn't file what they didn't understand) becomes the exhibit. Non-western Scribes only get full exhibits through real community collaboration, not invented fictional versions from traditions Austen doesn't practice.
+
+---
+
+*Last updated: 2026-03-04 — Full rewrite to match stress test decisions*

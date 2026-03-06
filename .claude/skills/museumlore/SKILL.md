@@ -7,50 +7,55 @@ description: Use when the user wants to discuss, analyze, or brainstorm museum l
 
 ## Overview
 
-Focus exclusively on the Lore & Narrative department of The Kinetic Archive museum project. No dispatching department agents, no full audits. Just lore discussion. Writers' room energy.
+Lore-focused discussion mode for The Kinetic Archive. Writers' room energy. This skill is an overlay on the `/museum` tracker system — use `/museum help` for the full command reference.
 
-## Usage
+**When to use this vs `/museum`:**
+- `/museum` = project management, department briefings, all 7 departments, all tracker commands
+- `/museumlore` = narrative discussion, story bible sync, lore sessions with strict close protocol
 
-- `/museumlore` - Review all lore items and open a focused discussion
-- `/museumlore strengths` - Analyze the strongest elements of the lore system
-- `/museumlore weaknesses` - Analyze the weakest elements and unresolved questions
-- `/museumlore <id>` - Deep dive on a specific lore item
-- `/museumlore session "Title"` - Start a lore-focused brainstorming session
+## The Two-Layer Rule
+
+**Layer 1: Story Bible** (`docs/museum/story-bible.md`) is the canonical source of truth.
+**Layer 2: Tracker** (`node scripts/museum-dev.js`) is the audit trail.
+
+If there's a conflict, the story bible wins. The tracker records how you got there, not where you are.
+
+## Before Any Lore Discussion
+
+**Read the story bible first.** Always. Before brainstorming, discussing, or proposing changes. Use the Read tool on `docs/museum/story-bible.md`. This prevents proposing ideas that contradict resolved decisions.
 
 ## Instructions
 
 ### For no arguments or "strengths" or "weaknesses":
 
-**Step 1: Load all lore items**
+**Step 1: Read the story bible** (always first — use the Read tool)
 
+**Step 2: Load lore items from tracker**
 ```bash
 node scripts/museum-dev.js list --tag lore
 ```
 
-Read key items in detail (especially audit-tagged questions and accepted decisions).
+**Step 3: Analyze and discuss**
 
-**Step 2: Analyze and discuss**
+For **strengths**: Identify lore elements that are internally consistent, narratively compelling, comedically effective, and structurally sound. Explain WHY each works.
 
-For **strengths**: Identify the lore elements that are most internally consistent, narratively compelling, comedically effective, and structurally sound. Explain WHY each element works — what it solves, what it enables, how it connects to other lore elements.
+For **weaknesses**: Identify unresolved questions, contradictions, thin areas. Be specific about what breaks and why.
 
-For **weaknesses**: Identify unresolved questions, potential contradictions, thin areas, and elements that haven't been stress-tested. Be specific about what breaks and why.
+For **no arguments**: Brief status overview, then ask the user what angle to explore.
 
-For **no arguments**: Present a brief status overview, then ask the user what angle they want to explore.
-
-**Step 3: Conversational mode**
-
-This is a DISCUSSION skill, not a dispatch-and-report skill. After the initial analysis, engage in back-and-forth with the user. Propose ideas, challenge assumptions, build on their responses. Think like a writers' room collaborator.
+**Step 4: Conversational mode** — this is a DISCUSSION skill, not dispatch-and-report.
 
 ### For "<id>":
 
-Read the item in detail and all linked items:
+Read the item in detail, all linked items, and run cascade check:
 ```bash
 node scripts/museum-dev.js <id>
 node scripts/museum-dev.js links <id>
+node scripts/museum-dev.js cascade <id>
 node scripts/museum-dev.js trace <id>
 ```
 
-Present the full context — the decision, its origin session, what it answers, what it links to — then discuss its implications and whether it's holding up.
+Present the full context, then discuss whether it's holding up.
 
 ### For "session <title>":
 
@@ -59,40 +64,53 @@ Start a lore brainstorming session:
 node scripts/museum-dev.js session "Title"
 ```
 
-During the session, capture ideas as they emerge. **Use the correct type based on provenance:**
-```bash
-# User-directed idea → decision
-node scripts/museum-dev.js capture <sessionId> decision "Content"
-
-# Claude-generated idea, user said "sure" → proposal
-node scripts/museum-dev.js capture <sessionId> proposal "Content"
-
-# Open question → question
-node scripts/museum-dev.js capture <sessionId> question "Content"
-```
-
-Tag all captures with `lore`:
+During the session, use standard tracker capture commands (see `/museum` skill for full reference). Tag all captures with `lore`:
 ```bash
 node scripts/museum-dev.js <capturedId> tag add lore
 ```
 
+### For "close" (SESSION CLOSING — MANDATORY):
+
+This step is **required** before ending any lore session. It prevents orphaned proposals, floating questions, and story bible drift.
+
+**Step 1:** List all captures: `node scripts/museum-dev.js tree <sessionId>`
+
+**Step 2:** Review each capture with the user:
+
+| Item Type | Possible Verdicts |
+|-----------|-------------------|
+| Decision | Already approved. Write into story bible if significant. Mark `completed`. |
+| Proposal | **Promote** (user says yes -> `museum promote <id>`) or **Reject** (`museum <id> verdict rejected "reason"`) |
+| Question | **Answer** (`museum <id> answer "..."`) or **Carry** (tag with `carries-to-next-session`) |
+
+**Step 3:** Update `docs/museum/story-bible.md` with any promoted proposals or significant decisions. Add tracker IDs to the Canonical Decisions table.
+
+**Step 4:** Run cascade check on major changes: `node scripts/museum-dev.js cascade <decisionId>`
+
+**Step 5:** Confirm: "Session closed. [N] items resolved, [M] carried to next session. Story bible updated."
+
 ## Key Principles
 
-- This is writers' room energy, not project management
+- Writers' room energy, not project management
 - Challenge lore that sounds good but doesn't hold up under scrutiny
 - Connect dots between decisions — the best lore is a web, not a list
 - When something is strong, explain the structural reason it works
 - When something is weak, propose specific fixes, not vague concerns
-- Capture any decisions or questions that emerge during discussion
-- **Proposals, not decisions** — Claude's ideas are captured as `proposal` type, not `decision`. Only the user can promote a proposal to a decision. See `/museum` skill for full rules.
-- **One pushback before capture** — Before saving a Claude-generated idea, give one honest counterargument.
+- **Proposals, not decisions** — Claude's ideas are `proposal` type. Only the user promotes.
+- **One pushback before capture** — give one honest counterargument before saving any Claude-generated idea.
+- **NEVER capture decisions without user approval.** Present -> ask -> explicit yes -> THEN capture.
+- **Proposals expire at session close.** No zombies.
 
 ## Common Mistakes
 
 | Mistake | Fix |
 |---------|-----|
-| Capturing Claude's idea as `decision` | Always use `proposal`. Only the user promotes to `decision`. |
-| Citing previous Claude output as "the strongest element" | That's a feedback loop, not evaluation. Judge lore on structural merit, not who wrote it. |
+| Capturing Claude's idea as `decision` | Always `proposal`. Only the user promotes. |
+| Capturing without asking user first | Present -> ask -> explicit "yes" -> THEN capture. |
+| Citing previous Claude output as "the strongest element" | Feedback loop. Judge on structural merit. |
 | Switching to project management mode | Stay in writers' room. Discuss narrative, don't track tasks. |
 | Vague criticism ("this feels weak") | Be specific: what breaks, what contradicts, what's untested. |
-| Forgetting to tag captures with `lore` | Every capture from this skill gets `node scripts/museum-dev.js <id> tag add lore`. |
+| Forgetting to tag captures with `lore` | Every capture from this skill gets tagged. |
+| Ending session without closing step | ALWAYS run `/museumlore close`. No orphans. |
+| Proposing ideas that contradict story bible | Read the story bible FIRST. |
+| Major decision without cascade check | Run `museum cascade <id>`. |

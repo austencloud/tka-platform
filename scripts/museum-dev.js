@@ -283,6 +283,178 @@ async function searchItems(query) {
 }
 
 // ============================================================================
+// CASCADE DETECTION
+// ============================================================================
+
+async function cascadeCheck(shortId) {
+  const fullId = await resolveAndValidateId(shortId);
+  if (!fullId) return;
+
+  const doc = await db.collection(COLLECTIONS.ITEMS).doc(fullId).get();
+  if (!doc.exists) {
+    console.log(`\n  ❌ Item not found: ${fullId}\n`);
+    return;
+  }
+
+  const sourceData = doc.data();
+  const sourceTitle = (sourceData.title || "(untitled)").substring(0, 60);
+  console.log(`\n  🔗 CASCADE CHECK for: ${sourceTitle}`);
+  console.log("=".repeat(70));
+
+  // Phase 1: Walk explicit links (BFS)
+  const visited = new Set([fullId]);
+  const queue = [{ id: fullId, depth: 0 }];
+  const linkedItems = [];
+
+  while (queue.length > 0) {
+    const { id: currentId, depth } = queue.shift();
+    if (depth > 3) continue; // Max 3 hops
+
+    const currentDoc = await db.collection(COLLECTIONS.ITEMS).doc(currentId).get();
+    if (!currentDoc.exists) continue;
+    const currentData = currentDoc.data();
+
+    const allLinked = [
+      ...(currentData.linksTo || []).map(l => ({ ...l, direction: "→" })),
+      ...(currentData.linkedFrom || []).map(l => ({ ...l, direction: "←" })),
+    ];
+
+    for (const link of allLinked) {
+      if (!visited.has(link.docId)) {
+        visited.add(link.docId);
+        const linkedDoc = await db.collection(COLLECTIONS.ITEMS).doc(link.docId).get();
+        if (linkedDoc.exists) {
+          const linkedData = linkedDoc.data();
+          linkedItems.push({
+            id: link.docId,
+            depth: depth + 1,
+            direction: link.direction,
+            linkType: link.type,
+            type: linkedData.type,
+            status: linkedData.status,
+            verdict: linkedData.verdict,
+            title: linkedData.title,
+          });
+          queue.push({ id: link.docId, depth: depth + 1 });
+        }
+      }
+    }
+  }
+
+  // Phase 2: Content-based search for related items
+  // Extract key terms from the source item
+  const sourceText = [sourceData.title || "", sourceData.description || ""].join(" ");
+  // Core entities (always checked)
+  const corePatterns = [
+    { pattern: /K(?:'s)?/i, label: "K" },
+    { pattern: /Order/i, label: "Order" },
+    { pattern: /Lethe/i, label: "Lethe" },
+    { pattern: /Scribe/i, label: "Scribe" },
+  ];
+
+  // Dynamic entities: scan all item titles for recurring proper nouns
+  const allItems = await db.collection(COLLECTIONS.ITEMS).get();
+  const nounCounts = new Map();
+  const STOP_WORDS = new Set(["The", "This", "That", "What", "When", "Where", "Why", "How", "Not", "And", "But", "For", "From", "With", "Into", "Room", "Phase", "Wing", "Session", "Decision", "Question", "Proposal"]);
+
+  allItems.forEach(d => {
+    const title = d.data().title || "";
+    const words = title.match(/[A-Z][a-z]{2,}/g) || [];
+    for (const w of words) {
+      if (!STOP_WORDS.has(w)) nounCounts.set(w, (nounCounts.get(w) || 0) + 1);
+    }
+  });
+
+  // Build patterns from nouns appearing in 2+ item titles
+  const dynamicPatterns = [];
+  for (const [noun, count] of nounCounts) {
+    if (count >= 2) {
+      dynamicPatterns.push({ pattern: new RegExp("\\b" + noun + "\\b", "i"), label: noun });
+    }
+  }
+
+  const entityPatterns = [...corePatterns, ...dynamicPatterns];
+  const keyEntities = [];
+
+  for (const ep of entityPatterns) {
+    if (ep.pattern.test(sourceText)) {
+      keyEntities.push(ep.label);
+    }
+  }
+
+  let contentMatches = [];
+  if (keyEntities.length > 0) {
+    allItems.forEach(d => {
+      if (visited.has(d.id)) return; // Already found via links
+      const data = d.data();
+      if (data.verdict === "superseded") return; // Skip superseded
+      if (data.type === "session") return; // Skip sessions
+
+      const text = [data.title || "", data.description || ""].join(" ");
+      const matchedEntities = keyEntities.filter(entity => {
+        const ep = entityPatterns.find(p => p.label === entity);
+        return ep && ep.pattern.test(text);
+      });
+
+      if (matchedEntities.length >= 2) { // At least 2 shared entities
+        contentMatches.push({
+          id: d.id,
+          type: data.type,
+          status: data.status,
+          verdict: data.verdict,
+          title: data.title,
+          matchedEntities,
+        });
+      }
+    });
+
+    // Sort by number of matched entities (most relevant first)
+    contentMatches.sort((a, b) => b.matchedEntities.length - a.matchedEntities.length);
+    contentMatches = contentMatches.slice(0, 30); // Cap at 30
+  }
+
+  // Display results
+  console.log(`\n  📎 LINKED ITEMS (${linkedItems.length} found via link graph):\n`);
+
+  if (linkedItems.length === 0) {
+    console.log("     (none — this item has no explicit links)\n");
+  } else {
+    for (const item of linkedItems) {
+      const indent = "  ".repeat(item.depth);
+      const title = (item.title || "(untitled)").substring(0, 50);
+      const verdict = item.verdict ? ` [${item.verdict}]` : "";
+      console.log(
+        `  ${indent}${item.direction} [${item.linkType}] ${item.id.substring(0, 8)}... | ${item.type} | ${title}${verdict}`
+      );
+    }
+    console.log();
+  }
+
+  console.log(`  🔍 CONTENT MATCHES (${contentMatches.length} items share 2+ entities with source):\n`);
+
+  if (contentMatches.length === 0) {
+    console.log("     (none)\n");
+  } else {
+    console.log(`     Key entities in source: ${keyEntities.join(", ")}\n`);
+    for (const item of contentMatches) {
+      const title = (item.title || "(untitled)").substring(0, 45);
+      const verdict = item.verdict ? ` [${item.verdict}]` : "";
+      const entities = item.matchedEntities.join(",");
+      console.log(
+        `     ${item.id.substring(0, 8)}... | ${item.type.padEnd(10)} | ${title}${item.title?.length > 45 ? "..." : ""}${verdict} (${entities})`
+      );
+    }
+    console.log();
+  }
+
+  const total = linkedItems.length + contentMatches.length;
+  console.log("─".repeat(70));
+  console.log(`  Total: ${total} potentially affected items`);
+  console.log(`  Review these items if the source decision changes.\n`);
+  console.log("=".repeat(70) + "\n");
+}
+
+// ============================================================================
 // DISPLAY OPERATIONS (linking, journal, transcript, attachments)
 // ============================================================================
 
@@ -665,7 +837,7 @@ QUICK CAPTURE (during sessions):
   museum session "Title"              Start a new session
   museum capture <sessionId> decision "The decision"
   museum capture <sessionId> question "The question"
-  museum session-end <sessionId> --transcript ./file.md
+  museum session-end <sessionId> [--transcript <path>] [--strict]
 
 QUEUE COMMANDS:
   museum                              List all items
@@ -714,6 +886,9 @@ ATTACHMENTS:
   museum <id> attach-url https://... "Description"
   museum <id> attachments             List attachments
 
+CASCADE:
+  museum cascade <id>                 Show all items affected if this decision changes
+
 OTHER:
   museum search "query"               Search items
   museum journal <id>                 View activity journal
@@ -733,7 +908,7 @@ STATUSES: ${STATUSES.join(", ")}
 // ============================================================================
 
 const READ_ONLY_COMMANDS = new Set([
-  "help", "--help", "-h", "list", "search", "journal", "transcript", "links", "trace", "tree",
+  "help", "--help", "-h", "list", "search", "journal", "transcript", "links", "trace", "tree", "cascade",
 ]);
 
 async function main() {
@@ -780,12 +955,13 @@ async function main() {
 
     case "session-end": {
       if (!args[1]) {
-        console.log("\n  ❌ Usage: museum session-end <sessionId> [--transcript <path>]\n");
+        console.log("\n  ❌ Usage: museum session-end <sessionId> [--transcript <path>] [--strict]\n");
         return;
       }
       const transcriptIdx = args.indexOf("--transcript");
       const transcriptPath = transcriptIdx !== -1 ? args[transcriptIdx + 1] : null;
-      return endSession(args[1], transcriptPath);
+      const strict = args.includes("--strict");
+      return endSession(args[1], transcriptPath, { strict });
     }
 
     case "capture":
@@ -854,6 +1030,14 @@ async function main() {
         return;
       }
       return showSessionTree(args[1]);
+
+    case "cascade":
+      if (!args[1]) {
+        console.log("\n  ❌ Usage: museum cascade <id>");
+        console.log("  Shows all items that might be affected if this decision changes.\n");
+        return;
+      }
+      return cascadeCheck(args[1]);
 
     case "search":
       if (!args[1]) {

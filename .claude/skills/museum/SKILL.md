@@ -13,7 +13,7 @@ All items are tagged by department. These are the 7 departments:
 
 | Department | Tag | Covers |
 |---|---|---|
-| Lore & Narrative | `lore` | The Order, Vessels, time mechanics, Austen's character, world bible |
+| Lore & Narrative | `lore` | The Order, Scribes, K's arc, timeline, world bible |
 | Exhibit Design | `exhibit-design` | Room concepts, floor plan, spatial flow, naming, what's in the museum |
 | Experience Design | `experience-design` | Interaction, pacing, emotional arc, tone, level system, performer count |
 | Art Direction | `art-direction` | Visual philosophy, era aesthetics, lighting, costume design |
@@ -49,7 +49,7 @@ $ARGUMENTS - Command and arguments (see help for full list)
 
 1. Run `node scripts/museum-dev.js list` to see all items
 2. Read the 10 most recent decisions (sort by date, newest first) — these represent the current state of the lore
-3. Read `docs/museum/phase-structure.md` first (most current structural doc), then other docs as needed
+3. Read `docs/museum/story-bible.md` (canonical source of truth), then other docs as needed
 4. Check for supersession chains — recent decisions often replace older ones. If a decision says "supersedes X," the older item is dead. Don't reference it.
 
 **Why this order matters:** The docs in `docs/museum/` are original designs. The tracker is where those designs get revised. A concept praised in `vtg-wing.md` may have been scrapped three sessions ago. Read the tracker first.
@@ -68,7 +68,7 @@ $ARGUMENTS - Command and arguments (see help for full list)
 
 **Step 1: Dispatch department agents in parallel**
 
-Launch 7 Task agents simultaneously using `subagent_type: "general-purpose"` and `model: "sonnet"`. Each agent gets this prompt template (fill in the department name and tag):
+Launch 7 agents simultaneously using the Agent tool with `subagent_type: "general-purpose"`. Each agent gets this prompt template (fill in the department name and tag):
 
 ```
 You are the {DEPARTMENT_NAME} department manager for The Kinetic Archive museum project.
@@ -172,6 +172,18 @@ End a session and optionally attach the transcript:
 node scripts/museum-dev.js session-end <sessionId>
 node scripts/museum-dev.js session-end <sessionId> --transcript ./transcript.md
 ```
+
+**Before ending any session, resolve all captures:**
+
+1. Run `node scripts/museum-dev.js tree <sessionId>` to list all spawned items
+2. For each item:
+   - **Decision** -> mark `completed` if approved
+   - **Proposal** -> promote (`museum promote <id>`) or reject (`museum <id> verdict rejected "reason"`)
+   - **Question** -> answer (`museum <id> answer "..."`) or tag with `carries-to-next-session`
+3. No orphaned proposals or unanswered questions should remain
+
+**For lore sessions:** Use `/museumlore` instead — it adds story bible sync and stricter close hygiene.
+
 
 ### For "create <type> <title>":
 

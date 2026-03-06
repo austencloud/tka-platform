@@ -20,15 +20,15 @@ You are walking through an abandoned government archive that presents this fabri
 
 The museum has two voices — both are K.
 
-The **narrator voice** is K's audio recordings, made starting ~1985 when K was a young true believer assigned to voice the new physical archive. The delivery system is automated (triggered by proximity, looping on schedule), but the voice is human. K at 21: earnest, proud, slightly over-prepared, deadly serious about the mission. The recordings span nearly two decades (1985-2003), and K's emotional state shifts dramatically across them:
+The **narrator voice** is K's audio recordings, made from 1989 through ~1993 as wings opened or were updated. K was ~21 when recording began (born ~1968). The delivery system is automated (triggered by proximity, looping on schedule), but the voice is human. K at 21: earnest, proud, slightly over-prepared, deadly serious about the mission. K's emotional state shifts across the four-year recording window:
 
 | Period | K's age | Emotional state | Vocal character |
 |---|---|---|---|
-| 1985-1988 | 21-24 | True believer. Awed. | Over-prepared, slightly nervous, reverent. Reads the institutional script like gospel. Careful enunciation. The eager employee who rehearsed his lines. |
-| 1989-1992 | 25-28 | Seeds of doubt. Still performing belief. | More natural, less nervous. Occasional editorializing — small asides that go slightly off-script. Admiration for the material leaking through the institutional framing. |
-| 1993 (post-leak) | 29 | Terrified. Performing normalcy. | Tighter delivery. Fewer asides. K pulls back to the script because improvisation feels dangerous. Sounds MORE professional, not less. On second playthrough: that's when K stopped being himself on tape. |
-| 1994-1999 | 30-35 | Active saboteur. Increasingly sardonic. | Dry humor surfaces. Word choices get pointed. Describing a containment operation as "thorough" with a pause that makes it sound like a question. The institutional script starts sounding like it's being read by someone who finds it absurd. |
-| 2000-2003 | 36-39 | Watching the system seize. | Almost relaxed. Occasional warmth, longer pauses, moments where K sounds like he's talking to someone specific rather than narrating to nobody. On second playthrough: he's already talking to the future visitor. |
+| 1989-1990 | ~21-22 | True believer. Awed. | Over-prepared, slightly nervous, reverent. Reads the institutional script like gospel. Careful enunciation. The eager employee who rehearsed his lines. Cave wing recorded first. |
+| 1990-1992 | ~22-24 | Seeds of doubt. Still performing belief. | More natural, less nervous. Occasional editorializing — small asides that go slightly off-script. Admiration for the material leaking through the institutional framing. Processing suppression orders is eroding K's belief. |
+| 1992-1993 | ~24-25 | Fear accumulating. Planning the leak. | Tighter delivery. Fewer asides. K pulls back to the script because improvisation feels dangerous. Sounds MORE professional, not less. Over-scripted, careful. Last recordings are from just before the Bellweather defection, when K was already planning the leak. On second playthrough: that's when K stopped being himself on tape. |
+
+Recording stopped at the Bellweather (~1993). K never recorded again — too risky after the defection. Four years of recording is enough time for the emotional arc to develop audibly. The cracking is gradual, not a switch. Micro-hesitations accumulate.
 
 Most players won't notice the vocal evolution on first playthrough. On second playthrough, it's obvious — and devastating.
 
@@ -38,17 +38,21 @@ The comedy comes from the contrast between the two voices AND from the absurdity
 
 K built the narration system and retains admin access. Some recordings may have been subtly modified or re-recorded after K's return — the player can't tell which segments are original (K-as-believer) and which are K's later edits (K-as-defector). Occasional off-script moments add personality: the narrator editorializes, hesitates, or adds asides that feel unscripted. Light touch, not constant.
 
-### 2. The Nathan Fielder Rule
+### 2. The Andy Kaufman Rule
 
-The joke is never explained. Visitors should leave genuinely uncertain whether any of this is real. The OOGA sequence will tip most people off, but the presentation should be so earnest they might think "well maybe OOGA is a real ancient word."
+The audience's confusion about what's real IS the art. Visitors should leave genuinely uncertain whether any of this is real. The OOGA sequence will tip most people off, but the presentation should be so earnest they might think "well maybe OOGA is a real ancient word." Players who know Austen built TKA can't tell where real-Austen ends and fictional-Austen begins. Tony Clifton wasn't real. Neither is the museum's version of history. The audience's inability to locate the boundary is the whole game.
 
 ### 3. Commit to the Bit
 
 This is not a joke that winks at the audience. The Order's voice is a serious museum presenting serious research about serious history. The humor comes from the *content* being absurd while the *presentation* is completely sincere. The Scribe annotations provide the human warmth without breaking the fiction.
 
-### 4. The Fire Jam Test
+### 4. Easter Egg Philosophy
 
-All text should pass the test: "Would Austen say this out loud at a fire jam?" Museum plaques can be formal (they're the Order's voice), but the Scribe annotations should feel human.
+Rooms should be full of unlabeled details that tell the story without spelling it out. K's pens in a display case, not labeled as K's. A sticky note that reads one way on first playthrough and devastatingly on second. The story lives in the objects, not the captions.
+
+Two layers of Easter eggs:
+- **Lore eggs:** Details that reward attentive players who piece together K's arc, the Order's history, or the timeline. Sometimes self-aware and ridiculous. The museum knows it's absurd — it just won't admit it.
+- **Meta eggs:** References to the fact that the whole thing is a video game. A filing cabinet labeled "Interactive Experiences Division." A memo about "user engagement metrics." An exit sign that leads to another room. The fourth wall is a load-bearing wall — lean on it, don't break it.
 
 ---
 
@@ -59,24 +63,30 @@ All text should pass the test: "Would Austen say this out loud at a fire jam?" M
 **What they are:** Three names from three eras. The organization's true age is unknowable — they've existed longer than anyone can confirm. The mystery is the point.
 - **Prehistoric:** Nameless. Just a symbol repeated on cave walls. Predates language.
 - **Classical:** Order of the Closed Palm. Named secret society. The symbol formalized into a seal.
-- **Modern:** Bureau of Kinetic Containment (BKC). The transition from ancient mystic guardians to government bureaucracy was gradual — decades of absorption, not a single founding date. Eventually: a budget line item and reporting requirements.
+- **Modern:** Bureau of Kinetic Containment (BKC). American, 1940s. The transition from ancient mystic guardians to government bureaucracy was gradual — decades of absorption, not a single founding date. Eventually: a budget line item and reporting requirements. The BKC's modern bureaucratic form is mid-century American, which is the in-universe explanation for the Anglocentrism of the records. The ancient roots are global, but the filing system that ate them is from Washington.
 
 **Naming in-game:** The formal names ("Order of the Closed Palm," "Bureau of Kinetic Containment") are not revealed directly in the intro. The player discovers them through exhibits. Early narration uses "we," "the organization," "this facility." The names emerge organically.
 
-**Symbol:** A hand with fingers curled inward toward the palm, thumb tucked underneath. The hand cannot grip. The hand refuses to hold a prop.
+**Symbol:** A hand with fingers curled inward toward the palm (not a fist — more like recoiling or refusing), thumb tucked underneath. The hand cannot grip. The hand refuses to hold a prop. The symbol appears differently in each era: carved into stone (ancient), hieroglyphic (Egyptian), wax seal (Renaissance), stamped on documents (Victorian), minimalist corporate logo (modern). Appears subtly from the earliest exhibits but is never labeled until the Order is named.
 
 **Core distinction:** The Order observes, studies, archives, reveres, but will not practice. They believe kinetic knowledge is sacred enough to belong behind glass. They suppress PRACTICE, not KNOWLEDGE. They're fine with the knowledge existing in archives. What concerns them is what happens when someone picks up a stick and moves.
 
 **Motivation (three layers):**
 1. **Ancient:** Genuinely afraid. The same sequences appearing independently in practitioners who never met. The same letterforms drawn by people on different continents with zero contact. The ancient Order witnessed something moving THROUGH practitioners — not possession in the demonic sense, but a signal arriving through human bodies. They didn't know what was transmitting. They contained what they could and watched. Real awe, real fear.
 2. **Modern:** Not completely ignorant but acknowledge they've lost awareness of WHY they do this. They act because they know they should, running inherited procedures they can barely read.
-3. **Surface:** Public health framing is the modern misread. Bureaucratic pandemic protocols for "people who like spinning sticks." Exposure forms, quarantine classifications, symptom assessments. The Order isn't wrong that flow artists get obsessed and stop answering emails. The comedy is the proportional response.
+3. **Surface:** Public health framing is the modern misread. Bureaucratic pandemic protocols for people who grip objects and spin them — staves, fans, clubs, anything. Exposure forms, quarantine classifications, symptom assessments. The Order's pathological model: flow state itself is a transmissible disease, spread through proximity and participation. Ancient symptom descriptions match modern flow state exactly (loss of time awareness, compulsive repetition, social withdrawal, "inability to release the object"). The Order isn't wrong that flow artists get obsessed and stop answering emails. The comedy is the diagnosis, not the symptoms.
+
+**Methods:** Three tiers. *Authorized transmission*: the Order permits certain individuals to receive kinetic knowledge under monitoring (da Vinci, the Victorian inventors, the 1993 research team were all sanctioned). *Discrediting*: preferred for unauthorized spread — anonymous complaints, funding reviews, paper retractions. No violence, just process. *Silencing*: when discrediting fails. The exact method is **never explained** in the museum. Referenced constantly, never shown. Like the noodle incident in Calvin & Hobbes. "The Vessel was silenced in the spring of 1521. No further records exist."
+
+**Internal structure (hints only):** A "council" that convenes during crises, regional "monitors," "archivists" who maintain suppressed knowledge, possible internal factions (hardliners vs. moderates). The Order should feel so old and entrenched that nobody is sure who's actually in charge anymore — including them.
 
 **Operational style:** Vogon bureaucracy. Authority without understanding. Triplicate forms, approval chains, institutional inertia. Not evil, just incredibly governmental.
 
 **Onboarding:** New Order members are shown kinetic performances during onboarding. The Order genuinely appreciates the beauty. But the institutional interpretation frames beauty as dangerous. The Order isn't ignorant of what they suppress — they fear what happens when people participate. Members who go through onboarding emerge believing kinetic knowledge is beautiful AND that it belongs behind glass.
 
-**Current status:** The Order panics and seals the museum around 2003. They detected an insider (K, though they never identified him specifically), they were already executing Protocol Lethe, and they boarded up the facility in a rush. Not destruction — abandonment under duress. Power stays on, systems stay running, because shutting everything down properly would require going back inside. K's voice continues playing to empty rooms for years.
+**Compartmentalization:** The Order fragments knowledge so no single member sees the full picture. Filing clerks process "Requisition 7741-B: Suppress kinetic notation in Pacific Northwest" without knowing what kinetic notation IS. Field agents confiscate props without understanding why. Archivists catalog artifacts but never see them assembled. K was the exception — his narration assignment required him to understand everything. That's why he cracked. The Order accidentally gave one person the keys to the whole thing.
+
+**Current status:** The 2003 collapse was a cascade: (1) v4 software spreading faster than suppression, (2) panic-driven Lethe execution, (3) Lethe failure at internet scale, (4) organizational paralysis from the double failure, (5) rushed museum abandonment. Power stays on, systems stay running, because shutting everything down properly would require going back inside. K's voice continues playing to empty rooms for years.
 
 On the surface, the collapse looks like bureaucratic paralysis, the Lethe's failure, or their ancient charter's termination conditions being met. The real cause: K's structural sabotage (see K's Arc below). The player doesn't learn this on the first playthrough.
 
@@ -86,13 +96,19 @@ On the surface, the collapse looks like bureaucratic paralysis, the Lethe's fail
 
 **What they are:** Not an organization. A pattern that recurs. People who picked up the prop and did the thing. Sometimes they cluster into groups (pirate crews, monastic orders, workshops, cults), sometimes they're alone. The Order documents them all.
 
-**Symbol:** A simple spiral. Appears subtly throughout the museum from the very first room, but is never named or explained until the final chamber.
+**Symbol:** A simple spiral. The most fundamental shape in prop manipulation — every spin is a spiral through time. Appears subtly throughout the museum from the very first room (floor tiles, ceiling patterns, artifact backgrounds), but is never named or explained until the final chamber. Remains consistent across eras (unlike the Closed Palm's era-specific variations), suggesting timelessness over institutional branding. Potential variations: spiral forming an "S," two intertwined lines (two props, duality), spiral with a line through it (pen stroke, notation).
+
+**Philosophy:** (1) Knowledge wants to be free — suppression is unnatural, the alphabet will always resurface. (2) Critical mass is protection — once enough people know, suppression is impossible. (3) Everyone is a potential Scribe — the ability isn't rare or special, just forgotten. (4) The museum is an activation — walking through the history awakens something that was always there.
 
 **How they're organized:** Through substance (the notation itself), not through form (bureaucracy). Understanding without authority. No meetings, no hierarchy, no filing system. TKA IS the organizational structure. Membership defined by practicing, not signing a form.
 
 **The twist:** By practicing, you're already a Scribe. The museum just explains what that means.
 
 **In the museum:** K (see K's Arc below) hollowed out the Order from inside, then returned to the sealed building years later and transformed the suppression archive into something that invites participation. K began as the sole annotator; over time, other Scribes may have contributed. The two-voice structure — K's own recorded narration from 1985-2003 vs. K's present-day handwritten annotations — defines the player's experience. Both voices are K. The player doesn't know this.
+
+**Order visual/audio presence:** The Closed Palm symbol escalates from subtle (hidden in floor tiles, frame corners, document margins) to overwhelming at the moment of naming. No Order-specific audio until then — then: ambient institutional dread, hold music, distant stamping. The feeling of having always been in a waiting room.
+
+**Scribe visual/audio presence:** The spiral is present from the first room, never labeled, easy to miss, obvious in retrospect. No specific Scribe audio until the final chamber — then: warm tones, resolution, the feeling of coming home. The moment of recognition: the visitor realizes the whole experience was designed for them.
 
 **Both factions want the same thing:** codification and systematic knowledge of kinetic notation. They disagree about the padlock. Classified vs. declassified. Same filing cabinet, different access policy.
 
@@ -112,9 +128,9 @@ The "Vessel" concept is retired. There is no reincarnating soul. Historical figu
 - **Ada Lovelace** (~1840s) - Wrote kinetic notation and accidentally invented programming. "THREAT LEVEL: EXISTENTIAL. Recommend continued suppression of general-purpose computation." Scribe sticky note next to a photo of a modern laptop: "oops."
 - **Edo Period Practitioner** (date unknown) - Exists only as a gap in the Order's records. Empty folder, reference number, "TRANSFERRED" stamped across it. The absence IS the exhibit.
 
-**Austen Cloud** does not have his own exhibit. His likeness may appear as an Easter egg on a historical figure from an earlier era (e.g., a 1300s wax figure with his face, never identified as existing in 2026). The fiction stays fictional. Austen's real story (the actual development, the real sketches) exists outside the fiction: loading screen, credits, "real history" link.
+**Austen Cloud** is meta-only, not a character. Zero in-game presence as a named character. No exhibit, no threat assessment file, no "latest Scribe" mention. Austen's roles are purely meta: (1) developer — the eldritch horror, the god of this universe, the reason 40,000 years of kinetic history exists because he programmed it. (2) Voice actor — voices the Order's institutional narration (which is K's young voice in-fiction). Exception: Austen's likeness appears on historical Scribes across eras — cave painter, medieval illuminator, possibly others — never identified, just there for those who recognize him. The recurring face across millennia is its own quiet joke. This is the Andy Kaufman layer: Kaufman wasn't a character in his shows, he WAS the show. Austen isn't a character in the museum, he IS the museum. Austen's real story (the actual development, the real sketches) exists outside the fiction: loading screen, credits, "real history" link.
 
-**Non-Western representation:** The Order's cultural bias is the exhibit. Meticulous European records, everything else filed under regional bureaus. "Records reclassified by East Asian Bureau -- filing reference REDACTED." Non-Western Scribes appear through organic community collaboration or where research supports it. Comedy always targets the Order's handling, never the culture itself.
+**Non-Western representation:** The Order's cultural bias is the exhibit. Meticulous European records, everything else filed under regional bureaus. "Records reclassified by East Asian Bureau -- filing reference REDACTED." Non-Western Scribes appear through organic community collaboration or where research supports it. Comedy always targets the Order's handling, never the culture itself. Non-Western Scribes get actual exhibits, not just redaction plaques — K recovered what the Order missed or misfiled. The Edo practitioner's empty folder remains as-is (the absence IS the exhibit there), but it is not the template for all non-Western representation.
 
 ---
 
@@ -122,13 +138,13 @@ The "Vessel" concept is retired. There is no reincarnating soul. Historical figu
 
 | Year | Version | Developer | Event |
 |------|---------|-----------|-------|
-| ~1985 | — | The Order (internal) | Physical archive (museum) opens. K (~21) joins the Order and begins recording narration. |
-| 1989 | DOS v1 | The Order (internal) | Classified digital notation tool, members only. K has been at the Order for four years. |
-| ~1993 | v2 | The Order (internal) | Bellweather Incident: K leaks the software (see K's Arc). K has been at the Order for eight years. |
+| ~1985 | — | The Order (internal) | Physical archive (museum) opens as internal training facility. |
+| 1989 | DOS v1 | The Order (internal) | K (~21) joins the Order, begins recording narration, builds classified digital notation tool. |
+| ~1993 | v2 | The Order (internal) | Bellweather Incident: K leaks the software (see K's Arc). K has been at the Order for ~4 years. Last recordings made. |
 | 1998 | v3 | The Scribes | Post-leak development, internet distribution, Order losing control |
-| 2003 | v4 | The Scribes | Final version before Protocol Lethe / Order collapse. K's last recordings. |
+| 2003 | v4 | The Scribes | Final version before Protocol Lethe / Order collapse. |
 
-The Bellweather Incident (~1993) is the founding act of the modern Scribe movement. The Order and the player both believe the defector is an unknown ex-member. On second playthrough, breadcrumbs reveal the defector was K — the same person whose voice has narrated the museum for eighteen years AND whose annotations fill it. K was technically proficient, covered his tracks, and was never identified.
+The Bellweather Incident (~1993) is the founding act of the modern Scribe movement. The Order and the player both believe the defector is an unknown ex-member. On second playthrough, breadcrumbs reveal the defector was K — the same person whose voice has narrated the museum for four years AND whose annotations fill it. K was technically proficient, covered his tracks, and was never identified.
 
 ---
 
@@ -148,14 +164,33 @@ Named for the Greek river of forgetting.
 
 ## The Museum Experience
 
-### Architecture: Two Eras
+### Architecture: Three Eras
 
-The Order's museum ends mid-building. Their final room is a containment report, a filing cabinet, a half-installed exhibit frozen when the approval loop killed operations. Everything after that seam is Scribe-built: warmer, handmade, the sticky notes become the primary voice instead of margin corrections.
+The museum is mostly linear with optional side rooms. Main path goes chronologically through wings in order — the Order would design controlled traffic flow. K's annotation arc (furtive to crafted) is on the main path and guaranteed in order. Optional alcoves and side offices contain flavor content that stands alone regardless of discovery order. Core story is never in a side room. The linearity itself is a design statement: the Order controls movement through space.
+
+The building has three distinct eras, each visible in the architecture:
+
+| Era | Years | What the player sees |
+|---|---|---|
+| **Order-built** | Pre-2003 | Institutional exhibits. Professional signage, controlled lighting, formal tone. K's narrator voice plays on automated systems. Decaying but structurally intact. |
+| **The Crumble** | 2003-2008 | The cascade killed operations. Half-installed exhibits frozen mid-construction. Filing cabinets left open. A collapsed section to route around. The approval loop that strangled the Order is visible in the unfinished work. No new content was created in this period — the Order was dying. |
+| **K's museum** | Post-2008 | After the last Order member dies, K returns to the abandoned facility and builds new exhibits using insider knowledge. Warmer, handmade. Sticky notes become the primary voice instead of margin corrections. Noticeably newer construction. The museum shifts from "Order archive with Scribe graffiti" to "K's own exhibit, built in the shell of the Order's abandoned project." |
+
+The seam between Order-built and K-built is the story told through architecture. The Crumble section is the hinge — the player walks through the evidence of institutional death before entering what K made from the wreckage.
+
+**Building decay as atmosphere:** 23 years of abandonment shows in Order-built sections. Water-stained exhibits, pest damage, broken HVAC. K's post-2008 sections are noticeably newer and better-maintained. The contrast tells the story visually.
+
+**Construction-era architecture:** Each wing's physical design reflects when the Order built it, not just what era it documents. A 1940s wing has heavy wood trim, brass fixtures, incandescent light. A 1970s wing has drop ceilings, fluorescents, metal-frame display cases. A 1990s wing has track lighting, cleaner lines, early digital signage. The player feels the construction decade in the furniture before reading anything. This secondary timeline (when the wing was built) layers on top of the primary timeline (what historical era it documents). Real museums work this way.
+
+**Document word count budgets:** Sticky note: 25-30 words. Wall plaque (Order): 50-75 words. Filing cabinet document: 100-150 words. Meeting transcript excerpt: 150-200 words. Bellweather report: 200-300 words (longest item, earned by importance). Screen/terminal display: 50-100 words. Total: 30-40 documents across museum. Half should be optional flavor text short enough to read in passing.
+
+**Museum scale:** Deferred — emerges from building. Start with 3 rooms, each with one interactive exhibit and a moving avatar in UE. Scale emerges naturally from content volume and what feels right in 3D space.
 
 ### Tonal Progression: Dread, Absurdity, Heart
 
 The museum's tonal arc mirrors institutional decay:
-- **Vulcan Cave wing:** Genuinely unsettling. Mythical language, torchlight, the Order's earliest documentation is reverential and afraid.
+- **Vulcan Cave wing:** Cavernous tunnels, glass-walled exhibits, dim torchlight, distant drums and humming. Awe-inspiring, not horror. TKA progression maps to cave depth — Type 1 motions on the earliest walls, Type 2 deeper in, first turns at the deepest point. The cave IS a curriculum rendered as archaeology. Order plaques shift tone deeper in: early plaques are clinical documentation, deeper plaques reveal writers unsettled by beauty they couldn't explain. Awe misread as fear, not actual dread. Four elemental chambers map to timing/direction modes (Water = split-time same-direction, Fire = split-time opposite, Earth = together-time same, Air = together-time opposite) plus a Day/Night exhibit (Sun = quarter-time same, Moon = quarter-time opposite). The museum does NOT label these associations — the rooms simply feel different. Interactive exhibit: 4-beat sequence matching (connect sequences to 3D wax figure models performing the movements).
+- **Egyptian wing:** Warmer, oil lamp simulation. Whole turns discovered (combinatorial space explodes). Types 3-6 formalized. LOOPs discovered. Complete Type system documented. First appearance of the Closed Palm symbol in temple records — not yet named.
 - **Classical through Medieval:** Fear gets formalized. Rituals become protocols. Mystical language becomes institutional language.
 - **Enlightenment onward:** Fully bureaucratized. Comedy builds as terror deflates.
 - **Modern wing:** A government department. Peak absurdity.
@@ -163,7 +198,7 @@ The museum's tonal arc mirrors institutional decay:
 
 ### K (The Annotator — and the Narrator)
 
-**Internal identity:** K is male, born ~1964. He/him in the world bible. Player-facing material avoids gendered pronouns entirely. The narrator voice is Austen's, which reads male, but players process it as "the museum guide" rather than a character on first playthrough. The connection between narrator and annotator — if the player makes it — supersedes the gender question.
+**Internal identity:** K is male, born ~1968. He/him in the world bible. Player-facing material avoids gendered pronouns entirely. The narrator voice is Austen's, which reads male, but players process it as "the museum guide" rather than a character on first playthrough. The connection between narrator and annotator — if the player makes it — supersedes the gender question.
 
 **K is both voices.** The narrator (recorded 1985-2003, starting at age 21) and the annotator (written years later, K post-return) are the same person. The player hears K's voice and reads K's handwriting throughout the entire game without knowing they belong to the same person.
 
@@ -177,17 +212,23 @@ The museum's tonal arc mirrors institutional decay:
 
 ### K's Arc
 
-**Phase 1: True Believer (~1985-1992)**
-K joins the Order as a government worker at ~21. Goes through onboarding: shown kinetic beauty, given the institutional interpretation (beautiful but dangerous). K initially believes it. K is technically proficient — a model employee — and assigned to the department that maintains systems and processes files. When the Order builds a physical archive (~1985), K is assigned to record the narration. It's a boring job that nobody senior wants. K volunteers because K is passionate, eager, and genuinely believes in the mission. The Order hands their entire archive's voice to the one person who will eventually turn it against them.
+**Phase 1: True Believer (~1989-1993)**
+K joins the Order at ~21 in 1989 (born ~1968). Goes through onboarding: shown kinetic beauty, given the institutional interpretation (beautiful but dangerous). K initially believes it. K is technically proficient — a model employee — and assigned to the department that maintains systems and processes files. The museum's physical archive has existed since ~1985, but K is assigned to record narration for new and updated wings. It's a boring job that nobody senior wants. K volunteers because K is passionate, eager, and genuinely believes in the mission. The Order hands their entire archive's voice to the one person who will eventually turn it against them.
 
-Over the next seven years, K processes suppression orders and records narration for new exhibits. The early recordings are reverent. By the late 1980s, seeds of doubt surface as micro-hesitations and off-script asides. See the vocal stages table in Two-Voice Tone System above.
+Over the next four years, K processes suppression orders and records narration as wings open or get updated. Cave wing first (reverent, true believer). Each subsequent wing recorded as K processes more suppression orders and cracks further. The early recordings are reverent. By 1991-1992, seeds of doubt surface as micro-hesitations and off-script asides. See the vocal stages table in Two-Voice Tone System above.
 
-**The gradual turn:** K's break isn't a single moment. Over years of processing suppression orders, the Edo period practitioner's files push K past the threshold. K processed the transfer order himself — he read the full file before emptying it. Her name, her students, her notation system. What the player sees in the museum is the hollow folder. What K experienced was the act of hollowing it. K loves these shapes. The cognitive dissonance of stamping CLASSIFIED on beauty K appreciates eats at him from inside.
+**The gradual turn:** K's break isn't a single moment. Processing suppression orders accumulates. The Edo period practitioner's files push K past the threshold. K processed the transfer order himself — he read the full file before emptying it. Her name, her students, her notation system. What the player sees in the museum is the hollow folder. What K experienced was the act of hollowing it. K loves these shapes. The cognitive dissonance of stamping CLASSIFIED on beauty K appreciates eats at him from inside.
+
+**The pen spinning moment:** K's kinesthetic awakening starts small — spinning a pen at his desk while processing files. The Order's own documentation tools become the first prop. A bored office worker in a government archive accidentally channels the thing his entire organization exists to suppress. K doesn't recognize what's happening at first. It's just fidgeting. Then it becomes something else.
 
 **The participation moment:** K's transformation isn't completed by observation but by participation. K encounters Scribes practicing together — messy, imperfect, human. Laughter and connection over flow arts. The thing the Order fears is people having a good time with sticks. K doesn't just see the beauty (the Order already showed him beauty in onboarding). K creates it. The gap between "I can see this is beautiful" and "I can do this myself" is the thesis.
 
 **Phase 2: The Bellweather Incident (~1993)**
-K leaks the notation software. By now K has been at the Order for eight years — long enough to know the systems, trusted enough to have access, skilled enough to cover his tracks. This is one big act, not ongoing sabotage. Then K lays low, terrified. The recordings from this period are noticeably tighter — K pulls back to the institutional script, afraid that improvisation might reveal something. He sounds more professional, not less. Nobody connects the leak to him. But K realizes the leak alone wasn't enough — the Order adapted.
+K leaks the notation software. K was the key actor in a messy moment — the Order's institutional cracks were already showing, multiple people saw the same problems, but K's specific act was the most consequential. K opened the door, others walked through. Not a solo hero, not a passive bystander. Agency + humility. The Order's own filing of the incident reflects this: multiple names in the report, but K's file is the thickest.
+
+K has been at the Order for ~4 years — long enough to know the systems, trusted enough to have access, skilled enough to cover his tracks. This is one big act, not ongoing sabotage. Then K lays low, terrified. The last recordings from this period are noticeably tighter — K pulls back to the institutional script, afraid that improvisation might reveal something. He sounds more professional, not less. Nobody connects the leak to him. But K realizes the leak alone wasn't enough — the Order adapted.
+
+Recording stops here. K never records again.
 
 **Phase 3: Structural Sabotage (late 1990s)**
 K makes 3-5 precise structural changes to the Order's bureaucratic machinery. Each looks like competent administrative work:
@@ -203,20 +244,22 @@ Total active sabotage period: ~2 years. K didn't sabotage constantly. He made pr
 **K in Order meetings:** K participates in meetings diagnosing the dysfunction he caused. May suggest reasonable-sounding solutions that make things worse. Meeting transcripts are findable documents in the museum. Maximum dramatic irony on second playthrough.
 
 **Phase 4: Collapse and Abandonment (~2003)**
-The accumulated dysfunction reaches critical mass. The Order detects an insider (they never identify K specifically), panic sets in during the Lethe execution, and they board up the museum in a rush. Not destruction — abandonment under duress. Power stays on, systems stay running, because going back inside to shut down properly is a job nobody wants right now. K's voice — eighteen years of recordings — plays to empty rooms.
+The 2003 collapse is a cascade, not a single event: (1) The Order detected that v4 notation software was spreading via the internet faster than they could suppress — K's Bellweather work bearing fruit a decade later. (2) They panicked and executed Protocol Lethe as a last resort. (3) Lethe failed because Bronze Age suppression tools can't work on 8 billion people with broadband. (4) The double failure (can't contain the software AND can't execute the emergency protocol) broke the organization. (5) They sealed the museum in a rush and went into bureaucratic paralysis.
 
-K does not stay in the building. K leaves (or is already out) before the Order seals it. Where K goes and what K does during the gap is undefined. The mystery is more powerful than any answer — the same structural move as the Edo practitioner's empty folder.
+Not destruction — abandonment under duress. Power stays on, systems stay running, because going back inside to shut down properly is a job nobody wants right now. K's voice plays to empty rooms.
+
+K does not stay in the building. K left before the 2003 seal. Where K goes and what K does during the gap is undefined. The mystery is more powerful than any answer — the same structural move as the Edo practitioner's empty folder.
 
 **Phase 5: Return and Curation**
 K returns within a few years of the sealing — not decades. How K gets in and what prompted the return are K's business. Evidence of long-term habitation is everywhere: personal items, evolving annotations, maintained infrastructure.
 
-K builds the Scribe wings — the new sections beyond the seam where the Order's museum ends. K annotates the old exhibits, responding to his own recorded narration from decades ago. The annotations evolve over time: early marks are hurried sharpie scribbles (K processing rooms he once worked in, seeing them differently). Over months and years, the annotations become deliberate, crafted, inviting. Eventually proper signs. The visual evolution IS K's transformation from defector to builder.
+K found and converted former Order members. They built the Scribe wings together — the new sections beyond the seam where the Order's museum ends. Early annotations are solo isolation (K alone in the building, processing rooms he once worked in). Later annotations reflect companionship. Guest book entries in different handwriting are converted members. K annotates the old exhibits, responding to his own recorded narration from decades ago. The annotations evolve over time: early marks are hurried sharpie scribbles. Over months and years, the annotations become deliberate, crafted, inviting. Eventually proper signs. The visual evolution IS K's transformation from defector to builder.
 
 K maintains the building's infrastructure (power, narration system). The automated narration still runs because K keeps it running — it's K's own voice, and the museum needs to function.
 
 The player is not the first visitor. A guest book near the entrance holds entries in different handwriting spanning years — some faded, some recent. Wear patterns on popular paths. K has been quietly opening this space, word of mouth, for years. The player is joining something that's been growing slowly.
 
-**Open questions:** Is K still alive/present when the player enters? K would be ~62 in 2026. Affects the ending — real-time handoff vs. prepared legacy. See tracker items xlYfXJnF and RMSc3fpH.
+**Open questions:** Is K still alive/present when the player enters? K would be ~58 in 2026 (born ~1968). Affects the ending — real-time handoff vs. prepared legacy. See tracker items xlYfXJnF and RMSc3fpH.
 
 ### Exhibit Tone Variety
 
@@ -241,12 +284,15 @@ The Order has documented flow state for longer than anyone can verify and called
 
 ### Sequential Endings
 
-Three rooms experienced in order, not as choices:
-1. **The Order's Response** -- Containment, warning, fear. "This knowledge is a public health hazard. Seal the archive. Walk away."
-2. **The MEH Response** -- Apathy, indifference. "Most won't care. It'll fade on its own." The real threat to niche art: nobody caring.
-3. **The Scribe Response** -- Real people spinning. Imperfect technique. Fully alive. The emotional counter.
+Three rooms experienced in order, not as choices. Scrooge effect: present vs. how things could be.
 
-After the Scribe Room: a wax figure near the exit, perfectly still, holding out a folded pamphlet. The player takes it (they will — players interact with everything). It unfolds in their hands like a real museum program: exhibition hours (24/7), curator's note, special thanks to every Scribe who came before. A QR code sits among the program details, not announced, just present. A real suggested donation link (actual money, straight to the developer). A brief transitional moment — elevator, moving walkway, or corridor — gives the player nothing to do but look at the pamphlet. "Press E to read pamphlet." They'll do it.
+1. **Room 1: Fear / Suppression** -- The Order's response. Containment, warning, dread. "This knowledge is a public health hazard. Seal the archive. Walk away."
+2. **Room 2: Isolation** -- Soloists spinning alone. Not an empty void — people are practicing, but separated. No connection, no transmission, no community. The real threat to niche art isn't suppression, it's atomization. Nobody sharing. Everyone alone with their prop.
+3. **Room 3: Explosion of Collaboration** -- Real people spinning together. Imperfect technique. Fully alive. Birds chirping, trees, light, warmth. The emotional counter. The activity that 40,000 years of history has been arguing over, just happening.
+
+After Room 3: a wax figure near the exit, perfectly still, holding out a folded pamphlet. The player takes it (they will — players interact with everything). It unfolds in their hands like a real museum program: exhibition hours (24/7), curator's note, special thanks to every Scribe who came before. A QR code sits among the program details, not announced, just present. A real suggested donation link (actual money, straight to the developer). A brief transitional moment — elevator, moving walkway, or corridor — gives the player nothing to do but look at the pamphlet. "Press E to read pamphlet." They'll do it.
+
+Then the gift shop. The Order built it (~1985-1998). Dusty, faded, untouched for 20+ years. Archaeological comedy — branded merchandise from a secret society that no longer exists. K kept it because it's funny. After the gift shop: an outdoor jam where the player picks up a prop. The game stops being a game and becomes the first step of practice.
 
 The Scribe Room's beauty does the work. The player who just watched the best compositions rendered in 3D doesn't need to be told to try the tool. No pitch. Just a program from a museum they just walked through. The game doesn't sell you anything. It hands you a pamphlet on your way out, like every museum does.
 
@@ -271,6 +317,8 @@ The ancient charter contains a clause in archaic language that reads differently
 
 Same words. The museum never confirms which reading is correct. The player's interpretation reveals whether they think like a Watcher or a practitioner.
 
+**Religious satire parallel:** The Termination Clause mirrors scripture — ancient text, two communities reading the same words with opposite conclusions. The Order is the institution. The Scribes are the reformation. The ancient authors may have intended "hold until needed, then open." Institutional telephone turned "hold" into "suppress." The same pattern as every religious schism: the text says one thing, the institution says another, and the reformers say "read it again."
+
 ---
 
 ## Integration with TKA Scribe (Web App)
@@ -281,7 +329,11 @@ The museum is a separate Unreal Engine 5 product (Steam download) that leads to 
 - MVP: Deep link handoff (game opens browser to TKA Scribe with URL parameters)
 - Future: UE5 WebView plugin to render web app inside the game
 
-**The badge:** Everyone who uses TKA Scribe is a Scribe. The museum game earns you a subtle visual distinction (spiral flourish, different color) but doesn't gate any functionality.
+**Community language:** "Scribes" becomes the community term. "Hello Scribes" works whether someone played the game or not. The game doesn't create Scribes — it reveals that you already were one.
+
+**Certificate customization:** On completion, the player chooses a certificate in one of five historical styles: Paleolithic (stone tablet, primitive markings), Egyptian (hieroglyphic, gold accents), Renaissance (codex page, illuminated manuscript), Victorian (formal document, wax seal, elaborate typography), Windows 93 (pixelated, retro computer aesthetic).
+
+**The badge:** Everyone who uses TKA Scribe is a Scribe. The museum game earns you a subtle visual distinction (spiral flourish, different color) but doesn't gate any functionality. Game completion may unlock the ability to generate sequences in historical styles (cave painting, hieroglyphics, codex, patent) — the "gift shop" items made permanent.
 
 ---
 
@@ -300,7 +352,7 @@ The modern wing (post-Lethe) acknowledges that multiple independent codification
 ## Design Principles
 
 - **This is a work of fiction.** Loading screen disclaimer: "This is a work of fiction. For real flow arts history, visit flowartswiki.org." Austen's real development story in credits/about section.
-- **TKA terminology only.** LOOPs not CAPs. No VTG, Spin Science, QFT, 9-Square, or CAPs named anywhere in the fiction.
+- **TKA terminology only.** LOOPs not CAPs. No VTG, Spin Science, QFT, 9-Square, or CAPs named anywhere in the fiction. Exception: VTG ratios (3:1, 5:1, etc.) can appear as labels on cave exhibits — as ancient notation terminology, not as "VTG." The name "Vulcan Tech Gospel" never appears. Players who know VTG recognize the terms; everyone else reads them as cave notation.
 - **No real living traditions co-opted.** Fake historical figures in fake contexts are fine. Real cultural practices are off-limits.
 - **Real historical figures are fair game.** Presented with deadpan sincerity.
 - **The wiki is the record. The museum is the joke.** Two projects, two standards.
@@ -324,16 +376,16 @@ Most content should be optional or fluff. The mandatory spine is minimal.
 
 ## Open Questions
 
-- **Game/building naming:** Is it "The Kinetic Archive"? What does the player see on the entrance? See tracker item jCihtoVg.
+- **Building naming:** RESOLVED. The building is called "The Kinetic Archive" on its entrance. Same name as the game. On internal memos: "Department of Rotational Affairs, Facility 7."
 - **Order naming:** "Order of the Closed Palm" as self-chosen grandiose name vs. pure bureaucratic identity. See tracker item Kqo8HfC6.
-- **K's current status:** Is K alive when the player enters? Still in the building? Born ~1964, would be ~62 in 2026. Affects the ending — real-time handoff vs. prepared legacy. See tracker item xlYfXJnF.
-- **Infrastructure:** Who kept the lights on during the gap? K maintains the building after returning, but the ~5-year unattended period needs acknowledgment. Best candidate: Order auto-renewed utility budgets that nobody reviewed after abandonment. Comedy solution. See tracker item RMSc3fpH.
-- **Document density:** Museum will contain many readable documents. Risk of "homework" feeling. Every document must be short, funny, or surprising. Needs a style guide. See tracker item 26HgCfAd.
-- **Interactive exhibits:** How to make the museum more game-like. The stick-in-trash-can concept is the model: environmental, surprising, comedically escalating. See tracker item BIj94Enz.
+- **K's current status:** Is K alive when the player enters? Still in the building? Born ~1968, would be ~58 in 2026. Affects the ending — real-time handoff vs. prepared legacy. See tracker item xlYfXJnF.
+- **Infrastructure:** Who kept the lights on during the gap? K maintains the building after returning, but the unattended period needs acknowledgment. Best candidate: Order auto-renewed utility budgets that nobody reviewed after abandonment. Comedy solution. See tracker item RMSc3fpH.
+- **Document density:** RESOLVED. Word count budgets locked in (see Architecture section above). Style guide: every document must be short, funny, or surprising.
+- **Interactive exhibits:** How to make the museum more game-like. The stick-in-trash-can concept is the model: environmental, surprising, comedically escalating. Stick alarm is an automated Order protocol — pre-recorded emergency message from decades ago, programmed to sound panicked. The comedy is the disproportionate response from a dead institution. Could be young-K's voice. See tracker item BIj94Enz.
 - **Flow state as disease:** The Order's specific pathological model for WHY practice is dangerous. Ancient symptom descriptions match flow state exactly. The comedy is the diagnosis, not the symptoms. Needs development. See tracker item rPnyXDoY.
-- **Re-emergence theories and actual stakes:** The Order has competing theories about why kinetic knowledge keeps appearing independently. Each theory deserves its own exhibit or wing — not a bullet list in narration but a physical, explorable space. Candidates: temporal anomaly (timeline charts that contradict themselves), collective unconscious (Jung quotes, brain diagrams), motor cortex encoding (MRI scans, neurological division filing cabinets), extraterrestrial signal (radio telescopes, frequency charts, maximum institutional understatement about budget allocation). A fifth theory — simulation hypothesis — appears only as a dismissed footnote: "Reclassified as non-credible. The Bureau does not allocate resources to unfalsifiable hypotheses." K's annotation near the theory exhibits: "They've considered every possibility except the obvious one." Connected question: what does the Order actually believe happens if containment fails completely? The ancient Order seemed to think something genuinely dangerous was coming — not a demon, but a signal with an unknown source. The modern Order lost that context but retained the fear. Whether there IS a real danger or the Order is a doomsday cult running on inertia — both readings should remain available to the player. See tracker item z1hgkdU6.
-- **The Space Age:** The museum jumps from Victorian mechanization to the software era. There's a missing aesthetic chapter: the space age (1950s-1980s). Rocket-era optimism, Cold War paranoia, NASA aesthetics, the Order's response to humanity leaving the planet. Significant untapped potential for visual variety and comedy. Needs exploration.
-- **Player identity:** The player's identity is deliberately ambiguous. They just walked in. The system doesn't know who they are. The player gradually realizes they're viewing from the future, not as an employee. See tracker item 6VLInAtv.
+- **Re-emergence theories and actual stakes:** The Order has competing theories about why kinetic knowledge keeps appearing independently. Each theory deserves its own exhibit or wing — not a bullet list in narration but a physical, explorable space. Candidates: temporal anomaly, collective unconscious, motor cortex encoding, extraterrestrial signal. Simulation hypothesis dismissed as non-credible. See tracker item z1hgkdU6.
+- **The Space Age:** The museum jumps from Victorian mechanization to the software era. Missing aesthetic chapter: 1950s-1980s. Needs exploration.
+- **Player identity:** RESOLVED. Deliberately ambiguous. The player gradually realizes they're viewing from the future, not as an employee. See tracker item 6VLInAtv.
 
 ### Resolved Questions
 
@@ -423,14 +475,73 @@ This connects to the simulation layer (the developer authored the codex), to K's
 
 ## Related Documents
 
-- `timeline.md` - Historical timeline
-- `phase-structure.md` - Museum phase structure
-- `museum-layout.md` - Physical wing layout (needs revision)
+**Active:**
+- `museum-layout.md` - Physical wing layout (needs revision to match phase structure)
 - `vtg-wing.md` - Vulcan Cave design (partially superseded by tracker decisions)
 - `stanley-parable-reference.md` - Stanley Parable design lessons and source URLs
 - `story-audit-march-2026.md` - Full story quality audit with predicted Steam rating
+- `gift-shop.md` - Fake items, digital unlocks, real merch concepts
+- `vessels.md` - Historical Scribes detail (aligned with this file)
+
+Previously separate docs for timeline, phase structure, endings, and the two orders were consolidated into this story bible and deleted on 2026-03-04.
+
+---
+
+## Canonical Decisions (Tracker Audit Trail)
+
+These tracker items feed into this document. If a conflict exists between this story bible and a tracker item, the story bible wins.
+
+### Stress Test Resolutions (2026-03-04)
+| ID | Decision |
+|----|----------|
+| GG3rb4hs | K = one character, all roles (narrator + annotator + defector + developer + renovator) |
+| llHve80e | Three sequential rooms (Hell/Limbo/Heaven), not branching endings |
+| GN8njaC9 | K is never seen — traces only, inspired by Portal/Stanley Parable |
+| DCi8meH1 | K left before 2003 seal, returned in recent times |
+| SWhhaaYq | K is male (he/him in world bible) |
+| p9jvZT3T | Building = "The Kinetic Archive" on entrance |
+| 9ypxl7IK | Two-voices reveal: don't design it, write K consistently |
+| EpHlQ0As | Bellweather: K was key actor in messy moment, not solo hero |
+| Qn0MJIJv | Compartmentalization resolves Order self-infection paradox |
+| izyq5GvZ | Document word count budgets locked in |
+| uhLhHNig | Mostly linear museum with optional side rooms |
+| NUKvLSgN | Recording timeline: 1989-~1993, not 1985-2003 |
+| iQyzRtlW | Building decay as atmosphere (23 years abandonment) |
+| IRjXCXaT | Museum scale deferred — emerges from building |
+| ouiO8GDS | Stick alarm: automated Order protocol, pre-recorded |
+| sK3ZwOeX | Meta-layer reference: Andy Kaufman, not Nathan Fielder |
+| oWEiLyRn | VTG terms as Easter eggs, system name never appears |
+| klOhXvKk | 2003 collapse: a cascade, not a single event |
+| 6eUXlfpL | Austen is meta-only, not a character |
+| MMNwP3DK | Replay content is additive, not the core value |
+
+### Foundational Decisions (pre-stress-test)
+| ID | Decision |
+|----|----------|
+| mqig62CV | The Order built the museum as internal archive |
+| 5pr0NyUF | Order formation: practical concern, constitutionally slow |
+| VCwhBRBG | Order motivation: public health framework |
+| sRMo8fWy | Order motivation hierarchy: ancient/modern/surface layers |
+| CgLG1ikY | Core thematic distinction: fear vs. trust |
+| tmwVEZQz | Codification thesis: classified vs. declassified |
+| gdFXK4om | Termination Clause as religious satire |
+| eBEzE5FY | Two-voice tone system |
+| 4ZtPEunb | Sequential endings, no choice mechanic |
+| Wj5rJBxD | Sequential endings reimagined: Scrooge effect |
+| G54EB6k1 | Vessels concept retired, everyone is a Scribe |
+| 8sP9dtqh | Engine: Unreal Engine 5 |
+| RtxpXzPm | Lethe: ancient, repeated, always incomplete |
+| 4Lk6dqs3 | Multi-medium world-building (Tolkien model) |
+| 1U2NtJxL | Transcendental attractor (McKenna-influenced) |
+| 08cLuuty | Three-era architecture: Order-built (pre-2003), Crumble (2003-2008), K's museum (post-2008) |
+| A570JAV2 | K's pens on display, unlabeled (Easter egg) |
+| 5RzULt6W | Pen spinning as K's kinesthetic awakening |
+| Lp3aqS7p | Vulcan Cave design: progression-as-depth, awe not horror |
+| icYM0KIg | Cave interactive exhibit: 4-beat sequence matching |
+| SOBLgt2M | Wing architecture reflects construction decade |
+| rPnyXDoY | Flow state as transmissible disease (Order's pathological model) |
 
 ---
 
 *Last updated: 2026-03-04*
-*Synced with museum-dev tracker decisions through session PSmYMOky. Major revision session: K timeline (~1964/~1985), vocal stages, Edo bridge, cosmic mystery forms + naming punchline, deepened ancient fear, underground museum gap, pamphlet handoff, retired TKA easter egg, deep lore (simulation layer, codex wall exhibit, parentage, ally, Edo, gap), K's closing annotation (fourth-wall transparency), no-character-simulation-aware guardrail, re-emergence theory exhibits, "they never asked what it IS" as codex thesis.*
+*Updated with all stress test resolutions and proposal reviews. Key changes: K born ~1968 (not ~1964), recording timeline 1989-~1993 (not 1985-2003), Nathan Fielder Rule → Andy Kaufman Rule, Austen is meta-only, 2003 collapse is a cascade, compartmentalization added, building decay/linear layout/word count budgets added, Bellweather reframed as K as key actor in messy moment. Three-era architecture added (Order/Crumble/K).*
