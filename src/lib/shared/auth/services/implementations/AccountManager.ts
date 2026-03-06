@@ -1,4 +1,9 @@
-import { updatePassword, signOut } from "firebase/auth";
+import {
+  updatePassword,
+  signOut,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+} from "firebase/auth";
 import { auth } from "../../firebase";
 import { nuclearCacheClear } from "../../utils/nuclearCacheClear";
 import type { IAccountManager } from "../contracts/IAccountManager";
@@ -22,11 +27,41 @@ export class AccountManager implements IAccountManager {
   ): Promise<void> {
     this.haptics.trigger("selection");
 
-    // Validate
     if (newPassword.length < 8) {
       throw new Error("Password must be at least 8 characters");
     }
 
+    if (!currentPassword) {
+      throw new Error("Current password is required");
+    }
+
+    // Verify current password before attempting the change
+    const user = auth.currentUser;
+    if (!user?.email) {
+      throw new Error("No authenticated user found");
+    }
+
+    try {
+      const credential = EmailAuthProvider.credential(
+        user.email,
+        currentPassword
+      );
+      await reauthenticateWithCredential(user, credential);
+    } catch (e: unknown) {
+      const code =
+        typeof e === "object" && e && "code" in e
+          ? (e as { code: string }).code
+          : "";
+      if (
+        code === "auth/wrong-password" ||
+        code === "auth/invalid-credential"
+      ) {
+        throw new Error("WRONG_PASSWORD");
+      }
+      throw new Error("WRONG_PASSWORD");
+    }
+
+    // Current password verified — now change it
     await this.stepUpCoordinator.executeSensitive(
       async () => {
         await this.apiClient.request("/api/account/update-password", {
@@ -39,9 +74,6 @@ export class AccountManager implements IAccountManager {
         }
 
         this.haptics.trigger("success");
-        alert(
-          "Password updated. For security, you may be signed out on other devices."
-        );
       },
       { allowPasswordReauth: true, password: currentPassword }
     );

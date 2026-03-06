@@ -1,46 +1,121 @@
 <!--
   PasswordChangeForm Component
 
-  Expandable form for changing password with visibility toggles.
+  Expandable form for changing password with visibility toggles,
+  strength indicator, inline error/success feedback.
   Uses shared profile-settings-state for password form state.
   Extracted from AccountSettingsSection for single responsibility.
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
   import { getProfileSettingsContext } from "../../state/profile-settings-context.svelte";
+  import { slide, fade } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
 
   const ctx = getProfileSettingsContext();
 
   interface Props {
     onChangePassword: () => Promise<void>;
     hapticService: IHapticFeedback | null;
+    showLabel?: boolean;
   }
 
-  let { onChangePassword, hapticService }: Props = $props();
+  let { onChangePassword, hapticService, showLabel = true }: Props = $props();
 
   // Password visibility toggles
   let showCurrentPassword = $state(false);
   let showNewPassword = $state(false);
 
+  // Track form open state for stagger animation
+  let formRevealed = $state(false);
+
+  // Inline feedback
+  let errorMessage = $state("");
+  let showSuccess = $state(false);
+
+  let newPasswordInput: HTMLInputElement | undefined = $state();
+
   const isFormValid = $derived(
-    ctx.password.new && ctx.password.new.length >= 8 && !ctx.ui.saving
+    ctx.password.current &&
+      ctx.password.current.length > 0 &&
+      ctx.password.new &&
+      ctx.password.new.length >= 8 &&
+      !ctx.ui.saving &&
+      !showSuccess
   );
 
-  const isPasswordWeak = $derived(
-    ctx.password.new && ctx.password.new.length < 8
+  // Password strength
+  type Strength = "weak" | "medium" | "strong";
+
+  const passwordStrength: Strength | null = $derived.by(() => {
+    const pw = ctx.password.new;
+    if (!pw || pw.length === 0) return null;
+    if (pw.length < 8) return "weak";
+
+    let score = 0;
+    if (pw.length >= 12) score++;
+    if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score++;
+    if (/\d/.test(pw)) score++;
+    if (/[^a-zA-Z0-9]/.test(pw)) score++;
+
+    if (score >= 3) return "strong";
+    if (score >= 1) return "medium";
+    return "weak";
+  });
+
+  const strengthLabel = $derived(
+    passwordStrength === "strong"
+      ? "Strong"
+      : passwordStrength === "medium"
+        ? "Good"
+        : passwordStrength === "weak"
+          ? "Weak"
+          : ""
   );
 
   function handleExpand() {
     hapticService?.trigger("selection");
     ctx.ui.showPasswordSection = true;
+    errorMessage = "";
+    showSuccess = false;
+    requestAnimationFrame(() => {
+      formRevealed = true;
+    });
+    setTimeout(() => newPasswordInput?.focus(), 420);
   }
 
   function handleCancel() {
     hapticService?.trigger("selection");
+    formRevealed = false;
+    errorMessage = "";
+    showSuccess = false;
     ctx.ui.showPasswordSection = false;
     ctx.resetPasswordForm();
     showCurrentPassword = false;
     showNewPassword = false;
+  }
+
+  async function handleSubmit() {
+    errorMessage = "";
+    try {
+      await onChangePassword();
+      // Success — show inline confirmation then collapse
+      showSuccess = true;
+      hapticService?.trigger("success");
+      setTimeout(() => {
+        handleCancel();
+      }, 1500);
+    } catch (e: unknown) {
+      const msg =
+        e instanceof Error ? e.message : String(e);
+      if (msg === "WRONG_PASSWORD") {
+        errorMessage = "Current password is incorrect";
+        hapticService?.trigger("error");
+      } else {
+        errorMessage = "Failed to change password. Please try again.";
+        hapticService?.trigger("error");
+      }
+    }
   }
 
   function toggleCurrentPassword() {
@@ -55,91 +130,120 @@
 </script>
 
 <div class="section">
-  <span class="label">Password</span>
+  {#if showLabel}
+    <span class="label">Password</span>
+  {/if}
   {#if !ctx.ui.showPasswordSection}
-    <button class="button button--secondary" onclick={handleExpand}>
-      <i class="fas fa-lock" aria-hidden="true"></i>
-      Change Password
-    </button>
+    <div in:fade={{ duration: 200, delay: 150 }} out:fade={{ duration: 120 }}>
+      <button class="button button--secondary" onclick={handleExpand}>
+        <i class="fas fa-lock" aria-hidden="true"></i>
+        Change Password
+      </button>
+    </div>
   {:else}
-    <div class="password-form">
-      <div class="field">
-        <label class="field-label" for="current-password">
-          Current Password <span class="optional">(optional)</span>
-        </label>
-        <div class="input-wrapper">
-          <input
-            id="current-password"
-            type={showCurrentPassword ? "text" : "password"}
-            class="input input-with-toggle"
-            bind:value={ctx.password.current}
-            placeholder="Enter current password (fallback)"
-            autocomplete="current-password"
-          />
-          <button
-            type="button"
-            class="toggle-visibility"
-            onclick={toggleCurrentPassword}
-            aria-label={showCurrentPassword ? "Hide password" : "Show password"}
-          >
-            <i
-              class="fas {showCurrentPassword ? 'fa-eye-slash' : 'fa-eye'}"
-              aria-hidden="true"
-            ></i>
-          </button>
+    <div
+      class="password-form"
+      class:success={showSuccess}
+      in:slide={{ duration: 300, easing: cubicOut }}
+      out:fade={{ duration: 150 }}
+    >
+      {#if showSuccess}
+        <div class="success-message" in:fade={{ duration: 200 }}>
+          <i class="fas fa-check-circle" aria-hidden="true"></i>
+          Password updated
         </div>
-        <p class="hint-message subtle">
-          If you have passkeys enabled, you can leave this blank and verify
-          with your device.
-        </p>
-      </div>
-
-      <div class="field">
-        <label class="field-label" for="new-password">New Password</label>
-        <div class="input-wrapper">
-          <input
-            id="new-password"
-            type={showNewPassword ? "text" : "password"}
-            class="input input-with-toggle"
-            bind:value={ctx.password.new}
-            placeholder="Enter new password"
-            aria-required="true"
-            aria-invalid={isPasswordWeak ? "true" : "false"}
-            aria-describedby={isPasswordWeak ? "password-hint" : undefined}
-            autocomplete="new-password"
-          />
-          <button
-            type="button"
-            class="toggle-visibility"
-            onclick={toggleNewPassword}
-            aria-label={showNewPassword ? "Hide password" : "Show password"}
-          >
-            <i
-              class="fas {showNewPassword ? 'fa-eye-slash' : 'fa-eye'}"
-              aria-hidden="true"
-            ></i>
-          </button>
-        </div>
-        {#if isPasswordWeak}
-          <p id="password-hint" class="hint-message" role="status">
-            Password must be at least 8 characters
-          </p>
+      {:else}
+        {#if errorMessage}
+          <div class="error-banner" role="alert" in:slide={{ duration: 200 }}>
+            <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+            {errorMessage}
+          </div>
         {/if}
-      </div>
 
-      <div class="button-row">
-        <button class="button button--secondary" onclick={handleCancel}>
-          Cancel
-        </button>
-        <button
-          class="button button--primary"
-          onclick={onChangePassword}
-          disabled={!isFormValid}
-        >
-          <i class="fas fa-check" aria-hidden="true"></i>
-          Update Password
-        </button>
-      </div>
+        <div class="field stagger-field" class:revealed={formRevealed} style="--stagger: 0">
+          <label class="field-label" for="current-password">
+            Current Password
+          </label>
+          <div class="input-wrapper">
+            <input
+              id="current-password"
+              type={showCurrentPassword ? "text" : "password"}
+              class="input input-with-toggle"
+              class:input-error={errorMessage.includes("incorrect")}
+              bind:value={ctx.password.current}
+              placeholder="Enter current password"
+              aria-required="true"
+              autocomplete="current-password"
+              oninput={() => (errorMessage = "")}
+            />
+            <button
+              type="button"
+              class="toggle-visibility"
+              onclick={toggleCurrentPassword}
+              aria-label={showCurrentPassword ? "Hide password" : "Show password"}
+            >
+              <i
+                class="fas {showCurrentPassword ? 'fa-eye-slash' : 'fa-eye'}"
+                aria-hidden="true"
+              ></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="field stagger-field" class:revealed={formRevealed} style="--stagger: 1">
+          <label class="field-label" for="new-password">New Password</label>
+          <div class="input-wrapper">
+            <input
+              id="new-password"
+              type={showNewPassword ? "text" : "password"}
+              class="input input-with-toggle"
+              bind:value={ctx.password.new}
+              bind:this={newPasswordInput}
+              placeholder="Enter new password"
+              aria-required="true"
+              autocomplete="new-password"
+            />
+            <button
+              type="button"
+              class="toggle-visibility"
+              onclick={toggleNewPassword}
+              aria-label={showNewPassword ? "Hide password" : "Show password"}
+            >
+              <i
+                class="fas {showNewPassword ? 'fa-eye-slash' : 'fa-eye'}"
+                aria-hidden="true"
+              ></i>
+            </button>
+          </div>
+          {#if passwordStrength}
+            <div class="strength-bar" aria-label="Password strength: {strengthLabel}">
+              <div class="strength-track">
+                <div class="strength-fill strength--{passwordStrength}"></div>
+              </div>
+              <span class="strength-label strength--{passwordStrength}">{strengthLabel}</span>
+            </div>
+          {/if}
+        </div>
+
+        <div class="button-row stagger-field" class:revealed={formRevealed} style="--stagger: 2">
+          <button class="button button--secondary" onclick={handleCancel}>
+            Cancel
+          </button>
+          <button
+            class="button button--primary"
+            onclick={handleSubmit}
+            disabled={!isFormValid}
+          >
+            {#if ctx.ui.saving}
+              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+              Updating...
+            {:else}
+              <i class="fas fa-check" aria-hidden="true"></i>
+              Update Password
+            {/if}
+          </button>
+        </div>
+      {/if}
     </div>
   {/if}
 </div>
@@ -149,6 +253,21 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+  }
+
+  /* Staggered field entrance */
+  .stagger-field {
+    opacity: 0;
+    transform: translateY(12px);
+    transition:
+      opacity 250ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 250ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: calc(var(--stagger, 0) * 80ms + 100ms);
+  }
+
+  .stagger-field.revealed {
+    opacity: 1;
+    transform: translateY(0);
   }
 
   .label {
@@ -165,17 +284,16 @@
     margin-bottom: 8px;
   }
 
-  .optional {
-    color: var(--theme-text-dim);
-    font-weight: 500;
-    font-size: var(--font-size-compact);
-  }
-
   .password-form {
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
     padding: 20px;
+    transition: border-color 300ms ease;
+  }
+
+  .password-form.success {
+    border-color: var(--semantic-success, #4caf50);
   }
 
   .field {
@@ -215,12 +333,12 @@
     padding-right: 50px;
   }
 
-  .input[aria-invalid="true"] {
-    border-color: rgba(251, 191, 36, 0.6);
+  .input-error {
+    border-color: var(--semantic-error, #f44336);
   }
 
-  .input[aria-invalid="true"]:focus {
-    border-color: rgba(251, 191, 36, 0.8);
+  .input-error:focus {
+    border-color: var(--semantic-error, #f44336);
   }
 
   .toggle-visibility {
@@ -252,16 +370,90 @@
     font-size: var(--font-size-base);
   }
 
-  .hint-message {
+  /* Error banner */
+  .error-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    background: color-mix(in srgb, var(--semantic-error, #f44336) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-error, #f44336) 30%, transparent);
+    border-radius: 8px;
+    color: var(--semantic-error, #f44336);
     font-size: var(--font-size-compact);
-    color: rgba(251, 191, 36, 0.9);
-    margin: 6px 0 0 0;
     font-weight: 500;
   }
 
-  .hint-message.subtle {
-    color: var(--theme-text-dim);
+  /* Success message */
+  .success-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 24px 16px;
+    color: var(--semantic-success, #4caf50);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+  }
+
+  .success-message i {
+    font-size: 1.25rem;
+  }
+
+  /* Strength indicator */
+  .strength-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .strength-track {
+    flex: 1;
+    height: 4px;
+    background: var(--theme-stroke);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .strength-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 300ms ease, background 300ms ease;
+  }
+
+  .strength-fill.strength--weak {
+    width: 33%;
+    background: var(--semantic-error, #f44336);
+  }
+
+  .strength-fill.strength--medium {
+    width: 66%;
+    background: var(--semantic-warning, #ff9800);
+  }
+
+  .strength-fill.strength--strong {
+    width: 100%;
+    background: var(--semantic-success, #4caf50);
+  }
+
+  .strength-label {
+    font-size: var(--font-size-compact);
     font-weight: 500;
+    min-width: 44px;
+  }
+
+  .strength-label.strength--weak {
+    color: var(--semantic-error, #f44336);
+  }
+
+  .strength-label.strength--medium {
+    color: var(--semantic-warning, #ff9800);
+  }
+
+  .strength-label.strength--strong {
+    color: var(--semantic-success, #4caf50);
   }
 
   .button-row {
@@ -345,8 +537,16 @@
 
   @media (prefers-reduced-motion: reduce) {
     .button,
-    .toggle-visibility {
+    .toggle-visibility,
+    .stagger-field,
+    .strength-fill,
+    .password-form {
       transition: none;
+    }
+
+    .stagger-field {
+      opacity: 1;
+      transform: none;
     }
 
     .button:hover,
