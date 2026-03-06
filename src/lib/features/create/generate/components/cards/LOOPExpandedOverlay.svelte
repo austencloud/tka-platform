@@ -289,7 +289,7 @@ Animates forward in z-axis and expands to fill the container space
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     cursor: pointer;
     padding: 8px 12px;
-    height: 48px;
+    height: var(--min-touch-target);
     font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     font-family: inherit;
@@ -326,8 +326,8 @@ Animates forward in z-axis and expands to fill the container space
     align-items: center;
     justify-content: center;
     padding: 8px;
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     transition: all var(--duration-normal) ease;
   }
 
@@ -428,7 +428,7 @@ Animates forward in z-axis and expands to fill the container space
     flex-shrink: 0;
     width: 100%;
     padding: 12px 20px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
 
     background: color-mix(in srgb, var(--theme-accent) 30%, transparent);
     border: 2px solid var(--theme-accent);

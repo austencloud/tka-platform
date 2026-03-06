@@ -112,8 +112,8 @@
   --btn-danger-shadow: 0 4px 16px rgba(239, 68, 68, 0.3);
 
   /* Header circular buttons (current style) */
-  --btn-header-size: 48px;
-  --btn-header-size-mobile: 48px;
+  --btn-header-size: var(--min-touch-target);
+  --btn-header-size-mobile: var(--min-touch-target);
   --btn-header-bg-neutral: linear-gradient(
     135deg,
     rgba(100, 100, 120, 0.85),

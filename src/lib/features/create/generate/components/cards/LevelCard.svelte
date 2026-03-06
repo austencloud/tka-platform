@@ -156,7 +156,7 @@ Uses stepper pattern for space-efficient level selection
   );
 
   function handleIncrement() {
-    const newLevel = Math.min(currentLevelNumber + 1, 4);
+    const newLevel = Math.min(currentLevelNumber + 1, 3);
     onLevelChange(numberToLevel[newLevel]);
   }
 
@@ -199,7 +199,7 @@ Uses stepper pattern for space-efficient level selection
   title={t("generator_level")}
   currentValue={currentLevelNumber}
   minValue={1}
-  maxValue={4}
+  maxValue={3}
   onIncrement={handleIncrement}
   onDecrement={handleDecrement}
   {formatValue}

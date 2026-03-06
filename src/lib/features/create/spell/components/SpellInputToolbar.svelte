@@ -358,7 +358,7 @@
     align-items: center;
     gap: 6px;
     padding: 10px 16px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
 
     background: var(--theme-accent, #6366f1);
     border: none;
@@ -395,7 +395,7 @@
     align-items: center;
     gap: 6px;
     padding: 10px 16px;
-    min-height: 48px;
+    min-height: var(--min-touch-target);
 
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));

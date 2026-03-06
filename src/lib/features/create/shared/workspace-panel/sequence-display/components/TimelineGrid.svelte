@@ -201,7 +201,7 @@
                 widthMultiplier={effectiveDuration}
                 animationEpoch={displayState.animationEpoch}
               />
-              {#if onDurationChange}
+              {#if onDurationChange && selectedStepNumber === step.stepNumber}
                 <DurationResizeHandle
                   currentDuration={duration}
                   onDragStart={() => handleResizeDragStart(stepIndex, duration)}

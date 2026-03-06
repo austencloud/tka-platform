@@ -254,7 +254,7 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay
   }
 
   .summary-line {
-    font-size: var(--card-text-size);
+    font-size: clamp(10px, 3cqw, 14px);
     font-weight: var(--card-text-weight);
     letter-spacing: var(--card-text-spacing);
     color: white;

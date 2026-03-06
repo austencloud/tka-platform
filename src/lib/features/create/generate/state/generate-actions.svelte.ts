@@ -438,7 +438,7 @@ export function createGenerationActionsState(
 
   /**
    * Extend the current sequence to complete its orientation cycle.
-   * Uses the same animation flow as generation so the new beats animate in.
+   * Only animates the NEW beats in — existing beats stay in place.
    */
   async function completeCycle() {
     const sequenceState = getSequenceState?.();
@@ -447,11 +447,23 @@ export function createGenerationActionsState(
     const currentSequence = sequenceState.currentSequence;
     if (!currentSequence) return;
 
+    const existingBeatCount = currentSequence.steps.length;
     const extended = orientationCycleExtender.extendIfNeeded(currentSequence);
     needsCycleCompletion = false;
 
-    // Use the same animation pipeline as generation
-    await updateWorkbenchWithSequence(extended);
+    // Signal StepGrid to animate only new beats (from existingBeatCount onward)
+    window.dispatchEvent(
+      new CustomEvent("prepare-cycle-extension", {
+        detail: {
+          totalBeatCount: extended.steps.length,
+          existingBeatCount,
+        },
+      })
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    sequenceState.setCurrentSequence(extended);
   }
 
   function clearError() {

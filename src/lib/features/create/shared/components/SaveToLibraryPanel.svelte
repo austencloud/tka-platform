@@ -584,8 +584,8 @@
     position: absolute;
     top: 16px;
     right: 16px;
-    width: 48px;
-    height: 48px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     border: none;
     border-radius: 50%;
     background: var(--theme-card-bg);

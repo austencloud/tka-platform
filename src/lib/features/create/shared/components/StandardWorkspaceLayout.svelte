@@ -292,16 +292,13 @@
     container-name: tool-panel;
   }
 
-  /* Compact viewports on Generate tab: tool panel gets a capped height so
-     the workspace maximizes space for the step grid. The compact chip toolbar
-     needs ~130px (2 chip rows + button + gaps), so 150px provides breathing
-     room while giving workspace maximum space for grid cells.
-     850px threshold catches iPhone SE through iPhone 14 Pro. */
+  /* Short viewports on Generate tab: give the tool panel a bit more room
+     so the card grid fits comfortably. Default 5fr:4fr (~55:44) becomes
+     1fr:1fr (50:50) on short screens so cards aren't squeezed. */
   @media (max-height: 850px) {
     .layout-wrapper.workspace-visible.generator-active:not(.side-by-side) {
-      grid-template-rows: 1fr 192px;
+      grid-template-rows: 5fr 4fr;
     }
-
   }
 
 

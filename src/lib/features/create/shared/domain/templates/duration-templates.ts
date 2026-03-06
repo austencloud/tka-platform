@@ -73,6 +73,8 @@ export interface DurationTemplateDefinition {
   readonly category: DurationCategory;
   /** Minimum steps required for this template to be applicable */
   readonly minSteps: number;
+  /** Only show when step count is a multiple of this value */
+  readonly divisibleBy?: number;
   /** Generator function to create entries for a given beat count */
   readonly generator: (stepCount: number) => DurationPatternEntry[];
 }
@@ -177,304 +179,36 @@ function generateGradualPattern(
 // =============================================================================
 
 const TEMPLATE_DEFINITIONS: readonly DurationTemplateDefinition[] = [
-  // =============================================================================
-  // ACCENT - Beat Emphasis (12 templates)
-  // =============================================================================
   {
     id: "every-third-doubled",
     name: "Every Third Doubled",
-    description: "Beats 3, 6, 9, 12... held twice as long",
+    description: "Beats 3, 6, 9... held twice as long",
     category: "accent",
     minSteps: 3,
+    divisibleBy: 3,
     generator: (stepCount) =>
       generateEveryNthPattern(stepCount, 3, 2, 2.0, 1.0),
   },
   {
-    id: "downbeat-accent",
-    name: "Downbeat Accent",
-    description: "4/4 downbeats (1, 5, 9...) emphasized",
-    category: "accent",
-    minSteps: 4,
-    generator: (stepCount) =>
-      generateEveryNthPattern(stepCount, 4, 0, 1.5, 1.0),
-  },
-  {
-    id: "backbeat-accent",
-    name: "Backbeat Accent",
-    description: "Rock/funk feel - beats 3, 7, 11... emphasized",
-    category: "accent",
-    minSteps: 4,
-    generator: (stepCount) =>
-      generateEveryNthPattern(stepCount, 4, 2, 1.5, 1.0),
-  },
-  {
-    id: "first-and-last",
-    name: "First and Last",
-    description: "First and last beats doubled",
-    category: "accent",
-    minSteps: 2,
-    generator: (stepCount) => {
-      const entries: DurationPatternEntry[] = [];
-      for (let i = 0; i < stepCount; i++) {
-        const isBookend = i === 0 || i === stepCount - 1;
-        entries.push({
-          stepIndex: i,
-          duration: isBookend ? 2.0 : 1.0,
-        });
-      }
-      return entries;
-    },
-  },
-  {
-    id: "every-second-accent",
-    name: "Every Other",
-    description: "Beats 2, 4, 6... emphasized",
-    category: "accent",
-    minSteps: 2,
-    generator: (stepCount) =>
-      generateEveryNthPattern(stepCount, 2, 1, 1.5, 1.0),
-  },
-  {
-    id: "strong-weak",
-    name: "Strong-Weak",
-    description: "Classical 2/4 feel",
-    category: "accent",
-    minSteps: 2,
-    generator: (stepCount) =>
-      generateAlternatingPattern(stepCount, 1.25, 0.75),
-  },
-  {
-    id: "triplet-accent",
-    name: "Triplet Accent",
-    description: "Every 3rd beat strong",
-    category: "accent",
+    id: "tresillo",
+    name: "Tresillo",
+    description: "3+3+2 foundation rhythm",
+    category: "feel",
     minSteps: 3,
+    divisibleBy: 3,
     generator: (stepCount) =>
-      generateEveryNthPattern(stepCount, 3, 0, 1.5, 1.0),
-  },
-  {
-    id: "last-beat-accent",
-    name: "Final Flourish",
-    description: "Last beat extended",
-    category: "accent",
-    minSteps: 2,
-    generator: (stepCount) => {
-      const entries: DurationPatternEntry[] = [];
-      for (let i = 0; i < stepCount; i++) {
-        entries.push({
-          stepIndex: i,
-          duration: i === stepCount - 1 ? 2.0 : 1.0,
-        });
-      }
-      return entries;
-    },
-  },
-  {
-    id: "middle-accent",
-    name: "Center Emphasis",
-    description: "Middle beat(s) doubled",
-    category: "accent",
-    minSteps: 3,
-    generator: (stepCount) => {
-      const entries: DurationPatternEntry[] = [];
-      const midStart = Math.floor((stepCount - 1) / 2);
-      const midEnd = Math.ceil((stepCount - 1) / 2);
-      for (let i = 0; i < stepCount; i++) {
-        const isMid = i >= midStart && i <= midEnd;
-        entries.push({
-          stepIndex: i,
-          duration: isMid ? 2.0 : 1.0,
-        });
-      }
-      return entries;
-    },
-  },
-  {
-    id: "crescendo-accent",
-    name: "Building",
-    description: "Increasing emphasis",
-    category: "accent",
-    minSteps: 4,
-    generator: (stepCount) => generateGradualPattern(stepCount, 1.0, 1.5),
-  },
-  {
-    id: "decrescendo-accent",
-    name: "Fading",
-    description: "Decreasing emphasis",
-    category: "accent",
-    minSteps: 4,
-    generator: (stepCount) => generateGradualPattern(stepCount, 1.5, 1.0),
-  },
-  {
-    id: "bookend-accent",
-    name: "Framed",
-    description: "Strong first & last, soft middle",
-    category: "accent",
-    minSteps: 4,
-    generator: (stepCount) => {
-      const entries: DurationPatternEntry[] = [];
-      for (let i = 0; i < stepCount; i++) {
-        const isBookend = i === 0 || i === stepCount - 1;
-        entries.push({
-          stepIndex: i,
-          duration: isBookend ? 1.5 : 0.8,
-        });
-      }
-      return entries;
-    },
-  },
-
-  // =============================================================================
-  // METER - Time Signature Patterns (16 templates)
-  // =============================================================================
-  {
-    id: "half-time",
-    name: "Half Time",
-    description: "Everything slower - all beats 2x duration",
-    category: "meter",
-    minSteps: 1,
-    generator: (stepCount) => generateUniformPattern(stepCount, 2.0),
-  },
-  {
-    id: "double-time",
-    name: "Double Time",
-    description: "Everything faster - all beats 0.5x duration",
-    category: "meter",
-    minSteps: 1,
-    generator: (stepCount) => generateUniformPattern(stepCount, 0.5),
+      generateRepeatingPattern(stepCount, [1.5, 1.5, 1.0]),
   },
   {
     id: "waltz-3-4",
     name: "3/4 Waltz",
     description: "ONE-two-three feel",
-    category: "meter",
+    category: "feel",
     minSteps: 3,
+    divisibleBy: 3,
     generator: (stepCount) =>
       generateRepeatingPattern(stepCount, [1.5, 0.75, 0.75]),
   },
-  {
-    id: "compound-6-8",
-    name: "6/8 Compound",
-    description: "Jig feel - grouped in threes",
-    category: "meter",
-    minSteps: 6,
-    generator: (stepCount) =>
-      generateRepeatingPattern(stepCount, [1.0, 0.5, 0.5, 1.0, 0.5, 0.5]),
-  },
-  {
-    id: "meter-5-4",
-    name: "5/4 Take Five",
-    description: "Jazz quintuple meter",
-    category: "meter",
-    minSteps: 5,
-    generator: (stepCount) =>
-      generateRepeatingPattern(stepCount, [1.25, 1.0, 1.0, 1.0, 0.75]),
-  },
-  {
-    id: "meter-7-8",
-    name: "7/8 Balkan",
-    description: "Bulgarian/Greek folk rhythm",
-    category: "meter",
-    minSteps: 7,
-    generator: (stepCount) =>
-      generateRepeatingPattern(stepCount, [1.0, 1.0, 0.75, 1.0, 1.0, 1.0, 0.75]),
-  },
-  {
-    id: "meter-9-8",
-    name: "9/8 Compound",
-    description: "Triple compound time",
-    category: "meter",
-    minSteps: 9,
-    generator: (stepCount) =>
-      generateRepeatingPattern(stepCount, [
-        1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5,
-      ]),
-  },
-  {
-    id: "meter-12-8",
-    name: "12/8 Slow Blues",
-    description: "Four groups of three",
-    category: "meter",
-    minSteps: 12,
-    generator: (stepCount) =>
-      generateRepeatingPattern(stepCount, [
-        1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5,
-      ]),
-  },
-  {
-    id: "quarter-time",
-    name: "Quarter Time",
-    description: "Ultra slow - all beats 4x duration",
-    category: "meter",
-    minSteps: 1,
-    generator: (stepCount) => generateUniformPattern(stepCount, 4.0),
-  },
-  {
-    id: "triple-time",
-    name: "Triple Time",
-    description: "Fast - all beats 0.33x duration",
-    category: "meter",
-    minSteps: 1,
-    generator: (stepCount) => generateUniformPattern(stepCount, 0.33),
-  },
-  {
-    id: "march-2-4",
-    name: "March",
-    description: "Military 2/4 rhythm",
-    category: "meter",
-    minSteps: 2,
-    generator: (stepCount) =>
-      generateRepeatingPattern(stepCount, [1.25, 0.75]),
-  },
-  {
-    id: "polonaise",
-    name: "Polonaise",
-    description: "Polish 3/4 dance",
-    category: "meter",
-    minSteps: 3,
-    generator: (stepCount) =>
-      generateRepeatingPattern(stepCount, [0.75, 1.25, 1.0]),
-  },
-  {
-    id: "siciliana",
-    name: "Siciliana",
-    description: "Pastoral 6/8",
-    category: "meter",
-    minSteps: 6,
-    generator: (stepCount) =>
-      generateRepeatingPattern(stepCount, [1.25, 0.75, 1.0, 1.0, 0.75, 0.25]),
-  },
-  {
-    id: "mazurka",
-    name: "Mazurka",
-    description: "Polish 3/4, accent on beat 2",
-    category: "meter",
-    minSteps: 3,
-    generator: (stepCount) =>
-      generateRepeatingPattern(stepCount, [1.0, 1.25, 0.75]),
-  },
-  {
-    id: "habanera",
-    name: "Habanera",
-    description: "Cuban 4/4",
-    category: "meter",
-    minSteps: 4,
-    generator: (stepCount) =>
-      generateRepeatingPattern(stepCount, [1.5, 0.5, 1.0, 1.0]),
-  },
-  {
-    id: "tango",
-    name: "Tango",
-    description: "Argentine sharp rhythm",
-    category: "meter",
-    minSteps: 4,
-    generator: (stepCount) =>
-      generateRepeatingPattern(stepCount, [1.0, 1.0, 1.5, 0.5]),
-  },
-
-  // =============================================================================
-  // FEEL - Rhythmic Character (9 templates)
-  // =============================================================================
   {
     id: "swing",
     name: "Swing",
@@ -487,169 +221,11 @@ const TEMPLATE_DEFINITIONS: readonly DurationTemplateDefinition[] = [
   {
     id: "shuffle",
     name: "Shuffle",
-    description: "Blues shuffle - heavy/light alternation",
+    description: "Heavy-light alternation",
     category: "feel",
     minSteps: 2,
     generator: (stepCount) =>
       generateAlternatingPattern(stepCount, 1.5, 0.5),
-  },
-  {
-    id: "push",
-    name: "Push",
-    description: "Anticipation - short-long alternation",
-    category: "feel",
-    minSteps: 2,
-    generator: (stepCount) =>
-      generateAlternatingPattern(stepCount, 0.75, 1.25),
-  },
-  {
-    id: "ritardando",
-    name: "Ritardando",
-    description: "Gradual slowdown through sequence",
-    category: "feel",
-    minSteps: 4,
-    generator: (stepCount) => generateGradualPattern(stepCount, 1.0, 2.0),
-  },
-  {
-    id: "accelerando",
-    name: "Accelerando",
-    description: "Gradual speedup through sequence",
-    category: "feel",
-    minSteps: 4,
-    generator: (stepCount) => generateGradualPattern(stepCount, 2.0, 1.0),
-  },
-  {
-    id: "four-on-floor",
-    name: "Four on Floor",
-    description: "House/disco steady pulse",
-    category: "feel",
-    minSteps: 4,
-    generator: (stepCount) =>
-      generateRepeatingPattern(stepCount, [1.0, 1.0, 1.0, 1.05]),
-  },
-  {
-    id: "trap-hihat",
-    name: "Trap Rolls",
-    description: "Fast 16th note feel",
-    category: "feel",
-    minSteps: 6,
-    generator: (stepCount) =>
-      generateRepeatingPattern(stepCount, [0.25, 0.25, 0.25, 0.25, 1.0, 1.0]),
-  },
-  {
-    id: "dnb-two-step",
-    name: "Drum & Bass",
-    description: "Fast broken beat",
-    category: "feel",
-    minSteps: 6,
-    generator: (stepCount) =>
-      generateRepeatingPattern(stepCount, [0.75, 0.25, 0.5, 0.5, 0.5, 0.5]),
-  },
-  {
-    id: "laid-back",
-    name: "Laid Back",
-    description: "Behind the beat - slight drag",
-    category: "feel",
-    minSteps: 2,
-    generator: (stepCount) => generateUniformPattern(stepCount, 1.1),
-  },
-
-  // =============================================================================
-  // WORLD - Global Rhythm Traditions (10 templates)
-  // =============================================================================
-  {
-    id: "clave-3-2",
-    name: "Son Clave 3-2",
-    description: "Cuban foundation rhythm",
-    category: "world",
-    minSteps: 8,
-    generator: (stepCount) =>
-      generateRepeatingPattern(stepCount, [
-        1.5, 0.5, 1.0, 0.5, 0.5, 1.0, 1.0, 2.0,
-      ]),
-  },
-  {
-    id: "clave-2-3",
-    name: "Son Clave 2-3",
-    description: "Reverse clave pattern",
-    category: "world",
-    minSteps: 8,
-    generator: (stepCount) =>
-      generateRepeatingPattern(stepCount, [
-        0.5, 0.5, 1.0, 1.0, 1.5, 0.5, 1.0, 2.0,
-      ]),
-  },
-  {
-    id: "tresillo",
-    name: "Tresillo",
-    description: "3+3+2 foundation rhythm",
-    category: "world",
-    minSteps: 3,
-    generator: (stepCount) =>
-      generateRepeatingPattern(stepCount, [1.5, 1.5, 1.0]),
-  },
-  {
-    id: "bossa-nova",
-    name: "Bossa Nova",
-    description: "Brazilian clave variant",
-    category: "world",
-    minSteps: 5,
-    generator: (stepCount) =>
-      generateRepeatingPattern(stepCount, [1.5, 0.5, 1.0, 1.5, 0.5]),
-  },
-  {
-    id: "reggaeton",
-    name: "Reggaeton/Dembow",
-    description: "Modern Latin rhythm",
-    category: "world",
-    minSteps: 5,
-    generator: (stepCount) =>
-      generateRepeatingPattern(stepCount, [0.75, 0.75, 0.5, 1.0, 1.0]),
-  },
-  {
-    id: "rumba",
-    name: "Rumba Clave",
-    description: "Cuban dance rhythm",
-    category: "world",
-    minSteps: 6,
-    generator: (stepCount) =>
-      generateRepeatingPattern(stepCount, [1.25, 0.75, 0.5, 1.0, 0.5, 1.0]),
-  },
-  {
-    id: "samba",
-    name: "Samba",
-    description: "Brazilian 2/4",
-    category: "world",
-    minSteps: 4,
-    generator: (stepCount) =>
-      generateRepeatingPattern(stepCount, [0.75, 0.5, 0.75, 1.0]),
-  },
-  {
-    id: "reggae-one-drop",
-    name: "Reggae One Drop",
-    description: "Laid back Jamaican",
-    category: "world",
-    minSteps: 4,
-    generator: (stepCount) =>
-      generateRepeatingPattern(stepCount, [2.0, 0.5, 0.5, 1.0]),
-  },
-  {
-    id: "ska-offbeat",
-    name: "Ska Offbeat",
-    description: "Syncopated upbeat",
-    category: "world",
-    minSteps: 4,
-    generator: (stepCount) =>
-      generateRepeatingPattern(stepCount, [0.5, 1.5, 0.5, 1.5]),
-  },
-  {
-    id: "bolero",
-    name: "Bolero",
-    description: "Romantic slow Latin",
-    category: "world",
-    minSteps: 4,
-    generator: (stepCount) =>
-      generateRepeatingPattern(stepCount, [1.5, 1.0, 1.0, 0.5]),
   },
 ];
 
@@ -672,7 +248,9 @@ export function getTemplateById(
 export function getTemplatesForStepCount(
   stepCount: number
 ): DurationTemplateDefinition[] {
-  return TEMPLATE_DEFINITIONS.filter((t) => stepCount >= t.minSteps);
+  return TEMPLATE_DEFINITIONS.filter(
+    (t) => stepCount >= t.minSteps && (!t.divisibleBy || stepCount % t.divisibleBy === 0)
+  );
 }
 
 /**

@@ -56,8 +56,10 @@ export class LOOPParameterProvider implements ILOOPParameterProvider {
         return 2;
       case DifficultyLevel.ADVANCED:
         return 3;
+      case DifficultyLevel.SKEWED:
+        return 4;
       default:
-        return 2; // Default to intermediate if unknown
+        return 2;
     }
   }
 
@@ -72,8 +74,10 @@ export class LOOPParameterProvider implements ILOOPParameterProvider {
         return DifficultyLevel.INTERMEDIATE;
       case 3:
         return DifficultyLevel.ADVANCED;
+      case 4:
+        return DifficultyLevel.SKEWED;
       default:
-        return DifficultyLevel.INTERMEDIATE; // Default to intermediate for invalid values
+        return DifficultyLevel.INTERMEDIATE;
     }
   }
 

@@ -182,6 +182,19 @@
     }
   }
 
+  // Helper to trigger cycle extension animation (only new beats)
+  async function triggerCycleExtensionAnimation(startFromIndex: number) {
+    if (!containerRef) return;
+
+    const dispatchEvent = (event: CustomEvent) =>
+      containerRef?.dispatchEvent(event);
+    await displayState.triggerSequentialAnimation(
+      steps,
+      dispatchEvent,
+      startFromIndex
+    );
+  }
+
   // Handle beat changes and trigger appropriate animations
   $effect(() => {
     const currentStepCount = steps.length;
@@ -238,6 +251,16 @@
             triggerFullAnimation();
           }, 10);
         }
+      } else if (
+        beatCountDiff > 1 &&
+        displayState.isWaitingForSequentialAnimation &&
+        !displayState.isPreparingFullAnimation
+      ) {
+        // Cycle extension: only animate the new beats
+        const startFrom = previousStepCount;
+        setTimeout(() => {
+          triggerCycleExtensionAnimation(startFrom);
+        }, 10);
       } else {
         setTimeout(() => {
           triggerFullAnimation();
@@ -255,6 +278,12 @@
       const stepsAdded = currentStepCount - previousStepCount;
       if (stepsAdded === 1) {
         // Single step added (constructor/visual-builder) - scroll to see the new step
+        scrollState.scrollToBottom();
+      } else if (
+        displayState.isWaitingForSequentialAnimation &&
+        !displayState.isPreparingFullAnimation
+      ) {
+        // Cycle extension - scroll to bottom to reveal new beats
         scrollState.scrollToBottom();
       } else {
         // Multiple steps added at once (generation) - scroll to top to see start position
@@ -286,6 +315,14 @@
     );
   };
 
+  const handlePrepareCycleExtension = (event: Event) => {
+    const customEvent = event as CustomEvent;
+    displayState.prepareCycleExtensionAnimation(
+      customEvent.detail.totalBeatCount,
+      customEvent.detail.existingBeatCount
+    );
+  };
+
   onMount(() => {
     window.addEventListener("animation-mode-change", handleAnimationModeChange);
     window.addEventListener(
@@ -295,6 +332,10 @@
     window.addEventListener(
       "prepare-sequence-animation",
       handlePrepareSequenceAnimation
+    );
+    window.addEventListener(
+      "prepare-cycle-extension",
+      handlePrepareCycleExtension
     );
 
     return () => {
@@ -309,6 +350,10 @@
       window.removeEventListener(
         "prepare-sequence-animation",
         handlePrepareSequenceAnimation
+      );
+      window.removeEventListener(
+        "prepare-cycle-extension",
+        handlePrepareCycleExtension
       );
     };
   });

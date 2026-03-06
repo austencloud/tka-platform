@@ -1,6 +1,6 @@
 <!--
-  CustomizeDrawer.svelte - Drawer-based Customize overlay
-  Bottom sheet on mobile, right panel on desktop.
+  CustomizeDrawer.svelte - Full-screen bottom sheet Customize overlay
+  Slides up from bottom, covers entire viewport including bottom nav.
   Follows DurationRhythmSheet pattern: portal + Drawer always in DOM.
 -->
 <script lang="ts">
@@ -24,8 +24,7 @@
 <div use:portal>
   <Drawer
     isOpen={isOpen}
-    placement="right"
-    respectLayoutMode={true}
+    placement="bottom"
     showHandle={false}
     closeOnBackdrop={true}
     ariaLabel="Customize generation settings"
@@ -63,49 +62,49 @@
     --sheet-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
   }
 
+  /* Full-screen bottom sheet on mobile — covers bottom nav */
+  :global(.drawer-content.customize-drawer-sheet[data-placement="bottom"]) {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100vh;
+    min-height: 100dvh;
+    max-height: 100vh;
+    max-height: 100dvh;
+    border-radius: 0;
+  }
+
   .customize-drawer-content {
     display: flex;
     flex-direction: column;
     height: 100%;
-    padding: 24px 24px calc(24px + env(safe-area-inset-bottom, 0px));
+    padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
     background: linear-gradient(
       135deg,
       color-mix(in srgb, #06b6d4 20%, #1a1a2e) 0%,
       color-mix(in srgb, #0891b2 12%, #1a1a2e) 50%,
       color-mix(in srgb, #06b6d4 16%, #1a1a2e) 100%
     );
-    border-radius: 16px 16px 0 0;
-    border-top: 1px solid color-mix(in srgb, #06b6d4 40%, transparent);
-  }
-
-  /* Right panel: left border instead of top */
-  :global(.drawer-content.customize-drawer-sheet[data-placement="right"]) .customize-drawer-content {
-    border-radius: 16px 0 0 16px;
+    border-radius: 0;
     border-top: none;
-    border-left: 1px solid color-mix(in srgb, #06b6d4 40%, transparent);
   }
 
-  /* Override CustomizeExpandedOverlay when inside drawer — fill height for scrolling */
+
+  /* Override CustomizeExpandedOverlay when inside drawer — fill height, no inner border */
   .customize-drawer-content > :global(.customize-expanded-overlay) {
     position: static;
     flex: 1;
     min-height: 0;
-    border-radius: 16px;
-    border: 1.5px solid color-mix(in srgb, #06b6d4 30%, transparent);
+    border-radius: 0;
+    border: none;
     box-shadow: none;
-    background: rgba(0, 0, 0, 0.15);
-    padding: 24px;
-    gap: 12px;
-  }
-
-  /* Center accordion content when it doesn't fill the drawer, scroll from top when it overflows */
-  .customize-drawer-content > :global(.customize-expanded-overlay .overlay-content) {
-    justify-content: safe center;
+    background: transparent;
+    padding: 0;
+    gap: 10px;
   }
 
   /* Scale up style buttons in drawer context */
   .customize-drawer-content > :global(.customize-expanded-overlay .option-btn) {
-    min-height: 48px;
+    min-height: var(--min-touch-target);
     font-size: var(--font-size-sm, 14px);
     border-radius: 12px;
   }
@@ -148,10 +147,10 @@
     gap: 10px;
   }
 
-  /* More generous accordion content padding */
+  /* Tight accordion content padding — maximize space for pictographs */
   .customize-drawer-content > :global(.customize-expanded-overlay .accordion-content) {
-    padding: 14px 16px 16px;
-    gap: 14px;
+    padding: 10px 8px 12px;
+    gap: 10px;
   }
 
   /* Larger accordion sections with more visual presence */
