@@ -233,4 +233,4 @@ mcp-server/src/core/humor-profile.json
 mcp-server-pkg/src/core/humor-profile.json
 
 # Private: cross-session development memory
-memory/
+memory/scripts/screenshot-capture/
