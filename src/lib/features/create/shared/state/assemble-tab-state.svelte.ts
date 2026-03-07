@@ -1,8 +1,8 @@
 /**
- * Visual Builder Tab State
+ * Assemble Tab State
  *
- * Manages the visual builder's integration into the Create module.
- * Owns an isolated SequenceState, UndoController, and VisualBuilderState.
+ * Manages the Assemble tab's integration into the Create module.
+ * Owns an isolated SequenceState, UndoController, and builder state (from visual-builder-lab).
  *
  * The reactive bridge converts BuilderStep[] (visual builder's per-hand model)
  * into StepData[] (what SequenceState/StepGrid needs), keeping both in sync.
@@ -29,7 +29,7 @@ import { createStepData } from "../domain/factories/createStepData";
 import { createStartPositionData } from "../domain/factories/createStartPositionData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 
-export function createVisualBuilderTabState(
+export function createAssembleTabState(
   sequenceService?: ISequenceRepository,
   sequencePersister?: ISequencePersister,
   sequenceStatisticsService?: ISequenceStatsCalculator,
@@ -40,7 +40,7 @@ export function createVisualBuilderTabState(
   let isInitialized = $state(false);
   let error = $state<string | null>(null);
 
-  // Visual builder state (per-hand click model)
+  // Builder state (per-hand click model from visual-builder-lab)
   const builderState: VisualBuilderState = createVisualBuilderState();
 
   // Converter service
@@ -57,7 +57,7 @@ export function createVisualBuilderTabState(
         ...(sequenceStatisticsService && { sequenceStatisticsService }),
         ...(sequenceTransformer && { SequenceTransformer: sequenceTransformer }),
         ...(sequenceValidationService && { sequenceValidationService }),
-        tabId: "visual-builder",
+        tabId: "assemble",
       })
     : null;
 
@@ -66,9 +66,9 @@ export function createVisualBuilderTabState(
     ? createUndoController({
         UndoManager: undoManager,
         sequenceState,
-        getActiveSection: () => "visual-builder",
+        getActiveSection: () => "assemble",
         setActiveSectionInternal: async () => {
-          // Visual builder tab doesn't need section switching
+          // Assemble tab doesn't need section switching
         },
       })
     : null;
@@ -159,7 +159,7 @@ export function createVisualBuilderTabState(
 
         sequenceState.setCurrentSequence({
           id: currentSeq?.id ?? crypto.randomUUID(),
-          name: currentSeq?.name ?? "Visual Builder Sequence",
+          name: currentSeq?.name ?? "Assemble Sequence",
           word: "",
           steps: stepsWithLetters,
           gridMode: gm,
@@ -181,7 +181,7 @@ export function createVisualBuilderTabState(
   // INITIALIZATION
   // ============================================================================
 
-  async function initializeVisualBuilderTab() {
+  async function initializeAssembleTab() {
     if (!sequenceState) {
       isInitialized = true;
       return;
@@ -193,7 +193,7 @@ export function createVisualBuilderTabState(
       }
       isInitialized = true;
     } catch (err) {
-      console.error("VisualBuilderTabState: Failed to initialize:", err);
+      console.error("AssembleTabState: Failed to initialize:", err);
       error = err instanceof Error ? err.message : "Failed to initialize";
     }
   }
@@ -209,8 +209,8 @@ export function createVisualBuilderTabState(
     get error() { return error; },
     get hasError() { return error !== null; },
 
-    // Visual builder state (consumed by InteractiveGrid & BuilderControls)
-    get visualBuilderState() { return builderState; },
+    // Builder state (consumed by InteractiveGrid & BuilderControls)
+    get assembleBuilderState() { return builderState; },
 
     // Sequence state (consumed by StepGrid via SequenceState)
     get sequenceState() { return sequenceState; },
@@ -227,7 +227,7 @@ export function createVisualBuilderTabState(
     clearUndoHistory: () => undoController?.clearUndoHistory(),
 
     // Initialization
-    initializeVisualBuilderTab,
+    initializeAssembleTab,
 
     // Cleanup — call when Create module unmounts
     destroy: () => {
@@ -239,4 +239,4 @@ export function createVisualBuilderTabState(
   };
 }
 
-export type VisualBuilderTabState = ReturnType<typeof createVisualBuilderTabState>;
+export type AssembleTabState = ReturnType<typeof createAssembleTabState>;

@@ -48,7 +48,7 @@
 
   const tabs = [
     { id: "construct", label: "Construct" },
-    { id: "visual-builder", label: "Visual Builder" },
+    { id: "assemble", label: "Assemble" },
     { id: "generate", label: "Generate" },
   ];
 
@@ -209,7 +209,7 @@
           <RetroGenerateTab onstatuschange={handleStatusChange} />
         {:else if activeTab === "construct"}
           <RetroConstructTab onstatuschange={handleStatusChange} />
-        {:else if activeTab === "visual-builder"}
+        {:else if activeTab === "assemble"}
           <RetroVisualBuilderTab onstatuschange={handleStatusChange} />
         {/if}
       {/snippet}

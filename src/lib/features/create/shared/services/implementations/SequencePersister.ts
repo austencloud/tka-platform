@@ -106,7 +106,7 @@ export class SequencePersister implements ISequencePersister {
       typeof value === "string" &&
       (value === "construct" ||
         value === "generate" ||
-        value === "visual-builder" ||
+        value === "assemble" ||
         value === "spell")
     );
   }

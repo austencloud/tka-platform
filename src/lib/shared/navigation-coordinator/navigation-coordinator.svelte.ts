@@ -122,8 +122,8 @@ export function moduleSections() {
   if (module === "create") {
     // Filter sections based on user's feature access (role-based)
     const availableSections = baseSections.filter((section) => {
-      // Visual Builder is admin-only (not ready for public)
-      if (section.id === "visual-builder") {
+      // Assemble is admin-only (not ready for public)
+      if (section.id === "assemble") {
         return featureFlagService.isAdmin;
       }
       return featureFlagService.canAccessTab("create", section.id);
@@ -333,7 +333,7 @@ export async function handleModuleChange(
 const TAB_ORDERS: Record<string, string[]> = {
   create: [
     "construct",
-    "visual-builder",
+    "assemble",
     "generate",
     "spell",
     "editor",

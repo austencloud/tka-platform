@@ -3,6 +3,12 @@ CustomizeExpandedOverlay.svelte - Accordion-based customize panel
 Three collapsible sections: Style, Rhythm, Start Position
 Only one section open at a time. All content renders inline (no drawer-hopping).
 -->
+<script module lang="ts">
+  // Module-level: persists across component mounts so reopening the drawer
+  // remembers which section was last open
+  let persistedSection: "style" | "rhythm" | "startEnd" | null = "style";
+</script>
+
 <script lang="ts">
   import { scale, slide } from "svelte/transition";
   import { quintOut } from "svelte/easing";
@@ -70,12 +76,13 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     hapticService = container.items.hapticFeedback;
   });
 
-  // Accordion state — Style open by default
-  let activeSection = $state<AccordionSection | null>("style");
+  // Accordion state — restore last-open section across drawer open/close cycles
+  let activeSection = $state<AccordionSection | null>(persistedSection);
 
   function toggleSection(section: AccordionSection) {
     hapticService?.trigger("selection");
     activeSection = activeSection === section ? null : section;
+    persistedSection = activeSection;
   }
 
   // ─── Local state for rhythm (instant UI feedback) ───

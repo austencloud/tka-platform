@@ -110,7 +110,7 @@
     switch (activeTab) {
       case "construct":
         return "rgba(59, 130, 246, 0.2)"; // Blue
-      case "visual-builder":
+      case "assemble":
         return "rgba(6, 182, 212, 0.2)"; // Cyan
       case "generate":
         return "rgba(245, 158, 11, 0.2)"; // Gold

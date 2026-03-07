@@ -277,7 +277,7 @@
     if (currentStepCount > previousStepCount) {
       const stepsAdded = currentStepCount - previousStepCount;
       if (stepsAdded === 1) {
-        // Single step added (constructor/visual-builder) - scroll to see the new step
+        // Single step added (constructor/assemble) - scroll to see the new step
         scrollState.scrollToBottom();
       } else if (
         displayState.isWaitingForSequentialAnimation &&
