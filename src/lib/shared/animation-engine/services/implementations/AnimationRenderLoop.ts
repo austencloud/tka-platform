@@ -51,12 +51,13 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   // Track quality tier for fire adaptive quality
   private previousQualityTier: QualityTier | null = null;
 
-  // Frame drop diagnostics — logs slow frames to console for debugging
-  private frameDropLoggingEnabled = true;
+  // Frame drop diagnostics — logs slow frames to console for debugging.
+  // Disabled by default. Enable via browser console: window.__TKA_FRAME_DROP_LOG = true
+  private frameDropLoggingEnabled = false;
   private static readonly FRAME_DROP_THRESHOLD_MS = 20; // ~50fps — anything below 60fps
   private lastFrameTime = 0; // Track RAF-to-RAF gap (true frame duration including browser overhead)
   private lastFrameDropLogTime = 0; // Rate-limit logs to avoid feedback loop with console recording extensions
-  private static readonly FRAME_DROP_LOG_COOLDOWN_MS = 500; // Max 2 logs per second
+  private static readonly FRAME_DROP_LOG_COOLDOWN_MS = 2000; // Max 1 log per 2 seconds
   private framesRenderedSinceStart = 0; // Warm-up grace period — skip frame drop logging for first N frames
   private static readonly WARMUP_FRAMES = 10; // First 10 frames always have high RAF gaps
 
@@ -491,13 +492,15 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.framesRenderedSinceStart++;
     const isWarmingUp = this.framesRenderedSinceStart <= AnimationRenderLoop.WARMUP_FRAMES;
     const isFirstFrameAfterRestart = rafGap > 1000;
+    const logEnabled = this.frameDropLoggingEnabled ||
+      (typeof window !== "undefined" && (window as any).__TKA_FRAME_DROP_LOG === true);
     if (
-      this.frameDropLoggingEnabled &&
+      logEnabled &&
       !isWarmingUp &&
       !isFirstFrameAfterRestart &&
       params.isPlaying &&
       (renderTime > AnimationRenderLoop.FRAME_DROP_THRESHOLD_MS ||
-       rafGap > 40) // RAF gap > 40ms means browser missed 2+ vsyncs (not just vsync jitter)
+       rafGap > 100) // RAF gap > 100ms means browser missed 5+ vsyncs (genuine stall)
     ) {
       const now = performance.now();
       if (now - this.lastFrameDropLogTime > AnimationRenderLoop.FRAME_DROP_LOG_COOLDOWN_MS) {
