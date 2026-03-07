@@ -389,10 +389,21 @@ ${svgParts.join("\n")}
       // The regex matches <circle that is NOT followed by fill= before the >
       innerContent = innerContent.replace(/<circle(?![^>]*fill=)/g, `<circle fill="${gridColor}"`);
 
+      // Box mode outer points use <path> elements (compound paths: two concentric circles).
+      // With fill-rule:evenodd + fill color, the inner circle cuts out → ring with dark center.
+      // Also update stroke color so the outline is visible on dark backgrounds.
+      if (gridMode === GridMode.BOX) {
+        innerContent = innerContent.replace(
+          /\.box-grid-stroke\{stroke:#000;/,
+          `.box-grid-stroke{fill:${gridColor};fill-rule:evenodd;stroke:${gridColor};`
+        );
+      }
+
       // Replace currentColor with the grid color (for hand points with fill:currentColor in CSS)
       // The CSS class .normal-hand-point { fill: currentColor } needs the color property set
       if (darkMode) {
         innerContent = innerContent.replace(/#000000/gi, gridColor);
+        innerContent = innerContent.replace(/#000(?![\da-f])/gi, gridColor);
         innerContent = innerContent.replace(/black/gi, gridColor);
       }
 
