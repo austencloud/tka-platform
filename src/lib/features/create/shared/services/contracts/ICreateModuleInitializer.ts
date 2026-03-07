@@ -32,7 +32,7 @@ import type { createConstructTabState } from "../../state/construct-tab-state.sv
 // ARCHIVED: AssemblerTabState import removed (Feb 2026)
 import type { GeneratorTabState } from "../../state/generator-tab-state.svelte";
 // REMOVED: SpellTabState import — Spell mode unified into Generate tab (Feb 2026)
-import type { VisualBuilderTabState } from "../../state/visual-builder-tab-state.svelte";
+import type { AssembleTabState } from "../../state/assemble-tab-state.svelte";
 
 // Use the actual return type of createConstructTabState instead of the incomplete interface
 type ConstructTabState = ReturnType<typeof createConstructTabState>;
@@ -44,7 +44,7 @@ export interface CreateModuleInitializationResult {
   // ARCHIVED: assemblerTabState removed (Feb 2026)
   generatorTabState: GeneratorTabState;
   // REMOVED: spellTabState — Spell mode unified into Generate tab (Feb 2026)
-  visualBuilderTabState: VisualBuilderTabState;
+  assembleTabState: AssembleTabState;
 
   // Core services
   sequenceService: ISequenceRepository;

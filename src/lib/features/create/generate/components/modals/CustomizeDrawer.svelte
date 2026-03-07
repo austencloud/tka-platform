@@ -1,6 +1,7 @@
 <!--
-  CustomizeDrawer.svelte - Full-screen bottom sheet Customize overlay
-  Slides up from bottom, covers entire viewport including bottom nav.
+  CustomizeDrawer.svelte - Customize overlay drawer
+  Desktop: right-side panel matching other create module drawers.
+  Mobile: full-screen bottom sheet covering entire viewport including bottom nav.
   Follows DurationRhythmSheet pattern: portal + Drawer always in DOM.
 -->
 <script lang="ts">
@@ -24,7 +25,8 @@
 <div use:portal>
   <Drawer
     isOpen={isOpen}
-    placement="bottom"
+    placement="right"
+    respectLayoutMode={true}
     showHandle={false}
     closeOnBackdrop={true}
     ariaLabel="Customize generation settings"
@@ -73,6 +75,11 @@
     border-radius: 0;
   }
 
+  /* Right-side panel on desktop — match other create module drawers */
+  :global(.drawer-content.customize-drawer-sheet[data-placement="right"]) {
+    --sheet-width: min(480px, 90vw);
+  }
+
   .customize-drawer-content {
     display: flex;
     flex-direction: column;
@@ -100,32 +107,6 @@
     background: transparent;
     padding: 0;
     gap: 10px;
-  }
-
-  /* Scale up style buttons in drawer context */
-  .customize-drawer-content > :global(.customize-expanded-overlay .option-btn) {
-    min-height: var(--min-touch-target);
-    font-size: var(--font-size-sm, 14px);
-    border-radius: 12px;
-  }
-
-  /* Larger axis labels */
-  .customize-drawer-content > :global(.customize-expanded-overlay .style-axis-label) {
-    font-size: var(--font-size-compact, 12px);
-  }
-
-  /* More spacious axis rows */
-  .customize-drawer-content > :global(.customize-expanded-overlay .style-axis) {
-    gap: 6px;
-  }
-
-  .customize-drawer-content > :global(.customize-expanded-overlay .style-axis-options) {
-    gap: 8px;
-  }
-
-  /* More spacing between axis groups in drawer */
-  .customize-drawer-content > :global(.customize-expanded-overlay .style-panel) {
-    gap: 14px;
   }
 
   /* Larger accordion headers in drawer context */

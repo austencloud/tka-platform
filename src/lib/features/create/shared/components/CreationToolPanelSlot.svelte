@@ -5,7 +5,7 @@
    * Creation Tool Panel Slot
    *
    * Renders the appropriate tool panel based on the active tab.
-   * Each creation mode (Constructor, Generator, Visual Builder) has its own dedicated panel.
+   * Each creation mode (Constructor, Generator, Assemble) has its own dedicated panel.
    *
    * Domain: Create module - Tool panel presentation
    */
@@ -16,7 +16,7 @@
   import { getCreateModuleContext } from "../context/create-module-context";
   import GeneratePanel from "../../generate/components/GeneratePanel.svelte";
   import ConstructTabContent from "./ConstructTabContent.svelte";
-  import VisualBuilderToolPanel from "../../visual-builder/components/VisualBuilderToolPanel.svelte";
+  import AssembleToolPanel from "../../visual-builder/components/AssembleToolPanel.svelte";
   import { desktopSidebarState } from "$lib/shared/layout/desktop-sidebar-state.svelte";
 
   // Get context
@@ -156,14 +156,14 @@
               sequenceState={createModuleState.getActiveTabSequenceState()}
               isDesktop={showDesktopSidebar}
             />
-          {:else if activeToolPanel === "visual-builder"}
-            <!-- Visual Builder Mode - Click grid points to build sequences -->
-            {@const visualBuilderTabState = createModuleState.visualBuilderTabState}
-            {#if visualBuilderTabState}
-              <VisualBuilderToolPanel tabState={visualBuilderTabState} />
+          {:else if activeToolPanel === "assemble"}
+            <!-- Assemble Mode - Click grid points to build sequences -->
+            {@const assembleTabState = createModuleState.assembleTabState}
+            {#if assembleTabState}
+              <AssembleToolPanel tabState={assembleTabState} />
             {:else}
               <div class="coming-soon-panel">
-                <p>Visual builder loading...</p>
+                <p>Assemble loading...</p>
               </div>
             {/if}
           {/if}

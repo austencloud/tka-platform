@@ -66,7 +66,7 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
 
 <div class="style-panel">
   <div class="style-axis">
-    <span class="style-axis-label">Prop Reversals</span>
+    <span class="style-axis-label">Props</span>
     <div class="style-axis-options">
       {#each propsOptions as opt}
         <button
@@ -78,7 +78,7 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
     </div>
   </div>
   <div class="style-axis">
-    <span class="style-axis-label">Hand Reversals</span>
+    <span class="style-axis-label">Hands</span>
     <div class="style-axis-options">
       {#each handsOptions as opt}
         <button
@@ -107,7 +107,7 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
   .style-panel {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 14px;
     width: 100%;
     flex: 1;
     justify-content: center;
@@ -115,20 +115,24 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
 
   .style-axis {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    align-items: center;
+    gap: 12px;
   }
 
   .style-axis-label {
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    opacity: 0.75;
-    text-align: center;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: rgba(255, 255, 255, 0.5);
+    min-width: 52px;
+    flex-shrink: 0;
   }
 
   .style-axis-options {
     display: flex;
-    gap: 6px;
+    gap: 4px;
+    flex: 1;
   }
 
   .option-btn {
@@ -139,9 +143,9 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
     border-radius: 10px;
     color: rgba(255, 255, 255, 0.7);
     cursor: pointer;
-    font-weight: 700;
-    font-size: var(--font-size-min, 14px);
-    padding: 4px 8px;
+    font-weight: 600;
+    font-size: var(--font-size-compact, 12px);
+    padding: 4px 6px;
     transition:
       background var(--duration-fast, 150ms) ease,
       border-color var(--duration-fast, 150ms) ease,

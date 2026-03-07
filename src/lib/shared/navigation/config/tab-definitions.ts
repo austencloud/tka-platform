@@ -14,7 +14,6 @@ import type { Section } from "../domain/types";
 
 // Default tab for new users visiting /create without a specific tab.
 // "construct" is the default because it's the most complete/polished experience.
-// "assemble" has been archived - replaced by visual-builder (Feb 2026).
 export const DEFAULT_CREATE_TAB = "construct";
 
 export const CREATE_TABS: Section[] = [
@@ -27,12 +26,10 @@ export const CREATE_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)",
     metadata: { isCreationMethod: true },
   },
-  // ARCHIVED: Assemble tab replaced by Visual Builder (Feb 2026)
-  // Files kept in src/lib/features/create/assemble/ for reference
   {
-    id: "visual-builder",
-    label: "Visual",
-    icon: '<i class="fas fa-hand-pointer" aria-hidden="true"></i>',
+    id: "assemble",
+    label: "Assemble",
+    icon: '<i class="fas fa-puzzle-piece" aria-hidden="true"></i>',
     description: "Click grid points to build sequences visually",
     color: "#06b6d4",
     gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
