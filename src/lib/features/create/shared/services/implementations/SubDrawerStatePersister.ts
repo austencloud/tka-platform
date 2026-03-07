@@ -23,6 +23,7 @@ export class SubDrawerStatePersister implements ISubDrawerStatePersister {
       "help",
       "turnPattern",
       "rotationDirection",
+      "duration",
       "extend",
     ];
     return validTypes.includes(value as SubDrawerType)
