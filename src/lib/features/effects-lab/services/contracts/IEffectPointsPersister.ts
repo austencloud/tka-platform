@@ -1,35 +1,40 @@
 /**
- * Shared effect point position persistence.
+ * Shared effect point persistence.
  *
- * Stores position-only data ({dx, dy}) in Firestore at `config/effectPoints`.
- * Each effect provider (fire, LED) enriches with its own intensity defaults
- * when serving data to renderers.
+ * Stores full point data (position + effect-specific properties like flameScale)
+ * in Firestore at `config/effectPoints`. All users read from this document so
+ * admin edits propagate globally in real time.
  *
  * Firestore doc shape:
  *   config/effectPoints {
- *     staff: [{dx, dy}, ...],
- *     fan: [{dx, dy}, ...],
+ *     staff: [{dx, dy, flameScale, ...}, ...],
+ *     fan: [{dx, dy, flameScale, ...}, ...],
  *     updatedAt: Timestamp,
  *     updatedBy: uid
  *   }
  */
 
-export interface EffectPosition {
+export interface EffectPoint {
 	dx: number;
 	dy: number;
+	/** Additional effect-specific properties (e.g. flameScale, brightness) */
+	[key: string]: number;
 }
 
 export interface IEffectPointsPersister {
-	/** Load positions from Firestore (falls back to localStorage cache). */
+	/** Load points from Firestore (falls back to localStorage cache). */
 	load(): Promise<void>;
 
-	/** Save positions for a prop type. Writes localStorage immediately, Firestore debounced. */
-	save(propType: string, points: EffectPosition[]): void;
+	/** Whether initial load has completed (Firestore or localStorage). */
+	isLoaded(): boolean;
 
-	/** Get cached positions for a prop type, or null if none stored. */
-	getPositions(propType: string): EffectPosition[] | null;
+	/** Save points for a prop type. Writes localStorage immediately, Firestore debounced. */
+	save(propType: string, points: EffectPoint[]): void;
 
-	/** Subscribe to position changes (from Firestore onSnapshot). Returns unsubscribe fn. */
+	/** Get cached points for a prop type, or null if none stored. */
+	getPoints(propType: string): EffectPoint[] | null;
+
+	/** Subscribe to point changes (from Firestore onSnapshot). Returns unsubscribe fn. */
 	subscribe(callback: () => void): () => void;
 
 	/** Tear down Firestore listener and clear observers. */

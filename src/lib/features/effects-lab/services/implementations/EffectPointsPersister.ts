@@ -1,9 +1,9 @@
 /**
  * Shared Effect Points Persister — Firebase + localStorage
  *
- * Stores position-only point data ({dx, dy}) for all prop types in a single
- * Firestore document (`config/effectPoints`). Both fire and LED providers
- * read from this shared source and enrich with their own intensity defaults.
+ * Stores full point data (position + effect-specific properties) for all
+ * prop types in a single Firestore document (`config/effectPoints`). All
+ * users read from this document, so admin edits propagate globally.
  *
  * Persistence strategy:
  *   - Save: localStorage (instant) + Firestore (debounced 1s)
@@ -23,7 +23,7 @@ import { auth, getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
 import type {
 	IEffectPointsPersister,
-	EffectPosition,
+	EffectPoint,
 } from "../contracts/IEffectPointsPersister";
 
 const LOG_PREFIX = "[EffectPointsPersister]";
@@ -31,22 +31,25 @@ const FIRESTORE_DOC_PATH = "config/effectPoints";
 const LOCAL_CACHE_KEY = "tka-effect-points-cache";
 const DEBOUNCE_MS = 1000;
 
+function isPermissionError(error: unknown): boolean {
+	return error instanceof Error && error.message.includes("Missing or insufficient permissions");
+}
+
 export class EffectPointsPersister implements IEffectPointsPersister {
-	private positions: Record<string, EffectPosition[]> = {};
+	private points: Record<string, EffectPoint[]> = {};
 	private observers: Array<() => void> = [];
 	private unsubscribe: Unsubscribe | null = null;
 	private debounceTimer: ReturnType<typeof setTimeout> | null = null;
 	private pendingWrites: Set<string> = new Set();
+	private loaded = false;
 
 	// ------------------------------------------------------------------
 	// load()
 	// ------------------------------------------------------------------
 
 	async load(): Promise<void> {
-		if (!auth.currentUser) {
-			this.readLocalStorage();
-			return;
-		}
+		// Always read localStorage first as an immediate cache
+		this.readLocalStorage();
 
 		try {
 			const docRef = await this.getDocRef();
@@ -55,27 +58,36 @@ export class EffectPointsPersister implements IEffectPointsPersister {
 			if (snap.exists()) {
 				this.applyFirestoreData(snap.data());
 				this.writeLocalStorage();
-			} else {
-				this.readLocalStorage();
 			}
 		} catch (error) {
-			console.warn(
-				`${LOG_PREFIX} Firestore load failed, falling back to localStorage:`,
-				error
-			);
-			this.readLocalStorage();
+			if (!isPermissionError(error)) {
+				console.warn(
+					`${LOG_PREFIX} Firestore load failed, using localStorage cache:`,
+					error
+				);
+			}
 		}
 
+		this.loaded = true;
+		this.notifyObservers();
 		this.startSnapshotListener();
+	}
+
+	// ------------------------------------------------------------------
+	// isLoaded()
+	// ------------------------------------------------------------------
+
+	isLoaded(): boolean {
+		return this.loaded;
 	}
 
 	// ------------------------------------------------------------------
 	// save()
 	// ------------------------------------------------------------------
 
-	save(propType: string, points: EffectPosition[]): void {
+	save(propType: string, points: EffectPoint[]): void {
 		const key = propType.toLowerCase();
-		this.positions[key] = points.map((p) => ({ dx: p.dx, dy: p.dy }));
+		this.points[key] = points.map((p) => ({ ...p }));
 
 		this.writeLocalStorage();
 
@@ -84,14 +96,14 @@ export class EffectPointsPersister implements IEffectPointsPersister {
 	}
 
 	// ------------------------------------------------------------------
-	// getPositions()
+	// getPoints()
 	// ------------------------------------------------------------------
 
-	getPositions(propType: string): EffectPosition[] | null {
+	getPoints(propType: string): EffectPoint[] | null {
 		const key = propType.toLowerCase();
-		const points = this.positions[key];
-		if (!points || points.length === 0) return null;
-		return points.map((p) => ({ dx: p.dx, dy: p.dy }));
+		const pts = this.points[key];
+		if (!pts || pts.length === 0) return null;
+		return pts.map((p) => ({ ...p }));
 	}
 
 	// ------------------------------------------------------------------
@@ -165,9 +177,9 @@ export class EffectPointsPersister implements IEffectPointsPersister {
 			};
 
 			for (const key of keysToWrite) {
-				const points = this.positions[key];
-				if (points) {
-					update[key] = points;
+				const pts = this.points[key];
+				if (pts) {
+					update[key] = pts;
 				}
 			}
 
@@ -186,8 +198,6 @@ export class EffectPointsPersister implements IEffectPointsPersister {
 	// ------------------------------------------------------------------
 
 	private startSnapshotListener(): void {
-		if (!auth.currentUser) return;
-
 		this.getDocRef()
 			.then((docRef) => {
 				this.unsubscribe = onSnapshot(
@@ -200,18 +210,22 @@ export class EffectPointsPersister implements IEffectPointsPersister {
 						}
 					},
 					(error) => {
-						console.error(
-							`${LOG_PREFIX} Snapshot listener error:`,
-							error
-						);
+						if (!isPermissionError(error)) {
+							console.error(
+								`${LOG_PREFIX} Snapshot listener error:`,
+								error
+							);
+						}
 					}
 				);
 			})
 			.catch((error) => {
-				console.error(
-					`${LOG_PREFIX} Failed to set up snapshot listener:`,
-					error
-				);
+				if (!isPermissionError(error)) {
+					console.error(
+						`${LOG_PREFIX} Failed to set up snapshot listener:`,
+						error
+					);
+				}
 			});
 	}
 
@@ -220,24 +234,24 @@ export class EffectPointsPersister implements IEffectPointsPersister {
 	// ------------------------------------------------------------------
 
 	private applyFirestoreData(data: Record<string, unknown>): void {
-		const newPositions: Record<string, EffectPosition[]> = {};
+		const newPoints: Record<string, EffectPoint[]> = {};
 
 		for (const [key, value] of Object.entries(data)) {
 			if (key === "updatedAt" || key === "updatedBy") continue;
 
-			const points = this.parsePointsArray(value);
-			if (points) {
-				newPositions[key.toLowerCase()] = points;
+			const pts = this.parsePointsArray(value);
+			if (pts) {
+				newPoints[key.toLowerCase()] = pts;
 			}
 		}
 
-		this.positions = newPositions;
+		this.points = newPoints;
 	}
 
-	private parsePointsArray(raw: unknown): EffectPosition[] | null {
+	private parsePointsArray(raw: unknown): EffectPoint[] | null {
 		if (!Array.isArray(raw)) return null;
 
-		const valid: EffectPosition[] = [];
+		const valid: EffectPoint[] = [];
 		for (const item of raw) {
 			if (
 				item !== null &&
@@ -245,8 +259,17 @@ export class EffectPointsPersister implements IEffectPointsPersister {
 				typeof (item as Record<string, unknown>).dx === "number" &&
 				typeof (item as Record<string, unknown>).dy === "number"
 			) {
-				const obj = item as { dx: number; dy: number };
-				valid.push({ dx: obj.dx, dy: obj.dy });
+				const obj = item as Record<string, unknown>;
+				const point: EffectPoint = { dx: obj.dx as number, dy: obj.dy as number };
+
+				// Preserve all additional numeric properties (flameScale, brightness, etc.)
+				for (const [prop, val] of Object.entries(obj)) {
+					if (prop !== "dx" && prop !== "dy" && typeof val === "number") {
+						point[prop] = val;
+					}
+				}
+
+				valid.push(point);
 			}
 		}
 
@@ -279,15 +302,15 @@ export class EffectPointsPersister implements IEffectPointsPersister {
 			const parsed = JSON.parse(raw);
 			if (typeof parsed !== "object" || parsed === null) return;
 
-			const result: Record<string, EffectPosition[]> = {};
+			const result: Record<string, EffectPoint[]> = {};
 			for (const [key, value] of Object.entries(parsed)) {
-				const points = this.parsePointsArray(value);
-				if (points) {
-					result[key] = points;
+				const pts = this.parsePointsArray(value);
+				if (pts) {
+					result[key] = pts;
 				}
 			}
 
-			this.positions = result;
+			this.points = result;
 		} catch {
 			// Corrupted cache — start fresh
 		}
@@ -297,7 +320,7 @@ export class EffectPointsPersister implements IEffectPointsPersister {
 		try {
 			localStorage.setItem(
 				LOCAL_CACHE_KEY,
-				JSON.stringify(this.positions)
+				JSON.stringify(this.points)
 			);
 		} catch {
 			// localStorage might be full or unavailable
