@@ -1,4 +1,5 @@
 import type { IEffectPointOverrideProvider } from "../services/contracts/IEffectPointOverrideProvider";
+import type { IEffectPointsPersister } from "../services/contracts/IEffectPointsPersister";
 import type { EffectDescriptor } from "../domain/EffectDescriptor";
 
 const MAX_UNDO_DEPTH = 20;
@@ -37,16 +38,34 @@ export class EffectPointEditorState {
 	private saveIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
 	private actionFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
 	private storageKey: string;
+	private unsubscribePersister: (() => void) | null = null;
 
 	constructor(
 		provider: IEffectPointOverrideProvider,
 		private descriptor: EffectDescriptor,
+		persister?: IEffectPointsPersister,
 	) {
 		this.storageKey = `effects-lab-selected-prop-${descriptor.id}`;
 		this.provider = provider;
 		const saved = this.loadSelectedPropType();
 		if (saved) this.selectedPropType = saved;
 		this.loadPointsForCurrentProp();
+
+		// Subscribe to persister changes so we reload when Firestore data arrives
+		// (fixes race condition where editor reads before async load completes)
+		if (persister) {
+			this.unsubscribePersister = persister.subscribe(() => {
+				// Only reload if we're NOT actively editing (dragging or just saved)
+				if (!this.isDragging && !this.saveIndicatorVisible) {
+					this.loadPointsForCurrentProp();
+				}
+			});
+		}
+	}
+
+	dispose(): void {
+		this.unsubscribePersister?.();
+		this.unsubscribePersister = null;
 	}
 
 	get availablePropTypes(): string[] {

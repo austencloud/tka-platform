@@ -72,6 +72,13 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Effect point positions - readable by all (pre-auth safe), writable by admins
+    // Stores fire/LED point positions that apply to all users globally
+    match /config/effectPoints {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Fire defaults configuration - readable by all (including anonymous), writable by admins
     match /config/fireDefaults {
       allow read: if true;

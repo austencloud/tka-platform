@@ -10,6 +10,7 @@
 	import { container } from "$lib/shared/di";
 	import { EffectPointEditorState } from "../state/effect-point-editor-state.svelte";
 	import type { IEffectPointOverrideProvider } from "../services/contracts/IEffectPointOverrideProvider";
+	import type { IEffectPointsPersister } from "../services/contracts/IEffectPointsPersister";
 	import type { EffectDescriptor } from "../domain/EffectDescriptor";
 	import EffectPropTypeSelector from "./EffectPropTypeSelector.svelte";
 	import EffectPointSvgCanvas from "./EffectPointSvgCanvas.svelte";
@@ -28,7 +29,8 @@
 	const provider = container.items[
 		providerKey
 	] as IEffectPointOverrideProvider;
-	const editorState = new EffectPointEditorState(provider, descriptor);
+	const persister = container.items.effectPointsPersister as IEffectPointsPersister;
+	const editorState = new EffectPointEditorState(provider, descriptor, persister);
 
 	function handleKeyDown(e: KeyboardEvent) {
 		if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
@@ -53,6 +55,7 @@
 
 	onDestroy(() => {
 		window.removeEventListener("keydown", handleKeyDown);
+		editorState.dispose();
 	});
 </script>
 

@@ -1,8 +1,7 @@
 import type { PropLedConfig } from "$lib/shared/animation-engine/domain/types/LedTypes";
 import type { IEffectPointOverrideProvider } from "../contracts/IEffectPointOverrideProvider";
-import type { IEffectPointsPersister } from "../contracts/IEffectPointsPersister";
+import type { IEffectPointsPersister, EffectPoint } from "../contracts/IEffectPointsPersister";
 
-const INTENSITY_STORAGE_KEY = "led-point-intensity-overrides";
 const DEFAULT_BRIGHTNESS = 0.8;
 
 /** Deep-copy that works on Svelte 5 $state proxies (structuredClone cannot clone them). */
@@ -13,35 +12,30 @@ function deepCopy<T>(value: T): T {
 /**
  * LED point override provider backed by shared EffectPointsPersister.
  *
- * Positions are shared across all effects (fire, LED) via the persister.
- * This provider enriches shared positions with LED-specific intensity
- * (brightness) and caches the full typed config to localStorage for
- * fast animation-frame reads.
+ * Full LED point configs (positions + brightness) are stored in Firestore
+ * via the persister. All users read from the same document.
  *
  * Fallback chain (highest to lowest priority):
- * 1. Shared positions from EffectPointsPersister (Firebase-backed)
+ * 1. Points from EffectPointsPersister (Firebase-backed)
  * 2. Admin-published defaults (when added)
  */
 export class LedPointOverrideProvider implements IEffectPointOverrideProvider {
 	private publishedDefaults: Map<string, PropLedConfig>;
-	private intensityOverrides: Map<string, Record<number, number>>;
 
 	constructor(private readonly persister: IEffectPointsPersister) {
 		this.publishedDefaults = new Map();
-		this.intensityOverrides = this.loadIntensityOverrides();
 	}
 
 	getOverride(propType: string): PropLedConfig | null {
 		const key = propType.toLowerCase();
 
-		const sharedPositions = this.persister.getPositions(key);
-		if (sharedPositions) {
-			const intensities = this.intensityOverrides.get(key);
+		const stored = this.persister.getPoints(key);
+		if (stored) {
 			return {
-				points: sharedPositions.map((p, i) => ({
+				points: stored.map((p) => ({
 					dx: p.dx,
 					dy: p.dy,
-					brightness: intensities?.[i] ?? DEFAULT_BRIGHTNESS,
+					brightness: p.brightness ?? DEFAULT_BRIGHTNESS,
 				})),
 			};
 		}
@@ -52,45 +46,45 @@ export class LedPointOverrideProvider implements IEffectPointOverrideProvider {
 	saveOverride(propType: string, config: PropLedConfig): void {
 		const key = propType.toLowerCase();
 
-		// Extract position-only data and persist to shared store (Firebase)
-		const positions = config.points.map((p) => ({ dx: p.dx, dy: p.dy }));
-		this.persister.save(key, positions);
-
-		// Cache per-point brightness overrides locally
-		const intensities: Record<number, number> = {};
-		config.points.forEach((p, i) => {
-			intensities[i] = p.brightness;
-		});
-		this.intensityOverrides.set(key, intensities);
-		this.persistIntensityOverrides();
+		// Store full LED point data (positions + brightness) to Firestore
+		const points: EffectPoint[] = config.points.map((p) => ({
+			dx: p.dx,
+			dy: p.dy,
+			brightness: p.brightness,
+		}));
+		this.persister.save(key, points);
 	}
 
 	clearOverride(propType: string): void {
 		const key = propType.toLowerCase();
 		this.persister.save(key, []);
-		if (this.intensityOverrides.delete(key)) {
-			this.persistIntensityOverrides();
-		}
 	}
 
 	hasOverride(propType: string): boolean {
 		const key = propType.toLowerCase();
-		return this.persister.getPositions(key) !== null;
+		return this.persister.getPoints(key) !== null;
 	}
 
 	getOverriddenTypes(): string[] {
-		const types = new Set<string>();
-		for (const key of this.intensityOverrides.keys()) {
-			if (this.persister.getPositions(key) !== null) {
-				types.add(key);
+		const candidates = [
+			"staff", "fan", "club", "buugeng", "triad", "minipoi",
+			"doublestaff", "sword", "bigstaff", "bigfan", "bigclub",
+			"minihoop", "bighoop", "bigbuugeng", "fractalgeng", "trigeng",
+			"triquetra", "chicken", "guitar", "ukulele", "doublestar",
+			"eightrings", "quiad", "torch", "poi",
+		];
+		const types: string[] = [];
+		for (const key of candidates) {
+			if (this.persister.getPoints(key) !== null) {
+				types.push(key);
 			}
 		}
-		return Array.from(types);
+		return types;
 	}
 
 	exportAll(): Record<string, PropLedConfig> {
 		const result: Record<string, PropLedConfig> = {};
-		for (const key of this.intensityOverrides.keys()) {
+		for (const key of this.getOverriddenTypes()) {
 			const override = this.getOverride(key);
 			if (override) {
 				result[key] = deepCopy(override);
@@ -139,35 +133,6 @@ export class LedPointOverrideProvider implements IEffectPointOverrideProvider {
 	}
 
 	// --- Private helpers ---
-
-	private loadIntensityOverrides(): Map<string, Record<number, number>> {
-		const map = new Map<string, Record<number, number>>();
-		try {
-			const raw = localStorage.getItem(INTENSITY_STORAGE_KEY);
-			if (!raw) return map;
-			const parsed = JSON.parse(raw) as Record<string, Record<number, number>>;
-			for (const [key, intensities] of Object.entries(parsed)) {
-				if (typeof intensities === "object" && intensities !== null) {
-					map.set(key, intensities);
-				}
-			}
-		} catch {
-			// Corrupted data — start fresh
-		}
-		return map;
-	}
-
-	private persistIntensityOverrides(): void {
-		try {
-			const obj: Record<string, Record<number, number>> = {};
-			for (const [key, intensities] of this.intensityOverrides) {
-				obj[key] = intensities;
-			}
-			localStorage.setItem(INTENSITY_STORAGE_KEY, JSON.stringify(obj));
-		} catch {
-			// Storage full or unavailable
-		}
-	}
 
 	private isValidConfig(config: unknown): config is PropLedConfig {
 		if (!config || typeof config !== "object") return false;
