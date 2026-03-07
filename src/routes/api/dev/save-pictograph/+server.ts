@@ -11,7 +11,6 @@ import { json, type RequestHandler } from "@sveltejs/kit";
 import { dev } from "$app/environment";
 import fs from "fs";
 import path from "path";
-import { requireFirebaseUser } from "$lib/server/auth/requireFirebaseUser";
 
 interface SaveRequest {
   letter: string;
@@ -29,9 +28,6 @@ export const POST: RequestHandler = async (event) => {
       { status: 403 }
     );
   }
-
-  // Defense-in-depth: require auth even in dev (writes to filesystem)
-  await requireFirebaseUser(event);
 
   try {
     const { request } = event;
