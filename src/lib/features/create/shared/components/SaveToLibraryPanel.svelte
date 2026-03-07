@@ -30,7 +30,6 @@
   import type { IContentModerator } from "$lib/features/moderation/services/contracts/IContentModerator";
   import type { ContentModerationResult } from "$lib/features/moderation/domain/models/content-moderation-models";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-  import { simplifyAndTruncate } from "../workspace-panel/shared/utils/word-simplifier";
   import { libraryState } from "$lib/features/library/state/library-state.svelte";
   import { notifyLibrarySequenceAdded } from "$lib/shared/library/library-events";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
@@ -147,7 +146,6 @@
   });
 
   const tkaName = $derived(derivedWord);
-  const displayTkaName = $derived(simplifyAndTruncate(tkaName, 8));
   const currentUser = $derived(authState.user);
   const creatorName = $derived(
     currentUser?.displayName || currentUser?.email || "Anonymous"
@@ -164,7 +162,7 @@
   });
   const hasDuplicate = $derived(duplicateCheck.hasDuplicate);
   const duplicateCount = $derived(duplicateCheck.existingSequences.length);
-  let acknowledgedDuplicate = $state(false);
+
 
   // Dynamic header content based on context
   const headerTitle = $derived(
@@ -175,16 +173,6 @@
       ? "Add your sequence to the gallery to share it"
       : "Publish this sequence to the gallery"
   );
-
-  // Desktop detection for ChoreoCard preview
-  let isDesktop = $state(false);
-  $effect(() => {
-    const mq = window.matchMedia("(min-width: 641px)");
-    isDesktop = mq.matches;
-    const handler = (e: MediaQueryListEvent) => { isDesktop = e.matches; };
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  });
 
   // Sync isOpen with show prop
   $effect(() => {
@@ -205,13 +193,20 @@
     if (sequence && show) {
       notes = "";
       showNotes = false;
-      acknowledgedDuplicate = false;
+
+    }
+  });
+
+  // Eagerly load library sequences when panel opens so duplicate detection works on first save
+  $effect(() => {
+    if (show && authState.user) {
+      libraryState.loadSequences();
     }
   });
 
   // Whether the save button would be enabled
   const canSave = $derived(
-    !!tkaName && !isSaving && !(hasDuplicate && !acknowledgedDuplicate) && !isFlagged
+    !!tkaName && !isSaving && !isFlagged
   );
 
   // Enter key submits the panel when it's open
@@ -402,11 +397,11 @@
 
     <div class="panel-body">
       <!-- Sequence Preview -->
-      {#if isDesktop && sequence}
+      {#if sequence}
         <div class="choreo-group">
           <div class="choreo-preview">
             <ChoreoCard
-              {sequence}
+              sequence={{ ...sequence, word: tkaName }}
               {darkMode}
               userName={creatorName}
               showCreatorName={true}
@@ -415,13 +410,6 @@
               showDifficultyLevel={true}
               showLoopGlyph={true}
             />
-          </div>
-        </div>
-      {:else}
-        <div class="form-group">
-          <div class="tka-name-display">
-            <span class="tka-badge">{displayTkaName || "..."}</span>
-            <span class="tka-hint">Auto-generated from sequence letters</span>
           </div>
         </div>
       {/if}
@@ -477,28 +465,12 @@
         </div>
       {/if}
 
-      <!-- Duplicate Warning -->
+      <!-- Duplicate info -->
       {#if hasDuplicate && !isFlagged}
-        <div class="duplicate-warning">
-          <div class="warning-header">
-            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-            <span>
-              {duplicateCount === 1
-                ? "You already have a sequence with this name"
-                : `You have ${duplicateCount} sequences with this name`}
-            </span>
-          </div>
-          <p class="warning-text">
-            Saving will create another variation.
-          </p>
-          <label class="acknowledge-checkbox">
-            <input
-              type="checkbox"
-              bind:checked={acknowledgedDuplicate}
-            />
-            <span>I understand, save as a new variation</span>
-          </label>
-        </div>
+        <p class="duplicate-info">
+          <i class="fas fa-layer-group" aria-hidden="true"></i>
+          Saving as variation {duplicateCount + 1} of "{tkaName}"
+        </p>
       {/if}
 
       <!-- Notes (optional) -->
@@ -647,37 +619,6 @@
     gap: 32px;
   }
 
-  .form-group {
-    margin: 0;
-  }
-
-  .tka-name-display {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 16px;
-    padding: 32px 24px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 16px;
-  }
-
-  .tka-badge {
-    font-size: clamp(2rem, 8vw, 3rem);
-    font-weight: 700;
-    color: var(--theme-text);
-    letter-spacing: 2px;
-    font-family: var(--font-mono, monospace);
-    text-align: center;
-    word-break: break-all;
-  }
-
-  .tka-hint {
-    font-size: var(--font-size-base, 16px);
-    color: var(--theme-text-dim);
-    text-align: center;
-  }
-
   .choreo-group {
     flex: 1;
     min-height: 0;
@@ -797,56 +738,20 @@
     color: var(--semantic-error, #ef4444);
   }
 
-  /* Duplicate Warning */
-  .duplicate-warning {
-    padding: 16px;
-    background: color-mix(in srgb, var(--semantic-warning) 15%, transparent);
-    border: 1.5px solid color-mix(in srgb, var(--semantic-warning) 40%, transparent);
-    border-radius: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .warning-header {
+  /* Duplicate info */
+  .duplicate-info {
     display: flex;
     align-items: center;
-    gap: 10px;
-    color: var(--semantic-warning, #f59e0b);
-    font-weight: 600;
-    font-size: var(--font-size-base, 16px);
-  }
-
-  .warning-header i {
-    font-size: 1.2em;
-  }
-
-  .warning-text {
+    justify-content: center;
+    gap: 8px;
     margin: 0;
+    font-size: var(--font-size-sm, 14px);
     color: var(--theme-text-dim);
-    font-size: var(--font-size-sm, 14px);
-    line-height: 1.5;
   }
 
-  .acknowledge-checkbox {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    font-size: var(--font-size-sm, 14px);
-    color: var(--theme-text);
-    padding: 8px 0;
-  }
-
-  .acknowledge-checkbox input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
-    accent-color: var(--semantic-warning, #f59e0b);
-  }
-
-  .acknowledge-checkbox span {
-    flex: 1;
+  .duplicate-info i {
+    font-size: 0.9em;
+    opacity: 0.7;
   }
 
   /* Optional fields - collapsed by default */
@@ -962,10 +867,6 @@
     .panel-body {
       padding: 20px 24px;
       gap: 24px;
-    }
-
-    .tka-name-display {
-      padding: 24px 20px;
     }
 
     .panel-footer {

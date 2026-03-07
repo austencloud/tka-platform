@@ -75,7 +75,25 @@
     onEditInConstructor,
   }: Props = $props();
 
-  let activeCategory = $state<Category>("transform");
+  // Persist active category across panel open/close cycles
+  const CATEGORY_KEY = "tka_sequence_actions_category";
+  const validCategories: Category[] = ["transform", "patterns", "edit"];
+
+  function getStoredCategory(): Category {
+    if (typeof sessionStorage === "undefined") return "transform";
+    const stored = sessionStorage.getItem(CATEGORY_KEY);
+    return validCategories.includes(stored as Category)
+      ? (stored as Category)
+      : "transform";
+  }
+
+  let activeCategory = $state<Category>(getStoredCategory());
+
+  $effect(() => {
+    if (typeof sessionStorage !== "undefined") {
+      sessionStorage.setItem(CATEGORY_KEY, activeCategory);
+    }
+  });
 
   const disabled = $derived(isTransforming || isExtending || !hasSequence);
 
