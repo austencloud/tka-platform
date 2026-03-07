@@ -72,6 +72,13 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Effect point positions - readable by all (pre-auth safe), writable by admins
+    // Stores fire/LED point positions that apply to all users globally
+    match /config/effectPoints {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Fire effect defaults - readable by all (including pre-auth), writable by admins
     // Must allow unauthenticated reads: FireDefaultsLoader runs during DI
     // container construction before auth completes
@@ -424,6 +431,42 @@ service cloud.firestore {
       match /tikaConversations/{conversationId} {
         allow read, create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      // -------------------------------------------------------------------------
+      // TIKA INTERACTIONS (Topic Discussion Tracking)
+      // -------------------------------------------------------------------------
+      match /tikaInteractions/{topicId} {
+        allow read, create, update: if isOwner(userId);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      // -------------------------------------------------------------------------
+      // TIKA VERIFICATIONS (Server-side audit log)
+      // -------------------------------------------------------------------------
+      match /tikaVerifications/{verificationId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId);
+        allow update: if false; // Immutable audit trail
+        allow delete: if isAdmin();
+      }
+
+      // -------------------------------------------------------------------------
+      // LEARNING PROGRESS (Concept Progress Tracking)
+      // -------------------------------------------------------------------------
+      match /learningProgress/{docId} {
+        allow read, create, update: if isOwner(userId);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      // -------------------------------------------------------------------------
+      // QUIZ HISTORY (Append-only Quiz Attempts)
+      // -------------------------------------------------------------------------
+      match /quizHistory/{attemptId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if false; // Quiz attempts are immutable
+        allow delete: if isAdmin();
       }
     }
 
