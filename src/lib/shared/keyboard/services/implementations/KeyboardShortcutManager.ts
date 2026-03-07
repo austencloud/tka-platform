@@ -18,6 +18,7 @@ import { Shortcut } from "../../domain/models/Shortcut";
 import { NormalizedKeyboardEvent } from "../../domain/models/KeyboardEvent";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { selectedArrowState } from "$lib/features/create/shared/state/selected-arrow-state.svelte";
+import { hasOpenDrawers, dismissTopDrawer } from "$lib/shared/foundation/ui/drawer/DrawerStack";
 
 const debug = createComponentLogger("KeyboardShortcutManager");
 
@@ -216,6 +217,14 @@ export class KeyboardShortcutManager implements IKeyboardShortcutManager {
     // Check if we should ignore (e.g., typing in input)
     // forceExecute bypasses the interactive element check
     if (!shortcut.forceExecute && normalized.shouldIgnore(shortcut.isSingleKey)) return;
+
+    // If a drawer is open and this is a single-key shortcut,
+    // dismiss the top drawer, then execute the shortcut.
+    // The drawer unregisters asynchronously via Svelte reactivity,
+    // so we dismiss once per keypress rather than looping.
+    if (shortcut.isSingleKey && hasOpenDrawers()) {
+      dismissTopDrawer();
+    }
 
     // Log for debugging
     debug.log(`Executing shortcut: ${shortcut.id}`, {

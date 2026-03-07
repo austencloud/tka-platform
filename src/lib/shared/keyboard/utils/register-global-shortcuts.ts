@@ -29,6 +29,10 @@ import { BackgroundType } from "@austencloud/backgrounds";
 import { BACKGROUND_CARD_REGISTRY } from "@austencloud/backgrounds/card";
 import { applyThemeFromColors } from "../../settings/utils/background-theme-calculator";
 import { propDrawerState } from "../../settings/state/prop-drawer-state.svelte";
+import {
+  getAllPropTypes,
+  PROP_TYPE_DISPLAY_REGISTRY,
+} from "../../pictograph/prop/domain/PropTypeDisplayRegistry";
 
 export function registerGlobalShortcuts(
   service: IKeyboardShortcutManager,
@@ -268,6 +272,37 @@ export function registerGlobalShortcuts(
     priority: "high",
     action: () => {
       propDrawerState.toggle();
+    },
+  });
+
+  // ==================== Prop Cycling (Shift+P) ====================
+
+  // Shift+P - Cycle to next prop type (all props, all variations)
+  service.register({
+    id: "global.cycle-prop-type",
+    label: "Next Prop Type",
+    description: "Cycle to the next prop type (Shift+P)",
+    key: "P",
+    modifiers: ["shift"],
+    context: "global",
+    scope: "action",
+    priority: "high",
+    action: () => {
+      const allProps = getAllPropTypes();
+      if (allProps.length === 0) return;
+
+      const currentProp = settingsService.settings.bluePropType;
+      const currentIndex = allProps.indexOf(currentProp);
+      const nextIndex = (currentIndex + 1) % allProps.length;
+      const nextProp = allProps[nextIndex];
+      if (!nextProp) return;
+
+      const displayInfo = PROP_TYPE_DISPLAY_REGISTRY[nextProp];
+      settingsService.updateSettings({
+        bluePropType: nextProp,
+        redPropType: nextProp,
+      });
+      toast.info(displayInfo.label, 1500);
     },
   });
 
