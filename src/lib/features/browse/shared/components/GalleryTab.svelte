@@ -18,14 +18,21 @@
   import LetterSelectionSheet from "../../sequences/filtering/components/bento-filter/LetterSelectionSheet.svelte";
   import PositionOptionsSheet from "../../sequences/filtering/components/bento-filter/PositionOptionsSheet.svelte";
   import SequenceDisplayPanel from "../../sequences/display/components/SequenceDisplayPanel.svelte";
+  import VariationPickerDrawer from "../../sequences/display/components/VariationPickerDrawer.svelte";
   import { sequencePanelManager } from "../state/sequence-panel-state.svelte";
+  import {
+    getVariationPickerState,
+    closeVariationPicker,
+  } from "../state/variation-picker-state.svelte";
+  import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
+  import { browseScrollState } from "../state/BrowseScrollState.svelte";
 
   interface Props {
     isMobile: boolean;
     drawerWidth: string;
     galleryState: BrowseState;
     error: string | null;
-    onSequenceAction: (action: string, sequence: SequenceData) => Promise<void>;
+    onSequenceAction: (action: string, sequence: SequenceData, variations?: SequenceData[]) => Promise<void>;
     onContainerScroll: (event: CustomEvent<{ scrollTop: number }>) => void;
   }
 
@@ -142,6 +149,17 @@
   function handleSectionClick(sectionId: string) {
     galleryState.scrollToSection(sectionId);
     sequencePanelManager.close();
+  }
+
+  // Variation picker
+  const pickerState = getVariationPickerState();
+
+  function handleVariationSelected(sequence: SequenceData) {
+    openSequenceViewer(sequence, {
+      returnPath: "/browse/gallery",
+      returnLabel: "Browse",
+      scrollY: browseScrollState.lastScrollY,
+    });
   }
 </script>
 
@@ -279,6 +297,14 @@
     />
   </div>
 {/if}
+
+<!-- Variation Picker: shown when tapping a card with multiple same-word sequences -->
+<VariationPickerDrawer
+  isOpen={pickerState.isOpen}
+  variations={pickerState.variations}
+  onSelect={handleVariationSelected}
+  onClose={closeVariationPicker}
+/>
 
 <style>
   .sequences-main {

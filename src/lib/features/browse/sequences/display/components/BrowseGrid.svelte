@@ -40,7 +40,7 @@
     viewMode?: "grid" | "list";
     thumbnailService: IBrowseThumbnailProvider | null;
     showSections?: boolean;
-    onAction?: (action: string, sequence: SequenceData) => void;
+    onAction?: (action: string, sequence: SequenceData, variations?: SequenceData[]) => void;
     /** Pinch-to-zoom column override. Mobile: 2-3, Desktop: 2-5. */
     pinchColumnOverride?: number;
     /** True for ~200ms after column change (for CSS transition timing) */
@@ -181,15 +181,7 @@
     sequence: SequenceData,
     variations?: SequenceData[]
   ) {
-    if (action === "view-detail" && variations) {
-      (onAction as (action: string, sequence: SequenceData, variations?: SequenceData[]) => void)(
-        action,
-        sequence,
-        variations
-      );
-    } else {
-      onAction(action, sequence);
-    }
+    onAction(action, sequence, variations);
   }
 
   // Hover prefetch for non-virtualized cards

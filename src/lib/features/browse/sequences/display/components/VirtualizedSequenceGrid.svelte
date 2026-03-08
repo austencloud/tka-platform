@@ -36,7 +36,7 @@
   } = $props<{
     sequences: SequenceData[];
     thumbnailService: IBrowseThumbnailProvider | null;
-    onAction?: (action: string, sequence: SequenceData) => void;
+    onAction?: (action: string, sequence: SequenceData, variations?: SequenceData[]) => void;
     /** Pinch-to-zoom column override. Mobile: 2-3, Desktop: 2-5. Overrides responsive columns. */
     pinchColumnOverride?: number;
   }>();
@@ -146,15 +146,7 @@
     sequence: SequenceData,
     variations?: SequenceData[]
   ) {
-    if (action === "view-detail" && variations) {
-      (onAction as (action: string, sequence: SequenceData, variations?: SequenceData[]) => void)(
-        action,
-        sequence,
-        variations
-      );
-    } else {
-      onAction(action, sequence);
-    }
+    onAction(action, sequence, variations);
   }
 
   // Initialize virtualizer and subscribe to updates

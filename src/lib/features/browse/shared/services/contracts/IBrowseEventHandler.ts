@@ -30,12 +30,12 @@ export interface IBrowseEventHandler {
   /**
    * Handle sequence actions (select, view-detail, delete, favorite, fullscreen, animate)
    */
-  handleSequenceAction(action: string, sequence: SequenceData): Promise<void>;
+  handleSequenceAction(action: string, sequence: SequenceData, variations?: SequenceData[]): Promise<void>;
 
   /**
    * Handle viewing sequence details
    */
-  handleViewDetail(sequence: SequenceData): void;
+  handleViewDetail(sequence: SequenceData, variations?: SequenceData[]): void;
 
   /**
    * Handle closing detail panel

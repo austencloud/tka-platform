@@ -471,8 +471,8 @@
             {drawerWidth}
             {galleryState}
             {error}
-            onSequenceAction={(action, sequence) => {
-              return eventHandlerService?.handleSequenceAction(action, sequence) ??
+            onSequenceAction={(action, sequence, variations) => {
+              return eventHandlerService?.handleSequenceAction(action, sequence, variations) ??
                 Promise.resolve();
             }}
             onContainerScroll={handleContainerScroll}

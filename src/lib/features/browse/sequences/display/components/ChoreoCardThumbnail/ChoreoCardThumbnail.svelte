@@ -18,6 +18,12 @@ Variation support:
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
+  import type { ContextMenuEntry, ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
+  import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
+  import { container } from "$lib/shared/di";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/ShareOptions";
   import PropAwareThumbnail from "../PropAwareThumbnail.svelte";
   import VariationPill from "./VariationPill.svelte";
 
@@ -105,6 +111,81 @@ Variation support:
       currentVariationIndex = 0;
     }
   });
+
+  // ── Context menu (admin-only) ──────────────────────────────────────
+  let contextMenuState: ContextMenuState = $state({ open: false });
+
+  const contextMenuItems: ContextMenuEntry[] = $derived.by(() => {
+    const seq = displayedSequence;
+    return [
+      {
+        id: "save-image",
+        label: "Save image",
+        icon: "fa-download",
+        async action() {
+          try {
+            const { sharer } = await import(
+              "$lib/shared/share/services/implementations/Sharer"
+            );
+            await sharer.downloadImage(seq, { ...DEFAULT_SHARE_OPTIONS, format: "PNG" });
+            toast.success("Image saved");
+          } catch (err) {
+            console.error("Save image failed:", err);
+            toast.error("Failed to save image");
+          }
+        },
+      },
+      {
+        id: "copy-image",
+        label: "Copy image",
+        icon: "fa-copy",
+        async action() {
+          try {
+            const { sharer } = await import(
+              "$lib/shared/share/services/implementations/Sharer"
+            );
+            const blob = await sharer.getImageBlob(seq, { ...DEFAULT_SHARE_OPTIONS, format: "PNG" });
+            await navigator.clipboard.write([
+              new ClipboardItem({ "image/png": blob }),
+            ]);
+            toast.success("Image copied to clipboard");
+          } catch (err) {
+            console.error("Copy image failed:", err);
+            toast.error("Failed to copy image");
+          }
+        },
+      },
+      {
+        id: "copy-for-claude",
+        label: "Copy for Claude",
+        icon: "fa-robot",
+        async action() {
+          try {
+            const copier = container.items.claudeCodeCopier;
+            const result = await copier.copyForClaude(seq);
+            if (result.success) {
+              toast.success("Copied for Claude");
+            } else {
+              toast.error("Failed to copy for Claude");
+            }
+          } catch (err) {
+            console.error("Copy for Claude failed:", err);
+            toast.error("Failed to copy for Claude");
+          }
+        },
+      },
+    ];
+  });
+
+  function handleContextMenu(e: MouseEvent) {
+    if (!featureFlagService.isAdmin) return;
+    e.preventDefault();
+    contextMenuState = { open: true, x: e.clientX, y: e.clientY };
+  }
+
+  function closeContextMenu() {
+    contextMenuState = { open: false };
+  }
 </script>
 
 <button
@@ -112,6 +193,7 @@ Variation support:
   class:selected
   class:light-mode={lightMode}
   onclick={handlePrimaryAction}
+  oncontextmenu={handleContextMenu}
   onpointerenter={handlePointerEnter}
   onpointerleave={handlePointerLeave}
 >
@@ -138,6 +220,8 @@ Variation support:
     onCycle={handleCycleVariation}
   />
 </button>
+
+<ContextMenu menuState={contextMenuState} items={contextMenuItems} onClose={closeContextMenu} />
 
 <style>
   .choreo-card {
