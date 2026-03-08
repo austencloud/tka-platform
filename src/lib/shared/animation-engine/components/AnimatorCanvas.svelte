@@ -45,6 +45,8 @@ Last audit: 2025-12-27
   import type { FireOverlayConfig } from "../domain/types/FireTypes";
   import type { LedOverlayConfig } from "../domain/types/LedTypes";
   import CanvasContextMenuHost from "./canvas-context-menu/CanvasContextMenuHost.svelte";
+  import CanvasSettingsModal from "./canvas-settings-modal/CanvasSettingsModal.svelte";
+  import type { SettingsPanelCategory } from "./canvas-context-menu/CanvasContextMenuBuilder";
   import { onMount, onDestroy, untrack } from "svelte";
 
   // Props
@@ -119,6 +121,15 @@ Last audit: 2025-12-27
   // Container element
   let containerElement: HTMLDivElement;
   let contextMenuHost: CanvasContextMenuHost | undefined = $state();
+
+  // Settings modal state
+  let settingsModalOpen = $state(false);
+  let settingsModalCategory = $state<SettingsPanelCategory | undefined>(undefined);
+
+  function handleOpenPanel(category: SettingsPanelCategory) {
+    settingsModalCategory = category;
+    settingsModalOpen = true;
+  }
 
   // Engine instance
   const engine = new AnimationEngine();
@@ -321,7 +332,18 @@ Last audit: 2025-12-27
     </div>
   </div>
 
-  <CanvasContextMenuHost bind:this={contextMenuHost} />
+  <CanvasContextMenuHost bind:this={contextMenuHost} onOpenPanel={handleOpenPanel} />
+
+  <CanvasSettingsModal
+    bind:open={settingsModalOpen}
+    initialCategory={settingsModalCategory}
+    {sequenceData}
+    {blueProp}
+    {redProp}
+    {letter}
+    {stepData}
+    {word}
+  />
 </div>
 
 <style>

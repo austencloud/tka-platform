@@ -19,6 +19,12 @@
   import type { StartPositionData } from "../../../../features/create/shared/domain/models/StartPositionData";
   import type { StepData } from "../../../../features/create/shared/domain/models/StepData";
   import { onDestroy } from "svelte";
+  import CategoryCard from "./CategoryCard.svelte";
+  import FireCategory from "./categories/FireCategory.svelte";
+  import LedCategory from "./categories/LedCategory.svelte";
+  import DisplayCategory from "./categories/DisplayCategory.svelte";
+  import PlaybackCategory from "./categories/PlaybackCategory.svelte";
+  import OverlayCategory from "./categories/OverlayCategory.svelte";
 
   interface Props {
     open: boolean;
@@ -87,6 +93,32 @@
   });
 
   onDestroy(() => stopPlayback());
+
+  const categories: ReadonlyArray<{
+    readonly id: string;
+    readonly title: string;
+    readonly icon: string;
+    readonly iconColor?: string;
+  }> = [
+    { id: "fire", title: "Fire", icon: "fa-fire-flame-curved", iconColor: "#f97316" },
+    { id: "led", title: "LED", icon: "fa-lightbulb", iconColor: "#22c55e" },
+    { id: "display", title: "Display", icon: "fa-eye" },
+    { id: "playback", title: "Playback", icon: "fa-play" },
+    { id: "overlays", title: "Overlays", icon: "fa-layer-group" },
+  ];
+
+  let expandedCategory = $state<string | null>(null);
+
+  // Auto-expand initial category when modal opens
+  $effect(() => {
+    if (open && initialCategory) {
+      expandedCategory = initialCategory;
+    }
+  });
+
+  function toggleCategory(id: string) {
+    expandedCategory = expandedCategory === id ? null : id;
+  }
 </script>
 
 <BaseModal bind:open size="xl" animation="pop" onclose={() => (open = false)}>
@@ -139,9 +171,30 @@
       </div>
     </div>
 
-    <div class="categories-section" data-animate="3">
-      <!-- Category cards will be wired in Task 5 -->
-      <p style="color: var(--theme-text-dim); text-align: center;">Categories loading...</p>
+    <div class="categories-section">
+      {#each categories as cat, i}
+        <CategoryCard
+          id={cat.id}
+          title={cat.title}
+          icon={cat.icon}
+          iconColor={cat.iconColor}
+          expanded={expandedCategory === cat.id}
+          onToggle={() => toggleCategory(cat.id)}
+          animateIndex={i + 3}
+        >
+          {#if cat.id === "fire"}
+            <FireCategory />
+          {:else if cat.id === "led"}
+            <LedCategory />
+          {:else if cat.id === "display"}
+            <DisplayCategory />
+          {:else if cat.id === "playback"}
+            <PlaybackCategory />
+          {:else if cat.id === "overlays"}
+            <OverlayCategory />
+          {/if}
+        </CategoryCard>
+      {/each}
     </div>
   </div>
 </BaseModal>
