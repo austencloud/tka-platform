@@ -22,7 +22,6 @@ Card-based architecture with integrated Generate button:
   import { createGenerationConfigState } from "../state/generate-config.svelte";
   import { createStartEndOptionsState } from "../state/start-end-options-state.svelte";
   import { createSpellModeState } from "../state/spell-mode-state.svelte";
-  import { GenerationMode } from "../shared/domain/models/generate-models";
   import CardBasedSettingsContainer from "./CardBasedSettingsContainer.svelte";
   import StartEndSheet from "./modals/StartEndSheet.svelte";
   import DurationRhythmSheet from "./modals/DurationRhythmSheet.svelte";
@@ -71,11 +70,11 @@ Card-based architecture with integrated Generate button:
   const deviceState = createDeviceState();
   const startEndState = createStartEndOptionsState();
 
-  // Spell mode: route generate to spell pipeline
-  const isSpellMode = $derived(configState.config.mode === GenerationMode.SPELL);
+  // Spell mode: derived from word presence (if there's a word, it's spell mode)
+  const hasWord = $derived(!!spellModeState.inputWord?.trim());
 
   async function handleGenerate(options: any) {
-    if (isSpellMode) {
+    if (hasWord) {
       await actionsState.onSpellGenerate();
     } else {
       await actionsState.onGenerateClicked(options);
@@ -88,7 +87,6 @@ Card-based architecture with integrated Generate button:
     if (!last) return false;
     const cur = configState.config;
     return (
-      cur.mode !== last.mode ||
       cur.loopEnabled !== last.loopEnabled ||
       cur.length !== last.length ||
       cur.level !== last.level ||
@@ -186,7 +184,7 @@ Card-based architecture with integrated Generate button:
       getConfig: () => configState.config,
       updateConfig: (updates) => configState.updateConfig(updates),
       triggerGeneration: () => {
-        if (isSpellMode) {
+        if (hasWord) {
           actionsState.onSpellGenerate();
         } else {
           const propType =
@@ -248,7 +246,7 @@ Card-based architecture with integrated Generate button:
   <div class="generate-panel-inner">
     <CardBasedSettingsContainer
       config={configState.config}
-      isFreeformMode={configState.isFreeformMode}
+      isFreeformMode={!hasWord}
       updateConfig={configState.updateConfig}
       isGenerating={actionsState.isGenerating}
       onGenerateClicked={handleGenerate}
