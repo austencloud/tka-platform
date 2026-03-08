@@ -237,6 +237,18 @@ export const NOTIFICATION_TYPES = {
   FEEDBACK_COMMENTED: "feedback-commented",
 };
 
+/**
+ * Notification Events
+ *
+ * Controls which events trigger email and/or in-app message notifications.
+ */
+export const NOTIFICATION_EVENTS = {
+  claim: { email: true, message: true },
+  "in-review": { email: true, message: true },
+  "create-feedback": { email: false, message: true },
+  note: { email: false, message: true },
+};
+
 // Default export for convenience
 export default {
   ADMIN_USER_ID,
@@ -257,4 +269,5 @@ export default {
   ARCHIVE_REASONS,
   MESSAGE_TEMPLATES,
   NOTIFICATION_TYPES,
+  NOTIFICATION_EVENTS,
 };
