@@ -91,7 +91,7 @@ Replaces the old GenerationModeCard (Freeform/Spell toggle).
     animation-delay: {cardIndex * 60}ms;
   "
 >
-  <CardHeader title="Word" fontSize={headerFontSize} />
+  <CardHeader title="Word" {headerFontSize} />
 
   <div class="input-row">
     <input
