@@ -8,24 +8,19 @@
   interface Props {
     intensity: number;
     colorBlend: number;
-    smokeLevel: number;
     onIntensityChange: (value: number) => void;
     onColorBlendChange: (value: number) => void;
-    onSmokeLevelChange: (value: number) => void;
   }
 
   let {
     intensity,
     colorBlend,
-    smokeLevel,
     onIntensityChange,
     onColorBlendChange,
-    onSmokeLevelChange,
   }: Props = $props();
 
-  function applyPreset(preset: { intensity: number; smokeLevel: number; colorBlend: number }) {
+  function applyPreset(preset: { intensity: number; colorBlend: number }) {
     onIntensityChange(preset.intensity);
-    onSmokeLevelChange(preset.smokeLevel);
     onColorBlendChange(preset.colorBlend);
   }
 </script>
@@ -54,24 +49,6 @@
     </div>
   </div>
 
-  <!-- Smoke slider -->
-  <div class="slider-group">
-    <div class="slider-row">
-      <label for="smoke-slider">Smoke</label>
-      <input
-        id="smoke-slider"
-        type="range"
-        min="0"
-        max="1"
-        step="0.05"
-        value={smokeLevel}
-        oninput={(e) => onSmokeLevelChange(Number(e.currentTarget.value))}
-        aria-label="Smoke level"
-      />
-      <span class="slider-value">{(smokeLevel * 100).toFixed(0)}%</span>
-    </div>
-  </div>
-
   <!-- Color blend slider -->
   <div class="slider-group">
     <div class="slider-row">
@@ -96,19 +73,19 @@
     <div class="presets-row">
       <button
         class="preset-btn"
-        onclick={() => applyPreset({ intensity: 0.8, smokeLevel: 0.05, colorBlend: 0 })}
+        onclick={() => applyPreset({ intensity: 0.8, colorBlend: 0 })}
         type="button"
-        aria-label="Apply clean burn preset"
+        aria-label="Apply intense fire preset"
       >
-        Clean Burn
+        Intense
       </button>
       <button
         class="preset-btn"
-        onclick={() => applyPreset({ intensity: 0.6, smokeLevel: 0.7, colorBlend: 0 })}
+        onclick={() => applyPreset({ intensity: 0.5, colorBlend: 0.7 })}
         type="button"
-        aria-label="Apply smoky fire preset"
+        aria-label="Apply colored fire preset"
       >
-        Smoky
+        Colored
       </button>
     </div>
   </div>

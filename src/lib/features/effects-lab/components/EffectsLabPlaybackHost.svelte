@@ -48,6 +48,7 @@
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
   import { InfiniteSequenceGenerator } from "$lib/features/landing/services/implementations/InfiniteSequenceGenerator";
   import { SpinnerMetricsRepository } from "$lib/features/landing/services/implementations/SpinnerMetricsRepository";
+  import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
   import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
@@ -229,8 +230,8 @@
     };
     return {
       enabled: fireEnabled,
-      intensity: 1.0,
-      flameHeight: 1.0,
+      intensity: intensity * 0.8,
+      flameHeight: intensity * 0.8,
       velocityReactive: true,
       quality: 4,
       fuelRendererType: "fluid" as const,
@@ -282,29 +283,60 @@
   // ─── Animation state ──────────────────────────────────────────────────
   const animationState = createAnimationPanelState();
 
-  // Suppress global trails when not in trails mode.
-  // The engine reads trailStyle from the visibility manager independently of the
-  // externalTrailSettings prop, so we must turn it off at the source.
-  // Uses untrack() for the writes because setTrailStyle() calls notifyObservers(),
-  // which triggers observer callbacks that write to $state, causing infinite loops.
+  // Save global effect states so we can restore them when leaving the Effects Lab.
+  // The Effects Lab takes exclusive control of fire/LED/trail visibility.
+  const savedFireEnabled = visibilityManager.isFireEffectEnabled();
+  const savedLedEnabled = visibilityManager.isLedEffectEnabled();
+  const savedTrailStyle = visibilityManager.getTrailStyle();
+
+  // Suppress effects not matching the active mode.
+  // The engine reads from the visibility manager independently of the config props,
+  // so we must turn effects off at the source to prevent bleed-through.
+  // Uses untrack() for writes because notifyObservers() triggers observer callbacks
+  // that write to $state, causing infinite loops.
   $effect(() => {
     const mode = activeMode;
     untrack(() => {
+      // Trails
       if (mode === "trails") {
         visibilityManager.setTrailStyle("on");
         animationSettings.setTrailEnabled(true);
       } else {
         visibilityManager.setTrailStyle("off");
       }
+
+      // Fire (shared by fire + charcoal modes)
+      if (mode === "fire" || mode === "charcoal") {
+        visibilityManager.setFireEffect(true);
+        visibilityManager.setFireIntensity(intensity);
+        visibilityManager.setFireColorBlend(colorBlend);
+        visibilityManager.setFireSmokeLevel(smokeLevel);
+      } else {
+        visibilityManager.setFireEffect(false);
+      }
+
+      // LED
+      if (mode === "led") {
+        visibilityManager.setLedEffect(true);
+      } else {
+        visibilityManager.setLedEffect(false);
+      }
     });
   });
 
-  // Fire visibility syncs — untrack writes to prevent observer → $state → effect cycles
+  // Fire visibility syncs — only push values when in fire/charcoal mode.
+  // Without the mode guard, fireEnabled ($state(true)) would re-enable fire
+  // even after the mode-switch effect disables it for non-fire modes.
   $effect(() => {
     const val = fireEnabled;
-    untrack(() => visibilityManager.setFireEffect(val));
+    const mode = activeMode;
+    if (mode === "fire" || mode === "charcoal") {
+      untrack(() => visibilityManager.setFireEffect(val));
+    }
   });
   $effect(() => {
+    const mode = activeMode;
+    if (mode !== "fire" && mode !== "charcoal") return;
     const syncBack = () => {
       const managerState = visibilityManager.isFireEffectEnabled();
       if (managerState !== fireEnabled) fireEnabled = managerState;
@@ -314,14 +346,20 @@
   });
   $effect(() => {
     const val = intensity;
+    const mode = activeMode;
+    if (mode !== "fire" && mode !== "charcoal") return;
     untrack(() => visibilityManager.setFireIntensity(val));
   });
   $effect(() => {
     const val = colorBlend;
+    const mode = activeMode;
+    if (mode !== "fire" && mode !== "charcoal") return;
     untrack(() => visibilityManager.setFireColorBlend(val));
   });
   $effect(() => {
     const val = smokeLevel;
+    const mode = activeMode;
+    if (mode !== "fire" && mode !== "charcoal") return;
     untrack(() => visibilityManager.setFireSmokeLevel(val));
   });
 
@@ -448,7 +486,8 @@
       const metricsRepo = new SpinnerMetricsRepository();
       const infiniteGen = new InfiniteSequenceGenerator(
         generationOrchestrator,
-        metricsRepo
+        metricsRepo,
+        orientationCycleExtender
       );
 
       chainingOrchestrator = new SequenceChainingOrchestrator(spinnerOrch, infiniteGen);
@@ -495,6 +534,11 @@
     chainingOrchestrator?.dispose();
     playbackController?.dispose();
     animationState.dispose();
+
+    // Restore global effect states that were active before the Effects Lab took over
+    visibilityManager.setFireEffect(savedFireEnabled);
+    visibilityManager.setLedEffect(savedLedEnabled);
+    visibilityManager.setTrailStyle(savedTrailStyle);
   });
 
   // ─── Sequence loading ─────────────────────────────────────────────────
@@ -694,10 +738,8 @@
         <FireControlsPanel
           {intensity}
           {colorBlend}
-          {smokeLevel}
           onIntensityChange={(v) => (intensity = v)}
           onColorBlendChange={(v) => (colorBlend = v)}
-          onSmokeLevelChange={(v) => (smokeLevel = v)}
         />
       {:else if activeMode === "charcoal"}
         <CharcoalControlsPanel
