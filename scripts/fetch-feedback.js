@@ -29,6 +29,7 @@ import config from "../config/feedback.config.js";
 import roles from "../config/developer-roles.js";
 import cfClient from "./lib/cloud-functions-client.js";
 import cliAuth from "./lib/cli-auth.js";
+import notifier from "./lib/feedback-notifier.js";
 
 // Generate a unique session ID for this script invocation
 // This allows us to distinguish between different agents/sessions
@@ -854,6 +855,17 @@ async function atomicClaim(docId, isReclaim = false) {
       priority: result.priority || "unset",
     }).catch(() => {}); // Ignore journal failures
 
+    // Notify admin about the claim (non-blocking)
+    try {
+      await notifier.notifyAdmin(db, {
+        event: "claim",
+        actor: { uid: identity.uid, displayName: identity.displayName, email: identity.email },
+        feedbackItem: { id: docId, title: result.title || "No title", status: "in-progress" },
+      });
+    } catch (notifyErr) {
+      console.warn(`  ⚠️  Notification failed (non-fatal): ${notifyErr.message}`);
+    }
+
     return result;
   } catch (error) {
     if (
@@ -1542,6 +1554,19 @@ async function updateFeedbackById(docId, status, resolutionNotes, userFacingNote
       adminNotes: resolutionNotes || null,
       userFacingNotes: userFacingNotes || null,
     }).catch(() => {}); // Non-blocking
+
+    // Notify admin when a developer submits for review
+    if (normalizedStatus === "in-review") {
+      try {
+        await notifier.notifyAdmin(db, {
+          event: "in-review",
+          actor: { uid: identity.uid, displayName: identity.displayName, email: identity.email },
+          feedbackItem: { id: docId, title: item.title || "No title", status: normalizedStatus },
+        });
+      } catch (notifyErr) {
+        console.warn(`  ⚠️  Notification failed (non-fatal): ${notifyErr.message}`);
+      }
+    }
 
     // item was already fetched earlier for state machine validation
     console.log("\n" + "=".repeat(70));
@@ -2340,6 +2365,15 @@ CREATE FEEDBACK
     --tab <name>          Tab name
     --internal-only       Mark as internal (not user-facing)
     --user <name>         User identifier (default: austen)
+
+DEVELOPER MANAGEMENT
+──────────────────────────────────────────────────────────────────────────────
+  login                  Sign in with Google (saves to ~/.tka/credentials.json)
+  logout                 Remove saved credentials
+  whoami                 Show current identity and role
+  add-developer <email> [role]
+                         Add a developer (admin only, default role: contributor)
+  list-developers        List all approved developers
 
 AUTO-PRIORITIZE
 ──────────────────────────────────────────────────────────────────────────────
@@ -3301,6 +3335,17 @@ async function addFeedback(args) {
     if (flags.isInternalOnly) console.log(`  Internal Only: YES`);
     console.log("\n" + "=".repeat(70) + "\n");
 
+    // Notify admin about new feedback (non-blocking)
+    try {
+      await notifier.notifyAdmin(db, {
+        event: "create-feedback",
+        actor: { uid: identity.uid, displayName: identity.displayName, email: identity.email },
+        feedbackItem: { id: docRef.id, title: flags.title, status: "new" },
+      });
+    } catch (notifyErr) {
+      console.warn(`  ⚠️  Notification failed (non-fatal): ${notifyErr.message}`);
+    }
+
     return { id: docRef.id, ...feedbackData };
   } catch (error) {
     console.error("\n  Error creating feedback:", error.message);
@@ -3381,27 +3426,110 @@ async function main() {
   identity = await cliAuth.resolveIdentity(db);
   console.log(`  👤 ${identity.displayName} (${identity.role})`);
 
-  // ── Permission gate helpers (close over identity) ──────────────────────
-  function assertPermission(action, context = "") {
-    if (!roles.hasPermission(identity.role, action)) {
-      const actionLabel = action.replace(/_/g, " ");
-      console.error(`\n  ❌ Permission denied: only admins can ${actionLabel}.`);
-      if (context) console.error(`  ${context}`);
-      console.error(`  Your role: ${identity.role}\n`);
-      process.exit(1);
-    }
-  }
-
-  function assertTransition(fromStatus, toStatus) {
-    if (!roles.canTransition(identity.role, fromStatus, toStatus)) {
-      console.error(`\n  ❌ Permission denied: ${identity.role} cannot move items from "${fromStatus}" to "${toStatus}".`);
-      console.error(`  This transition requires admin privileges.\n`);
-      process.exit(1);
-    }
-  }
-
   if (command === "whoami") {
     await cliAuth.whoami(db);
+    process.exit(0);
+  }
+
+  // Seed admin developer record if it doesn't exist (one-time setup)
+  if (identity.authMethod === "service-account") {
+    const adminDoc = await db.collection("developers").doc(identity.uid).get();
+    if (!adminDoc.exists) {
+      await db.collection("developers").doc(identity.uid).set({
+        displayName: "Austen Cloud",
+        email: "austencloud@gmail.com",
+        role: "admin",
+        addedAt: admin.firestore.FieldValue.serverTimestamp(),
+        addedBy: "system",
+        active: true,
+      });
+      console.log("  ✅ Admin developer record seeded.");
+    }
+  }
+
+  // ── Developer Management Commands ──────────────────────────────────────
+  if (command === "add-developer") {
+    if (!roles.hasPermission(identity.role, roles.ACTIONS.MANAGE_DEVELOPERS)) {
+      console.error("\n  ❌ Permission denied: only admins can manage developers.\n");
+      process.exit(1);
+    }
+
+    const email = args[1];
+    const role = args[2] || "contributor";
+
+    if (!email) {
+      console.error("\n  Usage: node scripts/fetch-feedback.js add-developer <email> [role]");
+      console.error("  Roles: admin, contributor (default: contributor)\n");
+      process.exit(1);
+    }
+
+    if (!["admin", "contributor"].includes(role)) {
+      console.error(`\n  Invalid role: "${role}". Must be "admin" or "contributor".\n`);
+      process.exit(1);
+    }
+
+    try {
+      const userRecord = await admin.auth().getUserByEmail(email);
+
+      const existing = await db.collection("developers").doc(userRecord.uid).get();
+      if (existing.exists) {
+        const data = existing.data();
+        console.log(`\n  ${email} is already a developer (role: ${data.role}, active: ${data.active})`);
+        if (!data.active) {
+          console.log("  Reactivating...");
+          await db.collection("developers").doc(userRecord.uid).update({ active: true, role });
+          console.log(`  ✅ Reactivated as ${role}.\n`);
+        }
+        process.exit(0);
+      }
+
+      await db.collection("developers").doc(userRecord.uid).set({
+        displayName: userRecord.displayName || email.split("@")[0],
+        email: userRecord.email,
+        role,
+        addedAt: admin.firestore.FieldValue.serverTimestamp(),
+        addedBy: identity.uid,
+        active: true,
+      });
+
+      console.log(`\n  ✅ Added ${userRecord.displayName || email} as ${role}`);
+      console.log(`  UID: ${userRecord.uid}\n`);
+    } catch (err) {
+      if (err.code === "auth/user-not-found") {
+        console.error(`\n  ❌ No Firebase account found for ${email}.`);
+        console.error("  They need to sign into the web app at least once first.\n");
+      } else {
+        console.error(`\n  ❌ Error: ${err.message}\n`);
+      }
+      process.exit(1);
+    }
+    process.exit(0);
+  }
+
+  if (command === "list-developers") {
+    const snapshot = await db.collection("developers").get();
+
+    if (snapshot.empty) {
+      console.log("\n  No developers registered.\n");
+      process.exit(0);
+    }
+
+    console.log("\n  TKA Developers:\n");
+    console.log("  " + "Name".padEnd(25) + "Email".padEnd(35) + "Role".padEnd(15) + "Active");
+    console.log("  " + "-".repeat(80));
+
+    snapshot.forEach((doc) => {
+      const d = doc.data();
+      const active = d.active ? "yes" : "no";
+      console.log(
+        "  " +
+        (d.displayName || "?").padEnd(25) +
+        (d.email || "?").padEnd(35) +
+        (d.role || "?").padEnd(15) +
+        active
+      );
+    });
+    console.log("");
     process.exit(0);
   }
 
@@ -3409,7 +3537,7 @@ async function main() {
 
   // Register session on startup (for bulletproof claim coordination)
   // Skip for read-only commands (list, stats, help)
-  const readOnlyCommands = ["list", "stats", "help", "--help", "-h", "journal"];
+  const readOnlyCommands = ["list", "stats", "help", "--help", "-h", "journal", "list-developers"];
   const isReadOnly = readOnlyCommands.includes(args[0]);
 
   if (!isReadOnly) {
@@ -3622,6 +3750,17 @@ async function main() {
       console.log(`  Type: ${type}`);
       console.log(`  Module: ${module} / ${tab}`);
       console.log("\n" + "=".repeat(70) + "\n");
+
+      // Notify admin about new feedback (non-blocking)
+      try {
+        await notifier.notifyAdmin(db, {
+          event: "create-feedback",
+          actor: { uid: identity.uid, displayName: identity.displayName, email: identity.email },
+          feedbackItem: { id: docRef.id, title, status: "new" },
+        });
+      } catch (notifyErr) {
+        console.warn(`  ⚠️  Notification failed (non-fatal): ${notifyErr.message}`);
+      }
     }
   } else {
     // All remaining commands use args[0] as a document ID
