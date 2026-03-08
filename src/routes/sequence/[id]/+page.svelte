@@ -481,8 +481,6 @@
           onBackToExportTypeSelection={ctx.backToExportTypeSelection}
           onDarkModeToggle={ctx.handleUnifiedDarkModeToggle}
           onSettingsOpen={() => (settingsModalOpen = true)}
-          onShareAnimation={() => ctx.enterExportMode("animation")}
-          onShareImage={() => ctx.enterExportMode("image")}
         />
 
         <!-- Main content -->
@@ -555,9 +553,12 @@
               exportProgress={ctx.exportProgress}
               exportError={ctx.exportError}
               isFullscreen={ctx.isFullscreen}
+              previewBlobUrl={ctx.previewBlobUrl}
+              sequenceWord={ctx.effectiveSequence?.word || "sequence"}
               onExport={ctx.handleExport}
               onCancel={ctx.handleCancelExport}
               onRetry={ctx.handleRetryExport}
+              onDismissPreview={ctx.dismissPreview}
             />
           {:else}
             <ViewerFooter
@@ -565,9 +566,6 @@
               isPlaying={ctx.isPlayingLocal}
               isLoggedIn={ctx.isLoggedIn}
               rampActive={ctx.rampActive}
-              isSyncToggling={ctx.isSyncToggling}
-              isSyncActive={ctx.isSyncActive}
-              isSyncConnected={ctx.isSyncConnected}
               onBpmChange={ctx.handleBpmChange}
               onPlayPause={ctx.handlePlaybackToggle}
               onStepBack={ctx.stepFullBeatBackward}
@@ -576,12 +574,11 @@
               onStepHalfForward={ctx.stepHalfBeatForward}
               onSave={ctx.handleSave}
               onEdit={ctx.handleEditInConstructor}
-              onCompose={() => ctx.handleOpenInCompose()}
-              onShare={ctx.handleShare}
+              onExportVideo={() => ctx.enterExportMode("animation")}
+              onExportImage={() => ctx.enterExportMode("image")}
               onGetApp={ctx.handleGetApp}
               onRampStart={ctx.handleRampStart}
               onRampStop={ctx.handleRampStop}
-              onConnect={ctx.handleSyncToggle}
               isOwned={ctx.isOwned}
               onDeleteRequest={() => (deleteConfirmOpen = true)}
             />
