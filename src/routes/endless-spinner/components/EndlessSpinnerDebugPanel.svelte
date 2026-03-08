@@ -2,9 +2,10 @@
   import { fly } from "svelte/transition";
   import type { SpinnerStats } from "$lib/features/landing/services/contracts/IEndlessSpinnerOrchestrator";
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import type { SequenceHistoryEntry } from "./SequenceHistoryPanel.svelte";
 
   interface Props {
-    sequenceHistory: string[];
+    sequenceHistory: SequenceHistoryEntry[];
     stats: SpinnerStats;
     gridMode: GridMode | null;
     isChainingEnabled: boolean;
@@ -22,8 +23,8 @@
   <div class="debug-section">
     <h3>Sequence Chain</h3>
     <div class="history-list">
-      {#each sequenceHistory as seq, i}
-        <div class="history-item" class:current={i === 0}>{seq}</div>
+      {#each sequenceHistory as entry, i}
+        <div class="history-item" class:current={i === 0}>{entry.sequence.word || "Generated"}</div>
       {/each}
     </div>
   </div>

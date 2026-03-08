@@ -25,6 +25,7 @@ import {
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import { VERTICAL_MIRROR_POSITION_MAP } from "$lib/features/create/generate/circular/domain/constants/strict-loop-position-maps";
 import type { IGenerationOrchestrator } from "$lib/features/create/generate/shared/services/contracts/IGenerationOrchestrator";
+import type { IOrientationCycleExtender } from "$lib/features/create/generate/circular/services/contracts/IOrientationCycleExtender";
 import type { GeneratedSequenceInfo, GenerationSettings } from "../../domain/models/spinner-models";
 import type { EndState } from "../contracts/IEndlessSpinnerOrchestrator";
 import type { IInfiniteSequenceGenerator } from "../contracts/IInfiniteSequenceGenerator";
@@ -88,7 +89,8 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
 
   constructor(
     private generationOrchestrator: IGenerationOrchestrator,
-    private metricsRepository: ISpinnerMetricsRepository
+    private metricsRepository: ISpinnerMetricsRepository,
+    private cycleExtender: IOrientationCycleExtender
   ) {
     // Start at a random position in the rotation for variety
     this.loopTypeIndex = Math.floor(Math.random() * LOOP_TYPE_ROTATION.length);
@@ -151,15 +153,20 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
         ...(blockedStartPositions && { blockedStartPositions }),
       });
 
+      // Extend sequence if orientations don't return to start after one pass.
+      // This ensures the infinite generator always produces complete orientation cycles,
+      // so the next chained sequence can safely assume starting orientation = "in".
+      const extended = this.cycleExtender.extendIfNeeded(sequence);
+
       // Update counters
       this.sessionCount++;
       const globalIndex = await this.incrementMetricsSafely();
 
-      // Update settings with actual beat count from generated sequence
-      settings.totalSteps = sequence.steps?.length ?? settings.totalSteps;
+      // Update settings with actual beat count from extended sequence
+      settings.totalSteps = extended.steps?.length ?? settings.totalSteps;
 
       return {
-        sequence,
+        sequence: extended,
         generatedAt: new Date(),
         globalIndex,
         settings,
@@ -210,12 +217,14 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
         ...(blockedStartPositions && { blockedStartPositions }),
       });
 
+      const extended = this.cycleExtender.extendIfNeeded(sequence);
+
       this.sessionCount++;
       const globalIndex = await this.incrementMetricsSafely();
-      fallbackSettings.totalSteps = sequence.steps?.length ?? fallbackSettings.totalSteps;
+      fallbackSettings.totalSteps = extended.steps?.length ?? fallbackSettings.totalSteps;
 
       return {
-        sequence,
+        sequence: extended,
         generatedAt: new Date(),
         globalIndex,
         settings: fallbackSettings,

@@ -3,19 +3,34 @@
     isPlaying: boolean;
     animationReady: boolean;
     showStepGrid: boolean;
+    showHistory: boolean;
     onToggleGrid: () => void;
     onTogglePause: () => void;
     onSkip: () => void;
+    onCopy: (full: boolean) => void;
+    onToggleHistory: () => void;
   }
 
   let {
     isPlaying,
     animationReady,
     showStepGrid,
+    showHistory,
     onToggleGrid,
     onTogglePause,
     onSkip,
+    onCopy,
+    onToggleHistory,
   }: Props = $props();
+
+  let copyConfirm = $state<"compact" | "full" | null>(null);
+
+  function handleCopyClick(event: MouseEvent) {
+    const full = event.shiftKey;
+    onCopy(full);
+    copyConfirm = full ? "full" : "compact";
+    setTimeout(() => (copyConfirm = null), 1500);
+  }
 </script>
 
 <div class="controls" role="group" aria-label="Playback controls">
@@ -31,6 +46,26 @@
       <rect x="3" y="14" width="7" height="7" rx="1" />
       <rect x="14" y="14" width="7" height="7" rx="1" />
     </svg>
+  </button>
+
+  <button
+    class="control-btn secondary"
+    class:copied={copyConfirm !== null}
+    onclick={handleCopyClick}
+    disabled={!animationReady}
+    aria-label={copyConfirm ? `Copied ${copyConfirm}` : "Copy sequence data (shift+click for full JSON)"}
+    title="Copy sequence data (shift+click for full JSON)"
+  >
+    {#if copyConfirm}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <polyline points="20 6 9 17 4 12" />
+      </svg>
+    {:else}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <rect x="9" y="9" width="13" height="13" rx="2" />
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+      </svg>
+    {/if}
   </button>
 
   <button
@@ -60,6 +95,19 @@
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d="M6 4v16l10-8z" />
       <rect x="16" y="4" width="2" height="16" />
+    </svg>
+  </button>
+
+  <button
+    class="control-btn secondary"
+    class:active={showHistory}
+    onclick={onToggleHistory}
+    aria-label={showHistory ? "Hide sequence history" : "Show sequence history"}
+    aria-pressed={showHistory}
+  >
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
     </svg>
   </button>
 </div>
@@ -120,6 +168,18 @@
   .control-btn.secondary svg {
     width: 20px;
     height: 20px;
+  }
+
+  .control-btn.copied {
+    background: rgba(74, 222, 128, 0.15);
+    border-color: rgba(74, 222, 128, 0.3);
+    color: rgba(74, 222, 128, 0.9);
+  }
+
+  .control-btn.active {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: rgba(99, 102, 241, 0.4);
+    color: #a5b4fc;
   }
 
   .control-btn:focus-visible {
