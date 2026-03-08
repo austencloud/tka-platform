@@ -27,12 +27,12 @@ export interface InterpolationResult {
     staffRotationAngle: number;
     x?: number; // Optional Cartesian x coordinate (for dash motions)
     y?: number; // Optional Cartesian y coordinate (for dash motions)
-  };
+  } | null; // null = hand not present in sequence
   redAngles: {
     centerPathAngle: number;
     staffRotationAngle: number;
     x?: number; // Optional Cartesian x coordinate (for dash motions)
     y?: number; // Optional Cartesian y coordinate (for dash motions)
-  };
+  } | null; // null = hand not present in sequence
   isValid: boolean;
 }

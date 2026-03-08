@@ -54,33 +54,37 @@ export class AnimationStateManager implements IAnimationStateManager {
    * Update prop states from interpolation result
    */
   updatePropStates(interpolationResult: InterpolationResult): PropStates {
-    // Update blue prop state - include x,y if provided (dash motions)
-    const blueUpdate: Partial<PropState> = {
-      centerPathAngle: interpolationResult.blueAngles.centerPathAngle,
-      staffRotationAngle: interpolationResult.blueAngles.staffRotationAngle,
-    };
-    if (
-      "x" in interpolationResult.blueAngles &&
-      "y" in interpolationResult.blueAngles
-    ) {
-      blueUpdate.x = interpolationResult.blueAngles.x;
-      blueUpdate.y = interpolationResult.blueAngles.y;
+    // Only update blue prop state if hand is present (null = hand not in sequence)
+    if (interpolationResult.blueAngles) {
+      const blueUpdate: Partial<PropState> = {
+        centerPathAngle: interpolationResult.blueAngles.centerPathAngle,
+        staffRotationAngle: interpolationResult.blueAngles.staffRotationAngle,
+      };
+      if (
+        "x" in interpolationResult.blueAngles &&
+        "y" in interpolationResult.blueAngles
+      ) {
+        blueUpdate.x = interpolationResult.blueAngles.x;
+        blueUpdate.y = interpolationResult.blueAngles.y;
+      }
+      this.updateBluePropState(blueUpdate);
     }
-    this.updateBluePropState(blueUpdate);
 
-    // Update red prop state - include x,y if provided (dash motions)
-    const redUpdate: Partial<PropState> = {
-      centerPathAngle: interpolationResult.redAngles.centerPathAngle,
-      staffRotationAngle: interpolationResult.redAngles.staffRotationAngle,
-    };
-    if (
-      "x" in interpolationResult.redAngles &&
-      "y" in interpolationResult.redAngles
-    ) {
-      redUpdate.x = interpolationResult.redAngles.x;
-      redUpdate.y = interpolationResult.redAngles.y;
+    // Only update red prop state if hand is present (null = hand not in sequence)
+    if (interpolationResult.redAngles) {
+      const redUpdate: Partial<PropState> = {
+        centerPathAngle: interpolationResult.redAngles.centerPathAngle,
+        staffRotationAngle: interpolationResult.redAngles.staffRotationAngle,
+      };
+      if (
+        "x" in interpolationResult.redAngles &&
+        "y" in interpolationResult.redAngles
+      ) {
+        redUpdate.x = interpolationResult.redAngles.x;
+        redUpdate.y = interpolationResult.redAngles.y;
+      }
+      this.updateRedPropState(redUpdate);
     }
-    this.updateRedPropState(redUpdate);
 
     return this.getPropStates();
   }

@@ -88,7 +88,7 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
 
       this.missingMotionLogged.clear();
       this.hasMotionData = steps.some(
-        (beat) => beat?.motions?.blue && beat?.motions?.red
+        (beat) => beat?.motions?.blue || beat?.motions?.red
       );
 
       // Extract metadata from domain data
@@ -148,20 +148,22 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
       this.currentStepProgress = 0;
 
       const firstStep = this.steps[0];
-      if (firstStep?.motions?.blue && firstStep?.motions?.red) {
+      if (firstStep?.motions?.blue || firstStep?.motions?.red) {
         const initialAngles =
           this.propInterpolationService.calculateInitialAngles(firstStep);
         if (initialAngles.isValid) {
-          this.animationStateService.setPropStates(
-            {
+          if (initialAngles.blueAngles) {
+            this.animationStateService.updateBluePropState({
               centerPathAngle: initialAngles.blueAngles.centerPathAngle,
               staffRotationAngle: initialAngles.blueAngles.staffRotationAngle,
-            },
-            {
+            });
+          }
+          if (initialAngles.redAngles) {
+            this.animationStateService.updateRedPropState({
               centerPathAngle: initialAngles.redAngles.centerPathAngle,
               staffRotationAngle: initialAngles.redAngles.staffRotationAngle,
-            }
-          );
+            });
+          }
         }
       }
       return;
@@ -188,9 +190,9 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
     this.currentStepIndex = stepState.currentStepIndex;
     this.currentStepProgress = stepState.stepProgress;
 
-    // Skip steps without motion data (common in legacy/shared URLs) and log once
+    // Skip steps without ANY motion data (neither hand present) and log once
     const beatMotions = stepState.currentStepData?.motions;
-    const hasBeatMotions = beatMotions?.blue && beatMotions?.red;
+    const hasBeatMotions = beatMotions?.blue || beatMotions?.red;
     if (!hasBeatMotions) {
       const key =
         stepState.currentStepData?.stepNumber ?? stepState.currentStepIndex;
@@ -266,7 +268,7 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
 
   private findFirstBeatWithMotion(): StepData | null {
     return (
-      this.steps.find((beat) => beat?.motions?.blue && beat?.motions?.red) ??
+      this.steps.find((beat) => beat?.motions?.blue || beat?.motions?.red) ??
       null
     );
   }
@@ -299,16 +301,18 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
       this.propInterpolationService.calculateInitialAngles(firstBeatWithMotion);
 
     if (initialAngles.isValid) {
-      this.animationStateService.setPropStates(
-        {
+      if (initialAngles.blueAngles) {
+        this.animationStateService.updateBluePropState({
           centerPathAngle: initialAngles.blueAngles.centerPathAngle,
           staffRotationAngle: initialAngles.blueAngles.staffRotationAngle,
-        },
-        {
+        });
+      }
+      if (initialAngles.redAngles) {
+        this.animationStateService.updateRedPropState({
           centerPathAngle: initialAngles.redAngles.centerPathAngle,
           staffRotationAngle: initialAngles.redAngles.staffRotationAngle,
-        }
-      );
+        });
+      }
     } else {
       console.warn(
         "SequenceAnimationOrchestrator: Failed to calculate initial angles"
@@ -435,9 +439,9 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
     this.currentStepProgress = stepState.stepProgress;
     this.atStartPosition = false;
 
-    // Skip steps without motion data
+    // Skip steps without ANY motion data (neither hand present)
     const beatMotions = stepState.currentStepData?.motions;
-    const hasBeatMotions = beatMotions?.blue && beatMotions?.red;
+    const hasBeatMotions = beatMotions?.blue || beatMotions?.red;
     if (!hasBeatMotions) {
       const key = stepState.currentStepData?.stepNumber ?? stepState.currentStepIndex;
       if (!this.missingMotionLogged.has(key)) {
@@ -474,19 +478,21 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
     this.currentStepProgress = 0;
 
     const firstStep = this.steps[0];
-    if (firstStep?.motions?.blue && firstStep?.motions?.red) {
+    if (firstStep?.motions?.blue || firstStep?.motions?.red) {
       const initialAngles = this.propInterpolationService.calculateInitialAngles(firstStep);
       if (initialAngles.isValid) {
-        this.animationStateService.setPropStates(
-          {
+        if (initialAngles.blueAngles) {
+          this.animationStateService.updateBluePropState({
             centerPathAngle: initialAngles.blueAngles.centerPathAngle,
             staffRotationAngle: initialAngles.blueAngles.staffRotationAngle,
-          },
-          {
+          });
+        }
+        if (initialAngles.redAngles) {
+          this.animationStateService.updateRedPropState({
             centerPathAngle: initialAngles.redAngles.centerPathAngle,
             staffRotationAngle: initialAngles.redAngles.staffRotationAngle,
-          }
-        );
+          });
+        }
       }
     }
   }
