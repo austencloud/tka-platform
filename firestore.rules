@@ -44,6 +44,29 @@ service cloud.firestore {
         && (userData.role == 'admin' || userData.role == 'tester' || userData.role == 'premium' || userData.isAdmin == true);
     }
 
+    // -------------------------------------------------------------------------
+    // DEVELOPER SYSTEM HELPERS (uses developers collection)
+    // -------------------------------------------------------------------------
+
+    // Check if user is an approved, active developer
+    function isApprovedDeveloper() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/developers/$(request.auth.uid))
+        && get(/databases/$(database)/documents/developers/$(request.auth.uid)).data.active == true;
+    }
+
+    // Check if user has admin role in the developers collection
+    function isDeveloperAdmin() {
+      return isApprovedDeveloper()
+        && get(/databases/$(database)/documents/developers/$(request.auth.uid)).data.role == "admin";
+    }
+
+    // Check if user has contributor role in the developers collection
+    function isContributor() {
+      return isApprovedDeveloper()
+        && get(/databases/$(database)/documents/developers/$(request.auth.uid)).data.role == "contributor";
+    }
+
     // Check if user has verified their age (18+) for Hall of Shame access
     function isAgeVerified() {
       let userData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
@@ -685,21 +708,23 @@ service cloud.firestore {
     // FEEDBACK COLLECTION
     // ============================================================================
 
-    // Feedback items - users can submit and read their own, testers/admins can manage all
+    // Feedback items - users can submit and read their own, testers/admins/developers can manage
     match /feedback/{feedbackId} {
       // Users can read their own feedback, testers/admins can read all
+      // Any authenticated user can read (for developer CLI access)
       allow read: if isAuthenticated()
-        && (resource.data.userId == request.auth.uid || isTester());
+        && (resource.data.userId == request.auth.uid || isTester() || isApprovedDeveloper());
 
       // Any authenticated user can submit feedback (must set their own userId)
       allow create: if isAuthenticated()
         && request.resource.data.userId == request.auth.uid;
 
-      // Only testers/admins can update feedback (status changes, admin notes, etc.)
-      allow update: if isTester();
+      // Testers/admins OR approved developers can update feedback
+      allow update: if isTester() || isApprovedDeveloper();
 
-      // Only admins can delete feedback
-      allow delete: if isAdmin();
+      // Admins can delete any feedback; contributors can delete their own
+      allow delete: if isAdmin() || isDeveloperAdmin()
+        || (isContributor() && resource.data.userId == request.auth.uid);
 
       // Subtasks subcollection
       match /subtasks/{subtaskId} {
@@ -1011,6 +1036,38 @@ service cloud.firestore {
         allow read: if isAuthenticated();
         allow write: if isAdmin();
       }
+    }
+
+    // ============================================================================
+    // DEVELOPERS COLLECTION (Multi-Developer Access Control)
+    // ============================================================================
+
+    // Developers collection - the authority on who can access developer tools
+    // Any approved developer can read the roster; only admin can manage it
+    match /developers/{uid} {
+      allow read: if isApprovedDeveloper();
+      allow write: if isDeveloperAdmin();
+    }
+
+    // ============================================================================
+    // AGENT SESSIONS (Developer CLI Sessions)
+    // ============================================================================
+
+    // Agent sessions - tracks active developer CLI sessions
+    // Any approved developer can read/write session data
+    match /agentSessions/{sessionId} {
+      allow read, write: if isApprovedDeveloper();
+    }
+
+    // ============================================================================
+    // MAIL COLLECTION (Email Trigger Extension)
+    // ============================================================================
+
+    // Mail collection - documents trigger the Firebase email extension
+    // Approved developers can create mail documents; no reads needed
+    match /mail/{mailId} {
+      allow create: if isApprovedDeveloper();
+      allow read: if false;
     }
 
     // ============================================================================
