@@ -35,6 +35,19 @@
   import { PropInterpolator } from "$lib/features/compose/services/implementations/PropInterpolator";
   import { StepCalculator } from "$lib/features/compose/services/implementations/StepCalculator";
 
+  // Sequence source services
+  import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
+  import { InfiniteSequenceGenerator } from "$lib/features/landing/services/implementations/InfiniteSequenceGenerator";
+  import { SpinnerMetricsRepository } from "$lib/features/landing/services/implementations/SpinnerMetricsRepository";
+  import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
+  import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+  import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
+  import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+  import { container } from "$lib/shared/di";
+  import type { IEndlessSpinnerOrchestrator, EndState } from "$lib/features/landing/services/contracts/IEndlessSpinnerOrchestrator";
+  import type { IInfiniteSequenceGenerator } from "$lib/features/landing/services/contracts/IInfiniteSequenceGenerator";
+  import { MotionColor, type Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+
   // ─── Default PropState (all zeroes) ───────────────────────────────────
   const DEFAULT_PROP_STATE: PropState = {
     centerPathAngle: 0,
@@ -77,6 +90,12 @@
 
   // ─── Source mode ──────────────────────────────────────────────────────
   let sourceMode = $state<SourceMode>("pick");
+  let loading = $state(false);
+  let isChainingNow = $state(false);
+
+  // ─── Sequence source services (initialized in onMount) ──────────────
+  let spinnerOrchestrator: IEndlessSpinnerOrchestrator | null = null;
+  let infiniteGenerator: IInfiniteSequenceGenerator | null = null;
 
   // ─── Sequence state ───────────────────────────────────────────────────
   let showPicker = $state(false);
@@ -95,12 +114,34 @@
   let sequenceWord = $derived(sequence?.word ?? sequence?.name ?? null);
 
   // ─── Service construction ─────────────────────────────────────────────
-  onMount(() => {
+  onMount(async () => {
     const angleCalculator = new AngleCalculator();
     const motionCalculator = new MotionCalculator();
     const endpointCalculator = new EndpointCalculator(angleCalculator, motionCalculator);
     propInterpolator = new PropInterpolator(angleCalculator, endpointCalculator);
     stepCalculator = new StepCalculator();
+
+    // Build sequence source services
+    const browseLoader = container.items.browseLoader;
+    const generationOrchestrator = container.items.generationOrchestrator;
+    const sequenceTransformer = container.items.sequenceTransformer;
+
+    spinnerOrchestrator = new EndlessSpinnerOrchestrator(
+      browseLoader,
+      generationOrchestrator,
+      sequenceTransformer,
+      startPositionDeriver,
+      orientationCalculator,
+      gridPositionDeriver
+    );
+    await spinnerOrchestrator.initialize();
+
+    const metricsRepo = new SpinnerMetricsRepository();
+    infiniteGenerator = new InfiniteSequenceGenerator(
+      generationOrchestrator,
+      metricsRepo,
+      orientationCycleExtender
+    );
 
     rafId = requestAnimationFrame(onFrame);
   });
@@ -135,6 +176,11 @@
     const totalDur = stepCalculator.calculateTotalDuration(steps);
     if (timePosition >= totalDur) {
       timePosition = 0;
+
+      // Auto-chain: load next sequence when looping in library/infinite modes
+      if (sourceMode !== "pick") {
+        loadNextSequence();
+      }
     }
 
     updatePropStates();
@@ -171,6 +217,46 @@
     propStates = updated;
   }
 
+  // ─── End-state extraction ─────────────────────────────────────────────
+  function extractEndState(): EndState {
+    if (!sequence || !steps.length) {
+      return { position: null, blueOrientation: null, redOrientation: null };
+    }
+
+    const finalStep = steps[steps.length - 1];
+    let position = finalStep?.endPosition ?? null;
+
+    // Fallback: derive from motion end locations
+    if (!position && finalStep?.motions) {
+      const blueMotion = finalStep.motions[MotionColor.BLUE];
+      const redMotion = finalStep.motions[MotionColor.RED];
+      if (blueMotion?.endLocation && redMotion?.endLocation) {
+        try {
+          position = gridPositionDeriver.getGridPositionFromLocations(
+            blueMotion.endLocation,
+            redMotion.endLocation
+          );
+        } catch {
+          /* silently fail */
+        }
+      }
+    }
+
+    // Fallback: for circular sequences, end = start
+    if (!position && sequence.isCircular) {
+      const startPos = sequence.startPosition ?? sequence.startingPosition;
+      if (startPos) {
+        position = startPos.gridPosition ?? startPos.startPosition ?? null;
+      }
+    }
+
+    return {
+      position,
+      blueOrientation: (finalStep?.motions?.blue?.endOrientation ?? null) as Orientation | null,
+      redOrientation: (finalStep?.motions?.red?.endOrientation ?? null) as Orientation | null,
+    };
+  }
+
   // ─── Sequence loading ─────────────────────────────────────────────────
   function handleSequenceSelected(seq: SequenceData) {
     showPicker = false;
@@ -184,6 +270,69 @@
       updatePropStates();
       isPlaying = true;
     }
+  }
+
+  async function loadNextSequence(): Promise<void> {
+    if (loading || isChainingNow) return;
+
+    loading = true;
+    isChainingNow = true;
+    try {
+      let nextSeq: SequenceData | null = null;
+
+      if (sourceMode === "library" && spinnerOrchestrator) {
+        if (!sequence) {
+          nextSeq = await spinnerOrchestrator.getInitialSequence();
+        } else {
+          const endState = extractEndState();
+          nextSeq = await spinnerOrchestrator.getNextSequence(endState);
+          if (!nextSeq) {
+            nextSeq = await spinnerOrchestrator.getInitialSequence();
+          }
+        }
+      } else if (sourceMode === "infinite" && infiniteGenerator) {
+        if (!sequence) {
+          const generated = await infiniteGenerator.generateInitial();
+          nextSeq = generated?.sequence ?? null;
+        } else {
+          const endState = extractEndState();
+          const generated = await infiniteGenerator.generateFromEndState(endState);
+          nextSeq = generated?.sequence ?? null;
+        }
+      }
+
+      if (nextSeq) {
+        handleSequenceSelected(nextSeq);
+      }
+    } catch (err) {
+      console.error("Effort Lab: failed to load next sequence:", err);
+    } finally {
+      loading = false;
+      isChainingNow = false;
+    }
+  }
+
+  async function handleShuffle(): Promise<void> {
+    if (sourceMode === "pick" || !infiniteGenerator) return;
+
+    loading = true;
+    isChainingNow = true;
+    try {
+      const generated = await infiniteGenerator.generateInitial();
+      if (generated) {
+        handleSequenceSelected(generated.sequence);
+      }
+    } catch (err) {
+      console.error("Effort Lab: shuffle failed:", err);
+    } finally {
+      loading = false;
+      isChainingNow = false;
+    }
+  }
+
+  function handleSkip(): void {
+    if (sourceMode === "pick") return;
+    loadNextSequence();
   }
 
   // ─── Controls ─────────────────────────────────────────────────────────
@@ -200,10 +349,12 @@
   }
 
   function handleSourceChange(mode: SourceMode) {
-    if (mode !== "pick") {
-      console.warn(`Source mode "${mode}" not yet implemented in Effort Lab`);
-    }
     sourceMode = mode;
+
+    // Auto-load first sequence when switching to library or infinite
+    if (mode !== "pick") {
+      loadNextSequence();
+    }
   }
 
   function handleQualityParamsChange(quality: EffortQuality, params: EffortParams) {
@@ -218,11 +369,11 @@
       <SourceControls
         {sourceMode}
         {sequence}
-        isChainingNow={false}
+        {isChainingNow}
         onSourceChange={handleSourceChange}
         onPick={() => (showPicker = true)}
-        onSkip={() => console.warn("Skip not yet implemented in Effort Lab")}
-        onShuffle={() => console.warn("Shuffle not yet implemented in Effort Lab")}
+        onSkip={handleSkip}
+        onShuffle={handleShuffle}
       />
     </div>
 
@@ -242,10 +393,20 @@
 
   <!-- Grid Area -->
   <div class="grid-area">
-    {#if !sequence}
+    {#if !sequence && sourceMode === "pick"}
       <div class="empty-state">
         <i class="fas fa-layer-group" aria-hidden="true"></i>
         <p>Pick a sequence to compare effort qualities</p>
+      </div>
+    {:else if !sequence && loading}
+      <div class="empty-state">
+        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+        <p>Loading sequence...</p>
+      </div>
+    {:else if !sequence}
+      <div class="empty-state">
+        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+        <p>Loading first sequence...</p>
       </div>
     {:else}
       <EffortComparisonGrid
