@@ -269,6 +269,11 @@ export class AnimationEngine {
   // Sequence content hash for detecting beat duration changes
   private lastSequenceContentHash: string | null = null;
 
+  // Cached flags for single-hand sequences (computed once per sequence change)
+  private sequenceHasBlueMotion: boolean = true;
+  private sequenceHasRedMotion: boolean = true;
+  private handPresenceCacheKey: string | null = null;
+
   // Prop type overrides (bypass settings when provided)
   private propTypeOverrideBlue: string | null = null;
   private propTypeOverrideRed: string | null = null;
@@ -1057,6 +1062,9 @@ export class AnimationEngine {
     this.lastPropsRef = null;
     this.prevStepData = null;
     this.prevSequenceData = null;
+    this.handPresenceCacheKey = null;
+    this.sequenceHasBlueMotion = true;
+    this.sequenceHasRedMotion = true;
   }
 
   // ============================================================================
@@ -1682,6 +1690,43 @@ export class AnimationEngine {
   }
 
   /**
+   * Recompute which hands have motion data, cached per sequence identity.
+   * For single-hand sequences (assembly in progress), this lets us null out
+   * the missing hand's prop so the renderer doesn't draw it.
+   */
+  private updateHandPresenceCache(): void {
+    const seq = this.prevSequenceData;
+    const cacheKey = seq ? (seq.id || seq.word || "") + "-" + seq.steps.length : null;
+
+    if (cacheKey === this.handPresenceCacheKey) return;
+    this.handPresenceCacheKey = cacheKey;
+
+    if (!seq || seq.steps.length === 0) {
+      this.sequenceHasBlueMotion = true;
+      this.sequenceHasRedMotion = true;
+      return;
+    }
+
+    let hasBlue = false;
+    let hasRed = false;
+
+    // Check start position
+    const startPos = seq.startPosition ?? seq.startingPosition;
+    if (startPos?.motions?.blue) hasBlue = true;
+    if (startPos?.motions?.red) hasRed = true;
+
+    // Check all steps
+    for (const step of seq.steps) {
+      if (step.motions?.blue) hasBlue = true;
+      if (step.motions?.red) hasRed = true;
+      if (hasBlue && hasRed) break;
+    }
+
+    this.sequenceHasBlueMotion = hasBlue;
+    this.sequenceHasRedMotion = hasRed;
+  }
+
+  /**
    * Get frame params by mutating reusable object (avoids 180 allocations/sec GC pressure)
    */
   private getFrameParams(props: AnimationEngineProps): RenderFrameParams {
@@ -1697,6 +1742,12 @@ export class AnimationEngine {
     // Mutate nested props object
     fp.props.blueProp = props.blueProp;
     fp.props.redProp = props.redProp;
+
+    // For single-hand sequences (e.g., during assembly), null out the missing
+    // hand's prop so the renderer skips drawing it entirely.
+    this.updateHandPresenceCache();
+    if (!this.sequenceHasBlueMotion) fp.props.blueProp = null;
+    if (!this.sequenceHasRedMotion) fp.props.redProp = null;
     fp.props.additionalLayers = props.additionalLayers ?? [];
     fp.props.bluePropDimensions = this.state.bluePropDimensions;
     fp.props.redPropDimensions = this.state.redPropDimensions;
