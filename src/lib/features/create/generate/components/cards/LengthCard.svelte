@@ -11,6 +11,7 @@ Shows current length with +/- stepper controls for quick adjustment
     currentLength,
     currentMode,
     loopEnabled = false,
+    locked = false,
     onLengthChange,
     // 🎨 Luminance-aware blue gradient - uses CSS variables that adapt to background brightness
     color = "radial-gradient(ellipse at top left, var(--card-blue, #3b82f6) 0%, var(--card-blue, #3b82f6) 40%, var(--card-blue-end, #1d4ed8) 100%)",
@@ -21,6 +22,8 @@ Shows current length with +/- stepper controls for quick adjustment
     currentLength: number;
     currentMode: GenerationMode;
     loopEnabled?: boolean;
+    /** When true, length is determined by word and cannot be changed */
+    locked?: boolean;
     onLengthChange: (length: number) => void;
     color?: string;
     shadowColor?: string;
@@ -35,11 +38,13 @@ Shows current length with +/- stepper controls for quick adjustment
   const STEP = $derived(loopEnabled ? 2 : 1);
 
   function handleIncrement() {
+    if (locked) return;
     const newLength = Math.min(currentLength + STEP, MAX_LENGTH);
     onLengthChange(newLength);
   }
 
   function handleDecrement() {
+    if (locked) return;
     const newLength = Math.max(currentLength - STEP, MIN_LENGTH);
     onLengthChange(newLength);
   }
@@ -49,16 +54,43 @@ Shows current length with +/- stepper controls for quick adjustment
   }
 </script>
 
-<StepperCard
-  title={t("generator_length")}
-  currentValue={currentLength}
-  minValue={MIN_LENGTH}
-  maxValue={MAX_LENGTH}
-  onIncrement={handleIncrement}
-  onDecrement={handleDecrement}
-  {formatValue}
-  {color}
-  {shadowColor}
-  {gridColumnSpan}
-  {headerFontSize}
-/>
+{#if locked}
+  <div class="locked-wrapper">
+    <StepperCard
+      title="Length (word)"
+      currentValue={currentLength}
+      minValue={MIN_LENGTH}
+      maxValue={MAX_LENGTH}
+      onIncrement={handleIncrement}
+      onDecrement={handleDecrement}
+      {formatValue}
+      {color}
+      {shadowColor}
+      {gridColumnSpan}
+      {headerFontSize}
+    />
+  </div>
+{:else}
+  <StepperCard
+    title={t("generator_length")}
+    currentValue={currentLength}
+    minValue={MIN_LENGTH}
+    maxValue={MAX_LENGTH}
+    onIncrement={handleIncrement}
+    onDecrement={handleDecrement}
+    {formatValue}
+    {color}
+    {shadowColor}
+    {gridColumnSpan}
+    {headerFontSize}
+  />
+{/if}
+
+<style>
+  .locked-wrapper {
+    width: 100%;
+    height: 100%;
+    opacity: 0.6;
+    pointer-events: none;
+  }
+</style>
