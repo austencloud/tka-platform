@@ -44,6 +44,7 @@ Last audit: 2025-12-27
   import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
   import type { FireOverlayConfig } from "../domain/types/FireTypes";
   import type { LedOverlayConfig } from "../domain/types/LedTypes";
+  import CanvasContextMenuHost from "./canvas-context-menu/CanvasContextMenuHost.svelte";
   import { onMount, onDestroy, untrack } from "svelte";
 
   // Props
@@ -117,6 +118,7 @@ Last audit: 2025-12-27
 
   // Container element
   let containerElement: HTMLDivElement;
+  let contextMenuHost: CanvasContextMenuHost | undefined = $state();
 
   // Engine instance
   const engine = new AnimationEngine();
@@ -245,6 +247,11 @@ Last audit: 2025-12-27
   ) {
     engine.handleGlyphSvgReady(svgString, width, height, x, y);
   }
+
+  function handleContextMenu(e: MouseEvent) {
+    e.preventDefault();
+    contextMenuHost?.openContextMenu(e.clientX, e.clientY);
+  }
 </script>
 
 <!-- Hidden GlyphRenderer that converts TKAGlyph to SVG for Canvas2D rendering -->
@@ -253,7 +260,8 @@ Last audit: 2025-12-27
 {/if}
 
 <!-- Outer container centers the content -->
-<div class="animation-container" data-focused={focused || undefined}>
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class="animation-container" data-focused={focused || undefined} oncontextmenu={handleContextMenu}>
   <!-- Inner wrapper: adaptive layout (vertical in portrait, horizontal in landscape) -->
   <div class="content-wrapper" data-dark-mode={darkModeEnabled ? "true" : "false"}>
     <!-- Word header - position adapts to layout mode -->
@@ -312,6 +320,8 @@ Last audit: 2025-12-27
       />
     </div>
   </div>
+
+  <CanvasContextMenuHost bind:this={contextMenuHost} anchorElement={containerElement} />
 </div>
 
 <style>
