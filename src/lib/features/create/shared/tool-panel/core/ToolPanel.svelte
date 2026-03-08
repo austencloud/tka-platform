@@ -22,6 +22,7 @@
   import { container } from "$lib/shared/di";
   import { createStepData } from "../../domain/factories/createStepData";
   import { createStartPositionData } from "../../domain/factories/createStartPositionData";
+  import { sequenceTransformer } from "../../services/implementations/sequence-transforms/SequenceTransformer";
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
   import GeneratePanel from "../../../generate/components/GeneratePanel.svelte";
@@ -335,19 +336,29 @@
                   });
                 }
               }}
-              onSequenceComplete={(pictographs) => {
-                // Complete - update current sequence steps and set level to 1
+              onSequenceComplete={async (pictographs) => {
+                // Complete - update current sequence steps, derive letters, set level to 1
                 const currentSeq =
                   createModuleState.sequenceState.currentSequence;
                 if (currentSeq) {
                   const steps = pictographs.map((p, i) =>
                     createStepData({ ...p, stepNumber: i + 1, duration: 1 })
                   );
-                  createModuleState.sequenceState.updateSequence({
+                  let sequence = {
                     ...currentSeq,
                     steps,
                     level: 1, // Assembly sequences are always level 1
-                  });
+                  };
+                  // Derive letters from motion data so arrow positioning
+                  // can detect Type 3+ letters for correct dash placement
+                  try {
+                    const derived = await sequenceTransformer.deriveSequenceLetters(sequence);
+                    sequence.steps = [...derived.steps];
+                    sequence.word = derived.word;
+                  } catch (error) {
+                    console.warn("Failed to derive letters for assembled sequence:", error);
+                  }
+                  createModuleState.sequenceState.updateSequence(sequence);
                 }
               }}
               onHeaderTextChange={(text) => {

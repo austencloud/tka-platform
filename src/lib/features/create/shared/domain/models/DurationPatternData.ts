@@ -7,7 +7,7 @@
  *
  * Key difference from Turn Patterns:
  * - Turn patterns modify the NUMBER of turns (0, 1, 2, fl, etc.)
- * - Duration patterns modify the TIME each beat is held (0.5x, 1x, 2x, etc.)
+ * - Duration patterns modify the TIME each beat is held (1x, 1.5x, 2x, etc.)
  * - Duration is a step-level property, not per-motion (both hands share the same duration)
  */
 
@@ -15,12 +15,12 @@ import type { Timestamp } from "firebase/firestore";
 
 /**
  * Duration value type - multiplier for beat timing
- * - 0.25 = quarter time (very fast)
- * - 0.5 = double time (fast)
- * - 1.0 = normal duration (default)
- * - 1.5 = slightly slower
- * - 2.0 = half time (slow)
- * - 4.0 = very slow
+ * A pictograph is fundamentally square at 1.0×; durations can only extend wider.
+ * - 1.0 = normal duration (default, square pictograph)
+ * - 1.25 = slightly wider
+ * - 1.5 = wider
+ * - 2.0 = double width (slow)
+ * - 4.0 = quadruple width (very slow)
  */
 export type DurationValue = number;
 
@@ -66,7 +66,7 @@ export interface DurationPatternCreateData {
  * Type guard to check if a value is a valid DurationValue
  */
 export function isDurationValue(value: unknown): value is DurationValue {
-  return typeof value === "number" && value > 0;
+  return typeof value === "number" && value >= 1.0;
 }
 
 /**
@@ -116,8 +116,6 @@ export function validatePatternForSequence(
 
 /**
  * Format a duration value for display
- * - 0.25 → "25%"
- * - 0.5 → "50%"
  * - 1.0 → "100%"
  * - 1.5 → "150%"
  * - 2.0 → "200%"
@@ -130,8 +128,6 @@ export function formatDurationValue(value: DurationValue): string {
 
 /**
  * Format a duration value for compact display (beat grid)
- * - 0.25 → "0.25×"
- * - 0.5 → "0.5×"
  * - 1.0 → "" (empty - default duration, not shown)
  * - 1.25 → "1.25×"
  * - 1.5 → "1.5×"

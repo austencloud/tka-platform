@@ -13,9 +13,9 @@ import type {
  *
  * Grid is 6 columns. Cards auto-wrap to new rows when a row fills up.
  *
- *   Row 1: Word(2) + Level(2) + Length(2) = 6
- *   Row 2 (beginner): GridMode(3) + PropCont(3) = 6
- *   Row 2 (non-beginner): GridMode(2) + PropCont(2) + TurnIntensity(2) = 6
+ *   Row 1: Word(4) + Length(2) = 6
+ *   Row 2 (beginner): Level(3) + GridMode(3) = 6
+ *   Row 2 (non-beginner): Level(2) + GridMode(2) + TurnIntensity(2) = 6
  *   Row 3 (no slice): Customize(3) + LOOP(3) = 6
  *   Row 3 (with slice): Customize(2) + LOOP(2) + Slice(2) = 6
  *   Row 4: Generate(6)
@@ -37,7 +37,7 @@ export class CardConfigurator implements ICardConfigurator {
     const isBeginnerLevel = currentLevel === DifficultyLevel.BEGINNER;
     const shouldShowTurnIntensity = currentLevel !== DifficultyLevel.BEGINNER;
 
-    // ─── Row 1: Word(2) + Level(2) + Length(2) = 6 ───
+    // ─── Row 1: Word(4) + Length(2) = 6 ───
 
     cardList.push({
       id: "word-input",
@@ -48,18 +48,7 @@ export class CardConfigurator implements ICardConfigurator {
         disabled: isGenerating,
         cardIndex: cardIndex++,
       },
-      gridColumnSpan: 2,
-    });
-
-    // Level card — always span 2
-    cardList.push({
-      id: "level",
-      props: {
-        currentLevel,
-        onLevelChange: handlers.handleLevelChange,
-        cardIndex: cardIndex++,
-      },
-      gridColumnSpan: 2,
+      gridColumnSpan: 4,
     });
 
     // Length card — always present, locked when word is typed
@@ -67,7 +56,9 @@ export class CardConfigurator implements ICardConfigurator {
     cardList.push({
       id: "length",
       props: {
-        currentLength: hasWord ? handlers.wordInputValue!.trim().length : config.length,
+        currentLength: hasWord
+          ? (handlers.computedWordLength ?? handlers.wordInputValue!.trim().length)
+          : config.length,
         currentMode: config.mode,
         loopEnabled,
         onLengthChange: handlers.handleLengthChange,
@@ -77,12 +68,21 @@ export class CardConfigurator implements ICardConfigurator {
       gridColumnSpan: 2,
     });
 
-    // ─── Row 2: Grid Mode + Prop Continuity [+ TurnIntensity] ───
+    // ─── Row 2: Level + GridMode [+ TurnIntensity] ───
 
-    // Grid + PropCont sizing:
-    // Beginner: 3 each (no TurnIntensity)
-    // Non-beginner: 2 each (TurnIntensity fills remaining)
-    const gridPropSpan = isBeginnerLevel ? 3 : 2;
+    // Beginner: Level(3) + GridMode(3) = 6
+    // Non-beginner: Level(2) + GridMode(2) + TurnIntensity(2) = 6
+    const row2Span = isBeginnerLevel ? 3 : 2;
+
+    cardList.push({
+      id: "level",
+      props: {
+        currentLevel,
+        onLevelChange: handlers.handleLevelChange,
+        cardIndex: cardIndex++,
+      },
+      gridColumnSpan: row2Span,
+    });
 
     cardList.push({
       id: "grid-mode",
@@ -91,21 +91,9 @@ export class CardConfigurator implements ICardConfigurator {
         onModeChange: handlers.handleGridModeChange,
         cardIndex: cardIndex++,
       },
-      gridColumnSpan: gridPropSpan,
+      gridColumnSpan: row2Span,
     });
 
-    cardList.push({
-      id: "prop-continuity",
-      props: {
-        currentContinuity: config.propContinuity,
-        onContinuityChange: handlers.handlePropContinuityChange,
-        cardIndex: cardIndex++,
-      },
-      gridColumnSpan: gridPropSpan,
-    });
-
-    // TurnIntensity (non-beginner only)
-    // Completes Row 2 → GridMode(2)+PropCont(2)+TurnIntensity(2)=6
     if (shouldShowTurnIntensity) {
       cardList.push({
         id: "turn-intensity",

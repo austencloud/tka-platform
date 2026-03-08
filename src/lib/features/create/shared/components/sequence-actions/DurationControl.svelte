@@ -2,8 +2,9 @@
   DurationControl.svelte
 
   Full-width integrated banner for adjusting beat duration.
-  Dual controls: fine (±0.25) and coarse (±1) stepping.
-  Display uses decimals with × suffix (0.5×, 1×, 1.25×, 2×, etc.).
+  Dual controls: fine (±0.1) and coarse (±0.5) stepping.
+  Tap the value to type any exact number (e.g. 1.67).
+  Minimum duration is 1.0 (square pictograph). Durations only extend wider.
 
   Visually integrates with prop control cards via matching padding and border-bottom divider.
   Compact mode: Smaller buttons and tighter spacing for mobile.
@@ -32,10 +33,41 @@
   const canDecrease = $derived(duration > MIN_DURATION);
   const canIncrease = $derived(duration < MAX_DURATION);
 
+  let editing = $state(false);
+  let editValue = $state("");
+  let inputEl: HTMLInputElement | undefined = $state();
+
   function handleChange(delta: number) {
     const newDuration = Math.max(MIN_DURATION, Math.min(MAX_DURATION, duration + delta));
     if (newDuration !== duration) {
       onDurationChange(newDuration);
+    }
+  }
+
+  function startEditing() {
+    editValue = duration.toString();
+    editing = true;
+    requestAnimationFrame(() => {
+      inputEl?.select();
+    });
+  }
+
+  function commitEdit() {
+    editing = false;
+    const parsed = parseFloat(editValue);
+    if (isNaN(parsed)) return;
+    const clamped = Math.max(MIN_DURATION, Math.min(MAX_DURATION, parsed));
+    const rounded = Math.round(clamped * 100) / 100;
+    if (rounded !== duration) {
+      onDurationChange(rounded);
+    }
+  }
+
+  function handleEditKeydown(e: KeyboardEvent) {
+    if (e.key === "Enter") {
+      commitEdit();
+    } else if (e.key === "Escape") {
+      editing = false;
     }
   }
 </script>
@@ -44,43 +76,65 @@
   <span class="duration-label">Duration</span>
 
   <div class="duration-row">
-    <!-- Coarse decrease (−1 beat) -->
+    <!-- Coarse decrease (−0.5) -->
     <button
       class="ctrl-btn coarse"
-      aria-label="Decrease duration by 1 beat"
+      aria-label="Decrease duration by half beat"
       onclick={() => handleChange(-DURATION_STEP_COARSE)}
       disabled={!canDecrease}
     >
       <i class="fas fa-angles-left" aria-hidden="true"></i>
     </button>
 
-    <!-- Fine decrease (−¼ beat) -->
+    <!-- Fine decrease (−0.1) -->
     <button
       class="ctrl-btn fine"
-      aria-label="Decrease duration by quarter beat"
+      aria-label="Decrease duration by tenth"
       onclick={() => handleChange(-DURATION_STEP_FINE)}
       disabled={!canDecrease}
     >
       <i class="fas fa-minus" aria-hidden="true"></i>
     </button>
 
-    <!-- Current value display -->
-    <span class="duration-value">{displayDuration}</span>
+    <!-- Current value display / direct input -->
+    {#if editing}
+      <input
+        bind:this={inputEl}
+        class="duration-input"
+        class:compact
+        type="number"
+        min={MIN_DURATION}
+        max={MAX_DURATION}
+        step="0.01"
+        bind:value={editValue}
+        onblur={commitEdit}
+        onkeydown={handleEditKeydown}
+      />
+    {:else}
+      <button
+        class="duration-value"
+        class:compact
+        onclick={startEditing}
+        aria-label="Edit duration value"
+      >
+        {displayDuration}
+      </button>
+    {/if}
 
-    <!-- Fine increase (+¼ beat) -->
+    <!-- Fine increase (+0.1) -->
     <button
       class="ctrl-btn fine"
-      aria-label="Increase duration by quarter beat"
+      aria-label="Increase duration by tenth"
       onclick={() => handleChange(DURATION_STEP_FINE)}
       disabled={!canIncrease}
     >
       <i class="fas fa-plus" aria-hidden="true"></i>
     </button>
 
-    <!-- Coarse increase (+1 beat) -->
+    <!-- Coarse increase (+0.5) -->
     <button
       class="ctrl-btn coarse"
-      aria-label="Increase duration by 1 beat"
+      aria-label="Increase duration by half beat"
       onclick={() => handleChange(DURATION_STEP_COARSE)}
       disabled={!canIncrease}
     >
@@ -144,12 +198,48 @@
     color: var(--theme-text, #ffffff);
     min-width: 64px;
     text-align: center;
-    font-feature-settings: "tnum"; /* Tabular numbers for consistent width */
+    font-feature-settings: "tnum";
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 2px 4px;
+    cursor: pointer;
+    transition: border-color var(--duration-fast) ease;
   }
 
-  .duration-control.compact .duration-value {
+  .duration-value:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .duration-value.compact {
     font-size: 1.1rem;
     min-width: 48px;
+  }
+
+  .duration-input {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--theme-text, #ffffff);
+    width: 72px;
+    text-align: center;
+    font-feature-settings: "tnum";
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--theme-accent, rgba(255, 255, 255, 0.3));
+    border-radius: 6px;
+    padding: 2px 4px;
+    outline: none;
+    -moz-appearance: textfield;
+  }
+
+  .duration-input::-webkit-inner-spin-button,
+  .duration-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .duration-input.compact {
+    font-size: 1.1rem;
+    width: 56px;
   }
 
   /* ============================================================================
@@ -187,7 +277,7 @@
     cursor: not-allowed;
   }
 
-  /* Coarse buttons (±1) - neutral styling, no orange accent */
+  /* Coarse buttons (±0.5) - neutral styling, no orange accent */
   .ctrl-btn.coarse {
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 255, 255, 0.2);
@@ -200,7 +290,7 @@
     box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
   }
 
-  /* Fine buttons (±¼) - subtle */
+  /* Fine buttons (±0.1) - subtle */
   .ctrl-btn.fine {
     width: 36px;
     height: 36px;

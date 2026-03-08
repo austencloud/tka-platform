@@ -5,6 +5,7 @@
     MIN_DURATION,
     MAX_DURATION,
     DURATION_STEP_FINE,
+    DURATION_STEP_COARSE,
   } from "../../../services/implementations/step-operations/DurationHandler";
 
   interface Props {
@@ -55,12 +56,12 @@
     if (e.key === "ArrowRight" || e.key === "ArrowUp") {
       e.preventDefault();
       e.stopPropagation();
-      const step = e.shiftKey ? 1.0 : DURATION_STEP_FINE;
+      const step = e.shiftKey ? DURATION_STEP_COARSE : DURATION_STEP_FINE;
       newDuration = Math.min(MAX_DURATION, currentDuration + step);
     } else if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
       e.preventDefault();
       e.stopPropagation();
-      const step = e.shiftKey ? 1.0 : DURATION_STEP_FINE;
+      const step = e.shiftKey ? DURATION_STEP_COARSE : DURATION_STEP_FINE;
       newDuration = Math.max(MIN_DURATION, currentDuration - step);
     } else if (e.key === "Home") {
       e.preventDefault();

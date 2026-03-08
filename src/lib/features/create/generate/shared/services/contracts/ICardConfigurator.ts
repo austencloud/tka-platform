@@ -54,6 +54,8 @@ export interface CardHandlers {
   handleLoopToggle?: () => void;
   // Start/End options (optional, for when start/end card is shown)
   startEndOptions?: StartEndOptions;
+  // Pre-computed total beat count for the current word (includes bridges + LOOP multiplier)
+  computedWordLength?: number;
   // Trigger value that increments when positions are reset due to grid mode change
   positionsResetTrigger?: number;
   // Current grid mode for position picker filtering

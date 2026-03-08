@@ -1,12 +1,13 @@
 /**
  * Duration Display Utilities
- * Formats duration values as decimals with × suffix (0.25×, 0.5×, 1×, 1.25×, 2×, etc.)
+ * Formats duration values as decimals with × suffix (1×, 1.25×, 2×, etc.)
+ * Minimum duration is 1.0 (square pictograph). Durations only extend wider.
  */
 
 /**
  * Format a duration value for display using decimals
- * @param duration - Duration value (0.25 to 4.0)
- * @returns Formatted string like "0.25×", "0.5×", "1×", "1.25×", "2×", etc.
+ * @param duration - Duration value (1.0 to 4.0)
+ * @returns Formatted string like "1×", "1.25×", "2×", etc.
  */
 export function formatDurationDisplay(duration: number): string {
   // Format as decimal, remove trailing zeros, add × suffix
@@ -31,7 +32,7 @@ export function parseDurationDisplay(formatted: string): number | null {
   const parsed = parseFloat(withoutSuffix);
 
   // Validate it's a valid number
-  if (isNaN(parsed) || parsed <= 0) {
+  if (isNaN(parsed) || parsed < 1.0) {
     return null;
   }
 

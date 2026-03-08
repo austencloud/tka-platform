@@ -165,7 +165,7 @@ export interface IStepOperator {
    * Does not apply to start position (beat 0).
    *
    * @param stepNumber Beat number (1+ = sequence steps, 0 = start position is invalid)
-   * @param newDuration New duration value (0.25 to 4.0, in quarter-beat increments)
+   * @param newDuration New duration value (1.0 to 4.0, in quarter-beat increments)
    * @param CreateModuleState Create Module State for sequence operations
    */
   updateStepDuration(
