@@ -33,64 +33,56 @@ export class PropInterpolator implements IPropInterpolator {
     const blueMotion = currentStepData.motions?.blue;
     const redMotion = currentStepData.motions?.red;
 
-    if (!blueMotion || !redMotion) {
-      console.warn("PropInterpolator: Missing motion data", {
-        stepNumber: currentStepData?.stepNumber,
-        hasBlue: !!blueMotion,
-        hasRed: !!redMotion,
-      });
+    // Both hands missing = truly invalid
+    if (!blueMotion && !redMotion) {
       return {
-        blueAngles: { centerPathAngle: 0, staffRotationAngle: 0 },
-        redAngles: { centerPathAngle: 0, staffRotationAngle: 0 },
+        blueAngles: null,
+        redAngles: null,
         isValid: false,
       };
     }
 
-    // Calculate endpoints using native MotionData
-    const blueEndpoints =
-      this.endpointCalculator.calculateMotionEndpoints(blueMotion);
-    const redEndpoints =
-      this.endpointCalculator.calculateMotionEndpoints(redMotion);
+    // Interpolate blue prop (null if not present)
+    let blueAngles: InterpolationResult["blueAngles"] = null;
+    if (blueMotion) {
+      const blueEndpoints =
+        this.endpointCalculator.calculateMotionEndpoints(blueMotion);
+      const blueDash = blueMotion.motionType === MotionType.DASH;
+      blueAngles = blueDash
+        ? this.interpolateDashMotion(blueEndpoints, stepProgress)
+        : {
+            centerPathAngle: this.angleCalculator.lerpAngle(
+              blueEndpoints.startCenterAngle,
+              blueEndpoints.targetCenterAngle,
+              stepProgress
+            ),
+            staffRotationAngle: this.angleCalculator.normalizeAnglePositive(
+              blueEndpoints.startStaffAngle +
+                blueEndpoints.staffRotationDelta * stepProgress
+            ),
+          };
+    }
 
-    // Check if motions are dashes - use Cartesian interpolation for straight-through-center movement
-    const blueDash = blueMotion.motionType === MotionType.DASH;
-    const redDash = redMotion.motionType === MotionType.DASH;
-
-    // Interpolate blue prop
-    const blueAngles = blueDash
-      ? this.interpolateDashMotion(blueEndpoints, stepProgress)
-      : {
-          // Grid location: ALWAYS shortest path (W → N always goes W → NW → N)
-          centerPathAngle: this.angleCalculator.lerpAngle(
-            blueEndpoints.startCenterAngle,
-            blueEndpoints.targetCenterAngle,
-            stepProgress
-          ),
-          // Staff rotation: Use total rotation delta to respect turns
-          staffRotationAngle: this.angleCalculator.normalizeAnglePositive(
-            blueEndpoints.startStaffAngle +
-              blueEndpoints.staffRotationDelta * stepProgress
-          ),
-          // Don't set x,y for non-dash motions - let CanvasRenderer calculate from angle
-        };
-
-    // Interpolate red prop
-    const redAngles = redDash
-      ? this.interpolateDashMotion(redEndpoints, stepProgress)
-      : {
-          // Grid location: ALWAYS shortest path
-          centerPathAngle: this.angleCalculator.lerpAngle(
-            redEndpoints.startCenterAngle,
-            redEndpoints.targetCenterAngle,
-            stepProgress
-          ),
-          // Staff rotation: Use total rotation delta to respect turns
-          staffRotationAngle: this.angleCalculator.normalizeAnglePositive(
-            redEndpoints.startStaffAngle +
-              redEndpoints.staffRotationDelta * stepProgress
-          ),
-          // Don't set x,y for non-dash motions - let CanvasRenderer calculate from angle
-        };
+    // Interpolate red prop (null if not present)
+    let redAngles: InterpolationResult["redAngles"] = null;
+    if (redMotion) {
+      const redEndpoints =
+        this.endpointCalculator.calculateMotionEndpoints(redMotion);
+      const redDash = redMotion.motionType === MotionType.DASH;
+      redAngles = redDash
+        ? this.interpolateDashMotion(redEndpoints, stepProgress)
+        : {
+            centerPathAngle: this.angleCalculator.lerpAngle(
+              redEndpoints.startCenterAngle,
+              redEndpoints.targetCenterAngle,
+              stepProgress
+            ),
+            staffRotationAngle: this.angleCalculator.normalizeAnglePositive(
+              redEndpoints.startStaffAngle +
+                redEndpoints.staffRotationDelta * stepProgress
+            ),
+          };
+    }
 
     return {
       blueAngles,
@@ -144,33 +136,39 @@ export class PropInterpolator implements IPropInterpolator {
     const blueStartMotion = firstStep.motions?.blue;
     const redStartMotion = firstStep.motions?.red;
 
-    if (!blueStartMotion || !redStartMotion) {
-      console.warn("PropInterpolator: Missing motion data on first beat", {
-        stepNumber: firstStep?.stepNumber,
-        hasBlue: !!blueStartMotion,
-        hasRed: !!redStartMotion,
-      });
+    // Both hands missing = truly invalid
+    if (!blueStartMotion && !redStartMotion) {
       return {
-        blueAngles: { centerPathAngle: 0, staffRotationAngle: 0 },
-        redAngles: { centerPathAngle: 0, staffRotationAngle: 0 },
+        blueAngles: null,
+        redAngles: null,
         isValid: false,
       };
     }
 
-    const blueStartEndpoints =
-      this.endpointCalculator.calculateMotionEndpoints(blueStartMotion);
-    const redStartEndpoints =
-      this.endpointCalculator.calculateMotionEndpoints(redStartMotion);
-
-    return {
-      blueAngles: {
+    // Calculate angles for whichever hand is present (null for missing hand)
+    let blueAngles: InterpolationResult["blueAngles"] = null;
+    if (blueStartMotion) {
+      const blueStartEndpoints =
+        this.endpointCalculator.calculateMotionEndpoints(blueStartMotion);
+      blueAngles = {
         centerPathAngle: blueStartEndpoints.startCenterAngle,
         staffRotationAngle: blueStartEndpoints.startStaffAngle,
-      },
-      redAngles: {
+      };
+    }
+
+    let redAngles: InterpolationResult["redAngles"] = null;
+    if (redStartMotion) {
+      const redStartEndpoints =
+        this.endpointCalculator.calculateMotionEndpoints(redStartMotion);
+      redAngles = {
         centerPathAngle: redStartEndpoints.startCenterAngle,
         staffRotationAngle: redStartEndpoints.startStaffAngle,
-      },
+      };
+    }
+
+    return {
+      blueAngles,
+      redAngles,
       isValid: true,
     };
   }
