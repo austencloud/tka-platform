@@ -213,7 +213,7 @@ export class CharcoalSparkRenderer implements IFireOverlayRenderer {
 			antialias: false,
 			depth: false,
 			stencil: false,
-			preserveDrawingBuffer: false,
+			preserveDrawingBuffer: true, // Required for video export to read charcoal pixels
 		});
 
 		if (!this.gl) {
@@ -374,12 +374,13 @@ export class CharcoalSparkRenderer implements IFireOverlayRenderer {
 			}
 		}
 
-		// Ambient emission during sustained movement — scaled by speed.
-		// Slow crawl = barely any embers. Fast spin = a gentle trailing trickle.
-		// The real drama comes from bursts on momentum switches, not ambient.
+		// Ambient emission during sustained movement — proportional to speed.
+		// Faster tips produce proportionally more sparks with no ceiling,
+		// so a fast dash showers embers while a slow crawl barely trickles.
+		const tipKey = `${tip.propIndex}_${tip.tipIndex}`;
+
 		if (tip.speed > params.ambientSpeedThreshold) {
-			const tipKey = `${tip.propIndex}_${tip.tipIndex}`;
-			const speedFactor = Math.min(tip.speed / 300, 1.0); // normalize: 300 vu/s = full rate
+			const speedFactor = tip.speed / 150; // linear, uncapped: 300 vu/s = 2× rate
 			const accumulated =
 				(this.ambientAccumulators.get(tipKey) ?? 0) +
 				params.ambientRate * speedFactor * dt;
@@ -390,6 +391,19 @@ export class CharcoalSparkRenderer implements IFireOverlayRenderer {
 			for (let i = 0; i < toEmit; i++) {
 				this.spawnParticle(tip, params);
 			}
+		} else if (params.idleRate > 0) {
+			// Idle emission: stationary or near-stationary tip still sheds embers.
+			// These spawn with minimal horizontal velocity so gravity pulls them down.
+			const accumulated =
+				(this.ambientAccumulators.get(tipKey) ?? 0) +
+				params.idleRate * dt;
+			const toEmit = Math.floor(accumulated);
+
+			this.ambientAccumulators.set(tipKey, accumulated - toEmit);
+
+			for (let i = 0; i < toEmit; i++) {
+				this.spawnIdleParticle(tip, params);
+			}
 		}
 	}
 
@@ -399,10 +413,9 @@ export class CharcoalSparkRenderer implements IFireOverlayRenderer {
 		if (!slot) return;
 
 		// Inherit a fraction of the tip's velocity vector.
-		// This is the key to realistic charcoal physics:
-		// - The spark moves roughly where the tip was going
-		// - But slower, so the tip "leaves it behind"
-		// - On sudden stop, inherited velocity carries sparks forward
+		// Sparks carry the tip's momentum — they fly where the tip was going
+		// but slower, so the tip leaves them behind. On direction reversals,
+		// the burst system (jerk detection) creates the dramatic spark pops.
 		const inheritedVx = tip.velocityX * params.velocityInheritance;
 		const inheritedVy = tip.velocityY * params.velocityInheritance;
 
@@ -429,6 +442,33 @@ export class CharcoalSparkRenderer implements IFireOverlayRenderer {
 		slot.size =
 			params.sizeMin + Math.random() * (params.sizeMax - params.sizeMin);
 		slot.temperature = 1.0;
+		slot.active = true;
+	}
+
+	/**
+	 * Spawn a low-energy particle for idle/stationary tips.
+	 * Minimal horizontal velocity — gravity pulls them straight down
+	 * like embers falling off a still-burning prop.
+	 */
+	private spawnIdleParticle(tip: PropTipData, params: CharcoalSparkParams): void {
+		const slot = this.findInactiveSlot();
+		if (!slot) return;
+
+		// Random direction, very low speed (just enough to spread slightly)
+		const angle = Math.random() * Math.PI * 2;
+		const speed = params.perturbSpeedMin * 0.3;
+
+		slot.x = tip.x;
+		slot.y = tip.y;
+		slot.vx = Math.cos(angle) * speed;
+		slot.vy = Math.sin(angle) * speed;
+		slot.maxLife =
+			params.lifetimeMin +
+			Math.random() * (params.lifetimeMax - params.lifetimeMin) * 0.6;
+		slot.life = slot.maxLife;
+		slot.size =
+			params.sizeMin + Math.random() * (params.sizeMax - params.sizeMin) * 0.5;
+		slot.temperature = 0.7 + Math.random() * 0.3; // Cooler starting temp
 		slot.active = true;
 	}
 

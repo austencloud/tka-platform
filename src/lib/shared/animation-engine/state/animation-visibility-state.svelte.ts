@@ -102,7 +102,7 @@ export class AnimationVisibilityStateManager {
     return {
       // Animation-specific defaults
       gridMode: "diamond", // Default to diamond grid
-      stepNumbers: false, // Hide beat numbers by default (user requested removal)
+      stepNumbers: true, // Show step numbers by default
       beatPosition: false, // Hide beat position by default (replaced by progress bar)
       props: true,
       trailStyle: "on", // Trails enabled by default (hardcoded vivid style)
@@ -154,6 +154,9 @@ export class AnimationVisibilityStateManager {
 
         // Force beatPosition to false (replaced by progress bar)
         parsed.beatPosition = false;
+
+        // Force stepNumbers to true (re-enabled for export and preview)
+        parsed.stepNumbers = true;
 
         // Migrate old flameColorMode (binary) → continuous fireColorBlend
         if ("flameColorMode" in parsed && !("fireColorBlend" in parsed)) {
@@ -208,6 +211,12 @@ export class AnimationVisibilityStateManager {
 
         // Ensure new properties exist with defaults if missing
         const defaults = this.getDefaultSettings();
+
+        // Deep-merge charcoalParams so newly added keys get their defaults
+        if (parsed.charcoalParams) {
+          parsed.charcoalParams = { ...DEFAULT_CHARCOAL_PARAMS, ...parsed.charcoalParams };
+        }
+
         return {
           ...defaults,
           ...parsed,

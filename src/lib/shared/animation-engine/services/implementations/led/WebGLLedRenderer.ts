@@ -114,7 +114,7 @@ export class WebGLLedRenderer implements ILedOverlayRenderer {
 			antialias: false,
 			depth: false,
 			stencil: false,
-			preserveDrawingBuffer: false,
+			preserveDrawingBuffer: true, // Required for video export to read LED pixels
 		});
 
 		if (!this.gl) {

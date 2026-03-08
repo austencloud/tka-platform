@@ -212,7 +212,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
       antialias: false,
       depth: false,
       stencil: false,
-      preserveDrawingBuffer: false,
+      preserveDrawingBuffer: true, // Required for video export to read fire pixels
     });
 
     if (!this.gl) {

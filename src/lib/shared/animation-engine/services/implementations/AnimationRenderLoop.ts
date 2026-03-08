@@ -148,6 +148,12 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     }
   }
 
+  setTargetFps(_fps: number | null): void {
+    // No-op: FPS throttling removed — time-based animation interpolation
+    // makes frame rate differences imperceptible in the preview.
+    // FPS setting only affects the exported video file.
+  }
+
   dispose(): void {
     // Mark as disposed FIRST to stop any pending RAF callbacks
     this.isDisposed = true;

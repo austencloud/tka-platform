@@ -283,6 +283,7 @@ export class AnimationEngine {
   private prevSmokeLevel: number = 0.1;
   private prevUseCharcoal: boolean = false;
   private prevFireIntensity: number = 0.7;
+  private prevCharcoalParamsJson: string = "";
 
   // Additional layer texture loading for tunnel mode (indexed by layer)
   private additionalLayerTexturesLoaded: boolean[] = [];
@@ -353,6 +354,7 @@ export class AnimationEngine {
     this.prevSmokeLevel = visibilityManager.getFireSmokeLevel();
     this.prevUseCharcoal = visibilityManager.getFireUseCharcoal();
     this.prevFireIntensity = visibilityManager.getFireIntensity();
+    this.prevCharcoalParamsJson = JSON.stringify(visibilityManager.getCharcoalParams());
     this.fireDefaultsLoader = container.items.fireDefaultsLoader;
 
     // Build fireConfig from base params + slider mappings
@@ -520,6 +522,18 @@ export class AnimationEngine {
               colorCurve: BASE_COLOR_CURVE,
               smokeOpacity: smokeLevelToOpacity(smokeLevel),
             });
+          }
+        }
+
+        // Sync charcoal params independently of the fire sliders above.
+        // Charcoal param changes (gravity, burst threshold, etc.) don't affect
+        // colorBlend/smokeLevel/useCharcoal/fireIntensity, so slidersChanged
+        // won't detect them. Forward directly to the renderer when changed.
+        if (useCharcoal && this.charcoalRenderer?.isInitialized()) {
+          const currentCharcoalJson = JSON.stringify(vm.getCharcoalParams());
+          if (currentCharcoalJson !== this.prevCharcoalParamsJson) {
+            this.prevCharcoalParamsJson = currentCharcoalJson;
+            (this.charcoalRenderer as CharcoalSparkRenderer).setParams(vm.getCharcoalParams());
           }
         }
 
@@ -976,6 +990,14 @@ export class AnimationEngine {
     ) {
       this.glyphTextureService.processPendingGlyph();
     }
+  }
+
+  /**
+   * Set target FPS for preview throttling.
+   * null = render at native refresh rate (no throttling).
+   */
+  setTargetFps(fps: number | null): void {
+    this.renderLoopService?.setTargetFps(fps);
   }
 
   /**
