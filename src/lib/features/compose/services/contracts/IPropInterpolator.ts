@@ -16,9 +16,12 @@ export interface IPropInterpolator {
     stepProgress: number
   ): InterpolationResult;
   calculateInitialAngles(firstStep: StepData): InterpolationResult;
-  getMotionData(stepData: StepData): { blue: MotionData; red: MotionData };
+  getMotionData(stepData: StepData): {
+    blue: MotionData | null;
+    red: MotionData | null;
+  };
   getEndpoints(stepData: StepData): {
-    blue: MotionEndpoints;
-    red: MotionEndpoints;
+    blue: MotionEndpoints | null;
+    red: MotionEndpoints | null;
   };
 }

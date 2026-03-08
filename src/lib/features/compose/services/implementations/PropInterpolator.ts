@@ -174,37 +174,33 @@ export class PropInterpolator implements IPropInterpolator {
   }
 
   /**
-   * Get motion data for debugging
+   * Get motion data for debugging (supports single-hand beats)
    */
-  getMotionData(stepData: StepData): { blue: MotionData; red: MotionData } {
-    const blueMotion = stepData.motions.blue;
-    const redMotion = stepData.motions.red;
-
-    if (!blueMotion) {
-      throw new Error("Blue motion data is missing for current beat.");
-    }
-
-    if (!redMotion) {
-      throw new Error("Red motion data is missing for current beat.");
-    }
-
+  getMotionData(stepData: StepData): {
+    blue: MotionData | null;
+    red: MotionData | null;
+  } {
     return {
-      blue: blueMotion,
-      red: redMotion,
+      blue: stepData.motions?.blue ?? null,
+      red: stepData.motions?.red ?? null,
     };
   }
 
   /**
-   * Calculate endpoints for debugging
+   * Calculate endpoints for debugging (supports single-hand beats)
    */
   getEndpoints(stepData: StepData): {
-    blue: MotionEndpoints;
-    red: MotionEndpoints;
+    blue: MotionEndpoints | null;
+    red: MotionEndpoints | null;
   } {
     const motionData = this.getMotionData(stepData);
     return {
-      blue: this.endpointCalculator.calculateMotionEndpoints(motionData.blue),
-      red: this.endpointCalculator.calculateMotionEndpoints(motionData.red),
+      blue: motionData.blue
+        ? this.endpointCalculator.calculateMotionEndpoints(motionData.blue)
+        : null,
+      red: motionData.red
+        ? this.endpointCalculator.calculateMotionEndpoints(motionData.red)
+        : null,
     };
   }
 }
