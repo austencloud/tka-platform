@@ -58,7 +58,7 @@
     hasActivePositions?: boolean;
     availableLengths?: number[];
     loopTypeCounts?: Record<string, number>;
-    onAction?: (action: string, sequence: SequenceData) => void;
+    onAction?: (action: string, sequence: SequenceData, variations?: SequenceData[]) => void;
     onScroll?: (event: CustomEvent<{ scrollTop: number }>) => void;
     onFilterChange?: (type: SequenceFilterType, value?: BrowseFilterValue) => void;
     onRemoveFilter?: (type: string) => void;
@@ -93,9 +93,9 @@
       : "No sequences found"
   );
 
-  // Handle sequence actions
-  function handleSequenceAction(action: string, sequence: SequenceData) {
-    onAction(action, sequence);
+  // Handle sequence actions (pass variations through for view-detail)
+  function handleSequenceAction(action: string, sequence: SequenceData, variations?: SequenceData[]) {
+    onAction(action, sequence, variations);
   }
 
   onMount(async () => {

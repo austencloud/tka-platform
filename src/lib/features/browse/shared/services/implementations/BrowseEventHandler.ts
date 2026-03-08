@@ -17,6 +17,7 @@ import type { IBrowseLoader } from "../../../sequences/display/services/contract
 import type { ISheetRouter } from "../../../../../shared/navigation/services/contracts/ISheetRouter";
 import { handleModuleChange } from "../../../../../shared/navigation-coordinator/navigation-coordinator.svelte";
 import { openSequenceViewer } from "../../../../../shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
+import { openVariationPicker } from "../../state/variation-picker-state.svelte";
 
 export class BrowseEventHandler implements IBrowseEventHandler {
   private params: BrowseEventHandlerParams | null = null;
@@ -48,7 +49,8 @@ export class BrowseEventHandler implements IBrowseEventHandler {
 
   async handleSequenceAction(
     action: string,
-    sequence: SequenceData
+    sequence: SequenceData,
+    variations?: SequenceData[]
   ): Promise<void> {
     this.ensureInitialized();
 
@@ -58,7 +60,7 @@ export class BrowseEventHandler implements IBrowseEventHandler {
           this.handleSequenceSelect(sequence);
           break;
         case "view-detail":
-          this.handleViewDetail(sequence);
+          this.handleViewDetail(sequence, variations);
           break;
         case "delete":
           // Deletion is handled by the sequence viewer, not the gallery.
@@ -84,12 +86,16 @@ export class BrowseEventHandler implements IBrowseEventHandler {
     }
   }
 
-  handleViewDetail(sequence: SequenceData): void {
-    openSequenceViewer(sequence, {
-      returnPath: "/browse/gallery",
-      returnLabel: "Browse",
-      scrollY: browseScrollState.lastScrollY,
-    });
+  handleViewDetail(sequence: SequenceData, variations?: SequenceData[]): void {
+    if (variations && variations.length > 1) {
+      openVariationPicker(variations);
+    } else {
+      openSequenceViewer(sequence, {
+        returnPath: "/browse/gallery",
+        returnLabel: "Browse",
+        scrollY: browseScrollState.lastScrollY,
+      });
+    }
   }
 
   handleCloseDetailPanel(): void {
