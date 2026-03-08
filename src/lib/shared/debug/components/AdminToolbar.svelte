@@ -24,6 +24,7 @@
   import { getTabIntroContent } from "$lib/shared/onboarding/config/tab-intro-content";
   import { firstRunState } from "$lib/shared/onboarding/state/first-run-state.svelte.ts";
   import { appEntryState } from "$lib/shared/onboarding/state/app-entry-state.svelte.ts";
+  import { createTutorialState } from "$lib/shared/onboarding/state/create-tutorial-state.svelte";
   import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
   import { container } from "$lib/shared/di";
   import type {
@@ -171,6 +172,7 @@
   }
 
   function previewCreateTutorial() {
+    createTutorialState.reset();
     appEntryState.replay();
     introResetMessage = "Create tutorial opened";
     setTimeout(() => {

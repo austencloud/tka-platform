@@ -135,6 +135,20 @@
     };
   }
 
+  function handleEmptySpaceContextMenu(e: MouseEvent) {
+    if (!featureFlagService.isAdmin) return;
+    // Only trigger if right-clicking on the container itself or empty space,
+    // not on a module button or its children
+    const target = e.target as HTMLElement;
+    if (target.closest(".module-group, .module-context-group, button, a")) return;
+    e.preventDefault();
+    contextMenuState = {
+      mode: "modules",
+      x: e.clientX,
+      y: e.clientY,
+    };
+  }
+
   function closeContextMenu() {
     contextMenuState = { mode: "closed" };
   }
@@ -305,7 +319,7 @@
   <!-- Unified Navigation Content Container -->
   <!-- Single container holds both modules and settings tabs - no flexbox recalculation -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="navigation-content themed-scrollbar" class:tabs-mode={isCollapsed} onscroll={closeContextMenu}>
+  <div class="navigation-content themed-scrollbar" class:tabs-mode={isCollapsed} onscroll={closeContextMenu} oncontextmenu={handleEmptySpaceContextMenu}>
     {#if isInSettings}
       <!-- Settings Content with Back Button Header -->
       <div

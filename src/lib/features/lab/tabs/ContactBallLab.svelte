@@ -22,6 +22,7 @@
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
   import { InfiniteSequenceGenerator } from "$lib/features/landing/services/implementations/InfiniteSequenceGenerator";
   import { SpinnerMetricsRepository } from "$lib/features/landing/services/implementations/SpinnerMetricsRepository";
+  import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
   import { SequenceChainingOrchestrator } from "$lib/features/effects-lab/services/implementations/SequenceChainingOrchestrator";
   import type { ISequenceChainingOrchestrator } from "$lib/features/effects-lab/services/contracts/ISequenceChainingOrchestrator";
   import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
@@ -167,7 +168,8 @@
       const metricsRepo = new SpinnerMetricsRepository();
       const infiniteGen = new InfiniteSequenceGenerator(
         generationOrchestrator,
-        metricsRepo
+        metricsRepo,
+        orientationCycleExtender
       );
 
       chainingOrchestrator = new SequenceChainingOrchestrator(spinnerOrch, infiniteGen);

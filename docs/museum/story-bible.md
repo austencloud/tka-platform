@@ -92,6 +92,8 @@ On the surface, the collapse looks like bureaucratic paralysis, the Lethe's fail
 
 **The museum is theirs.** The Order built it as an internal archive: a training facility for members, documenting containment failures throughout history. Every exhibit is a case file, not a celebration. Every plaque is a warning. The bureaucratic tone, the filing numbers, the redaction plaques all make sense because the Order IS a bureaucracy and this IS their archive.
 
+**This facility is one of many.** The BKC maintained specialized archives across multiple locations. This museum focuses on gripped-prop notation (the Kinetic Alphabet). Other facilities covered other kinetic domains — referenced in filing stamps ("TRANSFERRED TO DIVISION 7: NON-RIGID IMPLEMENTS"), transfer orders, and interdepartmental memos, but never visited by the player. The implication of a larger organization is more powerful than showing it. One room in this museum features a **prop wall**: 3D renders of poi, contact staves, dragon staff, juggling clubs, and other props displayed as specimens. Order documentation shows they monitored ALL kinetic activity, not just gripped props. K's annotation acknowledges the broader scope. This validates all flow artists without overclaiming that TKA covers their discipline. (Tracker: h20GkMk5)
+
 ### The Scribes
 
 **What they are:** Not an organization. A pattern that recurs. People who picked up the prop and did the thing. Sometimes they cluster into groups (pirate crews, monastic orders, workshops, cults), sometimes they're alone. The Order documents them all.

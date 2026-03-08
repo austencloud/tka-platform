@@ -46,6 +46,8 @@
   });
 
   function handleClick() {
+    // When expanded, act as a non-interactive header (ignore left clicks)
+    if (isExpanded) return;
     hapticService?.trigger("selection");
     onClick();
   }
@@ -206,13 +208,12 @@
     transition-duration: var(--duration-instant);
   }
 
-  /* Expanded state - blends with surrounding panel, not interactive */
+  /* Expanded state - blends with surrounding panel, acts as header */
   .module-button.expanded {
     color: var(--theme-text);
     background: transparent;
     border-color: transparent;
     cursor: default;
-    pointer-events: none; /* Disable interaction when expanded */
   }
 
   .module-button.expanded:hover {
@@ -250,7 +251,6 @@
     background: transparent;
     border-color: transparent;
     cursor: default;
-    pointer-events: none;
   }
 
   .module-button.active::after {
