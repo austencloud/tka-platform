@@ -37,8 +37,7 @@ LAYOUT PRIORITY (mobile-first):
     type HandPathAssembleState,
   } from "../state/handpath-assemble-state.svelte";
   import AssemblyWelcome from "./AssemblyWelcome.svelte";
-  import AssemblyPhaseHeader from "./AssemblyPhaseHeader.svelte";
-  import AssemblyControls from "./AssemblyControls.svelte";
+  import AssemblyToolbar from "./AssemblyToolbar.svelte";
   import HandPathGrid from "./HandPathGrid.svelte";
   import RotationSelector from "./RotationSelector.svelte";
 
@@ -349,12 +348,9 @@ LAYOUT PRIORITY (mobile-first):
     return false; // Can't undo in rotation-selection or complete phases
   });
 
-  // Expose undo ref to parent for workspace-level undo button
+  // During assembly, the toolbar owns undo — don't expose to workspace level
   $effect(() => {
-    undoRef = {
-      canUndo: canUndoAssembly,
-      undo: handleUndo,
-    };
+    undoRef = null;
   });
 
   // Expose back ref to parent for workspace back button
@@ -663,9 +659,9 @@ LAYOUT PRIORITY (mobile-first):
             />
           </div>
 
-          <!-- Controls Area - Compact, below grid -->
-          <div class="controls-area">
-            <AssemblyControls
+          <!-- Toolbar Area - Unified bottom toolbar -->
+          <div class="toolbar-area">
+            <AssemblyToolbar
               phase={currentPhase}
               {bluePathLength}
               {redPathLength}
@@ -674,6 +670,7 @@ LAYOUT PRIORITY (mobile-first):
               canUndo={canUndoAssembly}
               onNextHand={handleNextHand}
               onComplete={handleProceedToRotation}
+              onBack={handleBack}
               onReset={handleFullReset}
               onUndo={handleUndo}
             />
@@ -688,7 +685,7 @@ LAYOUT PRIORITY (mobile-first):
           />
         </div>
       {:else if currentPhase === "complete"}
-        <!-- Complete Phase - no header needed, checkmark speaks for itself -->
+        <!-- Complete Phase - checkmark + toolbar with "Build Another" -->
         <div class="complete-phase">
           <div class="complete-content">
             <div class="complete-icon">✓</div>
@@ -698,18 +695,21 @@ LAYOUT PRIORITY (mobile-first):
             </p>
           </div>
         </div>
-        <AssemblyControls
-          phase={currentPhase}
-          {bluePathLength}
-          {redPathLength}
-          {canProceedToRed}
-          {canComplete}
-          canUndo={canUndoAssembly}
-          onNextHand={handleNextHand}
-          onComplete={handleProceedToRotation}
-          onReset={handleFullReset}
-          onUndo={handleUndo}
-        />
+        <div class="toolbar-area">
+          <AssemblyToolbar
+            phase={currentPhase}
+            {bluePathLength}
+            {redPathLength}
+            {canProceedToRed}
+            {canComplete}
+            canUndo={canUndoAssembly}
+            onNextHand={handleNextHand}
+            onComplete={handleProceedToRotation}
+            onBack={handleBack}
+            onReset={handleFullReset}
+            onUndo={handleUndo}
+          />
+        </div>
       {/if}
     </div>
   {/if}
@@ -819,8 +819,8 @@ LAYOUT PRIORITY (mobile-first):
     overflow: hidden;
   }
 
-  /* Controls Area - Fixed height, minimal space */
-  .controls-area {
+  /* Toolbar Area - Fixed height, minimal space */
+  .toolbar-area {
     flex-shrink: 0;
   }
 
@@ -844,10 +844,10 @@ LAYOUT PRIORITY (mobile-first):
       order: 2; /* Grid on the right */
     }
 
-    .controls-area {
+    .toolbar-area {
       flex: 0 0 auto;
       width: clamp(180px, 30%, 280px);
-      order: 1; /* Controls on the left */
+      order: 1; /* Toolbar on the left */
       display: flex;
       flex-direction: column;
       justify-content: center;
