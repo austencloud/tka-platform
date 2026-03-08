@@ -1,23 +1,24 @@
 /**
  * Create Tutorial State
  *
- * Manages the 5-step create tutorial wizard.
- * Steps auto-advance when the user completes each action (no Continue button).
+ * Manages the 4-step create tutorial wizard.
+ * The "add-beat" step repeats until the user has picked REQUIRED_BEATS beats.
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+
+export const REQUIRED_BEATS = 4;
 
 export type CreateTutorialStep =
   | "pick-start"
   | "add-beat"
-  | "open-actions"
   | "play-sequence"
   | "ready";
 
 const STEPS: CreateTutorialStep[] = [
   "pick-start",
   "add-beat",
-  "open-actions",
   "play-sequence",
   "ready",
 ];
@@ -25,14 +26,16 @@ const STEPS: CreateTutorialStep[] = [
 interface CreateTutorialData {
   currentStepIndex: number;
   startPosition: PictographData | null;
-  selectedBeat: PictographData | null;
+  gridMode: GridMode;
+  beats: PictographData[];
 }
 
 function createCreateTutorialState() {
   const data = $state<CreateTutorialData>({
     currentStepIndex: 0,
     startPosition: null,
-    selectedBeat: null,
+    gridMode: GridMode.DIAMOND,
+    beats: [],
   });
 
   return {
@@ -51,22 +54,39 @@ function createCreateTutorialState() {
     get startPosition() {
       return data.startPosition;
     },
-    get selectedBeat() {
-      return data.selectedBeat;
+    get gridMode() {
+      return data.gridMode;
     },
+    get beats(): PictographData[] {
+      return data.beats;
+    },
+    /** Full sequence: start position + all beats */
     get sequence(): PictographData[] {
       const seq: PictographData[] = [];
       if (data.startPosition) seq.push(data.startPosition);
-      if (data.selectedBeat) seq.push(data.selectedBeat);
+      seq.push(...data.beats);
       return seq;
     },
-
-    setStartPosition(pos: PictographData) {
-      data.startPosition = pos;
+    get beatsRemaining() {
+      return REQUIRED_BEATS - data.beats.length;
     },
 
-    setSelectedBeat(beat: PictographData) {
-      data.selectedBeat = beat;
+    setStartPosition(pos: PictographData, gridMode?: GridMode) {
+      data.startPosition = pos;
+      // Clear beats — they were computed from the old start position
+      data.beats = [];
+      if (gridMode) {
+        data.gridMode = gridMode;
+      }
+    },
+
+    addBeat(beat: PictographData) {
+      data.beats.push(beat);
+    },
+
+    /** Remove the last beat (for undo/back within the add-beat step) */
+    removeLastBeat() {
+      data.beats.pop();
     },
 
     advance() {
@@ -75,10 +95,23 @@ function createCreateTutorialState() {
       }
     },
 
+    goBack() {
+      if (data.currentStepIndex > 0) {
+        data.currentStepIndex--;
+      }
+    },
+
+    goToStep(index: number) {
+      if (index >= 0 && index < STEPS.length) {
+        data.currentStepIndex = index;
+      }
+    },
+
     reset() {
       data.currentStepIndex = 0;
       data.startPosition = null;
-      data.selectedBeat = null;
+      data.gridMode = GridMode.DIAMOND;
+      data.beats = [];
     },
   };
 }
