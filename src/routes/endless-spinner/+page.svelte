@@ -33,6 +33,7 @@
   import type { IInfiniteSequenceGenerator } from "$lib/features/landing/services/contracts/IInfiniteSequenceGenerator";
   import { InfiniteSequenceGenerator } from "$lib/features/landing/services/implementations/InfiniteSequenceGenerator";
   import { SpinnerMetricsRepository } from "$lib/features/landing/services/implementations/SpinnerMetricsRepository";
+  import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
   import SpinnerModeToggle from "$lib/features/landing/components/SpinnerModeToggle.svelte";
   import LibraryModeInfo from "$lib/features/landing/components/LibraryModeInfo.svelte";
   import InfiniteModeInfo from "$lib/features/landing/components/InfiniteModeInfo.svelte";
@@ -48,6 +49,11 @@
   // Local extracted components
   import SpinnerControls from "./components/SpinnerControls.svelte";
   import EndlessSpinnerDebugPanel from "./components/EndlessSpinnerDebugPanel.svelte";
+  import SequenceHistoryPanel from "./components/SequenceHistoryPanel.svelte";
+  import type { SequenceHistoryEntry } from "./components/SequenceHistoryPanel.svelte";
+  import { SequenceDataSerializer } from "$lib/features/landing/services/implementations/SequenceDataSerializer";
+
+  const sequenceDataSerializer = new SequenceDataSerializer();
 
   // Data transformation services (instantiated once)
   const broadcastSequenceConverter = new BroadcastSequenceConverter();
@@ -66,10 +72,11 @@
   // UI state
   let showDebugPanel = $state(false);
   let showStepGrid = $state(true);
+  let showHistory = $state(false);
 
   // Sequence state
   let currentSequence = $state<SequenceData | null>(null);
-  let sequenceHistory = $state<string[]>([]);
+  let sequenceHistory = $state<SequenceHistoryEntry[]>([]);
   let lastStep = $state(-1);
   let preloadedSequence = $state<SequenceData | null>(null);
   let isPreloading = $state(false);
@@ -227,7 +234,8 @@
       metricsRepository = new SpinnerMetricsRepository();
       infiniteGenerator = new InfiniteSequenceGenerator(
         generationOrchestrator,
-        metricsRepository
+        metricsRepository,
+        orientationCycleExtender
       );
 
       // Initialize broadcast repository for live mode
@@ -318,7 +326,10 @@
         if (generated) {
           currentGeneratedInfo = generated;
           hotSwapSequence(generated.sequence);
-          sequenceHistory = [generated.sequence.word || "Generated", ...sequenceHistory.slice(0, 9)];
+          sequenceHistory = [
+            { sequence: generated.sequence, settings: generated.settings, timestamp: new Date() },
+            ...sequenceHistory.slice(0, 19),
+          ];
         }
       } else if (spinnerOrchestrator) {
         // Library mode: use curated sequences
@@ -334,7 +345,10 @@
         if (nextSeq) {
           currentGeneratedInfo = null; // Clear any generated info
           hotSwapSequence(nextSeq);
-          sequenceHistory = [nextSeq.word, ...sequenceHistory.slice(0, 9)];
+          sequenceHistory = [
+            { sequence: nextSeq, settings: null, timestamp: new Date() },
+            ...sequenceHistory.slice(0, 19),
+          ];
           const orchestratorStats = spinnerOrchestrator.getStats();
           stats = { ...orchestratorStats };
         }
@@ -505,7 +519,10 @@
 
       currentSequence = sequenceData;
       lastStep = -1;
-      sequenceHistory = [sequenceData.word, ...sequenceHistory.slice(0, 9)];
+      sequenceHistory = [
+        { sequence: sequenceData, settings: null, timestamp: new Date() },
+        ...sequenceHistory.slice(0, 19),
+      ];
 
       const sequence = propTypeApplier.applyToSequence(sequenceData, PropType.STAFF);
 
@@ -532,6 +549,26 @@
   function handleSkip() {
     if (!spinnerOrchestrator || !currentSequence) return;
     chainToNextSequence();
+  }
+
+  async function handleCopy(full: boolean) {
+    if (!currentSequence) return;
+    const text = full
+      ? sequenceDataSerializer.toFullJson(currentSequence, currentGeneratedInfo?.settings ?? null)
+      : sequenceDataSerializer.toCompactDebug(currentSequence, currentGeneratedInfo?.settings ?? null);
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // Fallback for non-secure contexts
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
   }
 
   function handleTogglePause() {
@@ -659,10 +696,21 @@
         isPlaying={animationState.isPlaying}
         {animationReady}
         {showStepGrid}
+        {showHistory}
         onToggleGrid={() => (showStepGrid = !showStepGrid)}
         onTogglePause={handleTogglePause}
         onSkip={handleSkip}
+        onCopy={handleCopy}
+        onToggleHistory={() => (showHistory = !showHistory)}
       />
+
+      <!-- Sequence history panel -->
+      {#if showHistory}
+        <SequenceHistoryPanel
+          entries={sequenceHistory}
+          serializer={sequenceDataSerializer}
+        />
+      {/if}
 
       <!-- Stats bar -->
       <SpinnerStatsBar
