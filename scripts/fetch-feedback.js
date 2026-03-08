@@ -27,6 +27,7 @@ import { existsSync, mkdirSync } from "fs";
 import { randomUUID } from "crypto";
 import config from "../config/feedback.config.js";
 import cfClient from "./lib/cloud-functions-client.js";
+import cliAuth from "./lib/cli-auth.js";
 
 // Generate a unique session ID for this script invocation
 // This allows us to distinguish between different agents/sessions
@@ -3323,6 +3324,26 @@ async function showMyProgress() {
 const args = process.argv.slice(2);
 
 async function main() {
+  // Handle auth commands that don't need Firebase Admin or identity resolution
+  const command = args[0];
+  if (command === "login") {
+    await cliAuth.login();
+    process.exit(0);
+  }
+  if (command === "logout") {
+    cliAuth.logout();
+    process.exit(0);
+  }
+
+  // Resolve developer identity for all other commands
+  const identity = await cliAuth.resolveIdentity(db);
+  console.log(`  👤 ${identity.displayName} (${identity.role})`);
+
+  if (command === "whoami") {
+    await cliAuth.whoami(db);
+    process.exit(0);
+  }
+
   const validPriorities = ["low", "medium", "high"];
 
   // Register session on startup (for bulletproof claim coordination)
