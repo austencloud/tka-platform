@@ -16,9 +16,12 @@
     exportProgress: VideoExportProgress | null;
     exportError: string | null;
     isFullscreen: boolean;
+    previewBlobUrl?: string | null;
+    sequenceWord?: string;
     onExport: () => void;
     onCancel: () => void;
     onRetry: () => void;
+    onDismissPreview?: () => void;
   }
 
   let {
@@ -27,10 +30,21 @@
     exportProgress,
     exportError,
     isFullscreen,
+    previewBlobUrl = null,
+    sequenceWord = "sequence",
     onExport,
     onCancel,
     onRetry,
+    onDismissPreview,
   }: Props = $props();
+
+  function handleRedownload() {
+    if (!previewBlobUrl) return;
+    const a = document.createElement("a");
+    a.href = previewBlobUrl;
+    a.download = `${sequenceWord}.mp4`;
+    a.click();
+  }
 
   // Human-readable stage names for export progress
   const EXPORT_STAGE_LABELS: Record<string, string> = {
@@ -49,7 +63,29 @@
       in:fade={{ duration: 200, delay: 50, easing: cubicOut }}
       out:fade={{ duration: 100, easing: cubicOut }}
     >
-      {#if exportError}
+      {#if previewBlobUrl && onDismissPreview}
+        <!-- Post-export preview actions -->
+        <div class="preview-actions-row">
+          <button
+            type="button"
+            class="preview-action-btn secondary"
+            onclick={handleRedownload}
+            aria-label="Download video again"
+          >
+            <i class="fas fa-download" aria-hidden="true"></i>
+            Save Again
+          </button>
+          <button
+            type="button"
+            class="preview-action-btn primary"
+            onclick={onDismissPreview}
+            aria-label="Done, return to viewer"
+          >
+            <i class="fas fa-check" aria-hidden="true"></i>
+            Done
+          </button>
+        </div>
+      {:else if exportError}
         <!-- Error state with retry button -->
         <div class="export-error-state" role="alert">
           <div class="error-content">
@@ -300,6 +336,61 @@
 
   .retry-export-btn:focus-visible {
     outline: 2px solid white;
+    outline-offset: 2px;
+  }
+
+  /* Preview actions */
+  .preview-actions-row {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .preview-action-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: var(--min-touch-target);
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .preview-action-btn.secondary {
+    background: color-mix(in srgb, var(--theme-card-bg) 70%, transparent);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+  }
+
+  .preview-action-btn.secondary:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    color: var(--theme-text, white);
+  }
+
+  .preview-action-btn.primary {
+    background: var(--theme-accent, #6366f1);
+    border: none;
+    color: white;
+  }
+
+  .preview-action-btn.primary:hover {
+    filter: brightness(1.1);
+  }
+
+  .preview-action-btn:active {
+    transform: scale(0.98);
+    transition-duration: 50ms;
+  }
+
+  .preview-action-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
     outline-offset: 2px;
   }
 

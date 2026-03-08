@@ -16,9 +16,10 @@ import { container } from "$lib/shared/di";
  * Combined exports (animation + choreo card) are handled by Compose module.
  */
 export class SequenceModalExporter implements ISequenceModalExporter {
-  private _isExporting = false;
-  private _progress: VideoExportProgress | null = null;
-  private _error: string | null = null;
+  private _isExporting = $state(false);
+  private _progress = $state<VideoExportProgress | null>(null);
+  private _error = $state<string | null>(null);
+  private _previewBlobUrl = $state<string | null>(null);
 
   // Lazy-loaded services
   private _videoExportOrchestrator: IVideoExportOrchestrator | null = null;
@@ -43,6 +44,7 @@ export class SequenceModalExporter implements ISequenceModalExporter {
       isExporting: this._isExporting,
       progress: this._progress,
       error: this._error,
+      previewBlobUrl: this._previewBlobUrl,
     };
   }
 
@@ -59,9 +61,11 @@ export class SequenceModalExporter implements ISequenceModalExporter {
     this._isExporting = true;
     this._error = null;
     this._progress = { progress: 0, stage: "capturing" };
+    // Revoke any previous preview URL
+    this.revokePreviewUrl();
 
     try {
-      await this.videoExportOrchestrator.executeExport(
+      const blob = await this.videoExportOrchestrator.executeExport(
         deps.canvas,
         deps.playbackController,
         deps.panelState,
@@ -80,8 +84,13 @@ export class SequenceModalExporter implements ISequenceModalExporter {
           compositeMode: "none",
           fps: options.fps,
           loopCount: options.loopCount,
+          resolution: options.resolution,
+          effectOverrides: options.effectOverrides,
         }
       );
+
+      // Create preview URL from the exported blob
+      this._previewBlobUrl = URL.createObjectURL(blob);
     } catch (error) {
       if ((error as Error).message !== "Export cancelled") {
         console.error("[SequenceModalExporter] Animation export failed:", error);
@@ -155,13 +164,25 @@ export class SequenceModalExporter implements ISequenceModalExporter {
     this._progress = null;
   }
 
+  dismissPreview(): void {
+    this.revokePreviewUrl();
+  }
+
   clearError(): void {
     this._error = null;
   }
 
   dispose(): void {
     this.cancel();
+    this.revokePreviewUrl();
     this._error = null;
+  }
+
+  private revokePreviewUrl(): void {
+    if (this._previewBlobUrl) {
+      URL.revokeObjectURL(this._previewBlobUrl);
+      this._previewBlobUrl = null;
+    }
   }
 }
 

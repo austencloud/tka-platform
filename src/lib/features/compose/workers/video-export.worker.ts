@@ -151,12 +151,14 @@ let sourceHeight = 0;
  *   - Level 3.1 (0x1f): up to 921,600 px (e.g. 1280x720)
  *   - Level 4.0 (0x28): up to 2,073,600 px (e.g. 1920x1080)
  *   - Level 5.1 (0x33): up to 8,912,896 px (e.g. 4096x2160)
+ *   - Level 6.0 (0x3c): up to 35,651,584 px (e.g. 8192x4320)
  */
 function selectCodec(width: number, height: number): string {
   const pixelArea = width * height;
   if (pixelArea <= 921_600) return "avc1.42001f";
   if (pixelArea <= 2_073_600) return "avc1.420028";
-  return "avc1.420033";
+  if (pixelArea <= 8_912_896) return "avc1.420033";
+  return "avc1.42003c";
 }
 
 /**

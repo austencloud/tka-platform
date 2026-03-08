@@ -508,10 +508,12 @@ export class CanvasRenderer implements ICanvasRenderer {
       ctx.fillRect(0, trackY, fillWidth, trackHeight);
     }
 
-    // Segment dividers (white lines between beats)
+    // Segment dividers (tick marks between beats)
     let cumulativeDuration = 0;
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = darkMode
+      ? "rgba(255, 255, 255, 0.45)"
+      : "rgba(0, 0, 0, 0.35)";
+    ctx.lineWidth = 2;
     for (let i = 0; i < totalSteps - 1; i++) {
       cumulativeDuration += stepDurations[i] ?? 1;
       const dividerX = (cumulativeDuration / totalDuration) * canvasSize;

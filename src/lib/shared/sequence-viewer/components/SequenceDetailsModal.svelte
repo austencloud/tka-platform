@@ -35,8 +35,8 @@
   import type { ISequenceDataProvider } from "../services/contracts/ISequenceDataProvider";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
-  import { sequenceModalExporter } from "../services/implementations/SequenceModalExporter";
-  import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { sequenceModalExporter } from "../services/implementations/SequenceModalExporter.svelte";
+  import { showToast, toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { container } from "$lib/shared/di";
   import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
   import { createAnimationPanelState, type PlaybackMode, type AnimationStateKey } from "$lib/features/compose/state/animation-panel-state.svelte";
@@ -67,6 +67,7 @@
   import ExportFooter from "./ExportFooter.svelte";
   import ExportVideoDrawer from "./ExportVideoDrawer.svelte";
   import type { ActiveEffect } from "./ExportVideoDrawer.svelte";
+  import VideoPreviewPanel from "./VideoPreviewPanel.svelte";
   import ExportProgressPill from "./ExportProgressPill.svelte";
   // Animation and playback
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
@@ -76,6 +77,9 @@
   import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
   import ChoreoCard from "./ChoreoCard.svelte";
   import { browser } from "$app/environment";
+  import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
+  import type { ContextMenuEntry, ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
+  import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
   import {
     getExportOptionsState,
     type VideoFps,
@@ -146,6 +150,77 @@
 
   // LAN Sync - just a toggle, no complex UI
   let isSyncToggling = $state(false);
+
+  // Context menu state (admin-only, right-click on animation canvas)
+  let contextMenuState: ContextMenuState = $state({ open: false });
+
+  function handleAnimationContextMenu(e: MouseEvent) {
+    if (!featureFlagService.isAdmin) return;
+    e.preventDefault();
+    contextMenuState = { open: true, x: e.clientX, y: e.clientY };
+  }
+
+  function buildAnimationContextMenuItems(): ContextMenuEntry[] {
+    const gridVisible = animationVisibility.isGridVisible();
+    const trailsOn = animationVisibility.isTrailsVisible();
+
+    return [
+      {
+        id: "download-video",
+        label: "Download video",
+        icon: "fa-video",
+        action: () => {
+          enterExportMode("animation");
+        },
+      },
+      {
+        id: "save-frame",
+        label: "Save frame",
+        icon: "fa-camera",
+        action: () => {
+          const canvas = animationCanvas;
+          if (!canvas) {
+            toast.error("No canvas found");
+            return;
+          }
+          const dataUrl = canvas.toDataURL("image/png");
+          const link = document.createElement("a");
+          link.download = `frame-${Date.now()}.png`;
+          link.href = dataUrl;
+          link.click();
+          toast.success("Frame saved", 2000);
+        },
+      },
+      { type: "separator" as const },
+      {
+        id: "grid",
+        label: "Grid",
+        icon: "fa-th",
+        checked: gridVisible,
+        keepOpen: true,
+        action: () => {
+          const newMode = gridVisible ? "none" : "diamond";
+          animationVisibility.setGridMode(newMode as "none" | "diamond");
+          // Force menu items to re-derive on next render
+          contextMenuState = { ...contextMenuState };
+        },
+      },
+      {
+        id: "glow",
+        label: "Glow",
+        icon: "fa-sun",
+        checked: trailsOn,
+        keepOpen: true,
+        action: () => {
+          const newStyle = trailsOn ? "off" : "on";
+          animTrailStyle = newStyle as "off" | "on";
+          animationVisibility.setTrailStyle(newStyle as "off" | "on");
+          // Force menu items to re-derive on next render
+          contextMenuState = { ...contextMenuState };
+        },
+      },
+    ];
+  }
 
   // Mobile: no auto-hide - controls stay visible until user collapses
 
@@ -316,6 +391,7 @@
     hapticService?.trigger("selection");
     isExportMode = false;
     exportType = null;
+    sequenceModalExporter.dismissPreview();
     accessibilityHelper.announce("Returned to viewer");
   }
 
@@ -331,11 +407,11 @@
     }
   }
 
-  function handleShareAnimation() {
+  function handleExportVideo() {
     enterExportMode("animation");
   }
 
-  function handleShareImage() {
+  function handleExportImage() {
     enterExportMode("image");
   }
 
@@ -731,6 +807,14 @@
   const isExporting = $derived(sequenceModalExporter.state.isExporting);
   const exportProgress = $derived(sequenceModalExporter.state.progress);
   const exportError = $derived(sequenceModalExporter.state.error);
+  const previewBlobUrl = $derived(sequenceModalExporter.state.previewBlobUrl);
+  const singlePlayDuration = $derived.by(() => {
+    const steps = effectiveSequence?.steps;
+    if (!steps?.length || bpmLocal <= 0) return 0;
+    const totalDurationUnits = steps.reduce((sum: number, s: any) => sum + (s.duration ?? 1), 0);
+    const speed = bpmLocal / 60;
+    return totalDurationUnits / speed;
+  });
 
   function handleCanvasReady(canvas: HTMLCanvasElement | null) {
     animationCanvas = canvas;
@@ -1131,21 +1215,24 @@
     onclose();
   }
 
-  // Export callbacks shared across all export types
-  const exportCallbacks = {
-    onSuccess: (message: string) => {
-      showToast(message, "success");
-      accessibilityHelper.announce(message, "assertive");
-      exitExportMode();
-    },
-    onError: (message: string) => {
-      // Error is already tracked in exporter state
-      accessibilityHelper.announce(`Export failed: ${message}`, "assertive");
-    },
-    onHaptic: (type: "success" | "error" | "selection") => {
-      hapticService?.trigger(type);
-    },
-  };
+  // Export callback factory — video export stays open for preview, image exits immediately
+  function makeExportCallbacks(isVideoExport: boolean) {
+    return {
+      onSuccess: (message: string) => {
+        showToast(message, "success");
+        accessibilityHelper.announce(message, "assertive");
+        if (!isVideoExport) {
+          exitExportMode();
+        }
+      },
+      onError: (message: string) => {
+        accessibilityHelper.announce(`Export failed: ${message}`, "assertive");
+      },
+      onHaptic: (type: "success" | "error" | "selection") => {
+        hapticService?.trigger(type);
+      },
+    };
+  }
 
   // Export handlers - delegate to service
   async function handleExport() {
@@ -1173,9 +1260,14 @@
 
     const opts = exportOptions.getVideoOptions();
     await sequenceModalExporter.exportAnimation(
-      opts,
+      {
+        fps: opts.fps,
+        loopCount: opts.loopCount,
+        resolution: opts.resolution,
+        effectOverrides: opts.effectOverrides ?? undefined,
+      },
       { canvas: animationCanvas, playbackController, panelState: modalAnimationState },
-      exportCallbacks
+      makeExportCallbacks(true)
     );
   }
 
@@ -1186,13 +1278,18 @@
     await sequenceModalExporter.exportImage(
       opts,
       { sequence, userName: authState.user?.displayName ?? "" },
-      exportCallbacks
+      makeExportCallbacks(false)
     );
   }
 
   function handleCancelExport() {
     sequenceModalExporter.cancel();
     showToast("Export cancelled", "info");
+  }
+
+  function dismissPreview() {
+    sequenceModalExporter.dismissPreview();
+    exitExportMode();
   }
 
   // Effects
@@ -1315,8 +1412,6 @@
       onBackToExportTypeSelection={backToExportTypeSelection}
       onDarkModeToggle={() => toggleImgSetting("darkMode")}
       onSettingsOpen={() => (settingsModalOpen = true)}
-      onShareAnimation={handleShareAnimation}
-      onShareImage={handleShareImage}
     />
   {/snippet}
 
@@ -1331,6 +1426,7 @@
     onkeydown={isFullscreen ? (e) => { if (e.key === 'Enter' || e.key === ' ') handleFullscreenTap(); } : undefined}
     ontouchstart={handleTouchStart}
     ontouchend={handleTouchEnd}
+    oncontextmenu={handleAnimationContextMenu}
     role={isFullscreen ? "button" : undefined}
     tabindex={isFullscreen ? 0 : undefined}
     aria-label={isFullscreen ? "Fullscreen viewer. Tap to show controls." : undefined}
@@ -1379,15 +1475,35 @@
               onCanvasReady={handleCanvasReady}
             />
           {/if}
+          <!-- Export settings badge overlay -->
+          <div class="export-settings-badge" aria-hidden="true">
+            {exportOptions.videoResolution}p · {exportOptions.videoFps}fps
+          </div>
         </div>
-        <ExportVideoDrawer
-          {exportOptions}
-          viewerEffects={getActiveEffects()}
-          {isExporting}
-          canvasReady={!!animationCanvas && !!playbackController}
-          layout={isMobile ? "bottom" : "sidebar"}
-          onExport={handleExport}
-        />
+        {#if previewBlobUrl}
+          <VideoPreviewPanel
+            blobUrl={previewBlobUrl}
+            onDismiss={dismissPreview}
+            onRedownload={() => {
+              const a = document.createElement("a");
+              a.href = previewBlobUrl!;
+              a.download = `${sequence?.word || "sequence"}.mp4`;
+              a.click();
+            }}
+          />
+        {:else}
+          <ExportVideoDrawer
+            {exportOptions}
+            viewerEffects={getActiveEffects()}
+            {isExporting}
+            {exportProgress}
+            canvasReady={!!animationCanvas && !!playbackController}
+            layout={isMobile ? "bottom" : "sidebar"}
+            {singlePlayDuration}
+            onExport={handleExport}
+            onCancel={handleCancelExport}
+          />
+        {/if}
       </div>
     {:else if isExportMode}
       <!-- Image/type-selector export: keep existing full-screen ExportModeContent -->
@@ -1431,9 +1547,6 @@
         isPlaying={isPlayingLocal}
         isLoggedIn={authState.isAuthenticated}
         rampActive={rampActive}
-        isSyncToggling={isSyncToggling}
-        isSyncActive={lanSyncState.isActive}
-        isSyncConnected={lanSyncState.isConnected}
         onBpmChange={handleBpmChange}
         onPlayPause={handlePlaybackToggle}
         onStepBack={handleStepFullBack}
@@ -1442,11 +1555,10 @@
         onStepHalfForward={handleStepHalfFwd}
         onSave={handleSave}
         onEdit={handleEditInConstructor}
-        onCompose={handleCompose}
-        onShare={handleShare}
+        onExportVideo={handleExportVideo}
+        onExportImage={handleExportImage}
         onRampStart={() => handleRampStart()}
         onRampStop={() => handleRampStop()}
-        onConnect={handleSyncToggle}
       />
     {/if}
   </div>
@@ -1473,9 +1585,6 @@
           isPlaying={isPlayingLocal}
           isLoggedIn={authState.isAuthenticated}
           rampActive={rampActive}
-          isSyncToggling={isSyncToggling}
-          isSyncActive={lanSyncState.isActive}
-          isSyncConnected={lanSyncState.isConnected}
           onBpmChange={handleBpmChange}
           onPlayPause={handlePlaybackToggle}
           onStepBack={handleStepFullBack}
@@ -1484,11 +1593,10 @@
           onStepHalfForward={handleStepHalfFwd}
           onSave={handleSave}
           onEdit={handleEditInConstructor}
-          onCompose={handleCompose}
-          onShare={handleShare}
+          onExportVideo={handleExportVideo}
+          onExportImage={handleExportImage}
           onRampStart={() => handleRampStart()}
           onRampStop={() => handleRampStop()}
-          onConnect={handleSyncToggle}
         />
         {#if rampActive}
           <RampProgressIndicator
@@ -1516,6 +1624,13 @@
 <ViewerSettingsModal
   bind:open={settingsModalOpen}
   onClose={() => (settingsModalOpen = false)}
+/>
+
+<!-- Animation canvas context menu (admin-only) -->
+<ContextMenu
+  menuState={contextMenuState}
+  items={buildAnimationContextMenuItems()}
+  onClose={() => (contextMenuState = { open: false })}
 />
 
 <style>
@@ -1651,15 +1766,37 @@
   /* Desktop: side-by-side (animation left, settings right) */
   .export-preview-layout.desktop {
     flex-direction: row;
+    align-items: stretch;
+    gap: 16px;
+    padding: 16px;
   }
 
   .export-animation-preview {
+    position: relative;
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: 0;
     min-width: 0;
+    /* Prevent the canvas from eating all width on ultrawide/4K */
+    max-width: 800px;
+  }
+
+  .export-settings-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 4px 10px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 6px;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    letter-spacing: 0.03em;
+    pointer-events: none;
+    z-index: 5;
   }
 
   .export-preview-layout .loading-state,

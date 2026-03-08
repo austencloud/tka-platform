@@ -26,6 +26,8 @@ export interface OpenSequenceViewerOptions {
 	initialBpm?: number;
 	/** Initial playback step */
 	initialStep?: number;
+	/** All variations of this sequence (same word). Enables variation navigation. */
+	variations?: SequenceData[];
 }
 
 /**
@@ -78,5 +80,6 @@ export function openSequenceViewer(
 		returnLabel: options.returnLabel,
 		initialBpm: options.initialBpm,
 		initialStep: options.initialStep,
+		variations: options.variations,
 	});
 }

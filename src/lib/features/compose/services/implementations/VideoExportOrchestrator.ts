@@ -26,6 +26,7 @@ import type {
   IVideoExportOrchestrator,
   VideoExportProgress,
   VideoResolution,
+  VideoEffectOverrides,
 } from "../contracts/IVideoExportOrchestrator";
 import type { IVideoExporter } from "../contracts/IVideoExporter";
 import type { ICompositeVideoRenderer } from "../contracts/ICompositeVideoRenderer";
@@ -48,7 +49,8 @@ function getExportDimensions(
   resolution: VideoResolution,
   aspectRatio: number
 ): { width: number; height: number } {
-  const height = resolution === 720 ? 720 : 1080;
+  const heightMap: Record<number, number> = { 720: 720, 1080: 1080, 2160: 2160, 4320: 4320 };
+  const height = heightMap[resolution] ?? 1080;
   let width = Math.round(height * aspectRatio);
   // H.264 requires even dimensions
   width = width % 2 === 0 ? width : width + 1;
@@ -69,7 +71,11 @@ function getExportDimensions(
  */
 function calculateBitrate(width: number, height: number, fps: number): number {
   const pixels = width * height;
-  const base = pixels <= 1280 * 720 ? 4_000_000 : 6_000_000;
+  const base =
+    pixels <= 1280 * 720 ? 4_000_000 :
+    pixels <= 1920 * 1080 ? 6_000_000 :
+    pixels <= 3840 * 2160 ? 20_000_000 :
+    50_000_000;
   const fpsMultiplier = fps <= 30 ? 1 : fps <= 60 ? 1.33 : 2.5;
   return Math.round(base * fpsMultiplier);
 }
@@ -93,7 +99,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
     panelState: AnimationPanelState,
     onProgress: (progress: VideoExportProgress) => void,
     options: VideoExportOrchestratorOptions = {}
-  ): Promise<void> {
+  ): Promise<Blob> {
     if (this._isExporting) {
       throw new Error("Export already in progress");
     }
@@ -130,13 +136,20 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       canvas.height + headerHeight + progressBarHeight
     );
 
-    // Determine final encode dimensions. When a resolution is specified and the
-    // background encoder is in use, scale to the target height while preserving
-    // the aspect ratio of the source canvas. Otherwise, encode at source size.
+    if (sourceWidth === 0 || sourceHeight === 0) {
+      throw new Error(
+        `Cannot export: canvas has zero dimensions (${canvas.width}x${canvas.height}). ` +
+        "Wait for the animation to load before exporting."
+      );
+    }
+
+    // Determine final encode dimensions. When a resolution is specified,
+    // scale to the target height while preserving the aspect ratio of the
+    // source canvas. Otherwise, encode at source size.
     let outputWidth: number;
     let outputHeight: number;
 
-    if (useBackgroundEncoder && options.resolution) {
+    if (options.resolution) {
       const aspectRatio = sourceWidth / sourceHeight;
       const dims = getExportDimensions(options.resolution, aspectRatio);
       outputWidth = dims.width;
@@ -159,20 +172,25 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       const bitrate = calculateBitrate(outputWidth, outputHeight, fps);
 
       // Calculate total frames early so the worker can allocate its muxer
+      // Use duration-aware total (matches the capture loop calculation below)
+      const earlySteps = panelState.sequenceData?.steps ?? [];
+      const earlyTotalDuration = earlySteps.length > 0
+        ? earlySteps.reduce((sum, s) => sum + (s.duration ?? 1), 0)
+        : panelState.totalSteps;
       const secondsPerBeat = 1.0 / panelState.speed;
-      const singleLoopDurationSeconds = panelState.totalSteps * secondsPerBeat;
+      const singleLoopDurationSeconds = earlyTotalDuration * secondsPerBeat;
       const framesPerLoop = Math.ceil(singleLoopDurationSeconds * fps);
       const loopCount = options.loopCount ?? panelState.exportLoopCount ?? 1;
       const totalFramesEstimate = framesPerLoop * loopCount;
 
-      // Wire progress from worker back to the orchestrator callback
-      this.backgroundEncoder.onProgress = (frameIndex, total) => {
-        onProgress({
-          progress: frameIndex / total,
-          stage: "encoding",
-          currentFrame: frameIndex,
-          totalFrames: total,
-        });
+      // Wire progress from worker — only used during the finalize phase.
+      // During capture, the main loop reports its own progress; the worker
+      // encodes frames concurrently but we don't surface that to the UI
+      // to avoid rapid "capturing"/"encoding" flicker.
+      this.backgroundEncoder.onProgress = () => {
+        // Progress is reported by the capture loop during capture phase.
+        // After capture completes, the finalize section below sets stage
+        // to "encoding" once and the worker's "complete" message ends it.
       };
 
       await this.backgroundEncoder.initialize({
@@ -201,6 +219,12 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       beat: panelState.currentStep,
     };
 
+    // Save and apply effect overrides for export
+    const savedEffectState = this.applyEffectOverrides(
+      visibilityManager,
+      options.effectOverrides
+    );
+
     try {
       onProgress({ progress: 0, stage: "capturing" });
 
@@ -210,11 +234,25 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       playbackController.jumpToStep(0);
       await this.delay(VIDEO_INITIAL_CAPTURE_DELAY_MS);
 
+      // If effect overrides were applied, wait for the DOM to stabilize.
+      // Toggling fire/LED/trails can trigger Svelte re-renders that
+      // temporarily destroy and recreate canvas elements.
+      if (savedEffectState) {
+        await this.waitForAnimationFrame();
+        await this.waitForAnimationFrame();
+        await this.waitForAnimationFrame();
+      }
+
+      // Build step durations array — each step's relative duration (default 1)
+      const steps = panelState.sequenceData?.steps ?? [];
+      const stepDurations = steps.map((s) => s.duration ?? 1);
+      const totalDurationUnits = stepDurations.reduce((sum, d) => sum + d, 0) || panelState.totalSteps;
+
       // Calculate effective duration at user's BPM/speed
-      // At speed=1.0 (60 BPM): 1 second per beat
-      // At speed=2.0 (120 BPM): 0.5 seconds per beat
-      const secondsPerBeat = 1.0 / panelState.speed;
-      const singleLoopDurationSeconds = panelState.totalSteps * secondsPerBeat;
+      // At speed=1.0 (60 BPM): 1 second per beat unit
+      // At speed=2.0 (120 BPM): 0.5 seconds per beat unit
+      const secondsPerBeatUnit = 1.0 / panelState.speed;
+      const singleLoopDurationSeconds = totalDurationUnits * secondsPerBeatUnit;
 
       const framesPerLoop = Math.ceil(singleLoopDurationSeconds * fps);
 
@@ -223,9 +261,14 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       const loopCount = options.loopCount ?? panelState.exportLoopCount ?? 1;
       const totalFrames = framesPerLoop * loopCount;
 
-      // Calculate beat progression per frame to match timing
-      // beatsPerFrame = totalSteps / framesPerLoop (for single loop)
-      const beatsPerFrame = panelState.totalSteps / framesPerLoop;
+      // Build cumulative duration breakpoints for time-to-beat mapping
+      // This allows steps with different durations to occupy proportional time
+      const cumulativeDurations: number[] = [];
+      let cumulative = 0;
+      for (const d of stepDurations) {
+        cumulativeDurations.push(cumulative);
+        cumulative += d;
+      }
 
       // Keyframe interval — emit a keyframe every 2 seconds for seekability
       const keyframeInterval = fps * 2;
@@ -259,13 +302,9 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       const isDarkMode = visibilityManager.isDarkMode();
 
       // Pre-render complete glyphs (letter + dash + turns column) before the frame loop
-      const steps = panelState.sequenceData?.steps ?? [];
       if (showTkaGlyph && steps.length > 0) {
         await this.glyphPrerenderer.prerenderGlyphs(steps, isDarkMode);
       }
-
-      // Build step durations array for progress bar
-      const stepDurations = steps.map((s) => s.duration ?? 1);
 
       // Create offscreen canvas for compositing (so we don't touch the visible canvas).
       // For the background encoder we render at source resolution here, then scale
@@ -290,11 +329,10 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       }
 
       // When the export resolution differs from the source, create a second
-      // canvas to downscale/upscale before extracting ImageData for the worker.
+      // canvas to downscale/upscale before extracting the frame.
       const needsResize =
-        useBackgroundEncoder &&
-        (offscreenCanvas.width !== outputWidth ||
-          offscreenCanvas.height !== outputHeight);
+        offscreenCanvas.width !== outputWidth ||
+        offscreenCanvas.height !== outputHeight;
       let resizeCanvas: HTMLCanvasElement | null = null;
       let resizeCtx: CanvasRenderingContext2D | null = null;
 
@@ -303,7 +341,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         resizeCanvas.width = outputWidth;
         resizeCanvas.height = outputHeight;
         resizeCtx = resizeCanvas.getContext("2d", {
-          willReadFrequently: true,
+          willReadFrequently: useBackgroundEncoder,
         });
       }
 
@@ -331,177 +369,211 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
           throw new Error("Export cancelled");
         }
 
-        // Calculate beat position for this frame
-        // Uses modulo to loop through the sequence for multiple loops
+        // Calculate beat position for this frame using duration-weighted mapping.
+        // Maps elapsed time (as fraction of loop) to the correct beat position,
+        // so steps with longer durations occupy proportionally more frames.
         const frameInLoop = i % framesPerLoop;
-        const beat = frameInLoop * beatsPerFrame;
+        const timeProgress = (frameInLoop / framesPerLoop) * totalDurationUnits;
+        const beat = this.timeToBeat(timeProgress, cumulativeDurations, stepDurations);
         playbackController.jumpToStep(beat);
 
         // Wait for the UI + canvas to render the new beat
         await this.waitForAnimationFrame();
         await this.waitForAnimationFrame();
 
-        // Render frame based on mode
-        if (isCompositeMode) {
-          // Composite mode: render animation + grid + beat highlight
+        // Guard: if the live canvas temporarily lost dimensions (Svelte re-render
+        // or PixiJS resize), wait for recovery. If it doesn't recover, skip
+        // rendering this frame — the offscreen canvas still holds the previous
+        // frame's content, so the encoder will duplicate it (brief freeze in
+        // the video, much better than aborting the entire export).
+        let canvasAvailable = canvas.width > 0 && canvas.height > 0;
+        if (!canvasAvailable) {
+          for (let retry = 0; retry < 30; retry++) {
+            await this.waitForAnimationFrame();
+            if (canvas.width > 0 && canvas.height > 0) {
+              canvasAvailable = true;
+              break;
+            }
+          }
+        }
+
+        // Render frame to offscreen canvas (only if live canvas is available).
+        // When the canvas is temporarily unavailable, the offscreen canvas keeps
+        // its previous content, producing a duplicated frame in the video.
+        if (canvasAvailable) {
+          if (isCompositeMode) {
+            // Composite mode: render animation + grid + beat highlight
+            const stepIndex = Math.floor(beat);
+            this.compositeRenderer.renderCompositeFrame(
+              canvas,
+              stepIndex,
+              offscreenCanvas
+            );
+          } else {
+            // Normal mode: copy the live canvas to the offscreen canvas (preserves visible animation)
+            offscreenCtx.clearRect(
+              0,
+              0,
+              offscreenCanvas.width,
+              offscreenCanvas.height
+            );
+
+            // Animation content goes below header (and above progress bar)
+            const canvasY = headerHeight > 0 ? headerHeight : 0;
+            offscreenCtx.drawImage(canvas, 0, canvasY);
+
+            // Composite WebGL overlay canvases (fire, charcoal sparks, LED effects)
+            // These are sibling canvases in the same container, layered via z-index
+            const container = canvas.parentElement;
+            if (container) {
+              const overlayCanvases = container.querySelectorAll("canvas");
+              for (const overlay of overlayCanvases) {
+                if (overlay === canvas) continue; // Skip the main canvas
+                if (overlay.width === 0 || overlay.height === 0) continue; // Skip uninitialized
+                offscreenCtx.drawImage(overlay, 0, canvasY);
+              }
+            }
+          }
+
+          // Get step index and cache key for the current beat
           const stepIndex = Math.floor(beat);
-          this.compositeRenderer.renderCompositeFrame(
-            canvas,
-            stepIndex,
-            offscreenCanvas
-          );
-        } else {
-          // Normal mode: copy the live canvas to the offscreen canvas (preserves visible animation)
-          offscreenCtx.clearRect(
+          const clampedStepIndex = Math.max(
             0,
-            0,
-            offscreenCanvas.width,
-            offscreenCanvas.height
+            Math.min(stepIndex, steps.length - 1)
           );
 
-          // Animation content goes below header (and above progress bar)
-          const canvasY = headerHeight > 0 ? headerHeight : 0;
-          offscreenCtx.drawImage(canvas, 0, canvasY);
-        }
+          // Calculate beat number for display (1-indexed)
+          const stepNumber = this.getStepNumberForFrame(beat, panelState);
 
-        // Get step index and cache key for the current beat
-        const stepIndex = Math.floor(beat);
-        const clampedStepIndex = Math.max(
-          0,
-          Math.min(stepIndex, steps.length - 1)
-        );
+          // Use cache key for glyph transition detection (includes letter + turns + colors)
+          const cacheKey =
+            this.glyphPrerenderer.getCacheKeyForStep(clampedStepIndex);
 
-        // Calculate beat number for display (1-indexed)
-        const stepNumber = this.getStepNumberForFrame(beat, panelState);
+          // Detect transitions (cache key or beat number changed)
+          const glyphChanged = cacheKey !== currentCacheKey;
+          const beatNumberChanged = stepNumber !== currentStepNumber;
+          const transitionDetected = glyphChanged || beatNumberChanged;
 
-        // Use cache key for glyph transition detection (includes letter + turns + colors)
-        const cacheKey =
-          this.glyphPrerenderer.getCacheKeyForStep(clampedStepIndex);
+          if (transitionDetected) {
+            // Store previous state for crossfade
+            previousGlyph = currentGlyph;
+            previousStepNumber = currentStepNumber;
 
-        // Detect transitions (cache key or beat number changed)
-        const glyphChanged = cacheKey !== currentCacheKey;
-        const beatNumberChanged = stepNumber !== currentStepNumber;
-        const transitionDetected = glyphChanged || beatNumberChanged;
+            // Update current state
+            currentCacheKey = cacheKey;
+            currentStepNumber = stepNumber;
 
-        if (transitionDetected) {
-          // Store previous state for crossfade
-          previousGlyph = currentGlyph;
-          previousStepNumber = currentStepNumber;
+            if (glyphChanged) {
+              currentGlyph = cacheKey
+                ? this.glyphPrerenderer.getGlyph(cacheKey)
+                : null;
+            }
 
-          // Update current state
-          currentCacheKey = cacheKey;
-          currentStepNumber = stepNumber;
-
-          if (glyphChanged) {
-            currentGlyph = cacheKey
-              ? this.glyphPrerenderer.getGlyph(cacheKey)
-              : null;
+            // Reset crossfade counter
+            framesSinceTransition = 0;
           }
 
-          // Reset crossfade counter
-          framesSinceTransition = 0;
-        }
+          // Calculate crossfade opacities (linear fade over 200ms)
+          const inCrossfade = framesSinceTransition < crossfadeDurationFrames;
+          const fadeProgress = inCrossfade
+            ? framesSinceTransition / crossfadeDurationFrames
+            : 1;
 
-        // Calculate crossfade opacities (linear fade over 200ms)
-        const inCrossfade = framesSinceTransition < crossfadeDurationFrames;
-        const fadeProgress = inCrossfade
-          ? framesSinceTransition / crossfadeDurationFrames
-          : 1;
+          const fadeOutOpacity = Math.max(0, 1 - fadeProgress); // 1 → 0
+          const fadeInOpacity = Math.min(1, fadeProgress); // 0 → 1
 
-        const fadeOutOpacity = Math.max(0, 1 - fadeProgress); // 1 → 0
-        const fadeInOpacity = Math.min(1, fadeProgress); // 0 → 1
+          // Apply translation offset for header when rendering overlays
+          if (headerHeight > 0 && !isCompositeMode) {
+            offscreenCtx.save();
+            offscreenCtx.translate(0, headerHeight);
+          }
 
-        // Apply translation offset for header when rendering overlays
-        if (headerHeight > 0 && !isCompositeMode) {
-          offscreenCtx.save();
-          offscreenCtx.translate(0, headerHeight);
-        }
+          // Render TKA glyph if enabled (pre-rendered includes letter + dash + turns)
+          // Dark mode is already baked into the pre-rendered image — no ctx.filter needed
+          if (showTkaGlyph) {
+            // Render fading-out glyph (if in crossfade and previous exists)
+            if (inCrossfade && previousGlyph?.image && fadeOutOpacity > 0) {
+              this.drawPrerenderedGlyph(
+                offscreenCtx,
+                actualCanvasSize,
+                previousGlyph,
+                fadeOutOpacity
+              );
+            }
 
-        // Render TKA glyph if enabled (pre-rendered includes letter + dash + turns)
-        // Dark mode is already baked into the pre-rendered image — no ctx.filter needed
-        if (showTkaGlyph) {
-          // Render fading-out glyph (if in crossfade and previous exists)
-          if (inCrossfade && previousGlyph?.image && fadeOutOpacity > 0) {
-            this.drawPrerenderedGlyph(
+            // Render fading-in glyph (current glyph)
+            if (currentGlyph?.image) {
+              const opacity = inCrossfade ? fadeInOpacity : 1;
+              this.drawPrerenderedGlyph(
+                offscreenCtx,
+                actualCanvasSize,
+                currentGlyph,
+                opacity
+              );
+            }
+          }
+
+          // Render beat numbers if enabled
+          if (showStepNumbers) {
+            // Render fading-out beat number (if in crossfade and previous exists)
+            if (
+              inCrossfade &&
+              previousStepNumber !== null &&
+              fadeOutOpacity > 0
+            ) {
+              this.canvasRenderer.renderStepNumberToCanvas(
+                offscreenCtx,
+                actualCanvasSize,
+                previousStepNumber,
+                fadeOutOpacity,
+                isDarkMode
+              );
+            }
+
+            // Render fading-in beat number (current beat number)
+            if (currentStepNumber !== null) {
+              const opacity = inCrossfade ? fadeInOpacity : 1;
+              this.canvasRenderer.renderStepNumberToCanvas(
+                offscreenCtx,
+                actualCanvasSize,
+                currentStepNumber,
+                opacity,
+                isDarkMode
+              );
+            }
+          }
+
+          // Restore context if we applied header offset
+          if (headerHeight > 0 && !isCompositeMode) {
+            offscreenCtx.restore();
+          }
+
+          // Render word header if enabled (at top of canvas, no offset)
+          // Pass activeStepNumber for letter highlighting
+          if (showWordHeader) {
+            const activeStepNumber = stepNumber;
+            this.canvasRenderer.renderWordHeaderToCanvas(
               offscreenCtx,
               actualCanvasSize,
-              previousGlyph,
-              fadeOutOpacity
+              panelState.sequenceWord,
+              isDarkMode,
+              activeStepNumber
             );
           }
 
-          // Render fading-in glyph (current glyph)
-          if (currentGlyph?.image) {
-            const opacity = inCrossfade ? fadeInOpacity : 1;
-            this.drawPrerenderedGlyph(
+          // Render progress bar if enabled (below canvas area)
+          if (showProgressBar && !isCompositeMode) {
+            const progressBarY = headerHeight + canvas.height;
+            this.canvasRenderer.renderProgressBarToCanvas(
               offscreenCtx,
               actualCanvasSize,
-              currentGlyph,
-              opacity
-            );
-          }
-        }
-
-        // Render beat numbers if enabled
-        if (showStepNumbers) {
-          // Render fading-out beat number (if in crossfade and previous exists)
-          if (
-            inCrossfade &&
-            previousStepNumber !== null &&
-            fadeOutOpacity > 0
-          ) {
-            this.canvasRenderer.renderStepNumberToCanvas(
-              offscreenCtx,
-              actualCanvasSize,
-              previousStepNumber,
-              fadeOutOpacity,
+              progressBarY,
+              steps.length,
+              beat,
+              stepDurations,
               isDarkMode
             );
           }
-
-          // Render fading-in beat number (current beat number)
-          if (currentStepNumber !== null) {
-            const opacity = inCrossfade ? fadeInOpacity : 1;
-            this.canvasRenderer.renderStepNumberToCanvas(
-              offscreenCtx,
-              actualCanvasSize,
-              currentStepNumber,
-              opacity,
-              isDarkMode
-            );
-          }
-        }
-
-        // Restore context if we applied header offset
-        if (headerHeight > 0 && !isCompositeMode) {
-          offscreenCtx.restore();
-        }
-
-        // Render word header if enabled (at top of canvas, no offset)
-        // Pass activeStepNumber for letter highlighting
-        if (showWordHeader) {
-          const activeStepNumber = stepNumber;
-          this.canvasRenderer.renderWordHeaderToCanvas(
-            offscreenCtx,
-            actualCanvasSize,
-            panelState.sequenceWord,
-            isDarkMode,
-            activeStepNumber
-          );
-        }
-
-        // Render progress bar if enabled (below canvas area)
-        if (showProgressBar && !isCompositeMode) {
-          const progressBarY = headerHeight + canvas.height;
-          this.canvasRenderer.renderProgressBarToCanvas(
-            offscreenCtx,
-            actualCanvasSize,
-            progressBarY,
-            steps.length,
-            beat,
-            stepDurations,
-            isDarkMode
-          );
         }
 
         // -----------------------------------------------------------------------
@@ -541,8 +613,20 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
             isKeyframe
           );
         } else if (inlineExporter) {
-          // Legacy path: capture from the offscreen canvas directly
-          await inlineExporter.addFrame(offscreenCanvas);
+          // Legacy path: capture from the (possibly resized) canvas
+          if (needsResize && resizeCtx && resizeCanvas) {
+            resizeCtx.clearRect(0, 0, outputWidth, outputHeight);
+            resizeCtx.drawImage(
+              offscreenCanvas,
+              0,
+              0,
+              outputWidth,
+              outputHeight
+            );
+            await inlineExporter.addFrame(resizeCanvas);
+          } else {
+            await inlineExporter.addFrame(offscreenCanvas);
+          }
         }
 
         // Increment crossfade frame counter
@@ -578,6 +662,8 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       await this.fileDownloadService.downloadBlob(outputBlob, filename);
 
       onProgress({ progress: 1, stage: "complete" });
+
+      return outputBlob;
     } catch (error) {
       // Don't log cancellation as an error - it's intentional user action
       if (!this.shouldCancel) {
@@ -590,6 +676,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       }
       throw error;
     } finally {
+      this.restoreEffectState(visibilityManager, savedEffectState);
       this.restorePlaybackState(playbackController, captureState);
       this._isExporting = false;
       this.shouldCancel = false;
@@ -694,6 +781,80 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
     ctx.globalAlpha = opacity;
     ctx.drawImage(glyph.image, x, y, scaledWidth, scaledHeight);
     ctx.restore();
+  }
+
+  /**
+   * Convert a time position (in duration units) to a beat position (float).
+   * Accounts for variable step durations so that longer steps occupy
+   * proportionally more frames in the exported video.
+   */
+  private timeToBeat(
+    timeProgress: number,
+    cumulativeDurations: number[],
+    stepDurations: number[]
+  ): number {
+    const stepCount = stepDurations.length;
+    if (stepCount === 0) return 0;
+
+    // Find which step the time position falls within
+    for (let i = stepCount - 1; i >= 0; i--) {
+      if (timeProgress >= cumulativeDurations[i]!) {
+        const elapsed = timeProgress - cumulativeDurations[i]!;
+        const stepDur = stepDurations[i]!;
+        const fraction = stepDur > 0 ? Math.min(1, elapsed / stepDur) : 0;
+        return i + fraction;
+      }
+    }
+
+    return 0;
+  }
+
+  /**
+   * Save current effect state and apply overrides for export.
+   * Returns the saved state for restoration after export.
+   */
+  private applyEffectOverrides(
+    visibilityManager: ReturnType<typeof getAnimationVisibilityManager>,
+    overrides?: VideoEffectOverrides
+  ): { fire: boolean; led: boolean; trails: boolean; charcoal: boolean } | null {
+    if (!overrides) return null;
+
+    const saved = {
+      fire: visibilityManager.isFireEffectEnabled(),
+      led: visibilityManager.isLedEffectEnabled(),
+      trails: visibilityManager.isTrailsVisible(),
+      charcoal: visibilityManager.getFireUseCharcoal(),
+    };
+
+    if (overrides.fire !== undefined) {
+      visibilityManager.setFireEffect(overrides.fire);
+    }
+    if (overrides.led !== undefined) {
+      visibilityManager.setLedEffect(overrides.led);
+    }
+    if (overrides.trails !== undefined) {
+      visibilityManager.setTrailStyle(overrides.trails ? "on" : "off");
+    }
+    if (overrides.charcoal !== undefined) {
+      visibilityManager.setFireUseCharcoal(overrides.charcoal);
+    }
+
+    return saved;
+  }
+
+  /**
+   * Restore effect state after export completes.
+   */
+  private restoreEffectState(
+    visibilityManager: ReturnType<typeof getAnimationVisibilityManager>,
+    saved: { fire: boolean; led: boolean; trails: boolean; charcoal: boolean } | null
+  ): void {
+    if (!saved) return;
+
+    visibilityManager.setFireEffect(saved.fire);
+    visibilityManager.setLedEffect(saved.led);
+    visibilityManager.setTrailStyle(saved.trails ? "on" : "off");
+    visibilityManager.setFireUseCharcoal(saved.charcoal);
   }
 
   private waitForAnimationFrame(): Promise<void> {

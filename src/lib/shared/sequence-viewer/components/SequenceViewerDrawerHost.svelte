@@ -28,6 +28,7 @@
   import ViewerFooter from "./ViewerFooter.svelte";
   import ExportVideoDrawer from "./ExportVideoDrawer.svelte";
   import ExportImagePanel from "./ExportImagePanel.svelte";
+  import VideoPreviewPanel from "./VideoPreviewPanel.svelte";
   import RampProgressIndicator from "./RampProgressIndicator.svelte";
   import ViewerSettingsModal from "./ViewerSettingsModal.svelte";
   import type { ActiveEffect } from "./ExportVideoDrawer.svelte";
@@ -193,15 +194,7 @@
                 </div>
 
                 <div class="drawer-header-actions">
-                  <button
-                    type="button"
-                    class="header-action-btn"
-                    onclick={ctx.exitExportMode}
-                    aria-label="Close export"
-                    title="Close"
-                  >
-                    <i class="fas fa-times" aria-hidden="true"></i>
-                  </button>
+                  <!-- Spacer to balance grid layout -->
                 </div>
               {:else}
                 <!-- Normal viewer: dismiss + export/settings actions -->
@@ -218,24 +211,6 @@
                 <div class="drawer-header-title">Sequence Viewer</div>
 
                 <div class="drawer-header-actions">
-                  <button
-                    type="button"
-                    class="header-action-btn"
-                    onclick={() => ctx.enterExportMode("animation")}
-                    aria-label="Export animation as video"
-                    title="Export video"
-                  >
-                    <i class="fas fa-video" aria-hidden="true"></i>
-                  </button>
-                  <button
-                    type="button"
-                    class="header-action-btn"
-                    onclick={() => ctx.enterExportMode("image")}
-                    aria-label="Export as image"
-                    title="Export image"
-                  >
-                    <i class="fas fa-image" aria-hidden="true"></i>
-                  </button>
                   <button
                     type="button"
                     class="header-action-btn"
@@ -284,7 +259,8 @@
                         ? 'animation'
                         : isImageExportActive
                           ? 'image'
-                          : ctx.editingPane
+                          : ctx.editingPane,
+                      suppressCloseButton: isAnyExportActive,
                     }}
                     onRenderProgress={ctx.onRenderProgress}
                     onFocusPane={ctx.enterEditMode}
@@ -292,23 +268,43 @@
                     onStepClick={ctx.handleStepClick}
                     onCanvasReady={ctx.handleCanvasReady}
                   />
-                  {#if isVideoExportActive}
-                    <ExportVideoDrawer
-                      exportOptions={ctx.exportOptions}
-                      viewerEffects={getActiveEffects()}
-                      isExporting={ctx.isExporting}
-                      canvasReady={ctx.canvasReady}
-                      layout={isMobileWidth ? "bottom" : "sidebar"}
-                      onExport={ctx.handleExport}
-                    />
-                  {/if}
-                  {#if isImageExportActive}
-                    <ExportImagePanel
-                      exportOptions={ctx.exportOptions}
-                      isExporting={ctx.isExporting}
-                      onExport={ctx.handleExport}
-                    />
-                  {/if}
+                  <div class="export-panel-slot" class:hidden={!isVideoExportActive}>
+                    {#if isVideoExportActive}
+                      {#if ctx.previewBlobUrl}
+                        <VideoPreviewPanel
+                          blobUrl={ctx.previewBlobUrl}
+                          onDismiss={ctx.dismissPreview}
+                          onRedownload={() => {
+                            const a = document.createElement("a");
+                            a.href = ctx.previewBlobUrl!;
+                            a.download = `${ctx.effectiveSequence?.word || "sequence"}.mp4`;
+                            a.click();
+                          }}
+                        />
+                      {:else}
+                        <ExportVideoDrawer
+                          exportOptions={ctx.exportOptions}
+                          viewerEffects={getActiveEffects()}
+                          isExporting={ctx.isExporting}
+                          exportProgress={ctx.exportProgress}
+                          canvasReady={ctx.canvasReady}
+                          layout={isMobileWidth ? "bottom" : "sidebar"}
+                          singlePlayDuration={ctx.singlePlayDuration}
+                          onExport={ctx.handleExport}
+                          onCancel={ctx.handleCancelExport}
+                        />
+                      {/if}
+                    {/if}
+                  </div>
+                  <div class="export-panel-slot" class:hidden={!isImageExportActive}>
+                    {#if isImageExportActive}
+                      <ExportImagePanel
+                        exportOptions={ctx.exportOptions}
+                        isExporting={ctx.isExporting}
+                        onExport={ctx.handleExport}
+                      />
+                    {/if}
+                  </div>
                 </div>
               {/if}
             </div>
@@ -320,9 +316,6 @@
                 isPlaying={ctx.isPlayingLocal}
                 isLoggedIn={ctx.isLoggedIn}
                 landscape={isLandscape}
-                isSyncToggling={ctx.isSyncToggling}
-                isSyncActive={ctx.isSyncActive}
-                isSyncConnected={ctx.isSyncConnected}
                 onBpmChange={ctx.handleBpmChange}
                 onPlayPause={ctx.handlePlaybackToggle}
                 onStepBack={ctx.stepFullBeatBackward}
@@ -331,13 +324,12 @@
                 onStepHalfForward={ctx.stepHalfBeatForward}
                 onSave={ctx.handleSave}
                 onEdit={ctx.handleEditInConstructor}
-                onCompose={() => ctx.handleOpenInCompose()}
-                onShare={ctx.handleShare}
+                onExportVideo={() => ctx.enterExportMode("animation")}
+                onExportImage={() => ctx.enterExportMode("image")}
                 onGetApp={ctx.handleGetApp}
                 rampActive={ctx.rampActive}
                 onRampStart={ctx.handleRampStart}
                 onRampStop={ctx.handleRampStop}
-                onConnect={ctx.handleSyncToggle}
                 isOwned={ctx.isOwned}
                 onDeleteRequest={() => (deleteConfirmOpen = true)}
               />
@@ -544,6 +536,14 @@
   /* Desktop export: side-by-side (animation left, settings right) */
   .viewer-and-export.export-active.desktop {
     flex-direction: row;
+  }
+
+  /* Export panel slot — hidden instantly via display:none to prevent layout flash */
+  .export-panel-slot {
+    display: contents;
+  }
+  .export-panel-slot.hidden {
+    display: none;
   }
 
   /* Override Drawer defaults for full-screen sequence viewer */

@@ -18,7 +18,14 @@ export interface VideoExportProgress {
   error?: string;
 }
 
-export type VideoResolution = 720 | 1080;
+export type VideoResolution = 720 | 1080 | 2160 | 4320;
+
+export interface VideoEffectOverrides {
+  fire?: boolean;
+  led?: boolean;
+  trails?: boolean;
+  charcoal?: boolean;
+}
 
 export interface VideoExportOrchestratorOptions {
   /** Custom filename for the export (defaults to sequence word) */
@@ -31,6 +38,8 @@ export interface VideoExportOrchestratorOptions {
   loopCount?: number;
   /** Desired output format (mp4 or webm) */
   format?: VideoExportFormat;
+  /** Override effect visibility for export (null = use current viewer state) */
+  effectOverrides?: VideoEffectOverrides;
   /** Composite mode: renders animation + grid side-by-side with beat highlighting */
   compositeMode?: "none" | "horizontal" | "vertical";
   /** Size of each beat cell in composite grid (default: 120) */
@@ -57,7 +66,7 @@ export interface IVideoExportOrchestrator {
     panelState: AnimationPanelState,
     onProgress: (progress: VideoExportProgress) => void,
     options?: VideoExportOrchestratorOptions
-  ): Promise<void>;
+  ): Promise<Blob>;
 
   /**
    * Cancel an ongoing export

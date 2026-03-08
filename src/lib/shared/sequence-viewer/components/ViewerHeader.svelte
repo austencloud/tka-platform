@@ -21,10 +21,6 @@
     onDarkModeToggle: () => void;
     /** Callback to open the settings modal */
     onSettingsOpen?: () => void;
-    /** Callback to enter animation export mode */
-    onShareAnimation?: () => void;
-    /** Callback to enter image export mode */
-    onShareImage?: () => void;
   }
 
   let {
@@ -39,8 +35,6 @@
     onBackToExportTypeSelection,
     onDarkModeToggle,
     onSettingsOpen,
-    onShareAnimation,
-    onShareImage,
   }: Props = $props();
 </script>
 
@@ -108,28 +102,6 @@
     {/if}
 
     <div class="header-right">
-      {#if onShareAnimation}
-        <button
-          type="button"
-          class="header-action-btn"
-          onclick={() => onShareAnimation?.()}
-          aria-label="Export animation as video"
-          title="Export video"
-        >
-          <i class="fas fa-video" aria-hidden="true"></i>
-        </button>
-      {/if}
-      {#if onShareImage}
-        <button
-          type="button"
-          class="header-action-btn"
-          onclick={() => onShareImage?.()}
-          aria-label="Export as image"
-          title="Export image"
-        >
-          <i class="fas fa-image" aria-hidden="true"></i>
-        </button>
-      {/if}
       <button
         type="button"
         class="header-action-btn"

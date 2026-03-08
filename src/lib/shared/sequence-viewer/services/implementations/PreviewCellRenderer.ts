@@ -68,6 +68,7 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
     // Render options for layer compositor
     const renderOptions: LayerRenderOptions = {
       size: options.size,
+      widthMultiplier: options.widthMultiplier,
       darkMode: isDark,
       showNonRadialPoints: options.showNonRadialPoints ?? true,
       handPointVisibility: options.handPointVisibility ?? "all",

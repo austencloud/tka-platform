@@ -30,10 +30,6 @@
     controlsVisible?: boolean;
     landscape?: boolean;
     rampActive?: boolean;
-    sequenceUrl?: string;
-    isSyncToggling?: boolean;
-    isSyncActive?: boolean;
-    isSyncConnected?: boolean;
     /** When true, shows only transport + BPM (no action buttons) */
     playbackOnly?: boolean;
     onBpmChange: (bpm: number) => void;
@@ -43,13 +39,12 @@
     onStepHalfBack?: () => void;
     onStepHalfForward?: () => void;
     onSave: () => void;
-    onCompose: () => void;
     onEdit: () => void;
-    onShare: () => void;
+    onExportVideo?: () => void;
+    onExportImage?: () => void;
     onGetApp?: () => void;
     onRampStart?: () => void;
     onRampStop?: () => void;
-    onConnect?: () => void;
     isOwned?: boolean;
     onDeleteRequest?: () => void;
   }
@@ -61,10 +56,6 @@
     controlsVisible = true,
     landscape = false,
     rampActive = false,
-    sequenceUrl = "",
-    isSyncToggling = false,
-    isSyncActive = false,
-    isSyncConnected = false,
     onBpmChange,
     onPlayPause,
     onStepBack,
@@ -72,13 +63,12 @@
     onStepHalfBack,
     onStepHalfForward,
     onSave,
-    onCompose,
     onEdit,
-    onShare,
+    onExportVideo,
+    onExportImage,
     onGetApp,
     onRampStart,
     onRampStop,
-    onConnect,
     isOwned = false,
     onDeleteRequest,
     playbackOnly = false,
@@ -104,7 +94,7 @@
     if (!footerEl) return;
 
     const selectLayout = () => {
-      const actionCount = isLoggedIn ? 5 : 3; // Save, Edit, Compose, Connect, Share (logged in) or Get App, Share (logged out) + Delete if owned
+      const actionCount = isLoggedIn ? 4 : 3; // Save, Construct, Export Video, Export Image (logged in) or Get App, Export Video, Export Image (logged out) + Delete if owned
       const actionsWidth = actionCount * 100 + (actionCount - 1) * 10;
       const minDesktopWidth = 272 + 16 + 400 + 16 + actionsWidth + 32;
 
@@ -199,21 +189,33 @@
         </button>
         <button
           type="button"
-          class="landscape-btn edit"
+          class="landscape-btn construct"
           onclick={onEdit}
-          aria-label="Edit in Constructor"
+          aria-label="Construct"
         >
           <i class="fas fa-hammer" aria-hidden="true"></i>
         </button>
       {/if}
-      <button
-        type="button"
-        class="landscape-btn share"
-        onclick={onShare}
-        aria-label="Share"
-      >
-        <i class="fas fa-share" aria-hidden="true"></i>
-      </button>
+      {#if onExportVideo}
+        <button
+          type="button"
+          class="landscape-btn export-video"
+          onclick={onExportVideo}
+          aria-label="Export video"
+        >
+          <i class="fas fa-video" aria-hidden="true"></i>
+        </button>
+      {/if}
+      {#if onExportImage}
+        <button
+          type="button"
+          class="landscape-btn export-image"
+          onclick={onExportImage}
+          aria-label="Export image"
+        >
+          <i class="fas fa-image" aria-hidden="true"></i>
+        </button>
+      {/if}
       {#if isOwned && onDeleteRequest}
         <button
           type="button"
@@ -257,10 +259,6 @@
       {isPlaying}
       {isLoggedIn}
       {rampActive}
-      {sequenceUrl}
-      {isSyncToggling}
-      {isSyncActive}
-      {isSyncConnected}
       {onBpmChange}
       {onPlayPause}
       {onStepBack}
@@ -269,11 +267,11 @@
       {onStepHalfForward}
       {onSave}
       {onEdit}
-      {onCompose}
+      {onExportVideo}
+      {onExportImage}
       {onGetApp}
       {onRampStart}
       {onRampStop}
-      {onConnect}
       {isOwned}
       {onDeleteRequest}
     />
@@ -313,36 +311,13 @@
           </button>
           <button
             type="button"
-            class="action-btn edit"
+            class="action-btn construct"
             onclick={onEdit}
-            aria-label="Edit in Constructor"
+            aria-label="Construct"
           >
             <i class="fas fa-hammer" aria-hidden="true"></i>
-            <span>Edit</span>
+            <span>Construct</span>
           </button>
-          <button
-            type="button"
-            class="action-btn compose"
-            onclick={onCompose}
-            aria-label="Open in Compose"
-          >
-            <i class="fas fa-users" aria-hidden="true"></i>
-            <span>Compose</span>
-          </button>
-          {#if onConnect}
-            <button
-              type="button"
-              class="action-btn connect"
-              class:active={isSyncActive}
-              class:connected={isSyncConnected}
-              onclick={onConnect}
-              disabled={isSyncToggling}
-              aria-label={isSyncConnected ? "Disconnect from sync" : isSyncActive ? "Searching for devices..." : "Connect to sync"}
-            >
-              <i class="fas {isSyncConnected ? 'fa-tower-broadcast' : isSyncActive ? 'fa-spinner fa-pulse' : 'fa-tower-broadcast'}" aria-hidden="true"></i>
-              <span>{isSyncConnected ? "Connected" : isSyncActive ? "Searching" : "Connect"}</span>
-            </button>
-          {/if}
         {:else}
           <button
             type="button"
@@ -354,15 +329,28 @@
             <span>Get App</span>
           </button>
         {/if}
-        <button
-          type="button"
-          class="action-btn share"
-          onclick={onShare}
-          aria-label="Share"
-        >
-          <i class="fas fa-share" aria-hidden="true"></i>
-          <span>Share</span>
-        </button>
+        {#if onExportVideo}
+          <button
+            type="button"
+            class="action-btn export-video"
+            onclick={onExportVideo}
+            aria-label="Export video"
+          >
+            <i class="fas fa-video" aria-hidden="true"></i>
+            <span>Video</span>
+          </button>
+        {/if}
+        {#if onExportImage}
+          <button
+            type="button"
+            class="action-btn export-image"
+            onclick={onExportImage}
+            aria-label="Export image"
+          >
+            <i class="fas fa-image" aria-hidden="true"></i>
+            <span>Image</span>
+          </button>
+        {/if}
         {#if isOwned && onDeleteRequest}
           <button
             type="button"
@@ -452,8 +440,9 @@
 
   /* Color-coded landscape buttons */
   .landscape-btn.save { color: #22c55e; border-color: rgba(34, 197, 94, 0.25); }
-  .landscape-btn.edit { color: #f59e0b; border-color: rgba(245, 158, 11, 0.25); }
-  .landscape-btn.share { color: #a855f7; border-color: rgba(168, 85, 247, 0.25); }
+  .landscape-btn.construct { color: #f59e0b; border-color: rgba(245, 158, 11, 0.25); }
+  .landscape-btn.export-video { color: #3b82f6; border-color: rgba(59, 130, 246, 0.25); }
+  .landscape-btn.export-image { color: #06b6d4; border-color: rgba(6, 182, 212, 0.25); }
   .landscape-btn.delete { color: var(--semantic-error); border-color: color-mix(in srgb, var(--semantic-error) 25%, transparent); }
 
   .landscape-divider {
@@ -618,26 +607,15 @@
     border-color: rgba(34, 197, 94, 0.4);
   }
 
-  .action-btn.edit {
+  .action-btn.construct {
     background: rgba(245, 158, 11, 0.1);
     border-color: rgba(245, 158, 11, 0.25);
     color: #f59e0b;
   }
 
-  .action-btn.edit:hover {
+  .action-btn.construct:hover {
     background: rgba(245, 158, 11, 0.2);
     border-color: rgba(245, 158, 11, 0.4);
-  }
-
-  .action-btn.compose {
-    background: rgba(6, 182, 212, 0.1);
-    border-color: rgba(6, 182, 212, 0.25);
-    color: #06b6d4;
-  }
-
-  .action-btn.compose:hover {
-    background: rgba(6, 182, 212, 0.2);
-    border-color: rgba(6, 182, 212, 0.4);
   }
 
   .action-btn.get-app {
@@ -651,15 +629,26 @@
     border-color: rgba(34, 197, 94, 0.4);
   }
 
-  .action-btn.share {
-    background: rgba(168, 85, 247, 0.1);
-    border-color: rgba(168, 85, 247, 0.25);
-    color: #a855f7;
+  .action-btn.export-video {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.25);
+    color: #3b82f6;
   }
 
-  .action-btn.share:hover {
-    background: rgba(168, 85, 247, 0.2);
-    border-color: rgba(168, 85, 247, 0.4);
+  .action-btn.export-video:hover {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: rgba(59, 130, 246, 0.4);
+  }
+
+  .action-btn.export-image {
+    background: rgba(6, 182, 212, 0.1);
+    border-color: rgba(6, 182, 212, 0.25);
+    color: #06b6d4;
+  }
+
+  .action-btn.export-image:hover {
+    background: rgba(6, 182, 212, 0.2);
+    border-color: rgba(6, 182, 212, 0.4);
   }
 
   .action-btn.delete {
@@ -671,33 +660,6 @@
   .action-btn.delete:hover {
     background: color-mix(in srgb, var(--semantic-error) 20%, transparent);
     border-color: color-mix(in srgb, var(--semantic-error) 40%, transparent);
-  }
-
-  .action-btn.connect {
-    background: rgba(245, 158, 11, 0.1);
-    border-color: rgba(245, 158, 11, 0.25);
-    color: #f59e0b;
-  }
-
-  .action-btn.connect:hover {
-    background: rgba(245, 158, 11, 0.2);
-    border-color: rgba(245, 158, 11, 0.4);
-  }
-
-  .action-btn.connect.active {
-    background: rgba(245, 158, 11, 0.15);
-    border-color: rgba(245, 158, 11, 0.35);
-  }
-
-  .action-btn.connect.connected {
-    background: rgba(34, 197, 94, 0.15);
-    border-color: rgba(34, 197, 94, 0.35);
-    color: #22c55e;
-  }
-
-  .action-btn.connect:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
   }
 
   /* ===========================

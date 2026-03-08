@@ -74,6 +74,10 @@
     isExporting: boolean;
     exportProgress: VideoExportProgress | null;
     exportError: string | null;
+    /** Object URL of exported video for in-app preview, null when no preview active */
+    previewBlobUrl: string | null;
+    /** Duration in seconds of a single sequence playthrough at current BPM */
+    singlePlayDuration: number;
 
     // Ramp training
     rampActive: boolean;
@@ -139,6 +143,7 @@
     stepFullBeatForward: () => void;
     handleCancelExport: () => void;
     handleRetryExport: () => void;
+    dismissPreview: () => void;
 
     // Pre-assembled prop groups for ViewerSplitPane
     splitPanePlayback: ViewerPlaybackState;
@@ -168,7 +173,7 @@
   import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
   import { sequenceModalPersistence } from "$lib/shared/sequence-viewer/services/implementations/SequenceModalPersistence";
   import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/implementations/CellPreWarmer";
-  import { sequenceModalExporter } from "$lib/shared/sequence-viewer/services/implementations/SequenceModalExporter";
+  import { sequenceModalExporter } from "$lib/shared/sequence-viewer/services/implementations/SequenceModalExporter.svelte";
   import { createModalAccessibilityHelper } from "$lib/shared/sequence-viewer/services/implementations/ModalAccessibilityHelper.svelte";
   import { saveSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
   import { getExportOptionsState } from "$lib/shared/sequence-viewer/state/export-options-state.svelte";
@@ -271,6 +276,16 @@
   const isExporting = $derived(sequenceModalExporter.state.isExporting);
   const exportProgress = $derived(sequenceModalExporter.state.progress);
   const exportError = $derived(sequenceModalExporter.state.error);
+  const previewBlobUrl = $derived(sequenceModalExporter.state.previewBlobUrl);
+
+  // Duration of a single sequence playthrough (for export UI)
+  const singlePlayDuration = $derived.by(() => {
+    const steps = effectiveSequence?.steps;
+    if (!steps?.length || bpmLocal <= 0) return 0;
+    const totalDurationUnits = steps.reduce((sum, s) => sum + (s.duration ?? 1), 0);
+    const speed = bpmLocal / 60;
+    return totalDurationUnits / speed;
+  });
 
   // LAN Sync
   let isSyncToggling = $state(false);
@@ -745,6 +760,7 @@
     hapticService?.trigger("selection");
     isExportMode = false;
     exportType = null;
+    sequenceModalExporter.dismissPreview();
     accessibilityHelper.announce("Returned to viewer");
   }
 
@@ -769,11 +785,16 @@
     if (isExporting || !exportType) return;
     hapticService?.trigger("selection");
 
+    const isVideoExport = exportType === "animation";
     const callbacks = {
       onSuccess: (message: string) => {
         showToast(message, "success");
         accessibilityHelper.announce(message, "assertive");
-        exitExportMode();
+        // Video exports stay in export mode to show preview panel
+        // Image exports exit immediately (no preview needed)
+        if (!isVideoExport) {
+          exitExportMode();
+        }
       },
       onError: (message: string) => {
         accessibilityHelper.announce(`Export failed: ${message}`, "assertive");
@@ -786,7 +807,12 @@
     if (exportType === "animation" && playbackController && animationCanvas) {
       const opts = exportOptions.getVideoOptions();
       await sequenceModalExporter.exportAnimation(
-        opts,
+        {
+          fps: opts.fps,
+          loopCount: opts.loopCount,
+          resolution: opts.resolution,
+          effectOverrides: opts.effectOverrides ?? undefined,
+        },
         { canvas: animationCanvas, playbackController, panelState: modalAnimationState },
         callbacks
       );
@@ -814,6 +840,11 @@
   function handleRetryExport() {
     sequenceModalExporter.clearError();
     handleExport();
+  }
+
+  function dismissPreview() {
+    sequenceModalExporter.dismissPreview();
+    exitExportMode();
   }
 
   // ============================================================================
@@ -1152,6 +1183,8 @@
     isExporting,
     exportProgress,
     exportError,
+    previewBlobUrl,
+    singlePlayDuration,
 
     // Ramp
     rampActive,
@@ -1217,6 +1250,7 @@
     stepFullBeatForward,
     handleCancelExport,
     handleRetryExport,
+    dismissPreview,
 
     // Pre-assembled prop groups for ViewerSplitPane
     splitPanePlayback: {

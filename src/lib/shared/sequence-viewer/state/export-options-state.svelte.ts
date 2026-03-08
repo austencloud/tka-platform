@@ -9,7 +9,7 @@
 export type VideoFps = 30 | 60 | 120;
 
 // Video resolution options
-export type VideoResolution = 720 | 1080;
+export type VideoResolution = 720 | 1080 | 2160 | 4320;
 
 // Effect overrides for video export
 export interface EffectOverride {

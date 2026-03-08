@@ -13,6 +13,7 @@
     VideoFps,
     VideoResolution,
   } from "../state/export-options-state.svelte";
+  import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
 
   export interface ActiveEffect {
     id: string;
@@ -27,31 +28,54 @@
     exportOptions: ExportOptionsStateManager;
     viewerEffects: ActiveEffect[];
     isExporting: boolean;
+    exportProgress?: VideoExportProgress | null;
     canvasReady?: boolean;
     layout?: PanelLayout;
+    /** Duration of a single playthrough in seconds (used to show total duration with repeats) */
+    singlePlayDuration?: number;
     onExport: () => void;
+    onCancel?: () => void;
   }
 
   let {
     exportOptions,
     viewerEffects,
     isExporting,
+    exportProgress = null,
     canvasReady = true,
     layout = "bottom",
+    singlePlayDuration = 0,
     onExport,
+    onCancel,
   }: Props = $props();
 
   const exportDisabled = $derived(isExporting || !canvasReady);
 
+  /** Format seconds into a human-readable duration like "4.2s" or "1m 12s" */
+  function formatDuration(seconds: number): string {
+    if (seconds <= 0) return "";
+    if (seconds < 60) return `${seconds.toFixed(1)}s`;
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.round(seconds % 60);
+    return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
+  }
+
+  const totalDuration = $derived(singlePlayDuration * exportOptions.videoLoopCount);
+  const durationLabel = $derived(
+    singlePlayDuration > 0 ? formatDuration(totalDuration) : ""
+  );
+
   const fpsOptions: { value: VideoFps; label: string; badge?: string }[] = [
     { value: 30, label: "30" },
     { value: 60, label: "60" },
-    { value: 120, label: "120", badge: "Pro" },
+    { value: 120, label: "120" },
   ];
 
   const resOptions: { value: VideoResolution; label: string }[] = [
     { value: 720, label: "720p" },
     { value: 1080, label: "1080p" },
+    { value: 2160, label: "4K" },
+    { value: 4320, label: "8K" },
   ];
 
   // Initialize effect overrides from viewer state on first open
@@ -136,31 +160,36 @@
       </div>
     </div>
 
-    <!-- Loops -->
+    <!-- Repeat -->
     <div class="setting-row">
-      <span class="setting-label">Loops</span>
-      <div class="loop-stepper">
-        <button
-          type="button"
-          class="stepper-btn"
-          onclick={() =>
-            exportOptions.setVideoLoopCount(exportOptions.videoLoopCount - 1)}
-          disabled={exportOptions.videoLoopCount <= 1}
-          aria-label="Decrease loops"
-        >
-          <i class="fas fa-minus" aria-hidden="true"></i>
-        </button>
-        <span class="loop-value">{exportOptions.videoLoopCount}x</span>
-        <button
-          type="button"
-          class="stepper-btn"
-          onclick={() =>
-            exportOptions.setVideoLoopCount(exportOptions.videoLoopCount + 1)}
-          disabled={exportOptions.videoLoopCount >= 10}
-          aria-label="Increase loops"
-        >
-          <i class="fas fa-plus" aria-hidden="true"></i>
-        </button>
+      <span class="setting-label">Repeat</span>
+      <div class="repeat-control">
+        <div class="repeat-stepper">
+          <button
+            type="button"
+            class="stepper-btn"
+            onclick={() =>
+              exportOptions.setVideoLoopCount(exportOptions.videoLoopCount - 1)}
+            disabled={exportOptions.videoLoopCount <= 1}
+            aria-label="Decrease repeat count"
+          >
+            <i class="fas fa-minus" aria-hidden="true"></i>
+          </button>
+          <span class="repeat-value">{exportOptions.videoLoopCount}x</span>
+          <button
+            type="button"
+            class="stepper-btn"
+            onclick={() =>
+              exportOptions.setVideoLoopCount(exportOptions.videoLoopCount + 1)}
+            disabled={exportOptions.videoLoopCount >= 10}
+            aria-label="Increase repeat count"
+          >
+            <i class="fas fa-plus" aria-hidden="true"></i>
+          </button>
+        </div>
+        {#if durationLabel}
+          <span class="duration-hint">{durationLabel}</span>
+        {/if}
       </div>
     </div>
 
@@ -187,24 +216,57 @@
   </div>
 
   <div class="panel-footer">
-    <button
-      type="button"
-      class="export-btn"
-      onclick={onExport}
-      disabled={exportDisabled}
-      aria-label="Export video"
-    >
-      {#if isExporting}
-        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-        Exporting...
-      {:else if !canvasReady}
-        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-        Loading...
-      {:else}
-        <i class="fas fa-download" aria-hidden="true"></i>
-        Export Video
-      {/if}
-    </button>
+    {#if isExporting}
+      <div class="export-progress-row" role="status" aria-live="polite">
+        <div class="progress-info">
+          <span class="progress-stage">
+            {#if !exportProgress}
+              Starting...
+            {:else}
+              Exporting
+            {/if}
+          </span>
+          <span class="progress-pct">{exportProgress ? Math.round(exportProgress.progress * 100) : 0}%</span>
+        </div>
+        <div
+          class="progress-bar"
+          role="progressbar"
+          aria-valuenow={exportProgress ? Math.round(exportProgress.progress * 100) : 0}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Export progress"
+        >
+          <div class="progress-fill" style="width: {exportProgress ? exportProgress.progress * 100 : 0}%"></div>
+        </div>
+        {#if onCancel}
+          <button
+            type="button"
+            class="cancel-btn"
+            onclick={onCancel}
+            aria-label="Cancel export"
+          >
+            <i class="fas fa-times" aria-hidden="true"></i>
+            Cancel
+          </button>
+        {/if}
+      </div>
+    {:else}
+      <button
+        type="button"
+        class="export-btn"
+        onclick={onExport}
+        disabled={exportDisabled}
+        aria-label="Export video"
+      >
+        {#if !canvasReady}
+          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+          Loading...
+        {:else}
+          <i class="fas fa-download" aria-hidden="true"></i>
+          Export Video
+        {/if}
+      </button>
+    {/if}
   </div>
 </div>
 
@@ -236,10 +298,9 @@
 
   .export-panel.sidebar {
     position: relative;
-    width: 300px;
-    min-width: 260px;
-    max-width: 340px;
-    flex-shrink: 0;
+    width: 360px;
+    min-width: 320px;
+    flex: 0 1 400px;
     border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     overflow-y: auto;
     justify-content: center;
@@ -258,8 +319,8 @@
   }
 
   .sidebar .panel-body {
-    gap: 18px;
-    padding: 16px 20px;
+    gap: 24px;
+    padding: 24px 28px;
   }
 
   .setting-row {
@@ -359,7 +420,13 @@
    * Loop stepper
    * ============================================================ */
 
-  .loop-stepper {
+  .repeat-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .repeat-stepper {
     display: flex;
     align-items: center;
     gap: 4px;
@@ -391,12 +458,19 @@
     cursor: not-allowed;
   }
 
-  .loop-value {
+  .repeat-value {
     min-width: 36px;
     text-align: center;
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
     color: var(--theme-text, white);
+  }
+
+  .duration-hint {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    white-space: nowrap;
   }
 
   /* ============================================================
@@ -447,13 +521,83 @@
   }
 
   /* ============================================================
+   * Export progress
+   * ============================================================ */
+
+  .export-progress-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .progress-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .progress-stage {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+  }
+
+  .progress-pct {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--theme-text, white);
+  }
+
+  .progress-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--theme-accent, #6366f1);
+    border-radius: 3px;
+    transition: width 0.2s ease;
+  }
+
+  .cancel-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    min-height: var(--min-touch-target);
+    padding: 10px 20px;
+    background: transparent;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .cancel-btn:hover {
+    background: color-mix(in srgb, var(--semantic-error, #f87171) 15%, transparent);
+    border-color: var(--semantic-error, #f87171);
+    color: var(--semantic-error, #f87171);
+  }
+
+  /* ============================================================
    * Reduced motion
    * ============================================================ */
 
   @media (prefers-reduced-motion: reduce) {
     .chip,
     .stepper-btn,
-    .export-btn {
+    .export-btn,
+    .cancel-btn,
+    .progress-fill {
       transition: none !important;
     }
 
