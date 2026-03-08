@@ -41,6 +41,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
   import ConsolidatedLOOPCard from "./cards/ConsolidatedLOOPCard.svelte";
   import SliceSizeCard from "./cards/SliceSizeCard.svelte";
   import CustomizeCard from "./cards/CustomizeCard.svelte";
+  import WordInputCard from "./cards/WordInputCard.svelte";
   // Props
   let {
     config,
@@ -85,6 +86,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
   const cardIdToHelpId: Record<string, GeneratorHelpId> = {
     "level": "level",
     "length": "length",
+    "word-input": "generation-mode",
     "generation-mode": "generation-mode",
     "grid-mode": "grid-mode",
     "prop-continuity": "prop-continuity",
@@ -289,6 +291,8 @@ Supports help mode: when active, clicking cards opens help instead of normal act
         <LevelCard {...card.props as any} color={cardColors.level.color} shadowColor={cardColors.level.shadowColor} />
       {:else if card.id === "length"}
         <LengthCard {...card.props as any} color={cardColors.length.color} shadowColor={cardColors.length.shadowColor} />
+      {:else if card.id === "word-input"}
+        <WordInputCard {...card.props as any} color={cardColors.mode.color} shadowColor={cardColors.mode.shadowColor} />
       {:else if card.id === "generation-mode"}
         <GenerationModeCard {...card.props as any} color={cardColors.mode.color} shadowColor={cardColors.mode.shadowColor} />
       {:else if card.id === "grid-mode"}
