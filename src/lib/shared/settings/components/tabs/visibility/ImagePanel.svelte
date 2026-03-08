@@ -8,12 +8,7 @@
 -->
 <script lang="ts">
   import { slide } from "svelte/transition";
-  import ImageExportPreviewLayered from "./ImageExportPreviewLayered.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
-  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-
-  // Dark mode is now a global setting, read directly
-  const darkMode = $derived(getSettings().darkMode ?? false);
 
   interface Props {
     addWord: boolean;
@@ -24,8 +19,6 @@
     showNotes: boolean;
     showBirthday: boolean;
     customNotesText: string;
-    // Pictograph visibility callbacks for fade transitions
-    onPictographToggle: (key: string) => void;
     onToggle: (key: string) => void;
     onCustomNotesChange: (value: string) => void;
     isMobileHidden?: boolean;
@@ -39,7 +32,6 @@
     showNotes,
     showBirthday,
     customNotesText,
-    onPictographToggle,
     onToggle,
     onCustomNotesChange,
     isMobileHidden = false,
@@ -70,25 +62,6 @@
 
   {#if !collapsed}
     <div class="panel-body" transition:slide={{ duration: 200 }}>
-      <div class="preview-frame image-preview">
-        <ImageExportPreviewLayered
-          showWord={addWord}
-          showDifficultyLevel={addDifficultyLevel}
-          {includeStartPosition}
-          {showCreatorName}
-          {showNotes}
-          {showBirthday}
-          {customNotesText}
-          {darkMode}
-          onToggleTKA={() => onPictographToggle("tka")}
-          onToggleVTG={() => onPictographToggle("vtg")}
-          onToggleElemental={() => onPictographToggle("elemental")}
-          onTogglePositions={() => onPictographToggle("positions")}
-          onToggleReversals={() => onPictographToggle("reversals")}
-          onToggleNonRadial={() => onPictographToggle("nonRadial")}
-        />
-      </div>
-
       <div class="panel-controls">
         <div class="control-group">
           <span class="group-label">{t("visibility_include_in_image")}</span>
@@ -219,35 +192,6 @@
     font-family:
       -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
     flex: 1;
-  }
-
-  .preview-frame {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: color-mix(in srgb, var(--theme-panel-bg) 80%, transparent);
-    border-radius: clamp(10px, 2cqi, 14px);
-    border: 1px solid var(--theme-stroke);
-    overflow: hidden;
-    width: 100%;
-    aspect-ratio: 1;
-    max-width: 500px;
-    box-shadow: inset 0 2px 8px var(--theme-shadow);
-    min-height: var(--vt-preview-min-h, auto);
-  }
-
-  /* Make pictograph fill the preview frame */
-  .preview-frame :global(.pictograph-with-visibility),
-  .preview-frame :global(.pictograph) {
-    width: 100% !important;
-    height: 100% !important;
-    max-width: 100%;
-    max-height: 100%;
-  }
-
-  .preview-frame :global(svg.pictograph) {
-    width: 100% !important;
-    height: 100% !important;
   }
 
   .panel-controls {
@@ -400,24 +344,6 @@
   .collapse-toggle:focus-visible {
     outline: 2px solid color-mix(in srgb, var(--theme-accent) 50%, transparent);
     outline-offset: 2px;
-  }
-
-  @container image-panel (min-width: 500px) {
-    .panel-body {
-      flex-direction: row;
-      align-items: flex-start;
-    }
-
-    .preview-frame {
-      flex-shrink: 0;
-      width: 50%;
-      max-width: 500px;
-    }
-
-    .panel-controls {
-      flex: 1;
-      margin-top: 0;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {

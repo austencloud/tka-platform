@@ -227,10 +227,6 @@ export class MotionQueryHandler implements IMotionQueryHandler {
           // Continue with other rows
         }
 
-        // Yield to event loop every 20 items to prevent blocking animations
-        if (i % 20 === 0) {
-          await new Promise((resolve) => setTimeout(resolve, 0));
-        }
       }
 
       // If no sequence context, return first 20 (fallback for empty sequences)
@@ -282,10 +278,6 @@ export class MotionQueryHandler implements IMotionQueryHandler {
           transformedPictographs.push(transformedPictograph);
         }
 
-        // Yield to event loop every 20 items to prevent blocking animations
-        if (i % 20 === 0) {
-          await new Promise((resolve) => setTimeout(resolve, 0));
-        }
       }
 
       // If no transformed options found, return all options as fallback

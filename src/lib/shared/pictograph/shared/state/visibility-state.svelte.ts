@@ -74,6 +74,10 @@ export class VisibilityStateManager {
   private settingsLoadedPromise: Promise<void> | null = null;
   private settingsLoadedResolve: (() => void) | null = null;
 
+  // Debounce mechanism for persistence to prevent rapid-fire write races
+  private persistDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private static readonly PERSIST_DEBOUNCE_MS = 100;
+
   constructor(initialSettings?: Partial<AppSettings>) {
     // Initialize with defaults matching desktop app
     this.settings = {
@@ -197,9 +201,27 @@ export class VisibilityStateManager {
   }
 
   /**
+   * Debounced persistence to prevent rapid-fire write races
+   */
+  private debouncedPersistSettings(): void {
+    if (this.persistDebounceTimer) {
+      clearTimeout(this.persistDebounceTimer);
+    }
+    this.persistDebounceTimer = setTimeout(() => {
+      this.persistDebounceTimer = null;
+      this.debouncedPersistSettings();
+    }, VisibilityStateManager.PERSIST_DEBOUNCE_MS);
+  }
+
+  /**
    * Persist current visibility settings to storage
    */
   private async persistSettings(): Promise<void> {
+    // Don't persist until initial load is complete — would overwrite real values with defaults
+    if (this.settingsLoadedPromise) {
+      await this.settingsLoadedPromise;
+    }
+
     const service = await getSettingsService();
     if (!service) return;
 
@@ -426,7 +448,7 @@ export class VisibilityStateManager {
       debug.log("Notifying observers for glyph change");
       this.notifyObservers(["glyph"]);
       // Persist to storage (async, non-blocking)
-      void this.persistSettings();
+      this.debouncedPersistSettings();
     }
   }
 
@@ -465,7 +487,7 @@ export class VisibilityStateManager {
     this.settings.showGrid = visible;
     this.notifyObservers(["all"]);
     // Persist to storage (async, non-blocking)
-    void this.persistSettings();
+    this.debouncedPersistSettings();
   }
 
   // ============================================================================
@@ -486,7 +508,7 @@ export class VisibilityStateManager {
     this.settings.nonRadialPoints = visible;
     this.notifyObservers(["non_radial"]);
     // Persist to storage (async, non-blocking)
-    void this.persistSettings();
+    this.debouncedPersistSettings();
   }
 
   // ============================================================================
@@ -508,7 +530,7 @@ export class VisibilityStateManager {
     this.settings.handPointVisibility = mode;
     this.notifyObservers(["all"]);
     // Persist to storage (async, non-blocking)
-    void this.persistSettings();
+    this.debouncedPersistSettings();
   }
 
   // ============================================================================
@@ -530,7 +552,7 @@ export class VisibilityStateManager {
     this.settings.stepNumbers = visible;
     this.notifyObservers(["all"]);
     // Persist to storage (async, non-blocking)
-    void this.persistSettings();
+    this.debouncedPersistSettings();
   }
 
   // ============================================================================

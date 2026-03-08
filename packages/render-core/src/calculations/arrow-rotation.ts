@@ -66,7 +66,8 @@ export function calculateArrowRotation(
   rotationDirection: string,
   startLocation?: GridLocation | string,
   endLocation?: GridLocation | string,
-  isRadialOrientation?: boolean
+  isRadialOrientation?: boolean,
+  turns?: number | string
 ): number {
   const normalizedMotionType = (
     typeof motionType === "string" ? motionType.toLowerCase() : motionType
@@ -77,6 +78,8 @@ export function calculateArrowRotation(
   ) as GridLocation;
 
   // Handle DASH with no rotation (straight dashes)
+  // For 0-turn dashes, always use start/end pair map — rotation direction
+  // is meaningless at 0 turns and may be incorrectly set to cw/ccw
   if (normalizedMotionType === "dash") {
     const normalizedDir = rotationDirection.toLowerCase();
     const isNoRotation =
@@ -85,7 +88,7 @@ export function calculateArrowRotation(
       normalizedDir === "norotation" ||
       normalizedDir === "none";
 
-    if (isNoRotation) {
+    if (isNoRotation || turns === 0) {
       if (startLocation && endLocation) {
         const startLoc = typeof startLocation === "string" ? startLocation.toLowerCase() : startLocation;
         const endLoc = typeof endLocation === "string" ? endLocation.toLowerCase() : endLocation;
