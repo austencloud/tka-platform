@@ -41,6 +41,7 @@ Last audit: 2025-12-27
   import SegmentedSequenceProgressBar from "./layers/SegmentedSequenceProgressBar.svelte";
   import { AnimationEngine } from "../services/implementations/AnimationEngine.svelte";
   import { getAnimationVisibilityManager } from "../state/animation-visibility-state.svelte";
+  import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
   import type { FireOverlayConfig } from "../domain/types/FireTypes";
   import type { LedOverlayConfig } from "../domain/types/LedTypes";
   import { onMount, onDestroy, untrack } from "svelte";
@@ -142,6 +143,13 @@ Last audit: 2025-12-27
   const effectiveBeatNumbersVisible = $derived(stepNumbersVisible && !hideStepNumbers);
   const effectiveBeatPositionVisible = $derived(beatPositionVisible);
 
+  // Derive loopability: use prop if provided, otherwise check from sequence data
+  const effectiveIsSeamlesslyLoopable = $derived.by(() => {
+    if (isSeamlesslyLoopable !== undefined) return isSeamlesslyLoopable;
+    if (!sequenceData) return false;
+    return sequenceLoopabilityChecker.isSeamlesslyLoopable(sequenceData);
+  });
+
   function handleVisibilityChange() {
     tkaGlyphVisible = visibilityManager.getVisibility("tkaGlyph");
     stepNumbersVisible = visibilityManager.getVisibility("stepNumbers");
@@ -183,11 +191,14 @@ Last audit: 2025-12-27
     };
   });
 
-  // Single effect to pass all props to engine
-  // NOTE: The engine.update() call is wrapped in untrack() because the engine
-  // internally reads reactive state (visibility manager, etc.) that would cause
-  // infinite loops if tracked. Props are read outside untrack() so changes still trigger updates.
+  // Single effect to pass all props to engine.
+  // Fire/LED configs are synced BEFORE engine.update() so the first render frame
+  // uses correct physics — not the defaults that would show a brief flash of
+  // full-intensity fire on tab switch.
   $effect(() => {
+    // Read reactive props outside untrack
+    const currentFireConfig = fireConfig;
+    const currentLedConfig = ledConfig;
     const props = {
       blueProp,
       redProp,
@@ -203,32 +214,19 @@ Last audit: 2025-12-27
       externalTrailSettings,
       bluePropType,
       redPropType,
-      // Pass preview dark mode override to engine for background rendering
       previewDarkMode,
-      // Pass loopability for trail clearing logic
       isSeamlesslyLoopable,
     };
     untrack(() => {
+      // Sync fire/LED config before update so render frame uses correct values
+      if (currentFireConfig) {
+        engine.setFireConfig(currentFireConfig);
+      }
+      if (currentLedConfig) {
+        engine.setLedConfig(currentLedConfig);
+      }
       engine.update(props);
     });
-  });
-
-  // Sync fire config to engine when provided
-  $effect(() => {
-    if (fireConfig) {
-      untrack(() => {
-        engine.setFireConfig(fireConfig);
-      });
-    }
-  });
-
-  // Sync LED config to engine when provided
-  $effect(() => {
-    if (ledConfig) {
-      untrack(() => {
-        engine.setLedConfig(ledConfig);
-      });
-    }
   });
 
   // Process pending glyphs when initialized
@@ -287,6 +285,11 @@ Last audit: 2025-12-27
         beatPositionVisible={effectiveBeatPositionVisible}
         darkMode={darkModeEnabled}
         isAtStartPosition={currentStep < 1 && sequenceData !== null}
+        isAtEndPosition={
+          sequenceData !== null &&
+          !effectiveIsSeamlesslyLoopable &&
+          currentStep >= (sequenceData.steps?.length ?? 0) + 0.99
+        }
       />
 
       <ProgressOverlay

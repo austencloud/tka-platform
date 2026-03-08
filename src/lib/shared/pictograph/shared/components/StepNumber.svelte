@@ -54,6 +54,7 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
 
   // Only render beat number if conditions are met
   // Beat number 0 is excluded so it falls through to show "Start" text
+  // Beat number -2 is excluded so it falls through to show "End" text
   const shouldRender = $derived.by(() => {
     return (
       showStepNumber &&
@@ -61,7 +62,8 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
       hasValidData &&
       stepNumber !== null &&
       stepNumber !== -1 &&
-      stepNumber !== 0 // Exclude 0 so it shows "Start" instead
+      stepNumber !== 0 && // Exclude 0 so it shows "Start" instead
+      stepNumber !== -2 // Exclude -2 so it shows "End" instead
     );
   });
 
@@ -71,10 +73,18 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
     return hasValidData && stepNumber === 0;
   });
 
-  // Get display text - step number or "Start"
+  // Show "End" text for beat number -2 (end position hold on freeform sequences)
+  const shouldRenderEndText = $derived.by(() => {
+    return hasValidData && stepNumber === -2;
+  });
+
+  // Get display text - step number, "Start", or "End"
   const displayText = $derived.by(() => {
     if (stepNumber === 0) {
       return "Start";
+    }
+    if (stepNumber === -2) {
+      return "End";
     }
     return stepNumber?.toString() || "";
   });
@@ -117,6 +127,23 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
     {displayText}
   </text>
 {:else if shouldRenderStartText}
+  <text
+    class="beat-number"
+    class:animating={isAnimating}
+    x="50"
+    y="50"
+    dominant-baseline="hanging"
+    text-anchor="start"
+    font-size="80"
+    font-family="Georgia, serif"
+    font-weight="bold"
+    letter-spacing="8"
+    fill={fillColor}
+    style="transform-origin: 50px 50px"
+  >
+    {displayText}
+  </text>
+{:else if shouldRenderEndText}
   <text
     class="beat-number"
     class:animating={isAnimating}
