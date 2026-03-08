@@ -1,11 +1,13 @@
 <!--
-WordInputCard.svelte - Card wrapping WordInput for Spell mode
-Follows BaseCard visual pattern with gradient background.
-Replaces LengthCard when mode=SPELL in the card grid.
+WordInputCard.svelte - Compact word input card for the generator grid
+Empty = random generation. Typed word = spell that word.
+Replaces the old GenerationModeCard (Freeform/Spell toggle).
 -->
 <script lang="ts">
-  import CardHeader from "./shared/CardHeader.svelte";
   import { container } from "$lib/shared/di";
+  import { onMount } from "svelte";
+  import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
+  import CardHeader from "./shared/CardHeader.svelte";
   import type { IGreekKeyMapper } from "$lib/shared/keyboard/services/contracts/IGreekKeyMapper";
   import {
     uppercasePreservingGreek,
@@ -13,87 +15,101 @@ Replaces LengthCard when mode=SPELL in the card grid.
   } from "$lib/shared/keyboard/domain/greek-input-helpers";
 
   let {
-    value = "",
-    onInput,
-    onSubmit,
-    color = "linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%)",
-    shadowColor = "160deg 70% 40%",
+    wordValue = "",
+    onWordChange,
+    onWordSubmit,
+    disabled = false,
+    color = "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6d28d9 100%)",
+    shadowColor = "270deg 70% 55%",
+    gridColumnSpan = 2,
     cardIndex = 0,
     headerFontSize = "9px",
   } = $props<{
-    value: string;
-    onInput: (value: string) => void;
-    onSubmit?: () => void;
+    wordValue?: string;
+    onWordChange?: (value: string) => void;
+    onWordSubmit?: () => void;
+    disabled?: boolean;
     color?: string;
     shadowColor?: string;
+    gridColumnSpan?: number;
     cardIndex?: number;
     headerFontSize?: string;
   }>();
 
-  const greekKeyMapper = container.items.greekKeyMapper as IGreekKeyMapper;
+  let greekKeyMapper: IGreekKeyMapper | null = $state(null);
+
+  onMount(() => {
+    greekKeyMapper = container.items.greekKeyMapper as IGreekKeyMapper;
+  });
+
+  const hasWord = $derived(wordValue.trim().length > 0);
 
   function handleInput(event: Event) {
     const target = event.target as HTMLInputElement;
-    // Uppercase Latin but preserve Greek lowercase (α, β, γ, etc.)
     const uppercased = uppercasePreservingGreek(target.value);
     if (target.value !== uppercased) {
       target.value = uppercased;
     }
-    onInput(uppercased);
+    onWordChange?.(uppercased);
   }
 
   function handleKeydown(event: KeyboardEvent) {
-    if (event.key === "Enter" && value.trim()) {
+    if (event.key === "Enter" && wordValue.trim()) {
       event.preventDefault();
-      onSubmit?.();
+      onWordSubmit?.();
       return;
     }
 
-    // Skip Greek mapping when modifiers held
     if (event.shiftKey || event.ctrlKey || event.altKey || event.metaKey) return;
-
-    // Skip numpad keys when NumLock is off
     if (event.code.startsWith("Numpad") && !event.getModifierState("NumLock")) return;
 
-    const symbol = greekKeyMapper.getSymbol(event.code);
+    const symbol = greekKeyMapper?.getSymbol(event.code);
     if (!symbol) return;
 
     event.preventDefault();
     const input = event.target as HTMLInputElement;
-    const cursor = input.selectionStart ?? value.length;
-    const result = insertAtCursor(value, symbol, cursor);
+    const cursor = input.selectionStart ?? wordValue.length;
+    const result = insertAtCursor(wordValue, symbol, cursor);
     const uppercased = uppercasePreservingGreek(result.value);
 
     input.value = uppercased;
     input.setSelectionRange(result.cursor, result.cursor);
-    onInput(uppercased);
+    onWordChange?.(uppercased);
   }
 
   function handleClear() {
-    onInput("");
+    onWordChange?.("");
   }
 </script>
 
 <div
   class="word-input-card"
-  style="--card-color: {color}; --shadow-color: {shadowColor}; --card-index: {cardIndex};"
+  class:has-word={hasWord}
+  style="
+    --card-bg: {color};
+    --card-shadow-color: {shadowColor};
+    animation-delay: {cardIndex * 60}ms;
+  "
 >
-  <CardHeader title="Word" {headerFontSize} />
+  <CardHeader title="Word" fontSize={headerFontSize} />
+
   <div class="input-row">
     <input
       type="text"
       class="word-field"
-      placeholder="WORD"
-      {value}
+      placeholder="A-Z"
+      value={wordValue}
       oninput={handleInput}
       onkeydown={handleKeydown}
       autocomplete="off"
       autocapitalize="off"
       spellcheck="false"
+      {disabled}
     />
-    {#if value.length > 0}
-      <button class="clear-btn" onclick={handleClear} aria-label="Clear word">
-        <i class="fas fa-times" aria-hidden="true"></i>
+
+    {#if hasWord && !disabled}
+      <button class="clear-btn" onclick={handleClear} aria-label="Clear word" type="button">
+        <FontAwesomeIcon icon="times" style="solid" />
       </button>
     {/if}
   </div>
@@ -101,72 +117,46 @@ Replaces LengthCard when mode=SPELL in the card grid.
 
 <style>
   .word-input-card {
-    container-type: size;
-    container-name: word-input-card;
-    position: relative;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
+    align-items: stretch;
+    justify-content: center;
     width: 100%;
     height: 100%;
-    min-height: 0;
-    min-width: 0;
-    padding: clamp(6px, 2cqh, 12px) clamp(4px, 1.5cqw, 8px);
-    border-radius: 16px;
-    background: var(--card-color);
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 6px 8px 8px;
+    gap: 2px;
+    position: relative;
     overflow: hidden;
-    color: white;
-
     box-shadow:
-      0 0 0 1px rgba(0, 0, 0, 0.12),
-      0 1px 2px hsl(var(--shadow-color) / 0.15),
-      0 2px 4px hsl(var(--shadow-color) / 0.12),
-      0 4px 8px hsl(var(--shadow-color) / 0.1),
-      inset 0 1px 0 var(--theme-stroke, rgba(255, 255, 255, 0.1));
-
-    /* Entrance animation */
-    animation: cardFadeIn var(--duration-emphasis, 300ms) cubic-bezier(0.4, 0, 0.2, 1)
-      calc(var(--card-index) * 40ms) both;
+      0 4px 12px hsl(var(--card-shadow-color) / 0.35),
+      0 2px 6px var(--theme-shadow),
+      inset 0 1px 0 var(--theme-stroke-strong),
+      inset 0 -1px 0 var(--theme-shadow);
+    transition: box-shadow var(--duration-emphasis) ease;
   }
 
-  /* Glossy sheen overlay */
-  .word-input-card::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 60%;
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--theme-text, white) 30%, transparent) 0%,
-      color-mix(in srgb, var(--theme-text, white) 15%, transparent) 40%,
-      color-mix(in srgb, var(--theme-text, white) 5%, transparent) 70%,
-      transparent 100%
-    );
-    border-radius: 16px 16px 0 0;
-    pointer-events: none;
-    z-index: 1;
+  .word-input-card.has-word {
+    box-shadow:
+      0 4px 16px hsl(var(--card-shadow-color) / 0.5),
+      0 2px 8px var(--theme-shadow),
+      inset 0 1px 0 var(--theme-stroke-strong),
+      inset 0 -1px 0 var(--theme-shadow);
   }
 
   .input-row {
     display: flex;
     align-items: center;
     gap: 4px;
-    width: 100%;
     flex: 1;
     min-height: 0;
-    position: relative;
-    z-index: 2;
   }
 
   .word-field {
     flex: 1;
     min-width: 0;
-    background: rgba(0, 0, 0, 0.25);
+    background: rgba(0, 0, 0, 0.2);
     border: 1.5px solid rgba(255, 255, 255, 0.2);
     border-radius: 10px;
     color: white;
@@ -174,37 +164,58 @@ Replaces LengthCard when mode=SPELL in the card grid.
     font-weight: 700;
     letter-spacing: 1.5px;
     text-align: center;
-    padding: 4px 8px;
+    padding: 2px 6px;
     height: 100%;
-    outline: none;
     font-family: inherit;
     transition: border-color 150ms ease;
   }
 
+  .word-field:focus:not(:focus-visible) {
+    outline: none;
+  }
+
   .word-field::placeholder {
-    color: rgba(255, 255, 255, 0.4);
+    color: rgba(255, 255, 255, 0.35);
     font-weight: 500;
     letter-spacing: 2px;
   }
 
   .word-field:focus {
     border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(0, 0, 0, 0.3);
+  }
+
+  .word-field:focus-visible {
+    border-color: rgba(255, 255, 255, 0.5);
+    outline: 2px solid white;
+    outline-offset: 1px;
+  }
+
+  .word-field:disabled {
+    opacity: 0.5;
   }
 
   .clear-btn {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     flex-shrink: 0;
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.25);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 8px;
     color: rgba(255, 255, 255, 0.7);
     cursor: pointer;
     font-size: 12px;
     transition: all 100ms ease;
+  }
+
+  .clear-btn::before {
+    content: "";
+    position: absolute;
+    inset: -12px;
   }
 
   .clear-btn:hover {
@@ -216,21 +227,13 @@ Replaces LengthCard when mode=SPELL in the card grid.
     transform: scale(0.92);
   }
 
-  @keyframes cardFadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(8px) scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
+  .clear-btn:focus-visible {
+    outline: 2px solid var(--theme-text, white);
+    outline-offset: 2px;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .word-input-card {
-      animation: none;
-    }
+    .word-input-card,
     .word-field,
     .clear-btn {
       transition: none;
