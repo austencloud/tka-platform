@@ -30,8 +30,8 @@ const STEP_NUMBER_Y = 50;
 /** Font size for numeric beat numbers (1, 2, 3...) */
 const NUMBER_FONT_SIZE = 100;
 
-/** Font size for "Start" text (beat 0) */
-const START_FONT_SIZE = 80;
+/** Font size for "Start" and "End" text */
+const LABEL_FONT_SIZE = 80;
 
 /** Text color for dark mode (light text on dark background) */
 const DARK_MODE_COLOR = "#ffffff";
@@ -57,11 +57,13 @@ export class StepNumberRenderer implements IStepNumberRenderer {
     const scale = cellSize / VIEW_BOX_SIZE;
 
     // Determine font size based on beat number
-    const baseFontSize = stepNumber === 0 ? START_FONT_SIZE : NUMBER_FONT_SIZE;
+    // stepNumber 0 = "Start", stepNumber -2 = "End", otherwise numeric
+    const isLabel = stepNumber === 0 || stepNumber === -2;
+    const baseFontSize = isLabel ? LABEL_FONT_SIZE : NUMBER_FONT_SIZE;
     const fontSize = baseFontSize * scale;
 
     // Determine text content
-    const text = stepNumber === 0 ? "Start" : stepNumber.toString();
+    const text = stepNumber === 0 ? "Start" : stepNumber === -2 ? "End" : stepNumber.toString();
 
     // Calculate position (scaled from viewBox coordinates)
     const textX = x + STEP_NUMBER_X * scale;

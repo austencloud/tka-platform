@@ -38,6 +38,8 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     darkMode = false,
     // Start position indicator - shows "Start" in top-left when at start position
     isAtStartPosition = false,
+    // End position indicator - shows "End" in top-left when at end position (freeform sequences only)
+    isAtEndPosition = false,
   }: {
     letter?: Letter | null;
     displayedLetter?: Letter | null;
@@ -50,6 +52,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     beatPositionVisible?: boolean;
     darkMode?: boolean;
     isAtStartPosition?: boolean;
+    isAtEndPosition?: boolean;
   } = $props();
 
   // Cross-fade duration in ms
@@ -99,7 +102,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
 
   // Create a key for step number changes
   const stepKey = $derived(
-    isAtStartPosition ? "start" : displayedStepNumber?.toString() ?? null
+    isAtStartPosition ? "start" : isAtEndPosition ? "end" : displayedStepNumber?.toString() ?? null
   );
 </script>
 
@@ -145,7 +148,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     {/if}
 
     <!-- Step number with cross-fade -->
-    {#if stepNumbersVisible || isAtStartPosition}
+    {#if stepNumbersVisible || isAtStartPosition || isAtEndPosition}
       {#key stepKey}
         <g
           class="beat-number-group"
@@ -153,7 +156,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
           out:fade={{ duration: FADE_DURATION, easing: cubicOut }}
         >
           <StepNumber
-            stepNumber={isAtStartPosition ? 0 : displayedStepNumber}
+            stepNumber={isAtStartPosition ? 0 : isAtEndPosition ? -2 : displayedStepNumber}
             {darkMode}
           />
         </g>
