@@ -152,6 +152,13 @@ export interface IAnimationRenderLoop {
   triggerRender(getFrameParams: () => RenderFrameParams): void;
 
   /**
+   * Set a target FPS for preview throttling.
+   * null = no throttling (render at native refresh rate).
+   * When set, frames are skipped to approximate the target rate.
+   */
+  setTargetFps(fps: number | null): void;
+
+  /**
    * Clean up resources
    */
   dispose(): void;

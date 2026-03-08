@@ -61,6 +61,8 @@ export interface CharcoalSparkParams {
 	ambientRate: number;
 	/** Speed below which ambient emission stops (viewbox units/s) */
 	ambientSpeedThreshold: number;
+	/** Sparks per second when tip is stationary (embers falling off a still-burning prop) */
+	idleRate: number;
 
 	// -- Physics --
 	/** Downward acceleration (viewbox units/s^2). Higher = sparks fall faster. */
@@ -116,14 +118,15 @@ export const DEFAULT_CHARCOAL_PARAMS: CharcoalSparkParams = {
 	burstThreshold: 120,
 	burstMultiplier: 25,
 	burstMax: 120,
-	ambientRate: 10,
+	ambientRate: 30,
 	ambientSpeedThreshold: 15,
+	idleRate: 3,
 	gravity: 250,
 	drag: 0.93,
-	velocityInheritance: 0.45,
-	perturbSpeedMin: 30,
-	perturbSpeedMax: 120,
-	spreadAngle: Math.PI * 0.4,
+	velocityInheritance: 0.75,
+	perturbSpeedMin: 8,
+	perturbSpeedMax: 35,
+	spreadAngle: Math.PI * 0.15,
 	lifetimeMin: 0.6,
 	lifetimeMax: 1.6,
 	sizeMin: 5,
@@ -155,41 +158,14 @@ export interface CharcoalSliderDef {
 /** Grouped slider definitions for the charcoal tuning panel. */
 export const CHARCOAL_SLIDER_GROUPS: { label: string; sliders: CharcoalSliderDef[] }[] = [
 	{
-		label: "Emission",
+		label: "Sparks",
 		sliders: [
-			{ key: "burstThreshold", label: "Burst Threshold", min: 50, max: 500, step: 10 },
-			{ key: "burstMultiplier", label: "Burst Multiplier", min: 1, max: 30, step: 1 },
-			{ key: "burstMax", label: "Burst Max", min: 10, max: 200, step: 5 },
-			{ key: "ambientRate", label: "Ambient Rate", min: 5, max: 120, step: 5 },
-			{ key: "ambientSpeedThreshold", label: "Speed Threshold", min: 1, max: 50, step: 1 },
-		],
-	},
-	{
-		label: "Physics",
-		sliders: [
-			{ key: "gravity", label: "Gravity", min: 50, max: 1200, step: 25 },
-			{ key: "drag", label: "Drag", min: 0.8, max: 0.99, step: 0.01, format: (v) => v.toFixed(2) },
-			{ key: "velocityInheritance", label: "Vel. Inherit", min: 0, max: 1, step: 0.05, format: (v) => v.toFixed(2) },
-			{ key: "perturbSpeedMin", label: "Perturb Min", min: 0, max: 200, step: 5 },
-			{ key: "perturbSpeedMax", label: "Perturb Max", min: 10, max: 400, step: 10 },
-			{ key: "spreadAngle", label: "Spread Angle", min: 0.1, max: Math.PI, step: 0.05, format: (v) => `${(v * 180 / Math.PI).toFixed(0)}°` },
-		],
-	},
-	{
-		label: "Appearance",
-		sliders: [
-			{ key: "lifetimeMin", label: "Life Min", min: 0.1, max: 2, step: 0.1, format: (v) => `${v.toFixed(1)}s` },
-			{ key: "lifetimeMax", label: "Life Max", min: 0.5, max: 4, step: 0.1, format: (v) => `${v.toFixed(1)}s` },
-			{ key: "sizeMin", label: "Size Min", min: 1, max: 20, step: 1 },
-			{ key: "sizeMax", label: "Size Max", min: 2, max: 30, step: 1 },
-			{ key: "emberGlowRadius", label: "Glow Radius", min: 5, max: 60, step: 1 },
-			{ key: "emberGlowIntensity", label: "Glow Intensity", min: 0.2, max: 4, step: 0.1, format: (v) => v.toFixed(1) },
-		],
-	},
-	{
-		label: "Pool",
-		sliders: [
-			{ key: "maxParticles", label: "Max Particles", min: 100, max: 2000, step: 50 },
+			{ key: "ambientRate", label: "Density", min: 5, max: 80, step: 5 },
+			{ key: "idleRate", label: "Idle Embers", min: 0, max: 10, step: 1 },
+			{ key: "gravity", label: "Gravity", min: 50, max: 800, step: 25 },
+			{ key: "lifetimeMax", label: "Lifetime", min: 0.5, max: 3, step: 0.1, format: (v) => `${v.toFixed(1)}s` },
+			{ key: "emberGlowIntensity", label: "Glow", min: 0.2, max: 3, step: 0.1, format: (v) => v.toFixed(1) },
+			{ key: "maxParticles", label: "Max Sparks", min: 200, max: 1200, step: 50 },
 		],
 	},
 ];

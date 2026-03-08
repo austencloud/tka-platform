@@ -261,10 +261,10 @@ Design variants supported:
     {/if}
 
     <div class="segments-track">
-      <!-- White segment dividers (always visible) -->
+      <!-- Segment dividers (always visible, proportional widths show duration) -->
       <div class="segments-background">
         {#each segments as segment}
-          <div class="segment segment-white" style="width: {segment.widthPercent}%"></div>
+          <div class="segment segment-divider" style="width: {segment.widthPercent}%"></div>
         {/each}
       </div>
 
@@ -340,7 +340,7 @@ Design variants supported:
     background: var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
-  /* White segment dividers (always visible, unfilled area) */
+  /* Segment dividers — tick marks that show duration boundaries */
   .segments-background {
     position: absolute;
     top: 0;
@@ -357,16 +357,16 @@ Design variants supported:
     height: 100%;
   }
 
-  .segment-white {
-    border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.3));
+  .segment-divider {
+    border-right: 2px solid rgba(0, 0, 0, 0.35);
   }
 
-  .segment-white:last-child {
+  .segment-divider:last-child {
     border-right: none;
   }
 
-  .dark-mode .segment-white {
-    border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.3));
+  .dark-mode .segment-divider {
+    border-right: 2px solid rgba(255, 255, 255, 0.45);
   }
 
   /* Continuous progress fill (moves smoothly left to right) */
