@@ -79,11 +79,11 @@
       description: "Mirror, flip, rotate, and transform your sequence.",
     },
     {
-      label: "View",
+      label: "View and Share",
       icon: "fa-play",
       iconType: "fa",
       colorClass: "success",
-      description: "Watch your sequence animated with props.",
+      description: "Watch your sequence animated with props, or share it.",
     },
     {
       label: "Clear",

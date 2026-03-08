@@ -31,6 +31,7 @@ import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
 import { turnAllocator } from "../shared/services/implementations/TurnAllocator";
 import { turnManager } from "../shared/services/implementations/TurnManager";
+import { PropContinuity } from "../shared/domain/models/generate-models";
 import { recalculateAllOrientations } from "$lib/features/create/shared/services/implementations/sequence-transforms/orientation-propagation";
 import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { reversalDetector } from "$lib/features/create/shared/services/implementations/ReversalDetector";
@@ -237,6 +238,9 @@ export function createGenerationActionsState(
           // Clone step to avoid mutation
           stepsWithTurns[i] = { ...step, motions: { ...step.motions } };
           turnManager.setTurns(stepsWithTurns[i]!, turnBlue, turnRed);
+          // Assign random CW/CCW rotation to dash/static motions that received non-zero turns.
+          // Without this, dash arrows with turns stay at noRotation → wrong arrow placement.
+          turnManager.updateDashStaticRotationDirections(stepsWithTurns[i]!, PropContinuity.RANDOM, "", "");
         }
 
         // Rebuild sequence with new turns, then recalculate entire orientation chain

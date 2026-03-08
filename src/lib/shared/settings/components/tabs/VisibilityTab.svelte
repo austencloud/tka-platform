@@ -454,6 +454,7 @@
         showNotes={imgShowNotes}
         showBirthday={imgShowBirthday}
         customNotesText={imgCustomNotesText}
+        onPictographToggle={handlePictographToggle}
         onToggle={handleImageToggle}
         onCustomNotesChange={handleCustomNotesChange}
         isMobileHidden={mobileMode !== "image"}
