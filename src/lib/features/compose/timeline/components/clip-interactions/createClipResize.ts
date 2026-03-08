@@ -36,7 +36,7 @@ export function createClipResize(
 
     const deltaX = e.clientX - dragStartX;
     const deltaTime = pixelsToTime(deltaX, getPixelsPerSecond());
-    const newDuration = Math.max(0.5, dragStartValue + deltaTime);
+    const newDuration = Math.max(1.0, dragStartValue + deltaTime);
 
     // Calculate new playback rate based on duration change
     const speedRatio = dragStartValue / newDuration;

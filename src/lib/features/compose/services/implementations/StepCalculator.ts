@@ -115,12 +115,12 @@ export class StepCalculator implements IStepCalculator {
    * Map a time position to beat index and progress within that beat.
    * Accounts for variable beat durations.
    *
-   * Example: steps with durations [1.0, 0.5, 0.25, 0.25] (total = 2.0)
+   * Example: steps with durations [1.0, 2.0, 1.5, 1.0] (total = 5.5)
    * - timePosition 0.5 → beat 0, progress 0.5
    * - timePosition 1.0 → beat 1, progress 0.0
-   * - timePosition 1.25 → beat 1, progress 0.5 (halfway through 0.5 duration)
-   * - timePosition 1.5 → beat 2, progress 0.0
-   * - timePosition 1.625 → beat 2, progress 0.5 (halfway through 0.25 duration)
+   * - timePosition 2.0 → beat 1, progress 0.5 (halfway through 2.0 duration)
+   * - timePosition 3.0 → beat 2, progress 0.0
+   * - timePosition 3.75 → beat 2, progress 0.5 (halfway through 1.5 duration)
    */
   mapTimePositionToBeat(
     timePosition: number,

@@ -102,7 +102,7 @@
   >
     <div class="media-pane animation-pane">
       <!-- Close button - shown when focused (desktop only) -->
-      {#if layout.focusedPane === "animation" && !layout.isMobile}
+      {#if layout.focusedPane === "animation" && !layout.isMobile && !layout.suppressCloseButton}
         <div
           class="pane-close-btn"
           role="button"
@@ -157,7 +157,7 @@
     <div class="preview-column-inner" class:focused={layout.focusedPane === "image"}>
       <div class="media-pane preview-pane">
         <!-- Close button - shown when focused (desktop only) -->
-        {#if layout.focusedPane === "image" && !layout.isMobile}
+        {#if layout.focusedPane === "image" && !layout.isMobile && !layout.suppressCloseButton}
           <div
             class="pane-close-btn"
             role="button"

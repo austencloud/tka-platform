@@ -27,6 +27,12 @@
   import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import ThumbnailContextMenu from "$lib/shared/components/thumbnail/ThumbnailContextMenu.svelte";
+  import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
+  import type { ContextMenuEntry, ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
+  import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
+  import { container } from "$lib/shared/di";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/ShareOptions";
   import { createStartPositionFromBeatStart } from "$lib/features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
   import { previewCellRenderer } from "../services/implementations/PreviewCellRenderer";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
@@ -46,6 +52,7 @@
     rows: number;
     durationRows?: TimelineRow[];
     hasMixedDurations?: boolean;
+    durationColCount?: number;
     passDividerGridRows?: number[];
   }
   const MAX_PREVIEW_CACHE = 10;
@@ -203,6 +210,8 @@
   let cellWidth = $state(0);
   let hasMixedDurations = $state(false);
   let durationRows = $state<TimelineRow[]>([]);
+  /** Max duration units in any single row (including start position), for CSS --col-count */
+  let durationColCount = $state(0);
 
   // Container-based sizing for "contain" behavior
   let containerElement: HTMLDivElement | undefined = $state();
@@ -322,10 +331,17 @@
   const previewAspectRatio = $derived.by(() => {
     if (!columns || !rows) return 1;
 
-    // In duration mode, width is still `columns` (start col + rowCapacity units).
-    // Each row takes 1 cell-height regardless of duration mix.
+    // Width in cell units — always use columns (grid column count).
     const gridWidth = columns;
-    const gridHeight = rows;
+
+    // In duration mode, each row's pixel height = cardWidth / durationColCount
+    // (because the widest row fills the card, and images maintain aspect ratio).
+    // In cell units: rowHeight = columns / durationColCount.
+    // For uniform grid: rowHeight = 1 cell unit (square cells).
+    const rowHeightInCellUnits = (hasMixedDurations && durationColCount > 0)
+      ? columns / durationColCount
+      : 1;
+    const gridHeight = rows * rowHeightInCellUnits;
 
     // Header adds ~1/3 cell height, footer adds ~1/7 cell height
     const headerFraction = showHeader ? 1/3 : 0;
@@ -469,6 +485,11 @@
     return false;
   }
 
+  /** Format duration for badge display (e.g., 2 → "2×", 1.25 → "1.25×") */
+  function formatDuration(d: number): string {
+    return Number.isInteger(d) ? `${d}×` : `${d}×`;
+  }
+
   async function renderAllCells() {
     if (!sequence?.steps?.length) {
       isLoading = false;
@@ -489,7 +510,7 @@
       let cols: number;
       let rws: number;
 
-      // Detect mixed durations — determines uniform grid vs flexbox rows
+      // Detect mixed durations — determines uniform grid vs timeline rows
       const mixed = detectMixedDurations(sequence.steps);
       hasMixedDurations = mixed;
 
@@ -513,15 +534,23 @@
 
       columns = cols;
 
-      // For mixed durations: compute timeline rows using row capacity
+      // For mixed durations: compute timeline rows using row capacity.
+      // Start position is handled as a separate column barrier, NOT inline in the first row.
       let computedDurationRows: TimelineRow[] = [];
       if (mixed) {
         const rowCapacity = cols - 1; // cols includes start position column
-        computedDurationRows = calculateTimelineRows(sequence.steps, rowCapacity, true);
+        computedDurationRows = calculateTimelineRows(sequence.steps, rowCapacity, false);
         rws = computedDurationRows.length;
         durationRows = computedDurationRows;
+        // Compute max step duration units in any row, then add 1 for start column
+        let maxStepUnits = 0;
+        for (const row of computedDurationRows) {
+          maxStepUnits = Math.max(maxStepUnits, row.totalDuration);
+        }
+        durationColCount = maxStepUnits + (includeStartPosition ? 1 : 0);
       } else {
         durationRows = [];
+        durationColCount = 0;
       }
 
       // Account for pass divider rows in total row count
@@ -543,6 +572,7 @@
         cells = cached.cells.map(c => ({ ...c, isLoaded: true }));
         hasMixedDurations = cached.hasMixedDurations ?? false;
         durationRows = cached.durationRows ?? [];
+        durationColCount = cached.durationColCount ?? 0;
         passDividerGridRows = cached.passDividerGridRows ?? [];
         isLoading = false;
         isRendering = false;
@@ -635,7 +665,14 @@
         const step = sequence.steps[i];
         if (!step) continue;
 
-        const imageUrl = await previewCellRenderer.renderCell(step, i + 1, isDark, renderOptions);
+        // For mixed-duration sequences, pass widthMultiplier so the image renderer
+        // produces a wider canvas with the pictograph content centered
+        const stepDuration = step.duration ?? 1;
+        const cellRenderOptions = (mixed && stepDuration !== 1)
+          ? { ...renderOptions, widthMultiplier: stepDuration }
+          : renderOptions;
+
+        const imageUrl = await previewCellRenderer.renderCell(step, i + 1, isDark, cellRenderOptions);
         const idx = cells.findIndex(c => c.index === i);
         if (idx !== -1) {
           cells[idx] = { ...cells[idx]!, imageUrl, isLoaded: true };
@@ -651,6 +688,7 @@
         rows: rws,
         durationRows: computedDurationRows,
         hasMixedDurations: mixed,
+        durationColCount,
         passDividerGridRows: [...passDividerGridRows],
       });
 
@@ -683,6 +721,81 @@
 
   function handleCellContextMenu(event: MouseEvent): void {
     cellContextMenu?.open(event);
+  }
+
+  // Admin context menu (save/copy/claude)
+  let contextMenuState: ContextMenuState = $state({ open: false });
+
+  const contextMenuItems: ContextMenuEntry[] = $derived.by(() => {
+    const seq = sequence;
+    return [
+      {
+        id: "save-image",
+        label: "Save image",
+        icon: "fa-download",
+        async action() {
+          try {
+            const { sharer } = await import(
+              "$lib/shared/share/services/implementations/Sharer"
+            );
+            await sharer.downloadImage(seq, { ...DEFAULT_SHARE_OPTIONS, format: "PNG" });
+            toast.success("Image saved");
+          } catch (err) {
+            console.error("Save image failed:", err);
+            toast.error("Failed to save image");
+          }
+        },
+      },
+      {
+        id: "copy-image",
+        label: "Copy image",
+        icon: "fa-copy",
+        async action() {
+          try {
+            const { sharer } = await import(
+              "$lib/shared/share/services/implementations/Sharer"
+            );
+            const blob = await sharer.getImageBlob(seq, { ...DEFAULT_SHARE_OPTIONS, format: "PNG" });
+            await navigator.clipboard.write([
+              new ClipboardItem({ "image/png": blob }),
+            ]);
+            toast.success("Image copied to clipboard");
+          } catch (err) {
+            console.error("Copy image failed:", err);
+            toast.error("Failed to copy image");
+          }
+        },
+      },
+      {
+        id: "copy-for-claude",
+        label: "Copy for Claude",
+        icon: "fa-robot",
+        async action() {
+          try {
+            const copier = container.items.claudeCodeCopier;
+            const result = await copier.copyForClaude(seq);
+            if (result.success) {
+              toast.success("Copied for Claude");
+            } else {
+              toast.error("Failed to copy for Claude");
+            }
+          } catch (err) {
+            console.error("Copy for Claude failed:", err);
+            toast.error("Failed to copy for Claude");
+          }
+        },
+      },
+    ];
+  });
+
+  function handleContextMenu(e: MouseEvent) {
+    if (!featureFlagService.isAdmin) return;
+    e.preventDefault();
+    contextMenuState = { open: true, x: e.clientX, y: e.clientY };
+  }
+
+  function closeContextMenu() {
+    contextMenuState = { open: false };
   }
 
   /**
@@ -914,7 +1027,7 @@
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="layered-preview" class:dark-mode={darkMode} class:scroll-mode={needsScroll} data-ctx-container bind:this={containerElement} oncontextmenu={handleCellContextMenu}>
+<div class="choreo-card-root" class:dark-mode={darkMode} class:scroll-mode={needsScroll} data-ctx-container bind:this={containerElement} oncontextmenu={(e) => { handleContextMenu(e); if (!featureFlagService.isAdmin) handleCellContextMenu(e); }}>
   {#if isLoading && cells.length === 0}
     <div class="loading-placeholder">
       <ProgressRing percent={-1} size={32} strokeWidth={3} />
@@ -976,34 +1089,96 @@
 
       <!-- Grid section with individual pictograph cells -->
       {#if hasMixedDurations && durationRows.length > 0}
-        <!-- Duration-aware flexbox layout: rows wrap by duration capacity -->
+        <!-- Duration-aware layout: start position as fixed column barrier, step rows to the right -->
+        {@const startCell = cells.find(c => c.index === -1)}
+        {@const stepMaxUnits = durationColCount - (includeStartPosition ? 1 : 0)}
         {#if needsScroll}
           <div class="grid-scroll-container themed-scrollbar" bind:this={gridScrollRef}>
-            <div class="duration-rows-container">
-              {#each durationRows as row, rowIdx (rowIdx)}
-                <div class="duration-row">
-                  <!-- Start position in first row -->
-                  {#if rowIdx === 0 && includeStartPosition}
-                    {@const startCell = cells.find(c => c.index === -1)}
-                    {#if startCell}
-                      <div class="duration-cell" style="flex: 1;">
-                        <div
-                          class="pictograph-cell"
-                          class:current={showHighlight && highlightedStepIndex === -1}
-                        >
-                          {#if startCell.isLoaded}
-                            <img class="cell-image" src={startCell.imageUrl} alt={startCell.label} draggable="false" />
+            <div class="duration-layout" style="--max-units: {durationColCount}; --step-max: {stepMaxUnits};">
+              {#if includeStartPosition && startCell}
+                <div class="duration-start-col">
+                  <div
+                    class="pictograph-cell"
+                    class:current={showHighlight && highlightedStepIndex === -1}
+                  >
+                    {#if startCell.isLoaded}
+                      <img class="cell-image" src={startCell.imageUrl} alt={startCell.label} draggable="false" />
+                      {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={darkMode}>Start</span>{/if}
+                    {:else}
+                      <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
+                    {/if}
+                  </div>
+                </div>
+              {/if}
+              <div class="duration-steps-area">
+                {#each durationRows as row, rowIdx (rowIdx)}
+                  <div class="duration-row">
+                    {#each row.steps as { stepIndex, duration } (stepIndex)}
+                      {@const cell = cells.find(c => c.index === stepIndex)}
+                      {#if cell}
+                        <div class="duration-cell" style="--dur: {duration}; flex: {duration};">
+                          {#if onStepClick}
+                            <button
+                              class="pictograph-cell clickable"
+                              class:current={showHighlight && highlightedStepIndex === cell.index}
+                              class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
+                              onclick={() => onStepClick(cell.index)}
+                              type="button"
+                              aria-label="Go to step {cell.label}"
+                            >
+                              {#if cell.isLoaded}
+                                <img class="cell-image" src={cell.imageUrl} alt={cell.label} draggable="false" />
+                                {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
+                              {:else}
+                                <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
+                              {/if}
+                            </button>
                           {:else}
-                            <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
+                            <div
+                              class="pictograph-cell"
+                              class:current={showHighlight && highlightedStepIndex === cell.index}
+                              class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
+                            >
+                              {#if cell.isLoaded}
+                                <img class="cell-image" src={cell.imageUrl} alt={cell.label} draggable="false" />
+                                {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
+                              {:else}
+                                <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
+                              {/if}
+                            </div>
                           {/if}
                         </div>
-                      </div>
-                    {/if}
+                      {/if}
+                    {/each}
+                  </div>
+                {/each}
+              </div>
+            </div>
+          </div>
+        {:else}
+          <div class="duration-layout" style="--max-units: {durationColCount}; --step-max: {stepMaxUnits};">
+            {#if includeStartPosition && startCell}
+              <div class="duration-start-col">
+                <div
+                  class="pictograph-cell"
+                  class:current={showHighlight && highlightedStepIndex === -1}
+                >
+                  {#if startCell.isLoaded}
+                    <img class="cell-image" src={startCell.imageUrl} alt={startCell.label} draggable="false" />
+                    {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={darkMode}>Start</span>{/if}
+                  {:else}
+                    <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
                   {/if}
+                </div>
+              </div>
+            {/if}
+            <div class="duration-steps-area">
+              {#each durationRows as row, rowIdx (rowIdx)}
+                <div class="duration-row">
                   {#each row.steps as { stepIndex, duration } (stepIndex)}
                     {@const cell = cells.find(c => c.index === stepIndex)}
                     {#if cell}
-                      <div class="duration-cell" style="flex: {duration};">
+                      <div class="duration-cell" style="--dur: {duration}; flex: {duration};">
                         {#if onStepClick}
                           <button
                             class="pictograph-cell clickable"
@@ -1026,69 +1201,6 @@
                             class:current={showHighlight && highlightedStepIndex === cell.index}
                             class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
                           >
-                            {#if cell.isLoaded}
-                              <img class="cell-image" src={cell.imageUrl} alt={cell.label} draggable="false" />
-                              {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
-                            {:else}
-                              <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
-                            {/if}
-                          </div>
-                        {/if}
-                      </div>
-                    {/if}
-                  {/each}
-                </div>
-              {/each}
-            </div>
-          </div>
-        {:else}
-          <div class="duration-rows-container">
-            {#each durationRows as row, rowIdx (rowIdx)}
-              <div class="duration-row">
-                <!-- Start position in first row -->
-                {#if rowIdx === 0 && includeStartPosition}
-                  {@const startCell = cells.find(c => c.index === -1)}
-                  {#if startCell}
-                    <div class="duration-cell" style="flex: 1;">
-                      <div
-                        class="pictograph-cell"
-                        class:current={showHighlight && highlightedStepIndex === -1}
-                      >
-                        {#if startCell.isLoaded}
-                          <img class="cell-image" src={startCell.imageUrl} alt={startCell.label} draggable="false" />
-                        {:else}
-                          <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
-                        {/if}
-                      </div>
-                    </div>
-                  {/if}
-                {/if}
-                {#each row.steps as { stepIndex, duration } (stepIndex)}
-                  {@const cell = cells.find(c => c.index === stepIndex)}
-                  {#if cell}
-                    <div class="duration-cell" style="flex: {duration};">
-                      {#if onStepClick}
-                        <button
-                          class="pictograph-cell clickable"
-                          class:current={showHighlight && highlightedStepIndex === cell.index}
-                          class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
-                          onclick={() => onStepClick(cell.index)}
-                          type="button"
-                          aria-label="Go to step {cell.label}"
-                        >
-                          {#if cell.isLoaded}
-                            <img class="cell-image" src={cell.imageUrl} alt={cell.label} draggable="false" />
-                            {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
-                          {:else}
-                            <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
-                          {/if}
-                        </button>
-                      {:else}
-                        <div
-                          class="pictograph-cell"
-                          class:current={showHighlight && highlightedStepIndex === cell.index}
-                          class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
-                        >
                           {#if cell.isLoaded}
                             <img class="cell-image" src={cell.imageUrl} alt={cell.label} draggable="false" />
                             {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
@@ -1102,6 +1214,7 @@
                 {/each}
               </div>
             {/each}
+            </div>
           </div>
         {/if}
       {:else if needsScroll}
@@ -1129,7 +1242,8 @@
                       alt={cell.label}
                       draggable="false"
                     />
-                    {#if showStepNumbers && cell.index >= 0}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
+                    {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
+                    {#if hasMixedDurations && cell.duration !== 1}<span class="duration-badge" class:dark-mode={darkMode}>{formatDuration(cell.duration)}</span>{/if}
                   {:else}
                     <div class="cell-spinner-container">
                       <ProgressRing percent={-1} size={20} strokeWidth={2} />
@@ -1150,7 +1264,8 @@
                       alt={cell.label}
                       draggable="false"
                     />
-                    {#if showStepNumbers && cell.index >= 0}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
+                    {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
+                    {#if hasMixedDurations && cell.duration !== 1}<span class="duration-badge" class:dark-mode={darkMode}>{formatDuration(cell.duration)}</span>{/if}
                   {:else}
                     <div class="cell-spinner-container">
                       <ProgressRing percent={-1} size={20} strokeWidth={2} />
@@ -1185,7 +1300,8 @@
                     alt={cell.label}
                     draggable="false"
                   />
-                  {#if showStepNumbers && cell.index >= 0}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
+                  {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
+                    {#if hasMixedDurations && cell.duration !== 1}<span class="duration-badge" class:dark-mode={darkMode}>{formatDuration(cell.duration)}</span>{/if}
                 {:else}
                   <div class="cell-spinner-container">
                     <ProgressRing percent={-1} size={20} strokeWidth={2} />
@@ -1206,7 +1322,8 @@
                     alt={cell.label}
                     draggable="false"
                   />
-                  {#if showStepNumbers && cell.index >= 0}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
+                  {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
+                    {#if hasMixedDurations && cell.duration !== 1}<span class="duration-badge" class:dark-mode={darkMode}>{formatDuration(cell.duration)}</span>{/if}
                 {:else}
                   <div class="cell-spinner-container">
                     <ProgressRing percent={-1} size={20} strokeWidth={2} />
@@ -1248,8 +1365,10 @@
   <ThumbnailContextMenu bind:this={cellContextMenu} onRerender={forceRerenderAllCells} />
 </div>
 
+<ContextMenu menuState={contextMenuState} items={contextMenuItems} onClose={closeContextMenu} />
+
 <style>
-  .layered-preview {
+  .choreo-card-root {
     position: relative;
     /* Flexbox centering - child dimensions are calculated via JS */
     display: flex;
@@ -1261,13 +1380,11 @@
     min-width: 0;
     overflow: hidden;
     box-sizing: border-box;
-    /* Padding to accommodate highlight scale + glow on edge cells */
-    position: relative;
   }
 
   /* In scroll mode, the scroll container's own padding handles glow space.
      Fill the container edge-to-edge instead of centering with extra padding. */
-  .layered-preview.scroll-mode {
+  .choreo-card-root.scroll-mode {
     padding: 0;
     align-items: stretch;
     justify-content: stretch;
@@ -1292,8 +1409,7 @@
     /* Fallback to auto if JS hasn't calculated yet */
     min-width: 0;
     min-height: 0;
-    /* Allow highlight glow to show on edges */
-    overflow: visible;
+    overflow: hidden;
   }
 
   /* In scroll mode, fill the parent edge-to-edge instead of using
@@ -1371,31 +1487,57 @@
 
   /* Scroll container for long sequences (>16 beats) */
   .grid-scroll-container {
-    flex: 1 1 auto;
+    flex: 0 1 auto;
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    /* Padding accommodates highlight scale(1.06) + 3px ring + inner blur.
-       12px covers the solid ring and visible glow; outermost blur fringe
-       (nearly transparent) gets clipped by overflow-x:hidden — acceptable. */
-    padding: 12px;
+    padding: 0;
   }
 
-  /* Duration-aware flexbox layout */
-  .duration-rows-container {
+  /* Duration-aware layout — start column barrier + step rows to the right */
+  .duration-layout {
     display: flex;
-    flex-direction: column;
-    gap: 0;
     width: 100%;
     min-height: 0;
     min-width: 0;
     max-width: 100%;
-    overflow: visible;
+    overflow: hidden;
     background: #f5f5f5;
   }
 
-  .dark-mode .duration-rows-container {
+  .dark-mode .duration-layout {
     background: #000;
+  }
+
+  /* Start position: fixed column that spans the full height as a barrier */
+  .duration-start-col {
+    flex: 0 0 calc(1 / var(--max-units, 5) * 100%);
+    display: flex;
+    align-items: flex-start;
+    background: #f5f5f5;
+  }
+
+  .dark-mode .duration-start-col {
+    background: #0a0a0f;
+  }
+
+  .duration-start-col .pictograph-cell {
+    width: 100%;
+    aspect-ratio: 1;
+  }
+
+  .duration-start-col .cell-image {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  /* Steps area: fills remaining width, stacks rows vertically */
+  .duration-steps-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
   }
 
   .duration-row {
@@ -1405,26 +1547,31 @@
   }
 
   .duration-cell {
+    /* flex distributes width proportionally within the row.
+       max-width caps each cell so rows with fewer total units
+       don't stretch cells beyond their proportion of the max step row. */
+    max-width: calc(var(--dur, 1) / var(--step-max, 4) * 100%);
     display: flex;
     align-items: center;
     justify-content: center;
     min-width: 0;
+    /* Background matches pictograph so wider cells have seamless side fill */
+    background: #f5f5f5;
+  }
+
+  .dark-mode .duration-cell {
+    background: #0a0a0f;
   }
 
   .duration-cell .pictograph-cell {
     width: 100%;
-    /* Height matches the row height; aspect-ratio on the image keeps it square */
     aspect-ratio: auto;
-    height: 100%;
   }
 
   .duration-cell .cell-image {
-    /* Keep image square and centered within the (potentially wider) cell */
-    height: 100%;
-    aspect-ratio: 1;
-    width: auto;
-    object-fit: cover;
-    margin: 0 auto;
+    /* Image fills the cell width; height follows natural aspect ratio */
+    width: 100%;
+    height: auto;
     display: block;
   }
 
@@ -1437,10 +1584,8 @@
     width: 100%;
     /* Let rows size to content - prevents gaps from 1fr row sizing */
     grid-auto-rows: auto;
-    /* Ensure grid doesn't overflow container */
     max-width: 100%;
-    /* Allow highlight overflow to be visible */
-    overflow: visible;
+    overflow: hidden;
     /* Light mode background for empty cells */
     background: #f5f5f5;
   }
@@ -1450,20 +1595,15 @@
     background: #000;
   }
 
-  /* Pass divider for multi-pass orientation cycles */
   /* Individual pictograph cell */
   .pictograph-cell {
     position: relative;
     /* Container context for step-number-overlay cqw units */
     container-type: inline-size;
-    /* Use padding-bottom trick for aspect ratio to prevent overflow */
     aspect-ratio: 1;
-    overflow: visible; /* Allow selection scale to show */
-    transition:
-      transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
-      box-shadow 0.2s ease;
-    /* Subtle border for cell separation */
+    overflow: hidden;
     box-sizing: border-box;
+    /* Subtle border for cell separation */
     border: 1px solid rgba(0, 0, 0, 0.08);
     /* Button reset for clickable variant */
     background: none;
@@ -1513,6 +1653,24 @@
     color: #ffffff;
   }
 
+  /* Duration badge — bottom-right corner, compact */
+  .duration-badge {
+    position: absolute;
+    bottom: 4%;
+    right: 4%;
+    font-family: system-ui, sans-serif;
+    font-weight: 600;
+    font-size: clamp(7px, 7.5cqw, 16px);
+    line-height: 1;
+    color: rgba(0, 0, 0, 0.55);
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .duration-badge.dark-mode {
+    color: rgba(255, 255, 255, 0.55);
+  }
+
   /* Per-cell loading spinner */
   .cell-spinner-container {
     display: flex;
@@ -1543,28 +1701,28 @@
   /* Current step - "Elevated Luxury" selection with scale + glow */
   .pictograph-cell.current {
     z-index: 10;
-    transform: scale(1.06);
-    box-shadow:
-      0 0 12px rgba(251, 191, 36, 0.6),
-      0 0 0 3px rgba(251, 191, 36, 0.9);
+  }
+
+  /* Golden selection overlay — rendered via ::after so it paints ON TOP of
+     the cell image. Stays within cell bounds so nothing overflows. */
+  .pictograph-cell.current::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 3px solid rgba(251, 191, 36, 0.9);
+    box-shadow: inset 0 0 14px rgba(251, 191, 36, 0.5);
+    pointer-events: none;
     animation: cellSelectionGlowIn 0.4s ease-out forwards;
   }
 
   @keyframes cellSelectionGlowIn {
     0% {
-      box-shadow:
-        0 0 0 rgba(251, 191, 36, 0),
-        0 0 0 0 rgba(251, 191, 36, 0);
-      transform: scale(1);
-    }
-    50% {
-      transform: scale(1.08);
+      border-color: rgba(251, 191, 36, 0);
+      box-shadow: inset 0 0 0 rgba(251, 191, 36, 0);
     }
     100% {
-      box-shadow:
-        0 0 12px rgba(251, 191, 36, 0.6),
-        0 0 0 3px rgba(251, 191, 36, 0.9);
-      transform: scale(1.06);
+      border-color: rgba(251, 191, 36, 0.9);
+      box-shadow: inset 0 0 14px rgba(251, 191, 36, 0.5);
     }
   }
 
@@ -1575,7 +1733,7 @@
   }
 
   /* Light mode needs stronger dimming since opacity against light bg is subtle */
-  .layered-preview:not(.dark-mode) .pictograph-cell.played {
+  .choreo-card-root:not(.dark-mode) .pictograph-cell.played {
     opacity: 0.4;
   }
 
@@ -1620,9 +1778,8 @@
       transition: none;
     }
 
-    .pictograph-cell.current {
+    .pictograph-cell.current::after {
       animation: none;
-      transform: scale(1);
     }
 
     .grid-scroll-container {

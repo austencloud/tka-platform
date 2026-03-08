@@ -236,26 +236,36 @@ export class LayerCompositor implements ILayerCompositor {
 
     // 5. Composite all layers
     const compositeStart = performance.now();
-    const canvas = createCanvas(options.size, options.size);
+    const wm = options.widthMultiplier ?? 1;
+    const canvasWidth = Math.round(options.size * wm);
+    const canvas = createCanvas(canvasWidth, options.size);
     const ctx = canvas.getContext("2d")!;
 
-    // Draw base layer (props + arrows)
-    ctx.drawImage(baseResult.canvas, 0, 0);
-
-    // Draw grid points overlay
-    ctx.drawImage(gridPointsResult.canvas, 0, 0);
-
-    // Draw TKA overlay
-    if (tkaResult) {
-      ctx.drawImage(tkaResult.canvas, 0, 0);
+    // For expanded cells, center the square content and fill background on sides
+    const coreOffset = Math.round((canvasWidth - options.size) / 2);
+    if (wm > 1) {
+      ctx.fillStyle = options.darkMode ? "#0a0a0f" : "#d8d8d2";
+      ctx.fillRect(0, 0, canvasWidth, options.size);
     }
 
-    // Draw reversal overlay
+    // Draw base layer (props + arrows) — centered
+    ctx.drawImage(baseResult.canvas, coreOffset, 0);
+
+    // Draw grid points overlay — centered
+    ctx.drawImage(gridPointsResult.canvas, coreOffset, 0);
+
+    // Draw TKA overlay — positioned at left edge of expanded canvas
+    if (tkaResult) {
+      ctx.drawImage(tkaResult.canvas, wm > 1 ? 0 : 0, 0);
+    }
+
+    // Draw reversal overlay — centered with core content
     if (reversalResult) {
-      ctx.drawImage(reversalResult.canvas, 0, 0);
+      ctx.drawImage(reversalResult.canvas, coreOffset, 0);
     }
 
     // 6. Draw beat number (not cached - simple text)
+    // For expanded cells, draw at left edge (not centered with core)
     if (typeof stepNumber === "number" && stepNumber !== -1) {
       const beatStart = performance.now();
       this.drawStepNumber(ctx, stepNumber, options.size, options.darkMode);

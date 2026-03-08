@@ -43,6 +43,10 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
   // Track if this is the first loop (for loopable sequences that skip start pos on subsequent loops)
   private isFirstLoop: boolean = true;
 
+  // End position hold duration for freeform (non-looping) sequences
+  // Adds a 1-beat pause at the end position so the user can see the final state
+  private endPositionHoldDuration: number = 0;
+
   // Loop completion callback (used by tempo ramp training)
   private loopCompleteCallback: (() => void) | null = null;
 
@@ -88,7 +92,9 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     state.setSequenceMetadata(metadata.word, metadata.author);
 
     // Store total duration for duration-aware playback (includes start position)
-    this.totalDuration = this.animationEngine.getTotalDurationWithStartPosition();
+    // For freeform sequences, add 1-beat end position hold so the user can see the final state
+    this.endPositionHoldDuration = this._isSeamlesslyLoopable ? 0 : 1;
+    this.totalDuration = this.animationEngine.getTotalDurationWithStartPosition() + this.endPositionHoldDuration;
     this.timePosition = 0;
     this.isFirstLoop = true;
 
@@ -131,8 +137,9 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     this.state.setTotalSteps(metadata.totalSteps);
     this.state.setSequenceMetadata(metadata.word, metadata.author);
 
-    // Update total duration (includes start position)
-    this.totalDuration = this.animationEngine.getTotalDurationWithStartPosition();
+    // Update total duration (includes start position + end hold for freeform sequences)
+    this.endPositionHoldDuration = this._isSeamlesslyLoopable ? 0 : 1;
+    this.totalDuration = this.animationEngine.getTotalDurationWithStartPosition() + this.endPositionHoldDuration;
 
     // Clamp time position to new duration range
     this.timePosition = Math.min(currentTimePos, this.totalDuration);
@@ -190,7 +197,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     // Re-initialize engine if we have sequence data
     if (this.sequenceData) {
       this.animationEngine.initializeWithDomainData(this.sequenceData);
-      this.totalDuration = this.animationEngine.getTotalDurationWithStartPosition();
+      this.totalDuration = this.animationEngine.getTotalDurationWithStartPosition() + this.endPositionHoldDuration;
     }
 
     // Update prop states
@@ -554,10 +561,13 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
       const duration = this.getStepDuration(stepSize);
       this.animateToBeatInternal(nextStep, duration, true, false);
 
-      // If we just stepped to the animation end beat, loop immediately after animation
-      // (no pause at the "past the end" position since it's not a real beat)
+      // If we just stepped to the animation end beat:
+      // - Loopable sequences: loop immediately (no pause, it's not a real beat)
+      // - Freeform sequences: pause at end position so user can see the final state
       const isAtAnimationEnd = nextStep >= animationEndStep;
-      const pauseMs = isAtAnimationEnd ? 0 : this.state.stepPlaybackPauseMs;
+      const pauseMs = isAtAnimationEnd
+        ? (this._isSeamlesslyLoopable ? 0 : this.state.stepPlaybackPauseMs)
+        : this.state.stepPlaybackPauseMs;
       const nextDelay = duration + pauseMs;
 
       this.stepPlaybackTimer = setTimeout(() => {
@@ -603,7 +613,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
         // Re-initialize engine if needed
         if (this.sequenceData) {
           this.animationEngine.initializeWithDomainData(this.sequenceData);
-          this.totalDuration = this.animationEngine.getTotalDurationWithStartPosition();
+          this.totalDuration = this.animationEngine.getTotalDurationWithStartPosition() + this.endPositionHoldDuration;
         }
       } else {
         // Stop at end

@@ -3,9 +3,18 @@ import type { VideoExportProgress } from "$lib/features/compose/services/contrac
 import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
 import type { AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
 
+export interface VideoExportEffectOverrides {
+  fire?: boolean;
+  led?: boolean;
+  trails?: boolean;
+  charcoal?: boolean;
+}
+
 export interface VideoExportOptions {
   fps: number;
   loopCount: number;
+  resolution: 720 | 1080 | 2160 | 4320;
+  effectOverrides?: VideoExportEffectOverrides;
 }
 
 export interface ImageExportOptions {
@@ -25,6 +34,8 @@ export interface ExportState {
   isExporting: boolean;
   progress: VideoExportProgress | null;
   error: string | null;
+  /** Object URL of the exported video blob, available after successful video export */
+  previewBlobUrl: string | null;
 }
 
 /**
@@ -85,6 +96,11 @@ export interface ISequenceModalExporter {
    * Cancel an in-progress export
    */
   cancel(): void;
+
+  /**
+   * Dismiss the post-export preview, revoking the blob URL
+   */
+  dismissPreview(): void;
 
   /**
    * Clear error state

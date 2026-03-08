@@ -50,6 +50,8 @@ export type LayerType = "base" | "gridPoints" | "tka" | "reversal" | "beat";
  */
 export interface LayerRenderOptions {
   size: number;
+  /** Width multiplier for duration-expanded cells (1 = square, 2 = double-wide). Default: 1 */
+  widthMultiplier?: number;
   darkMode: boolean;
 
   // Grid options (affect base layer only)

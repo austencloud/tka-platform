@@ -4,7 +4,7 @@
   Mobile/mid-width footer layout for the Sequence Viewer.
 
   Default state:
-  Row 1: [Save] [Edit] [Copy Link] [Connect]
+  Row 1: [Save] [Construct] [Video] [Image] [Delete]
   Row 2: [▶ Play] [── 60 BPM ──]
 
   Controls expanded (replaces both rows inline):
@@ -20,10 +20,6 @@
     isPlaying: boolean;
     isLoggedIn: boolean;
     rampActive?: boolean;
-    sequenceUrl?: string;
-    isSyncToggling?: boolean;
-    isSyncActive?: boolean;
-    isSyncConnected?: boolean;
 
     onBpmChange: (bpm: number) => void;
     onPlayPause: () => void;
@@ -33,11 +29,11 @@
     onStepHalfForward?: () => void;
     onSave: () => void;
     onEdit: () => void;
-    onCompose: () => void;
     onGetApp?: () => void;
     onRampStart?: () => void;
     onRampStop?: () => void;
-    onConnect?: () => void;
+    onExportVideo?: () => void;
+    onExportImage?: () => void;
     isOwned?: boolean;
     onDeleteRequest?: () => void;
   }
@@ -47,10 +43,6 @@
     isPlaying,
     isLoggedIn,
     rampActive = false,
-    sequenceUrl = "",
-    isSyncToggling = false,
-    isSyncActive = false,
-    isSyncConnected = false,
     onBpmChange,
     onPlayPause,
     onStepBack,
@@ -59,11 +51,11 @@
     onStepHalfForward,
     onSave,
     onEdit,
-    onCompose,
     onGetApp,
     onRampStart,
     onRampStop,
-    onConnect,
+    onExportVideo,
+    onExportImage,
     isOwned = false,
     onDeleteRequest,
   }: Props = $props();
@@ -76,12 +68,6 @@
 
   function closeControls() {
     controlsExpanded = false;
-  }
-
-  function handleCopyLink() {
-    if (sequenceUrl) {
-      navigator.clipboard.writeText(sequenceUrl);
-    }
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -142,12 +128,12 @@
         </button>
         <button
           type="button"
-          class="action-btn edit"
+          class="action-btn construct"
           onclick={onEdit}
-          aria-label="Edit in Constructor"
+          aria-label="Open in Constructor"
         >
           <i class="fas fa-hammer" aria-hidden="true"></i>
-          <span>Edit</span>
+          <span>Construct</span>
         </button>
       {:else}
         <button
@@ -161,28 +147,26 @@
         </button>
       {/if}
 
-      <button
-        type="button"
-        class="action-btn copy-link"
-        onclick={handleCopyLink}
-        aria-label="Copy link to clipboard"
-      >
-        <i class="fas fa-link" aria-hidden="true"></i>
-        <span>Copy Link</span>
-      </button>
-
-      {#if isLoggedIn && onConnect}
+      {#if onExportVideo}
         <button
           type="button"
-          class="action-btn connect"
-          class:active={isSyncActive}
-          class:connected={isSyncConnected}
-          onclick={onConnect}
-          disabled={isSyncToggling}
-          aria-label={isSyncConnected ? "Disconnect from sync" : isSyncActive ? "Searching for devices..." : "Connect to sync"}
+          class="action-btn export-video"
+          onclick={onExportVideo}
+          aria-label="Export video"
         >
-          <i class="fas {isSyncConnected ? 'fa-tower-broadcast' : isSyncActive ? 'fa-spinner fa-pulse' : 'fa-tower-broadcast'}" aria-hidden="true"></i>
-          <span>{isSyncConnected ? "Connected" : isSyncActive ? "Searching" : "Connect"}</span>
+          <i class="fas fa-video" aria-hidden="true"></i>
+          <span>Video</span>
+        </button>
+      {/if}
+      {#if onExportImage}
+        <button
+          type="button"
+          class="action-btn export-image"
+          onclick={onExportImage}
+          aria-label="Export image"
+        >
+          <i class="fas fa-image" aria-hidden="true"></i>
+          <span>Image</span>
         </button>
       {/if}
       {#if isLoggedIn && isOwned && onDeleteRequest}
@@ -411,13 +395,13 @@
     border-color: rgba(34, 197, 94, 0.4);
   }
 
-  .action-btn.edit {
+  .action-btn.construct {
     background: rgba(245, 158, 11, 0.1);
     border-color: rgba(245, 158, 11, 0.25);
     color: #f59e0b;
   }
 
-  .action-btn.edit:hover {
+  .action-btn.construct:hover {
     background: rgba(245, 158, 11, 0.2);
     border-color: rgba(245, 158, 11, 0.4);
   }
@@ -433,42 +417,26 @@
     border-color: rgba(34, 197, 94, 0.4);
   }
 
-  .action-btn.copy-link {
-    background: rgba(168, 85, 247, 0.1);
-    border-color: rgba(168, 85, 247, 0.25);
-    color: #a855f7;
+  .action-btn.export-video {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.25);
+    color: #3b82f6;
   }
 
-  .action-btn.copy-link:hover {
-    background: rgba(168, 85, 247, 0.2);
-    border-color: rgba(168, 85, 247, 0.4);
+  .action-btn.export-video:hover {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: rgba(59, 130, 246, 0.4);
   }
 
-  .action-btn.connect {
+  .action-btn.export-image {
     background: rgba(6, 182, 212, 0.1);
     border-color: rgba(6, 182, 212, 0.25);
     color: #06b6d4;
   }
 
-  .action-btn.connect:hover {
+  .action-btn.export-image:hover {
     background: rgba(6, 182, 212, 0.2);
     border-color: rgba(6, 182, 212, 0.4);
-  }
-
-  .action-btn.connect.active {
-    background: rgba(6, 182, 212, 0.15);
-    border-color: rgba(6, 182, 212, 0.35);
-  }
-
-  .action-btn.connect.connected {
-    background: rgba(34, 197, 94, 0.15);
-    border-color: rgba(34, 197, 94, 0.35);
-    color: #22c55e;
-  }
-
-  .action-btn.connect:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
   }
 
   .action-btn.delete {
