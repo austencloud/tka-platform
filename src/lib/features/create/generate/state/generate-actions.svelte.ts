@@ -302,21 +302,24 @@ export function createGenerationActionsState(
     letterSources?: Array<{ letter: Letter; isOriginal: boolean; stepIndex: number }>
   ): Promise<SequenceData> {
     try {
-      // Analyze if sequence can be directly extended
+      // Path A: Try direct extension (sequence already ends at LOOP-compatible position)
+      // Wrapped in its own try-catch so failures fall through to bridge-finding (Path B)
       const analysis = sequenceExtender.analyzeSequence(sequence);
-
       if (analysis.canExtend) {
-        // Direct extension — the sequence ends at a LOOP-compatible position
-        const extended = await sequenceExtender.extendSequence(sequence, { loopType });
-        if (extended) {
-          return updateLoopMetadata(extended, sequence, letterSources);
+        try {
+          const extended = await sequenceExtender.extendSequence(sequence, { loopType });
+          if (extended) {
+            return updateLoopMetadata(extended, sequence, letterSources);
+          }
+        } catch {
+          // Direct extension failed (e.g., position pair not valid for this LOOP type)
+          // Fall through to bridge-finding below
         }
       }
 
-      // Not directly extendable — find bridge letters
+      // Path B: Not directly extendable — find a bridge letter to make it LOOP-compatible
       const bridgeOptions = await sequenceExtender.getCircularizationOptions(sequence);
       if (bridgeOptions.length === 0) {
-        // No bridge options — return sequence without LOOP
         console.warn("[SpellGenerate] No bridge options found for LOOP extension");
         return sequence;
       }

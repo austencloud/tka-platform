@@ -50,6 +50,8 @@ Shows current length with +/- stepper controls for quick adjustment
   }
 
   function formatValue(value: number): string {
+    // When locked to a word, show "6+" to hint that bridges will increase the actual beat count
+    if (locked) return `${value}+`;
     return value.toString();
   }
 </script>
