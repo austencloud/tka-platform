@@ -16,9 +16,7 @@ Renders a section with:
   import type { IOptionGridFitCalculator } from "../../services/contracts/IGridFitCalculator";
   import { container } from "$lib/shared/di";
   import { optionGridFitCalculator } from "../../services/implementations/OptionGridFitCalculator";
-  import { onMount, onDestroy, tick, untrack } from "svelte";
-  import { flip } from "svelte/animate";
-  import { cubicOut } from "svelte/easing";
+  import { onMount } from "svelte";
   import { getLetterBorderColors } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
   import OptionPictographCell from "./OptionPictographCell.svelte";
   import SectionHeader from "./SectionHeader.svelte";
@@ -65,32 +63,6 @@ Renders a section with:
   let reversalDetector: IReversalDetector | null = null;
   const gridFitCalculator: IOptionGridFitCalculator | null = optionGridFitCalculator;
 
-  // Respect reduced motion preference
-  const reducedMotion =
-    typeof window !== "undefined"
-      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
-      : false;
-
-  const FLIP_DURATION = reducedMotion ? 0 : 300;
-  const FADE_OUT = reducedMotion ? 0 : 120;
-  const FADE_IN = reducedMotion ? 0 : 180;
-
-  // Crossfade animation state
-  let displayedItems = $state<PictographWithReversals[]>([]);
-  let fading = $state(false);
-  let fadeTimer: ReturnType<typeof setTimeout> | null = null;
-  let pictographsGridEl = $state<HTMLDivElement>();
-  let heightCleanupTimer: ReturnType<typeof setTimeout> | null = null;
-
-  /** Remove inline height/overflow styles from a previous animation */
-  function clearHeightLock() {
-    if (heightCleanupTimer) clearTimeout(heightCleanupTimer);
-    if (pictographsGridEl) {
-      pictographsGridEl.style.height = "";
-      pictographsGridEl.style.overflow = "";
-    }
-  }
-
   onMount(() => {
     hapticService = container.items.hapticFeedback;
     reversalDetector = container.items.reversalDetector;
@@ -99,11 +71,9 @@ Renders a section with:
   // Pictographs are already filtered when passed to this component
   const sectionPictographs = $derived(() => pictographs);
 
-  // Get pictographs with reversal information from service
-  // Returns the pictographs with reversal flags attached when service is ready
-  const pictographsWithReversals = $derived(() => {
+  // Get pictographs with reversal information — updates instantly when options change
+  const displayedItems = $derived(() => {
     if (!reversalDetector) {
-      // Service not ready yet, return pictographs without reversal info
       return sectionPictographs().map((p: PictographData) => ({
         ...p,
         blueReversal: false,
@@ -114,72 +84,6 @@ Renders a section with:
       currentSequence,
       sectionPictographs()
     );
-  });
-
-  // Crossfade with height interpolation: fade out, lock height, swap data,
-  // animate height to new value while fading back in
-  $effect(() => {
-    const target = pictographsWithReversals();
-    const current = untrack(() => displayedItems);
-
-    // First render — show immediately
-    if (current.length === 0) {
-      displayedItems = target;
-      return;
-    }
-
-    const targetIds = new Set(target.map((o) => o.id));
-    const currentIds = new Set(current.map((o) => o.id));
-    const setChanged =
-      targetIds.size !== currentIds.size ||
-      [...targetIds].some((id) => !currentIds.has(id));
-
-    if (!setChanged) {
-      // Same items, possibly reordered — FLIP handles it
-      displayedItems = target;
-      return;
-    }
-
-    // Clean up any interrupted animation
-    if (fadeTimer) clearTimeout(fadeTimer);
-    clearHeightLock();
-
-    // Lock current height so layout doesn't jump during crossfade
-    if (pictographsGridEl) {
-      pictographsGridEl.style.height = `${pictographsGridEl.offsetHeight}px`;
-      pictographsGridEl.style.overflow = "hidden";
-    }
-
-    fading = true;
-
-    fadeTimer = setTimeout(async () => {
-      displayedItems = target;
-      await tick();
-
-      // Measure natural height by briefly removing the lock (grid is invisible)
-      if (pictographsGridEl) {
-        const lockedHeight = pictographsGridEl.style.height;
-        pictographsGridEl.style.height = "";
-        const newHeight = pictographsGridEl.offsetHeight;
-        // Restore locked height so CSS transition can animate from old → new
-        pictographsGridEl.style.height = lockedHeight;
-
-        requestAnimationFrame(() => {
-          if (pictographsGridEl) {
-            pictographsGridEl.style.height = `${newHeight}px`;
-          }
-        });
-        heightCleanupTimer = setTimeout(clearHeightLock, FADE_IN + 50);
-      }
-
-      fading = false;
-      fadeTimer = null;
-    }, FADE_OUT);
-  });
-
-  onDestroy(() => {
-    if (fadeTimer) clearTimeout(fadeTimer);
-    if (heightCleanupTimer) clearTimeout(heightCleanupTimer);
   });
 
   // Reactive container element for measuring available space
@@ -289,7 +193,7 @@ Renders a section with:
   // CRITICAL: Considers BOTH width AND height constraints to prevent overflow
   // Size calculation delegated to IGridFitCalculator service
   const optimalLayout = $derived(() => {
-    const rawItemCount = pictographsWithReversals().length;
+    const rawItemCount = displayedItems().length;
     const safeItemCount = Math.max(rawItemCount, 1);
     const maxColumns = layoutConfig?.optionsPerRow || 4;
     const columns = Math.min(maxColumns, safeItemCount);
@@ -424,22 +328,18 @@ Renders a section with:
     <SectionHeader {letterType} />
   {/if}
 
-  <!-- Section Content - Container crossfade for filter, FLIP for reorder -->
+  <!-- Section Content - Index-keyed so components stay mounted,
+       arrows/props transition in place via their own CSS transforms -->
   <div
     class="pictographs-grid"
-    class:fading
-    bind:this={pictographsGridEl}
     style:grid-template-columns={optimalLayout().gridColumns}
     style:gap={layoutConfig?.gridGap || "16px"}
-    style:--fade-in="{FADE_IN}ms"
-    style:--fade-out="{FADE_OUT}ms"
   >
-    {#each displayedItems as pictograph, index (pictograph.id)}
+    {#each displayedItems() as pictograph, index (index)}
       {@const borderColors = getLetterBorderColors(pictograph.letter)}
       <button
         class="pictograph-option"
         class:continuation={continuationIndex === index}
-        animate:flip={{ duration: FLIP_DURATION, easing: cubicOut }}
         onclick={() => handlePictographClick(pictograph, index)}
         style:width="{optimalLayout().pictographSize}px"
         style:height="{optimalLayout().pictographSize}px"
@@ -482,16 +382,6 @@ Renders a section with:
     padding: 0 4px; /* Prevent edge clipping when grid is centered */
     box-sizing: border-box;
     overflow: hidden; /* Clip any overflow */
-    transition:
-      opacity var(--fade-in, 180ms) ease,
-      height var(--fade-in, 180ms) ease;
-  }
-
-  .pictographs-grid.fading {
-    opacity: 0;
-    transition:
-      opacity var(--fade-out, 120ms) ease,
-      height var(--fade-in, 180ms) ease;
   }
 
   .pictograph-option {
@@ -505,12 +395,6 @@ Renders a section with:
     justify-content: center;
     position: relative;
     box-sizing: border-box;
-    will-change: opacity;
-    transform: translateZ(0);
-    transition:
-      transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-      filter 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-      box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
     box-shadow:
       0 1px 2px rgba(0, 0, 0, 0.1),
@@ -524,30 +408,9 @@ Renders a section with:
       0 2px 4px rgba(0, 0, 0, 0.06);
   }
 
-  /* Disable prop/arrow transitions inside option cards — they must appear
-     instantly, not fly in from (0,0) during the grid crossfade. */
-  .pictograph-option :global(.prop-svg),
-  .pictograph-option :global(.arrow-svg) {
-    transition: none;
-  }
-
   .pictograph-option:disabled {
     cursor: not-allowed;
     pointer-events: none;
-  }
-
-  /* Reduce cascade pop-in effect by optimizing SVG rendering */
-  .pictograph-option :global(.pictograph) {
-    /* Force GPU acceleration for smoother rendering */
-    transform: translateZ(0);
-    will-change: transform;
-    /* Contain layout and paint to isolate rendering */
-    contain: layout paint;
-  }
-
-  .pictograph-option :global(.pictograph svg) {
-    /* Ensure SVG renders as a single unit */
-    will-change: contents;
   }
 
   /* Desktop hover - only on hover-capable devices */
@@ -565,7 +428,6 @@ Renders a section with:
   /* Mobile/universal active state */
   .pictograph-option:active {
     transform: scale(0.97);
-    transition: transform var(--duration-instant) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .pictograph-option:focus {

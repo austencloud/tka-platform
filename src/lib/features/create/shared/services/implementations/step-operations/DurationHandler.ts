@@ -11,17 +11,20 @@ import { getStepDataFromState, START_POSITION_BEAT_NUMBER } from "./step-data-he
 
 const logger = createComponentLogger("DurationHandler");
 
-/** Minimum duration (¼ beat = 1 subdivision) */
-export const MIN_DURATION = 0.25;
+/** Minimum duration (1 beat) — a pictograph is fundamentally square, can only stretch wider */
+export const MIN_DURATION = 1.0;
 
 /** Maximum duration (4 steps = 16 subdivisions) */
 export const MAX_DURATION = 4.0;
 
-/** Fine step size (¼ beat) */
-export const DURATION_STEP_FINE = 0.25;
+/** Fine step size (0.1 beat) */
+export const DURATION_STEP_FINE = 0.1;
 
-/** Coarse step size (1 beat) */
-export const DURATION_STEP_COARSE = 1.0;
+/** Coarse step size (½ beat) */
+export const DURATION_STEP_COARSE = 0.5;
+
+/** Minimum precision for duration rounding (hundredths) */
+export const DURATION_PRECISION = 0.01;
 
 /**
  * Update duration for a beat
@@ -50,8 +53,8 @@ export function updateStepDuration(
   // Clamp to valid range
   const clampedDuration = Math.max(MIN_DURATION, Math.min(MAX_DURATION, newDuration));
 
-  // Round to nearest valid step (0.25 increments)
-  const roundedDuration = Math.round(clampedDuration / DURATION_STEP_FINE) * DURATION_STEP_FINE;
+  // Round to nearest hundredth to avoid floating point noise
+  const roundedDuration = Math.round(clampedDuration / DURATION_PRECISION) * DURATION_PRECISION;
 
   // Skip if no change
   if (stepData.duration === roundedDuration) {

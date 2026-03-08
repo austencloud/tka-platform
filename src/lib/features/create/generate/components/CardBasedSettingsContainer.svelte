@@ -21,19 +21,21 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     DifficultyLevel,
     PropContinuity,
   } from "../shared/domain/models/generate-models";
-  import type {
+  import {
+    ROTATED_LOOP_TYPES,
     LOOPType,
+    SliceSize,
   } from "../circular/domain/models/circular-models";
   import type { GeneratorHelpId } from "../domain/generator-help-content";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getCardColors } from "../shared/domain/card-colors";
+  import { spellServiceLoader } from "$lib/features/create/spell/services/implementations/SpellServiceLoader";
   // Card components
   import GridModeCard from "./cards/GridModeCard.svelte";
   import LengthCard from "./cards/LengthCard.svelte";
   import LevelCard from "./cards/LevelCard.svelte";
-  import PropContinuityCard from "./cards/PropContinuityCard.svelte";
   import TurnIntensityCard from "./cards/TurnIntensityCard.svelte";
   import GenerateButtonCard from "./cards/GenerateButtonCard.svelte";
   import ConsolidatedLOOPCard from "./cards/ConsolidatedLOOPCard.svelte";
@@ -86,7 +88,6 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     "length": "length",
     "word-input": "generation-mode",
     "grid-mode": "grid-mode",
-    "prop-continuity": "prop-continuity",
     "turn-intensity": "turn-intensity",
     "customize": "prop-continuity",
     "loop": "loop-type",
@@ -131,6 +132,74 @@ Supports help mode: when active, clicking cards opens help instead of normal act
 
   // Get card colors based on current background (reactive to background changes)
   let cardColors = $derived(getCardColors(settingsService.settings.backgroundType ?? BackgroundType.SNOWFALL));
+
+  // Pre-compute word length including bridges and LOOP multiplication
+  let computedWordLength = $state<number | undefined>(undefined);
+
+  $effect(() => {
+    const word = wordInputValue?.trim();
+    if (!word) {
+      computedWordLength = undefined;
+      return;
+    }
+    computeWordLength(word, config.loopEnabled, config.loopType, config.sliceSize);
+  });
+
+  async function computeWordLength(
+    word: string,
+    loopEnabled: boolean,
+    loopType: string,
+    sliceSize: string
+  ) {
+    try {
+      const graph = await spellServiceLoader.getTransitionGraph();
+      const generator = await spellServiceLoader.getWordGenerator();
+
+      const parseResult = generator.parseWord(word);
+      if (!parseResult || parseResult.error || !parseResult.letters?.length) {
+        computedWordLength = undefined;
+        return;
+      }
+
+      const originalLetters = parseResult.letters;
+
+      // Count bridges needed between consecutive letters
+      let bridgeCount = 0;
+      for (let i = 1; i < originalLetters.length; i++) {
+        const prev = originalLetters[i - 1]!;
+        const curr = originalLetters[i]!;
+        if (!graph.canFollow(prev, curr)) {
+          const bridges = graph.findAllBridgeOptions(prev, curr);
+          if (bridges.length > 0) {
+            bridgeCount++;
+          }
+        }
+      }
+
+      let totalBeats = originalLetters.length + bridgeCount;
+
+      // Apply LOOP multiplier
+      if (loopEnabled) {
+        // LOOP extension adds 1 bridge beat to connect end back to start
+        totalBeats += 1;
+
+        if (ROTATED_LOOP_TYPES.has(loopType as LOOPType)) {
+          if (sliceSize === SliceSize.HALVED) {
+            totalBeats *= 2;
+          } else if (sliceSize === SliceSize.QUARTERED) {
+            totalBeats *= 4;
+          }
+        } else {
+          // Non-rotated LOOPs (mirrored, flipped, rewound) always double
+          totalBeats *= 2;
+        }
+      }
+
+      computedWordLength = totalBeats;
+    } catch {
+      computedWordLength = undefined;
+    }
+  }
 
   // Initialize services
   onMount(() => {
@@ -247,6 +316,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
         handleDurationTemplateSelect,
         handleLoopToggle,
         wordInputValue,
+        computedWordLength,
         handleWordInput: onWordInput,
         handleWordSubmit: onWordSubmit,
         handleStartEndChange: startEndState
@@ -288,8 +358,6 @@ Supports help mode: when active, clicking cards opens help instead of normal act
         <WordInputCard {...card.props as any} color={cardColors.mode.color} shadowColor={cardColors.mode.shadowColor} />
       {:else if card.id === "grid-mode"}
         <GridModeCard {...card.props as any} color={cardColors.gridMode.color} shadowColor={cardColors.gridMode.shadowColor} />
-      {:else if card.id === "prop-continuity"}
-        <PropContinuityCard {...card.props as any} color={cardColors.continuity.color} shadowColor={cardColors.continuity.shadowColor} />
       {:else if card.id === "turn-intensity"}
         <TurnIntensityCard {...card.props as any} color={cardColors.turnIntensity.color} shadowColor={cardColors.turnIntensity.shadowColor} />
       {:else if card.id === "customize"}

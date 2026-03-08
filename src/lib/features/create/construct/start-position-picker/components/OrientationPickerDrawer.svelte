@@ -67,7 +67,7 @@
   ariaLabel="{colorLabel} orientation picker"
   showHandle={true}
   class={drawerClass}
-  respectLayoutMode={true}
+  respectLayoutMode={false}
 >
   <div class="orientation-picker">
     <h3 class="picker-title">{colorLabel} Orientation</h3>

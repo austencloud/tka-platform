@@ -15,10 +15,11 @@
   import StartPositionEditMode from "./StartPositionEditMode.svelte";
   import DurationControl from "./DurationControl.svelte";
   import PictographInspectModal from "./PictographInspectModal.svelte";
-  import StepEditorHelpModal from "./StepEditorHelpModal.svelte";
   import HelpButton from "$lib/shared/components/help/HelpButton.svelte";
   import ArrowAdjustmentPanel from "./ArrowAdjustmentPanel.svelte";
   import ArrowAdjustmentHistory from "./ArrowAdjustmentHistory.svelte";
+  import StepEditorTour from "$lib/shared/onboarding/components/step-editor-tour/StepEditorTour.svelte";
+  import { stepEditorTourState } from "$lib/shared/onboarding/state/step-editor-tour-state.svelte";
   import type { StepData } from "../../domain/models/StepData";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import {
@@ -217,11 +218,30 @@
     return undefined;
   });
 
+  // Trigger step editor tour on first open with a selection
+  $effect(() => {
+    if (isOpen && hasSelection) {
+      stepEditorTourState.triggerIfFirstTime();
+    }
+  });
+
+  // Which section to highlight during tour
+  const tourHighlight = $derived(
+    stepEditorTourState.isActive
+      ? (
+          {
+            welcome: "all",
+            preview: "preview",
+            turns: "turns",
+            duration: "duration",
+          } as const
+        )[stepEditorTourState.currentStop]
+      : "none",
+  );
+
   // Inspect modal state (admin-only)
   let showInspectModal = $state(false);
 
-  // Help modal state
-  let showHelpModal = $state(false);
 
   function handleClose() {
     selectedArrowState.clearSelection();
@@ -259,9 +279,12 @@
   ariaLabel="Step editor panel"
   onClose={handleClose}
 >
-  <div class="editor-panel" class:desktop={isSideBySideLayout}>
+  <div class="editor-panel" class:desktop={isSideBySideLayout} class:tour-active={stepEditorTourState.isActive}>
+    <!-- Step Editor Tour overlay -->
+    <StepEditorTour />
+
     <!-- Header -->
-    <header class="panel-header">
+    <header class="panel-header" class:tour-dim={tourHighlight !== "none"}>
       <div class="header-info">
         <h2>Step Editor</h2>
         <span class="subtitle">
@@ -287,8 +310,8 @@
       <div class="header-actions">
         <!-- Help button -->
         <HelpButton
-          onclick={() => (showHelpModal = true)}
-          ariaLabel="Help with step editor"
+          onclick={() => stepEditorTourState.restart()}
+          ariaLabel="Replay step editor tour"
           size="compact"
         />
         {#if isAdmin() && hasSelection && displayedStepData}
@@ -328,7 +351,12 @@
     <!-- Pictograph Preview - shown on both mobile and desktop when beat selected -->
     <!-- Duration is now rendered INSIDE the pictograph via DurationGlyph -->
     {#if hasSelection && displayedStepData}
-      <div class="preview-section" class:mobile={!isSideBySideLayout}>
+      <div
+        class="preview-section"
+        class:mobile={!isSideBySideLayout}
+        class:tour-highlight={tourHighlight === "preview"}
+        class:tour-dim={tourHighlight !== "none" && tourHighlight !== "preview"}
+      >
         <div class="pictograph-container">
           <PictographContainer
             pictographData={displayedStepData}
@@ -340,7 +368,10 @@
     {/if}
 
     <!-- Controls - different layout for mobile vs desktop -->
-    <div class="controls-section" class:mobile={!isSideBySideLayout}>
+    <div
+      class="controls-section"
+      class:mobile={!isSideBySideLayout}
+    >
       {#if !hasSelection}
         <div class="no-selection">
           <i class="fas fa-hand-pointer" aria-hidden="true"></i>
@@ -354,26 +385,38 @@
         />
       {:else}
         {#if onDurationChange}
-          <DurationControl
-            duration={displayedStepData?.duration ?? 1}
-            compact={!isSideBySideLayout}
-            onDurationChange={onDurationChange}
-          />
+          <div
+            class="tour-section"
+            class:tour-highlight={tourHighlight === "duration"}
+            class:tour-dim={tourHighlight !== "none" && tourHighlight !== "duration"}
+          >
+            <DurationControl
+              duration={displayedStepData?.duration ?? 1}
+              compact={!isSideBySideLayout}
+              onDurationChange={onDurationChange}
+            />
+          </div>
         {/if}
-        <TurnsEditMode
-          {hasSelection}
-          blueTurns={displayBlueTurns}
-          redTurns={displayRedTurns}
-          {blueRotation}
-          {redRotation}
-          {showBlueRotation}
-          {showRedRotation}
-          stacked={!isSideBySideLayout}
-          compact={!isSideBySideLayout}
-          {onTurnsChange}
-          {onRotationChange}
-          {onOpenPropSheet}
-        />
+        <div
+          class="tour-section"
+          class:tour-highlight={tourHighlight === "turns"}
+          class:tour-dim={tourHighlight !== "none" && tourHighlight !== "turns"}
+        >
+          <TurnsEditMode
+            {hasSelection}
+            blueTurns={displayBlueTurns}
+            redTurns={displayRedTurns}
+            {blueRotation}
+            {redRotation}
+            {showBlueRotation}
+            {showRedRotation}
+            stacked={!isSideBySideLayout}
+            compact={!isSideBySideLayout}
+            {onTurnsChange}
+            {onRotationChange}
+            {onOpenPropSheet}
+          />
+        </div>
       {/if}
     </div>
   </div>
@@ -386,11 +429,6 @@
   onClose={handleCloseInspect}
 />
 
-<!-- Help Modal -->
-<StepEditorHelpModal
-  bind:show={showHelpModal}
-  onClose={() => (showHelpModal = false)}
-/>
 
 <style>
   /* ============================================================================
@@ -642,6 +680,35 @@
      REDUCED MOTION
      ============================================================================ */
 
+  /* ============================================================================
+     TOUR HIGHLIGHTING - Dim/highlight sections during coach marks
+     ============================================================================ */
+
+  .tour-section {
+    border-radius: 8px;
+  }
+
+  .tour-dim {
+    opacity: 0.25;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .tour-highlight {
+    position: relative;
+    z-index: 50;
+    opacity: 1;
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--feature-edit, #8b5cf6) 70%, transparent),
+      0 0 24px 4px color-mix(in srgb, var(--feature-edit, #8b5cf6) 35%, transparent);
+    border-radius: 8px;
+    transition: opacity 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  /* ============================================================================
+     REDUCED MOTION
+     ============================================================================ */
+
   @media (prefers-reduced-motion: reduce) {
     .icon-btn {
       transition: none;
@@ -653,6 +720,11 @@
 
     .cascade-indicator.pulse {
       animation: none;
+    }
+
+    .tour-dim,
+    .tour-highlight {
+      transition: none;
     }
   }
 </style>

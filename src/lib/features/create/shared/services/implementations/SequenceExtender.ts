@@ -159,10 +159,11 @@ export class SequenceExtender implements ISequenceExtender {
     }
 
     const { loopType } = options;
-    const sliceSize =
-      analysis.extensionType === "quarter_rotation"
+    // Use explicitly provided sliceSize, otherwise derive from position pair analysis
+    const sliceSize = options.sliceSize ??
+      (analysis.extensionType === "quarter_rotation"
         ? SliceSize.QUARTERED
-        : SliceSize.HALVED;
+        : SliceSize.HALVED);
 
     // Get the executor for the selected LOOP type
     const executor = this.loopExecutorSelector.getExecutor(loopType);
@@ -374,14 +375,18 @@ export class SequenceExtender implements ISequenceExtender {
   async extendWithBridge(
     sequence: SequenceData,
     bridgeLetter: Letter,
-    loopType: LOOPType
+    loopType: LOOPType,
+    pictographData?: import("$lib/shared/pictograph/shared/domain/models/PictographData").PictographData,
+    sliceSize?: SliceSize
   ): Promise<SequenceData> {
     // Use appendBridgeBeat to add the bridge, then apply LOOP
+    // Pass pictographData to ensure the exact variation (and thus end position) is used
     const sequenceWithBridge = await this.appendBridgeBeat(
       sequence,
-      bridgeLetter
+      bridgeLetter,
+      pictographData
     );
-    return this.extendSequence(sequenceWithBridge, { loopType });
+    return this.extendSequence(sequenceWithBridge, { loopType, sliceSize });
   }
 }
 

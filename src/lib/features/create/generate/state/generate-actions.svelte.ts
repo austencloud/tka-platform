@@ -26,10 +26,14 @@ import { createConstraintSet } from "$lib/shared/sequence-engine/constraints";
 import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { sequenceExtender } from "$lib/features/create/shared/services/implementations/SequenceExtender";
-import { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import { LOOPType, SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
-
+import { turnAllocator } from "../shared/services/implementations/TurnAllocator";
+import { turnManager } from "../shared/services/implementations/TurnManager";
+import { recalculateAllOrientations } from "$lib/features/create/shared/services/implementations/sequence-transforms/orientation-propagation";
+import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import { reversalDetector } from "$lib/features/create/shared/services/implementations/ReversalDetector";
 export function createGenerationActionsState(
   getSequenceState?: () => SequenceState | undefined,
   getIsSequential?: () => boolean,
@@ -209,16 +213,52 @@ export function createGenerationActionsState(
         return;
       }
 
-      // Derive start position
-      let sequenceWithStart = sequence;
-      const firstStep = sequence.steps?.[0];
-      if (!sequence.startPosition && firstStep) {
+      // Apply turn allocation to spell-generated sequence.
+      // The RandomSequenceGenerator selects pictographs with 0 turns (from CSV data).
+      // We allocate turns post-hoc, then recalculate ALL orientations from scratch.
+      // This is safe because recalculateAllOrientations() propagates from start position
+      // through every step, computing endOri based on each step's actual turns.
+      const level = config?.level ?? 2;
+      let turnAppliedSequence = sequence;
+      if (level >= 2 && sequence.steps?.length > 0) {
+        const turnAllocation = await turnAllocator.allocateTurns(
+          sequence.steps.length,
+          level,
+          config?.turnIntensity ?? 1.0
+        );
+
+        // Apply allocated turns to each step
+        const stepsWithTurns = [...sequence.steps];
+        for (let i = 0; i < stepsWithTurns.length; i++) {
+          const step = stepsWithTurns[i];
+          if (!step) continue;
+          const turnBlue = turnAllocation.blue[i] ?? 0;
+          const turnRed = turnAllocation.red[i] ?? 0;
+          // Clone step to avoid mutation
+          stepsWithTurns[i] = { ...step, motions: { ...step.motions } };
+          turnManager.setTurns(stepsWithTurns[i]!, turnBlue, turnRed);
+        }
+
+        // Rebuild sequence with new turns, then recalculate entire orientation chain
+        turnAppliedSequence = { ...sequence, steps: stepsWithTurns };
+      }
+
+      // Derive start position (needed for orientation recalculation)
+      let sequenceWithStart = turnAppliedSequence;
+      const firstStep = turnAppliedSequence.steps?.[0];
+      if (!turnAppliedSequence.startPosition && firstStep) {
         try {
           const derived = startPositionDeriver.deriveFromFirstBeat(firstStep);
-          sequenceWithStart = { ...sequence, startPosition: derived };
+          sequenceWithStart = { ...turnAppliedSequence, startPosition: derived };
         } catch {
           // Use sequence without start position
         }
+      }
+
+      // Recalculate orientations with the new turns and reprocess reversals
+      if (level >= 2 && sequenceWithStart.startPosition) {
+        sequenceWithStart = recalculateAllOrientations(sequenceWithStart, orientationCalculator);
+        sequenceWithStart = reversalDetector.processReversals(sequenceWithStart);
       }
 
       // Build final sequence with spell metadata
@@ -240,7 +280,8 @@ export function createGenerationActionsState(
       let loopedSequence: SequenceData = finalSequence;
       if (config?.loopEnabled) {
         const loopType = (config.loopType as LOOPType) || LOOPType.STRICT_REWOUND;
-        loopedSequence = await applySpellLoopExtension(finalSequence, loopType, parseResult.letterSources);
+        const sliceSize = (config.sliceSize as SliceSize) || SliceSize.HALVED;
+        loopedSequence = await applySpellLoopExtension(finalSequence, loopType, sliceSize, parseResult.letterSources);
       }
 
       // Apply duration rhythm template if configured
@@ -299,6 +340,7 @@ export function createGenerationActionsState(
   async function applySpellLoopExtension(
     sequence: SequenceData,
     loopType: LOOPType,
+    sliceSize: SliceSize,
     letterSources?: Array<{ letter: Letter; isOriginal: boolean; stepIndex: number }>
   ): Promise<SequenceData> {
     try {
@@ -307,7 +349,7 @@ export function createGenerationActionsState(
       const analysis = sequenceExtender.analyzeSequence(sequence);
       if (analysis.canExtend) {
         try {
-          const extended = await sequenceExtender.extendSequence(sequence, { loopType });
+          const extended = await sequenceExtender.extendSequence(sequence, { loopType, sliceSize });
           if (extended) {
             return updateLoopMetadata(extended, sequence, letterSources);
           }
@@ -318,22 +360,53 @@ export function createGenerationActionsState(
       }
 
       // Path B: Not directly extendable — find a bridge letter to make it LOOP-compatible
-      const bridgeOptions = await sequenceExtender.getCircularizationOptions(sequence);
-      if (bridgeOptions.length === 0) {
+      // Try both circularization (cross-group) and extension (same-group) options
+      const circularizationOptions = await sequenceExtender.getCircularizationOptions(sequence);
+      const extensionOptions = await sequenceExtender.getAllExtensionOptions(sequence);
+      const allBridgeOptions = [...circularizationOptions, ...extensionOptions];
+
+      if (allBridgeOptions.length === 0) {
         console.warn("[SpellGenerate] No bridge options found for LOOP extension");
         return sequence;
       }
+
+      // Filter bridge options to those compatible with the user's chosen LOOP type AND slice size
+      // rotationRelation tells us the position pair geometry:
+      //   "half" → valid for halved (180°)
+      //   "quarter" → valid for quartered (90°)
+      //   "exact" → same position (rewound only)
+      const expectedRotation = sliceSize === SliceSize.QUARTERED ? "quarter" : "half";
+
+      const compatibleBridges = allBridgeOptions.filter((opt) => {
+        const hasLoopType = opt.availableLOOPs.some((l) => l.loopType === loopType);
+        if (!hasLoopType) return false;
+        // Also check slice size compatibility via rotation relation
+        if (opt.rotationRelation) {
+          return opt.rotationRelation === expectedRotation;
+        }
+        return true; // No rotation info = allow (e.g., rewound)
+      });
+
+      if (compatibleBridges.length === 0) {
+        console.warn("[SpellGenerate] No bridge options compatible with", loopType, sliceSize);
+        return sequence;
+      }
+
+      const bridgeOptions = compatibleBridges;
 
       // Pick the first viable bridge option
       const bestBridge = bridgeOptions[0]!;
       const bridgeLetter = bestBridge.bridgeLetters[0];
       if (!bridgeLetter) return sequence;
 
-      // Extend with the bridge letter
+      // Extend with the bridge letter, passing the specific pictographData
+      // to ensure the exact variation (and correct end position) is used
       const extended = await sequenceExtender.extendWithBridge(
         sequence,
         bridgeLetter,
-        loopType
+        loopType,
+        bestBridge.pictographData,
+        sliceSize
       );
 
       if (!extended) return sequence;

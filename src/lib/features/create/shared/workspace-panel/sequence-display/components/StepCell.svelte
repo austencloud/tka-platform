@@ -8,6 +8,7 @@
   import { practiceAnimationStyle } from "../../../state/practice-animation-style.svelte";
   import { createStepCellAnimationManager } from "../services/implementations/StepCellAnimationManager";
 
+
   let {
     step,
     index = 0,
@@ -117,13 +118,18 @@
     animationState = animationManager.getState();
   });
 
-  // Derived values from animation manager
+  // Derived values using reactive animationState (NOT non-reactive class methods)
+  // animationManager methods read plain `hasAnimated` which Svelte can't track.
+  // We inline the logic here using animationState.hasAnimated which IS reactive.
   const shouldAnimateIn = $derived.by(() => {
-    return animationManager.shouldAnimateIn(shouldAnimate, step.isBlank);
+    return shouldAnimate && !animationState.hasAnimated && !step.isBlank;
   });
 
   const isVisible = $derived.by(() => {
-    return animationManager.isVisible(shouldAnimate, index, step.isBlank);
+    if (shouldAnimate && !animationState.hasAnimated) return false;
+    if (index === -1) return true;
+    if (step.isBlank) return false;
+    return true;
   });
 
   const enableTransitionsForNewData = $derived.by(() => {
@@ -258,8 +264,8 @@
     }
   }
 
-  // Prevent context menu when long-press handler is active
   function handleContextMenu(event: MouseEvent) {
+    // Prevent default context menu when long-press handler is active
     if (onLongPress) {
       event.preventDefault();
     }

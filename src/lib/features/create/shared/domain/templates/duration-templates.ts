@@ -168,7 +168,7 @@ function generateGradualPattern(
   for (let i = 0; i < stepCount; i++) {
     entries.push({
       stepIndex: i,
-      duration: Math.max(0.1, startDuration + step * i),
+      duration: Math.max(1.0, startDuration + step * i),
     });
   }
   return entries;
@@ -202,21 +202,21 @@ const TEMPLATE_DEFINITIONS: readonly DurationTemplateDefinition[] = [
   {
     id: "waltz-3-4",
     name: "3/4 Waltz",
-    description: "ONE-two-three feel",
+    description: "ONE-two-three feel — downbeat held longer",
     category: "feel",
     minSteps: 3,
     divisibleBy: 3,
     generator: (stepCount) =>
-      generateRepeatingPattern(stepCount, [1.5, 0.75, 0.75]),
+      generateRepeatingPattern(stepCount, [2, 1, 1]),
   },
   {
     id: "swing",
     name: "Swing",
-    description: "Triplet feel - long-short alternation",
+    description: "Long-short alternation",
     category: "feel",
     minSteps: 2,
     generator: (stepCount) =>
-      generateAlternatingPattern(stepCount, 1.33, 0.67),
+      generateAlternatingPattern(stepCount, 1.67, 1.0),
   },
   {
     id: "shuffle",
@@ -225,7 +225,7 @@ const TEMPLATE_DEFINITIONS: readonly DurationTemplateDefinition[] = [
     category: "feel",
     minSteps: 2,
     generator: (stepCount) =>
-      generateAlternatingPattern(stepCount, 1.5, 0.5),
+      generateAlternatingPattern(stepCount, 1.5, 1.0),
   },
 ];
 

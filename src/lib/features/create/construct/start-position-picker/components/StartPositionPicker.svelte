@@ -56,6 +56,12 @@ Controls moved below the grid for better UX
   onMount(() => {
     hapticService = container.items.hapticFeedback;
     loadPersistedPreferences();
+
+    // Always ensure positions are loaded — loadPersistedPreferences may
+    // skip loadPositions if there are no stored prefs or no gridMode pref.
+    if (pickerState.positions.length === 0 && !showAdvancedPicker) {
+      void pickerState.loadPositions();
+    }
   });
 
   /**
@@ -448,8 +454,8 @@ Controls moved below the grid for better UX
     width: 100%;
   }
 
-  /* Make orientation trigger buttons stretch to fill their row equally */
-  .orientation-controls :global(.orientation-trigger) {
+  /* Make orientation cyclers stretch to fill their row equally */
+  .orientation-controls :global(.orientation-cycler) {
     flex: 1;
   }
 

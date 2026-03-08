@@ -141,14 +141,16 @@ export function createStepGridDisplayState() {
 
     // Check if this animation was superseded by a newer one
     if (thisGeneration !== animationGeneration) {
-      return; // Abort - a newer animation has started
+      cleanupAnimation();
+      return;
     }
 
     // Trigger steps sequentially (from startFromIndex onward)
     for (let i = startFromIndex; i < stepCount; i++) {
       // Check if this animation was superseded by a newer one
       if (thisGeneration !== animationGeneration) {
-        return; // Abort - a newer animation has started
+        cleanupAnimation();
+        return;
       }
 
       // Add this beat to stepsToAnimate to trigger its animation
@@ -180,7 +182,8 @@ export function createStepGridDisplayState() {
 
     // Only proceed if this animation is still current
     if (thisGeneration !== animationGeneration) {
-      return; // Abort - a newer animation has started
+      cleanupAnimation();
+      return;
     }
 
     // Dispatch completion event
@@ -266,7 +269,10 @@ export function createStepGridDisplayState() {
    * Check if a beat should be hidden (sequential mode waiting)
    */
   function shouldBeatBeHidden(stepIndex: number): boolean {
-    return isWaitingForSequentialAnimation && !stepsToAnimate.has(stepIndex);
+    if (!isWaitingForSequentialAnimation) return false;
+    // If this step has already been revealed, don't hide it
+    if (stepsToAnimate.has(stepIndex)) return false;
+    return true;
   }
 
   /**
