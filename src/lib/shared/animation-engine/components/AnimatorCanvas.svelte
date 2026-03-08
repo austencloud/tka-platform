@@ -321,7 +321,7 @@ Last audit: 2025-12-27
     </div>
   </div>
 
-  <CanvasContextMenuHost bind:this={contextMenuHost} anchorElement={containerElement} />
+  <CanvasContextMenuHost bind:this={contextMenuHost} />
 </div>
 
 <style>
