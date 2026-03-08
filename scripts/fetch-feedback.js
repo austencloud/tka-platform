@@ -26,12 +26,17 @@ import { execSync } from "child_process";
 import { existsSync, mkdirSync } from "fs";
 import { randomUUID } from "crypto";
 import config from "../config/feedback.config.js";
+import roles from "../config/developer-roles.js";
 import cfClient from "./lib/cloud-functions-client.js";
 import cliAuth from "./lib/cli-auth.js";
 
 // Generate a unique session ID for this script invocation
 // This allows us to distinguish between different agents/sessions
 const SESSION_ID = randomUUID();
+
+// Resolved developer identity — set in main() after auth, used by all write operations.
+// Module-level so functions outside main() can reference the authenticated user.
+let identity = null;
 
 // Load service account key
 const serviceAccount = JSON.parse(
@@ -76,7 +81,7 @@ async function registerSession() {
       registeredAt: admin.firestore.FieldValue.serverTimestamp(),
       lastActivity: admin.firestore.FieldValue.serverTimestamp(),
       activeClaims: [],
-      userId: ADMIN_USER_ID,
+      userId: identity.uid,
       metadata: {
         hostname,
         pid: process.pid,
@@ -804,7 +809,7 @@ async function atomicClaim(docId, isReclaim = false) {
       transaction.update(docRef, {
         status: "in-progress",
         claimedAt: admin.firestore.FieldValue.serverTimestamp(),
-        claimedBy: ADMIN_USER_ID,
+        claimedBy: identity.uid,
         claimToken: claimToken, // Unique token for THIS claim attempt
         claimSession: SESSION_ID, // Session ID for this script invocation
         lastActivity: admin.firestore.FieldValue.serverTimestamp(), // Heartbeat system
@@ -1479,6 +1484,13 @@ async function updateFeedbackById(docId, status, resolutionNotes, userFacingNote
       return null;
     }
 
+    // PERMISSION: Check if the current user's role allows this transition
+    if (identity && !roles.canTransition(identity.role, currentStatus, normalizedStatus)) {
+      console.error(`\n  ❌ Permission denied: ${identity.role} cannot move items from "${currentStatus}" to "${normalizedStatus}".`);
+      console.error(`  This transition requires admin privileges.\n`);
+      process.exit(1);
+    }
+
     const updateData = {
       status: normalizedStatus,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -1819,6 +1831,22 @@ async function deleteFeedback(docId) {
     }
 
     const item = doc.data();
+
+    // PERMISSION: Check if the current user can delete this item
+    if (identity) {
+      if (item.userId === identity.uid) {
+        if (!roles.hasPermission(identity.role, roles.ACTIONS.DELETE_OWN)) {
+          console.error(`\n  ❌ Permission denied: ${identity.role} cannot delete feedback items.\n`);
+          process.exit(1);
+        }
+      } else {
+        if (!roles.hasPermission(identity.role, roles.ACTIONS.DELETE_ANY)) {
+          console.error(`\n  ❌ Permission denied: only admins can delete other users' feedback.\n`);
+          process.exit(1);
+        }
+      }
+    }
+
     await docRef.delete();
 
     console.log("\n" + "=".repeat(70));
@@ -1982,6 +2010,13 @@ async function deferFeedback(docId, deferUntilDate, reason) {
  * Update feedback priority
  */
 async function updateFeedbackPriority(docId, priority) {
+  // PERMISSION: Only admins can change priority
+  if (identity && !roles.hasPermission(identity.role, roles.ACTIONS.CHANGE_PRIORITY)) {
+    console.error(`\n  ❌ Permission denied: only admins can change priority.`);
+    console.error(`  Your role: ${identity.role}\n`);
+    process.exit(1);
+  }
+
   const validPriorities = ["low", "medium", "high"];
   if (!validPriorities.includes(priority)) {
     console.log(
@@ -2714,10 +2749,17 @@ async function unclaimFeedback(docId, options = {}) {
       return null;
     }
 
+    // PERMISSION: Only admins can perform emergency unclaims
+    if (emergency && identity && !roles.hasPermission(identity.role, roles.ACTIONS.EMERGENCY_UNCLAIM)) {
+      console.error(`\n  ❌ Permission denied: only admins can perform emergency unclaims.`);
+      console.error(`  Your role: ${identity.role}\n`);
+      process.exit(1);
+    }
+
     // Check emergency cooldown
     if (emergency) {
       const recentEmergency = await db.collection("emergencyActions")
-        .where("performedBy", "==", ADMIN_USER_ID)
+        .where("performedBy", "==", identity.uid)
         .orderBy("timestamp", "desc")
         .limit(1)
         .get();
@@ -2807,7 +2849,7 @@ async function unclaimFeedback(docId, options = {}) {
       await db.collection("emergencyActions").add({
         actionType: "unclaim",
         feedbackId: docId,
-        performedBy: ADMIN_USER_ID,
+        performedBy: identity.uid,
         reason: emergency,
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
         previousClaimant: item.claimedBy || null,
@@ -3225,10 +3267,10 @@ async function addFeedback(args) {
     status: "new",
     source: "terminal", // Created via CLI, not app feedback form
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    userId: ADMIN_USER.userId,
-    userDisplayName: ADMIN_USER.displayName,
-    userEmail: ADMIN_USER.email,
-    userPhotoURL: ADMIN_USER.photoURL,
+    userId: identity.uid,
+    userDisplayName: identity.displayName,
+    userEmail: identity.email,
+    userPhotoURL: identity.photoUrl || "",
   };
 
   if (flags.priority) {
@@ -3267,14 +3309,14 @@ async function addFeedback(args) {
 }
 
 /**
- * Show only items claimed by the current user (ADMIN_USER_ID)
+ * Show only items claimed by the current user (identity.uid)
  */
 async function showMyProgress() {
   try {
     const snapshot = await db
       .collection("feedback")
       .where("status", "==", "in-progress")
-      .where("claimedBy", "==", ADMIN_USER_ID)
+      .where("claimedBy", "==", identity.uid)
       .get();
 
     if (snapshot.empty) {
@@ -3336,8 +3378,27 @@ async function main() {
   }
 
   // Resolve developer identity for all other commands
-  const identity = await cliAuth.resolveIdentity(db);
+  identity = await cliAuth.resolveIdentity(db);
   console.log(`  👤 ${identity.displayName} (${identity.role})`);
+
+  // ── Permission gate helpers (close over identity) ──────────────────────
+  function assertPermission(action, context = "") {
+    if (!roles.hasPermission(identity.role, action)) {
+      const actionLabel = action.replace(/_/g, " ");
+      console.error(`\n  ❌ Permission denied: only admins can ${actionLabel}.`);
+      if (context) console.error(`  ${context}`);
+      console.error(`  Your role: ${identity.role}\n`);
+      process.exit(1);
+    }
+  }
+
+  function assertTransition(fromStatus, toStatus) {
+    if (!roles.canTransition(identity.role, fromStatus, toStatus)) {
+      console.error(`\n  ❌ Permission denied: ${identity.role} cannot move items from "${fromStatus}" to "${toStatus}".`);
+      console.error(`  This transition requires admin privileges.\n`);
+      process.exit(1);
+    }
+  }
 
   if (command === "whoami") {
     await cliAuth.whoami(db);
@@ -3547,10 +3608,10 @@ async function main() {
         status: "new",
         source: "terminal",
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        userId: ADMIN_USER.userId,
-        userDisplayName: ADMIN_USER.displayName,
-        userEmail: ADMIN_USER.email,
-        userPhotoURL: ADMIN_USER.photoURL,
+        userId: identity.uid,
+        userDisplayName: identity.displayName,
+        userEmail: identity.email,
+        userPhotoURL: identity.photoUrl || "",
       });
 
       console.log("\n" + "=".repeat(70));
