@@ -94,8 +94,10 @@ function loadConfig(): UIGenerationConfig | null {
     // This prevents undefined values from overriding DEFAULT_CONFIG
     // Migrate legacy "circular" mode → freeform + loopEnabled
     const isLegacyCircular = data.mode === ("circular" as GenerationMode);
+    // Migrate legacy "spell" mode → freeform (spell is now implicit from word presence)
+    const isLegacySpell = data.mode === GenerationMode.SPELL;
     const result: Partial<UIGenerationConfig> = {
-      mode: isLegacyCircular ? GenerationMode.FREEFORM : (data.mode as GenerationMode),
+      mode: isLegacyCircular || isLegacySpell ? GenerationMode.FREEFORM : (data.mode as GenerationMode),
       loopEnabled: data.loopEnabled ?? isLegacyCircular,
       length: data.length,
       level: data.level,
@@ -184,7 +186,6 @@ export function createGenerationConfigState(
 
   // Derived values
   const isFreeformMode = $derived(config.mode === GenerationMode.FREEFORM);
-  const isSpellMode = $derived(config.mode === GenerationMode.SPELL);
   const isLoopEnabled = $derived(config.loopEnabled);
 
   // Simple update function with persistence
@@ -251,9 +252,6 @@ export function createGenerationConfigState(
     },
     get isFreeformMode() {
       return isFreeformMode;
-    },
-    get isSpellMode() {
-      return isSpellMode;
     },
     get isLoopEnabled() {
       return isLoopEnabled;

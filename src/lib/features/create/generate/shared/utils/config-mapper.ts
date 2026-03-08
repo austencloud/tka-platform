@@ -116,13 +116,8 @@ export function uiConfigToGenerationOptions(
   const derivedPropContinuity =
     uiConfig.constraintPreset === "smooth" ? PropContinuity.CONTINUOUS : PropContinuity.RANDOM;
 
-  // When loop is enabled in freeform mode, use the circular generation pipeline
-  const effectiveMode =
-    uiConfig.loopEnabled && uiConfig.mode === "freeform"
-      ? "circular"
-      : uiConfig.mode === "spell"
-        ? "freeform" // Spell mode uses its own pipeline; service layer gets "freeform"
-        : uiConfig.mode;
+  // When loop is enabled, use the circular generation pipeline; otherwise freeform
+  const effectiveMode = uiConfig.loopEnabled ? "circular" : "freeform";
 
   const options: GenerationOptions = {
     length: uiConfig.length,
