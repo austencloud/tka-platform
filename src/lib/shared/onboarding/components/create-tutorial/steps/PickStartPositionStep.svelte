@@ -25,8 +25,11 @@
     unsubscribe = startPositionState.onSelectedPositionChange(
       (position, source) => {
         if (source === "user" && position) {
-          // Store in tutorial state and advance
-          createTutorialState.setStartPosition(position);
+          // Store in tutorial state with the picker's current grid mode
+          createTutorialState.setStartPosition(
+            position,
+            startPositionState.currentGridMode,
+          );
           onAdvance();
         }
       }
@@ -80,7 +83,7 @@
 
   .picker-container {
     width: 100%;
-    min-height: 200px;
+    height: clamp(280px, 50vh, 500px);
   }
 
   @media (max-width: 480px) {

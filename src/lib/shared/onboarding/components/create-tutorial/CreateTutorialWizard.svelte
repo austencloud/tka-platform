@@ -16,7 +16,6 @@
   // Step components (will be created in Tasks 4-8)
   import PickStartPositionStep from "./steps/PickStartPositionStep.svelte";
   import AddBeatStep from "./steps/AddBeatStep.svelte";
-  import OpenActionsStep from "./steps/OpenActionsStep.svelte";
   import PlaySequenceStep from "./steps/PlaySequenceStep.svelte";
   import ReadyStep from "./steps/ReadyStep.svelte";
 
@@ -33,7 +32,6 @@
   const STEP_ICONS: Record<CreateTutorialStep, string> = {
     "pick-start": "fa-crosshairs",
     "add-beat": "fa-plus",
-    "open-actions": "fa-tools",
     "play-sequence": "fa-play",
     ready: "fa-rocket",
   };
@@ -41,7 +39,6 @@
   const STEPS: CreateTutorialStep[] = [
     "pick-start",
     "add-beat",
-    "open-actions",
     "play-sequence",
     "ready",
   ];
@@ -77,6 +74,43 @@
     });
   }
 
+  function handleBack() {
+    if (createTutorialState.currentStepIndex === 0) return;
+    hapticService?.trigger("selection");
+
+    // On the add-beat step with beats already picked, undo the last beat
+    // instead of leaving the step entirely
+    if (
+      createTutorialState.currentStep === "add-beat" &&
+      createTutorialState.beats.length > 0
+    ) {
+      createTutorialState.removeLastBeat();
+      return;
+    }
+
+    animateIn = false;
+
+    requestAnimationFrame(() => {
+      createTutorialState.goBack();
+      requestAnimationFrame(() => {
+        animateIn = true;
+      });
+    });
+  }
+
+  function handleDotClick(index: number) {
+    if (index >= createTutorialState.currentStepIndex) return;
+    hapticService?.trigger("selection");
+    animateIn = false;
+
+    requestAnimationFrame(() => {
+      createTutorialState.goToStep(index);
+      requestAnimationFrame(() => {
+        animateIn = true;
+      });
+    });
+  }
+
   function handleSkip() {
     hapticService?.trigger("selection");
     createTutorialState.reset();
@@ -93,7 +127,12 @@
     ></div>
   </div>
 
-  <!-- Skip button -->
+  <!-- Navigation buttons -->
+  {#if createTutorialState.currentStepIndex > 0}
+    <button class="back-button" onclick={handleBack}>
+      <i class="fas fa-arrow-left" aria-hidden="true"></i> Back
+    </button>
+  {/if}
   <button class="skip-button" onclick={handleSkip}>Skip tutorial</button>
 
   <!-- Step content -->
@@ -102,8 +141,6 @@
       <PickStartPositionStep onAdvance={handleAdvance} />
     {:else if createTutorialState.currentStep === "add-beat"}
       <AddBeatStep onAdvance={handleAdvance} />
-    {:else if createTutorialState.currentStep === "open-actions"}
-      <OpenActionsStep onAdvance={handleAdvance} />
     {:else if createTutorialState.currentStep === "play-sequence"}
       <PlaySequenceStep onAdvance={handleAdvance} />
     {:else if createTutorialState.currentStep === "ready"}
@@ -114,14 +151,23 @@
   <!-- Step dots with icons -->
   <div class="step-dots">
     {#each STEPS as step, i}
-      <div
-        class="dot"
-        class:active={i === createTutorialState.currentStepIndex}
-        class:completed={i < createTutorialState.currentStepIndex}
-        aria-label="Step {i + 1}: {step}"
-      >
-        <i class="fas {STEP_ICONS[step]}" aria-hidden="true"></i>
-      </div>
+      {#if i < createTutorialState.currentStepIndex}
+        <button
+          class="dot completed"
+          aria-label="Go back to step {i + 1}: {step}"
+          onclick={() => handleDotClick(i)}
+        >
+          <i class="fas {STEP_ICONS[step]}" aria-hidden="true"></i>
+        </button>
+      {:else}
+        <div
+          class="dot"
+          class:active={i === createTutorialState.currentStepIndex}
+          aria-label="Step {i + 1}: {step}"
+        >
+          <i class="fas {STEP_ICONS[step]}" aria-hidden="true"></i>
+        </div>
+      {/if}
     {/each}
   </div>
 </div>
@@ -155,6 +201,30 @@
     transition: width var(--duration-emphasis, 0.6s) ease;
   }
 
+  /* Back button */
+  .back-button {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    padding: 8px 16px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: 0.875rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all var(--duration-normal, 0.3s) ease;
+  }
+
+  .back-button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--theme-text, rgba(255, 255, 255, 0.9));
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
   /* Skip button */
   .skip-button {
     position: fixed;
@@ -182,7 +252,7 @@
     align-items: center;
     justify-content: center;
     width: 100%;
-    max-width: 780px;
+    max-width: 1100px;
     padding: 0 16px 90px;
   }
 
@@ -233,14 +303,30 @@
     transform: scale(1.1);
   }
 
-  .dot.completed {
+  button.dot.completed {
     background: rgba(255, 255, 255, 0.15);
     border-color: rgba(255, 255, 255, 0.4);
     color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    padding: 0;
+  }
+
+  button.dot.completed:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: var(--theme-accent-strong, #8b5cf6);
+    color: var(--theme-accent-strong, #8b5cf6);
+    transform: scale(1.1);
   }
 
   /* Mobile */
   @media (max-width: 480px) {
+    .back-button {
+      top: 12px;
+      left: 12px;
+      padding: 6px 12px;
+      font-size: 0.8125rem;
+    }
+
     .skip-button {
       top: 12px;
       right: 12px;
@@ -273,7 +359,9 @@
     }
 
     .dot,
-    .skip-button {
+    .skip-button,
+    .back-button,
+    button.dot.completed {
       transition: none;
     }
   }

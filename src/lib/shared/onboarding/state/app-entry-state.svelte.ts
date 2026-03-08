@@ -33,8 +33,20 @@ function createAppEntryState() {
     ? localStorage.getItem(APP_ENTRY_COMPLETED_KEY) === "true"
     : false;
 
+  // If first-run is done but entry isn't, skip straight to create-tutorial.
+  // Otherwise the "wizard-active" phase falls through to main app and the
+  // tutorial is never shown for returning users who missed it.
+  const firstRunDone =
+    isBrowser &&
+    localStorage.getItem("tka-first-run-completed") === "true";
+  const initialPhase: AppEntryPhase = completed
+    ? "complete"
+    : firstRunDone
+      ? "create-tutorial"
+      : "wizard-active";
+
   const state = $state<AppEntryState>({
-    phase: completed ? "complete" : "wizard-active",
+    phase: initialPhase,
     hasCompleted: completed,
   });
 

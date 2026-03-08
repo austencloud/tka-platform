@@ -2,12 +2,15 @@
   AddBeatStep - Step 2 of the create tutorial
 
   Shows available next beats via the OptionPicker after the user picked a start position.
-  Auto-advances when the user taps an option (no Continue button needed).
+  The user picks 4 beats total. Each pick updates the sequence and refreshes options.
+  Auto-advances to the next wizard step after the 4th beat.
 -->
 <script lang="ts">
   import OptionPicker from "$lib/features/create/construct/option-picker/components/OptionPicker.svelte";
-  import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { createTutorialState } from "../../../state/create-tutorial-state.svelte";
+  import {
+    createTutorialState,
+    REQUIRED_BEATS,
+  } from "../../../state/create-tutorial-state.svelte";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 
   interface Props {
@@ -16,27 +19,34 @@
 
   const { onAdvance }: Props = $props();
 
-  // Build the current sequence from tutorial state (just the start position at this point)
+  // The full sequence so far: start position + all beats picked
   const currentSequence = $derived<PictographData[]>(
-    createTutorialState.startPosition
-      ? [createTutorialState.startPosition]
-      : []
+    createTutorialState.sequence
   );
 
-  // Use the grid mode from the start position, or default to DIAMOND
-  const currentGridMode = $derived(
-    createTutorialState.startPosition?.gridMode ?? GridMode.DIAMOND
-  );
+  const beatCount = $derived(createTutorialState.beats.length);
+  const beatsRemaining = $derived(createTutorialState.beatsRemaining);
+
+  // Use the grid mode stored when the start position was picked
+  const currentGridMode = $derived(createTutorialState.gridMode);
 
   function handleOptionSelected(option: PictographData) {
-    createTutorialState.setSelectedBeat(option);
-    onAdvance();
+    createTutorialState.addBeat(option);
+    if (createTutorialState.beatsRemaining <= 0) {
+      onAdvance();
+    }
   }
 </script>
 
 <div class="tutorial-step">
-  <h1 class="title">Add a beat</h1>
-  <p class="subtitle">These are your options. Tap one to add it to your sequence.</p>
+  <h1 class="title">Add beat {beatCount + 1} of {REQUIRED_BEATS}</h1>
+  <p class="subtitle">
+    {#if beatsRemaining > 1}
+      Pick a move. {beatsRemaining} beats left.
+    {:else}
+      Last one. Pick your final beat.
+    {/if}
+  </p>
 
   <div class="picker-container">
     {#if currentSequence.length > 0}
@@ -58,7 +68,7 @@
     flex-direction: column;
     align-items: center;
     gap: 14px;
-    max-width: 560px;
+    max-width: 780px;
     width: 100%;
     text-align: center;
     padding: 20px;
@@ -84,7 +94,7 @@
 
   .picker-container {
     width: 100%;
-    min-height: 200px;
+    height: clamp(300px, 55vh, 600px);
   }
 
   .loading {
