@@ -49,6 +49,7 @@
     "contact-ball": () => import("./tabs/ContactBallLab.svelte"),
     "ascii-pictograph": () => import("./tabs/AsciiPictographLab.svelte"),
     "retro-pictograph": () => import("./tabs/RetroPictographLab.svelte"),
+    effort: () => import("$lib/features/effort-lab/EffortLabModule.svelte"),
   };
 
   // Get current tab, default to first tab

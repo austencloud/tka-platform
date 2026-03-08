@@ -793,6 +793,14 @@ export const LAB_TABS: Section[] = [
     color: "#6666ff",
     gradient: "linear-gradient(135deg, #9999ff 0%, #6666ff 100%)",
   },
+  {
+    id: "effort",
+    label: "Effort",
+    icon: '<i class="fas fa-wind" aria-hidden="true"></i>',
+    description: "Laban effort qualities: compare movement styles side by side",
+    color: "#818cf8",
+    gradient: "linear-gradient(135deg, #a5b4fc 0%, #818cf8 100%)",
+  },
 ];
 
 // REMOVED: LANDING_PAGE_TABS - LandingPreviewModule now handles its own internal tabs
