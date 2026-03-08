@@ -7,8 +7,17 @@
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
   import type { ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
-  import { buildCanvasContextMenuItems } from "./CanvasContextMenuBuilder";
+  import {
+    buildCanvasContextMenuItems,
+    type SettingsPanelCategory,
+  } from "./CanvasContextMenuBuilder";
   import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
+
+  interface CanvasContextMenuHostProps {
+    onOpenPanel?: (category: SettingsPanelCategory) => void;
+  }
+
+  const { onOpenPanel }: CanvasContextMenuHostProps = $props();
 
   let menuState: ContextMenuState = $state({ open: false });
   let menuItemsVersion: number = $state(0);
@@ -33,7 +42,13 @@
     // Touch menuItemsVersion to re-derive when visibility settings change
     void menuItemsVersion;
 
-    return buildCanvasContextMenuItems({ visibilityManager });
+    return buildCanvasContextMenuItems({
+      visibilityManager,
+      onOpenPanel: (category) => {
+        menuState = { open: false };
+        onOpenPanel?.(category);
+      },
+    });
   });
 
   /**
