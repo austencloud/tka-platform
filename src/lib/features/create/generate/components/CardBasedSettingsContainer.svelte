@@ -19,7 +19,6 @@ Supports help mode: when active, clicking cards opens help instead of normal act
   import type { StartEndOptionsState } from "../state/start-end-options-state.svelte";
   import type {
     DifficultyLevel,
-    GenerationMode,
     PropContinuity,
   } from "../shared/domain/models/generate-models";
   import type {
@@ -31,7 +30,6 @@ Supports help mode: when active, clicking cards opens help instead of normal act
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getCardColors } from "../shared/domain/card-colors";
   // Card components
-  import GenerationModeCard from "./cards/GenerationModeCard.svelte";
   import GridModeCard from "./cards/GridModeCard.svelte";
   import LengthCard from "./cards/LengthCard.svelte";
   import LevelCard from "./cards/LevelCard.svelte";
@@ -87,7 +85,6 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     "level": "level",
     "length": "length",
     "word-input": "generation-mode",
-    "generation-mode": "generation-mode",
     "grid-mode": "grid-mode",
     "prop-continuity": "prop-continuity",
     "turn-intensity": "turn-intensity",
@@ -195,10 +192,6 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     }
   }
 
-  function handleGenerationModeChange(mode: GenerationMode) {
-    updateConfig({ mode });
-  }
-
   function handleLOOPTypeChange(loopType: LOOPType) {
     updateConfig({ loopType });
   }
@@ -245,7 +238,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
         handleTurnIntensityChange,
         handlePropContinuityChange,
         handleGridModeChange,
-        handleGenerationModeChange,
+        handleGenerationModeChange: () => {}, // No-op: mode is now derived from word presence
         handleLOOPTypeChange,
         handleSliceSizeChange: (sliceSize: any) => updateConfig({ sliceSize }),
         handleConstraintPresetChange,
@@ -293,8 +286,6 @@ Supports help mode: when active, clicking cards opens help instead of normal act
         <LengthCard {...card.props as any} color={cardColors.length.color} shadowColor={cardColors.length.shadowColor} />
       {:else if card.id === "word-input"}
         <WordInputCard {...card.props as any} color={cardColors.mode.color} shadowColor={cardColors.mode.shadowColor} />
-      {:else if card.id === "generation-mode"}
-        <GenerationModeCard {...card.props as any} color={cardColors.mode.color} shadowColor={cardColors.mode.shadowColor} />
       {:else if card.id === "grid-mode"}
         <GridModeCard {...card.props as any} color={cardColors.gridMode.color} shadowColor={cardColors.gridMode.shadowColor} />
       {:else if card.id === "prop-continuity"}

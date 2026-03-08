@@ -34,7 +34,8 @@ export interface CardHandlers {
   handleTurnIntensityChange: (intensity: number) => void;
   handlePropContinuityChange: (continuity: PropContinuity) => void;
   handleGridModeChange: (mode: GridMode) => void;
-  handleGenerationModeChange: (mode: GenerationMode) => void;
+  /** @deprecated Mode is now derived from word presence. Kept for interface compat. */
+  handleGenerationModeChange?: (mode: GenerationMode) => void;
   handleLOOPTypeChange: (loopType: LOOPType) => void;
   handleSliceSizeChange: (sliceSize: SliceSize) => void;
   handleStartEndChange?: (options: StartEndOptions) => void;
