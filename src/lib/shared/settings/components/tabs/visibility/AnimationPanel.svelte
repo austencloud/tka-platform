@@ -135,10 +135,9 @@
 
   {#if !collapsed}
     <div class="panel-body" transition:slide={{ duration: 200 }}>
-      <div class="preview-frame animation-preview">
+      <div class="preview-strip">
         <AnimationPreviewController />
       </div>
-
       <div class="panel-controls">
         <!-- Mobile: Compact layout (below 320px) -->
         <div class="mobile-layout">
@@ -282,26 +281,21 @@
     flex: 1;
   }
 
-  .preview-frame {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: color-mix(in srgb, var(--theme-panel-bg) 80%, transparent);
-    border-radius: clamp(10px, 2cqi, 14px);
+  .preview-strip {
+    width: 100%;
+    max-height: 150px;
+    border-radius: clamp(8px, 1.5cqi, 12px);
     border: 1px solid var(--theme-stroke);
     overflow: hidden;
-    width: 100%;
-    aspect-ratio: 1;
-    max-width: 500px;
-    box-shadow: inset 0 2px 8px var(--theme-shadow);
-    min-height: var(--vt-preview-min-h, auto);
+    background: color-mix(in srgb, var(--theme-panel-bg) 80%, transparent);
   }
 
-  .preview-frame :global(.canvas-wrapper) {
-    height: auto !important;
-    width: 100%;
-    max-height: 100%;
-    aspect-ratio: 1;
+  .preview-strip :global(.canvas-wrapper),
+  .preview-strip :global(canvas) {
+    width: 100% !important;
+    height: 150px !important;
+    max-height: 150px;
+    object-fit: cover;
   }
 
   .panel-controls {
@@ -362,24 +356,6 @@
   .collapse-toggle:focus-visible {
     outline: 2px solid color-mix(in srgb, var(--theme-accent) 50%, transparent);
     outline-offset: 2px;
-  }
-
-  @container animation-panel (min-width: 500px) {
-    .panel-body {
-      flex-direction: row;
-      align-items: flex-start;
-    }
-
-    .preview-frame {
-      flex-shrink: 0;
-      width: 50%;
-      max-width: 500px;
-    }
-
-    .panel-controls {
-      flex: 1;
-      margin-top: 0;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {

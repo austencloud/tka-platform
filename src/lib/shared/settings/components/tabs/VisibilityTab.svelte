@@ -274,21 +274,23 @@
   onMount(() => {
     hapticService = container.items.hapticFeedback;
 
-    // Load initial pictograph visibility
-    tkaGlyphVisible = visibilityManager.getRawGlyphVisibility("tkaGlyph");
-    vtgGlyphVisible = visibilityManager.getRawGlyphVisibility("vtgGlyph");
-    elementalGlyphVisible =
-      visibilityManager.getRawGlyphVisibility("elementalGlyph");
-    positionsGlyphVisible =
-      visibilityManager.getRawGlyphVisibility("positionsGlyph");
-    reversalIndicatorsVisible =
-      visibilityManager.getRawGlyphVisibility("reversalIndicators");
-    gridVisible = visibilityManager.getGridVisibility();
-    nonRadialVisible = visibilityManager.getNonRadialVisibility();
-    handPointVisibility = visibilityManager.getHandPointVisibility();
-    stepNumbersVisible = visibilityManager.getBeatNumbersVisibility();
+    // Wait for persisted settings to load before reading initial pictograph values
+    void visibilityManager.ensureSettingsLoaded().then(() => {
+      tkaGlyphVisible = visibilityManager.getRawGlyphVisibility("tkaGlyph");
+      vtgGlyphVisible = visibilityManager.getRawGlyphVisibility("vtgGlyph");
+      elementalGlyphVisible =
+        visibilityManager.getRawGlyphVisibility("elementalGlyph");
+      positionsGlyphVisible =
+        visibilityManager.getRawGlyphVisibility("positionsGlyph");
+      reversalIndicatorsVisible =
+        visibilityManager.getRawGlyphVisibility("reversalIndicators");
+      gridVisible = visibilityManager.getGridVisibility();
+      nonRadialVisible = visibilityManager.getNonRadialVisibility();
+      handPointVisibility = visibilityManager.getHandPointVisibility();
+      stepNumbersVisible = visibilityManager.getBeatNumbersVisibility();
+    });
 
-    // Load initial animation visibility
+    // Load initial animation visibility (separate persistence, no race)
     animTrailStyle = animationVisibilityManager.getTrailStyle();
     animPlaybackMode = animationVisibilityManager.getPlaybackMode();
     animBpm = animationVisibilityManager.getBpm();
@@ -381,22 +383,24 @@
     />
   </div>
 
-  <!-- Dark Mode Toggle -->
-  <button
-    type="button"
-    class="dark-mode-toggle"
-    class:active={darkMode}
-    class:disabled={isPreview}
-    onclick={handleDarkModeToggle}
-    aria-pressed={darkMode}
-    disabled={isPreview}
-  >
-    <span class="dark-mode-icon">{darkMode ? "🌙" : "☀️"}</span>
-    <span class="dark-mode-label">{darkMode ? t("visibility_dark_mode") : t("visibility_light_mode")}</span>
-    <div class="dark-mode-switch" class:on={darkMode}>
-      <div class="dark-mode-knob"></div>
-    </div>
-  </button>
+  <!-- Dark Mode Toggle - compact pill -->
+  <div class="dark-mode-row">
+    <button
+      type="button"
+      class="dark-mode-toggle"
+      class:active={darkMode}
+      class:disabled={isPreview}
+      onclick={handleDarkModeToggle}
+      aria-pressed={darkMode}
+      disabled={isPreview}
+    >
+      <span class="dark-mode-icon">{darkMode ? "🌙" : "☀️"}</span>
+      <span class="dark-mode-label">{darkMode ? t("visibility_dark_mode") : t("visibility_light_mode")}</span>
+      <div class="dark-mode-switch" class:on={darkMode}>
+        <div class="dark-mode-knob"></div>
+      </div>
+    </button>
+  </div>
 
   <!-- Panels Container -->
   <div class="visibility-panels-container">
@@ -414,46 +418,47 @@
       isMobileHidden={mobileMode !== "pictograph"}
     />
 
-    <AnimationPanel
-      gridVisible={gridVisible}
-      stepNumbersVisible={stepNumbersVisible}
-      trailStyle={animTrailStyle}
-      playbackMode={animPlaybackMode}
-      bpm={animBpm}
-      tkaGlyphVisible={animTkaGlyphVisible}
-      wordHeaderVisible={animWordHeaderVisible}
-      fireEffectEnabled={animFireEffectEnabled}
-      ledEffectEnabled={animLedEffectEnabled}
-      ledBrightness={animLedBrightness}
-      onLedBrightnessChange={handleLedBrightnessChange}
-      colorBlend={animColorBlend}
-      smokeLevel={animSmokeLevel}
-      useCharcoal={animUseCharcoal}
-      fireIntensity={animFireIntensity}
-      onColorBlendChange={handleColorBlendChange}
-      onSmokeLevelChange={handleSmokeLevelChange}
-      onUseCharcoalChange={handleUseCharcoalChange}
-      onFireIntensityChange={handleFireIntensityChange}
-      onToggle={handleAnimationToggle}
-      onTrailStyleChange={handleTrailStyleChange}
-      onPlaybackModeChange={handlePlaybackModeChange}
-      onBpmChange={handleBpmChange}
-      isMobileHidden={mobileMode !== "animation"}
-    />
+    <div class="secondary-panels">
+      <AnimationPanel
+        gridVisible={gridVisible}
+        stepNumbersVisible={stepNumbersVisible}
+        trailStyle={animTrailStyle}
+        playbackMode={animPlaybackMode}
+        bpm={animBpm}
+        tkaGlyphVisible={animTkaGlyphVisible}
+        wordHeaderVisible={animWordHeaderVisible}
+        fireEffectEnabled={animFireEffectEnabled}
+        ledEffectEnabled={animLedEffectEnabled}
+        ledBrightness={animLedBrightness}
+        onLedBrightnessChange={handleLedBrightnessChange}
+        colorBlend={animColorBlend}
+        smokeLevel={animSmokeLevel}
+        useCharcoal={animUseCharcoal}
+        fireIntensity={animFireIntensity}
+        onColorBlendChange={handleColorBlendChange}
+        onSmokeLevelChange={handleSmokeLevelChange}
+        onUseCharcoalChange={handleUseCharcoalChange}
+        onFireIntensityChange={handleFireIntensityChange}
+        onToggle={handleAnimationToggle}
+        onTrailStyleChange={handleTrailStyleChange}
+        onPlaybackModeChange={handlePlaybackModeChange}
+        onBpmChange={handleBpmChange}
+        isMobileHidden={mobileMode !== "animation"}
+      />
 
-    <ImagePanel
-      addWord={imgAddWord}
-      addDifficultyLevel={imgAddDifficultyLevel}
-      includeStartPosition={imgIncludeStartPosition}
-      showCreatorName={imgShowCreatorName}
-      showNotes={imgShowNotes}
-      showBirthday={imgShowBirthday}
-      customNotesText={imgCustomNotesText}
-      onPictographToggle={handlePictographToggle}
-      onToggle={handleImageToggle}
-      onCustomNotesChange={handleCustomNotesChange}
-      isMobileHidden={mobileMode !== "image"}
-    />
+      <ImagePanel
+        addWord={imgAddWord}
+        addDifficultyLevel={imgAddDifficultyLevel}
+        includeStartPosition={imgIncludeStartPosition}
+        showCreatorName={imgShowCreatorName}
+        showNotes={imgShowNotes}
+        showBirthday={imgShowBirthday}
+        customNotesText={imgCustomNotesText}
+        onToggle={handleImageToggle}
+        onCustomNotesChange={handleCustomNotesChange}
+        isMobileHidden={mobileMode !== "image"}
+      />
+    </div>
   </div>
 </div>
 
@@ -513,17 +518,38 @@
     }
   }
 
-  /* Dark Mode Toggle */
+  /* Secondary panels: Animation + Image side by side on desktop */
+  .secondary-panels {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(6px, 1.5cqi, 12px);
+    width: 100%;
+  }
+
+  @container visibility-tab (min-width: 700px) {
+    .secondary-panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  /* Dark Mode Row - right-aligned container */
+  .dark-mode-row {
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
+    max-width: 1200px;
+  }
+
+  /* Dark Mode Toggle - compact pill */
   .dark-mode-toggle {
     display: flex;
     align-items: center;
-    gap: 12px;
-    width: 100%;
-    max-width: 1200px;
-    padding: 14px 16px;
+    gap: 8px;
+    padding: 8px 14px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 16px;
+    border-radius: 20px;
     cursor: pointer;
     transition:
       background var(--duration-fast) ease,
@@ -558,15 +584,15 @@
   }
 
   .dark-mode-icon {
-    font-size: var(--font-size-lg, 18px);
+    font-size: var(--font-size-sm, 14px);
     line-height: 1;
   }
 
   .dark-mode-label {
-    flex: 1;
-    font-size: var(--font-size-base, 16px);
+    font-size: var(--font-size-sm, 14px);
     font-weight: 500;
     color: var(--theme-text, #ffffff);
+    white-space: nowrap;
   }
 
   .dark-mode-toggle.active .dark-mode-label {
@@ -574,10 +600,10 @@
   }
 
   .dark-mode-switch {
-    width: 44px;
-    height: 26px;
+    width: 36px;
+    height: 20px;
     background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: 13px;
+    border-radius: 10px;
     padding: 2px;
     transition: background var(--duration-normal) ease;
     flex-shrink: 0;
@@ -585,20 +611,20 @@
 
   .dark-mode-switch.on {
     background: rgba(0, 255, 255, 0.4);
-    box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+    box-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
   }
 
   .dark-mode-knob {
-    width: 22px;
-    height: 22px;
+    width: 16px;
+    height: 16px;
     background: white;
     border-radius: 50%;
     transition: transform var(--duration-normal) ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   }
 
   .dark-mode-switch.on .dark-mode-knob {
-    transform: translateX(18px);
+    transform: translateX(16px);
   }
 
   @media (prefers-reduced-motion: reduce) {
