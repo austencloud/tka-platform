@@ -1,21 +1,23 @@
 <script lang="ts">
   import type { EffortQuality } from "../domain/effort-qualities";
+  import type { EffortParams } from "../domain/effort-easing";
   import { sampleEasingCurve } from "../domain/effort-easing";
 
   interface Props {
     quality: EffortQuality;
     color: string;
+    params?: EffortParams;
     width?: number;
     height?: number;
   }
 
-  const { quality, color, width = 120, height = 40 }: Props = $props();
+  const { quality, color, params, width = 120, height = 40 }: Props = $props();
 
   const padding = 4;
   const innerW = $derived(width - padding * 2);
   const innerH = $derived(height - padding * 2);
 
-  const samples = $derived(sampleEasingCurve(quality, 48));
+  const samples = $derived(sampleEasingCurve(quality, 48, params));
 
   const yExtent = $derived.by(() => {
     let min = 0;
