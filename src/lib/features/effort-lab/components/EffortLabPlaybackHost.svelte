@@ -9,7 +9,7 @@
   - Sequence loading via SequencePickerModal
   - A custom RAF loop producing timePosition
   - Per-frame computation of 7 PropState pairs via PropInterpolator
-  - Controls bar (pick sequence, BPM, play/pause)
+  - Controls bar (source picker, tempo, transport)
 -->
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
@@ -21,8 +21,13 @@
   import type { EffortQuality } from "../domain/effort-qualities";
   import { EFFORT_QUALITIES } from "../domain/effort-qualities";
   import { applyEffortEasing } from "../domain/effort-easing";
+  import type { EffortParams } from "../domain/effort-easing";
   import EffortComparisonGrid from "./EffortComparisonGrid.svelte";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
+  import SourceControls from "$lib/features/effects-lab/components/SourceControls.svelte";
+  import TempoControl from "$lib/shared/sequence-viewer/components/TempoControl.svelte";
+  import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
+  import type { SourceMode } from "$lib/features/effects-lab/services/contracts/ISequenceChainingOrchestrator";
 
   import { AngleCalculator } from "$lib/features/compose/services/implementations/AngleCalculator";
   import { MotionCalculator } from "$lib/features/compose/services/implementations/MotionCalculator";
@@ -47,6 +52,18 @@
     return result;
   }
 
+  function createDefaultQualityParams(): Record<EffortQuality, EffortParams> {
+    const result = {} as Record<EffortQuality, EffortParams>;
+    for (const descriptor of EFFORT_QUALITIES) {
+      const defaults: EffortParams = {};
+      for (const p of descriptor.params) {
+        defaults[p.key] = p.defaultValue;
+      }
+      result[descriptor.id] = defaults;
+    }
+    return result;
+  }
+
   // ─── Services (constructed fresh, not DI singletons) ──────────────────
   let propInterpolator: PropInterpolator;
   let stepCalculator: StepCalculator;
@@ -58,6 +75,9 @@
   let rafId: number | null = null;
   let lastTime: number | null = null;
 
+  // ─── Source mode ──────────────────────────────────────────────────────
+  let sourceMode = $state<SourceMode>("pick");
+
   // ─── Sequence state ───────────────────────────────────────────────────
   let showPicker = $state(false);
   let sequence = $state<SequenceData | null>(null);
@@ -67,10 +87,12 @@
   let currentStep = $state(0);
   let currentLetter = $state<Letter | null>(null);
 
+  // ─── Quality params ───────────────────────────────────────────────────
+  let qualityParams = $state(createDefaultQualityParams());
+
   // ─── Derived ──────────────────────────────────────────────────────────
   let gridMode = $derived(sequence?.gridMode ?? GridMode.DIAMOND);
   let sequenceWord = $derived(sequence?.word ?? sequence?.name ?? null);
-  let beatCount = $derived(steps.length);
 
   // ─── Service construction ─────────────────────────────────────────────
   onMount(() => {
@@ -135,7 +157,7 @@
     const updated = { ...propStates };
 
     for (const descriptor of EFFORT_QUALITIES) {
-      const easedProgress = applyEffortEasing(descriptor.id, stepProgress);
+      const easedProgress = applyEffortEasing(descriptor.id, stepProgress, qualityParams[descriptor.id]);
       const result = propInterpolator.interpolatePropAngles(stepData!, easedProgress);
 
       if (result.isValid) {
@@ -172,52 +194,49 @@
       lastTime = null;
     }
   }
+
+  function handleBpmChange(newBpm: number) {
+    bpm = newBpm;
+  }
+
+  function handleSourceChange(mode: SourceMode) {
+    if (mode !== "pick") {
+      console.warn(`Source mode "${mode}" not yet implemented in Effort Lab`);
+    }
+    sourceMode = mode;
+  }
+
+  function handleQualityParamsChange(quality: EffortQuality, params: EffortParams) {
+    qualityParams = { ...qualityParams, [quality]: params };
+  }
 </script>
 
 <div class="effort-playback-host">
   <!-- Controls Bar -->
   <div class="controls-bar">
     <div class="controls-left">
-      <button
-        class="pick-btn"
-        onclick={() => (showPicker = true)}
-        aria-label="Pick a sequence to load"
-      >
-        <i class="fas fa-folder-open" aria-hidden="true"></i>
-        Pick Sequence
-      </button>
-
-      {#if sequence}
-        <div class="sequence-info">
-          <span class="sequence-name">{sequenceWord}</span>
-          <span class="beat-count">{beatCount} beats</span>
-        </div>
-      {/if}
+      <SourceControls
+        {sourceMode}
+        {sequence}
+        isChainingNow={false}
+        onSourceChange={handleSourceChange}
+        onPick={() => (showPicker = true)}
+        onSkip={() => console.warn("Skip not yet implemented in Effort Lab")}
+        onShuffle={() => console.warn("Shuffle not yet implemented in Effort Lab")}
+      />
     </div>
 
     <div class="controls-right">
-      <label class="bpm-control">
-        <span class="bpm-label">BPM</span>
-        <input
-          type="range"
-          min="30"
-          max="240"
-          step="1"
-          bind:value={bpm}
-          class="bpm-slider"
-          aria-label="Beats per minute"
-        />
-        <span class="bpm-value">{bpm}</span>
-      </label>
-
-      <button
-        class="play-btn"
-        onclick={togglePlayback}
-        disabled={steps.length === 0}
-        aria-label={isPlaying ? "Pause" : "Play"}
-      >
-        <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
-      </button>
+      <TempoControl
+        {bpm}
+        onBpmChange={handleBpmChange}
+        showPresets={false}
+        showRamp={false}
+      />
+      <TransportControls
+        {isPlaying}
+        onPlaybackToggle={togglePlayback}
+      />
     </div>
   </div>
 
@@ -237,6 +256,8 @@
         {currentStep}
         {isPlaying}
         word={sequenceWord}
+        {qualityParams}
+        onQualityParamsChange={handleQualityParamsChange}
       />
     {/if}
   </div>
@@ -261,7 +282,7 @@
 
   .controls-bar {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     flex-wrap: wrap;
     gap: var(--spacing-sm, 8px);
@@ -270,109 +291,15 @@
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
-  .controls-left,
+  .controls-left {
+    flex-shrink: 0;
+  }
+
   .controls-right {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm, 8px);
-  }
-
-  .pick-btn {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs, 4px);
-    min-height: var(--min-touch-target, 44px);
-    padding: 8px 16px;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: var(--border-radius-md, 8px);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
-    color: var(--theme-text, white);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 500;
-    cursor: pointer;
-    transition: border-color 150ms ease;
-  }
-
-  .pick-btn:hover {
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
-  }
-
-  .pick-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: 2px;
-  }
-
-  .sequence-info {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs, 4px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-min, 14px);
-  }
-
-  .sequence-name {
-    font-weight: 600;
-    color: var(--theme-text, white);
-  }
-
-  .beat-count {
-    font-size: var(--font-size-compact, 12px);
-    opacity: 0.7;
-  }
-
-  .bpm-control {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs, 4px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-compact, 12px);
-  }
-
-  .bpm-label {
-    font-weight: 500;
-  }
-
-  .bpm-slider {
-    width: 100px;
-    accent-color: var(--theme-accent, #8b5cf6);
-  }
-
-  .bpm-value {
-    min-width: 2.5ch;
-    text-align: right;
-    font-family: var(--font-mono, monospace);
-    font-size: var(--font-size-compact, 12px);
-  }
-
-  .play-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    min-height: var(--min-touch-target, 44px);
-    min-width: var(--min-touch-target, 44px);
-    border: none;
-    border-radius: var(--border-radius-md, 8px);
-    background: var(--theme-accent, #8b5cf6);
-    color: white;
-    font-size: 16px;
-    cursor: pointer;
-    transition: opacity 150ms ease;
-  }
-
-  .play-btn:hover:not(:disabled) {
-    opacity: 0.85;
-  }
-
-  .play-btn:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-  }
-
-  .play-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: 2px;
+    gap: var(--spacing-md, 16px);
+    flex-wrap: wrap;
   }
 
   .grid-area {
@@ -400,12 +327,5 @@
   .empty-state p {
     font-size: var(--font-size-min, 14px);
     margin: 0;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .pick-btn,
-    .play-btn {
-      transition: none;
-    }
   }
 </style>
