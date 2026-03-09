@@ -1045,7 +1045,10 @@ service cloud.firestore {
     // Developers collection - the authority on who can access developer tools
     // Any approved developer can read the roster; only admin can manage it
     match /developers/{uid} {
-      allow read: if isApprovedDeveloper();
+      // Authenticated users can read their own record (needed for role lookup at login)
+      // Approved developers can read all records (for list-developers command)
+      allow read: if isAuthenticated() && request.auth.uid == uid
+                  || isApprovedDeveloper();
       allow write: if isDeveloperAdmin();
     }
 
