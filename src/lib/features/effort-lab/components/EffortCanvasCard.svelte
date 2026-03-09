@@ -4,12 +4,11 @@
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-  import type { EffortQualityDescriptor } from "../domain/effort-qualities";
-  import type { EffortParams } from "../domain/effort-easing";
+  import type { EffortDescriptor, EffortParams } from "../domain/effort-types";
   import EasingCurvePreview from "./EasingCurvePreview.svelte";
 
   interface Props {
-    descriptor: EffortQualityDescriptor;
+    descriptor: EffortDescriptor;
     blueProp: PropState;
     redProp: PropState;
     gridMode: GridMode;
@@ -65,9 +64,9 @@
   <div class="card-footer">
     <div class="card-info">
       <span class="card-label">{descriptor.label}</span>
-      <span class="card-description">{descriptor.description}</span>
+      <span class="card-subtitle">{descriptor.subtitle}</span>
     </div>
-    <EasingCurvePreview quality={descriptor.id} color={descriptor.color} {params} />
+    <EasingCurvePreview effortId={descriptor.id} color={descriptor.color} {params} />
   </div>
 
   {#if descriptor.params.length > 0}
@@ -136,10 +135,11 @@
     line-height: 1.2;
   }
 
-  .card-description {
+  .card-subtitle {
     font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-    line-height: 1.3;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
+    font-style: italic;
+    line-height: 1.2;
   }
 
   .param-sliders {
