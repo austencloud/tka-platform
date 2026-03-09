@@ -52,12 +52,12 @@
   });
 
   // Filter to main modules and dev modules - static order from module-definitions.ts
-  // Settings is always shown in main modules on mobile (it's user-facing, not dev-only)
+  // Settings is accessed via account footer, not shown in module grid
   const mainModules = $derived(
-    modules.filter((m: ModuleDefinition) => m.isMain || m.id === "settings")
+    modules.filter((m: ModuleDefinition) => m.isMain)
   );
   const devModules = $derived(
-    modules.filter((m: ModuleDefinition) => !m.isMain && m.id !== "settings")
+    modules.filter((m: ModuleDefinition) => !m.isMain)
   );
 
   // Determine grid layout class based on module count

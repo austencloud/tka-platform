@@ -13,6 +13,8 @@
   import type { IDeviceDetector } from "../../device/services/contracts/IDeviceDetector";
   import type { ResponsiveSettings } from "../../device/domain/models/device-models";
   import Drawer from "../../foundation/ui/Drawer.svelte";
+  import AccountRow from "./account/AccountRow.svelte";
+  import { authState } from "../../auth/state/authState.svelte";
 
   let {
     // Current state
@@ -87,6 +89,22 @@
     closeDrawer();
   }
 
+  function handleAccountSettings() {
+    hapticService?.trigger("selection");
+    onModuleChange?.("settings" as ModuleId);
+    closeDrawer();
+  }
+
+  async function handleSignOut() {
+    hapticService?.trigger("selection");
+    closeDrawer();
+    try {
+      await authState.signOut();
+    } catch (error) {
+      console.error("Sign out failed:", error);
+    }
+  }
+
   // Listen for custom event from primary navigation
   onMount(() => {
     const handleToggleEvent = () => {
@@ -140,6 +158,24 @@
         {modules}
         onModuleSelect={handleModuleSelect}
       />
+    </div>
+
+    <!-- Account Footer -->
+    <div class="account-footer">
+      <div class="account-footer-actions">
+        <button class="drawer-action" onclick={handleAccountSettings}>
+          <i class="fas fa-cog" aria-hidden="true"></i>
+          <span>Settings</span>
+        </button>
+        {#if authState.isAuthenticated}
+          <span class="action-divider" aria-hidden="true"></span>
+          <button class="drawer-action sign-out" onclick={handleSignOut}>
+            <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+            <span>Sign Out</span>
+          </button>
+        {/if}
+      </div>
+      <AccountRow variant="drawer" onclick={handleAccountSettings} />
     </div>
   </div>
 </Drawer>
@@ -400,6 +436,80 @@
       background: rgba(255, 255, 255, 0.95);
       border: 2px solid white;
       color: black;
+    }
+  }
+
+  /* ============================================================================
+     ACCOUNT FOOTER - Pinned at bottom of drawer
+     ============================================================================ */
+  .account-footer {
+    flex-shrink: 0;
+    padding: 12px 20px max(20px, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--theme-stroke);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .account-footer-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 4px;
+  }
+
+  .drawer-action {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--theme-text-dim);
+    cursor: pointer;
+    font-size: var(--font-size-compact);
+    font-weight: 500;
+    transition: all var(--duration-fast) ease;
+  }
+
+  .drawer-action:hover {
+    background: var(--theme-card-hover-bg);
+    color: var(--theme-text);
+  }
+
+  .drawer-action:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--theme-accent) 70%, transparent);
+    outline-offset: 2px;
+  }
+
+  .drawer-action i {
+    font-size: var(--font-size-compact);
+    opacity: 0.6;
+  }
+
+  .drawer-action:hover i {
+    opacity: 1;
+  }
+
+  .drawer-action.sign-out:hover {
+    color: var(--semantic-error);
+  }
+
+  .drawer-action.sign-out:hover i {
+    color: var(--semantic-error);
+  }
+
+  .action-divider {
+    color: var(--theme-text-dim);
+    opacity: 0.2;
+    font-size: var(--font-size-base);
+    user-select: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .drawer-action {
+      transition: none;
     }
   }
 </style>
