@@ -100,6 +100,20 @@ export class PublicSequencesLoader implements IBrowseLoader {
     }
   }
 
+  /**
+   * Add a sequence directly to the in-memory cache.
+   * Called after publishing so the sequence appears in the gallery immediately.
+   * If the cache isn't loaded yet, this is a no-op — the sequence will be fetched
+   * from Firestore naturally on the next gallery load.
+   */
+  addToCache(sequence: SequenceData): void {
+    if (!this.cachedSequences) return;
+    const exists = this.cachedSequences.some((s) => s.id === sequence.id);
+    if (!exists) {
+      this.cachedSequences = [...this.cachedSequences, sequence];
+    }
+  }
+
   private async fetchPublicSequences(): Promise<SequenceData[]> {
     const firestore = await getFirestoreInstance();
     const publicSeqRef = collection(firestore, getPublicSequencesPath());
