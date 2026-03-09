@@ -107,7 +107,7 @@
     gap: 12px;
     flex: 1;
     min-height: 0;
-    overflow-y: auto;
+    overflow: hidden;
     padding: 16px;
   }
 
