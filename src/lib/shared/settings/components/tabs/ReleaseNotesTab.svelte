@@ -1,42 +1,42 @@
-<!-- ReleaseNotesTab - Version history and release notes -->
+<!-- ReleaseNotesTab - Master-detail version history with container query responsive layout -->
 <script lang="ts">
   import { createVersionState } from "$lib/features/feedback/state/version-state.svelte";
   import type { AppVersion } from "$lib/features/feedback/domain/models/version-models";
   import VersionCard from "./release-notes/VersionCard.svelte";
+  import VersionListItem from "./release-notes/VersionListItem.svelte";
+  import VersionDetailContent from "./release-notes/VersionDetailContent.svelte";
   import VersionDetailPanel from "./release-notes/VersionDetailPanel.svelte";
-  import { versionService } from "$lib/features/feedback/services/implementations/VersionManager";
 
-  // Create version state
   const versionState = createVersionState();
-
-  // Expose seed function globally for one-time use (can be removed after seeding)
-  if (typeof window !== "undefined") {
-    (
-      window as unknown as { seedChangelog: () => Promise<void> }
-    ).seedChangelog = async () => {
-      await versionService.seedV010Changelog();
-      versionState.loadVersions();
-    };
-  }
 
   // Load versions on mount
   $effect(() => {
     versionState.loadVersions();
   });
 
-  // Selected version for detail panel
   let selectedVersion = $state<AppVersion | null>(null);
   let isPanelOpen = $state(false);
 
+  // Auto-select first version when versions load
+  $effect(() => {
+    if (versionState.versions.length > 0 && !selectedVersion) {
+      selectedVersion = versionState.versions[0] ?? null;
+    }
+  });
+
+  /** Wide mode: select version for inline detail panel */
+  function selectVersion(version: AppVersion) {
+    selectedVersion = version;
+  }
+
+  /** Narrow mode: select version and open drawer */
   function openVersionDetail(version: AppVersion) {
     selectedVersion = version;
     isPanelOpen = true;
   }
 
   async function handleVersionUpdated() {
-    // Reload versions to get updated changelog
     await versionState.loadVersions();
-    // Update selected version with fresh data
     if (selectedVersion) {
       const updated = versionState.versions.find(
         (v) => v.version === selectedVersion?.version
@@ -58,37 +58,67 @@
     </div>
   </header>
 
-  <div class="tab-content themed-scrollbar">
-    {#if versionState.isLoading && versionState.versions.length === 0}
-      <div class="loading-state">
-        <div class="skeleton-card"></div>
-        <div class="skeleton-card"></div>
-        <div class="skeleton-card"></div>
-      </div>
-    {:else if versionState.error}
-      <div class="error-state">
-        <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-        <p>{versionState.error}</p>
-        <button type="button" onclick={() => versionState.loadVersions()}>
-          Try Again
-        </button>
-      </div>
-    {:else if versionState.versions.length === 0}
-      <div class="empty-state">
-        <i class="fas fa-rocket" aria-hidden="true"></i>
-        <h3>No Releases Yet</h3>
-        <p>Check back soon for updates!</p>
-      </div>
-    {:else}
-      <div class="versions-list">
-        {#each versionState.versions as version (version.version)}
-          <VersionCard {version} onclick={() => openVersionDetail(version)} />
-        {/each}
-      </div>
-    {/if}
+  <div class="master-detail-layout">
+    <!-- Master: version list -->
+    <aside class="version-list-panel themed-scrollbar">
+      {#if versionState.isLoading && versionState.versions.length === 0}
+        <div class="loading-state">
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+        </div>
+      {:else if versionState.error}
+        <div class="error-state">
+          <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+          <p>{versionState.error}</p>
+          <button type="button" onclick={() => versionState.loadVersions()}>
+            Try Again
+          </button>
+        </div>
+      {:else if versionState.versions.length === 0}
+        <div class="empty-state">
+          <i class="fas fa-rocket" aria-hidden="true"></i>
+          <h3>No Releases Yet</h3>
+          <p>Check back soon for updates!</p>
+        </div>
+      {:else}
+        <!-- Wide mode: compact list items -->
+        <div class="version-list-compact">
+          {#each versionState.versions as version (version.version)}
+            <VersionListItem
+              {version}
+              isActive={selectedVersion?.version === version.version}
+              onclick={() => selectVersion(version)}
+            />
+          {/each}
+        </div>
+        <!-- Narrow mode: full cards -->
+        <div class="version-list-cards">
+          {#each versionState.versions as version (version.version)}
+            <VersionCard {version} onclick={() => openVersionDetail(version)} />
+          {/each}
+        </div>
+      {/if}
+    </aside>
+
+    <!-- Detail: inline content (wide mode only) -->
+    <main class="version-detail-panel themed-scrollbar">
+      {#if selectedVersion}
+        <VersionDetailContent
+          version={selectedVersion}
+          onVersionUpdated={handleVersionUpdated}
+          showCloseButton={false}
+        />
+      {:else}
+        <div class="no-selection">
+          <i class="fas fa-arrow-left" aria-hidden="true"></i>
+          <p>Select a version to view details</p>
+        </div>
+      {/if}
+    </main>
   </div>
 
-  <!-- Detail Panel -->
+  <!-- Drawer for narrow mode -->
   <VersionDetailPanel
     version={selectedVersion}
     bind:isOpen={isPanelOpen}
@@ -100,18 +130,16 @@
   .release-notes-tab {
     display: flex;
     flex-direction: column;
-    gap: 20px;
     height: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
     width: 100%;
+    container-type: inline-size;
   }
 
   .tab-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-bottom: 16px;
+    padding: 0 0 16px 0;
     border-bottom: 1px solid var(--theme-stroke);
   }
 
@@ -129,16 +157,80 @@
     color: var(--theme-accent);
   }
 
-  .tab-content {
+  .master-detail-layout {
     flex: 1;
-    overflow-y: auto;
-    padding-right: 4px;
+    min-height: 0;
+    display: flex;
+    gap: 0;
   }
 
-  .versions-list {
+  /* Master panel */
+  .version-list-panel {
+    flex-shrink: 0;
+    width: 280px;
+    overflow-y: auto;
+    border-right: 1px solid var(--theme-stroke);
+  }
+
+  /* Detail panel */
+  .version-detail-panel {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+  }
+
+  /* Default: wide mode - show compact list and detail */
+  .version-list-compact {
     display: flex;
     flex-direction: column;
+  }
+
+  .version-list-cards {
+    display: none;
+  }
+
+  /* No selection empty state */
+  .no-selection {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
     gap: 12px;
+    color: var(--theme-text-dim);
+  }
+
+  .no-selection i {
+    font-size: var(--font-size-xl);
+    opacity: 0.5;
+  }
+
+  .no-selection p {
+    margin: 0;
+    font-size: var(--font-size-sm);
+  }
+
+  /* Narrow mode: hide detail panel, show cards instead of list items */
+  @container (max-width: 699px) {
+    .version-list-panel {
+      width: 100%;
+      border-right: none;
+    }
+
+    .version-list-compact {
+      display: none;
+    }
+
+    .version-list-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 0 4px;
+    }
+
+    .version-detail-panel {
+      display: none;
+    }
   }
 
   /* Loading state */
@@ -150,7 +242,7 @@
 
   .skeleton-card {
     height: 72px;
-    background: var(--theme-card-bg, var(--theme-card-bg));
+    background: var(--theme-card-bg);
     border-radius: 12px;
     animation: pulse 1.5s ease-in-out infinite;
   }
@@ -184,7 +276,7 @@
   .error-state p {
     margin: 0 0 16px 0;
     font-size: var(--font-size-sm);
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
   }
 
   .error-state button {
@@ -192,7 +284,7 @@
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 8px;
-    color: var(--theme-text, var(--theme-text));
+    color: var(--theme-text);
     font-size: var(--font-size-sm);
     cursor: pointer;
     transition: all var(--duration-normal);
@@ -232,7 +324,7 @@
   .empty-state p {
     margin: 0;
     font-size: var(--font-size-sm);
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
   }
 
   /* Reduced motion */
