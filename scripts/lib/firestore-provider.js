@@ -29,6 +29,9 @@ const FIREBASE_CONFIG = {
   projectId: "the-kinetic-alphabet",
 };
 
+// Google's token endpoint requires client_secret even for desktop/PKCE flows.
+// For desktop clients this is NOT a real secret — Google documents it as safe to embed.
+// Same pattern used by gcloud CLI, firebase-tools, and other Google CLI tools.
 const OAUTH_CONFIG = {
   clientId:
     "664225703033-i9had4ijqua22fge706s7ugtn1isjhs5.apps.googleusercontent.com",
@@ -50,7 +53,6 @@ async function postFormHttps(url, params) {
   const https = await import("https");
   const mod = https.default || https;
   const body = new URLSearchParams(params).toString();
-  const { URL } = await import("url");
   const parsed = new URL(url);
 
   return new Promise((resolve, reject) => {
@@ -101,7 +103,7 @@ function loadCredentials() {
 // Cached singleton — both initFirestore() and getAdminAuth() share this.
 // ---------------------------------------------------------------------------
 
-let _cached = null;
+let _initPromise = null;
 let _adminAuth = null;
 
 // ---------------------------------------------------------------------------
@@ -119,6 +121,12 @@ async function initClientSdk(credentials) {
   if (tokens.error) {
     throw new Error(
       `Token refresh failed: ${tokens.error} — ${tokens.error_description || "unknown"}`
+    );
+  }
+
+  if (!tokens.id_token) {
+    throw new Error(
+      "Token refresh succeeded but no id_token returned. The refresh token may be invalid — try logging in again."
     );
   }
 
@@ -150,9 +158,13 @@ async function initClientSdk(credentials) {
 
 async function initAdminSdk() {
   const admin = (await import("firebase-admin")).default;
-  const serviceAccount = JSON.parse(
-    readFileSync(SERVICE_ACCOUNT_PATH, "utf8")
-  );
+
+  let serviceAccount;
+  try {
+    serviceAccount = JSON.parse(readFileSync(SERVICE_ACCOUNT_PATH, "utf8"));
+  } catch (err) {
+    throw new Error(`Failed to read service account key: ${err.message}`);
+  }
 
   if (admin.apps.length === 0) {
     admin.initializeApp({
@@ -181,19 +193,22 @@ async function initAdminSdk() {
  * @returns {Promise<{ db: any, FieldValue: any, auth: any, isAdmin: boolean, sdk: "client" | "admin" }>}
  */
 export async function initFirestore() {
-  if (_cached) return _cached;
+  if (!_initPromise) {
+    _initPromise = _initFirestoreImpl();
+  }
+  return _initPromise;
+}
 
+async function _initFirestoreImpl() {
   // Priority 1: Client SDK via saved OAuth credentials
   const credentials = loadCredentials();
   if (credentials?.googleRefreshToken) {
-    _cached = await initClientSdk(credentials);
-    return _cached;
+    return await initClientSdk(credentials);
   }
 
   // Priority 2: Admin SDK via service account key
   if (existsSync(SERVICE_ACCOUNT_PATH)) {
-    _cached = await initAdminSdk();
-    return _cached;
+    return await initAdminSdk();
   }
 
   // Priority 3: No credentials available
@@ -201,7 +216,7 @@ export async function initFirestore() {
     [
       "No Firebase credentials found.",
       "",
-      "Contributors: run `node scripts/cli-login.js` to authenticate with Google.",
+      "Contributors: run `node scripts/fetch-feedback.js login` to authenticate with Google.",
       "Admins: place serviceAccountKey.json in the project root.",
     ].join("\n")
   );
@@ -214,9 +229,9 @@ export async function initFirestore() {
  * @returns {Promise<import("firebase-admin").auth.Auth | null>}
  */
 export async function getAdminAuth() {
-  // If we haven't initialized yet, do so now
-  if (!_cached) {
-    await initFirestore();
+  // Ensure initialization has run
+  if (_initPromise) {
+    await _initPromise;
   }
   return _adminAuth;
 }
