@@ -20,6 +20,8 @@ import type { IAnimationStateManager } from "../contracts/IAnimationStateManager
 import type { IStepCalculator } from "../contracts/IStepCalculator";
 import type { IPropInterpolator } from "../contracts/IPropInterpolator";
 import type { ISequenceAnimationOrchestrator } from "../contracts/ISequenceAnimationOrchestrator";
+import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+import { applyEffort } from "$lib/features/effort-lab/domain/effort-easing-unified";
 
 /**
  * Lightweight Animation Orchestrator
@@ -209,11 +211,15 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
       return;
     }
 
+    // Apply effort easing to step progress before interpolation
+    const effortPreset = getAnimationVisibilityManager().getEffortPreset();
+    const easedProgress = applyEffort(effortPreset, stepState.stepProgress);
+
     // Use focused service for interpolation
     const interpolationResult =
       this.propInterpolationService.interpolatePropAngles(
         stepState.currentStepData,
-        stepState.stepProgress
+        easedProgress
       );
 
     if (!interpolationResult.isValid) {
@@ -454,10 +460,14 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
       return stepState.currentStepIndex + 1; // Return 1-based beat number
     }
 
+    // Apply effort easing to step progress before interpolation
+    const effortPreset = getAnimationVisibilityManager().getEffortPreset();
+    const easedProgress = applyEffort(effortPreset, stepState.stepProgress);
+
     // Use focused service for interpolation
     const interpolationResult = this.propInterpolationService.interpolatePropAngles(
       stepState.currentStepData,
-      stepState.stepProgress
+      easedProgress
     );
 
     if (interpolationResult.isValid) {
