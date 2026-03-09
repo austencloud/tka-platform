@@ -91,6 +91,7 @@
       disableContextMenu={true}
       hideTkaGlyph={false}
       hideStepNumbers={true}
+      fireConfig={{ disableFrameCache: true }}
     />
   </div>
 

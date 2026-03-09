@@ -173,6 +173,9 @@ export interface FireOverlayConfig {
   fuelRendererType?: FuelRendererType;
   /** Color curve for the fluid renderer display pass */
   colorCurve?: FireColorCurve;
+  /** Disable frame caching — forces live simulation every frame. Use when external
+   *  easing/timing makes cached frames drift from actual prop positions (e.g. effort labs). */
+  disableFrameCache?: boolean;
   /** Charcoal spark params (only used when useCharcoal is true) */
   charcoalParams?: import("./CharcoalSparkTypes").CharcoalSparkParams;
   /** Smoke opacity in display shader (0.0 = no smoke, 0.5 = heavy smoke, default per fuel) */
