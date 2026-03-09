@@ -17,6 +17,7 @@
     type PlaybackMode,
   } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
+  import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
@@ -82,6 +83,7 @@
   let animSmokeLevel = $state(0.1);
   let animUseCharcoal = $state(false);
   let animFireIntensity = $state(0.7);
+  let animEffortPreset = $state<EffortId>("linear");
 
   // Image composition state
   let imgAddWord = $state(true);
@@ -215,6 +217,12 @@
     animationVisibilityManager.setFireIntensity(value);
   }
 
+  function handleEffortPresetChange(preset: EffortId) {
+    triggerHaptic();
+    animEffortPreset = preset;
+    animationVisibilityManager.setEffortPreset(preset);
+  }
+
   function handleTrailStyleChange(newStyle: string) {
     triggerHaptic();
     animationVisibilityManager.setTrailStyle(newStyle as TrailVisibility);
@@ -304,6 +312,7 @@
     animSmokeLevel = animationVisibilityManager.getFireSmokeLevel();
     animUseCharcoal = animationVisibilityManager.getFireUseCharcoal();
     animFireIntensity = animationVisibilityManager.getFireIntensity();
+    animEffortPreset = animationVisibilityManager.getEffortPreset();
 
     // Load initial image composition
     imgAddWord = imageCompositionManager.addWord;
@@ -346,6 +355,7 @@
       animSmokeLevel = animationVisibilityManager.getFireSmokeLevel();
       animUseCharcoal = animationVisibilityManager.getFireUseCharcoal();
       animFireIntensity = animationVisibilityManager.getFireIntensity();
+      animEffortPreset = animationVisibilityManager.getEffortPreset();
     };
 
     const imageObserver = () => {
@@ -439,6 +449,8 @@
         onSmokeLevelChange={handleSmokeLevelChange}
         onUseCharcoalChange={handleUseCharcoalChange}
         onFireIntensityChange={handleFireIntensityChange}
+        effortPreset={animEffortPreset}
+        onEffortPresetChange={handleEffortPresetChange}
         onToggle={handleAnimationToggle}
         onTrailStyleChange={handleTrailStyleChange}
         onPlaybackModeChange={handlePlaybackModeChange}
