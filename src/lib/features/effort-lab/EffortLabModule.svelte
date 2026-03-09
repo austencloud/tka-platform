@@ -1,22 +1,49 @@
 <!--
   EffortLabModule.svelte
 
-  Effort Lab: compare 7 Laban-inspired movement qualities side by side.
-  Each canvas plays the same sequence with a different easing function applied
-  to the interpolation progress, revealing how effort qualities affect
-  the visual character of prop animation.
+  Effort Lab: explore movement quality through easing curves.
+  Two tabs:
+  - Efforts: 7 discrete effort qualities compared side by side
+  - Laban: 2×2 matrix of Weight×Time compound actions from Laban Movement Analysis
 -->
 <script lang="ts">
   import EffortLabPlaybackHost from "./components/EffortLabPlaybackHost.svelte";
+  import LabanTab from "./components/LabanTab.svelte";
+
+  let activeTab = $state<"efforts" | "laban">("efforts");
 </script>
 
 <div class="effort-lab">
   <header class="effort-lab-header">
     <h2 class="effort-lab-title">Effort Lab</h2>
     <span class="experiment-badge">Experimental</span>
+    <nav class="tab-bar" role="tablist">
+      <button
+        class="tab"
+        class:active={activeTab === "efforts"}
+        role="tab"
+        aria-selected={activeTab === "efforts"}
+        onclick={() => (activeTab = "efforts")}
+      >
+        Efforts
+      </button>
+      <button
+        class="tab"
+        class:active={activeTab === "laban"}
+        role="tab"
+        aria-selected={activeTab === "laban"}
+        onclick={() => (activeTab = "laban")}
+      >
+        Laban
+      </button>
+    </nav>
   </header>
 
-  <EffortLabPlaybackHost />
+  {#if activeTab === "efforts"}
+    <EffortLabPlaybackHost />
+  {:else}
+    <LabanTab />
+  {/if}
 </div>
 
 <style>
@@ -53,5 +80,38 @@
     background: rgba(139, 92, 246, 0.2);
     color: #a78bfa;
     border: 1px solid rgba(139, 92, 246, 0.3);
+  }
+
+  .tab-bar {
+    display: flex;
+    gap: 2px;
+    margin-left: auto;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-radius: 8px;
+    padding: 2px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .tab {
+    padding: 4px 14px;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .tab:hover {
+    color: var(--theme-text, #ffffff);
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .tab.active {
+    color: var(--theme-text, #ffffff);
+    background: rgba(139, 92, 246, 0.2);
+    font-weight: 600;
   }
 </style>
