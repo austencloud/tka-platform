@@ -1,8 +1,8 @@
 /**
  * Unified Effort Type System
  *
- * 8 effort qualities: 4 from Laban's action drive (Weight x Time)
- * and 4 animation-inspired easings.
+ * 7 effort qualities: 4 from Laban's action drive (Weight x Time)
+ * and 3 animation-inspired easings.
  */
 
 export type EffortId =
@@ -12,8 +12,7 @@ export type EffortId =
   | "punch"
   | "elastic"
   | "bounce"
-  | "anticipation"
-  | "stepped";
+  | "anticipation";
 
 export interface EffortParamDef {
   readonly key: string;
@@ -101,16 +100,6 @@ export const EFFORTS: readonly EffortDescriptor[] = [
     color: "#6366f1",
     params: [
       { key: "pullback", label: "Pullback", min: 0.1, max: 0.5, step: 0.05, defaultValue: 0.2 },
-    ],
-  },
-  {
-    id: "stepped",
-    label: "Stepped",
-    subtitle: "locking, isolation",
-    color: "#fb923c",
-    params: [
-      { key: "steps", label: "Steps", min: 2, max: 8, step: 1, defaultValue: 4 },
-      { key: "smoothness", label: "Smoothness", min: 0, max: 1, step: 0.1, defaultValue: 0.3 },
     ],
   },
 ] as const;
