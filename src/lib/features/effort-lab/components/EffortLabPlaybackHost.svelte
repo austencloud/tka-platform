@@ -48,6 +48,38 @@
   import type { IInfiniteSequenceGenerator } from "$lib/features/landing/services/contracts/IInfiniteSequenceGenerator";
   import { MotionColor, type Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
+  // ─── Persistence ─────────────────────────────────────────────────────
+  const STORAGE_KEY = "effort-lab-efforts-state";
+
+  interface EffortLabPersistedState {
+    sequenceId: string | null;
+    bpm: number;
+    sourceMode: SourceMode;
+    qualityParams: Record<string, EffortParams>;
+  }
+
+  function loadPersistedState(): Partial<EffortLabPersistedState> {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch { /* ignore */ }
+    return {};
+  }
+
+  function savePersistedState() {
+    try {
+      const state: EffortLabPersistedState = {
+        sequenceId: sequence?.word || sequence?.name || sequence?.id || null,
+        bpm,
+        sourceMode,
+        qualityParams,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch { /* ignore */ }
+  }
+
+  const persisted = loadPersistedState();
+
   // ─── Default PropState (all zeroes) ───────────────────────────────────
   const DEFAULT_PROP_STATE: PropState = {
     centerPathAngle: 0,
@@ -84,12 +116,12 @@
   // ─── Playback state ───────────────────────────────────────────────────
   let timePosition = $state(0);
   let isPlaying = $state(false);
-  let bpm = $state(60);
+  let bpm = $state(persisted.bpm ?? 60);
   let rafId: number | null = null;
   let lastTime: number | null = null;
 
   // ─── Source mode ──────────────────────────────────────────────────────
-  let sourceMode = $state<SourceMode>("pick");
+  let sourceMode = $state<SourceMode>(persisted.sourceMode ?? "pick");
   let loading = $state(false);
   let isChainingNow = $state(false);
 
@@ -107,11 +139,38 @@
   let currentLetter = $state<Letter | null>(null);
 
   // ─── Quality params ───────────────────────────────────────────────────
-  let qualityParams = $state(createDefaultQualityParams());
+  let qualityParams = $state(
+    persisted.qualityParams
+      ? { ...createDefaultQualityParams(), ...persisted.qualityParams }
+      : createDefaultQualityParams()
+  );
 
   // ─── Derived ──────────────────────────────────────────────────────────
   let gridMode = $derived(sequence?.gridMode ?? GridMode.DIAMOND);
   let sequenceWord = $derived(sequence?.word ?? sequence?.name ?? null);
+
+  // ─── Auto-save on state changes ──────────────────────────────────────
+  $effect(() => {
+    // Touch reactive deps to trigger on changes
+    void bpm;
+    void sourceMode;
+    void qualityParams;
+    void sequence;
+    savePersistedState();
+  });
+
+  // ─── Restore sequence by ID ─────────────────────────────────────────
+  async function restoreSequence(id: string) {
+    try {
+      const sequenceRepository = container.items.sequenceRepository;
+      const loaded = await sequenceRepository.getSequence(id);
+      if (loaded) {
+        handleSequenceSelected(loaded);
+      }
+    } catch (err) {
+      console.error("Effort Lab: failed to restore sequence:", err);
+    }
+  }
 
   // ─── Service construction ─────────────────────────────────────────────
   onMount(async () => {
@@ -144,6 +203,13 @@
     );
 
     rafId = requestAnimationFrame(onFrame);
+
+    // Restore previous session state
+    if (persisted.sequenceId) {
+      restoreSequence(persisted.sequenceId);
+    } else if (sourceMode !== "pick") {
+      loadNextSequence();
+    }
   });
 
   onDestroy(() => {
