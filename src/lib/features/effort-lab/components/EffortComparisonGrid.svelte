@@ -54,7 +54,7 @@
 <style>
   .effort-comparison-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: var(--spacing-md, 16px);
     flex: 1;
     min-height: 0;
@@ -64,7 +64,7 @@
 
   @media (max-width: 900px) {
     .effort-comparison-grid {
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     }
   }
 </style>
