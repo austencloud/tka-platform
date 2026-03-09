@@ -70,6 +70,7 @@ function loadCredentials() {
   try {
     return JSON.parse(readFileSync(CREDENTIALS_PATH, "utf8"));
   } catch {
+    console.warn("  ⚠️  Credentials file is corrupted — will re-authenticate.");
     return null;
   }
 }
