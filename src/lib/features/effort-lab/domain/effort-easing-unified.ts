@@ -2,7 +2,7 @@
  * Unified easing functions for all 8 effort qualities.
  *
  * 4 Laban efforts (glide, dab, press, punch) delegate to applyLabanEasing.
- * 4 animation efforts (elastic, bounce, anticipation, stepped) are standalone.
+ * 3 animation efforts (elastic, bounce, anticipation) are standalone.
  *
  * Every function guarantees f(0)=0 and f(1)=1.
  */
@@ -157,33 +157,6 @@ function anticipation(t: number, params?: EffortParams): number {
 	}
 }
 
-/**
- * Stepped: quantize progress into N discrete steps with optional smoothing.
- */
-function stepped(t: number, params?: EffortParams): number {
-	if (t <= 0) return 0;
-	if (t >= 1) return 1;
-
-	const steps = Math.round(resolve("stepped", "steps", params));
-	const smoothness = resolve("stepped", "smoothness", params);
-
-	// Which step are we in?
-	const stepIndex = Math.floor(t * steps);
-	const stepStart = stepIndex / steps;
-	const stepEnd = (stepIndex + 1) / steps;
-	const stepProgress = (t - stepStart) / (stepEnd - stepStart);
-
-	// Hard step value (floor quantized)
-	const hardValue = stepIndex / steps;
-
-	// Smooth value: ease within the step toward the next value
-	const nextValue = (stepIndex + 1) / steps;
-	const smoothed = hardValue + (nextValue - hardValue) * stepProgress;
-
-	// Blend between hard and smooth based on smoothness param
-	return hardValue + (smoothed - hardValue) * smoothness;
-}
-
 // ---------------------------------------------------------------------------
 // Dispatch
 // ---------------------------------------------------------------------------
@@ -199,7 +172,6 @@ const EFFORT_FNS: Record<
 	elastic,
 	bounce,
 	anticipation,
-	stepped,
 };
 
 /**

@@ -13,11 +13,10 @@ const ALL_EFFORTS: EffortId[] = [
 	"elastic",
 	"bounce",
 	"anticipation",
-	"stepped",
 ];
 
 describe("Unified Effort Easing", () => {
-	describe("boundary invariants (all 8 efforts)", () => {
+	describe("boundary invariants (all 7 efforts)", () => {
 		it.each(ALL_EFFORTS)("%s returns ~0 at t=0", (id) => {
 			expect(applyEffort(id, 0)).toBeCloseTo(0, 5);
 		});
@@ -77,18 +76,6 @@ describe("Unified Effort Easing", () => {
 				}
 			}
 			expect(foundPullback).toBe(true);
-		});
-	});
-
-	describe("stepped", () => {
-		it("is monotonically non-decreasing", () => {
-			let prev = 0;
-			for (let i = 0; i <= 1000; i++) {
-				const t = i / 1000;
-				const value = applyEffort("stepped", t);
-				expect(value).toBeGreaterThanOrEqual(prev - 1e-10);
-				prev = value;
-			}
 		});
 	});
 
