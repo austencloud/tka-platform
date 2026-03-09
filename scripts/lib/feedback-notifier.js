@@ -8,10 +8,9 @@
  *
  * Usage:
  *   import notifier from "./lib/feedback-notifier.js";
- *   await notifier.notifyAdmin(db, { event, actor, feedbackItem, details });
+ *   await notifier.notifyAdmin(db, FieldValue, { event, actor, feedbackItem, details });
  */
 
-import admin from "firebase-admin";
 import { ADMIN_USER_ID, ADMIN_USER, NOTIFICATION_EVENTS } from "../../config/feedback.config.js";
 
 // ---------------------------------------------------------------------------
@@ -41,7 +40,7 @@ const SYSTEM_CONVERSATION_ID = `feedback-notifications-${ADMIN_USER_ID}`;
  * Creates the conversation document if it doesn't exist (idempotent via set+merge),
  * then appends a message to the subcollection.
  */
-async function sendInAppMessage(db, { event, actor, feedbackItem, details }) {
+async function sendInAppMessage(db, FieldValue, { event, actor, feedbackItem, details }) {
   const label = EVENT_LABELS[event] || event;
   const text = `${actor.displayName} ${label} "${feedbackItem.title}"`;
 
@@ -53,8 +52,8 @@ async function sendInAppMessage(db, { event, actor, feedbackItem, details }) {
       participants: [ADMIN_USER_ID],
       type: "system",
       label: "Feedback Activity",
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      lastMessageAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
+      lastMessageAt: FieldValue.serverTimestamp(),
     },
     { merge: true }
   );
@@ -64,7 +63,7 @@ async function sendInAppMessage(db, { event, actor, feedbackItem, details }) {
     text,
     senderId: "system",
     senderName: "Feedback System",
-    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    timestamp: FieldValue.serverTimestamp(),
     metadata: {
       type: "feedback-activity",
       event,
@@ -124,13 +123,14 @@ async function sendEmailNotification(db, { event, actor, feedbackItem, details }
  * Reads channel config from NOTIFICATION_EVENTS in feedback.config.js.
  *
  * @param {FirebaseFirestore.Firestore} db  Firestore instance
+ * @param {any} FieldValue  Firestore FieldValue (admin or client SDK)
  * @param {Object} opts
  * @param {"claim"|"in-review"|"create-feedback"|"note"} opts.event
  * @param {{ uid: string, displayName: string, email: string }} opts.actor
  * @param {{ id: string, title: string, status: string }} opts.feedbackItem
  * @param {string} [opts.details]  Optional extra context
  */
-async function notifyAdmin(db, { event, actor, feedbackItem, details }) {
+async function notifyAdmin(db, FieldValue, { event, actor, feedbackItem, details }) {
   // Don't notify admin about their own actions
   if (actor.uid === ADMIN_USER_ID) return;
 
@@ -142,7 +142,7 @@ async function notifyAdmin(db, { event, actor, feedbackItem, details }) {
   const promises = [];
 
   if (eventConfig.message) {
-    promises.push(sendInAppMessage(db, payload));
+    promises.push(sendInAppMessage(db, FieldValue, payload));
   }
 
   if (eventConfig.email) {

@@ -146,6 +146,7 @@ async function initClientSdk(credentials) {
   return {
     db: firebase.firestore(),
     FieldValue: firebase.firestore.FieldValue,
+    Timestamp: firebase.firestore.Timestamp,
     auth: null,
     isAdmin: false,
     sdk: "client",
@@ -177,6 +178,7 @@ async function initAdminSdk() {
   return {
     db: admin.firestore(),
     FieldValue: admin.firestore.FieldValue,
+    Timestamp: admin.firestore.Timestamp,
     auth: _adminAuth,
     isAdmin: true,
     sdk: "admin",
@@ -190,7 +192,7 @@ async function initAdminSdk() {
 /**
  * Initialize Firestore and return a unified interface.
  *
- * @returns {Promise<{ db: any, FieldValue: any, auth: any, isAdmin: boolean, sdk: "client" | "admin" }>}
+ * @returns {Promise<{ db: any, FieldValue: any, Timestamp: any, auth: any, isAdmin: boolean, sdk: "client" | "admin" }>}
  */
 export async function initFirestore() {
   if (!_initPromise) {

@@ -20,8 +20,7 @@
  *   - Tokens are visible in `list` output for debugging concurrent claims
  */
 
-import admin from "firebase-admin";
-import { readFileSync } from "fs";
+import { initFirestore, getAdminAuth } from "./lib/firestore-provider.js";
 import { execSync } from "child_process";
 import { existsSync, mkdirSync } from "fs";
 import { randomUUID } from "crypto";
@@ -39,17 +38,10 @@ const SESSION_ID = randomUUID();
 // Module-level so functions outside main() can reference the authenticated user.
 let identity = null;
 
-// Load service account key
-const serviceAccount = JSON.parse(
-  readFileSync("./serviceAccountKey.json", "utf8")
-);
-
-// Initialize Firebase Admin
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-});
-
-const db = admin.firestore();
+// Firestore references — initialized in main() via FirestoreProvider
+let db = null;
+let FieldValue = null;
+let Timestamp = null;
 
 // Import config values
 const {
@@ -79,8 +71,8 @@ async function registerSession() {
     await db.collection("agentSessions").doc(SESSION_ID).set({
       sessionId: SESSION_ID,
       agentType: "claude-cli",
-      registeredAt: admin.firestore.FieldValue.serverTimestamp(),
-      lastActivity: admin.firestore.FieldValue.serverTimestamp(),
+      registeredAt: FieldValue.serverTimestamp(),
+      lastActivity: FieldValue.serverTimestamp(),
       activeClaims: [],
       userId: identity.uid,
       metadata: {
@@ -106,7 +98,7 @@ async function registerSession() {
 async function updateSessionActivity() {
   try {
     await db.collection("agentSessions").doc(SESSION_ID).update({
-      lastActivity: admin.firestore.FieldValue.serverTimestamp(),
+      lastActivity: FieldValue.serverTimestamp(),
     });
   } catch {
     // Ignore - session may not exist
@@ -321,7 +313,7 @@ async function addJournalEntry(docId, type, message = "", data = {}) {
       .doc(); // Auto-generate ID
 
     await journalRef.set({
-      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      timestamp: FieldValue.serverTimestamp(),
       type,
       sessionId: SESSION_ID,
       message,
@@ -370,7 +362,7 @@ async function getJournalEntries(docId, limit = 20) {
 async function refreshActivity(docId, activityType = "activity") {
   try {
     await db.collection("feedback").doc(docId).update({
-      lastActivity: admin.firestore.FieldValue.serverTimestamp(),
+      lastActivity: FieldValue.serverTimestamp(),
       lastActivityType: activityType,
     });
   } catch (error) {
@@ -503,8 +495,8 @@ async function sendDirectMessageToUser(
           },
         },
         unreadCount: { [ADMIN_USER_ID]: 0, [userId]: 0 },
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       });
     }
 
@@ -515,7 +507,7 @@ async function sendDirectMessageToUser(
       senderName: ADMIN_USER.displayName,
       senderAvatar: ADMIN_USER.photoURL,
       content: messageContent,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
       readBy: [ADMIN_USER_ID],
       attachments: [
         {
@@ -542,17 +534,17 @@ async function sendDirectMessageToUser(
         content: messageContent,
         senderId: ADMIN_USER_ID,
         senderName: ADMIN_USER.displayName,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
         hasAttachment: true,
       },
-      [`unreadCount.${userId}`]: admin.firestore.FieldValue.increment(1),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      [`unreadCount.${userId}`]: FieldValue.increment(1),
+      updatedAt: FieldValue.serverTimestamp(),
     });
 
     // Update notification tracking to prevent duplicates
     try {
       await db.collection("feedback").doc(feedbackId).update({
-        lastNotifiedAt: admin.firestore.FieldValue.serverTimestamp(),
+        lastNotifiedAt: FieldValue.serverTimestamp(),
         lastNotifiedStatus: feedbackStatus,
       });
     } catch (e) {
@@ -593,7 +585,7 @@ async function notifyUserFeedbackResolved(
       feedbackId,
       feedbackTitle: feedbackTitle || "Your feedback",
       message: message || "Your feedback has been addressed! Check it out.",
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
       read: false,
       fromUserId: "system",
       fromUserName: "TKA Scribe",
@@ -809,16 +801,16 @@ async function atomicClaim(docId, isReclaim = false) {
       // Also set lastActivity for the new heartbeat system
       transaction.update(docRef, {
         status: "in-progress",
-        claimedAt: admin.firestore.FieldValue.serverTimestamp(),
+        claimedAt: FieldValue.serverTimestamp(),
         claimedBy: identity.uid,
         claimToken: claimToken, // Unique token for THIS claim attempt
         claimSession: SESSION_ID, // Session ID for this script invocation
-        lastActivity: admin.firestore.FieldValue.serverTimestamp(), // Heartbeat system
+        lastActivity: FieldValue.serverTimestamp(), // Heartbeat system
         lastActivityType: "claimed",
         // Clear any pending claim request (we're taking over)
-        claimRequestedAt: admin.firestore.FieldValue.delete(),
-        claimRequestedBy: admin.firestore.FieldValue.delete(),
-        claimRequestReason: admin.firestore.FieldValue.delete(),
+        claimRequestedAt: FieldValue.delete(),
+        claimRequestedBy: FieldValue.delete(),
+        claimRequestReason: FieldValue.delete(),
       });
 
       return { id: doc.id, ...data, isReclaim };
@@ -843,8 +835,8 @@ async function atomicClaim(docId, isReclaim = false) {
 
     // Update session's active claims (async, non-blocking)
     db.collection("agentSessions").doc(SESSION_ID).update({
-      activeClaims: admin.firestore.FieldValue.arrayUnion(docId),
-      lastActivity: admin.firestore.FieldValue.serverTimestamp(),
+      activeClaims: FieldValue.arrayUnion(docId),
+      lastActivity: FieldValue.serverTimestamp(),
     }).catch(() => {}); // Ignore session update failures
 
     // Journal the successful claim (async, non-blocking)
@@ -857,7 +849,7 @@ async function atomicClaim(docId, isReclaim = false) {
 
     // Notify admin about the claim (non-blocking)
     try {
-      await notifier.notifyAdmin(db, {
+      await notifier.notifyAdmin(db, FieldValue, {
         event: "claim",
         actor: { uid: identity.uid, displayName: identity.displayName, email: identity.email },
         feedbackItem: { id: docId, title: result.title || "No title", status: "in-progress" },
@@ -1322,7 +1314,7 @@ async function updateFeedbackTitle(docId, title) {
 
     await docRef.update({
       title: title,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     });
 
     console.log("\n" + "=".repeat(70));
@@ -1354,7 +1346,7 @@ async function updateFeedbackDescription(docId, description) {
 
     await docRef.update({
       description: description,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     });
 
     console.log("\n" + "=".repeat(70));
@@ -1386,7 +1378,7 @@ async function updateResolutionNotes(docId, notes) {
 
     await docRef.update({
       resolutionNotes: notes,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     });
 
     const item = doc.data();
@@ -1420,7 +1412,7 @@ async function updateChangelogEntry(docId, entry) {
 
     await docRef.update({
       changelogEntry: entry,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     });
 
     const item = doc.data();
@@ -1505,18 +1497,18 @@ async function updateFeedbackById(docId, status, resolutionNotes, userFacingNote
 
     const updateData = {
       status: normalizedStatus,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     };
 
     // Clear claim fields when archiving, completing, or moving to review
     if (["archived", "completed", "in-review"].includes(normalizedStatus)) {
-      updateData.claimedAt = admin.firestore.FieldValue.delete();
-      updateData.claimedBy = admin.firestore.FieldValue.delete();
-      updateData.claimToken = admin.firestore.FieldValue.delete();
-      updateData.claimSession = admin.firestore.FieldValue.delete();
+      updateData.claimedAt = FieldValue.delete();
+      updateData.claimedBy = FieldValue.delete();
+      updateData.claimToken = FieldValue.delete();
+      updateData.claimSession = FieldValue.delete();
     }
     if (normalizedStatus === "archived") {
-      updateData.resolvedAt = admin.firestore.FieldValue.serverTimestamp();
+      updateData.resolvedAt = FieldValue.serverTimestamp();
     }
 
     if (resolutionNotes) {
@@ -1535,14 +1527,14 @@ async function updateFeedbackById(docId, status, resolutionNotes, userFacingNote
 
     // Also refresh lastActivity if still in-progress (counts as activity)
     if (normalizedStatus === "in-progress") {
-      updateData.lastActivity = admin.firestore.FieldValue.serverTimestamp();
+      updateData.lastActivity = FieldValue.serverTimestamp();
       updateData.lastActivityType = "status-update";
     }
 
     // Clear heartbeat fields when leaving in-progress
     if (currentStatus === "in-progress" && normalizedStatus !== "in-progress") {
-      updateData.lastActivity = admin.firestore.FieldValue.delete();
-      updateData.lastActivityType = admin.firestore.FieldValue.delete();
+      updateData.lastActivity = FieldValue.delete();
+      updateData.lastActivityType = FieldValue.delete();
     }
 
     await docRef.update(updateData);
@@ -1558,7 +1550,7 @@ async function updateFeedbackById(docId, status, resolutionNotes, userFacingNote
     // Notify admin when a developer submits for review
     if (normalizedStatus === "in-review") {
       try {
-        await notifier.notifyAdmin(db, {
+        await notifier.notifyAdmin(db, FieldValue, {
           event: "in-review",
           actor: { uid: identity.uid, displayName: identity.displayName, email: identity.email },
           feedbackItem: { id: docId, title: item.title || "No title", status: normalizedStatus },
@@ -1662,7 +1654,7 @@ async function addSubtask(docId, title, description, dependsOn = []) {
 
     await docRef.update({
       subtasks,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     });
 
     console.log("\n" + "=".repeat(70));
@@ -1709,7 +1701,7 @@ async function deleteSubtask(docId, subtaskId) {
 
     await docRef.update({
       subtasks,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     });
 
     const completed = subtasks.filter((s) => s.status === "completed").length;
@@ -1767,7 +1759,7 @@ async function updateSubtaskStatus(docId, subtaskId, status) {
 
     await docRef.update({
       subtasks,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     });
 
     // Show progress
@@ -2012,9 +2004,9 @@ async function deferFeedback(docId, deferUntilDate, reason) {
 
     await feedbackRef.update({
       status: "archived",
-      deferredUntil: admin.firestore.Timestamp.fromDate(parsedDate),
+      deferredUntil: Timestamp.fromDate(parsedDate),
       resolutionNotes: reason || `Deferred until ${deferUntilDate}`,
-      archivedAt: admin.firestore.FieldValue.serverTimestamp(),
+      archivedAt: FieldValue.serverTimestamp(),
     });
 
     console.log("\n" + "=".repeat(70));
@@ -2061,7 +2053,7 @@ async function updateFeedbackPriority(docId, priority) {
 
     await docRef.update({
       priority: priority,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     });
 
     const item = doc.data();
@@ -2239,7 +2231,7 @@ async function prioritizeFeedback(dryRun = false, jsonOutput = false) {
       if (!dryRun) {
         await db.collection("feedback").doc(item.id).update({
           priority,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
         });
       }
     }
@@ -2459,7 +2451,7 @@ async function sendHeartbeat(docId, message = null) {
 
     // Update lastActivity
     await docRef.update({
-      lastActivity: admin.firestore.FieldValue.serverTimestamp(),
+      lastActivity: FieldValue.serverTimestamp(),
       lastActivityType: "heartbeat",
     });
 
@@ -2540,7 +2532,7 @@ async function requestClaim(docId, reason) {
 
     // Record the claim request
     await docRef.update({
-      claimRequestedAt: admin.firestore.FieldValue.serverTimestamp(),
+      claimRequestedAt: FieldValue.serverTimestamp(),
       claimRequestedBy: SESSION_ID.substring(0, 8),
       claimRequestReason: reason,
     });
@@ -2684,7 +2676,7 @@ async function touchFile(docId, filePath) {
 
     // Update lastActivity
     await docRef.update({
-      lastActivity: admin.firestore.FieldValue.serverTimestamp(),
+      lastActivity: FieldValue.serverTimestamp(),
       lastActivityType: "file-edit",
     });
 
@@ -2885,7 +2877,7 @@ async function unclaimFeedback(docId, options = {}) {
         feedbackId: docId,
         performedBy: identity.uid,
         reason: emergency,
-        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        timestamp: FieldValue.serverTimestamp(),
         previousClaimant: item.claimedBy || null,
         previousClaimToken: item.claimToken || null,
         previousSession: item.claimSession || null,
@@ -2897,23 +2889,23 @@ async function unclaimFeedback(docId, options = {}) {
     // Update session's active claims if releasing own claim
     if (item.claimSession) {
       db.collection("agentSessions").doc(item.claimSession).update({
-        activeClaims: admin.firestore.FieldValue.arrayRemove(docId),
+        activeClaims: FieldValue.arrayRemove(docId),
       }).catch(() => {}); // Ignore - session may not exist
     }
 
     // Clear claim fields
     await docRef.update({
       status: "new",
-      claimedAt: admin.firestore.FieldValue.delete(),
-      claimedBy: admin.firestore.FieldValue.delete(),
-      claimToken: admin.firestore.FieldValue.delete(),
-      claimSession: admin.firestore.FieldValue.delete(),
-      lastActivity: admin.firestore.FieldValue.delete(),
-      lastActivityType: admin.firestore.FieldValue.delete(),
-      claimRequestedAt: admin.firestore.FieldValue.delete(),
-      claimRequestedBy: admin.firestore.FieldValue.delete(),
-      claimRequestReason: admin.firestore.FieldValue.delete(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      claimedAt: FieldValue.delete(),
+      claimedBy: FieldValue.delete(),
+      claimToken: FieldValue.delete(),
+      claimSession: FieldValue.delete(),
+      lastActivity: FieldValue.delete(),
+      lastActivityType: FieldValue.delete(),
+      claimRequestedAt: FieldValue.delete(),
+      claimRequestedBy: FieldValue.delete(),
+      claimRequestReason: FieldValue.delete(),
+      updatedAt: FieldValue.serverTimestamp(),
     });
 
     console.log("\n" + "=".repeat(70));
@@ -3300,7 +3292,7 @@ async function addFeedback(args) {
     type,
     status: "new",
     source: "terminal", // Created via CLI, not app feedback form
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: FieldValue.serverTimestamp(),
     userId: identity.uid,
     userDisplayName: identity.displayName,
     userEmail: identity.email,
@@ -3337,7 +3329,7 @@ async function addFeedback(args) {
 
     // Notify admin about new feedback (non-blocking)
     try {
-      await notifier.notifyAdmin(db, {
+      await notifier.notifyAdmin(db, FieldValue, {
         event: "create-feedback",
         actor: { uid: identity.uid, displayName: identity.displayName, email: identity.email },
         feedbackItem: { id: docRef.id, title: flags.title, status: "new" },
@@ -3422,6 +3414,12 @@ async function main() {
     process.exit(0);
   }
 
+  // Initialize Firestore (Admin SDK or Client SDK depending on credentials)
+  const provider = await initFirestore();
+  db = provider.db;
+  FieldValue = provider.FieldValue;
+  Timestamp = provider.Timestamp;
+
   // Resolve developer identity for all other commands
   identity = await cliAuth.resolveIdentity();
 
@@ -3447,7 +3445,7 @@ async function main() {
         displayName: "Austen Cloud",
         email: "austencloud@gmail.com",
         role: "admin",
-        addedAt: admin.firestore.FieldValue.serverTimestamp(),
+        addedAt: FieldValue.serverTimestamp(),
         addedBy: "system",
         active: true,
       });
@@ -3477,7 +3475,12 @@ async function main() {
     }
 
     try {
-      const userRecord = await admin.auth().getUserByEmail(email);
+      const adminAuth = await getAdminAuth();
+      if (!adminAuth) {
+        console.error("\n  ❌ add-developer requires the service account key (admin only).\n");
+        process.exit(1);
+      }
+      const userRecord = await adminAuth.getUserByEmail(email);
 
       const existing = await db.collection("developers").doc(userRecord.uid).get();
       if (existing.exists) {
@@ -3495,7 +3498,7 @@ async function main() {
         displayName: userRecord.displayName || email.split("@")[0],
         email: userRecord.email,
         role,
-        addedAt: admin.firestore.FieldValue.serverTimestamp(),
+        addedAt: FieldValue.serverTimestamp(),
         addedBy: identity.uid,
         active: true,
       });
@@ -3743,7 +3746,7 @@ async function main() {
         capturedTab: tab,
         status: "new",
         source: "terminal",
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
         userId: identity.uid,
         userDisplayName: identity.displayName,
         userEmail: identity.email,
@@ -3761,7 +3764,7 @@ async function main() {
 
       // Notify admin about new feedback (non-blocking)
       try {
-        await notifier.notifyAdmin(db, {
+        await notifier.notifyAdmin(db, FieldValue, {
           event: "create-feedback",
           actor: { uid: identity.uid, displayName: identity.displayName, email: identity.email },
           feedbackItem: { id: docRef.id, title, status: "new" },
