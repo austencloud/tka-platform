@@ -369,6 +369,11 @@ export class AnimationVisibilityStateManager {
    */
   setTrailStyle(style: TrailVisibility): void {
     this.settings.trailStyle = style;
+    // Mutual exclusion: trails can't be active alongside fire or LED
+    if (style !== "off") {
+      if (this.settings.fireEffect) this.settings.fireEffect = false;
+      if (this.settings.ledEffect) this.settings.ledEffect = false;
+    }
     this.saveToStorage();
     this.notifyObservers();
   }
@@ -541,6 +546,11 @@ export class AnimationVisibilityStateManager {
    */
   setFireEffect(enabled: boolean): void {
     this.settings.fireEffect = enabled;
+    // Mutual exclusion: only one effect active at a time
+    if (enabled) {
+      if (this.settings.ledEffect) this.settings.ledEffect = false;
+      if (this.settings.trailStyle !== "off") this.settings.trailStyle = "off";
+    }
     this.saveToStorage();
     this.notifyObservers();
   }
@@ -628,6 +638,11 @@ export class AnimationVisibilityStateManager {
    */
   setLedEffect(enabled: boolean): void {
     this.settings.ledEffect = enabled;
+    // Mutual exclusion: only one effect active at a time
+    if (enabled) {
+      if (this.settings.fireEffect) this.settings.fireEffect = false;
+      if (this.settings.trailStyle !== "off") this.settings.trailStyle = "off";
+    }
     this.saveToStorage();
     this.notifyObservers();
   }

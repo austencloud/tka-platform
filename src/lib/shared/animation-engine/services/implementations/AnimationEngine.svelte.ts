@@ -68,8 +68,9 @@ import { PropTypeChanger } from "./PropTypeChanger.svelte";
 import { AnimatorCanvasInitializer } from "./AnimatorCanvasInitializer";
 import { FireTipTracker } from "./FireTipTracker";
 import { WebGLFireRenderer } from "./fire/WebGLFireRenderer";
-import { CharcoalSparkRenderer } from "./fire/CharcoalSparkRenderer";
+import { CharcoalSparkRenderer } from "./charcoal/CharcoalSparkRenderer";
 import type { IFireOverlayRenderer } from "../contracts/IFireOverlayRenderer";
+import type { ICharcoalRenderer } from "../contracts/ICharcoalRenderer";
 import type { IFireTipTracker } from "../contracts/IFireTipTracker";
 import { DEFAULT_FIRE_CONFIG, DEFAULT_PROP_FLAME_COLORS, type FireOverlayConfig } from "../../domain/types/FireTypes";
 import type { IFireDefaultsLoader } from "../contracts/IFireDefaultsLoader";
@@ -235,7 +236,7 @@ export class AnimationEngine {
   private frameBudgetMonitor: IFrameBudgetMonitor =
     new FrameBudgetMonitor(new DeviceTierDetector().detect());
   private fireRenderer: IFireOverlayRenderer | null = null;
-  private charcoalRenderer: IFireOverlayRenderer | null = null;
+  private charcoalRenderer: ICharcoalRenderer | null = null;
   private fireTipTracker: IFireTipTracker | null = null;
   private fireConfig: FireOverlayConfig = { ...DEFAULT_FIRE_CONFIG };
   private fireDefaultsLoader: IFireDefaultsLoader | null = null;
@@ -538,7 +539,7 @@ export class AnimationEngine {
           const currentCharcoalJson = JSON.stringify(vm.getCharcoalParams());
           if (currentCharcoalJson !== this.prevCharcoalParamsJson) {
             this.prevCharcoalParamsJson = currentCharcoalJson;
-            (this.charcoalRenderer as CharcoalSparkRenderer).setParams(vm.getCharcoalParams());
+            this.charcoalRenderer.setParams(vm.getCharcoalParams());
           }
         }
 
@@ -584,7 +585,7 @@ export class AnimationEngine {
     } else if (this.charcoalRenderer?.isInitialized() && this.renderLoopService) {
       // Charcoal spark renderer was created during the gap — wire it now
       this.renderLoopService.updateConfig({
-        fireRenderer: this.charcoalRenderer,
+        charcoalRenderer: this.charcoalRenderer,
       });
     }
     if (this.ledRenderer?.isInitialized() && this.renderLoopService) {
@@ -1280,6 +1281,7 @@ export class AnimationEngine {
       if (this.fireRenderer?.isInitialized()) {
         this.fireRenderer.dispose();
         this.fireRenderer = null;
+        this.renderLoopService?.updateConfig({ fireRenderer: null });
       }
 
       if (!this.charcoalRenderer?.isInitialized()) {
@@ -1291,22 +1293,22 @@ export class AnimationEngine {
           this.canvasSize
         );
         if (success) {
-          // Push current charcoal params to the new renderer
           if (this.fireConfig.charcoalParams) {
-            (this.charcoalRenderer as CharcoalSparkRenderer).setParams(this.fireConfig.charcoalParams);
+            this.charcoalRenderer.setParams(this.fireConfig.charcoalParams);
           }
           this.renderLoopService?.updateConfig({
-            fireRenderer: this.charcoalRenderer,
+            charcoalRenderer: this.charcoalRenderer,
           });
         } else {
           this.charcoalRenderer = null;
         }
       }
     } else if (enabled && !useCharcoal) {
-      // Fluid mode: use WebGL fire renderer, tear down charcoal renderer
+      // Fire mode: use WebGL fluid renderer, tear down charcoal renderer
       if (this.charcoalRenderer?.isInitialized()) {
         this.charcoalRenderer.dispose();
         this.charcoalRenderer = null;
+        this.renderLoopService?.updateConfig({ charcoalRenderer: null });
       }
 
       if (!this.fireRenderer?.isInitialized()) {
@@ -1337,6 +1339,7 @@ export class AnimationEngine {
       }
       this.renderLoopService?.updateConfig({
         fireRenderer: null,
+        charcoalRenderer: null,
       });
       this.fireTipTracker?.reset();
     }
@@ -1354,7 +1357,7 @@ export class AnimationEngine {
     }
     // Forward charcoal params to spark renderer
     if (config.charcoalParams && this.charcoalRenderer?.isInitialized()) {
-      (this.charcoalRenderer as CharcoalSparkRenderer).setParams(config.charcoalParams);
+      this.charcoalRenderer.setParams(config.charcoalParams);
     }
     this.syncFireOverlay();
 

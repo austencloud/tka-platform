@@ -12,6 +12,7 @@ import type { PropState } from "$lib/shared/animation-engine/domain/PropState";
 import type { AnimationPathCache } from "$lib/features/compose/services/implementations/AnimationPathCache";
 import type { IFrameBudgetMonitor } from "./IFrameBudgetMonitor";
 import type { IFireOverlayRenderer } from "./IFireOverlayRenderer";
+import type { ICharcoalRenderer } from "./ICharcoalRenderer";
 import type { IFireTipTracker } from "./IFireTipTracker";
 import type { FireOverlayConfig, PropFlameColor } from "../../domain/types/FireTypes";
 import type { ILedOverlayRenderer } from "./ILedOverlayRenderer";
@@ -31,9 +32,11 @@ export interface RenderLoopConfig {
   pathCache: AnimationPathCache | null;
   canvasSize: number;
   frameBudgetMonitor?: IFrameBudgetMonitor | null;
-  /** Optional fire overlay renderer (WebGL layer on top of Canvas2D) */
+  /** Optional fire overlay renderer (WebGL fluid simulation on top of Canvas2D) */
   fireRenderer?: IFireOverlayRenderer | null;
-  /** Optional fire tip position/velocity tracker */
+  /** Optional charcoal overlay renderer (WebGL2 point-sprite particles) */
+  charcoalRenderer?: ICharcoalRenderer | null;
+  /** Optional fire/charcoal tip position/velocity tracker (shared by both) */
   fireTipTracker?: IFireTipTracker | null;
   /** Optional LED overlay renderer (WebGL layer on top of fire) */
   ledRenderer?: ILedOverlayRenderer | null;
