@@ -382,9 +382,8 @@ async function resolveIdentity() {
     // Firestore access uses Admin SDK, so no Firebase ID token refresh needed.
     // If credentials are very old (past expiresAt), prompt re-login.
     if (isExpired(creds)) {
-      console.error(`\n  ⚠️  Credentials expired. Please log in again.`);
-      console.error("  Run: node scripts/fetch-feedback.js login\n");
-      process.exit(1);
+      console.log("  ⚠️  Credentials expired — re-authenticating...");
+      return null;
     }
 
     return {
@@ -402,11 +401,8 @@ async function resolveIdentity() {
     return { uid, email, displayName, photoUrl, authMethod };
   }
 
-  // Path 3: No credentials at all
-  console.error("\n  ❌ Not authenticated.");
-  console.error("  Run: node scripts/fetch-feedback.js login");
-  console.error("  Or place serviceAccountKey.json in the project root.\n");
-  process.exit(1);
+  // Path 3: No credentials — return null so caller can trigger auto-login
+  return null;
 }
 
 // ---------------------------------------------------------------------------

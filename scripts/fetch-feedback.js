@@ -3414,14 +3414,23 @@ async function main() {
     process.exit(0);
   }
 
+  // Resolve developer identity — if not logged in, trigger login automatically
+  identity = await cliAuth.resolveIdentity();
+  if (!identity) {
+    console.log("\n  First time? Let's get you signed in.\n");
+    await cliAuth.login();
+    identity = await cliAuth.resolveIdentity();
+    if (!identity) {
+      console.error("\n  ❌ Login failed. Try: node scripts/fetch-feedback.js login\n");
+      process.exit(1);
+    }
+  }
+
   // Initialize Firestore (Admin SDK or Client SDK depending on credentials)
   const provider = await initFirestore();
   db = provider.db;
   FieldValue = provider.FieldValue;
   Timestamp = provider.Timestamp;
-
-  // Resolve developer identity for all other commands
-  identity = await cliAuth.resolveIdentity();
 
   // Look up role from Firestore (resolveIdentity no longer does this)
   try {
