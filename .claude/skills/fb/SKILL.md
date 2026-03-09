@@ -18,6 +18,26 @@ $ARGUMENTS - Optional feedback ID (first 8+ characters)
 
 ## Instructions
 
+### Step 0: Ensure authenticated
+
+Before anything else, check if the developer is signed in:
+
+```bash
+node scripts/fetch-feedback.js whoami
+```
+
+If this fails or shows "Not authenticated", the developer needs to sign in. Run:
+
+```bash
+node scripts/fetch-feedback.js login
+```
+
+This opens a browser for Google sign-in. Once complete, proceed.
+
+**Note:** If this is a new contributor, they also need to be added by Austen. If you see `Permission denied` on any command, tell the user to ask Austen to run `add-developer` with their email.
+
+---
+
 ### If no argument provided:
 
 **STEP 1: Check for in-progress items**
