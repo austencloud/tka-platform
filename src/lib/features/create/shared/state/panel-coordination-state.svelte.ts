@@ -96,16 +96,16 @@ export type CustomizeOptions = StartEndOptions;
  * Props for the Customize expanded overlay (Style + Rhythm + Start/End)
  */
 export interface CustomizeOverlayProps {
-  constraintPreset: "smooth" | "mixed" | "high-reversal";
-  handPathMode: "smooth" | "mixed" | "high";
+  constraintPreset: "smooth" | "mixed" | "choppy";
+  handPathMode: "smooth" | "mixed" | "choppy";
   motionTypeFilter: "no-dash" | "prefer-dash" | null;
   durationTemplateId: string | null;
   stepCount: number;
   startEndOptions: StartEndOptions | null;
   gridMode: GridMode;
   isFreeformMode: boolean;
-  onConstraintPresetChange: (v: "smooth" | "mixed" | "high-reversal") => void;
-  onHandPathModeChange: (v: "smooth" | "mixed" | "high") => void;
+  onConstraintPresetChange: (v: "smooth" | "mixed" | "choppy") => void;
+  onHandPathModeChange: (v: "smooth" | "mixed" | "choppy") => void;
   onMotionTypeFilterChange: (v: "no-dash" | "mixed" | "prefer-dash") => void;
   onDurationTemplateSelect: (id: string | null) => void;
   onStartEndChange: ((options: StartEndOptions) => void) | null;
