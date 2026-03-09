@@ -4,7 +4,7 @@
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-  import { type LabanQuadrant, type SpaceQuality, getActionName } from "../domain/laban-actions";
+  import type { LabanQuadrant } from "../domain/laban-actions";
   import { applyLabanEasing } from "../domain/laban-easing";
 
   interface Props {
@@ -17,7 +17,6 @@
     currentStep: number;
     isPlaying: boolean;
     word: string | null;
-    currentSpace: SpaceQuality;
     weight: number;
     time: number;
     onWeightChange: (value: number) => void;
@@ -34,15 +33,13 @@
     currentStep,
     isPlaying,
     word,
-    currentSpace,
     weight,
     time,
     onWeightChange,
     onTimeChange,
   }: Props = $props();
 
-  const actionName = $derived(getActionName(quadrant, currentSpace));
-  const displayName = $derived(actionName.charAt(0).toUpperCase() + actionName.slice(1));
+  const displayName = `${quadrant.weightLabel} · ${quadrant.timeLabel}`;
 
   // --- Inline Laban curve preview (same SVG approach as EasingCurvePreview) ---
   const curveWidth = 120;
@@ -100,7 +97,6 @@
   <div class="card-footer">
     <div class="card-info">
       <span class="card-label">{displayName}</span>
-      <span class="card-description">{quadrant.weightLabel} · {quadrant.timeLabel}</span>
     </div>
     <svg
       width={curveWidth}

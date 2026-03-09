@@ -10,7 +10,6 @@
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-  import type { SpaceQuality } from "../domain/laban-actions";
   import { LABAN_QUADRANTS } from "../domain/laban-actions";
   import LabanActionCard from "./LabanActionCard.svelte";
 
@@ -22,7 +21,6 @@
     currentStep: number;
     isPlaying: boolean;
     word: string | null;
-    currentSpace: SpaceQuality;
     quadrantParams: Record<string, { weight: number; time: number }>;
     onQuadrantParamChange: (quadrantId: string, key: "weight" | "time", value: number) => void;
   }
@@ -35,7 +33,6 @@
     currentStep,
     isPlaying,
     word,
-    currentSpace,
     quadrantParams,
     onQuadrantParamChange,
   }: Props = $props();
@@ -67,7 +64,7 @@
       {currentStep}
       {isPlaying}
       {word}
-      {currentSpace}
+
       weight={params.weight}
       time={params.time}
       onWeightChange={(v) => onQuadrantParamChange(quadrant.id, "weight", v)}
@@ -90,7 +87,7 @@
       {currentStep}
       {isPlaying}
       {word}
-      {currentSpace}
+
       weight={params.weight}
       time={params.time}
       onWeightChange={(v) => onQuadrantParamChange(quadrant.id, "weight", v)}
