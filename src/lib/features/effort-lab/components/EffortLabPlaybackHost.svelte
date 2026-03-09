@@ -2,14 +2,14 @@
   EffortLabPlaybackHost.svelte
 
   Core orchestration component for the Effort Lab. Manages a shared RAF loop
-  that drives 7 synchronized animation canvases, each applying a different
+  that drives 8 synchronized animation canvases, each applying a different
   Laban-inspired effort quality (easing function) to the same sequence.
 
   Owns:
   - Sequence loading via SequencePickerModal
   - A custom RAF loop producing timePosition
-  - Per-frame computation of 7 PropState pairs via PropInterpolator
-  - Controls bar (source picker, tempo, transport)
+  - Per-frame computation of 8 PropState pairs via PropInterpolator
+  - Controls bar (source picker, tempo, transport, reset)
 -->
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
@@ -18,10 +18,9 @@
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import type { EffortQuality } from "../domain/effort-qualities";
-  import { EFFORT_QUALITIES } from "../domain/effort-qualities";
-  import { applyEffortEasing } from "../domain/effort-easing";
-  import type { EffortParams } from "../domain/effort-easing";
+  import type { EffortId, EffortParams } from "../domain/effort-types";
+  import { EFFORTS } from "../domain/effort-types";
+  import { applyEffort } from "../domain/effort-easing-unified";
   import EffortComparisonGrid from "./EffortComparisonGrid.svelte";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import SourceControls from "$lib/features/effects-lab/components/SourceControls.svelte";
@@ -86,9 +85,9 @@
     staffRotationAngle: 0,
   };
 
-  function createDefaultPropStates(): Record<EffortQuality, { blue: PropState; red: PropState }> {
-    const result = {} as Record<EffortQuality, { blue: PropState; red: PropState }>;
-    for (const descriptor of EFFORT_QUALITIES) {
+  function createDefaultPropStates(): Record<EffortId, { blue: PropState; red: PropState }> {
+    const result = {} as Record<EffortId, { blue: PropState; red: PropState }>;
+    for (const descriptor of EFFORTS) {
       result[descriptor.id] = {
         blue: { ...DEFAULT_PROP_STATE },
         red: { ...DEFAULT_PROP_STATE },
@@ -97,9 +96,9 @@
     return result;
   }
 
-  function createDefaultQualityParams(): Record<EffortQuality, EffortParams> {
-    const result = {} as Record<EffortQuality, EffortParams>;
-    for (const descriptor of EFFORT_QUALITIES) {
+  function createDefaultQualityParams(): Record<EffortId, EffortParams> {
+    const result = {} as Record<EffortId, EffortParams>;
+    for (const descriptor of EFFORTS) {
       const defaults: EffortParams = {};
       for (const p of descriptor.params) {
         defaults[p.key] = p.defaultValue;
@@ -268,8 +267,8 @@
 
     const updated = { ...propStates };
 
-    for (const descriptor of EFFORT_QUALITIES) {
-      const easedProgress = applyEffortEasing(descriptor.id, stepProgress, qualityParams[descriptor.id]);
+    for (const descriptor of EFFORTS) {
+      const easedProgress = applyEffort(descriptor.id, stepProgress, qualityParams[descriptor.id]);
       const result = propInterpolator.interpolatePropAngles(stepData!, easedProgress);
 
       if (result.isValid) {
@@ -423,9 +422,20 @@
     }
   }
 
-  function handleQualityParamsChange(quality: EffortQuality, params: EffortParams) {
+  function handleQualityParamsChange(quality: EffortId, params: EffortParams) {
     qualityParams = { ...qualityParams, [quality]: params };
   }
+
+  function resetToDefaults() {
+    qualityParams = createDefaultQualityParams();
+  }
+
+  let hasCustomParams = $derived(
+    EFFORTS.some(e => {
+      const current = qualityParams[e.id];
+      return e.params.some(p => (current?.[p.key] ?? p.defaultValue) !== p.defaultValue);
+    })
+  );
 </script>
 
 <div class="effort-playback-host">
@@ -444,6 +454,12 @@
     </div>
 
     <div class="controls-right">
+      {#if hasCustomParams}
+        <button class="reset-btn" onclick={resetToDefaults} title="Reset sliders to defaults">
+          <i class="fas fa-undo" aria-hidden="true"></i>
+          Reset
+        </button>
+      {/if}
       <TempoControl
         {bpm}
         onBpmChange={handleBpmChange}
@@ -516,6 +532,27 @@
     padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .reset-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    background: transparent;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .reset-btn:hover {
+    color: var(--theme-text, #ffffff);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    background: rgba(255, 255, 255, 0.04);
   }
 
   .controls-left {
