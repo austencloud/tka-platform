@@ -3923,4 +3923,13 @@ async function main() {
 
 main()
   .then(() => process.exit(0))
-  .catch(() => process.exit(1));
+  .catch((err) => {
+    const msg = err?.message || String(err);
+    if (msg.includes("invalid_grant") || msg.includes("Token refresh failed")) {
+      console.error(`\n  ⚠️  Authentication failed: ${msg}`);
+      console.error("  Run: node scripts/fetch-feedback.js login\n");
+    } else {
+      console.error(`\n  ❌ ${msg}\n`);
+    }
+    process.exit(1);
+  });
