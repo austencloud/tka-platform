@@ -31,11 +31,11 @@
 
   const phaseMessage = $derived.by(() => {
     switch (builderState.phase) {
-      case "idle": return `Place ${handLabel.toLowerCase()} prop`;
-      case "placing": return `Click destination for ${handLabel.toLowerCase()}`;
+      case "idle": return `Tap start for ${handLabel.toLowerCase()}`;
+      case "placing": return `Tap destination`;
       case "building":
-      case "animating": return "Click next point or Done";
-      case "done": return `${handLabel} path locked`;
+      case "animating": return "Tap next point";
+      case "done": return `${handLabel} path set`;
       case "complete": return "Sequence complete";
       default: return "";
     }
@@ -91,6 +91,8 @@
       ? "Rotation direction: Clockwise"
       : "Rotation direction: Counter-clockwise"
   );
+
+  const isBlueHand = $derived(builderState.activeHand === MotionColor.BLUE);
 
   const isFlipped = $derived(
     builderState.rotationDirection === RotationDirection.COUNTER_CLOCKWISE
@@ -178,18 +180,44 @@
       <i class="fas fa-undo" aria-hidden="true"></i>
     </button>
 
-    <!-- Done with hand -->
+    <!-- Back to blue (when on red hand, before placing points) -->
+    <button
+      class="back-btn"
+      class:visible={builderState.canGoBack && !isAnimating}
+      onclick={() => builderState.goBackToBlue()}
+      disabled={!builderState.canGoBack || isAnimating}
+      aria-label="Go back to blue hand"
+    >
+      <i class="fas fa-chevron-left" aria-hidden="true"></i>
+      <span>Back</span>
+    </button>
+
+    <!-- Next: Red Hand (blue hand active) -->
     <button
       class="done-btn"
-      class:visible={builderState.canFinishHand && !isAnimating}
-      class:dimmed={isAnimating && builderState.canFinishHand}
+      class:visible={builderState.canFinishHand && !isAnimating && isBlueHand}
+      class:dimmed={isAnimating && builderState.canFinishHand && isBlueHand}
       onclick={() => builderState.finishHand()}
       disabled={!builderState.canFinishHand || isAnimating}
       aria-disabled={!builderState.canFinishHand || isAnimating}
-      aria-label="Done with {handLabel.toLowerCase()} hand"
+      aria-label="Finish blue hand and start red"
+    >
+      <span>Next: Red</span>
+      <i class="fas fa-chevron-right" aria-hidden="true"></i>
+    </button>
+
+    <!-- Complete (red hand active) -->
+    <button
+      class="done-btn red-done"
+      class:visible={builderState.canFinishHand && !isAnimating && !isBlueHand}
+      class:dimmed={isAnimating && builderState.canFinishHand && !isBlueHand}
+      onclick={() => builderState.finishHand()}
+      disabled={!builderState.canFinishHand || isAnimating}
+      aria-disabled={!builderState.canFinishHand || isAnimating}
+      aria-label="Complete sequence"
     >
       <i class="fas fa-check" aria-hidden="true"></i>
-      <span>Done</span>
+      <span>Complete</span>
     </button>
 
     <!-- New Sequence (complete phase) -->
@@ -543,6 +571,58 @@
     font-size: 12px;
   }
 
+  /* Red hand complete button — uses red accent */
+  .done-btn.red-done {
+    border-color: var(--prop-red, #ed1c24);
+    background: color-mix(in srgb, var(--prop-red, #ed1c24) 15%, rgba(0, 0, 0, 0.6));
+  }
+
+  .done-btn.red-done:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--prop-red, #ed1c24) 30%, rgba(0, 0, 0, 0.6));
+  }
+
+  /* Back button — ghost style to go back to previous hand */
+  .back-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: rgba(255, 255, 255, 0.8);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
+    cursor: pointer;
+    min-height: var(--min-touch-target);
+    pointer-events: none;
+    opacity: 0;
+    transform: scale(0.9);
+    transition: opacity 0.2s ease, transform 0.2s ease, background 0.15s ease;
+  }
+
+  .back-btn.visible {
+    pointer-events: auto;
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .back-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+
+  .back-btn:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 3px;
+  }
+
+  .back-btn i {
+    font-size: 11px;
+  }
+
   /* New sequence button */
   .new-btn {
     display: flex;
@@ -600,6 +680,7 @@
     .cluster.bottom-left,
     .action-icon,
     .done-btn,
+    .back-btn,
     .new-btn,
     .pill,
     .turn-pill,

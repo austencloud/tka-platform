@@ -88,6 +88,7 @@ export class KeyboardShortcutManager implements IKeyboardShortcutManager {
       enabled: options.enabled ?? true,
       isSingleKey: (options.modifiers ?? []).length === 0,
       forceExecute: options.forceExecute ?? false,
+      preserveDrawers: options.preserveDrawers ?? false,
     };
 
     // Only add description if it's defined
@@ -222,7 +223,8 @@ export class KeyboardShortcutManager implements IKeyboardShortcutManager {
     // dismiss the top drawer, then execute the shortcut.
     // The drawer unregisters asynchronously via Svelte reactivity,
     // so we dismiss once per keypress rather than looping.
-    if (shortcut.isSingleKey && hasOpenDrawers()) {
+    // Shortcuts with preserveDrawers (e.g. dark mode toggle) skip this.
+    if (shortcut.isSingleKey && !shortcut.preserveDrawers && hasOpenDrawers()) {
       dismissTopDrawer();
     }
 

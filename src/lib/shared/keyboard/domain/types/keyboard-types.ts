@@ -103,6 +103,9 @@ export interface ShortcutDefinition {
 
   /** Force execution even when focus is on interactive elements (overrides shouldIgnore) */
   forceExecute: boolean;
+
+  /** When true, skip the automatic drawer-dismiss on single-key shortcuts */
+  preserveDrawers: boolean;
 }
 
 /**
@@ -150,6 +153,9 @@ export interface ShortcutRegistrationOptions {
 
   /** Force execution even when focus is on interactive elements (default: false) */
   forceExecute?: boolean;
+
+  /** When true, skip the automatic drawer-dismiss on single-key shortcuts (default: false) */
+  preserveDrawers?: boolean;
 }
 
 /**

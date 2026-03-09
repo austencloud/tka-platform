@@ -71,6 +71,9 @@ export function createVisualBuilderState() {
   const canFinishHand = $derived(
     phase === "building" && activeSteps.length > 0
   );
+  const canGoBack = $derived(
+    activeHand === MotionColor.RED && (phase === "idle" || phase === "placing")
+  );
 
   /** First click — place prop at a grid point */
   function placeFirstPoint(location: GridLocation): void {
@@ -150,6 +153,25 @@ export function createVisualBuilderState() {
     }
   }
 
+  /** Go back from red hand to blue hand (restore blue's last position) */
+  function goBackToBlue(): void {
+    if (activeHand !== MotionColor.RED) return;
+
+    activeHand = MotionColor.BLUE;
+
+    // Restore blue's last known position
+    if (blueSteps.length > 0) {
+      const lastBlueStep = blueSteps[blueSteps.length - 1]!;
+      currentPosition = lastBlueStep.endPosition;
+      currentOrientation = lastBlueStep.endOrientation;
+      phase = "building";
+    } else {
+      currentPosition = null;
+      currentOrientation = Orientation.IN;
+      phase = "idle";
+    }
+  }
+
   /** Undo last step from active hand */
   function undoStep(): void {
     if (phase === "placing" && currentPosition !== null) {
@@ -220,10 +242,12 @@ export function createVisualBuilderState() {
     get isBlueComplete() { return isBlueComplete; },
     get canUndo() { return canUndo; },
     get canFinishHand() { return canFinishHand; },
+    get canGoBack() { return canGoBack; },
 
     // Actions
     handlePointClick,
     finishHand,
+    goBackToBlue,
     undoStep,
     reset,
     setRotationDirection,

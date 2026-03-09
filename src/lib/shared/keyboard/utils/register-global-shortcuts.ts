@@ -143,6 +143,10 @@ export function registerGlobalShortcuts(
   });
 
   // l - Toggle Dark Mode (dark background)
+  // Track last toggled value locally so rapid presses always flip correctly
+  // (getSettings() reads from async state that may not have flushed yet)
+  let darkModeOverride: boolean | null = null;
+
   service.register({
     id: "global.toggle-dark-mode",
     label: "Toggle Dark Mode",
@@ -150,17 +154,18 @@ export function registerGlobalShortcuts(
     key: "l",
     modifiers: [],
     context: "global",
-    scope: "action",
+    scope: "view",
     priority: "high",
+    preserveDrawers: true,
     action: () => {
       // Block changes in preview mode - don't modify the previewed user's settings
       if (isSettingsPreviewMode()) {
         return;
       }
 
-      const currentSettings = getSettings();
-      const beforeValue = currentSettings.darkMode ?? false;
+      const beforeValue = darkModeOverride ?? (getSettings().darkMode ?? false);
       const newValue = !beforeValue;
+      darkModeOverride = newValue;
 
       // Update AppSettings (syncs to Firebase)
       void updateSettings({ darkMode: newValue });
