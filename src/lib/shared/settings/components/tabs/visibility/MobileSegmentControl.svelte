@@ -2,7 +2,7 @@
   MobileSegmentControl.svelte
 
   Segmented control for switching between Pictograph, Animation, and Image
-  panels on mobile devices. Hidden on desktop via container query.
+  panels. Only one panel is visible at a time (hero pattern).
 -->
 <script lang="ts">
   import type { VisibilityMode } from "./visibility-types";
@@ -61,7 +61,8 @@
     border-radius: 16px;
     border: 1px solid var(--theme-stroke);
     width: 100%;
-    margin-bottom: 12px;
+    flex: 1;
+    min-width: 0;
   }
 
   .segment-btn {
