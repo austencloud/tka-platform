@@ -19,6 +19,7 @@
     TrackingMode,
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
+  import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
 
   interface Props {
     gridVisible: boolean;
@@ -44,6 +45,8 @@
     onTrailStyleChange: (style: string) => void;
     onPlaybackModeChange: (mode: PlaybackMode) => void;
     onBpmChange: (bpm: number) => void;
+    effortPreset: EffortId;
+    onEffortPresetChange: (preset: EffortId) => void;
     isMobileHidden?: boolean;
   }
 
@@ -71,6 +74,8 @@
     onTrailStyleChange,
     onPlaybackModeChange,
     onBpmChange,
+    effortPreset,
+    onEffortPresetChange,
     isMobileHidden = false,
   }: Props = $props();
 
@@ -168,6 +173,8 @@
             {onPlaybackModeChange}
             {onBpmChange}
             {onToggle}
+            {effortPreset}
+            {onEffortPresetChange}
             onTrailPreset={setTrailPreset}
             onToggleBothEnds={toggleBothEnds}
           />
@@ -201,6 +208,8 @@
             {onPlaybackModeChange}
             {onBpmChange}
             {onToggle}
+            {effortPreset}
+            {onEffortPresetChange}
             onTrailPreset={setTrailPreset}
             onToggleBothEnds={toggleBothEnds}
           />
