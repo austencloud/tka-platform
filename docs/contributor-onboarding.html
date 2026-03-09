@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TKA Contributor Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+  :root {
+    --bg: #0c0c10;
+    --bg-card: rgba(255,255,255,0.03);
+    --bg-card-hover: rgba(255,255,255,0.055);
+    --stroke: rgba(255,255,255,0.07);
+    --stroke-hover: rgba(255,255,255,0.14);
+    --text: #e8e8ed;
+    --text-dim: rgba(255,255,255,0.45);
+    --text-mid: rgba(255,255,255,0.65);
+    --accent: #6ee7a0;
+    --accent-dim: rgba(110,231,160,0.12);
+    --accent-glow: rgba(110,231,160,0.06);
+    --warn: #f0a050;
+    --code-bg: rgba(255,255,255,0.05);
+    --font-body: 'Outfit', system-ui, sans-serif;
+    --font-mono: 'DM Mono', 'Cascadia Code', monospace;
+  }
+
+  html { scroll-behavior: smooth }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-weight: 300;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ── Ambient background ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(110,231,160,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 80% 80%, rgba(100,140,255,0.03) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  /* ── Scroll progress bar ── */
+  .progress-track {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    z-index: 100;
+    background: transparent;
+  }
+  .progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent), #64b5f6);
+    transition: width 0.15s ease-out;
+  }
+
+  /* ── Layout ── */
+  .page { max-width: 720px; margin: 0 auto; padding: 4rem 1.5rem 6rem }
+
+  /* ── Hero ── */
+  .hero {
+    text-align: center;
+    padding: 3rem 0 4rem;
+    animation: fadeUp 0.8s ease-out both;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid rgba(110,231,160,0.15);
+    padding: 0.35rem 1rem;
+    border-radius: 100px;
+    margin-bottom: 1.5rem;
+  }
+  .hero h1 {
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    margin-bottom: 1rem;
+  }
+  .hero h1 span { color: var(--accent) }
+  .hero p {
+    font-size: 1.1rem;
+    color: var(--text-mid);
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  /* ── Sections ── */
+  section {
+    margin-bottom: 3.5rem;
+    animation: fadeUp 0.6s ease-out both;
+  }
+
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    font-weight: 400;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.6rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 1rem;
+  }
+
+  h3 {
+    font-size: 1.05rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: var(--text);
+  }
+
+  p { color: var(--text-mid); margin-bottom: 1rem }
+  p strong { color: var(--text); font-weight: 500 }
+
+  /* ── Steps ── */
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    counter-reset: step;
+  }
+  .step {
+    counter-increment: step;
+    background: var(--bg-card);
+    border: 1px solid var(--stroke);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .step::before {
+    content: counter(step);
+    position: absolute;
+    top: 1.2rem;
+    right: 1.3rem;
+    font-family: var(--font-mono);
+    font-size: 2.5rem;
+    font-weight: 500;
+    color: rgba(255,255,255,0.03);
+    line-height: 1;
+    pointer-events: none;
+  }
+  .step:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--stroke-hover);
+    transform: translateY(-1px);
+  }
+  .step h3 { margin-bottom: 0.4rem }
+  .step p { margin-bottom: 0.6rem; font-size: 0.92rem }
+  .step p:last-child { margin-bottom: 0 }
+
+  /* ── Code blocks ── */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--stroke);
+    border-radius: 8px;
+    padding: 0.9rem 1.1rem;
+    overflow-x: auto;
+    margin: 0.5rem 0 0;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    line-height: 1.65;
+    color: var(--text-mid);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
+  }
+  pre .comment { color: rgba(255,255,255,0.25) }
+  pre .cmd { color: var(--accent) }
+  pre .flag { color: #64b5f6 }
+  pre .string { color: #f0a050 }
+
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.82em;
+    background: var(--code-bg);
+    padding: 0.15em 0.45em;
+    border-radius: 4px;
+    color: var(--accent);
+  }
+
+  /* ── Flow diagram ── */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 1.5rem 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .flow::-webkit-scrollbar { display: none }
+  .flow-node {
+    flex-shrink: 0;
+    text-align: center;
+    padding: 0.7rem 1.1rem;
+    border-radius: 10px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    white-space: nowrap;
+    border: 1px solid var(--stroke);
+    background: var(--bg-card);
+    transition: all 0.3s ease;
+  }
+  .flow-node:hover {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .flow-node.you { border-color: rgba(110,231,160,0.3); background: var(--accent-dim) }
+  .flow-node.admin { border-color: rgba(100,140,255,0.2); background: rgba(100,140,255,0.06) }
+  .flow-arrow {
+    flex-shrink: 0;
+    width: 36px;
+    height: 1px;
+    background: linear-gradient(90deg, var(--stroke), rgba(255,255,255,0.15), var(--stroke));
+    position: relative;
+    margin: 0 2px;
+  }
+  .flow-arrow::after {
+    content: '';
+    position: absolute;
+    right: -1px;
+    top: -3px;
+    border: 3px solid transparent;
+    border-left: 5px solid rgba(255,255,255,0.15);
+  }
+
+  /* ── Command table ── */
+  .cmd-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .cmd-row {
+    display: grid;
+    grid-template-columns: 1fr 1.8fr;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--stroke);
+    transition: all 0.3s ease;
+    align-items: center;
+  }
+  .cmd-row:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--stroke-hover);
+  }
+  .cmd-name {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--accent);
+  }
+  .cmd-desc {
+    font-size: 0.85rem;
+    color: var(--text-mid);
+  }
+
+  /* ── Permissions ── */
+  .perm-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+  .perm-card {
+    padding: 1.1rem;
+    border-radius: 10px;
+    border: 1px solid var(--stroke);
+    background: var(--bg-card);
+  }
+  .perm-card h3 {
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.7rem;
+  }
+  .perm-card.yes h3 { color: var(--accent) }
+  .perm-card.no h3 { color: var(--text-dim) }
+  .perm-card ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+  .perm-card li {
+    font-size: 0.82rem;
+    color: var(--text-mid);
+    padding-left: 1.2rem;
+    position: relative;
+  }
+  .perm-card.yes li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.45em;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .perm-card.no li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.45em;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+  }
+
+  /* ── Troubleshoot ── */
+  .trouble-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .trouble-item {
+    padding: 1rem 1.25rem;
+    border-radius: 10px;
+    border: 1px solid var(--stroke);
+    background: var(--bg-card);
+    transition: all 0.3s ease;
+  }
+  .trouble-item:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--stroke-hover);
+  }
+  .trouble-q {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--warn);
+    margin-bottom: 0.3rem;
+    font-weight: 400;
+  }
+  .trouble-a {
+    font-size: 0.85rem;
+    color: var(--text-mid);
+    margin: 0;
+  }
+
+  /* ── Divider ── */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--stroke), transparent);
+    margin: 3rem 0;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    text-align: center;
+    padding-top: 2rem;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+  }
+  .footer a { color: var(--accent); text-decoration: none }
+  .footer a:hover { text-decoration: underline }
+
+  /* ── Animations ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px) }
+    to { opacity: 1; transform: translateY(0) }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    .page { padding: 2.5rem 1rem 4rem }
+    .perm-grid { grid-template-columns: 1fr }
+    .cmd-row { grid-template-columns: 1fr; gap: 0.25rem }
+    .cmd-desc { padding-left: 0 }
+    .flow { padding: 1rem 0 }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
+
+<div class="page">
+
+  <!-- Hero -->
+  <header class="hero">
+    <div class="hero-badge">Contributor Guide</div>
+    <h1>Welcome to <span>TKA</span></h1>
+    <p>Clone the repo, type one command, and start fixing things. No keys, no config, no ceremony.</p>
+  </header>
+
+  <div class="divider"></div>
+
+  <!-- Get Running -->
+  <section class="reveal">
+    <div class="section-label">01 &mdash; Setup</div>
+    <h2>Get Running</h2>
+    <p>Five minutes. Three steps. Then you're working.</p>
+
+    <div class="steps">
+      <div class="step">
+        <h3>Clone and install</h3>
+        <p>Grab the repo and install dependencies.</p>
+        <pre><span class="cmd">git clone</span> https://github.com/austencloud/the-kinetic-alphabet.git
+<span class="cmd">cd</span> the-kinetic-alphabet
+<span class="cmd">npm install</span></pre>
+      </div>
+
+      <div class="step">
+        <h3>Create your Firebase account</h3>
+        <p>Visit the web app and sign in with Google. This is a one-time thing&mdash;it creates the account the CLI needs to recognize you.</p>
+        <pre><span class="comment"># Open in your browser:</span>
+https://tkascribe.com</pre>
+      </div>
+
+      <div class="step">
+        <h3>Open Claude Code and go</h3>
+        <p>Open Claude Code in the repo directory and type <code>/fb</code>. If you're not logged in yet, a browser opens for Google sign-in. Then Claude picks a feedback item and you start working.</p>
+        <pre><span class="comment"># In Claude Code, type:</span>
+<span class="cmd">/fb</span></pre>
+        <p>After you log in, send Austen your email so he can add you as a contributor.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- How It Works -->
+  <section class="reveal">
+    <div class="section-label">02 &mdash; Workflow</div>
+    <h2>How It Works</h2>
+    <p>Bugs, features, and ideas live in a shared queue. You claim one, fix it, submit it. Austen reviews and ships.</p>
+
+    <div class="flow">
+      <div class="flow-node you">new</div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node you">in-progress</div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node you">in-review</div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node admin">completed</div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node admin">shipped</div>
+    </div>
+
+    <p><strong style="color:var(--accent)">Green</strong> = you do this. <strong style="color:#64b5f6">Blue</strong> = Austen does this.</p>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- Slash Commands -->
+  <section class="reveal">
+    <div class="section-label">03 &mdash; Commands</div>
+    <h2>Slash Commands</h2>
+    <p>Type these in Claude Code. Claude handles the rest.</p>
+
+    <div class="cmd-grid">
+      <div class="cmd-row">
+        <span class="cmd-name">/fb</span>
+        <span class="cmd-desc">Pick the best unclaimed item and start working</span>
+      </div>
+      <div class="cmd-row">
+        <span class="cmd-name">/fb &lt;id&gt;</span>
+        <span class="cmd-desc">Claim a specific item and start working</span>
+      </div>
+      <div class="cmd-row">
+        <span class="cmd-name">/done</span>
+        <span class="cmd-desc">Wrap up and submit your work for review</span>
+      </div>
+      <div class="cmd-row">
+        <span class="cmd-name">/check</span>
+        <span class="cmd-desc">Find and fix TypeScript errors</span>
+      </div>
+      <div class="cmd-row">
+        <span class="cmd-name">/commit</span>
+        <span class="cmd-desc">Commit your changes in clean, logical chunks</span>
+      </div>
+      <div class="cmd-row">
+        <span class="cmd-name">/submitfb</span>
+        <span class="cmd-desc">Found a bug? Submit it to the queue</span>
+      </div>
+      <div class="cmd-row">
+        <span class="cmd-name">/audit</span>
+        <span class="cmd-desc">Audit a module for code quality</span>
+      </div>
+      <div class="cmd-row">
+        <span class="cmd-name">/monolith</span>
+        <span class="cmd-desc">Detect files that need splitting</span>
+      </div>
+      <div class="cmd-row">
+        <span class="cmd-name">/deadcode</span>
+        <span class="cmd-desc">Find and remove unused code</span>
+      </div>
+      <div class="cmd-row">
+        <span class="cmd-name">/ship</span>
+        <span class="cmd-desc">Check if a feature is production-ready</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- Manual CLI -->
+  <section class="reveal">
+    <div class="section-label">04 &mdash; CLI Reference</div>
+    <h2>Manual Commands</h2>
+    <p>If you need finer control or prefer working outside Claude Code.</p>
+
+    <pre><span class="comment"># See the queue</span>
+<span class="cmd">node scripts/fetch-feedback.js</span> <span class="flag">list</span>
+
+<span class="comment"># Claim something specific</span>
+<span class="cmd">node scripts/fetch-feedback.js</span> <span class="flag">claim</span> <span class="string">yfTRt6UK</span>
+
+<span class="comment"># See what you're working on</span>
+<span class="cmd">node scripts/fetch-feedback.js</span> <span class="flag">mine</span>
+
+<span class="comment"># View full details on an item</span>
+<span class="cmd">node scripts/fetch-feedback.js</span> <span class="string">yfTRt6UK</span>
+
+<span class="comment"># Submit your work for review</span>
+<span class="cmd">node scripts/fetch-feedback.js</span> <span class="string">yfTRt6UK</span> <span class="flag">in-review</span> <span class="string">"Fixed the layout bug"</span>
+
+<span class="comment"># Keep your claim alive (they expire after 45 min)</span>
+<span class="cmd">node scripts/fetch-feedback.js</span> <span class="flag">heartbeat</span> <span class="string">yfTRt6UK</span> <span class="string">"still on it"</span>
+
+<span class="comment"># Check your identity</span>
+<span class="cmd">node scripts/fetch-feedback.js</span> <span class="flag">whoami</span>
+
+<span class="comment"># Full command list</span>
+<span class="cmd">node scripts/fetch-feedback.js</span> <span class="flag">help</span></pre>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- Permissions -->
+  <section class="reveal">
+    <div class="section-label">05 &mdash; Permissions</div>
+    <h2>What You Can Do</h2>
+
+    <div class="perm-grid">
+      <div class="perm-card yes">
+        <h3>You</h3>
+        <ul>
+          <li>View all feedback</li>
+          <li>Claim and work on items</li>
+          <li>Submit work for review</li>
+          <li>Create new feedback</li>
+          <li>Delete your own feedback</li>
+        </ul>
+      </div>
+      <div class="perm-card no">
+        <h3>Admin only</h3>
+        <ul>
+          <li>Change priority</li>
+          <li>Mark as completed</li>
+          <li>Archive items</li>
+          <li>Delete others' feedback</li>
+          <li>Manage developers</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- Troubleshooting -->
+  <section class="reveal">
+    <div class="section-label">06 &mdash; Troubleshooting</div>
+    <h2>If Something Goes Wrong</h2>
+
+    <div class="trouble-list">
+      <div class="trouble-item">
+        <div class="trouble-q">"Could not sign into Firebase"</div>
+        <p class="trouble-a">Visit <a href="https://tkascribe.com" style="color:var(--accent)">tkascribe.com</a> and sign in with Google first. That creates your account.</p>
+      </div>
+      <div class="trouble-item">
+        <div class="trouble-q">"Permission denied"</div>
+        <p class="trouble-a">Austen hasn't added you yet. Send him your email.</p>
+      </div>
+      <div class="trouble-item">
+        <div class="trouble-q">"Cannot claim &mdash; active work in progress"</div>
+        <p class="trouble-a">Someone else is on it. Pick a different item, or wait 45 minutes for the claim to expire.</p>
+      </div>
+      <div class="trouble-item">
+        <div class="trouble-q">"Token refresh failed"</div>
+        <p class="trouble-a">Run <code>node scripts/fetch-feedback.js login</code> to re-authenticate.</p>
+      </div>
+      <div class="trouble-item">
+        <div class="trouble-q">Browser doesn't open during login</div>
+        <p class="trouble-a">Copy the URL from the terminal and paste it into your browser.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- Project Basics -->
+  <section class="reveal">
+    <div class="section-label">07 &mdash; The Codebase</div>
+    <h2>Project Basics</h2>
+
+    <div class="cmd-grid">
+      <div class="cmd-row">
+        <span class="cmd-name">Stack</span>
+        <span class="cmd-desc">Svelte 5 + TypeScript + Firebase</span>
+      </div>
+      <div class="cmd-row">
+        <span class="cmd-name">Architecture</span>
+        <span class="cmd-desc">Small files, dependency injection, services over utilities</span>
+      </div>
+      <div class="cmd-row">
+        <span class="cmd-name">Node</span>
+        <span class="cmd-desc">v22+ required</span>
+      </div>
+      <div class="cmd-row">
+        <span class="cmd-name">Dev server</span>
+        <span class="cmd-desc"><code>vite --port 5174</code> &mdash; port 5173 is Austen's</span>
+      </div>
+      <div class="cmd-row">
+        <span class="cmd-name">Type check</span>
+        <span class="cmd-desc"><code>npm run check</code></span>
+      </div>
+      <div class="cmd-row">
+        <span class="cmd-name">Tests</span>
+        <span class="cmd-desc"><code>npm test</code> &mdash; only algorithms where bugs would be silent</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <div class="divider"></div>
+  <footer class="footer">
+    <p>Questions? Ask Austen or check <code>node scripts/fetch-feedback.js help</code></p>
+    <p style="margin-top:0.5rem;opacity:0.4">The Kinetic Alphabet</p>
+  </footer>
+
+</div>
+
+<script>
+  // Scroll progress bar
+  window.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const pct = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100;
+    document.getElementById('progressBar').style.width = pct + '%';
+  });
+
+  // Reveal on scroll
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        setTimeout(() => e.target.classList.add('visible'), i * 60);
+        obs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.15 });
+
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+</script>
+
+</body>
+</html>

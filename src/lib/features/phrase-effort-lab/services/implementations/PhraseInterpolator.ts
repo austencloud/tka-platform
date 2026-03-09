@@ -1,0 +1,39 @@
+import type { IPhraseInterpolator, PhraseInterpolationResult } from "../contracts/IPhraseInterpolator";
+import type { EffortPhrase } from "../../domain/effort-timeline-types";
+import { applyEffort } from "$lib/features/effort-lab/domain/effort-easing-unified";
+
+export class PhraseInterpolator implements IPhraseInterpolator {
+  interpolate(
+    phrase: EffortPhrase,
+    currentBeat: number,
+    totalSteps: number,
+  ): PhraseInterpolationResult {
+    const phraseDuration = phrase.endBeat - phrase.startBeat + 1;
+    const beatsIntoPhrase = currentBeat - phrase.startBeat;
+
+    // Clamp to [0, phraseDuration)
+    const clampedBeats = Math.max(0, Math.min(beatsIntoPhrase, phraseDuration - 0.001));
+    const phraseProgress = clampedBeats / phraseDuration;
+
+    // Apply the effort easing to the phrase-level progress
+    const easedProgress = applyEffort(phrase.effortId, phraseProgress, phrase.params);
+
+    // Map eased progress back to a beat offset within the phrase
+    const easedBeats = easedProgress * phraseDuration;
+
+    // Convert to step index (0-based) and local progress
+    const phraseStartIndex = phrase.startBeat - 1; // convert 1-based beat to 0-based index
+    const absoluteBeatOffset = phraseStartIndex + easedBeats;
+
+    const stepIndex = Math.min(
+      Math.floor(absoluteBeatOffset),
+      totalSteps - 1,
+    );
+    const localProgress = absoluteBeatOffset - Math.floor(absoluteBeatOffset);
+
+    return {
+      stepIndex: Math.max(0, stepIndex),
+      localProgress: Math.min(localProgress, 0.999),
+    };
+  }
+}

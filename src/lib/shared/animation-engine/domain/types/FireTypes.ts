@@ -95,6 +95,8 @@ export interface FireFrameInput {
   sequenceContentHash?: string;
   /** Time relative to the start of the current loop (ms). Used for timestamp-indexed cache playback. */
   relativeTime?: number;
+  /** Whether the sequence loops seamlessly (end position = start position). When true, fire should NOT be cleared on loop — it should continue naturally. */
+  isSeamlesslyLoopable?: boolean;
 }
 
 /**

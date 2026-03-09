@@ -61,7 +61,7 @@
   });
 
   // Derived
-  const isAdmin = $derived(authState.isAdmin);
+  const isAdmin = $derived(authState.isEffectiveAdmin);
   const hasChangelog = $derived(
     version?.changelogEntries && version.changelogEntries.length > 0
   );
@@ -392,8 +392,9 @@
     flex-direction: column;
     flex: 1;
     min-height: 0;
-    padding: 24px;
+    padding: 24px 32px;
     overflow-y: auto;
+    max-width: 800px;
   }
 
   section {
@@ -404,7 +405,7 @@
     margin: 0 0 12px 0;
     font-size: var(--font-size-compact);
     font-weight: 600;
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
@@ -412,7 +413,7 @@
   .hint {
     margin: 0 0 16px 0;
     font-size: var(--font-size-compact);
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
     font-style: italic;
   }
 

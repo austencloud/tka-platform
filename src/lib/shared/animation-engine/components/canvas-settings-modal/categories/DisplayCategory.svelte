@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { onDestroy } from "svelte";
 	import { getAnimationVisibilityManager } from "../../../state/animation-visibility-state.svelte";
-	import type { GridMode } from "../../../state/animation-visibility-state.svelte";
 
 	const vm = getAnimationVisibilityManager();
 
-	let gridMode = $state(vm.getGridMode());
+	let gridVisible = $state(vm.isGridVisible());
+	let tkaGlyph = $state(vm.getVisibility("tkaGlyph"));
 	let stepNumbers = $state(vm.getVisibility("stepNumbers"));
 	let beatPosition = $state(vm.getVisibility("beatPosition"));
 	let props = $state(vm.getVisibility("props"));
@@ -13,7 +13,8 @@
 	let progressBar = $state(vm.getVisibility("progressBar"));
 
 	function handleVisibilityChange(): void {
-		gridMode = vm.getGridMode();
+		gridVisible = vm.isGridVisible();
+		tkaGlyph = vm.getVisibility("tkaGlyph");
 		stepNumbers = vm.getVisibility("stepNumbers");
 		beatPosition = vm.getVisibility("beatPosition");
 		props = vm.getVisibility("props");
@@ -24,13 +25,14 @@
 	vm.registerObserver(handleVisibilityChange);
 	onDestroy(() => vm.unregisterObserver(handleVisibilityChange));
 
-	const gridModes: { id: GridMode; label: string }[] = [
-		{ id: "none", label: "None" },
-		{ id: "diamond", label: "Diamond" },
-		{ id: "box", label: "Box" },
-	];
+	function toggleGrid(): void {
+		// Toggle between "none" and "diamond" (sequence's actual grid mode
+		// is determined by the sequence data, not this setting)
+		vm.setGridMode(gridVisible ? "none" : "diamond");
+	}
 
-	const toggles: { key: "stepNumbers" | "beatPosition" | "props" | "wordHeader" | "progressBar"; label: string }[] = [
+	const toggles: { key: "tkaGlyph" | "stepNumbers" | "beatPosition" | "props" | "wordHeader" | "progressBar"; label: string }[] = [
+		{ key: "tkaGlyph", label: "TKA Glyph" },
 		{ key: "stepNumbers", label: "Step Numbers" },
 		{ key: "beatPosition", label: "Beat Position" },
 		{ key: "props", label: "Props" },
@@ -40,6 +42,7 @@
 
 	function getToggleValue(key: string): boolean {
 		switch (key) {
+			case "tkaGlyph": return tkaGlyph;
 			case "stepNumbers": return stepNumbers;
 			case "beatPosition": return beatPosition;
 			case "props": return props;
@@ -51,22 +54,16 @@
 </script>
 
 <div class="display-category">
-	<span class="group-label">Grid</span>
-	<div class="preset-row">
-		{#each gridModes as mode}
-			<button
-				class="preset-btn"
-				class:active={gridMode === mode.id}
-				type="button"
-				aria-pressed={gridMode === mode.id}
-				onclick={() => vm.setGridMode(mode.id)}
-			>
-				{mode.label}
-			</button>
-		{/each}
-	</div>
+	<button
+		class="toggle-row"
+		type="button"
+		aria-pressed={gridVisible}
+		onclick={toggleGrid}
+	>
+		<span>Grid</span>
+		<span class="toggle-indicator" class:active={gridVisible}></span>
+	</button>
 
-	<span class="group-label">Elements</span>
 	{#each toggles as toggle}
 		<button
 			class="toggle-row"
@@ -85,51 +82,6 @@
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
-	}
-
-	.group-label {
-		font-size: var(--font-size-compact, 12px);
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-		margin-top: 4px;
-	}
-
-	.preset-row {
-		display: flex;
-		gap: 6px;
-	}
-
-	.preset-btn {
-		flex: 1;
-		min-height: var(--min-touch-target, 44px);
-		padding: 8px;
-		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		border-radius: 8px;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-		font-size: var(--font-size-compact, 12px);
-		font-weight: 500;
-		cursor: pointer;
-		transition: all var(--duration-fast, 100ms) ease;
-	}
-
-	.preset-btn:hover {
-		background: color-mix(in srgb, var(--theme-text) 8%, transparent);
-		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-		color: var(--theme-text, white);
-	}
-
-	.preset-btn.active {
-		background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
-		border-color: var(--theme-accent, #8b5cf6);
-		color: var(--theme-text, white);
-	}
-
-	.preset-btn:focus-visible {
-		outline: 2px solid var(--theme-accent, #8b5cf6);
-		outline-offset: 2px;
 	}
 
 	.toggle-row {
@@ -184,7 +136,6 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.preset-btn,
 		.toggle-row,
 		.toggle-indicator,
 		.toggle-indicator::after {

@@ -7,115 +7,16 @@
 <script lang="ts">
   import { slide } from "svelte/transition";
   import AnimationPreviewController from "./AnimationPreviewController.svelte";
-  import AnimationMobileControls from "./AnimationMobileControls.svelte";
   import AnimationDesktopControls from "./AnimationDesktopControls.svelte";
-  import type {
-    TrailVisibility,
-    PlaybackMode,
-  } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import {
-    animationSettings,
-    TrailMode,
-    TrackingMode,
-  } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
-  import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
 
   interface Props {
-    gridVisible: boolean;
-    stepNumbersVisible: boolean;
-    trailStyle: TrailVisibility;
-    playbackMode: PlaybackMode;
-    bpm: number;
-    tkaGlyphVisible: boolean;
-    wordHeaderVisible: boolean;
-    fireEffectEnabled: boolean;
-    ledEffectEnabled: boolean;
-    ledBrightness: number;
-    onLedBrightnessChange: (level: number) => void;
-    colorBlend: number;
-    smokeLevel: number;
-    useCharcoal: boolean;
-    fireIntensity: number;
-    onColorBlendChange: (value: number) => void;
-    onSmokeLevelChange: (value: number) => void;
-    onUseCharcoalChange: (value: boolean) => void;
-    onFireIntensityChange: (value: number) => void;
-    onToggle: (key: string) => void;
-    onTrailStyleChange: (style: string) => void;
-    onPlaybackModeChange: (mode: PlaybackMode) => void;
-    onBpmChange: (bpm: number) => void;
-    effortPreset: EffortId;
-    onEffortPresetChange: (preset: EffortId) => void;
     isMobileHidden?: boolean;
   }
 
-  let {
-    gridVisible,
-    stepNumbersVisible,
-    trailStyle,
-    playbackMode,
-    bpm,
-    tkaGlyphVisible,
-    wordHeaderVisible,
-    fireEffectEnabled,
-    ledEffectEnabled,
-    ledBrightness,
-    onLedBrightnessChange,
-    colorBlend,
-    smokeLevel,
-    useCharcoal,
-    fireIntensity,
-    onColorBlendChange,
-    onSmokeLevelChange,
-    onUseCharcoalChange,
-    onFireIntensityChange,
-    onToggle,
-    onTrailStyleChange,
-    onPlaybackModeChange,
-    onBpmChange,
-    effortPreset,
-    onEffortPresetChange,
-    isMobileHidden = false,
-  }: Props = $props();
+  let { isMobileHidden = false }: Props = $props();
 
   let collapsed = $state(false);
-
-  const bpmPresets = [30, 60, 90, 120];
-
-  // Check if tracking both ends
-  const isBothEnds = $derived(
-    animationSettings.trail.trackingMode === TrackingMode.BOTH_ENDS
-  );
-
-  // Show bilateral toggle only when trails are enabled
-  const showBilateralToggle = $derived(trailStyle !== "off");
-
-  /**
-   * Set trail on/off with hardcoded vivid settings when enabled
-   */
-  function setTrailPreset(preset: TrailVisibility) {
-    onTrailStyleChange(preset);
-
-    if (preset === "off") {
-      animationSettings.setTrailMode(TrailMode.OFF);
-    } else {
-      // "on" - use hardcoded vivid settings
-      animationSettings.setTrailMode(TrailMode.FADE);
-      animationSettings.setFadeDuration(2500);
-      animationSettings.setTrailAppearance({
-        lineWidth: 3.5,
-        maxOpacity: 0.95,
-      });
-    }
-  }
-
-  function toggleBothEnds() {
-    const newMode = isBothEnds
-      ? TrackingMode.RIGHT_END
-      : TrackingMode.BOTH_ENDS;
-    animationSettings.setTrackingMode(newMode);
-  }
 </script>
 
 <section
@@ -145,75 +46,7 @@
       </div>
 
       <div class="panel-controls">
-        <!-- Mobile: Compact layout (below 320px) -->
-        <div class="mobile-layout">
-          <AnimationMobileControls
-            {playbackMode}
-            {bpm}
-            {bpmPresets}
-            {gridVisible}
-            {stepNumbersVisible}
-            {tkaGlyphVisible}
-            {wordHeaderVisible}
-            {fireEffectEnabled}
-            {ledEffectEnabled}
-            {ledBrightness}
-            {onLedBrightnessChange}
-            {colorBlend}
-            {smokeLevel}
-            {useCharcoal}
-            {fireIntensity}
-            {onColorBlendChange}
-            {onSmokeLevelChange}
-            {onUseCharcoalChange}
-            {onFireIntensityChange}
-            {trailStyle}
-            {showBilateralToggle}
-            {isBothEnds}
-            {onPlaybackModeChange}
-            {onBpmChange}
-            {onToggle}
-            {effortPreset}
-            {onEffortPresetChange}
-            onTrailPreset={setTrailPreset}
-            onToggleBothEnds={toggleBothEnds}
-          />
-        </div>
-
-        <!-- Desktop: Expanded layout (320px+) -->
-        <div class="desktop-layout">
-          <AnimationDesktopControls
-            {playbackMode}
-            {bpm}
-            {bpmPresets}
-            {gridVisible}
-            {stepNumbersVisible}
-            {tkaGlyphVisible}
-            {wordHeaderVisible}
-            {fireEffectEnabled}
-            {ledEffectEnabled}
-            {ledBrightness}
-            {onLedBrightnessChange}
-            {colorBlend}
-            {smokeLevel}
-            {useCharcoal}
-            {fireIntensity}
-            {onColorBlendChange}
-            {onSmokeLevelChange}
-            {onUseCharcoalChange}
-            {onFireIntensityChange}
-            {trailStyle}
-            {showBilateralToggle}
-            {isBothEnds}
-            {onPlaybackModeChange}
-            {onBpmChange}
-            {onToggle}
-            {effortPreset}
-            {onEffortPresetChange}
-            onTrailPreset={setTrailPreset}
-            onToggleBothEnds={toggleBothEnds}
-          />
-        </div>
+        <AnimationDesktopControls />
       </div>
     </div>
   {/if}
@@ -222,7 +55,8 @@
 <style>
   .preview-frame {
     width: 100%;
-    height: 200px;
+    aspect-ratio: 16 / 9;
+    max-height: 400px;
     border-radius: clamp(8px, 1.5cqi, 12px);
     border: 1px solid var(--theme-stroke);
     overflow: hidden;
@@ -316,26 +150,7 @@
     flex-direction: column;
     gap: clamp(8px, 2cqi, 12px);
     width: 100%;
-    margin-top: auto;
     flex-shrink: var(--vt-controls-shrink, 1);
-  }
-
-  /* Mobile/Desktop layout switching via container query */
-  .mobile-layout {
-    display: block;
-  }
-
-  .desktop-layout {
-    display: none;
-  }
-
-  @container animation-panel (min-width: 320px) {
-    .mobile-layout {
-      display: none;
-    }
-    .desktop-layout {
-      display: block;
-    }
   }
 
   .panel-body {

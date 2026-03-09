@@ -98,6 +98,7 @@ export class WebGLLedRenderer implements ILedOverlayRenderer {
 		this.canvas.style.height = "100%";
 		this.canvas.style.pointerEvents = "none";
 		this.canvas.style.zIndex = "3";
+		this.canvas.style.background = "transparent";
 		this.canvas.setAttribute("aria-hidden", "true");
 
 		this.dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);

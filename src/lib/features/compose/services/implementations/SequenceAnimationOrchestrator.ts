@@ -22,6 +22,9 @@ import type { IPropInterpolator } from "../contracts/IPropInterpolator";
 import type { ISequenceAnimationOrchestrator } from "../contracts/ISequenceAnimationOrchestrator";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { applyEffort } from "$lib/features/effort-lab/domain/effort-easing-unified";
+import { PhraseInterpolator } from "$lib/features/phrase-effort-lab/services/implementations/PhraseInterpolator";
+import { findPhraseAtBeat } from "$lib/features/phrase-effort-lab/domain/effort-timeline-types";
+import type { EffortTimeline } from "$lib/features/phrase-effort-lab/domain/effort-timeline-types";
 
 /**
  * Lightweight Animation Orchestrator
@@ -43,6 +46,8 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
   private hasMotionData = false;
   private missingMotionLogged = new Set<number>();
   private metadata: SequenceMetadata = { word: "", author: "", totalSteps: 0 };
+  private effortTimeline: EffortTimeline | null = null;
+  private phraseInterpolator = new PhraseInterpolator();
   private initialized = false;
   private currentStepIndex = 0;
   private currentStepProgress = 0; // Sub-beat progress (0.0 to 1.0)
@@ -109,6 +114,9 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
         redPropType: settings.redPropType || settings.propType,
         gridMode: sequenceData.gridMode,
       };
+
+      // Store effort timeline for phrase-level easing (if present)
+      this.effortTimeline = sequenceData.effortTimeline ?? null;
 
       // Store motion steps - beat 1 is at index 0, beat 2 at index 1, etc.
       this.steps = steps;
@@ -211,18 +219,41 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
       return;
     }
 
-    // Apply effort easing to step progress before interpolation
-    const effortPreset = getAnimationVisibilityManager().getEffortPreset();
-    const easedProgress = applyEffort(effortPreset, stepState.stepProgress);
+    // Determine interpolation based on effort timeline or global preset
+    let interpolationResult;
 
-    // Use focused service for interpolation
-    const interpolationResult =
-      this.propInterpolationService.interpolatePropAngles(
-        stepState.currentStepData,
-        easedProgress
+    if (this.effortTimeline?.phrases?.length) {
+      // Phrase mode: check if current beat falls within a phrase
+      const currentBeat = stepState.currentStepIndex + 1 + stepState.stepProgress; // 1-based
+      const phrase = findPhraseAtBeat(this.effortTimeline, currentBeat);
+
+      if (phrase) {
+        // Use phrase-level interpolation
+        const phraseResult = this.phraseInterpolator.interpolate(
+          phrase, currentBeat, this.steps.length,
+        );
+        const targetStep = this.steps[phraseResult.stepIndex];
+        if (targetStep) {
+          interpolationResult = this.propInterpolationService.interpolatePropAngles(
+            targetStep, phraseResult.localProgress,
+          );
+        }
+      } else {
+        // Gap between phrases — use linear (no easing)
+        interpolationResult = this.propInterpolationService.interpolatePropAngles(
+          stepState.currentStepData, stepState.stepProgress,
+        );
+      }
+    } else {
+      // No effort timeline — existing behavior (global preset)
+      const effortPreset = getAnimationVisibilityManager().getEffortPreset();
+      const easedProgress = applyEffort(effortPreset, stepState.stepProgress);
+      interpolationResult = this.propInterpolationService.interpolatePropAngles(
+        stepState.currentStepData, easedProgress,
       );
+    }
 
-    if (!interpolationResult.isValid) {
+    if (!interpolationResult?.isValid) {
       console.warn(
         "SequenceAnimationOrchestrator: Skipping beat without motion data",
         {
@@ -460,17 +491,41 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
       return stepState.currentStepIndex + 1; // Return 1-based beat number
     }
 
-    // Apply effort easing to step progress before interpolation
-    const effortPreset = getAnimationVisibilityManager().getEffortPreset();
-    const easedProgress = applyEffort(effortPreset, stepState.stepProgress);
+    // Determine interpolation based on effort timeline or global preset
+    let interpolationResult;
 
-    // Use focused service for interpolation
-    const interpolationResult = this.propInterpolationService.interpolatePropAngles(
-      stepState.currentStepData,
-      easedProgress
-    );
+    if (this.effortTimeline?.phrases?.length) {
+      // Phrase mode: check if current beat falls within a phrase
+      const currentBeat = stepState.currentStepIndex + 1 + stepState.stepProgress; // 1-based
+      const phrase = findPhraseAtBeat(this.effortTimeline, currentBeat);
 
-    if (interpolationResult.isValid) {
+      if (phrase) {
+        // Use phrase-level interpolation
+        const phraseResult = this.phraseInterpolator.interpolate(
+          phrase, currentBeat, this.steps.length,
+        );
+        const targetStep = this.steps[phraseResult.stepIndex];
+        if (targetStep) {
+          interpolationResult = this.propInterpolationService.interpolatePropAngles(
+            targetStep, phraseResult.localProgress,
+          );
+        }
+      } else {
+        // Gap between phrases — use linear (no easing)
+        interpolationResult = this.propInterpolationService.interpolatePropAngles(
+          stepState.currentStepData, stepState.stepProgress,
+        );
+      }
+    } else {
+      // No effort timeline — existing behavior (global preset)
+      const effortPreset = getAnimationVisibilityManager().getEffortPreset();
+      const easedProgress = applyEffort(effortPreset, stepState.stepProgress);
+      interpolationResult = this.propInterpolationService.interpolatePropAngles(
+        stepState.currentStepData, easedProgress,
+      );
+    }
+
+    if (interpolationResult?.isValid) {
       this.animationStateService.updatePropStates(interpolationResult);
     }
 
@@ -597,6 +652,7 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
     this.steps = [];
     this.totalSteps = 0;
     this.metadata = { word: "", author: "", totalSteps: 0 };
+    this.effortTimeline = null;
     this.initialized = false;
     this.currentStepIndex = 0;
     this.atStartPosition = true;

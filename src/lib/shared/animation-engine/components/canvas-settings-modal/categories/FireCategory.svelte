@@ -30,6 +30,16 @@
 	function formatSmoke(v: number): string {
 		return `${Math.round(v * 100)}%`;
 	}
+
+	function resetDefaults(): void {
+		vm.resetFireDefaults();
+	}
+
+	const isDefault = $derived(
+		Math.abs(intensity - 0.7) < 0.03 &&
+		Math.abs(colorBlend - 0.5) < 0.03 &&
+		Math.abs(smokeLevel - 0.1) < 0.03
+	);
 </script>
 
 <div class="fire-controls">
@@ -74,6 +84,15 @@
 		/>
 		<span class="slider-value">{formatSmoke(smokeLevel)}</span>
 	</div>
+
+	<button
+		class="reset-btn"
+		type="button"
+		disabled={isDefault}
+		onclick={resetDefaults}
+	>
+		Reset
+	</button>
 </div>
 
 <style>
@@ -107,5 +126,39 @@
 		font-family: var(--font-mono, monospace);
 		font-size: var(--font-size-compact, 12px);
 		color: var(--theme-text, white);
+	}
+
+	.reset-btn {
+		align-self: flex-end;
+		padding: 4px 12px;
+		min-height: 32px;
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		border-radius: 6px;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+		font-size: var(--font-size-compact, 12px);
+		cursor: pointer;
+		transition: all var(--duration-fast, 100ms) ease;
+	}
+
+	.reset-btn:hover:not(:disabled) {
+		background: color-mix(in srgb, var(--theme-text) 8%, transparent);
+		color: var(--theme-text, white);
+	}
+
+	.reset-btn:disabled {
+		opacity: 0.3;
+		cursor: default;
+	}
+
+	.reset-btn:focus-visible {
+		outline: 2px solid var(--theme-accent, #8b5cf6);
+		outline-offset: 2px;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.reset-btn {
+			transition: none;
+		}
 	}
 </style>

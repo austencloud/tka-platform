@@ -5,10 +5,23 @@
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "release" ]; then
-  echo "⚠️  WARNING: Committing to production branch ($BRANCH)"
-  echo "   Make sure you're ready to release these changes!"
-  echo "   Production environment will be used."
-else
-  echo "✅ Development branch detected: $BRANCH"
-  echo "   Development environment will be used."
+  # Check if contributor (non-admin) is committing to main
+  CREDS_FILE="$HOME/.tka/credentials.json"
+  ADMIN_UID="PBp3GSBO6igCKPwJyLZNmVEmamI3"
+
+  if [ -f "$CREDS_FILE" ]; then
+    USER_UID=$(node -e "try{console.log(JSON.parse(require('fs').readFileSync('$CREDS_FILE','utf8')).uid)}catch{}" 2>/dev/null)
+
+    if [ -n "$USER_UID" ] && [ "$USER_UID" != "$ADMIN_UID" ]; then
+      echo ""
+      echo "  ❌ Contributors cannot commit directly to main."
+      echo ""
+      echo "  Create a feature branch first:"
+      echo "    git checkout -b fb/<feedback-id>-short-description"
+      echo ""
+      exit 1
+    fi
+  fi
+
+  echo "⚠️  Committing to production branch ($BRANCH)"
 fi

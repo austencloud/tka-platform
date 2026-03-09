@@ -434,6 +434,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         playbackSpeed: params.playbackSpeed,
         sequenceContentHash: params.sequenceContentHash,
         relativeTime: currentTime - this.loopStartTime,
+        isSeamlesslyLoopable: params.isSeamlesslyLoopable ?? false,
       };
 
       if (activeFireRenderer) {

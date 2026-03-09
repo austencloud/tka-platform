@@ -1,0 +1,37 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Block non-admin pushes to main
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+if [ "$BRANCH" = "main" ]; then
+  # Check TKA credentials for role
+  CREDS_FILE="$HOME/.tka/credentials.json"
+
+  if [ ! -f "$CREDS_FILE" ]; then
+    echo ""
+    echo "  ❌ Cannot push to main — not authenticated."
+    echo "  Run: node scripts/fetch-feedback.js login"
+    echo ""
+    exit 1
+  fi
+
+  # Check if this is the admin (Austen) by UID
+  ADMIN_UID="PBp3GSBO6igCKPwJyLZNmVEmamI3"
+  USER_UID=$(node -e "try{console.log(JSON.parse(require('fs').readFileSync('$CREDS_FILE','utf8')).uid)}catch{}" 2>/dev/null)
+
+  if [ "$USER_UID" != "$ADMIN_UID" ]; then
+    USER_NAME=$(node -e "try{console.log(JSON.parse(require('fs').readFileSync('$CREDS_FILE','utf8')).displayName||'unknown')}catch{}" 2>/dev/null)
+    echo ""
+    echo "  ❌ Contributors cannot push directly to main."
+    echo ""
+    echo "  Hey $USER_NAME — create a feature branch instead:"
+    echo ""
+    echo "    git checkout -b fb/<feedback-id>-short-description"
+    echo "    git push -u origin fb/<feedback-id>-short-description"
+    echo ""
+    echo "  Then open a PR for review. Austen will merge it."
+    echo ""
+    exit 1
+  fi
+fi
