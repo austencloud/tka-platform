@@ -173,6 +173,7 @@
   .laban-card {
     display: flex;
     flex-direction: column;
+    min-height: 0;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--border-radius-lg, 12px);
@@ -199,8 +200,8 @@
   }
 
   .canvas-container {
-    aspect-ratio: 1;
-    width: 100%;
+    flex: 1;
+    min-height: 0;
     position: relative;
   }
 
