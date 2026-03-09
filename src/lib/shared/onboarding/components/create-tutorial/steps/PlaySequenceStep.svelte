@@ -180,7 +180,7 @@
         <i class="fas fa-stop" aria-hidden="true"></i> Back to card
       </button>
     {:else}
-      <button class="play-button" onclick={handlePlay}>
+      <button class="play-button" onclick={handlePlay} aria-label="Play sequence">
         <i class="fas fa-play" aria-hidden="true"></i>
       </button>
     {/if}
@@ -202,17 +202,15 @@
     width: 100%;
     text-align: center;
     padding: 20px;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   .title {
     font-size: 1.4rem;
     font-weight: 700;
-    color: white;
+    color: var(--theme-text, #fff);
     margin: 0;
   }
 
@@ -263,19 +261,23 @@
     justify-content: center;
     width: 64px;
     height: 64px;
-    background: linear-gradient(135deg, #22c55e, #16a34a);
+    background: linear-gradient(
+      135deg,
+      var(--semantic-success, #22c55e),
+      color-mix(in srgb, var(--semantic-success, #22c55e) 85%, #000)
+    );
     border: none;
     border-radius: 50%;
-    color: white;
+    color: var(--theme-text, #fff);
     font-size: 1.5rem;
     cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 16px rgba(34, 197, 94, 0.4);
+    transition: all var(--duration-fast, 150ms) var(--ease-out);
+    box-shadow: 0 4px 16px color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent);
   }
 
   .play-button:hover {
     transform: scale(1.08);
-    box-shadow: 0 6px 24px rgba(34, 197, 94, 0.5);
+    box-shadow: 0 6px 24px color-mix(in srgb, var(--semantic-success, #22c55e) 50%, transparent);
   }
 
   .play-button:active {
@@ -293,19 +295,19 @@
     justify-content: center;
     gap: 8px;
     padding: 12px 24px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 12px;
-    color: white;
+    color: var(--theme-text, #fff);
     font-size: 0.9rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-fast, 150ms) var(--ease-out);
   }
 
   .stop-button:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
+    background: var(--theme-hover, rgba(255, 255, 255, 0.1));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
   }
 
   .continue-button {
@@ -322,11 +324,11 @@
     border: 2px solid
       color-mix(in srgb, var(--theme-accent-strong, #8b5cf6) 60%, transparent);
     border-radius: 12px;
-    color: white;
+    color: var(--theme-text, #fff);
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-fast, 150ms) var(--ease-out);
   }
 
   .continue-button:hover {
@@ -376,7 +378,8 @@
       transition: none;
     }
     .play-button:hover,
-    .play-button:active {
+    .play-button:active,
+    .continue-button:active {
       transform: none;
     }
   }
