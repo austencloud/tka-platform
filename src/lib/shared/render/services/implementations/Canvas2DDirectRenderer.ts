@@ -377,13 +377,8 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     // Drawing them here would bake them into cached blobs, causing double
     // numbers when the ChoreoCard also renders its HTML overlay.
 
-    // 9. Draw VTG glyph (bottom-right corner)
-    if (visibility.showVTG) {
-      await this.drawVTGGlyph(ctx, preparedPictograph, gridMode, size, isDarkMode);
-    }
-
-    // 10. Draw Elemental glyph (top-right corner)
-    if (visibility.showElemental) {
+    // 9. Draw fused Elemental+VTG glyph (bottom-right corner)
+    if (visibility.showVTG || visibility.showElemental) {
       await this.drawElementalGlyph(ctx, preparedPictograph, gridMode, size, isDarkMode);
     }
 
@@ -1212,29 +1207,28 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     if (!vtgResult.elementalType) return;
 
     const scale = size / VIEWBOX_SIZE;
-    const svgCache = getSvgImageCache();
+    const PADDING = 40;
+    const GLYPH_WIDTH = 120;
+    const GLYPH_HEIGHT = 140;
 
-    // Calculate position (top-right corner with 4% offset - same as VTG)
-    const offset = VIEWBOX_SIZE * VTG_OFFSET_PERCENTAGE;
-    const x = (VIEWBOX_SIZE - ELEMENTAL_GLYPH_WIDTH - offset) * scale;
-    const y = offset * scale;
+    // Position in bottom-right corner (matching ElementalGlyph.svelte)
+    const x = (VIEWBOX_SIZE - GLYPH_WIDTH - PADDING) * scale;
+    const y = (VIEWBOX_SIZE - GLYPH_HEIGHT - PADDING) * scale;
 
     try {
-      // Load Elemental glyph SVG
-      const elementalPath = `/images/elements/${vtgResult.elementalType}.svg`;
+      // Load fused elemental+VTG PNG
+      const elementalPath = `/images/elements/${vtgResult.elementalType}.png`;
       const response = await fetch(elementalPath);
       if (!response.ok) return;
 
-      const svgText = await response.text();
-      const cacheKey = `elemental_${vtgResult.elementalType}_${isDarkMode}`;
-      const img = await svgCache.getImage(svgText, cacheKey);
+      const blob = await response.blob();
+      const img = await createImageBitmap(blob);
 
       // Draw at calculated position
-      const drawWidth = ELEMENTAL_GLYPH_WIDTH * scale;
-      const drawHeight = ELEMENTAL_GLYPH_HEIGHT * scale;
+      const drawWidth = GLYPH_WIDTH * scale;
+      const drawHeight = GLYPH_HEIGHT * scale;
 
       ctx.save();
-      // Elemental glyphs are colored, no filter needed
       ctx.drawImage(img, x, y, drawWidth, drawHeight);
       ctx.restore();
     } catch (error) {

@@ -14,9 +14,9 @@
   import { fly, fade, scale } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import PictographWithVisibility from "$lib/shared/pictograph/shared/components/PictographWithVisibility.svelte";
-  import { examplePictographData, exampleStartPositionData } from "./example-data";
+  import { exampleStartPositionData, getAabbPictographSteps } from "./example-data";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-    import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
+
 
   interface Props {
     // Content visibility toggles
@@ -57,23 +57,10 @@
     onToggleNonRadial,
   }: Props = $props();
 
-  // Get visibility manager to read beat numbers setting from Pictograph panel
-  const visibilityManager = getVisibilityStateManager();
-
-  // Beat numbers visibility comes from Pictograph settings
-  let showStepNumbers = $state(visibilityManager.getBeatNumbersVisibility());
-
-  // Update beat numbers when visibility changes
-  $effect(() => {
-    const observer = () => {
-      showStepNumbers = visibilityManager.getBeatNumbersVisibility();
-    };
-    visibilityManager.registerObserver(observer, ["all"]);
-    return () => visibilityManager.unregisterObserver(observer);
-  });
+  const aabbSteps = getAabbPictographSteps();
 
   // Example word for preview
-  const previewWord = "SAMPLE";
+  const previewWord = "AABB";
 
   // Example difficulty level for preview
   const difficultyLevel = 2;
@@ -141,36 +128,28 @@
       </div>
     {/if}
 
-    <!-- Grid section with pictograph -->
+    <!-- Grid section with sequence strip -->
     <div class="grid-section">
-      <!-- Start position pictograph -->
       {#if includeStartPosition}
-        <div class="start-position-cell" transition:fade={{ duration: 200 }}>
+        <div class="sequence-cell start-cell" transition:fade={{ duration: 200 }}>
           <PictographWithVisibility pictographData={exampleStartPositionData} forceShowAll={true} />
         </div>
       {/if}
-
-      <!-- Pictograph with visibility toggles -->
-      <div class="pictograph-cell">
-        <PictographWithVisibility
-          pictographData={examplePictographData}
-          forceShowAll={false}
-          previewMode={true}
-          {onToggleTKA}
-          {onToggleVTG}
-          {onToggleElemental}
-          {onTogglePositions}
-          {onToggleReversals}
-          {onToggleNonRadial}
-        />
-
-        <!-- Beat number overlay -->
-        {#if showStepNumbers}
-          <div class="beat-number-overlay" transition:fade={{ duration: 200 }}>
-            1
-          </div>
-        {/if}
-      </div>
+      {#each aabbSteps as step, i}
+        <div class="sequence-cell">
+          <PictographWithVisibility
+            pictographData={step}
+            forceShowAll={false}
+            previewMode={true}
+            {onToggleTKA}
+            {onToggleVTG}
+            {onToggleElemental}
+            {onTogglePositions}
+            {onToggleReversals}
+            {onToggleNonRadial}
+          />
+        </div>
+      {/each}
     </div>
 
     <!-- Footer section -->
@@ -283,82 +262,52 @@
     color: #ffffff;
   }
 
-  /* Grid section - uses CSS grid for proper sizing */
+  /* Grid section - horizontal strip of pictographs */
   .grid-section {
-    display: grid;
+    display: flex;
     background: rgba(255, 255, 255, 1);
     min-height: 0;
-  }
-
-  /* When start position is shown: 2 equal columns */
-  .grid-section:has(.start-position-cell) {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  /* When start position is hidden: single column */
-  .grid-section:not(:has(.start-position-cell)) {
-    grid-template-columns: 1fr;
   }
 
   .dark-mode .grid-section {
     background: rgba(20, 20, 25, 1);
   }
 
-  .start-position-cell {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(250, 250, 250, 1);
-    border-right: 1px solid rgba(0, 0, 0, 0.08);
-    aspect-ratio: 1;
-    padding: 2px;
-    box-sizing: border-box;
-  }
-
-  .dark-mode .start-position-cell {
-    background: rgba(25, 25, 30, 1);
-    border-right-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .start-position-cell :global(.pictograph-with-visibility),
-  .start-position-cell :global(.pictograph),
-  .start-position-cell :global(svg.pictograph) {
-    width: 100% !important;
-    height: 100% !important;
-    max-width: 100%;
-    max-height: 100%;
-  }
-
-  .pictograph-cell {
+  .sequence-cell {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 0;
+    flex: 1;
     aspect-ratio: 1;
+    min-width: 0;
+    border-right: 1px solid rgba(0, 0, 0, 0.08);
   }
 
-  .pictograph-cell :global(.pictograph-with-visibility),
-  .pictograph-cell :global(.pictograph) {
+  .sequence-cell:last-child {
+    border-right: none;
+  }
+
+  .dark-mode .sequence-cell {
+    border-right-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .sequence-cell.start-cell {
+    flex: 1;
+    background: rgba(250, 250, 250, 1);
+  }
+
+  .dark-mode .sequence-cell.start-cell {
+    background: rgba(25, 25, 30, 1);
+  }
+
+  .sequence-cell :global(.pictograph-with-visibility),
+  .sequence-cell :global(.pictograph),
+  .sequence-cell :global(svg.pictograph) {
     width: 100% !important;
     height: 100% !important;
     max-width: 100%;
     max-height: 100%;
-  }
-
-  .beat-number-overlay {
-    position: absolute;
-    top: 4%;
-    left: 4%;
-    font-family: Georgia, serif;
-    font-weight: bold;
-    font-size: clamp(10px, 4cqi, 16px);
-    color: #231f20;
-    pointer-events: none;
-  }
-
-  .dark-mode .beat-number-overlay {
-    color: #ffffff;
   }
 
   /* Footer section */
@@ -406,30 +355,24 @@
     white-space: nowrap;
   }
 
-  /* Ensure pictograph fills available space */
-  .pictograph-cell :global(svg.pictograph) {
-    width: 100% !important;
-    height: 100% !important;
-  }
-
   /* Override preview mode opacity to fully hide (not dim) invisible glyphs */
   /* This gives smooth fade transitions while ensuring invisible = opacity 0, not 0.4 */
   /* In the special Pictograph panel, preview mode dims "off" elements to 40% so users can click them. */
   /* In Image Export, we want truly hidden (0%) to accurately preview what exports look like. */
 
   /* Glyph components - these use .visible class directly */
-  .pictograph-cell :global(.tka-glyph.preview-mode:not(.visible)),
-  .pictograph-cell :global(.turns-column.preview-mode:not(.visible)),
-  .pictograph-cell :global(.vtg-glyph.preview-mode:not(.visible)),
-  .pictograph-cell :global(.elemental-glyph.preview-mode:not(.visible)),
-  .pictograph-cell :global(.position-glyph.preview-mode:not(.visible)),
-  .pictograph-cell :global(.reversal-indicators.preview-mode:not(.visible)) {
+  .sequence-cell :global(.tka-glyph.preview-mode:not(.visible)),
+  .sequence-cell :global(.turns-column.preview-mode:not(.visible)),
+  .sequence-cell :global(.vtg-glyph.preview-mode:not(.visible)),
+  .sequence-cell :global(.elemental-glyph.preview-mode:not(.visible)),
+  .sequence-cell :global(.position-glyph.preview-mode:not(.visible)),
+  .sequence-cell :global(.reversal-indicators.preview-mode:not(.visible)) {
     opacity: 0 !important;
   }
 
   /* Hand points - controlled via grid-container classes, not individual element classes */
   /* When hide-inactive-hand-points is active, inactive points normally show at 40% */
-  .pictograph-cell
+  .sequence-cell
     :global(
       .grid-container.preview-mode.hide-inactive-hand-points .hand-point-inactive
     ) {
@@ -438,22 +381,22 @@
 
   /* Non-radial points - controlled by show-non-radial class on grid-container */
   /* These target specific IDs within the grid SVG */
-  .pictograph-cell
+  .sequence-cell
     :global(
       .grid-container.preview-mode:not(.show-non-radial)
         #ne_diamond_layer2_point
     ),
-  .pictograph-cell
+  .sequence-cell
     :global(
       .grid-container.preview-mode:not(.show-non-radial)
         #se_diamond_layer2_point
     ),
-  .pictograph-cell
+  .sequence-cell
     :global(
       .grid-container.preview-mode:not(.show-non-radial)
         #sw_diamond_layer2_point
     ),
-  .pictograph-cell
+  .sequence-cell
     :global(
       .grid-container.preview-mode:not(.show-non-radial)
         #nw_diamond_layer2_point
@@ -469,8 +412,7 @@
     .footer-name,
     .footer-notes,
     .footer-birthday,
-    .start-position-cell,
-    .beat-number-overlay {
+    .sequence-cell {
       transition: opacity var(--duration-normal) ease;
     }
   }

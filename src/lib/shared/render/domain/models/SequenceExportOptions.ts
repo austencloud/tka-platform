@@ -87,6 +87,9 @@ export interface SequenceExportOptions {
   /** Original creation date of the sequence (for birthday display) */
   birthday?: Date;
 
+  // Layout override
+  columnCount?: number | null;  // Override auto-calculated column count (null/undefined = auto)
+
   // Output format
   format: "PNG" | "JPEG" | "WebP";
   quality: number; // 0-1 for JPEG

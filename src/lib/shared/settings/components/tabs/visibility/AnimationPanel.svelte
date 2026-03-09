@@ -135,9 +135,10 @@
 
   {#if !collapsed}
     <div class="panel-body" transition:slide={{ duration: 200 }}>
-      <div class="preview-strip">
+      <div class="preview-frame">
         <AnimationPreviewController />
       </div>
+
       <div class="panel-controls">
         <!-- Mobile: Compact layout (below 320px) -->
         <div class="mobile-layout">
@@ -210,6 +211,26 @@
 </section>
 
 <style>
+  .preview-frame {
+    width: 100%;
+    height: 200px;
+    border-radius: clamp(8px, 1.5cqi, 12px);
+    border: 1px solid var(--theme-stroke);
+    overflow: hidden;
+    background: color-mix(in srgb, var(--theme-panel-bg) 80%, transparent);
+    flex-shrink: 0;
+  }
+
+  .preview-frame :global(.canvas-wrapper) {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .preview-frame :global(canvas) {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
   .settings-panel {
     container-type: inline-size;
     container-name: animation-panel;
@@ -279,23 +300,6 @@
     font-family:
       -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
     flex: 1;
-  }
-
-  .preview-strip {
-    width: 100%;
-    max-height: 150px;
-    border-radius: clamp(8px, 1.5cqi, 12px);
-    border: 1px solid var(--theme-stroke);
-    overflow: hidden;
-    background: color-mix(in srgb, var(--theme-panel-bg) 80%, transparent);
-  }
-
-  .preview-strip :global(.canvas-wrapper),
-  .preview-strip :global(canvas) {
-    width: 100% !important;
-    height: 150px !important;
-    max-height: 150px;
-    object-fit: cover;
   }
 
   .panel-controls {

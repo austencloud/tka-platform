@@ -530,7 +530,7 @@
   @container visibility-tab (min-width: 700px) {
     .secondary-panels {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 35% 1fr;
     }
   }
 

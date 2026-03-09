@@ -1,10 +1,9 @@
 <!--
-ElementalGlyph.svelte - Elemental Glyph Component
+ElementalGlyph.svelte - Fused Elemental + VTG Glyph Component
 
-Renders elemental symbols (water, fire, earth, air, sun, moon) in the top-right corner
-of pictographs based on VTG mode classification. Only displays for Type1 letters.
-
-Based on legacy elemental_glyph.py implementation.
+Renders fused elemental/VTG symbols (water/SS, fire/SO, earth/TS, air/TO, sun/QS, moon/QO)
+in the bottom-right corner of pictographs. Each icon contains the VTG mode text
+embedded within the elemental shape. Only displays for Type1 letters.
 -->
 <script lang="ts">
   import type { ElementalType } from "../domain/enums/pictograph-enums";
@@ -58,31 +57,23 @@ Based on legacy elemental_glyph.py implementation.
     return true;
   });
 
-  // SVG path - elements are in static/images/elements/
-  const svgPath = $derived.by(() => {
+  // Image path - fused elemental+VTG PNGs in static/images/elements/
+  const imagePath = $derived.by(() => {
     if (!elementalType) return "";
-    return `/images/elements/${elementalType}.svg`;
+    return `/images/elements/${elementalType}.png`;
   });
 
-  // Positioning based on legacy elemental_glyph.py:
-  // - 4% offset from edges
-  // - Positioned in top-right corner
-  // - Standard pictograph size is 950x950 (viewBox)
-  // - SVGs have natural size around 85-100px wide x 125px tall
+  // Positioning: bottom-right corner (replacing both old elemental top-right and VTG bottom-right)
   const PICTOGRAPH_SIZE = 950;
-  const OFFSET_PERCENTAGE = 0.04;
+  const PADDING = 40;
 
-  // Use natural SVG size (approximately 95px wide, 125px tall on average)
-  // This matches the legacy behavior where boundingRect is used directly
-  const GLYPH_WIDTH = 95;
-  const GLYPH_HEIGHT = 125;
+  // Fused glyphs are roughly square (~200x230px source), scaled to fit pictograph
+  const GLYPH_WIDTH = 120;
+  const GLYPH_HEIGHT = 140;
 
-  const offsetWidth = PICTOGRAPH_SIZE * OFFSET_PERCENTAGE;
-  const offsetHeight = PICTOGRAPH_SIZE * OFFSET_PERCENTAGE;
-
-  // Position in top-right corner (with x-offset for expanded cells)
-  const xPosition = $derived(PICTOGRAPH_SIZE - GLYPH_WIDTH - offsetWidth + xOffset);
-  const yPosition = offsetHeight;
+  // Position in bottom-right corner (with x-offset for expanded cells)
+  const xPosition = $derived(PICTOGRAPH_SIZE - GLYPH_WIDTH - PADDING + xOffset);
+  const yPosition = PICTOGRAPH_SIZE - GLYPH_HEIGHT - PADDING;
 
   // Center point for scale animation
   const centerX = $derived(xPosition + GLYPH_WIDTH / 2);
@@ -129,7 +120,7 @@ Based on legacy elemental_glyph.py implementation.
     <image
       class="elemental-image"
       class:animating={isAnimating}
-      href={svgPath}
+      href={imagePath}
       x={xPosition}
       y={yPosition}
       width={GLYPH_WIDTH}

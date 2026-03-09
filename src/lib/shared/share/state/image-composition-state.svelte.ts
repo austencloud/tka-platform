@@ -96,6 +96,11 @@ class ImageCompositionStateManager {
     if (firebaseSettings && getAuthSync().currentUser) {
       // Use Firebase settings for authenticated users
       this.settings = { ...DEFAULT_SETTINGS, ...firebaseSettings };
+      // Fix truncated default that was persisted due to previous save bug
+      if (this.settings.customNotesText === "Created using TKA Scrib") {
+        this.settings.customNotesText = DEFAULT_SETTINGS.customNotesText;
+        this.saveToStorage();
+      }
     } else {
       // Fall back to localStorage for guests or if no Firebase settings exist
       this.loadFromStorage();
@@ -138,8 +143,9 @@ class ImageCompositionStateManager {
    * Save settings to Firebase for authenticated users
    */
   private saveToFirebase(): void {
-    // Use updateSetting to trigger Firebase persistence
-    void settingsService.updateSetting("imageExport", this.settings);
+    // Spread to create a plain object — settingsService.updateSetting uses === reference
+    // equality to skip no-ops, and passing the same $state proxy would always match.
+    void settingsService.updateSetting("imageExport", { ...this.settings });
   }
 
   private notifyObservers(): void {

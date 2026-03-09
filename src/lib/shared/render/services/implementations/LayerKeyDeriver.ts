@@ -49,6 +49,8 @@ export interface GridPointsLayerKeyComponents {
   handPointVisibility: "all" | "active";
   // Grid mode affects which points exist
   gridMode: string;
+  // Visual mode — grid point colors differ between dark and light
+  darkMode: boolean;
   // Size
   size: number;
 }
@@ -144,6 +146,7 @@ export class LayerKeyDeriver {
       showNonRadialPoints: options.showNonRadialPoints,
       handPointVisibility: options.handPointVisibility,
       gridMode: prepared?.gridMode ?? "diamond",
+      darkMode: options.darkMode,
       size: options.size,
     };
   }

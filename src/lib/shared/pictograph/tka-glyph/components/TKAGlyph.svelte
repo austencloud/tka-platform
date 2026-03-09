@@ -138,7 +138,7 @@ Uses pure runes instead of stores for reactivity.
     getLetterImagePath,
     isDashLetter,
   } from "../utils/letter-image-getter";
-  import { onMount, tick } from "svelte";
+  import { onMount } from "svelte";
   import Dash from "./Dash.svelte";
 
   let {
@@ -152,8 +152,6 @@ Uses pure runes instead of stores for reactivity.
     onToggle = undefined,
     // Dark Mode override for export (when set, applies filter override)
     darkMode = undefined,
-    // Disable scale-pulse animation on letter change (for animation canvas overlay)
-    disableChangeAnimation = false,
   } = $props<{
     /** The letter to display */
     letter: string | null | undefined;
@@ -173,22 +171,39 @@ Uses pure runes instead of stores for reactivity.
     onToggle?: () => void;
     /** Dark Mode override for export. When set, applies filter override. */
     darkMode?: boolean;
-    /** Disable scale-pulse animation when letter changes */
-    disableChangeAnimation?: boolean;
   }>();
 
-  // Letter dimensions state - match legacy behavior
-  // Initialize with sensible defaults to prevent flash on first render
-  // The actual dimensions will be loaded async and update if different
+  // Letter dimensions state - async-loaded by $effect for uncached letters
   let letterDimensions = $state({ width: 100, height: 100 });
+
+  // Effective dimensions: synchronous cache lookup + async fallback.
+  // TurnsColumn uses the same sync-cache pattern for positioning.
+  // Both MUST agree on dimensions to prevent turn numbers overlapping the letter.
+  // Without this, TKAGlyph's $effect updates dimensions AFTER render,
+  // while TurnsColumn's $derived.by reads from cache DURING render — one-frame mismatch.
+  const effectiveDimensions = $derived.by(() => {
+    if (letter) {
+      const cached = globalDimensionsCache.get(letter);
+      if (cached && (cached.width !== 100 || cached.height !== 100)) {
+        return cached;
+      }
+    }
+    return letterDimensions;
+  });
 
   // Local SVG data URL for this component instance (avoids global state reactivity issues)
   let localSvgDataUrl = $state<string | null>(null);
 
-  // Image source - uses local cached URL if available
+  // Image source - checks global cache for CURRENT letter first (synchronous)
+  // CRITICAL: localSvgDataUrl is $state updated by $effect (runs AFTER render),
+  // so it's stale for one frame when letter changes. Reading from globalSvgDataUrlCache
+  // keyed by the current letter avoids showing the old letter's image.
   const imageSrc = $derived.by(() => {
     if (!letter) return "";
-    // Use local cached URL if available, otherwise fall back to file path
+    // Sync lookup for current letter — no $effect delay
+    const cachedUrl = globalSvgDataUrlCache.get(letter);
+    if (cachedUrl) return cachedUrl;
+    // Fall back to file path (will be replaced when $effect loads data)
     return localSvgDataUrl ?? getLetterImagePath(letter as Letter);
   });
 
@@ -300,56 +315,12 @@ Uses pure runes instead of stores for reactivity.
 
   // Check if letter dimensions are loaded
   const dimensionsLoaded = $derived.by(
-    () => letterDimensions.width > 0 && letterDimensions.height > 0
+    () => effectiveDimensions.width > 0 && effectiveDimensions.height > 0
   );
 
   // Check if this letter needs a separate dash rendered
   const showDash = $derived(isDashLetter(letter));
 
-  // ============================================================================
-  // LETTER CHANGE ANIMATION
-  // ============================================================================
-  // Track letter changes to trigger a subtle scale-pulse animation.
-  // When the letter swaps, we briefly scale down then back up to draw
-  // attention to the change without being jarring.
-
-  let previousLetter = $state<string | null>(null);
-  let isAnimatingChange = $state(false);
-
-  // Center point for scale animation (so it pops "towards" the user, not from an edge)
-  const centerX = $derived(letterDimensions.width / 2);
-  const centerY = $derived(letterDimensions.height / 2);
-
-  $effect(() => {
-    const currentLetter = letter ?? null;
-    let timeout: ReturnType<typeof setTimeout> | undefined;
-
-    // Skip animation on initial mount (previousLetter is null)
-    // Only animate when letter actually changes to a different value
-    // Also skip if animation is disabled (e.g., in animation canvas overlay)
-    if (
-      !disableChangeAnimation &&
-      previousLetter !== null &&
-      currentLetter !== previousLetter &&
-      currentLetter !== null
-    ) {
-      // Trigger the scale-pulse animation
-      isAnimatingChange = true;
-
-      // Remove the animation class after the animation completes (200ms)
-      timeout = setTimeout(() => {
-        isAnimatingChange = false;
-      }, 200);
-    }
-
-    // Update previous letter for next comparison
-    previousLetter = currentLetter;
-
-    // Cleanup timeout if effect re-runs
-    return () => {
-      if (timeout) clearTimeout(timeout);
-    };
-  });
 </script>
 
 <!-- TKA Glyph Group - only render when dimensions are loaded AND when visible
@@ -378,20 +349,14 @@ Uses pure runes instead of stores for reactivity.
         }
       : {}}
   >
-    <!-- Inner group for scale animation - scales from center of letter -->
-    <g
-      class="letter-content"
-      class:animating-change={isAnimatingChange}
-      style="transform-origin: {centerX}px {centerY}px"
-    >
       <!-- Main letter with exact legacy dimensions -->
       <!-- Uses cached data URL if available for instant rendering, otherwise falls back to file path -->
       <image
         x="0"
         y="0"
         href={imageSrc}
-        width={letterDimensions.width}
-        height={letterDimensions.height}
+        width={effectiveDimensions.width}
+        height={effectiveDimensions.height}
         preserveAspectRatio="xMinYMin meet"
         class="letter-image"
       />
@@ -400,13 +365,12 @@ Uses pure runes instead of stores for reactivity.
       <!-- Note: Dash is inside this TKAGlyph group, so the filter: invert() handles dark mode -->
       {#if showDash}
         <Dash
-          letterWidth={letterDimensions.width}
-          letterHeight={letterDimensions.height}
+          letterWidth={effectiveDimensions.width}
+          letterHeight={effectiveDimensions.height}
           {visible}
           {previewMode}
         />
       {/if}
-    </g>
   </g>
 {/if}
 
@@ -419,32 +383,6 @@ Uses pure runes instead of stores for reactivity.
     transition:
       opacity var(--duration-fast) ease-out,
       filter var(--duration-fast) ease-out;
-  }
-
-  /* Inner content group for scale animation - transform-origin is set inline based on letter dimensions */
-
-  /* Subtle scale-pulse animation when letter changes - pops "towards" user */
-  @keyframes letter-change-pulse {
-    0% {
-      transform: scale(1);
-    }
-    50% {
-      transform: scale(0.91);
-    }
-    100% {
-      transform: scale(1);
-    }
-  }
-
-  .letter-content.animating-change {
-    animation: letter-change-pulse 180ms ease-in-out;
-  }
-
-  /* Respect reduced motion preference */
-  @media (prefers-reduced-motion: reduce) {
-    .letter-content.animating-change {
-      animation: none;
-    }
   }
 
   .tka-glyph.visible {

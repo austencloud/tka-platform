@@ -152,20 +152,30 @@ Props:
     }
   });
 
-  // Use loaded dimensions, or prop if explicitly provided
-  const effectiveLetterDimensions = $derived(() => {
+  // Effective letter dimensions: synchronous cache lookup + prop + async fallback.
+  // Uses $derived.by (not $derived(() => fn)) so Svelte tracks all reactive reads
+  // and recalculates SYNCHRONOUSLY when letter/props change — no one-frame lag.
+  const effectiveLetterDimensions = $derived.by(() => {
     // Use provided dimensions if explicitly set (not default)
     if (letterDimensions.width !== 100 || letterDimensions.height !== 100) {
       return letterDimensions;
     }
+    // Synchronous cache lookup for the current letter — avoids $effect delay
+    if (letter) {
+      const cached = getLetterDimensions(letter);
+      if (cached.width !== 100 || cached.height !== 100) {
+        return cached;
+      }
+    }
+    // Fallback to async-loaded state (for letters not yet in cache)
     return loadedLetterDimensions;
   });
 
   // Parse the turns tuple
-  const parsedTurns = $derived(() => parseTurnsTuple(turnsTuple));
+  const parsedTurns = $derived.by(() => parseTurnsTuple(turnsTuple));
 
   // Determine colors based on letter type and motion data
-  const turnColors = $derived(() =>
+  const turnColors = $derived.by(() =>
     colorInterpreter.interpretTurnColors(letter, pictographData)
   );
 
@@ -174,9 +184,9 @@ Props:
 
   // Calculate the maximum width needed for the turn column
   // This ensures consistent alignment when top and bottom numbers have different widths
-  const columnWidth = $derived(() => {
-    const topWidth = getTurnNumberWidth(parsedTurns().top);
-    const bottomWidth = getTurnNumberWidth(parsedTurns().bottom);
+  const columnWidth = $derived.by(() => {
+    const topWidth = getTurnNumberWidth(parsedTurns.top);
+    const bottomWidth = getTurnNumberWidth(parsedTurns.bottom);
     return Math.max(topWidth, bottomWidth);
   });
 
@@ -185,75 +195,34 @@ Props:
 
   // Calculate positions for the numbers (with proper bottom number height)
   // In standalone mode, position at left edge (x=0) instead of right of letter
-  const positions = $derived(() => {
-    const dims = effectiveLetterDimensions();
+  const positions = $derived.by(() => {
+    const dims = effectiveLetterDimensions;
     if (standalone) {
-      // Standalone mode: position at left edge
-      const topY = -5; // Small padding from top
+      const topY = -5;
       const bottomY = dims.height - numberHeight + 5;
       return {
         top: { x: 0, y: topY },
         bottom: { x: 0, y: bottomY },
       };
     }
-    // Normal mode: position to the right of the letter (or dash if present)
     return calculateTurnPositions(dims, numberHeight, hasDash);
   });
 
   // Check visibility
-  const showTop = $derived(() => shouldDisplayTurn(parsedTurns().top));
-  const showBottom = $derived(() => shouldDisplayTurn(parsedTurns().bottom));
+  const showTop = $derived(shouldDisplayTurn(parsedTurns.top));
+  const showBottom = $derived(shouldDisplayTurn(parsedTurns.bottom));
 
   // Get image paths
-  const topImagePath = $derived(() =>
-    getTurnNumberImagePath(parsedTurns().top)
-  );
-  const bottomImagePath = $derived(() =>
-    getTurnNumberImagePath(parsedTurns().bottom)
-  );
+  const topImagePath = $derived(getTurnNumberImagePath(parsedTurns.top));
+  const bottomImagePath = $derived(getTurnNumberImagePath(parsedTurns.bottom));
 
-  // ============================================================================
-  // TURNS CHANGE ANIMATION
-  // ============================================================================
-  // Track when turn values change to trigger subtle scale-pulse animations.
-
-  let prevTopTurn = $state<ReturnType<typeof parsedTurns>["top"] | undefined>(undefined);
-  let prevBottomTurn = $state<ReturnType<typeof parsedTurns>["bottom"] | undefined>(undefined);
-  let isTopAnimating = $state(false);
-  let isBottomAnimating = $state(false);
-
-  $effect(() => {
-    const currentTop = parsedTurns().top;
-    let timeout: ReturnType<typeof setTimeout> | undefined;
-    // Skip initial mount, animate when value changes
-    if (prevTopTurn !== undefined && currentTop !== prevTopTurn && currentTop !== null) {
-      isTopAnimating = true;
-      timeout = setTimeout(() => { isTopAnimating = false; }, 180);
-    }
-    prevTopTurn = currentTop;
-    return () => { if (timeout) clearTimeout(timeout); };
-  });
-
-  $effect(() => {
-    const currentBottom = parsedTurns().bottom;
-    let timeout: ReturnType<typeof setTimeout> | undefined;
-    // Skip initial mount, animate when value changes
-    if (prevBottomTurn !== undefined && currentBottom !== prevBottomTurn && currentBottom !== null) {
-      isBottomAnimating = true;
-      timeout = setTimeout(() => { isBottomAnimating = false; }, 180);
-    }
-    prevBottomTurn = currentBottom;
-    return () => { if (timeout) clearTimeout(timeout); };
-  });
 </script>
 
 <!-- Turns Column Group - only render when visible (or in preview mode) AND dimensions are loaded
      NOTE: We check visibility here (not just CSS) because when exporting to SVG/image,
      CSS classes don't carry over - only the raw SVG markup is captured.
-     We wait for valid dimensions to avoid positioning flash when letter loads.
-     dimensionsReady is true only after actual letter SVG dimensions are loaded (not default 100x100).
-     Also check if letterDimensions prop has valid values (passed from parent with pre-cached dims). -->
-{#if (visible || previewMode) && (dimensionsReady || (letterDimensions.width !== 100 || letterDimensions.height !== 100))}
+     We wait for valid dimensions to avoid positioning flash when letter loads. -->
+{#if (visible || previewMode) && (dimensionsReady || (letterDimensions.width !== 100 || letterDimensions.height !== 100) || (effectiveLetterDimensions.width !== 100 || effectiveLetterDimensions.height !== 100))}
   <g
     class="turns-column"
     class:visible
@@ -308,18 +277,16 @@ Props:
     </defs>
 
     <!-- Top Number -->
-    {#if showTop()}
+    {#if showTop}
       <g
         class="turn-number top"
-        class:animating={isTopAnimating}
-        transform="translate({positions().top.x}, {positions().top.y})"
-        style="transform-origin: {positions().top.x + columnWidth() / 2}px {positions().top.y + numberHeight / 2}px"
+        transform="translate({positions.top.x}, {positions.top.y})"
       >
         <image
-          href={topImagePath()}
-          width={columnWidth()}
+          href={topImagePath}
+          width={columnWidth}
           height={numberHeight}
-          filter="url(#{turnColors().top === '#ED1C24'
+          filter="url(#{turnColors.top === '#ED1C24'
             ? 'turn-color-red'
             : 'turn-color-blue'})"
           preserveAspectRatio="xMidYMin meet"
@@ -328,18 +295,16 @@ Props:
     {/if}
 
     <!-- Bottom Number -->
-    {#if showBottom()}
+    {#if showBottom}
       <g
         class="turn-number bottom"
-        class:animating={isBottomAnimating}
-        transform="translate({positions().bottom.x}, {positions().bottom.y})"
-        style="transform-origin: {positions().bottom.x + columnWidth() / 2}px {positions().bottom.y + numberHeight / 2}px"
+        transform="translate({positions.bottom.x}, {positions.bottom.y})"
       >
         <image
-          href={bottomImagePath()}
-          width={columnWidth()}
+          href={bottomImagePath}
+          width={columnWidth}
           height={numberHeight}
-          filter="url(#{turnColors().bottom === '#ED1C24'
+          filter="url(#{turnColors.bottom === '#ED1C24'
             ? 'turn-color-red'
             : 'turn-color-blue'})"
           preserveAspectRatio="xMidYMin meet"
@@ -389,29 +354,5 @@ Props:
   .turn-number image {
     /* Smooth rendering for number SVGs */
     image-rendering: optimizeQuality;
-  }
-
-  /* Scale-pulse animation when turn value changes */
-  @keyframes turn-pulse {
-    0% {
-      transform: scale(1);
-    }
-    50% {
-      transform: scale(0.88);
-    }
-    100% {
-      transform: scale(1);
-    }
-  }
-
-  .turn-number.animating {
-    animation: turn-pulse 180ms ease-in-out;
-  }
-
-  /* Respect reduced motion preference */
-  @media (prefers-reduced-motion: reduce) {
-    .turn-number.animating {
-      animation: none;
-    }
   }
 </style>

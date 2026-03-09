@@ -16,7 +16,7 @@ import type { ConstraintSet } from "../types";
 export type ConstraintPresetId =
   | "smooth"
   | "mixed"
-  | "high-reversal"
+  | "choppy"
   | "random"
   | "custom";
 
@@ -47,8 +47,8 @@ export const CONSTRAINT_PRESETS: ConstraintPresetMeta[] = [
     icon: "fa-leaf",
   },
   {
-    id: "high-reversal",
-    label: "High",
+    id: "choppy",
+    label: "Choppy",
     description: "Maximize direction changes for dynamic movement",
     icon: "fa-bolt",
   },
@@ -58,8 +58,8 @@ export const CONSTRAINT_PRESETS: ConstraintPresetMeta[] = [
  * Options for creating a constraint set.
  */
 export interface ConstraintSetOptions {
-  /** Hand path reversal mode: 'smooth' = minimize, 'mixed' = balanced, 'high' = maximize */
-  handPathMode?: "smooth" | "mixed" | "high";
+  /** Hand path reversal mode: 'smooth' = minimize, 'mixed' = balanced, 'choppy' = maximize */
+  handPathMode?: "smooth" | "mixed" | "choppy";
 }
 
 /**
@@ -80,7 +80,7 @@ export function createConstraintSet(
       );
       break;
 
-    case "high-reversal":
+    case "choppy":
       softConstraints.push(new ReversalConstraint("every"));
       break;
 
@@ -99,12 +99,12 @@ export function createConstraintSet(
   }
 
   // Add hand path constraint based on user preference
-  // Spectrum: smooth (minimize) → mixed (allow) → high (maximize reversals)
+  // Spectrum: smooth (minimize) → mixed (allow) → choppy (maximize reversals)
   if (options?.handPathMode === "smooth") {
     softConstraints.push(new HandPathConstraint("maximize")); // maximize continuity = minimize reversals
   } else if (options?.handPathMode === "mixed") {
     softConstraints.push(new HandPathConstraint("allow")); // balanced, no strong preference
-  } else if (options?.handPathMode === "high") {
+  } else if (options?.handPathMode === "choppy") {
     softConstraints.push(new HandPathConstraint("every")); // maximize reversals
   }
 
