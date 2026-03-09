@@ -63,8 +63,7 @@
     ImageCompositionProps,
     PropRenderingProps,
   } from "../domain/viewer-prop-groups";
-  import ExportModeContent from "./ExportModeContent.svelte";
-  import ExportFooter from "./ExportFooter.svelte";
+  import ExportImagePanel from "./ExportImagePanel.svelte";
   import ExportVideoDrawer from "./ExportVideoDrawer.svelte";
   import type { ActiveEffect } from "./ExportVideoDrawer.svelte";
   import VideoPreviewPanel from "./VideoPreviewPanel.svelte";
@@ -141,11 +140,7 @@
   let viewMode = $state<ViewMode>(loadViewMode());
   $effect.pre(() => { if (initialViewMode) viewMode = initialViewMode; });
 
-  // Export mode state
-  let isExportMode = $state(false);
-  // What to export: animation, image, or both (redirects to Compose)
-  type ExportType = "animation" | "image" | "both";
-  let exportType = $state<ExportType | null>(null);
+  // Export options (export mode is now driven by editingPane — derived declarations below editingPane)
   const exportOptions = getExportOptionsState();
 
   // LAN Sync - just a toggle, no complex UI
@@ -170,7 +165,7 @@
         label: "Download video",
         icon: "fa-video",
         action: () => {
-          enterExportMode("animation");
+          enterEditMode("animation");
         },
       },
       {
@@ -322,6 +317,12 @@
   // Which pane is in edit mode: null, 'animation', or 'image'
   let editingPane = $state<'animation' | 'image' | null>(null);
 
+  // Derived: is export mode active? (when editingPane is set, we're editing/exporting)
+  const isExportMode = $derived(editingPane !== null);
+  // Derived: export type maps directly from editingPane
+  type ExportType = "animation" | "image" | "both";
+  const exportType = $derived<ExportType | null>(editingPane);
+
   // Export button label based on focused pane
   const exportButtonLabel = $derived.by(() => {
     if (editingPane === 'image') return 'Export Image';
@@ -338,38 +339,9 @@
       isFullscreen = true;
     }
 
-    accessibilityHelper.announce(`${pane === 'animation' ? 'Animation' : 'Image'} expanded. Tap to collapse.`);
-  }
-
-  function exitEditMode() {
-    hapticService?.trigger("selection");
-    editingPane = null;
-
-    // On desktop, also exit fullscreen when unfocusing
-    if (!isMobile && isFullscreen) {
-      isFullscreen = false;
-      fullscreenControlsVisible = false;
-    }
-
-    accessibilityHelper.announce("Split view restored");
-  }
-
-  // Export mode functions
-  function enterExportMode(format?: "animation" | "image" | "side-by-side") {
-    hapticService?.trigger("selection");
-    isExportMode = true;
-
-    if (format === "animation" || format === "image") {
-      // Skip type selector, go straight to settings
-      exportType = format;
-    } else {
-      // Fallback: show type selector
-      exportType = null;
-    }
-
     // For video export: start playback for live preview
-    // For image/selector: pause playback
-    if (format === "animation") {
+    // For image: pause playback
+    if (pane === "animation") {
       if (!isPlayingLocal && playbackController) {
         playbackController.togglePlayback();
       }
@@ -377,49 +349,27 @@
       playbackController.togglePlayback();
     }
 
-    if (exportType) {
-      accessibilityHelper.announce(
-        `${exportType === "animation" ? "Video" : "Image"} export selected. Configure options below.`,
-        "assertive"
-      );
-    } else {
-      accessibilityHelper.announce("Export mode. Choose Video, Image, or Combined format.", "assertive");
-    }
+    accessibilityHelper.announce(
+      `${pane === 'animation' ? 'Video' : 'Image'} export selected. Configure options below.`,
+      "assertive"
+    );
   }
 
-  function exitExportMode() {
+  function exitEditMode() {
     hapticService?.trigger("selection");
-    isExportMode = false;
-    exportType = null;
+    editingPane = null;
     sequenceModalExporter.dismissPreview();
+
+    // On desktop, also exit fullscreen when unfocusing
+    if (!isMobile && isFullscreen) {
+      isFullscreen = false;
+      fullscreenControlsVisible = false;
+    }
+
     accessibilityHelper.announce("Returned to viewer");
   }
 
-  function selectExportType(type: ExportType) {
-    hapticService?.trigger("selection");
-    if (type === "both") {
-      // Redirect to Compose with combo-export preset
-      accessibilityHelper.announce("Opening Compose for combined export");
-      handleOpenInCompose("combo-export");
-    } else {
-      exportType = type;
-      accessibilityHelper.announce(`${type === 'animation' ? 'Video' : 'Image'} export selected. Configure options below.`);
-    }
-  }
-
-  function handleExportVideo() {
-    enterExportMode("animation");
-  }
-
-  function handleExportImage() {
-    enterExportMode("image");
-  }
-
-  function backToExportTypeSelection() {
-    hapticService?.trigger("selection");
-    exportType = null;
-    accessibilityHelper.announce("Back to export format selection");
-  }
+  // Export mode is now driven by editingPane — enterEditMode/exitEditMode handle transitions
 
   // Simple sync toggle - one tap to connect/disconnect
   async function handleSyncToggle() {
@@ -1008,7 +958,11 @@
 
       setAnimationPlaybackRef(playbackController);
       setSequenceViewerRef({
-        enterExportMode,
+        enterExportMode: (format?: string) => {
+          if (format === "animation" || format === "image") {
+            enterEditMode(format);
+          }
+        },
         save: handleSave,
         share: handleShare,
         openInCompose: handleCompose,
@@ -1075,6 +1029,10 @@
   function handleStepHalfFwd() { arrivedViaStepping = true; playbackController?.stepHalfBeatForward(); }
   function handleStepFullBack() { arrivedViaStepping = true; playbackController?.stepFullBeatBackward(); }
   function handleStepFullFwd() { arrivedViaStepping = true; playbackController?.stepFullBeatForward(); }
+  function handleRestartToStart() {
+    arrivedViaStepping = true;
+    playbackController?.seekToStep(0);
+  }
 
   // Announce playback state changes
   $effect(() => {
@@ -1222,7 +1180,7 @@
         showToast(message, "success");
         accessibilityHelper.announce(message, "assertive");
         if (!isVideoExport) {
-          exitExportMode();
+          exitEditMode();
         }
       },
       onError: (message: string) => {
@@ -1248,7 +1206,7 @@
       case "image":
         await handleImageExport();
         break;
-      // "both" is handled by selectExportType -> redirects to Compose
+      // "both" would redirect to Compose via handleOpenInCompose
     }
   }
 
@@ -1289,7 +1247,7 @@
 
   function dismissPreview() {
     sequenceModalExporter.dismissPreview();
-    exitExportMode();
+    exitEditMode();
   }
 
   // Effects
@@ -1345,12 +1303,14 @@
 
   const modalImageComposition = $derived({
     showWord: imgShowWord,
+    showStepNumbers: true,
     showDifficulty: imgShowDifficulty,
     showStartPos: imgShowStartPos,
     showCreatorName: imgShowCreatorName,
     showNotes: imgShowNotes,
     darkMode: imgDarkMode,
     columnCount: imgColumnCount,
+    forceContain: false,
     userName: authState.user?.displayName || "",
   });
 
@@ -1408,8 +1368,8 @@
       {isLandscapeMobile}
       darkMode={imgDarkMode}
       onClose={handleClose}
-      onExitExportMode={exitExportMode}
-      onBackToExportTypeSelection={backToExportTypeSelection}
+      onExitExportMode={exitEditMode}
+      onBackToExportTypeSelection={exitEditMode}
       onDarkModeToggle={() => toggleImgSetting("darkMode")}
       onSettingsOpen={() => (settingsModalOpen = true)}
     />
@@ -1444,11 +1404,12 @@
         onStepHalfBeatForward={handleStepHalfFwd}
         onStepFullBeatBackward={handleStepFullBack}
         onStepFullBeatForward={handleStepFullFwd}
+        onRestartToStart={handleRestartToStart}
         onBpmChange={handleBpmChange}
       />
     {/if}
 
-    {#if isExportMode && exportType === "animation"}
+    {#if editingPane === "animation"}
       <!-- Video export: animation preview + settings panel (side-by-side on desktop, overlay on mobile) -->
       <div class="export-preview-layout" class:desktop={!isMobile}>
         <div class="export-animation-preview">
@@ -1500,29 +1461,44 @@
             canvasReady={!!animationCanvas && !!playbackController}
             layout={isMobile ? "bottom" : "sidebar"}
             {singlePlayDuration}
+            isPlaying={isPlayingLocal}
+            bpm={bpmLocal}
+            onPlaybackToggle={handlePlaybackToggle}
+            onBpmChange={handleBpmChange}
             onExport={handleExport}
             onCancel={handleCancelExport}
           />
         {/if}
       </div>
-    {:else if isExportMode}
-      <!-- Image/type-selector export: keep existing full-screen ExportModeContent -->
-      <ExportModeContent
-        sequence={effectiveSequence}
-        {exportType}
-        {exportOptions}
-        animationState={modalAnimationState}
-        {animationLoading}
-        currentStep={currentStepLocal}
-        {currentLetter}
-        {currentStepData}
-        userName={authState.user?.displayName || ""}
-        {bluePropType}
-        {redPropType}
-        {catDogModeEnabled}
-        onSelectType={selectExportType}
-        onCanvasReady={handleCanvasReady}
-      />
+    {:else if editingPane === "image"}
+      <!-- Image export: choreo card preview + settings panel -->
+      <div class="export-preview-layout" class:desktop={!isMobile}>
+        <div class="export-image-preview themed-scrollbar">
+          <ChoreoCard
+            sequence={effectiveSequence}
+            showWord={exportOptions.imageShowWord}
+            showStepNumbers={exportOptions.imageShowStepNumbers}
+            showDifficultyLevel={exportOptions.imageShowDifficulty}
+            includeStartPosition={exportOptions.imageIncludeStartPosition}
+            showCreatorName={exportOptions.imageShowCreatorName}
+            showNotes={exportOptions.imageShowNotes}
+            darkMode={exportOptions.imageDarkMode}
+            userName={authState.user?.displayName || ""}
+            columnCount={exportOptions.imageColumnCount != null
+              ? exportOptions.imageColumnCount + (exportOptions.imageIncludeStartPosition ? 1 : 0)
+              : null}
+            forceContain={true}
+            {bluePropType}
+            {redPropType}
+            {catDogModeEnabled}
+          />
+        </div>
+        <ExportImagePanel
+          {exportOptions}
+          isExporting={sequenceModalExporter.state.isExporting}
+          onExport={handleExport}
+        />
+      </div>
     {:else}
       <!-- Split view: Animation and Image side by side, tap to focus -->
       <ViewerSplitPane
@@ -1539,10 +1515,9 @@
     {/if}
 
     <!-- Landscape: Footer rendered inline as right column (not in BaseModal footer slot) -->
-    {#if isLandscapeMobile && !isFullscreen && (!isExportMode || exportType === "animation")}
+    {#if isLandscapeMobile && !isFullscreen}
       <ViewerFooter
         landscape={true}
-        playbackOnly={isExportMode && exportType === "animation"}
         bpm={bpmLocal}
         isPlaying={isPlayingLocal}
         isLoggedIn={authState.isAuthenticated}
@@ -1553,10 +1528,9 @@
         onStepForward={handleStepFullFwd}
         onStepHalfBack={handleStepHalfBack}
         onStepHalfForward={handleStepHalfFwd}
+        onRestartToStart={handleRestartToStart}
         onSave={handleSave}
         onEdit={handleEditInConstructor}
-        onExportVideo={handleExportVideo}
-        onExportImage={handleExportImage}
         onRampStart={() => handleRampStart()}
         onRampStop={() => handleRampStop()}
       />
@@ -1565,53 +1539,37 @@
 
   {#snippet footer()}
     {#if !isFullscreen && !isLandscapeMobile}
-      {#if isExportMode && exportType !== "animation"}
-        <!-- Export footer for image/type-selector (video uses drawer's own button) -->
-        <ExportFooter
-          {exportType}
-          {isExporting}
-          {exportProgress}
-          {exportError}
-          {isFullscreen}
-          onExport={handleExport}
-          onCancel={handleCancelExport}
-          onRetry={() => { sequenceModalExporter.clearError(); handleExport(); }}
+      <!-- Footer: ViewerFooter with MorphChip toolbar (handles all screen sizes) -->
+      <ViewerFooter
+        bpm={bpmLocal}
+        isPlaying={isPlayingLocal}
+        isLoggedIn={authState.isAuthenticated}
+        rampActive={rampActive}
+        onBpmChange={handleBpmChange}
+        onPlayPause={handlePlaybackToggle}
+        onStepBack={handleStepFullBack}
+        onStepForward={handleStepFullFwd}
+        onStepHalfBack={handleStepHalfBack}
+        onStepHalfForward={handleStepHalfFwd}
+        onRestartToStart={handleRestartToStart}
+        onSave={handleSave}
+        onEdit={handleEditInConstructor}
+        onRampStart={() => handleRampStart()}
+        onRampStop={() => handleRampStop()}
+      />
+      {#if rampActive}
+        <RampProgressIndicator
+          progress={rampState.progress}
+          onStop={() => handleRampStop()}
+          variant="floating"
         />
-      {:else}
-        <!-- Footer: ViewerFooter with MorphChip toolbar (handles all screen sizes) -->
-        <ViewerFooter
-          playbackOnly={isExportMode && exportType === "animation"}
-          bpm={bpmLocal}
-          isPlaying={isPlayingLocal}
-          isLoggedIn={authState.isAuthenticated}
-          rampActive={rampActive}
-          onBpmChange={handleBpmChange}
-          onPlayPause={handlePlaybackToggle}
-          onStepBack={handleStepFullBack}
-          onStepForward={handleStepFullFwd}
-          onStepHalfBack={handleStepHalfBack}
-          onStepHalfForward={handleStepHalfFwd}
-          onSave={handleSave}
-          onEdit={handleEditInConstructor}
-          onExportVideo={handleExportVideo}
-          onExportImage={handleExportImage}
-          onRampStart={() => handleRampStart()}
-          onRampStop={() => handleRampStop()}
-        />
-        {#if rampActive}
-          <RampProgressIndicator
-            progress={rampState.progress}
-            onStop={() => handleRampStop()}
-            variant="floating"
-          />
-        {/if}
       {/if}
     {/if}
   {/snippet}
 </BaseModal>
 
 <!-- Floating progress pill: shows when export is running but drawer is closed -->
-{#if isExporting && exportProgress && !(isExportMode && exportType === "animation")}
+{#if isExporting && exportProgress && editingPane !== "animation"}
   <ExportProgressPill
     progress={exportProgress}
     onCancel={handleCancelExport}
@@ -1781,6 +1739,19 @@
     min-width: 0;
     /* Prevent the canvas from eating all width on ultrawide/4K */
     max-width: 800px;
+  }
+
+  .export-image-preview {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 0;
+    min-width: 0;
+    max-width: 800px;
+    overflow-y: auto;
+    padding: 8px;
   }
 
   .export-settings-badge {

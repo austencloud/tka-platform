@@ -120,10 +120,6 @@
     enterFullscreen: () => void;
     exitFullscreen: () => void;
     handleFullscreenTap: () => void;
-    enterExportMode: (format?: ExportType | "side-by-side") => void;
-    exitExportMode: () => void;
-    selectExportType: (type: ExportType) => void;
-    backToExportTypeSelection: () => void;
     handleExport: () => Promise<void>;
     handleCanvasReady: (canvas: HTMLCanvasElement | null) => void;
     handleSyncToggle: () => Promise<void>;
@@ -141,6 +137,7 @@
     stepHalfBeatForward: () => void;
     stepFullBeatBackward: () => void;
     stepFullBeatForward: () => void;
+    restartToStart: () => void;
     handleCancelExport: () => void;
     handleRetryExport: () => void;
     dismissPreview: () => void;
@@ -232,9 +229,6 @@
   let fullscreenControlsVisible = $state(false);
   let controlsHideTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  // Export mode
-  let isExportMode = $state(false);
-  let exportType = $state<ExportType | null>(null);
   const exportOptions = getExportOptionsState();
 
   // Services
@@ -268,8 +262,14 @@
   // Used to show "just completed" beat in glyph/highlight instead of "about to start" beat
   let arrivedViaStepping = $state(false);
 
-  // Edit mode
+  // Edit mode (single source of truth for export state)
   let editingPane = $state<'animation' | 'image' | null>(null);
+
+  // Export mode (derived from editingPane)
+  const isExportMode = $derived(editingPane !== null);
+  const exportType = $derived<ExportType | null>(
+    editingPane === 'animation' ? 'animation' : editingPane === 'image' ? 'image' : null
+  );
 
   // Export state
   let animationCanvas = $state<HTMLCanvasElement | null>(null);
@@ -679,12 +679,27 @@
   function enterEditMode(pane: 'animation' | 'image') {
     hapticService?.trigger("selection");
     editingPane = pane;
-    accessibilityHelper.announce(`${pane === 'animation' ? 'Animation' : 'Image'} expanded. Tap to collapse.`);
+
+    // Video export: start playback for live preview
+    // Image export: pause playback
+    if (pane === "animation") {
+      if (!isPlayingLocal && playbackController) {
+        playbackController.togglePlayback();
+      }
+    } else if (pane === "image") {
+      if (isPlayingLocal && playbackController) {
+        playbackController.togglePlayback();
+      }
+    }
+
+    const label = pane === 'animation' ? 'Video' : 'Image';
+    accessibilityHelper.announce(`${label} export. Configure settings and tap Export when ready.`, "assertive");
   }
 
   function exitEditMode() {
     hapticService?.trigger("selection");
     editingPane = null;
+    sequenceModalExporter.dismissPreview();
     accessibilityHelper.announce("Split view restored");
   }
 
@@ -733,53 +748,8 @@
   }
 
   // ============================================================================
-  // EXPORT MODE
+  // EXPORT
   // ============================================================================
-
-  function enterExportMode(format?: ExportType | "side-by-side") {
-    hapticService?.trigger("selection");
-    isExportMode = true;
-    if (format === "side-by-side") {
-      exportType = "both";
-    } else if (format) {
-      exportType = format;
-    } else {
-      exportType = null;
-    }
-    if (isPlayingLocal && playbackController) {
-      playbackController.togglePlayback();
-    }
-    if (format) {
-      accessibilityHelper.announce(`Export mode. ${format === "animation" ? "Video" : format === "image" ? "Image" : "Combined"} export selected.`, "assertive");
-    } else {
-      accessibilityHelper.announce("Export mode. Choose Video, Image, or Combined format.", "assertive");
-    }
-  }
-
-  function exitExportMode() {
-    hapticService?.trigger("selection");
-    isExportMode = false;
-    exportType = null;
-    sequenceModalExporter.dismissPreview();
-    accessibilityHelper.announce("Returned to viewer");
-  }
-
-  function selectExportType(type: ExportType) {
-    hapticService?.trigger("selection");
-    if (type === "both") {
-      accessibilityHelper.announce("Opening Compose for combined export");
-      handleOpenInCompose("combo-export");
-    } else {
-      exportType = type;
-      accessibilityHelper.announce(`${type === 'animation' ? 'Video' : 'Image'} export selected. Configure options below.`);
-    }
-  }
-
-  function backToExportTypeSelection() {
-    hapticService?.trigger("selection");
-    exportType = null;
-    accessibilityHelper.announce("Back to export format selection");
-  }
 
   async function handleExport() {
     if (isExporting || !exportType) return;
@@ -793,7 +763,7 @@
         // Video exports stay in export mode to show preview panel
         // Image exports exit immediately (no preview needed)
         if (!isVideoExport) {
-          exitExportMode();
+          exitEditMode();
         }
       },
       onError: (message: string) => {
@@ -844,7 +814,8 @@
 
   function dismissPreview() {
     sequenceModalExporter.dismissPreview();
-    exitExportMode();
+    editingPane = null;
+    accessibilityHelper.announce("Returned to viewer");
   }
 
   // ============================================================================
@@ -1091,8 +1062,8 @@
       event.preventDefault();
       if (isFullscreen) {
         exitFullscreen();
-      } else if (isExportMode) {
-        exitExportMode();
+      } else if (editingPane) {
+        exitEditMode();
       } else {
         handleBackInternal();
       }
@@ -1147,6 +1118,7 @@
   function stepHalfBeatForward() { arrivedViaStepping = true; playbackController?.stepHalfBeatForward(); }
   function stepFullBeatBackward() { arrivedViaStepping = true; playbackController?.stepFullBeatBackward(); }
   function stepFullBeatForward() { arrivedViaStepping = true; playbackController?.stepFullBeatForward(); }
+  function restartToStart() { arrivedViaStepping = true; playbackController?.seekToStep(0); }
 
   // ============================================================================
   // CONTEXT OBJECT
@@ -1227,10 +1199,6 @@
     enterFullscreen,
     exitFullscreen,
     handleFullscreenTap,
-    enterExportMode,
-    exitExportMode,
-    selectExportType,
-    backToExportTypeSelection,
     handleExport,
     handleCanvasReady,
     handleSyncToggle,
@@ -1248,6 +1216,7 @@
     stepHalfBeatForward,
     stepFullBeatBackward,
     stepFullBeatForward,
+    restartToStart,
     handleCancelExport,
     handleRetryExport,
     dismissPreview,
@@ -1264,12 +1233,14 @@
     },
     splitPaneImageComposition: {
       showWord: imgShowWord,
+      showStepNumbers: true,
       showDifficulty: imgShowDifficulty,
       showStartPos: imgShowStartPos,
       showCreatorName: imgShowCreatorName,
       showNotes: imgShowNotes,
       darkMode: imgDarkMode,
       columnCount: imgColumnCount,
+      forceContain: false,
       userName: authState.user?.displayName || "",
     },
     splitPanePropRendering: {

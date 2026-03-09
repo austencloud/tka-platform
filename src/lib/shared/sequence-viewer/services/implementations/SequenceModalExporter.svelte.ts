@@ -10,6 +10,7 @@ import type {
 import type { VideoExportProgress, IVideoExportOrchestrator } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
 import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
 import { container } from "$lib/shared/di";
+import { recordExportThroughput } from "../../state/export-timing-tracker";
 
 /**
  * Orchestrates sequence exports (image, video).
@@ -64,6 +65,9 @@ export class SequenceModalExporter implements ISequenceModalExporter {
     // Revoke any previous preview URL
     this.revokePreviewUrl();
 
+    const exportStartTime = performance.now();
+    let capturedFrameCount = 0;
+
     try {
       const blob = await this.videoExportOrchestrator.executeExport(
         deps.canvas,
@@ -71,6 +75,9 @@ export class SequenceModalExporter implements ISequenceModalExporter {
         deps.panelState,
         (progress) => {
           this._progress = progress;
+          if (progress.totalFrames) {
+            capturedFrameCount = progress.totalFrames;
+          }
           if (progress.stage === "complete") {
             callbacks.onHaptic("success");
             callbacks.onSuccess("Video exported!");
@@ -88,6 +95,12 @@ export class SequenceModalExporter implements ISequenceModalExporter {
           effectOverrides: options.effectOverrides,
         }
       );
+
+      // Record device throughput for future time estimates
+      const exportDurationMs = performance.now() - exportStartTime;
+      if (capturedFrameCount > 0 && exportDurationMs > 0) {
+        recordExportThroughput(options.resolution, capturedFrameCount, exportDurationMs);
+      }
 
       // Create preview URL from the exported blob
       this._previewBlobUrl = URL.createObjectURL(blob);
@@ -131,6 +144,9 @@ export class SequenceModalExporter implements ISequenceModalExporter {
         showNotes: options.showNotes,
         showBirthday: true,
         addReversalSymbols: true,
+        columnCount: options.columnCount != null
+          ? options.columnCount + (options.includeStartPosition ? 1 : 0)
+          : undefined,
         visibilityOverrides: {
           darkMode: options.darkMode,
         },

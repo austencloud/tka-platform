@@ -14,6 +14,8 @@
     VideoResolution,
   } from "../state/export-options-state.svelte";
   import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
+  import { estimateExportTime, hasDeviceMetrics } from "../state/export-timing-tracker";
+  import TempoControl from "./TempoControl.svelte";
 
   export interface ActiveEffect {
     id: string;
@@ -33,6 +35,11 @@
     layout?: PanelLayout;
     /** Duration of a single playthrough in seconds (used to show total duration with repeats) */
     singlePlayDuration?: number;
+    /** Current playback state for inline transport controls */
+    isPlaying?: boolean;
+    bpm?: number;
+    onPlaybackToggle?: () => void;
+    onBpmChange?: (bpm: number) => void;
     onExport: () => void;
     onCancel?: () => void;
   }
@@ -45,9 +52,24 @@
     canvasReady = true,
     layout = "bottom",
     singlePlayDuration = 0,
+    isPlaying = false,
+    bpm = 60,
+    onPlaybackToggle,
+    onBpmChange,
     onExport,
     onCancel,
   }: Props = $props();
+
+  /**
+   * Prevent spacebar from activating focused buttons inside the export panel.
+   * The orchestrator's capture-phase keydown handler routes spacebar to
+   * playback toggle, but native <button> activation can still fire.
+   */
+  function preventSpaceActivation(event: KeyboardEvent) {
+    if (event.key === " " || event.code === "Space") {
+      event.preventDefault();
+    }
+  }
 
   const exportDisabled = $derived(isExporting || !canvasReady);
 
@@ -64,6 +86,24 @@
   const durationLabel = $derived(
     singlePlayDuration > 0 ? formatDuration(totalDuration) : ""
   );
+
+  const estimatedTime = $derived.by(() => {
+    if (singlePlayDuration <= 0) return null;
+    return estimateExportTime(
+      exportOptions.videoResolution,
+      exportOptions.videoFps,
+      singlePlayDuration,
+      exportOptions.videoLoopCount
+    );
+  });
+
+  const timeEstimateLabel = $derived.by(() => {
+    if (estimatedTime === null) return "";
+    const label = formatDuration(estimatedTime);
+    if (!label) return "";
+    const isEstimate = !hasDeviceMetrics(exportOptions.videoResolution);
+    return isEstimate ? `~${label} est.` : `~${label}`;
+  });
 
   const fpsOptions: { value: VideoFps; label: string; badge?: string }[] = [
     { value: 30, label: "30" },
@@ -120,7 +160,28 @@
   role="region"
   aria-label="Video export settings"
 >
-  <div class="panel-body">
+  <div class="panel-body" onkeydown={preventSpaceActivation}>
+    <!-- Playback controls -->
+    {#if onPlaybackToggle && onBpmChange}
+      <div class="playback-row">
+        <button
+          type="button"
+          class="play-btn"
+          class:playing={isPlaying}
+          onclick={onPlaybackToggle}
+          aria-label={isPlaying ? "Pause" : "Play"}
+        >
+          <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
+        </button>
+        <TempoControl
+          {bpm}
+          {onBpmChange}
+          showPresets={false}
+          showRamp={false}
+        />
+      </div>
+    {/if}
+
     <!-- FPS -->
     <div class="setting-row">
       <span class="setting-label">FPS</span>
@@ -251,21 +312,26 @@
         {/if}
       </div>
     {:else}
-      <button
-        type="button"
-        class="export-btn"
-        onclick={onExport}
-        disabled={exportDisabled}
-        aria-label="Export video"
-      >
-        {#if !canvasReady}
-          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-          Loading...
-        {:else}
-          <i class="fas fa-download" aria-hidden="true"></i>
-          Export Video
+      <div class="export-row">
+        <button
+          type="button"
+          class="export-btn"
+          onclick={onExport}
+          disabled={exportDisabled}
+          aria-label="Export video"
+        >
+          {#if !canvasReady}
+            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+            Loading...
+          {:else}
+            <i class="fas fa-download" aria-hidden="true"></i>
+            Export Video
+          {/if}
+        </button>
+        {#if timeEstimateLabel && !exportDisabled}
+          <span class="time-estimate">{timeEstimateLabel}</span>
         {/if}
-      </button>
+      </div>
     {/if}
   </div>
 </div>
@@ -303,7 +369,6 @@
     flex: 0 1 400px;
     border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     overflow-y: auto;
-    justify-content: center;
   }
 
   /* ============================================================
@@ -417,6 +482,52 @@
   }
 
   /* ============================================================
+   * Playback controls
+   * ============================================================ */
+
+  .playback-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+  }
+
+  .play-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--theme-card-bg) 70%, transparent);
+    color: var(--theme-text, white);
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .play-btn:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-accent, #6366f1);
+  }
+
+  .play-btn.playing {
+    border-color: var(--theme-accent, #6366f1);
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 20%, transparent);
+  }
+
+  .play-btn i {
+    margin-left: 2px;
+  }
+
+  .play-btn.playing i {
+    margin-left: 0;
+  }
+
+  /* ============================================================
    * Loop stepper
    * ============================================================ */
 
@@ -484,6 +595,19 @@
 
   .sidebar .panel-footer {
     padding: 12px 20px 16px;
+  }
+
+  .export-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .time-estimate {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 
   .export-btn {
@@ -595,6 +719,7 @@
   @media (prefers-reduced-motion: reduce) {
     .chip,
     .stepper-btn,
+    .play-btn,
     .export-btn,
     .cancel-btn,
     .progress-fill {

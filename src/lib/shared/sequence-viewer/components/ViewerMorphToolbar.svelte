@@ -27,13 +27,12 @@
     onStepForward: () => void;
     onStepHalfBack?: () => void;
     onStepHalfForward?: () => void;
+    onRestartToStart?: () => void;
     onSave: () => void;
     onEdit: () => void;
     onGetApp?: () => void;
     onRampStart?: () => void;
     onRampStop?: () => void;
-    onExportVideo?: () => void;
-    onExportImage?: () => void;
     isOwned?: boolean;
     onDeleteRequest?: () => void;
   }
@@ -49,13 +48,12 @@
     onStepForward,
     onStepHalfBack,
     onStepHalfForward,
+    onRestartToStart,
     onSave,
     onEdit,
     onGetApp,
     onRampStart,
     onRampStop,
-    onExportVideo,
-    onExportImage,
     isOwned = false,
     onDeleteRequest,
   }: Props = $props();
@@ -90,6 +88,7 @@
           onStepHalfBeatForward={onStepHalfForward ?? (() => {})}
           onStepFullBeatBackward={onStepBack}
           onStepFullBeatForward={onStepForward}
+          {onRestartToStart}
         />
       </div>
       <div class="tempo-close-row">
@@ -147,28 +146,6 @@
         </button>
       {/if}
 
-      {#if onExportVideo}
-        <button
-          type="button"
-          class="action-btn export-video"
-          onclick={onExportVideo}
-          aria-label="Export video"
-        >
-          <i class="fas fa-video" aria-hidden="true"></i>
-          <span>Video</span>
-        </button>
-      {/if}
-      {#if onExportImage}
-        <button
-          type="button"
-          class="action-btn export-image"
-          onclick={onExportImage}
-          aria-label="Export image"
-        >
-          <i class="fas fa-image" aria-hidden="true"></i>
-          <span>Image</span>
-        </button>
-      {/if}
       {#if isLoggedIn && isOwned && onDeleteRequest}
         <button
           type="button"

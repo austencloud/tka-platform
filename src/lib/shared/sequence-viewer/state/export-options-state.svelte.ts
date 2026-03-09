@@ -47,6 +47,7 @@ export interface ImageExportOptions {
   showCreatorName: boolean;
   showNotes: boolean;
   darkMode: boolean;
+  columnCount: number | null;  // null = auto
 }
 
 interface ExportOptionsState {
@@ -83,7 +84,8 @@ const DEFAULT_IMAGE_OPTIONS: ImageExportOptions = {
   showDifficulty: true,
   showCreatorName: true,
   showNotes: true,
-  darkMode: false,
+  darkMode: true,
+  columnCount: null,
 };
 
 function loadFromStorage(): ExportOptionsState {
@@ -156,6 +158,7 @@ export function createExportOptionsState() {
   let imageShowCreatorName = $state(stored.image.showCreatorName);
   let imageShowNotes = $state(stored.image.showNotes);
   let imageDarkMode = $state(stored.image.darkMode);
+  let imageColumnCount = $state<number | null>(stored.image.columnCount ?? null);
 
   // Persist changes on any update
   function persist() {
@@ -184,6 +187,7 @@ export function createExportOptionsState() {
         showCreatorName: imageShowCreatorName,
         showNotes: imageShowNotes,
         darkMode: imageDarkMode,
+        columnCount: imageColumnCount,
       },
     });
   }
@@ -211,6 +215,7 @@ export function createExportOptionsState() {
     get imageShowCreatorName() { return imageShowCreatorName; },
     get imageShowNotes() { return imageShowNotes; },
     get imageDarkMode() { return imageDarkMode; },
+    get imageColumnCount() { return imageColumnCount; },
 
     // Video setters
     setVideoFps(fps: VideoFps) {
@@ -285,6 +290,10 @@ export function createExportOptionsState() {
       imageDarkMode = dark;
       persist();
     },
+    setImageColumnCount(count: number | null) {
+      imageColumnCount = count;
+      persist();
+    },
 
     // Bulk getters for export functions
     getVideoOptions(): VideoExportOptions {
@@ -318,6 +327,7 @@ export function createExportOptionsState() {
         showCreatorName: imageShowCreatorName,
         showNotes: imageShowNotes,
         darkMode: imageDarkMode,
+        columnCount: imageColumnCount,
       };
     },
 
@@ -342,6 +352,7 @@ export function createExportOptionsState() {
       imageShowCreatorName = DEFAULT_IMAGE_OPTIONS.showCreatorName;
       imageShowNotes = DEFAULT_IMAGE_OPTIONS.showNotes;
       imageDarkMode = DEFAULT_IMAGE_OPTIONS.darkMode;
+      imageColumnCount = DEFAULT_IMAGE_OPTIONS.columnCount;
       persist();
     },
   };

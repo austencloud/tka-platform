@@ -19,6 +19,7 @@
     onStepHalfBeatForward = () => {},
     onStepFullBeatBackward = () => {},
     onStepFullBeatForward = () => {},
+    onRestartToStart,
   }: {
     isPlaying?: boolean;
     /** How long step buttons glow after click (ms). 0 to disable. */
@@ -28,6 +29,8 @@
     onStepHalfBeatForward?: () => void;
     onStepFullBeatBackward?: () => void;
     onStepFullBeatForward?: () => void;
+    /** When provided, replaces the full-beat-backward button with a restart-to-start button */
+    onRestartToStart?: () => void;
   } = $props();
 
   // Step glow state
@@ -58,16 +61,28 @@
     <i class="fas fa-chevron-left" aria-hidden="true"></i>
   </button>
 
-  <!-- Full Beat Back (primary - adjacent to play) -->
-  <button
-    class="step-btn step-full"
-    class:stepping={glowingBtn === 'fb'}
-    onclick={() => { glow('fb'); onStepFullBeatBackward(); }}
-    type="button"
-    aria-label="Previous full beat"
-  >
-    <i class="fas fa-angles-left" aria-hidden="true"></i>
-  </button>
+  <!-- Full Beat Back / Restart (primary - adjacent to play) -->
+  {#if onRestartToStart}
+    <button
+      class="step-btn step-full"
+      class:stepping={glowingBtn === 'fb'}
+      onclick={() => { glow('fb'); onRestartToStart(); }}
+      type="button"
+      aria-label="Restart from beginning"
+    >
+      <i class="fas fa-backward-fast" aria-hidden="true"></i>
+    </button>
+  {:else}
+    <button
+      class="step-btn step-full"
+      class:stepping={glowingBtn === 'fb'}
+      onclick={() => { glow('fb'); onStepFullBeatBackward(); }}
+      type="button"
+      aria-label="Previous full beat"
+    >
+      <i class="fas fa-angles-left" aria-hidden="true"></i>
+    </button>
+  {/if}
 
   <!-- Play/Pause -->
   <button

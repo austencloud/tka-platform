@@ -74,6 +74,22 @@
       </div>
     </div>
 
+    <!-- Columns -->
+    <div class="setting-row">
+      <span class="setting-label">Columns</span>
+      <div class="chip-group">
+        {#each [{ label: "Auto", value: null }, { label: "2", value: 2 }, { label: "3", value: 3 }, { label: "4", value: 4 }, { label: "5", value: 5 }, { label: "6", value: 6 }] as option}
+          <button
+            type="button"
+            class="chip"
+            class:active={exportOptions.imageColumnCount === option.value}
+            onclick={() => exportOptions.setImageColumnCount(option.value)}
+            aria-pressed={exportOptions.imageColumnCount === option.value}
+          >{option.label}</button>
+        {/each}
+      </div>
+    </div>
+
     <!-- Theme -->
     <div class="setting-row">
       <span class="setting-label">Theme</span>

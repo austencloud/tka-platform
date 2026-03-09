@@ -97,6 +97,7 @@
   interface Props {
     sequence: SequenceData;
     // Visibility toggles
+    showWord?: boolean;
     showStepNumbers?: boolean;
     showDifficultyLevel?: boolean;
     includeStartPosition?: boolean;
@@ -119,12 +120,14 @@
     onStepClick?: (stepIndex: number) => void;  // 0-indexed step that was clicked
     // Layout override
     columnCount?: number | null;  // Override auto-calculated column count (null = auto)
+    forceContain?: boolean;  // Force contain mode even for long sequences (disables scroll)
     // Render progress callback (loaded cells, total cells)
     onRenderProgress?: (loaded: number, total: number) => void;
   }
 
   const {
     sequence,
+    showWord = true,
     showStepNumbers = true,
     showDifficultyLevel = true,
     includeStartPosition = true,
@@ -142,6 +145,7 @@
     showHighlight = false,
     onStepClick,
     columnCount = null,
+    forceContain = false,
     onRenderProgress,
   }: Props = $props();
 
@@ -220,7 +224,7 @@
 
   // Scroll mode for long sequences (>16 beats)
   const SCROLL_THRESHOLD = 16;
-  const needsScroll = $derived((sequence?.steps?.length ?? 0) > SCROLL_THRESHOLD);
+  const needsScroll = $derived(!forceContain && (sequence?.steps?.length ?? 0) > SCROLL_THRESHOLD);
   let gridScrollRef: HTMLDivElement | undefined = $state();
 
   // Orientation cycle pass dividers
@@ -276,9 +280,9 @@
     return null;
   });
 
-  // Show header when difficulty or LOOP glyph is enabled
+  // Show header when difficulty, LOOP glyph, or word is enabled
   const showHeader = $derived(
-    showDifficultyLevel || (showLoopGlyph && loopComponents)
+    showDifficultyLevel || (showLoopGlyph && loopComponents) || (showWord && sequence.word)
   );
 
   // Show footer when any footer element is enabled
@@ -856,6 +860,23 @@
       // Scroll mode: CSS handles sizing (width/height: 100% on .preview-stack).
       // No JS contain calculation needed — just skip.
       return;
+    } else if (forceContain) {
+      // Force-contain mode: fit to whichever dimension is more constrained,
+      // same as normal contain. overflow:visible on root handles any overflow.
+      const contentRatio = previewAspectRatio;
+      const containerRatio = containerWidth / containerHeight;
+
+      if (contentRatio > containerRatio) {
+        // Wide card: constrain by width
+        newWidth = containerWidth;
+        const h = containerWidth / contentRatio;
+        newHeight = Number.isFinite(h) ? h : null;
+      } else {
+        // Tall card: constrain by height, let width be natural
+        newHeight = containerHeight;
+        const w = containerHeight * contentRatio;
+        newWidth = Number.isFinite(w) ? w : null;
+      }
     } else {
       // Contain mode: fit content while preserving aspect ratio
       const contentRatio = previewAspectRatio;
@@ -1027,7 +1048,7 @@
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="choreo-card-root" class:dark-mode={darkMode} class:scroll-mode={needsScroll} data-ctx-container bind:this={containerElement} oncontextmenu={(e) => { handleContextMenu(e); if (!featureFlagService.isAdmin) handleCellContextMenu(e); }}>
+<div class="choreo-card-root" class:dark-mode={darkMode} class:scroll-mode={needsScroll} class:force-contain={forceContain} data-ctx-container bind:this={containerElement} oncontextmenu={(e) => { handleContextMenu(e); if (!featureFlagService.isAdmin) handleCellContextMenu(e); }}>
   {#if isLoading && cells.length === 0}
     <div class="loading-placeholder">
       <ProgressRing percent={-1} size={32} strokeWidth={3} />
@@ -1062,7 +1083,7 @@
             </div>
           {/if}
 
-          {#if sequence.word}
+          {#if showWord && sequence.word}
             <span
               class="word-title"
               style="font-size: {Math.max(10, Math.floor(scaledHeaderHeight * 0.55))}px;"
@@ -1390,6 +1411,11 @@
     justify-content: stretch;
   }
 
+  .choreo-card-root.force-contain {
+    overflow: visible;
+    align-items: flex-start;
+  }
+
   .loading-placeholder {
     display: flex;
     align-items: center;
@@ -1687,10 +1713,7 @@
     cursor: pointer;
   }
 
-  .pictograph-cell.clickable:hover {
-    z-index: 5;
-    transform: scale(1.02);
-  }
+  /* No individual cell hover scale in viewer - whole pane scales instead */
 
   .pictograph-cell.clickable:focus-visible {
     outline: 2px solid var(--theme-accent, #6366f1);

@@ -16,12 +16,14 @@ export interface ViewerPlaybackState {
 
 export interface ImageCompositionProps {
   showWord: boolean;
+  showStepNumbers: boolean;
   showDifficulty: boolean;
   showStartPos: boolean;
   showCreatorName: boolean;
   showNotes: boolean;
   darkMode: boolean;
   columnCount: number | null;
+  forceContain: boolean;
   userName: string;
 }
 

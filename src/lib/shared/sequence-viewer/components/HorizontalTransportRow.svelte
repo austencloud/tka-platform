@@ -11,13 +11,17 @@
 		onStepHalfBack,
 		onStepHalfFwd,
 		onStepFullBack,
+		onRestartToStart,
 		onStepFullFwd,
 	}: {
 		isPlaying: boolean;
 		onPlaybackToggle: () => void;
 		onStepHalfBack: () => void;
 		onStepHalfFwd: () => void;
-		onStepFullBack: () => void;
+		/** Step backward by one full beat (compose context) */
+		onStepFullBack?: () => void;
+		/** Restart from the beginning (viewer context) — replaces step-back button when provided */
+		onRestartToStart?: () => void;
 		onStepFullFwd: () => void;
 	} = $props();
 </script>
@@ -30,13 +34,23 @@
 	>
 		<i class="fas fa-chevron-left" aria-hidden="true"></i>
 	</button>
-	<button
-		class="step-btn step-primary"
-		onclick={onStepFullBack}
-		aria-label="Previous beat"
-	>
-		<i class="fas fa-angles-left" aria-hidden="true"></i>
-	</button>
+	{#if onRestartToStart}
+		<button
+			class="step-btn step-primary"
+			onclick={onRestartToStart}
+			aria-label="Restart from beginning"
+		>
+			<i class="fas fa-backward-fast" aria-hidden="true"></i>
+		</button>
+	{:else if onStepFullBack}
+		<button
+			class="step-btn step-primary"
+			onclick={onStepFullBack}
+			aria-label="Previous beat"
+		>
+			<i class="fas fa-angles-left" aria-hidden="true"></i>
+		</button>
+	{/if}
 
 	<button
 		class="play-btn"
