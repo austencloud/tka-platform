@@ -3423,11 +3423,19 @@ async function main() {
   }
 
   // Resolve developer identity for all other commands
-  identity = await cliAuth.resolveIdentity(db);
+  identity = await cliAuth.resolveIdentity();
+
+  // Look up role from Firestore (resolveIdentity no longer does this)
+  try {
+    const devDoc = await db.collection("developers").doc(identity.uid).get();
+    identity.role = devDoc.exists ? (devDoc.data().role || "contributor") : "contributor";
+  } catch {
+    identity.role = "contributor";
+  }
   console.log(`  👤 ${identity.displayName} (${identity.role})`);
 
   if (command === "whoami") {
-    await cliAuth.whoami(db);
+    cliAuth.whoami(identity);
     process.exit(0);
   }
 
