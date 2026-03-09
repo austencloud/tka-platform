@@ -1,23 +1,22 @@
 <script lang="ts">
-  import type { EffortQuality } from "../domain/effort-qualities";
-  import type { EffortParams } from "../domain/effort-easing";
-  import { sampleEasingCurve } from "../domain/effort-easing";
+  import type { EffortId, EffortParams } from "../domain/effort-types";
+  import { sampleEffortCurve } from "../domain/effort-easing-unified";
 
   interface Props {
-    quality: EffortQuality;
+    effortId: EffortId;
     color: string;
     params?: EffortParams;
     width?: number;
     height?: number;
   }
 
-  const { quality, color, params, width = 120, height = 40 }: Props = $props();
+  const { effortId, color, params, width = 120, height = 40 }: Props = $props();
 
   const padding = 4;
   const innerW = $derived(width - padding * 2);
   const innerH = $derived(height - padding * 2);
 
-  const samples = $derived(sampleEasingCurve(quality, 48, params));
+  const samples = $derived(sampleEffortCurve(effortId, 48, params));
 
   const yExtent = $derived.by(() => {
     let min = 0;
@@ -60,7 +59,7 @@
   {height}
   viewBox="0 0 {width} {height}"
   role="img"
-  aria-label="{quality} easing curve"
+  aria-label="{effortId} easing curve"
   class="easing-curve-preview"
 >
   <rect
