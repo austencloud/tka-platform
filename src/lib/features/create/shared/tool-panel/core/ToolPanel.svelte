@@ -20,14 +20,10 @@
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
-  import { createStepData } from "../../domain/factories/createStepData";
-  import { createStartPositionData } from "../../domain/factories/createStartPositionData";
-  import { sequenceTransformer } from "../../services/implementations/sequence-transforms/SequenceTransformer";
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
   import GeneratePanel from "../../../generate/components/GeneratePanel.svelte";
   import ConstructTabContent from "../../components/ConstructTabContent.svelte";
-  import AssemblerTab from "$lib/features/create/assemble/components/AssemblerTab.svelte";
   import type {
     IAnimationStateRef,
     IToolPanelProps,
@@ -281,92 +277,7 @@
           in:fade={fadeInParams}
           out:fade={fadeOutParams}
         >
-          {#if activeToolPanel === "guided"}
-            <!-- Assemble Tab - Simplified tap-based hand path builder -->
-            <AssemblerTab
-              initialGridMode={createModuleState.sequenceState.gridMode}
-              onStartPositionSet={(startPosition) => {
-                // Ensure a sequence exists
-                let currentSeq =
-                  createModuleState.sequenceState.currentSequence;
-
-                if (!currentSeq) {
-                  const gridMode = createModuleState.sequenceState.gridMode;
-                  currentSeq = {
-                    id: crypto.randomUUID(),
-                    name: "Hand Path Sequence",
-                    word: "",
-                    steps: [],
-                    gridMode,
-                    thumbnails: [],
-                    isFavorite: false,
-                    isCircular: false,
-                    metadata: {},
-                    tags: [],
-                    startingPosition: createStartPositionData({
-                      ...startPosition,
-                    }),
-                  };
-                  createModuleState.sequenceState.setCurrentSequence(
-                    currentSeq
-                  );
-                } else {
-                  // IMPORTANT: Clear existing steps when setting new start position in assembly mode
-                  // This prevents old beat data from persisting after clear
-                  createModuleState.sequenceState.updateSequence({
-                    ...currentSeq,
-                    steps: [], // Clear steps when setting new start position
-                    startingPosition: createStartPositionData({
-                      ...startPosition,
-                    }),
-                  });
-                }
-              }}
-              onSequenceUpdate={(pictographs) => {
-                // Preview mode - update current sequence steps
-                const currentSeq =
-                  createModuleState.sequenceState.currentSequence;
-                if (currentSeq) {
-                  const steps = pictographs.map((p, i) =>
-                    createStepData({ ...p, stepNumber: i + 1, duration: 1 })
-                  );
-                  createModuleState.sequenceState.updateSequence({
-                    ...currentSeq,
-                    steps,
-                  });
-                }
-              }}
-              onSequenceComplete={async (pictographs) => {
-                // Complete - update current sequence steps, derive letters, set level to 1
-                const currentSeq =
-                  createModuleState.sequenceState.currentSequence;
-                if (currentSeq) {
-                  const steps = pictographs.map((p, i) =>
-                    createStepData({ ...p, stepNumber: i + 1, duration: 1 })
-                  );
-                  let sequence = {
-                    ...currentSeq,
-                    steps,
-                    level: 1, // Assembly sequences are always level 1
-                  };
-                  // Derive letters from motion data so arrow positioning
-                  // can detect Type 3+ letters for correct dash placement
-                  try {
-                    const derived = await sequenceTransformer.deriveSequenceLetters(sequence);
-                    sequence.steps = [...derived.steps];
-                    sequence.word = derived.word;
-                  } catch (error) {
-                    console.warn("Failed to derive letters for assembled sequence:", error);
-                  }
-                  createModuleState.sequenceState.updateSequence(sequence);
-                }
-              }}
-              onHeaderTextChange={(text) => {
-                // Update the guided mode header text in CreateModuleState
-                createModuleState.setGuidedModeHeaderText(text);
-              }}
-            />
-          {:else if activeToolPanel === "construct"}
+          {#if activeToolPanel === "construct"}
             {#if isPickerStateLoading}
               <!-- Loading state while determining which picker to show -->
               <div class="picker-loading">
