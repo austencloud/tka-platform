@@ -41,8 +41,8 @@ export interface CardHandlers {
   handleStartEndChange?: (options: StartEndOptions) => void;
   handleGenerateClick?: () => Promise<void>;
   // Style card handlers
-  handleConstraintPresetChange?: (v: "smooth" | "mixed" | "high-reversal") => void;
-  handleHandPathModeChange?: (v: "smooth" | "mixed" | "high") => void;
+  handleConstraintPresetChange?: (v: "smooth" | "mixed" | "choppy") => void;
+  handleHandPathModeChange?: (v: "smooth" | "mixed" | "choppy") => void;
   handleMotionTypeFilterChange?: (v: "no-dash" | "mixed" | "prefer-dash") => void;
   // Duration card handler
   handleDurationTemplateSelect?: (id: string | null) => void;

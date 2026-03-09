@@ -228,6 +228,11 @@ export function createGenerationActionsState(
           config?.turnIntensity ?? 1.0
         );
 
+        // Derive prop continuity from constraintPreset (same mapping as freeform pipeline)
+        const propContinuity = config?.constraintPreset === "smooth"
+          ? PropContinuity.CONTINUOUS
+          : PropContinuity.RANDOM;
+
         // Apply allocated turns to each step
         const stepsWithTurns = [...sequence.steps];
         for (let i = 0; i < stepsWithTurns.length; i++) {
@@ -238,9 +243,10 @@ export function createGenerationActionsState(
           // Clone step to avoid mutation
           stepsWithTurns[i] = { ...step, motions: { ...step.motions } };
           turnManager.setTurns(stepsWithTurns[i]!, turnBlue, turnRed);
-          // Assign random CW/CCW rotation to dash/static motions that received non-zero turns.
-          // Without this, dash arrows with turns stay at noRotation → wrong arrow placement.
-          turnManager.updateDashStaticRotationDirections(stepsWithTurns[i]!, PropContinuity.RANDOM, "", "");
+          // Set rotation direction for dash/static motions that received non-zero turns.
+          // CONTINUOUS: maintains the existing rotation direction across steps.
+          // RANDOM: assigns random CW/CCW per step (more reversals).
+          turnManager.updateDashStaticRotationDirections(stepsWithTurns[i]!, propContinuity, "", "");
         }
 
         // Rebuild sequence with new turns, then recalculate entire orientation chain

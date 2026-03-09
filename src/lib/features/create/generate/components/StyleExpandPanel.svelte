@@ -15,25 +15,25 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
     onHandsChange,
     onDashesChange,
   }: {
-    constraintPreset: "smooth" | "mixed" | "high-reversal";
-    handPathMode: "smooth" | "mixed" | "high";
+    constraintPreset: "smooth" | "mixed" | "choppy";
+    handPathMode: "smooth" | "mixed" | "choppy";
     motionTypeFilter: "no-dash" | "prefer-dash" | null;
     haptic: IHapticFeedback | null;
-    onPropsChange: (v: "smooth" | "mixed" | "high-reversal") => void;
-    onHandsChange: (v: "smooth" | "mixed" | "high") => void;
+    onPropsChange: (v: "smooth" | "mixed" | "choppy") => void;
+    onHandsChange: (v: "smooth" | "mixed" | "choppy") => void;
     onDashesChange: (v: "no-dash" | "mixed" | "prefer-dash") => void;
   } = $props();
 
   const propsOptions = [
     { value: "smooth", label: "Smooth" },
     { value: "mixed", label: "Mixed" },
-    { value: "high-reversal", label: "High" },
+    { value: "choppy", label: "Choppy" },
   ] as const;
 
   const handsOptions = [
     { value: "smooth", label: "Smooth" },
     { value: "mixed", label: "Mixed" },
-    { value: "high", label: "High" },
+    { value: "choppy", label: "Choppy" },
   ] as const;
 
   const dashOptions = [
@@ -48,12 +48,12 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
     return "mixed";
   });
 
-  function handleProps(v: "smooth" | "mixed" | "high-reversal") {
+  function handleProps(v: "smooth" | "mixed" | "choppy") {
     haptic?.trigger("selection");
     onPropsChange(v);
   }
 
-  function handleHands(v: "smooth" | "mixed" | "high") {
+  function handleHands(v: "smooth" | "mixed" | "choppy") {
     haptic?.trigger("selection");
     onHandsChange(v);
   }

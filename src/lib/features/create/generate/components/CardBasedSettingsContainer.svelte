@@ -266,11 +266,11 @@ Supports help mode: when active, clicking cards opens help instead of normal act
   }
 
   // Style handlers
-  function handleConstraintPresetChange(v: "smooth" | "mixed" | "high-reversal") {
+  function handleConstraintPresetChange(v: "smooth" | "mixed" | "choppy") {
     updateConfig({ constraintPreset: v });
   }
 
-  function handleHandPathModeChange(v: "smooth" | "mixed" | "high") {
+  function handleHandPathModeChange(v: "smooth" | "mixed" | "choppy") {
     updateConfig({ handPathMode: v });
   }
 

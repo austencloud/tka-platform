@@ -33,8 +33,8 @@ interface SerializedConfig {
   loopType: LOOPType;
   timestamp: number;
   // 3-axis constraint system
-  constraintPreset?: "smooth" | "mixed" | "high-reversal";
-  handPathMode?: "smooth" | "mixed" | "high";
+  constraintPreset?: "smooth" | "mixed" | "choppy";
+  handPathMode?: "smooth" | "mixed" | "choppy";
   motionTypeFilter?: "no-dash" | "prefer-dash" | null;
   // Duration rhythm template
   durationTemplateId?: string | null;
@@ -119,10 +119,16 @@ function loadConfig(): UIGenerationConfig | null {
       result.loopType = data.loopType as LOOPType;
     }
     if (data.constraintPreset !== undefined) {
-      result.constraintPreset = data.constraintPreset;
+      // Migrate legacy "high-reversal" → "choppy"
+      result.constraintPreset = data.constraintPreset === "high-reversal" as string
+        ? "choppy"
+        : data.constraintPreset;
     }
     if (data.handPathMode !== undefined) {
-      result.handPathMode = data.handPathMode;
+      // Migrate legacy "high" → "choppy"
+      result.handPathMode = data.handPathMode === "high" as string
+        ? "choppy"
+        : data.handPathMode;
     }
     if (data.motionTypeFilter !== undefined) {
       result.motionTypeFilter = data.motionTypeFilter;

@@ -54,16 +54,16 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     onStartEndChange,
     onClose,
   } = $props<{
-    constraintPreset: "smooth" | "mixed" | "high-reversal";
-    handPathMode: "smooth" | "mixed" | "high";
+    constraintPreset: "smooth" | "mixed" | "choppy";
+    handPathMode: "smooth" | "mixed" | "choppy";
     motionTypeFilter: "no-dash" | "prefer-dash" | null;
     durationTemplateId: string | null;
     stepCount: number;
     startEndOptions: StartEndOptions | null;
     gridMode?: GridMode;
     isFreeformMode?: boolean;
-    onConstraintPresetChange: (v: "smooth" | "mixed" | "high-reversal") => void;
-    onHandPathModeChange: (v: "smooth" | "mixed" | "high") => void;
+    onConstraintPresetChange: (v: "smooth" | "mixed" | "choppy") => void;
+    onHandPathModeChange: (v: "smooth" | "mixed" | "choppy") => void;
     onMotionTypeFilterChange: (v: "no-dash" | "mixed" | "prefer-dash") => void;
     onDurationTemplateSelect: (id: string | null) => void;
     onStartEndChange: ((options: StartEndOptions) => void) | null;
@@ -84,6 +84,11 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     activeSection = activeSection === section ? null : section;
     persistedSection = activeSection;
   }
+
+  // ─── Local state for style (instant UI feedback) ───
+  let localConstraintPreset = $state<"smooth" | "mixed" | "choppy">(constraintPreset);
+  let localHandPathMode = $state<"smooth" | "mixed" | "choppy">(handPathMode);
+  let localMotionTypeFilter = $state<"no-dash" | "prefer-dash" | null>(motionTypeFilter);
 
   // ─── Local state for rhythm (instant UI feedback) ───
   let localDurationTemplateId = $state<string | null>(durationTemplateId);
@@ -139,9 +144,9 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   // ─── Style summary ───
   const styleSummary = $derived.by(() => {
     const isDefault =
-      constraintPreset === "smooth" &&
-      handPathMode === "smooth" &&
-      (motionTypeFilter === null || motionTypeFilter === "no-dash");
+      localConstraintPreset === "smooth" &&
+      localHandPathMode === "smooth" &&
+      (localMotionTypeFilter === null || localMotionTypeFilter === "no-dash");
     return isDefault ? "Default" : "Custom";
   });
 
@@ -264,13 +269,13 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
       {#if activeSection === "style"}
         <div class="accordion-content" id="section-style" transition:slide={{ duration: 200, easing: quintOut }}>
           <StyleExpandPanel
-            {constraintPreset}
-            {handPathMode}
-            {motionTypeFilter}
+            constraintPreset={localConstraintPreset}
+            handPathMode={localHandPathMode}
+            motionTypeFilter={localMotionTypeFilter}
             haptic={hapticService}
-            onPropsChange={onConstraintPresetChange}
-            onHandsChange={onHandPathModeChange}
-            onDashesChange={onMotionTypeFilterChange}
+            onPropsChange={(v) => { localConstraintPreset = v; onConstraintPresetChange(v); }}
+            onHandsChange={(v) => { localHandPathMode = v; onHandPathModeChange(v); }}
+            onDashesChange={(v) => { localMotionTypeFilter = v === "mixed" ? null : v; onMotionTypeFilterChange(v); }}
           />
         </div>
       {/if}

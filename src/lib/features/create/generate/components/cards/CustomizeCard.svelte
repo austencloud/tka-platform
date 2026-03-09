@@ -36,16 +36,16 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay
     cardIndex = 0,
     headerFontSize = "9px",
   } = $props<{
-    constraintPreset: "smooth" | "mixed" | "high-reversal";
-    handPathMode: "smooth" | "mixed" | "high";
+    constraintPreset: "smooth" | "mixed" | "choppy";
+    handPathMode: "smooth" | "mixed" | "choppy";
     motionTypeFilter: "no-dash" | "prefer-dash" | null;
     durationTemplateId: string | null;
     stepCount: number;
     startEndOptions?: StartEndOptions;
     gridMode?: GridMode;
     isFreeformMode?: boolean;
-    onConstraintPresetChange: (v: "smooth" | "mixed" | "high-reversal") => void;
-    onHandPathModeChange: (v: "smooth" | "mixed" | "high") => void;
+    onConstraintPresetChange: (v: "smooth" | "mixed" | "choppy") => void;
+    onHandPathModeChange: (v: "smooth" | "mixed" | "choppy") => void;
     onMotionTypeFilterChange: (v: "no-dash" | "mixed" | "prefer-dash") => void;
     onDurationTemplateSelect: (id: string | null) => void;
     onStartEndChange?: (options: StartEndOptions) => void;
@@ -254,7 +254,7 @@ Shows summary ("Default" or "Custom"), click opens the expanded overlay
   }
 
   .summary-line {
-    font-size: clamp(10px, 3cqw, 14px);
+    font-size: clamp(14px, 3cqw, 16px);
     font-weight: var(--card-text-weight);
     letter-spacing: var(--card-text-spacing);
     color: white;

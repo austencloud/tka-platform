@@ -38,8 +38,8 @@ export interface GenerationOptions {
   loopType?: LOOPType | undefined; // LOOP type for circular generation
 
   // 3-axis constraint system
-  constraintPreset?: "smooth" | "mixed" | "high-reversal" | undefined;
-  handPathMode?: "smooth" | "mixed" | "high" | undefined;
+  constraintPreset?: "smooth" | "mixed" | "choppy" | undefined;
+  handPathMode?: "smooth" | "mixed" | "choppy" | undefined;
   motionTypeFilter?: "no-dash" | "prefer-dash" | null | undefined;
 
   // Customize options - advanced constraints for generation
