@@ -47,6 +47,12 @@
   import type { IInfiniteSequenceGenerator } from "$lib/features/landing/services/contracts/IInfiniteSequenceGenerator";
   import { MotionColor, type Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
+  // ─── Clean up obsolete localStorage keys from old two-tab layout ────
+  try {
+    localStorage.removeItem("effort-lab-active-tab");
+    localStorage.removeItem("effort-lab-laban-state");
+  } catch { /* ignore */ }
+
   // ─── Persistence ─────────────────────────────────────────────────────
   const STORAGE_KEY = "effort-lab-efforts-state";
 
