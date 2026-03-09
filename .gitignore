@@ -143,6 +143,9 @@ android-twa/keystore.properties
 # Screenshot testing credentials
 tests/screenshots/credentials.local.json
 
+# OAuth client credentials (saved locally for reference, not used in code)
+oauth-desktop-client.local.json
+
 # Multi-device screenshot testing (captures are ephemeral, baselines are committed)
 tests/screenshots/captures/
 tests/screenshots/gallery.html

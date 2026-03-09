@@ -63,9 +63,9 @@ export const ROLE_PERMISSIONS = {
  */
 export const TRANSITION_ACTIONS = {
   "new->in-progress": ACTIONS.CLAIM_ITEM,
-  "in-progress->new": ACTIONS.CLAIM_ITEM,
+  "in-progress->new": ACTIONS.WORK_ON_CLAIM,
   "in-progress->in-review": ACTIONS.MOVE_TO_IN_REVIEW,
-  "in-review->in-progress": ACTIONS.MOVE_TO_IN_REVIEW,
+  "in-review->in-progress": ACTIONS.MOVE_TO_COMPLETED, // admin sends back
   "in-review->completed": ACTIONS.MOVE_TO_COMPLETED,
   "completed->archived": ACTIONS.ARCHIVE,
   "completed->in-review": ACTIONS.MOVE_TO_COMPLETED,
