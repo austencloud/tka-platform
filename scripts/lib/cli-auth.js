@@ -12,7 +12,7 @@
  *
  * Usage:
  *   import cliAuth from "./lib/cli-auth.js";
- *   const identity = await cliAuth.resolveIdentity(db);
+ *   const identity = await cliAuth.resolveIdentity();
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, unlinkSync } from "fs";
@@ -301,15 +301,26 @@ async function login() {
     process.exit(1);
   }
 
-  // Look up the Firebase UID from the email using Admin SDK
-  // (Firebase UID may differ from Google UID — this gets the right one)
+  // Sign into Firebase using the Google ID token to get the Firebase UID.
+  // Uses Client SDK compat — no service account key required.
   let firebaseUid;
   try {
-    const { default: fbAdmin } = await import("firebase-admin");
-    const userRecord = await fbAdmin.auth().getUserByEmail(googleProfile.email);
-    firebaseUid = userRecord.uid;
+    const firebase = (await import("firebase/compat/app")).default;
+    await import("firebase/compat/auth");
+
+    if (firebase.apps.length === 0) {
+      firebase.initializeApp({
+        apiKey: "AIzaSyDKUM9pf0e_KgFjW1OBKChvrU75SnR12v4",
+        authDomain: "the-kinetic-alphabet.firebaseapp.com",
+        projectId: "the-kinetic-alphabet",
+      });
+    }
+
+    const credential = firebase.auth.GoogleAuthProvider.credential(googleTokens.id_token);
+    const userCredential = await firebase.auth().signInWithCredential(credential);
+    firebaseUid = userCredential.user.uid;
   } catch (err) {
-    console.error(`\n  No Firebase account found for ${googleProfile.email}.`);
+    console.error(`\n  Could not sign into Firebase for ${googleProfile.email}.`);
     console.error("  Sign into the web app at least once first, then try again.\n");
     process.exit(1);
   }
@@ -358,10 +369,12 @@ function logout() {
  *   2. ./serviceAccountKey.json (admin service account fallback)
  *   3. Error — must log in
  *
- * @param {FirebaseFirestore.Firestore} db - Firestore instance for role lookup
- * @returns {Promise<{uid, email, displayName, photoUrl, role, authMethod}>}
+ * Returns identity without role — the caller looks up the role from Firestore
+ * after initializing the database connection.
+ *
+ * @returns {Promise<{uid, email, displayName, photoUrl, authMethod}>}
  */
-async function resolveIdentity(db) {
+async function resolveIdentity() {
   // Path 1: Personal OAuth credentials
   const creds = loadCredentials();
   if (creds) {
@@ -374,22 +387,19 @@ async function resolveIdentity(db) {
       process.exit(1);
     }
 
-    // Look up role from developers collection
-    const role = await lookupRole(db, creds.uid);
-
     return {
       uid: creds.uid,
       email: creds.email,
       displayName: creds.displayName,
       photoUrl: creds.photoUrl,
-      role,
       authMethod: "oauth",
     };
   }
 
   // Path 2: Service account fallback (legacy — admin access)
   if (existsSync(SERVICE_ACCOUNT_PATH)) {
-    return { ...ADMIN_IDENTITY };
+    const { uid, email, displayName, photoUrl, authMethod } = ADMIN_IDENTITY;
+    return { uid, email, displayName, photoUrl, authMethod };
   }
 
   // Path 3: No credentials at all
@@ -399,32 +409,16 @@ async function resolveIdentity(db) {
   process.exit(1);
 }
 
-/**
- * Look up a developer's role from the developers Firestore collection.
- * Falls back to "contributor" if not found.
- */
-async function lookupRole(db, uid) {
-  try {
-    const doc = await db.collection("developers").doc(uid).get();
-    if (doc.exists) {
-      return doc.data().role || "contributor";
-    }
-    return "contributor";
-  } catch {
-    // If Firestore lookup fails, default to contributor (safe fallback)
-    return "contributor";
-  }
-}
-
 // ---------------------------------------------------------------------------
 // Whoami
 // ---------------------------------------------------------------------------
 
 /**
- * Print current identity info to console.
+ * Print identity info to console.
+ * Expects an identity object (with optional `role` field set by the caller).
  */
-async function whoami(db) {
-  const identity = await resolveIdentity(db);
+function whoami(identity) {
+  const role = identity.role || "unknown";
 
   console.log(`\n  ╭─────────────────────────────────────╮`);
   console.log(`  │  TKA CLI Identity                    │`);
@@ -432,7 +426,7 @@ async function whoami(db) {
   console.log(`  │  Name:   ${identity.displayName.padEnd(27)}│`);
   console.log(`  │  Email:  ${identity.email.padEnd(27)}│`);
   console.log(`  │  UID:    ${identity.uid.slice(0, 25).padEnd(27)}│`);
-  console.log(`  │  Role:   ${identity.role.padEnd(27)}│`);
+  console.log(`  │  Role:   ${role.padEnd(27)}│`);
   console.log(`  │  Auth:   ${identity.authMethod.padEnd(27)}│`);
   console.log(`  ╰─────────────────────────────────────╯\n`);
 }
