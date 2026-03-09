@@ -35,6 +35,34 @@
     isPanelOpen = true;
   }
 
+  function handleListKeydown(e: KeyboardEvent) {
+    if (!versionState.versions.length) return;
+    const currentIndex = selectedVersion
+      ? versionState.versions.findIndex(
+          (v) => v.version === selectedVersion?.version
+        )
+      : -1;
+
+    let newIndex = currentIndex;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      newIndex = Math.min(currentIndex + 1, versionState.versions.length - 1);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      newIndex = Math.max(currentIndex - 1, 0);
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      newIndex = 0;
+    } else if (e.key === "End") {
+      e.preventDefault();
+      newIndex = versionState.versions.length - 1;
+    }
+
+    if (newIndex !== currentIndex && newIndex >= 0) {
+      selectedVersion = versionState.versions[newIndex] ?? null;
+    }
+  }
+
   async function handleVersionUpdated() {
     await versionState.loadVersions();
     if (selectedVersion) {
@@ -83,7 +111,14 @@
         </div>
       {:else}
         <!-- Wide mode: compact list items -->
-        <div class="version-list-compact">
+        <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+        <div
+          class="version-list-compact"
+          role="listbox"
+          tabindex="0"
+          aria-label="Version list"
+          onkeydown={handleListKeydown}
+        >
           {#each versionState.versions as version (version.version)}
             <VersionListItem
               {version}

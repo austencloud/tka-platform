@@ -310,6 +310,7 @@
     releasedAt={version.releasedAt}
     onClose={showCloseButton ? onClose : undefined}
     getCopyData={formatReleaseNotesForCopy}
+    layout={showCloseButton ? "drawer" : "inline"}
   />
 
   {#if version.releaseNotes}
