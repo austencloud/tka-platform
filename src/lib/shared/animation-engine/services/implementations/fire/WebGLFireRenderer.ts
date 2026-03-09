@@ -429,6 +429,10 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     }
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+    // Invalidate frame cache so stale fire frames from old effort/position
+    // aren't served after the simulation is cleared
+    this.frameCache?.invalidate();
   }
 
   dispose(): void {

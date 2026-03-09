@@ -7,6 +7,7 @@
 
 import type { CharcoalSparkParams } from "../domain/types/CharcoalSparkTypes";
 import { DEFAULT_CHARCOAL_PARAMS } from "../domain/types/CharcoalSparkTypes";
+import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
 
 type VisibilityObserver = () => void;
 
@@ -60,6 +61,7 @@ interface AnimationVisibilitySettings {
   reversalIndicators: boolean;
   blueMotion: boolean;
   redMotion: boolean;
+  effortPreset: EffortId;
 }
 
 const STORAGE_KEY = "animation-visibility-settings";
@@ -133,6 +135,7 @@ export class AnimationVisibilityStateManager {
       reversalIndicators: false, // Less clutter during animation
       blueMotion: true,
       redMotion: true,
+      effortPreset: "linear",
     };
   }
 
@@ -283,7 +286,7 @@ export class AnimationVisibilityStateManager {
   getVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "effortPreset"
     >
   ): boolean {
     return this.settings[key] as boolean;
@@ -307,7 +310,7 @@ export class AnimationVisibilityStateManager {
   setVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "effortPreset"
     >,
     visible: boolean
   ): void {
@@ -702,13 +705,33 @@ export class AnimationVisibilityStateManager {
     this.notifyObservers();
   }
 
+  // ============================================================================
+  // EFFORT PRESET
+  // ============================================================================
+
+  /**
+   * Get current effort easing preset
+   */
+  getEffortPreset(): EffortId {
+    return this.settings.effortPreset;
+  }
+
+  /**
+   * Set effort easing preset
+   */
+  setEffortPreset(preset: EffortId): void {
+    this.settings.effortPreset = preset;
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
   /**
    * Toggle a boolean visibility setting
    */
   toggleVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "effortPreset"
     >
   ): void {
     this.setVisibility(key, !(this.settings[key] as boolean));
