@@ -89,11 +89,19 @@ export class LibrarySaveService implements ILibrarySaveService {
       thumbnailUrl,
     });
 
-    // If the user chose "publish to community", send a copy of this sequence
-    // to the public browse gallery. We do this in the background so the save
-    // doesn't feel slower — the sequence is already safely in their library
-    // at this point, so a delay or failure here won't affect that.
-    if (visibility === "public" && this.publicIndexSyncer) {
+    // The sequence is saved. Now update the community library to match.
+    // This happens quietly in the background — if it takes a moment or fails,
+    // the sequence is already in the user's personal library safe and sound.
+    if (visibility === "private" && this.publicIndexSyncer) {
+      // Saving as private removes the sequence from the community library.
+      // deleteDoc is idempotent, so this is safe even if the sequence was
+      // never published — Firestore just silently does nothing.
+      this.publicIndexSyncer
+        .removeFromPublicIndex(sequenceId)
+        .catch((error) =>
+          console.error("[LibrarySaveService] Public index removal failed:", error)
+        );
+    } else if (visibility === "public" && this.publicIndexSyncer) {
       const user = getAuthSync().currentUser;
       if (user) {
         const savedThumbnails = thumbnailUrl
