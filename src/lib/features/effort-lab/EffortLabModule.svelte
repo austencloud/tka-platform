@@ -10,7 +10,21 @@
   import EffortLabPlaybackHost from "./components/EffortLabPlaybackHost.svelte";
   import LabanTab from "./components/LabanTab.svelte";
 
-  let activeTab = $state<"efforts" | "laban">("efforts");
+  const TAB_KEY = "effort-lab-active-tab";
+
+  function loadTab(): "efforts" | "laban" {
+    try {
+      const saved = localStorage.getItem(TAB_KEY);
+      if (saved === "efforts" || saved === "laban") return saved;
+    } catch { /* ignore */ }
+    return "efforts";
+  }
+
+  let activeTab = $state(loadTab());
+
+  $effect(() => {
+    try { localStorage.setItem(TAB_KEY, activeTab); } catch { /* ignore */ }
+  });
 </script>
 
 <div class="effort-lab">

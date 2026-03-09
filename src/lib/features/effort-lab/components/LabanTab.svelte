@@ -43,6 +43,38 @@
   import LabanMatrixGrid from "./LabanMatrixGrid.svelte";
   import SequenceAnalysisBar from "./SequenceAnalysisBar.svelte";
 
+  // ─── Persistence ─────────────────────────────────────────────────────
+  const STORAGE_KEY = "effort-lab-laban-state";
+
+  interface LabanPersistedState {
+    sequenceId: string | null;
+    bpm: number;
+    sourceMode: SourceMode;
+    quadrantParams: Record<string, { weight: number; time: number }>;
+  }
+
+  function loadPersistedState(): Partial<LabanPersistedState> {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch { /* ignore */ }
+    return {};
+  }
+
+  function savePersistedState() {
+    try {
+      const state: LabanPersistedState = {
+        sequenceId: sequence?.word || sequence?.name || sequence?.id || null,
+        bpm,
+        sourceMode,
+        quadrantParams,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch { /* ignore */ }
+  }
+
+  const persisted = loadPersistedState();
+
   // ─── Default PropState (all zeroes) ───────────────────────────────────
   const DEFAULT_PROP_STATE: PropState = {
     centerPathAngle: 0,
@@ -56,12 +88,12 @@
   // ─── Playback state ───────────────────────────────────────────────────
   let timePosition = $state(0);
   let isPlaying = $state(false);
-  let bpm = $state(60);
+  let bpm = $state(persisted.bpm ?? 60);
   let rafId: number | null = null;
   let lastTime: number | null = null;
 
   // ─── Source mode ──────────────────────────────────────────────────────
-  let sourceMode = $state<SourceMode>("pick");
+  let sourceMode = $state<SourceMode>(persisted.sourceMode ?? "pick");
   let loading = $state(false);
   let isChainingNow = $state(false);
 
@@ -78,10 +110,13 @@
   let currentLetter = $state<Letter | null>(null);
 
   // ─── Laban-specific state ─────────────────────────────────────────────
+  const defaultQuadrantParams = Object.fromEntries(
+    LABAN_QUADRANTS.map(q => [q.id, { weight: q.defaultWeight, time: q.defaultTime }])
+  );
   let quadrantParams = $state<Record<string, { weight: number; time: number }>>(
-    Object.fromEntries(
-      LABAN_QUADRANTS.map(q => [q.id, { weight: q.defaultWeight, time: q.defaultTime }])
-    )
+    persisted.quadrantParams
+      ? { ...defaultQuadrantParams, ...persisted.quadrantParams }
+      : defaultQuadrantParams
   );
 
   let quadrantPropStates = $state<Record<string, { blue: PropState; red: PropState }>>(
@@ -96,6 +131,28 @@
   // ─── Derived ──────────────────────────────────────────────────────────
   let gridMode = $derived(sequence?.gridMode ?? GridMode.DIAMOND);
   let sequenceWord = $derived(sequence?.word ?? sequence?.name ?? null);
+
+  // ─── Auto-save on state changes ──────────────────────────────────────
+  $effect(() => {
+    void bpm;
+    void sourceMode;
+    void quadrantParams;
+    void sequence;
+    savePersistedState();
+  });
+
+  // ─── Restore sequence by ID ─────────────────────────────────────────
+  async function restoreSequence(id: string) {
+    try {
+      const sequenceRepository = container.items.sequenceRepository;
+      const loaded = await sequenceRepository.getSequence(id);
+      if (loaded) {
+        handleSequenceSelected(loaded);
+      }
+    } catch (err) {
+      console.error("Laban Tab: failed to restore sequence:", err);
+    }
+  }
 
   // ─── Service construction ─────────────────────────────────────────────
   onMount(async () => {
@@ -127,6 +184,13 @@
     );
 
     rafId = requestAnimationFrame(onFrame);
+
+    // Restore previous session state
+    if (persisted.sequenceId) {
+      restoreSequence(persisted.sequenceId);
+    } else if (sourceMode !== "pick") {
+      loadNextSequence();
+    }
   });
 
   onDestroy(() => {
@@ -351,6 +415,17 @@
       [quadrantId]: { weight: existing.weight, time: existing.time, [key]: value },
     };
   }
+
+  function resetToDefaults() {
+    quadrantParams = { ...defaultQuadrantParams };
+  }
+
+  let hasCustomParams = $derived(
+    LABAN_QUADRANTS.some(q => {
+      const current = quadrantParams[q.id];
+      return current && (current.weight !== q.defaultWeight || current.time !== q.defaultTime);
+    })
+  );
 </script>
 
 <div class="laban-tab">
@@ -369,6 +444,12 @@
     </div>
 
     <div class="controls-right">
+      {#if hasCustomParams}
+        <button class="reset-btn" onclick={resetToDefaults} title="Reset sliders to defaults">
+          <i class="fas fa-undo" aria-hidden="true"></i>
+          Reset
+        </button>
+      {/if}
       <TempoControl
         {bpm}
         onBpmChange={handleBpmChange}
@@ -442,6 +523,27 @@
     padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .reset-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    background: transparent;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .reset-btn:hover {
+    color: var(--theme-text, #ffffff);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    background: rgba(255, 255, 255, 0.04);
   }
 
   .controls-left {
