@@ -11,7 +11,7 @@
   }: {
     version: string;
     releasedAt: Date;
-    onClose: () => void;
+    onClose?: () => void;
     getCopyData?: () => string;
   } = $props();
 
@@ -37,14 +37,16 @@
     />
   {/if}
 
-  <button
-    type="button"
-    class="header-button close-button"
-    onclick={onClose}
-    aria-label="Close version details"
-  >
-    <i class="fas fa-times" aria-hidden="true"></i>
-  </button>
+  {#if onClose}
+    <button
+      type="button"
+      class="header-button close-button"
+      onclick={onClose}
+      aria-label="Close version details"
+    >
+      <i class="fas fa-times" aria-hidden="true"></i>
+    </button>
+  {/if}
 
   <div class="version-badge" class:pre-release={isPreRelease}>
     <span class="badge-text">
