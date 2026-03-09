@@ -1,6 +1,7 @@
 /**
  * Unified easing functions for all 8 effort qualities.
  *
+ * 1 baseline (linear) is the identity function.
  * 4 Laban efforts (glide, dab, press, punch) delegate to applyLabanEasing.
  * 3 animation efforts (elastic, bounce, anticipation) are standalone.
  *
@@ -32,6 +33,16 @@ function resolve(
 	params?: EffortParams
 ): number {
 	return params?.[key] ?? getDefault(effortId, key);
+}
+
+// ---------------------------------------------------------------------------
+// Baseline
+// ---------------------------------------------------------------------------
+
+function linear(t: number): number {
+	if (t <= 0) return 0;
+	if (t >= 1) return 1;
+	return t;
 }
 
 // ---------------------------------------------------------------------------
@@ -165,6 +176,7 @@ const EFFORT_FNS: Record<
 	EffortId,
 	(t: number, params?: EffortParams) => number
 > = {
+	linear,
 	glide,
 	dab,
 	press,

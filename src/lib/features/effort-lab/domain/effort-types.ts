@@ -1,11 +1,12 @@
 /**
  * Unified Effort Type System
  *
- * 7 effort qualities: 4 from Laban's action drive (Weight x Time)
- * and 3 animation-inspired easings.
+ * 8 effort qualities: 4 from Laban's action drive (Weight x Time),
+ * 3 animation-inspired easings, and 1 baseline reference (Linear).
  */
 
 export type EffortId =
+  | "linear"
   | "glide"
   | "dab"
   | "press"
@@ -34,6 +35,13 @@ export interface EffortDescriptor {
 export type EffortParams = Record<string, number>;
 
 export const EFFORTS: readonly EffortDescriptor[] = [
+  {
+    id: "linear",
+    label: "Linear",
+    subtitle: "constant speed",
+    color: "#94a3b8",
+    params: [],
+  },
   {
     id: "glide",
     label: "Glide",

@@ -6,6 +6,7 @@ import {
 import type { EffortId } from "../../src/lib/features/effort-lab/domain/effort-types";
 
 const ALL_EFFORTS: EffortId[] = [
+	"linear",
 	"glide",
 	"dab",
 	"press",
@@ -16,7 +17,7 @@ const ALL_EFFORTS: EffortId[] = [
 ];
 
 describe("Unified Effort Easing", () => {
-	describe("boundary invariants (all 7 efforts)", () => {
+	describe("boundary invariants (all 8 efforts)", () => {
 		it.each(ALL_EFFORTS)("%s returns ~0 at t=0", (id) => {
 			expect(applyEffort(id, 0)).toBeCloseTo(0, 5);
 		});
