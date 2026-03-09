@@ -11,6 +11,7 @@ These commands load their full workflow via skills. See the skill for details:
 - `/ai-bust` - Scan text for AI writing patterns
 - `/monolith` - Detect and decompose monolithic files
 - `/deadcode` - Find and remove unused code
+- `/concepts` - Learn tab concept lesson development and tracking
 
 ---
 

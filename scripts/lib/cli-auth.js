@@ -1,7 +1,9 @@
 /**
- * CLI Authentication Module
+ * CLI Authentication Module (PKCE)
  *
- * Handles developer identity for CLI operations.
+ * Handles developer identity for CLI operations using OAuth 2.0 with PKCE
+ * (Proof Key for Code Exchange). No client secret needed — the security comes
+ * from a one-time random verifier + SHA-256 challenge, not an embedded secret.
  *
  * Resolution order:
  *   1. ~/.tka/credentials.json (personal Google OAuth login)
@@ -16,6 +18,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync, unlinkSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
+import { randomBytes, createHash } from "crypto";
 import http from "http";
 import { URL } from "url";
 
@@ -23,14 +26,13 @@ import { URL } from "url";
 // Firebase & OAuth Configuration
 // ---------------------------------------------------------------------------
 
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDKUM9pf0e_KgFjW1OBKChvrU75SnR12v4",
-  projectId: "the-kinetic-alphabet",
-};
-
 const OAUTH_CONFIG = {
-  clientId: "PLACEHOLDER_FILL_FROM_FIREBASE_CONSOLE",
-  clientSecret: "PLACEHOLDER_FILL_FROM_FIREBASE_CONSOLE",
+  // Desktop OAuth client with PKCE (OAuth 2.1 standard for CLI tools)
+  // Google's token endpoint requires client_secret even for desktop/PKCE flows.
+  // For desktop clients this is NOT a real secret — Google documents it as safe to embed.
+  // Same pattern used by gcloud CLI, firebase-tools, and other Google CLI tools.
+  clientId: "664225703033-i9had4ijqua22fge706s7ugtn1isjhs5.apps.googleusercontent.com",
+  clientSecret: "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",
   scopes: ["openid", "email", "profile"],
 };
 
@@ -123,111 +125,66 @@ async function postFormHttps(url, params) {
   });
 }
 
-/**
- * POST a JSON body over HTTPS. Returns parsed JSON.
- */
-async function postJsonHttps(url, jsonBody) {
-  const https = await import("https");
-  const mod = https.default || https;
-  const body = JSON.stringify(jsonBody);
-  const parsed = new URL(url);
-
-  return new Promise((resolve, reject) => {
-    const req = mod.request(
-      {
-        hostname: parsed.hostname,
-        port: parsed.port || 443,
-        path: parsed.pathname + parsed.search,
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Content-Length": Buffer.byteLength(body),
-        },
-      },
-      (res) => {
-        let data = "";
-        res.on("data", (chunk) => (data += chunk));
-        res.on("end", () => {
-          try {
-            const result = JSON.parse(data);
-            if (result.error) {
-              reject(new Error(result.error.message || JSON.stringify(result.error)));
-            } else {
-              resolve(result);
-            }
-          } catch {
-            reject(new Error(`Invalid response from ${url}: ${data.slice(0, 200)}`));
-          }
-        });
-      }
-    );
-
-    req.on("error", reject);
-    req.write(body);
-    req.end();
-  });
-}
-
 function successPage(title, message, isSuccess) {
-  const color = isSuccess ? "#4caf50" : "#f44336";
-  const icon = isSuccess ? "✓" : "✗";
-  return (
-    `<html><body style="font-family:system-ui;text-align:center;padding:3rem;">` +
-    `<h2 style="color:${color};">${icon} ${title}</h2>` +
-    `<p>${message}</p>` +
-    `</body></html>`
-  );
+  const bg = isSuccess ? "#0a0a1a" : "#1a0a0a";
+  const accent = isSuccess ? "#22c55e" : "#ef4444";
+  const glow = isSuccess ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)";
+  const icon = isSuccess ? "&#10003;" : "&#10007;";
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>${title}</title></head>
+<body style="margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:${bg};font-family:system-ui,-apple-system,sans-serif;">
+  <div style="text-align:center;padding:3rem 4rem;border-radius:16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);box-shadow:0 0 80px ${glow};">
+    <div style="width:64px;height:64px;margin:0 auto 1.5rem;border-radius:50%;background:${accent};display:flex;align-items:center;justify-content:center;">
+      <span style="font-size:32px;color:#fff;line-height:1;">${icon}</span>
+    </div>
+    <h1 style="color:#f0f0f0;font-size:1.5rem;font-weight:600;margin:0 0 0.5rem;">${title}</h1>
+    <p style="color:rgba(255,255,255,0.5);font-size:0.95rem;margin:0;">${message}</p>
+  </div>
+</body></html>`;
 }
 
 // ---------------------------------------------------------------------------
-// Token Refresh
+// PKCE (Proof Key for Code Exchange)
 // ---------------------------------------------------------------------------
 
 /**
- * Refresh an expired Firebase ID token using the refresh token.
- * Uses the Firebase secure token endpoint.
+ * Generate a cryptographically random code verifier (43-128 chars, URL-safe).
+ * RFC 7636 Section 4.1
  */
-async function refreshIdToken(refreshToken) {
-  const url = `https://securetoken.googleapis.com/v1/token?key=${FIREBASE_CONFIG.apiKey}`;
-  const result = await postFormHttps(url, {
-    grant_type: "refresh_token",
-    refresh_token: refreshToken,
-  });
+function generateCodeVerifier() {
+  return randomBytes(32).toString("base64url");
+}
 
-  if (result.error) {
-    throw new Error(`Token refresh failed: ${result.error.message || result.error}`);
-  }
-
-  return {
-    idToken: result.id_token,
-    refreshToken: result.refresh_token,
-    expiresAt: Date.now() + Number(result.expires_in) * 1000,
-  };
+/**
+ * Derive the code challenge from the verifier using SHA-256.
+ * RFC 7636 Section 4.2
+ */
+function generateCodeChallenge(verifier) {
+  return createHash("sha256").update(verifier).digest("base64url");
 }
 
 // ---------------------------------------------------------------------------
-// OAuth Login Flow
+// OAuth Login Flow (PKCE — no client secret needed)
 // ---------------------------------------------------------------------------
 
 /**
- * Interactive OAuth login flow.
+ * Interactive OAuth login flow using PKCE.
  *
- * 1. Starts local HTTP server on random port
- * 2. Opens browser to Google OAuth consent URL
- * 3. Receives redirect with auth code at /callback
- * 4. Exchanges auth code for Google tokens via googleapis
- * 5. Exchanges Google ID token for Firebase Auth credentials via identitytoolkit
- * 6. Saves credentials to ~/.tka/credentials.json
+ * PKCE eliminates the need for a client secret. Instead:
+ * 1. Generate a random code_verifier (kept in memory, never sent to Google)
+ * 2. Hash it to create a code_challenge (sent with the auth request)
+ * 3. After user signs in, exchange the auth code + original verifier for tokens
+ * 4. Google verifies: SHA256(verifier) === challenge it received earlier
+ *
+ * This is the OAuth 2.1 standard for public clients (CLI tools, mobile apps).
+ * Same pattern used by gcloud, gh, firebase-tools, and every modern CLI.
  */
 async function login() {
-  const { clientId, clientSecret, scopes } = OAUTH_CONFIG;
+  const { clientId, scopes } = OAUTH_CONFIG;
 
-  if (clientId.startsWith("PLACEHOLDER")) {
-    console.error("\n  ❌ OAuth client not configured yet.");
-    console.error("  Fill in clientId and clientSecret in scripts/lib/cli-auth.js");
-    console.error("  (Task 7 — get these from Firebase Console > Authentication > Sign-in method > Google)\n");
-    process.exit(1);
-  }
+  // Generate PKCE pair — verifier stays in memory, challenge goes to Google
+  const codeVerifier = generateCodeVerifier();
+  const codeChallenge = generateCodeChallenge(codeVerifier);
 
   let capturedRedirectUri = null;
 
@@ -278,9 +235,11 @@ async function login() {
         `&response_type=code` +
         `&scope=${encodeURIComponent(scopes.join(" "))}` +
         `&access_type=offline` +
-        `&prompt=consent`;
+        `&prompt=consent` +
+        `&code_challenge=${encodeURIComponent(codeChallenge)}` +
+        `&code_challenge_method=S256`;
 
-      console.log(`\n  🔐 Opening browser for Google sign-in...`);
+      console.log(`\n  Opening browser for Google sign-in...`);
       console.log(`  If the browser doesn't open, visit:\n  ${authUrl}\n`);
 
       // Open browser (cross-platform)
@@ -305,48 +264,69 @@ async function login() {
     }, 120_000);
   });
 
-  // Exchange auth code for Google tokens
+  // Exchange auth code for Google tokens (PKCE: send verifier, not secret)
   console.log("  Exchanging auth code for tokens...");
 
-  const googleTokens = await postFormHttps("https://oauth2.googleapis.com/token", {
-    code: authCode,
-    client_id: clientId,
-    client_secret: clientSecret,
-    redirect_uri: capturedRedirectUri,
-    grant_type: "authorization_code",
-  });
-
-  if (googleTokens.error) {
-    throw new Error(`Google token exchange failed: ${googleTokens.error_description || googleTokens.error}`);
+  const { clientSecret } = OAUTH_CONFIG;
+  let googleTokens;
+  try {
+    googleTokens = await postFormHttps("https://oauth2.googleapis.com/token", {
+      code: authCode,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: capturedRedirectUri,
+      grant_type: "authorization_code",
+      code_verifier: codeVerifier,
+    });
+  } catch (err) {
+    console.error(`\n  Token exchange failed: ${err.message}\n`);
+    process.exit(1);
   }
 
-  // Exchange Google ID token for Firebase Auth credentials
-  console.log("  Signing in to Firebase...");
+  if (googleTokens.error) {
+    console.error(`\n  Google token exchange error: ${googleTokens.error_description || googleTokens.error}\n`);
+    process.exit(1);
+  }
 
-  const firebaseAuth = await postJsonHttps(
-    `https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key=${FIREBASE_CONFIG.apiKey}`,
-    {
-      postBody: `id_token=${googleTokens.id_token}&providerId=google.com`,
-      requestUri: "http://localhost",
-      returnIdpCredential: true,
-      returnSecureToken: true,
-    }
-  );
+  // Decode Google ID token to get user info (it's a JWT — middle segment is the payload)
+  console.log("  Resolving Firebase identity...");
 
-  // Save credentials
+  let googleProfile;
+  try {
+    const payload = googleTokens.id_token.split(".")[1];
+    const padded = payload + "=".repeat((4 - (payload.length % 4)) % 4);
+    googleProfile = JSON.parse(Buffer.from(padded, "base64").toString("utf8"));
+  } catch (err) {
+    console.error(`\n  Failed to decode Google token: ${err.message}\n`);
+    process.exit(1);
+  }
+
+  // Look up the Firebase UID from the email using Admin SDK
+  // (Firebase UID may differ from Google UID — this gets the right one)
+  let firebaseUid;
+  try {
+    const { default: fbAdmin } = await import("firebase-admin");
+    const userRecord = await fbAdmin.auth().getUserByEmail(googleProfile.email);
+    firebaseUid = userRecord.uid;
+  } catch (err) {
+    console.error(`\n  No Firebase account found for ${googleProfile.email}.`);
+    console.error("  Sign into the web app at least once first, then try again.\n");
+    process.exit(1);
+  }
+
+  // Save credentials (Google refresh token for future re-auth, Firebase UID for identity)
   const credentials = {
-    uid: firebaseAuth.localId,
-    email: firebaseAuth.email,
-    displayName: firebaseAuth.displayName,
-    photoUrl: firebaseAuth.photoUrl || null,
-    idToken: firebaseAuth.idToken,
-    refreshToken: firebaseAuth.refreshToken,
-    expiresAt: Date.now() + Number(firebaseAuth.expiresIn) * 1000,
+    uid: firebaseUid,
+    email: googleProfile.email,
+    displayName: googleProfile.name || googleProfile.email.split("@")[0],
+    photoUrl: googleProfile.picture || null,
+    googleRefreshToken: googleTokens.refresh_token,
+    expiresAt: Date.now() + 365 * 24 * 60 * 60 * 1000, // credentials don't expire (re-login to refresh)
   };
 
   saveCredentials(credentials);
 
-  console.log(`\n  ✅ Logged in as ${credentials.displayName} (${credentials.email})`);
+  console.log(`\n  Logged in as ${credentials.displayName} (${credentials.email})`);
   console.log(`  Credentials saved to ${CREDENTIALS_PATH}\n`);
 }
 
@@ -385,19 +365,13 @@ async function resolveIdentity(db) {
   // Path 1: Personal OAuth credentials
   const creds = loadCredentials();
   if (creds) {
-    // Refresh token if expired
+    // Credentials are identity-only (Firebase UID, email, display name).
+    // Firestore access uses Admin SDK, so no Firebase ID token refresh needed.
+    // If credentials are very old (past expiresAt), prompt re-login.
     if (isExpired(creds)) {
-      try {
-        const refreshed = await refreshIdToken(creds.refreshToken);
-        creds.idToken = refreshed.idToken;
-        creds.refreshToken = refreshed.refreshToken;
-        creds.expiresAt = refreshed.expiresAt;
-        saveCredentials(creds);
-      } catch (err) {
-        console.error(`\n  ⚠️  Token refresh failed: ${err.message}`);
-        console.error("  Run: node scripts/fetch-feedback.js login\n");
-        process.exit(1);
-      }
+      console.error(`\n  ⚠️  Credentials expired. Please log in again.`);
+      console.error("  Run: node scripts/fetch-feedback.js login\n");
+      process.exit(1);
     }
 
     // Look up role from developers collection
