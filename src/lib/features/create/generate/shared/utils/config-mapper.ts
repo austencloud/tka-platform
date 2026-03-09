@@ -69,8 +69,8 @@ export interface UIGenerationConfig {
   loopType: string; // LOOP type when loopEnabled=true
 
   // 3-axis constraint system (replaces binary propContinuity)
-  constraintPreset: "smooth" | "mixed" | "high-reversal"; // Prop reversal frequency
-  handPathMode: "smooth" | "mixed" | "high"; // Hand path reversal frequency
+  constraintPreset: "smooth" | "mixed" | "choppy"; // Prop reversal frequency
+  handPathMode: "smooth" | "mixed" | "choppy"; // Hand path reversal frequency
   motionTypeFilter: "no-dash" | "prefer-dash" | null; // Dash frequency ("mixed" = null)
 
   // Duration rhythm template (applied automatically after generation)

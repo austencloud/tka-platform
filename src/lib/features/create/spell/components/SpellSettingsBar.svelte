@@ -93,7 +93,7 @@ Container-aware responsive design (2-tier):
   const propsOptions = [
     { value: "smooth", label: "Smooth" },
     { value: "mixed", label: "Mixed" },
-    { value: "high-reversal", label: "High" },
+    { value: "choppy", label: "Choppy" },
   ];
 
   function handlePropsChange(v: string) {
@@ -106,7 +106,7 @@ Container-aware responsive design (2-tier):
   const handsOptions = [
     { value: "smooth", label: "Smooth" },
     { value: "mixed", label: "Mixed" },
-    { value: "high", label: "High" },
+    { value: "choppy", label: "Choppy" },
   ];
 
   function handleHandsChange(v: string) {
@@ -135,13 +135,13 @@ Container-aware responsive design (2-tier):
 
   const propsDisplayValue = $derived.by(() => {
     if (preferences.constraintPreset === "smooth") return "Smooth";
-    if (preferences.constraintPreset === "high-reversal") return "High";
+    if (preferences.constraintPreset === "choppy") return "Choppy";
     return "Mixed";
   });
 
   const handsDisplayValue = $derived.by(() => {
     if (preferences.handPathMode === "smooth") return "Smooth";
-    if (preferences.handPathMode === "high") return "High";
+    if (preferences.handPathMode === "choppy") return "Choppy";
     return "Mixed";
   });
 

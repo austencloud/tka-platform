@@ -21,11 +21,11 @@ Shows summary (Smooth/Mixed/Custom) and opens an inline overlay with StyleExpand
     cardIndex = 0,
     headerFontSize = "9px",
   } = $props<{
-    constraintPreset: "smooth" | "mixed" | "high-reversal";
-    handPathMode: "smooth" | "mixed" | "high";
+    constraintPreset: "smooth" | "mixed" | "choppy";
+    handPathMode: "smooth" | "mixed" | "choppy";
     motionTypeFilter: "no-dash" | "prefer-dash" | null;
-    onConstraintPresetChange: (v: "smooth" | "mixed" | "high-reversal") => void;
-    onHandPathModeChange: (v: "smooth" | "mixed" | "high") => void;
+    onConstraintPresetChange: (v: "smooth" | "mixed" | "choppy") => void;
+    onHandPathModeChange: (v: "smooth" | "mixed" | "choppy") => void;
     onMotionTypeFilterChange: (v: "no-dash" | "mixed" | "prefer-dash") => void;
     color?: string;
     shadowColor?: string;
@@ -42,9 +42,9 @@ Shows summary (Smooth/Mixed/Custom) and opens an inline overlay with StyleExpand
 
   let displayValue = $derived.by(() => {
     const presetLabel = constraintPreset === "smooth" ? "Smooth"
-      : constraintPreset === "high-reversal" ? "High" : "Mixed";
+      : constraintPreset === "choppy" ? "Choppy" : "Mixed";
     const handLabel = handPathMode === "smooth" ? "Smooth"
-      : handPathMode === "high" ? "High" : "Mixed";
+      : handPathMode === "choppy" ? "Choppy" : "Mixed";
     const dashLabel = motionTypeFilter === "no-dash" ? "Low"
       : motionTypeFilter === "prefer-dash" ? "High" : "Mixed";
 

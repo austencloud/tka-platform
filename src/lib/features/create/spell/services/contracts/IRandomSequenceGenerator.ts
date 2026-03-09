@@ -18,7 +18,7 @@ export interface RandomSequenceGenerationOptions {
   gridMode: GridMode;
   /** Optional constraints to respect during generation */
   constraints?: VariationConstraints;
-  /** Optional soft constraint set for scoring variations (smooth, natural, high-reversal) */
+  /** Optional soft constraint set for scoring variations (smooth, natural, choppy) */
   constraintSet?: ConstraintSet;
   /** Optional abort signal to cancel generation */
   signal?: AbortSignal;

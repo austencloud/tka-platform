@@ -39,8 +39,8 @@ export interface SpellPreferences {
   maxReversals: number | null;
   /** Prefer high continuity (same rotation direction) */
   highContinuity: boolean;
-  /** Hand path reversal mode: 'smooth' = minimize, 'mixed' = balanced, 'high' = maximize */
-  handPathMode: "smooth" | "mixed" | "high";
+  /** Hand path reversal mode: 'smooth' = minimize, 'mixed' = balanced, 'choppy' = maximize */
+  handPathMode: "smooth" | "mixed" | "choppy";
   /** Generate a circular (LOOP) sequence that returns to start */
   makeCircular: boolean;
   /** Selected LOOP type when makeCircular is true (null = show options after generation) */
