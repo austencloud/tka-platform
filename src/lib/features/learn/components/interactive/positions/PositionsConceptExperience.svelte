@@ -12,7 +12,9 @@ Supports keyboard navigation (arrow keys between phases) and accessibility featu
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { createPositionsExperienceState } from "./positions-experience-state.svelte";
-  import PositionsDiscoveryPhase from "./PositionsDiscoveryPhase.svelte";
+  import DiscoveryVariantA from "./DiscoveryVariantA.svelte";
+  import DiscoveryVariantB from "./DiscoveryVariantB.svelte";
+  import DiscoveryVariantC from "./DiscoveryVariantC.svelte";
   import ConstructionQuiz from "./ConstructionQuiz.svelte";
   import SpeedRounds from "./SpeedRounds.svelte";
   import ExperienceProgressIndicator from "../ExperienceProgressIndicator.svelte";
@@ -26,6 +28,9 @@ Supports keyboard navigation (arrow keys between phases) and accessibility featu
 
   const hapticService = container.items.hapticFeedback;
   const experienceState = createPositionsExperienceState();
+
+  // Variant switcher for A/B testing discovery phase
+  let variant = $state<'a' | 'b' | 'c'>('a');
 
   const PHASE_STEP: Record<string, number> = {
     discovery: 1,
@@ -116,7 +121,25 @@ Supports keyboard navigation (arrow keys between phases) and accessibility featu
   {/if}
 
   {#if experienceState.phase === "discovery"}
-    <PositionsDiscoveryPhase {experienceState} />
+    <!-- Dev toggle for variant switching -->
+    <button
+      class="variant-toggle"
+      onclick={() => {
+        variant = variant === 'a' ? 'b' : variant === 'b' ? 'c' : 'a';
+        hapticService?.trigger('selection');
+      }}
+      aria-label="Switch discovery variant"
+    >
+      Variant {variant.toUpperCase()}
+    </button>
+
+    {#if variant === 'a'}
+      <DiscoveryVariantA {experienceState} />
+    {:else if variant === 'b'}
+      <DiscoveryVariantB {experienceState} />
+    {:else}
+      <DiscoveryVariantC {experienceState} />
+    {/if}
   {:else if experienceState.phase === "construction-quiz"}
     <ConstructionQuiz {experienceState} />
   {:else if experienceState.phase === "speed-rounds"}
@@ -157,12 +180,28 @@ Supports keyboard navigation (arrow keys between phases) and accessibility featu
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     height: 100%;
-    padding: var(--spacing-xl, 2rem);
-    padding-top: var(--spacing-2xl, 3rem);
+    padding: 1rem;
     overflow-y: auto;
     overflow-x: hidden;
     outline: none;
+    position: relative;
+  }
+
+  .variant-toggle {
+    position: absolute;
+    bottom: 3.5rem;
+    right: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--theme-text, rgba(255, 255, 255, 0.5));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 6px;
+    cursor: pointer;
+    z-index: 10;
   }
 
   /* Screen reader only */
