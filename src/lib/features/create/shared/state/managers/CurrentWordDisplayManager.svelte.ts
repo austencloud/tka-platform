@@ -24,6 +24,34 @@ import type { LetterSource } from "$lib/features/create/spell/domain/models/spel
 type CreateModuleState = ReturnType<typeof CreateModuleStateType>;
 type ConstructTabState = ReturnType<typeof ConstructTabStateType>;
 
+/**
+ * Detect and remove repeated cycles in letter sources.
+ * E.g., [A,Δ,U,S,T,Y,E,Δ,N,W,A,Δ,U,S,T,Y,E,Δ,N,W] → first 10 only.
+ */
+function simplifyRepeatedLetterSources(sources: LetterSource[]): LetterSource[] {
+  const n = sources.length;
+  if (n < 2) return sources;
+
+  // Try pattern lengths from 1 to half the array
+  for (let len = 1; len <= Math.floor(n / 2); len++) {
+    if (n % len !== 0) continue;
+
+    let isRepeating = true;
+    for (let i = len; i < n; i++) {
+      if (sources[i]!.letter !== sources[i % len]!.letter) {
+        isRepeating = false;
+        break;
+      }
+    }
+
+    if (isRepeating) {
+      return sources.slice(0, len);
+    }
+  }
+
+  return sources;
+}
+
 export interface CurrentWordDisplayConfig {
   CreateModuleState: CreateModuleState;
   constructTabState: ConstructTabState;
@@ -75,8 +103,11 @@ export function createCurrentWordDisplayEffect(
       } | undefined;
 
       if (spellData?.letterSources && spellData.letterSources.length > 0) {
-        displayText = spellData.expandedWord || sequence?.word || "";
-        letterSources = spellData.letterSources;
+        const allSources = spellData.letterSources;
+        // Simplify repeated letter sources (e.g., AUSTEN×2 at 20 steps → show one cycle)
+        letterSources = simplifyRepeatedLetterSources(allSources);
+        // Build display text from the simplified sources
+        displayText = letterSources.map(s => s.letter).join("");
       }
       // PRIORITY 2: Construct tab - start position instructions
       else if (navigationState.activeTab === "construct") {
@@ -87,7 +118,7 @@ export function createCurrentWordDisplayEffect(
         }
       }
       // PRIORITY 4: Guided mode - header text
-      else if (CreateModuleState.activeSection === "guided") {
+      else if (CreateModuleState.activeSection === "assemble") {
         displayText =
           CreateModuleState.guidedModeHeaderText || "Guided Builder";
       }

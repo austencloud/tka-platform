@@ -275,6 +275,24 @@ export function createSequenceState(services: SequenceStateServices) {
   // ============================================================================
 
   function setCurrentSequence(sequence: SequenceData | null): void {
+    // Normalize step numbers for imported sequences (e.g., from Browse gallery).
+    // Steps loaded from Firestore may lack stepNumber, causing step selection to fail
+    // because selectStep() validates stepNumber against the sequence length.
+    if (sequence?.steps?.length) {
+      const needsNormalization = sequence.steps.some(
+        (step, index) => step.stepNumber !== index + 1
+      );
+      if (needsNormalization) {
+        sequence = {
+          ...sequence,
+          steps: sequence.steps.map((step, index) => ({
+            ...step,
+            stepNumber: index + 1,
+          })),
+        };
+      }
+    }
+
     // Only clear selection when loading a NEW sequence, not when updating the current one
     // This preserves beat selection during beat edits (turns, orientation changes, etc.)
     const previousSequenceId = coreState.currentSequence?.id;

@@ -27,6 +27,7 @@
   import { arrowAdjustmentUndoStack } from "$lib/shared/pictograph/arrow/positioning/global/state/ArrowAdjustmentUndoStack";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
   const logger = createComponentLogger("ArrowAdjustmentPanel");
 
@@ -60,15 +61,27 @@
   // Derived
   const selectedArrow = $derived(selectedArrowState.selectedArrow);
 
-  // Get prop types from selected arrow's motion data
-  const thisPropType = $derived(
-    selectedArrow?.motionData?.propType?.toLowerCase() || "staff"
-  );
+  // Get prop types from global settings to match the rendering pipeline.
+  // PictographPreparer overrides motionData.propType with global settings before
+  // passing to SpecialPlacer for adjustment lookup. We must use the SAME prop types
+  // here so WASD adjustments are saved/read under the same key the renderer uses.
+  const thisPropType = $derived.by(() => {
+    if (!selectedArrow) return "staff";
+    const settings = getSettings();
+    const settingsPropType = selectedArrow.color === "blue"
+      ? settings.bluePropType
+      : settings.redPropType;
+    return (settingsPropType ?? selectedArrow.motionData?.propType)?.toLowerCase() || "staff";
+  });
   const otherPropType = $derived.by(() => {
     if (!selectedArrow) return "staff";
+    const settings = getSettings();
     const otherColor = selectedArrow.color === "blue" ? "red" : "blue";
+    const settingsPropType = otherColor === "blue"
+      ? settings.bluePropType
+      : settings.redPropType;
     const otherMotion = selectedArrow.pictographData?.motions?.[otherColor];
-    return otherMotion?.propType?.toLowerCase() || "staff";
+    return (settingsPropType ?? otherMotion?.propType)?.toLowerCase() || "staff";
   });
 
   // Get default save layer from orchestrator
