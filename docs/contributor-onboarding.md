@@ -1,195 +1,156 @@
-# Contributing to TKA with Claude Code
+# TKA Contributor Guide
 
-Welcome. This guide gets you from zero to claiming your first feedback item.
-
----
-
-## Prerequisites
-
-- **Node.js 22+** — check with `node --version`
-- **Claude Code** — Anthropic's CLI tool
-- **Git** — to clone the repo
+Hey Kevin. Here's everything you need to start contributing.
 
 ---
 
-## Setup (one-time)
-
-### 1. Clone the repo
+## Get Running (5 minutes)
 
 ```bash
+# 1. Clone and install
 git clone https://github.com/austencloud/the-kinetic-alphabet.git
 cd the-kinetic-alphabet
 npm install
+
+# 2. Create your Firebase account (one-time)
+# Visit https://the-kinetic-alphabet.web.app and sign in with Google
+
+# 3. Open Claude Code in this repo and type:
+/fb
 ```
 
-### 2. Sign into the web app once
+That's it. If you're not logged in yet, a browser window opens for Google sign-in. Once authenticated, Claude picks a feedback item and you start working.
 
-Go to https://the-kinetic-alphabet.web.app and sign in with your Google account. This creates your Firebase account — needed before the CLI can recognize you.
-
-### 3. Log into the CLI
-
-```bash
-node scripts/fetch-feedback.js login
-```
-
-A browser window opens for Google sign-in. After you authenticate, you'll see:
-
-```
-Logged in as Your Name (you@gmail.com)
-Credentials saved to ~/.tka/credentials.json
-```
-
-### 4. Austen adds you as a contributor
-
-After you log in, tell Austen your email. He runs:
-
-```bash
-node scripts/fetch-feedback.js add-developer you@gmail.com contributor
-```
-
-### 5. Verify it works
-
-```bash
-node scripts/fetch-feedback.js whoami
-```
-
-You should see your name, email, and `Role: contributor`.
+After you log in, send Austen your email so he can add you as a contributor.
 
 ---
 
-## The Feedback Workflow
+## How It Works
 
-Feedback items are bugs, features, and ideas tracked in Firestore. Your job: pick one, fix it, submit for review.
+The project tracks bugs, features, and ideas as **feedback items** in a shared queue. You pick one, fix it, submit it for review. Austen tests it and either ships it or sends it back.
 
-### See what's available
-
-```bash
-node scripts/fetch-feedback.js list
+```
+  You claim it          You fix it            Austen reviews it
+┌──────────┐      ┌──────────────┐      ┌───────────────────┐
+│   new    │ ───▸ │ in-progress  │ ───▸ │    in-review      │
+└──────────┘      └──────────────┘      └───────────────────┘
+                                               │
+                                    ┌──────────┴──────────┐
+                                    ▼                     ▼
+                              ┌──────────┐         ┌───────────┐
+                              │completed │         │ back to   │
+                              │ (ships!) │         │ you       │
+                              └──────────┘         └───────────┘
 ```
 
-Shows all items grouped by status. Look at the **UNCLAIMED** section — those are ready to work on.
+---
 
-### Claim an item
+## The Main Command: `/fb`
+
+This is your primary workflow. Type it in Claude Code and Claude handles the rest.
+
+| Command | What it does |
+|---------|-------------|
+| `/fb` | Auto-pick the best unclaimed item and start working |
+| `/fb yfTRt6UK` | Claim a specific item by ID and start working |
+| `/done` | Mark your current work done and submit for review |
+
+Claude reads the feedback, understands the codebase, assesses complexity, and helps you implement the fix. When you're done, `/done` wraps it up and notifies Austen.
+
+---
+
+## Other Useful Commands
+
+These are slash commands you type directly in Claude Code:
+
+| Command | What it does |
+|---------|-------------|
+| `/check` | Find and fix TypeScript errors |
+| `/commit` | Analyze your changes and commit in clean, logical chunks |
+| `/submitfb` | Found a bug? Submit it to the feedback queue |
+| `/audit` | Audit a module or component for code quality |
+| `/monolith` | Detect files that are too large and need splitting |
+| `/deadcode` | Find and remove unused code |
+| `/ship` | Check if a feature is production-ready |
+| `/screenshots` | Take screenshots across 9 device sizes at once |
+
+You don't need to memorize these. Claude suggests them when relevant.
+
+---
+
+## Manual CLI Commands
+
+If you prefer working outside Claude Code, or need finer control:
 
 ```bash
-# Auto-claim the next item (by priority)
-node scripts/fetch-feedback.js
+# See the queue
+node scripts/fetch-feedback.js list
 
-# Claim a specific item by ID (first 8 chars is enough)
+# Claim something specific
 node scripts/fetch-feedback.js claim yfTRt6UK
 
-# Claim the next high-priority item
-node scripts/fetch-feedback.js high
-```
-
-When you claim an item, Austen gets notified.
-
-### View item details
-
-```bash
-node scripts/fetch-feedback.js yfTRt6UK
-```
-
-### Keep your claim alive
-
-Claims go stale after 45 minutes of inactivity. If you're working on something for a while:
-
-```bash
-node scripts/fetch-feedback.js heartbeat yfTRt6UK "still working on the component"
-```
-
-### Submit for review
-
-When you're done:
-
-```bash
-node scripts/fetch-feedback.js yfTRt6UK in-review "Fixed the dropdown override logic, added confirmation dialog"
-```
-
-Austen gets an email and an in-app notification. He tests it and either moves it to `completed` or sends it back.
-
-### See your active items
-
-```bash
+# See what you're working on
 node scripts/fetch-feedback.js mine
+
+# View full details on an item
+node scripts/fetch-feedback.js yfTRt6UK
+
+# Submit your work for review
+node scripts/fetch-feedback.js yfTRt6UK in-review "Fixed the layout bug"
+
+# Keep your claim alive during long sessions (claims go stale after 45 min)
+node scripts/fetch-feedback.js heartbeat yfTRt6UK "still on it"
+
+# Check your identity
+node scripts/fetch-feedback.js whoami
+
+# Full command list
+node scripts/fetch-feedback.js help
 ```
-
-### Create new feedback
-
-Found a bug while working? Log it:
-
-```bash
-node scripts/fetch-feedback.js create
-```
-
-Follows an interactive prompt.
 
 ---
 
-## What You Can Do
+## Your Permissions
 
-| Action | Available |
-|--------|-----------|
-| View all feedback | Yes |
-| Claim items | Yes |
-| Work on claimed items | Yes |
-| Submit for review | Yes |
-| Create new feedback | Yes |
-| Delete your own feedback | Yes |
-| Change priority | No (admin) |
-| Mark as completed | No (admin) |
-| Archive items | No (admin) |
-| Delete others' feedback | No (admin) |
+| You can | You can't (admin only) |
+|---------|----------------------|
+| View all feedback | Change priority |
+| Claim and work on items | Mark items as completed |
+| Submit work for review | Archive items |
+| Create new feedback | Delete others' feedback |
+| Delete your own feedback | Manage developers |
 
----
-
-## Using Claude Code with /fb
-
-Once you have Claude Code set up in this repo, the `/fb` command is the fast path:
-
-```
-/fb              — auto-claim next item
-/fb yfTRt6UK     — claim specific item and start working
-/fb mine         — see your items
-```
-
-Claude reads the feedback item, understands the codebase, and helps you fix it. When done, it submits for review automatically via `/done`.
-
----
-
-## Quick Reference
-
-```bash
-# Auth
-node scripts/fetch-feedback.js login        # Sign in
-node scripts/fetch-feedback.js logout       # Sign out
-node scripts/fetch-feedback.js whoami       # Check identity
-
-# Work
-node scripts/fetch-feedback.js list         # See all items
-node scripts/fetch-feedback.js              # Auto-claim next
-node scripts/fetch-feedback.js claim <id>   # Claim specific
-node scripts/fetch-feedback.js mine         # Your items
-node scripts/fetch-feedback.js <id>         # View details
-
-# Progress
-node scripts/fetch-feedback.js heartbeat <id> "msg"    # Keep claim alive
-node scripts/fetch-feedback.js <id> in-review "notes"  # Submit for review
-
-# Help
-node scripts/fetch-feedback.js help         # Full command list
-```
+When you submit for review, Austen gets an email and an in-app notification. He tests it and moves it forward.
 
 ---
 
 ## Troubleshooting
 
-**"Not authenticated"** — Run `login` first.
+**Browser doesn't open during login**
+Copy the URL from the terminal and paste it into your browser manually.
 
-**"No Firebase account found"** — Sign into the web app (https://the-kinetic-alphabet.web.app) with Google first, then try `login` again.
+**"Could not sign into Firebase"**
+Visit https://the-kinetic-alphabet.web.app and sign in with Google first. This creates your Firebase account.
 
-**"Permission denied"** — Ask Austen to run `add-developer` with your email.
+**"Permission denied" on commands**
+Austen hasn't added you as a contributor yet. Send him your email.
 
-**"Cannot claim — active work in progress"** — Someone else is working on it. Pick a different item or wait for the claim to go stale (45 min).
+**"Cannot claim — active work in progress"**
+Someone else is working on that item. Pick a different one, or wait 45 minutes for the claim to expire.
 
-**Credentials expired** — Run `login` again. Credentials last 1 year but can be refreshed anytime.
+**"Token refresh failed"**
+Run `node scripts/fetch-feedback.js login` to re-authenticate.
+
+**Anything else**
+Ask Austen or check `node scripts/fetch-feedback.js help`.
+
+---
+
+## Project Basics
+
+- **Stack:** Svelte 5 + TypeScript + Firebase
+- **Architecture:** Small files, dependency injection, services over utilities
+- **Node requirement:** v22+
+- **Dev server:** `npm run dev` runs on port 5173 (Austen's), use `vite --port 5174` if you need your own
+- **Tests:** `npm test` — we only test algorithms where bugs would be silent
+- **Type check:** `npm run check`
