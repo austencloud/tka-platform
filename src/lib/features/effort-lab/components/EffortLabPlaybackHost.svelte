@@ -84,7 +84,7 @@
   // ─── Playback state ───────────────────────────────────────────────────
   let timePosition = $state(0);
   let isPlaying = $state(false);
-  let bpm = $state(120);
+  let bpm = $state(60);
   let rafId: number | null = null;
   let lastTime: number | null = null;
 
