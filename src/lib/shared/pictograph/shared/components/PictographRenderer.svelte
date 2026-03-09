@@ -31,7 +31,6 @@ Usage:
   import DirectionDot from "../../tka-glyph/components/DirectionDot.svelte";
   import { parseTurnsTuple } from "../../tka-glyph/utils/turn-tuple-parser";
   import ReversalIndicators from "./ReversalIndicators.svelte";
-  import VTGGlyph from "./VTGGlyph.svelte";
   import ElementalGlyph from "./ElementalGlyph.svelte";
   import PositionGlyph from "./PositionGlyph.svelte";
   import StepNumber from "./StepNumber.svelte";
@@ -253,6 +252,7 @@ Usage:
 
   // Parse direction from turns tuple for direction dot
   const parsedDirection = $derived(parseTurnsTuple(turnsTuple).direction);
+
 </script>
 
 <div class="pictograph-renderer">
@@ -379,26 +379,14 @@ Usage:
         onToggle={onToggleReversals}
       />
 
-      <!-- Elemental glyph -->
+      <!-- Fused Elemental + VTG glyph (bottom-right) -->
       <ElementalGlyph
         elementalType={vtgInfo.elementalType}
         letter={pictograph.letter}
         {hasValidData}
-        visible={showElemental}
+        visible={showElemental || showVTG}
         {previewMode}
-        onToggle={onToggleElemental}
-        xOffset={rightGlyphOffset}
-      />
-
-      <!-- VTG glyph -->
-      <VTGGlyph
-        vtgMode={vtgInfo.vtgMode}
-        letter={pictograph.letter}
-        {hasValidData}
-        visible={showVTG}
-        {previewMode}
-        {darkMode}
-        onToggle={onToggleVTG}
+        onToggle={onToggleElemental ?? onToggleVTG}
         xOffset={rightGlyphOffset}
       />
 

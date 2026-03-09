@@ -234,7 +234,7 @@
     overflow: hidden;
     width: 100%;
     aspect-ratio: 1;
-    max-width: 500px;
+    max-width: 320px;
     box-shadow: inset 0 2px 8px var(--theme-shadow);
     /* In modal: preview shrinks to fit; in settings: auto (full aspect-ratio size) */
     min-height: var(--vt-preview-min-h, auto);
@@ -406,7 +406,7 @@
     outline-offset: 2px;
   }
 
-  @container pictograph-panel (min-width: 500px) {
+  @container pictograph-panel (min-width: 450px) {
     .panel-body {
       flex-direction: row;
       align-items: flex-start;
@@ -414,8 +414,8 @@
 
     .preview-frame {
       flex-shrink: 0;
-      width: 50%;
-      max-width: 500px;
+      width: 40%;
+      max-width: 320px;
     }
 
     .panel-controls {

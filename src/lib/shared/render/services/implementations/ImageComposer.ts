@@ -220,10 +220,22 @@ export class ImageComposer implements IImageComposer {
     // Step 1: Calculate layout using LayoutCalculator
     // This service has the proper lookup tables matching the desktop application
     const stepCount = sequence.steps.length;
-    const [columns, rows] = this.layoutService.calculateLayout(
-      stepCount,
-      options.includeStartPosition ?? false
-    );
+    let columns: number;
+    let rows: number;
+    if (options.columnCount != null && options.columnCount > 0) {
+      // Manual column override (e.g., from image export settings)
+      columns = options.columnCount;
+      const startCol = (options.includeStartPosition ?? false) ? 1 : 0;
+      const stepsPerRow = columns - startCol;
+      const firstRowSteps = Math.min(stepsPerRow, stepCount);
+      const remaining = stepCount - firstRowSteps;
+      rows = 1 + (remaining > 0 ? Math.ceil(remaining / stepsPerRow) : 0);
+    } else {
+      [columns, rows] = this.layoutService.calculateLayout(
+        stepCount,
+        options.includeStartPosition ?? false
+      );
+    }
 
     // Step 2: Calculate canvas dimensions including title space
     // Scale stepSize by stepScale to maintain proportions between grid and title areas

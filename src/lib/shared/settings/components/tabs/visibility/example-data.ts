@@ -86,8 +86,154 @@ export const exampleSequenceData: SequenceData = {
  * Shows the starting configuration (Alpha 1 - hands at opposite points: blue at south, red at north).
  * Used in the Image Export preview to show what the start position cell looks like.
  */
+/** AABB sequence steps for Image Export preview */
+export const aabbStepData: Array<{
+  letter: Letter;
+  blueMotion: Parameters<typeof createMotionData>[0];
+  redMotion: Parameters<typeof createMotionData>[0];
+  stepNumber: number;
+}> = [
+  {
+    letter: Letter.A,
+    stepNumber: 1,
+    blueMotion: {
+      motionType: MotionType.PRO,
+      rotationDirection: RotationDirection.CLOCKWISE,
+      startLocation: GridLocation.SOUTH,
+      endLocation: GridLocation.WEST,
+      turns: 0,
+      startOrientation: Orientation.IN,
+      endOrientation: Orientation.IN,
+      color: MotionColor.BLUE,
+      isVisible: true,
+      arrowLocation: GridLocation.WEST,
+      gridMode: GridMode.DIAMOND,
+    },
+    redMotion: {
+      motionType: MotionType.PRO,
+      rotationDirection: RotationDirection.CLOCKWISE,
+      startLocation: GridLocation.NORTH,
+      endLocation: GridLocation.EAST,
+      turns: 0,
+      startOrientation: Orientation.IN,
+      endOrientation: Orientation.IN,
+      color: MotionColor.RED,
+      isVisible: true,
+      arrowLocation: GridLocation.EAST,
+      gridMode: GridMode.DIAMOND,
+    },
+  },
+  {
+    letter: Letter.A,
+    stepNumber: 2,
+    blueMotion: {
+      motionType: MotionType.PRO,
+      rotationDirection: RotationDirection.CLOCKWISE,
+      startLocation: GridLocation.WEST,
+      endLocation: GridLocation.NORTH,
+      turns: 0,
+      startOrientation: Orientation.IN,
+      endOrientation: Orientation.IN,
+      color: MotionColor.BLUE,
+      isVisible: true,
+      arrowLocation: GridLocation.NORTH,
+      gridMode: GridMode.DIAMOND,
+    },
+    redMotion: {
+      motionType: MotionType.PRO,
+      rotationDirection: RotationDirection.CLOCKWISE,
+      startLocation: GridLocation.EAST,
+      endLocation: GridLocation.SOUTH,
+      turns: 0,
+      startOrientation: Orientation.IN,
+      endOrientation: Orientation.IN,
+      color: MotionColor.RED,
+      isVisible: true,
+      arrowLocation: GridLocation.SOUTH,
+      gridMode: GridMode.DIAMOND,
+    },
+  },
+  {
+    letter: Letter.B,
+    stepNumber: 3,
+    blueMotion: {
+      motionType: MotionType.ANTI,
+      rotationDirection: RotationDirection.CLOCKWISE,
+      startLocation: GridLocation.NORTH,
+      endLocation: GridLocation.WEST,
+      turns: 0,
+      startOrientation: Orientation.IN,
+      endOrientation: Orientation.OUT,
+      color: MotionColor.BLUE,
+      isVisible: true,
+      arrowLocation: GridLocation.WEST,
+      gridMode: GridMode.DIAMOND,
+    },
+    redMotion: {
+      motionType: MotionType.ANTI,
+      rotationDirection: RotationDirection.CLOCKWISE,
+      startLocation: GridLocation.SOUTH,
+      endLocation: GridLocation.EAST,
+      turns: 0,
+      startOrientation: Orientation.IN,
+      endOrientation: Orientation.OUT,
+      color: MotionColor.RED,
+      isVisible: true,
+      arrowLocation: GridLocation.EAST,
+      gridMode: GridMode.DIAMOND,
+    },
+  },
+  {
+    letter: Letter.B,
+    stepNumber: 4,
+    blueMotion: {
+      motionType: MotionType.ANTI,
+      rotationDirection: RotationDirection.CLOCKWISE,
+      startLocation: GridLocation.WEST,
+      endLocation: GridLocation.SOUTH,
+      turns: 0,
+      startOrientation: Orientation.OUT,
+      endOrientation: Orientation.IN,
+      color: MotionColor.BLUE,
+      isVisible: true,
+      arrowLocation: GridLocation.SOUTH,
+      gridMode: GridMode.DIAMOND,
+    },
+    redMotion: {
+      motionType: MotionType.ANTI,
+      rotationDirection: RotationDirection.CLOCKWISE,
+      startLocation: GridLocation.EAST,
+      endLocation: GridLocation.NORTH,
+      turns: 0,
+      startOrientation: Orientation.OUT,
+      endOrientation: Orientation.IN,
+      color: MotionColor.RED,
+      isVisible: true,
+      arrowLocation: GridLocation.NORTH,
+      gridMode: GridMode.DIAMOND,
+    },
+  },
+];
+
+/** Convert aabbStepData to pictograph data objects for rendering */
+export function getAabbPictographSteps() {
+  return aabbStepData.map((step) => ({
+    id: `aabb-step-${step.stepNumber}`,
+    letter: step.letter,
+    startPosition: GridPosition.ALPHA1,
+    endPosition: GridPosition.ALPHA1,
+    gridMode: GridMode.DIAMOND,
+    stepNumber: step.stepNumber,
+    motions: {
+      blue: createMotionData(step.blueMotion),
+      red: createMotionData(step.redMotion),
+    },
+  }));
+}
+
 export const exampleStartPositionData: StartPositionData = {
   isStartPosition: true,
+  stepNumber: 0,
   id: "visibility-preview-start",
   letter: Letter.ALPHA,
   startPosition: GridPosition.ALPHA1,

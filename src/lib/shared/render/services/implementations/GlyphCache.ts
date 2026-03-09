@@ -331,7 +331,7 @@ export class GlyphCache implements IGlyphCache {
 
   private async loadElement(element: ElementType): Promise<void> {
     try {
-      const path = `/images/elements/${element}.svg`;
+      const path = `/images/elements/${element}.png`;
 
       const response = await fetch(path);
 
@@ -340,21 +340,13 @@ export class GlyphCache implements IGlyphCache {
         return;
       }
 
-      const svgContent = await response.text();
-
-      // Validate this is actually SVG content
-      const trimmed = svgContent.trimStart();
-      if (
-        !trimmed.startsWith("<svg") &&
-        !trimmed.startsWith("<?xml") &&
-        !trimmed.startsWith("<!DOCTYPE svg")
-      ) {
-        this.failedCount++;
-        return;
-      }
-
-      // Convert to base64 data URL for inline embedding (UTF-8 safe)
-      const dataUrl = `data:image/svg+xml;base64,${this.utf8ToBase64(svgContent)}`;
+      const blob = await response.blob();
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
 
       // Cache with the path as the key
       this.cache.set(path, dataUrl);

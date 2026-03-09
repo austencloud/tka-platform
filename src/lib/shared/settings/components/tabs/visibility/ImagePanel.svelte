@@ -10,9 +10,7 @@
   import { slide } from "svelte/transition";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import ImageExportPreviewLayered from "./ImageExportPreviewLayered.svelte";
-  import {
-    getSettings,
-  } from "$lib/shared/application/state/app-state.svelte";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
   interface Props {
     addWord: boolean;
@@ -23,8 +21,8 @@
     showNotes: boolean;
     showBirthday: boolean;
     customNotesText: string;
-    onPictographToggle: (key: string) => void;
     onToggle: (key: string) => void;
+    onPictographToggle: (key: string) => void;
     onCustomNotesChange: (value: string) => void;
     isMobileHidden?: boolean;
   }
@@ -37,15 +35,14 @@
     showNotes,
     showBirthday,
     customNotesText,
-    onPictographToggle,
     onToggle,
+    onPictographToggle,
     onCustomNotesChange,
     isMobileHidden = false,
   }: Props = $props();
 
-  const darkMode = $derived(getSettings().darkMode ?? false);
-
   let collapsed = $state(false);
+  const darkMode = $derived(getSettings().darkMode ?? false);
 </script>
 
 <section
@@ -70,7 +67,7 @@
 
   {#if !collapsed}
     <div class="panel-body" transition:slide={{ duration: 200 }}>
-      <div class="preview-strip">
+      <div class="preview-frame">
         <ImageExportPreviewLayered
           showWord={addWord}
           showDifficultyLevel={addDifficultyLevel}
@@ -88,6 +85,7 @@
           onToggleNonRadial={() => onPictographToggle("nonRadial")}
         />
       </div>
+
       <div class="panel-controls">
         <div class="control-group">
           <span class="group-label">{t("visibility_include_in_image")}</span>
@@ -149,6 +147,15 @@
 </section>
 
 <style>
+  .preview-frame {
+    width: 100%;
+    border-radius: clamp(8px, 1.5cqi, 12px);
+    border: 1px solid var(--theme-stroke);
+    overflow: hidden;
+    background: color-mix(in srgb, var(--theme-panel-bg) 80%, transparent);
+    flex-shrink: 0;
+  }
+
   .settings-panel {
     container-type: inline-size;
     container-name: image-panel;
@@ -218,21 +225,6 @@
     font-family:
       -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
     flex: 1;
-  }
-
-  .preview-strip {
-    width: 100%;
-    max-height: 180px;
-    border-radius: clamp(8px, 1.5cqi, 12px);
-    border: 1px solid var(--theme-stroke);
-    overflow: hidden;
-    background: color-mix(in srgb, var(--theme-panel-bg) 80%, transparent);
-  }
-
-  .preview-strip :global(.image-export-preview) {
-    transform: scale(0.6);
-    transform-origin: top center;
-    max-height: 180px;
   }
 
   .panel-controls {
