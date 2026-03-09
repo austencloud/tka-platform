@@ -1,14 +1,15 @@
 <!-- Sidebar Footer Component -->
-<!-- Footer with settings, inbox, network status, and version badge -->
+<!-- Footer with account, inbox, network status, and voice mic -->
 <script lang="ts">
   import { container } from "$lib/shared/di";
-  import { whatsNewState } from "../../../settings/state/whats-new-state.svelte";
   import { inboxState } from "../../../inbox/state/inbox-state.svelte";
   import { featureFlagService } from "../../../auth/services/PostHogFeatureFlagService.svelte";
   import NetworkStatusIndicator from "../../../offline/components/NetworkStatusIndicator.svelte";
   import ModuleQuickToggle from "./ModuleQuickToggle.svelte";
   import { voiceControlState } from "../../../voice-control/state/voice-control-state.svelte";
   import { getSettings } from "../../../application/state/app-state.svelte";
+  import AccountRow from "../account/AccountRow.svelte";
+  import AccountPopover from "../account/AccountPopover.svelte";
 
   let { isCollapsed, onSettingsClick, isInSettings = false } = $props<{
     isCollapsed: boolean;
@@ -24,6 +25,18 @@
   const voiceEnabled = $derived(voiceControlState.enabled);
   const inCommandMode = $derived(voiceControlState.commandMode);
   const hasVoiceError = $derived(voiceControlState.detectorState === "error");
+
+  // Account popover state
+  let popoverOpen = $state(false);
+  let accountSectionEl = $state<HTMLElement | null>(null);
+
+  function togglePopover() {
+    popoverOpen = !popoverOpen;
+  }
+
+  function closePopover() {
+    popoverOpen = false;
+  }
 
   function handleMicClick() {
     try {
@@ -78,42 +91,28 @@
 
     inboxState.open();
   }
-
-  function handleVersionClick() {
-    // Haptic feedback
-    try {
-      const hapticService = container.items.hapticFeedback;
-      hapticService?.trigger("selection");
-    } catch {
-      // Ignore if not available
-    }
-
-    // Open the What's New modal in manual mode
-    void whatsNewState.openManual();
-  }
 </script>
 
-<!-- Footer with settings, inbox (hidden when in settings mode) -->
+<!-- Footer with account, inbox (hidden when in settings mode) -->
 <div
   class="sidebar-footer"
   class:collapsed={isCollapsed}
   style="--button-accent-color: #64748b;"
 >
   {#if !isInSettings}
-    <!-- Settings Button -->
-    <button
-      class="footer-button settings-button"
-      class:collapsed={isCollapsed}
-      onclick={handleSettingsClick}
-      aria-label="Open settings"
-    >
-      <div class="button-icon">
-        <i class="fas fa-cog" aria-hidden="true"></i>
-      </div>
-      {#if !isCollapsed}
-        <span class="button-label">Settings</span>
-      {/if}
-    </button>
+    <!-- Account Row + Popover (replaces Settings button) -->
+    <div class="account-section" bind:this={accountSectionEl} style="position: relative;">
+      <AccountRow
+        variant={isCollapsed ? "collapsed" : "expanded"}
+        onclick={togglePopover}
+      />
+      <AccountPopover
+        isOpen={popoverOpen}
+        onClose={closePopover}
+        onSettingsClick={handleSettingsClick}
+        anchorElement={accountSectionEl}
+      />
+    </div>
 
     <!-- Inbox Button -->
     <button
@@ -143,41 +142,27 @@
     {/if}
   {/if}
 
-  <!-- Voice mic + Version row -->
-  <div class="version-row" class:collapsed={isCollapsed}>
-    {#if voiceSupported}
-      <button
-        class="mic-button"
-        class:inactive={!voiceEnabled}
-        class:command-mode={inCommandMode}
-        class:error={hasVoiceError}
-        onclick={handleMicClick}
-        aria-label={!voiceEnabled ? "Enable voice control" : inCommandMode ? "Stop voice command mode" : "Start voice command mode"}
-      >
-        <i class="fas fa-microphone" aria-hidden="true"></i>
-        {#if inCommandMode}
-          <div class="mic-glow-ring"></div>
-        {/if}
-      </button>
-    {/if}
+  <!-- Voice mic -->
+  {#if voiceSupported}
     <button
-      class="version-badge"
-      class:collapsed={isCollapsed}
-      onclick={handleVersionClick}
-      aria-label="View Release Notes"
+      class="mic-button"
+      class:inactive={!voiceEnabled}
+      class:command-mode={inCommandMode}
+      class:error={hasVoiceError}
+      onclick={handleMicClick}
+      aria-label={!voiceEnabled ? "Enable voice control" : inCommandMode ? "Stop voice command mode" : "Start voice command mode"}
     >
-      {#if isCollapsed}
-        <span class="version-number">v{__APP_VERSION__}</span>
-      {:else}
-        <span class="version-label">Version {__APP_VERSION__}</span>
+      <i class="fas fa-microphone" aria-hidden="true"></i>
+      {#if inCommandMode}
+        <div class="mic-glow-ring"></div>
       {/if}
     </button>
-  </div>
+  {/if}
 </div>
 
 <style>
   /* ============================================================================
-     SIDEBAR FOOTER - Inbox button + version badge
+     SIDEBAR FOOTER - Inbox button + account row
      ============================================================================ */
   .sidebar-footer {
     display: flex;
@@ -194,7 +179,14 @@
   }
 
   /* ============================================================================
-     FOOTER BUTTONS (shared styles for settings + inbox)
+     ACCOUNT SECTION
+     ============================================================================ */
+  .account-section {
+    position: relative;
+  }
+
+  /* ============================================================================
+     FOOTER BUTTONS (shared styles for inbox)
      ============================================================================ */
   .footer-button {
     width: 100%;
@@ -333,20 +325,6 @@
   }
 
   /* ============================================================================
-     VERSION ROW (mic button + version badge)
-     ============================================================================ */
-  .version-row {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .version-row.collapsed {
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  /* ============================================================================
      MIC BUTTON
      ============================================================================ */
   .mic-button {
@@ -416,55 +394,6 @@
   .mic-button.error {
     background: rgba(239, 68, 68, 0.1);
     color: rgba(239, 68, 68, 0.6);
-  }
-
-  /* ============================================================================
-     VERSION BADGE
-     ============================================================================ */
-  .version-badge {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 4px 8px;
-    font-size: var(--font-size-compact);
-    font-weight: 500;
-    color: var(--theme-text-dim);
-    letter-spacing: 0.3px;
-    opacity: 0.7;
-    transition: all var(--duration-normal) ease;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    border-radius: 6px;
-    flex: 1;
-    min-width: 0;
-  }
-
-  .version-badge:hover {
-    opacity: 1;
-    color: var(--theme-accent);
-    background: var(--theme-card-bg);
-  }
-
-  .version-badge:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--theme-accent) 70%, transparent);
-    outline-offset: 2px;
-  }
-
-  .version-badge.collapsed {
-    padding: 4px 0;
-    font-size: var(--font-size-compact);
-  }
-
-  .version-number,
-  .version-label {
-    white-space: nowrap;
-  }
-
-  .version-label {
-    /* Delayed fade-in animation when sidebar expands (Google Calendar-style) */
-    animation: label-fade-in var(--duration-normal) ease-out var(--duration-fast) both;
   }
 
   @media (prefers-reduced-motion: reduce) {
