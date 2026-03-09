@@ -30,18 +30,15 @@
     controlsVisible?: boolean;
     landscape?: boolean;
     rampActive?: boolean;
-    /** When true, shows only transport + BPM (no action buttons) */
-    playbackOnly?: boolean;
     onBpmChange: (bpm: number) => void;
     onPlayPause: () => void;
     onStepBack: () => void;
     onStepForward: () => void;
     onStepHalfBack?: () => void;
     onStepHalfForward?: () => void;
+    onRestartToStart?: () => void;
     onSave: () => void;
     onEdit: () => void;
-    onExportVideo?: () => void;
-    onExportImage?: () => void;
     onGetApp?: () => void;
     onRampStart?: () => void;
     onRampStop?: () => void;
@@ -62,16 +59,14 @@
     onStepForward,
     onStepHalfBack,
     onStepHalfForward,
+    onRestartToStart,
     onSave,
     onEdit,
-    onExportVideo,
-    onExportImage,
     onGetApp,
     onRampStart,
     onRampStop,
     isOwned = false,
     onDeleteRequest,
-    playbackOnly = false,
   }: Props = $props();
 
   // Landscape BPM popover state
@@ -126,10 +121,10 @@
     <button
       type="button"
       class="landscape-btn"
-      onclick={onStepBack}
-      aria-label="Step backward"
+      onclick={onRestartToStart ?? onStepBack}
+      aria-label={onRestartToStart ? "Restart from beginning" : "Step backward"}
     >
-      <i class="fas fa-backward-step" aria-hidden="true"></i>
+      <i class="fas {onRestartToStart ? 'fa-backward-fast' : 'fa-backward-step'}" aria-hidden="true"></i>
     </button>
     <button
       type="button"
@@ -165,7 +160,6 @@
           <TempoControl
             {bpm}
             {onBpmChange}
-            showRamp={!playbackOnly}
             rampActive={rampActive}
             onRampStart={onRampStart}
             onRampStop={onRampStop}
@@ -174,58 +168,36 @@
       {/if}
     </div>
 
-    {#if !playbackOnly}
-      <div class="landscape-divider" aria-hidden="true"></div>
+    <div class="landscape-divider" aria-hidden="true"></div>
 
-      <!-- Action buttons -->
-      {#if isLoggedIn}
-        <button
-          type="button"
-          class="landscape-btn save"
-          onclick={onSave}
-          aria-label="Save"
-        >
-          <i class="fas fa-bookmark" aria-hidden="true"></i>
-        </button>
-        <button
-          type="button"
-          class="landscape-btn construct"
-          onclick={onEdit}
-          aria-label="Construct"
-        >
-          <i class="fas fa-hammer" aria-hidden="true"></i>
-        </button>
-      {/if}
-      {#if onExportVideo}
-        <button
-          type="button"
-          class="landscape-btn export-video"
-          onclick={onExportVideo}
-          aria-label="Export video"
-        >
-          <i class="fas fa-video" aria-hidden="true"></i>
-        </button>
-      {/if}
-      {#if onExportImage}
-        <button
-          type="button"
-          class="landscape-btn export-image"
-          onclick={onExportImage}
-          aria-label="Export image"
-        >
-          <i class="fas fa-image" aria-hidden="true"></i>
-        </button>
-      {/if}
-      {#if isOwned && onDeleteRequest}
-        <button
-          type="button"
-          class="landscape-btn delete"
-          onclick={onDeleteRequest}
-          aria-label="Delete sequence"
-        >
-          <i class="fas fa-trash" aria-hidden="true"></i>
-        </button>
-      {/if}
+    <!-- Action buttons -->
+    {#if isLoggedIn}
+      <button
+        type="button"
+        class="landscape-btn save"
+        onclick={onSave}
+        aria-label="Save"
+      >
+        <i class="fas fa-bookmark" aria-hidden="true"></i>
+      </button>
+      <button
+        type="button"
+        class="landscape-btn construct"
+        onclick={onEdit}
+        aria-label="Construct"
+      >
+        <i class="fas fa-hammer" aria-hidden="true"></i>
+      </button>
+    {/if}
+    {#if isOwned && onDeleteRequest}
+      <button
+        type="button"
+        class="landscape-btn delete"
+        onclick={onDeleteRequest}
+        aria-label="Delete sequence"
+      >
+        <i class="fas fa-trash" aria-hidden="true"></i>
+      </button>
     {/if}
   </aside>
 {:else}
@@ -234,25 +206,7 @@
   class="viewer-footer"
   data-controls-visible={controlsVisible}
 >
-  {#if playbackOnly}
-    <!-- Playback-only mode (video export): unified transport + BPM strip -->
-    <div class="playback-only-row">
-      <TransportControls
-        {isPlaying}
-        onPlaybackToggle={onPlayPause}
-        onStepHalfBeatBackward={onStepHalfBack ?? (() => {})}
-        onStepHalfBeatForward={onStepHalfForward ?? (() => {})}
-        onStepFullBeatBackward={onStepBack}
-        onStepFullBeatForward={onStepForward}
-      />
-      <div class="playback-only-divider" aria-hidden="true"></div>
-      <TempoControl
-        {bpm}
-        {onBpmChange}
-        showRamp={false}
-      />
-    </div>
-  {:else if layout === "mid"}
+  {#if layout === "mid"}
     <!-- Mid-width (self-calibrating): MorphChip toolbar -->
     <ViewerMorphToolbar
       {bpm}
@@ -265,10 +219,9 @@
       {onStepForward}
       {onStepHalfBack}
       {onStepHalfForward}
+      {onRestartToStart}
       {onSave}
       {onEdit}
-      {onExportVideo}
-      {onExportImage}
       {onGetApp}
       {onRampStart}
       {onRampStop}
@@ -286,6 +239,7 @@
           onStepHalfBeatForward={onStepHalfForward ?? (() => {})}
           onStepFullBeatBackward={onStepBack}
           onStepFullBeatForward={onStepForward}
+          {onRestartToStart}
         />
         <div class="tempo-section">
           <TempoControl
@@ -327,28 +281,6 @@
           >
             <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
             <span>Get App</span>
-          </button>
-        {/if}
-        {#if onExportVideo}
-          <button
-            type="button"
-            class="action-btn export-video"
-            onclick={onExportVideo}
-            aria-label="Export video"
-          >
-            <i class="fas fa-video" aria-hidden="true"></i>
-            <span>Video</span>
-          </button>
-        {/if}
-        {#if onExportImage}
-          <button
-            type="button"
-            class="action-btn export-image"
-            onclick={onExportImage}
-            aria-label="Export image"
-          >
-            <i class="fas fa-image" aria-hidden="true"></i>
-            <span>Image</span>
           </button>
         {/if}
         {#if isOwned && onDeleteRequest}

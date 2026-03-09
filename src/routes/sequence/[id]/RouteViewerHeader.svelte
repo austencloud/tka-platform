@@ -5,48 +5,42 @@
   Similar to ViewerHeader but with route-aware back navigation instead of modal close.
 -->
 <script lang="ts">
-  type ExportType = "animation" | "image" | "both";
-
   interface Props {
-    isExportMode: boolean;
-    exportType: ExportType | null;
+    editingPane: 'animation' | 'image' | null;
     isFullscreen: boolean;
     isMobile: boolean;
     darkMode: boolean;
     returnLabel: string;
     // Callbacks
     onBack: () => void;
-    onExitExportMode: () => void;
-    onBackToExportTypeSelection: () => void;
+    onExitEditMode: () => void;
     onDarkModeToggle: () => void;
     /** Callback to open the settings modal */
     onSettingsOpen?: () => void;
   }
 
   let {
-    isExportMode,
-    exportType,
+    editingPane,
     isFullscreen,
     isMobile,
     darkMode,
     returnLabel,
     onBack,
-    onExitExportMode,
-    onBackToExportTypeSelection,
+    onExitEditMode,
     onDarkModeToggle,
     onSettingsOpen,
   }: Props = $props();
 </script>
 
-{#if isExportMode}
-  <!-- Export mode header -->
+{#if editingPane}
+  <!-- Edit/Export mode header -->
   <header class="route-header export-header" data-hidden={isFullscreen}>
     <div class="header-left">
       <button
         type="button"
         class="back-button"
-        onclick={exportType ? onBackToExportTypeSelection : onExitExportMode}
-        aria-label={exportType ? "Back to export options" : "Back to viewer"}
+        onclick={onExitEditMode}
+        aria-label="Back to viewer"
       >
         <i class="fas fa-arrow-left" aria-hidden="true"></i>
       </button>
@@ -54,9 +48,7 @@
 
     <div class="header-center">
       <h2 class="mode-title">
-        {#if !exportType}
-          Export
-        {:else if exportType === "animation"}
+        {#if editingPane === "animation"}
           Export Video
         {:else}
           Export Image

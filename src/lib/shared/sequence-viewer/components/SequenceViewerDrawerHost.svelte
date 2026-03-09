@@ -171,9 +171,9 @@
       onBack={handleDismiss}
     >
       {#snippet children(ctx)}
-        {@const isVideoExportActive = ctx.isExportMode && ctx.exportType === "animation"}
-        {@const isImageExportActive = ctx.isExportMode && ctx.exportType === "image"}
-        {@const isAnyExportActive = isVideoExportActive || isImageExportActive}
+        {@const isVideoExportActive = ctx.editingPane === "animation"}
+        {@const isImageExportActive = ctx.editingPane === "image"}
+        {@const isAnyExportActive = ctx.editingPane !== null}
         <div class="drawer-viewer-container" class:landscape={isLandscape}>
           <!-- Header — adapts between normal viewer and export mode -->
           <header class="drawer-header">
@@ -182,7 +182,7 @@
                 <button
                   type="button"
                   class="drawer-back-button"
-                  onclick={ctx.exitExportMode}
+                  onclick={ctx.exitEditMode}
                   aria-label="Back to viewer"
                 >
                   <i class="fas fa-arrow-left" aria-hidden="true"></i>
@@ -240,12 +240,16 @@
                     imageComposition={isImageExportActive
                       ? {
                           showWord: ctx.exportOptions.imageShowWord,
+                          showStepNumbers: ctx.exportOptions.imageShowStepNumbers,
                           showDifficulty: ctx.exportOptions.imageShowDifficulty,
                           showStartPos: ctx.exportOptions.imageIncludeStartPosition,
                           showCreatorName: ctx.exportOptions.imageShowCreatorName,
                           showNotes: ctx.exportOptions.imageShowNotes,
                           darkMode: ctx.exportOptions.imageDarkMode,
-                          columnCount: ctx.splitPaneImageComposition.columnCount,
+                          columnCount: ctx.exportOptions.imageColumnCount != null
+                            ? ctx.exportOptions.imageColumnCount + (ctx.exportOptions.imageIncludeStartPosition ? 1 : 0)
+                            : null,
+                          forceContain: true,
                           userName: ctx.splitPaneImageComposition.userName,
                         }
                       : ctx.splitPaneImageComposition}
@@ -255,12 +259,8 @@
                       fullscreenStackVertical: ctx.fullscreenStackVertical,
                       isMobile: isMobileWidth,
                       isLandscapeMobile: isLandscape,
-                      focusedPane: isVideoExportActive
-                        ? 'animation'
-                        : isImageExportActive
-                          ? 'image'
-                          : ctx.editingPane,
-                      suppressCloseButton: isAnyExportActive,
+                      focusedPane: ctx.editingPane,
+                      suppressCloseButton: false,
                     }}
                     onRenderProgress={ctx.onRenderProgress}
                     onFocusPane={ctx.enterEditMode}
@@ -290,6 +290,10 @@
                           canvasReady={ctx.canvasReady}
                           layout={isMobileWidth ? "bottom" : "sidebar"}
                           singlePlayDuration={ctx.singlePlayDuration}
+                          isPlaying={ctx.isPlayingLocal}
+                          bpm={ctx.bpmLocal}
+                          onPlaybackToggle={ctx.handlePlaybackToggle}
+                          onBpmChange={ctx.handleBpmChange}
                           onExport={ctx.handleExport}
                           onCancel={ctx.handleCancelExport}
                         />
@@ -310,7 +314,6 @@
             </div>
 
             <!-- Footer: hidden during export modes, shown in normal viewer -->
-            {#if !isAnyExportActive}
               <ViewerFooter
                 bpm={ctx.bpmLocal}
                 isPlaying={ctx.isPlayingLocal}
@@ -322,10 +325,9 @@
                 onStepForward={ctx.stepFullBeatForward}
                 onStepHalfBack={ctx.stepHalfBeatBackward}
                 onStepHalfForward={ctx.stepHalfBeatForward}
+                onRestartToStart={ctx.restartToStart}
                 onSave={ctx.handleSave}
                 onEdit={ctx.handleEditInConstructor}
-                onExportVideo={() => ctx.enterExportMode("animation")}
-                onExportImage={() => ctx.enterExportMode("image")}
                 onGetApp={ctx.handleGetApp}
                 rampActive={ctx.rampActive}
                 onRampStart={ctx.handleRampStart}
@@ -333,7 +335,6 @@
                 isOwned={ctx.isOwned}
                 onDeleteRequest={() => (deleteConfirmOpen = true)}
               />
-            {/if}
           </div>
           {#if ctx.rampActive}
             <RampProgressIndicator

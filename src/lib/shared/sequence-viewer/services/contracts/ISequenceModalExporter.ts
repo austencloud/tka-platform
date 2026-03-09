@@ -25,6 +25,7 @@ export interface ImageExportOptions {
   showCreatorName: boolean;
   showNotes: boolean;
   darkMode: boolean;
+  columnCount: number | null;
 }
 
 /**

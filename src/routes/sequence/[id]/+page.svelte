@@ -40,8 +40,14 @@
   import ViewerSplitPane from "$lib/shared/sequence-viewer/components/ViewerSplitPane.svelte";
   import ViewerFooter from "$lib/shared/sequence-viewer/components/ViewerFooter.svelte";
   import FullscreenControls from "$lib/shared/sequence-viewer/components/FullscreenControls.svelte";
-  import ExportModeContent from "$lib/shared/sequence-viewer/components/ExportModeContent.svelte";
-  import ExportFooter from "$lib/shared/sequence-viewer/components/ExportFooter.svelte";
+  import ExportVideoDrawer from "$lib/shared/sequence-viewer/components/ExportVideoDrawer.svelte";
+  import type { ActiveEffect } from "$lib/shared/sequence-viewer/components/ExportVideoDrawer.svelte";
+  import ExportImagePanel from "$lib/shared/sequence-viewer/components/ExportImagePanel.svelte";
+  import VideoPreviewPanel from "$lib/shared/sequence-viewer/components/VideoPreviewPanel.svelte";
+  import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
+  import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import RampProgressIndicator from "$lib/shared/sequence-viewer/components/RampProgressIndicator.svelte";
   import RouteViewerHeader from "./RouteViewerHeader.svelte";
   import ViewerSettingsModal from "$lib/shared/sequence-viewer/components/ViewerSettingsModal.svelte";
@@ -406,6 +412,29 @@
   }
 
   // ============================================================================
+  // EXPORT HELPERS
+  // ============================================================================
+
+  const animationVisibility = getAnimationVisibilityManager();
+
+  function getActiveEffects(): ActiveEffect[] {
+    const effects: ActiveEffect[] = [];
+    if (animationVisibility.getVisibility("fireEffect")) {
+      effects.push({ id: "fire", label: "Fire", icon: "fas fa-fire", active: true });
+    }
+    if (animationVisibility.getVisibility("ledEffect")) {
+      effects.push({ id: "led", label: "LED", icon: "fas fa-lightbulb", active: true });
+    }
+    if (animationVisibility.getTrailStyle() !== "off") {
+      effects.push({ id: "trails", label: "Trails", icon: "fas fa-wind", active: true });
+    }
+    if (animationVisibility.getVisibility("fireUseCharcoal")) {
+      effects.push({ id: "charcoal", label: "Charcoal", icon: "fas fa-smog", active: true });
+    }
+    return effects;
+  }
+
+  // ============================================================================
   // URL HELPERS
   // ============================================================================
 
@@ -470,15 +499,13 @@
       >
         <!-- Header -->
         <RouteViewerHeader
-          isExportMode={ctx.isExportMode}
-          exportType={ctx.exportType}
+          editingPane={ctx.editingPane}
           isFullscreen={ctx.isFullscreen}
           {isMobile}
           darkMode={ctx.imgDarkMode}
           returnLabel={handoffData?.returnLabel || "Back"}
           onBack={ctx.onBack}
-          onExitExportMode={ctx.exitExportMode}
-          onBackToExportTypeSelection={ctx.backToExportTypeSelection}
+          onExitEditMode={ctx.exitEditMode}
           onDarkModeToggle={ctx.handleUnifiedDarkModeToggle}
           onSettingsOpen={() => (settingsModalOpen = true)}
         />
@@ -506,29 +533,103 @@
               onStepHalfBeatForward={ctx.stepHalfBeatForward}
               onStepFullBeatBackward={ctx.stepFullBeatBackward}
               onStepFullBeatForward={ctx.stepFullBeatForward}
+              onRestartToStart={ctx.restartToStart}
               onBpmChange={ctx.handleBpmChange}
             />
           {/if}
 
           {#if ctx.hasSequence && ctx.effectiveSequence}
-            {#if ctx.isExportMode}
-              <ExportModeContent
-                sequence={ctx.effectiveSequence}
-                exportType={ctx.exportType}
-                exportOptions={ctx.exportOptions}
-                animationState={ctx.modalAnimationState}
-                animationLoading={ctx.animationLoading}
-                currentStep={ctx.currentStepLocal}
-                currentLetter={ctx.currentLetter}
-                currentStepData={ctx.currentStepData}
-                userName={ctx.userName}
-                bluePropType={ctx.bluePropType}
-                redPropType={ctx.redPropType}
-                catDogModeEnabled={ctx.catDogModeEnabled}
-                onSelectType={ctx.selectExportType}
-                onCanvasReady={ctx.handleCanvasReady}
-              />
+            {#if ctx.editingPane === "animation"}
+              <!-- Video export: animation preview + settings panel -->
+              <div class="export-preview-layout" class:desktop={!isMobile}>
+                <div class="export-animation-preview">
+                  {#if ctx.animationLoading}
+                    <div class="loading-state">
+                      <ProgressRing percent={-1} size={32} strokeWidth={3} />
+                    </div>
+                  {:else if ctx.modalAnimationState.error}
+                    <div class="error-state">
+                      <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                      <span>{ctx.modalAnimationState.error}</span>
+                    </div>
+                  {:else}
+                    <AnimatorCanvas
+                      sequenceData={ctx.modalAnimationState.sequenceData}
+                      currentStep={ctx.currentStepLocal}
+                      isPlaying={true}
+                      blueProp={ctx.modalAnimationState.bluePropState}
+                      redProp={ctx.modalAnimationState.redPropState}
+                      gridMode={ctx.effectiveSequence?.gridMode}
+                      letter={ctx.currentLetter}
+                      stepData={ctx.currentStepData}
+                      word={ctx.effectiveSequence?.word}
+                      onCanvasReady={ctx.handleCanvasReady}
+                    />
+                  {/if}
+                  <div class="export-settings-badge" aria-hidden="true">
+                    {ctx.exportOptions.videoResolution}p · {ctx.exportOptions.videoFps}fps
+                  </div>
+                </div>
+                {#if ctx.previewBlobUrl}
+                  <VideoPreviewPanel
+                    blobUrl={ctx.previewBlobUrl}
+                    onDismiss={ctx.dismissPreview}
+                    onRedownload={() => {
+                      const a = document.createElement("a");
+                      a.href = ctx.previewBlobUrl!;
+                      a.download = `${ctx.effectiveSequence?.word || "sequence"}.mp4`;
+                      a.click();
+                    }}
+                  />
+                {:else}
+                  <ExportVideoDrawer
+                    exportOptions={ctx.exportOptions}
+                    viewerEffects={getActiveEffects()}
+                    isExporting={ctx.isExporting}
+                    exportProgress={ctx.exportProgress}
+                    canvasReady={ctx.canvasReady}
+                    layout={isMobile ? "bottom" : "sidebar"}
+                    singlePlayDuration={ctx.singlePlayDuration}
+                    isPlaying={ctx.isPlayingLocal}
+                    bpm={ctx.bpmLocal}
+                    onPlaybackToggle={ctx.handlePlaybackToggle}
+                    onBpmChange={ctx.handleBpmChange}
+                    onExport={ctx.handleExport}
+                    onCancel={ctx.handleCancelExport}
+                  />
+                {/if}
+              </div>
+            {:else if ctx.editingPane === "image"}
+              <!-- Image export: choreo card preview + settings panel -->
+              <div class="export-preview-layout" class:desktop={!isMobile}>
+                <div class="export-animation-preview">
+                  <ChoreoCard
+                    sequence={ctx.effectiveSequence}
+                    showWord={ctx.exportOptions.imageShowWord}
+                    showStepNumbers={ctx.exportOptions.imageShowStepNumbers}
+                    showDifficultyLevel={ctx.exportOptions.imageShowDifficulty}
+                    includeStartPosition={ctx.exportOptions.imageIncludeStartPosition}
+                    showCreatorName={ctx.exportOptions.imageShowCreatorName}
+                    showNotes={ctx.exportOptions.imageShowNotes}
+                    darkMode={ctx.exportOptions.imageDarkMode}
+                    userName={ctx.userName}
+                    columnCount={ctx.exportOptions.imageColumnCount != null
+                      ? ctx.exportOptions.imageColumnCount + (ctx.exportOptions.imageIncludeStartPosition ? 1 : 0)
+                      : null}
+                    forceContain={true}
+                    bluePropType={ctx.bluePropType}
+                    redPropType={ctx.redPropType}
+                    catDogModeEnabled={ctx.catDogModeEnabled}
+                  />
+                </div>
+                <ExportImagePanel
+                  exportOptions={ctx.exportOptions}
+                  isExporting={ctx.isExporting}
+                  onExport={ctx.handleExport}
+                />
+              </div>
             {:else}
+              <!-- Split view: Animation and Image side by side, tap to focus -->
               <ViewerSplitPane
                 sequence={ctx.effectiveSequence}
                 playback={ctx.splitPanePlayback}
@@ -544,51 +645,34 @@
           {/if}
         </div>
 
-        <!-- Footer -->
-        {#if !ctx.isFullscreen}
-          {#if ctx.isExportMode}
-            <ExportFooter
-              exportType={ctx.exportType}
-              isExporting={ctx.isExporting}
-              exportProgress={ctx.exportProgress}
-              exportError={ctx.exportError}
-              isFullscreen={ctx.isFullscreen}
-              previewBlobUrl={ctx.previewBlobUrl}
-              sequenceWord={ctx.effectiveSequence?.word || "sequence"}
-              onExport={ctx.handleExport}
-              onCancel={ctx.handleCancelExport}
-              onRetry={ctx.handleRetryExport}
-              onDismissPreview={ctx.dismissPreview}
+        <!-- Footer (only in split view, not when editing/exporting — those panels have inline controls) -->
+        {#if !ctx.isFullscreen && !ctx.editingPane}
+          <ViewerFooter
+            bpm={ctx.bpmLocal}
+            isPlaying={ctx.isPlayingLocal}
+            isLoggedIn={ctx.isLoggedIn}
+            rampActive={ctx.rampActive}
+            onBpmChange={ctx.handleBpmChange}
+            onPlayPause={ctx.handlePlaybackToggle}
+            onStepBack={ctx.stepFullBeatBackward}
+            onStepForward={ctx.stepFullBeatForward}
+            onStepHalfBack={ctx.stepHalfBeatBackward}
+            onStepHalfForward={ctx.stepHalfBeatForward}
+            onRestartToStart={ctx.restartToStart}
+            onSave={ctx.handleSave}
+            onEdit={ctx.handleEditInConstructor}
+            onGetApp={ctx.handleGetApp}
+            onRampStart={ctx.handleRampStart}
+            onRampStop={ctx.handleRampStop}
+            isOwned={ctx.isOwned}
+            onDeleteRequest={() => (deleteConfirmOpen = true)}
+          />
+          {#if ctx.rampActive}
+            <RampProgressIndicator
+              progress={ctx.rampState.progress}
+              onStop={ctx.handleRampStop}
+              variant="floating"
             />
-          {:else}
-            <ViewerFooter
-              bpm={ctx.bpmLocal}
-              isPlaying={ctx.isPlayingLocal}
-              isLoggedIn={ctx.isLoggedIn}
-              rampActive={ctx.rampActive}
-              onBpmChange={ctx.handleBpmChange}
-              onPlayPause={ctx.handlePlaybackToggle}
-              onStepBack={ctx.stepFullBeatBackward}
-              onStepForward={ctx.stepFullBeatForward}
-              onStepHalfBack={ctx.stepHalfBeatBackward}
-              onStepHalfForward={ctx.stepHalfBeatForward}
-              onSave={ctx.handleSave}
-              onEdit={ctx.handleEditInConstructor}
-              onExportVideo={() => ctx.enterExportMode("animation")}
-              onExportImage={() => ctx.enterExportMode("image")}
-              onGetApp={ctx.handleGetApp}
-              onRampStart={ctx.handleRampStart}
-              onRampStop={ctx.handleRampStop}
-              isOwned={ctx.isOwned}
-              onDeleteRequest={() => (deleteConfirmOpen = true)}
-            />
-            {#if ctx.rampActive}
-              <RampProgressIndicator
-                progress={ctx.rampState.progress}
-                onStop={ctx.handleRampStop}
-                variant="floating"
-              />
-            {/if}
           {/if}
         {/if}
       </div>
@@ -705,6 +789,64 @@
   .back-button:focus-visible {
     outline: 2px solid var(--theme-accent, #f43f5e);
     outline-offset: 2px;
+  }
+
+  /* Export preview layout */
+  .export-preview-layout {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .export-preview-layout.desktop {
+    flex-direction: row;
+    align-items: stretch;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .export-animation-preview {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    min-width: 0;
+    max-width: 800px;
+  }
+
+  .export-settings-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 4px 10px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 6px;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    letter-spacing: 0.03em;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  .export-preview-layout .loading-state,
+  .export-preview-layout .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
+    font-size: var(--font-size-min, 14px);
+  }
+
+  .export-preview-layout .error-state {
+    color: var(--semantic-error, #f87171);
   }
 
   /* Mobile drawer appearance */

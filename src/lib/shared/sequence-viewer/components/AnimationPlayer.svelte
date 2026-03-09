@@ -230,7 +230,14 @@
 	// Step handlers
 	const stepHalfBack = () => useContext ? ctx?.actions?.onStepHalfBeatBackward() : controller?.stepHalfBeatBackward();
 	const stepHalfFwd = () => useContext ? ctx?.actions?.onStepHalfBeatForward() : controller?.stepHalfBeatForward();
-	const stepFullBack = () => useContext ? ctx?.actions?.onStepFullBeatBackward() : controller?.stepFullBeatBackward();
+	const restartToStart = () => {
+		if (useContext) {
+			ctx?.actions?.onStepFullBeatBackward();
+		} else {
+			// seekToStep preserves playback state — if playing, continues from start
+			controller?.seekToStep(0);
+		}
+	};
 	const stepFullFwd = () => useContext ? ctx?.actions?.onStepFullBeatForward() : controller?.stepFullBeatForward();
 	const setPlaybackMode = (m: "continuous" | "step") => ctx?.actions.onPlaybackModeChange(m);
 	const setStepSize = (s: 0.5 | 1) => ctx?.actions.onStepPlaybackStepSizeChange(s);
@@ -292,7 +299,7 @@
 					onPlaybackToggle={togglePlayback}
 					onStepHalfBack={stepHalfBack}
 					onStepHalfFwd={stepHalfFwd}
-					onStepFullBack={stepFullBack}
+					onRestartToStart={restartToStart}
 					onStepFullFwd={stepFullFwd}
 				/>
 			{/if}
@@ -338,7 +345,7 @@
 					onStepSizeChange={setStepSize}
 					onStepHalfBack={stepHalfBack}
 					onStepHalfFwd={stepHalfFwd}
-					onStepFullBack={stepFullBack}
+					onRestartToStart={restartToStart}
 					onStepFullFwd={stepFullFwd}
 				/>
 			{/if}

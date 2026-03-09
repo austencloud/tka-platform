@@ -176,7 +176,8 @@
           showHighlight={playback.isPlaying || playback.highlightedStepIndex !== null}
           {onStepClick}
           {onRenderProgress}
-          showStepNumbers={true}
+          showWord={imageComposition.showWord}
+          showStepNumbers={imageComposition.showStepNumbers}
           showDifficultyLevel={imageComposition.showDifficulty}
           includeStartPosition={imageComposition.showStartPos}
           showCreatorName={imageComposition.showCreatorName}
@@ -185,6 +186,7 @@
           showLoopGlyph={true}
           darkMode={imageComposition.darkMode}
           columnCount={imageComposition.columnCount}
+          forceContain={imageComposition.forceContain}
           userName={imageComposition.userName}
           bluePropType={propRendering.bluePropType}
           redPropType={propRendering.redPropType}
@@ -232,8 +234,16 @@
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     overflow: hidden;
-    /* Smooth opacity transition for content fade */
-    transition: opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    /* Smooth transitions for opacity + hover scale */
+    transition: opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+                transform 0.2s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  /* Whole-pane hover scale — communicates "click to focus" */
+  @media (hover: hover) and (pointer: fine) {
+    .split-column:hover:not(.focused) {
+      transform: scale(1.015);
+    }
   }
 
   .split-column:focus-visible {

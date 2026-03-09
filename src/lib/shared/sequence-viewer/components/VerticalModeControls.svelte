@@ -26,7 +26,7 @@
 		onStepSizeChange,
 		onStepHalfBack,
 		onStepHalfFwd,
-		onStepFullBack,
+		onRestartToStart,
 		onStepFullFwd,
 	}: {
 		controlsLevel: ControlsLevel;
@@ -41,7 +41,7 @@
 		onStepSizeChange: (size: 0.5 | 1) => void;
 		onStepHalfBack: () => void;
 		onStepHalfFwd: () => void;
-		onStepFullBack: () => void;
+		onRestartToStart: () => void;
 		onStepFullFwd: () => void;
 	} = $props();
 </script>
@@ -54,7 +54,7 @@
 			{onPlaybackToggle}
 			onStepHalfBeatBackward={onStepHalfBack}
 			onStepHalfBeatForward={onStepHalfFwd}
-			onStepFullBeatBackward={onStepFullBack}
+			onRestartToStart={onRestartToStart}
 			onStepFullBeatForward={onStepFullFwd}
 		/>
 		<SettingsTogglePanel
@@ -80,7 +80,7 @@
 			{onPlaybackToggle}
 			onStepHalfBeatBackward={onStepHalfBack}
 			onStepHalfBeatForward={onStepHalfFwd}
-			onStepFullBeatBackward={onStepFullBack}
+			onRestartToStart={onRestartToStart}
 			onStepFullBeatForward={onStepFullFwd}
 		/>
 		<button

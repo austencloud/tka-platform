@@ -19,6 +19,7 @@
     onStepHalfBeatForward: () => void;
     onStepFullBeatBackward: () => void;
     onStepFullBeatForward: () => void;
+    onRestartToStart?: () => void;
     onBpmChange: (bpm: number) => void;
   }
 
@@ -33,6 +34,7 @@
     onStepHalfBeatForward,
     onStepFullBeatBackward,
     onStepFullBeatForward,
+    onRestartToStart,
     onBpmChange,
   }: Props = $props();
 </script>
@@ -57,6 +59,7 @@
         onStepHalfBeatForward={onStepHalfBeatForward}
         onStepFullBeatBackward={onStepFullBeatBackward}
         onStepFullBeatForward={onStepFullBeatForward}
+        onRestartToStart={onRestartToStart}
       />
       <TempoControl
         {bpm}
