@@ -1,0 +1,107 @@
+import { describe, it, expect } from "vitest";
+import {
+	applyEffort,
+	sampleEffortCurve,
+} from "../../src/lib/features/effort-lab/domain/effort-easing-unified";
+import type { EffortId } from "../../src/lib/features/effort-lab/domain/effort-types";
+
+const ALL_EFFORTS: EffortId[] = [
+	"glide",
+	"dab",
+	"press",
+	"punch",
+	"elastic",
+	"bounce",
+	"anticipation",
+	"stepped",
+];
+
+describe("Unified Effort Easing", () => {
+	describe("boundary invariants (all 8 efforts)", () => {
+		it.each(ALL_EFFORTS)("%s returns ~0 at t=0", (id) => {
+			expect(applyEffort(id, 0)).toBeCloseTo(0, 5);
+		});
+
+		it.each(ALL_EFFORTS)("%s returns ~1 at t=1", (id) => {
+			expect(applyEffort(id, 1)).toBeCloseTo(1, 5);
+		});
+
+		it.each(ALL_EFFORTS)("%s output is finite for all t in [0,1]", (id) => {
+			for (let i = 0; i <= 100; i++) {
+				const t = i / 100;
+				const value = applyEffort(id, t);
+				expect(Number.isFinite(value)).toBe(true);
+			}
+		});
+	});
+
+	describe("Laban effort character", () => {
+		it("glide (light+sustained) is ahead of punch (strong+sudden) at t=0.5", () => {
+			const glideVal = applyEffort("glide", 0.5);
+			const punchVal = applyEffort("punch", 0.5);
+			expect(glideVal).toBeGreaterThan(punchVal);
+		});
+	});
+
+	describe("elastic", () => {
+		it("exceeds 1.0 at some point with default params", () => {
+			let foundOvershoot = false;
+			for (let i = 0; i <= 200; i++) {
+				const t = i / 200;
+				if (applyEffort("elastic", t) > 1.0) {
+					foundOvershoot = true;
+					break;
+				}
+			}
+			expect(foundOvershoot).toBe(true);
+		});
+	});
+
+	describe("bounce", () => {
+		it("never exceeds ~1.0", () => {
+			for (let i = 0; i <= 1000; i++) {
+				const t = i / 1000;
+				expect(applyEffort("bounce", t)).toBeLessThanOrEqual(1.001);
+			}
+		});
+	});
+
+	describe("anticipation", () => {
+		it("goes below 0 (pullback) with default params", () => {
+			let foundPullback = false;
+			for (let i = 0; i <= 200; i++) {
+				const t = i / 200;
+				if (applyEffort("anticipation", t) < 0) {
+					foundPullback = true;
+					break;
+				}
+			}
+			expect(foundPullback).toBe(true);
+		});
+	});
+
+	describe("stepped", () => {
+		it("is monotonically non-decreasing", () => {
+			let prev = 0;
+			for (let i = 0; i <= 1000; i++) {
+				const t = i / 1000;
+				const value = applyEffort("stepped", t);
+				expect(value).toBeGreaterThanOrEqual(prev - 1e-10);
+				prev = value;
+			}
+		});
+	});
+
+	describe("sampleEffortCurve", () => {
+		it("returns correct count (samples+1 entries)", () => {
+			const samples = sampleEffortCurve("glide", 10);
+			expect(samples).toHaveLength(11);
+		});
+
+		it("first sample is t=0, last is t=1", () => {
+			const samples = sampleEffortCurve("elastic", 20);
+			expect(samples[0].t).toBe(0);
+			expect(samples[samples.length - 1].t).toBe(1);
+		});
+	});
+});
