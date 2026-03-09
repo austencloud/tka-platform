@@ -14,16 +14,21 @@
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import AnimatorCanvas from "../AnimatorCanvas.svelte";
   import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
-  import type { GridMode } from "../../state/animation-visibility-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import type { PropState } from "../../domain/PropState";
   import type { StartPositionData } from "../../../../features/create/shared/domain/models/StartPositionData";
   import type { StepData } from "../../../../features/create/shared/domain/models/StepData";
+  import { slide } from "svelte/transition";
   import { onDestroy } from "svelte";
   import FireCategory from "./categories/FireCategory.svelte";
   import CharcoalCategory from "./categories/CharcoalCategory.svelte";
   import LedCategory from "./categories/LedCategory.svelte";
+  import PlaybackCategory from "./categories/PlaybackCategory.svelte";
+  import EffortCategory from "./categories/EffortCategory.svelte";
+  import DisplayCategory from "./categories/DisplayCategory.svelte";
+  import EffectPicker from "./EffectPicker.svelte";
+  import type { ActiveEffect } from "./EffectPicker.svelte";
 
   interface Props {
     open: boolean;
@@ -47,6 +52,10 @@
     word = null,
   }: Props = $props();
 
+  // Collapsible section state
+  let motionOpen = $state(false);
+  let displayOpen = $state(false);
+
   // Playback state
   let isPlaying = $state(true);
   let playbackStep = $state(0);
@@ -60,34 +69,18 @@
   let charcoalEnabled = $state(vm.getFireUseCharcoal());
   let ledEnabled = $state(vm.isLedEffectEnabled());
   let trailsVisible = $state(vm.isTrailsVisible());
-  let gridMode = $state(vm.getGridMode());
-  let stepNumbers = $state(vm.getVisibility("stepNumbers"));
-  let beatPosition = $state(vm.getVisibility("beatPosition"));
-  let propsVisible = $state(vm.getVisibility("props"));
-  let wordHeader = $state(vm.getVisibility("wordHeader"));
-  let progressBar = $state(vm.getVisibility("progressBar"));
-  let tkaGlyph = $state(vm.getVisibility("tkaGlyph"));
 
   function syncFromManager(): void {
     fireEnabled = vm.isFireEffectEnabled();
     charcoalEnabled = vm.getFireUseCharcoal();
     ledEnabled = vm.isLedEffectEnabled();
     trailsVisible = vm.isTrailsVisible();
-    gridMode = vm.getGridMode();
-    stepNumbers = vm.getVisibility("stepNumbers");
-    beatPosition = vm.getVisibility("beatPosition");
-    propsVisible = vm.getVisibility("props");
-    wordHeader = vm.getVisibility("wordHeader");
-    progressBar = vm.getVisibility("progressBar");
-    tkaGlyph = vm.getVisibility("tkaGlyph");
   }
 
   vm.registerObserver(syncFromManager);
   onDestroy(() => vm.unregisterObserver(syncFromManager));
 
   // ── Active effect ──
-  type ActiveEffect = "none" | "fire" | "charcoal" | "led" | "trails";
-
   const activeEffect: ActiveEffect = $derived.by(() => {
     if (fireEnabled && charcoalEnabled) return "charcoal";
     if (fireEnabled) return "fire";
@@ -113,52 +106,6 @@
       vm.setLedEffect(true);
     } else if (effect === "trails") {
       vm.setTrailStyle("on");
-    }
-  }
-
-  // ── Effect definitions ──
-  const effects: ReadonlyArray<{
-    readonly id: ActiveEffect;
-    readonly label: string;
-    readonly icon: string;
-    readonly iconColor?: string;
-  }> = [
-    { id: "none", label: "None", icon: "fa-ban" },
-    { id: "fire", label: "Fire", icon: "fa-fire-flame-curved", iconColor: "#f97316" },
-    { id: "charcoal", label: "Charcoal", icon: "fa-fire", iconColor: "#a855f7" },
-    { id: "led", label: "LED", icon: "fa-lightbulb", iconColor: "#22c55e" },
-    { id: "trails", label: "Trails", icon: "fa-wind", iconColor: "#60a5fa" },
-  ];
-
-  // ── Grid options ──
-  const gridOptions: ReadonlyArray<{ id: GridMode; label: string }> = [
-    { id: "none", label: "Off" },
-    { id: "diamond", label: "Diamond" },
-    { id: "box", label: "Box" },
-  ];
-
-  // ── Display toggles ──
-  const displayToggles: ReadonlyArray<{
-    key: "stepNumbers" | "beatPosition" | "props" | "wordHeader" | "progressBar" | "tkaGlyph";
-    label: string;
-  }> = [
-    { key: "stepNumbers", label: "Step Numbers" },
-    { key: "beatPosition", label: "Beat Position" },
-    { key: "props", label: "Props" },
-    { key: "wordHeader", label: "Word Header" },
-    { key: "progressBar", label: "Progress Bar" },
-    { key: "tkaGlyph", label: "TKA Glyph" },
-  ];
-
-  function getToggleValue(key: string): boolean {
-    switch (key) {
-      case "stepNumbers": return stepNumbers;
-      case "beatPosition": return beatPosition;
-      case "props": return propsVisible;
-      case "wordHeader": return wordHeader;
-      case "progressBar": return progressBar;
-      case "tkaGlyph": return tkaGlyph;
-      default: return false;
     }
   }
 
@@ -264,30 +211,12 @@
 
     <!-- Controls panel -->
     <div class="controls-section">
-      <!-- Effect picker -->
+      <!-- Effects: always visible -->
       <div class="control-group" data-animate="3">
-        <span class="group-label">Effect</span>
-        <div class="effect-picker">
-          {#each effects as effect}
-            <button
-              class="effect-btn"
-              class:active={activeEffect === effect.id}
-              type="button"
-              aria-pressed={activeEffect === effect.id}
-              onclick={() => selectEffect(effect.id)}
-            >
-              <i
-                class="fas {effect.icon}"
-                style={effect.iconColor && activeEffect === effect.id ? `color: ${effect.iconColor}` : ""}
-                aria-hidden="true"
-              ></i>
-              <span>{effect.label}</span>
-            </button>
-          {/each}
-        </div>
+        <span class="group-label">Effects</span>
+        <EffectPicker {activeEffect} onSelect={selectEffect} />
       </div>
 
-      <!-- Effect detail controls -->
       {#if activeEffect === "fire"}
         <div class="control-group" data-animate="4">
           <FireCategory />
@@ -302,41 +231,46 @@
         </div>
       {/if}
 
-      <!-- Grid -->
-      <div class="control-group" data-animate="5">
-        <span class="group-label">Grid</span>
-        <div class="preset-row">
-          {#each gridOptions as opt}
-            <button
-              class="preset-btn"
-              class:active={gridMode === opt.id}
-              type="button"
-              aria-pressed={gridMode === opt.id}
-              onclick={() => vm.setGridMode(opt.id)}
-            >
-              {opt.label}
-            </button>
-          {/each}
+      <!-- Motion: collapsed by default -->
+      <button
+        class="section-toggle"
+        type="button"
+        aria-expanded={motionOpen}
+        onclick={() => (motionOpen = !motionOpen)}
+        data-animate="5"
+      >
+        <span class="section-toggle-label">Motion</span>
+        <i class="fas {motionOpen ? 'fa-chevron-up' : 'fa-chevron-down'}" aria-hidden="true"></i>
+      </button>
+      {#if motionOpen}
+        <div class="collapsible-section" transition:slide={{ duration: 150 }}>
+          <div class="control-group">
+            <span class="group-label">Playback</span>
+            <PlaybackCategory />
+          </div>
+          <div class="control-group">
+            <span class="group-label">Effort</span>
+            <EffortCategory />
+          </div>
         </div>
-      </div>
+      {/if}
 
-      <!-- Display toggles -->
-      <div class="control-group" data-animate="6">
-        <span class="group-label">Display</span>
-        <div class="toggle-grid">
-          {#each displayToggles as toggle}
-            <button
-              class="toggle-chip"
-              class:active={getToggleValue(toggle.key)}
-              type="button"
-              aria-pressed={getToggleValue(toggle.key)}
-              onclick={() => vm.toggleVisibility(toggle.key)}
-            >
-              {toggle.label}
-            </button>
-          {/each}
+      <!-- Display: collapsed by default -->
+      <button
+        class="section-toggle"
+        type="button"
+        aria-expanded={displayOpen}
+        onclick={() => (displayOpen = !displayOpen)}
+        data-animate="6"
+      >
+        <span class="section-toggle-label">Display</span>
+        <i class="fas {displayOpen ? 'fa-chevron-up' : 'fa-chevron-down'}" aria-hidden="true"></i>
+      </button>
+      {#if displayOpen}
+        <div class="collapsible-section" transition:slide={{ duration: 150 }}>
+          <DisplayCategory />
         </div>
-      </div>
+      {/if}
     </div>
   </div>
 </BaseModal>
@@ -462,123 +396,51 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 
-  /* ── Effect picker ── */
-  .effect-picker {
+  /* Collapsible section toggle */
+  .section-toggle {
     display: flex;
-    gap: 6px;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 10px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    cursor: pointer;
+    transition: all var(--duration-fast, 100ms) ease;
+    min-height: 44px;
   }
 
-  .effect-btn {
-    flex: 1;
+  .section-toggle:hover {
+    background: color-mix(in srgb, var(--theme-text) 6%, transparent);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    color: var(--theme-text, white);
+  }
+
+  .section-toggle:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
+  }
+
+  .section-toggle-label {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  }
+
+  .section-toggle i {
+    font-size: 10px;
+    opacity: 0.6;
+  }
+
+  .collapsible-section {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    min-height: var(--min-touch-target, 44px);
-    padding: 10px 8px;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 10px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast, 100ms) ease;
-  }
-
-  .effect-btn i {
-    font-size: 16px;
-  }
-
-  .effect-btn:hover {
-    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    color: var(--theme-text, white);
-  }
-
-  .effect-btn.active {
-    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
-    border-color: var(--theme-accent, #8b5cf6);
-    color: var(--theme-text, white);
-  }
-
-  .effect-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: 2px;
-  }
-
-  /* ── Preset buttons (grid options) ── */
-  .preset-row {
-    display: flex;
-    gap: 6px;
-  }
-
-  .preset-btn {
-    flex: 1;
-    min-height: var(--min-touch-target, 44px);
-    padding: 8px;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 8px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast, 100ms) ease;
-  }
-
-  .preset-btn:hover {
-    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    color: var(--theme-text, white);
-  }
-
-  .preset-btn.active {
-    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
-    border-color: var(--theme-accent, #8b5cf6);
-    color: var(--theme-text, white);
-  }
-
-  .preset-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: 2px;
-  }
-
-  /* ── Display toggle chips ── */
-  .toggle-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .toggle-chip {
-    padding: 6px 12px;
-    min-height: 32px;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 16px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast, 100ms) ease;
-  }
-
-  .toggle-chip:hover {
-    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    color: var(--theme-text, white);
-  }
-
-  .toggle-chip.active {
-    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
-    border-color: var(--theme-accent, #8b5cf6);
-    color: var(--theme-text, white);
-  }
-
-  .toggle-chip:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: 2px;
+    gap: 16px;
+    padding: 4px 0;
   }
 
   /* ── Desktop: side-by-side ── */
@@ -613,9 +475,7 @@
   @media (prefers-reduced-motion: reduce) {
     .close-btn,
     .play-btn,
-    .effect-btn,
-    .preset-btn,
-    .toggle-chip {
+    .section-toggle {
       transition: none;
     }
   }

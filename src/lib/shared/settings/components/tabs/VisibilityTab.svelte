@@ -11,13 +11,8 @@
 -->
 <script lang="ts">
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
-  import {
-    getAnimationVisibilityManager,
-    type TrailVisibility,
-    type PlaybackMode,
-  } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
-  import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
@@ -69,21 +64,6 @@
   let nonRadialVisible = $state(false);
   let handPointVisibility = $state<"all" | "active">("all");
   let stepNumbersVisible = $state(true);
-
-  // Animation visibility state
-  let animTrailStyle = $state<TrailVisibility>("on");
-  let animPlaybackMode = $state<PlaybackMode>("continuous");
-  let animBpm = $state(60);
-  let animTkaGlyphVisible = $state(true);
-  let animWordHeaderVisible = $state(true);
-  let animFireEffectEnabled = $state(false);
-  let animLedEffectEnabled = $state(false);
-  let animLedBrightness = $state(5);
-  let animColorBlend = $state(0.5);
-  let animSmokeLevel = $state(0.1);
-  let animUseCharcoal = $state(false);
-  let animFireIntensity = $state(0.7);
-  let animEffortPreset = $state<EffortId>("linear");
 
   // Image composition state
   let imgAddWord = $state(true);
@@ -158,88 +138,6 @@
     }
   }
 
-  // Animation toggle handler
-  function handleAnimationToggle(key: string) {
-    triggerHaptic();
-    switch (key) {
-      case "tka":
-        animTkaGlyphVisible = !animTkaGlyphVisible;
-        animationVisibilityManager.setVisibility(
-          "tkaGlyph",
-          animTkaGlyphVisible
-        );
-        break;
-      case "wordHeader":
-        animWordHeaderVisible = !animWordHeaderVisible;
-        animationVisibilityManager.setVisibility(
-          "wordHeader",
-          animWordHeaderVisible
-        );
-        break;
-      case "fireEffect":
-        animFireEffectEnabled = !animFireEffectEnabled;
-        animationVisibilityManager.setFireEffect(animFireEffectEnabled);
-        break;
-      case "ledEffect":
-        animLedEffectEnabled = !animLedEffectEnabled;
-        animationVisibilityManager.setLedEffect(animLedEffectEnabled);
-        break;
-    }
-  }
-
-  function handleLedBrightnessChange(level: number) {
-    triggerHaptic();
-    animLedBrightness = level;
-    animationVisibilityManager.setLedBrightness(level);
-  }
-
-  function handleColorBlendChange(value: number) {
-    triggerHaptic();
-    animColorBlend = value;
-    animationVisibilityManager.setFireColorBlend(value);
-  }
-
-  function handleSmokeLevelChange(value: number) {
-    triggerHaptic();
-    animSmokeLevel = value;
-    animationVisibilityManager.setFireSmokeLevel(value);
-  }
-
-  function handleUseCharcoalChange(value: boolean) {
-    triggerHaptic();
-    animUseCharcoal = value;
-    animationVisibilityManager.setFireUseCharcoal(value);
-  }
-
-  function handleFireIntensityChange(value: number) {
-    triggerHaptic();
-    animFireIntensity = value;
-    animationVisibilityManager.setFireIntensity(value);
-  }
-
-  function handleEffortPresetChange(preset: EffortId) {
-    triggerHaptic();
-    animEffortPreset = preset;
-    animationVisibilityManager.setEffortPreset(preset);
-  }
-
-  function handleTrailStyleChange(newStyle: string) {
-    triggerHaptic();
-    animationVisibilityManager.setTrailStyle(newStyle as TrailVisibility);
-  }
-
-  function handlePlaybackModeChange(mode: PlaybackMode) {
-    triggerHaptic();
-    animPlaybackMode = mode;
-    animationVisibilityManager.setPlaybackMode(mode);
-  }
-
-  function handleBpmChange(bpm: number) {
-    triggerHaptic();
-    animBpm = bpm;
-    animationVisibilityManager.setBpm(bpm);
-  }
-
   // Image toggle handler
   function handleImageToggle(key: string) {
     triggerHaptic();
@@ -298,22 +196,6 @@
       stepNumbersVisible = visibilityManager.getBeatNumbersVisibility();
     });
 
-    // Load initial animation visibility (separate persistence, no race)
-    animTrailStyle = animationVisibilityManager.getTrailStyle();
-    animPlaybackMode = animationVisibilityManager.getPlaybackMode();
-    animBpm = animationVisibilityManager.getBpm();
-    animTkaGlyphVisible = animationVisibilityManager.getVisibility("tkaGlyph");
-    animWordHeaderVisible =
-      animationVisibilityManager.getVisibility("wordHeader");
-    animFireEffectEnabled = animationVisibilityManager.isFireEffectEnabled();
-    animLedEffectEnabled = animationVisibilityManager.isLedEffectEnabled();
-    animLedBrightness = animationVisibilityManager.getLedBrightness();
-    animColorBlend = animationVisibilityManager.getFireColorBlend();
-    animSmokeLevel = animationVisibilityManager.getFireSmokeLevel();
-    animUseCharcoal = animationVisibilityManager.getFireUseCharcoal();
-    animFireIntensity = animationVisibilityManager.getFireIntensity();
-    animEffortPreset = animationVisibilityManager.getEffortPreset();
-
     // Load initial image composition
     imgAddWord = imageCompositionManager.addWord;
     imgAddDifficultyLevel = imageCompositionManager.addDifficultyLevel;
@@ -340,24 +222,6 @@
       stepNumbersVisible = visibilityManager.getBeatNumbersVisibility();
     };
 
-    const animationObserver = () => {
-      animTrailStyle = animationVisibilityManager.getTrailStyle();
-      animPlaybackMode = animationVisibilityManager.getPlaybackMode();
-      animBpm = animationVisibilityManager.getBpm();
-      animTkaGlyphVisible =
-        animationVisibilityManager.getVisibility("tkaGlyph");
-      animWordHeaderVisible =
-        animationVisibilityManager.getVisibility("wordHeader");
-      animFireEffectEnabled = animationVisibilityManager.isFireEffectEnabled();
-      animLedEffectEnabled = animationVisibilityManager.isLedEffectEnabled();
-      animLedBrightness = animationVisibilityManager.getLedBrightness();
-      animColorBlend = animationVisibilityManager.getFireColorBlend();
-      animSmokeLevel = animationVisibilityManager.getFireSmokeLevel();
-      animUseCharcoal = animationVisibilityManager.getFireUseCharcoal();
-      animFireIntensity = animationVisibilityManager.getFireIntensity();
-      animEffortPreset = animationVisibilityManager.getEffortPreset();
-    };
-
     const imageObserver = () => {
       imgAddWord = imageCompositionManager.addWord;
       imgAddDifficultyLevel = imageCompositionManager.addDifficultyLevel;
@@ -370,7 +234,6 @@
     };
 
     visibilityManager.registerObserver(pictographObserver, ["all"]);
-    animationVisibilityManager.registerObserver(animationObserver);
     imageCompositionManager.registerObserver(imageObserver);
 
     // Entry animation
@@ -378,7 +241,6 @@
 
     return () => {
       visibilityManager.unregisterObserver(pictographObserver);
-      animationVisibilityManager.unregisterObserver(animationObserver);
       imageCompositionManager.unregisterObserver(imageObserver);
     };
   });
@@ -425,34 +287,7 @@
       isMobileHidden={activePanel !== "pictograph"}
     />
 
-    <AnimationPanel
-      gridVisible={gridVisible}
-      stepNumbersVisible={stepNumbersVisible}
-      trailStyle={animTrailStyle}
-      playbackMode={animPlaybackMode}
-      bpm={animBpm}
-      tkaGlyphVisible={animTkaGlyphVisible}
-      wordHeaderVisible={animWordHeaderVisible}
-      fireEffectEnabled={animFireEffectEnabled}
-      ledEffectEnabled={animLedEffectEnabled}
-      ledBrightness={animLedBrightness}
-      onLedBrightnessChange={handleLedBrightnessChange}
-      colorBlend={animColorBlend}
-      smokeLevel={animSmokeLevel}
-      useCharcoal={animUseCharcoal}
-      fireIntensity={animFireIntensity}
-      onColorBlendChange={handleColorBlendChange}
-      onSmokeLevelChange={handleSmokeLevelChange}
-      onUseCharcoalChange={handleUseCharcoalChange}
-      onFireIntensityChange={handleFireIntensityChange}
-      effortPreset={animEffortPreset}
-      onEffortPresetChange={handleEffortPresetChange}
-      onToggle={handleAnimationToggle}
-      onTrailStyleChange={handleTrailStyleChange}
-      onPlaybackModeChange={handlePlaybackModeChange}
-      onBpmChange={handleBpmChange}
-      isMobileHidden={activePanel !== "animation"}
-    />
+    <AnimationPanel isMobileHidden={activePanel !== "animation"} />
 
     <ImagePanel
       addWord={imgAddWord}
@@ -499,6 +334,7 @@
     align-items: center;
     gap: clamp(8px, 1.5cqi, 16px);
     width: 100%;
+    max-width: 1000px;
     flex-shrink: 0;
   }
 
@@ -508,6 +344,7 @@
     flex-direction: column;
     gap: clamp(6px, 1.5cqi, 12px);
     width: 100%;
+    max-width: 1000px;
 
     /* In modal context, grow to fill available height.
        In settings page context, defaults to content-driven. */

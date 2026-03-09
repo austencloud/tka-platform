@@ -1,321 +1,122 @@
 <!--
   AnimationDesktopControls.svelte
 
-  Expanded desktop layout for animation visibility controls.
-  Displayed when panel width is 320px or above.
+  Progressive disclosure: Effects always visible, Motion and Display collapsed.
 -->
 <script lang="ts">
-  import type {
-    TrailVisibility,
-    PlaybackMode,
-  } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
-  import { EFFORTS } from "$lib/features/effort-lab/domain/effort-types";
+  import EffectPicker from "$lib/shared/animation-engine/components/canvas-settings-modal/EffectPicker.svelte";
+  import type { ActiveEffect } from "$lib/shared/animation-engine/components/canvas-settings-modal/EffectPicker.svelte";
+  import FireCategory from "$lib/shared/animation-engine/components/canvas-settings-modal/categories/FireCategory.svelte";
+  import CharcoalCategory from "$lib/shared/animation-engine/components/canvas-settings-modal/categories/CharcoalCategory.svelte";
+  import LedCategory from "$lib/shared/animation-engine/components/canvas-settings-modal/categories/LedCategory.svelte";
+  import PlaybackCategory from "$lib/shared/animation-engine/components/canvas-settings-modal/categories/PlaybackCategory.svelte";
+  import EffortCategory from "$lib/shared/animation-engine/components/canvas-settings-modal/categories/EffortCategory.svelte";
+  import DisplayCategory from "$lib/shared/animation-engine/components/canvas-settings-modal/categories/DisplayCategory.svelte";
+  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { onDestroy } from "svelte";
+  import { slide } from "svelte/transition";
 
-  interface Props {
-    playbackMode: PlaybackMode;
-    bpm: number;
-    bpmPresets: number[];
-    gridVisible: boolean;
-    stepNumbersVisible: boolean;
-    tkaGlyphVisible: boolean;
-    wordHeaderVisible: boolean;
-    fireEffectEnabled: boolean;
-    ledEffectEnabled: boolean;
-    ledBrightness: number;
-    onLedBrightnessChange: (level: number) => void;
-    colorBlend: number;
-    smokeLevel: number;
-    useCharcoal: boolean;
-    fireIntensity: number;
-    onColorBlendChange: (value: number) => void;
-    onSmokeLevelChange: (value: number) => void;
-    onUseCharcoalChange: (value: boolean) => void;
-    onFireIntensityChange: (value: number) => void;
-    trailStyle: TrailVisibility;
-    showBilateralToggle: boolean;
-    isBothEnds: boolean;
-    onPlaybackModeChange: (mode: PlaybackMode) => void;
-    onBpmChange: (bpm: number) => void;
-    onToggle: (key: string) => void;
-    effortPreset: EffortId;
-    onEffortPresetChange: (preset: EffortId) => void;
-    onTrailPreset: (preset: TrailVisibility) => void;
-    onToggleBothEnds: () => void;
+  const vm = getAnimationVisibilityManager();
+
+  let fireEnabled = $state(vm.isFireEffectEnabled());
+  let charcoalEnabled = $state(vm.getFireUseCharcoal());
+  let ledEnabled = $state(vm.isLedEffectEnabled());
+  let trailsVisible = $state(vm.isTrailsVisible());
+
+  function sync(): void {
+    fireEnabled = vm.isFireEffectEnabled();
+    charcoalEnabled = vm.getFireUseCharcoal();
+    ledEnabled = vm.isLedEffectEnabled();
+    trailsVisible = vm.isTrailsVisible();
   }
 
-  let {
-    playbackMode,
-    bpm,
-    bpmPresets,
-    gridVisible,
-    stepNumbersVisible,
-    tkaGlyphVisible,
-    wordHeaderVisible,
-    fireEffectEnabled,
-    ledEffectEnabled,
-    ledBrightness,
-    onLedBrightnessChange,
-    colorBlend,
-    smokeLevel,
-    useCharcoal,
-    fireIntensity,
-    onColorBlendChange,
-    onSmokeLevelChange,
-    onUseCharcoalChange,
-    onFireIntensityChange,
-    trailStyle,
-    showBilateralToggle,
-    isBothEnds,
-    onPlaybackModeChange,
-    onBpmChange,
-    onToggle,
-    effortPreset,
-    onEffortPresetChange,
-    onTrailPreset,
-    onToggleBothEnds,
-  }: Props = $props();
+  vm.registerObserver(sync);
+  onDestroy(() => vm.unregisterObserver(sync));
 
-  const brightnessLevels = [1, 2, 3, 4, 5];
+  const activeEffect: ActiveEffect = $derived.by(() => {
+    if (fireEnabled && charcoalEnabled) return "charcoal";
+    if (fireEnabled) return "fire";
+    if (ledEnabled) return "led";
+    if (trailsVisible) return "trails";
+    return "none";
+  });
+
+  function selectEffect(effect: ActiveEffect) {
+    if (vm.isFireEffectEnabled()) vm.setFireEffect(false);
+    if (vm.isLedEffectEnabled()) vm.setLedEffect(false);
+    if (vm.isTrailsVisible()) vm.setTrailStyle("off");
+    vm.setFireUseCharcoal(false);
+
+    if (effect === "fire") {
+      vm.setFireEffect(true);
+    } else if (effect === "charcoal") {
+      vm.setFireUseCharcoal(true);
+      vm.setFireEffect(true);
+    } else if (effect === "led") {
+      vm.setLedEffect(true);
+    } else if (effect === "trails") {
+      vm.setTrailStyle("on");
+    }
+  }
+
+  // Collapsible sections — both collapsed by default
+  let motionOpen = $state(false);
+  let displayOpen = $state(false);
 </script>
 
 <div class="desktop-controls">
-  <div class="control-group">
-    <span class="group-label">Playback</span>
-    <div class="playback-mode-toggle">
-      <button
-        class="mode-btn"
-        class:active={playbackMode === "continuous"}
-        aria-pressed={playbackMode === "continuous"}
-        onclick={() => onPlaybackModeChange("continuous")}
-        type="button"
-        aria-label="Continuous playback"
-      >
-        <i class="fas fa-wave-square" aria-hidden="true"></i>
-        <span>Continuous</span>
-      </button>
-      <button
-        class="mode-btn"
-        class:active={playbackMode === "step"}
-        aria-pressed={playbackMode === "step"}
-        onclick={() => onPlaybackModeChange("step")}
-        type="button"
-        aria-label="Step playback"
-      >
-        <i class="fas fa-shoe-prints" aria-hidden="true"></i>
-        <span>Step</span>
-      </button>
-    </div>
-  </div>
-
-  <div class="control-group">
-    <span class="group-label">Effort</span>
-    <div class="effort-grid">
-      {#each EFFORTS as effort}
-        <button
-          class="effort-btn"
-          class:active={effortPreset === effort.id}
-          aria-pressed={effortPreset === effort.id}
-          onclick={() => onEffortPresetChange(effort.id)}
-          type="button"
-          aria-label="Set effort to {effort.label}"
-          style:--effort-color={effort.color}
-        >
-          {effort.label}
-        </button>
-      {/each}
-    </div>
-  </div>
-
-  <div class="control-group">
-    <span class="group-label">Speed (BPM)</span>
-    <div class="bpm-presets">
-      {#each bpmPresets as presetBpm}
-        <button
-          class="bpm-btn"
-          class:active={bpm === presetBpm}
-          aria-pressed={bpm === presetBpm}
-          onclick={() => onBpmChange(presetBpm)}
-          type="button"
-          aria-label="Set BPM to {presetBpm}"
-        >
-          {presetBpm}
-        </button>
-      {/each}
-    </div>
-  </div>
-
-  <div class="control-group">
-    <span class="group-label">Trails</span>
-    <div class="trail-preset-row">
-      <div class="preset-buttons">
-        <button
-          class="preset-btn"
-          class:active={trailStyle === "off"}
-          aria-pressed={trailStyle === "off"}
-          onclick={() => onTrailPreset("off")}
-          type="button"
-        >
-          Off
-        </button>
-        <button
-          class="preset-btn"
-          class:active={trailStyle === "on"}
-          aria-pressed={trailStyle === "on"}
-          onclick={() => onTrailPreset("on")}
-          type="button"
-        >
-          On
-        </button>
-      </div>
-
-      {#if showBilateralToggle}
-        <button
-          class="ends-toggle"
-          class:active={isBothEnds}
-          aria-pressed={isBothEnds}
-          onclick={onToggleBothEnds}
-          type="button"
-          title={isBothEnds ? "Trailing both ends" : "Trailing one end"}
-        >
-          <i
-            class="fas {isBothEnds
-              ? 'fa-arrows-alt-h'
-              : 'fa-long-arrow-alt-right'}"
-            aria-hidden="true"
-          ></i>
-          <span class="ends-label">{isBothEnds ? "Both" : "One"}</span>
-        </button>
-      {/if}
-    </div>
-  </div>
-
-  <div class="control-group">
-    <span class="group-label">Overlays</span>
-    <div class="toggle-grid">
-      <button
-        class="toggle-btn"
-        class:active={tkaGlyphVisible}
-        aria-pressed={tkaGlyphVisible}
-        onclick={() => onToggle("tka")}>TKA Glyph</button
-      >
-      <button
-        class="toggle-btn"
-        class:active={wordHeaderVisible}
-        aria-pressed={wordHeaderVisible}
-        onclick={() => onToggle("wordHeader")}>Word</button
-      >
-    </div>
-  </div>
-
+  <!-- Effects: always visible — the primary thing users adjust -->
   <div class="control-group">
     <span class="group-label">Effects</span>
-    <div class="toggle-grid">
-      <button
-        class="toggle-btn"
-        class:active={fireEffectEnabled}
-        aria-pressed={fireEffectEnabled}
-        onclick={() => onToggle("fireEffect")}
-        type="button"
-      >
-        Fire
-      </button>
-      <button
-        class="toggle-btn"
-        class:active={ledEffectEnabled}
-        aria-pressed={ledEffectEnabled}
-        onclick={() => onToggle("ledEffect")}
-        type="button"
-      >
-        LED
-      </button>
-    </div>
-    {#if ledEffectEnabled}
-      <div class="led-brightness-section">
-        <span class="group-label">Brightness</span>
-        <div class="bpm-presets">
-          {#each brightnessLevels as level}
-            <button
-              class="bpm-btn"
-              class:active={ledBrightness === level}
-              aria-pressed={ledBrightness === level}
-              onclick={() => onLedBrightnessChange(level)}
-              type="button"
-              aria-label="Set LED brightness to level {level}"
-            >
-              {level}
-            </button>
-          {/each}
-        </div>
-      </div>
-    {/if}
-    {#if fireEffectEnabled}
-      <div class="flame-mode-row">
-        <button
-          class="preset-btn"
-          class:active={!useCharcoal}
-          aria-pressed={!useCharcoal}
-          onclick={() => onUseCharcoalChange(false)}
-          type="button"
-        >
-          Fire
-        </button>
-        <button
-          class="preset-btn"
-          class:active={useCharcoal}
-          aria-pressed={useCharcoal}
-          onclick={() => onUseCharcoalChange(true)}
-          type="button"
-        >
-          Charcoal
-        </button>
-      </div>
-      <div class="intensity-row">
-        <span class="slider-label">Intensity</span>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value={fireIntensity}
-          oninput={(e) => onFireIntensityChange(parseFloat(e.currentTarget.value))}
-          class="intensity-slider"
-          aria-label="Fire intensity"
-        />
-        <span class="intensity-value">{(fireIntensity * 100).toFixed(0)}%</span>
-      </div>
-      {#if !useCharcoal}
-        <div class="intensity-row">
-          <span class="slider-label">Smoke</span>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.05"
-            value={smokeLevel}
-            oninput={(e) => onSmokeLevelChange(parseFloat(e.currentTarget.value))}
-            class="intensity-slider"
-            aria-label="Smoke level"
-          />
-          <span class="intensity-value">{(smokeLevel * 100).toFixed(0)}%</span>
-        </div>
-      {/if}
-      <div class="intensity-row">
-        <span class="slider-label">Color</span>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value={colorBlend}
-          oninput={(e) => onColorBlendChange(parseFloat(e.currentTarget.value))}
-          class="intensity-slider"
-          aria-label="Flame color blend"
-        />
-        <span class="intensity-value">{colorBlend < 0.1 ? "Nat" : colorBlend > 0.9 ? "Col" : `${(colorBlend * 100).toFixed(0)}%`}</span>
-      </div>
+    <EffectPicker {activeEffect} onSelect={selectEffect} />
+
+    {#if activeEffect === "fire"}
+      <FireCategory />
+    {:else if activeEffect === "charcoal"}
+      <CharcoalCategory />
+    {:else if activeEffect === "led"}
+      <LedCategory />
     {/if}
   </div>
+
+  <!-- Motion: collapsed by default -->
+  <button
+    class="section-toggle"
+    type="button"
+    aria-expanded={motionOpen}
+    onclick={() => (motionOpen = !motionOpen)}
+  >
+    <span class="section-toggle-label">Motion</span>
+    <i class="fas {motionOpen ? 'fa-chevron-up' : 'fa-chevron-down'}" aria-hidden="true"></i>
+  </button>
+  {#if motionOpen}
+    <div class="collapsible-section" transition:slide={{ duration: 150 }}>
+      <div class="control-group">
+        <span class="group-label">Playback</span>
+        <PlaybackCategory />
+      </div>
+      <div class="control-group">
+        <span class="group-label">Effort</span>
+        <EffortCategory />
+      </div>
+    </div>
+  {/if}
+
+  <!-- Display: collapsed by default -->
+  <button
+    class="section-toggle"
+    type="button"
+    aria-expanded={displayOpen}
+    onclick={() => (displayOpen = !displayOpen)}
+  >
+    <span class="section-toggle-label">Display</span>
+    <i class="fas {displayOpen ? 'fa-chevron-up' : 'fa-chevron-down'}" aria-hidden="true"></i>
+  </button>
+  {#if displayOpen}
+    <div class="collapsible-section" transition:slide={{ duration: 150 }}>
+      <DisplayCategory />
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -332,48 +133,6 @@
     gap: clamp(4px, 1cqi, 6px);
   }
 
-  .led-brightness-section {
-    display: flex;
-    flex-direction: column;
-    gap: clamp(4px, 1cqi, 6px);
-  }
-
-  .flame-mode-row {
-    display: flex;
-    gap: clamp(4px, 1cqi, 6px);
-  }
-
-  .intensity-row {
-    display: flex;
-    align-items: center;
-    gap: clamp(6px, 1cqi, 10px);
-    margin-top: clamp(4px, 1cqi, 6px);
-  }
-
-  .slider-label {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--theme-text-dim);
-    white-space: nowrap;
-  }
-
-  .intensity-slider {
-    flex: 1;
-    min-height: 44px;
-    accent-color: var(--theme-accent);
-    cursor: pointer;
-  }
-
-  .intensity-value {
-    font-size: var(--font-size-compact, 12px);
-    font-variant-numeric: tabular-nums;
-    color: var(--theme-text-dim);
-    min-width: 28px;
-    text-align: right;
-  }
-
   .group-label {
     font-size: var(--font-size-compact);
     font-weight: 600;
@@ -381,441 +140,60 @@
     letter-spacing: 0.5px;
     color: var(--theme-text-dim);
     padding-left: 2px;
-    font-family:
-      -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
     line-height: 1.2;
   }
 
-  .toggle-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: clamp(4px, 1cqi, 8px);
-  }
-
-  .playback-mode-toggle {
+  /* Collapsible section toggle */
+  .section-toggle {
     display: flex;
-    gap: clamp(4px, 1cqi, 8px);
-  }
-
-  .mode-btn {
-    display: flex;
-    flex: 1;
     align-items: center;
-    justify-content: center;
-    gap: clamp(4px, 1cqi, 8px);
-    min-height: 44px;
-    padding: clamp(8px, 1.5cqi, 12px) clamp(10px, 2cqi, 14px);
-    background: color-mix(in srgb, var(--theme-card-bg) 70%, transparent);
-    border: 1px solid var(--theme-stroke);
-    border-radius: clamp(8px, 1.5cqi, 12px);
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-compact);
-    font-weight: 600;
-    font-family:
-      -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 10px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     cursor: pointer;
-    transition: all var(--duration-fast) ease;
-    -webkit-tap-highlight-color: transparent;
+    transition: all var(--duration-fast, 100ms) ease;
+    min-height: 44px;
   }
 
-  .mode-btn i {
-    font-size: var(--font-size-sm);
+  .section-toggle:hover {
+    background: color-mix(in srgb, var(--theme-text) 6%, transparent);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    color: var(--theme-text, white);
   }
 
-  .mode-btn:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
-    color: var(--theme-text);
-    transform: translateY(-1px);
-  }
-
-  .mode-btn:active {
-    transform: translateY(0) scale(0.97);
-    transition-duration: 50ms;
-  }
-
-  .mode-btn.active {
-    background: color-mix(in srgb, var(--theme-accent) 25%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent) 45%, transparent);
-    color: white;
-    box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--theme-accent) 15%, transparent),
-      0 4px 12px color-mix(in srgb, var(--theme-accent) 25%, transparent);
-  }
-
-  .mode-btn.active:hover {
-    background: color-mix(in srgb, var(--theme-accent) 35%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent) 55%, transparent);
-    box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--theme-accent) 20%, transparent),
-      0 4px 16px color-mix(in srgb, var(--theme-accent) 35%, transparent);
-  }
-
-  .mode-btn:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--theme-accent) 50%, transparent);
+  .section-toggle:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
     outline-offset: 2px;
   }
 
-  .bpm-presets {
-    display: flex;
-    gap: clamp(4px, 1cqi, 8px);
-  }
-
-  .bpm-btn {
-    flex: 1;
-    min-height: 44px;
-    padding: clamp(8px, 1.5cqi, 12px) clamp(6px, 1.5cqi, 8px);
-    background: color-mix(in srgb, var(--theme-card-bg) 70%, transparent);
-    border: 1px solid var(--theme-stroke);
-    border-radius: clamp(8px, 1.5cqi, 12px);
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-compact);
+  .section-toggle-label {
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    font-family:
-      -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .bpm-btn:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
-    color: var(--theme-text);
-    transform: translateY(-1px);
-  }
-
-  .bpm-btn:active {
-    transform: translateY(0) scale(0.97);
-    transition-duration: 50ms;
-  }
-
-  .bpm-btn.active {
-    background: color-mix(in srgb, var(--theme-accent-strong) 25%, transparent);
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent-strong) 45%,
-      transparent
-    );
-    color: white;
-    box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--theme-accent-strong) 15%, transparent),
-      0 4px 12px color-mix(in srgb, var(--theme-accent-strong) 25%, transparent);
-  }
-
-  .bpm-btn.active:hover {
-    background: color-mix(in srgb, var(--theme-accent-strong) 35%, transparent);
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent-strong) 55%,
-      transparent
-    );
-    box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--theme-accent-strong) 20%, transparent),
-      0 4px 16px color-mix(in srgb, var(--theme-accent-strong) 35%, transparent);
-  }
-
-  .bpm-btn:focus-visible {
-    outline: 2px solid
-      color-mix(in srgb, var(--theme-accent-strong) 50%, transparent);
-    outline-offset: 2px;
-  }
-
-  .toggle-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 44px;
-    padding: clamp(8px, 1.5cqi, 12px) clamp(8px, 1.5cqi, 10px);
-    background: color-mix(in srgb, var(--theme-card-bg) 70%, transparent);
-    border: 1px solid var(--theme-stroke);
-    border-radius: clamp(8px, 1.5cqi, 12px);
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-compact);
-    font-weight: 600;
-    font-family:
-      -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .toggle-btn:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
-    color: var(--theme-text);
-    transform: translateY(-1px);
-  }
-
-  .toggle-btn:active {
-    transform: translateY(0) scale(0.97);
-    transition-duration: 50ms;
-  }
-
-  .toggle-btn.active {
-    background: color-mix(in srgb, var(--theme-accent) 25%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent) 45%, transparent);
-    color: white;
-    box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--theme-accent) 15%, transparent),
-      0 4px 12px color-mix(in srgb, var(--theme-accent) 25%, transparent);
-  }
-
-  .toggle-btn.active:hover {
-    background: color-mix(in srgb, var(--theme-accent) 35%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent) 55%, transparent);
-    box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--theme-accent) 20%, transparent),
-      0 4px 16px color-mix(in srgb, var(--theme-accent) 35%, transparent);
-  }
-
-  .toggle-btn:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--theme-accent) 50%, transparent);
-    outline-offset: 2px;
-  }
-
-  .trail-preset-row {
-    display: flex;
-    align-items: center;
-    gap: clamp(4px, 1cqi, 8px);
-  }
-
-  .preset-buttons {
-    display: flex;
-    gap: clamp(4px, 1cqi, 6px);
-    flex: 1;
-  }
-
-  .preset-btn {
-    flex: 1;
-    min-height: 44px;
-    padding: clamp(8px, 1.5cqi, 12px) clamp(8px, 1.5cqi, 10px);
-    background: color-mix(in srgb, var(--theme-card-bg) 70%, transparent);
-    border: 1px solid var(--theme-stroke);
-    border-radius: clamp(8px, 1.5cqi, 12px);
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-compact);
-    font-weight: 600;
-    font-family:
-      -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .preset-btn:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
-    color: var(--theme-text);
-    transform: translateY(-1px);
-  }
-
-  .preset-btn:active {
-    transform: translateY(0) scale(0.97);
-    transition-duration: 50ms;
-  }
-
-  .preset-btn.active {
-    background: color-mix(in srgb, var(--theme-accent) 25%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent) 45%, transparent);
-    color: white;
-    box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--theme-accent) 15%, transparent),
-      0 4px 12px color-mix(in srgb, var(--theme-accent) 25%, transparent);
-  }
-
-  .preset-btn.active:hover {
-    background: color-mix(in srgb, var(--theme-accent) 35%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent) 55%, transparent);
-    box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--theme-accent) 20%, transparent),
-      0 4px 16px color-mix(in srgb, var(--theme-accent) 35%, transparent);
-  }
-
-  .preset-btn:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--theme-accent) 50%, transparent);
-    outline-offset: 2px;
-  }
-
-  .ends-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: clamp(4px, 1cqi, 6px);
-    min-height: 44px;
-    padding: clamp(8px, 1.5cqi, 12px) clamp(10px, 2cqi, 14px);
-    background: color-mix(in srgb, var(--theme-card-bg) 70%, transparent);
-    border: 1px solid var(--theme-stroke);
-    border-radius: clamp(8px, 1.5cqi, 12px);
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-compact);
-    font-weight: 600;
-    font-family:
-      -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-    -webkit-tap-highlight-color: transparent;
-    white-space: nowrap;
-  }
-
-  .ends-toggle i {
-    font-size: var(--font-size-sm);
-  }
-
-  .ends-label {
     text-transform: uppercase;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.5px;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
   }
 
-  .ends-toggle:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
-    color: var(--theme-text);
-    transform: translateY(-1px);
+  .section-toggle i {
+    font-size: 10px;
+    opacity: 0.6;
   }
 
-  .ends-toggle:active {
-    transform: translateY(0) scale(0.97);
-    transition-duration: 50ms;
-  }
-
-  .ends-toggle.active {
-    background: color-mix(in srgb, var(--theme-accent-strong) 25%, transparent);
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent-strong) 45%,
-      transparent
-    );
-    color: white;
-    box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--theme-accent-strong) 15%, transparent),
-      0 4px 12px color-mix(in srgb, var(--theme-accent-strong) 25%, transparent);
-  }
-
-  .ends-toggle.active:hover {
-    background: color-mix(in srgb, var(--theme-accent-strong) 35%, transparent);
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent-strong) 55%,
-      transparent
-    );
-    box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--theme-accent-strong) 20%, transparent),
-      0 4px 16px color-mix(in srgb, var(--theme-accent-strong) 35%, transparent);
-  }
-
-  .ends-toggle:focus-visible {
-    outline: 2px solid
-      color-mix(in srgb, var(--theme-accent-strong) 50%, transparent);
-    outline-offset: 2px;
-  }
-
-  .effort-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: clamp(4px, 1cqi, 6px);
-  }
-
-  .effort-btn {
-    min-height: 44px;
-    padding: clamp(8px, 1.5cqi, 10px) clamp(4px, 1cqi, 6px);
-    background: color-mix(in srgb, var(--theme-card-bg) 70%, transparent);
-    border: 1px solid var(--theme-stroke);
-    border-radius: clamp(8px, 1.5cqi, 12px);
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-compact);
-    font-weight: 600;
-    font-family:
-      -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .effort-btn:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
-    color: var(--theme-text);
-    transform: translateY(-1px);
-  }
-
-  .effort-btn:active {
-    transform: translateY(0) scale(0.97);
-    transition-duration: 50ms;
-  }
-
-  .effort-btn.active {
-    background: color-mix(in srgb, var(--effort-color) 25%, transparent);
-    border-color: color-mix(in srgb, var(--effort-color) 55%, transparent);
-    color: white;
-    box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--effort-color) 15%, transparent),
-      0 4px 12px color-mix(in srgb, var(--effort-color) 25%, transparent);
-  }
-
-  .effort-btn.active:hover {
-    background: color-mix(in srgb, var(--effort-color) 35%, transparent);
-    border-color: color-mix(in srgb, var(--effort-color) 65%, transparent);
-    box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--effort-color) 20%, transparent),
-      0 4px 16px color-mix(in srgb, var(--effort-color) 35%, transparent);
-  }
-
-  .effort-btn:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--effort-color) 50%, transparent);
-    outline-offset: 2px;
+  .collapsible-section {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(6px, 1.5cqi, 10px);
+    padding: 4px 0;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .toggle-btn,
-    .mode-btn,
-    .bpm-btn,
-    .preset-btn,
-    .ends-toggle,
-    .effort-btn {
+    .section-toggle {
       transition: none;
-    }
-  }
-
-  @media (prefers-contrast: high) {
-    .toggle-btn,
-    .mode-btn,
-    .bpm-btn,
-    .preset-btn,
-    .ends-toggle {
-      border-width: 2px;
-    }
-
-    .toggle-btn.active,
-    .preset-btn.active,
-    .mode-btn.active {
-      border-color: var(--theme-accent);
-    }
-
-    .bpm-btn.active,
-    .ends-toggle.active {
-      border-color: var(--theme-accent-strong);
-    }
-
-    .effort-btn {
-      border-width: 2px;
-    }
-
-    .effort-btn.active {
-      border-color: var(--effort-color);
-    }
-
-    .effort-btn:focus-visible {
-      outline-width: 3px;
-    }
-
-    .toggle-btn:focus-visible,
-    .mode-btn:focus-visible,
-    .bpm-btn:focus-visible,
-    .preset-btn:focus-visible,
-    .ends-toggle:focus-visible {
-      outline-width: 3px;
     }
   }
 </style>

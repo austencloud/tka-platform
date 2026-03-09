@@ -12,82 +12,29 @@
 # DEPLOY CONTEXTS - Branch-based deployments
 # ============================================================================
 
-# Production (main/release branch) - Public release with limited modules
+# Production (main branch)
 [context.production]
   command = "pnpm install && pnpm build"
   [context.production.environment]
     PUBLIC_ENVIRONMENT = "production"
-    # Publicly released modules
-    PUBLIC_ENABLE_CREATE_MODULE = "true"
-    PUBLIC_ENABLE_DISCOVER_MODULE = "true"
-    PUBLIC_ENABLE_FEEDBACK_MODULE = "true"
-    # Unreleased modules (admin/dev only)
-    PUBLIC_ENABLE_LEARN_MODULE = "false"
-    PUBLIC_ENABLE_LIBRARY_MODULE = "false"
-    PUBLIC_ENABLE_COMPOSE_MODULE = "false"
-    PUBLIC_ENABLE_TRAIN_MODULE = "false"
-    PUBLIC_ENABLE_ML_TRAINING_MODULE = "false"
-    PUBLIC_ENABLE_ADMIN_MODULE = "false"
-    # Development tools
-    PUBLIC_ENABLE_DEBUG_TOOLS = "false"
-    PUBLIC_ENABLE_ROLE_OVERRIDE = "false"
-    PUBLIC_ENABLE_ANALYTICS = "true"
 
-# Develop branch - Full feature preview for testing
+# Develop branch - all features enabled
 [context.develop]
   command = "pnpm install && pnpm build"
   [context.develop.environment]
     PUBLIC_ENVIRONMENT = "development"
-    # All modules enabled in dev
-    PUBLIC_ENABLE_CREATE_MODULE = "true"
-    PUBLIC_ENABLE_DISCOVER_MODULE = "true"
-    PUBLIC_ENABLE_FEEDBACK_MODULE = "true"
-    PUBLIC_ENABLE_LEARN_MODULE = "true"
-    PUBLIC_ENABLE_LIBRARY_MODULE = "true"
-    PUBLIC_ENABLE_COMPOSE_MODULE = "true"
-    PUBLIC_ENABLE_TRAIN_MODULE = "true"
-    PUBLIC_ENABLE_ML_TRAINING_MODULE = "true"
-    PUBLIC_ENABLE_ADMIN_MODULE = "true"
-    # Development tools enabled
-    PUBLIC_ENABLE_DEBUG_TOOLS = "true"
-    PUBLIC_ENABLE_ROLE_OVERRIDE = "true"
-    PUBLIC_ENABLE_ANALYTICS = "true"
 
-# Deploy previews (PRs) - Same as develop
+# Deploy previews (PRs)
 [context.deploy-preview]
   command = "pnpm install && pnpm build"
   [context.deploy-preview.environment]
     PUBLIC_ENVIRONMENT = "development"
-    PUBLIC_ENABLE_CREATE_MODULE = "true"
-    PUBLIC_ENABLE_DISCOVER_MODULE = "true"
-    PUBLIC_ENABLE_FEEDBACK_MODULE = "true"
-    PUBLIC_ENABLE_LEARN_MODULE = "true"
-    PUBLIC_ENABLE_LIBRARY_MODULE = "true"
-    PUBLIC_ENABLE_COMPOSE_MODULE = "true"
-    PUBLIC_ENABLE_TRAIN_MODULE = "true"
-    PUBLIC_ENABLE_ML_TRAINING_MODULE = "true"
-    PUBLIC_ENABLE_ADMIN_MODULE = "true"
-    PUBLIC_ENABLE_DEBUG_TOOLS = "true"
-    PUBLIC_ENABLE_ROLE_OVERRIDE = "true"
-    PUBLIC_ENABLE_ANALYTICS = "true"
 
-# Branch deploys (any other branch) - Same as develop
+# Branch deploys (any other branch)
 [context.branch-deploy]
   command = "pnpm install && pnpm build"
   [context.branch-deploy.environment]
     PUBLIC_ENVIRONMENT = "development"
-    PUBLIC_ENABLE_CREATE_MODULE = "true"
-    PUBLIC_ENABLE_DISCOVER_MODULE = "true"
-    PUBLIC_ENABLE_FEEDBACK_MODULE = "true"
-    PUBLIC_ENABLE_LEARN_MODULE = "true"
-    PUBLIC_ENABLE_LIBRARY_MODULE = "true"
-    PUBLIC_ENABLE_COMPOSE_MODULE = "true"
-    PUBLIC_ENABLE_TRAIN_MODULE = "true"
-    PUBLIC_ENABLE_ML_TRAINING_MODULE = "true"
-    PUBLIC_ENABLE_ADMIN_MODULE = "true"
-    PUBLIC_ENABLE_DEBUG_TOOLS = "true"
-    PUBLIC_ENABLE_ROLE_OVERRIDE = "true"
-    PUBLIC_ENABLE_ANALYTICS = "true"
 
 # ============================================================================
 # CACHING HEADERS - Aggressive caching for immutable assets

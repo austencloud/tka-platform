@@ -320,7 +320,7 @@ Hands render at the exact same size/position as everywhere else in the app.
           showElemental={false}
           showPositions={false}
           disableTransitions={true}
-          cellIndex={0}
+          cellIndex={null}
           bluePropTypeOverride={PropType.HAND}
           redPropTypeOverride={PropType.HAND}
         />

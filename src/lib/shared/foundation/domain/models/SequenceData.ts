@@ -1,4 +1,5 @@
 ﻿import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { EffortTimeline } from "$lib/features/phrase-effort-lab/domain/effort-timeline-types";
 import type { TimeSignatureKey } from "./TimeSignature";
 /**
  * Sequence Domain Model
@@ -100,6 +101,8 @@ export interface SequenceData {
   readonly animatedSequencePath?: string;
   /** User-provided tagline or notes for this sequence */
   readonly notes?: string;
+  /** Effort timeline: phrase-level effort easing curves spanning multiple beats */
+  readonly effortTimeline?: EffortTimeline | null;
 }
 
 export function createSequenceData(
@@ -175,6 +178,7 @@ export function createSequenceData(
       animatedSequencePath: data.animatedSequencePath,
     }),
     ...(data.notes !== undefined && { notes: data.notes }),
+    ...(data.effortTimeline !== undefined && { effortTimeline: data.effortTimeline }),
   };
   return result;
 }

@@ -1,7 +1,7 @@
 <!--
-DiscoveryVariantA - Grid-Only Discovery
-The grid is the entire experience. Tap two points, see the position type label.
-No separate pictograph view. Minimal and fast.
+PositionsDiscoveryPhase - Tap grid points to discover alpha, beta, gamma.
+The grid IS the experience. Place two hands, see the position type.
+Discover all three to unlock the quiz.
 -->
 <script lang="ts">
   import PlacementGrid from './PlacementGrid.svelte';
@@ -17,7 +17,6 @@ No separate pictograph view. Minimal and fast.
 
   let { experienceState }: Props = $props();
 
-  // Position type detection
   const OPPOSITE_PAIRS: Record<string, string> = {
     N: 'S', S: 'N', E: 'W', W: 'E',
     NE: 'SW', SW: 'NE', NW: 'SE', SE: 'NW',
@@ -29,7 +28,6 @@ No separate pictograph view. Minimal and fast.
     return 'gamma';
   }
 
-  // Local state
   let gridMode = $state<GridMode>(GridMode.DIAMOND);
   let discoveryCount = $state(0);
   let detectedType = $state<PositionType | null>(null);
@@ -43,13 +41,11 @@ No separate pictograph view. Minimal and fast.
   } catch { /* desktop */ }
 
   const POSITION_TYPES: PositionType[] = ['alpha', 'beta', 'gamma'];
-
-  // Type colors for the result label
   const TYPE_COLORS: Record<PositionType, string> = {
-    alpha: '#22d3ee',
-    beta: '#f59e0b',
-    gamma: '#a78bfa',
+    alpha: '#22d3ee', beta: '#f59e0b', gamma: '#a78bfa',
   };
+
+  const remainingCount = $derived(3 - experienceState.discoveredTypes.size);
 
   function handlePlacementComplete(left: HandPosition, right: HandPosition) {
     const type = detectPositionType(left, right);
@@ -65,12 +61,13 @@ No separate pictograph view. Minimal and fast.
     }
 
     discoveryCount++;
+    // After a few tries on diamond, suggest box
     if (discoveryCount === 3 && gridMode === GridMode.DIAMOND) {
       gridMode = GridMode.BOX;
     }
   }
 
-  function handleTryAgain() {
+  function handlePlaceAnother() {
     showResult = false;
     detectedType = null;
     gridKey++;
@@ -89,9 +86,7 @@ No separate pictograph view. Minimal and fast.
   }
 </script>
 
-<div class="variant-a">
-  <p class="main-prompt">Place two hands on the grid</p>
-
+<div class="discovery-phase">
   <div class="grid-area">
     {#key gridKey}
       <PlacementGrid
@@ -102,16 +97,30 @@ No separate pictograph view. Minimal and fast.
     {/key}
   </div>
 
-  <!-- Result label (fades in after placement) -->
+  <!-- Result + actions (shown after placement) -->
   {#if showResult && detectedType}
     {@const info = POSITION_TYPE_INFO[detectedType]}
-    <div class="result-label" style="--type-color: {TYPE_COLORS[detectedType]}">
-      <span class="result-symbol">{info.symbol}</span>
-      <span class="result-name">{info.label}</span>
+    <div class="result-section">
+      <div class="result-label" style="--type-color: {TYPE_COLORS[detectedType]}">
+        <span class="result-symbol">{info.symbol}</span>
+        <span class="result-name">{info.label}</span>
+      </div>
+
+      <!-- Primary action: place another -->
+      {#if !experienceState.allDiscovered}
+        <button class="primary-btn" onclick={handlePlaceAnother}>
+          Place another ({remainingCount} left to find)
+        </button>
+      {/if}
+
+      <!-- Secondary: switch grid mode -->
+      <button class="secondary-btn" onclick={handleSwitchGrid}>
+        Switch to {gridMode === GridMode.DIAMOND ? 'box' : 'diamond'} grid
+      </button>
     </div>
   {/if}
 
-  <!-- Discovery tracker: 3 slots -->
+  <!-- Discovery tracker -->
   <div class="discovery-tracker">
     {#each POSITION_TYPES as type (type)}
       {@const info = POSITION_TYPE_INFO[type]}
@@ -132,25 +141,15 @@ No separate pictograph view. Minimal and fast.
     {/each}
   </div>
 
-  <!-- Action buttons -->
-  {#if showResult}
-    <div class="action-buttons">
-      <button class="action-btn" onclick={handleTryAgain}>Try again</button>
-      <button class="action-btn" onclick={handleSwitchGrid}>
-        {gridMode === GridMode.DIAMOND ? 'Try box grid' : 'Try diamond grid'}
-      </button>
-    </div>
-  {/if}
-
   {#if experienceState.allDiscovered}
     <button class="advance-btn" onclick={handleAdvanceToQuiz}>
-      Ready for the challenge?
+      All found — ready for the quiz?
     </button>
   {/if}
 </div>
 
 <style>
-  .variant-a {
+  .discovery-phase {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -161,25 +160,24 @@ No separate pictograph view. Minimal and fast.
     padding: 1rem;
   }
 
-  .main-prompt {
-    margin: 0;
-    font-size: 1.25rem;
-    color: var(--theme-text, rgba(255, 255, 255, 0.9));
-    text-align: center;
-    font-weight: 600;
-  }
-
   .grid-area {
     width: 100%;
     max-width: min(90vw, 500px);
   }
 
-  /* Result label */
+  /* Result section: label + action buttons stacked */
+  .result-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    animation: fade-slide-up 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
   .result-label {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    animation: fade-slide-up 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
   .result-symbol {
@@ -199,6 +197,42 @@ No separate pictograph view. Minimal and fast.
   @keyframes fade-slide-up {
     from { opacity: 0; transform: translateY(12px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Primary action — clear, prominent */
+  .primary-btn {
+    padding: 0.75rem 2rem;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    color: var(--theme-on-accent, #000);
+    background: var(--theme-accent, #22d3ee);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .primary-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(34, 211, 238, 0.3);
+  }
+
+  /* Secondary action — subtle */
+  .secondary-btn {
+    padding: 0.4rem 1rem;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    background: transparent;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease;
+  }
+
+  .secondary-btn:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    color: var(--theme-text, rgba(255, 255, 255, 0.85));
   }
 
   /* Discovery tracker */
@@ -242,29 +276,7 @@ No separate pictograph view. Minimal and fast.
     100% { transform: scale(1); }
   }
 
-  /* Action buttons */
-  .action-buttons {
-    display: flex;
-    gap: 0.75rem;
-  }
-
-  .action-btn {
-    padding: 0.5rem 1.25rem;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    color: var(--theme-text, rgba(255, 255, 255, 0.85));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 8px;
-    cursor: pointer;
-    transition: border-color 0.15s ease, background 0.15s ease;
-  }
-
-  .action-btn:hover {
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    background: rgba(255, 255, 255, 0.08);
-  }
-
+  /* Advance button */
   .advance-btn {
     padding: 0.75rem 2rem;
     font-size: var(--font-size-min, 14px);
@@ -283,9 +295,9 @@ No separate pictograph view. Minimal and fast.
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .result-label { animation: none; opacity: 1; transform: none; }
+    .result-section { animation: none; opacity: 1; transform: none; }
     .tracker-slot { transition: none; }
     .tracker-slot.celebrating { animation: none; }
-    .action-btn, .advance-btn { transition: none; }
+    .primary-btn, .secondary-btn, .advance-btn { transition: none; }
   }
 </style>

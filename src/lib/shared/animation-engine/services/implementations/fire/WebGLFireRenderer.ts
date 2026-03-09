@@ -309,11 +309,17 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
           );
         }
 
-        // Clear simulation buffers so residual velocity/fuel/temperature from the
-        // previous loop's final positions don't bleed into the first frame of the
-        // new loop. Without this, fire appears offset from prop tips after looping.
+        // For seamless loops, fire should continue naturally — props don't teleport,
+        // so there's no velocity spike or positional discontinuity to fix.
+        // For non-seamless loops, clear only velocity/pressure (physics fields) so
+        // residual velocity doesn't push fire away from prop tips, but let
+        // temperature/fuel/soot fade out naturally through dissipation physics.
         if (!cache.isWarm()) {
-          this.clearSimulation();
+          if (input.isSeamlesslyLoopable) {
+            // Don't clear anything — fire continues seamlessly
+          } else {
+            this.clearVelocityFields();
+          }
         }
       }
 
@@ -339,9 +345,10 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     }
 
     // Default path: no cache, run full simulation + display
-    // Clear simulation on loop when running without cache
-    if (input.loopDetected) {
-      this.clearSimulation();
+    // On loop: seamless sequences keep fire continuous; non-seamless clear only
+    // velocity to prevent drift while letting visible fire fade naturally.
+    if (input.loopDetected && !input.isSeamlesslyLoopable) {
+      this.clearVelocityFields();
     }
     this.stepSimulation(input.tips, input, config);
     this.renderDisplay(config, input);
@@ -391,6 +398,44 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
       this.createSimulationBuffers();
       this.frameCache?.invalidate();
     }
+  }
+
+  /**
+   * Clear only velocity and pressure fields, preserving visual fire trails.
+   * Used on non-seamless loop boundaries: prevents residual velocity from
+   * pushing fire away from prop tips, while letting temperature/fuel/soot
+   * fade out naturally through dissipation physics.
+   */
+  private clearVelocityFields(): void {
+    const gl = this.gl;
+    if (!gl || !this.initialized) return;
+
+    const physicsFields = [this.velocity, this.pressure];
+    for (const field of physicsFields) {
+      if (!field) continue;
+      for (const buf of [field.read, field.write]) {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, buf.fbo);
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+      }
+    }
+
+    // Divergence and curl are derived from velocity — clear them too
+    if (this.divergenceFBO) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.divergenceFBO.fbo);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    }
+    if (this.curlFBO) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.curlFBO.fbo);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    }
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+    // Note: frame cache is NOT invalidated here — velocity-only clearing
+    // is compatible with continued recording.
   }
 
   clearSimulation(): void {

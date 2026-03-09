@@ -121,9 +121,17 @@
     border-left-color: var(--theme-accent);
     background: color-mix(
       in srgb,
-      var(--theme-accent) 8%,
+      var(--theme-accent) 12%,
       transparent
     );
+  }
+
+  .version-list-item.active .version-number {
+    color: var(--theme-accent);
+  }
+
+  .version-list-item.active .summary-text {
+    color: var(--theme-text);
   }
 
   .version-list-item.pre-release {

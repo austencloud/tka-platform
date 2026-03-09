@@ -69,9 +69,8 @@
       const updated = versionState.versions.find(
         (v) => v.version === selectedVersion?.version
       );
-      if (updated) {
-        selectedVersion = updated;
-      }
+      // If the selected version was removed, fall back to first
+      selectedVersion = updated ?? versionState.versions[0] ?? null;
     }
   }
 </script>

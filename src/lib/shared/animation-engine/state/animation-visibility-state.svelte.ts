@@ -625,6 +625,22 @@ export class AnimationVisibilityStateManager {
     this.notifyObservers();
   }
 
+  /** Reset fire controls to defaults. */
+  resetFireDefaults(): void {
+    this.settings.fireIntensity = 0.7;
+    this.settings.fireColorBlend = 0.5;
+    this.settings.fireSmokeLevel = 0.1;
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  /** Reset charcoal controls to defaults. */
+  resetCharcoalDefaults(): void {
+    this.settings.charcoalParams = { ...DEFAULT_CHARCOAL_PARAMS };
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
   // ============================================================================
   // LED EFFECT
   // ============================================================================

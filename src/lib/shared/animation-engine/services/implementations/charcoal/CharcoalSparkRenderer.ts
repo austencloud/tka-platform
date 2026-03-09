@@ -265,8 +265,9 @@ export class CharcoalSparkRenderer implements ICharcoalRenderer {
 
 		if (dt <= 0) return;
 
-		// Clear on loop boundaries
-		if (input.loopDetected) {
+		// On loop: seamless sequences keep sparks continuous; non-seamless deactivate
+		// existing particles so they don't linger at old positions.
+		if (input.loopDetected && !input.isSeamlesslyLoopable) {
 			this.clearSimulation();
 		}
 

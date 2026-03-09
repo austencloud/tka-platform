@@ -6,28 +6,21 @@
 	const vm = getAnimationVisibilityManager();
 
 	let playbackMode = $state(vm.getPlaybackMode());
-	let speed = $state(vm.getSpeed());
 
 	function handleVisibilityChange(): void {
 		playbackMode = vm.getPlaybackMode();
-		speed = vm.getSpeed();
 	}
 
 	vm.registerObserver(handleVisibilityChange);
 	onDestroy(() => vm.unregisterObserver(handleVisibilityChange));
 
-	let derivedBpm = $derived(Math.round(speed * 60));
-
 	const modes: { id: PlaybackMode; label: string }[] = [
 		{ id: "continuous", label: "Continuous" },
 		{ id: "step", label: "Step" },
 	];
-
-	const bpmPresets = [30, 60, 90, 120];
 </script>
 
 <div class="playback-category">
-	<span class="group-label">Mode</span>
 	<div class="preset-row">
 		{#each modes as mode}
 			<button
@@ -41,35 +34,6 @@
 			</button>
 		{/each}
 	</div>
-
-	<span class="group-label">Speed</span>
-	<div class="slider-row">
-		<label for="ctx-playback-speed">Speed</label>
-		<input
-			id="ctx-playback-speed"
-			type="range"
-			min="0.1"
-			max="3.0"
-			step="0.1"
-			value={speed}
-			oninput={(e) => vm.setSpeed(Number((e.target as HTMLInputElement).value))}
-		/>
-		<span class="slider-value">{derivedBpm} BPM</span>
-	</div>
-
-	<div class="preset-row">
-		{#each bpmPresets as bpm}
-			<button
-				class="preset-btn"
-				class:active={derivedBpm === bpm}
-				type="button"
-				aria-pressed={derivedBpm === bpm}
-				onclick={() => vm.setBpm(bpm)}
-			>
-				{bpm}
-			</button>
-		{/each}
-	</div>
 </div>
 
 <style>
@@ -77,15 +41,6 @@
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
-	}
-
-	.group-label {
-		font-size: var(--font-size-compact, 12px);
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-		margin-top: 4px;
 	}
 
 	.preset-row {
@@ -122,32 +77,6 @@
 	.preset-btn:focus-visible {
 		outline: 2px solid var(--theme-accent, #8b5cf6);
 		outline-offset: 2px;
-	}
-
-	.slider-row {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		min-height: var(--min-touch-target, 44px);
-	}
-
-	.slider-row label {
-		min-width: 70px;
-		font-size: var(--font-size-compact, 12px);
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-	}
-
-	.slider-row input[type="range"] {
-		flex: 1;
-		accent-color: var(--theme-accent, #8b5cf6);
-	}
-
-	.slider-value {
-		min-width: 52px;
-		text-align: right;
-		font-family: var(--font-mono, monospace);
-		font-size: var(--font-size-compact, 12px);
-		color: var(--theme-text, white);
 	}
 
 	@media (prefers-reduced-motion: reduce) {

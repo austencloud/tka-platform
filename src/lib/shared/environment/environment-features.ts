@@ -29,75 +29,38 @@ export function isDevelopment(): boolean {
 }
 
 /**
- * Check if a module is enabled in the current environment
- * This provides an additional layer of control beyond role-based access.
+ * Check if a module is enabled in the current environment.
  *
- * In production: Only modules explicitly enabled are shown
- * In development: All modules are shown by default
- *
- * @param moduleId The module to check
- * @returns true if the module should be visible in this environment
+ * Production: uses PRODUCTION_MODULES map (code, not env vars)
+ * Development: all modules enabled
  */
 export function isModuleEnabledInEnvironment(moduleId: ModuleId): boolean {
-  if (!browser) return true; // SSR - allow all
-
-  // Development mode - all modules enabled unless explicitly disabled
-  if (isDevelopment()) {
-    return getEnvFlag(
-      `PUBLIC_ENABLE_${moduleId.toUpperCase().replace(/-/g, "_")}_MODULE`,
-      true
-    );
-  }
-
-  // Production mode - only explicitly enabled modules
-  if (isProduction()) {
-    return getEnvFlag(
-      `PUBLIC_ENABLE_${moduleId.toUpperCase().replace(/-/g, "_")}_MODULE`,
-      false
-    );
-  }
-
-  // Default to true for unknown environments
+  if (!browser) return true;
+  if (isProduction()) return PRODUCTION_MODULES[moduleId] ?? false;
   return true;
 }
 
 /**
- * Check if debug tools are enabled
+ * Debug tools: enabled in development, disabled in production.
  */
 export function isDebugToolsEnabled(): boolean {
   if (!browser) return false;
-  return getEnvFlag("PUBLIC_ENABLE_DEBUG_TOOLS", isDevelopment());
+  return isDevelopment();
 }
 
 /**
- * Check if role override is enabled
+ * Role override: enabled in development, disabled in production.
  */
 export function isRoleOverrideEnabled(): boolean {
   if (!browser) return false;
-  return getEnvFlag("PUBLIC_ENABLE_ROLE_OVERRIDE", isDevelopment());
+  return isDevelopment();
 }
 
 /**
- * Check if analytics is enabled
+ * Analytics: always enabled.
  */
 export function isAnalyticsEnabled(): boolean {
-  if (!browser) return true;
-  return getEnvFlag("PUBLIC_ENABLE_ANALYTICS", true);
-}
-
-/**
- * Get environment flag value
- */
-function getEnvFlag(key: string, defaultValue: boolean): boolean {
-  if (!browser) return defaultValue;
-
-  const value = (import.meta.env as Record<string, string | undefined>)[key];
-
-  if (value === undefined) return defaultValue;
-  if (value === "true" || value === "1") return true;
-  if (value === "false" || value === "0") return false;
-
-  return defaultValue;
+  return true;
 }
 
 /**

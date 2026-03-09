@@ -13,7 +13,7 @@ cd the-kinetic-alphabet
 npm install
 
 # 2. Create your Firebase account (one-time)
-# Visit https://the-kinetic-alphabet.web.app and sign in with Google
+# Visit https://tkascribe.com and sign in with Google
 
 # 3. Open Claude Code in this repo and type:
 /fb
@@ -130,7 +130,7 @@ When you submit for review, Austen gets an email and an in-app notification. He 
 Copy the URL from the terminal and paste it into your browser manually.
 
 **"Could not sign into Firebase"**
-Visit https://the-kinetic-alphabet.web.app and sign in with Google first. This creates your Firebase account.
+Visit https://tkascribe.com and sign in with Google first. This creates your Firebase account.
 
 **"Permission denied" on commands**
 Austen hasn't added you as a contributor yet. Send him your email.

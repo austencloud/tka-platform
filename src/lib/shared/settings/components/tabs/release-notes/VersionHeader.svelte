@@ -112,17 +112,17 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--theme-card-bg, var(--theme-card-bg));
-    border: 1px solid var(--theme-stroke, var(--theme-stroke));
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
     border-radius: 12px;
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
     cursor: pointer;
     transition: all var(--duration-normal);
   }
 
   .header-button:hover {
     background: var(--theme-card-hover-bg);
-    color: var(--theme-text, var(--theme-text));
+    color: var(--theme-text);
   }
 
   .close-button {
@@ -159,8 +159,8 @@
   }
 
   .version-badge.pre-release {
-    background: var(--theme-card-bg, var(--theme-card-bg));
-    border-color: var(--theme-stroke, var(--theme-stroke-strong));
+    background: var(--theme-card-bg);
+    border-color: var(--theme-stroke-strong);
   }
 
   .badge-text {
@@ -174,13 +174,13 @@
   }
 
   .pre-release .badge-text {
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
     font-size: var(--font-size-base);
   }
 
   .release-date {
     font-size: var(--font-size-sm);
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
   }
 
   @media (max-width: 768px) {
