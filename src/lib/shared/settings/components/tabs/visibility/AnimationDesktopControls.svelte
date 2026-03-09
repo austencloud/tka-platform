@@ -9,6 +9,8 @@
     TrailVisibility,
     PlaybackMode,
   } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
+  import { EFFORTS } from "$lib/features/effort-lab/domain/effort-types";
 
   interface Props {
     playbackMode: PlaybackMode;
@@ -36,6 +38,8 @@
     onPlaybackModeChange: (mode: PlaybackMode) => void;
     onBpmChange: (bpm: number) => void;
     onToggle: (key: string) => void;
+    effortPreset: EffortId;
+    onEffortPresetChange: (preset: EffortId) => void;
     onTrailPreset: (preset: TrailVisibility) => void;
     onToggleBothEnds: () => void;
   }
@@ -66,6 +70,8 @@
     onPlaybackModeChange,
     onBpmChange,
     onToggle,
+    effortPreset,
+    onEffortPresetChange,
     onTrailPreset,
     onToggleBothEnds,
   }: Props = $props();
@@ -99,6 +105,25 @@
         <i class="fas fa-shoe-prints" aria-hidden="true"></i>
         <span>Step</span>
       </button>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <span class="group-label">Effort</span>
+    <div class="effort-grid">
+      {#each EFFORTS as effort}
+        <button
+          class="effort-btn"
+          class:active={effortPreset === effort.id}
+          aria-pressed={effortPreset === effort.id}
+          onclick={() => onEffortPresetChange(effort.id)}
+          type="button"
+          aria-label="Set effort to {effort.label}"
+          style:--effort-color={effort.color}
+        >
+          {effort.label}
+        </button>
+      {/each}
     </div>
   </div>
 
@@ -686,12 +711,69 @@
     outline-offset: 2px;
   }
 
+  .effort-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: clamp(4px, 1cqi, 6px);
+  }
+
+  .effort-btn {
+    min-height: 44px;
+    padding: clamp(8px, 1.5cqi, 10px) clamp(4px, 1cqi, 6px);
+    background: color-mix(in srgb, var(--theme-card-bg) 70%, transparent);
+    border: 1px solid var(--theme-stroke);
+    border-radius: clamp(8px, 1.5cqi, 12px);
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact);
+    font-weight: 600;
+    font-family:
+      -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    cursor: pointer;
+    transition: all var(--duration-fast) ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .effort-btn:hover {
+    background: var(--theme-card-hover-bg);
+    border-color: var(--theme-stroke-strong);
+    color: var(--theme-text);
+    transform: translateY(-1px);
+  }
+
+  .effort-btn:active {
+    transform: translateY(0) scale(0.97);
+    transition-duration: 50ms;
+  }
+
+  .effort-btn.active {
+    background: color-mix(in srgb, var(--effort-color) 25%, transparent);
+    border-color: color-mix(in srgb, var(--effort-color) 55%, transparent);
+    color: white;
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--effort-color) 15%, transparent),
+      0 4px 12px color-mix(in srgb, var(--effort-color) 25%, transparent);
+  }
+
+  .effort-btn.active:hover {
+    background: color-mix(in srgb, var(--effort-color) 35%, transparent);
+    border-color: color-mix(in srgb, var(--effort-color) 65%, transparent);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--effort-color) 20%, transparent),
+      0 4px 16px color-mix(in srgb, var(--effort-color) 35%, transparent);
+  }
+
+  .effort-btn:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--effort-color) 50%, transparent);
+    outline-offset: 2px;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .toggle-btn,
     .mode-btn,
     .bpm-btn,
     .preset-btn,
-    .ends-toggle {
+    .ends-toggle,
+    .effort-btn {
       transition: none;
     }
   }
@@ -714,6 +796,18 @@
     .bpm-btn.active,
     .ends-toggle.active {
       border-color: var(--theme-accent-strong);
+    }
+
+    .effort-btn {
+      border-width: 2px;
+    }
+
+    .effort-btn.active {
+      border-color: var(--effort-color);
+    }
+
+    .effort-btn:focus-visible {
+      outline-width: 3px;
     }
 
     .toggle-btn:focus-visible,
