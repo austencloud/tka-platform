@@ -27,6 +27,7 @@
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { container } from "$lib/shared/di";
   import type { ILibrarySaveService } from "$lib/features/library/services/contracts/ILibrarySaveService";
+  import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
   import type { IContentModerator } from "$lib/features/moderation/services/contracts/IContentModerator";
   import type { ContentModerationResult } from "$lib/features/moderation/domain/models/content-moderation-models";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
@@ -69,6 +70,8 @@
   let isSaving = $state(false);
   let saveStep = $state(0);
   let renderProgress = $state({ current: 0, total: 0 });
+  let publishToCommunity = $state(false);
+  let isUnpublishing = $state(false);
 
   // Get the save service
   let librarySaveService: ILibrarySaveService | null = null;
@@ -76,6 +79,14 @@
     librarySaveService = container.items.librarySaveService;
   } catch (error) {
     console.warn("Failed to resolve librarySaveService:", error);
+  }
+
+  // Get the library repository for publish/unpublish
+  let libraryRepository: ILibraryRepository | null = null;
+  try {
+    libraryRepository = container.items.libraryRepository;
+  } catch (error) {
+    console.warn("Failed to resolve libraryRepository:", error);
   }
 
   // Get the content moderator
@@ -163,20 +174,48 @@
   const hasDuplicate = $derived(duplicateCheck.hasDuplicate);
   const duplicateCount = $derived(duplicateCheck.existingSequences.length);
 
+  // The saved version of this sequence (if it exists in the user's library)
+  const savedSequence = $derived.by(() => {
+    const id = sequence?.id;
+    if (!id) return null;
+    return libraryState.getSequenceById(id) ?? null;
+  });
+
+  // Whether the sequence is currently published to the community library
+  const isAlreadyPublished = $derived(savedSequence?.visibility === "public");
+
+  // Whether the in-editor sequence differs from the saved version (step letters changed)
+  const hasUnsavedChanges = $derived.by(() => {
+    if (!savedSequence || !sequence?.steps) return false;
+    const currentLetters = sequence.steps.map((s) => s?.letter ?? "");
+    const savedLetters = savedSequence.steps?.map((s: { letter?: string }) => s?.letter ?? "") ?? [];
+    if (currentLetters.length !== savedLetters.length) return true;
+    return currentLetters.some((l, i) => l !== savedLetters[i]);
+  });
+
 
   // Dynamic header content based on context
   const headerTitle = $derived(
     showShareContext ? "Add to Gallery" : "Add to Gallery"
   );
   const headerSubtitle = $derived(
-    showShareContext
-      ? "Add your sequence to the gallery to share it"
-      : "Publish this sequence to the gallery"
+    isFlagged
+      ? "This sequence can't be published due to content moderation."
+      : publishToCommunity
+        ? "Saves to your library and the community gallery."
+        : "Saves to your personal library only."
   );
 
   // Sync isOpen with show prop
   $effect(() => {
     isOpen = show;
+  });
+
+  // Default the community toggle to match the current published state when panel opens
+  $effect(() => {
+    if (show) {
+      publishToCommunity = isAlreadyPublished;
+    }
   });
 
   // Run content moderation when tkaName changes
@@ -247,7 +286,7 @@
         sequence,
         {
           name: tkaName,
-          visibility: "public",
+          visibility: publishToCommunity && !isFlagged ? "public" : "private",
           tags: [],
           notes: notes.trim(),
         },
@@ -289,6 +328,24 @@
   function handleClose() {
     isOpen = false;
     onClose?.();
+  }
+
+  async function handleRemoveFromCommunity() {
+    const id = sequence?.id;
+    if (!id || !libraryRepository || isUnpublishing) return;
+
+    isUnpublishing = true;
+    try {
+      await libraryRepository.unpublishSequence(id);
+      // Optimistically flip the toggle so UI responds immediately.
+      // The real-time Firestore subscription in libraryState will update
+      // isAlreadyPublished and savedSequence automatically.
+      publishToCommunity = false;
+    } catch (error) {
+      logger.error("Failed to remove from community:", error);
+    } finally {
+      isUnpublishing = false;
+    }
   }
 
   function handleOpenAppeal() {
@@ -473,6 +530,54 @@
         </p>
       {/if}
 
+      <!-- Community visibility section -->
+      {#if !isFlagged}
+        <div class="community-section">
+          <label class="toggle-row">
+            <div class="toggle-label">
+              <i class="fas fa-globe" aria-hidden="true"></i>
+              <span>Publish to community library</span>
+            </div>
+            <button
+              type="button"
+              class="toggle-button"
+              class:toggle-on={publishToCommunity}
+              onclick={() => (publishToCommunity = !publishToCommunity)}
+              disabled={isSaving}
+              aria-pressed={publishToCommunity}
+              aria-label={publishToCommunity
+                ? "Will publish to community on save"
+                : "Will save to personal library only"}
+            >
+              <span class="toggle-track">
+                <span class="toggle-thumb"></span>
+              </span>
+            </button>
+          </label>
+
+          {#if isAlreadyPublished && !hasUnsavedChanges}
+            <button
+              type="button"
+              class="remove-community-button"
+              onclick={handleRemoveFromCommunity}
+              disabled={isUnpublishing || isSaving}
+            >
+              {#if isUnpublishing}
+                <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                Removing from community...
+              {:else}
+                <i class="fas fa-eye-slash" aria-hidden="true"></i>
+                Remove from community
+              {/if}
+            </button>
+          {:else if isAlreadyPublished && hasUnsavedChanges}
+            <p class="community-note">
+              Save changes first to manage community visibility.
+            </p>
+          {/if}
+        </div>
+      {/if}
+
       <!-- Notes (optional) -->
       <div class="optional-section">
         <ExpandableField
@@ -509,13 +614,16 @@
       >
         {#if isSaving}
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-          Publishing...
+          Saving...
         {:else if isFlagged}
           <i class="fas fa-ban" aria-hidden="true"></i>
           Cannot Publish
-        {:else}
+        {:else if publishToCommunity}
           <i class="fas fa-globe" aria-hidden="true"></i>
           Add to Gallery
+        {:else}
+          <i class="fas fa-bookmark" aria-hidden="true"></i>
+          Save to Library
         {/if}
       </button>
     </div>
@@ -879,10 +987,125 @@
     }
   }
 
+  /* Community section */
+  .community-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px;
+    background: var(--theme-card-bg);
+    border: 1.5px solid var(--theme-stroke);
+    border-radius: 12px;
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    gap: 12px;
+    user-select: none;
+  }
+
+  .toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text);
+  }
+
+  .toggle-label i {
+    color: var(--theme-accent);
+    width: 16px;
+    text-align: center;
+  }
+
+  .toggle-button {
+    appearance: none;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .toggle-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .toggle-track {
+    display: block;
+    width: 44px;
+    height: 24px;
+    border-radius: 12px;
+    background: var(--theme-stroke);
+    position: relative;
+    transition: background var(--duration-normal) ease;
+  }
+
+  .toggle-on .toggle-track {
+    background: var(--theme-accent);
+  }
+
+  .toggle-thumb {
+    display: block;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: white;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transition: transform var(--duration-normal) ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  .toggle-on .toggle-thumb {
+    transform: translateX(20px);
+  }
+
+  .remove-community-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: transparent;
+    border: 1.5px solid var(--theme-stroke);
+    border-radius: 8px;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-sm, 14px);
+    cursor: pointer;
+    transition: all var(--duration-normal) ease;
+    width: 100%;
+  }
+
+  .remove-community-button:hover:not(:disabled) {
+    border-color: var(--semantic-error, #ef4444);
+    color: var(--semantic-error, #ef4444);
+  }
+
+  .remove-community-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .community-note {
+    margin: 0;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim);
+    text-align: center;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .button,
     .textarea-field,
-    .close-button {
+    .close-button,
+    .toggle-track,
+    .toggle-thumb,
+    .remove-community-button {
       transition: none;
     }
   }

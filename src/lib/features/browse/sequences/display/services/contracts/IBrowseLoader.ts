@@ -23,4 +23,11 @@ export interface IBrowseLoader {
    * Use this after a delete to update the UI instantly without a Firestore round-trip.
    */
   removeFromCache(sequenceId: string): void;
+
+  /**
+   * Add a single sequence to the in-memory cache.
+   * Use this after publishing so the sequence appears in the gallery immediately
+   * without requiring a Firestore round-trip.
+   */
+  addToCache(sequence: SequenceData): void;
 }

@@ -22,6 +22,8 @@ import type { IPublicIndexSyncer } from "../contracts/IPublicIndexSyncer";
 import type { LibrarySequence } from "../../domain/models/LibrarySequence";
 import type { IContentModerator } from "$lib/features/moderation/services/contracts/IContentModerator";
 import type { IContentAppealManager } from "$lib/features/moderation/services/contracts/IContentAppealManager";
+import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { ContentModerationError } from "$lib/features/moderation/errors/ContentModerationError";
 import { LOOP_LABELS_COLLECTION } from "$lib/features/loop-labeler/domain/constants/firebase-collections";
 import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
@@ -33,7 +35,8 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
 
   constructor(
     private readonly contentModerator?: IContentModerator,
-    private readonly contentAppealManager?: IContentAppealManager
+    private readonly contentAppealManager?: IContentAppealManager,
+    private readonly browseLoader?: IBrowseLoader
   ) {}
 
   /**
@@ -106,10 +109,45 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
         updatedAt: serverTimestamp(),
       };
 
+      // Strip undefined fields — Firestore rejects them in setDoc
+      const filteredPublicData = Object.fromEntries(
+        Object.entries(publicData).filter(([, v]) => v !== undefined)
+      );
+
       await setDoc(
         doc(firestore, getPublicSequencePath(sequence.id)),
-        publicData
+        filteredPublicData
       );
+
+      // Inject the newly published sequence into the browse gallery cache so it
+      // shows up immediately without a Firestore round-trip.
+      if (this.browseLoader) {
+        const cachedEntry: SequenceData = {
+          id: sequence.id,
+          name: sequence.name,
+          displayName: sequence.displayName,
+          word: sequence.word,
+          steps: [], // Gallery only needs metadata — steps are fetched on demand
+          thumbnails: sequence.thumbnails.slice(0, 3),
+          sequenceLength: sequence.steps.length,
+          difficultyLevel: sequence.difficultyLevel,
+          level,
+          isCircular,
+          loopType: loopType as SequenceData["loopType"],
+          isFavorite: false,
+          tags: [],
+          metadata: {},
+          ownerId: userId,
+          ownerDisplayName: (userData["displayName"] as string | undefined) ?? "Unknown",
+          ownerAvatarUrl: userData["photoURL"] as string | undefined,
+          dateAdded: new Date(),
+          ...(sequence.source === "forked" && sequence.forkAttribution && {
+            source: "forked" as const,
+            forkAttribution: sequence.forkAttribution,
+          }),
+        };
+        this.browseLoader.addToCache(cachedEntry);
+      }
     } catch (error) {
       console.error(
         "[PublicIndexSyncer] Failed to sync to public index:",
@@ -127,6 +165,9 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
 
     try {
       await deleteDoc(doc(firestore, getPublicSequencePath(sequenceId)));
+
+      // Remove from cache immediately so the gallery reflects the change.
+      this.browseLoader?.removeFromCache(sequenceId);
     } catch (error) {
       console.error(
         "[PublicIndexSyncer] Failed to remove from public index:",
