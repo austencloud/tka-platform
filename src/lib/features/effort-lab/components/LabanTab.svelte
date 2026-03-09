@@ -409,7 +409,6 @@
         {currentStep}
         {isPlaying}
         word={sequenceWord}
-        {currentSpace}
         {quadrantParams}
         onQuadrantParamChange={handleQuadrantParamChange}
       />
