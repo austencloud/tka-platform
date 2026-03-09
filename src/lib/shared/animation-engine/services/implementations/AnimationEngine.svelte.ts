@@ -37,6 +37,7 @@ import { SequenceAnimationOrchestrator } from "$lib/features/compose/services/im
 import { AnimationStateManager } from "$lib/features/compose/services/implementations/AnimationStateManager";
 import { container } from "$lib/shared/di";
 import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
+import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
 
 // Services
 import { CanvasResizer } from "./CanvasResizer.svelte";
@@ -290,6 +291,7 @@ export class AnimationEngine {
   private prevUseCharcoal: boolean = false;
   private prevFireIntensity: number = 0.7;
   private prevCharcoalParamsJson: string = "";
+  private prevEffortPreset: EffortId = "linear";
 
   // Additional layer texture loading for tunnel mode (indexed by layer)
   private additionalLayerTexturesLoaded: boolean[] = [];
@@ -361,6 +363,7 @@ export class AnimationEngine {
     this.prevUseCharcoal = visibilityManager.getFireUseCharcoal();
     this.prevFireIntensity = visibilityManager.getFireIntensity();
     this.prevCharcoalParamsJson = JSON.stringify(visibilityManager.getCharcoalParams());
+    this.prevEffortPreset = visibilityManager.getEffortPreset();
     this.fireDefaultsLoader = container.items.fireDefaultsLoader;
 
     // Build fireConfig from base params + slider mappings
@@ -528,6 +531,25 @@ export class AnimationEngine {
               colorCurve: BASE_COLOR_CURVE,
               smokeOpacity: smokeLevelToOpacity(smokeLevel),
             });
+          }
+        }
+
+        // Reset fire tip tracker when effort preset changes.
+        // Effort easing changes prop positions instantly (different curve = different
+        // position for the same stepProgress), causing a velocity spike that pushes
+        // flames away from prop tips.
+        const effortPreset = vm.getEffortPreset();
+        if (effortPreset !== this.prevEffortPreset) {
+          this.prevEffortPreset = effortPreset;
+          // Reset tip tracker (stored positions/velocities)
+          this.fireTipTracker?.reset();
+          // Clear WebGL simulation buffers + frame cache so residual
+          // velocity/fuel from the old effort curve doesn't persist
+          if (this.fireRenderer?.isInitialized()) {
+            this.fireRenderer.clearSimulation();
+          }
+          if (this.charcoalRenderer?.isInitialized()) {
+            this.charcoalRenderer.clearSimulation();
           }
         }
 
