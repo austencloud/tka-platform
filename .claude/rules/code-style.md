@@ -1,5 +1,31 @@
 # Code Style & Architecture
 
+## Commenting Style
+
+Write comments as if explaining to someone who uses the app but doesn't write code. Assume they know what TKA is, what sequences are, and how the app works — but not how software is built.
+
+**Good:**
+```ts
+// We normally find a sequence by its word (e.g. "ABBD"). But if the user
+// edited and re-saved it with a different word (e.g. "ABBDJ"), our lookup
+// table still has the old word and won't find the new one. In that case,
+// we fall back to locating it by its unique ID instead, which never changes
+// no matter how many times the sequence is edited.
+```
+
+**Bad:**
+```ts
+// Look up sourceRef from cache. If the word changed since the last load,
+// the cache entry for the old word is stale. Fall back to constructing
+// the path from ownerId + id.
+```
+
+Rules:
+- No jargon: avoid "cache", "ref", "sync", "index", "denormalize", "invalidate"
+- Say what the user would observe, not what the code does internally
+- Explain the *why* — what problem does this solve, what would go wrong without it
+- Keep it conversational. Short sentences are fine.
+
 ## File Size & Composition Philosophy
 
 This project follows a **2026+ AI-assisted development approach**:
