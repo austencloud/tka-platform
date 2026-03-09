@@ -9,6 +9,8 @@
     TrailVisibility,
     PlaybackMode,
   } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
+  import { EFFORTS } from "$lib/features/effort-lab/domain/effort-types";
 
   interface Props {
     playbackMode: PlaybackMode;
@@ -36,6 +38,8 @@
     onPlaybackModeChange: (mode: PlaybackMode) => void;
     onBpmChange: (bpm: number) => void;
     onToggle: (key: string) => void;
+    effortPreset: EffortId;
+    onEffortPresetChange: (preset: EffortId) => void;
     onTrailPreset: (preset: TrailVisibility) => void;
     onToggleBothEnds: () => void;
   }
@@ -66,6 +70,8 @@
     onPlaybackModeChange,
     onBpmChange,
     onToggle,
+    effortPreset,
+    onEffortPresetChange,
     onTrailPreset,
     onToggleBothEnds,
   }: Props = $props();
@@ -98,6 +104,23 @@
       <i class="fas fa-shoe-prints" aria-hidden="true"></i>
       <span>Step</span>
     </button>
+  </div>
+
+  <!-- Row: Effort preset -->
+  <div class="effort-mobile-grid">
+    {#each EFFORTS as effort}
+      <button
+        class="compact-btn effort"
+        class:active={effortPreset === effort.id}
+        aria-pressed={effortPreset === effort.id}
+        onclick={() => onEffortPresetChange(effort.id)}
+        type="button"
+        aria-label="Set effort to {effort.label}"
+        style:--effort-color={effort.color}
+      >
+        {effort.label}
+      </button>
+    {/each}
   </div>
 
   <!-- Row 2: BPM -->
@@ -409,6 +432,23 @@
     color: var(--theme-text-dim);
     min-width: 32px;
     text-align: right;
+  }
+
+  .effort-mobile-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: clamp(4px, 1cqi, 6px);
+  }
+
+  .compact-btn.effort {
+    padding: 8px 4px;
+    font-size: var(--font-size-compact);
+  }
+
+  .compact-btn.effort.active {
+    background: color-mix(in srgb, var(--effort-color) 25%, transparent);
+    border-color: color-mix(in srgb, var(--effort-color) 55%, transparent);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--effort-color) 20%, transparent);
   }
 
   @media (prefers-reduced-motion: reduce) {
