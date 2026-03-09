@@ -44,7 +44,7 @@
   const imageCompositionManager = getImageCompositionManager();
 
   // UI state
-  let mobileMode = $state<VisibilityMode>("pictograph");
+  let activePanel = $state<VisibilityMode>("pictograph");
   let isVisible = $state(false);
 
   // Dark mode - top-level toggle
@@ -102,7 +102,7 @@
   // Mobile mode handler
   function handleModeChange(mode: VisibilityMode) {
     triggerHaptic();
-    mobileMode = mode;
+    activePanel = mode;
   }
 
   // Pictograph toggle handler
@@ -385,16 +385,8 @@
 </script>
 
 <div class="visibility-tab" class:visible={isVisible}>
-  <!-- Mobile: Segmented Control (hidden on desktop via container query) -->
-  <div class="mobile-only">
-    <MobileSegmentControl
-      currentMode={mobileMode}
-      onModeChange={handleModeChange}
-    />
-  </div>
-
-  <!-- Dark Mode Toggle - compact pill -->
-  <div class="dark-mode-row">
+  <!-- Top bar: dark mode toggle + segment control -->
+  <div class="top-bar">
     <button
       type="button"
       class="dark-mode-toggle"
@@ -410,10 +402,15 @@
         <div class="dark-mode-knob"></div>
       </div>
     </button>
+
+    <MobileSegmentControl
+      currentMode={activePanel}
+      onModeChange={handleModeChange}
+    />
   </div>
 
-  <!-- Panels Container -->
-  <div class="visibility-panels-container">
+  <!-- Hero Panel: selected panel gets full width -->
+  <div class="hero-panel">
     <PictographPanel
       {tkaGlyphVisible}
       {vtgGlyphVisible}
@@ -425,53 +422,51 @@
       {handPointVisibility}
       {stepNumbersVisible}
       onToggle={handlePictographToggle}
-      isMobileHidden={mobileMode !== "pictograph"}
+      isMobileHidden={activePanel !== "pictograph"}
     />
 
-    <div class="secondary-panels">
-      <AnimationPanel
-        gridVisible={gridVisible}
-        stepNumbersVisible={stepNumbersVisible}
-        trailStyle={animTrailStyle}
-        playbackMode={animPlaybackMode}
-        bpm={animBpm}
-        tkaGlyphVisible={animTkaGlyphVisible}
-        wordHeaderVisible={animWordHeaderVisible}
-        fireEffectEnabled={animFireEffectEnabled}
-        ledEffectEnabled={animLedEffectEnabled}
-        ledBrightness={animLedBrightness}
-        onLedBrightnessChange={handleLedBrightnessChange}
-        colorBlend={animColorBlend}
-        smokeLevel={animSmokeLevel}
-        useCharcoal={animUseCharcoal}
-        fireIntensity={animFireIntensity}
-        onColorBlendChange={handleColorBlendChange}
-        onSmokeLevelChange={handleSmokeLevelChange}
-        onUseCharcoalChange={handleUseCharcoalChange}
-        onFireIntensityChange={handleFireIntensityChange}
-        effortPreset={animEffortPreset}
-        onEffortPresetChange={handleEffortPresetChange}
-        onToggle={handleAnimationToggle}
-        onTrailStyleChange={handleTrailStyleChange}
-        onPlaybackModeChange={handlePlaybackModeChange}
-        onBpmChange={handleBpmChange}
-        isMobileHidden={mobileMode !== "animation"}
-      />
+    <AnimationPanel
+      gridVisible={gridVisible}
+      stepNumbersVisible={stepNumbersVisible}
+      trailStyle={animTrailStyle}
+      playbackMode={animPlaybackMode}
+      bpm={animBpm}
+      tkaGlyphVisible={animTkaGlyphVisible}
+      wordHeaderVisible={animWordHeaderVisible}
+      fireEffectEnabled={animFireEffectEnabled}
+      ledEffectEnabled={animLedEffectEnabled}
+      ledBrightness={animLedBrightness}
+      onLedBrightnessChange={handleLedBrightnessChange}
+      colorBlend={animColorBlend}
+      smokeLevel={animSmokeLevel}
+      useCharcoal={animUseCharcoal}
+      fireIntensity={animFireIntensity}
+      onColorBlendChange={handleColorBlendChange}
+      onSmokeLevelChange={handleSmokeLevelChange}
+      onUseCharcoalChange={handleUseCharcoalChange}
+      onFireIntensityChange={handleFireIntensityChange}
+      effortPreset={animEffortPreset}
+      onEffortPresetChange={handleEffortPresetChange}
+      onToggle={handleAnimationToggle}
+      onTrailStyleChange={handleTrailStyleChange}
+      onPlaybackModeChange={handlePlaybackModeChange}
+      onBpmChange={handleBpmChange}
+      isMobileHidden={activePanel !== "animation"}
+    />
 
-      <ImagePanel
-        addWord={imgAddWord}
-        addDifficultyLevel={imgAddDifficultyLevel}
-        includeStartPosition={imgIncludeStartPosition}
-        showCreatorName={imgShowCreatorName}
-        showNotes={imgShowNotes}
-        showBirthday={imgShowBirthday}
-        customNotesText={imgCustomNotesText}
-        onPictographToggle={handlePictographToggle}
-        onToggle={handleImageToggle}
-        onCustomNotesChange={handleCustomNotesChange}
-        isMobileHidden={mobileMode !== "image"}
-      />
-    </div>
+    <ImagePanel
+      addWord={imgAddWord}
+      addDifficultyLevel={imgAddDifficultyLevel}
+      includeStartPosition={imgIncludeStartPosition}
+      showCreatorName={imgShowCreatorName}
+      showNotes={imgShowNotes}
+      showBirthday={imgShowBirthday}
+      customNotesText={imgCustomNotesText}
+      onPictographToggle={handlePictographToggle}
+      onToggle={handleImageToggle}
+      onCustomNotesChange={handleCustomNotesChange}
+      isMobileHidden={activePanel !== "image"}
+    />
   </div>
 </div>
 
@@ -498,60 +493,26 @@
     opacity: 1;
   }
 
-  .mobile-only {
+  /* Top bar: dark mode toggle + segment control in a row */
+  .top-bar {
+    display: flex;
+    align-items: center;
+    gap: clamp(8px, 1.5cqi, 16px);
     width: 100%;
     flex-shrink: 0;
   }
 
-  /* Hide mobile segment control on desktop */
-  @container visibility-tab (min-width: 700px) {
-    .mobile-only {
-      display: none;
-    }
-  }
-
-  .visibility-panels-container {
+  /* Hero panel: selected panel is full width, others hidden via isMobileHidden */
+  .hero-panel {
     display: flex;
     flex-direction: column;
     gap: clamp(6px, 1.5cqi, 12px);
     width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
 
     /* In modal context, grow to fill available height.
        In settings page context, defaults to content-driven. */
     flex-grow: var(--vt-container-flex-grow, 0);
     min-height: var(--vt-container-min-h, auto);
-  }
-
-  /* Desktop: Show all panels regardless of mobile mode */
-  @container visibility-tab (min-width: 700px) {
-    .visibility-panels-container :global(.mobile-hidden) {
-      display: flex !important;
-    }
-  }
-
-  /* Secondary panels: Animation + Image side by side on desktop */
-  .secondary-panels {
-    display: flex;
-    flex-direction: column;
-    gap: clamp(6px, 1.5cqi, 12px);
-    width: 100%;
-  }
-
-  @container visibility-tab (min-width: 700px) {
-    .secondary-panels {
-      display: grid;
-      grid-template-columns: 35% 1fr;
-    }
-  }
-
-  /* Dark Mode Row - right-aligned container */
-  .dark-mode-row {
-    display: flex;
-    justify-content: flex-end;
-    width: 100%;
-    max-width: 1200px;
   }
 
   /* Dark Mode Toggle - compact pill */
