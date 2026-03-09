@@ -310,7 +310,7 @@ async function login() {
 
     if (firebase.apps.length === 0) {
       firebase.initializeApp({
-        apiKey: "AIzaSyDKUM9pf0e_KgFjW1OBKChvrU75SnR12v4",
+        apiKey: "AIzaSyBSFcJ4T0ssj1adw_KrxWColIu8GKiJI30",
         authDomain: "the-kinetic-alphabet.firebaseapp.com",
         projectId: "the-kinetic-alphabet",
       });
