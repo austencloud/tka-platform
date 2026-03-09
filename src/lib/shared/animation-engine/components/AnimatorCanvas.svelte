@@ -89,6 +89,8 @@ Last audit: 2025-12-27
     fireConfig = undefined,
     // LED overlay configuration — when provided, overrides the engine's defaults
     ledConfig = undefined,
+    // When true, suppresses context menu and settings modal (used inside CanvasSettingsModal to prevent recursion)
+    disableContextMenu = false,
   }: {
     blueProp: PropState | null;
     redProp: PropState | null;
@@ -116,6 +118,7 @@ Last audit: 2025-12-27
     focused?: boolean;
     fireConfig?: Partial<FireOverlayConfig>;
     ledConfig?: Partial<LedOverlayConfig>;
+    disableContextMenu?: boolean;
   } = $props();
 
   // Container element
@@ -332,18 +335,20 @@ Last audit: 2025-12-27
     </div>
   </div>
 
-  <CanvasContextMenuHost bind:this={contextMenuHost} onOpenPanel={handleOpenPanel} />
+  {#if !disableContextMenu}
+    <CanvasContextMenuHost bind:this={contextMenuHost} onOpenPanel={handleOpenPanel} />
 
-  <CanvasSettingsModal
-    bind:open={settingsModalOpen}
-    initialCategory={settingsModalCategory}
-    {sequenceData}
-    {blueProp}
-    {redProp}
-    {letter}
-    {stepData}
-    {word}
-  />
+    <CanvasSettingsModal
+      bind:open={settingsModalOpen}
+      initialCategory={settingsModalCategory}
+      {sequenceData}
+      {blueProp}
+      {redProp}
+      {letter}
+      {stepData}
+      {word}
+    />
+  {/if}
 </div>
 
 <style>

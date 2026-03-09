@@ -129,7 +129,6 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
             scale={1}
             visible={true}
             {darkMode}
-            disableChangeAnimation={true}
           />
           <TurnsColumn
             turnsTuple={displayedTurnsTuple}

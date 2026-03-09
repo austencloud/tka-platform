@@ -13,11 +13,11 @@
  *   - Gravity + drag physics per particle
  *   - Temperature-based color (core -> mid -> cool over lifetime)
  *
- * Implements IFireOverlayRenderer so it drops into the existing
- * render pipeline as a swap for WebGLFireRenderer.
+ * Implements ICharcoalRenderer — architecturally independent from
+ * the fire overlay renderer (different physics, shaders, visual output).
  */
 
-import type { IFireOverlayRenderer } from "../../contracts/IFireOverlayRenderer";
+import type { ICharcoalRenderer } from "../../contracts/ICharcoalRenderer";
 import type {
 	FireFrameInput,
 	FireOverlayConfig,
@@ -145,7 +145,7 @@ interface ShaderProgram {
 // CharcoalSparkRenderer
 // ============================================================================
 
-export class CharcoalSparkRenderer implements IFireOverlayRenderer {
+export class CharcoalSparkRenderer implements ICharcoalRenderer {
 	private canvas: HTMLCanvasElement | null = null;
 	private gl: WebGL2RenderingContext | null = null;
 	private initialized = false;
@@ -254,7 +254,7 @@ export class CharcoalSparkRenderer implements IFireOverlayRenderer {
 		this.canvas.height = Math.round(height * this.dpr);
 	}
 
-	renderFire(input: FireFrameInput, config: FireOverlayConfig): void {
+	renderCharcoal(input: FireFrameInput, config: FireOverlayConfig): void {
 		if (!this.initialized || !this.gl || !this.canvas) return;
 
 		// Compute delta time
@@ -282,10 +282,6 @@ export class CharcoalSparkRenderer implements IFireOverlayRenderer {
 
 		// Render
 		this.draw(input, params);
-	}
-
-	setQuality(_octaves: number): void {
-		// No-op: point sprites are already cheap. No quality knob needed.
 	}
 
 	clearSimulation(): void {

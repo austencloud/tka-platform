@@ -12,6 +12,7 @@ import { TrailMode } from "../../domain/types/TrailTypes";
 import type { AnimationPathCache } from "$lib/features/compose/services/implementations/AnimationPathCache";
 import type { IFrameBudgetMonitor } from "../contracts/IFrameBudgetMonitor";
 import type { IFireOverlayRenderer } from "../contracts/IFireOverlayRenderer";
+import type { ICharcoalRenderer } from "../contracts/ICharcoalRenderer";
 import type { IFireTipTracker, FireTipTrackerConfig } from "../contracts/IFireTipTracker";
 import type { ILedOverlayRenderer } from "../contracts/ILedOverlayRenderer";
 import type { ILedTipTracker, LedTipTrackerConfig } from "../contracts/ILedTipTracker";
@@ -28,6 +29,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private pathCache: AnimationPathCache | null = null;
   private frameBudgetMonitor: IFrameBudgetMonitor | null = null;
   private fireRenderer: IFireOverlayRenderer | null = null;
+  private charcoalRenderer: ICharcoalRenderer | null = null;
   private fireTipTracker: IFireTipTracker | null = null;
   private ledRenderer: ILedOverlayRenderer | null = null;
   private ledTipTracker: ILedTipTracker | null = null;
@@ -85,6 +87,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.canvasSize = config.canvasSize;
     this.frameBudgetMonitor = config.frameBudgetMonitor ?? null;
     this.fireRenderer = config.fireRenderer ?? null;
+    this.charcoalRenderer = config.charcoalRenderer ?? null;
     this.fireTipTracker = config.fireTipTracker ?? null;
     this.ledRenderer = config.ledRenderer ?? null;
     this.ledTipTracker = config.ledTipTracker ?? null;
@@ -100,6 +103,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.frameBudgetMonitor = config.frameBudgetMonitor ?? null;
     if (config.fireRenderer !== undefined)
       this.fireRenderer = config.fireRenderer ?? null;
+    if (config.charcoalRenderer !== undefined)
+      this.charcoalRenderer = config.charcoalRenderer ?? null;
     if (config.fireTipTracker !== undefined)
       this.fireTipTracker = config.fireTipTracker ?? null;
     if (config.ledRenderer !== undefined)
@@ -166,6 +171,9 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     // Clean up fire overlay
     this.fireRenderer?.dispose();
     this.fireRenderer = null;
+    // Clean up charcoal overlay
+    this.charcoalRenderer?.dispose();
+    this.charcoalRenderer = null;
     this.fireTipTracker = null;
     // Clean up LED overlay
     this.ledRenderer?.dispose();
@@ -222,7 +230,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.renderer?.isBackgroundTransitioning() ?? false;
     const fireActive =
       params.fireConfig?.enabled === true &&
-      this.fireRenderer?.isInitialized() === true;
+      (this.fireRenderer?.isInitialized() === true ||
+       this.charcoalRenderer?.isInitialized() === true);
     const ledActive =
       params.ledConfig?.enabled === true &&
       this.ledRenderer?.isInitialized() === true;
@@ -383,17 +392,19 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     // Read prop transforms from Canvas2D renderer for fire coherence
     const renderedTransforms = this.renderer?.getLastPropTransforms?.() ?? undefined;
 
-    // Fire overlay: render after Canvas2D so it composites on top
-    if (
-      this.fireRenderer?.isInitialized() &&
-      this.fireTipTracker &&
-      params.fireConfig?.enabled
-    ) {
+    // Fire/charcoal overlay: render after Canvas2D so it composites on top.
+    // Fire and charcoal are independent renderers that share tip tracking.
+    const activeFireRenderer = this.fireRenderer?.isInitialized() ? this.fireRenderer : null;
+    const activeCharcoalRenderer = this.charcoalRenderer?.isInitialized() ? this.charcoalRenderer : null;
+    const hasActiveOverlay = (activeFireRenderer || activeCharcoalRenderer) &&
+      this.fireTipTracker && params.fireConfig?.enabled;
+
+    if (hasActiveOverlay) {
       // Reset tip tracker on loop to prevent velocity spike from position teleport.
       // Without this, the position delta (end-of-sequence → start-of-sequence) produces
       // a massive velocity injection that pushes fire off the prop tips.
       if (this.loopDetectedThisFrame) {
-        this.fireTipTracker.reset();
+        this.fireTipTracker!.reset();
       }
 
       const tipTrackerConfig: FireTipTrackerConfig = {
@@ -405,19 +416,12 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         renderedTransforms,
       };
 
-      const tipResult = this.fireTipTracker.update(
+      const tipResult = this.fireTipTracker!.update(
         props.blueProp,
         props.redProp,
         tipTrackerConfig,
         currentTime
       );
-
-      // When a time gap is detected (HMR, tab switch, frame drops), clear
-      // the entire fluid simulation so residual heat/fuel at stale positions
-      // doesn't render as disconnected flames.
-      if (tipResult.gapDetected) {
-        this.fireRenderer.clearSimulation();
-      }
 
       const fireInput: import("../../domain/types/FireTypes").FireFrameInput = {
         tips: tipResult.tips,
@@ -426,17 +430,23 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         canvasHeight: this.canvasSize,
         darkMode: params.darkMode ?? false,
         propColors: params.propColors,
-        // Treat gap detection the same as a loop: invalidate frame cache
-        // so the fire renderer doesn't replay stale cached frames.
         loopDetected: this.loopDetectedThisFrame || tipResult.gapDetected,
         playbackSpeed: params.playbackSpeed,
         sequenceContentHash: params.sequenceContentHash,
         relativeTime: currentTime - this.loopStartTime,
       };
 
-      // All fuel types (including charcoal) use the fluid Navier-Stokes renderer.
-      // Charcoal uses different physics (gravity, low buoyancy) and color curve.
-      this.fireRenderer.renderFire(fireInput, params.fireConfig);
+      if (activeFireRenderer) {
+        if (tipResult.gapDetected) {
+          activeFireRenderer.clearSimulation();
+        }
+        activeFireRenderer.renderFire(fireInput, params.fireConfig!);
+      } else if (activeCharcoalRenderer) {
+        if (tipResult.gapDetected) {
+          activeCharcoalRenderer.clearSimulation();
+        }
+        activeCharcoalRenderer.renderCharcoal(fireInput, params.fireConfig!);
+      }
     }
 
     // LED overlay: render after fire so it composites on top of both Canvas2D and fire
