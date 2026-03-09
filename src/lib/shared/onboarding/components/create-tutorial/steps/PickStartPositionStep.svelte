@@ -61,17 +61,15 @@
     width: 100%;
     text-align: center;
     padding: 24px 32px;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   .title {
     font-size: 1.4rem;
     font-weight: 700;
-    color: white;
+    color: var(--theme-text, #fff);
     margin: 0;
   }
 

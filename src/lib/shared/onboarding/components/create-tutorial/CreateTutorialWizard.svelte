@@ -192,7 +192,7 @@
     left: 0;
     right: 0;
     height: 3px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   .progress-fill {
@@ -208,7 +208,7 @@
     left: 16px;
     padding: 8px 16px;
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: 0.875rem;
@@ -216,13 +216,13 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    transition: all var(--duration-normal, 0.3s) ease;
+    transition: all var(--duration-normal, 200ms) var(--ease-out);
   }
 
   .back-button:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     color: var(--theme-text, rgba(255, 255, 255, 0.9));
-    border-color: rgba(255, 255, 255, 0.3);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
   }
 
   /* Skip button */
@@ -232,18 +232,18 @@
     right: 16px;
     padding: 8px 16px;
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: 0.875rem;
     cursor: pointer;
-    transition: all var(--duration-normal, 0.3s) ease;
+    transition: all var(--duration-normal, 200ms) var(--ease-out);
   }
 
   .skip-button:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     color: var(--theme-text, rgba(255, 255, 255, 0.9));
-    border-color: rgba(255, 255, 255, 0.3);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
   }
 
   /* Step container */
@@ -261,8 +261,8 @@
     opacity: 0;
     transform: translateY(20px);
     transition:
-      opacity 0.4s ease,
-      transform 0.4s ease;
+      opacity var(--duration-dramatic, 350ms) var(--ease-out),
+      transform var(--duration-dramatic, 350ms) var(--ease-out);
   }
 
   .create-tutorial-wizard.animate-in :global(.tutorial-step) {
@@ -285,11 +285,11 @@
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.08);
-    border: 2px solid rgba(255, 255, 255, 0.15);
-    color: rgba(255, 255, 255, 0.4);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: 0.9rem;
-    transition: all var(--duration-normal, 0.3s) ease;
+    transition: all var(--duration-normal, 200ms) var(--ease-out);
   }
 
   .dot.active {
@@ -304,15 +304,15 @@
   }
 
   button.dot.completed {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.4);
-    color: rgba(255, 255, 255, 0.7);
+    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    border-color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    color: var(--theme-text, rgba(255, 255, 255, 0.9));
     cursor: pointer;
     padding: 0;
   }
 
   button.dot.completed:hover {
-    background: rgba(255, 255, 255, 0.25);
+    background: var(--theme-hover, rgba(255, 255, 255, 0.1));
     border-color: var(--theme-accent-strong, #8b5cf6);
     color: var(--theme-accent-strong, #8b5cf6);
     transform: scale(1.1);
