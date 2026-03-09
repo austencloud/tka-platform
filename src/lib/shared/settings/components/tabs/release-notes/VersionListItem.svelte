@@ -72,6 +72,8 @@
   class="version-list-item"
   class:active={isActive}
   class:pre-release={isPreRelease}
+  role="option"
+  aria-selected={isActive}
   {onclick}
 >
   <div class="header-row">

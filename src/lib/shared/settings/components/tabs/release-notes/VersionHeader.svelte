@@ -8,11 +8,13 @@
     releasedAt,
     onClose,
     getCopyData,
+    layout = "drawer",
   }: {
     version: string;
     releasedAt: Date;
     onClose?: () => void;
     getCopyData?: () => string;
+    layout?: "drawer" | "inline";
   } = $props();
 
   const isPreRelease = $derived(version === PRE_RELEASE_VERSION);
@@ -25,46 +27,81 @@
   );
 </script>
 
-<header class="panel-header">
-  {#if getCopyData}
-    <CopyForAIButton
-      getData={getCopyData}
-      ariaLabel="Copy release notes"
-      variant="icon-only"
-      size="md"
-      idleIcon="fa-copy"
-      class="header-button copy-button"
-    />
+<header class="panel-header" class:layout-inline={layout === "inline"} class:layout-drawer={layout === "drawer"}>
+  {#if layout === "drawer"}
+    {#if getCopyData}
+      <CopyForAIButton
+        getData={getCopyData}
+        ariaLabel="Copy release notes"
+        variant="icon-only"
+        size="md"
+        idleIcon="fa-copy"
+        class="header-button copy-button"
+      />
+    {/if}
+
+    {#if onClose}
+      <button
+        type="button"
+        class="header-button close-button"
+        onclick={onClose}
+        aria-label="Close version details"
+      >
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+    {/if}
+
+    <div class="version-badge" class:pre-release={isPreRelease}>
+      <span class="badge-text">
+        {isPreRelease ? "Pre-Release" : `v${version}`}
+      </span>
+    </div>
+
+    <time class="release-date">{formattedDate}</time>
+  {:else}
+    <div class="version-badge inline-badge" class:pre-release={isPreRelease}>
+      <span class="badge-text">
+        {isPreRelease ? "Pre-Release" : `v${version}`}
+      </span>
+    </div>
+
+    <time class="release-date">{formattedDate}</time>
+
+    {#if getCopyData}
+      <CopyForAIButton
+        getData={getCopyData}
+        ariaLabel="Copy release notes"
+        variant="icon-only"
+        size="md"
+        idleIcon="fa-copy"
+        class="header-button copy-button-inline"
+      />
+    {/if}
   {/if}
-
-  {#if onClose}
-    <button
-      type="button"
-      class="header-button close-button"
-      onclick={onClose}
-      aria-label="Close version details"
-    >
-      <i class="fas fa-times" aria-hidden="true"></i>
-    </button>
-  {/if}
-
-  <div class="version-badge" class:pre-release={isPreRelease}>
-    <span class="badge-text">
-      {isPreRelease ? "Pre-Release" : `v${version}`}
-    </span>
-  </div>
-
-  <time class="release-date">{formattedDate}</time>
 </header>
 
 <style>
-  .panel-header {
+  /* Drawer layout: centered, column */
+  .panel-header.layout-drawer {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 12px;
     margin-bottom: 24px;
     position: relative;
+  }
+
+  /* Inline layout: horizontal row */
+  .panel-header.layout-inline {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .layout-inline .release-date {
+    flex: 1;
   }
 
   .header-button {
@@ -117,6 +154,10 @@
     border-radius: 24px;
   }
 
+  .version-badge.inline-badge {
+    padding: 4px 14px;
+  }
+
   .version-badge.pre-release {
     background: var(--theme-card-bg, var(--theme-card-bg));
     border-color: var(--theme-stroke, var(--theme-stroke-strong));
@@ -126,6 +167,10 @@
     font-size: var(--font-size-xl);
     font-weight: 700;
     color: var(--theme-accent);
+  }
+
+  .inline-badge .badge-text {
+    font-size: var(--font-size-base);
   }
 
   .pre-release .badge-text {
@@ -139,7 +184,7 @@
   }
 
   @media (max-width: 768px) {
-    .panel-header {
+    .panel-header.layout-drawer {
       margin-bottom: 16px;
     }
 
@@ -147,8 +192,14 @@
       padding: 6px 16px;
     }
 
-    .badge-text {
+    .layout-drawer .badge-text {
       font-size: var(--font-size-lg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .header-button {
+      transition: none;
     }
   }
 </style>
