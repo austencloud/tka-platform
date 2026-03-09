@@ -282,7 +282,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
 
     // --- Frame cache logic ---
     const cache = this.frameCache;
-    if (cache) {
+    if (cache && !config.disableFrameCache) {
       // Compute config hash for invalidation (includes playback speed — different BPM = different fire physics)
       const hash = this.computeConfigHash(config, input.playbackSpeed, input.sequenceContentHash);
 
@@ -330,6 +330,11 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
         this.stepSimulation(input.tips, input, config);
         this.renderDisplayToCache(config, input, cache);
         return;
+      }
+    } else if (cache && config.disableFrameCache) {
+      // Frame caching disabled — invalidate any existing cache
+      if (cache.isRecording() || cache.isWarm()) {
+        cache.invalidate();
       }
     }
 
