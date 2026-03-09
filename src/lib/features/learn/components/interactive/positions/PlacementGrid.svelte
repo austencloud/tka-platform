@@ -5,7 +5,7 @@ Users tap grid points to place hands, forming position types (alpha/beta/gamma).
 <script lang="ts">
   import { untrack } from "svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import type { HandPosition } from "../../domain/constants/position-quiz-data";
+  import type { HandPosition } from "../../../domain/constants/position-quiz-data";
   import { container } from "$lib/shared/di";
 
   interface PlacementGridProps {

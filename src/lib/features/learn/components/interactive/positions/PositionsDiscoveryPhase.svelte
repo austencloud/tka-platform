@@ -7,8 +7,8 @@ No text explanation — pure discovery through interaction.
   import PlacementGrid from './PlacementGrid.svelte';
   import PositionVisualizer from './PositionVisualizer.svelte';
   import type { PositionsExperienceStateManager } from './positions-experience-state.svelte';
-  import type { HandPosition, PositionType } from '../../domain/constants/position-quiz-data';
-  import { POSITION_TYPE_INFO } from '../../domain/constants/position-quiz-data';
+  import type { HandPosition, PositionType } from '../../../domain/constants/position-quiz-data';
+  import { POSITION_TYPE_INFO } from '../../../domain/constants/position-quiz-data';
   import { GridMode } from '$lib/shared/pictograph/grid/domain/enums/grid-enums';
   import { container } from '$lib/shared/di';
 

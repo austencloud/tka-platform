@@ -13,7 +13,6 @@
   import GridPointTapQuiz from "$lib/features/learn/components/interactive/GridPointTapQuiz.svelte";
   import Type1LetterQuiz from "$lib/features/learn/components/interactive/letters/type1/Type1LetterQuiz.svelte";
   import StaffIdentificationQuiz from "$lib/features/learn/components/interactive/staff/StaffIdentificationQuiz.svelte";
-  import PositionIdentificationQuiz from "$lib/features/learn/components/interactive/positions/PositionIdentificationQuiz.svelte";
   import MotionIdentificationQuiz from "$lib/features/learn/components/interactive/motions/MotionIdentificationQuiz.svelte";
   import VTGQuiz from "$lib/features/learn/components/interactive/vtg/VTGQuiz.svelte";
   import WordBuildingQuiz from "$lib/features/learn/components/interactive/words/WordBuildingQuiz.svelte";
@@ -78,12 +77,6 @@
       name: "Staff Identification",
       category: "concept-quiz",
       component: StaffIdentificationQuiz,
-    },
-    {
-      id: "position-identification",
-      name: "Position Identification",
-      category: "concept-quiz",
-      component: PositionIdentificationQuiz,
     },
     {
       id: "motion-identification",
