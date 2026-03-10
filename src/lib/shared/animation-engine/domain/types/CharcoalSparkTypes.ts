@@ -113,6 +113,68 @@ export interface CharcoalSparkParams {
 // Default Parameters (steel-wool baseline)
 // ============================================================================
 
+/** Slider definition for charcoal controls UI. */
+export interface CharcoalSliderDef {
+	key: keyof CharcoalSparkParams;
+	label: string;
+	min: number;
+	max: number;
+	step: number;
+	format?: (v: number) => string;
+}
+
+/** Group of related sliders in the charcoal controls panel. */
+export interface CharcoalSliderGroup {
+	label: string;
+	sliders: CharcoalSliderDef[];
+}
+
+const fmtDec = (v: number) => v.toFixed(2);
+const fmtAngle = (v: number) => `${((v / Math.PI) * 180).toFixed(0)}°`;
+
+/** Slider groups for the CharcoalControlsPanel UI. */
+export const CHARCOAL_SLIDER_GROUPS: CharcoalSliderGroup[] = [
+	{
+		label: "Emission",
+		sliders: [
+			{ key: "burstThreshold", label: "Burst threshold", min: 20, max: 300, step: 5 },
+			{ key: "burstMultiplier", label: "Burst multiplier", min: 1, max: 60, step: 1 },
+			{ key: "burstMax", label: "Burst max", min: 10, max: 300, step: 5 },
+			{ key: "ambientRate", label: "Ambient rate", min: 0, max: 120, step: 1 },
+			{ key: "ambientSpeedThreshold", label: "Speed threshold", min: 1, max: 50, step: 1 },
+			{ key: "idleRate", label: "Idle rate", min: 0, max: 20, step: 1 },
+		],
+	},
+	{
+		label: "Physics",
+		sliders: [
+			{ key: "gravity", label: "Gravity", min: 10, max: 800, step: 5 },
+			{ key: "drag", label: "Drag", min: 0.8, max: 1, step: 0.01, format: fmtDec },
+			{ key: "velocityInheritance", label: "Vel. inheritance", min: 0, max: 1, step: 0.05, format: fmtDec },
+			{ key: "perturbSpeedMin", label: "Perturb min", min: 0, max: 40, step: 1 },
+			{ key: "perturbSpeedMax", label: "Perturb max", min: 5, max: 100, step: 1 },
+			{ key: "spreadAngle", label: "Spread angle", min: 0, max: Math.PI, step: 0.05, format: fmtAngle },
+		],
+	},
+	{
+		label: "Appearance",
+		sliders: [
+			{ key: "lifetimeMin", label: "Life min", min: 0.1, max: 3, step: 0.05, format: fmtDec },
+			{ key: "lifetimeMax", label: "Life max", min: 0.3, max: 5, step: 0.05, format: fmtDec },
+			{ key: "sizeMin", label: "Size min", min: 1, max: 15, step: 1 },
+			{ key: "sizeMax", label: "Size max", min: 3, max: 30, step: 1 },
+			{ key: "emberGlowRadius", label: "Glow radius", min: 0, max: 60, step: 1 },
+			{ key: "emberGlowIntensity", label: "Glow intensity", min: 0, max: 4, step: 0.1, format: fmtDec },
+		],
+	},
+	{
+		label: "Pool",
+		sliders: [
+			{ key: "maxParticles", label: "Max particles", min: 50, max: 2000, step: 50 },
+		],
+	},
+];
+
 /** Default charcoal spark parameters — balanced steel-wool starting point. */
 export const DEFAULT_CHARCOAL_PARAMS: CharcoalSparkParams = {
 	burstThreshold: 120,
