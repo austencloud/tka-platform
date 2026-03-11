@@ -24,7 +24,7 @@ const ADMIN_ONLY_MODULES = new Set(
 export function translateModule(moduleId: string): string {
   const normalizedId = moduleId.toLowerCase().replace(/-/g, "_");
   const key = `module_${normalizedId}`;
-  const silent = ADMIN_ONLY_MODULES.has(moduleId as any);
+  const silent = ADMIN_ONLY_MODULES.has(moduleId);
   const result = tDynamic(key, { silent });
   return result !== key ? result : moduleId;
 }
@@ -55,7 +55,7 @@ export function translateTab(
   const normalizedModuleId = moduleId.toLowerCase().replace(/-/g, "_");
   const normalizedTabId = tabId.toLowerCase().replace(/-/g, "_");
   const key = `tab_${normalizedModuleId}_${normalizedTabId}`;
-  const silent = ADMIN_ONLY_MODULES.has(moduleId as any);
+  const silent = ADMIN_ONLY_MODULES.has(moduleId);
   const result = tDynamic(key, { silent });
   return result !== key ? result : fallbackLabel || tabId;
 }
@@ -75,7 +75,7 @@ export function translateTabDescription(
   const normalizedModuleId = moduleId.toLowerCase().replace(/-/g, "_");
   const normalizedTabId = tabId.toLowerCase().replace(/-/g, "_");
   const key = `tab_desc_${normalizedModuleId}_${normalizedTabId}`;
-  const silent = ADMIN_ONLY_MODULES.has(moduleId as any);
+  const silent = ADMIN_ONLY_MODULES.has(moduleId);
   const result = tDynamic(key, { silent });
   return result !== key ? result : fallback || tabId;
 }
@@ -92,7 +92,7 @@ export function translateModuleDescription(
 ): string {
   const normalizedId = moduleId.toLowerCase().replace(/-/g, "_");
   const key = `module_desc_${normalizedId}`;
-  const silent = ADMIN_ONLY_MODULES.has(moduleId as any);
+  const silent = ADMIN_ONLY_MODULES.has(moduleId);
   const result = tDynamic(key, { silent });
   return result !== key ? result : fallback || moduleId;
 }

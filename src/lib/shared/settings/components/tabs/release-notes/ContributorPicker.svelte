@@ -1,4 +1,4 @@
-<!-- ContributorPicker - Search and select contributors to tag on changelog entries -->
+<!-- ContributorPicker - Search existing user accounts to tag as contributors on changelog entries -->
 <script lang="ts">
 	import type { Contributor } from '$lib/features/feedback/domain/models/contributor-models';
 	import ContributorBadge from './ContributorBadge.svelte';
@@ -133,7 +133,7 @@
 		font-size: 10px;
 		cursor: pointer;
 		border-radius: 50%;
-		transition: all 0.15s;
+		transition: all var(--duration-fast, 0.15s);
 	}
 
 	.remove-btn:hover {
@@ -154,6 +154,7 @@
 		color: var(--theme-text);
 		font-size: var(--font-size-compact);
 		font-family: inherit;
+		box-sizing: border-box;
 	}
 
 	input:focus {
@@ -182,7 +183,7 @@
 		background: none;
 		border: none;
 		cursor: pointer;
-		transition: background 0.15s;
+		transition: background var(--duration-fast, 0.15s);
 	}
 
 	.dropdown-item:hover {

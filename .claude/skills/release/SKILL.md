@@ -46,6 +46,16 @@ node scripts/fetch-feedback.js list --status completed
 - Technical/cosmetic changes (backgrounds, particle effects) - consolidate into one line
 - Implementation details users don't care about
 
+### Always Exclude
+
+| Category | Why |
+|----------|-----|
+| Lab modules (effort-lab, effects-lab, etc.) | Developer-only. Not user-facing. |
+| Learn tab (all mentions) | Not released yet. Exclude until user says otherwise. |
+| Endless spinner changes | Not user-facing. |
+| CLI/auth infrastructure | Users don't see this. |
+| Docs/contributor onboarding | Internal. |
+
 ### Mark internal-only items
 `node scripts/fetch-feedback.js <id> internal-only true`
 

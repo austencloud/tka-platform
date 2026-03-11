@@ -1,8 +1,8 @@
 <!--
   ContributorsTab.svelte - Admin tab for managing the curated contributors list
 
-  Contributors are developers credited in release notes changelog entries.
-  Only admins can add, edit, or delete contributors.
+  Contributors are linked to existing user accounts. Admins search for users
+  by name and add them to the curated contributor list.
   Non-admins see an access-denied message.
 -->
 <script lang="ts">
@@ -10,26 +10,30 @@
   import { container } from "$lib/shared/di";
   import type { Contributor } from "$lib/features/feedback/domain/models/contributor-models";
   import type { IContributorLoader } from "$lib/features/feedback/services/contracts/IContributorLoader";
+  import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
+  import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   let contributors = $state<Contributor[]>([]);
   let isLoading = $state(true);
   let isAdding = $state(false);
-  let editingId = $state<string | null>(null);
 
-  // Add form state
-  let newName = $state("");
-  let newAvatarUrl = $state("");
-
-  // Edit form state
-  let editName = $state("");
-  let editAvatarUrl = $state("");
+  // User search state
+  let searchQuery = $state("");
+  let searchResults = $state<EnhancedUserProfile[]>([]);
+  let isSearching = $state(false);
+  let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 
   let deleteConfirmId = $state<string | null>(null);
 
   const isAdmin = $derived(authState.isEffectiveAdmin);
   let isVisible = $state(false);
+
+  // Track which userIds are already contributors to avoid duplicates in search
+  const contributorUserIds = $derived(
+    new Set(contributors.map((c) => c.userId))
+  );
 
   async function loadContributors() {
     isLoading = true;
@@ -43,54 +47,62 @@
     }
   }
 
-  async function handleAdd() {
-    if (!newName.trim() || !newAvatarUrl.trim()) return;
+  function handleSearchInput() {
+    if (searchTimeout) clearTimeout(searchTimeout);
+
+    const trimmed = searchQuery.trim();
+    if (trimmed.length < 2) {
+      searchResults = [];
+      isSearching = false;
+      return;
+    }
+
+    isSearching = true;
+    searchTimeout = setTimeout(() => {
+      void performSearch(trimmed);
+    }, 300);
+  }
+
+  async function performSearch(term: string) {
     try {
-      const loader = container.items.contributorLoader as IContributorLoader;
-      const id = await loader.add({
-        displayName: newName.trim(),
-        avatarUrl: newAvatarUrl.trim(),
-      });
-      contributors = [
-        ...contributors,
-        { id, displayName: newName.trim(), avatarUrl: newAvatarUrl.trim() },
-      ];
-      newName = "";
-      newAvatarUrl = "";
-      isAdding = false;
-      toast.success("Contributor added");
+      const userRepo = container.items.userRepository as IUserRepository;
+      const users = await userRepo.getUsers({ limit: 20 });
+
+      // Client-side filter by displayName or username
+      const lower = term.toLowerCase();
+      searchResults = users.filter(
+        (u) =>
+          !contributorUserIds.has(u.id) &&
+          (u.displayName.toLowerCase().includes(lower) ||
+            u.username.toLowerCase().includes(lower))
+      );
     } catch {
-      toast.error("Failed to add contributor");
+      toast.error("Failed to search users");
+      searchResults = [];
+    } finally {
+      isSearching = false;
     }
   }
 
-  function startEdit(c: Contributor) {
-    editingId = c.id;
-    editName = c.displayName;
-    editAvatarUrl = c.avatarUrl;
-  }
-
-  function cancelEdit() {
-    editingId = null;
-  }
-
-  async function saveEdit() {
-    if (!editingId || !editName.trim() || !editAvatarUrl.trim()) return;
+  async function handleAddUser(user: EnhancedUserProfile) {
     try {
       const loader = container.items.contributorLoader as IContributorLoader;
-      await loader.update(editingId, {
-        displayName: editName.trim(),
-        avatarUrl: editAvatarUrl.trim(),
-      });
-      contributors = contributors.map((c) =>
-        c.id === editingId
-          ? { ...c, displayName: editName.trim(), avatarUrl: editAvatarUrl.trim() }
-          : c
-      );
-      editingId = null;
-      toast.success("Contributor updated");
+      const id = await loader.addByUserId(user.id);
+      contributors = [
+        ...contributors,
+        {
+          id,
+          userId: user.id,
+          displayName: user.displayName,
+          avatarUrl: user.avatar ?? "",
+        },
+      ];
+      searchQuery = "";
+      searchResults = [];
+      isAdding = false;
+      toast.success(`${user.displayName} added as contributor`);
     } catch {
-      toast.error("Failed to update contributor");
+      toast.error("Failed to add contributor");
     }
   }
 
@@ -115,14 +127,13 @@
       .slice(0, 2);
   }
 
-  function truncateUrl(url: string, maxLength = 40): string {
-    if (url.length <= maxLength) return url;
-    return url.slice(0, maxLength) + "...";
-  }
-
   onMount(() => {
     void loadContributors();
     setTimeout(() => (isVisible = true), 30);
+
+    return () => {
+      if (searchTimeout) clearTimeout(searchTimeout);
+    };
   });
 </script>
 
@@ -152,8 +163,8 @@
         onclick={() => {
           isAdding = !isAdding;
           if (!isAdding) {
-            newName = "";
-            newAvatarUrl = "";
+            searchQuery = "";
+            searchResults = [];
           }
         }}
         aria-label={isAdding ? "Cancel adding" : "Add contributor"}
@@ -163,55 +174,70 @@
       </button>
     </header>
 
-    <!-- Add form -->
+    <!-- Add form - user search -->
     {#if isAdding}
       <section class="add-form">
         <h2 class="section-title">
-          <i class="fas fa-user-plus" aria-hidden="true"></i>
-          New Contributor
+          <i class="fas fa-search" aria-hidden="true"></i>
+          Find User Account
         </h2>
-        <div class="form-fields">
-          <label class="field">
-            <span class="field-label">Display Name</span>
-            <input
-              type="text"
-              class="field-input"
-              bind:value={newName}
-              placeholder="e.g. Kevin Tran"
-            />
-          </label>
-          <label class="field">
-            <span class="field-label">Avatar URL</span>
-            <input
-              type="url"
-              class="field-input"
-              bind:value={newAvatarUrl}
-              placeholder="https://github.com/user.png"
-            />
-          </label>
+        <div class="search-wrapper">
+          <input
+            type="text"
+            class="field-input"
+            bind:value={searchQuery}
+            oninput={handleSearchInput}
+            placeholder="Search by name or username..."
+          />
+          {#if isSearching}
+            <div class="search-spinner">
+              <div class="spinner-sm"></div>
+            </div>
+          {/if}
         </div>
-        <div class="form-actions">
-          <button
-            type="button"
-            class="glass-btn"
-            onclick={() => {
-              isAdding = false;
-              newName = "";
-              newAvatarUrl = "";
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            class="glass-btn primary"
-            disabled={!newName.trim() || !newAvatarUrl.trim()}
-            onclick={handleAdd}
-          >
-            <i class="fas fa-check" aria-hidden="true"></i>
-            Add Contributor
-          </button>
-        </div>
+
+        {#if searchResults.length > 0}
+          <ul class="search-results" role="listbox">
+            {#each searchResults as user (user.id)}
+              <li class="search-result-item" role="option" aria-selected="false">
+                <button
+                  type="button"
+                  class="result-btn"
+                  onclick={() => handleAddUser(user)}
+                >
+                  <div class="avatar-wrapper">
+                    {#if user.avatar}
+                      <img
+                        src={user.avatar}
+                        alt={user.displayName}
+                        class="avatar"
+                        onerror={(e) => {
+                          const target = e.currentTarget as HTMLImageElement;
+                          target.style.display = "none";
+                          const fallback = target.nextElementSibling as HTMLElement;
+                          if (fallback) fallback.style.display = "flex";
+                        }}
+                      />
+                    {/if}
+                    <span
+                      class="avatar fallback"
+                      style={user.avatar ? "display: none" : ""}
+                    >
+                      {getInitials(user.displayName)}
+                    </span>
+                  </div>
+                  <div class="result-info">
+                    <span class="result-name">{user.displayName}</span>
+                    <span class="result-username">@{user.username}</span>
+                  </div>
+                  <i class="fas fa-plus result-add-icon" aria-hidden="true"></i>
+                </button>
+              </li>
+            {/each}
+          </ul>
+        {:else if searchQuery.trim().length >= 2 && !isSearching}
+          <p class="no-results">No matching users found</p>
+        {/if}
       </section>
     {/if}
 
@@ -227,7 +253,7 @@
         <div class="empty-icon">
           <i class="fas fa-users" aria-hidden="true"></i>
         </div>
-        <p>No contributors yet. Add developers to credit them in release notes.</p>
+        <p>No contributors yet. Search for user accounts to credit them in release notes.</p>
       </div>
     {:else}
       <!-- Contributors list -->
@@ -240,109 +266,60 @@
         <ul class="card-list" role="list">
           {#each contributors as contributor (contributor.id)}
             <li class="contributor-card">
-              {#if editingId === contributor.id}
-                <!-- Edit mode -->
-                <div class="edit-form">
-                  <label class="field">
-                    <span class="field-label">Display Name</span>
-                    <input
-                      type="text"
-                      class="field-input"
-                      bind:value={editName}
+              <div class="card-content">
+                <div class="avatar-wrapper">
+                  {#if contributor.avatarUrl}
+                    <img
+                      src={contributor.avatarUrl}
+                      alt={contributor.displayName}
+                      class="avatar"
+                      onerror={(e) => {
+                        const target = e.currentTarget as HTMLImageElement;
+                        target.style.display = "none";
+                        const fallback = target.nextElementSibling as HTMLElement;
+                        if (fallback) fallback.style.display = "flex";
+                      }}
                     />
-                  </label>
-                  <label class="field">
-                    <span class="field-label">Avatar URL</span>
-                    <input
-                      type="url"
-                      class="field-input"
-                      bind:value={editAvatarUrl}
-                    />
-                  </label>
-                  <div class="form-actions">
-                    <button type="button" class="glass-btn" onclick={cancelEdit}>
-                      Cancel
+                  {/if}
+                  <span
+                    class="avatar fallback"
+                    style={contributor.avatarUrl ? "display: none" : ""}
+                  >
+                    {getInitials(contributor.displayName)}
+                  </span>
+                </div>
+                <div class="card-info">
+                  <span class="card-name">{contributor.displayName}</span>
+                </div>
+                <div class="card-actions">
+                  {#if deleteConfirmId === contributor.id}
+                    <span class="confirm-text">Remove?</span>
+                    <button
+                      type="button"
+                      class="glass-btn danger"
+                      onclick={() => handleDelete(contributor.id)}
+                    >
+                      Yes
                     </button>
                     <button
                       type="button"
-                      class="glass-btn primary"
-                      disabled={!editName.trim() || !editAvatarUrl.trim()}
-                      onclick={saveEdit}
+                      class="glass-btn"
+                      onclick={() => (deleteConfirmId = null)}
                     >
-                      <i class="fas fa-check" aria-hidden="true"></i>
-                      Save
+                      No
                     </button>
-                  </div>
-                </div>
-              {:else}
-                <!-- Display mode -->
-                <div class="card-content">
-                  <div class="avatar-wrapper">
-                    {#if contributor.avatarUrl}
-                      <img
-                        src={contributor.avatarUrl}
-                        alt={contributor.displayName}
-                        class="avatar"
-                        onerror={(e) => {
-                          const target = e.currentTarget as HTMLImageElement;
-                          target.style.display = "none";
-                          const fallback = target.nextElementSibling as HTMLElement;
-                          if (fallback) fallback.style.display = "flex";
-                        }}
-                      />
-                    {/if}
-                    <span
-                      class="avatar fallback"
-                      style={contributor.avatarUrl ? "display: none" : ""}
+                  {:else}
+                    <button
+                      type="button"
+                      class="icon-btn danger"
+                      onclick={() => (deleteConfirmId = contributor.id)}
+                      aria-label="Remove {contributor.displayName}"
                     >
-                      {getInitials(contributor.displayName)}
-                    </span>
-                  </div>
-                  <div class="card-info">
-                    <span class="card-name">{contributor.displayName}</span>
-                    <span class="card-url">{truncateUrl(contributor.avatarUrl)}</span>
-                    {#if contributor.userId}
-                      <span class="card-uid">UID: {contributor.userId}</span>
-                    {/if}
-                  </div>
-                  <div class="card-actions">
-                    {#if deleteConfirmId === contributor.id}
-                      <span class="confirm-text">Delete?</span>
-                      <button
-                        type="button"
-                        class="glass-btn danger"
-                        onclick={() => handleDelete(contributor.id)}
-                      >
-                        Yes
-                      </button>
-                      <button
-                        type="button"
-                        class="glass-btn"
-                        onclick={() => (deleteConfirmId = null)}
-                      >
-                        No
-                      </button>
-                    {:else}
-                      <button
-                        type="button"
-                        class="icon-btn"
-                        onclick={() => startEdit(contributor)}
-                        aria-label="Edit {contributor.displayName}"
-                      >
-                        <i class="fas fa-pen" aria-hidden="true"></i>
-                      </button>
-                      <button
-                        type="button"
-                        class="icon-btn danger"
-                        onclick={() => (deleteConfirmId = contributor.id)}
-                        aria-label="Delete {contributor.displayName}"
-                      >
-                        <i class="fas fa-trash" aria-hidden="true"></i>
-                      </button>
-                    {/if}
-                  </div>
+                      <i class="fas fa-trash" aria-hidden="true"></i>
+                    </button>
+                  {/if}
                 </div>
-              {/if}
+              </div>
             </li>
           {/each}
         </ul>
@@ -429,9 +406,8 @@
     opacity: 0.7;
   }
 
-  /* Add / Edit form */
-  .add-form,
-  .edit-form {
+  /* Add form - search */
+  .add-form {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-md, 16px);
@@ -441,27 +417,28 @@
     border-radius: 12px;
   }
 
-  .form-fields {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm, 8px);
+  .search-wrapper {
+    position: relative;
   }
 
-  .field {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+  .search-spinner {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
   }
 
-  .field-label {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+  .spinner-sm {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-top-color: var(--theme-accent, #f59e0b);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
   }
 
   .field-input {
+    width: 100%;
     padding: 10px 12px;
     background: rgba(0, 0, 0, 0.2);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -470,6 +447,7 @@
     font-size: var(--font-size-sm, 14px);
     outline: none;
     transition: border-color var(--duration-fast) ease;
+    box-sizing: border-box;
   }
 
   .field-input:focus {
@@ -480,9 +458,77 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
   }
 
-  .form-actions {
+  /* Search results */
+  .search-results {
+    list-style: none;
+    margin: 0;
+    padding: 0;
     display: flex;
-    gap: 8px;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 280px;
+    overflow-y: auto;
+  }
+
+  .search-result-item {
+    border-radius: 8px;
+  }
+
+  .result-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 8px);
+    width: 100%;
+    padding: 10px 12px;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all var(--duration-fast) ease;
+    color: inherit;
+  }
+
+  .result-btn:hover {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .result-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .result-name {
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 600;
+    color: var(--theme-text, #fff);
+  }
+
+  .result-username {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+  }
+
+  .result-add-icon {
+    color: var(--theme-accent, #f59e0b);
+    font-size: var(--font-size-compact, 12px);
+    opacity: 0;
+    transition: opacity var(--duration-fast) ease;
+  }
+
+  .result-btn:hover .result-add-icon {
+    opacity: 1;
+  }
+
+  .no-results {
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    margin: 0;
+    text-align: center;
+    padding: var(--spacing-sm, 8px) 0;
   }
 
   /* Contributors list */
@@ -560,20 +606,6 @@
     color: var(--theme-text, #fff);
   }
 
-  .card-url {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .card-uid {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    font-family: monospace;
-  }
-
   /* Card actions */
   .card-actions {
     display: flex;
@@ -620,7 +652,7 @@
     font-size: var(--font-size-compact, 12px);
   }
 
-  /* Glass buttons - same pattern as EditableChangelogItem */
+  /* Glass buttons */
   .glass-btn {
     flex: 1;
     display: flex;
@@ -798,7 +830,8 @@
       transition: none;
     }
 
-    .spinner {
+    .spinner,
+    .spinner-sm {
       animation: none;
     }
   }
