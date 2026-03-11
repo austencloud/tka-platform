@@ -84,13 +84,22 @@
     height: clamp(280px, 50vh, 500px);
   }
 
+  @media (max-width: 640px) {
+    .picker-container {
+      height: clamp(320px, 60vh, 520px);
+    }
+  }
+
   @media (max-width: 480px) {
     .tutorial-step {
-      padding: 16px;
-      gap: 10px;
+      padding: 12px;
+      gap: 8px;
     }
     .title {
       font-size: 1.25rem;
+    }
+    .picker-container {
+      height: clamp(340px, 65vh, 520px);
     }
   }
 

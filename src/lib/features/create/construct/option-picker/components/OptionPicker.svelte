@@ -34,6 +34,8 @@ Delegates all rendering to child components.
     onToggleContinuous?: (value: boolean) => void;
     isSideBySideLayout?: () => boolean;
     isUndoingOption?: boolean;
+    /** Optional predicate to further filter options (e.g., loop-only for tutorials) */
+    filterPredicate?: (option: PictographData) => boolean;
   }
 
   const {
@@ -44,6 +46,7 @@ Delegates all rendering to child components.
     onToggleContinuous,
     isSideBySideLayout = () => false,
     isUndoingOption = false,
+    filterPredicate,
   }: Props = $props();
 
   // State
@@ -112,8 +115,13 @@ Delegates all rendering to child components.
     }
 
     // Access filteredOptions and state (reactive) - tracks when options or filters change
-    const filtered = pickerState.filteredOptions;
+    let filtered = pickerState.filteredOptions;
     const currentState = pickerState.state;
+    // Apply external filter predicate if provided (e.g., loop-only for tutorials)
+    const _filterPredicate = filterPredicate;
+    if (_filterPredicate) {
+      filtered = filtered.filter(_filterPredicate);
+    }
     // Include darkMode as dependency - prop colors need re-preparation when theme changes
     const _darkMode = darkMode;
     // Include prop type settings as dependencies - re-prepare when prop type changes (P button)

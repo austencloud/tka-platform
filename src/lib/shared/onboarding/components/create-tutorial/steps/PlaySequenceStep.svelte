@@ -35,6 +35,7 @@
   // Playback state
   let showAnimation = $state(false);
   let isPlaying = $state(false);
+  let hasPlayed = $state(false);
   let currentStep = $state(0);
   let playbackController: IAnimationPlaybackController | null = null;
   const animationState = createAnimationPanelState();
@@ -88,6 +89,7 @@
   function handlePlay() {
     if (!tutorialSequence || !playbackController) return;
     showAnimation = true;
+    hasPlayed = true;
 
     // Initialize and start playback
     animationState.setShouldLoop(true);
@@ -185,9 +187,11 @@
       </button>
     {/if}
 
-    <button class="continue-button" onclick={onAdvance}>
-      Continue <i class="fas fa-arrow-right" aria-hidden="true"></i>
-    </button>
+    {#if hasPlayed}
+      <button class="continue-button" onclick={onAdvance}>
+        Continue <i class="fas fa-arrow-right" aria-hidden="true"></i>
+      </button>
+    {/if}
   </div>
 </div>
 

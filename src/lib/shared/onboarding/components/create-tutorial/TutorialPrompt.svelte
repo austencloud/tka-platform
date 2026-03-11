@@ -1,0 +1,206 @@
+<!--
+  TutorialPrompt - Opt-in card shown after FirstRunWizard
+
+  Asks the user if they want a guided tour of the builder.
+  Accept launches the full CreateTutorialWizard.
+  Skip goes straight to the main app.
+-->
+<script lang="ts">
+  import { onMount } from "svelte";
+
+  interface Props {
+    onAccept: () => void;
+    onSkip: () => void;
+  }
+
+  const { onAccept, onSkip }: Props = $props();
+
+  let animateIn = $state(false);
+
+  onMount(() => {
+    requestAnimationFrame(() => {
+      animateIn = true;
+    });
+  });
+</script>
+
+<div class="tutorial-prompt-backdrop" class:animate-in={animateIn}>
+  <div class="prompt-card">
+    <div class="icon-circle">
+      <i class="fas fa-compass" aria-hidden="true"></i>
+    </div>
+
+    <h2 class="prompt-title">Quick tour?</h2>
+    <p class="prompt-body">
+      Build a short sequence step by step. Takes about a minute.
+    </p>
+
+    <div class="prompt-actions">
+      <button class="accept-button" onclick={onAccept}>
+        Show me
+        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+      </button>
+      <button class="skip-button" onclick={onSkip}>
+        Skip, I'll explore
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .tutorial-prompt-backdrop {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    padding: 24px;
+  }
+
+  .prompt-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    max-width: 380px;
+    width: 100%;
+    padding: 36px 28px 28px;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    border-radius: 20px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    text-align: center;
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+    transition:
+      opacity var(--duration-dramatic, 350ms) var(--ease-out),
+      transform var(--duration-dramatic, 350ms) var(--ease-out);
+  }
+
+  .animate-in .prompt-card {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  .icon-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: color-mix(
+      in srgb,
+      var(--theme-accent-strong, #8b5cf6) 20%,
+      transparent
+    );
+    border: 1.5px solid
+      color-mix(in srgb, var(--theme-accent-strong, #8b5cf6) 40%, transparent);
+    color: var(--theme-accent-strong, #8b5cf6);
+    font-size: 1.4rem;
+  }
+
+  .prompt-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--theme-text, #fff);
+    margin: 0;
+  }
+
+  .prompt-body {
+    font-size: 0.95rem;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    margin: 0;
+    line-height: 1.5;
+    max-width: 280px;
+  }
+
+  .prompt-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    margin-top: 4px;
+  }
+
+  .accept-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 14px 24px;
+    background: color-mix(
+      in srgb,
+      var(--theme-accent-strong, #8b5cf6) 40%,
+      transparent
+    );
+    border: 2px solid
+      color-mix(in srgb, var(--theme-accent-strong, #8b5cf6) 60%, transparent);
+    border-radius: 12px;
+    color: var(--theme-text, #fff);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--duration-fast, 150ms) var(--ease-out);
+  }
+
+  .accept-button:hover {
+    background: color-mix(
+      in srgb,
+      var(--theme-accent-strong, #8b5cf6) 50%,
+      transparent
+    );
+    box-shadow: 0 6px 20px
+      color-mix(in srgb, var(--theme-accent-strong, #8b5cf6) 30%, transparent);
+  }
+
+  .accept-button:active {
+    transform: scale(0.97);
+  }
+
+  .accept-button:focus-visible {
+    outline: 2px solid var(--theme-accent-strong, #8b5cf6);
+    outline-offset: 2px;
+  }
+
+  .skip-button {
+    padding: 10px 24px;
+    background: transparent;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all var(--duration-fast, 150ms) var(--ease-out);
+  }
+
+  .skip-button:hover {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text, rgba(255, 255, 255, 0.9));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+  }
+
+  .skip-button:focus-visible {
+    outline: 2px solid var(--theme-accent-strong, #8b5cf6);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .prompt-card {
+      transition: none;
+      opacity: 1;
+      transform: none;
+    }
+
+    .accept-button,
+    .skip-button {
+      transition: none;
+    }
+
+    .accept-button:active {
+      transform: none;
+    }
+  }
+</style>
