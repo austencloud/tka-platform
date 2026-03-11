@@ -17,6 +17,7 @@
   import VersionHeader from "./VersionHeader.svelte";
   import NoChangelogState from "./NoChangelogState.svelte";
   import ActionToast from "./ActionToast.svelte";
+  import ContributorBadge from "./ContributorBadge.svelte";
   import { container } from "$lib/shared/di";
   import type { Contributor } from "$lib/features/feedback/domain/models/contributor-models";
   import type { IContributorLoader } from "$lib/features/feedback/services/contracts/IContributorLoader";
@@ -412,6 +413,20 @@
   {:else}
     <NoChangelogState />
   {/if}
+
+  {#if version?.contributorIds?.length && contributorMap.size > 0}
+    <section>
+      <h3>Contributors</h3>
+      <div class="contributors-grid">
+        {#each version.contributorIds as cid (cid)}
+          {@const contrib = contributorMap.get(cid)}
+          {#if contrib}
+            <ContributorBadge contributor={contrib} size="md" />
+          {/if}
+        {/each}
+      </div>
+    </section>
+  {/if}
 </div>
 
 {#if selectedFeedback}
@@ -462,6 +477,12 @@
     color: var(--theme-text-dim);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+  }
+
+  .contributors-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
   .hint {
