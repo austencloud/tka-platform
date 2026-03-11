@@ -21,6 +21,7 @@ import type { IContentModerator } from "$lib/features/moderation/services/contra
 import type { IContentAppealManager } from "$lib/features/moderation/services/contracts/IContentAppealManager";
 import type { IConflictResolver } from "$lib/shared/offline/services/contracts/IConflictResolver";
 import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
+import { SequenceContentHasher } from "$lib/features/library/services/implementations/SequenceContentHasher";
 
 /**
  * Library Repository dependencies
@@ -82,17 +83,21 @@ export function createLibraryContainer(deps: {
     deps.publicIndexSyncer?.browseLoader
   );
 
+  const contentHasher = new SequenceContentHasher();
+
   const libraryRepository = new LibraryRepository(
     deps.libraryRepository.achievementManager,
     deps.libraryRepository.tagManager,
     deps.libraryRepository.orientationCycleDetector,
     publicIndexSyncer,
-    deps.libraryRepository.conflictResolver
+    deps.libraryRepository.conflictResolver,
+    contentHasher
   );
 
   return createContainer().add({
     publicIndexSyncer: () => publicIndexSyncer,
     collectionManager: () => new CollectionManager(),
+    contentHasher: () => contentHasher,
     libraryRepository: () => libraryRepository,
     librarySaveService: () =>
       new LibrarySaveService(

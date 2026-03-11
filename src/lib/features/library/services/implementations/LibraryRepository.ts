@@ -37,6 +37,7 @@ import type { ITagManager } from "../contracts/ITagManager";
 import type { IOrientationCycleDetector } from "../../../create/generate/circular/services/contracts/IOrientationCycleDetector";
 import type { IPublicIndexSyncer } from "../contracts/IPublicIndexSyncer";
 import type { IConflictResolver } from "$lib/shared/offline/services/contracts/IConflictResolver";
+import type { ISequenceContentHasher } from "../contracts/ISequenceContentHasher";
 import { migrateSequenceTags } from "../migrations/tag-migration";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type {
@@ -88,7 +89,8 @@ export class LibraryRepository implements ILibraryRepository {
     private tagService: ITagManager,
     private orientationCycleDetector: IOrientationCycleDetector,
     private publicIndexSyncer: IPublicIndexSyncer,
-    private conflictResolver?: IConflictResolver
+    private conflictResolver?: IConflictResolver,
+    private contentHasher?: ISequenceContentHasher
   ) {}
 
   /**
