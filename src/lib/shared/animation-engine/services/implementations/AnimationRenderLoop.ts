@@ -396,8 +396,9 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     // Fire and charcoal are independent renderers that share tip tracking.
     const activeFireRenderer = this.fireRenderer?.isInitialized() ? this.fireRenderer : null;
     const activeCharcoalRenderer = this.charcoalRenderer?.isInitialized() ? this.charcoalRenderer : null;
-    const hasActiveOverlay = (activeFireRenderer || activeCharcoalRenderer) &&
-      this.fireTipTracker && params.fireConfig?.enabled;
+    const hasActiveOverlay = this.fireTipTracker && (
+      (activeFireRenderer && params.fireConfig?.enabled) || activeCharcoalRenderer
+    );
 
     if (hasActiveOverlay) {
       // Reset tip tracker on loop to prevent velocity spike from position teleport.

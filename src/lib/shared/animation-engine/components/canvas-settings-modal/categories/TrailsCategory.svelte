@@ -1,0 +1,229 @@
+<script lang="ts">
+	import { animationSettings } from "../../../state/animation-settings-state.svelte";
+	import { TrackingMode } from "../../../domain/types/TrailTypes";
+
+	const trackingOptions: ReadonlyArray<{
+		readonly id: TrackingMode;
+		readonly label: string;
+		readonly icon: string;
+	}> = [
+		{ id: TrackingMode.RIGHT_END, label: "One End", icon: "fa-minus" },
+		{ id: TrackingMode.BOTH_ENDS, label: "Both Ends", icon: "fa-grip-lines" },
+	];
+
+	let trackingMode = $derived(animationSettings.trail.trackingMode);
+	let lineWidth = $derived(animationSettings.trail.lineWidth);
+	let maxOpacity = $derived(animationSettings.trail.maxOpacity);
+
+	function formatWidth(v: number): string {
+		return v.toFixed(1);
+	}
+
+	function formatBrightness(v: number): string {
+		return `${Math.round(v * 100)}%`;
+	}
+
+	const isDefault = $derived(
+		Math.abs(lineWidth - 5) < 0.2 &&
+		Math.abs(maxOpacity - 1.0) < 0.03 &&
+		trackingMode === TrackingMode.RIGHT_END
+	);
+
+	function resetDefaults(): void {
+		animationSettings.setTrailAppearance({ lineWidth: 5, maxOpacity: 1.0 });
+		animationSettings.setTrackingMode(TrackingMode.RIGHT_END);
+	}
+</script>
+
+<div class="trails-controls">
+	<div class="option-row">
+		<span class="option-label">Tracking</span>
+		<div class="chip-group" role="radiogroup" aria-label="Trail tracking mode">
+			{#each trackingOptions as option}
+				<button
+					class="chip"
+					class:active={trackingMode === option.id}
+					type="button"
+					role="radio"
+					aria-checked={trackingMode === option.id}
+					onclick={() => animationSettings.setTrackingMode(option.id)}
+				>
+					<i class="fas {option.icon}" aria-hidden="true"></i>
+					{option.label}
+				</button>
+			{/each}
+		</div>
+	</div>
+
+	<div class="slider-row">
+		<label for="ctx-trail-width">Thickness</label>
+		<input
+			id="ctx-trail-width"
+			type="range"
+			min="1"
+			max="12"
+			step="0.5"
+			value={lineWidth}
+			oninput={(e) => animationSettings.setTrailAppearance({ lineWidth: Number((e.target as HTMLInputElement).value) })}
+		/>
+		<span class="slider-value">{formatWidth(lineWidth)}</span>
+	</div>
+
+	<div class="slider-row">
+		<label for="ctx-trail-brightness">Brightness</label>
+		<input
+			id="ctx-trail-brightness"
+			type="range"
+			min="0.3"
+			max="1"
+			step="0.05"
+			value={maxOpacity}
+			oninput={(e) => {
+				const v = Number((e.target as HTMLInputElement).value);
+				animationSettings.setTrailAppearance({
+					maxOpacity: v,
+					minOpacity: v * 0.3,
+					glowBlur: v * 5,
+				});
+			}}
+		/>
+		<span class="slider-value">{formatBrightness(maxOpacity)}</span>
+	</div>
+
+	<button
+		class="reset-btn"
+		type="button"
+		disabled={isDefault}
+		onclick={resetDefaults}
+	>
+		Reset
+	</button>
+</div>
+
+<style>
+	.trails-controls {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.option-row {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		min-height: var(--min-touch-target, 44px);
+	}
+
+	.option-label {
+		min-width: 70px;
+		font-size: var(--font-size-compact, 12px);
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+	}
+
+	.chip-group {
+		display: flex;
+		gap: 6px;
+		flex: 1;
+	}
+
+	.chip {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		min-height: var(--min-touch-target, 44px);
+		padding: 8px 12px;
+		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		border-radius: 10px;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+		font-size: var(--font-size-compact, 12px);
+		font-weight: 500;
+		cursor: pointer;
+		transition: all var(--duration-fast, 100ms) ease;
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	.chip:hover {
+		background: color-mix(in srgb, var(--theme-text) 8%, transparent);
+		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+		color: var(--theme-text, white);
+	}
+
+	.chip.active {
+		background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
+		border-color: var(--theme-accent, #8b5cf6);
+		color: var(--theme-text, white);
+	}
+
+	.chip:focus-visible {
+		outline: 2px solid var(--theme-accent, #8b5cf6);
+		outline-offset: 2px;
+	}
+
+	.chip i {
+		font-size: 14px;
+	}
+
+	.slider-row {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		min-height: var(--min-touch-target, 44px);
+	}
+
+	.slider-row label {
+		min-width: 70px;
+		font-size: var(--font-size-compact, 12px);
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+	}
+
+	.slider-row input[type="range"] {
+		flex: 1;
+		accent-color: var(--theme-accent, #8b5cf6);
+	}
+
+	.slider-value {
+		min-width: 32px;
+		text-align: right;
+		font-family: var(--font-mono, monospace);
+		font-size: var(--font-size-compact, 12px);
+		color: var(--theme-text, white);
+	}
+
+	.reset-btn {
+		align-self: flex-end;
+		padding: 4px 12px;
+		min-height: 32px;
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		border-radius: 6px;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+		font-size: var(--font-size-compact, 12px);
+		cursor: pointer;
+		transition: all var(--duration-fast, 100ms) ease;
+	}
+
+	.reset-btn:hover:not(:disabled) {
+		background: color-mix(in srgb, var(--theme-text) 8%, transparent);
+		color: var(--theme-text, white);
+	}
+
+	.reset-btn:disabled {
+		opacity: 0.3;
+		cursor: default;
+	}
+
+	.reset-btn:focus-visible {
+		outline: 2px solid var(--theme-accent, #8b5cf6);
+		outline-offset: 2px;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.chip,
+		.reset-btn {
+			transition: none;
+		}
+	}
+</style>

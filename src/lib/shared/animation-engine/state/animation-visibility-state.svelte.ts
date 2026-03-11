@@ -42,13 +42,14 @@ interface AnimationVisibilitySettings {
   // Dark Mode: dark background, inverted grid, white text/outlines
   darkMode: boolean;
 
-  // Effects
-  fireEffect: boolean; // WebGL fire shader at prop tips
+  // Fire Effect
+  fireEffect: boolean; // WebGL Navier-Stokes fluid fire at prop tips
   fireColorBlend: number; // 0 = natural fire, 1 = prop-colored (continuous slider)
-  fireSmokeLevel: number; // 0 = clean burn, 1 = heavy smoke (continuous slider)
-  fireUseCharcoal: boolean; // false = normal fire, true = charcoal (gravity-heavy fluid preset)
-  charcoalParams: import("../domain/types/CharcoalSparkTypes").CharcoalSparkParams; // Charcoal spark tuning params
   fireIntensity: number; // User intensity slider value (0.0-1.0)
+
+  // Charcoal Effect (independent particle system, NOT a fire variant)
+  charcoalEffect: boolean; // Discrete gravity-heavy spark particles at prop tips
+  charcoalParams: import("../domain/types/CharcoalSparkTypes").CharcoalSparkParams; // Charcoal spark tuning params
 
   // LED Effects
   ledEffect: boolean; // WebGL LED overlay
@@ -69,6 +70,8 @@ const STORAGE_KEY = "animation-visibility-settings";
 export class AnimationVisibilityStateManager {
   private settings: AnimationVisibilitySettings;
   private observers: Set<VisibilityObserver> = new Set();
+  /** Tracks dark mode state before an effect forced it on, so we can restore on disable. null = no effect override active. */
+  private darkModeBeforeEffect: boolean | null = null;
 
   /**
    * Cached motion colors - computed once when dark mode changes.
@@ -116,13 +119,14 @@ export class AnimationVisibilityStateManager {
       // Global effects
       darkMode: false, // Dark Mode disabled by default
 
-      // Effects
-      fireEffect: false, // Fire shader disabled by default
+      // Fire Effect
+      fireEffect: false, // Fire disabled by default
       fireColorBlend: 0.5, // Halfway between natural and prop-colored
-      fireSmokeLevel: 0.1, // Light smoke
-      fireUseCharcoal: false, // Fluid fire by default
-      charcoalParams: { ...DEFAULT_CHARCOAL_PARAMS }, // Default charcoal spark params
       fireIntensity: 0.7, // 0-1 range, 0.7 = normal fire
+
+      // Charcoal Effect (independent from fire)
+      charcoalEffect: false, // Charcoal disabled by default
+      charcoalParams: { ...DEFAULT_CHARCOAL_PARAMS }, // Default charcoal spark params
 
       // LED Effects
       ledEffect: false,
@@ -171,9 +175,10 @@ export class AnimationVisibilityStateManager {
           delete parsed.coloredFlames;
         }
 
-        // Migrate old fuelSourceId → fireUseCharcoal boolean
-        if ("fuelSourceId" in parsed && !("fireUseCharcoal" in parsed)) {
-          parsed.fireUseCharcoal = parsed.fuelSourceId === "charcoal";
+        // Migrate old fuelSourceId → charcoalEffect
+        if ("fuelSourceId" in parsed && !("charcoalEffect" in parsed)) {
+          parsed.charcoalEffect = parsed.fuelSourceId === "charcoal";
+          if (parsed.charcoalEffect) parsed.fireEffect = false;
           delete parsed.fuelSourceId;
         }
 
@@ -194,8 +199,20 @@ export class AnimationVisibilityStateManager {
 
         // Ensure new slider properties exist
         if (!("fireColorBlend" in parsed)) parsed.fireColorBlend = 0.5;
-        if (!("fireSmokeLevel" in parsed)) parsed.fireSmokeLevel = 0.1;
-        if (!("fireUseCharcoal" in parsed)) parsed.fireUseCharcoal = false;
+        // Remove legacy fireSmokeLevel if present (smoke feature removed)
+        if ("fireSmokeLevel" in parsed) delete parsed.fireSmokeLevel;
+
+        // Migrate old fireUseCharcoal → charcoalEffect (separate effect)
+        if ("fireUseCharcoal" in parsed && !("charcoalEffect" in parsed)) {
+          if (parsed.fireUseCharcoal && parsed.fireEffect) {
+            parsed.charcoalEffect = true;
+            parsed.fireEffect = false; // They were sharing fireEffect; give it to charcoal
+          } else {
+            parsed.charcoalEffect = false;
+          }
+          delete parsed.fireUseCharcoal;
+        }
+        if (!("charcoalEffect" in parsed)) parsed.charcoalEffect = false;
         // Migrate old charcoalPresetId → charcoalParams
         if ("charcoalPresetId" in parsed) {
           delete parsed.charcoalPresetId;
@@ -211,6 +228,7 @@ export class AnimationVisibilityStateManager {
         // Clean up removed keys
         delete parsed.fuelSourceId;
         delete parsed.flameColorMode;
+        delete parsed.fireUseCharcoal;
 
         // Ensure new properties exist with defaults if missing
         const defaults = this.getDefaultSettings();
@@ -286,7 +304,7 @@ export class AnimationVisibilityStateManager {
   getVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "effortPreset"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireIntensity" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "effortPreset"
     >
   ): boolean {
     return this.settings[key] as boolean;
@@ -310,7 +328,7 @@ export class AnimationVisibilityStateManager {
   setVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "effortPreset"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "fireColorBlend" | "fireIntensity" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "effortPreset"
     >,
     visible: boolean
   ): void {
@@ -372,9 +390,10 @@ export class AnimationVisibilityStateManager {
    */
   setTrailStyle(style: TrailVisibility): void {
     this.settings.trailStyle = style;
-    // Mutual exclusion: trails can't be active alongside fire or LED
+    // Mutual exclusion: trails can't be active alongside fire, charcoal, or LED
     if (style !== "off") {
       if (this.settings.fireEffect) this.settings.fireEffect = false;
+      if (this.settings.charcoalEffect) this.settings.charcoalEffect = false;
       if (this.settings.ledEffect) this.settings.ledEffect = false;
     }
     this.saveToStorage();
@@ -533,6 +552,36 @@ export class AnimationVisibilityStateManager {
     this.setDarkMode(!this.settings.darkMode);
   }
 
+  /**
+   * When a visual effect (fire, charcoal, LED) is enabled, switch to dark mode
+   * so the effect is visible against a dark background. Restore the previous
+   * dark mode state when the last effect is disabled.
+   */
+  private syncEffectDarkMode(effectEnabled: boolean): void {
+    if (effectEnabled) {
+      if (this.darkModeBeforeEffect === null) {
+        this.darkModeBeforeEffect = this.settings.darkMode;
+      }
+      if (!this.settings.darkMode) {
+        this.settings.darkMode = true;
+        this.syncDarkModeClass();
+        this.updateMotionColorsCache();
+      }
+    } else {
+      // Only restore if no other effect is still active
+      const anyEffectActive = this.settings.fireEffect || this.settings.charcoalEffect || this.settings.ledEffect;
+      if (!anyEffectActive && this.darkModeBeforeEffect !== null) {
+        const restore = this.darkModeBeforeEffect;
+        this.darkModeBeforeEffect = null;
+        if (this.settings.darkMode !== restore) {
+          this.settings.darkMode = restore;
+          this.syncDarkModeClass();
+          this.updateMotionColorsCache();
+        }
+      }
+    }
+  }
+
   // ============================================================================
   // FIRE EFFECT
   // ============================================================================
@@ -551,9 +600,11 @@ export class AnimationVisibilityStateManager {
     this.settings.fireEffect = enabled;
     // Mutual exclusion: only one effect active at a time
     if (enabled) {
+      if (this.settings.charcoalEffect) this.settings.charcoalEffect = false;
       if (this.settings.ledEffect) this.settings.ledEffect = false;
       if (this.settings.trailStyle !== "off") this.settings.trailStyle = "off";
     }
+    this.syncEffectDarkMode(enabled);
     this.saveToStorage();
     this.notifyObservers();
   }
@@ -579,24 +630,39 @@ export class AnimationVisibilityStateManager {
     this.notifyObservers();
   }
 
-  getFireSmokeLevel(): number {
-    return this.settings.fireSmokeLevel;
+  // ============================================================================
+  // CHARCOAL EFFECT (independent from fire)
+  // ============================================================================
+
+  isCharcoalEffectEnabled(): boolean {
+    return this.settings.charcoalEffect;
   }
 
-  setFireSmokeLevel(value: number): void {
-    this.settings.fireSmokeLevel = Math.max(0, Math.min(1, value));
+  setCharcoalEffect(enabled: boolean): void {
+    this.settings.charcoalEffect = enabled;
+    // Mutual exclusion: only one effect active at a time
+    if (enabled) {
+      if (this.settings.fireEffect) this.settings.fireEffect = false;
+      if (this.settings.ledEffect) this.settings.ledEffect = false;
+      if (this.settings.trailStyle !== "off") this.settings.trailStyle = "off";
+    }
+    this.syncEffectDarkMode(enabled);
     this.saveToStorage();
     this.notifyObservers();
   }
 
+  toggleCharcoalEffect(): void {
+    this.setCharcoalEffect(!this.settings.charcoalEffect);
+  }
+
+  /** @deprecated Use isCharcoalEffectEnabled() instead. Kept for migration. */
   getFireUseCharcoal(): boolean {
-    return this.settings.fireUseCharcoal;
+    return this.settings.charcoalEffect;
   }
 
+  /** @deprecated Use setCharcoalEffect() instead. Kept for migration. */
   setFireUseCharcoal(value: boolean): void {
-    this.settings.fireUseCharcoal = value;
-    this.saveToStorage();
-    this.notifyObservers();
+    this.setCharcoalEffect(value);
   }
 
   getCharcoalParams(): CharcoalSparkParams {
@@ -629,7 +695,6 @@ export class AnimationVisibilityStateManager {
   resetFireDefaults(): void {
     this.settings.fireIntensity = 0.7;
     this.settings.fireColorBlend = 0.5;
-    this.settings.fireSmokeLevel = 0.1;
     this.saveToStorage();
     this.notifyObservers();
   }
@@ -660,8 +725,10 @@ export class AnimationVisibilityStateManager {
     // Mutual exclusion: only one effect active at a time
     if (enabled) {
       if (this.settings.fireEffect) this.settings.fireEffect = false;
+      if (this.settings.charcoalEffect) this.settings.charcoalEffect = false;
       if (this.settings.trailStyle !== "off") this.settings.trailStyle = "off";
     }
+    this.syncEffectDarkMode(enabled);
     this.saveToStorage();
     this.notifyObservers();
   }
@@ -747,7 +814,7 @@ export class AnimationVisibilityStateManager {
   toggleVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireSmokeLevel" | "fireIntensity" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "effortPreset"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireIntensity" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "effortPreset"
     >
   ): void {
     this.setVisibility(key, !(this.settings[key] as boolean));

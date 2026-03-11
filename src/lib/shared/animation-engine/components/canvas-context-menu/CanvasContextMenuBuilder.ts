@@ -30,11 +30,14 @@ export function buildCanvasContextMenuItems(
       label: "Fire",
       icon: "fa-fire-flame-curved",
       iconColor: "#f97316",
-      checked: settings.fireEffect && !settings.fireUseCharcoal,
+      checked: settings.fireEffect,
       keepOpen: true,
       action: () => {
-        vm.setFireUseCharcoal(false);
-        vm.toggleFireEffect();
+        if (settings.fireEffect) {
+          vm.setFireEffect(false);
+        } else {
+          vm.setFireEffect(true);
+        }
       },
     },
     {
@@ -42,15 +45,13 @@ export function buildCanvasContextMenuItems(
       label: "Charcoal",
       icon: "fa-fire",
       iconColor: "#a855f7",
-      checked: settings.fireEffect && settings.fireUseCharcoal,
+      checked: settings.charcoalEffect,
       keepOpen: true,
       action: () => {
-        if (settings.fireEffect && settings.fireUseCharcoal) {
-          vm.setFireEffect(false);
-          vm.setFireUseCharcoal(false);
+        if (settings.charcoalEffect) {
+          vm.setCharcoalEffect(false);
         } else {
-          vm.setFireUseCharcoal(true);
-          vm.setFireEffect(true);
+          vm.setCharcoalEffect(true);
         }
       },
     },
@@ -61,7 +62,13 @@ export function buildCanvasContextMenuItems(
       iconColor: "#22c55e",
       checked: settings.ledEffect,
       keepOpen: true,
-      action: () => vm.toggleLedEffect(),
+      action: () => {
+        if (settings.ledEffect) {
+          vm.setLedEffect(false);
+        } else {
+          vm.setLedEffect(true);
+        }
+      },
     },
     {
       id: "toggle-trails",
@@ -69,8 +76,13 @@ export function buildCanvasContextMenuItems(
       icon: "fa-route",
       checked: settings.trailStyle !== "off",
       keepOpen: true,
-      action: () =>
-        vm.setTrailStyle(settings.trailStyle === "off" ? "on" : "off"),
+      action: () => {
+        if (settings.trailStyle !== "off") {
+          vm.setTrailStyle("off");
+        } else {
+          vm.setTrailStyle("on");
+        }
+      },
     },
     { type: "separator" as const },
     {

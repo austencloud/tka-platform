@@ -175,31 +175,31 @@ export const CHARCOAL_SLIDER_GROUPS: CharcoalSliderGroup[] = [
 	},
 ];
 
-/** Default charcoal spark parameters — Austen's dialed-in steel-wool look (82/58/60). */
+/** Default charcoal spark parameters — moderate steel-wool look (40/40/50). */
 export const DEFAULT_CHARCOAL_PARAMS: CharcoalSparkParams = {
-	burstThreshold: 45,
-	burstMultiplier: 108,
-	burstMax: 540,
-	ambientRate: 214,
-	ambientSpeedThreshold: 5,
-	idleRate: 21,
-	gravity: 261,
-	drag: 0.93,
-	velocityInheritance: 0.55,
-	perturbSpeedMin: 31,
-	perturbSpeedMax: 122,
-	spreadAngle: Math.PI * 0.58,
-	lifetimeMin: 1.87,
-	lifetimeMax: 4.98,
-	sizeMin: 6,
-	sizeMax: 14,
+	burstThreshold: 114,
+	burstMultiplier: 57,
+	burstMax: 284,
+	ambientRate: 107,
+	ambientSpeedThreshold: 10,
+	idleRate: 10,
+	gravity: 294,
+	drag: 0.91,
+	velocityInheritance: 0.59,
+	perturbSpeedMin: 28,
+	perturbSpeedMax: 111,
+	spreadAngle: Math.PI * 0.50,
+	lifetimeMin: 1.17,
+	lifetimeMax: 3.54,
+	sizeMin: 5,
+	sizeMax: 12,
 	shrinkOverLife: true,
 	coreColor: [255, 242, 210],
 	midColor: [255, 150, 35],
 	coolColor: [170, 45, 2],
-	emberGlowRadius: 28,
-	emberGlowIntensity: 1.96,
-	maxParticles: 4136,
+	emberGlowRadius: 25,
+	emberGlowIntensity: 1.70,
+	maxParticles: 2120,
 };
 
 // ============================================================================
@@ -218,9 +218,9 @@ export interface CharcoalSemanticValues {
 
 /** Default semantic values that correspond to DEFAULT_CHARCOAL_PARAMS. */
 export const DEFAULT_CHARCOAL_SEMANTIC: CharcoalSemanticValues = {
-	intensity: 0.82,
-	spread: 0.47,  // gravity 261 in [480, 15] range
-	glow: 0.60,
+	intensity: 0.40,
+	spread: 0.40,
+	glow: 0.50,
 };
 
 /** Lerp helper: map t [0-1] to [a, b]. */

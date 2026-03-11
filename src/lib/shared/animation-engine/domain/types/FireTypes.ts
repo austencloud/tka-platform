@@ -132,16 +132,6 @@ export interface FirePhysicsParams {
   temperatureInjection: number;
   /** Constant upward velocity injected at tip via splat (0.5 - 8.0) */
   upwardBias: number;
-  /** Fraction of burned fuel that becomes soot (0.01 = clean, 0.15 = sooty) */
-  sootYield: number;
-  /** Temperature below which cooling gas emits visible smoke (0.2 - 0.6) */
-  sootCoolThreshold: number;
-  /** Rate at which cooling gas generates smoke (0.3 - 3.0) */
-  sootCoolRate: number;
-  /** Soot fade rate per simulation step (1.0 - 4.0) */
-  sootDissipation: number;
-  /** Soot persistence during advection transport (0.95 - 0.99) */
-  sootAdvectionDissipation: number;
   /** Constant downward force on heated fluid. 0 = no gravity (normal fire). Negative = downward pull. (-10 to 0) */
   gravity: number;
 }
@@ -180,8 +170,6 @@ export interface FireOverlayConfig {
   disableFrameCache?: boolean;
   /** Charcoal spark params (only used when useCharcoal is true) */
   charcoalParams?: import("./CharcoalSparkTypes").CharcoalSparkParams;
-  /** Smoke opacity in display shader (0.0 = no smoke, 0.5 = heavy smoke, default per fuel) */
-  smokeOpacity?: number;
   /** HDR bloom strength (0.0 = no bloom, 0.04-0.15 = subtle glow, default 0.08) */
   bloomStrength?: number;
   /**
@@ -211,11 +199,6 @@ export const DEFAULT_PHYSICS: FirePhysicsParams = {
   pressureDissipation: 0.8,
   temperatureInjection: 1.1,
   upwardBias: 2.0,
-  sootYield: 0.04,
-  sootCoolThreshold: 0.3,
-  sootCoolRate: 0.8,
-  sootDissipation: 2.5,
-  sootAdvectionDissipation: 0.97,
   gravity: 0,
 };
 
@@ -264,11 +247,6 @@ export const BASE_FIRE_PHYSICS: FirePhysicsParams = {
   pressureDissipation: 0.8,
   temperatureInjection: 1.5,
   upwardBias: 3.0,
-  sootYield: 0.02,
-  sootCoolThreshold: 0.3,
-  sootCoolRate: 0.6,
-  sootDissipation: 3.0,
-  sootAdvectionDissipation: 0.96,
   gravity: 0,
 };
 
@@ -301,11 +279,6 @@ export const CHARCOAL_FIRE_PHYSICS: FirePhysicsParams = {
   pressureDissipation: 0.8,
   temperatureInjection: 1.8,
   upwardBias: -6.0,
-  sootYield: 0.12,
-  sootCoolThreshold: 0.4,
-  sootCoolRate: 1.8,
-  sootDissipation: 1.8,
-  sootAdvectionDissipation: 0.98,
   gravity: -10000.0,
 };
 
@@ -339,23 +312,3 @@ export function intensityToPhysics(intensity: number): Partial<FirePhysicsParams
   };
 }
 
-/**
- * Map user-facing smoke level (0-1) to soot physics overrides.
- * 0.0 = clean burn (nearly no soot). 1.0 = heavy sooty fire.
- */
-export function smokeLevelToPhysics(smokeLevel: number): Partial<FirePhysicsParams> {
-  return {
-    sootYield: lerp(0.005, 0.15, smokeLevel),
-    sootCoolRate: lerp(0.2, 2.5, smokeLevel),
-    sootDissipation: lerp(4.0, 1.2, smokeLevel),
-    sootAdvectionDissipation: lerp(0.93, 0.985, smokeLevel),
-  };
-}
-
-/**
- * Map smoke level (0-1) to display shader smoke opacity.
- * 0.0 = no visible smoke. 1.0 = heavy smoke.
- */
-export function smokeLevelToOpacity(smokeLevel: number): number {
-  return lerp(0.0, 0.45, smokeLevel);
-}

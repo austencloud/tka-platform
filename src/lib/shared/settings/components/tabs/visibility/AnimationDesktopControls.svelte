@@ -9,6 +9,7 @@
   import FireCategory from "$lib/shared/animation-engine/components/canvas-settings-modal/categories/FireCategory.svelte";
   import CharcoalCategory from "$lib/shared/animation-engine/components/canvas-settings-modal/categories/CharcoalCategory.svelte";
   import LedCategory from "$lib/shared/animation-engine/components/canvas-settings-modal/categories/LedCategory.svelte";
+  import TrailsCategory from "$lib/shared/animation-engine/components/canvas-settings-modal/categories/TrailsCategory.svelte";
   import PlaybackCategory from "$lib/shared/animation-engine/components/canvas-settings-modal/categories/PlaybackCategory.svelte";
   import EffortCategory from "$lib/shared/animation-engine/components/canvas-settings-modal/categories/EffortCategory.svelte";
   import DisplayCategory from "$lib/shared/animation-engine/components/canvas-settings-modal/categories/DisplayCategory.svelte";
@@ -19,13 +20,13 @@
   const vm = getAnimationVisibilityManager();
 
   let fireEnabled = $state(vm.isFireEffectEnabled());
-  let charcoalEnabled = $state(vm.getFireUseCharcoal());
+  let charcoalEnabled = $state(vm.isCharcoalEffectEnabled());
   let ledEnabled = $state(vm.isLedEffectEnabled());
   let trailsVisible = $state(vm.isTrailsVisible());
 
   function sync(): void {
     fireEnabled = vm.isFireEffectEnabled();
-    charcoalEnabled = vm.getFireUseCharcoal();
+    charcoalEnabled = vm.isCharcoalEffectEnabled();
     ledEnabled = vm.isLedEffectEnabled();
     trailsVisible = vm.isTrailsVisible();
   }
@@ -34,7 +35,7 @@
   onDestroy(() => vm.unregisterObserver(sync));
 
   const activeEffect: ActiveEffect = $derived.by(() => {
-    if (fireEnabled && charcoalEnabled) return "charcoal";
+    if (charcoalEnabled) return "charcoal";
     if (fireEnabled) return "fire";
     if (ledEnabled) return "led";
     if (trailsVisible) return "trails";
@@ -42,20 +43,20 @@
   });
 
   function selectEffect(effect: ActiveEffect) {
-    if (vm.isFireEffectEnabled()) vm.setFireEffect(false);
-    if (vm.isLedEffectEnabled()) vm.setLedEffect(false);
-    if (vm.isTrailsVisible()) vm.setTrailStyle("off");
-    vm.setFireUseCharcoal(false);
-
+    // Each setter handles mutual exclusion internally
     if (effect === "fire") {
       vm.setFireEffect(true);
     } else if (effect === "charcoal") {
-      vm.setFireUseCharcoal(true);
-      vm.setFireEffect(true);
+      vm.setCharcoalEffect(true);
     } else if (effect === "led") {
       vm.setLedEffect(true);
     } else if (effect === "trails") {
       vm.setTrailStyle("on");
+    } else {
+      vm.setFireEffect(false);
+      vm.setCharcoalEffect(false);
+      vm.setLedEffect(false);
+      vm.setTrailStyle("off");
     }
   }
 
@@ -76,6 +77,8 @@
       <CharcoalCategory />
     {:else if activeEffect === "led"}
       <LedCategory />
+    {:else if activeEffect === "trails"}
+      <TrailsCategory />
     {/if}
   </div>
 

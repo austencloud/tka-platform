@@ -646,7 +646,7 @@
     if (animationVisibility.getTrailStyle() !== "off") {
       effects.push({ id: "trails", label: "Trails", icon: "fas fa-wind", active: true });
     }
-    if (animationVisibility.getVisibility("fireUseCharcoal")) {
+    if (animationVisibility.isCharcoalEffectEnabled()) {
       effects.push({ id: "charcoal", label: "Charcoal", icon: "fas fa-smog", active: true });
     }
     return effects;
