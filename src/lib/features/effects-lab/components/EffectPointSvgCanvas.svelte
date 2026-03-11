@@ -312,8 +312,8 @@
     }
   }
 
-  function pointRadius(point: { dx: number; dy: number }): number {
-    return Math.max(POINT_MIN_RADIUS, Math.min(POINT_MAX_RADIUS, descriptor.getIntensity(point as any) * 12));
+  function pointRadius(_point: { dx: number; dy: number }): number {
+    return (POINT_MIN_RADIUS + POINT_MAX_RADIUS) / 2;
   }
 
   onMount(() => {
@@ -384,7 +384,7 @@
         onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); editorState.selectedPointIndex = i; } }}
         role="button"
         tabindex="0"
-        aria-label="Point {i + 1}: dx={point.dx}, dy={point.dy}, {descriptor.intensityLabel}={descriptor.getIntensity(point)}"
+        aria-label="Point {i + 1}: dx={point.dx}, dy={point.dy}"
       >
         <!-- Glow ring for selected -->
         {#if isSelected}
