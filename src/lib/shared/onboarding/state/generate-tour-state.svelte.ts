@@ -8,20 +8,24 @@
 const TOUR_COMPLETED_KEY = "tka-generate-tour-completed";
 
 export type GenerateTourStop =
-  | "level"
-  | "length"
   | "word-input"
+  | "length"
+  | "level"
   | "grid-mode"
   | "turn-intensity"
+  | "customize"
+  | "loop"
   | "slice-size"
   | "generate-button";
 
 const STOPS: GenerateTourStop[] = [
-  "level",
-  "length",
   "word-input",
+  "length",
+  "level",
   "grid-mode",
   "turn-intensity",
+  "customize",
+  "loop",
   "slice-size",
   "generate-button",
 ];
