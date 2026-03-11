@@ -113,6 +113,17 @@ export interface LibrarySequence extends SequenceData {
    */
   readonly _version?: number;
 
+  /**
+   * SHA-256 hash of the sequence's motion content (steps, positions, turns,
+   * orientations). Two sequences with the same hash are the same physical
+   * movement pattern. Used to detect when an edit creates a new variation
+   * vs. a metadata-only update.
+   *
+   * Optional because legacy sequences saved before this feature won't have it.
+   * Computed and stored on every save going forward.
+   */
+  readonly contentHash?: string;
+
   // ============================================================
   // TIMESTAMPS
   // ============================================================
