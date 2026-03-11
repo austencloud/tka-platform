@@ -10,7 +10,7 @@
 
 import type { PropState } from "../../domain/PropState";
 import type { PropTipData, RenderedPropTransform } from "../../domain/types/FireTypes";
-import { getFirePoints, type FirePoint } from "../../domain/types/PropFirePoints";
+import { getTipPoints, type TipPoint } from "../../domain/types/PropTipPoints";
 import type {
 	IFireTipTracker,
 	FireTipTrackerConfig,
@@ -160,10 +160,10 @@ export class FireTipTracker implements IFireTipTracker {
 		outputStartIndex: number,
 		renderedTransform?: RenderedPropTransform | null
 	): number {
-		const fireConfig = getFirePoints(propType);
-		const firePoints = fireConfig.points;
+		const tipConfig = getTipPoints(propType);
+		const tipPoints = tipConfig.points;
 
-		if (firePoints.length === 0) return outputStartIndex;
+		if (tipPoints.length === 0) return outputStartIndex;
 
 		let centerX: number;
 		let centerY: number;
@@ -194,13 +194,13 @@ export class FireTipTracker implements IFireTipTracker {
 
 		let outputIndex = outputStartIndex;
 
-		for (let i = 0; i < firePoints.length && outputIndex < MAX_TOTAL_TIPS; i++) {
-			const fp: FirePoint = firePoints[i]!;
+		for (let i = 0; i < tipPoints.length && outputIndex < MAX_TOTAL_TIPS; i++) {
+			const tp: TipPoint = tipPoints[i]!;
 			const prevSlot = prevTipOffset + i;
 
-			// Transform fire point from prop-local to canvas space
-			const worldX = centerX + (fp.dx * cosA - fp.dy * sinA) * gridScaleFactor;
-			const worldY = centerY + (fp.dx * sinA + fp.dy * cosA) * gridScaleFactor;
+			// Transform tip point from prop-local to canvas space
+			const worldX = centerX + (tp.dx * cosA - tp.dy * sinA) * gridScaleFactor;
+			const worldY = centerY + (tp.dx * sinA + tp.dy * cosA) * gridScaleFactor;
 
 			this.emitTip(
 				this.prevTips[prevSlot]!,
@@ -208,7 +208,7 @@ export class FireTipTracker implements IFireTipTracker {
 				worldY,
 				propIndex,
 				i,
-				fp.flameScale,
+				1.0,
 				currentTime,
 				outputIndex
 			);
@@ -216,7 +216,7 @@ export class FireTipTracker implements IFireTipTracker {
 		}
 
 		// Invalidate any remaining prev slots for this prop (if prop type changed to fewer tips)
-		for (let i = firePoints.length; i < MAX_TOTAL_TIPS / 2; i++) {
+		for (let i = tipPoints.length; i < MAX_TOTAL_TIPS / 2; i++) {
 			const prevSlot = prevTipOffset + i;
 			if (prevSlot < this.prevTips.length) {
 				this.prevTips[prevSlot]!.valid = false;
