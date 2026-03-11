@@ -8,11 +8,18 @@
   import { whatsNewState } from "../state/whats-new-state.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import { container } from "$lib/shared/di";
   import {
     CATEGORY_ICONS,
     CATEGORY_LABELS,
   } from "$lib/features/feedback/domain/constants/changelog-constants";
-  import type { ChangelogCategory } from "$lib/features/feedback/domain/models/version-models";
+  import type { Contributor } from "$lib/features/feedback/domain/models/contributor-models";
+  import type {
+    ChangelogCategory,
+    ChangelogEntry,
+  } from "$lib/features/feedback/domain/models/version-models";
+  import type { IContributorLoader } from "$lib/features/feedback/services/contracts/IContributorLoader";
+  import ContributorBadge from "./tabs/release-notes/ContributorBadge.svelte";
 
   // Category display order and colors
   const CATEGORY_CONFIG: Record<
@@ -40,30 +47,39 @@
   const version = $derived(whatsNewState.version);
   const isOpen = $derived(whatsNewState.isOpen);
 
+  let contributors = $state<Map<string, Contributor>>(new Map());
+
+  $effect(() => {
+    if (!version?.contributorIds?.length) {
+      contributors = new Map();
+      return;
+    }
+    const loader = container.items.contributorLoader as IContributorLoader;
+    loader.getByIds(version.contributorIds).then((list) => {
+      contributors = new Map(list.map((c) => [c.id, c]));
+    });
+  });
+
   // Group changelog entries by category
   const groupedChangelog = $derived.by(() => {
     if (!version?.changelogEntries) return [];
 
-    const groups = new Map<ChangelogCategory, string[]>();
+    const groups = new Map<ChangelogCategory, ChangelogEntry[]>();
 
     for (const entry of version.changelogEntries) {
       const existing = groups.get(entry.category) || [];
-      existing.push(entry.text);
+      existing.push(entry);
       groups.set(entry.category, existing);
     }
 
-    // Convert to sorted array
     return Array.from(groups.entries())
-      .map(([category, items]) => ({
+      .map(([category, entries]) => ({
         category,
-        items,
+        entries,
         ...CATEGORY_CONFIG[category],
       }))
       .sort((a, b) => a.order - b.order);
   });
-
-  // Get explicitly curated highlights (if any were set during release)
-  const highlights = $derived(version?.highlights ?? []);
 
   // Total count for summary
   const totalChanges = $derived(version?.changelogEntries?.length ?? 0);
@@ -84,8 +100,7 @@
 
   async function handleViewAllReleases() {
     whatsNewState.close();
-    navigationState.setActiveTab("release-notes");
-    await handleModuleChange("settings");
+    await handleModuleChange("settings", "release-notes");
   }
 </script>
 
@@ -115,11 +130,13 @@
           <i class="fas fa-rocket" aria-hidden="true"></i>
           <span>v{version.version}</span>
         </div>
-        <h1 id="whats-new-title">What's New</h1>
-        <p class="subtitle">
-          {totalChanges}
-          {totalChanges === 1 ? "update" : "updates"} in this release
-        </p>
+        <div class="header-text">
+          <h1 id="whats-new-title">What's New</h1>
+          <p class="subtitle">
+            {totalChanges}
+            {totalChanges === 1 ? "update" : "updates"} in this release
+          </p>
+        </div>
         <button
           class="close-btn"
           onclick={handleClose}
@@ -132,27 +149,6 @@
 
       <!-- Body -->
       <div class="modal-body">
-        <!-- Curated Highlights (optional - only shown if explicitly set during release) -->
-        {#if highlights.length > 0}
-          <div class="highlights-section">
-            {#each highlights as highlight, i}
-              <div class="hero-feature">
-                <div class="hero-icon">
-                  <i class="fas fa-star" aria-hidden="true"></i>
-                </div>
-                <div class="hero-content">
-                  <span class="hero-label"
-                    >{highlights.length > 1
-                      ? `Highlight ${i + 1}`
-                      : "Highlight"}</span
-                  >
-                  <p class="hero-text">{highlight}</p>
-                </div>
-              </div>
-            {/each}
-          </div>
-        {/if}
-
         <!-- Category Cards -->
         <div class="category-grid">
           {#each groupedChangelog as group}
@@ -168,16 +164,40 @@
                   ></i>
                 </div>
                 <h3>{CATEGORY_LABELS[group.category]}</h3>
-                <span class="category-count">{group.items.length}</span>
+                <span class="category-count">{group.entries.length}</span>
               </div>
               <ul class="category-list">
-                {#each group.items as item}
-                  <li>{item}</li>
+                {#each group.entries as entry}
+                  <li>
+                    <span>{entry.text}</span>
+                    {#if entry.contributorIds?.length}
+                      <span class="entry-contributors">
+                        {#each entry.contributorIds as cid}
+                          {#if contributors.get(cid)}
+                            <ContributorBadge contributor={contributors.get(cid)} />
+                          {/if}
+                        {/each}
+                      </span>
+                    {/if}
+                  </li>
                 {/each}
               </ul>
             </div>
           {/each}
         </div>
+
+        {#if version?.contributorIds?.length && contributors.size > 0}
+          <div class="contributors-footer">
+            <h4 class="contributors-title">Contributors</h4>
+            <div class="contributors-list">
+              {#each version.contributorIds as cid}
+                {#if contributors.get(cid)}
+                  <ContributorBadge contributor={contributors.get(cid)} size="md" />
+                {/if}
+              {/each}
+            </div>
+          </div>
+        {/if}
 
         <!-- Empty state -->
         {#if groupedChangelog.length === 0}
@@ -241,7 +261,7 @@
     display: flex;
     flex-direction: column;
     width: 100%;
-    max-width: 520px;
+    max-width: 720px;
     max-height: calc(100vh - 40px);
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -270,11 +290,11 @@
   .modal-header {
     position: relative;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    gap: 8px;
-    padding: 32px 24px 24px;
-    text-align: center;
+    gap: 14px;
+    padding: 20px 24px;
+    padding-right: 56px;
     background: linear-gradient(
       180deg,
       color-mix(in srgb, var(--theme-accent) 8%, transparent) 0%,
@@ -306,9 +326,15 @@
     font-size: var(--font-size-compact);
   }
 
+  .header-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
   .modal-header h1 {
-    margin: 8px 0 0;
-    font-size: var(--font-size-2xl);
+    margin: 0;
+    font-size: var(--font-size-xl);
     font-weight: 700;
     color: var(--theme-text);
   }
@@ -383,68 +409,6 @@
     background: color-mix(in srgb, var(--theme-text) 40%, transparent);
   }
 
-  /* Highlights Section */
-  .highlights-section {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  /* Hero Feature */
-  .hero-feature {
-    display: flex;
-    gap: 16px;
-    padding: 16px;
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--theme-accent) 10%, transparent) 0%,
-      color-mix(in srgb, var(--theme-accent) 5%, transparent) 100%
-    );
-    border: 1.5px solid
-      color-mix(in srgb, var(--theme-accent) 25%, transparent);
-    border-radius: 14px;
-  }
-
-  .hero-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    flex-shrink: 0;
-    background: linear-gradient(
-      135deg,
-      var(--theme-accent) 0%,
-      color-mix(in srgb, var(--theme-accent) 70%, var(--semantic-info)) 100%
-    );
-    border-radius: 12px;
-    color: white;
-    font-size: var(--font-size-lg);
-  }
-
-  .hero-content {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 0;
-  }
-
-  .hero-label {
-    font-size: var(--font-size-compact);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--theme-accent);
-  }
-
-  .hero-text {
-    margin: 0;
-    font-size: var(--font-size-sm);
-    font-weight: 500;
-    color: var(--theme-text);
-    line-height: 1.5;
-  }
-
   /* Category Grid */
   .category-grid {
     display: flex;
@@ -504,6 +468,14 @@
     margin: 0;
     padding: 0;
     list-style: none;
+    columns: 1;
+  }
+
+  @media (min-width: 600px) {
+    .category-list {
+      columns: 2;
+      column-gap: 24px;
+    }
   }
 
   .category-list li {
@@ -512,6 +484,7 @@
     font-size: var(--font-size-sm);
     color: var(--theme-text);
     line-height: 1.5;
+    break-inside: avoid;
   }
 
   .category-list li::before {
@@ -546,6 +519,38 @@
     margin: 0;
     font-size: var(--font-size-sm);
     color: var(--theme-text-dim);
+  }
+
+  /* ============================================================================
+     CONTRIBUTORS
+     ============================================================================ */
+  .entry-contributors {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+  }
+
+  .contributors-footer {
+    padding: 16px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 14px;
+  }
+
+  .contributors-title {
+    margin: 0 0 12px;
+    font-size: var(--font-size-compact);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--theme-text-dim);
+  }
+
+  .contributors-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
   /* ============================================================================
@@ -617,21 +622,12 @@
     }
 
     .modal-header {
-      padding: 24px 20px 20px;
-    }
-
-    .modal-header h1 {
-      font-size: var(--font-size-xl);
+      padding: 16px;
+      padding-right: 48px;
     }
 
     .modal-body {
       padding: 16px;
-    }
-
-    .hero-feature {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 12px;
     }
 
     .category-card {
