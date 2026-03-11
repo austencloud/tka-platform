@@ -72,6 +72,7 @@ interface FirestoreUserData extends DocumentData {
   // Admin-related fields
   role?: UserRole;
   isDisabled?: boolean;
+  isHidden?: boolean;
   adminLabel?: string;
   adminNotes?: string;
 }
@@ -184,6 +185,7 @@ export class UserRepository implements IUserRepository {
   private readonly SORT_FIELD_MAP: Record<CreatorSortCriteria, string> = {
     lastActive: "lastActivityDate",
     joinedDate: "createdAt",
+    favoriteProp: "favoriteProp",
   };
 
   /**
@@ -240,6 +242,8 @@ export class UserRepository implements IUserRepository {
 
       for (const docSnap of resultDocs) {
         const data = docSnap.data() as FirestoreUserData;
+        // Skip hidden accounts (bots, test accounts, etc.)
+        if (data.isHidden) continue;
         const isFollowing =
           currentUserId !== docSnap.id && followingSet.has(docSnap.id);
         // Skip achievements fetch in list views to avoid N+1 queries
@@ -288,6 +292,7 @@ export class UserRepository implements IUserRepository {
 
       for (const docSnap of querySnapshot.docs) {
         const data = docSnap.data() as FirestoreUserData;
+        if (data.isHidden) continue;
         // Skip achievements fetch in list views
         const user = await this.mapFirestoreToEnhancedProfile(
           docSnap.id,
@@ -342,6 +347,7 @@ export class UserRepository implements IUserRepository {
 
                 for (const docSnap of querySnapshot.docs) {
                   const data = docSnap.data() as FirestoreUserData;
+                  if (data.isHidden) continue;
                   const isFollowing =
                     currentUserId !== docSnap.id &&
                     followingSet.has(docSnap.id);
@@ -798,6 +804,7 @@ export class UserRepository implements IUserRepository {
       // Admin-related fields
       const role = data.role ?? "user";
       const isDisabled = data.isDisabled ?? false;
+      const isHidden = data.isHidden ?? false;
       const adminLabel = data.adminLabel ?? undefined;
       const adminNotes = data.adminNotes ?? undefined;
 
@@ -831,6 +838,7 @@ export class UserRepository implements IUserRepository {
         bio,
         role,
         isDisabled,
+        isHidden,
         adminLabel,
         adminNotes,
       };
