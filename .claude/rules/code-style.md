@@ -21,7 +21,6 @@ Write comments as if explaining to someone who uses the app but doesn't write co
 ```
 
 Rules:
-- No jargon: avoid "cache", "ref", "sync", "index", "denormalize", "invalidate"
 - Say what the user would observe, not what the code does internally
 - Explain the *why* — what problem does this solve, what would go wrong without it
 - Keep it conversational. Short sentences are fine.
