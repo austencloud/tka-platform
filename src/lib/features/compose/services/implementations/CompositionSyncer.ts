@@ -16,6 +16,8 @@
 import type { Composition } from "../../compose/domain/types";
 import { dexieCompositionRepository } from "./DexieCompositionRepository";
 import { firebaseCompositionRepository } from "./FirebaseCompositionRepository";
+import { container } from "$lib/shared/di";
+import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 
 export class CompositionSyncer {
   private hasSynced = false;
@@ -32,7 +34,12 @@ export class CompositionSyncer {
     // Cloud in the background - fire and forget
     if (firebaseCompositionRepository.isAuthenticated()) {
       firebaseCompositionRepository.saveComposition(saved).catch((err) => {
-        console.warn("Cloud save failed, composition saved locally:", err);
+        try {
+          const errorHandler = container.items.errorHandler as IErrorHandler;
+          errorHandler.showWarning("Saved locally, but cloud sync failed. Changes may not appear on other devices.");
+        } catch {
+          console.warn("Cloud save failed, composition saved locally:", err);
+        }
       });
     }
 
@@ -47,7 +54,12 @@ export class CompositionSyncer {
 
     if (firebaseCompositionRepository.isAuthenticated()) {
       firebaseCompositionRepository.deleteComposition(compositionId).catch((err) => {
-        console.warn("Cloud delete failed:", err);
+        try {
+          const errorHandler = container.items.errorHandler as IErrorHandler;
+          errorHandler.showWarning("Deleted locally, but cloud sync failed. It may reappear on other devices.");
+        } catch {
+          console.warn("Cloud delete failed:", err);
+        }
       });
     }
   }
@@ -63,7 +75,12 @@ export class CompositionSyncer {
       firebaseCompositionRepository
         .updateFavorite(compositionId, newStatus)
         .catch((err) => {
-          console.warn("Cloud favorite update failed:", err);
+          try {
+            const errorHandler = container.items.errorHandler as IErrorHandler;
+            errorHandler.showWarning("Updated locally, but cloud sync failed.");
+          } catch {
+            console.warn("Cloud favorite update failed:", err);
+          }
         });
     }
 
@@ -138,6 +155,12 @@ export class CompositionSyncer {
       }
     } catch (error) {
       console.error("Cloud sync failed, using local data:", error);
+      try {
+        const errorHandler = container.items.errorHandler as IErrorHandler;
+        errorHandler.showWarning("Couldn't sync compositions from the cloud. Showing local data.");
+      } catch {
+        // ErrorHandler not available
+      }
     }
   }
 

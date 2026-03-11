@@ -7,6 +7,7 @@
  */
 
 import { container } from "$lib/shared/di";
+import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 import type { SequenceData } from "../../../../../shared/foundation/domain/models/SequenceData";
 import type { ICreateModuleEventHandler } from "../contracts/ICreateModuleEventHandler";
 import type { IBuildConstructSectionCoordinator } from "../contracts/IConstructCoordinator";
@@ -219,6 +220,17 @@ export class CreateModuleEventHandler implements ICreateModuleEventHandler {
       performance.mark("coordination-complete");
     } catch (error) {
       console.error("❌ Error handling option selection:", error);
+      const errorHandler = container.items.errorHandler as IErrorHandler;
+      errorHandler.showUserError({
+        message: "Something went wrong adding that beat",
+        technicalDetails: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error : new Error(String(error)),
+        severity: "error",
+        context: {
+          module: "create",
+          action: "add-beat",
+        },
+      });
       throw error;
     }
   }

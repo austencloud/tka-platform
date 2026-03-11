@@ -25,6 +25,8 @@ import type { IContentAppealManager } from "$lib/features/moderation/services/co
 import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { ContentModerationError } from "$lib/features/moderation/errors/ContentModerationError";
+import { container } from "$lib/shared/di";
+import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 import { LOOP_LABELS_COLLECTION } from "$lib/features/loop-labeler/domain/constants/firebase-collections";
 import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
 import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
@@ -153,6 +155,21 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
         "[PublicIndexSyncer] Failed to sync to public index:",
         error
       );
+      // Don't show a generic error modal for moderation failures — those have their own UI
+      if (!(error instanceof ContentModerationError)) {
+        const errorHandler = container.items.errorHandler as IErrorHandler;
+        errorHandler.showUserError({
+          message: "Couldn't publish your sequence",
+          technicalDetails: error instanceof Error ? error.message : String(error),
+          error: error instanceof Error ? error : new Error(String(error)),
+          severity: "error",
+          context: {
+            module: "library",
+            action: "publish-sequence",
+            additionalData: { sequenceId: sequence.id, userId },
+          },
+        });
+      }
       throw error; // Re-throw so callers know the sync failed
     }
   }
@@ -173,6 +190,18 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
         "[PublicIndexSyncer] Failed to remove from public index:",
         error
       );
+      const errorHandler = container.items.errorHandler as IErrorHandler;
+      errorHandler.showUserError({
+        message: "Couldn't unpublish your sequence",
+        technicalDetails: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error : new Error(String(error)),
+        severity: "error",
+        context: {
+          module: "library",
+          action: "unpublish-sequence",
+          additionalData: { sequenceId },
+        },
+      });
       throw error; // Re-throw so callers know the removal failed
     }
   }

@@ -10,6 +10,8 @@ import type { IAccountManager } from "../contracts/IAccountManager";
 import type { IProfileApiClient } from "../contracts/IProfileApiClient";
 import type { IStepUpAuthCoordinator } from "../contracts/IStepUpAuthCoordinator";
 import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
+import { container } from "$lib/shared/di";
+import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 
 /**
  * Manages user account operations (password changes, deletion, cache clearing)
@@ -70,7 +72,16 @@ export class AccountManager implements IAccountManager {
 
         // Update client auth password so Firebase doesn't immediately desync
         if (auth.currentUser) {
-          await updatePassword(auth.currentUser, newPassword).catch(() => {});
+          await updatePassword(auth.currentUser, newPassword).catch((error) => {
+            try {
+              const errorHandler = container.items.errorHandler as IErrorHandler;
+              errorHandler.showWarning(
+                "Password changed on server, but your session may need a re-login to sync."
+              );
+            } catch {
+              console.warn("Client password sync failed:", error);
+            }
+          });
         }
 
         this.haptics.trigger("success");
@@ -85,7 +96,16 @@ export class AccountManager implements IAccountManager {
     await this.stepUpCoordinator.executeSensitive(
       async () => {
         await this.apiClient.request("/api/account/delete");
-        await signOut(auth).catch(() => {});
+        await signOut(auth).catch((error) => {
+          try {
+            const errorHandler = container.items.errorHandler as IErrorHandler;
+            errorHandler.showWarning(
+              "Account deleted, but sign-out failed. Please close and reopen the app."
+            );
+          } catch {
+            console.warn("Sign-out after deletion failed:", error);
+          }
+        });
         alert("Account deleted successfully.");
       },
       { allowPasswordReauth: true }
@@ -97,6 +117,7 @@ export class AccountManager implements IAccountManager {
 
     try {
       await nuclearCacheClear();
+      // Intentional: reload must fire after cache clear completes, no cancellation needed
       setTimeout(() => {
         window.location.reload();
       }, 500);

@@ -30,6 +30,8 @@ import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
+import { container } from "$lib/shared/di";
+import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 import type { IAchievementManager } from "$lib/shared/gamification/services/contracts/IAchievementManager";
 import type { ITagManager } from "../contracts/ITagManager";
 import type { IOrientationCycleDetector } from "../../../create/generate/circular/services/contracts/IOrientationCycleDetector";
@@ -88,6 +90,37 @@ export class LibraryRepository implements ILibraryRepository {
     private publicIndexSyncer: IPublicIndexSyncer,
     private conflictResolver?: IConflictResolver
   ) {}
+
+  /**
+   * Surface an error to the user via the ErrorHandler modal (which includes
+   * "Report Bug"). Falls back to a plain toast if the ErrorHandler itself
+   * isn't available or throws.
+   */
+  private reportError(
+    message: string,
+    error: unknown,
+    action: string,
+    additionalData?: Record<string, unknown>,
+    severity: "error" | "warning" = "error"
+  ): void {
+    try {
+      const errorHandler = container.items.errorHandler as IErrorHandler;
+      errorHandler.showUserError({
+        message,
+        technicalDetails: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error : new Error(String(error)),
+        severity,
+        context: {
+          module: "library",
+          action,
+          additionalData,
+        },
+      });
+    } catch {
+      // ErrorHandler itself failed — fall back to toast
+      toast.error(message);
+    }
+  }
 
   /**
    * Get the current user ID or throw if not authenticated
@@ -295,8 +328,12 @@ export class LibraryRepository implements ILibraryRepository {
     // Fire-and-forget: setDoc queues locally, syncs when online
     // trackWrite monitors the sync status but we don't block on it
     trackWrite(() => setDoc(sequenceDocRef, writeData), "library").catch((error) => {
-      console.error("[LibraryRepository] Failed to save sequence:", error);
-      toast.error("Failed to save sequence. Will retry when online.");
+      this.reportError(
+        "Failed to save sequence. Your changes may not sync to other devices.",
+        error,
+        "save-sequence",
+        { sequenceId }
+      );
     });
 
     // Track the local write version for conflict detection
@@ -358,9 +395,15 @@ export class LibraryRepository implements ILibraryRepository {
     if (finalSequence.visibility === "public" && this.publicIndexSyncer) {
       this.publicIndexSyncer
         .syncToPublicIndex(finalSequence, userId)
-        .catch((error) =>
-          console.error("[LibraryRepository] Public index sync failed:", error)
-        );
+        .catch((error) => {
+          this.reportError(
+            "Sequence saved, but it may not appear in the community gallery yet.",
+            error,
+            "public-index-sync",
+            { sequenceId: finalSequence.id },
+            "warning"
+          );
+        });
     } else if (finalSequence.visibility === "public" && !this.publicIndexSyncer) {
       console.warn("[LibraryRepository] Sequence is public but publicIndexSyncer is null — it will NOT appear in the public gallery.", { sequenceId: finalSequence.id });
     }
@@ -448,8 +491,12 @@ export class LibraryRepository implements ILibraryRepository {
         }),
       "library"
     ).catch((error) => {
-      console.error("[LibraryRepository] Failed to update sequence:", error);
-      toast.error("Failed to update sequence. Will retry when online.");
+      this.reportError(
+        "Failed to update sequence. Your changes may not sync to other devices.",
+        error,
+        "update-sequence",
+        { sequenceId }
+      );
     });
 
     // Handle visibility changes (async, non-blocking)
@@ -459,15 +506,27 @@ export class LibraryRepository implements ILibraryRepository {
       } else if (updates.visibility === "public") {
         this.publicIndexSyncer
           .syncToPublicIndex(updated, userId)
-          .catch((err) =>
-            console.error("[LibraryRepository] Public index sync failed:", err)
-          );
+          .catch((error) => {
+            this.reportError(
+              "Sequence updated, but it may not appear in the community gallery yet.",
+              error,
+              "public-index-sync",
+              { sequenceId },
+              "warning"
+            );
+          });
       } else if (existing.visibility === "public") {
         this.publicIndexSyncer
           .removeFromPublicIndex(sequenceId)
-          .catch((err) =>
-            console.error("[LibraryRepository] Public index remove failed:", err)
-          );
+          .catch((error) => {
+            this.reportError(
+              "Sequence updated, but it may still appear in the community gallery.",
+              error,
+              "public-index-remove",
+              { sequenceId },
+              "warning"
+            );
+          });
       }
     }
 
@@ -488,12 +547,15 @@ export class LibraryRepository implements ILibraryRepository {
     // only refreshes on an explicit reload anyway; awaiting it just slows down
     // the delete. Errors are logged but not rethrown.
     if (existing.visibility === "public" && this.publicIndexSyncer) {
-      this.publicIndexSyncer.removeFromPublicIndex(sequenceId).catch((error) =>
-        console.warn(
-          "[LibraryRepository] Failed to remove from public index:",
-          error
-        )
-      );
+      this.publicIndexSyncer.removeFromPublicIndex(sequenceId).catch((error) => {
+        this.reportError(
+          "Sequence deleted, but it may still appear in the community gallery.",
+          error,
+          "public-index-remove",
+          { sequenceId },
+          "warning"
+        );
+      });
     } else if (existing.visibility === "public" && !this.publicIndexSyncer) {
       console.warn("[LibraryRepository] Sequence is public but publicIndexSyncer is null — it will NOT be removed from the public gallery.", { sequenceId });
     }
@@ -505,8 +567,12 @@ export class LibraryRepository implements ILibraryRepository {
       () => deleteDoc(doc(firestore, getUserSequencePath(userId, sequenceId))),
       "library"
     ).catch((error) => {
-      console.error("[LibraryRepository] Failed to delete sequence:", error);
-      toast.error("Failed to delete sequence. Will retry when online.");
+      this.reportError(
+        "Failed to delete sequence. It may reappear on refresh.",
+        error,
+        "delete-sequence",
+        { sequenceId }
+      );
     });
 
     // Decrement user's sequenceCount (async, non-blocking, clamped to 0)
@@ -927,8 +993,11 @@ export class LibraryRepository implements ILibraryRepository {
         }
       }
     } catch (error) {
-      console.error("[LibraryRepository] Failed to delete sequences:", error);
-      toast.error("Failed to delete sequences. Please try again.");
+      this.reportError(
+        "Failed to delete sequences. Please try again.",
+        error,
+        "delete-sequences-batch"
+      );
       throw new LibraryError("Failed to delete sequences", "NETWORK");
     }
   }

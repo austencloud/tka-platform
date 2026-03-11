@@ -25,6 +25,8 @@ import type {
   SaveProgress,
   SaveResult,
 } from "../contracts/ILibrarySaveService";
+import { container } from "$lib/shared/di";
+import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 
 export class LibrarySaveService implements ILibrarySaveService {
   private readonly shareService: ISharer | null;
@@ -75,17 +77,34 @@ export class LibrarySaveService implements ILibrarySaveService {
 
     // Step 4: Save sequence to Firestore
     emitProgress(4);
-    const savedSequence = await this.libraryRepository.saveSequenceWithMetadata(
-      sequence,
-      {
-        name,
-        displayName: displayName || undefined,
-        visibility,
-        tags,
-        notes,
-        thumbnailUrl,
-      }
-    );
+    let savedSequence;
+    try {
+      savedSequence = await this.libraryRepository.saveSequenceWithMetadata(
+        sequence,
+        {
+          name,
+          displayName: displayName || undefined,
+          visibility,
+          tags,
+          notes,
+          thumbnailUrl,
+        }
+      );
+    } catch (error) {
+      const errorHandler = container.items.errorHandler as IErrorHandler;
+      errorHandler.showUserError({
+        message: "Couldn't save to your library",
+        technicalDetails: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error : new Error(String(error)),
+        severity: "error",
+        context: {
+          module: "library",
+          action: "save-to-library",
+          additionalData: { sequenceName: name, visibility },
+        },
+      });
+      throw error;
+    }
     const sequenceId = savedSequence.id;
 
     // Step 5: Refresh library state
@@ -186,11 +205,22 @@ export class LibrarySaveService implements ILibrarySaveService {
 
       return uploadResult.url;
     } catch (error) {
-      // Don't fail the entire save if thumbnail generation fails
+      // Don't fail the entire save if thumbnail generation fails — show a warning instead
       console.error(
         "[LibrarySaveService] Failed to generate/upload thumbnail:",
         error
       );
+      const errorHandler = container.items.errorHandler as IErrorHandler;
+      errorHandler.showUserError({
+        message: "Sequence saved, but the thumbnail didn't generate",
+        technicalDetails: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error : new Error(String(error)),
+        severity: "warning",
+        context: {
+          module: "library",
+          action: "save-to-library",
+        },
+      });
       return undefined;
     }
   }
