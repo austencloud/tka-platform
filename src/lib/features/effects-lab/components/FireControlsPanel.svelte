@@ -19,10 +19,7 @@
     onColorBlendChange,
   }: Props = $props();
 
-  function applyPreset(preset: { intensity: number; colorBlend: number }) {
-    onIntensityChange(preset.intensity);
-    onColorBlendChange(preset.colorBlend);
-  }
+
 </script>
 
 <div class="fire-controls">
@@ -67,28 +64,6 @@
     </div>
   </div>
 
-  <!-- Quick presets -->
-  <div class="presets-section">
-    <span class="section-label">Presets</span>
-    <div class="presets-row">
-      <button
-        class="preset-btn"
-        onclick={() => applyPreset({ intensity: 0.8, colorBlend: 0 })}
-        type="button"
-        aria-label="Apply intense fire preset"
-      >
-        Intense
-      </button>
-      <button
-        class="preset-btn"
-        onclick={() => applyPreset({ intensity: 0.5, colorBlend: 0.7 })}
-        type="button"
-        aria-label="Apply colored fire preset"
-      >
-        Colored
-      </button>
-    </div>
-  </div>
 </div>
 
 <style>
@@ -114,51 +89,6 @@
 
   h3 i {
     color: var(--flame-orange);
-  }
-
-  .section-label {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-  }
-
-  .presets-section {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin-top: var(--spacing-sm, 8px);
-  }
-
-  .presets-row {
-    display: flex;
-    gap: 6px;
-  }
-
-  .preset-btn {
-    flex: 1;
-    min-height: var(--min-touch-target);
-    padding: 8px 10px;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--border-radius-md, 8px);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 150ms ease;
-  }
-
-  .preset-btn:hover {
-    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    color: var(--theme-text, white);
-  }
-
-  .preset-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: 2px;
   }
 
   .slider-group {
