@@ -46,7 +46,7 @@ Canvas Settings...
 
 ### `keepOpen` Behavior
 
-All submenu items use `keepOpen: false` (default). Since both effects and efforts are radio-style single selections, the menu closes after choosing.
+All submenu items use `keepOpen: false` (default). Since both effects and efforts are radio-style single selections, the menu closes after choosing. This is a deliberate change from the current flat layout where effects use `keepOpen: true` for toggle-style interaction — submenus are radio-style picks, not multi-toggles.
 
 ## Files Changed
 
