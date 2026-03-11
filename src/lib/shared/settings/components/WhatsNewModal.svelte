@@ -173,8 +173,9 @@
                     {#if entry.contributorIds?.length}
                       <span class="entry-contributors">
                         {#each entry.contributorIds as cid}
-                          {#if contributors.get(cid)}
-                            <ContributorBadge contributor={contributors.get(cid)} />
+                          {@const contrib = contributors.get(cid)}
+                          {#if contrib}
+                            <ContributorBadge contributor={contrib} />
                           {/if}
                         {/each}
                       </span>
@@ -191,8 +192,9 @@
             <h4 class="contributors-title">Contributors</h4>
             <div class="contributors-list">
               {#each version.contributorIds as cid}
-                {#if contributors.get(cid)}
-                  <ContributorBadge contributor={contributors.get(cid)} size="md" />
+                {@const contrib = contributors.get(cid)}
+                {#if contrib}
+                  <ContributorBadge contributor={contrib} size="md" />
                 {/if}
               {/each}
             </div>
