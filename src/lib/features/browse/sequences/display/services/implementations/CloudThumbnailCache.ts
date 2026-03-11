@@ -21,6 +21,8 @@ import type {
   ThumbnailVariant,
   DeleteProgress,
 } from "../contracts/ICloudThumbnailCache";
+import { container } from "$lib/shared/di";
+import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 
 // In-memory cache with TTL to avoid stale URLs
 // Firebase download URLs expire after ~1 hour, so we refresh after 30 minutes
@@ -264,10 +266,24 @@ export class CloudThumbnailCache implements ICloudThumbnailCache {
       }
       return await response.blob();
     } catch (error) {
-      console.warn(
-        `CloudThumbnailCache: Error downloading ${this.getCacheKey(key)}:`,
-        error
-      );
+      try {
+        const errorHandler = container.items.errorHandler as IErrorHandler;
+        errorHandler.showUserError({
+          message: "Thumbnail didn't load",
+          technicalDetails: error instanceof Error ? error.message : String(error),
+          error: error instanceof Error ? error : new Error(String(error)),
+          severity: "warning",
+          context: {
+            module: "browse",
+            action: "load-thumbnail",
+          },
+        });
+      } catch {
+        console.warn(
+          `CloudThumbnailCache: Error downloading ${this.getCacheKey(key)}:`,
+          error
+        );
+      }
       return null;
     }
   }

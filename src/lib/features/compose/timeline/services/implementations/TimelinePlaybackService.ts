@@ -12,6 +12,8 @@ import type {
 import type { TimeSeconds, TimelineClip } from "../../domain/timeline-types";
 import { getClipEndTime } from "../../domain/timeline-types";
 import { getTimelineState } from "../../state/timeline-state.svelte";
+import { container } from "$lib/shared/di";
+import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 
 export class TimelinePlayer implements ITimelinePlayer {
   private animationFrameId: number | null = null;
@@ -19,6 +21,8 @@ export class TimelinePlayer implements ITimelinePlayer {
   private isRunning: boolean = false;
   private audioElement: HTMLAudioElement | null = null;
   private audioSyncEnabled: boolean = false;
+  private audioErrorShown: boolean = false;
+  private audioErrorResetTimer: ReturnType<typeof setTimeout> | null = null;
 
   private _activeClips: TimelineClip[] = [];
   private _activeClipInfos: ActiveClipInfo[] = [];
@@ -252,6 +256,11 @@ export class TimelinePlayer implements ITimelinePlayer {
   destroy(): void {
     this.stopEngine();
     this.disconnectAudio();
+
+    if (this.audioErrorResetTimer) {
+      clearTimeout(this.audioErrorResetTimer);
+      this.audioErrorResetTimer = null;
+    }
   }
 
   // =========================================================================
@@ -271,7 +280,7 @@ export class TimelinePlayer implements ITimelinePlayer {
       this.audioElement.currentTime = state.playhead.position;
       this.audioElement.playbackRate =
         state.playhead.shuttleSpeed * state.playhead.direction;
-      this.audioElement.play().catch(console.error);
+      this.audioElement.play().catch((e) => this.handleAudioPlayError(e));
     }
 
   }
@@ -291,6 +300,7 @@ export class TimelinePlayer implements ITimelinePlayer {
       this.audioElement.pause();
     }
 
+    this.audioErrorShown = false;
   }
 
   private tick = (currentTime: number): void => {
@@ -407,10 +417,30 @@ export class TimelinePlayer implements ITimelinePlayer {
       } else {
         this.audioElement.playbackRate = speed;
         if (this.isRunning) {
-          this.audioElement.play().catch(console.error);
+          this.audioElement.play().catch((e) => this.handleAudioPlayError(e));
         }
       }
     }
+  }
+
+  private handleAudioPlayError(error: unknown): void {
+    if (this.audioErrorShown) return;
+    this.audioErrorShown = true;
+
+    try {
+      const errorHandler = container.items.errorHandler as IErrorHandler;
+      errorHandler.showWarning(
+        "Audio playback failed. Try clicking anywhere on the page first (browser autoplay policy)."
+      );
+    } catch {
+      console.error("Audio play failed:", error);
+    }
+
+    // Reset after 10 seconds so the warning can show again if needed
+    this.audioErrorResetTimer = setTimeout(() => {
+      this.audioErrorResetTimer = null;
+      this.audioErrorShown = false;
+    }, 10000);
   }
 
   private handleAudioTimeUpdate = (): void => {
