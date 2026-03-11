@@ -7,7 +7,7 @@
  */
 
 import { beforeEach, describe, expect, it } from "vitest";
-import type { BeatData } from "../../../src/lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "../../../src/lib/features/create/shared/domain/models/StepData";
 import { Letter } from "../../../src/lib/shared/foundation/domain/models/Letter";
 import {
   GridLocation,
@@ -25,8 +25,8 @@ import { SliceSize } from "../../../src/lib/features/create/generate/circular/do
 
 // Mock OrientationCalculator that passes through unchanged
 const mockOrientationCalculator: IOrientationCalculator = {
-  updateStartOrientations: (beat: BeatData, _previousBeat: BeatData) => beat,
-  updateEndOrientations: (beat: BeatData) => beat,
+  updateStartOrientations: (beat: StepData, _previousBeat: StepData) => beat,
+  updateEndOrientations: (beat: StepData) => beat,
   calculateEndOrientation: () => Orientation.IN,
   calculateStartOrientation: () => Orientation.IN,
 };
@@ -42,11 +42,11 @@ describe("SwappedInvertedLOOPExecutor", () => {
     it("should correctly generate swapped-inverted completion with proper grid positions", () => {
       // Input sequence: β (beta5) → D (alpha3) → J (beta5)
       // This is an "already complete" sequence (ends at start position)
-      const inputSequence: BeatData[] = [
+      const inputSequence: StepData[] = [
         // Start position (beat 0): β at beta5
         {
           id: "beat-0",
-          beatNumber: 0,
+          stepNumber: 0,
           duration: 1.0,
           letter: Letter.β,
           startPosition: GridPosition.BETA5,
@@ -80,7 +80,7 @@ describe("SwappedInvertedLOOPExecutor", () => {
         // Beat 1: D - beta5 → alpha3
         {
           id: "beat-1",
-          beatNumber: 1,
+          stepNumber: 1,
           duration: 1.0,
           letter: Letter.D,
           startPosition: GridPosition.BETA5,
@@ -114,7 +114,7 @@ describe("SwappedInvertedLOOPExecutor", () => {
         // Beat 2: J - alpha3 → beta5
         {
           id: "beat-2",
-          beatNumber: 2,
+          stepNumber: 2,
           duration: 1.0,
           letter: Letter.J,
           startPosition: GridPosition.ALPHA3,
@@ -213,10 +213,10 @@ describe("SwappedInvertedLOOPExecutor", () => {
 
     it("should reject sequences that don't return to start position", () => {
       // Sequence that ends at different position than start
-      const invalidSequence: BeatData[] = [
+      const invalidSequence: StepData[] = [
         {
           id: "beat-0",
-          beatNumber: 0,
+          stepNumber: 0,
           duration: 1.0,
           letter: Letter.β,
           startPosition: GridPosition.BETA5,
@@ -249,7 +249,7 @@ describe("SwappedInvertedLOOPExecutor", () => {
         },
         {
           id: "beat-1",
-          beatNumber: 1,
+          stepNumber: 1,
           duration: 1.0,
           letter: Letter.D,
           startPosition: GridPosition.BETA5,

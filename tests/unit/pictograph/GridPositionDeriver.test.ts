@@ -1081,7 +1081,10 @@ describe("GridPositionDeriver", () => {
 
     it("should maintain bidirectional consistency for all positions", () => {
       // Test that every position → locations → position round-trip works
-      const positions = Object.values(GridPosition);
+      // Filter out tau and terra positions which use CENTER location and aren't in the perimeter map
+      const positions = Object.values(GridPosition).filter(
+        (p) => !p.startsWith("tau") && !p.startsWith("terra")
+      );
 
       positions.forEach((position) => {
         const [blue, red] = service.getGridLocationsFromPosition(position);

@@ -12,7 +12,7 @@
 
 import { beforeEach, describe, expect, it } from "vitest";
 import type { SequenceExportOptions } from "../../../src/lib/shared/render/domain/models/SequenceExportOptions";
-import { DimensionCalculationService } from "../../../src/lib/shared/render/services/implementations/DimensionCalculationService";
+import { DimensionCalculator as DimensionCalculationService } from "../../../src/lib/shared/render/services/implementations/DimensionCalculator";
 
 describe("DimensionCalculationService", () => {
   let service: DimensionCalculationService;

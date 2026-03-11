@@ -9,7 +9,7 @@
  */
 
 import { beforeEach, describe, expect, it } from "vitest";
-import type { BeatData } from "../../../src/lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "../../../src/lib/features/create/shared/domain/models/StepData";
 import { Letter } from "../../../src/lib/shared/foundation/domain/models/Letter";
 import {
   GridLocation,
@@ -38,9 +38,9 @@ describe("DataTransformer", () => {
 
   describe("beatToPictographData", () => {
     it("should convert beat with blue motion to pictograph", () => {
-      const beat: BeatData = {
+      const beat: StepData = {
         id: "beat-1",
-        beatNumber: 1,
+        stepNumber: 1,
         duration: 1.0,
         letter: Letter.A,
         motions: {
@@ -72,9 +72,9 @@ describe("DataTransformer", () => {
     });
 
     it("should convert beat with both blue and red motions", () => {
-      const beat: BeatData = {
+      const beat: StepData = {
         id: "beat-2",
-        beatNumber: 2,
+        stepNumber: 2,
         duration: 1.0,
         letter: Letter.B,
         motions: {
@@ -117,9 +117,9 @@ describe("DataTransformer", () => {
     });
 
     it("should handle beat with no motions", () => {
-      const beat: BeatData = {
+      const beat: StepData = {
         id: "beat-3",
-        beatNumber: 3,
+        stepNumber: 3,
         duration: 1.0,
         letter: Letter.C,
         motions: {},
@@ -137,9 +137,9 @@ describe("DataTransformer", () => {
     });
 
     it("should handle beat with null letter", () => {
-      const beat: BeatData = {
+      const beat: StepData = {
         id: "beat-4",
-        beatNumber: 4,
+        stepNumber: 4,
         duration: 1.0,
         letter: null,
         motions: {
@@ -181,9 +181,9 @@ describe("DataTransformer", () => {
         propType: PropType.STAFF,
       });
 
-      const beat: BeatData = {
+      const beat: StepData = {
         id: "beat-5",
-        beatNumber: 5,
+        stepNumber: 5,
         duration: 1.0,
         letter: Letter.D,
         motions: {
@@ -206,9 +206,9 @@ describe("DataTransformer", () => {
     });
 
     it("should generate correct pictograph ID from beat number", () => {
-      const beat: BeatData = {
+      const beat: StepData = {
         id: "original-beat-id",
-        beatNumber: 42,
+        stepNumber: 42,
         duration: 1.0,
         letter: Letter.E,
         motions: {},
