@@ -138,7 +138,7 @@
     </div>
 
     {#if wordValue.trim()}
-      <div class="word-preview">{wordValue.trim()}</div>
+      <div class="word-preview" aria-live="polite">{wordValue.trim()}</div>
     {/if}
   </div>
 </div>
@@ -153,7 +153,7 @@
     position: fixed;
     inset: 0;
     z-index: 100;
-    background: rgba(0, 0, 0, 0.6);
+    background: var(--theme-backdrop, rgba(0, 0, 0, 0.6));
     display: flex;
     align-items: flex-start;
     justify-content: center;
@@ -175,7 +175,7 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 16px 48px var(--theme-shadow, rgba(0, 0, 0, 0.4));
     animation: slideDown 200ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 
