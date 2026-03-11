@@ -16,6 +16,7 @@ import { TranscriptionClient } from "$lib/features/feedback/services/implementat
 import { FormDraftPersister } from "$lib/features/feedback/services/implementations/FormDraftPersister.svelte";
 import { FeedbackTypeResolver } from "$lib/features/feedback/services/implementations/FeedbackTypeResolver";
 import { AudioAnalyzer } from "$lib/features/feedback/services/implementations/AudioAnalyzer";
+import { ContributorLoader } from "$lib/features/feedback/services/implementations/ContributorLoader";
 
 /**
  * Creates the feedback container.
@@ -32,6 +33,7 @@ export function createFeedbackContainer() {
     formDraftPersister: () => new FormDraftPersister(),
     feedbackTypeResolver: () => new FeedbackTypeResolver(),
     audioAnalyzer: () => new AudioAnalyzer(),
+    contributorLoader: () => new ContributorLoader(),
   });
 }
 

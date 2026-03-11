@@ -27,6 +27,7 @@ export interface ChangelogEntry {
   category: ChangelogCategory;
   text: string; // User-friendly description of what changed
   feedbackId?: string; // Original feedback ID for linking to details
+  contributorIds?: string[]; // References to contributor doc IDs
 }
 
 /**
@@ -40,6 +41,7 @@ export interface AppVersion {
   feedbackSummary: FeedbackSummary;
   changelogEntries?: ChangelogEntry[]; // Curated user-facing changelog (primary display)
   highlights?: string[]; // Optional curated highlights for this release (shown prominently in What's New)
+  contributorIds?: string[]; // Version-level summary (union of all entry contributors)
 }
 
 /**
