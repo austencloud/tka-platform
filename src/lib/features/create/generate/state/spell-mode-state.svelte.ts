@@ -16,6 +16,7 @@ export function createSpellModeState() {
   let letterSources = $state<LetterSource[]>([]);
   let error = $state<string | null>(null);
   let isGenerating = $state(false);
+  let isWordInputOpen = $state(false);
 
   function setInputWord(word: string) {
     inputWord = word;
@@ -46,12 +47,21 @@ export function createSpellModeState() {
     error = null;
   }
 
+  function openWordInput() {
+    isWordInputOpen = true;
+  }
+
+  function closeWordInput() {
+    isWordInputOpen = false;
+  }
+
   return {
     get inputWord() { return inputWord; },
     get expandedWord() { return expandedWord; },
     get letterSources() { return letterSources; },
     get error() { return error; },
     get isGenerating() { return isGenerating; },
+    get isWordInputOpen() { return isWordInputOpen; },
 
     setInputWord,
     setExpandedWord,
@@ -59,6 +69,8 @@ export function createSpellModeState() {
     setError,
     setGenerating,
     clearError,
+    openWordInput,
+    closeWordInput,
   };
 }
 
