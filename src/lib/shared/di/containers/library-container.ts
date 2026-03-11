@@ -82,23 +82,24 @@ export function createLibraryContainer(deps: {
     deps.publicIndexSyncer?.browseLoader
   );
 
+  const libraryRepository = new LibraryRepository(
+    deps.libraryRepository.achievementManager,
+    deps.libraryRepository.tagManager,
+    deps.libraryRepository.orientationCycleDetector,
+    publicIndexSyncer,
+    deps.libraryRepository.conflictResolver
+  );
+
   return createContainer().add({
     publicIndexSyncer: () => publicIndexSyncer,
     collectionManager: () => new CollectionManager(),
-    libraryRepository: () =>
-      new LibraryRepository(
-        deps.libraryRepository.achievementManager,
-        deps.libraryRepository.tagManager,
-        deps.libraryRepository.orientationCycleDetector,
-        publicIndexSyncer,
-        deps.libraryRepository.conflictResolver
-      ),
+    libraryRepository: () => libraryRepository,
     librarySaveService: () =>
       new LibrarySaveService(
         deps.librarySaveService.sharer ?? null,
         deps.librarySaveService.firebaseVideoUploader ?? null,
         deps.librarySaveService.tagManager ?? null,
-        publicIndexSyncer
+        libraryRepository
       ),
   });
 }
