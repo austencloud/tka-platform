@@ -12,7 +12,9 @@
    */
 
   import { onMount } from "svelte";
+  import { doc, getDoc } from "firebase/firestore";
   import { container } from "$lib/shared/di";
+  import { getFirestoreInstance } from "$lib/shared/auth/firebase";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { authState, isEffectiveAdmin } from "$lib/shared/auth/state/authState.svelte.ts";
   import { browseNavigationState } from "../../shared/state/browse-navigation-state.svelte";
@@ -97,10 +99,29 @@
           creatorsDataState.loadFeaturedCreators(userRepository),
         ]);
       }
+
+      // Patch the current user's sequenceCount from the latest Firestore cache.
+      // The creators list is cached, but a recent save updates the user doc
+      // in the local Firestore cache. One getDoc refreshes the stale card.
+      if (currentUserId) {
+        void refreshCurrentUserCount(currentUserId);
+      }
     } catch (err) {
       console.error("[CreatorsPanel] Error loading creators:", err);
     }
   });
+
+  async function refreshCurrentUserCount(uid: string) {
+    try {
+      const firestore = await getFirestoreInstance();
+      const snap = await getDoc(doc(firestore, `users/${uid}`));
+      if (!snap.exists()) return;
+      const freshCount = (snap.data().sequenceCount as number) ?? 0;
+      creatorsDataState.patchUser(uid, { sequenceCount: freshCount });
+    } catch {
+      // Non-critical — the list still works with the cached value
+    }
+  }
 
   function handleUserClick(user: EnhancedUserProfile) {
     hapticService?.trigger("selection");

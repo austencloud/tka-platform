@@ -383,21 +383,29 @@ export class LibraryRepository implements ILibraryRepository {
     this.conflictResolver?.trackLocalWrite(actualSequenceId, newVersion);
 
     // Update user stats — separate non-blocking write
+    // Uses setDoc with merge instead of updateDoc so it works even if the
+    // user document hasn't been created yet (race with auth state init).
     if (isNewSequence) {
       trackWrite(
         () =>
-          updateDoc(userDocRef, {
-            sequenceCount: increment(1),
-            lastActivityDate: serverTimestamp(),
-          }),
+          setDoc(
+            userDocRef,
+            {
+              sequenceCount: increment(1),
+              lastActivityDate: serverTimestamp(),
+            },
+            { merge: true }
+          ),
         "library"
       ).catch((error) => {
         console.error("[LibraryRepository] Failed to update user stats:", error);
       });
     } else {
-      updateDoc(userDocRef, {
-        lastActivityDate: serverTimestamp(),
-      }).catch((error) => {
+      setDoc(
+        userDocRef,
+        { lastActivityDate: serverTimestamp() },
+        { merge: true }
+      ).catch((error) => {
         console.error("[LibraryRepository] Failed to update activity:", error);
       });
     }
@@ -619,14 +627,20 @@ export class LibraryRepository implements ILibraryRepository {
 
     // Decrement user's sequenceCount (async, non-blocking, clamped to 0)
     const userDocRef = doc(firestore, `users/${userId}`);
-    updateDoc(userDocRef, {
-      sequenceCount: increment(-1),
-    })
+    setDoc(
+      userDocRef,
+      { sequenceCount: increment(-1) },
+      { merge: true }
+    )
       .then(async () => {
         const userSnap = await getDoc(userDocRef);
         const count = (userSnap.data()?.["sequenceCount"] as number) ?? 0;
         if (count < 0) {
-          await updateDoc(userDocRef, { sequenceCount: 0 });
+          await setDoc(
+            userDocRef,
+            { sequenceCount: 0 },
+            { merge: true }
+          );
         }
       })
       .catch((error) => {
