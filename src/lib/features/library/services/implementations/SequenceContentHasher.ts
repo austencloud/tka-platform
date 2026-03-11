@@ -67,6 +67,10 @@ export class SequenceContentHasher implements ISequenceContentHasher {
     return Object.fromEntries(sorted);
   }
 
+  // Intentionally excluded from hash:
+  // - arrowPlacementData, propPlacementData: rendering/layout concerns derived from motion fields
+  // - propType: viewer preference, not sequence identity (overridden by global settings)
+  // - isVisible, color, arrowLocation: rendering state, not motion definition
   private extractMotion(m: MotionData): unknown {
     return {
       motionType: m.motionType,
