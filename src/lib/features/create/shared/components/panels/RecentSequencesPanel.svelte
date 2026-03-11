@@ -13,10 +13,10 @@
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { SessionManager } from "../../services/SessionManager.svelte";
   import { Autosaver } from "../../services/Autosaver";
-  import { SequencePersister } from "../../services/SequencePersister";
+  import { container } from "$lib/shared/di";
+  import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
   import type { SequenceSession } from "../../domain/SequenceSession";
   import type { DraftSequence } from "../../domain/DraftSequence";
-  import type { SavedSequence } from "../../services/SequencePersister";
 
   interface Props {
     show: boolean;
@@ -26,17 +26,16 @@
 
   const dispatch = createEventDispatcher<{
     loadDraft: { sessionId: string; draft: DraftSequence };
-    loadSequence: { sequenceId: string; sequence: SavedSequence };
+    loadSequence: { sequenceId: string; sequence: LibrarySequence };
     deleteDraft: { sessionId: string };
   }>();
 
   const sessionManager = new SessionManager();
   const autosaver = new Autosaver();
-  const persistenceService = new SequencePersister();
 
   let sessions = $state<SequenceSession[]>([]);
   let drafts = $state<DraftSequence[]>([]);
-  let savedSequences = $state<SavedSequence[]>([]);
+  let savedSequences = $state<LibrarySequence[]>([]);
   let isLoading = $state(false);
 
   onMount(async () => {
@@ -46,11 +45,18 @@
   async function loadData() {
     isLoading = true;
     try {
-      [sessions, drafts, savedSequences] = await Promise.all([
+      const [sessionsResult, draftsResult, savedResult] = await Promise.all([
         sessionManager.getRecentSessions(10),
         autosaver.getAllDrafts(),
-        persistenceService.getRecentSequences(10),
+        container?.items?.libraryRepository?.getSequences({
+          limit: 10,
+          sortBy: "updatedAt",
+          sortDirection: "desc",
+        }) ?? [],
       ]);
+      sessions = sessionsResult;
+      drafts = draftsResult;
+      savedSequences = savedResult;
     } catch (error) {
       console.error("Failed to load recent sequences:", error);
     } finally {
@@ -179,10 +185,10 @@
                   </div>
                   <div class="item-info">
                     <div class="item-title">
-                      {sequence.metadata.name}
+                      {sequence.name}
                     </div>
                     <div class="item-meta">
-                      {sequence.stepCount} steps · {formatDate(
+                      {sequence.steps?.length ?? 0} steps · {formatDate(
                         sequence.updatedAt
                       )}
                     </div>

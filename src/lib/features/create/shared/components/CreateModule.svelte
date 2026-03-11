@@ -66,7 +66,6 @@
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { SessionManager } from "../services/SessionManager.svelte";
   import { Autosaver } from "../services/Autosaver";
-  import { SequencePersister } from "../services/SequencePersister";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { createPanelHeightTracker } from "../state/managers/PanelHeightTracker.svelte";
   import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
@@ -102,7 +101,6 @@
   // Session management services
   let sessionManager: SessionManager | null = $state(null);
   let autosaver: Autosaver | null = $state(null);
-  let sequencePersister: SequencePersister | null = $state(null);
 
   // Settings service for user preferences
   let settingsService: ISettingsState | null = $state(null);
@@ -177,8 +175,8 @@
     get autosaver() {
       return autosaver;
     },
-    get sequencePersister() {
-      return sequencePersister;
+    get libraryRepository() {
+      return container?.items?.libraryRepository ?? null;
     },
     layout: layoutContext,
     handlers: {
@@ -302,7 +300,6 @@
         // Initialize session management
         sessionManager = new SessionManager();
         autosaver = new Autosaver();
-        sequencePersister = new SequencePersister();
 
         // Wait for auth to be initialized before creating session
         // This prevents race condition where CreateModule initializes before Firebase auth

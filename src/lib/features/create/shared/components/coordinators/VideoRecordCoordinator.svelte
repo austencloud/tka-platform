@@ -88,8 +88,8 @@
       logger.error("No current sequence found");
       return;
     }
-    if (!ctx.sequencePersister) {
-      logger.error("SequencePersister not available");
+    if (!ctx.libraryRepository) {
+      logger.error("libraryRepository not available");
       return;
     }
     if (!ctx.sessionManager) {
@@ -104,10 +104,16 @@
       });
 
       // Save sequence to library
-      const sequenceId = await ctx.sequencePersister.saveSequence(
+      const saved = await ctx.libraryRepository!.saveSequenceWithMetadata(
         currentSequence,
-        metadata
+        {
+          name: metadata.name,
+          visibility: metadata.visibility ?? "private",
+          tags: metadata.tags ?? [],
+          notes: metadata.notes ?? "",
+        }
       );
+      const sequenceId = saved.id;
 
       logger.success("Sequence saved to library with ID:", sequenceId);
 
