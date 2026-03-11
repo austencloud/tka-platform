@@ -3,6 +3,7 @@
   import { authState } from "../../../auth/state/authState.svelte";
   import { container } from "../../../di";
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
+  import RobustAvatar from "../../../components/avatar/RobustAvatar.svelte";
 
   let { variant = "expanded", onclick } = $props<{
     variant?: "expanded" | "collapsed" | "drawer";
@@ -14,17 +15,9 @@
   const displayName = $derived(
     user?.displayName || user?.email || "Sign In"
   );
-  const initial = $derived(displayName.charAt(0).toUpperCase());
   const photoURL = $derived(user?.photoURL ?? null);
 
-  let photoError = $state(false);
-
-  // Reset photo error when URL changes
-  $effect(() => {
-    if (photoURL) {
-      photoError = false;
-    }
-  });
+  const avatarSize = $derived(variant === "collapsed" ? 32 : 28);
 
   function handleClick() {
     try {
@@ -34,10 +27,6 @@
       // Ignore if not available
     }
     onclick();
-  }
-
-  function handlePhotoError() {
-    photoError = true;
   }
 </script>
 
@@ -49,20 +38,17 @@
   aria-label={isAuthenticated ? "Account menu" : "Sign in"}
   aria-haspopup={variant !== "drawer" ? "menu" : undefined}
 >
-  <div class="avatar" class:collapsed={variant === "collapsed"}>
-    {#if isAuthenticated && photoURL && !photoError}
-      <img
-        class="avatar-photo"
-        src={photoURL}
-        alt=""
-        onerror={handlePhotoError}
-      />
-    {:else if isAuthenticated}
-      <span class="avatar-initial">{initial}</span>
-    {:else}
+  {#if isAuthenticated}
+    <RobustAvatar
+      src={photoURL}
+      name={displayName}
+      customSize={avatarSize}
+    />
+  {:else}
+    <div class="avatar-guest" class:collapsed={variant === "collapsed"}>
       <i class="fas fa-user" aria-hidden="true"></i>
-    {/if}
-  </div>
+    </div>
+  {/if}
 
   {#if variant !== "collapsed"}
     <span class="account-label">{displayName}</span>
@@ -121,9 +107,9 @@
   }
 
   /* ==========================================================================
-     AVATAR
+     AVATAR (guest fallback only — authenticated users use RobustAvatar)
      ========================================================================== */
-  .avatar {
+  .avatar-guest {
     width: 28px;
     height: 28px;
     flex-shrink: 0;
@@ -134,25 +120,12 @@
     background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
     color: var(--theme-accent);
     font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    overflow: hidden;
   }
 
-  .avatar.collapsed {
+  .avatar-guest.collapsed {
     width: 32px;
     height: 32px;
     font-size: var(--font-size-sm, 14px);
-  }
-
-  .avatar-photo {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 50%;
-  }
-
-  .avatar-initial {
-    line-height: 1;
   }
 
   /* ==========================================================================

@@ -20,6 +20,8 @@
   import CollapsedModuleButton from "./desktop-sidebar/CollapsedModuleButton.svelte";
   import SidebarContextMenu from "./desktop-sidebar/SidebarContextMenu.svelte";
   import type { ContextMenuState } from "./desktop-sidebar/SidebarContextMenu.svelte";
+  import AccountPopover from "./account/AccountPopover.svelte";
+  import { inboxState } from "../../inbox/state/inbox-state.svelte";
   import {
     navigationState,
     SETTINGS_TABS,
@@ -107,6 +109,29 @@
 
   // Context menu state
   let contextMenuState = $state<ContextMenuState>({ mode: "closed" });
+
+  // Account popover state (rendered outside nav to avoid overflow clipping)
+  let accountPopoverOpen = $state(false);
+  let accountSectionEl = $state<HTMLElement | null>(null);
+  const hasUnread = $derived(inboxState.totalUnreadCount > 0);
+
+  function toggleAccountPopover() {
+    accountPopoverOpen = !accountPopoverOpen;
+  }
+
+  function closeAccountPopover() {
+    accountPopoverOpen = false;
+  }
+
+  function handleInboxClick() {
+    try {
+      const hapticService = container.items.hapticFeedback as IHapticFeedback;
+      hapticService?.trigger("selection");
+    } catch {
+      // Ignore if not available
+    }
+    inboxState.open();
+  }
 
   function handleModuleContextMenu(e: MouseEvent, moduleId: string) {
     if (!featureFlagService.isAdmin) return; // Admin-only feature
@@ -497,12 +522,24 @@
     {isCollapsed}
     {isInSettings}
     onSettingsClick={handleSettingsTap}
+    onAccountClick={toggleAccountPopover}
+    bind:accountSectionElement={accountSectionEl}
   />
 
 </nav>
 
 <!-- Context menu rendered outside nav to avoid overflow: hidden clipping -->
 <SidebarContextMenu menuState={contextMenuState} onClose={closeContextMenu} />
+
+<!-- Account popover rendered outside nav to avoid overflow: hidden clipping -->
+<AccountPopover
+  isOpen={accountPopoverOpen}
+  onClose={closeAccountPopover}
+  onInboxClick={handleInboxClick}
+  {hasUnread}
+  unreadCount={inboxState.totalUnreadCount}
+  anchorElement={accountSectionEl}
+/>
 
 <style>
   /* ============================================================================
