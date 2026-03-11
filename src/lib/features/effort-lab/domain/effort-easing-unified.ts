@@ -86,7 +86,10 @@ function punch(t: number, params?: EffortParams): number {
 // ---------------------------------------------------------------------------
 
 /**
- * Elastic ease-out: overshoots 1.0 then oscillates back with exponential decay.
+ * Elastic ease-out: overshoot then settle.
+ * Models a staff swinging past its target and settling back.
+ * amplitude (default 0.4) controls overshoot magnitude (~8% at default).
+ * frequency (default 1.0) controls oscillation count (higher = more wobble).
  */
 function elastic(t: number, params?: EffortParams): number {
 	if (t <= 0) return 0;
@@ -95,9 +98,11 @@ function elastic(t: number, params?: EffortParams): number {
 	const amplitude = resolve("elastic", "amplitude", params);
 	const frequency = resolve("elastic", "frequency", params);
 
-	// Elastic ease-out: decaying sinusoidal oscillation around 1.0
-	const decay = Math.pow(2, -10 * t);
-	return 1 - decay * Math.cos(t * frequency * Math.PI * 2) * amplitude + decay * (amplitude - 1);
+	// Based on the standard elastic ease-out (easings.net) but scaled down.
+	// The raw formula overshoots by ~18%; amplitude*0.5 scales that to ~8% at default.
+	const period = (2 * Math.PI) / (3 * frequency);
+	const raw = Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * period);
+	return 1 + raw * amplitude * 0.35;
 }
 
 /**
