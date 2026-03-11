@@ -25,6 +25,19 @@ if (browser) {
 // When DISABLE_PWA=true, this entire block is dead-code eliminated
 declare const __PWA_ENABLED__: boolean;
 
+// Dev mode: register a minimal FCM-only service worker for push notification testing
+// This doesn't use the full PWA/Workbox SW — just the Firebase messaging handler
+if (browser && dev) {
+  navigator.serviceWorker
+    .register("/firebase-messaging-sw.js", { scope: "/" })
+    .then((reg) => {
+      console.log("[FCM-Dev] Messaging service worker registered", reg.scope);
+    })
+    .catch((err) => {
+      console.warn("[FCM-Dev] Messaging service worker registration failed:", err);
+    });
+}
+
 if (browser && !dev && typeof __PWA_ENABLED__ !== "undefined" && __PWA_ENABLED__) {
   // Only register service worker in production builds with PWA enabled
   import("virtual:pwa-register")

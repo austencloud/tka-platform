@@ -491,6 +491,13 @@ service cloud.firestore {
         allow update: if false; // Quiz attempts are immutable
         allow delete: if isAdmin();
       }
+
+      // -------------------------------------------------------------------------
+      // FCM PUSH TOKENS (Device registration for push notifications)
+      // -------------------------------------------------------------------------
+      match /fcmTokens/{tokenId} {
+        allow read, write: if isOwner(userId);
+      }
     }
 
     // ============================================================================
