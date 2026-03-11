@@ -379,9 +379,14 @@ export class LibraryRepository implements ILibraryRepository {
       thumbnailUrl?: string;
     }
   ): Promise<LibrarySequence> {
+    // Put the new thumbnail first, filter out duplicates so re-saves
+    // don't grow the array with the same URL repeated.
+    const existingThumbnails = (sequence.thumbnails || []).filter(
+      (t) => t !== metadata.thumbnailUrl
+    );
     const thumbnails = metadata.thumbnailUrl
-      ? [metadata.thumbnailUrl, ...(sequence.thumbnails || [])]
-      : (sequence.thumbnails || []);
+      ? [metadata.thumbnailUrl, ...existingThumbnails]
+      : existingThumbnails;
 
     const enrichedSequence: SequenceData = {
       ...sequence,
@@ -389,6 +394,7 @@ export class LibraryRepository implements ILibraryRepository {
       displayName: metadata.displayName,
       word: sequence.word || metadata.name,
       thumbnails,
+      tags: metadata.tags,
     };
 
     return this.saveSequence(enrichedSequence, {
