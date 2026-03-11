@@ -2,19 +2,19 @@
 <!-- Footer with settings, network status, account, and voice mic -->
 <script lang="ts">
   import { container } from "$lib/shared/di";
-  import { inboxState } from "../../../inbox/state/inbox-state.svelte";
   import { featureFlagService } from "../../../auth/services/PostHogFeatureFlagService.svelte";
   import NetworkStatusIndicator from "../../../offline/components/NetworkStatusIndicator.svelte";
   import ModuleQuickToggle from "./ModuleQuickToggle.svelte";
   import { voiceControlState } from "../../../voice-control/state/voice-control-state.svelte";
   import { getSettings } from "../../../application/state/app-state.svelte";
   import AccountRow from "../account/AccountRow.svelte";
-  import AccountPopover from "../account/AccountPopover.svelte";
 
-  let { isCollapsed, onSettingsClick, isInSettings = false } = $props<{
+  let { isCollapsed, onSettingsClick, isInSettings = false, onAccountClick, accountSectionElement = $bindable(null) } = $props<{
     isCollapsed: boolean;
     onSettingsClick?: () => void;
     isInSettings?: boolean;
+    onAccountClick?: () => void;
+    accountSectionElement?: HTMLElement | null;
   }>();
 
   const isAdmin = $derived(featureFlagService.isAdmin);
@@ -25,18 +25,6 @@
   const voiceEnabled = $derived(voiceControlState.enabled);
   const inCommandMode = $derived(voiceControlState.commandMode);
   const hasVoiceError = $derived(voiceControlState.detectorState === "error");
-
-  // Account popover state
-  let popoverOpen = $state(false);
-  let accountSectionEl = $state<HTMLElement | null>(null);
-
-  function togglePopover() {
-    popoverOpen = !popoverOpen;
-  }
-
-  function closePopover() {
-    popoverOpen = false;
-  }
 
   function handleMicClick() {
     try {
@@ -61,8 +49,6 @@
     }
   }
 
-  const hasUnread = $derived(inboxState.totalUnreadCount > 0);
-
   function handleSettingsClick() {
     // Haptic feedback
     try {
@@ -73,18 +59,6 @@
     }
 
     onSettingsClick?.();
-  }
-
-  function handleInboxClick() {
-    // Haptic feedback
-    try {
-      const hapticService = container.items.hapticFeedback;
-      hapticService?.trigger("selection");
-    } catch {
-      // Ignore if not available
-    }
-
-    inboxState.open();
   }
 </script>
 
@@ -118,19 +92,11 @@
       <ModuleQuickToggle {isCollapsed} />
     {/if}
 
-    <!-- Account Row + Popover (at bottom of footer) -->
-    <div class="account-section" bind:this={accountSectionEl} style="position: relative;">
+    <!-- Account Row (popover rendered outside nav to avoid overflow clipping) -->
+    <div class="account-section" bind:this={accountSectionElement}>
       <AccountRow
         variant={isCollapsed ? "collapsed" : "expanded"}
-        onclick={togglePopover}
-      />
-      <AccountPopover
-        isOpen={popoverOpen}
-        onClose={closePopover}
-        onInboxClick={handleInboxClick}
-        {hasUnread}
-        unreadCount={inboxState.totalUnreadCount}
-        anchorElement={accountSectionEl}
+        onclick={() => onAccountClick?.()}
       />
     </div>
   {/if}

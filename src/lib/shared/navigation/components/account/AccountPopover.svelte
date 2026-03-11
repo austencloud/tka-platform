@@ -4,6 +4,7 @@
   import { whatsNewState } from "../../../settings/state/whats-new-state.svelte";
   import { container } from "../../../di";
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
+  import RobustAvatar from "../../../components/avatar/RobustAvatar.svelte";
 
   let { isOpen, onClose, onInboxClick, hasUnread = false, unreadCount = 0, anchorElement } = $props<{
     isOpen: boolean;
@@ -20,17 +21,17 @@
     user?.displayName || user?.email || "Guest"
   );
   const email = $derived(user?.email ?? null);
-  const initial = $derived(displayName.charAt(0).toUpperCase());
   const photoURL = $derived(user?.photoURL ?? null);
 
   let popoverEl: HTMLDivElement | undefined = $state();
-  let photoError = $state(false);
 
-  // Reset photo error when URL changes
-  $effect(() => {
-    if (photoURL) {
-      photoError = false;
-    }
+  // Compute fixed position from anchor element so the popover escapes
+  // the sidebar's overflow: hidden
+  let popoverStyle = $derived.by(() => {
+    if (!anchorElement) return "";
+    const rect = anchorElement.getBoundingClientRect();
+    const gap = 8;
+    return `left: ${rect.left}px; bottom: ${window.innerHeight - rect.top + gap}px; width: ${rect.width}px;`;
   });
 
   // Document-level listeners for close on Escape and click-outside
@@ -117,9 +118,7 @@
     onClose();
   }
 
-  function handlePhotoError() {
-    photoError = true;
-  }
+
 </script>
 
 {#if isOpen}
@@ -127,23 +126,22 @@
     class="account-popover"
     role="menu"
     bind:this={popoverEl}
+    style={popoverStyle}
   >
     <!-- Identity header -->
     <div class="identity-header">
-      <div class="identity-avatar">
-        {#if isAuthenticated && photoURL && !photoError}
-          <img
-            class="identity-avatar-photo"
-            src={photoURL}
-            alt=""
-            onerror={handlePhotoError}
-          />
-        {:else if isAuthenticated}
-          <span class="identity-avatar-initial">{initial}</span>
-        {:else}
+      {#if isAuthenticated}
+        <RobustAvatar
+          src={photoURL}
+          name={displayName}
+          size="md"
+          customSize={40}
+        />
+      {:else}
+        <div class="identity-avatar-guest">
           <i class="fas fa-user" aria-hidden="true"></i>
-        {/if}
-      </div>
+        </div>
+      {/if}
       <div class="identity-info">
         <span class="identity-name">{displayName}</span>
         {#if email}
@@ -213,10 +211,7 @@
      POPOVER CONTAINER
      ========================================================================== */
   .account-popover {
-    position: absolute;
-    bottom: calc(100% + 8px);
-    left: 0;
-    right: 0;
+    position: fixed;
     min-width: 220px;
     background: rgb(18, 18, 28);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -251,7 +246,7 @@
     padding: 16px;
   }
 
-  .identity-avatar {
+  .identity-avatar-guest {
     width: 40px;
     height: 40px;
     flex-shrink: 0;
@@ -262,19 +257,6 @@
     background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
     color: var(--theme-accent);
     font-size: var(--font-size-sm, 14px);
-    font-weight: 600;
-    overflow: hidden;
-  }
-
-  .identity-avatar-photo {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 50%;
-  }
-
-  .identity-avatar-initial {
-    line-height: 1;
   }
 
   .identity-info {
