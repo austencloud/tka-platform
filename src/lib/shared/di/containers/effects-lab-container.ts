@@ -1,19 +1,17 @@
 import { createContainer } from "iti";
 import { EffectPointsPersister } from "$lib/features/effects-lab/services/implementations/EffectPointsPersister";
-import { FirePointOverrideProvider } from "$lib/features/effects-lab/services/implementations/FirePointOverrideProvider";
-import { LedPointOverrideProvider } from "$lib/features/effects-lab/services/implementations/LedPointOverrideProvider";
+import { TipPointOverrideProvider } from "$lib/features/effects-lab/services/implementations/TipPointOverrideProvider";
 import { FireDefaultsLoader } from "$lib/shared/animation-engine/services/implementations/FireDefaultsLoader";
 import { FireDefaultsPublisher } from "$lib/shared/animation-engine/services/implementations/FireDefaultsPublisher";
-import { setFirePointOverrideProvider } from "$lib/shared/animation-engine/domain/types/PropFirePoints";
-import { setLedPointOverrideProvider } from "$lib/shared/animation-engine/domain/types/PropLedPoints";
+import { setTipPointOverrideProvider } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
 
 /**
  * Effects Lab DI container.
  *
  * Registration order matters:
  * 1. `effectPointsPersister` — shared Firebase-backed position storage
- * 2. `fireDefaultsLoader` — admin-published fire defaults from Firestore
- * 3. `firePointOverrideProvider` / `ledPointOverrideProvider` — depend on persister
+ * 2. `fireDefaultsLoader` — admin-published defaults from Firestore
+ * 3. `tipPointOverrideProvider` — depends on persister, single unified provider
  */
 export const effectsLabContainer = createContainer()
 	.add({
@@ -26,37 +24,41 @@ export const effectsLabContainer = createContainer()
 		fireDefaultsPublisher: () => new FireDefaultsPublisher(),
 	})
 	.add(({ effectPointsPersister, fireDefaultsLoader }) => ({
-		firePointOverrideProvider: () => {
-			const provider = new FirePointOverrideProvider(effectPointsPersister);
+		tipPointOverrideProvider: () => {
+			const provider = new TipPointOverrideProvider(effectPointsPersister);
 
-			// Hook into the domain-level fire point lookup so overrides
-			// take effect automatically in FireTipTracker
-			setFirePointOverrideProvider((propType) => provider.getOverride(propType));
+			// Hook into the domain-level tip point lookup so overrides
+			// take effect automatically in all tip trackers
+			setTipPointOverrideProvider((propType) => provider.getOverride(propType));
 
-			// Load admin-published defaults from Firestore; apply as lowest-priority fallback
+			// Load admin-published defaults from Firestore; strip flameScale
+			// from legacy fire point data to produce position-only tip configs
 			fireDefaultsLoader.load().then(() => {
 				const firePoints = fireDefaultsLoader.getAllFirePoints();
 				if (Object.keys(firePoints).length > 0) {
-					provider.loadPublishedDefaults(firePoints);
+					const tipDefaults: Record<string, { points: { dx: number; dy: number }[] }> = {};
+					for (const [key, config] of Object.entries(firePoints)) {
+						tipDefaults[key] = {
+							points: config.points.map((p) => ({ dx: p.dx, dy: p.dy })),
+						};
+					}
+					provider.loadPublishedDefaults(tipDefaults);
 				}
 			});
 
-			// Subscribe to real-time updates so published changes propagate immediately
+			// Subscribe to real-time updates
 			fireDefaultsLoader.subscribe(() => {
 				const firePoints = fireDefaultsLoader.getAllFirePoints();
 				if (Object.keys(firePoints).length > 0) {
-					provider.loadPublishedDefaults(firePoints);
+					const tipDefaults: Record<string, { points: { dx: number; dy: number }[] }> = {};
+					for (const [key, config] of Object.entries(firePoints)) {
+						tipDefaults[key] = {
+							points: config.points.map((p) => ({ dx: p.dx, dy: p.dy })),
+						};
+					}
+					provider.loadPublishedDefaults(tipDefaults);
 				}
 			});
-
-			return provider;
-		},
-		ledPointOverrideProvider: () => {
-			const provider = new LedPointOverrideProvider(effectPointsPersister);
-
-			// Hook into the domain-level LED point lookup so overrides
-			// take effect automatically in LedTipTracker
-			setLedPointOverrideProvider((propType) => provider.getOverride(propType));
 
 			return provider;
 		},
