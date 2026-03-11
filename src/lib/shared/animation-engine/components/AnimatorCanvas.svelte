@@ -76,6 +76,8 @@ Last audit: 2025-12-27
     // Tunnel mode: hide TKA glyph and beat numbers (combined motions don't form a letter)
     hideTkaGlyph = false,
     hideStepNumbers = false,
+    // Hide progress bar for this instance (e.g. small canvases in Decompose tab)
+    hideProgressBar = false,
     // Whether sequence returns to start position - controls trail clearing on loop
     isSeamlesslyLoopable = undefined,
     // Progress bar visual variant
@@ -112,6 +114,7 @@ Last audit: 2025-12-27
     previewDarkMode?: boolean | null;
     hideTkaGlyph?: boolean;
     hideStepNumbers?: boolean;
+    hideProgressBar?: boolean;
     isSeamlesslyLoopable?: boolean;
     progressBarVariant?: "minimal" | "raised" | "rounded" | "neon" | "gradient" | "labeled" | "gradient-labeled";
     onProgressBarSeek?: ((targetStep: number) => void) | null;
@@ -326,7 +329,7 @@ Last audit: 2025-12-27
       <SegmentedSequenceProgressBar
         steps={sequenceData?.steps ?? []}
         currentStep={currentStep}
-        visible={progressBarVisible}
+        visible={progressBarVisible && !hideProgressBar}
         darkMode={darkModeEnabled}
         variant={progressBarVariant}
         showLabels={progressBarVariant === "labeled" || progressBarVariant === "gradient-labeled"}
