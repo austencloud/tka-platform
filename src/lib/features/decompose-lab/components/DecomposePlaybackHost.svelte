@@ -641,6 +641,9 @@
               {...propsForView(slotState.smallLeftView)}
               {...sharedCanvasProps()}
               focused={false}
+              hideTkaGlyph={true}
+              hideStepNumbers={true}
+              hideProgressBar={true}
             />
           {/snippet}
           {#snippet smallRightCanvas()}
@@ -648,6 +651,9 @@
               {...propsForView(slotState.smallRightView)}
               {...sharedCanvasProps()}
               focused={false}
+              hideTkaGlyph={true}
+              hideStepNumbers={true}
+              hideProgressBar={true}
             />
           {/snippet}
         </DecomposeLayout>
