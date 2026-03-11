@@ -7,7 +7,7 @@
 
   let { variant = "expanded", onclick } = $props<{
     variant?: "expanded" | "collapsed" | "drawer";
-    onclick: () => void;
+    onclick?: () => void;
   }>();
 
   const user = $derived(authState.user);
@@ -30,31 +30,48 @@
   }
 </script>
 
-<button
-  class="account-row"
-  class:collapsed={variant === "collapsed"}
-  class:drawer={variant === "drawer"}
-  onclick={handleClick}
-  aria-label={isAuthenticated ? "Account menu" : "Sign in"}
-  aria-haspopup={variant !== "drawer" ? "menu" : undefined}
->
-  {#if isAuthenticated}
-    <RobustAvatar
-      src={photoURL}
-      name={displayName}
-      customSize={avatarSize}
-    />
-  {:else}
-    <div class="avatar-guest" class:collapsed={variant === "collapsed"}>
-      <i class="fas fa-user" aria-hidden="true"></i>
-    </div>
-  {/if}
-
-  {#if variant !== "collapsed"}
+{#if variant === "drawer"}
+  <!-- Drawer: static identity display, not interactive -->
+  <div class="account-row drawer">
+    {#if isAuthenticated}
+      <RobustAvatar
+        src={photoURL}
+        name={displayName}
+        customSize={32}
+      />
+    {:else}
+      <div class="avatar-guest">
+        <i class="fas fa-user" aria-hidden="true"></i>
+      </div>
+    {/if}
     <span class="account-label">{displayName}</span>
-    <i class="fas fa-chevron-up chevron" aria-hidden="true"></i>
-  {/if}
-</button>
+  </div>
+{:else}
+  <button
+    class="account-row"
+    class:collapsed={variant === "collapsed"}
+    onclick={handleClick}
+    aria-label={isAuthenticated ? "Account menu" : "Sign in"}
+    aria-haspopup="menu"
+  >
+    {#if isAuthenticated}
+      <RobustAvatar
+        src={photoURL}
+        name={displayName}
+        customSize={avatarSize}
+      />
+    {:else}
+      <div class="avatar-guest" class:collapsed={variant === "collapsed"}>
+        <i class="fas fa-user" aria-hidden="true"></i>
+      </div>
+    {/if}
+
+    {#if variant !== "collapsed"}
+      <span class="account-label">{displayName}</span>
+      <i class="fas fa-chevron-up chevron" aria-hidden="true"></i>
+    {/if}
+  </button>
+{/if}
 
 <style>
   /* ==========================================================================
@@ -99,11 +116,14 @@
   }
 
   /* ==========================================================================
-     DRAWER VARIANT - Full width, different padding/radius
+     DRAWER VARIANT - Static identity display, not interactive
      ========================================================================== */
   .account-row.drawer {
     border-radius: 14px;
     padding: 12px 16px;
+    cursor: default;
+    border-color: transparent;
+    background: transparent;
   }
 
   /* ==========================================================================

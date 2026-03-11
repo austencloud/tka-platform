@@ -67,10 +67,10 @@
 			<button
 				class="join-button"
 				onclick={onJoin}
-				aria-label={t(‘connect_join_session_of’, { name: session.hostDisplayName })}
+				aria-label={t('connect_join_session_of', { name: session.hostDisplayName })}
 			>
 				<i class="fas fa-link" aria-hidden="true"></i>
-				{t(‘connect_join’)}
+				{t('connect_join')}
 			</button>
 		{/if}
 	</div>

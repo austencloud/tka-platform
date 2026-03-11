@@ -57,7 +57,7 @@
     modules.filter((m: ModuleDefinition) => m.isMain)
   );
   const devModules = $derived(
-    modules.filter((m: ModuleDefinition) => !m.isMain)
+    modules.filter((m: ModuleDefinition) => !m.isMain && m.id !== "settings")
   );
 
   // Determine grid layout class based on module count

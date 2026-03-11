@@ -153,7 +153,10 @@
     aria-expanded={layout.focusedPane === "image"}
   >
     <div class="preview-column-inner" class:focused={layout.focusedPane === "image"}>
-      <div class="media-pane preview-pane">
+      <div
+        class="media-pane preview-pane"
+        class:export-sidebar-active={layout.focusedPane === "image" && !layout.isMobile}
+      >
         <!-- Close button - shown when focused (desktop only) -->
         {#if layout.focusedPane === "image" && !layout.isMobile && !layout.suppressCloseButton}
           <div
@@ -296,6 +299,15 @@
     background: transparent;
     border-top: none;
     container-type: normal;
+    /* Smooth padding transition when export sidebar appears */
+    transition: padding-right 250ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  /* When the image export sidebar is active on desktop, add right padding
+     so the ChoreoCard content doesn't extend behind the export panel overlay.
+     Uses the --export-sidebar-width variable set by the parent host component. */
+  .preview-pane.export-sidebar-active {
+    padding-right: var(--export-sidebar-width, 320px);
   }
 
   /* Close button — spring pop-in, staggered 100ms after grid starts moving */

@@ -1626,18 +1626,17 @@
 
   /* ===== END FULLSCREEN MORPH STYLES ===== */
 
-  /* Body content - must fill the modal-body wrapper completely */
+  /* Body content - flex column so footer is a normal child below the viewer */
   .modal-body-content {
     height: 100%;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    /* Create stacking context for view transitions */
-    position: relative;
   }
 
   /* Landscape: row layout with content + controls column */
   .modal-body-content[data-landscape="true"] {
+    display: flex;
     flex-direction: row;
   }
 
@@ -1694,9 +1693,9 @@
   }
 
   /* Viewer + export panel container.
-     The split pane is absolute inside this; export panel overlays the right side.
-     This prevents the parent from resizing when the export panel appears. */
+     Flex child fills remaining space. Export panel overlays the right side. */
   .viewer-and-export {
+    --export-sidebar-width: 320px;
     position: relative;
     flex: 1;
     min-height: 0;
@@ -1709,6 +1708,7 @@
     top: 0;
     right: 0;
     bottom: 0;
+    width: var(--export-sidebar-width);
     z-index: 5;
     overflow: hidden;
     overflow-y: auto;
@@ -1725,16 +1725,20 @@
     }
   }
 
-  /* Footer collapse — CSS transition so parent height changes gradually */
+  /* Footer — CSS grid row collapse for smooth height animation. */
   .footer-collapse {
-    overflow: hidden;
-    max-height: 200px;
-    transition: max-height 250ms cubic-bezier(0.2, 0, 0, 1),
+    display: grid;
+    grid-template-rows: 1fr;
+    transition: grid-template-rows 250ms cubic-bezier(0.2, 0, 0, 1),
                 opacity 250ms cubic-bezier(0.2, 0, 0, 1);
   }
 
+  .footer-collapse > :global(*) {
+    overflow: hidden;
+  }
+
   .footer-collapse.collapsed {
-    max-height: 0;
+    grid-template-rows: 0fr;
     opacity: 0;
     pointer-events: none;
   }

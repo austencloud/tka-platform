@@ -172,8 +172,9 @@
 
     <!-- Account Footer -->
     <div class="account-footer">
+      <AccountRow variant="drawer" />
       <div class="account-footer-actions">
-        <button class="drawer-action" onclick={handleInboxClick}>
+        <button class="drawer-action inbox" onclick={handleInboxClick}>
           <div class="drawer-action-icon-wrapper">
             <i class="fas fa-inbox" aria-hidden="true"></i>
             {#if hasUnread}
@@ -196,7 +197,6 @@
           </button>
         {/if}
       </div>
-      <AccountRow variant="drawer" onclick={() => {}} />
     </div>
   </div>
 </Drawer>
@@ -476,13 +476,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 8px;
     flex: 1;
     min-height: var(--min-touch-target, 50px);
-    padding: 8px 12px;
-    background: transparent;
-    border: none;
-    border-radius: 8px;
+    padding: 10px 12px;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 12px;
     color: var(--theme-text-dim);
     cursor: pointer;
     font-size: var(--font-size-sm, 14px);
@@ -492,7 +492,12 @@
 
   .drawer-action:hover {
     background: var(--theme-card-hover-bg);
+    border-color: var(--theme-stroke-strong);
     color: var(--theme-text);
+  }
+
+  .drawer-action:active {
+    transform: scale(0.97);
   }
 
   .drawer-action:focus-visible {
@@ -501,20 +506,29 @@
   }
 
   .drawer-action i {
-    font-size: var(--font-size-compact);
-    opacity: 0.6;
+    font-size: var(--font-size-sm, 14px);
   }
 
-  .drawer-action:hover i {
-    opacity: 1;
+  /* Inbox — blue accent */
+  .drawer-action.inbox {
+    color: var(--semantic-info, #3b82f6);
+    border-color: color-mix(in srgb, var(--semantic-info, #3b82f6) 25%, transparent);
+  }
+
+  .drawer-action.inbox:hover {
+    background: color-mix(in srgb, var(--semantic-info, #3b82f6) 10%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-info, #3b82f6) 40%, transparent);
+  }
+
+  /* Sign Out — red by default */
+  .drawer-action.sign-out {
+    color: var(--semantic-error, #ef4444);
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 25%, transparent);
   }
 
   .drawer-action.sign-out:hover {
-    color: var(--semantic-error);
-  }
-
-  .drawer-action.sign-out:hover i {
-    color: var(--semantic-error);
+    background: color-mix(in srgb, var(--semantic-error) 10%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error) 40%, transparent);
   }
 
   /* ============================================================================
@@ -522,8 +536,8 @@
      ============================================================================ */
   .account-footer-actions {
     display: flex;
-    align-items: center;
-    gap: 0;
+    align-items: stretch;
+    gap: 8px;
   }
 
   .drawer-action-icon-wrapper {

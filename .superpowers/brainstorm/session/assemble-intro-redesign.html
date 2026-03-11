@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Assemble Tab Redesign - Initial State</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0f0f1a;
+    color: #eee;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    padding: 24px;
+    min-height: 100vh;
+  }
+
+  h1 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #fff;
+  }
+
+  .subtitle {
+    color: rgba(255,255,255,0.5);
+    font-size: 14px;
+    margin-bottom: 32px;
+  }
+
+  .compare {
+    display: flex;
+    gap: 40px;
+    justify-content: center;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .phone-frame {
+    width: 340px;
+    background: #1a1a2e;
+    border-radius: 28px;
+    border: 2px solid rgba(255,255,255,0.08);
+    overflow: hidden;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    position: relative;
+  }
+
+  .phone-frame:hover {
+    border-color: rgba(255,255,255,0.2);
+  }
+
+  .phone-frame.selected {
+    border-color: #6366f1;
+    box-shadow: 0 0 20px rgba(99,102,241,0.3);
+  }
+
+  .phone-label {
+    padding: 14px 16px 10px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.4);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .phone-label .badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .badge-current { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.4); }
+  .badge-proposed { background: rgba(99,102,241,0.2); color: #818cf8; }
+
+  .phone-screen {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 9/16;
+    overflow: hidden;
+  }
+
+  /* ===== CURRENT DESIGN ===== */
+  .current-bg {
+    background: linear-gradient(180deg, #1a1a3e 0%, #0a0a1e 30%, #0a0a1e 70%, #1a2a4e 100%);
+  }
+
+  .current-grid-area {
+    position: absolute;
+    top: 18%;
+    left: 10%;
+    right: 10%;
+    aspect-ratio: 1;
+    background: #0a0a0f;
+    border-radius: 12px;
+    border: 1.5px solid rgba(255,255,255,0.12);
+  }
+
+  .current-instruction {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    font-size: 14px;
+    color: rgba(255,255,255,0.9);
+    font-weight: 500;
+    z-index: 2;
+  }
+
+  .dot-blue { width: 10px; height: 10px; border-radius: 50%; background: #2e8bf0; flex-shrink: 0; }
+
+  /* Grid dots */
+  .grid-dot {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid rgba(46,139,240,0.5);
+    background: rgba(46,139,240,0.08);
+    transform: translate(-50%, -50%);
+  }
+
+  .grid-dot.center-dot {
+    width: 8px;
+    height: 8px;
+    background: rgba(255,255,255,0.3);
+    border: none;
+  }
+
+  .grid-dot.white-dot {
+    width: 16px;
+    height: 16px;
+    background: rgba(255,255,255,0.8);
+    border: none;
+  }
+
+  /* Current turn switcher */
+  .current-turn-bar {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 3px;
+    z-index: 2;
+  }
+
+  .current-turn-btn {
+    padding: 5px 6px;
+    min-width: 28px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    text-align: center;
+  }
+
+  .current-turn-btn.active {
+    background: rgba(255,255,255,0.12);
+    color: #fff;
+    border-radius: 7px;
+  }
+
+  .current-cw {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 8px;
+    color: rgba(255,255,255,0.6);
+    font-size: 11px;
+    border-right: 1px solid rgba(255,255,255,0.1);
+    margin-right: 2px;
+  }
+
+  /* ===== PROPOSED DESIGN ===== */
+  .proposed-bg {
+    background: linear-gradient(180deg, #1a1a3e 0%, #0e1528 30%, #0e1528 70%, #1a2a4e 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+  }
+
+  .proposed-instruction {
+    width: 100%;
+    text-align: center;
+    padding: 16px 16px 12px;
+    z-index: 2;
+  }
+
+  .proposed-instruction .step-label {
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .proposed-instruction .step-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .proposed-instruction .dot-glow {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #2e8bf0;
+    box-shadow: 0 0 12px rgba(46,139,240,0.6);
+    flex-shrink: 0;
+  }
+
+  .proposed-grid-area {
+    width: 90%;
+    aspect-ratio: 1;
+    background: linear-gradient(145deg, rgba(20,25,40,0.95), rgba(10,12,22,0.98));
+    border-radius: 20px;
+    border: 1.5px solid rgba(255,255,255,0.08);
+    position: relative;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
+    margin-top: 4px;
+  }
+
+  /* Bigger, juicier grid dots */
+  .prop-dot {
+    position: absolute;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    transition: transform 0.15s ease;
+  }
+
+  .prop-dot:hover {
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+
+  .prop-dot.cardinal {
+    width: 52px;
+    height: 52px;
+    border: 2.5px solid rgba(46,139,240,0.6);
+    background: rgba(46,139,240,0.12);
+    box-shadow: 0 0 16px rgba(46,139,240,0.15);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  .prop-dot.intercardinal {
+    width: 40px;
+    height: 40px;
+    background: rgba(255,255,255,0.6);
+    border: none;
+  }
+
+  .prop-dot.center {
+    width: 10px;
+    height: 10px;
+    background: rgba(255,255,255,0.25);
+    border: none;
+    cursor: default;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% {
+      border-color: rgba(46,139,240,0.4);
+      box-shadow: 0 0 12px rgba(46,139,240,0.1);
+    }
+    50% {
+      border-color: rgba(46,139,240,0.8);
+      box-shadow: 0 0 20px rgba(46,139,240,0.25);
+    }
+  }
+
+  /* Proposed turn switcher - bubbly, bigger */
+  .proposed-turn-bar {
+    width: 90%;
+    margin-top: 12px;
+    background: linear-gradient(145deg, rgba(20,25,40,0.9), rgba(15,18,30,0.95));
+    border-radius: 16px;
+    border: 1.5px solid rgba(255,255,255,0.08);
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  }
+
+  .proposed-cw-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 12px;
+    color: rgba(255,255,255,0.7);
+    font-size: 13px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .proposed-divider {
+    width: 1px;
+    height: 28px;
+    background: rgba(255,255,255,0.1);
+    margin: 0 4px;
+    flex-shrink: 0;
+  }
+
+  .proposed-turns {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+  }
+
+  .proposed-turn-pill {
+    flex: 1;
+    padding: 10px 4px;
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.5);
+    text-align: center;
+    border-radius: 10px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .proposed-turn-pill.active {
+    background: rgba(255,255,255,0.12);
+    color: #fff;
+  }
+
+  /* Selection state */
+  .option-tag {
+    position: absolute;
+    top: -1px;
+    right: 16px;
+    background: #6366f1;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 0 0 8px 8px;
+    display: none;
+  }
+
+  .phone-frame.selected .option-tag {
+    display: block;
+  }
+
+  /* Notes */
+  .callouts {
+    margin-top: 32px;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .callout {
+    display: flex;
+    gap: 12px;
+    padding: 14px 16px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 12px;
+    margin-bottom: 8px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .callout-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(99,102,241,0.2);
+    color: #818cf8;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .callout-text {
+    font-size: 14px;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.5;
+  }
+
+  .callout-text strong {
+    color: #fff;
+  }
+</style>
+</head>
+<body>
+
+<h1>Assemble Tab - Initial State Redesign</h1>
+<p class="subtitle">Side-by-side: current vs proposed. Click to select your preference.</p>
+
+<div class="compare">
+  <!-- CURRENT -->
+  <div class="phone-frame" onclick="this.classList.toggle('selected'); document.querySelector('.phone-frame:last-of-type')?.classList.remove('selected')">
+    <div class="option-tag">SELECTED</div>
+    <div class="phone-label"><span class="badge badge-current">Current</span> What you have now</div>
+    <div class="phone-screen current-bg">
+      <!-- Instruction badge -->
+      <div class="current-instruction">
+        <div class="dot-blue"></div>
+        Tap start for blue
+      </div>
+
+      <!-- Black grid box -->
+      <div class="current-grid-area">
+        <!-- Diamond grid dots (small) -->
+        <div class="grid-dot white-dot" style="top: 15%; left: 50%;"></div>
+        <div class="grid-dot" style="top: 35%; left: 50%;"></div>
+        <div class="grid-dot white-dot" style="top: 50%; left: 15%;"></div>
+        <div class="grid-dot" style="top: 50%; left: 35%;"></div>
+        <div class="grid-dot center-dot" style="top: 50%; left: 50%;"></div>
+        <div class="grid-dot" style="top: 50%; left: 65%;"></div>
+        <div class="grid-dot white-dot" style="top: 50%; left: 85%;"></div>
+        <div class="grid-dot" style="top: 65%; left: 50%;"></div>
+        <div class="grid-dot white-dot" style="top: 85%; left: 50%;"></div>
+      </div>
+
+      <!-- Turn bar -->
+      <div class="current-turn-bar">
+        <div class="current-cw">↻ CW</div>
+        <div class="current-turn-btn active">0</div>
+        <div class="current-turn-btn">0.5</div>
+        <div class="current-turn-btn">1</div>
+        <div class="current-turn-btn">1.5</div>
+        <div class="current-turn-btn">2</div>
+        <div class="current-turn-btn">2.5</div>
+        <div class="current-turn-btn">3</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROPOSED -->
+  <div class="phone-frame" onclick="this.classList.toggle('selected'); document.querySelector('.phone-frame:first-of-type')?.classList.remove('selected')">
+    <div class="option-tag">SELECTED</div>
+    <div class="phone-label"><span class="badge badge-proposed">Proposed</span> Redesigned intro</div>
+    <div class="phone-screen proposed-bg">
+      <!-- Big clear instruction -->
+      <div class="proposed-instruction">
+        <div class="step-label">Step 1 of 2</div>
+        <div class="step-title">
+          <span class="dot-glow"></span>
+          Tap a starting point
+        </div>
+      </div>
+
+      <!-- Warm card grid area -->
+      <div class="proposed-grid-area">
+        <!-- Diamond grid - bigger dots -->
+        <div class="prop-dot cardinal" style="top: 18%; left: 50%;"></div>
+        <div class="prop-dot intercardinal" style="top: 50%; left: 18%;"></div>
+        <div class="prop-dot center" style="top: 50%; left: 50%;"></div>
+        <div class="prop-dot intercardinal" style="top: 50%; left: 82%;"></div>
+        <div class="prop-dot cardinal" style="top: 82%; left: 50%;"></div>
+        <div class="prop-dot cardinal" style="top: 50%; left: 50%; display: none;"></div>
+
+        <!-- Only show the 4 diamond positions, bigger -->
+        <div class="prop-dot cardinal" style="top: 50%; left: 18%;"></div>
+        <div class="prop-dot cardinal" style="top: 50%; left: 82%;"></div>
+      </div>
+
+      <!-- Bubbly turn bar -->
+      <div class="proposed-turn-bar">
+        <div class="proposed-cw-toggle">↻ CW</div>
+        <div class="proposed-divider"></div>
+        <div class="proposed-turns">
+          <div class="proposed-turn-pill active">0</div>
+          <div class="proposed-turn-pill">0.5</div>
+          <div class="proposed-turn-pill">1</div>
+          <div class="proposed-turn-pill">1.5</div>
+          <div class="proposed-turn-pill">2</div>
+          <div class="proposed-turn-pill">2.5</div>
+          <div class="proposed-turn-pill">3</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="callouts">
+  <div class="callout">
+    <div class="callout-num">1</div>
+    <div class="callout-text"><strong>Big, centered instruction</strong> — "Step 1 of 2: Tap a starting point" replaces the tucked-away "Tap start for blue." User knows exactly what to do and where they are in the process.</div>
+  </div>
+  <div class="callout">
+    <div class="callout-num">2</div>
+    <div class="callout-text"><strong>Warm card background</strong> — subtle gradient replaces flat black. Rounded corners (20px), soft inner glow, and a faint border give it depth without distraction.</div>
+  </div>
+  <div class="callout">
+    <div class="callout-num">3</div>
+    <div class="callout-text"><strong>Bigger hit targets</strong> — diamond grid points are 52px diameter (vs ~40px current), with a glowing pulse that says "tap me." Way easier on mobile.</div>
+  </div>
+  <div class="callout">
+    <div class="callout-num">4</div>
+    <div class="callout-text"><strong>Bubbly turn bar</strong> — pills are taller (44px min-height), wider, rounded (10px). The whole bar has a card treatment with its own gradient background. Feels like part of the UI, not floating glass.</div>
+  </div>
+  <div class="callout">
+    <div class="callout-num">5</div>
+    <div class="callout-text"><strong>Open question:</strong> Should the non-diamond points (the white intercardinal dots at N/S/E/W) still show during idle? They're not tappable targets in diamond mode — hiding them reduces noise.</div>
+  </div>
+</div>
+
+</body>
+</html>
