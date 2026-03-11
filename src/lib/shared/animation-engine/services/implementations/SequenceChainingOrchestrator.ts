@@ -11,7 +11,7 @@ import type { IAnimationPlaybackController } from "$lib/features/compose/service
 import type { AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
 import type { IEndlessSpinnerOrchestrator, EndState } from "$lib/features/landing/services/contracts/IEndlessSpinnerOrchestrator";
 import type { IInfiniteSequenceGenerator } from "$lib/features/landing/services/contracts/IInfiniteSequenceGenerator";
-import type { ISequenceChainingOrchestrator, SourceMode } from "../contracts/ISequenceChainingOrchestrator";
+import type { ISequenceChainingOrchestrator, SourceMode } from "$lib/shared/animation-engine/services/contracts/ISequenceChainingOrchestrator";
 
 import { PropTypeApplier } from "$lib/features/landing/services/implementations/PropTypeApplier";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
