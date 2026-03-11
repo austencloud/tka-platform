@@ -1,5 +1,5 @@
 ---
-description: Use when building, reviewing, or planning any Learn tab concept lesson. Use when discussing curriculum design, lesson interactivity, or concept progression. Enforces the interaction philosophy for all 28 concepts.
+description: Use when building, reviewing, or planning any Learn tab concept lesson, or when discussing curriculum design, lesson interactivity, or concept progression
 argument-hint: "[status|next|<concept-id>|philosophy|redesign]"
 ---
 

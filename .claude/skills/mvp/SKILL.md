@@ -65,7 +65,6 @@ Score each remaining item 1-5 on each factor. VQ > 1.0 stays. VQ < 1.0 gets cut 
 
 - More than 2 items in-progress simultaneously
 - Can't explain what you're working on in one sentence
-- "While I'm in here, I might as well..." — NO. File it and move on.
 - A single item has been in-progress for more than 2 sessions
 
 ## Tracker File
@@ -81,4 +80,4 @@ Show progress as bar chart per area with overall percentage and days remaining.
 - **Never add without user approval.** Push back on scope creep.
 - **Verification required for completion.** Evidence, not claims.
 - **`/mvp next` returns ONE item**, not a list.
-- **"While I'm in here..."** is scope creep. File it, move on.
+- **"While I'm in here..."** — scope creep in disguise. File it, move on.

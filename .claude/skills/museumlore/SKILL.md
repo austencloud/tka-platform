@@ -1,6 +1,6 @@
 ---
 name: museumlore
-description: Use when the user wants to discuss, analyze, or brainstorm museum lore and narrative elements for The Kinetic Archive. Triggers on /museumlore or when conversation focuses on worldbuilding, story consistency, or narrative design.
+description: Use when discussing, analyzing, or brainstorming museum lore and narrative elements for The Kinetic Archive, or when conversation focuses on worldbuilding, story consistency, or narrative design
 ---
 
 # Museum Lore Deep Dive
