@@ -746,6 +746,14 @@ export const LAB_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
   },
   {
+    id: "decompose",
+    label: "Decompose",
+    icon: '<i class="fas fa-layer-group" aria-hidden="true"></i>',
+    description: "Isolate and study individual hand paths",
+    color: "#06b6d4",
+    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
+  },
+  {
     id: "museum",
     label: "Museum",
     icon: '<i class="fas fa-building-columns" aria-hidden="true"></i>',
