@@ -11,6 +11,7 @@ Follows Svelte 5 runes + microservices architecture.
   import { container } from "$lib/shared/di";
     import { onMount } from "svelte";
   import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   // ✅ PURE RUNES: Props using modern Svelte 5 runes
   const {
@@ -37,10 +38,10 @@ Follows Svelte 5 runes + microservices architecture.
 
   // Sort options matching legacy app
   const sortOptions = [
-    { id: BrowseSortMethod.ALPHABETICAL, label: "Alphabetical" },
-    { id: BrowseSortMethod.DIFFICULTY_LEVEL, label: "Difficulty" },
-    { id: BrowseSortMethod.DATE_ADDED, label: "Date Added" },
-    { id: BrowseSortMethod.SEQUENCE_LENGTH, label: "Length" },
+    { id: BrowseSortMethod.ALPHABETICAL, label: t('browse_sort_alphabetical') },
+    { id: BrowseSortMethod.DIFFICULTY_LEVEL, label: t('browse_sort_difficulty') },
+    { id: BrowseSortMethod.DATE_ADDED, label: t('browse_sort_date_added') },
+    { id: BrowseSortMethod.SEQUENCE_LENGTH, label: t('browse_sort_length') },
   ];
 
   // Local state for controlled component - initialized with default, $effect syncs from prop
@@ -75,12 +76,12 @@ Follows Svelte 5 runes + microservices architecture.
   <!-- Filter button -->
   <button class="filter-button" onclick={handleFilterClick}>
     <span class="filter-icon">🔍</span>
-    Filter
+    {t('browse_filter')}
   </button>
 
   <!-- Sort controls -->
   <div class="sort-section">
-    <label for="sort-select">Sort by:</label>
+    <label for="sort-select">{t('browse_sort_by')}:</label>
     <div class="sort-select-container">
       <select
         id="sort-select"
@@ -96,8 +97,8 @@ Follows Svelte 5 runes + microservices architecture.
         class="sort-direction-button"
         onclick={toggleSortDirection}
         aria-label={sortDirection === "asc"
-          ? "Sort ascending"
-          : "Sort descending"}
+          ? t('browse_sort_ascending')
+          : t('browse_sort_descending')}
       >
         {#if sortDirection === "asc"}
           <span class="sort-icon">↑</span>

@@ -9,6 +9,7 @@
     INITIAL_PHI,
     ARENA_COLOR,
   } from "../../domain/constants/arena-constants";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   let {
     rating,
@@ -34,7 +35,7 @@
 <div
   class="rating-badge"
   style="width: {size}px; height: {size}px;"
-  title="Rating: {rating} (confidence: {Math.round(confidence * 100)}%)"
+  title={t('arena_leaderboard_rating_confidence', { rating, confidence: Math.round(confidence * 100) })}
 >
   <svg
     viewBox="0 0 {size} {size}"

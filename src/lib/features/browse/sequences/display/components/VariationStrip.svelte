@@ -14,6 +14,7 @@ Features:
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import PropAwareThumbnail from "./PropAwareThumbnail.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   const {
     variations = [],
@@ -75,15 +76,15 @@ Features:
 {#if variations.length > 1}
   <div class="variation-strip-container" class:light-mode={lightMode}>
     <div class="variation-strip-header">
-      <span class="variation-label">Variations of "{variations[0]?.word}"</span>
-      <span class="variation-count">{currentIndex + 1} of {variations.length}</span>
+      <span class="variation-label">{t('browse_variations_of', { word: variations[0]?.word ?? '' })}</span>
+      <span class="variation-count">{t('browse_variation_count', { current: String(currentIndex + 1), total: String(variations.length) })}</span>
     </div>
 
     <div
       bind:this={containerRef}
       class="variation-strip"
       role="tablist"
-      aria-label="Sequence variations"
+      aria-label={t('browse_sequence_variations')}
     >
       {#each variations as variation, index (variation.id)}
         <button
@@ -92,7 +93,7 @@ Features:
           data-variation-index={index}
           role="tab"
           aria-selected={index === currentIndex}
-          aria-label="{variation.author ?? 'Unknown'} - {variation.word}"
+          aria-label={`${variation.author ?? t('browse_unknown')} - ${variation.word}`}
           tabindex={index === currentIndex ? 0 : -1}
           onclick={() => handleSelect(index)}
           onkeydown={(e) => handleKeydown(e, index)}

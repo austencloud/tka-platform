@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { mandalaState } from "../../state/mandala-state.svelte";
   import { SYMMETRY_FOLDS } from "../../domain/enums/mandala-enums";
   import type {
@@ -28,12 +29,12 @@
   });
 
   // Mirror axis options
-  const MIRROR_AXES: { id: MirrorAxis; label: string }[] = [
-    { id: "none", label: "None" },
-    { id: "vertical", label: "Vertical" },
-    { id: "horizontal", label: "Horizontal" },
-    { id: "both", label: "Both" },
-  ];
+  const MIRROR_AXES = $derived<{ id: MirrorAxis; label: string }[]>([
+    { id: "none", label: t('mandala_mirror_none') },
+    { id: "vertical", label: t('mandala_mirror_vertical') },
+    { id: "horizontal", label: t('mandala_mirror_horizontal') },
+    { id: "both", label: t('mandala_mirror_both') },
+  ]);
 
   function handleFoldChange(fold: SymmetryFold) {
     mandalaState.setFoldCount(fold);
@@ -61,7 +62,7 @@
 <div class="symmetry-controls">
   <!-- Fold count selector -->
   <div class="control-section">
-    <div class="section-label">Symmetry Folds</div>
+    <div class="section-label">{t('mandala_symmetry_folds')}</div>
     <div class="fold-chips">
       {#each SYMMETRY_FOLDS as fold (fold)}
         <button
@@ -77,7 +78,7 @@
 
   <!-- Mirror controls -->
   <div class="control-section">
-    <div class="section-label">Mirror Reflection</div>
+    <div class="section-label">{t('mandala_mirror_reflection')}</div>
     <div class="mirror-axes">
       {#each MIRROR_AXES as axis (axis.id)}
         <button
@@ -96,17 +97,17 @@
   <!-- Visual info -->
   <div class="control-section">
     <div class="symmetry-info">
-      <span class="info-value">{config.foldCount}-fold</span>
+      <span class="info-value">{t('mandala_n_fold', { count: String(config.foldCount) })}</span>
       <span class="info-detail">
         {#if config.enableMirror && config.mirrorAxis !== "none"}
-          + {config.mirrorAxis} mirror
+          {t('mandala_plus_mirror', { axis: config.mirrorAxis })}
         {:else}
-          rotational only
+          {t('mandala_rotational_only')}
         {/if}
       </span>
     </div>
     <div class="element-count">
-      Each element → {copyMultiplier} copies
+      {t('mandala_copy_count', { count: String(copyMultiplier) })}
     </div>
   </div>
 
@@ -118,7 +119,7 @@
       onclick={handleGridDotsToggle}
     >
       <span class="toggle-icon">{config.showGridDots ? "●" : "○"}</span>
-      <span class="toggle-label">Show Grid Dots</span>
+      <span class="toggle-label">{t('mandala_show_grid_dots')}</span>
     </button>
   </div>
 </div>

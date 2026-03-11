@@ -11,6 +11,7 @@
     feedbackItems,
     onToggle,
     onItemClick,
+    onEditRelease,
   } = $props<{
     version: AppVersion;
     isExpanded: boolean;
@@ -18,6 +19,7 @@
     feedbackItems: VersionFeedbackItemType[];
     onToggle: () => void;
     onItemClick: (itemId: string) => void;
+    onEditRelease?: () => void;
   }>();
 
   const formattedDate = $derived(
@@ -63,6 +65,13 @@
 
   {#if isExpanded}
     <div class="version-items">
+      {#if onEditRelease}
+        <button type="button" class="edit-release-btn" onclick={onEditRelease}>
+          <i class="fas fa-pen" aria-hidden="true"></i>
+          Edit Release Notes & Contributors
+        </button>
+      {/if}
+
       {#if isLoading}
         <div class="items-loading">
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
@@ -183,5 +192,26 @@
     padding: 24px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-size: var(--font-size-compact);
+  }
+
+  .edit-release-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 12px;
+    background: color-mix(in srgb, var(--theme-accent) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 20%, transparent);
+    border-radius: 8px;
+    color: var(--theme-accent);
+    font-size: var(--font-size-compact);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--duration-normal);
+  }
+
+  .edit-release-btn:hover {
+    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 35%, transparent);
   }
 </style>

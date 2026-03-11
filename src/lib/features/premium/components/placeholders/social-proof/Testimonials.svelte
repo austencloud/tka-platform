@@ -1,5 +1,6 @@
 <!-- Testimonials - User quotes with photos/names -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
   interface Testimonial {
     id: string;
     quote: string;
@@ -18,7 +19,7 @@
 </script>
 
 <div class="testimonials">
-  <h3>What Flow Artists Say</h3>
+  <h3>{t('premium_testimonials_heading')}</h3>
   <div class="testimonial-grid">
     {#each testimonials.slice(0, maxVisible) as testimonial (testimonial.id)}
       <div class="testimonial-card">

@@ -140,7 +140,7 @@
         class="hud-button settings-toggle"
         class:active={showSettings}
         onclick={() => showSettings = !showSettings}
-        aria-label="Toggle settings"
+        aria-label={t("gallery_toggle_settings")}
       >
         <i class="fas fa-cog" aria-hidden="true"></i>
       </button>
@@ -152,7 +152,7 @@
             class="hud-button minimap-toggle"
             class:active={showMinimap}
             onclick={() => showMinimap = !showMinimap}
-            aria-label="Toggle minimap"
+            aria-label={t("gallery_toggle_minimap")}
           >
             <i class="fas fa-map" aria-hidden="true"></i>
           </button>
@@ -161,7 +161,7 @@
             class="hud-button chat-toggle"
             class:active={showChat}
             onclick={() => showChat = !showChat}
-            aria-label="Toggle chat"
+            aria-label={t("gallery_toggle_chat")}
           >
             <i class="fas fa-comments" aria-hidden="true"></i>
             {#if getChatMessages().length > 0}
@@ -186,11 +186,11 @@
   <!-- Settings Panel -->
   {#if showSettings}
     <div class="settings-panel">
-      <h3>Gallery Settings</h3>
+      <h3>{t("gallery_settings_title")}</h3>
 
       <ChipGroup>
         <ChipToggle
-          label="Raycasting"
+          label={t("gallery_settings_raycasting")}
           icon="fa-feather"
           active={gallerySettings.physicsMode === "raycasting"}
           color="cyan"
@@ -200,7 +200,7 @@
           }}
         />
         <ChipToggle
-          label="Rapier"
+          label={t("gallery_settings_rapier")}
           icon="fa-cube"
           active={gallerySettings.physicsMode === "rapier"}
           color="cyan"
@@ -213,7 +213,7 @@
 
       <ChipGroup>
         <ChipToggle
-          label="WebGL"
+          label={t("gallery_settings_webgl")}
           icon="fa-globe"
           active={gallerySettings.renderingBackend === "webgl"}
           color="emerald"
@@ -223,7 +223,7 @@
           }}
         />
         <ChipToggle
-          label="WebGPU"
+          label={t("gallery_settings_webgpu")}
           icon="fa-bolt"
           active={gallerySettings.renderingBackend === "webgpu-auto"}
           color="emerald"
@@ -292,7 +292,7 @@
         gallerySettings.reset();
         window.location.reload();
       }}>
-        Reset to Defaults
+        {t("gallery_settings_reset")}
       </button>
     </div>
   {/if}

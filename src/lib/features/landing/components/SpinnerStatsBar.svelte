@@ -7,6 +7,7 @@
 -->
 <script lang="ts">
   import { fade } from "svelte/transition";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { SpinnerMode, SpinnerMetrics } from "../domain/models/spinner-models";
   import type { SpinnerStats } from "../services/contracts/IEndlessSpinnerOrchestrator";
 
@@ -37,25 +38,25 @@
         <!-- Library mode stats -->
         <div class="stat">
           <span class="stat-value">{transitionCount}</span>
-          <span class="stat-label">transitions</span>
+          <span class="stat-label">{t('landing_stats_transitions')}</span>
         </div>
         <div class="stat">
           <span class="stat-value">{libraryStats?.uniqueSequencesUsed ?? 0}</span>
-          <span class="stat-label">unique</span>
+          <span class="stat-label">{t('landing_stats_unique')}</span>
         </div>
         <div class="stat">
           <span class="stat-value">{libraryStats?.sequencesPlayed ?? 0}</span>
-          <span class="stat-label">in session</span>
+          <span class="stat-label">{t('landing_stats_in_session')}</span>
         </div>
       {:else}
         <!-- Infinite mode stats -->
         <div class="stat highlight">
           <span class="stat-value">{formatNumber(globalMetrics?.totalGenerated ?? 0)}</span>
-          <span class="stat-label">ever generated</span>
+          <span class="stat-label">{t('landing_stats_ever_generated')}</span>
         </div>
         <div class="stat">
           <span class="stat-value">{sessionGeneratedCount}</span>
-          <span class="stat-label">this session</span>
+          <span class="stat-label">{t('landing_stats_this_session')}</span>
         </div>
       {/if}
     </div>

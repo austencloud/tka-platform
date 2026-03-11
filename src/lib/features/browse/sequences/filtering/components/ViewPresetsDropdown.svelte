@@ -18,6 +18,7 @@ Responsive behavior:
   import type { BrowseFilter } from "$lib/shared/persistence/domain/types/FilteringTypes";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   let hapticService: IHapticFeedback;
   let deviceDetector: IDeviceDetector | null = null;
@@ -40,25 +41,25 @@ Responsive behavior:
   const presets = [
     {
       id: "all",
-      label: "All Sequences",
+      label: t('browse_preset_all_sequences'),
       icon: "fa-th",
       filter: {} as Partial<BrowseFilter>,
     },
     {
       id: "favorites",
-      label: "Favorites",
+      label: t('browse_preset_favorites'),
       icon: "fa-heart",
       filter: { showFavoritesOnly: true } as Partial<BrowseFilter>,
     },
     {
       id: "recent",
-      label: "Recent",
+      label: t('browse_preset_recent'),
       icon: "fa-clock",
       filter: { sortBy: "dateAdded" as const } as Partial<BrowseFilter>,
     },
     {
       id: "easy",
-      label: "Easy",
+      label: t('browse_preset_easy'),
       icon: "fa-circle",
       iconColor: "#4ade80",
       filter: { difficultyLevels: [1] } as Partial<BrowseFilter>,

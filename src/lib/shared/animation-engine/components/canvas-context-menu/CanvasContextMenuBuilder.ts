@@ -4,7 +4,7 @@
  * Reads current state from AnimationVisibilityStateManager and produces
  * ContextMenuEntry[] for the animation canvas right-click menu.
  *
- * Quick toggles: Dark Mode, Fire, LED, Trails (mutually exclusive effects).
+ * Quick toggles: Fire, Charcoal, LED, Trails (mutually exclusive effects).
  * Panel launcher: "Canvas Settings..." opens the full settings modal.
  */
 
@@ -26,25 +26,37 @@ export function buildCanvasContextMenuItems(
 
   return [
     {
-      id: "toggle-dark-mode",
-      label: "Dark Mode",
-      icon: "fa-moon",
-      checked: settings.darkMode,
+      id: "toggle-fire-effect",
+      label: "Fire",
+      icon: "fa-fire-flame-curved",
+      iconColor: "#f97316",
+      checked: settings.fireEffect && !settings.fireUseCharcoal,
       keepOpen: true,
-      action: () => vm.toggleDarkMode(),
+      action: () => {
+        vm.setFireUseCharcoal(false);
+        vm.toggleFireEffect();
+      },
     },
     {
-      id: "toggle-fire-effect",
-      label: "Fire Effect",
+      id: "toggle-charcoal-effect",
+      label: "Charcoal",
       icon: "fa-fire",
-      iconColor: "#f97316",
-      checked: settings.fireEffect,
+      iconColor: "#a855f7",
+      checked: settings.fireEffect && settings.fireUseCharcoal,
       keepOpen: true,
-      action: () => vm.toggleFireEffect(),
+      action: () => {
+        if (settings.fireEffect && settings.fireUseCharcoal) {
+          vm.setFireEffect(false);
+          vm.setFireUseCharcoal(false);
+        } else {
+          vm.setFireUseCharcoal(true);
+          vm.setFireEffect(true);
+        }
+      },
     },
     {
       id: "toggle-led-effect",
-      label: "LED Effect",
+      label: "LED",
       icon: "fa-lightbulb",
       iconColor: "#22c55e",
       checked: settings.ledEffect,

@@ -28,6 +28,9 @@
     onConfirmAdd,
     onStartEdit,
     onEndEdit,
+    allContributors,
+    contributorMap,
+    onUpdateEntryContributors,
   }: {
     category: ChangelogCategory;
     entries: ChangelogEntry[];

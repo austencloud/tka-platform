@@ -8,6 +8,7 @@
 <script lang="ts">
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import PropSelectionSheet from "$lib/shared/settings/components/tabs/prop-type/PropSelectionSheet.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   let {
     isOpen = $bindable(false),
@@ -31,6 +32,6 @@
   bind:isOpen
   {selectedPropType}
   color="blue"
-  title="Arena Prop"
+  title={t('arena_battle_prop_title')}
   onSelect={handleSelect}
 />

@@ -13,6 +13,7 @@
   import { NOTIFICATION_TYPE_CONFIG } from "../domain/models/notification-models";
   import { notificationService } from "../services/implementations/Notifier";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   let { notification, onAction, onDismiss } = $props<{
     notification: UserNotification;
@@ -52,10 +53,10 @@
     const hour = 60 * minute;
     const day = 24 * hour;
 
-    if (diff < minute) return "Just now";
-    if (diff < hour) return `${Math.floor(diff / minute)}m ago`;
-    if (diff < day) return `${Math.floor(diff / hour)}h ago`;
-    if (diff < 7 * day) return `${Math.floor(diff / day)}d ago`;
+    if (diff < minute) return t("feedback_time_just_now");
+    if (diff < hour) return t("feedback_time_minutes_ago", { count: Math.floor(diff / minute) });
+    if (diff < day) return t("feedback_time_hours_ago", { count: Math.floor(diff / hour) });
+    if (diff < 7 * day) return t("feedback_time_days_ago", { count: Math.floor(diff / day) });
 
     // Format as date
     return notification.createdAt.toLocaleDateString(undefined, {
@@ -102,7 +103,7 @@
     class="notification-card"
     onclick={handleDismiss}
     type="button"
-    title="Click to dismiss and remove"
+    title={t("feedback_notif_click_dismiss")}
     aria-label="Dismiss notification: {notification.message}"
   >
     <div class="notification-icon" style="background: {config.color};">
@@ -116,7 +117,7 @@
       </div>
       <p class="notification-message">{notification.message}</p>
       {#if notification.fromUserName}
-        <span class="notification-from">from {notification.fromUserName}</span>
+        <span class="notification-from">{t("feedback_notif_from", { name: notification.fromUserName })}</span>
       {/if}
     </div>
 

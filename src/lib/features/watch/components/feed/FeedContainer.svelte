@@ -9,6 +9,7 @@
   - Auto-load when 3 items from end
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount, onDestroy } from "svelte";
   import type { FeedItem } from "../../domain/models/feed-models";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -182,7 +183,7 @@
     const item = items[index];
     if (!item) return;
 
-    const announcement = `Card ${index + 1} of ${items.length}: ${item.title} by ${item.creatorName}`;
+    const announcement = t('watch_feed_card_announcement', { current: index + 1, total: items.length, title: item.title, creator: item.creatorName });
 
     // Use existing live region or create one
     let liveRegion = document.getElementById("feed-live-region");
@@ -229,7 +230,7 @@
   class="feed-container"
   onscroll={handleScroll}
   role="feed"
-  aria-label="Content feed"
+  aria-label={t('watch_feed_label')}
 >
   {#if isLoading && items.length === 0}
     <!-- Initial loading state -->

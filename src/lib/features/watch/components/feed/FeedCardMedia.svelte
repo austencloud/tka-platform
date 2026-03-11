@@ -10,6 +10,7 @@
   media types are available on the item.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount, onDestroy } from "svelte";
   import type { FeedContentType, FeedItem } from "../../domain/models/feed-models";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -134,7 +135,7 @@
       class="mute-toggle"
       onclick={handleMuteToggle}
       type="button"
-      aria-label={isMuted ? "Unmute" : "Mute"}
+      aria-label={t(isMuted ? 'watch_media_unmute' : 'watch_media_mute')}
     >
       <i class="fas {isMuted ? 'fa-volume-mute' : 'fa-volume-up'}" aria-hidden="true"></i>
     </button>

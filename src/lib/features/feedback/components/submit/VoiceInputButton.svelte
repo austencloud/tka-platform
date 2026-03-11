@@ -2,6 +2,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import type { IVoiceRecorder, VoiceRecordingResult } from "../../services/contracts/IVoiceRecorder";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   const {
     voiceRecorder,
@@ -73,9 +74,9 @@
   class:recording={isRecording}
   onclick={toggleRecording}
   {disabled}
-  aria-label={isRecording ? "Stop recording" : "Start voice input"}
+  aria-label={isRecording ? t("feedback_stop_recording") : t("feedback_start_voice_input")}
   aria-pressed={isRecording}
-  title={isRecording ? "Stop recording" : "Speak to dictate feedback"}
+  title={isRecording ? t("feedback_stop_recording") : t("feedback_speak_to_dictate")}
 >
   {#if isRecording}
     <span class="pulse-ring"></span>

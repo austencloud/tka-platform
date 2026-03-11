@@ -6,6 +6,7 @@
   Hover-reveal delete button.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { VoiceSessionPreview } from "$lib/shared/voice-control/domain/voice-session-types";
   import type { ResolutionTier } from "$lib/shared/voice-control/domain/voice-session-types";
 
@@ -28,10 +29,10 @@
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
 
-    if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
+    if (diffMins < 1) return t('voice_sessions_just_now');
+    if (diffMins < 60) return t('voice_sessions_minutes_ago', { count: String(diffMins) });
+    if (diffHours < 24) return t('voice_sessions_hours_ago', { count: String(diffHours) });
+    if (diffDays < 7) return t('voice_sessions_days_ago', { count: String(diffDays) });
 
     return date.toLocaleDateString(undefined, {
       month: "short",
@@ -98,7 +99,7 @@
       <span class="item-duration">{formatDuration(preview.durationMs)}</span>
     </div>
     <div class="item-meta">
-      <span class="event-count">{preview.stats.totalEvents} events</span>
+      <span class="event-count">{t('voice_sessions_event_count', { count: String(preview.stats.totalEvents) })}</span>
       <span class="separator">·</span>
       <span class="success-rate" style="color: {preview.stats.successCount === preview.stats.totalEvents ? '#22c55e' : preview.stats.unresolvedCount > 0 ? '#f59e0b' : '#94a3b8'}">{successRate(preview.stats)}</span>
     </div>
@@ -118,8 +119,8 @@
   <button
     class="delete-btn"
     onclick={handleDeleteClick}
-    title="Delete session"
-    aria-label="Delete session"
+    title={t('voice_sessions_delete_session')}
+    aria-label={t('voice_sessions_delete_session')}
   >
     <i class="fas fa-times" aria-hidden="true"></i>
   </button>

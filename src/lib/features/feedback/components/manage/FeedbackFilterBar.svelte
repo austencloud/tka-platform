@@ -13,6 +13,7 @@
   import FilterButton from "./FilterButton.svelte";
   import FilterMobileSheet from "./FilterMobileSheet.svelte";
   import FilterDesktopDrawers from "./FilterDesktopDrawers.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     manageState: FeedbackManageState;
@@ -48,7 +49,7 @@
     <input
       type="text"
       class="search-input"
-      placeholder="Search feedback..."
+      placeholder={t("feedback_search_placeholder")}
       value={manageState.searchQuery}
       oninput={(e) => manageState.setSearchQuery(e.currentTarget.value)}
     />
@@ -66,7 +67,7 @@
 
   <!-- Mobile: Filters button -->
   <FilterButton
-    label="Filters"
+    label={t("feedback_filters")}
     icon="fa-sliders-h"
     badgeCount={uiState.activeFilterCount}
     onClick={() => uiState.openSheet()}
@@ -78,7 +79,7 @@
     <!-- Type chips -->
     <div class="chip-group">
       <FilterButton
-        label="All Types"
+        label={t("feedback_all_types")}
         onClick={() => handleTypeFilter("all")}
         isActive={manageState.filters.type === "all"}
       />
@@ -132,7 +133,7 @@
         aria-label="Clear all filters"
       >
         <i class="fas fa-times" aria-hidden="true"></i>
-        Clear
+        {t("feedback_clear")}
       </button>
     {/if}
   </div>

@@ -5,6 +5,8 @@
   Standard transport: first, prev, play/pause, next, last + scrubber.
 -->
 <script lang="ts">
+	import { t } from '$lib/shared/i18n/i18n.svelte';
+
 	interface Props {
 		isPlaying: boolean;
 		currentBeat: number;
@@ -58,8 +60,8 @@
 			class="transport-btn"
 			onclick={onFirst}
 			disabled={disabled || currentBeat === 0}
-			aria-label="First beat"
-			title="First beat"
+			aria-label={t('connect_first_beat')}
+			title={t('connect_first_beat')}
 		>
 			<i class="fas fa-step-backward" aria-hidden="true"></i>
 		</button>
@@ -68,8 +70,8 @@
 			class="transport-btn"
 			onclick={onPrevious}
 			disabled={disabled || currentBeat === 0}
-			aria-label="Previous beat"
-			title="Previous beat"
+			aria-label={t('connect_previous_beat')}
+			title={t('connect_previous_beat')}
 		>
 			<i class="fas fa-backward" aria-hidden="true"></i>
 		</button>
@@ -78,8 +80,8 @@
 			class="transport-btn play-btn"
 			onclick={handlePlayPause}
 			{disabled}
-			aria-label={isPlaying ? 'Pause' : 'Play'}
-			title={isPlaying ? 'Pause' : 'Play'}
+			aria-label={isPlaying ? t('connect_pause') : t('connect_play')}
+			title={isPlaying ? t('connect_pause') : t('connect_play')}
 		>
 			{#if isPlaying}
 				<i class="fas fa-pause" aria-hidden="true"></i>
@@ -92,8 +94,8 @@
 			class="transport-btn"
 			onclick={onNext}
 			disabled={disabled || currentBeat >= maxBeat}
-			aria-label="Next beat"
-			title="Next beat"
+			aria-label={t('connect_next_beat')}
+			title={t('connect_next_beat')}
 		>
 			<i class="fas fa-forward" aria-hidden="true"></i>
 		</button>
@@ -102,8 +104,8 @@
 			class="transport-btn"
 			onclick={onLast}
 			disabled={disabled || currentBeat >= maxBeat}
-			aria-label="Last beat"
-			title="Last beat"
+			aria-label={t('connect_last_beat')}
+			title={t('connect_last_beat')}
 		>
 			<i class="fas fa-step-forward" aria-hidden="true"></i>
 		</button>
@@ -122,11 +124,11 @@
 				value={currentBeat}
 				{disabled}
 				oninput={handleSliderChange}
-				aria-label="Seek position"
+				aria-label={t('connect_seek_position')}
 				aria-valuemin={0}
 				aria-valuemax={maxBeat}
 				aria-valuenow={currentBeat}
-				aria-valuetext="Beat {currentBeat} of {maxBeat}"
+				aria-valuetext={t('connect_beat_of', { current: currentBeat, total: maxBeat })}
 				style="--progress: {progressPercent}%"
 			/>
 		</div>

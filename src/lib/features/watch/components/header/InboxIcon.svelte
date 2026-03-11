@@ -5,6 +5,7 @@
   Tapping navigates to messages view.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount, onDestroy } from "svelte";
   import { container } from "$lib/shared/di";
   import type { IConversationManager } from "$lib/shared/messaging/services/contracts/IConversationManager";
@@ -52,7 +53,7 @@
   class="inbox-icon"
   onclick={handleClick}
   type="button"
-  aria-label={hasUnread ? `Messages, ${unreadCount} unread` : "Messages"}
+  aria-label={hasUnread ? t('watch_inbox_unread', { count: unreadCount }) : t('watch_inbox')}
 >
   <i class="fas fa-envelope" aria-hidden="true"></i>
   {#if hasUnread}

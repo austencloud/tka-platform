@@ -9,6 +9,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   interface Props {
     onSearch: (query: string) => void;
@@ -192,7 +193,7 @@
         onkeydown={handleKeydown}
         onblur={handleCollapse}
         {placeholder}
-        aria-label="Search sequences"
+        aria-label={t('browse_search_sequences')}
       />
       <!-- Greek letter picker toggle -->
       <button
@@ -200,9 +201,9 @@
         class:active={showGreekPicker}
         onmousedown={toggleGreekPicker}
         type="button"
-        aria-label="Insert Greek letter"
+        aria-label={t('browse_insert_greek_letter')}
         aria-expanded={showGreekPicker}
-        title="Greek letters (Σ, Δ, α, β...)"
+        title={t('browse_greek_letters_title')}
       >
         Σ
       </button>
@@ -211,7 +212,7 @@
           class="clear-button"
           onclick={handleClear}
           type="button"
-          aria-label="Clear search"
+          aria-label={t('browse_clear_search')}
         >
           <i class="fas fa-times" aria-hidden="true"></i>
         </button>
@@ -220,7 +221,7 @@
 
     <!-- Greek letter picker dropdown -->
     {#if showGreekPicker}
-      <div class="greek-picker" role="listbox" aria-label="Greek letters">
+      <div class="greek-picker" role="listbox" aria-label={t('browse_greek_letters')}>
         {#each SPECIAL_LETTERS as letter}
           <button
             class="greek-letter"
@@ -239,7 +240,7 @@
       class="search-button"
       onclick={handleExpand}
       type="button"
-      aria-label="Open search"
+      aria-label={t('browse_open_search')}
       aria-expanded="false"
     >
       <i class="fas fa-search" aria-hidden="true"></i>

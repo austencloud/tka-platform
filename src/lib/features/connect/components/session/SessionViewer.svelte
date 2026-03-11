@@ -13,6 +13,7 @@
 	import { fade, fly } from 'svelte/transition';
 	import { connectState } from '../../state/connect-state.svelte';
 	import { container } from '$lib/shared/di';
+	import { t } from '$lib/shared/i18n/i18n.svelte';
 	import { lanSyncState } from '$lib/shared/lan-sync/state/lan-sync-state.svelte';
 	import type { DisplayPreference, SyncSession } from '../../domain/models/connect-models';
 	import {
@@ -152,12 +153,12 @@
 			}
 
 			// All sources exhausted
-			loadError = 'Sequence not found';
+			loadError = t('connect_sequence_not_found');
 		} catch (error) {
 			loadError = error instanceof Error ? error.message : 'Failed to load sequence';
 			const errorHandler = container.items.errorHandler;
 			errorHandler.showUserError({
-				message: 'Failed to load the synced sequence. You can report this so it can be fixed.',
+				message: t('connect_load_sequence_failed'),
 				technicalDetails: error instanceof Error ? error.message : String(error),
 				error: error instanceof Error ? error : new Error(String(error)),
 				severity: 'error',
@@ -264,7 +265,7 @@
 	<div class="session-viewer" transition:fly={{ y: 50, duration: 300 }}>
 		<!-- Header -->
 		<header class="viewer-header">
-			<button class="back-button" onclick={onClose} aria-label="Leave session">
+			<button class="back-button" onclick={onClose} aria-label={t('connect_leave_session')}>
 				<i class="fas fa-arrow-left" aria-hidden="true"></i>
 			</button>
 
@@ -274,10 +275,10 @@
 					class="participants-badge"
 					onclick={() => (showParticipants = !showParticipants)}
 					aria-expanded={showParticipants}
-					aria-label="{participants.length} synced participants"
+					aria-label={t('connect_synced_participants', { count: participants.length })}
 				>
 					<i class="fas fa-users" aria-hidden="true"></i>
-					<span>{participants.length} synced</span>
+					<span>{t('connect_synced_count', { count: participants.length })}</span>
 				</button>
 			</div>
 
@@ -287,8 +288,8 @@
 					onChange={handleDisplayChange}
 				/>
 
-				<button class="leave-button" onclick={onClose} aria-label="Leave session">
-					Leave
+				<button class="leave-button" onclick={onClose} aria-label={t('connect_leave_session')}>
+					{t('connect_leave')}
 				</button>
 			</div>
 		</header>
@@ -305,7 +306,7 @@
 			{#if isLoading}
 				<div class="loading-state">
 					<ProgressRing percent={-1} size={32} strokeWidth={3} />
-					<p>Loading sequence...</p>
+					<p>{t('connect_loading_sequence')}</p>
 				</div>
 			{:else if loadError}
 				<div class="error-state">
@@ -360,7 +361,7 @@
 
 				<!-- Beat indicator -->
 				<div class="beat-indicator">
-					Beat {currentBeat} of {sequence.steps?.length ?? 0}
+					{t('connect_beat_of', { current: currentBeat, total: sequence.steps?.length ?? 0 })}
 				</div>
 			{/if}
 		</main>

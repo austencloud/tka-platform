@@ -11,6 +11,7 @@
     CONFIRMATION_STATUS_CONFIG,
   } from "../../domain/models/feedback-models";
   import MyFeedbackCard from "./MyFeedbackCard.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   const { items, selectedItemId, onSelect, isLoading } = $props<{
     items: FeedbackItem[];
@@ -97,16 +98,14 @@
     {#if filteredItems.length === 0 && !isLoading}
       <div class="empty-filter">
         <i class="fas fa-filter" aria-hidden="true"></i>
-        <span
-          >No {STATUS_CONFIG[selectedStatus].label.toLowerCase()} feedback</span
-        >
+        <span>{t("feedback_no_status_feedback", { status: STATUS_CONFIG[selectedStatus].label.toLowerCase() })}</span>
       </div>
     {/if}
 
     {#if isLoading}
       <div class="loading-more">
         <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-        <span>Loading more...</span>
+        <span>{t("feedback_loading_more")}</span>
       </div>
     {/if}
   </section>

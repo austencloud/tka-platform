@@ -6,6 +6,7 @@ Displays A-Z grid with clear option
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
     import { onMount } from "svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   let {
     currentLetter = null,
@@ -38,9 +39,9 @@ Displays A-Z grid with clear option
 
 <div class="letter-selection-sheet">
   <div class="sheet-header">
-    <h3 class="sheet-title">Select Letter</h3>
+    <h3 class="sheet-title">{t('browse_select_letter')}</h3>
     {#if currentLetter}
-      <button class="clear-btn" onclick={handleClear}> Clear </button>
+      <button class="clear-btn" onclick={handleClear}> {t('browse_clear')} </button>
     {/if}
   </div>
 
@@ -50,7 +51,7 @@ Displays A-Z grid with clear option
         class="letter-btn"
         class:selected={currentLetter === letter}
         onclick={() => handleLetterClick(letter)}
-        aria-label="Filter by letter {letter}"
+        aria-label={t('browse_filter_by_letter', { letter })}
         aria-pressed={currentLetter === letter}
       >
         {letter}

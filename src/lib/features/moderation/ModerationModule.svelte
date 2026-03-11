@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { authState } from '$lib/shared/auth/state/authState.svelte';
 	import ReportsDashboard from './components/ReportsDashboard.svelte';
+	import { t } from '$lib/shared/i18n/i18n.svelte';
 </script>
 
 {#if authState.isAdmin}
@@ -8,8 +9,8 @@
 {:else}
 	<div class="access-denied">
 		<i class="fa-solid fa-lock" aria-hidden="true"></i>
-		<h2>Access Denied</h2>
-		<p>You don't have permission to view this page.</p>
+		<h2>{t('moderation_access_denied')}</h2>
+		<p>{t('moderation_no_permission')}</p>
 	</div>
 {/if}
 

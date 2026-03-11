@@ -6,6 +6,7 @@ Popover uses fixed positioning to escape overflow:hidden containers.
 -->
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   interface Props {
     label: string;

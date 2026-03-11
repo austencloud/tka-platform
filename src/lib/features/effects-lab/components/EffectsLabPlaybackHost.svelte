@@ -745,6 +745,7 @@
         <CharcoalControlsPanel
           params={charcoalParams}
           onParamChange={handleCharcoalParamChange}
+          onParamsReplace={(p) => { charcoalParams = { ...p }; }}
           onReset={handleCharcoalReset}
         />
       {:else if activeMode === "led"}

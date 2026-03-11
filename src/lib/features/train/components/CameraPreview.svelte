@@ -11,6 +11,7 @@ Features frame processing loop for pose estimation and overlay support.
   import type { ICameraManager } from "../services/contracts/ICameraManager";
   import type { Snippet } from "svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     onCameraReady?: () => void;
@@ -70,7 +71,7 @@ Features frame processing loop for pose estimation and overlay support.
     } catch (error) {
       isInitializing = false;
       const message =
-        error instanceof Error ? error.message : "Failed to access camera";
+        error instanceof Error ? error.message : t('train_camera_failed');
       errorMessage = message;
       onCameraError?.(message);
     }
@@ -101,7 +102,7 @@ Features frame processing loop for pose estimation and overlay support.
     {#if isInitializing}
       <div class="loading-state">
         <ProgressRing percent={-1} size={32} strokeWidth={3} />
-        <p>Initializing camera...</p>
+        <p>{t('train_camera_initializing')}</p>
       </div>
     {/if}
 
@@ -119,7 +120,7 @@ Features frame processing loop for pose estimation and overlay support.
           <line x1="12" y1="16" x2="12.01" y2="16" />
         </svg>
         <p>{errorMessage}</p>
-        <button class="retry-button" onclick={initCamera}> Try Again </button>
+        <button class="retry-button" onclick={initCamera}> {t('train_camera_retry')} </button>
       </div>
     {/if}
   </div>

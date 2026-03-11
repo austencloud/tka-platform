@@ -9,6 +9,7 @@
   When correcting, shows a GridPositionPicker for each hand per beat.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { DetectedBeat } from "../../domain/models";
   import type { PhaseVerdict, UserCorrection } from "../../domain/verification-models";
@@ -97,11 +98,11 @@
     <div class="verdict-actions">
       <button class="verdict-btn accept" onclick={handleAccept}>
         <i class="fas fa-check"></i>
-        Looks right
+        {t('skel2tka_looks_right')}
       </button>
 
       <div class="beat-correction-list">
-        <span class="section-label">Wrong at beat:</span>
+        <span class="section-label">{t('skel2tka_wrong_at_beat')}</span>
         <div class="beat-buttons">
           {#each beats as beat, i}
             <button
@@ -117,24 +118,24 @@
 
       {#if corrections.length > 0}
         <div class="correction-summary">
-          <span>{corrections.length} correction{corrections.length === 1 ? "" : "s"} pending</span>
+          <span>{t('skel2tka_corrections_pending', { count: String(corrections.length) })}</span>
           <button class="verdict-btn corrected" onclick={submitCorrections}>
             <i class="fas fa-paper-plane"></i>
-            Submit corrections
+            {t('skel2tka_submit_corrections')}
           </button>
         </div>
       {/if}
 
       <button class="verdict-btn reject" onclick={handleReject}>
         <i class="fas fa-redo"></i>
-        Try again
+        {t('skel2tka_try_again')}
       </button>
     </div>
 
   {:else if mode === "correcting" && currentBeat}
     <div class="correction-ui">
       <div class="correction-header">
-        <h4>Correct Beat {correctingBeatIndex + 1}</h4>
+        <h4>{t('skel2tka_correct_beat', { beat: String(correctingBeatIndex + 1) })}</h4>
         <span class="beat-time">
           {currentBeat.startTime.toFixed(2)}s - {currentBeat.endTime.toFixed(2)}s
         </span>
@@ -142,9 +143,9 @@
 
       <div class="hand-pickers">
         <div class="picker-group">
-          <span class="picker-label" style="color: #3b82f6;">Blue hand</span>
+          <span class="picker-label" style="color: #3b82f6;">{t('skel2tka_blue_hand')}</span>
           <span class="detected-value">
-            Detected: {detectedBlue?.toUpperCase() ?? "none"}
+            {t('skel2tka_detected_value', { value: detectedBlue?.toUpperCase() ?? t('skel2tka_none') })}
           </span>
           <GridPositionPicker
             selected={correctedBlue}
@@ -154,9 +155,9 @@
         </div>
 
         <div class="picker-group">
-          <span class="picker-label" style="color: #ef4444;">Red hand</span>
+          <span class="picker-label" style="color: #ef4444;">{t('skel2tka_red_hand')}</span>
           <span class="detected-value">
-            Detected: {detectedRed?.toUpperCase() ?? "none"}
+            {t('skel2tka_detected_value', { value: detectedRed?.toUpperCase() ?? t('skel2tka_none') })}
           </span>
           <GridPositionPicker
             selected={correctedRed}
@@ -169,10 +170,10 @@
       <div class="correction-actions">
         <button class="action-btn save" onclick={saveCorrection}>
           <i class="fas fa-save"></i>
-          Save correction
+          {t('skel2tka_save_correction')}
         </button>
         <button class="action-btn cancel" onclick={cancelCorrection}>
-          Cancel
+          {t('skel2tka_cancel')}
         </button>
       </div>
     </div>

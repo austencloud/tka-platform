@@ -15,6 +15,7 @@
   import InlineFilterPanel from "../../filtering/components/inline-filter/InlineFilterPanel.svelte";
   import { gridZoomManager } from "../../../shared/state/grid-zoom-state.svelte";
   import { sequencePanelManager } from "../../../shared/state/sequence-panel-state.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   const {
     sequences = [],
@@ -89,8 +90,8 @@
   const hasSequences = $derived(!isInitializing && !error && sequences.length > 0);
   const emptyMessage = $derived(
     source === "my-library"
-      ? "No sequences saved yet"
-      : "No sequences found"
+      ? t('browse_no_sequences_saved')
+      : t('browse_no_sequences_found')
   );
 
   // Handle sequence actions (pass variations through for view-detail)
@@ -178,7 +179,7 @@
     {:else if error}
       <div class="error-state" role="alert" aria-live="assertive">
         <p class="error-message">{error}</p>
-        <button onclick={handleRetry}> Try Again </button>
+        <button onclick={handleRetry}> {t('browse_try_again')} </button>
       </div>
     {:else if isEmpty}
       <div class="empty-state">

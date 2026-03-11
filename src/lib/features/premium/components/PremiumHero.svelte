@@ -2,6 +2,8 @@
   PremiumHero - Hero section with developer photo and value proposition
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
+
   interface Props {
     photoUrl?: string;
     title: string;
@@ -20,7 +22,7 @@
 
 <div class="hero">
   <div class="developer-photo">
-    <img src={photoUrl} alt="Developer" onerror={handleImageError} />
+    <img src={photoUrl} alt={t('premium_hero_photo_alt')} onerror={handleImageError} />
     <div class="photo-placeholder">
       <i class="fas fa-user" aria-hidden="true"></i>
     </div>

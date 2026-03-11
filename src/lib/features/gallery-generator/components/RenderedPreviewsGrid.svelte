@@ -5,6 +5,7 @@
   Shows blob URLs directly (not PropAwareThumbnail which would fetch from cloud).
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { galleryGeneratorState } from "../state/gallery-generator-state.svelte";
 
   const state = galleryGeneratorState;
@@ -29,10 +30,10 @@
 <svelte:window on:keydown={handleKeydown} />
 
 <div class="column preview-column">
-  <h2>Rendered ({state.renderedImages.length})</h2>
+  <h2>{t('gallery_gen_rendered_heading', { count: String(state.renderedImages.length) })}</h2>
 
   {#if state.renderedImages.length === 0}
-    <p class="empty-message">Rendered images will appear here</p>
+    <p class="empty-message">{t('gallery_gen_rendered_empty')}</p>
   {:else}
     <div class="preview-grid">
       {#each state.renderedImages as img (img.name)}
@@ -44,7 +45,7 @@
           <img src={img.imageUrl} alt={img.name} loading="lazy" />
           <span class="card-label">{img.name}</span>
           <span class="status-badge" class:written={img.written}>
-            {img.written ? "✓ Written" : "Preview"}
+            {img.written ? t('gallery_gen_written') : t('gallery_gen_preview')}
           </span>
         </button>
       {/each}
@@ -57,7 +58,7 @@
   <button
     class="lightbox-overlay"
     on:click={closeLightbox}
-    aria-label="Close lightbox"
+    aria-label={t('gallery_gen_close_lightbox')}
   >
     <div class="lightbox-content" on:click|stopPropagation role="presentation">
       <img src={state.viewingImage.url} alt={state.viewingImage.name} />

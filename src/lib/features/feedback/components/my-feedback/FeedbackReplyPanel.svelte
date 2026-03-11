@@ -5,6 +5,7 @@
     FeedbackStatus,
   } from "../../domain/models/feedback-models";
   import { STATUS_CONFIG } from "../../domain/models/feedback-models";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     item: FeedbackItem;
@@ -36,7 +37,7 @@
         showSuccess = false;
       }, 3000);
     } catch (err) {
-      error = err instanceof Error ? err.message : "Failed to submit reply";
+      error = err instanceof Error ? err.message : t("feedback_reply_failed");
     }
   }
 
@@ -54,17 +55,16 @@
     <div class="header-content">
       <h3>
         {#if (item.status as string) === "feedback-needs-info"}
-          Share More Details
+          {t("feedback_share_more_details")}
         {:else if (item.status as string) === "feedback-response"}
-          Admin Response
+          {t("feedback_admin_response")}
         {/if}
       </h3>
       <p class="header-hint">
         {#if (item.status as string) === "feedback-needs-info"}
-          The team needs more information to resolve this. Add clarification or
-          details below.
+          {t("feedback_needs_info_hint")}
         {:else if (item.status as string) === "feedback-response"}
-          The team sent a response. You can reply with additional information.
+          {t("feedback_response_hint")}
         {/if}
       </p>
     </div>
@@ -74,7 +74,7 @@
     {#if showSuccess}
       <div class="success-message">
         <i class="fas fa-check-circle" aria-hidden="true"></i>
-        <span>Reply sent successfully!</span>
+        <span>{t("feedback_reply_sent")}</span>
       </div>
     {/if}
 
@@ -86,13 +86,13 @@
     {/if}
 
     <div class="form-group">
-      <label for="reply-textarea" class="field-label">Your Reply</label>
+      <label for="reply-textarea" class="field-label">{t("feedback_your_reply")}</label>
       <div class="textarea-wrapper">
         <textarea
           id="reply-textarea"
           class="reply-textarea"
           bind:value={reply}
-          placeholder="Please provide additional details or information..."
+          placeholder={t("feedback_reply_placeholder")}
           rows="4"
           disabled={isLoading}
         ></textarea>
@@ -100,7 +100,7 @@
       <div class="field-hint">
         <span class="char-count" class:met={hasMinChars}>
           {#if reply.trim().length < 5}
-            {5 - reply.trim().length} more needed
+            {t("feedback_chars_needed", { count: 5 - reply.trim().length })}
           {:else}
             <i class="fas fa-check" aria-hidden="true"></i>
           {/if}
@@ -115,7 +115,7 @@
         onclick={handleCancel}
         disabled={isLoading || reply.length === 0}
       >
-        Clear
+        {t("feedback_clear")}
       </button>
       <button
         type="button"
@@ -125,10 +125,10 @@
       >
         {#if isLoading}
           <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
-          <span>Sending...</span>
+          <span>{t("feedback_sending")}</span>
         {:else}
           <i class="fas fa-send" aria-hidden="true"></i>
-          <span>Send Reply</span>
+          <span>{t("feedback_send_reply")}</span>
         {/if}
       </button>
     </div>

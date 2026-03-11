@@ -6,6 +6,7 @@
   Requires age verification before displaying content.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { container } from "$lib/shared/di";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import type { IHallOfShameLoader } from "../services/contracts/IHallOfShameLoader";
@@ -53,18 +54,18 @@
     console.warn("Failed to resolve Hall of Shame services:", error);
   }
 
-  const categories: { value: ShameCategory | "all"; label: string }[] = [
-    { value: "all", label: "All" },
-    { value: "profanity", label: "Profanity" },
-    { value: "sexual", label: "Crude" },
-    { value: "creative", label: "Creative" },
-  ];
+  const categories = $derived<{ value: ShameCategory | "all"; label: string }[]>([
+    { value: "all", label: t('hall_of_shame_cat_all') },
+    { value: "profanity", label: t('hall_of_shame_cat_profanity') },
+    { value: "sexual", label: t('hall_of_shame_cat_crude') },
+    { value: "creative", label: t('hall_of_shame_cat_creative') },
+  ]);
 
-  const sortOptions: { value: ShameSortOption; label: string }[] = [
-    { value: "newest", label: "Newest" },
-    { value: "mostVoted", label: "Most Votes" },
-    { value: "mostViewed", label: "Most Views" },
-  ];
+  const sortOptions = $derived<{ value: ShameSortOption; label: string }[]>([
+    { value: "newest", label: t('hall_of_shame_sort_newest') },
+    { value: "mostVoted", label: t('hall_of_shame_sort_most_votes') },
+    { value: "mostViewed", label: t('hall_of_shame_sort_most_views') },
+  ]);
 
   // Check verification when auth becomes initialized
   $effect(() => {
@@ -201,25 +202,25 @@
   {#if !authState.initialized || isCheckingVerification}
     <div class="loading-state">
       <ProgressRing percent={-1} size={32} strokeWidth={3} />
-      <p>Checking access...</p>
+      <p>{t('hall_of_shame_checking_access')}</p>
     </div>
   {:else if !authState.user}
     <div class="access-denied">
       <i class="fas fa-lock" aria-hidden="true"></i>
-      <h2>Sign In Required</h2>
-      <p>You must be signed in to access the Hall of Shame.</p>
+      <h2>{t('hall_of_shame_sign_in_required')}</h2>
+      <p>{t('hall_of_shame_sign_in_message')}</p>
     </div>
   {:else if !isVerified}
     <div class="verification-required">
       <i class="fas fa-skull" aria-hidden="true"></i>
-      <h2>Age Verification Required</h2>
-      <p>The Hall of Shame contains crude humor and profanity. You must verify your age to proceed.</p>
+      <h2>{t('hall_of_shame_age_required')}</h2>
+      <p>{t('hall_of_shame_age_required_message')}</p>
       <button class="verify-button" onclick={() => (showGate = true)}>
-        Verify Age
+        {t('hall_of_shame_verify_age')}
       </button>
       <div class="warning-notice">
         <i class="fas fa-ban" aria-hidden="true"></i>
-        <span>Slurs and hate speech are strictly prohibited. Violations result in immediate admin notification and possible ban.</span>
+        <span>{t('hall_of_shame_hate_speech_warning')}</span>
       </div>
     </div>
   {:else}
@@ -228,12 +229,12 @@
       <div class="header-content">
         <h1>
           <i class="fas fa-skull" aria-hidden="true"></i>
-          Hall of Shame
+          {t('hall_of_shame_title')}
         </h1>
-        <p class="subtitle">Where the naughty sequences go to be celebrated</p>
+        <p class="subtitle">{t('hall_of_shame_subtitle')}</p>
         <div class="header-warning">
           <i class="fas fa-ban" aria-hidden="true"></i>
-          <span>No slurs or hate speech. Violations trigger admin review and possible ban.</span>
+          <span>{t('hall_of_shame_header_warning')}</span>
         </div>
       </div>
 
@@ -241,7 +242,7 @@
         <select
           class="filter-select"
           bind:value={selectedCategory}
-          aria-label="Filter by category"
+          aria-label={t('hall_of_shame_filter_by_category')}
         >
           {#each categories as cat}
             <option value={cat.value}>{cat.label}</option>
@@ -251,7 +252,7 @@
         <select
           class="filter-select"
           bind:value={sortOption}
-          aria-label="Sort by"
+          aria-label={t('hall_of_shame_sort_by')}
         >
           {#each sortOptions as opt}
             <option value={opt.value}>{opt.label}</option>
@@ -265,7 +266,7 @@
       <section class="featured-section">
         <h2 class="section-title">
           <i class="fas fa-star" aria-hidden="true"></i>
-          Featured
+          {t('hall_of_shame_featured')}
         </h2>
         <div class="featured-grid">
           {#each featuredEntries as entry (entry.id)}
@@ -280,22 +281,22 @@
       {#if isLoading}
         <div class="loading-state">
           <ProgressRing percent={-1} size={32} strokeWidth={3} />
-          <p>Loading gallery...</p>
+          <p>{t('hall_of_shame_loading')}</p>
         </div>
       {:else if error}
         <div class="error-state">
           <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
           <p>{error}</p>
-          <button class="retry-button" onclick={loadGallery}>Retry</button>
+          <button class="retry-button" onclick={loadGallery}>{t('hall_of_shame_retry')}</button>
         </div>
       {:else if entries.length === 0}
         <div class="empty-state">
           <i class="fas fa-ghost" aria-hidden="true"></i>
-          <h3>No entries yet</h3>
+          <h3>{t('hall_of_shame_no_entries')}</h3>
           <p>
             {selectedCategory === "all"
-              ? "The Hall of Shame is empty. Be the first to submit!"
-              : `No entries in the ${selectedCategory} category.`}
+              ? t('hall_of_shame_empty_all')
+              : t('hall_of_shame_empty_category', { category: selectedCategory })}
           </p>
         </div>
       {:else}
@@ -314,9 +315,9 @@
             >
               {#if isLoadingMore}
                 <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-                Loading...
+                {t('hall_of_shame_loading_more')}
               {:else}
-                Load More
+                {t('hall_of_shame_load_more')}
               {/if}
             </button>
           </div>

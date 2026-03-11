@@ -1,5 +1,7 @@
 <!-- FAQ - Frequently Asked Questions to address objections -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
+
   interface FAQItem {
     id: string;
     question: string;
@@ -14,36 +16,32 @@
 
   let { items = [], defaultExpanded = false }: Props = $props();
 
-  const defaultFAQs: FAQItem[] = [
+  const defaultFAQs: FAQItem[] = $derived([
     {
       id: "what-included",
-      question: "What exactly do I get with premium?",
-      answer:
-        "Unlimited sequence generation, full access to Compose and Train modules, and priority support. All premium features are clearly marked throughout the app.",
-      category: "features",
+      question: t('premium_faq_q_included'),
+      answer: t('premium_faq_a_included'),
+      category: "features" as const,
     },
     {
       id: "cancel",
-      question: "Can I cancel anytime?",
-      answer:
-        "Yes, absolutely. Cancel your subscription anytime from your account settings. You'll keep access until the end of your billing period.",
-      category: "billing",
+      question: t('premium_faq_q_cancel'),
+      answer: t('premium_faq_a_cancel'),
+      category: "billing" as const,
     },
     {
       id: "secure",
-      question: "Is my payment secure?",
-      answer:
-        "All payments are processed by Stripe, the industry standard for secure online payments. We never see or store your payment information.",
-      category: "billing",
+      question: t('premium_faq_q_secure'),
+      answer: t('premium_faq_a_secure'),
+      category: "billing" as const,
     },
     {
       id: "refund",
-      question: "What if I'm not satisfied?",
-      answer:
-        "We offer a 30-day money-back guarantee. If premium isn't right for you, email support@tka.com within 30 days for a full refund.",
-      category: "billing",
+      question: t('premium_faq_q_refund'),
+      answer: t('premium_faq_a_refund'),
+      category: "billing" as const,
     },
-  ];
+  ]);
 
   const displayItems = $derived(items.length > 0 ? items : defaultFAQs);
 
@@ -69,7 +67,7 @@
 </script>
 
 <div class="faq">
-  <h3>Frequently Asked Questions</h3>
+  <h3>{t('premium_faq_heading')}</h3>
   <div class="faq-list">
     {#each displayItems as item (item.id)}
       <div class="faq-item">

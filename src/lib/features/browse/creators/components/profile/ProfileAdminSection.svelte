@@ -23,6 +23,8 @@
   } from "$lib/shared/auth/domain/models/UserRole";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import { generateAvatarUrl } from "$lib/shared/foundation/utils/avatar-generator";
+  import { container } from "$lib/shared/di";
+  import type { IContributorLoader } from "$lib/features/feedback/services/contracts/IContributorLoader";
 
   interface Props {
     userProfile: EnhancedUserProfile;
@@ -37,6 +39,7 @@
   let actionError = $state<string | null>(null);
   let confirmAction = $state<{ type: string; message: string } | null>(null);
   let editNameModal = $state<{ open: boolean; value: string }>({ open: false, value: "" });
+  let deleteConfirmText = $state("");
 
   // Admin label state (quick identifier like "Jake from Tuesday jam")
   let adminLabel = $state("");
@@ -47,11 +50,56 @@
   let notesSaveStatus = $state<"idle" | "saving" | "saved">("idle");
   let notesDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
+  // Contributor state
+  let isContributor = $state(false);
+  let contributorDocId = $state<string | null>(null);
+  let isTogglingContributor = $state(false);
+
   // Sync local state with prop changes
   $effect(() => {
     adminLabel = userProfile.adminLabel ?? "";
     adminNotes = userProfile.adminNotes ?? "";
+    // Check contributor status when user changes
+    void checkContributorStatus(userProfile.id);
   });
+
+  async function checkContributorStatus(userId: string) {
+    try {
+      const loader = container.items.contributorLoader as IContributorLoader;
+      const all = await loader.getAll();
+      const match = all.find((c) => c.userId === userId);
+      isContributor = !!match;
+      contributorDocId = match?.id ?? null;
+    } catch {
+      isContributor = false;
+      contributorDocId = null;
+    }
+  }
+
+  async function toggleContributor() {
+    if (isTogglingContributor) return;
+    isTogglingContributor = true;
+    actionError = null;
+
+    try {
+      const loader = container.items.contributorLoader as IContributorLoader;
+
+      if (isContributor && contributorDocId) {
+        await loader.delete(contributorDocId);
+        isContributor = false;
+        contributorDocId = null;
+      } else {
+        const newId = await loader.addByUserId(userProfile.id);
+        isContributor = true;
+        contributorDocId = newId;
+      }
+    } catch (err) {
+      console.error("[ProfileAdminSection] Failed to toggle contributor:", err);
+      actionError = "Failed to update contributor status";
+    } finally {
+      isTogglingContributor = false;
+    }
+  }
 
   async function changeRole(newRole: UserRole) {
     if (isActionPending || userProfile.role === newRole) return;
@@ -447,6 +495,20 @@
 
       <button
         class="action-btn"
+        class:contributor-active={isContributor}
+        disabled={isTogglingContributor}
+        onclick={toggleContributor}
+      >
+        {#if isTogglingContributor}
+          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+        {:else}
+          <i class="fas {isContributor ? 'fa-star' : 'fa-user-plus'}" aria-hidden="true"></i>
+        {/if}
+        {isContributor ? "Release Contributor" : "Add as Contributor"}
+      </button>
+
+      <button
+        class="action-btn"
         class:danger={!userProfile.isDisabled}
         class:success={userProfile.isDisabled}
         disabled={isActionPending}
@@ -484,6 +546,7 @@
         class="action-btn destructive"
         disabled={isActionPending}
         onclick={() => {
+          deleteConfirmText = "";
           confirmAction = {
             type: "delete",
             message: `DELETE ${userProfile.displayName}'s account?`,
@@ -502,8 +565,8 @@
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="modal-backdrop"
-    onclick={() => (confirmAction = null)}
-    onkeydown={(e) => e.key === "Escape" && (confirmAction = null)}
+    onclick={() => { confirmAction = null; deleteConfirmText = ""; }}
+    onkeydown={(e) => e.key === "Escape" && (confirmAction = null, deleteConfirmText = "")}
   >
     <div
       class="modal"
@@ -514,10 +577,29 @@
       tabindex="-1"
     >
       <p class="modal-message">{confirmAction.message}</p>
+
+      {#if confirmAction.type === "delete"}
+        <div class="delete-warning">
+          <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+          <span>This will permanently delete all of their data: sequences, XP, achievements, streaks, followers, and settings. This cannot be undone.</span>
+        </div>
+        <label class="delete-confirm-label" for="delete-confirm-input">
+          Type <strong>{userProfile.displayName}</strong> to confirm:
+        </label>
+        <input
+          id="delete-confirm-input"
+          type="text"
+          class="delete-confirm-input"
+          bind:value={deleteConfirmText}
+          placeholder={userProfile.displayName}
+          autocomplete="off"
+        />
+      {/if}
+
       <div class="modal-actions">
         <button
           class="modal-btn cancel"
-          onclick={() => (confirmAction = null)}
+          onclick={() => { confirmAction = null; deleteConfirmText = ""; }}
           disabled={isActionPending}
         >
           Cancel
@@ -525,10 +607,12 @@
         <button
           class="modal-btn confirm"
           onclick={handleConfirm}
-          disabled={isActionPending}
+          disabled={isActionPending || (confirmAction.type === "delete" && deleteConfirmText !== userProfile.displayName)}
         >
           {#if isActionPending}
             <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+          {:else if confirmAction.type === "delete"}
+            Delete Forever
           {:else}
             Confirm
           {/if}
@@ -831,6 +915,17 @@
     color: var(--semantic-success);
   }
 
+  .action-btn.contributor-active {
+    background: color-mix(in srgb, var(--semantic-warning, #f59e0b) 15%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-warning, #f59e0b) 35%, transparent);
+    color: var(--semantic-warning, #f59e0b);
+  }
+
+  .action-btn.contributor-active:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--semantic-warning, #f59e0b) 25%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-warning, #f59e0b) 50%, transparent);
+  }
+
   /* Destructive action - more severe than danger */
   .action-btn.destructive {
     background: color-mix(in srgb, var(--semantic-error) 15%, transparent);
@@ -908,8 +1003,51 @@
     color: var(--semantic-error);
   }
 
-  .modal-btn.confirm:hover {
+  .modal-btn.confirm:hover:not(:disabled) {
     background: color-mix(in srgb, var(--semantic-error) 30%, transparent);
+  }
+
+  .delete-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    background: color-mix(in srgb, var(--semantic-error) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-error) 25%, transparent);
+    border-radius: 8px;
+    color: var(--semantic-error);
+    font-size: var(--font-size-compact);
+    line-height: 1.5;
+  }
+
+  .delete-warning i {
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+
+  .delete-confirm-label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: var(--font-size-sm);
+    color: var(--theme-text-dim);
+  }
+
+  .delete-confirm-input {
+    width: 100%;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 8px;
+    color: var(--theme-text);
+    font-size: var(--font-size-sm);
+    outline: none;
+    transition: border-color var(--duration-normal) ease;
+  }
+
+  .delete-confirm-input:focus {
+    border-color: var(--semantic-error);
   }
 
   .modal-btn:disabled {

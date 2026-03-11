@@ -5,6 +5,7 @@
 -->
 <script lang="ts">
   import type { TimedConfig } from "../../state/train-practice-state.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     config: TimedConfig;
@@ -15,13 +16,13 @@
 </script>
 
 <div class="config-panel">
-  <h3>Timed Mode Settings</h3>
-  <p class="description">Practice with beat timing and performance scoring.</p>
+  <h3>{t('train_timed_config_title')}</h3>
+  <p class="description">{t('train_timed_config_desc')}</p>
 
   <div class="setting-group">
     <label for="bpm">
-      Tempo (BPM)
-      <span class="hint">{config.bpm} beats per minute</span>
+      {t('train_timed_tempo')}
+      <span class="hint">{t('train_timed_bpm_value', { bpm: config.bpm })}</span>
     </label>
     <input
       id="bpm"
@@ -33,8 +34,8 @@
       oninput={(e) => onUpdate({ bpm: parseInt(e.currentTarget.value) })}
     />
     <div class="range-labels">
-      <span>Slower</span>
-      <span>Faster</span>
+      <span>{t('train_timed_slower')}</span>
+      <span>{t('train_timed_faster')}</span>
     </div>
   </div>
 
@@ -45,9 +46,9 @@
         checked={config.strictTiming}
         onchange={(e) => onUpdate({ strictTiming: e.currentTarget.checked })}
       />
-      <span>Strict timing windows</span>
+      <span>{t('train_timed_strict')}</span>
     </label>
-    <p class="hint">Require precise timing for Perfect/Good/Miss scoring.</p>
+    <p class="hint">{t('train_timed_strict_hint')}</p>
   </div>
 
   <div class="setting-group">
@@ -58,9 +59,9 @@
         onchange={(e) =>
           onUpdate({ showTimingFeedback: e.currentTarget.checked })}
       />
-      <span>Show timing feedback</span>
+      <span>{t('train_timed_feedback')}</span>
     </label>
-    <p class="hint">Display visual feedback for hit timing (early/late).</p>
+    <p class="hint">{t('train_timed_feedback_hint')}</p>
   </div>
 </div>
 

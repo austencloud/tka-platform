@@ -13,6 +13,7 @@
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { isCatDogMode } from "../utils/prop-mode-helpers";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   const {
     isOpen = false,
@@ -56,11 +57,11 @@
   placement="bottom"
   onclose={onClose}
   onOpenChange={(open) => { if (!open) onClose(); }}
-  ariaLabel="Choose a variation"
+  ariaLabel={t('browse_choose_variation')}
   class="variation-picker-drawer"
 >
   <DrawerHeader
-    title='{variations.length} variations of "{word}"'
+    title={t('browse_variations_title', { count: String(variations.length), word })}
     onClose={onClose}
   />
 

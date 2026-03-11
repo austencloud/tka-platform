@@ -7,6 +7,7 @@
   import { onMount } from "svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { PracticeMode } from "../../domain/enums/TrainEnums";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     isOpen: boolean;
@@ -91,8 +92,8 @@
         <i class="fas fa-brain" aria-hidden="true"></i>
       </div>
       <div class="header-content">
-        <h3 class="panel-title">Practice Mode</h3>
-        <p class="panel-subtitle">Choose how you want to practice</p>
+        <h3 class="panel-title">{t('train_practice_mode')}</h3>
+        <p class="panel-subtitle">{t('train_practice_mode_subtitle')}</p>
       </div>
       <button class="close-btn" onclick={handleClose} aria-label="Close">
         <i class="fas fa-times" aria-hidden="true"></i>

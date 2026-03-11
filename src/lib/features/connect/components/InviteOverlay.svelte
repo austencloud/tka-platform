@@ -9,6 +9,7 @@
 	import { connectState } from '../state/connect-state.svelte';
 	import ProgressRing from '$lib/shared/components/loading/ProgressRing.svelte';
 	import type { Invite } from '../domain/models/connect-models';
+	import { t } from '$lib/shared/i18n/i18n.svelte';
 
 	// Derived from state
 	const activeInvite = $derived(connectState.activeInviteOverlay);

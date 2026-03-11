@@ -6,6 +6,7 @@
   } from "../../domain/models/feedback-models";
   import FeedbackKanbanCard from "./FeedbackKanbanCard.svelte";
   import type { IClaimStatusDeriver } from "../../services/contracts/IClaimStatusDeriver";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   const {
     status,
@@ -89,7 +90,7 @@
   ondrop={handleDrop}
   role="region"
   id="column-{status}"
-  aria-label="{config.label} column"
+  aria-label={t("feedback_column_label", { label: config.label })}
 >
   <!-- Column Header -->
   <header class="column-header">
@@ -127,20 +128,20 @@
         </div>
         <span class="empty-title">
           {#if status === "new"}
-            No new feedback
+            {t("feedback_empty_new")}
           {:else if status === "completed"}
-            Nothing completed yet
+            {t("feedback_empty_completed")}
           {:else if status === "wont-fix"}
-            No declined items
+            {t("feedback_empty_declined")}
           {:else}
-            No items here
+            {t("feedback_empty_default")}
           {/if}
         </span>
         <span class="empty-hint">
           {#if status === "new"}
-            Feedback will appear here when submitted
+            {t("feedback_empty_new_hint")}
           {:else}
-            Drag items here to update their status
+            {t("feedback_empty_drag_hint")}
           {/if}
         </span>
       </div>
@@ -168,7 +169,7 @@
   {#if isDropTarget}
     <div class="drop-indicator">
       <i class="fas fa-plus-circle" aria-hidden="true"></i>
-      <span>Drop here</span>
+      <span>{t("feedback_drop_here")}</span>
     </div>
   {/if}
 </div>

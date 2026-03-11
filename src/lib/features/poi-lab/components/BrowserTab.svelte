@@ -9,6 +9,7 @@
    */
 
   import { onMount } from "svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { container } from "$lib/shared/di";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PoiValidationResult } from "../domain/poi-models";
@@ -165,7 +166,7 @@
   {#if isLoading}
     <div class="loading">
       <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-      Loading sequences from database...
+      {t('poi_lab_loading_sequences')}
     </div>
   {:else if error}
     <div class="error" role="alert">
@@ -173,15 +174,14 @@
       <p>{error}</p>
       <button class="retry-btn" onclick={() => location.reload()}>
         <i class="fas fa-redo" aria-hidden="true"></i>
-        Retry
+        {t('poi_lab_retry')}
       </button>
     </div>
   {:else}
     <div class="header-section">
-      <h3>Sequence Poi Validation</h3>
+      <h3>{t('poi_lab_browser_title')}</h3>
       <p class="description">
-        Validates complete sequences for poi physics constraints.
-        Momentum continuity determines which transitions are legal.
+        {t('poi_lab_browser_description')}
       </p>
     </div>
 
@@ -192,7 +192,7 @@
         class:active={selectedFilter === "all"}
         onclick={() => (selectedFilter = "all")}
       >
-        All
+        {t('poi_lab_filter_all')}
         <span class="count">{counts.all}</span>
       </button>
       <button
@@ -201,7 +201,7 @@
         onclick={() => (selectedFilter = "valid")}
       >
         <i class="fas fa-check" aria-hidden="true"></i>
-        Valid
+        {t('poi_lab_filter_valid')}
         <span class="count">{counts.valid}</span>
       </button>
       <button
@@ -210,7 +210,7 @@
         onclick={() => (selectedFilter = "invalid")}
       >
         <i class="fas fa-times" aria-hidden="true"></i>
-        Invalid
+        {t('poi_lab_filter_invalid')}
         <span class="count">{counts.invalid}</span>
       </button>
     </nav>
@@ -222,19 +222,19 @@
           class="page-btn"
           onclick={prevPage}
           disabled={currentPage === 0}
-          aria-label="Previous page"
+          aria-label={t('poi_lab_prev_page')}
         >
           <i class="fas fa-chevron-left" aria-hidden="true"></i>
         </button>
         <span class="page-info">
-          Page {currentPage + 1} of {totalPages}
-          <span class="showing">({filtered.length} sequences)</span>
+          {t('poi_lab_page_info', { current: String(currentPage + 1), total: String(totalPages) })}
+          <span class="showing">({t('poi_lab_sequence_count', { count: String(filtered.length) })})</span>
         </span>
         <button
           class="page-btn"
           onclick={nextPage}
           disabled={currentPage >= totalPages - 1}
-          aria-label="Next page"
+          aria-label={t('poi_lab_next_page')}
         >
           <i class="fas fa-chevron-right" aria-hidden="true"></i>
         </button>
@@ -245,7 +245,7 @@
     {#if paginated.length === 0}
       <div class="empty-state">
         <i class="fas fa-database" aria-hidden="true"></i>
-        <p>No sequences found</p>
+        <p>{t('poi_lab_no_sequences')}</p>
       </div>
     {:else}
       <div class="sequence-grid themed-scrollbar">
@@ -286,18 +286,18 @@
           {@const stepCount = getStepCount(expandedSeq)}
           <div class="detail-drawer">
             <div class="drawer-header">
-              <span class="sequence-word">{expandedSeq.word || expandedSeq.name || "Untitled"}</span>
-              <span class="beat-count">{stepCount} beat{stepCount !== 1 ? "s" : ""}</span>
+              <span class="sequence-word">{expandedSeq.word || expandedSeq.name || t('poi_lab_untitled')}</span>
+              <span class="beat-count">{t('poi_lab_beat_count', { count: String(stepCount) })}</span>
             </div>
             {#if validation.isPending}
               <div class="pending-message">
                 <i class="fas fa-hourglass-half" aria-hidden="true"></i>
-                Beat data not loaded - click to validate
+                {t('poi_lab_pending_validation')}
               </div>
             {:else if validation.isValid}
               <div class="valid-message">
                 <i class="fas fa-check-circle" aria-hidden="true"></i>
-                Poi-legal sequence
+                {t('poi_lab_poi_legal')}
               </div>
             {:else}
               <div class="violations-list">
@@ -319,11 +319,11 @@
       <div class="pagination bottom">
         <button class="page-btn" onclick={prevPage} disabled={currentPage === 0}>
           <i class="fas fa-chevron-left" aria-hidden="true"></i>
-          Previous
+          {t('poi_lab_previous')}
         </button>
-        <span class="page-info">Page {currentPage + 1} of {totalPages}</span>
+        <span class="page-info">{t('poi_lab_page_info', { current: String(currentPage + 1), total: String(totalPages) })}</span>
         <button class="page-btn" onclick={nextPage} disabled={currentPage >= totalPages - 1}>
-          Next
+          {t('poi_lab_next')}
           <i class="fas fa-chevron-right" aria-hidden="true"></i>
         </button>
       </div>

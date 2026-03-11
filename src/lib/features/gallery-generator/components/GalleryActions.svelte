@@ -4,6 +4,7 @@
   Action buttons for rendering and writing.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { galleryGeneratorState } from "../state/gallery-generator-state.svelte";
 
   interface Props {
@@ -22,7 +23,7 @@
 
 <div class="actions">
   {#if state.isRendering}
-    <button class="action-btn cancel" onclick={onCancel}> Cancel </button>
+    <button class="action-btn cancel" onclick={onCancel}> {t('gallery_gen_cancel')} </button>
   {:else}
     <button
       class="action-btn primary"
@@ -30,28 +31,28 @@
       disabled={state.isLoading || state.pendingSequences.length === 0}
     >
       {#if state.pendingSequences.length === state.sequences.length}
-        Render All ({state.pendingSequences.length})
+        {t('gallery_gen_render_all', { count: String(state.pendingSequences.length) })}
       {:else if state.pendingSequences.length > 0}
-        Resume ({state.pendingSequences.length} pending)
+        {t('gallery_gen_resume', { count: String(state.pendingSequences.length) })}
       {:else}
-        All Rendered!
+        {t('gallery_gen_all_rendered')}
       {/if}
     </button>
   {/if}
 
   {#if state.hasResults && !state.isRendering}
-    <button class="action-btn secondary" onclick={onClear}> Clear </button>
+    <button class="action-btn secondary" onclick={onClear}> {t('gallery_gen_clear')} </button>
   {/if}
 
   {#if state.previewCount > 0 && !state.isRendering}
     <button class="action-btn success" onclick={onWriteAll}>
-      Write {state.previewCount} to Gallery
+      {t('gallery_gen_write_to_gallery', { count: String(state.previewCount) })}
     </button>
   {/if}
 
   {#if state.renderedImages.length > 0 && !state.isRendering && state.selectedPropType}
     <button class="action-btn cloud" onclick={onUploadToCloud}>
-      ☁️ Upload {state.renderedImages.length} to Cloud
+      {t('gallery_gen_upload_to_cloud', { count: String(state.renderedImages.length) })}
     </button>
   {/if}
 </div>

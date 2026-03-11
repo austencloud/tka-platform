@@ -1,20 +1,42 @@
 <!--
   CharcoalControlsPanel.svelte
 
-  Parameter sliders for charcoal spark tuning.
-  Groups: Emission, Physics, Appearance, Pool.
+  Charcoal spark controls for the Effects Lab.
+  Shows 3 semantic sliders (Intensity, Spread, Glow) by default,
+  with an Advanced toggle to access all individual parameters.
 -->
 <script lang="ts">
   import type { CharcoalSparkParams } from "$lib/shared/animation-engine/domain/types/CharcoalSparkTypes";
-  import { CHARCOAL_SLIDER_GROUPS } from "$lib/shared/animation-engine/domain/types/CharcoalSparkTypes";
+  import {
+    CHARCOAL_SLIDER_GROUPS,
+    charcoalParamsToSemantic,
+    semanticToCharcoalParams,
+    DEFAULT_CHARCOAL_SEMANTIC,
+  } from "$lib/shared/animation-engine/domain/types/CharcoalSparkTypes";
 
   interface Props {
     params: CharcoalSparkParams;
     onParamChange: (key: keyof CharcoalSparkParams, value: number | boolean) => void;
+    onParamsReplace: (params: CharcoalSparkParams) => void;
     onReset: () => void;
   }
 
-  let { params, onParamChange, onReset }: Props = $props();
+  let { params, onParamChange, onParamsReplace, onReset }: Props = $props();
+
+  let advancedOpen = $state(false);
+
+  const semantic = $derived(charcoalParamsToSemantic(params));
+
+  function applySemanticValue(key: "intensity" | "spread" | "glow", value: number): void {
+    const updated = { ...semantic, [key]: value };
+    onParamsReplace(semanticToCharcoalParams(updated));
+  }
+
+  const isDefault = $derived(
+    Math.abs(semantic.intensity - DEFAULT_CHARCOAL_SEMANTIC.intensity) < 0.02 &&
+    Math.abs(semantic.spread - DEFAULT_CHARCOAL_SEMANTIC.spread) < 0.02 &&
+    Math.abs(semantic.glow - DEFAULT_CHARCOAL_SEMANTIC.glow) < 0.02
+  );
 </script>
 
 <div class="charcoal-controls">
@@ -26,6 +48,7 @@
     <button
       class="reset-btn"
       onclick={onReset}
+      disabled={isDefault && !advancedOpen}
       type="button"
       aria-label="Reset charcoal parameters to defaults"
     >
@@ -33,44 +56,102 @@
     </button>
   </div>
 
-  {#each CHARCOAL_SLIDER_GROUPS as group}
-    <div class="slider-group">
-      <span class="group-label">{group.label}</span>
-      {#each group.sliders as slider}
-        {@const value = params[slider.key] as number}
-        <div class="slider-row">
-          <label for="charcoal-{slider.key}">{slider.label}</label>
-          <input
-            id="charcoal-{slider.key}"
-            type="range"
-            min={slider.min}
-            max={slider.max}
-            step={slider.step}
-            {value}
-            oninput={(e) => onParamChange(slider.key, Number(e.currentTarget.value))}
-            aria-label="{slider.label}"
-          />
-          <span class="slider-value">
-            {slider.format ? slider.format(value) : Math.round(value)}
-          </span>
+  <!-- Semantic sliders -->
+  <div class="slider-row">
+    <label for="charcoal-intensity">Intensity</label>
+    <input
+      id="charcoal-intensity"
+      type="range"
+      min="0"
+      max="1"
+      step="0.02"
+      value={semantic.intensity}
+      oninput={(e) => applySemanticValue("intensity", Number(e.currentTarget.value))}
+    />
+    <span class="slider-value">{Math.round(semantic.intensity * 100)}%</span>
+  </div>
+
+  <div class="slider-row">
+    <label for="charcoal-spread">Spread</label>
+    <input
+      id="charcoal-spread"
+      type="range"
+      min="0"
+      max="1"
+      step="0.02"
+      value={semantic.spread}
+      oninput={(e) => applySemanticValue("spread", Number(e.currentTarget.value))}
+    />
+    <span class="slider-value">{Math.round(semantic.spread * 100)}%</span>
+  </div>
+
+  <div class="slider-row">
+    <label for="charcoal-glow">Glow</label>
+    <input
+      id="charcoal-glow"
+      type="range"
+      min="0"
+      max="1"
+      step="0.02"
+      value={semantic.glow}
+      oninput={(e) => applySemanticValue("glow", Number(e.currentTarget.value))}
+    />
+    <span class="slider-value">{Math.round(semantic.glow * 100)}%</span>
+  </div>
+
+  <!-- Advanced toggle -->
+  <button
+    class="advanced-toggle"
+    type="button"
+    onclick={() => advancedOpen = !advancedOpen}
+    aria-expanded={advancedOpen}
+  >
+    <i class="fas {advancedOpen ? 'fa-chevron-up' : 'fa-chevron-down'}" aria-hidden="true"></i>
+    Advanced
+  </button>
+
+  {#if advancedOpen}
+    <div class="advanced-section">
+      {#each CHARCOAL_SLIDER_GROUPS as group}
+        <div class="slider-group">
+          <span class="group-label">{group.label}</span>
+          {#each group.sliders as slider}
+            {@const value = params[slider.key] as number}
+            <div class="slider-row">
+              <label for="charcoal-{slider.key}">{slider.label}</label>
+              <input
+                id="charcoal-{slider.key}"
+                type="range"
+                min={slider.min}
+                max={slider.max}
+                step={slider.step}
+                {value}
+                oninput={(e) => onParamChange(slider.key, Number(e.currentTarget.value))}
+                aria-label={slider.label}
+              />
+              <span class="slider-value">
+                {slider.format ? slider.format(value) : Math.round(value)}
+              </span>
+            </div>
+          {/each}
         </div>
       {/each}
-    </div>
-  {/each}
 
-  <!-- Shrink toggle -->
-  <div class="toggle-row">
-    <span>Shrink over life</span>
-    <button
-      class="toggle-btn"
-      class:active={params.shrinkOverLife}
-      onclick={() => onParamChange("shrinkOverLife", !params.shrinkOverLife)}
-      aria-label={params.shrinkOverLife ? "Disable shrink" : "Enable shrink"}
-      type="button"
-    >
-      {params.shrinkOverLife ? "ON" : "OFF"}
-    </button>
-  </div>
+      <!-- Shrink toggle -->
+      <div class="toggle-row">
+        <span>Shrink over life</span>
+        <button
+          class="toggle-btn"
+          class:active={params.shrinkOverLife}
+          onclick={() => onParamChange("shrinkOverLife", !params.shrinkOverLife)}
+          aria-label={params.shrinkOverLife ? "Disable shrink" : "Enable shrink"}
+          type="button"
+        >
+          {params.shrinkOverLife ? "ON" : "OFF"}
+        </button>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -81,6 +162,9 @@
     --charcoal-amber-border: rgba(245, 158, 11, 0.3);
     --charcoal-amber-border-strong: rgba(245, 158, 11, 0.5);
 
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
     padding: var(--spacing-md, 16px);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--charcoal-amber-dim);
@@ -91,7 +175,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: var(--spacing-sm, 8px);
+    margin-bottom: var(--spacing-xs, 4px);
   }
 
   h3 {
@@ -121,32 +205,19 @@
     transition: all 150ms ease;
   }
 
-  .reset-btn:hover {
+  .reset-btn:hover:not(:disabled) {
     border-color: var(--charcoal-amber-border);
     color: var(--charcoal-amber);
+  }
+
+  .reset-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
   }
 
   .reset-btn:focus-visible {
     outline: 2px solid var(--theme-accent, #8b5cf6);
     outline-offset: 2px;
-  }
-
-  .slider-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin-top: var(--spacing-sm, 8px);
-    padding-top: var(--spacing-sm, 8px);
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
-  }
-
-  .group-label {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    margin-bottom: 2px;
   }
 
   .slider-row {
@@ -173,6 +244,62 @@
     font-family: var(--font-mono, monospace);
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text, white);
+  }
+
+  .advanced-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 6px;
+    margin-top: 4px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
+    border-radius: 6px;
+    background: transparent;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+    transition: all 150ms ease;
+  }
+
+  .advanced-toggle:hover {
+    background: color-mix(in srgb, var(--theme-text) 5%, transparent);
+    color: var(--theme-text, white);
+  }
+
+  .advanced-toggle:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
+  }
+
+  .advanced-section {
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
+    padding-top: var(--spacing-sm, 8px);
+  }
+
+  .slider-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: var(--spacing-sm, 8px);
+    padding-top: var(--spacing-sm, 8px);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
+  }
+
+  .slider-group:first-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+  }
+
+  .group-label {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    margin-bottom: 2px;
   }
 
   .toggle-row {
@@ -216,7 +343,8 @@
 
   @media (prefers-reduced-motion: reduce) {
     .reset-btn,
-    .toggle-btn {
+    .toggle-btn,
+    .advanced-toggle {
       transition: none;
     }
   }

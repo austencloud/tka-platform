@@ -7,6 +7,7 @@
   that manual verification may not be productive.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { SanityCheckReport, SanityCheckResult } from "../../domain/verification-models";
 
   let {
@@ -52,18 +53,17 @@
       class="fas {severityIcon(report.overallSeverity)}"
       style="color: {severityColor(report.overallSeverity)};"
     ></i>
-    <h4>Sanity Checks</h4>
+    <h4>{t('skel2tka_sanity_checks')}</h4>
     <span class="summary">
-      {passCount} pass
-      {#if warnCount > 0}, {warnCount} warn{/if}
-      {#if failCount > 0}, {failCount} fail{/if}
+      {t('skel2tka_sanity_pass', { count: String(passCount) })}
+      {#if warnCount > 0}, {t('skel2tka_sanity_warn', { count: String(warnCount) })}{/if}
+      {#if failCount > 0}, {t('skel2tka_sanity_fail', { count: String(failCount) })}{/if}
     </span>
   </div>
 
   {#if report.overallSeverity === "fail"}
     <div class="overall-warning">
-      Some checks failed. The detection output may not be usable.
-      You can still review it, but consider re-recording or adjusting the video.
+      {t('skel2tka_sanity_overall_warning')}
     </div>
   {/if}
 

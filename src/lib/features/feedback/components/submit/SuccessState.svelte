@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
+
   const { onSubmitAnother } = $props<{
     onSubmitAnother: () => void;
   }>();
@@ -8,14 +10,13 @@
   <div class="success-icon">
     <i class="fas fa-check" aria-hidden="true"></i>
   </div>
-  <h2 class="success-title">Feedback Submitted!</h2>
+  <h2 class="success-title">{t("feedback_submitted_title")}</h2>
   <p class="success-message">
-    Thank you for helping improve TKA Scribe. Your feedback has been received
-    and will be reviewed.
+    {t("feedback_submitted_message")}
   </p>
   <button type="button" class="success-action" onclick={onSubmitAnother}>
     <i class="fas fa-plus" aria-hidden="true"></i>
-    Submit Another
+    {t("feedback_submit_another")}
   </button>
 </div>
 

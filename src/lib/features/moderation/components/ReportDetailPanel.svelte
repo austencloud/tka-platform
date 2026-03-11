@@ -7,6 +7,7 @@
 		formatReportDate
 	} from '../domain/models/report-models';
 	import ReportResolutionPanel from './ReportResolutionPanel.svelte';
+	import { t } from '$lib/shared/i18n/i18n.svelte';
 
 	const report = $derived(adminReportsState.selectedReport);
 	const categoryConfig = $derived(report ? getCategoryConfig(report.category) : null);
@@ -28,12 +29,12 @@
 {#if report}
 	<div class="detail-panel">
 		<header class="panel-header">
-			<h2>Report Details</h2>
+			<h2>{t('moderation_report_details')}</h2>
 			<button
 				type="button"
 				class="close-btn"
 				onclick={() => adminReportsState.clearSelectedReport()}
-				aria-label="Close details"
+				aria-label={t('moderation_close_details')}
 			>
 				<i class="fa-solid fa-xmark" aria-hidden="true"></i>
 			</button>
@@ -58,44 +59,44 @@
 
 			<!-- Reported User -->
 			<section class="section">
-				<h3>Reported User</h3>
+				<h3>{t('moderation_reported_user')}</h3>
 				<div class="user-info">
 					<div class="info-row">
-						<span class="label">Name:</span>
+						<span class="label">{t('moderation_name')}:</span>
 						<span class="value">{report.reportedUserDisplayName}</span>
 					</div>
 					<div class="info-row">
-						<span class="label">User ID:</span>
+						<span class="label">{t('moderation_user_id')}:</span>
 						<code class="value-code">{report.reportedUserId}</code>
 					</div>
 				</div>
 			</section>
 
-			<!-- Description -->
+			<!-- {t('moderation_description')} -->
 			<section class="section">
-				<h3>Description</h3>
-				<p class="description">{report.description || 'No description provided'}</p>
+				<h3>{t('moderation_description')}</h3>
+				<p class="description">{report.description || t('moderation_no_description')}</p>
 			</section>
 
 			<!-- Reporter -->
 			<section class="section">
-				<h3>Reported By</h3>
+				<h3>{t('moderation_reported_by')}</h3>
 				<div class="user-info">
 					<div class="info-row">
-						<span class="label">Name:</span>
+						<span class="label">{t('moderation_name')}:</span>
 						<span class="value">{report.reporterDisplayName}</span>
 					</div>
 					<div class="info-row">
-						<span class="label">Date:</span>
+						<span class="label">{t('moderation_date')}:</span>
 						<span class="value">{formatReportDate(report.createdAt)}</span>
 					</div>
 				</div>
 			</section>
 
-			<!-- Resolution (if resolved) -->
+			<!-- {t('moderation_resolution')} (if resolved) -->
 			{#if report.resolution && resolutionConfig}
 				<section class="section">
-					<h3>Resolution</h3>
+					<h3>{t('moderation_resolution')}</h3>
 					<div class="resolution-info">
 						<div class="resolution-badge" class:severity-high={resolutionConfig.severity === 'high'}>
 							<i class="fa-solid {resolutionConfig.icon}" aria-hidden="true"></i>
@@ -105,7 +106,7 @@
 							<p class="admin-notes">{report.adminNotes}</p>
 						{/if}
 						{#if report.resolvedAt}
-							<p class="resolved-date">Resolved: {formatReportDate(report.resolvedAt)}</p>
+							<p class="resolved-date">{t('moderation_resolved')}: {formatReportDate(report.resolvedAt)}</p>
 						{/if}
 					</div>
 				</section>
@@ -116,7 +117,7 @@
 				<section class="section">
 					<button type="button" class="btn-secondary" onclick={handleStartReview}>
 						<i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-						Start Review
+						{t('moderation_start_review')}
 					</button>
 				</section>
 			{/if}
@@ -129,7 +130,7 @@
 {:else}
 	<div class="empty-state">
 		<i class="fa-solid fa-file-lines" aria-hidden="true"></i>
-		<p>Select a report to view details</p>
+		<p>{t('moderation_select_report')}</p>
 	</div>
 {/if}
 

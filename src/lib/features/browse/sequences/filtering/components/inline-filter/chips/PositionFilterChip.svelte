@@ -4,6 +4,7 @@ Displays when position filters are active.
 -->
 <script lang="ts">
   import FilterChipBase from "../FilterChipBase.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   interface Props {
     hasActivePositions: boolean;
@@ -12,7 +13,7 @@ Displays when position filters are active.
 
   let { hasActivePositions, onOpenSheet }: Props = $props();
 
-  const label = $derived(hasActivePositions ? "Positions" : "Position");
+  const label = $derived(hasActivePositions ? t('browse_chip_positions') : t('browse_chip_position'));
 </script>
 
 <FilterChipBase

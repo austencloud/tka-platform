@@ -1,6 +1,7 @@
 <!-- ImageViewerModal - Full-screen image viewer for feedback screenshots -->
 <script lang="ts">
   import { onMount } from "svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   let {
     images = [],
@@ -62,14 +63,14 @@
       class="viewer-container"
       role="dialog"
       aria-modal="true"
-      aria-label="Image viewer"
+      aria-label={t("feedback_image_viewer")}
     >
       <!-- Close button -->
       <button
         class="close-btn"
         onclick={onClose}
         type="button"
-        aria-label="Close"
+        aria-label={t("feedback_close")}
       >
         <i class="fas fa-times" aria-hidden="true"></i>
       </button>
@@ -96,7 +97,7 @@
           class="nav-btn prev"
           onclick={handlePrev}
           type="button"
-          aria-label="Previous"
+          aria-label={t("feedback_previous")}
         >
           <i class="fas fa-chevron-left" aria-hidden="true"></i>
         </button>
@@ -104,7 +105,7 @@
           class="nav-btn next"
           onclick={handleNext}
           type="button"
-          aria-label="Next"
+          aria-label={t("feedback_next")}
         >
           <i class="fas fa-chevron-right" aria-hidden="true"></i>
         </button>

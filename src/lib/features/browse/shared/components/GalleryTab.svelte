@@ -26,6 +26,7 @@
   } from "../state/variation-picker-state.svelte";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
   import { browseScrollState } from "../state/BrowseScrollState.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   interface Props {
     isMobile: boolean;
@@ -205,7 +206,7 @@
       if (!open) sequencePanelManager.close();
     }}
   >
-    <DrawerHeader title="View Presets" onClose={() => sequencePanelManager.close()} />
+    <DrawerHeader title={t('browse_view_presets')} onClose={() => sequencePanelManager.close()} />
     <ViewPresetsSheet
       currentFilter={galleryState.currentFilter.type as FilterPreset}
       onFilterChange={(preset) => {
@@ -225,7 +226,7 @@
       if (!open) sequencePanelManager.close();
     }}
   >
-    <DrawerHeader title="Sort & Navigate" onClose={() => sequencePanelManager.close()} />
+    <DrawerHeader title={t('browse_sort_navigate')} onClose={() => sequencePanelManager.close()} />
     <SortJumpSheet
       currentSortMethod={galleryState.currentSortMethod}
       availableSections={galleryState.availableNavigationSections}
@@ -251,7 +252,7 @@
       if (!open) isLetterSheetOpen = false;
     }}
   >
-    <DrawerHeader title="Select Letter" onClose={() => (isLetterSheetOpen = false)} />
+    <DrawerHeader title={t('browse_select_letter')} onClose={() => (isLetterSheetOpen = false)} />
     <div class="sheet-content">
       <LetterSelectionSheet
         {currentLetter}
@@ -273,7 +274,7 @@
       if (!open) isOptionsSheetOpen = false;
     }}
   >
-    <DrawerHeader title="Position Options" onClose={() => (isOptionsSheetOpen = false)} />
+    <DrawerHeader title={t('browse_position_options')} onClose={() => (isOptionsSheetOpen = false)} />
     <div class="sheet-content options-sheet-content">
       <PositionOptionsSheet
         {startPosition}

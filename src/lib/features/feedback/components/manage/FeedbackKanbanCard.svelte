@@ -8,6 +8,7 @@
   } from "../../domain/models/feedback-models";
   import { generateAvatarUrl } from "$lib/shared/foundation/utils/avatar-generator";
   import type { ClaimHealth } from "../../services/contracts/IClaimStatusDeriver";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   const {
     item,
@@ -48,13 +49,13 @@
   const claimTooltip = $derived.by(() => {
     if (!claimHealth || claimHealth === "none") return "";
     if (claimHealth === "active") {
-      return `Active claim [${claimTokenShort}] - ${claimAgeFormatted} ago`;
+      return t("feedback_claim_active", { token: claimTokenShort ?? "", age: claimAgeFormatted });
     }
     if (claimHealth === "stale") {
-      return `Stale claim [${claimTokenShort}] - ${claimAgeFormatted} ago (reclaimable)`;
+      return t("feedback_claim_stale", { token: claimTokenShort ?? "", age: claimAgeFormatted });
     }
     if (claimHealth === "orphaned") {
-      return "Orphaned: status is in-progress but no claim exists";
+      return t("feedback_claim_orphaned");
     }
     return "";
   });
@@ -91,10 +92,10 @@
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
 
-    if (minutes < 1) return "Just now";
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    if (days < 7) return `${days}d ago`;
+    if (minutes < 1) return t("feedback_time_just_now");
+    if (minutes < 60) return t("feedback_time_minutes_ago", { count: minutes });
+    if (hours < 24) return t("feedback_time_hours_ago", { count: hours });
+    if (days < 7) return t("feedback_time_days_ago", { count: days });
     return date.toLocaleDateString();
   }
 
@@ -338,7 +339,7 @@
       />
       <h4 class="card-title">{item.title}</h4>
       {#if priorityConfig}
-        <span class="priority-badge" title="{priorityConfig.label} priority">
+        <span class="priority-badge" title={t("feedback_priority_title", { priority: priorityConfig.label })}>
           {#if item.priority === "critical"}
             <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
           {:else if item.priority === "high"}
@@ -351,7 +352,7 @@
         </span>
       {/if}
       {#if lane !== 'normal'}
-        <span class="lane-badge lane-{lane}" title="{lane} lane">
+        <span class="lane-badge lane-{lane}" title={t("feedback_lane_title", { lane })}>
           {#if lane === 'critical'}
             <i class="fas fa-fire" aria-hidden="true"></i>
           {:else if lane === 'internal'}
@@ -385,11 +386,7 @@
     {#if item.imageUrls && item.imageUrls.length > 0}
       <div class="screenshot-indicator">
         <i class="fas fa-images" aria-hidden="true"></i>
-        <span
-          >{item.imageUrls.length} screenshot{item.imageUrls.length !== 1
-            ? "s"
-            : ""}</span
-        >
+        <span>{t("feedback_screenshot_count", { count: item.imageUrls.length })}</span>
       </div>
     {/if}
 
@@ -397,7 +394,7 @@
     <div class="card-footer">
       <div class="card-meta">
         <span class="meta-user">
-          {item.userDisplayName?.split(" ")[0] || "Unknown"}
+          {item.userDisplayName?.split(" ")[0] || t("feedback_unknown_user")}
         </span>
         <span class="meta-time">{formatRelativeTime(item.createdAt)}</span>
       </div>

@@ -5,6 +5,7 @@
   Only shows buttons for media types that exist on the item.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { FeedContentType } from "../../domain/models/feed-models";
 
   interface Props {
@@ -34,11 +35,11 @@
 
   const showSwitcher = $derived(availableTypes.length > 1);
 
-  const typeConfig: Record<Exclude<FeedContentType, "all">, { icon: string; label: string }> = {
-    video: { icon: "fas fa-play", label: "Video" },
-    animation: { icon: "fas fa-film", label: "Animation" },
-    pictograph: { icon: "fas fa-th", label: "Card" },
-  };
+  const typeConfig = $derived.by((): Record<Exclude<FeedContentType, "all">, { icon: string; label: string }> => ({
+    video: { icon: "fas fa-play", label: t('watch_media_type_video') },
+    animation: { icon: "fas fa-film", label: t('watch_media_type_animation') },
+    pictograph: { icon: "fas fa-th", label: t('watch_media_type_card') },
+  }));
 
   function handleClick(type: FeedContentType, e: Event) {
     e.stopPropagation();
@@ -47,7 +48,7 @@
 </script>
 
 {#if showSwitcher}
-  <div class="media-switcher" role="tablist" aria-label="Media type">
+  <div class="media-switcher" role="tablist" aria-label={t('watch_media_type_switcher')}>
     {#each availableTypes as type (type)}
       {@const config = typeConfig[type]}
       <button

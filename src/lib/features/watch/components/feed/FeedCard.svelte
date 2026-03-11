@@ -8,6 +8,7 @@
   - Per-card media type switching (video/animation/pictograph)
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount, onDestroy } from "svelte";
   import type { FeedItem, FeedContentType } from "../../domain/models/feed-models";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -109,7 +110,7 @@
 
   // Format step count for display
   const stepCountText = $derived(
-    item.stepCount ? `${item.stepCount} beats` : ""
+    item.stepCount ? t('watch_card_beats', { count: item.stepCount }) : ""
   );
 </script>
 
@@ -119,7 +120,7 @@
     class="media-container"
     onclick={handleCardClick}
     type="button"
-    aria-label="View {item.title}"
+    aria-label={t('watch_card_view', { title: item.title })}
   >
     <FeedCardMedia
       {item}

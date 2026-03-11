@@ -6,6 +6,7 @@
   Supports category filtering.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
   import type { ShowcaseVideo, VideoCategory } from "$lib/features/landing-preview/types";
@@ -38,7 +39,7 @@
   async function loadShowcase() {
     const loader = container.items.videoCuratorLoader;
     if (!loader) {
-      error = "Video curator unavailable";
+      error = t('watch_showcase_curator_unavailable');
       loading = false;
       return;
     }
@@ -55,7 +56,7 @@
       categories = loadedCategories;
     } catch (e) {
       console.error("Failed to load showcase videos:", e);
-      error = e instanceof Error ? e.message : "Failed to load videos";
+      error = e instanceof Error ? e.message : t('watch_showcase_load_error');
     } finally {
       loading = false;
     }
@@ -79,7 +80,7 @@
   {#if loading}
     <div class="loading-state">
       <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-      <span>Loading showcase...</span>
+      <span>{t('watch_showcase_loading')}</span>
     </div>
   {:else if error}
     <div class="error-state">
@@ -87,7 +88,7 @@
       <span>{error}</span>
       <button class="retry-btn" onclick={loadShowcase}>
         <i class="fas fa-redo" aria-hidden="true"></i>
-        Retry
+        {t('watch_showcase_retry')}
       </button>
     </div>
   {:else}
@@ -99,7 +100,7 @@
           class:active={selectedCategory === null}
           onclick={() => selectCategory(null)}
         >
-          All
+          {t('watch_showcase_all')}
         </button>
         {#each categories as category}
           <button
@@ -118,8 +119,8 @@
     {#if displayedVideos().length === 0}
       <div class="empty-state">
         <i class="fas fa-star" aria-hidden="true"></i>
-        <span>No showcase videos yet</span>
-        <p class="empty-hint">Curated performances will appear here.</p>
+        <span>{t('watch_showcase_empty')}</span>
+        <p class="empty-hint">{t('watch_showcase_empty_hint')}</p>
       </div>
     {:else}
       <div class="videos-grid">
@@ -139,7 +140,7 @@
               {#if video.featured}
                 <span class="featured-badge">
                   <i class="fas fa-star" aria-hidden="true"></i>
-                  Featured
+                  {t('watch_showcase_featured')}
                 </span>
               {/if}
               <div class="play-overlay">

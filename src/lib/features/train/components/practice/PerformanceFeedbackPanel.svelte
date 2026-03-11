@@ -6,6 +6,8 @@
   Hidden on mobile (shown in camera overlay), visible on desktop in top bar.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
+
   interface Props {
     currentScore?: number;
     currentCombo?: number;
@@ -27,14 +29,14 @@
   <div class="performance-feedback-panel">
     <!-- Score Display -->
     <div class="metric">
-      <span class="metric-label">Score</span>
+      <span class="metric-label">{t('train_score_label')}</span>
       <span class="metric-value score">{currentScore.toLocaleString()}</span>
     </div>
 
     <!-- Combo Display (only when active) -->
     {#if currentCombo > 0}
       <div class="metric combo-metric">
-        <span class="metric-label">Combo</span>
+        <span class="metric-label">{t('train_combo_label')}</span>
         <span class="metric-value combo">{currentCombo}x</span>
       </div>
     {/if}
@@ -46,13 +48,13 @@
         class:hit={lastHitResult}
         class:miss={!lastHitResult}
       >
-        {lastHitResult ? `+${lastHitPoints}` : "MISS"}
+        {lastHitResult ? `+${lastHitPoints}` : t('train_miss')}
       </div>
     {/if}
   </div>
 {:else}
   <div class="performance-feedback-panel empty">
-    <span class="empty-text">Ready to train</span>
+    <span class="empty-text">{t('train_ready')}</span>
   </div>
 {/if}
 

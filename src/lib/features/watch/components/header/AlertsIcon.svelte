@@ -5,6 +5,7 @@
   Tapping navigates to alerts/notifications view.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount, onDestroy } from "svelte";
   import { container } from "$lib/shared/di";
 
@@ -52,7 +53,7 @@
   class="alerts-icon"
   onclick={handleClick}
   type="button"
-  aria-label={hasUnread ? `Notifications, ${unreadCount} unread` : "Notifications"}
+  aria-label={hasUnread ? t('watch_alerts_unread', { count: unreadCount }) : t('watch_alerts')}
 >
   <i class="fas fa-bell" aria-hidden="true"></i>
   {#if hasUnread}

@@ -8,6 +8,7 @@
   - Composition: "Open"
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { FeedItemIntent } from "../../domain/models/feed-models";
 
   interface Props {
@@ -21,14 +22,14 @@
   const ctaConfig = $derived.by(() => {
     switch (intent) {
       case "tutorial":
-        return { label: "Start Learning", icon: "fas fa-graduation-cap" };
+        return { label: t('watch_cta_start_learning'), icon: "fas fa-graduation-cap" };
       case "demo":
-        return { label: "View Sequence", icon: "fas fa-eye" };
+        return { label: t('watch_cta_view_sequence'), icon: "fas fa-eye" };
       case "composition":
-        return { label: "Open", icon: "fas fa-folder-open" };
+        return { label: t('watch_cta_open'), icon: "fas fa-folder-open" };
       case "sequence":
       default:
-        return { label: "Practice", icon: "fas fa-play" };
+        return { label: t('watch_cta_practice'), icon: "fas fa-play" };
     }
   });
 

@@ -4,6 +4,7 @@
   Left column showing sequences waiting to be rendered.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { galleryGeneratorState } from "../state/gallery-generator-state.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
@@ -19,18 +20,18 @@
 
 <div class="column pending-column">
   <h2>
-    Pending ({state.pendingSequences.length})
+    {t('gallery_gen_pending_heading', { count: String(state.pendingSequences.length) })}
     {#if state.renderingSequences.length > 0}
       <span class="rendering-count"
-        >· {state.renderingSequences.length} rendering</span
+        >· {t('gallery_gen_rendering_count', { count: String(state.renderingSequences.length) })}</span
       >
     {/if}
   </h2>
 
   {#if state.isLoading}
-    <p class="empty-message">Loading sequences...</p>
+    <p class="empty-message">{t('gallery_gen_loading')}</p>
   {:else if state.pendingSequences.length === 0}
-    <p class="empty-message">All sequences rendered!</p>
+    <p class="empty-message">{t('gallery_gen_all_rendered')}</p>
   {:else}
     <div class="sequence-list">
       {#each state.pendingSequences.slice(0, 100) as sequence (sequence.id)}
@@ -48,7 +49,7 @@
               class="render-btn"
               onclick={() => onRenderSingle(sequence)}
               disabled={state.isRendering}
-              title="Render this sequence"
+              title={t('gallery_gen_render_single')}
             >
               ▶
             </button>
@@ -57,7 +58,7 @@
       {/each}
       {#if state.pendingSequences.length > 100}
         <p class="more-text">
-          ...and {state.pendingSequences.length - 100} more
+          {t('gallery_gen_and_more', { count: String(state.pendingSequences.length - 100) })}
         </p>
       {/if}
     </div>

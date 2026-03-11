@@ -5,6 +5,7 @@
   Only Phase 1 is active. Others show description + "Coming soon".
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { PhaseInfo } from "../domain/models";
 
   interface Props {
@@ -50,7 +51,7 @@
         <p class="phase-description">{phase.description}</p>
       </div>
       {#if phase.status === "locked"}
-        <span class="coming-soon">Coming soon</span>
+        <span class="coming-soon">{t('skel2tka_coming_soon')}</span>
       {/if}
     </button>
   {/each}

@@ -8,6 +8,7 @@
 	import { connectState } from '../../state/connect-state.svelte';
 	import SessionCard from './SessionCard.svelte';
 	import ProgressRing from '$lib/shared/components/loading/ProgressRing.svelte';
+	import { t } from '$lib/shared/i18n/i18n.svelte';
 
 	// Derived from connectState
 	const nearbySessions = $derived(connectState.nearbySessions);
@@ -28,12 +29,12 @@
 	<!-- Header with refresh -->
 	<header class="tab-header">
 		<div class="header-info">
-			<h2>Nearby Sessions</h2>
+			<h2>{t('connect_nearby_sessions')}</h2>
 			<p class="subtitle" aria-live="polite" aria-atomic="true">
 				{#if nearbySessions.length === 0}
-					No one nearby is sharing right now
+					{t('connect_no_one_nearby')}
 				{:else}
-					{nearbySessions.length} session{nearbySessions.length === 1 ? '' : 's'} found
+					{t('connect_sessions_found', { count: nearbySessions.length })}
 				{/if}
 			</p>
 		</div>
@@ -41,7 +42,7 @@
 		<button
 			class="refresh-button"
 			onclick={handleRefresh}
-			aria-label="Refresh nearby sessions"
+			aria-label={t('connect_refresh_nearby')}
 			disabled={isLoading}
 		>
 			<i class="fas fa-sync-alt" class:spinning={isLoading} aria-hidden="true"></i>
@@ -53,18 +54,18 @@
 		{#if isLoading && nearbySessions.length === 0}
 			<div class="loading-state">
 				<ProgressRing percent={-1} size={32} strokeWidth={3} />
-				<p>Looking for sessions...</p>
+				<p>{t('connect_looking_for_sessions')}</p>
 			</div>
 		{:else if nearbySessions.length === 0}
 			<div class="empty-state">
 				<div class="empty-icon">
 					<i class="fas fa-broadcast-tower" aria-hidden="true"></i>
 				</div>
-				<h3>No sessions nearby</h3>
-				<p>When someone shares a sequence, it will appear here automatically.</p>
+				<h3>{t('connect_no_sessions_nearby')}</h3>
+				<p>{t('connect_sessions_appear_automatically')}</p>
 				<div class="hint">
 					<i class="fas fa-lightbulb" aria-hidden="true"></i>
-					<span>Make sure you're signed in to see nearby sessions</span>
+					<span>{t('connect_sign_in_hint')}</span>
 				</div>
 			</div>
 		{:else}

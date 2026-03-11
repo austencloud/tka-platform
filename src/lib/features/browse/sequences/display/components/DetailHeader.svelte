@@ -9,6 +9,7 @@ Displays:
 -->
 <script lang="ts">
   import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   interface Props {
     title?: string;
@@ -20,7 +21,7 @@ Displays:
   }
 
   const {
-    title = "Sequence Details",
+    title = t('browse_sequence_details'),
     isExpanded = false,
     getCopyData,
     onCopyActivate,
@@ -37,7 +38,7 @@ Displays:
       <CopyForAIButton
         getData={getCopyData}
         onActivate={onCopyActivate}
-        ariaLabel="Copy for Claude Code"
+        ariaLabel={t('browse_copy_for_claude')}
         variant="icon-only"
         size="md"
         class="header-btn"
@@ -48,7 +49,7 @@ Displays:
       <button
         class="collapse-button"
         onclick={onCollapse}
-        aria-label="Collapse panel"
+        aria-label={t('browse_collapse_panel')}
       >
         <svg
           viewBox="0 0 24 24"
@@ -61,7 +62,7 @@ Displays:
         </svg>
       </button>
     {/if}
-    <button class="close-button" onclick={onClose} aria-label="Close">
+    <button class="close-button" onclick={onClose} aria-label={t('browse_close')}>
       <svg
         viewBox="0 0 24 24"
         fill="none"

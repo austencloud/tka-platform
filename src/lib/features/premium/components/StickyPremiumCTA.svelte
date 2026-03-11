@@ -2,6 +2,8 @@
   StickyPremiumCTA - Floating bottom CTA for mobile conversion
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
+
   interface Props {
     price: number;
     period: string;
@@ -21,7 +23,7 @@
 
 <div class="sticky-cta">
   <div class="price-info">
-    <span class="price">${price}/{period}</span>
+    <span class="price">{t('premium_sticky_price', { price, period })}</span>
   </div>
   <button
     class="cta-button"
@@ -31,7 +33,7 @@
     {#if isLoading}
       <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
     {:else}
-      <span>Start Creating Freely</span>
+      <span>{t('premium_sticky_cta_button')}</span>
     {/if}
   </button>
 </div>

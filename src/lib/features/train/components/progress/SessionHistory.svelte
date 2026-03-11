@@ -5,6 +5,7 @@
 -->
 <script lang="ts">
   import type { StoredPerformance } from "../../domain/models/TrainDatabaseModels";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     sessions: StoredPerformance[];
@@ -44,13 +45,13 @@
     });
 
     if (sessionDate.getTime() === today.getTime()) {
-      return `Today ${timeStr}`;
+      return `${t('train_time_today')} ${timeStr}`;
     }
 
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
     if (sessionDate.getTime() === yesterday.getTime()) {
-      return `Yesterday ${timeStr}`;
+      return `${t('train_time_yesterday')} ${timeStr}`;
     }
 
     return `${date.toLocaleDateString()} ${timeStr}`;

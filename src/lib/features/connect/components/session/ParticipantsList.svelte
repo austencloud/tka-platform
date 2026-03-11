@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
 	import type { SessionParticipant } from '../../domain/models/connect-models';
+	import { t } from '$lib/shared/i18n/i18n.svelte';
 
 	interface Props {
 		participants: SessionParticipant[];
@@ -24,7 +25,7 @@
 	);
 </script>
 
-<div class="participants-list" role="list" aria-label="Session participants">
+<div class="participants-list" role="list" aria-label={t('connect_session_participants')}>
 	{#each sortedParticipants as participant (participant.userId)}
 		<div class="participant-item" role="listitem">
 			<div class="participant-avatar">
@@ -38,11 +39,11 @@
 				<span class="participant-name">
 					{participant.displayName}
 					{#if participant.userId === hostUserId}
-						<span class="host-badge">Host</span>
+						<span class="host-badge">{t('connect_host')}</span>
 					{/if}
 				</span>
 				<span class="participant-status">
-					{participant.isSynced ? 'Synced' : 'Solo practice'}
+					{participant.isSynced ? t('connect_synced') : t('connect_solo_practice')}
 				</span>
 			</div>
 		</div>
@@ -51,7 +52,7 @@
 	{#if participants.length === 0}
 		<div class="empty-state">
 			<i class="fas fa-users" aria-hidden="true"></i>
-			<p>No one else has joined yet</p>
+			<p>{t('connect_no_one_joined')}</p>
 		</div>
 	{/if}
 </div>

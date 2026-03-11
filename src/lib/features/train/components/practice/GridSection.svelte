@@ -7,6 +7,7 @@
 <script lang="ts">
   import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     sequence: SequenceData | null;
@@ -49,11 +50,11 @@
       <div class="empty-icon">
         <i class="fas fa-th" aria-hidden="true"></i>
       </div>
-      <p class="empty-text">No sequence selected</p>
+      <p class="empty-text">{t('train_no_sequence_selected')}</p>
       {#if onBrowseSequences}
         <button class="browse-btn" onclick={onBrowseSequences}>
           <i class="fas fa-folder-open" aria-hidden="true"></i>
-          Browse
+          {t('train_browse')}
         </button>
       {/if}
     </div>

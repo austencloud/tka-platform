@@ -5,6 +5,7 @@
 -->
 <script lang="ts">
 	import type { SyncSession } from '../../domain/models/connect-models';
+	import { t } from '$lib/shared/i18n/i18n.svelte';
 
 	interface Props {
 		session: SyncSession;
@@ -20,10 +21,10 @@
 	function formatTimeAgo(timestamp: number): string {
 		const seconds = Math.floor((Date.now() - timestamp) / 1000);
 
-		if (seconds < 60) return 'Just now';
-		if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-		if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-		return `${Math.floor(seconds / 86400)}d ago`;
+		if (seconds < 60) return t('connect_just_now');
+		if (seconds < 3600) return t('connect_minutes_ago', { count: Math.floor(seconds / 60) });
+		if (seconds < 86400) return t('connect_hours_ago', { count: Math.floor(seconds / 3600) });
+		return t('connect_days_ago', { count: Math.floor(seconds / 86400) });
 	}
 </script>
 
@@ -48,28 +49,28 @@
 
 	<!-- Sequence info -->
 	<div class="sequence-section">
-		<span class="sharing-label">is sharing</span>
+		<span class="sharing-label">{t('connect_is_sharing')}</span>
 		<span class="sequence-word">"{session.sequenceWord}"</span>
 	</div>
 
 	<!-- Participant count -->
 	<div class="participants-section">
 		<i class="fas fa-users" aria-hidden="true"></i>
-		<span>{session.participantCount} synced</span>
+		<span>{t('connect_synced_count', { count: session.participantCount })}</span>
 	</div>
 
 	<!-- Join button -->
 	<div class="action-section">
 		{#if isOwnSession}
-			<span class="own-session-badge">Your session</span>
+			<span class="own-session-badge">{t('connect_your_session')}</span>
 		{:else}
 			<button
 				class="join-button"
 				onclick={onJoin}
-				aria-label={`Join ${session.hostDisplayName}’s session`}
+				aria-label={t(‘connect_join_session_of’, { name: session.hostDisplayName })}
 			>
 				<i class="fas fa-link" aria-hidden="true"></i>
-				Join
+				{t(‘connect_join’)}
 			</button>
 		{/if}
 	</div>

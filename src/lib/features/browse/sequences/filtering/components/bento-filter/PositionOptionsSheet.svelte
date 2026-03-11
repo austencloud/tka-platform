@@ -5,6 +5,7 @@ Uses shared PositionSection components for consistent UX with Generate module
 <script lang="ts">
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import PositionSection from "$lib/shared/components/position-picker/PositionSection.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   let {
     startPosition = null,
@@ -29,22 +30,22 @@ Uses shared PositionSection components for consistent UX with Generate module
   {#if hasAnySelection}
     <div class="clear-section">
       <button class="clear-all-button" onclick={onClearAll} type="button">
-        Clear All Positions
+        {t('browse_clear_all_positions')}
       </button>
     </div>
   {/if}
 
   <div class="sections-container">
     <PositionSection
-      title="Start Position"
-      description="Filter by where sequences begin"
+      title={t('browse_start_position')}
+      description={t('browse_start_position_desc')}
       currentPosition={startPosition}
       onPositionChange={onStartPositionChange}
     />
 
     <PositionSection
-      title="End Position"
-      description="Filter by where sequences end"
+      title={t('browse_end_position')}
+      description={t('browse_end_position_desc')}
       currentPosition={endPosition}
       onPositionChange={onEndPositionChange}
     />

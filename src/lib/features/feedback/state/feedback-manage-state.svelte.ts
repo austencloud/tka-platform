@@ -202,6 +202,8 @@ export function createFeedbackManageState() {
       title: string;
       description: string;
       priority: FeedbackPriority | undefined;
+      assignedTo: string | undefined;
+      assignedToName: string | undefined;
     }>
   ) {
     try {

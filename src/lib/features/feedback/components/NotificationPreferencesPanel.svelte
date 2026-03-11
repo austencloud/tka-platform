@@ -25,6 +25,7 @@
   import type { IFCMTokenManager } from "$lib/shared/push/services/contracts/IFCMTokenManager";
   import type { INotificationPreferencesManager } from "$lib/shared/push/services/contracts/INotificationPreferencesManager";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   const notificationPreferencesManager = container.items
     .notificationPreferencesManager as INotificationPreferencesManager;
@@ -209,17 +210,17 @@
 
   // Preference descriptions (keyed by notification type for clarity)
   const typeDescriptions: Record<NotificationType, string> = {
-    "feedback-resolved": "When your feedback is marked as resolved",
-    "feedback-in-progress": "When work starts on your feedback",
-    "feedback-needs-info": "When admin needs more details from you",
-    "feedback-response": "When admin sends you a message",
-    "sequence-liked": "When someone likes your sequence",
-    "user-followed": "When someone follows you",
-    "achievement-unlocked": "When you unlock an achievement",
-    "message-received": "When you receive a direct message",
-    "admin-new-user-signup": "When a new user signs up",
-    "system-announcement": "Important system announcements",
-    "moderation-warning": "When you receive a moderation warning",
+    "feedback-resolved": t("feedback_notif_desc_resolved"),
+    "feedback-in-progress": t("feedback_notif_desc_in_progress"),
+    "feedback-needs-info": t("feedback_notif_desc_needs_info"),
+    "feedback-response": t("feedback_notif_desc_response"),
+    "sequence-liked": t("feedback_notif_desc_liked"),
+    "user-followed": t("feedback_notif_desc_followed"),
+    "achievement-unlocked": t("feedback_notif_desc_achievement"),
+    "message-received": t("feedback_notif_desc_message"),
+    "admin-new-user-signup": t("feedback_notif_desc_signup"),
+    "system-announcement": t("feedback_notif_desc_system"),
+    "moderation-warning": t("feedback_notif_desc_moderation"),
   };
 
   // Dynamically generate preference groups from NOTIFICATION_TYPE_CONFIG
@@ -264,32 +265,32 @@
 
     if (feedback.length > 0) {
       groups.push({
-        title: "Feedback Notifications",
-        description: "Get notified when your feedback is addressed",
+        title: t("feedback_group_feedback"),
+        description: t("feedback_group_feedback_desc"),
         items: feedback,
       });
     }
 
     if (sequence.length > 0) {
       groups.push({
-        title: "Sequence Engagement",
-        description: "Get notified when others interact with your sequences",
+        title: t("feedback_group_engagement"),
+        description: t("feedback_group_engagement_desc"),
         items: sequence,
       });
     }
 
     if (social.length > 0) {
       groups.push({
-        title: "Social & Achievements",
-        description: "Get notified about followers and milestones",
+        title: t("feedback_group_social"),
+        description: t("feedback_group_social_desc"),
         items: social,
       });
     }
 
     if (admin.length > 0) {
       groups.push({
-        title: "Admin Notifications",
-        description: "Get notified about important admin events",
+        title: t("feedback_group_admin"),
+        description: t("feedback_group_admin_desc"),
         items: admin,
       });
     }
@@ -302,8 +303,8 @@
 
 <div class="notification-preferences-panel">
   <div class="panel-header">
-    <h2>Notification Preferences</h2>
-    <p class="subtitle">Choose which notifications you want to receive</p>
+    <h2>{t("feedback_notification_prefs")}</h2>
+    <p class="subtitle">{t("feedback_notification_prefs_subtitle")}</p>
   </div>
 
   {#if isPreviewMode}
@@ -319,12 +320,12 @@
   {#if isLoading}
     <div class="loading-state shell">
       <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-      <p>Loading preferences...</p>
+      <p>{t("feedback_loading_prefs")}</p>
     </div>
   {:else if !authState.isAuthenticated}
     <div class="empty-state shell">
       <i class="fas fa-user-slash" aria-hidden="true"></i>
-      <p>Sign in to manage notification preferences</p>
+      <p>{t("feedback_sign_in_prefs")}</p>
     </div>
   {:else}
     <!-- Quick Actions (hidden in preview mode) -->
@@ -341,7 +342,7 @@
           aria-busy={bulkBusy === "enable"}
         >
           <i class="fas fa-check-circle" aria-hidden="true"></i>
-          Enable All
+          {t("feedback_enable_all")}
         </button>
         <button
           class="action-button"
@@ -350,11 +351,11 @@
           onpointerdown={() => (bulkPressed = "disable")}
           onpointerup={() => clearBulkPressedSoon()}
           onpointerleave={() => (bulkPressed = null)}
-          aria-label="Disable all notifications"
+          aria-label={t("feedback_disable_all")}
           aria-busy={bulkBusy === "disable"}
         >
           <i class="fas fa-times-circle" aria-hidden="true"></i>
-          Disable All
+          {t("feedback_disable_all")}
         </button>
       </div>
     {/if}
@@ -380,15 +381,15 @@
             ></i>
           </div>
           <div class="push-toggle-text">
-            <span class="push-toggle-label">Push notifications</span>
+            <span class="push-toggle-label">{t("feedback_push_notifications")}</span>
             <span class="push-toggle-description">
               {preferences.pushEnabled
-                ? "Notifications are delivered to this device"
-                : "Turn on to receive notifications on this device"}
+                ? t("feedback_push_enabled_desc")
+                : t("feedback_push_disabled_desc")}
             </span>
           </div>
           <span class="push-toggle-status" aria-hidden="true">
-            {preferences.pushEnabled ? "On" : "Off"}
+            {preferences.pushEnabled ? t("feedback_push_on") : t("feedback_push_off")}
           </span>
         </div>
       </button>
@@ -412,7 +413,7 @@
     <!-- System Notifications Notice -->
     <div class="system-notice">
       <i class="fas fa-info-circle" aria-hidden="true"></i>
-      <p>System announcements cannot be disabled and will always be shown.</p>
+      <p>{t("feedback_system_notice")}</p>
     </div>
   {/if}
 </div>

@@ -2,6 +2,7 @@
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
     import { onMount } from "svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   let hapticService: IHapticFeedback;
 
@@ -13,25 +14,25 @@
   // Quick access filter options matching desktop app
   const quickFilters = [
     {
-      label: "⭐ My Favorites",
+      label: `⭐ ${t('browse_my_favorites')}`,
       type: "favorites",
       value: "favorites",
       color: "#FFD700",
-      description: "Your starred sequences",
+      description: t('browse_your_starred'),
     },
     {
-      label: "🔥 Recently Added",
+      label: `🔥 ${t('browse_recently_added')}`,
       type: "recent",
       value: "recent",
       color: "#FF6B6B",
-      description: "Recently added sequences",
+      description: t('browse_recently_added_desc'),
     },
     {
-      label: "📊 All Sequences",
+      label: `📊 ${t('browse_all_sequences')}`,
       type: "all_sequences",
       value: "all",
       color: "#4ECDC4",
-      description: "Browse all sequences",
+      description: t('browse_browse_all_desc'),
     },
   ];
 

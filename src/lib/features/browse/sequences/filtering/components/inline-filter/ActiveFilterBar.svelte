@@ -7,6 +7,7 @@ Only renders when at least one filter is active.
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import type { ActiveFilter } from "../../../../shared/domain/models/multi-filter-models";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   interface Props {
     filters: ActiveFilter[];
@@ -34,7 +35,7 @@ Only renders when at least one filter is active.
 </script>
 
 {#if filters.length > 0}
-  <div class="active-filter-bar" role="status" aria-live="polite" aria-label="Active filters">
+  <div class="active-filter-bar" role="status" aria-live="polite" aria-label={t('browse_active_filters')}>
     <div class="filter-chips-scroll">
       {#each filters as filter (filter.type)}
         <span
@@ -45,7 +46,7 @@ Only renders when at least one filter is active.
           <button
             class="chip-dismiss"
             type="button"
-            aria-label="Remove {filter.label} filter"
+            aria-label={t('browse_remove_filter', { label: filter.label })}
             onclick={() => handleRemove(filter.type)}
           >
             <i class="fas fa-times" aria-hidden="true"></i>
@@ -59,7 +60,7 @@ Only renders when at least one filter is active.
           type="button"
           onclick={handleClearAll}
         >
-          Clear all
+          {t('browse_clear_all')}
         </button>
       {/if}
     </div>

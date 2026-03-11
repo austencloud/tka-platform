@@ -7,6 +7,7 @@
 <script lang="ts">
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     step: StepData | null;
@@ -30,7 +31,7 @@
 <div class="step-visualization">
   <!-- Step counter -->
   <div class="step-header">
-    <span class="step-counter">Step {stepNumber} / {totalSteps}</span>
+    <span class="step-counter">{t('train_step_counter', { step: stepNumber, total: totalSteps })}</span>
   </div>
 
   <!-- Pictograph visualization -->
@@ -39,11 +40,11 @@
       <PictographContainer pictographData={step} />
     {:else if isBlank}
       <div class="blank-step">
-        <span>Blank Step</span>
+        <span>{t('train_blank_step')}</span>
       </div>
     {:else}
       <div class="no-step">
-        <span>No step data</span>
+        <span>{t('train_no_step_data')}</span>
       </div>
     {/if}
   </div>
@@ -54,10 +55,10 @@
       {#if step.blueReversal || step.redReversal}
         <div class="reversals">
           {#if step.blueReversal}
-            <span class="reversal blue">Blue Reversal</span>
+            <span class="reversal blue">{t('train_blue_reversal')}</span>
           {/if}
           {#if step.redReversal}
-            <span class="reversal red">Red Reversal</span>
+            <span class="reversal red">{t('train_red_reversal')}</span>
           {/if}
         </div>
       {/if}
@@ -66,13 +67,13 @@
         <div class="positions">
           {#if step.motions.blue}
             <div class="position-info">
-              <span class="label blue">Blue:</span>
+              <span class="label blue">{t('train_blue_label')}</span>
               <span class="location">{step.motions.blue.endLocation}</span>
             </div>
           {/if}
           {#if step.motions.red}
             <div class="position-info">
-              <span class="label red">Red:</span>
+              <span class="label red">{t('train_red_label')}</span>
               <span class="location">{step.motions.red.endLocation}</span>
             </div>
           {/if}

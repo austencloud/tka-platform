@@ -9,6 +9,7 @@
 	import { connectState } from '../../state/connect-state.svelte';
 	import ProgressRing from '$lib/shared/components/loading/ProgressRing.svelte';
 	import type { UserSearchResult, Invite } from '../../domain/models/connect-models';
+	import { t } from '$lib/shared/i18n/i18n.svelte';
 
 	// Local state
 	let searchQuery = $state('');
@@ -88,15 +89,15 @@
 <div class="invite-tab">
 	<!-- Search section -->
 	<section class="search-section">
-		<h2>Find Users</h2>
+		<h2>{t('connect_find_users')}</h2>
 		<div class="search-box">
 			<i class="fas fa-search" aria-hidden="true"></i>
 			<input
 				type="text"
-				placeholder="Search by username..."
+				placeholder={t('connect_search_placeholder')}
 				value={searchQuery}
 				oninput={handleSearchInput}
-				aria-label="Search for users"
+				aria-label={t('connect_search_for_users')}
 			/>
 			{#if isSearching}
 				<ProgressRing percent={-1} size={24} strokeWidth={2} />
@@ -128,15 +129,15 @@
 
 						<div class="user-actions">
 							{#if isInSession}
-								<button class="invite-button" onclick={() => handleInviteUser(user)} aria-label="Invite {user.displayName} to session">
+								<button class="invite-button" onclick={() => handleInviteUser(user)} aria-label={t('connect_invite_user', { name: user.displayName })}>
 									<i class="fas fa-paper-plane" aria-hidden="true"></i>
-									Invite
+									{t('connect_invite_button')}
 								</button>
 							{/if}
 							<button
 								class="add-friend-button"
 								onclick={() => handleAddFriend(user)}
-								aria-label="Add {user.displayName} as friend"
+								aria-label={t('connect_add_friend', { name: user.displayName })}
 							>
 								<i class="fas fa-user-plus" aria-hidden="true"></i>
 							</button>
@@ -145,20 +146,20 @@
 				{/each}
 			</div>
 		{:else if searchQuery.length >= 2 && !isSearching}
-			<p class="no-results">No users found for "{searchQuery}"</p>
+			<p class="no-results">{t('connect_no_users_found', { query: searchQuery })}</p>
 		{/if}
 	</section>
 
 	<!-- Pending invites section -->
 	{#if pendingInvites.length > 0}
 		<section class="invites-section">
-			<h2>Pending Invites</h2>
+			<h2>{t('connect_pending_invites')}</h2>
 			<div class="invites-list">
 				{#each pendingInvites as invite (invite.inviteId)}
 					<article class="invite-card">
 						<div class="invite-info">
 							<span class="invite-from">
-								<strong>{invite.fromDisplayName}</strong> invited you to join
+								<strong>{invite.fromDisplayName}</strong> {t('connect_invited_you_to_join')}
 							</span>
 							<span class="invite-sequence">"{invite.sequenceWord}"</span>
 						</div>
@@ -167,15 +168,15 @@
 							<button
 								class="accept-button"
 								onclick={() => handleAcceptInvite(invite)}
-								aria-label={`Join ${invite.fromDisplayName}’s session for ${invite.sequenceWord}`}
+								aria-label={t(‘connect_join_session_for’, { name: invite.fromDisplayName, word: invite.sequenceWord })}
 							>
 								<i class="fas fa-check" aria-hidden="true"></i>
-								Join
+								{t('connect_join')}
 							</button>
 							<button
 								class="decline-button"
 								onclick={() => handleDeclineInvite(invite)}
-								aria-label={`Decline ${invite.fromDisplayName}'s invite to ${invite.sequenceWord}`}
+								aria-label={t('connect_decline_invite_from', { name: invite.fromDisplayName, word: invite.sequenceWord })}
 							>
 								<i class="fas fa-times" aria-hidden="true"></i>
 							</button>
@@ -191,16 +192,14 @@
 		<div class="help-section">
 			<i class="fas fa-info-circle" aria-hidden="true"></i>
 			<p>
-				Start sharing a sequence to invite others.
-				Open a sequence and tap the Sync button to begin.
+				{t('connect_start_sharing_hint')}
 			</p>
 		</div>
 	{:else if currentSession}
 		<div class="session-hint">
 			<i class="fas fa-link" aria-hidden="true"></i>
 			<p>
-				You're sharing "<strong>{currentSession.sequenceWord}</strong>".
-				Search for users above to invite them.
+				{t('connect_sharing_sequence', { word: currentSession.sequenceWord })}
 			</p>
 		</div>
 	{/if}

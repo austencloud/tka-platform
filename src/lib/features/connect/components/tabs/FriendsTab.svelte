@@ -7,6 +7,7 @@
 <script lang="ts">
 	import { connectState } from '../../state/connect-state.svelte';
 	import type { Friend } from '../../domain/models/connect-models';
+	import { t } from '$lib/shared/i18n/i18n.svelte';
 
 	// Derived state
 	const friends = $derived(connectState.friends);
@@ -41,12 +42,12 @@
 	<!-- Header -->
 	<header class="tab-header">
 		<div class="header-info">
-			<h2>Friends</h2>
+			<h2>{t('connect_friends_heading')}</h2>
 			<p class="subtitle" aria-live="polite" aria-atomic="true">
 				{#if onlineFriends.length === 0}
-					No friends online
+					{t('connect_no_friends_online')}
 				{:else}
-					{onlineFriends.length} online
+					{t('connect_online_count', { count: onlineFriends.length })}
 				{/if}
 			</p>
 		</div>
@@ -59,8 +60,8 @@
 				<div class="empty-icon">
 					<i class="fas fa-user-friends" aria-hidden="true"></i>
 				</div>
-				<h3>No friends yet</h3>
-				<p>Add friends from the Invite tab to see them here.</p>
+				<h3>{t('connect_no_friends_yet')}</h3>
+				<p>{t('connect_add_friends_hint')}</p>
 			</div>
 		{:else}
 			{#each sortedFriends as friend (friend.userId)}
@@ -81,7 +82,7 @@
 					<div class="friend-info">
 						<span class="friend-name">{friend.nickname || friend.displayName}</span>
 						<span class="friend-status">
-							{isOnline(friend) ? 'Online' : 'Offline'}
+							{isOnline(friend) ? t('connect_online') : t('connect_offline')}
 						</span>
 					</div>
 
@@ -91,19 +92,19 @@
 							<button
 								class="invite-button"
 								onclick={() => handleInvite(friend)}
-								title="Invite to session"
-								aria-label="Invite {friend.nickname || friend.displayName} to session"
+								title={t('connect_invite_to_session')}
+								aria-label={t('connect_invite_user', { name: friend.nickname || friend.displayName })}
 							>
 								<i class="fas fa-paper-plane" aria-hidden="true"></i>
-								Invite
+								{t('connect_invite_button')}
 							</button>
 						{/if}
 
 						<button
 							class="remove-button"
 							onclick={() => handleRemoveFriend(friend)}
-							title="Remove friend"
-							aria-label="Remove {friend.nickname || friend.displayName}"
+							title={t('connect_remove_friend')}
+							aria-label={t('connect_remove_user', { name: friend.nickname || friend.displayName })}
 						>
 							<i class="fas fa-times" aria-hidden="true"></i>
 						</button>

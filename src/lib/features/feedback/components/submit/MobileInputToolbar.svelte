@@ -14,6 +14,7 @@
   import { browser } from "$app/environment";
   import VoiceInputButton from "./VoiceInputButton.svelte";
   import type { IVoiceRecorder, VoiceRecordingResult } from "../../services/contracts/IVoiceRecorder";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   let {
     visible = false,
@@ -260,7 +261,7 @@
             {:else}
               <i class="fas fa-paper-plane" aria-hidden="true"></i>
             {/if}
-            <span>Submit</span>
+            <span>{t("feedback_submit")}</span>
           </button>
         {/if}
 
@@ -269,9 +270,9 @@
           class="done-button"
           onclick={onDone}
           {disabled}
-          aria-label="Done - dismiss keyboard"
+          aria-label={t("feedback_done_dismiss_keyboard")}
         >
-          <span class="done-text">Done</span>
+          <span class="done-text">{t("feedback_done")}</span>
         </button>
       </div>
     </div>

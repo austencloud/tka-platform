@@ -9,6 +9,7 @@
 	 * - Click to teleport (optional)
 	 */
 
+	import { t } from "$lib/shared/i18n/i18n.svelte.js";
 	import type { GalleryLayout } from '../../domain/models/GalleryLayout';
 	import type { RemotePlayer, PlayerPosition } from '../domain/multiplayer-models';
 
@@ -140,7 +141,7 @@
 		viewBox="0 0 {MINIMAP_SIZE} {MINIMAP_SIZE}"
 		onclick={handleClick}
 		role={onTeleport ? "button" : "img"}
-		aria-label={onTeleport ? "Gallery minimap - click to teleport" : "Gallery minimap showing player positions"}
+		aria-label={onTeleport ? t("gallery_minimap_teleport_label") : t("gallery_minimap_label")}
 	>
 		<!-- Background -->
 		<rect
@@ -225,7 +226,7 @@
 	</svg>
 
 	<!-- Expand/collapse button -->
-	<button class="expand-button" aria-label={expanded ? 'Collapse minimap' : 'Expand minimap'}>
+	<button class="expand-button" aria-label={expanded ? t("gallery_minimap_collapse") : t("gallery_minimap_expand")}>
 		<i class="fas fa-{expanded ? 'compress' : 'expand'}" aria-hidden="true"></i>
 	</button>
 </div>

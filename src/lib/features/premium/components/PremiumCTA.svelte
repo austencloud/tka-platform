@@ -2,6 +2,8 @@
   PremiumCTA - Call to action with price and subscribe button
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
+
   interface Props {
     price: number;
     period: string;
@@ -21,8 +23,8 @@
 
 <div class="cta">
   <div class="price-display">
-    <span class="amount">${price}</span>
-    <span class="period">/{period}</span>
+    <span class="amount">{t('premium_cta_price_amount', { price })}</span>
+    <span class="period">{t('premium_cta_price_period', { period })}</span>
   </div>
   <button
     class="subscribe-button"
@@ -31,13 +33,13 @@
   >
     {#if isLoading}
       <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-      <span>Processing...</span>
+      <span>{t('premium_cta_processing')}</span>
     {:else}
       <i class="fas fa-unlock" aria-hidden="true"></i>
-      <span>Unlock Unlimited Creation</span>
+      <span>{t('premium_cta_unlock')}</span>
     {/if}
   </button>
-  <p class="note">Cancel anytime • No long-term commitment</p>
+  <p class="note">{t('premium_cta_cancel_note')}</p>
 </div>
 
 <style>

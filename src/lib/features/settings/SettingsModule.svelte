@@ -43,7 +43,6 @@
   import PreferencesTab from "$lib/shared/settings/components/tabs/PreferencesTab.svelte";
   import LanguageTab from "$lib/shared/settings/components/tabs/LanguageTab.svelte";
   import NotificationPreferencesPanel from "$lib/features/feedback/components/NotificationPreferencesPanel.svelte";
-  import ContributorsTab from "$lib/shared/settings/components/tabs/ContributorsTab.svelte";
 
   // Reactive settings - derives from getSettings() to maintain reactivity
   let settings = $derived(getSettings());
@@ -268,8 +267,6 @@
             currentSettings={settings}
             onSettingUpdate={handleSettingUpdate}
           />
-        {:else if activeTab === "contributors"}
-          <ContributorsTab />
         {:else if activeTab === "language"}
           <LanguageTab />
         {:else}

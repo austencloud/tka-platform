@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
   import { ARENA_COLOR } from "../../domain/constants/arena-constants";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   let {
     dataPoints = [],
@@ -62,7 +63,7 @@
 
 <div class="rating-history">
   {#if dataPoints.length >= 2}
-    <svg viewBox="0 0 {width} {height}" {width} {height} aria-label="Rating history chart">
+    <svg viewBox="0 0 {width} {height}" {width} {height} aria-label={t('arena_detail_rating_history_chart')}>
       <defs>
         <linearGradient id="rating-fill" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stop-color={ARENA_COLOR} stop-opacity="0.3" />
@@ -83,7 +84,7 @@
     </svg>
   {:else}
     <div class="no-data">
-      <span>Not enough data for a chart yet</span>
+      <span>{t('arena_detail_not_enough_data')}</span>
     </div>
   {/if}
 </div>

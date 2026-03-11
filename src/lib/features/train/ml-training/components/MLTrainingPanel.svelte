@@ -22,6 +22,7 @@ Mobile-first design:
     ML_TRAINING_TABS,
   } from "$lib/shared/navigation/state/navigation-state.svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   type Tab = "capture" | "sessions" | "labeling";
 
@@ -203,7 +204,7 @@ Mobile-first design:
 
       <!-- Frame Preview Grid -->
       <div class="preview-section">
-        <h3>Captured Frames</h3>
+        <h3>{t('train_ml_captured_frames')}</h3>
         {#if isLoadingPreview}
           <div
             class="preview-loading"
@@ -212,7 +213,7 @@ Mobile-first design:
             aria-busy="true"
           >
             <ProgressRing percent={-1} size={24} strokeWidth={2} />
-            <span>Loading preview...</span>
+            <span>{t('train_ml_loading_preview')}</span>
           </div>
         {:else if previewFrames.length > 0}
           <div class="preview-grid">
@@ -224,14 +225,14 @@ Mobile-first design:
             {#if selectedSession.frameCount > 6}
               <div class="preview-more">
                 <span>+{selectedSession.frameCount - 6}</span>
-                <span class="more-label">more</span>
+                <span class="more-label">{t('train_ml_more')}</span>
               </div>
             {/if}
           </div>
         {:else}
           <div class="no-preview">
             <i class="fa fa-image" aria-hidden="true"></i>
-            <span>No frames available</span>
+            <span>{t('train_ml_no_frames')}</span>
           </div>
         {/if}
       </div>

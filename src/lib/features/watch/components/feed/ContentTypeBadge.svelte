@@ -5,6 +5,7 @@
   Only displayed when the item is identified as a tutorial.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { FeedItemIntent } from "../../domain/models/feed-models";
 
   interface Props {
@@ -20,7 +21,7 @@
 {#if showBadge}
   <div class="content-type-badge">
     <i class="fas fa-graduation-cap" aria-hidden="true"></i>
-    <span>Tutorial</span>
+    <span>{t('watch_badge_tutorial')}</span>
   </div>
 {/if}
 

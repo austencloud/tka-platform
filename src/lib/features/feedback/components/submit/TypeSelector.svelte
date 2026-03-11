@@ -1,6 +1,7 @@
 <script lang="ts">
   import { TYPE_CONFIG } from "../../domain/models/feedback-models";
   import type { FeedbackType } from "../../domain/models/feedback-models";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   const { selectedType, onTypeChange, isInputMode = false } = $props<{
     selectedType: FeedbackType;
@@ -10,7 +11,7 @@
 </script>
 
 <fieldset class="type-selector" class:collapsed={isInputMode}>
-  <legend class="sr-only">Feedback Type</legend>
+  <legend class="sr-only">{t("feedback_type")}</legend>
   <div class="segment-control">
     {#each Object.entries(TYPE_CONFIG) as [type, config]}
       <button

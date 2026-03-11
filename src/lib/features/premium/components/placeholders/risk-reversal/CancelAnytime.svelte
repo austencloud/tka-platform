@@ -1,5 +1,7 @@
 <!-- CancelAnytime - Prominent cancellation policy display -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
+
   interface Props {
     variant?: "inline" | "badge";
     showSteps?: boolean;
@@ -11,31 +13,30 @@
 {#if variant === "inline"}
   <div class="cancel-inline">
     <i class="fas fa-check-circle" aria-hidden="true"></i>
-    <span>Cancel anytime, no questions asked</span>
+    <span>{t('premium_cancel_inline')}</span>
   </div>
 {:else}
   <div class="cancel-badge">
     <div class="badge-header">
       <i class="fas fa-door-open" aria-hidden="true"></i>
-      <h4>No Long-Term Commitment</h4>
+      <h4>{t('premium_cancel_badge_title')}</h4>
     </div>
     <p>
-      Cancel your subscription anytime from your account settings. You'll keep
-      access until the end of your billing period.
+      {t('premium_cancel_badge_description')}
     </p>
     {#if showSteps}
       <div class="cancel-steps">
         <div class="step">
           <span class="step-number">1</span>
-          <span>Go to Account Settings</span>
+          <span>{t('premium_cancel_step_1')}</span>
         </div>
         <div class="step">
           <span class="step-number">2</span>
-          <span>Click "Manage Subscription"</span>
+          <span>{t('premium_cancel_step_2')}</span>
         </div>
         <div class="step">
           <span class="step-number">3</span>
-          <span>Select "Cancel Subscription"</span>
+          <span>{t('premium_cancel_step_3')}</span>
         </div>
       </div>
     {/if}

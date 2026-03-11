@@ -5,12 +5,14 @@
   Visual feedback is handled by the panels themselves.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
+
   let { winner = "" }: { winner: string } = $props();
 </script>
 
 {#if winner}
   <div class="sr-only" role="status" aria-live="assertive" aria-atomic="true">
-    Voted for {winner}
+    {t('arena_battle_voted_for', { word: winner })}
   </div>
 {/if}
 

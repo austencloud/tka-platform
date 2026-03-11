@@ -19,6 +19,7 @@
   import SubmitButton from "./SubmitButton.svelte";
   import Toast from "./Toast.svelte";
   import MobileInputToolbar from "./MobileInputToolbar.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // Props
   const { formState, hideSuccessState = false, isInputMode = false, isTouchDevice: isTouchDeviceProp, onInputFocusChange, onKeyboardHeightChange } = $props<{
@@ -132,7 +133,7 @@
       }
     } catch (err) {
       console.error("Transcription failed:", err);
-      transcriptionError = "Transcription failed. Try again or type instead.";
+      transcriptionError = t("feedback_transcription_failed");
       hapticService?.trigger("warning");
       setTimeout(() => {
         transcriptionError = "";
@@ -227,7 +228,7 @@
       value={formState.formData.description}
       error={formState.formErrors.description}
       placeholder={currentTypeConfig?.placeholder ??
-        "Describe the issue, suggestion, or idea..."}
+        t("feedback_default_placeholder")}
       {isTranscribing}
       isMobile={isMobileDevice}
       {isTouchDevice}
@@ -259,8 +260,8 @@
       {#if formState.submitStatus === "error"}
         <Toast
           type="error"
-          title="Submission failed"
-          message="Please check your connection and try again."
+          title={t("feedback_submission_failed")}
+          message={t("feedback_check_connection")}
           icon="fa-exclamation"
         />
       {/if}
@@ -268,7 +269,7 @@
       {#if transcriptionError}
         <Toast
           type="error"
-          title="Transcription failed"
+          title={t("feedback_transcription_failed_title")}
           message={transcriptionError}
           icon="fa-microphone-slash"
         />

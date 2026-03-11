@@ -6,6 +6,7 @@
   Replay re-runs transcripts through the current interpreter to detect regressions.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { VoiceSession, VoiceSessionEvent, ResolutionTier } from "$lib/shared/voice-control/domain/voice-session-types";
   import type { IVoiceSessionFormatter } from "$lib/features/voice-sessions/services/contracts/IVoiceSessionFormatter";
   import type { IVoiceSessionReplayer } from "$lib/features/voice-sessions/services/contracts/IVoiceSessionReplayer";
@@ -53,10 +54,10 @@
   };
 
   const diffLabels: Record<ReplayDiffType, string> = {
-    SAME: "Same",
-    IMPROVED: "Improved",
-    REGRESSED: "Regressed",
-    CHANGED: "Changed",
+    SAME: t('voice_sessions_diff_same'),
+    IMPROVED: t('voice_sessions_diff_improved'),
+    REGRESSED: t('voice_sessions_diff_regressed'),
+    CHANGED: t('voice_sessions_diff_changed'),
   };
 
   const diffIcons: Record<ReplayDiffType, string> = {
@@ -124,9 +125,9 @@
 
 <div class="detail-view">
   <div class="detail-header">
-    <button class="back-btn" onclick={onClose} aria-label="Back to session list">
+    <button class="back-btn" onclick={onClose} aria-label={t('voice_sessions_back')}>
       <i class="fas fa-arrow-left" aria-hidden="true"></i>
-      Back
+      {t('voice_sessions_back')}
     </button>
     <span class="detail-title">
       {session.startedAt.toLocaleDateString(undefined, { month: "short", day: "numeric" })} at {session.startedAt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
@@ -137,19 +138,19 @@
   <div class="stats-grid">
     <div class="stat-cell">
       <span class="stat-value">{session.stats.totalEvents}</span>
-      <span class="stat-label">Events</span>
+      <span class="stat-label">{t('voice_sessions_events')}</span>
     </div>
     <div class="stat-cell">
       <span class="stat-value" style="color: var(--semantic-success, #22c55e)">{successRate()}</span>
-      <span class="stat-label">Success</span>
+      <span class="stat-label">{t('voice_sessions_success')}</span>
     </div>
     <div class="stat-cell">
       <span class="stat-value">{formatDuration(session.durationMs)}</span>
-      <span class="stat-label">Duration</span>
+      <span class="stat-label">{t('voice_sessions_duration')}</span>
     </div>
     <div class="stat-cell">
       <span class="stat-value">{Math.round(session.stats.avgLatencyMs)}ms</span>
-      <span class="stat-label">Avg Latency</span>
+      <span class="stat-label">{t('voice_sessions_avg_latency')}</span>
     </div>
   </div>
 
@@ -170,7 +171,7 @@
 
   <!-- Event Timeline -->
   <div class="timeline-header">
-    <h3>Events</h3>
+    <h3>{t('voice_sessions_events')}</h3>
   </div>
   <div class="timeline themed-scrollbar">
     {#each session.events as event}
@@ -193,7 +194,7 @@
       </div>
     {/each}
     {#if session.events.length === 0}
-      <div class="empty-timeline">No events in this session.</div>
+      <div class="empty-timeline">{t('voice_sessions_no_events')}</div>
     {/if}
   </div>
 
@@ -204,8 +205,8 @@
         {#if replaying}Replaying session...{:else if replayResult}Replay complete: {replayResult.summary.regressedCount} regressions, {replayResult.summary.improvedCount} improvements{/if}
       </span>
       <div class="replay-header">
-        <h3>Replay Results</h3>
-        <button class="close-replay-btn" onclick={closeReplay} aria-label="Close replay">
+        <h3>{t('voice_sessions_replay_results')}</h3>
+        <button class="close-replay-btn" onclick={closeReplay} aria-label={t('voice_sessions_close_replay')}>
           <i class="fas fa-times" aria-hidden="true"></i>
         </button>
       </div>
@@ -243,7 +244,7 @@
             {#if comparison.diff !== "SAME"}
               <div class="diff-comparison">
                 <div class="diff-side original">
-                  <span class="diff-side-label">Original</span>
+                  <span class="diff-side-label">{t('voice_sessions_original')}</span>
                   <span class="tier-badge small" style="background: {tierColors[comparison.originalTier]}">{tierLabels[comparison.originalTier]}</span>
                   {#if comparison.originalCommand}
                     <span class="diff-command">{comparison.originalCommand.category}:{comparison.originalCommand.action}({comparison.originalCommand.target})</span>
@@ -252,7 +253,7 @@
                   {/if}
                 </div>
                 <div class="diff-side current">
-                  <span class="diff-side-label">Current</span>
+                  <span class="diff-side-label">{t('voice_sessions_current')}</span>
                   <span class="tier-badge small" style="background: {tierColors[comparison.currentTier]}">{tierLabels[comparison.currentTier]}</span>
                   {#if comparison.currentCommand}
                     <span class="diff-command">{comparison.currentCommand.category}:{comparison.currentCommand.action}({comparison.currentCommand.target})</span>
@@ -272,17 +273,17 @@
   <div class="detail-actions">
     <button class="action-btn copy" onclick={copyForAI} disabled={copySuccess}>
       <i class="fas {copySuccess ? 'fa-check' : 'fa-copy'}" aria-hidden="true"></i>
-      {copySuccess ? "Copied" : "Copy for AI"}
+      {copySuccess ? t('voice_sessions_copied') : t('voice_sessions_copy_for_ai')}
     </button>
     {#if replayer}
       <button class="action-btn replay" onclick={runReplay} disabled={replaying}>
         <i class="fas {replaying ? 'fa-spinner fa-spin' : 'fa-redo'}" aria-hidden="true"></i>
-        {replaying ? "Replaying..." : showReplayDiff ? "Re-run" : "Replay"}
+        {replaying ? t('voice_sessions_replaying') : showReplayDiff ? t('voice_sessions_rerun') : t('voice_sessions_replay')}
       </button>
     {/if}
     <button class="action-btn delete" onclick={onDelete}>
       <i class="fas fa-trash" aria-hidden="true"></i>
-      Delete
+      {t('voice_sessions_delete')}
     </button>
   </div>
 </div>

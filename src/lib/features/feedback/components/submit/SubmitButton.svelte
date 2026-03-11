@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
+
   const { isSubmitting, disabled } = $props<{
     isSubmitting: boolean;
     disabled: boolean;
@@ -9,10 +11,10 @@
   <button type="submit" class="submit-btn" {disabled} aria-busy={isSubmitting}>
     {#if isSubmitting}
       <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
-      <span>Submitting...</span>
+      <span>{t("feedback_submitting")}</span>
     {:else}
       <i class="fas fa-paper-plane" aria-hidden="true"></i>
-      <span>Submit Feedback</span>
+      <span>{t("feedback_submit_button")}</span>
     {/if}
   </button>
 </div>

@@ -5,6 +5,7 @@ Shows available lengths with contextual counts.
 <script lang="ts">
   import FilterChipBase from "../FilterChipBase.svelte";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
@@ -26,7 +27,7 @@ Shows available lengths with contextual counts.
     hapticService = container.items.hapticFeedback ?? null;
   });
 
-  const label = $derived(activeLength ? `${activeLength} beats` : "Length");
+  const label = $derived(activeLength ? t('browse_n_beats', { count: String(activeLength) }) : t('browse_chip_length'));
   const isActive = $derived(activeLength !== null);
 
   // Compute counts lazily when dropdown is open
@@ -82,7 +83,7 @@ Shows available lengths with contextual counts.
         aria-selected={activeLength === null}
         onclick={() => handleSelect(null)}
       >
-        <span>All Lengths</span>
+        <span>{t('browse_all_lengths')}</span>
         {#if activeLength === null}
           <i class="fas fa-check" aria-hidden="true"></i>
         {/if}
@@ -97,7 +98,7 @@ Shows available lengths with contextual counts.
           onclick={() => handleSelect(length)}
         >
           <span>
-            {length} beats
+            {t('browse_n_beats', { count: String(length) })}
             {#if lengthCounts}
               <span class="option-count">({lengthCounts[length]})</span>
             {/if}

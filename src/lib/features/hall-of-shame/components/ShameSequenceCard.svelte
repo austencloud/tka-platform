@@ -5,6 +5,7 @@
   Shows thumbnail, word, category, vote count, and voting controls.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { HallOfShameEntry } from "../domain/models/hall-of-shame-models";
   import { container } from "$lib/shared/di";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -106,7 +107,7 @@
     {/if}
 
     {#if entry.featured}
-      <div class="featured-badge" title="Featured">
+      <div class="featured-badge" title={t('hall_of_shame_featured')}>
         <i class="fas fa-star" aria-hidden="true"></i>
       </div>
     {/if}
@@ -133,7 +134,7 @@
       class:voted={hasVoted}
       onclick={handleVote}
       disabled={!currentUser || hasVoted || isVoting}
-      title={hasVoted ? "Already voted" : currentUser ? "Vote for this" : "Sign in to vote"}
+      title={hasVoted ? t('hall_of_shame_already_voted') : currentUser ? t('hall_of_shame_vote_for_this') : t('hall_of_shame_sign_in_to_vote')}
     >
       {#if isVoting}
         <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>

@@ -14,6 +14,7 @@
   import FeedbackDetailPanel from "./FeedbackDetailPanel.svelte";
   import PrepareReleasePanel from "./PrepareReleasePanel.svelte";
   import FeedbackArchiveView from "./FeedbackArchiveView.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // Create manage state with real-time subscription
   const manageState = createFeedbackManageState();
@@ -128,8 +129,8 @@
   {#if !isAdmin}
     <div class="access-denied">
       <i class="fas fa-lock" aria-hidden="true"></i>
-      <h2>Admin Access Required</h2>
-      <p>You need admin permissions to manage feedback.</p>
+      <h2>{t("feedback_admin_required")}</h2>
+      <p>{t("feedback_admin_required_message")}</p>
     </div>
   {:else if versionState.showPreparePanel}
     <div class="release-panel-container">

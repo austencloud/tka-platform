@@ -5,6 +5,7 @@ Shows circular/non-circular/specific LOOP types with counts.
 <script lang="ts">
   import FilterChipBase from "../FilterChipBase.svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
@@ -23,29 +24,29 @@ Shows circular/non-circular/specific LOOP types with counts.
     hapticService = container.items.hapticFeedback ?? null;
   });
 
-  const label = $derived(activeValue ? formatLabel(activeValue) : "Pattern");
+  const label = $derived(activeValue ? formatLabel(activeValue) : t('browse_chip_pattern'));
   const isActive = $derived(activeValue !== null);
 
   function formatLabel(value: string): string {
-    if (value === "circular") return "Circular";
-    if (value === "non_circular") return "Non-circular";
+    if (value === "circular") return t('browse_pattern_circular');
+    if (value === "non_circular") return t('browse_pattern_non_circular');
     // Capitalize first letter
     return value.charAt(0).toUpperCase() + value.slice(1);
   }
 
   const options = $derived.by(() => {
     const items: { value: string | null; label: string; count?: number }[] = [
-      { value: null, label: "All Patterns" },
+      { value: null, label: t('browse_all_patterns') },
     ];
 
     const circularCount = loopTypeCounts["_circular"] ?? 0;
     const nonCircularCount = loopTypeCounts["_non_circular"] ?? 0;
 
     if (circularCount > 0) {
-      items.push({ value: "circular", label: "Circular", count: circularCount });
+      items.push({ value: "circular", label: t('browse_pattern_circular'), count: circularCount });
     }
     if (nonCircularCount > 0) {
-      items.push({ value: "non_circular", label: "Non-circular", count: nonCircularCount });
+      items.push({ value: "non_circular", label: t('browse_pattern_non_circular'), count: nonCircularCount });
     }
 
     // Add specific LOOP types (skip meta keys)

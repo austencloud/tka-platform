@@ -9,6 +9,7 @@
 -->
 <script lang="ts">
   import { PracticeMode } from "../../domain/enums/TrainEnums";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     activeMode: PracticeMode;
@@ -21,24 +22,24 @@
   const modes = [
     {
       value: PracticeMode.ADAPTIVE,
-      label: "Adaptive",
-      shortDesc: "Auto-advance",
+      label: t('train_mode_adaptive'),
+      shortDesc: t('train_mode_adaptive_short'),
       icon: "fa-brain",
-      description: "Moves forward when you match the position",
+      description: t('train_mode_adaptive_desc'),
     },
     {
       value: PracticeMode.STEP_BY_STEP,
-      label: "Step",
-      shortDesc: "Manual",
+      label: t('train_mode_step'),
+      shortDesc: t('train_mode_step_short'),
       icon: "fa-shoe-prints",
-      description: "Advance manually at your own pace",
+      description: t('train_mode_step_desc'),
     },
     {
       value: PracticeMode.TIMED,
-      label: "Timed",
-      shortDesc: "Beat sync",
+      label: t('train_mode_timed'),
+      shortDesc: t('train_mode_timed_short'),
       icon: "fa-stopwatch",
-      description: "Follow the rhythm with scoring",
+      description: t('train_mode_timed_desc'),
     },
   ];
 </script>

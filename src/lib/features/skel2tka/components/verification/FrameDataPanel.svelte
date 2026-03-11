@@ -5,6 +5,7 @@
   and which beat the current frame belongs to.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { DetectionFrame } from "$lib/features/train/domain/models/DetectionFrame";
   import type { DetectedBeat } from "../../domain/models";
 
@@ -40,7 +41,7 @@
 <div class="frame-data-panel">
   <div class="panel-header">
     <span class="frame-counter">
-      Frame {frameIndex + 1} / {totalFrames}
+      {t('skel2tka_frame_counter', { current: String(frameIndex + 1), total: String(totalFrames) })}
     </span>
     <span class="timestamp">{timestamp.toFixed(3)}s</span>
   </div>
@@ -60,18 +61,18 @@
               ({detection.rawPosition.x.toFixed(2)}, {detection.rawPosition.y.toFixed(2)})
             </span>
           {:else}
-            <span class="not-detected">not detected</span>
+            <span class="not-detected">{t('skel2tka_not_detected')}</span>
           {/if}
         </div>
       {/each}
     </div>
   {:else}
-    <div class="no-data">No detection data for this frame</div>
+    <div class="no-data">{t('skel2tka_no_detection_data')}</div>
   {/if}
 
   {#if currentBeat}
     <div class="beat-info">
-      <span class="beat-label">Beat {currentBeat.index + 1}</span>
+      <span class="beat-label">{t('skel2tka_beat_label', { beat: String(currentBeat.index + 1) })}</span>
       {#if currentBeat.positionLabel}
         <span class="position-label {currentBeat.positionLabel}">
           {currentBeat.positionLabel}

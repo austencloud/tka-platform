@@ -15,6 +15,7 @@ Matches the desktop Python app navigation pattern exactly.
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
     import { onMount } from "svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   let hapticService: IHapticFeedback;
 
@@ -35,15 +36,15 @@ Matches the desktop Python app navigation pattern exactly.
   function getHeaderText(sortMethod: BrowseSortMethod): string {
     switch (sortMethod) {
       case BrowseSortMethod.ALPHABETICAL:
-        return "Letter";
+        return t('browse_sort_letter');
       case BrowseSortMethod.DIFFICULTY_LEVEL:
-        return "Level";
+        return t('browse_sort_level');
       case BrowseSortMethod.SEQUENCE_LENGTH:
-        return "Length";
+        return t('browse_sort_length');
       case BrowseSortMethod.DATE_ADDED:
-        return "Date";
+        return t('browse_sort_date');
       default:
-        return "Navigation";
+        return t('browse_navigation');
     }
   }
 

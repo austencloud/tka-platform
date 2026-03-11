@@ -5,6 +5,8 @@
   Shows the selected file name and size. Emits the File object.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
+
   interface Props {
     onFileSelected: (file: File) => void;
     disabled?: boolean;
@@ -82,11 +84,11 @@
     <i class="fas fa-check-circle file-icon"></i>
     <span class="file-name">{selectedFile.name}</span>
     <span class="file-size">{formatFileSize(selectedFile.size)}</span>
-    <span class="hint">Drop another file or click to change</span>
+    <span class="hint">{t('skel2tka_drop_change')}</span>
   {:else}
     <i class="fas fa-cloud-arrow-up upload-icon"></i>
-    <span class="primary-text">Drop a video file here</span>
-    <span class="hint">or click to browse. MP4, MOV, WebM supported.</span>
+    <span class="primary-text">{t('skel2tka_drop_video')}</span>
+    <span class="hint">{t('skel2tka_drop_hint')}</span>
   {/if}
 </div>
 

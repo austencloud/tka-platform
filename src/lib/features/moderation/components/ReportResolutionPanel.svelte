@@ -7,6 +7,7 @@
 		type ReportResolution,
 		type UserReport
 	} from '../domain/models/report-models';
+	import { t } from '$lib/shared/i18n/i18n.svelte';
 
 	interface Props {
 		report: UserReport;
@@ -25,14 +26,14 @@
 
 	async function handleResolve() {
 		if (!selectedResolution) {
-			toast.error('Please select a resolution');
+			toast.error(t('moderation_select_resolution'));
 			return;
 		}
 
 		// Confirm if disabling account
 		if (selectedResolution === 'account_disabled') {
 			const confirmed = confirm(
-				`This will disable ${report.reportedUserDisplayName}'s account. They will no longer be able to sign in. Continue?`
+				t('moderation_confirm_disable', { name: report.reportedUserDisplayName })
 			);
 			if (!confirmed) return;
 		}
@@ -50,13 +51,13 @@
 			adminReportsState.updateLocalReport(updated);
 			await adminReportsState.loadCounts();
 
-			toast.success('Report resolved successfully');
+			toast.success(t('moderation_resolved_success'));
 
 			// Reset form
 			selectedResolution = null;
 			adminNotes = '';
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Failed to resolve report';
+			const message = error instanceof Error ? error.message : t('moderation_resolve_failed');
 			toast.error(message);
 		} finally {
 			isSubmitting = false;
@@ -65,7 +66,7 @@
 </script>
 
 <div class="resolution-panel">
-	<h3>Resolve Report</h3>
+	<h3>{t('moderation_resolve_report')}</h3>
 
 	<div class="resolution-options">
 		{#each resolutions as [key, config]}
@@ -87,11 +88,11 @@
 	</div>
 
 	<div class="notes-field">
-		<label for="admin-notes">Admin Notes (optional)</label>
+		<label for="admin-notes">{t('moderation_admin_notes')}</label>
 		<textarea
 			id="admin-notes"
 			bind:value={adminNotes}
-			placeholder="Add notes about this resolution..."
+			placeholder={t('moderation_admin_notes_placeholder')}
 			rows="3"
 		></textarea>
 	</div>
@@ -106,13 +107,13 @@
 		>
 			{#if isSubmitting}
 				<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
-				Resolving...
+				{t('moderation_resolving')}
 			{:else if selectedResolution === 'account_disabled'}
 				<i class="fa-solid fa-user-lock" aria-hidden="true"></i>
-				Disable Account & Resolve
+				{t('moderation_disable_and_resolve')}
 			{:else}
 				<i class="fa-solid fa-check" aria-hidden="true"></i>
-				Resolve Report
+				{t('moderation_resolve_report')}
 			{/if}
 		</button>
 	</div>

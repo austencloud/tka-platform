@@ -1,6 +1,7 @@
 <!-- ImageUpload - Upload and preview images for feedback -->
 <script lang="ts">
   import { onMount } from "svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // Props
   const {
@@ -139,10 +140,10 @@
       ondragover={handleDragOver}
       ondragleave={handleDragLeave}
       {disabled}
-      title="Upload image or paste screenshot"
+      title={t("feedback_upload_image_title")}
     >
       <i class="fas fa-paperclip" aria-hidden="true"></i>
-      <span>Attach image</span>
+      <span>{t("feedback_attach_image")}</span>
     </button>
     <input
       type="file"
@@ -151,7 +152,7 @@
       accept="image/*"
       multiple
       {disabled}
-      aria-label="Upload images"
+      aria-label={t("feedback_upload_images")}
       class="sr-only"
     />
   {/if}
@@ -167,7 +168,7 @@
             class="remove-btn"
             onclick={() => removeImage(index)}
             {disabled}
-            aria-label="Remove image"
+            aria-label={t("feedback_remove_image")}
           >
             <i class="fas fa-times" aria-hidden="true"></i>
           </button>

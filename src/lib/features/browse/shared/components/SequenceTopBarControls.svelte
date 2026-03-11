@@ -19,6 +19,7 @@
   import ExpandableSearchBar from "./ExpandableSearchBar.svelte";
   import SortPopover from "./SortPopover.svelte";
   import SegmentedControl from "$lib/shared/3d-animation/components/controls/SegmentedControl.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   interface Props {
     onSourceChange?: (source: SequenceSource) => void;
@@ -54,10 +55,10 @@
     if (!sequenceControls?.currentFilter) return null;
     const filter = sequenceControls.currentFilter;
     if (filter.type === "all") return null;
-    if (filter.type === "favorites") return "Favorites";
-    if (filter.type === "difficulty") return `Level ${filter.value}`;
-    if (filter.type === "startingLetter") return `Letter ${filter.value}`;
-    if (filter.type === "length") return `${filter.value} steps`;
+    if (filter.type === "favorites") return t('browse_filter_favorites');
+    if (filter.type === "difficulty") return t('browse_filter_level', { level: String(filter.value) });
+    if (filter.type === "startingLetter") return t('browse_filter_letter', { letter: String(filter.value) });
+    if (filter.type === "length") return t('browse_filter_steps', { count: String(filter.value) });
     if (filter.type === "startingPosition") return filter.value;
     if (filter.type === "contains_letters") return `"${filter.value}"`;
     return filter.type;
@@ -72,23 +73,23 @@
   const filterAnnouncement = $derived.by(() => {
     if (!sequenceControls?.currentFilter) return "";
     const filter = sequenceControls.currentFilter;
-    if (filter.type === "all") return "All sequences shown";
-    if (filter.type === "favorites") return "Showing favorites";
-    if (filter.type === "difficulty") return `Filtered by level ${filter.value}`;
-    if (filter.type === "startingLetter") return `Filtered by letter ${filter.value}`;
-    if (filter.type === "length") return `Filtered by ${filter.value} steps`;
-    if (filter.type === "startingPosition") return `Filtered by position ${filter.value}`;
-    if (filter.type === "contains_letters") return `Searching for "${filter.value}"`;
-    return `Filter active: ${filter.type}`;
+    if (filter.type === "all") return t('browse_announce_all');
+    if (filter.type === "favorites") return t('browse_announce_favorites');
+    if (filter.type === "difficulty") return t('browse_announce_level', { level: String(filter.value) });
+    if (filter.type === "startingLetter") return t('browse_announce_letter', { letter: String(filter.value) });
+    if (filter.type === "length") return t('browse_announce_steps', { count: String(filter.value) });
+    if (filter.type === "startingPosition") return t('browse_announce_position', { position: String(filter.value) });
+    if (filter.type === "contains_letters") return t('browse_announce_search', { query: String(filter.value) });
+    return t('browse_announce_filter_active', { type: filter.type });
   });
 
   // Source toggle options for SegmentedControl
   const sourceOptions = $derived.by(() => {
     const opts: { value: SequenceSource; label: string }[] = [
-      { value: "community", label: "Community" },
+      { value: "community", label: t('browse_source_community') },
     ];
     if (canViewMyLibrary) {
-      opts.push({ value: "my-library", label: "My Library" });
+      opts.push({ value: "my-library", label: t('browse_source_my_library') });
     }
     return opts;
   });
@@ -182,7 +183,7 @@
         <ExpandableSearchBar
           onSearch={handleSearch}
           onClear={handleSearchClear}
-          placeholder="Search sequences..."
+          placeholder={t('browse_search_placeholder')}
         />
 
         <!-- Grid Zoom Controls (desktop only) -->
@@ -192,8 +193,8 @@
             onclick={handleZoomOut}
             disabled={!canZoomOut}
             type="button"
-            aria-label="Zoom out (larger cards)"
-            title="Larger cards"
+            aria-label={t('browse_zoom_out')}
+            title={t('browse_zoom_out_title')}
           >
             <i class="fas fa-minus" aria-hidden="true"></i>
           </button>
@@ -203,8 +204,8 @@
             onclick={handleZoomIn}
             disabled={!canZoomIn}
             type="button"
-            aria-label="Zoom in (smaller cards)"
-            title="Smaller cards"
+            aria-label={t('browse_zoom_in')}
+            title={t('browse_zoom_in_title')}
           >
             <i class="fas fa-plus" aria-hidden="true"></i>
           </button>
@@ -217,7 +218,7 @@
           class:panel-open={isInlineFiltersOpen}
           onclick={handleToggleFilters}
           type="button"
-          aria-label={isInlineFiltersOpen ? "Close filters" : "Open filters"}
+          aria-label={isInlineFiltersOpen ? t('browse_close_filters') : t('browse_open_filters')}
           aria-expanded={isInlineFiltersOpen}
         >
           <i class="fas fa-sliders-h" aria-hidden="true"></i>

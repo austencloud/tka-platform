@@ -12,6 +12,7 @@
   import type { Component } from "svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { ARENA_TABS } from "$lib/shared/navigation/config/tab-definitions";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   const tabComponents: Record<string, () => Promise<{ default: Component }>> = {
     battle: () => import("./components/battle/ArenaBattleView.svelte"),
@@ -37,11 +38,11 @@
         })
         .catch((err: Error) => {
           console.error(`Failed to load arena tab "${activeTab}":`, err);
-          loadError = `Failed to load "${activeTab}" tab`;
+          loadError = t('arena_error_tab_load_failed', { tab: activeTab });
           TabComponent = null;
         });
     } else {
-      loadError = `Unknown tab: ${activeTab}`;
+      loadError = t('arena_error_unknown_tab', { tab: activeTab });
       TabComponent = null;
     }
   });
@@ -58,7 +59,7 @@
   {:else}
     <div class="arena-loading" role="status" aria-live="polite" aria-busy="true">
       <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
-      <span>Loading...</span>
+      <span>{t('arena_loading')}</span>
     </div>
   {/if}
 </div>

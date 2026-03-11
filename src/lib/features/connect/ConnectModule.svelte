@@ -18,6 +18,7 @@
 	// Session viewer overlay
 	import SessionViewer from './components/session/SessionViewer.svelte';
 	import ProgressRing from '$lib/shared/components/loading/ProgressRing.svelte';
+	import { t } from '$lib/shared/i18n/i18n.svelte';
 
 	type TabId = 'nearby' | 'friends' | 'invite';
 
@@ -83,13 +84,13 @@
 	{#if isInitializing}
 		<div class="loading-state">
 			<ProgressRing percent={-1} size={32} strokeWidth={3} />
-			<p>Connecting...</p>
+			<p>{t('connect_connecting')}</p>
 		</div>
 	{:else if initError}
 		<div class="error-state">
 			<i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
 			<p>{initError}</p>
-			<button onclick={handleRetry}>Retry</button>
+			<button onclick={handleRetry}>{t('connect_retry')}</button>
 		</div>
 	{:else}
 		<!-- Tab Navigation -->
@@ -104,7 +105,7 @@
 				aria-controls="tabpanel-connect"
 			>
 				<i class="fas fa-broadcast-tower" aria-hidden="true"></i>
-				<span>Nearby</span>
+				<span>{t('connect_nearby')}</span>
 				{#if nearbySessions.length > 0}
 					<span class="badge" aria-label="{nearbySessions.length} sessions">{nearbySessions.length}</span>
 				{/if}
@@ -120,7 +121,7 @@
 				aria-controls="tabpanel-connect"
 			>
 				<i class="fas fa-user-friends" aria-hidden="true"></i>
-				<span>Friends</span>
+				<span>{t('connect_friends')}</span>
 				{#if onlineFriends.length > 0}
 					<span class="badge online" aria-label="{onlineFriends.length} online">{onlineFriends.length}</span>
 				{/if}
@@ -136,7 +137,7 @@
 				aria-controls="tabpanel-connect"
 			>
 				<i class="fas fa-paper-plane" aria-hidden="true"></i>
-				<span>Invite</span>
+				<span>{t('connect_invite')}</span>
 				{#if pendingInviteCount > 0}
 					<span class="badge pending" aria-label="{pendingInviteCount} pending">{pendingInviteCount}</span>
 				{/if}
@@ -157,16 +158,16 @@
 		<!-- Current Session Banner (if in session) -->
 		{#if isInSession && currentSession}
 			<div class="current-session-banner">
-				<button class="session-info-button" onclick={openSessionViewer} aria-label="View current session details">
+				<button class="session-info-button" onclick={openSessionViewer} aria-label={t('connect_view_session_details')}>
 					<i class="fas fa-link" aria-hidden="true"></i>
 					<span>
-						Synced: <strong>"{currentSession.sequenceWord}"</strong>
-						({currentSession.participantCount} connected)
+						{t('connect_synced_label')}: <strong>"{currentSession.sequenceWord}"</strong>
+						({t('connect_connected_count', { count: currentSession.participantCount })})
 					</span>
 					<i class="fas fa-chevron-right view-icon" aria-hidden="true"></i>
 				</button>
-				<button class="leave-button" onclick={() => connectState.leaveSession()} aria-label="Leave current session">
-					Leave
+				<button class="leave-button" onclick={() => connectState.leaveSession()} aria-label={t('connect_leave_session')}>
+					{t('connect_leave')}
 				</button>
 			</div>
 		{/if}

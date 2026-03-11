@@ -1,5 +1,6 @@
 <script lang="ts">
   import QuickAccessSection from "./QuickAccessSection.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   // ✅ PURE RUNES: Props using modern Svelte 5 runes
   const { onFilterSelected = () => {} } = $props<{
@@ -21,7 +22,7 @@
         <div class="header-row">
           <!-- Header on left -->
           <div class="header-content">
-            <h1 class="header-title">Sequence Library</h1>
+            <h1 class="header-title">{t('browse_sequence_library')}</h1>
           </div>
 
           <!-- Stretch to push Quick Access to right -->

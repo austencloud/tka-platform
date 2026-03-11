@@ -12,6 +12,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     sequence: SequenceData | null;
@@ -164,7 +165,7 @@
   {#if isLoading}
     <div class="loading-state">
       <ProgressRing percent={-1} size={32} strokeWidth={3} />
-      <span>Loading animation...</span>
+      <span>{t('train_loading_animation')}</span>
     </div>
   {:else if loadError}
     <div class="error-state">
@@ -186,11 +187,11 @@
       <div class="empty-icon">
         <i class="fas fa-play-circle" aria-hidden="true"></i>
       </div>
-      <p class="empty-text">No sequence selected</p>
+      <p class="empty-text">{t('train_no_sequence_selected')}</p>
       {#if onBrowseSequences}
         <button class="browse-btn" onclick={onBrowseSequences}>
           <i class="fas fa-folder-open" aria-hidden="true"></i>
-          Browse
+          {t('train_browse')}
         </button>
       {/if}
     </div>

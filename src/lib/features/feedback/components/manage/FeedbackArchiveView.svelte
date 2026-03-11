@@ -4,8 +4,10 @@
   import type { FeedbackItem } from "../../domain/models/feedback-models";
   import { feedbackQueryService } from "../../services/implementations/FeedbackQuerier";
   import { archiveLoader } from "../../services/implementations/ArchiveLoader";
+  import type { AppVersion } from "../../domain/models/version-models";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import FeedbackDetailPanel from "./FeedbackDetailPanel.svelte";
+  import VersionDetailContent from "$lib/shared/settings/components/tabs/release-notes/VersionDetailContent.svelte";
 
   // Extracted components
   import ArchiveViewToggle from "./archive/ArchiveViewToggle.svelte";
@@ -36,6 +38,10 @@
   let selectedItem = $state<FeedbackItem | null>(null);
   let isDetailOpen = $state(false);
   let isLoadingItem = $state(false);
+
+  // Version detail drawer state (for editing changelog/contributors)
+  let selectedVersion = $state<AppVersion | null>(null);
+  let isVersionDetailOpen = $state(false);
 
   // Responsive state
   let isMobile = $state(false);
@@ -95,6 +101,20 @@
   function closeDetail() {
     isDetailOpen = false;
     selectedItem = null;
+  }
+
+  function openVersionDetail(version: AppVersion) {
+    selectedVersion = version;
+    isVersionDetailOpen = true;
+  }
+
+  function closeVersionDetail() {
+    isVersionDetailOpen = false;
+    selectedVersion = null;
+  }
+
+  function handleVersionUpdated() {
+    versionState.loadVersions();
   }
 
   // Sorted archived items
@@ -190,6 +210,7 @@
               : []}
             onToggle={() => toggleVersion(version.version)}
             onItemClick={openFeedbackDetail}
+            onEditRelease={() => openVersionDetail(version)}
           />
         {/each}
       </div>
@@ -221,6 +242,23 @@
       <span>Failed to load feedback item</span>
       <button type="button" onclick={closeDetail}>Close</button>
     </div>
+  {/if}
+</Drawer>
+
+<!-- Version Detail Drawer (changelog editing + contributor tagging) -->
+<Drawer
+  bind:isOpen={isVersionDetailOpen}
+  placement={isMobile ? "bottom" : "right"}
+  onclose={closeVersionDetail}
+  ariaLabel={selectedVersion ? `Edit release v${selectedVersion.version}` : "Edit release"}
+>
+  {#if selectedVersion}
+    <VersionDetailContent
+      version={selectedVersion}
+      onVersionUpdated={handleVersionUpdated}
+      showCloseButton={true}
+      onClose={closeVersionDetail}
+    />
   {/if}
 </Drawer>
 

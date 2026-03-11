@@ -39,6 +39,7 @@ Used by both desktop side panel and mobile slide-up overlay.
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   // Services (resolved in onMount)
   let hapticService: IHapticFeedback | null = null;
@@ -275,7 +276,7 @@ Used by both desktop side panel and mobile slide-up overlay.
 <div class="detail-content">
   <!-- Header -->
   <DetailHeader
-    title="Sequence Details"
+    title={t('browse_sequence_details')}
     isExpanded={sequencePanelManager.isDetailExpanded}
     getCopyData={getCopyDataForClaude}
     onCopyActivate={handleCopyActivate}
@@ -302,11 +303,11 @@ Used by both desktop side panel and mobile slide-up overlay.
       <button
         class="creator-badge"
         onclick={handleCreatorClick}
-        aria-label={`View ${sequence.ownerDisplayName || "creator"}'s profile`}
+        aria-label={t('browse_view_creator_profile', { name: sequence.ownerDisplayName || t('browse_creator_default') })}
       >
         <AvatarImage
           src={sequence.ownerAvatarUrl}
-          alt={sequence.ownerDisplayName || "Creator"}
+          alt={sequence.ownerDisplayName || t('browse_creator_default')}
           size={48}
         />
       </button>
@@ -328,7 +329,7 @@ Used by both desktop side panel and mobile slide-up overlay.
         {#if hasCreatorInfo}
           <button class="creator-link" onclick={handleCreatorClick}>
             <span class="creator-label">
-              By {sequence.ownerDisplayName || sequence.author || "Unknown"}
+              {t('browse_by_creator', { name: sequence.ownerDisplayName || sequence.author || t('browse_unknown') })}
             </span>
             <svg
               class="creator-arrow"
@@ -343,7 +344,7 @@ Used by both desktop side panel and mobile slide-up overlay.
             </svg>
           </button>
         {:else}
-          <span class="metadata-item">By {sequence.author}</span>
+          <span class="metadata-item">{t('browse_by_creator', { name: sequence.author })}</span>
         {/if}
       </div>
     {/if}
