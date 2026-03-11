@@ -21,40 +21,9 @@
 	}
 	let { descriptor }: Props = $props();
 
-	// Resolve the correct override provider based on effect type
-	const providerKey =
-		descriptor.id === "fire" || descriptor.id === "charcoal"
-			? "firePointOverrideProvider"
-			: "ledPointOverrideProvider";
-	const provider = container.items[
-		providerKey
-	] as IEffectPointOverrideProvider;
+	const provider = container.items.tipPointOverrideProvider as IEffectPointOverrideProvider;
 	const persister = container.items.effectPointsPersister as IEffectPointsPersister;
 	const editorState = new EffectPointEditorState(provider, descriptor, persister);
-
-	// Provide access to other effect providers for cross-effect point copying
-	const firePointProvider = container.items.firePointOverrideProvider as IEffectPointOverrideProvider;
-	const ledPointProvider = container.items.ledPointOverrideProvider as IEffectPointOverrideProvider;
-	const copySourceProviders = buildCopySourceProviders(descriptor.id, firePointProvider, ledPointProvider);
-
-	function buildCopySourceProviders(
-		currentId: string,
-		fireProv: IEffectPointOverrideProvider,
-		ledProv: IEffectPointOverrideProvider,
-	): { id: string; label: string; icon: string; provider: IEffectPointOverrideProvider }[] {
-		const sources: { id: string; label: string; icon: string; provider: IEffectPointOverrideProvider }[] = [];
-
-		// Fire and charcoal share the same point provider, so show them as one "Fire" source
-		const isFireOrCharcoal = currentId === "fire" || currentId === "charcoal";
-		if (!isFireOrCharcoal) {
-			sources.push({ id: "fire", label: "Fire / Charcoal", icon: "fas fa-fire", provider: fireProv });
-		}
-		if (currentId !== "led") {
-			sources.push({ id: "led", label: "LED", icon: "fas fa-lightbulb", provider: ledProv });
-		}
-
-		return sources;
-	}
 
 	function handleKeyDown(e: KeyboardEvent) {
 		if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
@@ -89,7 +58,7 @@
 	<div class="editor-content">
 		<EffectPointSvgCanvas {editorState} {descriptor} />
 		<div class="list-panel-wrapper">
-			<EffectPointListPanel {editorState} {descriptor} {copySourceProviders} />
+			<EffectPointListPanel {editorState} {descriptor} />
 		</div>
 	</div>
 </div>
