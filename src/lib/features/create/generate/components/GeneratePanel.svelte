@@ -8,7 +8,7 @@ Card-based architecture with integrated Generate button:
 - Generation actions: generateActionsState.svelte.ts
 - Device state: generateDeviceState.svelte.ts
 - Responsive padding: State-driven for sync with workspace animation
-- Help mode: Triggered from ButtonPanel for learning mode
+- Tour: Guided tour triggered from help button or ButtonPanel
 -->
 <script lang="ts">
   import type { SequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
@@ -27,9 +27,9 @@ Card-based architecture with integrated Generate button:
   import DurationRhythmSheet from "./modals/DurationRhythmSheet.svelte";
   import LOOPDrawer from "./modals/LOOPDrawer.svelte";
   import CustomizeDrawer from "./modals/CustomizeDrawer.svelte";
-  import GeneratorHelpOverlay from "./help/GeneratorHelpOverlay.svelte";
-  import GeneratorHelpModal from "./help/GeneratorHelpModal.svelte";
   import type { GeneratorHelpId } from "../domain/generator-help-content";
+  import { generateTourState } from "$lib/shared/onboarding/state/generate-tour-state.svelte";
+  import GeneratePanelTour from "$lib/shared/onboarding/components/generate-tour/GeneratePanelTour.svelte";
   import {
     setGeneratorVoiceRef,
     type GeneratorVoiceRef,
@@ -42,9 +42,6 @@ Card-based architecture with integrated Generate button:
   // Get context for panel coordination (optional - may not be available in all contexts)
   const context = tryGetCreateModuleContext();
   const panelState = context?.panelState;
-
-  // Help mode types
-  type HelpMode = "inactive" | "selecting" | "viewing";
 
   // Props
   let {
@@ -101,69 +98,22 @@ Card-based architecture with integrated Generate button:
     );
   });
 
-  // ===== Help Mode State =====
-  let helpMode = $state<HelpMode>("inactive");
-  let isExiting = $state(false); // True during exit animation
-  let selectedControl = $state<GeneratorHelpId | null>(null);
   let hapticService = $state<IHapticFeedback | null>(null);
 
-  // Toggle body class for z-index boosting when help mode active OR exiting
-  $effect(() => {
-    if (helpMode !== "inactive" || isExiting) {
-      document.body.classList.add("generator-help-mode-active");
-    } else {
-      document.body.classList.remove("generator-help-mode-active");
-    }
-    return () => document.body.classList.remove("generator-help-mode-active");
-  });
+  // Tour trigger
+  function handleHelpClick(event?: MouseEvent) {
+    event?.stopPropagation();
+    hapticService?.trigger("selection");
+    generateTourState.start();
+  }
 
   // Listen to mobile help button trigger from ButtonPanel
   $effect(() => {
     if (panelState?.shouldEnterGeneratorHelpMode) {
-      enterHelpMode();
+      generateTourState.start();
       panelState.clearGeneratorHelpModeTrigger();
     }
   });
-
-  function enterHelpMode(event?: MouseEvent) {
-    event?.stopPropagation(); // Prevent panel click from immediately exiting
-    hapticService?.trigger("selection");
-    helpMode = "selecting";
-  }
-
-  function selectControlHelp(controlId: GeneratorHelpId) {
-    hapticService?.trigger("selection");
-    selectedControl = controlId;
-    helpMode = "viewing";
-  }
-
-  function closeHelpModal() {
-    // Return to selection state so user can browse other controls
-    helpMode = "selecting";
-    selectedControl = null;
-  }
-
-  function exitHelpMode() {
-    // Start exit animation (keeps z-index boosted)
-    isExiting = true;
-
-    // After animation completes, fully exit
-    setTimeout(() => {
-      helpMode = "inactive";
-      selectedControl = null;
-      isExiting = false;
-    }, 250); // Match CSS animation duration
-  }
-
-  // Handle clicks on the panel background (not on cards) to exit help mode
-  function handlePanelClick(event: MouseEvent) {
-    // Only act when in selecting mode (not viewing a modal)
-    if (helpMode !== "selecting") return;
-
-    // If the click was on a card, it will have stopped propagation
-    // So we only get here for clicks on empty panel space
-    exitHelpMode();
-  }
 
   // ===== Device Service Integration =====
   onMount(() => {
@@ -197,8 +147,8 @@ Card-based architecture with integrated Generate button:
           actionsState.onGenerateClicked(options);
         }
       },
-      openHelpForControl: (controlId: GeneratorHelpId) => {
-        selectControlHelp(controlId);
+      openHelpForControl: (_controlId: GeneratorHelpId) => {
+        generateTourState.start();
       },
       getCurrentPropType: () =>
         settingsService.settings.bluePropType || "staff",
@@ -210,24 +160,15 @@ Card-based architecture with integrated Generate button:
     };
   });
 
-  function handlePanelKeydown(event: KeyboardEvent) {
-    if (helpMode !== "selecting") return;
-    if (event.key === "Escape") {
-      exitHelpMode();
-    }
-  }
+
 </script>
 
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
   class="generate-panel"
-  class:help-active={helpMode !== "inactive"}
   data-layout={deviceState.layoutMode}
   data-allow-scroll={deviceState.shouldAllowScrolling}
   data-is-desktop={isDesktop}
   style="--min-touch-target: {deviceState.minTouchTarget}px; --element-spacing: {deviceState.elementSpacing}px;"
-  onclick={handlePanelClick}
-  onkeydown={handlePanelKeydown}
   role="region"
   aria-label="Generator settings panel"
 >
@@ -235,7 +176,7 @@ Card-based architecture with integrated Generate button:
   {#if isDesktop}
     <button
       class="desktop-help-button"
-      onclick={enterHelpMode}
+      onclick={handleHelpClick}
       aria-label="Help with generator settings"
       title="Help with generator settings"
     >
@@ -252,9 +193,7 @@ Card-based architecture with integrated Generate button:
       onGenerateClicked={handleGenerate}
       {startEndState}
       {hasSettingsChanged}
-      helpMode={helpMode !== "inactive"}
-      helpModeExiting={isExiting}
-      onHelpSelect={selectControlHelp}
+      tourActiveStop={generateTourState.isActive ? generateTourState.currentStop : null}
       wordInputValue={spellModeState.inputWord}
       onWordInput={(v) => spellModeState.setInputWord(v)}
       onWordSubmit={() => handleGenerate(null)}
@@ -307,13 +246,8 @@ Card-based architecture with integrated Generate button:
   />
 {/if}
 
-<!-- Help mode overlays -->
-{#if helpMode !== "inactive" || isExiting}
-  <GeneratorHelpOverlay onClose={exitHelpMode} {isExiting} />
-{/if}
-{#if helpMode === "viewing" && selectedControl}
-  <GeneratorHelpModal controlId={selectedControl} onClose={closeHelpModal} />
-{/if}
+<!-- Tour overlay -->
+<GeneratePanelTour />
 
 <style>
   .generate-panel {
@@ -326,11 +260,6 @@ Card-based architecture with integrated Generate button:
     width: 100%;
     overflow: visible;
     gap: 0;
-  }
-
-  /* Boost panel z-index when help mode is active (above backdrop at 200) */
-  :global(body.generator-help-mode-active) .generate-panel {
-    z-index: 210;
   }
 
   .generate-panel-inner {
