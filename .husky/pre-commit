@@ -25,3 +25,15 @@ if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "release" ]; then
 
   echo "⚠️  Committing to production branch ($BRANCH)"
 fi
+
+# Run type checking on staged files
+echo "🔍 Running type check..."
+npx svelte-check --tsconfig ./tsconfig.json --compiler-warnings "state_referenced_locally:ignore" 2>/dev/null
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "  ❌ Type check failed. Fix errors before committing."
+  echo "  Run: npm run check"
+  echo ""
+  exit 1
+fi
+echo "✅ Type check passed"
