@@ -26,7 +26,7 @@
       onclick={() => onModeChange(desc.id as EffectMode)}
     >
       <i class={desc.icon} aria-hidden="true"></i>
-      {desc.label}
+      <span class="mode-label">{desc.label}</span>
     </button>
   {/each}
 </div>
@@ -35,42 +35,55 @@
   .mode-bar {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 2px;
-    padding: 3px;
-    background: color-mix(in srgb, var(--theme-text) 3%, transparent);
-    border-radius: var(--border-radius-md, 8px);
+    gap: 6px;
+    padding: var(--spacing-sm, 8px);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius-lg, 12px);
   }
 
   .mode-btn {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    min-height: var(--min-touch-target);
-    padding: 8px;
-    border: none;
-    border-radius: 6px;
+    min-height: 72px;
+    padding: 12px 8px;
+    border: 1.5px solid transparent;
+    border-radius: var(--border-radius-md, 8px);
     background: transparent;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     cursor: pointer;
-    transition: color 150ms ease, background 150ms ease;
+    transition: color 150ms ease, background 150ms ease, border-color 150ms ease;
   }
 
   .mode-btn:hover {
     color: var(--theme-text, white);
     background: color-mix(in srgb, var(--theme-text) 6%, transparent);
+    border-color: color-mix(in srgb, var(--theme-text) 8%, transparent);
   }
 
   .mode-btn.active {
     color: var(--mode-color);
     background: var(--mode-color-mid);
-    box-shadow: 0 1px 3px var(--theme-overlay-dark, rgba(0, 0, 0, 0.2));
+    border-color: var(--mode-color-border);
   }
 
   .mode-btn i {
+    font-size: 1.25rem;
+  }
+
+  .mode-btn.active i {
+    filter: drop-shadow(0 0 6px var(--mode-color));
+  }
+
+  .mode-label {
     font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    letter-spacing: 0.3px;
   }
 
   .mode-btn:focus-visible {
@@ -81,6 +94,10 @@
   @media (prefers-reduced-motion: reduce) {
     .mode-btn {
       transition: none;
+    }
+
+    .mode-btn.active i {
+      filter: none;
     }
   }
 </style>
