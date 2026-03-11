@@ -5,6 +5,7 @@
 
 import type { Achievement } from "$lib/shared/gamification/domain/models/achievement-models";
 import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
 /**
  * Base User Profile
@@ -28,9 +29,21 @@ export interface UserProfile {
   instagramUsername?: string;
   pronouns?: string;
 
+  // Prop preferences
+  /** Props this creator uses (e.g. ["staff", "fan", "club"]) */
+  propsISpinWith?: PropType[];
+  /** Their single primary identity prop */
+  favoriteProp?: PropType | null;
+  /** Optional catdog combo favorite */
+  favoriteCatdog?: {
+    bluePropType: PropType;
+    redPropType: PropType;
+  } | null;
+
   // Admin-related fields
   role?: UserRole;
   isDisabled?: boolean;
+  isHidden?: boolean;
 
   // Warning-related fields
   hasActiveWarning?: boolean;
@@ -76,11 +89,13 @@ export type CreatorFilterType =
   | "most-followers"
   | "newest";
 
-export type CreatorSortCriteria = "lastActive" | "joinedDate";
+export type CreatorSortCriteria = "lastActive" | "joinedDate" | "favoriteProp";
 
 export interface CreatorQueryOptions {
   filter?: CreatorFilterType;
   sortBy?: CreatorSortCriteria;
   limit?: number;
   offset?: number;
+  /** Filter to creators who spin with these props */
+  propFilter?: PropType[];
 }
