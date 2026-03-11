@@ -1,7 +1,10 @@
 <!-- EditableChangelogItem - A changelog entry with inline editing for admins -->
 <script lang="ts">
   import type { ChangelogEntry } from "$lib/features/feedback/domain/models/version-models";
+  import type { Contributor } from "$lib/features/feedback/domain/models/contributor-models";
   import { fly, scale } from "svelte/transition";
+  import ContributorBadge from "./ContributorBadge.svelte";
+  import ContributorPicker from "./ContributorPicker.svelte";
 
   let {
     entry,
@@ -13,6 +16,9 @@
     isEditing,
     onStartEdit,
     onEndEdit,
+    contributors,
+    allContributors,
+    onUpdateContributors,
   }: {
     entry: ChangelogEntry;
     canEdit: boolean;
@@ -23,6 +29,9 @@
     isEditing: boolean;
     onStartEdit?: (id: string) => void;
     onEndEdit?: () => void;
+    contributors?: Contributor[];
+    allContributors?: Contributor[];
+    onUpdateContributors?: (ids: string[]) => void;
   } = $props();
 
   let editText = $state("");
@@ -158,6 +167,14 @@
       disabled={isSaving}
     ></textarea>
 
+    {#if allContributors && onUpdateContributors}
+      <ContributorPicker
+        {allContributors}
+        selectedIds={entry.contributorIds ?? []}
+        onUpdate={onUpdateContributors}
+      />
+    {/if}
+
     {#if error}
       <div class="error-message" in:fly={{ y: -10, duration: 200 }}>
         {error}
@@ -251,7 +268,16 @@
       }}
     >
       <span class="bullet"></span>
-      <span class="change-text">{entry.text}</span>
+      <div class="change-item-content">
+        <span class="change-text">{entry.text}</span>
+        {#if contributors && contributors.length > 0}
+          <div class="entry-contributors">
+            {#each contributors as c (c.id)}
+              <ContributorBadge contributor={c} />
+            {/each}
+          </div>
+        {/if}
+      </div>
     </button>
 
     {#if hasLink && onOpenFeedback}
@@ -323,11 +349,25 @@
     border-radius: 50%;
   }
 
+  .change-item-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
   .change-text {
     flex: 1;
     font-size: var(--font-size-sm);
     line-height: 1.5;
     color: var(--theme-text);
+  }
+
+  .entry-contributors {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
   }
 
   .feedback-link-icon {
