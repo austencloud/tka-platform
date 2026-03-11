@@ -1,0 +1,45 @@
+name: Web App CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "desktop/**"
+      - "docs/**"
+      - "*.md"
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "desktop/**"
+      - "docs/**"
+      - "*.md"
+
+jobs:
+  validate:
+    name: Lint, Type Check, Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint (Prettier + ESLint)
+        run: npm run lint
+
+      - name: Type check (svelte-check)
+        run: npm run check
+
+      - name: Unit tests (Vitest)
+        run: npm run test:ci
+
+      - name: Build
+        run: npm run build
