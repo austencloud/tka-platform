@@ -198,7 +198,10 @@ export class LibraryRepository implements ILibraryRepository {
   // CRUD OPERATIONS
   // ============================================================
 
-  async saveSequence(sequence: SequenceData): Promise<LibrarySequence> {
+  async saveSequence(
+    sequence: SequenceData,
+    overrides?: { visibility?: SequenceVisibility; notes?: string }
+  ): Promise<LibrarySequence> {
     const firestore = await getFirestoreInstance();
     const userId = this.getUserId();
     const sequenceId = sequence.id || crypto.randomUUID();
@@ -227,11 +230,20 @@ export class LibraryRepository implements ILibraryRepository {
         id: sequenceId,
         updatedAt: new Date(),
       };
+      if (overrides?.visibility) {
+        libSeq = { ...libSeq, visibility: overrides.visibility };
+      }
+      if (overrides?.notes !== undefined) {
+        libSeq = { ...libSeq, notes: overrides.notes };
+      }
     } else {
       libSeq = createLibrarySequence(
         { ...sequence, id: sequenceId },
         userId,
-        { visibility: "public" }
+        {
+          visibility: overrides?.visibility ?? "public",
+          notes: overrides?.notes,
+        }
       );
     }
 
@@ -354,6 +366,35 @@ export class LibraryRepository implements ILibraryRepository {
     }
 
     return finalSequence;
+  }
+
+  async saveSequenceWithMetadata(
+    sequence: SequenceData,
+    metadata: {
+      name: string;
+      displayName?: string;
+      visibility: SequenceVisibility;
+      tags: string[];
+      notes: string;
+      thumbnailUrl?: string;
+    }
+  ): Promise<LibrarySequence> {
+    const thumbnails = metadata.thumbnailUrl
+      ? [metadata.thumbnailUrl, ...(sequence.thumbnails || [])]
+      : (sequence.thumbnails || []);
+
+    const enrichedSequence: SequenceData = {
+      ...sequence,
+      name: metadata.name,
+      displayName: metadata.displayName,
+      word: sequence.word || metadata.name,
+      thumbnails,
+    };
+
+    return this.saveSequence(enrichedSequence, {
+      visibility: metadata.visibility,
+      notes: metadata.notes,
+    });
   }
 
   async getSequence(sequenceId: string): Promise<LibrarySequence | null> {

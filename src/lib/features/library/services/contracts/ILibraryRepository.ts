@@ -76,6 +76,24 @@ export interface ILibraryRepository {
   saveSequence(sequence: SequenceData): Promise<LibrarySequence>;
 
   /**
+   * Save a sequence with explicit metadata from the UI save panel.
+   * Like saveSequence(), but accepts name, visibility, tags, notes, and thumbnail.
+   * All post-write side effects (public sync, achievements, conflict detection,
+   * offline tracking) are handled identically to saveSequence().
+   */
+  saveSequenceWithMetadata(
+    sequence: SequenceData,
+    metadata: {
+      name: string;
+      displayName?: string;
+      visibility: SequenceVisibility;
+      tags: string[];
+      notes: string;
+      thumbnailUrl?: string;
+    }
+  ): Promise<LibrarySequence>;
+
+  /**
    * Get a sequence by ID from user's library
    * @param sequenceId The sequence ID
    * @returns The sequence or null if not found
