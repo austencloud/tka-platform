@@ -239,41 +239,79 @@ export class LibraryRepository implements ILibraryRepository {
   ): Promise<LibrarySequence> {
     const firestore = await getFirestoreInstance();
     const userId = this.getUserId();
-    const sequenceId = sequence.id || crypto.randomUUID();
+    let actualSequenceId = sequence.id || crypto.randomUUID();
 
-    const sequenceDocRef = doc(
+    let sequenceDocRef = doc(
       firestore,
-      getUserSequencePath(userId, sequenceId)
+      getUserSequencePath(userId, actualSequenceId)
     );
     const userDocRef = doc(firestore, `users/${userId}`);
 
     // Check if this is a new or existing sequence using local cache
     // getDoc reads from cache first when offline persistence is enabled
     const existingDoc = await getDoc(sequenceDocRef);
-    const isNewSequence = !existingDoc.exists();
+    let isNewSequence = !existingDoc.exists();
+
+    // Compute content hash for the incoming sequence
+    const incomingHash = this.contentHasher
+      ? await this.contentHasher.computeHash(sequence)
+      : undefined;
 
     let libSeq: LibrarySequence;
 
     if (existingDoc.exists()) {
-      const existing = this.mapDocToLibrarySequence(
-        existingDoc.data(),
-        sequenceId
-      );
-      libSeq = {
-        ...existing,
-        ...sequence,
-        id: sequenceId,
-        updatedAt: new Date(),
-      };
-      if (overrides?.visibility) {
-        libSeq = { ...libSeq, visibility: overrides.visibility };
-      }
-      if (overrides?.notes !== undefined) {
-        libSeq = { ...libSeq, notes: overrides.notes };
+      // FORK DETECTION: If motion content changed, this is a new variation.
+      // Create a new document — the original stays untouched in the user's library.
+      const existingData = existingDoc.data();
+      const existingHash = existingData?.contentHash as string | undefined;
+
+      if (incomingHash && existingHash && existingHash !== incomingHash) {
+        // Content changed — fork into a new variation
+        const parentId = actualSequenceId;
+        actualSequenceId = crypto.randomUUID();
+        sequenceDocRef = doc(
+          firestore,
+          getUserSequencePath(userId, actualSequenceId)
+        );
+        isNewSequence = true;
+
+        libSeq = createLibrarySequence(
+          { ...sequence, id: actualSequenceId },
+          userId,
+          {
+            visibility: overrides?.visibility ?? "private",
+            notes: overrides?.notes,
+            source: "created",
+            forkAttribution: {
+              originalSequenceId: parentId,
+              originalCreatorId: existingData?.ownerId ?? userId,
+              originalCreatorName: existingData?.ownerDisplayName ?? "",
+              forkedAt: new Date(),
+            },
+          }
+        );
+      } else {
+        // Same hash or no stored hash — normal metadata update
+        const existing = this.mapDocToLibrarySequence(
+          existingData!,
+          actualSequenceId
+        );
+        libSeq = {
+          ...existing,
+          ...sequence,
+          id: actualSequenceId,
+          updatedAt: new Date(),
+        };
+        if (overrides?.visibility) {
+          libSeq = { ...libSeq, visibility: overrides.visibility };
+        }
+        if (overrides?.notes !== undefined) {
+          libSeq = { ...libSeq, notes: overrides.notes };
+        }
       }
     } else {
       libSeq = createLibrarySequence(
-        { ...sequence, id: sequenceId },
+        { ...sequence, id: actualSequenceId },
         userId,
         {
           visibility: overrides?.visibility ?? "public",
@@ -312,14 +350,15 @@ export class LibraryRepository implements ILibraryRepository {
     // IMPORTANT: birthday is set once on creation and NEVER changes
     const rawWriteData = {
       ...libSeq,
-      birthday: existingDoc.exists()
-        ? libSeq.birthday
-        : libSeq.birthday || serverTimestamp(),
-      createdAt: existingDoc.exists()
-        ? libSeq.createdAt
-        : serverTimestamp(),
+      contentHash: incomingHash,
+      birthday: isNewSequence
+        ? libSeq.birthday || serverTimestamp()
+        : libSeq.birthday,
+      createdAt: isNewSequence ? serverTimestamp() : libSeq.createdAt,
       updatedAt: serverTimestamp(),
-      _version: ((existingDoc.data()?._version as number) || 0) + 1,
+      _version: isNewSequence
+        ? 1
+        : ((existingDoc.data()?._version as number) || 0) + 1,
     };
 
     // Strip undefined values — Firestore rejects them in setDoc
@@ -334,13 +373,13 @@ export class LibraryRepository implements ILibraryRepository {
         "Failed to save sequence. Your changes may not sync to other devices.",
         error,
         "save-sequence",
-        { sequenceId }
+        { sequenceId: actualSequenceId }
       );
     });
 
     // Track the local write version for conflict detection
     const newVersion = writeData._version as number;
-    this.conflictResolver?.trackLocalWrite(sequenceId, newVersion);
+    this.conflictResolver?.trackLocalWrite(actualSequenceId, newVersion);
 
     // Update user stats — separate non-blocking write
     if (isNewSequence) {
