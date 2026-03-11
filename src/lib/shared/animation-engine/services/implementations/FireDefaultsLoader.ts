@@ -10,7 +10,7 @@
  *
  * Storage structure:
  *   config/fireDefaults {
- *     firePoints: Record<string, PropFirePointConfig>,
+ *     firePoints: Record<string, PropTipConfig>,
  *     propPhysics: Record<string, FirePhysicsParams>,
  *     globalPhysics: FirePhysicsParams,
  *     updatedAt: Timestamp,
@@ -31,7 +31,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { FirePhysicsParams } from "../../domain/types/FireTypes";
-import type { PropFirePointConfig, FirePoint } from "../../domain/types/PropFirePoints";
+import type { PropTipConfig, TipPoint } from "../../domain/types/PropTipPoints";
 import type { IFireDefaultsLoader } from "../contracts/IFireDefaultsLoader";
 
 const LOG_PREFIX = "[FireDefaultsLoader]";
@@ -45,7 +45,7 @@ function isPermissionError(error: unknown): boolean {
 export class FireDefaultsLoader implements IFireDefaultsLoader {
 	private unsubscribe: Unsubscribe | null = null;
 	private loaded = false;
-	private firePoints: Record<string, PropFirePointConfig> = {};
+	private firePoints: Record<string, PropTipConfig> = {};
 	private propPhysics: Record<string, FirePhysicsParams> = {};
 	private globalPhysicsValue: FirePhysicsParams | null = null;
 	private observers: Array<() => void> = [];
@@ -104,7 +104,7 @@ export class FireDefaultsLoader implements IFireDefaultsLoader {
 	// getFirePoints()
 	// ------------------------------------------------------------------
 
-	getFirePoints(propType: string): PropFirePointConfig | null {
+	getFirePoints(propType: string): PropTipConfig | null {
 		const key = propType.toLowerCase();
 		return this.firePoints[key] ?? null;
 	}
@@ -113,7 +113,7 @@ export class FireDefaultsLoader implements IFireDefaultsLoader {
 	// getAllFirePoints()
 	// ------------------------------------------------------------------
 
-	getAllFirePoints(): Record<string, PropFirePointConfig> {
+	getAllFirePoints(): Record<string, PropTipConfig> {
 		return { ...this.firePoints };
 	}
 
@@ -209,8 +209,8 @@ export class FireDefaultsLoader implements IFireDefaultsLoader {
 	// Private: Parse fire points from Firestore
 	// ------------------------------------------------------------------
 
-	private parseFirePoints(raw: unknown): Record<string, PropFirePointConfig> {
-		const result: Record<string, PropFirePointConfig> = {};
+	private parseFirePoints(raw: unknown): Record<string, PropTipConfig> {
+		const result: Record<string, PropTipConfig> = {};
 
 		if (typeof raw !== "object" || raw === null) return result;
 
@@ -224,19 +224,19 @@ export class FireDefaultsLoader implements IFireDefaultsLoader {
 		return result;
 	}
 
-	private parseFirePointConfig(raw: unknown): PropFirePointConfig | null {
+	private parseFirePointConfig(raw: unknown): PropTipConfig | null {
 		if (typeof raw !== "object" || raw === null) return null;
 
 		const obj = raw as Record<string, unknown>;
 		if (!Array.isArray(obj.points)) return null;
 
-		const validPoints: FirePoint[] = [];
+		const validPoints: TipPoint[] = [];
 		for (const point of obj.points) {
-			if (this.isValidFirePoint(point)) {
+			if (this.isValidTipPoint(point)) {
+				// Only extract dx and dy — strip legacy flameScale if present in stored data
 				validPoints.push({
 					dx: point.dx,
 					dy: point.dy,
-					flameScale: point.flameScale,
 				});
 			}
 		}
@@ -246,14 +246,10 @@ export class FireDefaultsLoader implements IFireDefaultsLoader {
 		return { points: validPoints };
 	}
 
-	private isValidFirePoint(raw: unknown): raw is FirePoint {
+	private isValidTipPoint(raw: unknown): raw is { dx: number; dy: number } {
 		if (typeof raw !== "object" || raw === null) return false;
 		const obj = raw as Record<string, unknown>;
-		return (
-			typeof obj.dx === "number" &&
-			typeof obj.dy === "number" &&
-			typeof obj.flameScale === "number"
-		);
+		return typeof obj.dx === "number" && typeof obj.dy === "number";
 	}
 
 	// ------------------------------------------------------------------

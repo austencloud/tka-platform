@@ -1,5 +1,5 @@
 import type { FirePhysicsParams } from "../../domain/types/FireTypes";
-import type { PropFirePointConfig } from "../../domain/types/PropFirePoints";
+import type { PropTipConfig } from "../../domain/types/PropTipPoints";
 
 /**
  * Publishes admin-tuned fire defaults to Firestore.
@@ -8,7 +8,7 @@ import type { PropFirePointConfig } from "../../domain/types/PropFirePoints";
 export interface IFireDefaultsPublisher {
 	/** Publish fire points + physics to Firestore. Throws if not admin. */
 	publish(data: {
-		firePoints: Record<string, PropFirePointConfig>;
+		firePoints: Record<string, PropTipConfig>;
 		propPhysics: Record<string, FirePhysicsParams>;
 		globalPhysics: FirePhysicsParams;
 	}): Promise<void>;
