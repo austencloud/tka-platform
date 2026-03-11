@@ -14,6 +14,8 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { ActiveCreateModule } from "$lib/shared/foundation/ui/UITypes";
 import type { ISequencePersister } from "../contracts/ISequencePersister";
 import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+import { container } from "$lib/shared/di";
+import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 
 export class SequencePersister implements ISequencePersister {
   constructor(private persistenceService: IPersistenceService) {}
@@ -57,6 +59,17 @@ export class SequencePersister implements ISequencePersister {
         "❌ SequencePersister: Failed to save current state:",
         error
       );
+      const errorHandler = container.items.errorHandler as IErrorHandler;
+      errorHandler.showUserError({
+        message: "Couldn't save your sequence",
+        technicalDetails: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error : new Error(String(error)),
+        severity: "error",
+        context: {
+          module: "create",
+          action: "save-sequence",
+        },
+      });
       throw error;
     }
   }
@@ -94,6 +107,17 @@ export class SequencePersister implements ISequencePersister {
         "❌ SequencePersister: Failed to load current state:",
         error
       );
+      const errorHandler = container.items.errorHandler as IErrorHandler;
+      errorHandler.showUserError({
+        message: "Couldn't load your sequence",
+        technicalDetails: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error : new Error(String(error)),
+        severity: "error",
+        context: {
+          module: "create",
+          action: "load-sequence",
+        },
+      });
       return null;
     }
   }

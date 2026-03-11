@@ -23,6 +23,8 @@ import { getPublicSequencesPath } from "$lib/features/library/data/firestore-pat
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { IBrowseLoader } from "../contracts/IBrowseLoader";
 import type { PublicSequenceIndex } from "$lib/features/library/domain/models/PublicSequenceIndex";
+import { container } from "$lib/shared/di";
+import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 
 export class PublicSequencesLoader implements IBrowseLoader {
   private cachedSequences: SequenceData[] | null = null;
@@ -50,6 +52,19 @@ export class PublicSequencesLoader implements IBrowseLoader {
     try {
       this.cachedSequences = await this.loadPromise;
       return this.cachedSequences;
+    } catch (error) {
+      const errorHandler = container.items.errorHandler as IErrorHandler;
+      errorHandler.showUserError({
+        message: "Couldn't load the gallery",
+        technicalDetails: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error : new Error(String(error)),
+        severity: "error",
+        context: {
+          module: "browse",
+          action: "load-gallery",
+        },
+      });
+      throw error;
     } finally {
       this.loadPromise = null;
     }

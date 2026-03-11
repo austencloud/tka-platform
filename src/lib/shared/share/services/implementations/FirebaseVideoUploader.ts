@@ -10,6 +10,8 @@ import type {
   VideoUploadResult,
 } from "../contracts/IFirebaseVideoUploader";
 import { getStorageInstance, getAuthSync } from "$lib/shared/auth/firebase";
+import { container } from "$lib/shared/di";
+import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 
 export class FirebaseVideoUploader implements IFirebaseVideoUploader {
   /**
@@ -31,57 +33,74 @@ export class FirebaseVideoUploader implements IFirebaseVideoUploader {
     videoFile: File | Blob,
     onProgress?: (percent: number) => void
   ): Promise<VideoUploadResult> {
-    const { ref, uploadBytesResumable, getDownloadURL } =
-      await import("firebase/storage");
-    const storage = await getStorageInstance();
-    const userId = this.getUserId();
+    try {
+      const { ref, uploadBytesResumable, getDownloadURL } =
+        await import("firebase/storage");
+      const storage = await getStorageInstance();
+      const userId = this.getUserId();
 
-    // Generate storage path: users/{userId}/recordings/{sequenceId}/{timestamp}.mp4
-    const timestamp = Date.now();
-    const extension =
-      videoFile instanceof File
-        ? videoFile.name.split(".").pop() || "mp4"
-        : "mp4";
-    const storagePath = `users/${userId}/recordings/${sequenceId}/${timestamp}.${extension}`;
+      // Generate storage path: users/{userId}/recordings/{sequenceId}/{timestamp}.mp4
+      const timestamp = Date.now();
+      const extension =
+        videoFile instanceof File
+          ? videoFile.name.split(".").pop() || "mp4"
+          : "mp4";
+      const storagePath = `users/${userId}/recordings/${sequenceId}/${timestamp}.${extension}`;
 
-    // Create storage reference
-    const storageRef = ref(storage, storagePath);
+      // Create storage reference
+      const storageRef = ref(storage, storagePath);
 
-    // Upload with progress tracking
-    const uploadTask = uploadBytesResumable(storageRef, videoFile, {
-      contentType: videoFile.type || "video/mp4",
-      customMetadata: {
-        sequenceId,
-        userId,
-        uploadedAt: new Date().toISOString(),
-      },
-    });
-
-    // Return promise that resolves when upload completes
-    return new Promise((resolve, reject) => {
-      uploadTask.on(
-        "state_changed",
-        (snapshot) => {
-          // Calculate progress percentage
-          const progress =
-            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          onProgress?.(Math.round(progress));
+      // Upload with progress tracking
+      const uploadTask = uploadBytesResumable(storageRef, videoFile, {
+        contentType: videoFile.type || "video/mp4",
+        customMetadata: {
+          sequenceId,
+          userId,
+          uploadedAt: new Date().toISOString(),
         },
-        (error) => {
-          console.error("❌ Upload failed:", error);
-          reject(error);
-        },
-        async () => {
-          // Upload completed successfully
-          try {
-            const url = await getDownloadURL(uploadTask.snapshot.ref);
-            resolve({ url, storagePath });
-          } catch (error) {
+      });
+
+      // Return promise that resolves when upload completes
+      return await new Promise((resolve, reject) => {
+        uploadTask.on(
+          "state_changed",
+          (snapshot) => {
+            // Calculate progress percentage
+            const progress =
+              (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            onProgress?.(Math.round(progress));
+          },
+          (error) => {
+            console.error("❌ Upload failed:", error);
             reject(error);
+          },
+          async () => {
+            // Upload completed successfully
+            try {
+              const url = await getDownloadURL(uploadTask.snapshot.ref);
+              resolve({ url, storagePath });
+            } catch (error) {
+              reject(error);
+            }
           }
-        }
-      );
-    });
+        );
+      });
+    } catch (error) {
+      console.error("❌ FirebaseVideoUploader: Failed to upload video:", error);
+      const errorHandler = container.items.errorHandler as IErrorHandler;
+      errorHandler.showUserError({
+        message: "Couldn't upload your video",
+        technicalDetails: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error : new Error(String(error)),
+        severity: "error",
+        context: {
+          module: "share",
+          action: "upload-video",
+          additionalData: { sequenceId },
+        },
+      });
+      throw error;
+    }
   }
 
   /**
@@ -92,26 +111,43 @@ export class FirebaseVideoUploader implements IFirebaseVideoUploader {
     animationBlob: Blob,
     format: "webp" | "gif"
   ): Promise<VideoUploadResult> {
-    const { ref, uploadBytes, getDownloadURL } =
-      await import("firebase/storage");
-    const storage = await getStorageInstance();
-    const userId = this.getUserId();
+    try {
+      const { ref, uploadBytes, getDownloadURL } =
+        await import("firebase/storage");
+      const storage = await getStorageInstance();
+      const userId = this.getUserId();
 
-    // Storage path: users/{userId}/animations/{sequenceId}/sequence.{format}
-    const storagePath = `users/${userId}/animations/${sequenceId}/sequence.${format}`;
+      // Storage path: users/{userId}/animations/{sequenceId}/sequence.{format}
+      const storagePath = `users/${userId}/animations/${sequenceId}/sequence.${format}`;
 
-    const storageRef = ref(storage, storagePath);
-    await uploadBytes(storageRef, animationBlob, {
-      contentType: format === "webp" ? "image/webp" : "image/gif",
-      customMetadata: {
-        sequenceId,
-        userId,
-        uploadedAt: new Date().toISOString(),
-      },
-    });
+      const storageRef = ref(storage, storagePath);
+      await uploadBytes(storageRef, animationBlob, {
+        contentType: format === "webp" ? "image/webp" : "image/gif",
+        customMetadata: {
+          sequenceId,
+          userId,
+          uploadedAt: new Date().toISOString(),
+        },
+      });
 
-    const url = await getDownloadURL(storageRef);
-    return { url, storagePath };
+      const url = await getDownloadURL(storageRef);
+      return { url, storagePath };
+    } catch (error) {
+      console.error("❌ FirebaseVideoUploader: Failed to upload animation:", error);
+      const errorHandler = container.items.errorHandler as IErrorHandler;
+      errorHandler.showUserError({
+        message: "Couldn't upload your video",
+        technicalDetails: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error : new Error(String(error)),
+        severity: "error",
+        context: {
+          module: "share",
+          action: "upload-video",
+          additionalData: { sequenceId, format },
+        },
+      });
+      throw error;
+    }
   }
 
   /**
@@ -194,31 +230,48 @@ export class FirebaseVideoUploader implements IFirebaseVideoUploader {
     thumbnailBlob: Blob,
     format: "png" | "jpeg" | "webp" = "png"
   ): Promise<VideoUploadResult> {
-    const { ref, uploadBytes, getDownloadURL } =
-      await import("firebase/storage");
-    const storage = await getStorageInstance();
-    const userId = this.getUserId();
+    try {
+      const { ref, uploadBytes, getDownloadURL } =
+        await import("firebase/storage");
+      const storage = await getStorageInstance();
+      const userId = this.getUserId();
 
-    // Storage path: users/{userId}/thumbnails/{sequenceId}/thumbnail.{format}
-    const storagePath = `users/${userId}/thumbnails/${sequenceId}/thumbnail.${format}`;
+      // Storage path: users/{userId}/thumbnails/{sequenceId}/thumbnail.{format}
+      const storagePath = `users/${userId}/thumbnails/${sequenceId}/thumbnail.${format}`;
 
-    const contentTypeMap = {
-      png: "image/png",
-      jpeg: "image/jpeg",
-      webp: "image/webp",
-    };
+      const contentTypeMap = {
+        png: "image/png",
+        jpeg: "image/jpeg",
+        webp: "image/webp",
+      };
 
-    const storageRef = ref(storage, storagePath);
-    await uploadBytes(storageRef, thumbnailBlob, {
-      contentType: contentTypeMap[format],
-      customMetadata: {
-        sequenceId,
-        userId,
-        uploadedAt: new Date().toISOString(),
-      },
-    });
+      const storageRef = ref(storage, storagePath);
+      await uploadBytes(storageRef, thumbnailBlob, {
+        contentType: contentTypeMap[format],
+        customMetadata: {
+          sequenceId,
+          userId,
+          uploadedAt: new Date().toISOString(),
+        },
+      });
 
-    const url = await getDownloadURL(storageRef);
-    return { url, storagePath };
+      const url = await getDownloadURL(storageRef);
+      return { url, storagePath };
+    } catch (error) {
+      console.error("❌ FirebaseVideoUploader: Failed to upload thumbnail:", error);
+      const errorHandler = container.items.errorHandler as IErrorHandler;
+      errorHandler.showUserError({
+        message: "Couldn't upload your video",
+        technicalDetails: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error : new Error(String(error)),
+        severity: "error",
+        context: {
+          module: "share",
+          action: "upload-video",
+          additionalData: { sequenceId, format },
+        },
+      });
+      throw error;
+    }
   }
 }

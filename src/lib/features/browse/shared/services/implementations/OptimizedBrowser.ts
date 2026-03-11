@@ -14,6 +14,8 @@ import type {
   PaginatedSequences,
   SequenceMetadata,
 } from "../contracts/IOptimizedBrowser";
+import { container } from "$lib/shared/di";
+import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 
 // API Response types
 interface PaginatedSequencesResponse {
@@ -68,6 +70,18 @@ export class OptimizedBrowser implements IOptimizedBrowser {
       };
     } catch (error) {
       console.error("Failed to load initial sequences:", error);
+      const errorHandler = container.items.errorHandler as IErrorHandler;
+      errorHandler.showUserError({
+        message: "Couldn't load more results",
+        technicalDetails: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error : new Error(String(error)),
+        severity: "error",
+        context: {
+          module: "browse",
+          action: "load-page",
+          additionalData: { page: 1 },
+        },
+      });
       throw error;
     }
   }
@@ -106,6 +120,18 @@ export class OptimizedBrowser implements IOptimizedBrowser {
       };
     } catch (error) {
       console.error(`Failed to load page ${page}:`, error);
+      const errorHandler = container.items.errorHandler as IErrorHandler;
+      errorHandler.showUserError({
+        message: "Couldn't load more results",
+        technicalDetails: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error : new Error(String(error)),
+        severity: "error",
+        context: {
+          module: "browse",
+          action: "load-page",
+          additionalData: { page },
+        },
+      });
       throw error;
     }
   }
@@ -179,6 +205,18 @@ export class OptimizedBrowser implements IOptimizedBrowser {
       };
     } catch (error) {
       console.error("Search failed:", error);
+      const errorHandler = container.items.errorHandler as IErrorHandler;
+      errorHandler.showUserError({
+        message: "Couldn't load more results",
+        technicalDetails: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error : new Error(String(error)),
+        severity: "error",
+        context: {
+          module: "browse",
+          action: "load-page",
+          additionalData: { query, page },
+        },
+      });
       throw error;
     }
   }

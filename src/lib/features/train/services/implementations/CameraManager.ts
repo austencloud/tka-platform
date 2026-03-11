@@ -1,4 +1,6 @@
 import type { ICameraManager, CameraConfig } from "../contracts/ICameraManager";
+import { container } from "$lib/shared/di";
+import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 
 const DEFAULT_CONFIG: CameraConfig = {
   facingMode: "user",
@@ -88,6 +90,34 @@ export class CameraManager implements ICameraManager {
       return this._stream;
     } catch (error) {
       console.error("Failed to start camera:", error);
+
+      let message = "Couldn't access your camera";
+      if (error instanceof Error) {
+        if (error.name === "NotAllowedError") {
+          message = "Camera access was denied. Check your browser permissions.";
+        } else if (error.name === "NotFoundError") {
+          message = "No camera found on this device.";
+        } else if (error.name === "NotReadableError") {
+          message = "Camera is being used by another app.";
+        }
+      }
+
+      const errorHandler = container.items.errorHandler as IErrorHandler;
+      errorHandler.showUserError({
+        message,
+        technicalDetails: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error : new Error(String(error)),
+        severity: "error",
+        context: {
+          module: "train",
+          action: "camera-access",
+          additionalData: {
+            errorName: error instanceof Error ? error.name : "unknown",
+            facingMode: this._currentConfig.facingMode,
+          },
+        },
+      });
+
       throw new Error(`Camera access failed: ${error}`);
     }
   }
