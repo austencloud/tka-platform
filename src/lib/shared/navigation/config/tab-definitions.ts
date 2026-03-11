@@ -383,6 +383,14 @@ export const SETTINGS_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
   },
   {
+    id: "contributors",
+    label: "Contributors",
+    icon: '<i class="fas fa-users" aria-hidden="true"></i>',
+    description: "Manage credited developers",
+    color: "#f59e0b",
+    gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
+  },
+  {
     id: "props",
     label: "Props",
     icon: '<i class="fas fa-tags" aria-hidden="true"></i>',
