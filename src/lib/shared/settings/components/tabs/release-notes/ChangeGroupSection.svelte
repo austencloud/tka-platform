@@ -4,6 +4,7 @@
     ChangelogCategory,
     ChangelogEntry,
   } from "$lib/features/feedback/domain/models/version-models";
+  import type { Contributor } from "$lib/features/feedback/domain/models/contributor-models";
   import {
     CATEGORY_ICONS,
     CATEGORY_LABELS,
@@ -42,6 +43,9 @@
     onConfirmAdd: () => Promise<void>;
     onStartEdit: (id: string) => void;
     onEndEdit: () => void;
+    allContributors?: Contributor[];
+    contributorMap?: Map<string, Contributor>;
+    onUpdateEntryContributors?: (index: number, ids: string[]) => void;
   } = $props();
 </script>
 
@@ -66,6 +70,15 @@
           isEditing={currentlyEditingId === itemId}
           {onStartEdit}
           {onEndEdit}
+          contributors={entry.contributorIds
+            ? entry.contributorIds
+                .map((id) => contributorMap?.get(id))
+                .filter((c): c is Contributor => !!c)
+            : undefined}
+          {allContributors}
+          onUpdateContributors={onUpdateEntryContributors
+            ? (ids) => onUpdateEntryContributors(index, ids)
+            : undefined}
         />
       </li>
     {/each}
