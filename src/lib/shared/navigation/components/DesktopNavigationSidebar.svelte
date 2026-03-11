@@ -95,10 +95,8 @@
   const isOnTutorialChoiceStep = $derived(false);
 
   // Get filtered settings sections using feature flag service
-  // The "contributors" tab is admin-only (managing credited developers)
   const filteredSettingsSections = $derived(
     SETTINGS_TABS.filter((section) => {
-      if (section.id === "contributors" && !featureFlagService.isAdmin) return false;
       return featureFlagService.canAccessTab("settings", section.id);
     })
   );
