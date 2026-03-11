@@ -10,6 +10,10 @@ description: Use when TypeScript errors need analysis and fixing, or after large
 npx tsc --noEmit
 ```
 
+## Scope
+
+For build-time compilation only. For runtime bugs, use `/fb`. For code quality audits, use `/audit`.
+
 ## Strategy
 
 | Errors | Approach |
