@@ -695,6 +695,19 @@ service cloud.firestore {
     }
 
     // ============================================================================
+    // CONTRIBUTORS COLLECTION (Release Notes Attribution)
+    // ============================================================================
+
+    // Curated list of developers credited in release notes.
+    // Each doc references a user account (userId field).
+    // Anyone authenticated can read (badges shown in What's New modal).
+    // Only admins can add/remove contributors.
+    match /contributors/{contributorId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ============================================================================
     // VERSIONS COLLECTION (Release Management)
     // ============================================================================
 
