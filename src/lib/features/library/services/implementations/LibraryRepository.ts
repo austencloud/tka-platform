@@ -279,9 +279,10 @@ export class LibraryRepository implements ILibraryRepository {
           { ...sequence, id: actualSequenceId },
           userId,
           {
+            // Forks default to private — don't auto-publish variations
             visibility: overrides?.visibility ?? "private",
             notes: overrides?.notes,
-            source: "created",
+            source: "forked",
             forkAttribution: {
               originalSequenceId: parentId,
               originalCreatorId: existingData?.ownerId ?? userId,
