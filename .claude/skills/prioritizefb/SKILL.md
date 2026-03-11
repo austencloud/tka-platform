@@ -1,5 +1,5 @@
 ---
-description: Auto-prioritize unprioritized feedback
+description: Use when feedback items lack priority and need triage
 ---
 
 # Prioritize Feedback
@@ -9,6 +9,10 @@ description: Auto-prioritize unprioritized feedback
 ```bash
 node scripts/fetch-feedback.js prioritize --json
 ```
+
+## Scope
+
+Only sets priority on items that lack one. For claiming and working on feedback, use `/fb`.
 
 ## Priority Criteria
 

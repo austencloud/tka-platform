@@ -1,5 +1,5 @@
 ---
-description: Generate user-friendly changelog
+description: Use when preparing release notes or reviewing what changed since last version
 ---
 
 # Changelog Generation
@@ -22,6 +22,10 @@ Transform technical messages to plain language:
 
 - Before: `fix(nav): settings tab not persisting`
 - After: `Fixed settings not saving when switching modules`
+
+## Scope
+
+This generates raw changelog text. For full release packaging (version bump, GitHub release, feedback archival), use `/release` instead.
 
 ## Output Format
 

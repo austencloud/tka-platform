@@ -1,5 +1,5 @@
 ---
-description: Detect monolithic files and propose decomposition
+description: Use when a file feels too large or has multiple responsibilities that should be separated
 ---
 
 # Monolith Detection
@@ -59,11 +59,11 @@ Evaluate through all four before proposing changes:
 - The "duplication" is actually encapsulation
 - You're uncomfortable with size but can't name the responsibility
 
-### Lessons From Real Mistakes
+### Common Traps
 
-**The Thin Wrapper Trap (2026-01-15):** Claude extracted FishStyleMapper, FishBehaviorTrigger, and DeepOceanLabDrawer after being challenged. Only PersonalityBars.svelte (a reusable UI component) was worth it. The services added 7 files and ~240 lines for no benefit.
+**The Thin Wrapper Trap:** Extracting services that add files but no value. If the extracted class is just a passthrough with no logic of its own, you created 7 files and ~240 lines for nothing. Only extract when the piece has its own responsibility.
 
-**The Leave It Alone Overcorrection (2026-01-29):** Claude analyzed a 2867-line modal and concluded "leave it alone" because "it's an orchestrator." Wrong. The file had 5+ clear UI sections that each owned their own markup + CSS.
+**The "It's An Orchestrator" Excuse:** Concluding "leave it alone" for a 2000+ line file because "it orchestrates children." Check if it has 5+ distinct UI sections each with their own markup + CSS. If so, those sections are extractable components, not orchestration.
 
 ### The Real Test
 
@@ -86,29 +86,7 @@ Every service extraction MUST follow this structure:
 4. Usage:          container.items.serviceName
 ```
 
-### Service Naming (no "Service" suffix):
-
-| Action | Suffix | Example |
-|--------|--------|---------|
-| Load data | `*Loader` | `SequenceLoader` |
-| Detect/check | `*Detector` | `LayoutDetector` |
-| Manage state | `*Manager` | `PlaybackManager` |
-| Calculate | `*Calculator` | `BeatCalculator` |
-| Persist | `*Persister` | `SequencePersister` |
-| Orchestrate | `*Orchestrator` | `GenerationOrchestrator` |
-
-### Component Extraction (Markup + CSS)
-
-When extracting UI, the markup AND styles go together. CSS travels with components in Svelte.
-
-### FORBIDDEN Patterns
-
-| FORBIDDEN | CORRECT ALTERNATIVE |
-|-----------|---------------------|
-| `use*.ts` hooks | Service class in ITI container |
-| `*Utils.ts` | Service class in ITI container |
-| `*.css` standalone | Extract component with markup + CSS |
-| Loose function files | Service class in ITI container |
+Service naming: see `.claude/rules/service-naming.md`. No "Service" suffix. No hooks, utils, or loose function files — everything goes in ITI containers. UI extraction: markup AND styles travel together.
 
 ---
 
@@ -130,20 +108,14 @@ npx -p @austencloud/code-quality ac-monolith --mark-audited "lib/path/to/File.sv
 
 ## Commands Reference
 
-```bash
-# Scanning
-npx -p @austencloud/code-quality ac-monolith              # Top 20 monoliths
-npx -p @austencloud/code-quality ac-monolith --all         # All over threshold
-npx -p @austencloud/code-quality ac-monolith --include-audited  # Include audited
+All commands: `npx -p @austencloud/code-quality ac-monolith <flag>`
 
-# Claiming
-npx -p @austencloud/code-quality ac-monolith --auto-claim     # Find and claim top
-npx -p @austencloud/code-quality ac-monolith --claim <path>   # Claim specific
-npx -p @austencloud/code-quality ac-monolith --release <path> # Release claim
-npx -p @austencloud/code-quality ac-monolith --claims         # Show active claims
-npx -p @austencloud/code-quality ac-monolith --clear-expired  # Remove stale claims
-
-# Auditing
-npx -p @austencloud/code-quality ac-monolith --mark-audited <path> "<reason>"
-npx -p @austencloud/code-quality ac-monolith --unmark-audited <path>
-```
+| Flag | Purpose |
+|------|---------|
+| (none) | Top 20 monoliths |
+| `--all` | All over threshold |
+| `--auto-claim` | Find and claim top |
+| `--claim <path>` | Claim specific |
+| `--release <path>` | Release claim |
+| `--mark-audited <path> "reason"` | Mark as reviewed |
+| `--unmark-audited <path>` | Remove audit mark |

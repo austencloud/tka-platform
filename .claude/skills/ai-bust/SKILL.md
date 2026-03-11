@@ -1,5 +1,5 @@
 ---
-description: Detect AI-isms in user-facing text
+description: Use when writing or reviewing user-facing text to check for AI writing patterns, banned words, or robotic tone
 ---
 
 # AI Writing Buster
@@ -105,47 +105,10 @@ Skip:
 - Test files
 - Config files
 
-## Example Output
+## Burstiness Check
 
-```
-=== AI Writing Buster Report ===
+After pattern-matching, check sentence rhythm. If most sentences are 15-25 words with uniform structure, flag as "uniform rhythm." Real writing varies length.
 
-src/routes/landing/+page.svelte
+## After Reporting
 
-CRITICAL (2):
-  Line 45 | EM_DASH | "for teachers — whether you're"
-    -> Use comma: "for teachers, whether you're"
-
-  Line 12 | BANNED_OPENER | "In today's fast-paced world of flow arts..."
-    -> Delete opener, start with substance
-
-HIGH (3):
-  Line 67 | BLACKLIST_WORD | "seamlessly integrate"
-    -> Delete "seamlessly" - just "integrate"
-
-  Line 89 | BLACKLIST_WORD | "leverage the power"
-    -> "use" or just describe what it does
-
-  Line 102 | HEDGING | "It's worth noting that..."
-    -> State directly
-
-MEDIUM (1):
-  Line 134 | PERFECT_THREE | "intuitive, powerful, and flexible"
-    -> Break rhythm: "intuitive and powerful" or add imperfection
-
----
-Overall: NEEDS REWRITE (2 critical, 3 high, 1 medium)
-```
-
-## The Burstiness Check
-
-After pattern-matching, do a manual rhythm check:
-
-1. Count sentence lengths in the scanned text
-2. If most sentences are 15-25 words with uniform structure -> flag as "uniform rhythm"
-3. Real writing mixes: Short punches. Then longer explanations. Fragments work.
-
-## Final Question
-
-After reporting, ask:
-> "Want me to fix these issues, or just use this as a reference?"
+Ask: "Want me to fix these issues, or just use this as a reference?"

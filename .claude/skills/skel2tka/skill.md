@@ -1,5 +1,5 @@
 ---
-description: Skel2TKA pipeline development tracking
+description: Use when working on or checking status of the video-to-TKA notation pipeline
 argument-hint: "[phase|status]"
 ---
 

@@ -1,5 +1,5 @@
 ---
-description: Analyze TypeScript errors and fix them
+description: Use when TypeScript errors need analysis and fixing, or after large refactors
 ---
 
 # TypeScript Check

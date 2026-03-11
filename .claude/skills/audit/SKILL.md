@@ -1,5 +1,5 @@
 ---
-description: Audit a module, tab, or feature for quality
+description: Use when assessing code quality of a module, tab, or feature across 8 dimensions
 ---
 
 # Audit Command
@@ -71,19 +71,7 @@ This produces structured JSON with per-dimension findings. No LLM involved. Take
 
 ### Phase 3: Evaluate
 
-Spawn the **audit-evaluator** agent (read-only, Sonnet):
-
-```
-Task(
-  subagent_type: "audit-evaluator",
-  prompt: "Read the evidence file at F:\tka-platform\.audit-evidence.json and grade the target '<target>' (scope: src/lib/<target>). Apply mechanical thresholds from your protocol. Output the scorecard, issues, GRADES_JSON, and ISSUES_JSON blocks."
-)
-```
-
-The evaluator returns:
-- A formatted scorecard with per-dimension grades + evidence counts
-- A `GRADES_JSON` block with machine-readable grades
-- An `ISSUES_JSON` block with machine-readable issues (file:line citations)
+Spawn the **audit-evaluator** agent (`subagent_type: "audit-evaluator"`) with the evidence file path and target scope. It returns a scorecard, `GRADES_JSON`, and `ISSUES_JSON` blocks.
 
 ---
 
@@ -112,46 +100,20 @@ Show the evaluator's scorecard and issues to the user. Then ask:
 
 ### Phase 6 (Optional): Fix
 
-If user chooses to fix, spawn the **audit-fixer** agent:
-
-```
-Task(
-  subagent_type: "audit-fixer",
-  prompt: "Fix these audit issues in TKA Scribe (working dir: F:\tka-platform). Issues: <ISSUES_JSON>. Fix only cited issues. Run typecheck after."
-)
-```
-
-After the fixer completes:
-1. **Re-collect evidence**: `node scripts/collect-evidence.cjs "<target>" --out .audit-evidence.json`
-2. **Re-evaluate**: Spawn evaluator again with fresh evidence
-3. **Re-record**: Update grades in tracker with new results
-4. Present the before/after comparison
-
----
+Spawn the **audit-fixer** agent (`subagent_type: "audit-fixer"`) with the `ISSUES_JSON`. After fixes, re-collect evidence, re-evaluate, re-record, and present before/after.
 
 ### Phase 7 (Optional): Defer to Feedback
 
-If user chooses to defer, create feedback items:
-
-```bash
-node scripts/fetch-feedback.js create --type enhancement --module "<module>" --title "Audit: <issue summary>" --description "<full issue with file:line>"
-```
-
----
+Create feedback items via `node scripts/fetch-feedback.js create` for each issue.
 
 ## Post-Audit
 
-1. **Recording auto-releases the claim**
-2. **If fixes were made**, offer to commit: group audit fixes into a single commit
-3. **Summary**: Show grades, issues fixed/deferred, and next recommendation
+1. Recording auto-releases the claim
+2. If fixes were made, offer to commit
+3. Show grades, issues fixed/deferred, and next recommendation
 
-## Important Notes
+## Key Rules
 
-- **Evidence is deterministic** - grep finds violations or it doesn't
-- **Thresholds are mechanical** - 0 violations = A+, period
-- **Evaluator cannot fix code** - no incentive to rationalize
-- **Issues have file:line citations** - accountability
-- **Re-evaluation uses fresh evidence** - not the fixer's word
-- Claims expire after 4 hours
-- Large modules (>30 files) must be audited as sub-features
-- The goal is A+ across all 8 dimensions
+- Evidence is deterministic. Thresholds are mechanical. 0 violations = A+.
+- Evaluator cannot fix code. Re-evaluation uses fresh evidence, not the fixer's word.
+- Claims expire after 4 hours. Large modules (>30 files) audit as sub-features.
