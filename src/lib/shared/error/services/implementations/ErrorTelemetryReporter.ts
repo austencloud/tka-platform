@@ -30,7 +30,7 @@ const DEDUP_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
 export class ErrorTelemetryReporter implements IErrorTelemetryReporter {
   async report(options: ShowErrorOptions): Promise<void> {
     try {
-      const db = getFirestoreInstance();
+      const db = await getFirestoreInstance();
 
       const message = options.message;
       const module = options.context?.module ?? "unknown";
@@ -53,7 +53,7 @@ export class ErrorTelemetryReporter implements IErrorTelemetryReporter {
         (options.context?.additionalData as object | undefined) ?? null;
 
       if (!snapshot.empty) {
-        const existingDoc = snapshot.docs[0];
+        const existingDoc = snapshot.docs[0]!;
         await updateDoc(existingDoc.ref, {
           count: increment(1),
           lastSeen: serverTimestamp(),
