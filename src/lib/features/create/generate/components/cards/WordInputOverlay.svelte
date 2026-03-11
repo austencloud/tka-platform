@@ -137,9 +137,15 @@
       {/if}
     </div>
 
-    {#if wordValue.trim()}
-      <div class="word-preview" aria-live="polite">{wordValue.trim()}</div>
-    {/if}
+    <button
+      class="confirm-btn"
+      type="button"
+      onclick={handleDone}
+      aria-label="Confirm word"
+    >
+      <i class="fas fa-check" aria-hidden="true"></i>
+      <span>Confirm</span>
+    </button>
   </div>
 </div>
 
@@ -152,7 +158,7 @@
   .overlay-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 100;
+    z-index: 200;
     background: var(--theme-backdrop, rgba(0, 0, 0, 0.6));
     display: flex;
     align-items: flex-start;
@@ -290,12 +296,33 @@
     transform: scale(0.92);
   }
 
-  .word-preview {
-    text-align: center;
-    font-size: 14px;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    letter-spacing: 2px;
-    font-weight: 600;
+  .confirm-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 14px;
+    min-height: 48px;
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    border: none;
+    border-radius: 14px;
+    color: white;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 150ms ease;
+    touch-action: manipulation;
+  }
+
+  .confirm-btn:hover {
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    transform: translateY(-1px);
+  }
+
+  .confirm-btn:active {
+    transform: scale(0.98);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -305,7 +332,8 @@
     }
     .close-btn,
     .clear-btn,
-    .word-field {
+    .word-field,
+    .confirm-btn {
       transition: none;
     }
   }
