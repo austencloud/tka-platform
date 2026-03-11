@@ -1,0 +1,81 @@
+import { doc, getDoc, updateDoc, getFirestore } from "firebase/firestore";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { IPropPreferencePersister, PropPreferences, CatdogCombo } from "../contracts/IPropPreferencePersister";
+
+const DEFAULT_PREFS: PropPreferences = {
+  propsISpinWith: [],
+  favoriteProp: null,
+  favoriteCatdog: null,
+};
+
+export class PropPreferencePersister implements IPropPreferencePersister {
+  async load(userId: string): Promise<PropPreferences> {
+    const db = getFirestore();
+    const userDoc = await getDoc(doc(db, "users", userId));
+    if (!userDoc.exists()) return { ...DEFAULT_PREFS };
+    const data = userDoc.data();
+    return {
+      propsISpinWith: (data.propsISpinWith as PropType[]) ?? [],
+      favoriteProp: (data.favoriteProp as PropType) ?? null,
+      favoriteCatdog: (data.favoriteCatdog as CatdogCombo) ?? null,
+    };
+  }
+
+  async save(userId: string, prefs: PropPreferences): Promise<void> {
+    this.validate(prefs);
+    const db = getFirestore();
+    await updateDoc(doc(db, "users", userId), {
+      propsISpinWith: prefs.propsISpinWith,
+      favoriteProp: prefs.favoriteProp,
+      favoriteCatdog: prefs.favoriteCatdog,
+    });
+  }
+
+  async addProp(userId: string, prop: PropType): Promise<void> {
+    const prefs = await this.load(userId);
+    if (prefs.propsISpinWith.includes(prop)) return;
+    prefs.propsISpinWith.push(prop);
+    await this.save(userId, prefs);
+  }
+
+  async removeProp(userId: string, prop: PropType): Promise<void> {
+    const prefs = await this.load(userId);
+    prefs.propsISpinWith = prefs.propsISpinWith.filter((p) => p !== prop);
+    if (prefs.favoriteProp === prop) prefs.favoriteProp = null;
+    if (prefs.favoriteCatdog && (prefs.favoriteCatdog.bluePropType === prop || prefs.favoriteCatdog.redPropType === prop)) {
+      prefs.favoriteCatdog = null;
+    }
+    await this.save(userId, prefs);
+  }
+
+  async setFavorite(userId: string, prop: PropType): Promise<void> {
+    const prefs = await this.load(userId);
+    if (!prefs.propsISpinWith.includes(prop)) prefs.propsISpinWith.push(prop);
+    prefs.favoriteProp = prop;
+    await this.save(userId, prefs);
+  }
+
+  async setCatdogFavorite(userId: string, combo: CatdogCombo | null): Promise<void> {
+    const prefs = await this.load(userId);
+    if (combo) {
+      if (!prefs.propsISpinWith.includes(combo.bluePropType)) prefs.propsISpinWith.push(combo.bluePropType);
+      if (!prefs.propsISpinWith.includes(combo.redPropType)) prefs.propsISpinWith.push(combo.redPropType);
+    }
+    prefs.favoriteCatdog = combo;
+    await this.save(userId, prefs);
+  }
+
+  private validate(prefs: PropPreferences): void {
+    if (prefs.favoriteProp && !prefs.propsISpinWith.includes(prefs.favoriteProp)) {
+      throw new Error(`favoriteProp "${prefs.favoriteProp}" must be in propsISpinWith`);
+    }
+    if (prefs.favoriteCatdog) {
+      if (!prefs.propsISpinWith.includes(prefs.favoriteCatdog.bluePropType)) {
+        throw new Error(`catdog blue "${prefs.favoriteCatdog.bluePropType}" must be in propsISpinWith`);
+      }
+      if (!prefs.propsISpinWith.includes(prefs.favoriteCatdog.redPropType)) {
+        throw new Error(`catdog red "${prefs.favoriteCatdog.redPropType}" must be in propsISpinWith`);
+      }
+    }
+  }
+}
