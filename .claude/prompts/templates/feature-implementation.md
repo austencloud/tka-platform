@@ -1,19 +1,15 @@
-Implement [FEATURE NAME].
+<!-- DEPRECATED: This template is superseded by Claude's superpowers skills. -->
+<!-- Do NOT follow the workflow below. Use the skills instead.              -->
 
-## What it should do
-[1-3 sentences describing the behavior from the user's perspective]
+# This template has been replaced by superpowers skills
 
-## Context
-[Any relevant files, modules, or constraints you already know about]
+If you're reading this as a Claude agent, **use the skills instead of this template:**
 
-## Requirements
-- [Specific requirement 1]
-- [Specific requirement 2]
+- `/brainstorming` — explores intent, requirements, and design before implementation
+- `/writing-plans` — designs architecture before touching code
+- `/verification-before-completion` — ensures verification output before claiming done
+- `/check` — TypeScript error analysis and fixing
 
-## Workflow
-1. Use the Plan agent to design the architecture before writing any code
-2. Explore the codebase as needed to understand existing patterns
-3. Implement following the plan, respecting DI container patterns and the module checklist
-4. Run /check to catch TypeScript errors
-5. Use the verification-runner agent to confirm it works before marking done
-6. Do not claim "done" without verification output
+These skills provide full interactive workflows with more context than a static template can.
+
+If you're a human contributor, run these slash commands in your Claude Code session. They do everything this template describes and more.
