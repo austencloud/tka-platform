@@ -202,9 +202,6 @@
 
   .tour-card {
     position: fixed;
-    left: 50%;
-    bottom: max(env(safe-area-inset-bottom, 0px), 16px);
-    transform: translateX(-50%);
     z-index: 250;
     display: flex;
     flex-direction: column;
@@ -217,6 +214,11 @@
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 16px;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+
+    /* Mobile default: bottom-centered */
+    left: 50%;
+    bottom: max(env(safe-area-inset-bottom, 0px), 16px);
+    transform: translateX(-50%);
     animation: slideUp var(--duration-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
@@ -228,6 +230,31 @@
     to {
       opacity: 1;
       transform: translateX(-50%) translateY(0);
+    }
+  }
+
+  /* Desktop: center in the workspace area (left half, after sidebar).
+     Sidebar is ~130px, workspace fills from there to ~50% of viewport.
+     Midpoint of workspace ≈ calc((130px + 50vw) / 2) ≈ 25vw + 65px */
+  @media (min-width: 1024px) {
+    .tour-card {
+      left: calc(25vw + 65px);
+      bottom: auto;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      max-height: 70vh;
+      animation: fadeScale var(--duration-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes fadeScale {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
     }
   }
 
