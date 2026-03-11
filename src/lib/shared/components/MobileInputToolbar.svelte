@@ -1,8 +1,9 @@
 <!--
-  MobileInputToolbar - Keyboard-aware toolbar for mobile feedback input
+  MobileInputToolbar - Keyboard-aware toolbar for mobile text input
 
-  Shows above the virtual keyboard when textarea is focused on mobile.
-  Provides Done button to dismiss keyboard without closing the form.
+  Shows above the virtual keyboard when a textarea is focused on mobile.
+  Provides a Done button to dismiss the keyboard, and a snippet slot for
+  consumer-specific left-side content (e.g. submit button, voice input).
 
   Uses:
   - VirtualKeyboard API (Chrome Android) for keyboard-inset-height
@@ -10,34 +11,23 @@
   - CSS env() variables for positioning
 -->
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
+  import { onMount, onDestroy, type Snippet } from "svelte";
   import { browser } from "$app/environment";
-  import VoiceInputButton from "./VoiceInputButton.svelte";
-  import type { IVoiceRecorder, VoiceRecordingResult } from "../../services/contracts/IVoiceRecorder";
-  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   let {
     visible = false,
     disabled = false,
-    isFormValid = false,
-    isSubmitting = false,
-    voiceRecorder,
+    doneLabel = "Done",
     onDone,
-    onSubmit,
-    onRecordingStart,
-    onRecordingEnd,
     onKeyboardHeightChange,
+    leftContent,
   } = $props<{
     visible: boolean;
     disabled?: boolean;
-    isFormValid?: boolean;
-    isSubmitting?: boolean;
-    voiceRecorder: IVoiceRecorder;
+    doneLabel?: string;
     onDone: () => void;
-    onSubmit?: () => void;
-    onRecordingStart: (stream: MediaStream) => void;
-    onRecordingEnd: (result: VoiceRecordingResult) => void;
     onKeyboardHeightChange?: (height: number) => void;
+    leftContent?: Snippet;
   }>();
 
   let keyboardHeight = $state(0);
@@ -229,50 +219,21 @@
     aria-label="Input actions"
   >
     <div class="toolbar-content">
-      <div class="toolbar-left">
-        <VoiceInputButton
-          {voiceRecorder}
-          {onRecordingStart}
-          {onRecordingEnd}
-          {disabled}
-        />
-      </div>
+      {#if leftContent}
+        <div class="toolbar-left">
+          {@render leftContent()}
+        </div>
+      {/if}
 
       <div class="toolbar-right">
-        {#if onSubmit}
-          <button
-            type="button"
-            class="submit-button"
-            onmousedown={(e) => {
-              // Prevent blur from textarea so submit completes before keyboard dismisses
-              e.preventDefault();
-              onSubmit();
-            }}
-            ontouchstart={(e) => {
-              // Same for touch - prevent blur, then submit
-              e.preventDefault();
-              onSubmit();
-            }}
-            disabled={disabled || !isFormValid || isSubmitting}
-            aria-label="Submit feedback"
-          >
-            {#if isSubmitting}
-              <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
-            {:else}
-              <i class="fas fa-paper-plane" aria-hidden="true"></i>
-            {/if}
-            <span>{t("feedback_submit")}</span>
-          </button>
-        {/if}
-
         <button
           type="button"
           class="done-button"
           onclick={onDone}
           {disabled}
-          aria-label={t("feedback_done_dismiss_keyboard")}
+          aria-label={doneLabel}
         >
-          <span class="done-text">{t("feedback_done")}</span>
+          <span class="done-text">{doneLabel}</span>
         </button>
       </div>
     </div>
@@ -339,44 +300,6 @@
     gap: 8px;
   }
 
-  .submit-button {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 16px;
-    min-height: var(--min-touch-target); /* WCAG AAA touch target */
-
-    background: var(--theme-accent, #4a9eff);
-    border: none;
-    border-radius: 8px;
-
-    color: white;
-    font-size: 15px;
-    font-weight: 600;
-
-    cursor: pointer;
-    transition: all 150ms ease;
-    touch-action: manipulation;
-  }
-
-  .submit-button:hover:not(:disabled) {
-    background: var(--theme-accent-strong, #5aafff);
-    transform: translateY(-1px);
-  }
-
-  .submit-button:active:not(:disabled) {
-    transform: scale(0.98);
-  }
-
-  .submit-button:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  .submit-button i {
-    font-size: 14px;
-  }
-
   .done-button {
     display: flex;
     align-items: center;
@@ -423,8 +346,7 @@
       animation: none;
     }
 
-    .done-button,
-    .submit-button {
+    .done-button {
       transition: none;
     }
   }
