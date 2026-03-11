@@ -23,6 +23,7 @@
     isSettingsPreviewMode,
   } from "$lib/shared/application/state/app-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
+  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import MobileSegmentControl from "./visibility/MobileSegmentControl.svelte";
   import type { VisibilityMode } from "./visibility/visibility-types";
   import PictographPanel from "./visibility/PictographPanel.svelte";
@@ -38,8 +39,14 @@
   const animationVisibilityManager = getAnimationVisibilityManager();
   const imageCompositionManager = getImageCompositionManager();
 
-  // UI state
-  let activePanel = $state<VisibilityMode>("pictograph");
+  // UI state — restore persisted panel or default to "pictograph"
+  const VALID_PANELS: VisibilityMode[] = ["pictograph", "animation", "image"];
+  const savedPanel = navigationState.getLastPanelForTab("settings", "visibility");
+  let activePanel = $state<VisibilityMode>(
+    savedPanel && VALID_PANELS.includes(savedPanel as VisibilityMode)
+      ? (savedPanel as VisibilityMode)
+      : "pictograph"
+  );
   let isVisible = $state(false);
 
   // Dark mode - top-level toggle
@@ -83,6 +90,7 @@
   function handleModeChange(mode: VisibilityMode) {
     triggerHaptic();
     activePanel = mode;
+    navigationState.setLastPanelForTab(mode, "settings", "visibility");
   }
 
   // Pictograph toggle handler
