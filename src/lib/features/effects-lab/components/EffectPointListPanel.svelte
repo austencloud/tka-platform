@@ -1,44 +1,27 @@
 <!--
   EffectPointListPanel.svelte
 
-  Point list with intensity sliders, delete buttons,
-  and auto-saved actions (set default, reset, copy, import).
-  Adapts to any effect type via EffectDescriptor.
+  Point list with delete buttons, and auto-saved actions
+  (set default, reset, copy, import). Adapts to any effect
+  type via EffectDescriptor.
 -->
 <script lang="ts">
   import { onDestroy } from "svelte";
   import type { EffectDescriptor } from "../domain/EffectDescriptor";
   import type { EffectPointEditorState } from "../state/effect-point-editor-state.svelte";
-  import type { IEffectPointOverrideProvider } from "../services/contracts/IEffectPointOverrideProvider";
-
-  interface CopySource {
-    id: string;
-    label: string;
-    icon: string;
-    provider: IEffectPointOverrideProvider;
-  }
 
   interface Props {
     editorState: EffectPointEditorState;
     descriptor: EffectDescriptor;
-    copySourceProviders?: CopySource[];
   }
 
-  const { editorState, descriptor, copySourceProviders = [] }: Props = $props();
+  const { editorState, descriptor }: Props = $props();
 
   let showImport = $state(false);
-  let showCopyMenu = $state(false);
   let importText = $state("");
   let importError = $state<string | null>(null);
   let copyFeedback = $state(false);
   let copyFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
-
-  function handleWindowClick(e: MouseEvent) {
-    if (showCopyMenu) {
-      const wrapper = (e.target as HTMLElement)?.closest(".copy-from-wrapper");
-      if (!wrapper) showCopyMenu = false;
-    }
-  }
 
   onDestroy(() => {
     if (copyFeedbackTimer !== null) clearTimeout(copyFeedbackTimer);
@@ -66,13 +49,6 @@
     }
   }
 
-  function handleIntensityChange(index: number, value: number) {
-    const point = editorState.points[index];
-    if (!point) return;
-    descriptor.setIntensity(point, value);
-    editorState.updatePoint(index, point);
-  }
-
   function handleCoordChange(index: number, field: "dx" | "dy", raw: string) {
     const value = parseFloat(raw);
     if (Number.isFinite(value)) {
@@ -88,8 +64,6 @@
     editorState.addPoint(0, 0);
   }
 </script>
-
-<svelte:window onclick={handleWindowClick} />
 
 <div
   class="list-panel themed-scrollbar"
@@ -173,25 +147,6 @@
                 <i class="fas fa-trash-alt" aria-hidden="true"></i>
               </button>
             </div>
-            <!-- Row 2: intensity slider (full width) -->
-            <div class="intensity-row">
-              <label class="intensity-label" for="intensity-{i}">
-                <i class="{descriptor.icon}" aria-hidden="true"></i>
-                {descriptor.intensityLabel}
-              </label>
-              <input
-                id="intensity-{i}"
-                type="range"
-                class="intensity-slider"
-                min={descriptor.intensityRange[0]}
-                max={descriptor.intensityRange[1]}
-                step={descriptor.intensityStep}
-                value={descriptor.getIntensity(point)}
-                oninput={(e) => handleIntensityChange(i, parseFloat((e.target as HTMLInputElement).value))}
-                onclick={(e) => e.stopPropagation()}
-              />
-              <span class="scale-value">{descriptor.getIntensity(point).toFixed(1)}</span>
-            </div>
           </div>
         {/each}
       </div>
@@ -251,33 +206,6 @@
         Import JSON
       </button>
 
-      {#if copySourceProviders.length > 0}
-        <div class="copy-from-wrapper">
-          <button
-            class="action-btn copy-from-btn"
-            onclick={() => { showCopyMenu = !showCopyMenu; }}
-            aria-label="Copy points from another effect"
-            aria-expanded={showCopyMenu}
-          >
-            <i class="fas fa-clone" aria-hidden="true"></i>
-            Copy From...
-          </button>
-          {#if showCopyMenu}
-            <div class="copy-menu" role="menu">
-              {#each copySourceProviders as source (source.id)}
-                <button
-                  class="copy-menu-item"
-                  role="menuitem"
-                  onclick={() => { editorState.copyFromProvider(source.provider); showCopyMenu = false; }}
-                >
-                  <i class={source.icon} aria-hidden="true"></i>
-                  {source.label}
-                </button>
-              {/each}
-            </div>
-          {/if}
-        </div>
-      {/if}
     </div>
 
     {#if showImport}
@@ -285,7 +213,7 @@
         <textarea
           class="import-textarea"
           bind:value={importText}
-          placeholder={'{"points": [{"dx": 0, "dy": 0, "' + descriptor.intensityLabel.toLowerCase().replace(/\s+/g, '') + '": ' + descriptor.intensityDefault + '}]}'}
+          placeholder={'{"points": [{"dx": 0, "dy": 0}]}'}
           rows="4"
         ></textarea>
         {#if importError}
@@ -547,46 +475,6 @@
     color: var(--semantic-error, #ef4444);
   }
 
-  /* Row 2: intensity slider */
-  .intensity-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding-left: 36px;
-  }
-
-  .intensity-label {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    flex-shrink: 0;
-    cursor: pointer;
-  }
-
-  .intensity-label i {
-    color: var(--effect-accent);
-    font-size: var(--font-size-compact, 12px);
-  }
-
-  .intensity-slider {
-    flex: 1;
-    min-width: 0;
-    height: 6px;
-    accent-color: var(--effect-accent);
-    cursor: pointer;
-  }
-
-  .scale-value {
-    font-family: var(--font-mono, monospace);
-    font-size: var(--font-size-min, 14px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    min-width: 28px;
-    text-align: right;
-    flex-shrink: 0;
-  }
-
   /* --- Action buttons --- */
   .action-buttons {
     display: flex;
@@ -640,66 +528,6 @@
 
   .reset-btn:hover:not(:disabled) {
     background: var(--semantic-error-dim, rgba(239, 68, 68, 0.1));
-  }
-
-  .copy-from-wrapper {
-    position: relative;
-  }
-
-  .copy-from-btn {
-    border-color: var(--effect-accent-border);
-    color: var(--effect-accent);
-  }
-
-  .copy-from-btn:hover:not(:disabled) {
-    background: var(--effect-accent-dim);
-  }
-
-  .copy-menu {
-    position: absolute;
-    bottom: calc(100% + 4px);
-    left: 0;
-    min-width: 160px;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border: 1.5px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-    border-radius: var(--border-radius-md, 8px);
-    padding: 4px;
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .copy-menu-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 44px;
-    padding: 8px 12px;
-    border: none;
-    border-radius: var(--border-radius-sm, 4px);
-    background: transparent;
-    color: var(--theme-text, white);
-    font-size: var(--font-size-min, 14px);
-    cursor: pointer;
-    transition: background 100ms ease;
-    text-align: left;
-    width: 100%;
-  }
-
-  .copy-menu-item:hover {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
-  }
-
-  .copy-menu-item:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: -2px;
-  }
-
-  .copy-menu-item i {
-    width: 16px;
-    text-align: center;
-    font-size: var(--font-size-min, 14px);
   }
 
   .import-section {
@@ -785,8 +613,7 @@
     .action-btn,
     .point-row,
     .icon-btn,
-    .add-center-btn,
-    .copy-menu-item {
+    .add-center-btn {
       transition: none;
     }
 
