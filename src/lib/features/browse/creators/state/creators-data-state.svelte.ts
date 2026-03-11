@@ -266,6 +266,20 @@ function createCreatorsDataState() {
     }
   }
 
+  /**
+   * Patch any fields on a cached user entry (all lists: main, featured, search).
+   * Used for reconciling stale denormalized fields like sequenceCount.
+   */
+  function patchUser(userId: string, patch: Partial<EnhancedUserProfile>) {
+    const apply = (u: EnhancedUserProfile) =>
+      u.id === userId ? { ...u, ...patch } : u;
+    users = users.map(apply);
+    featuredUsers = featuredUsers.map(apply);
+    if (searchResults) {
+      searchResults = searchResults.map(apply);
+    }
+  }
+
   return {
     // Data
     get users() {
@@ -328,6 +342,7 @@ function createCreatorsDataState() {
     clearSearch,
     refreshCreators,
     updateUserFollowStatus,
+    patchUser,
   };
 }
 
@@ -442,6 +457,9 @@ export const creatorsDataState = {
       isFollowing,
       followerCountDelta
     );
+  },
+  patchUser(userId: string, patch: Partial<EnhancedUserProfile>) {
+    getCreatorsDataState().patchUser(userId, patch);
   },
 };
 

@@ -6,7 +6,9 @@
    */
 
   import { onMount } from "svelte";
+  import { doc, setDoc } from "firebase/firestore";
   import { container } from "$lib/shared/di";
+  import { getFirestoreInstance } from "$lib/shared/auth/firebase";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
@@ -97,6 +99,21 @@
     }
   }
 
+  // Write the correct sequence count to Firestore when the denormalized
+  // counter has drifted from the actual number of sequences.
+  async function reconcileCount(uid: string, actualCount: number) {
+    try {
+      const firestore = await getFirestoreInstance();
+      await setDoc(
+        doc(firestore, `users/${uid}`),
+        { sequenceCount: actualCount },
+        { merge: true }
+      );
+    } catch (err) {
+      console.warn("[UserProfilePanel] Failed to reconcile sequenceCount:", err);
+    }
+  }
+
   onMount(async () => {
     try {
       // Resolve services
@@ -119,6 +136,17 @@
       userSequences = await libraryService.getUserSequences(userId, {
         visibility: isOwnProfile ? undefined : "public",
       });
+
+      // Always use the actual loaded sequence count as the source of truth.
+      // The denormalized sequenceCount field on the user doc can drift when
+      // increment writes fail silently. Overwrite it every time we have real data.
+      const actualCount = userSequences.length;
+      if (userProfile.sequenceCount !== actualCount) {
+        userProfile = { ...userProfile, sequenceCount: actualCount };
+        // Write the correct count back to Firestore (non-blocking).
+        // Works for own profile (isOwner rule) and admin viewing others.
+        void reconcileCount(userId, actualCount);
+      }
 
       isLoading = false;
 
