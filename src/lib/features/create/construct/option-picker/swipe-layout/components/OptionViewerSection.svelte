@@ -348,6 +348,7 @@ Renders a section with:
         style:--pictograph-size="{optimalLayout().pictographSize}px"
         data-testid="option-item"
         data-letter={pictograph.letter}
+        aria-label="Select {pictograph.letter}"
       >
         <OptionPictographCell
           pictographData={pictograph as PreparedPictographData}

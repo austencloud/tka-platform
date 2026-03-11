@@ -80,6 +80,7 @@
           class:color-red={orientationPickerState.activeColor === "red"}
           onclick={() => handleSelect(opt.value)}
           aria-pressed={opt.value === orientationPickerState.currentOrientation}
+          aria-label="{opt.label}: {opt.hint}"
         >
           <i class="fas {opt.icon}" aria-hidden="true"></i>
           <div class="option-text">

@@ -83,7 +83,7 @@
 
   // ── Active effect ──
   const activeEffect: ActiveEffect = $derived.by(() => {
-    if (fireEnabled && charcoalEnabled) return "charcoal";
+    if (charcoalEnabled) return "charcoal";
     if (fireEnabled) return "fire";
     if (ledEnabled) return "led";
     if (trailsVisible) return "trails";

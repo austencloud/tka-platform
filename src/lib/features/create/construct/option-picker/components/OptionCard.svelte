@@ -49,6 +49,7 @@ Receives pre-calculated data, just renders it.
   style:--border-secondary={borderColors.secondary}
   data-testid="option-card"
   data-letter={pictograph.letter}
+  aria-label="Select {pictograph.letter}"
 >
   <OptionCardContent {pictograph} {blueReversal} {redReversal} />
 </button>

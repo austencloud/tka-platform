@@ -30,6 +30,7 @@ import type { ISettingsPersister } from "../services/contracts/ISettingsPersiste
 import { auth } from "../../auth/firebase";
 import type { ISettingsState } from "../services/contracts/ISettingsState";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
+import { getAnimationVisibilityManager } from "../../animation-engine/state/animation-visibility-state.svelte";
 
 const debug = createComponentLogger("SettingsState");
 
@@ -249,6 +250,17 @@ class SettingsState implements ISettingsState {
             }
           }
 
+          // Sync pictograph dark mode from Firebase profile setting.
+          // AnimationVisibilityStateManager uses its own localStorage key, so it
+          // doesn't see the Firebase-synced darkMode value without this bridge.
+          if (firebaseSettings.darkMode !== undefined) {
+            const animVisManager = getAnimationVisibilityManager();
+            if (animVisManager.isDarkMode() !== firebaseSettings.darkMode) {
+              animVisManager.setDarkMode(firebaseSettings.darkMode);
+              debug.success(`Synced pictograph dark mode from Firebase: ${firebaseSettings.darkMode}`);
+            }
+          }
+
           debug.success("Applied settings from Firebase");
         }
       } else {
@@ -325,6 +337,15 @@ class SettingsState implements ISettingsState {
     // NOTE: We intentionally do NOT update background here during real-time sync.
     // Background changes from other devices would be jarring during active use.
     // Background is only synced on initial login (see syncFromFirebase).
+
+    // Bridge darkMode into AnimationVisibilityStateManager so pictographs
+    // reflect the profile-level preference (it has its own localStorage key)
+    if (remoteSettings.darkMode !== undefined) {
+      const animVisManager = getAnimationVisibilityManager();
+      if (animVisManager.isDarkMode() !== remoteSettings.darkMode) {
+        animVisManager.setDarkMode(remoteSettings.darkMode);
+      }
+    }
 
     // Save to localStorage for offline access
     this.saveSettingsToStorage(settingsState);

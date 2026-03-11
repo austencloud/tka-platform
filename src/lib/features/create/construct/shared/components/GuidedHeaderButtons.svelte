@@ -49,7 +49,7 @@
 
   <div class="header-right">
     {#if showNextHandButton}
-      <button class="next-hand-button" onclick={handleNextHandClick}>
+      <button class="next-hand-button" onclick={handleNextHandClick} aria-label={nextHandButtonText}>
         {nextHandButtonText}
         <i class="fas fa-arrow-right" aria-hidden="true"></i>
       </button>
