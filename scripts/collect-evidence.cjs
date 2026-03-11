@@ -352,13 +352,24 @@ function collectAccessibility() {
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         if (/<button\b/.test(line) && !/aria-label/.test(line) && !/>.*<\/button>/.test(line)) {
-          // Button without visible text or aria-label on same line
-          // This is a rough heuristic; evaluator refines
-          findings.missingAriaLabel.push({
-            file: rel(f),
-            line: i + 1,
-            preview: line.trim().substring(0, 120),
-          });
+          // Check subsequent lines until closing > for aria-label on a different line
+          let hasAriaOnNextLines = false;
+          for (let j = i + 1; j < Math.min(i + 15, lines.length); j++) {
+            if (/aria-label/.test(lines[j])) {
+              hasAriaOnNextLines = true;
+              break;
+            }
+            // Stop looking if we hit a line that closes the opening tag
+            // (line is just ">" or "/>" optionally with whitespace)
+            if (/^\s*\/?>$/.test(lines[j].trim())) break;
+          }
+          if (!hasAriaOnNextLines) {
+            findings.missingAriaLabel.push({
+              file: rel(f),
+              line: i + 1,
+              preview: line.trim().substring(0, 120),
+            });
+          }
         }
       }
     } catch {

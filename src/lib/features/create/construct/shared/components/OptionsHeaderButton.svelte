@@ -159,7 +159,7 @@
   }
 
   .options-header-button.compact .chevron {
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
   }
 
   .options-header-button.compact .header-right-indicator {
@@ -196,7 +196,7 @@
     }
 
     .chevron {
-      font-size: 0.7rem;
+      font-size: var(--font-size-compact, 12px);
     }
 
     /* Extra compact on mobile when compact mode is active */

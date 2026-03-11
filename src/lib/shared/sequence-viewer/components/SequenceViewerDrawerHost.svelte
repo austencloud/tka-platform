@@ -312,8 +312,8 @@
               {/if}
             </div>
 
-            <!-- Footer: hidden during export modes, shown in normal viewer -->
-            {#if !isAnyExportActive}
+            <!-- Footer: collapses via CSS during export modes for smooth transition -->
+            <div class="footer-collapse" class:collapsed={isAnyExportActive}>
               <ViewerFooter
                 bpm={ctx.bpmLocal}
                 isPlaying={ctx.isPlayingLocal}
@@ -337,7 +337,7 @@
                 isOwned={ctx.isOwned}
                 onDeleteRequest={() => (deleteConfirmOpen = true)}
               />
-            {/if}
+            </div>
           </div>
           {#if ctx.rampActive}
             <RampProgressIndicator
@@ -554,6 +554,20 @@
       border-left: none;
       border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     }
+  }
+
+  /* Footer collapse — smooth height transition instead of instant DOM removal */
+  .footer-collapse {
+    overflow: hidden;
+    max-height: 200px;
+    transition: max-height 250ms cubic-bezier(0.2, 0, 0, 1),
+                opacity 250ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  .footer-collapse.collapsed {
+    max-height: 0;
+    opacity: 0;
+    pointer-events: none;
   }
 
   /* Override Drawer defaults for full-screen sequence viewer */
