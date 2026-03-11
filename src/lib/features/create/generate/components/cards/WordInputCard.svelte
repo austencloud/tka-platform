@@ -24,6 +24,8 @@ Replaces the old GenerationModeCard (Freeform/Spell toggle).
     gridColumnSpan = 2,
     cardIndex = 0,
     headerFontSize = "9px",
+    isMobile = false,
+    onOpenOverlay,
   } = $props<{
     wordValue?: string;
     onWordChange?: (value: string) => void;
@@ -34,6 +36,8 @@ Replaces the old GenerationModeCard (Freeform/Spell toggle).
     gridColumnSpan?: number;
     cardIndex?: number;
     headerFontSize?: string;
+    isMobile?: boolean;
+    onOpenOverlay?: () => void;
   }>();
 
   let greekKeyMapper: IGreekKeyMapper | null = $state(null);
@@ -43,6 +47,20 @@ Replaces the old GenerationModeCard (Freeform/Spell toggle).
   });
 
   const hasWord = $derived(wordValue.trim().length > 0);
+
+  function handleFocus(event: FocusEvent) {
+    if (isMobile && onOpenOverlay) {
+      // Prevent the inline input from actually focusing on mobile — open the overlay instead
+      (event.target as HTMLInputElement).blur();
+      onOpenOverlay();
+    }
+  }
+
+  function handleCardTap() {
+    if (isMobile && onOpenOverlay) {
+      onOpenOverlay();
+    }
+  }
 
   function handleInput(event: Event) {
     const target = event.target as HTMLInputElement;
@@ -85,11 +103,16 @@ Replaces the old GenerationModeCard (Freeform/Spell toggle).
 <div
   class="word-input-card"
   class:has-word={hasWord}
+  class:mobile={isMobile}
   style="
     --card-bg: {color};
     --card-shadow-color: {shadowColor};
     animation-delay: {cardIndex * 60}ms;
   "
+  onclick={handleCardTap}
+  role={isMobile ? "button" : undefined}
+  tabindex={isMobile ? 0 : undefined}
+  aria-label={isMobile ? "Enter word to spell" : undefined}
 >
   <CardHeader title="Word" {headerFontSize} />
 
@@ -101,10 +124,12 @@ Replaces the old GenerationModeCard (Freeform/Spell toggle).
       value={wordValue}
       oninput={handleInput}
       onkeydown={handleKeydown}
+      onfocus={handleFocus}
       autocomplete="off"
       autocapitalize="off"
       spellcheck="false"
       {disabled}
+      readonly={isMobile}
     />
 
     {#if hasWord && !disabled}
@@ -135,6 +160,15 @@ Replaces the old GenerationModeCard (Freeform/Spell toggle).
       inset 0 1px 0 var(--theme-stroke-strong),
       inset 0 -1px 0 var(--theme-shadow);
     transition: box-shadow var(--duration-emphasis) ease;
+  }
+
+  .word-input-card.mobile {
+    cursor: pointer;
+  }
+
+  .word-input-card.mobile .word-field {
+    cursor: pointer;
+    pointer-events: none;
   }
 
   .word-input-card.has-word {

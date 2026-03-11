@@ -1,7 +1,6 @@
 ﻿<!--
 CardBasedSettingsContainer - Minimal card grid renderer
 Delegates ALL logic to services (SRP compliant)
-Supports tour mode: highlights the active tour stop card
 -->
 <script lang="ts">
   import { container } from "$lib/shared/di";
@@ -50,12 +49,14 @@ Supports tour mode: highlights the active tour stop card
     onGenerateClicked,
     startEndState,
     hasSettingsChanged = false,
-    tourActiveStop = null,
     wordInputValue = "",
     onWordInput,
     onWordSubmit,
     needsCycleCompletion = false,
     onCompleteCycle,
+    tourActiveStop = null,
+    isMobile = false,
+    onOpenWordInput,
   } = $props<{
     config: UIGenerationConfig;
     isFreeformMode: boolean;
@@ -64,7 +65,6 @@ Supports tour mode: highlights the active tour stop card
     onGenerateClicked: (options: any) => Promise<void>;
     startEndState?: StartEndOptionsState;
     hasSettingsChanged?: boolean;
-    tourActiveStop?: string | null;
     wordInputValue?: string;
     onWordInput?: (value: string) => void;
     onWordSubmit?: () => void;
@@ -72,6 +72,12 @@ Supports tour mode: highlights the active tour stop card
     needsCycleCompletion?: boolean;
     /** Called when user clicks "Complete Cycle" */
     onCompleteCycle?: () => void;
+    /** When set, highlights this card and dims others (used by tour modal) */
+    tourActiveStop?: string | null;
+    /** Whether the app is in mobile layout — used to open word input overlay */
+    isMobile?: boolean;
+    /** Called when user taps the word card on mobile to open the overlay */
+    onOpenWordInput?: () => void;
   }>();
 
   // Get panel coordination state from context (for LOOP expanded overlay)
@@ -319,7 +325,13 @@ Supports tour mode: highlights the active tour stop card
       {:else if card.id === "length"}
         <LengthCard {...card.props as any} color={cardColors.length.color} shadowColor={cardColors.length.shadowColor} />
       {:else if card.id === "word-input"}
-        <WordInputCard {...card.props as any} color={cardColors.mode.color} shadowColor={cardColors.mode.shadowColor} />
+        <WordInputCard
+          {...card.props as any}
+          color={cardColors.mode.color}
+          shadowColor={cardColors.mode.shadowColor}
+          {isMobile}
+          onOpenOverlay={onOpenWordInput}
+        />
       {:else if card.id === "grid-mode"}
         <GridModeCard {...card.props as any} color={cardColors.gridMode.color} shadowColor={cardColors.gridMode.shadowColor} />
       {:else if card.id === "turn-intensity"}
@@ -406,7 +418,26 @@ Supports tour mode: highlights the active tour stop card
     min-width: 0;
   }
 
-  /* Tour highlighting */
+  /*
+   * MAX-HEIGHT CONSTRAINTS:
+   * - Mobile/tablet stacked layouts: NO max-height - use all vertical space
+   * - Desktop (1024px+): Apply max-height so cards don't expand infinitely
+   *
+   * Note: Don't use orientation to detect layout - app uses width breakpoints
+   * to decide stacked vs side-by-side, not orientation.
+   */
+
+  /* Desktop (side-by-side layout): constrain height and center */
+  @media (min-width: 1024px) {
+    .card-settings-container {
+      max-width: min(750px, 95%);
+      max-height: min(65%, 750px);
+      padding-inline: 0; /* Remove mobile padding on desktop */
+      align-self: center; /* Center vertically when height is constrained */
+    }
+  }
+
+  /* Tour highlighting — used when rendered inside the tour modal */
   .card-wrapper.tour-dim {
     opacity: 0.2;
     pointer-events: none;
@@ -415,8 +446,7 @@ Supports tour mode: highlights the active tour stop card
 
   .card-wrapper.tour-highlight {
     position: relative;
-    z-index: 210;
-    pointer-events: none;
+    z-index: 1;
   }
 
   .card-wrapper.tour-highlight::after {
@@ -441,38 +471,11 @@ Supports tour mode: highlights the active tour stop card
     }
   }
 
-  .card-settings-container.tour-active {
-    position: relative;
-    z-index: 210;
-  }
-
-  /*
-   * MAX-HEIGHT CONSTRAINTS:
-   * - Mobile/tablet stacked layouts: NO max-height - use all vertical space
-   * - Desktop (1024px+): Apply max-height so cards don't expand infinitely
-   *
-   * Note: Don't use orientation to detect layout - app uses width breakpoints
-   * to decide stacked vs side-by-side, not orientation.
-   */
-
-  /* Desktop (side-by-side layout): constrain height and center */
-  @media (min-width: 1024px) {
-    .card-settings-container {
-      max-width: min(750px, 95%);
-      max-height: min(65%, 750px);
-      padding-inline: 0; /* Remove mobile padding on desktop */
-      align-self: center; /* Center vertically when height is constrained */
-    }
-  }
-
   /* Accessibility: Respect reduced motion preference */
   @media (prefers-reduced-motion: reduce) {
     .card-wrapper {
       transition: none;
     }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
     .card-wrapper.tour-dim {
       transition: none;
     }

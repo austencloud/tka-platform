@@ -23,6 +23,7 @@ Card-based architecture with integrated Generate button:
   import { createStartEndOptionsState } from "../state/start-end-options-state.svelte";
   import { createSpellModeState } from "../state/spell-mode-state.svelte";
   import CardBasedSettingsContainer from "./CardBasedSettingsContainer.svelte";
+  import WordInputOverlay from "./cards/WordInputOverlay.svelte";
   import StartEndSheet from "./modals/StartEndSheet.svelte";
   import DurationRhythmSheet from "./modals/DurationRhythmSheet.svelte";
   import LOOPDrawer from "./modals/LOOPDrawer.svelte";
@@ -62,13 +63,15 @@ Card-based architecture with integrated Generate button:
     () => sequenceState,
     () => isSequentialAnimation,
     () => configState.config,
-    () => spellModeState
+    () => spellModeState,
+    (type, metadata) => context?.CreateModuleState.pushUndoSnapshot(type, metadata)
   );
   const deviceState = createDeviceState();
   const startEndState = createStartEndOptionsState();
 
   // Spell mode: derived from word presence (if there's a word, it's spell mode)
   const hasWord = $derived(!!spellModeState.inputWord?.trim());
+  const isMobile = $derived(deviceState.isMobile);
 
   async function handleGenerate(options: any) {
     if (hasWord) {
@@ -193,15 +196,25 @@ Card-based architecture with integrated Generate button:
       onGenerateClicked={handleGenerate}
       {startEndState}
       {hasSettingsChanged}
-      tourActiveStop={generateTourState.isActive ? generateTourState.currentStop : null}
       wordInputValue={spellModeState.inputWord}
       onWordInput={(v) => spellModeState.setInputWord(v)}
       onWordSubmit={() => handleGenerate(null)}
       needsCycleCompletion={actionsState.needsCycleCompletion}
       onCompleteCycle={() => actionsState.completeCycle()}
+      {isMobile}
+      onOpenWordInput={() => spellModeState.openWordInput()}
     />
   </div>
 </div>
+
+<!-- Word input overlay — rendered outside the panel div so it can cover the full viewport on mobile -->
+{#if spellModeState.isWordInputOpen}
+  <WordInputOverlay
+    wordValue={spellModeState.inputWord}
+    onWordChange={(v) => spellModeState.setInputWord(v)}
+    onClose={() => spellModeState.closeWordInput()}
+  />
+{/if}
 
 <!-- Start/End position drawer (rendered outside card grid for full-screen coverage) -->
 {#if panelState}
@@ -246,8 +259,20 @@ Card-based architecture with integrated Generate button:
   />
 {/if}
 
-<!-- Tour overlay -->
-<GeneratePanelTour />
+<!-- Tour overlay — renders a second card grid inside the modal with highlighting -->
+{#snippet tourCardPreview()}
+  <CardBasedSettingsContainer
+    config={configState.config}
+    isFreeformMode={!hasWord}
+    updateConfig={() => {}}
+    isGenerating={false}
+    onGenerateClicked={async () => {}}
+    {hasSettingsChanged}
+    wordInputValue={spellModeState.inputWord}
+    tourActiveStop={generateTourState.isActive ? generateTourState.currentStop : null}
+  />
+{/snippet}
+<GeneratePanelTour cardPreview={tourCardPreview} />
 
 <style>
   .generate-panel {
