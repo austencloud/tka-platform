@@ -268,52 +268,52 @@
                     onStepClick={ctx.handleStepClick}
                     onCanvasReady={ctx.handleCanvasReady}
                   />
-                  <div class="export-panel-slot" class:hidden={!isVideoExportActive}>
-                    {#if isVideoExportActive}
-                      {#if ctx.previewBlobUrl}
-                        <VideoPreviewPanel
-                          blobUrl={ctx.previewBlobUrl}
-                          onDismiss={ctx.dismissPreview}
-                          onRedownload={() => {
-                            const a = document.createElement("a");
-                            a.href = ctx.previewBlobUrl!;
-                            a.download = `${ctx.effectiveSequence?.word || "sequence"}.mp4`;
-                            a.click();
-                          }}
-                        />
-                      {:else}
-                        <ExportVideoDrawer
+                  {#if isAnyExportActive}
+                    <div class="export-panel-container" class:sidebar={!isMobileWidth && isVideoExportActive}>
+                      {#if isVideoExportActive}
+                        {#if ctx.previewBlobUrl}
+                          <VideoPreviewPanel
+                            blobUrl={ctx.previewBlobUrl}
+                            onDismiss={ctx.dismissPreview}
+                            onRedownload={() => {
+                              const a = document.createElement("a");
+                              a.href = ctx.previewBlobUrl!;
+                              a.download = `${ctx.effectiveSequence?.word || "sequence"}.mp4`;
+                              a.click();
+                            }}
+                          />
+                        {:else}
+                          <ExportVideoDrawer
+                            exportOptions={ctx.exportOptions}
+                            viewerEffects={getActiveEffects()}
+                            isExporting={ctx.isExporting}
+                            exportProgress={ctx.exportProgress}
+                            canvasReady={ctx.canvasReady}
+                            layout={isMobileWidth ? "bottom" : "sidebar"}
+                            singlePlayDuration={ctx.singlePlayDuration}
+                            isPlaying={ctx.isPlayingLocal}
+                            bpm={ctx.bpmLocal}
+                            onPlaybackToggle={ctx.handlePlaybackToggle}
+                            onBpmChange={ctx.handleBpmChange}
+                            onExport={ctx.handleExport}
+                            onCancel={ctx.handleCancelExport}
+                          />
+                        {/if}
+                      {:else if isImageExportActive}
+                        <ExportImagePanel
                           exportOptions={ctx.exportOptions}
-                          viewerEffects={getActiveEffects()}
                           isExporting={ctx.isExporting}
-                          exportProgress={ctx.exportProgress}
-                          canvasReady={ctx.canvasReady}
-                          layout={isMobileWidth ? "bottom" : "sidebar"}
-                          singlePlayDuration={ctx.singlePlayDuration}
-                          isPlaying={ctx.isPlayingLocal}
-                          bpm={ctx.bpmLocal}
-                          onPlaybackToggle={ctx.handlePlaybackToggle}
-                          onBpmChange={ctx.handleBpmChange}
                           onExport={ctx.handleExport}
-                          onCancel={ctx.handleCancelExport}
                         />
                       {/if}
-                    {/if}
-                  </div>
-                  <div class="export-panel-slot" class:hidden={!isImageExportActive}>
-                    {#if isImageExportActive}
-                      <ExportImagePanel
-                        exportOptions={ctx.exportOptions}
-                        isExporting={ctx.isExporting}
-                        onExport={ctx.handleExport}
-                      />
-                    {/if}
-                  </div>
+                    </div>
+                  {/if}
                 </div>
               {/if}
             </div>
 
             <!-- Footer: hidden during export modes, shown in normal viewer -->
+            {#if !isAnyExportActive}
               <ViewerFooter
                 bpm={ctx.bpmLocal}
                 isPlaying={ctx.isPlayingLocal}
@@ -329,12 +329,15 @@
                 onSave={ctx.handleSave}
                 onEdit={ctx.handleEditInConstructor}
                 onGetApp={ctx.handleGetApp}
+                onExportVideo={() => ctx.enterEditMode('animation')}
+                onExportImage={() => ctx.enterEditMode('image')}
                 rampActive={ctx.rampActive}
                 onRampStart={ctx.handleRampStart}
                 onRampStop={ctx.handleRampStop}
                 isOwned={ctx.isOwned}
                 onDeleteRequest={() => (deleteConfirmOpen = true)}
               />
+            {/if}
           </div>
           {#if ctx.rampActive}
             <RampProgressIndicator
@@ -522,29 +525,35 @@
   }
 
   /* Viewer + export panel container.
-     Normal mode: just the split pane filling the space.
-     Export active: animation pane + export settings panel side-by-side (desktop)
-     or stacked (mobile). */
+     The split pane fills this via width/height: 100%; export panel overlays the right side.
+     This prevents the parent from resizing when the export panel appears. */
   .viewer-and-export {
     position: relative;
     flex: 1;
     min-height: 0;
-    display: flex;
-    flex-direction: column;
     overflow: hidden;
   }
 
-  /* Desktop export: side-by-side (animation left, settings right) */
-  .viewer-and-export.export-active.desktop {
-    flex-direction: row;
+  /* Export panel — absolute overlay so it doesn't steal width from split pane */
+  .export-panel-container {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 5;
+    overflow: hidden;
+    overflow-y: auto;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
-  /* Export panel slot — hidden instantly via display:none to prevent layout flash */
-  .export-panel-slot {
-    display: contents;
-  }
-  .export-panel-slot.hidden {
-    display: none;
+  @media (max-width: 767px) {
+    .export-panel-container {
+      top: auto;
+      left: 0;
+      border-left: none;
+      border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    }
   }
 
   /* Override Drawer defaults for full-screen sequence viewer */

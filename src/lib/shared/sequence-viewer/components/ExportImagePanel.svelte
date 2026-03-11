@@ -6,8 +6,7 @@
   Mobile: compact bottom panel below the choreo card.
 -->
 <script lang="ts">
-  import { slide } from "svelte/transition";
-  import { cubicOut } from "svelte/easing";
+  import { fade } from "svelte/transition";
   import type { ExportOptionsStateManager } from "../state/export-options-state.svelte";
 
   type PanelLayout = "sidebar" | "bottom";
@@ -27,7 +26,7 @@
 
 <div
   class="export-panel"
-  transition:slide={{ duration: 250, easing: cubicOut, axis: "y" }}
+  transition:fade={{ duration: 200 }}
   role="region"
   aria-label="Image export settings"
 >

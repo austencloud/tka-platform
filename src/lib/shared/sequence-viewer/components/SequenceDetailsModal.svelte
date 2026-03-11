@@ -69,12 +69,10 @@
   import VideoPreviewPanel from "./VideoPreviewPanel.svelte";
   import ExportProgressPill from "./ExportProgressPill.svelte";
   // Animation and playback
-  import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import { TempoRampOrchestrator } from "../services/implementations/TempoRampOrchestrator";
   import { createTempoRampState } from "../state/tempo-ramp-state.svelte";
   import RampProgressIndicator from "./RampProgressIndicator.svelte";
   import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
-  import ChoreoCard from "./ChoreoCard.svelte";
   import { browser } from "$app/environment";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuEntry, ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
@@ -1409,161 +1407,144 @@
       />
     {/if}
 
-    {#if editingPane === "animation"}
-      <!-- Video export: animation preview + settings panel (side-by-side on desktop, overlay on mobile) -->
-      <div class="export-preview-layout" class:desktop={!isMobile}>
-        <div class="export-animation-preview">
-          {#if animationLoading}
-            <div class="loading-state">
-              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-            </div>
-          {:else if modalAnimationState.error}
-            <div class="error-state">
-              <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-              <span>{modalAnimationState.error}</span>
-            </div>
-          {:else}
-            <AnimatorCanvas
-              sequenceData={modalAnimationState.sequenceData}
-              currentStep={currentStepLocal}
-              isPlaying={true}
-              blueProp={modalAnimationState.bluePropState}
-              redProp={modalAnimationState.redPropState}
-              gridMode={sequence?.gridMode}
-              letter={currentLetter}
-              stepData={currentStepData}
-              word={sequence?.word}
-              onCanvasReady={handleCanvasReady}
-            />
-          {/if}
-          <!-- Export settings badge overlay -->
-          <div class="export-settings-badge" aria-hidden="true">
-            {exportOptions.videoResolution}p · {exportOptions.videoFps}fps
-          </div>
-        </div>
-        {#if previewBlobUrl}
-          <VideoPreviewPanel
-            blobUrl={previewBlobUrl}
-            onDismiss={dismissPreview}
-            onRedownload={() => {
-              const a = document.createElement("a");
-              a.href = previewBlobUrl!;
-              a.download = `${sequence?.word || "sequence"}.mp4`;
-              a.click();
-            }}
-          />
-        {:else}
-          <ExportVideoDrawer
-            {exportOptions}
-            viewerEffects={getActiveEffects()}
-            {isExporting}
-            {exportProgress}
-            canvasReady={!!animationCanvas && !!playbackController}
-            layout={isMobile ? "bottom" : "sidebar"}
-            {singlePlayDuration}
-            isPlaying={isPlayingLocal}
-            bpm={bpmLocal}
-            onPlaybackToggle={handlePlaybackToggle}
-            onBpmChange={handleBpmChange}
-            onExport={handleExport}
-            onCancel={handleCancelExport}
-          />
-        {/if}
-      </div>
-    {:else if editingPane === "image"}
-      <!-- Image export: choreo card preview + settings panel -->
-      <div class="export-preview-layout" class:desktop={!isMobile}>
-        <div class="export-image-preview themed-scrollbar">
-          <ChoreoCard
-            sequence={effectiveSequence}
-            showWord={exportOptions.imageShowWord}
-            showStepNumbers={exportOptions.imageShowStepNumbers}
-            showDifficultyLevel={exportOptions.imageShowDifficulty}
-            includeStartPosition={exportOptions.imageIncludeStartPosition}
-            showCreatorName={exportOptions.imageShowCreatorName}
-            showNotes={exportOptions.imageShowNotes}
-            darkMode={exportOptions.imageDarkMode}
-            userName={authState.user?.displayName || ""}
-            columnCount={exportOptions.imageColumnCount != null
-              ? exportOptions.imageColumnCount + (exportOptions.imageIncludeStartPosition ? 1 : 0)
-              : null}
-            forceContain={true}
-            {bluePropType}
-            {redPropType}
-            {catDogModeEnabled}
-          />
-        </div>
-        <ExportImagePanel
-          {exportOptions}
-          isExporting={sequenceModalExporter.state.isExporting}
-          onExport={handleExport}
-        />
-      </div>
-    {:else}
-      <!-- Split view: Animation and Image side by side, tap to focus -->
+    <div
+      class="viewer-and-export"
+      class:export-active={editingPane !== null}
+      class:desktop={!isMobile}
+    >
+      <!-- Single persistent ViewerSplitPane — never destroyed, CSS grid transitions handle focus -->
       <ViewerSplitPane
         sequence={effectiveSequence}
         playback={modalPlayback}
-        imageComposition={modalImageComposition}
+        imageComposition={editingPane === "image"
+          ? {
+              showWord: exportOptions.imageShowWord,
+              showStepNumbers: exportOptions.imageShowStepNumbers,
+              showDifficulty: exportOptions.imageShowDifficulty,
+              showStartPos: exportOptions.imageIncludeStartPosition,
+              showCreatorName: exportOptions.imageShowCreatorName,
+              showNotes: exportOptions.imageShowNotes,
+              darkMode: exportOptions.imageDarkMode,
+              columnCount: exportOptions.imageColumnCount != null
+                ? exportOptions.imageColumnCount + (exportOptions.imageIncludeStartPosition ? 1 : 0)
+                : null,
+              forceContain: true,
+              userName: authState.user?.displayName || "",
+            }
+          : modalImageComposition}
         propRendering={modalPropRendering}
-        layout={{ isFullscreen, fullscreenStackVertical, isMobile, isLandscapeMobile, focusedPane: editingPane }}
+        layout={{
+          isFullscreen,
+          fullscreenStackVertical,
+          isMobile,
+          isLandscapeMobile,
+          focusedPane: editingPane,
+          suppressCloseButton: false,
+        }}
         onFocusPane={enterEditMode}
         onUnfocusPane={exitEditMode}
         onStepClick={handleStepClick}
         onCanvasReady={handleCanvasReady}
       />
-    {/if}
+      {#if editingPane !== null}
+        <div class="export-panel-container" class:sidebar={!isMobile && editingPane === "animation"}>
+          {#if editingPane === "animation"}
+            {#if previewBlobUrl}
+              <VideoPreviewPanel
+                blobUrl={previewBlobUrl}
+                onDismiss={dismissPreview}
+                onRedownload={() => {
+                  const a = document.createElement("a");
+                  a.href = previewBlobUrl!;
+                  a.download = `${sequence?.word || "sequence"}.mp4`;
+                  a.click();
+                }}
+              />
+            {:else}
+              <ExportVideoDrawer
+                {exportOptions}
+                viewerEffects={getActiveEffects()}
+                {isExporting}
+                {exportProgress}
+                canvasReady={!!animationCanvas && !!playbackController}
+                layout={isMobile ? "bottom" : "sidebar"}
+                {singlePlayDuration}
+                isPlaying={isPlayingLocal}
+                bpm={bpmLocal}
+                onPlaybackToggle={handlePlaybackToggle}
+                onBpmChange={handleBpmChange}
+                onExport={handleExport}
+                onCancel={handleCancelExport}
+              />
+            {/if}
+          {:else if editingPane === "image"}
+            <ExportImagePanel
+              {exportOptions}
+              isExporting={sequenceModalExporter.state.isExporting}
+              onExport={handleExport}
+            />
+          {/if}
+        </div>
+      {/if}
+    </div>
 
-    <!-- Landscape: Footer rendered inline as right column (not in BaseModal footer slot) -->
+    <!-- Landscape: Footer rendered inline as right column -->
     {#if isLandscapeMobile && !isFullscreen}
-      <ViewerFooter
-        landscape={true}
-        bpm={bpmLocal}
-        isPlaying={isPlayingLocal}
-        isLoggedIn={authState.isAuthenticated}
-        rampActive={rampActive}
-        onBpmChange={handleBpmChange}
-        onPlayPause={handlePlaybackToggle}
-        onStepBack={handleStepFullBack}
-        onStepForward={handleStepFullFwd}
-        onStepHalfBack={handleStepHalfBack}
-        onStepHalfForward={handleStepHalfFwd}
-        onRestartToStart={handleRestartToStart}
-        onSave={handleSave}
-        onEdit={handleEditInConstructor}
-        onRampStart={() => handleRampStart()}
-        onRampStop={() => handleRampStop()}
-      />
+      <div class="footer-collapse" class:collapsed={isExportMode}>
+        <ViewerFooter
+          landscape={true}
+          bpm={bpmLocal}
+          isPlaying={isPlayingLocal}
+          isLoggedIn={authState.isAuthenticated}
+          rampActive={rampActive}
+          onBpmChange={handleBpmChange}
+          onPlayPause={handlePlaybackToggle}
+          onStepBack={handleStepFullBack}
+          onStepForward={handleStepFullFwd}
+          onStepHalfBack={handleStepHalfBack}
+          onStepHalfForward={handleStepHalfFwd}
+          onRestartToStart={handleRestartToStart}
+          onSave={handleSave}
+          onEdit={handleEditInConstructor}
+          onExportVideo={() => enterEditMode('animation')}
+          onExportImage={() => enterEditMode('image')}
+          onRampStart={() => handleRampStart()}
+          onRampStop={() => handleRampStop()}
+        />
+      </div>
     {/if}
   </div>
 
   {#snippet footer()}
     {#if !isFullscreen && !isLandscapeMobile}
-      <!-- Footer: ViewerFooter with MorphChip toolbar (handles all screen sizes) -->
-      <ViewerFooter
-        bpm={bpmLocal}
-        isPlaying={isPlayingLocal}
-        isLoggedIn={authState.isAuthenticated}
-        rampActive={rampActive}
-        onBpmChange={handleBpmChange}
-        onPlayPause={handlePlaybackToggle}
-        onStepBack={handleStepFullBack}
-        onStepForward={handleStepFullFwd}
-        onStepHalfBack={handleStepHalfBack}
-        onStepHalfForward={handleStepHalfFwd}
-        onRestartToStart={handleRestartToStart}
-        onSave={handleSave}
-        onEdit={handleEditInConstructor}
-        onRampStart={() => handleRampStart()}
-        onRampStop={() => handleRampStop()}
-      />
-      {#if rampActive}
-        <RampProgressIndicator
-          progress={rampState.progress}
-          onStop={() => handleRampStop()}
-          variant="floating"
+      <div class="footer-collapse" class:collapsed={isExportMode}>
+        <ViewerFooter
+          bpm={bpmLocal}
+          isPlaying={isPlayingLocal}
+          isLoggedIn={authState.isAuthenticated}
+          rampActive={rampActive}
+          onBpmChange={handleBpmChange}
+          onPlayPause={handlePlaybackToggle}
+          onStepBack={handleStepFullBack}
+          onStepForward={handleStepFullFwd}
+          onStepHalfBack={handleStepHalfBack}
+          onStepHalfForward={handleStepHalfFwd}
+          onRestartToStart={handleRestartToStart}
+          onSave={handleSave}
+          onEdit={handleEditInConstructor}
+          onExportVideo={() => enterEditMode('animation')}
+          onExportImage={() => enterEditMode('image')}
+          onRampStart={() => handleRampStart()}
+          onRampStop={() => handleRampStop()}
         />
-      {/if}
+        {#if rampActive}
+          <RampProgressIndicator
+            progress={rampState.progress}
+            onStop={() => handleRampStop()}
+            variant="floating"
+          />
+        {/if}
+      </div>
     {/if}
   {/snippet}
 </BaseModal>
@@ -1712,77 +1693,50 @@
     }
   }
 
-  /* Video export preview layout */
-  .export-preview-layout {
+  /* Viewer + export panel container.
+     The split pane is absolute inside this; export panel overlays the right side.
+     This prevents the parent from resizing when the export panel appears. */
+  .viewer-and-export {
     position: relative;
     flex: 1;
-    display: flex;
-    flex-direction: column;
+    min-height: 0;
     overflow: hidden;
   }
 
-  /* Desktop: side-by-side (animation left, settings right) */
-  .export-preview-layout.desktop {
-    flex-direction: row;
-    align-items: stretch;
-    gap: 16px;
-    padding: 16px;
-  }
-
-  .export-animation-preview {
-    position: relative;
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 0;
-    min-width: 0;
-    /* Prevent the canvas from eating all width on ultrawide/4K */
-    max-width: 800px;
-  }
-
-  .export-image-preview {
-    position: relative;
-    flex: 1;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    min-height: 0;
-    min-width: 0;
-    max-width: 800px;
-    overflow-y: auto;
-    padding: 8px;
-  }
-
-  .export-settings-badge {
+  /* Export panel — absolute overlay so it doesn't steal width from split pane */
+  .export-panel-container {
     position: absolute;
-    top: 12px;
-    right: 12px;
-    padding: 4px 10px;
-    background: rgba(0, 0, 0, 0.7);
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: 6px;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-    letter-spacing: 0.03em;
-    pointer-events: none;
+    top: 0;
+    right: 0;
+    bottom: 0;
     z-index: 5;
+    overflow: hidden;
+    overflow-y: auto;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
-  .export-preview-layout .loading-state,
-  .export-preview-layout .error-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
-    font-size: var(--font-size-min, 14px);
+  @media (max-width: 767px) {
+    .export-panel-container {
+      top: auto;
+      left: 0;
+      border-left: none;
+      border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    }
   }
 
-  .export-preview-layout .error-state {
-    color: var(--semantic-error, #f87171);
+  /* Footer collapse — CSS transition so parent height changes gradually */
+  .footer-collapse {
+    overflow: hidden;
+    max-height: 200px;
+    transition: max-height 250ms cubic-bezier(0.2, 0, 0, 1),
+                opacity 250ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  .footer-collapse.collapsed {
+    max-height: 0;
+    opacity: 0;
+    pointer-events: none;
   }
 
   /* Reduced motion */

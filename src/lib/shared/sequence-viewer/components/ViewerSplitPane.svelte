@@ -7,7 +7,6 @@
 -->
 <script lang="ts">
   import { fade } from "svelte/transition";
-  import { cubicOut } from "svelte/easing";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type {
     ViewerPlaybackState,
@@ -85,8 +84,7 @@
   data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "vertical" : "horizontal") : undefined}
   data-landscape={layout.isLandscapeMobile || undefined}
   data-focused={layout.focusedPane}
-  in:fade={{ duration: 250, delay: 50, easing: cubicOut }}
-  out:fade={{ duration: 150, easing: cubicOut }}
+  in:fade={{ duration: 200 }}
 >
   <!-- Animation pane -->
   <div
@@ -198,6 +196,15 @@
 </div>
 
 <style>
+  /*
+   * Unified Motion Language
+   *
+   * One curve:  cubic-bezier(0.2, 0, 0, 1)  — Material 3 "emphasized decelerate"
+   * Micro:      120ms  — button press, hover
+   * Standard:   250ms  — layout shifts, panel transitions, focus/unfocus
+   * Spring:     cubic-bezier(0.34, 1.56, 0.64, 1) — close button pop only
+   */
+
   /* View container for absolute positioning */
   .view-container {
     position: absolute;
@@ -207,26 +214,22 @@
   /* Split view - CSS Grid with animated grid-template transitions */
   .split-view {
     display: grid;
-    /* Mobile: vertical stack, both panes equal (use % for animatable values) */
     grid-template-rows: 50% 50%;
     grid-template-columns: 1fr;
     height: 100%;
     width: 100%;
     position: relative;
-    /* GPU hint for smoother animation */
     will-change: grid-template-rows, grid-template-columns;
-    /* Smooth grid transitions - 300ms ease-out */
-    transition: grid-template-rows 0.3s cubic-bezier(0.32, 0.72, 0, 1),
-                grid-template-columns 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    transition: grid-template-rows 250ms cubic-bezier(0.2, 0, 0, 1),
+                grid-template-columns 250ms cubic-bezier(0.2, 0, 0, 1);
   }
 
-  /* Split columns are tappable buttons */
+  /* Split columns — tappable focus targets */
   .split-column {
     min-height: 0;
     min-width: 0;
     display: flex;
     flex-direction: column;
-    /* Button reset */
     border: none;
     padding: 0;
     margin: 0;
@@ -234,15 +237,17 @@
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     overflow: hidden;
-    /* Smooth transitions for opacity + hover scale */
-    transition: opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1),
-                transform 0.2s cubic-bezier(0.32, 0.72, 0, 1);
+    transition: opacity 250ms cubic-bezier(0.2, 0, 0, 1);
   }
 
-  /* Whole-pane hover scale — communicates "click to focus" */
+  /* Hover scale — desktop pointer devices only */
   @media (hover: hover) and (pointer: fine) {
+    .split-column:not(.focused) {
+      transition: opacity 250ms cubic-bezier(0.2, 0, 0, 1),
+                  transform 120ms cubic-bezier(0.2, 0, 0, 1);
+    }
     .split-column:hover:not(.focused) {
-      transform: scale(1.015);
+      transform: scale(1.012);
     }
   }
 
@@ -258,11 +263,10 @@
   .preview-column {
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    transition: border-color 0.25s ease,
-                opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    transition: border-color 250ms cubic-bezier(0.2, 0, 0, 1),
+                opacity 250ms cubic-bezier(0.2, 0, 0, 1);
   }
 
-  /* Inner wrapper for preview column */
   .preview-column-inner {
     display: flex;
     flex-direction: column;
@@ -294,7 +298,7 @@
     container-type: normal;
   }
 
-  /* Close button - shown when pane is focused */
+  /* Close button — spring pop-in, staggered 100ms after grid starts moving */
   .pane-close-btn {
     position: absolute;
     top: 12px;
@@ -313,13 +317,13 @@
     justify-content: center;
     z-index: 10;
     -webkit-tap-highlight-color: transparent;
-    animation: closeButtonPopIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation: closeButtonPopIn 200ms cubic-bezier(0.34, 1.56, 0.64, 1) 100ms both;
   }
 
   @keyframes closeButtonPopIn {
     from {
       opacity: 0;
-      transform: scale(0.7);
+      transform: scale(0.6);
     }
     to {
       opacity: 1;
@@ -341,7 +345,7 @@
     outline-offset: 2px;
   }
 
-  /* Hidden column fades out */
+  /* Hidden column fades out — same 250ms as the grid, so everything lands together */
   .split-view[data-focused] .split-column[data-hidden="true"] {
     opacity: 0;
     pointer-events: none;

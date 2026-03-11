@@ -6,8 +6,7 @@
   Mobile: compact bottom overlay on top of animation.
 -->
 <script lang="ts">
-  import { slide } from "svelte/transition";
-  import { cubicOut } from "svelte/easing";
+  import { fade } from "svelte/transition";
   import type {
     ExportOptionsStateManager,
     VideoFps,
@@ -156,7 +155,7 @@
   class="export-panel"
   class:sidebar={layout === "sidebar"}
   class:bottom={layout === "bottom"}
-  transition:slide={{ duration: 250, easing: cubicOut, axis: layout === "sidebar" ? "x" : "y" }}
+  transition:fade={{ duration: 200 }}
   role="region"
   aria-label="Video export settings"
 >
