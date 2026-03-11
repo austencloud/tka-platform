@@ -475,7 +475,8 @@
     outline-offset: 2px;
   }
 
-  /* Main area wraps body + footer. Column in portrait, row in landscape. */
+  /* Main area wraps body + footer in a flex column.
+     Body fills remaining space; footer is a normal flex child at the bottom. */
   .drawer-main {
     display: flex;
     flex-direction: column;
@@ -484,18 +485,27 @@
     overflow: hidden;
   }
 
-  .landscape .drawer-main {
-    flex-direction: row;
+  /* Landscape: footer is a side column, collapses horizontally */
+  .landscape .footer-collapse {
+    grid-template-rows: 1fr;
+    grid-template-columns: 1fr;
+    transition: grid-template-columns 250ms cubic-bezier(0.2, 0, 0, 1),
+                opacity 250ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  .landscape .footer-collapse.collapsed {
+    grid-template-columns: 0fr;
+    grid-template-rows: 1fr;
+    opacity: 0;
+    pointer-events: none;
   }
 
   .drawer-body-content {
     flex: 1;
     min-height: 0;
-    min-width: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    position: relative;
   }
 
   /* Landscape: compact header — icon-only back button, no title, minimal height */
@@ -528,6 +538,7 @@
      The split pane fills this via width/height: 100%; export panel overlays the right side.
      This prevents the parent from resizing when the export panel appears. */
   .viewer-and-export {
+    --export-sidebar-width: 320px;
     position: relative;
     flex: 1;
     min-height: 0;
@@ -540,6 +551,7 @@
     top: 0;
     right: 0;
     bottom: 0;
+    width: var(--export-sidebar-width);
     z-index: 5;
     overflow: hidden;
     overflow-y: auto;
@@ -556,16 +568,22 @@
     }
   }
 
-  /* Footer collapse — smooth height transition instead of instant DOM removal */
+  /* Footer — uses CSS grid row collapse for smooth height animation.
+     grid-template-rows: 1fr → 0fr smoothly collapses the footer to zero height
+     while the flex body above grows to fill the freed space. */
   .footer-collapse {
-    overflow: hidden;
-    max-height: 200px;
-    transition: max-height 250ms cubic-bezier(0.2, 0, 0, 1),
+    display: grid;
+    grid-template-rows: 1fr;
+    transition: grid-template-rows 250ms cubic-bezier(0.2, 0, 0, 1),
                 opacity 250ms cubic-bezier(0.2, 0, 0, 1);
   }
 
+  .footer-collapse > :global(*) {
+    overflow: hidden;
+  }
+
   .footer-collapse.collapsed {
-    max-height: 0;
+    grid-template-rows: 0fr;
     opacity: 0;
     pointer-events: none;
   }

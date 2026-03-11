@@ -1,0 +1,167 @@
+<!--
+  DecomposeCanvasView.svelte
+
+  Renders three synchronized AnimatorCanvases in a seamless vertical layout:
+  hero (full width, both hands) + two small (half width each, blue/red) + single progress bar.
+  Used by AnimatorCanvas when decompose mode is active.
+-->
+<script lang="ts">
+  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+  import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+  import type { PropState } from "../domain/PropState";
+  import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import type { FireOverlayConfig } from "../domain/types/FireTypes";
+  import type { LedOverlayConfig } from "../domain/types/LedTypes";
+  import AnimatorCanvas from "./AnimatorCanvas.svelte";
+  import SegmentedSequenceProgressBar from "./layers/SegmentedSequenceProgressBar.svelte";
+
+  interface Props {
+    blueProp: PropState | null;
+    redProp: PropState | null;
+    gridVisible?: boolean;
+    gridMode?: GridMode | null;
+    backgroundAlpha?: number;
+    letter?: Letter | null;
+    stepData?: StartPositionData | StepData | null;
+    sequenceData?: SequenceData | null;
+    currentStep?: number;
+    isPlaying?: boolean;
+    word?: string | null;
+    fireConfig?: Partial<FireOverlayConfig>;
+    ledConfig?: Partial<LedOverlayConfig>;
+    onCollapse: () => void;
+  }
+
+  let {
+    blueProp,
+    redProp,
+    gridVisible = true,
+    gridMode = null,
+    backgroundAlpha = 0,
+    letter = null,
+    stepData = null,
+    sequenceData = null,
+    currentStep = 0,
+    isPlaying = false,
+    word = null,
+    fireConfig = undefined,
+    ledConfig = undefined,
+    onCollapse,
+  }: Props = $props();
+
+  // Shared props for all three sub-canvases
+  const shared = $derived({
+    gridVisible,
+    gridMode,
+    backgroundAlpha,
+    letter,
+    stepData,
+    sequenceData,
+    currentStep,
+    isPlaying,
+    word: null as string | null,
+    fireConfig,
+    ledConfig,
+    disableContextMenu: true,
+    hideProgressBar: true,
+    fillContainer: true,
+  });
+</script>
+
+<div class="decompose-view">
+  <div class="decompose-unit">
+    <div class="hero-slot">
+      <AnimatorCanvas
+        {blueProp}
+        {redProp}
+        {...shared}
+        {word}
+        focused={true}
+      />
+    </div>
+
+    <div class="small-slots">
+      <div class="small-slot">
+        <AnimatorCanvas
+          {blueProp}
+          redProp={null}
+          {...shared}
+          focused={false}
+          hideTkaGlyph={true}
+          hideStepNumbers={true}
+        />
+      </div>
+
+      <div class="small-slot">
+        <AnimatorCanvas
+          blueProp={null}
+          {redProp}
+          {...shared}
+          focused={false}
+          hideTkaGlyph={true}
+          hideStepNumbers={true}
+        />
+      </div>
+    </div>
+
+    {#if sequenceData?.steps?.length}
+      <div class="progress-slot">
+        <SegmentedSequenceProgressBar
+          steps={sequenceData.steps}
+          {currentStep}
+          visible={true}
+          variant="gradient"
+        />
+      </div>
+    {/if}
+  </div>
+</div>
+
+<style>
+  .decompose-view {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    container-type: size;
+  }
+
+  /* The unit: hero (square) + two half-width squares below = 2:3 aspect ratio.
+     Size it from whichever dimension is the constraint. */
+  /* The canvas portion is 2:3 (hero square + half-height small row).
+     The hero has a word header (~50px) and there's a progress bar (~32px).
+     Subtract that chrome from available height before computing width. */
+  .decompose-unit {
+    --chrome: 50px;
+    width: min(100cqw, calc((100cqh - var(--chrome)) * 2 / 3));
+    display: flex;
+    flex-direction: column;
+  }
+
+  .hero-slot {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+  }
+
+  .small-slots {
+    display: flex;
+    width: 100%;
+  }
+
+  .small-slot {
+    position: relative;
+    width: 50%;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+  }
+
+  .progress-slot {
+    width: 100%;
+  }
+</style>

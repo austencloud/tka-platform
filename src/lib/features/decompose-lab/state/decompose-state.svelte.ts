@@ -7,38 +7,21 @@ export interface DecomposeSlotState {
   readonly smallLeftView: HandView;
   readonly smallRightView: HandView;
   readonly activeEffectMode: EffectMode;
-  swapWithHero(slot: "left" | "right"): void;
   setEffectMode(mode: EffectMode): void;
 }
 
 export function createDecomposeSlotState(): DecomposeSlotState {
-  let heroView = $state<HandView>("both");
-  let smallLeftView = $state<HandView>("blue");
-  let smallRightView = $state<HandView>("red");
   let activeEffectMode = $state<EffectMode>("trails");
-
-  function swapWithHero(slot: "left" | "right") {
-    if (slot === "left") {
-      const temp = heroView;
-      heroView = smallLeftView;
-      smallLeftView = temp;
-    } else {
-      const temp = heroView;
-      heroView = smallRightView;
-      smallRightView = temp;
-    }
-  }
 
   function setEffectMode(mode: EffectMode) {
     activeEffectMode = mode;
   }
 
   return {
-    get heroView() { return heroView; },
-    get smallLeftView() { return smallLeftView; },
-    get smallRightView() { return smallRightView; },
+    get heroView() { return "both" as const; },
+    get smallLeftView() { return "blue" as const; },
+    get smallRightView() { return "red" as const; },
     get activeEffectMode() { return activeEffectMode; },
-    swapWithHero,
     setEffectMode,
   };
 }

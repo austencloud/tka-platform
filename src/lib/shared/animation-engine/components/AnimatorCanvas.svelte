@@ -46,6 +46,7 @@ Last audit: 2025-12-27
   import type { LedOverlayConfig } from "../domain/types/LedTypes";
   import CanvasContextMenuHost from "./canvas-context-menu/CanvasContextMenuHost.svelte";
   import CanvasSettingsModal from "./canvas-settings-modal/CanvasSettingsModal.svelte";
+  import DecomposeCanvasView from "./DecomposeCanvasView.svelte";
   import type { SettingsPanelCategory } from "./canvas-context-menu/CanvasContextMenuBuilder";
   import { onMount, onDestroy, untrack } from "svelte";
 
@@ -93,6 +94,8 @@ Last audit: 2025-12-27
     ledConfig = undefined,
     // When true, suppresses context menu and settings modal (used inside CanvasSettingsModal to prevent recursion)
     disableContextMenu = false,
+    // When true, canvas fills its parent edge-to-edge (no centering, no border, no square constraint)
+    fillContainer = false,
   }: {
     blueProp: PropState | null;
     redProp: PropState | null;
@@ -122,7 +125,32 @@ Last audit: 2025-12-27
     fireConfig?: Partial<FireOverlayConfig>;
     ledConfig?: Partial<LedOverlayConfig>;
     disableContextMenu?: boolean;
+    fillContainer?: boolean;
   } = $props();
+
+  // Decompose mode state
+  let decomposed = $state(false);
+  let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function toggleDecompose() {
+    decomposed = !decomposed;
+  }
+
+  function handlePointerDown(e: PointerEvent) {
+    // Only primary button, only touch/pen (not mouse — mouse uses context menu)
+    if (e.button !== 0 || e.pointerType === "mouse" || disableContextMenu) return;
+    longPressTimer = setTimeout(() => {
+      longPressTimer = null;
+      toggleDecompose();
+    }, 500);
+  }
+
+  function cancelLongPress() {
+    if (longPressTimer !== null) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+    }
+  }
 
   // Container element
   let containerElement: HTMLDivElement;
@@ -271,88 +299,141 @@ Last audit: 2025-12-27
   }
 </script>
 
-<!-- Hidden GlyphRenderer that converts TKAGlyph to SVG for Canvas2D rendering -->
-{#if letter}
-  <GlyphRenderer {letter} {stepData} onSvgReady={handleGlyphSvgReady} />
-{/if}
-
-<!-- Outer container centers the content -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="animation-container" data-focused={focused || undefined} oncontextmenu={handleContextMenu}>
-  <!-- Inner wrapper: adaptive layout (vertical in portrait, horizontal in landscape) -->
-  <div class="content-wrapper" data-dark-mode={darkModeEnabled ? "true" : "false"}>
-    <!-- Word header - position adapts to layout mode -->
-    <div class="header-slot">
-      <WordHeader
-        {word}
-        visible={wordHeaderVisible}
-        darkMode={darkModeEnabled}
-        activeStepNumber={isPlaying ? Math.floor(currentStep) : null}
-      />
-    </div>
-
-    <!-- Canvas wrapper maintains 1:1 aspect ratio for animation only -->
-    <div
-      class="canvas-wrapper"
-      bind:this={containerElement}
-      data-transparent={backgroundAlpha === 0 ? "true" : "false"}
-      data-dark-mode={darkModeEnabled ? "true" : "false"}
-    >
-      <GlyphOverlay
-        {letter}
-        {displayedLetter}
-        {displayedTurnsTuple}
-        {displayedStepNumber}
-        {displayedMusicalPosition}
-        {stepData}
-        tkaGlyphVisible={effectiveTkaGlyphVisible}
-        stepNumbersVisible={effectiveBeatNumbersVisible}
-        beatPositionVisible={effectiveBeatPositionVisible}
-        darkMode={darkModeEnabled}
-        isAtStartPosition={currentStep < 1 && sequenceData !== null}
-        isAtEndPosition={
-          sequenceData !== null &&
-          !effectiveIsSeamlesslyLoopable &&
-          currentStep >= (sequenceData.steps?.length ?? 0) + 0.99
-        }
-      />
-
-      <ProgressOverlay
-        {isPreRendering}
-        {preRenderProgress}
-        {preRenderedFramesReady}
-      />
-    </div>
-
-    <!-- Progress bar - position adapts to layout mode -->
-    <div class="progress-slot">
-      <SegmentedSequenceProgressBar
-        steps={sequenceData?.steps ?? []}
-        currentStep={currentStep}
-        visible={progressBarVisible && !hideProgressBar}
-        darkMode={darkModeEnabled}
-        variant={progressBarVariant}
-        showLabels={progressBarVariant === "labeled" || progressBarVariant === "gradient-labeled"}
-        onSeek={onProgressBarSeek}
-      />
-    </div>
-  </div>
-
-  {#if !disableContextMenu}
-    <CanvasContextMenuHost bind:this={contextMenuHost} onOpenPanel={handleOpenPanel} />
-
-    <CanvasSettingsModal
-      bind:open={settingsModalOpen}
-      initialCategory={settingsModalCategory}
-      {sequenceData}
+{#if decomposed}
+  <!-- Decompose mode: three synchronized canvases -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div
+    class="animation-container"
+    oncontextmenu={handleContextMenu}
+    onpointerdown={handlePointerDown}
+    onpointermove={cancelLongPress}
+    onpointerup={cancelLongPress}
+    onpointercancel={cancelLongPress}
+  >
+    <DecomposeCanvasView
       {blueProp}
       {redProp}
-      {letter}
-      {stepData}
-      {word}
+      gridVisible={gridVisible}
+      gridMode={gridMode}
+      backgroundAlpha={backgroundAlpha}
+      letter={letter}
+      stepData={stepData}
+      sequenceData={sequenceData}
+      currentStep={currentStep}
+      isPlaying={isPlaying}
+      word={word}
+      fireConfig={fireConfig}
+      ledConfig={ledConfig}
+      onCollapse={toggleDecompose}
     />
+
+    {#if !disableContextMenu}
+      <CanvasContextMenuHost
+        bind:this={contextMenuHost}
+        onOpenPanel={handleOpenPanel}
+        {decomposed}
+        onToggleDecompose={toggleDecompose}
+      />
+    {/if}
+  </div>
+{:else}
+  <!-- Hidden GlyphRenderer that converts TKAGlyph to SVG for Canvas2D rendering -->
+  {#if letter}
+    <GlyphRenderer {letter} {stepData} onSvgReady={handleGlyphSvgReady} />
   {/if}
-</div>
+
+  <!-- Outer container centers the content -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div
+    class="animation-container"
+    data-focused={focused || undefined}
+    data-fill={fillContainer || undefined}
+    oncontextmenu={handleContextMenu}
+    onpointerdown={handlePointerDown}
+    onpointermove={cancelLongPress}
+    onpointerup={cancelLongPress}
+    onpointercancel={cancelLongPress}
+  >
+    <!-- Inner wrapper: adaptive layout (vertical in portrait, horizontal in landscape) -->
+    <div class="content-wrapper" data-dark-mode={darkModeEnabled ? "true" : "false"}>
+      <!-- Word header - position adapts to layout mode -->
+      <div class="header-slot">
+        <WordHeader
+          {word}
+          visible={wordHeaderVisible}
+          darkMode={darkModeEnabled}
+          activeStepNumber={isPlaying ? Math.floor(currentStep) : null}
+        />
+      </div>
+
+      <!-- Canvas wrapper maintains 1:1 aspect ratio for animation only -->
+      <div
+        class="canvas-wrapper"
+        bind:this={containerElement}
+        data-transparent={backgroundAlpha === 0 ? "true" : "false"}
+        data-dark-mode={darkModeEnabled ? "true" : "false"}
+      >
+        <GlyphOverlay
+          {letter}
+          {displayedLetter}
+          {displayedTurnsTuple}
+          {displayedStepNumber}
+          {displayedMusicalPosition}
+          {stepData}
+          tkaGlyphVisible={effectiveTkaGlyphVisible}
+          stepNumbersVisible={effectiveBeatNumbersVisible}
+          beatPositionVisible={effectiveBeatPositionVisible}
+          darkMode={darkModeEnabled}
+          isAtStartPosition={currentStep < 1 && sequenceData !== null}
+          isAtEndPosition={
+            sequenceData !== null &&
+            !effectiveIsSeamlesslyLoopable &&
+            currentStep >= (sequenceData.steps?.length ?? 0) + 0.99
+          }
+        />
+
+        <ProgressOverlay
+          {isPreRendering}
+          {preRenderProgress}
+          {preRenderedFramesReady}
+        />
+      </div>
+
+      <!-- Progress bar - position adapts to layout mode -->
+      <div class="progress-slot">
+        <SegmentedSequenceProgressBar
+          steps={sequenceData?.steps ?? []}
+          currentStep={currentStep}
+          visible={progressBarVisible && !hideProgressBar}
+          darkMode={darkModeEnabled}
+          variant={progressBarVariant}
+          showLabels={progressBarVariant === "labeled" || progressBarVariant === "gradient-labeled"}
+          onSeek={onProgressBarSeek}
+        />
+      </div>
+    </div>
+
+    {#if !disableContextMenu}
+      <CanvasContextMenuHost
+        bind:this={contextMenuHost}
+        onOpenPanel={handleOpenPanel}
+        {decomposed}
+        onToggleDecompose={toggleDecompose}
+      />
+
+      <CanvasSettingsModal
+        bind:open={settingsModalOpen}
+        initialCategory={settingsModalCategory}
+        {sequenceData}
+        {blueProp}
+        {redProp}
+        {letter}
+        {stepData}
+        {word}
+      />
+    {/if}
+  </div>
+{/if}
 
 <style>
   /* Outer container: centers content, establishes container query context */
@@ -517,6 +598,35 @@ Last audit: 2025-12-27
       border: none;
       border-radius: 0;
     }
+  }
+
+  /* ===========================================
+     FILL CONTAINER MODE: Edge-to-edge rendering
+     Used by DecomposeCanvasView sub-canvases.
+     Strips centering, borders, and square constraint
+     so the canvas fills its parent slot completely.
+     =========================================== */
+
+  /* Fill mode: canvas stretches to fill its parent slot completely.
+     Used by decompose views so canvases sit flush against each other. */
+  .animation-container[data-fill] {
+    align-items: stretch;
+    justify-content: stretch;
+  }
+
+  .animation-container[data-fill] .content-wrapper {
+    width: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    height: 100%;
+    container-type: size;
+  }
+
+  .animation-container[data-fill] .canvas-wrapper {
+    flex: 1;
+    /* Override the square constraint — fill remaining space after header/progress */
+    height: auto !important;
+    min-height: 0;
   }
 
   /* ===========================================

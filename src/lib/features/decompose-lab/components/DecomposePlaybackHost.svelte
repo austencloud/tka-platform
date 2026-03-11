@@ -583,6 +583,8 @@
       fireConfig: activeEffectMode === "fire" || activeEffectMode === "charcoal" ? fireConfig : undefined,
       ledConfig: activeEffectMode === "led" ? ledConfig : undefined,
       backgroundAlpha: 0,
+      disableContextMenu: true,
+      fillContainer: true,
     };
   }
 </script>
@@ -644,6 +646,7 @@
             <AnimatorCanvas
               {...propsForView(slotState.smallLeftView)}
               {...sharedCanvasProps()}
+              word={null}
               focused={false}
               hideTkaGlyph={true}
               hideStepNumbers={true}
@@ -654,6 +657,7 @@
             <AnimatorCanvas
               {...propsForView(slotState.smallRightView)}
               {...sharedCanvasProps()}
+              word={null}
               focused={false}
               hideTkaGlyph={true}
               hideStepNumbers={true}

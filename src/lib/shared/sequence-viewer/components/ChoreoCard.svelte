@@ -1413,7 +1413,9 @@
 
   .choreo-card-root.force-contain {
     overflow: visible;
-    align-items: flex-start;
+    /* Keep align-items: center (inherited from .choreo-card-root) so the
+       content stays visually centered during the grid transition.
+       flex-start was causing a 187px upward jump on the first frame. */
   }
 
   .loading-placeholder {

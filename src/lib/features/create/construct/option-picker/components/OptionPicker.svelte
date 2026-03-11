@@ -162,13 +162,26 @@ Delegates all rendering to child components.
     // Notify parent first (triggers step grid animation synchronously)
     onOptionSelected(option);
 
+    // When a filterPredicate is provided (e.g., tutorial loop filter), skip the fast
+    // path and let the reactive $effect handle reloading. The predicate may change
+    // based on the parent's state update from onOptionSelected, and the fast path
+    // would capture the stale predicate value.
+    if (filterPredicate) {
+      isSelecting = false;
+      return;
+    }
+
     // Run load → prepare as one async pipeline, concurrent with step grid animation
     const nextSequence = [...currentSequence, option as PictographData];
     (async () => {
       try {
         await pickerState!.loadOptions(nextSequence, currentGridMode);
         // Immediately prepare — don't wait for reactive effect scheduling
-        const filtered = pickerState!.filteredOptions;
+        let filtered = pickerState!.filteredOptions;
+        // Apply external filter predicate if provided (e.g., loop-only for tutorials)
+        if (filterPredicate) {
+          filtered = filtered.filter(filterPredicate);
+        }
         if (preparer && filtered.length > 0) {
           const prepared = await preparer.prepareBatch(filtered);
           preparedOptions = prepared;

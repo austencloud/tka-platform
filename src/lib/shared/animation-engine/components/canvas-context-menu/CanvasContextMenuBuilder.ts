@@ -16,6 +16,8 @@ export type SettingsPanelCategory = "fire" | "led" | "display";
 interface CanvasContextMenuDeps {
   visibilityManager: AnimationVisibilityStateManager;
   onOpenPanel: (category: SettingsPanelCategory) => void;
+  decomposed?: boolean;
+  onToggleDecompose?: () => void;
 }
 
 export function buildCanvasContextMenuItems(
@@ -85,6 +87,18 @@ export function buildCanvasContextMenuItems(
       },
     },
     { type: "separator" as const },
+    ...(deps.onToggleDecompose
+      ? [
+          {
+            id: "toggle-decompose",
+            label: deps.decomposed ? "Collapse" : "Decompose",
+            icon: deps.decomposed ? "fa-compress" : "fa-table-columns",
+            checked: deps.decomposed,
+            action: () => deps.onToggleDecompose!(),
+          },
+          { type: "separator" as const },
+        ]
+      : []),
     {
       id: "open-canvas-settings",
       label: "Canvas Settings\u2026",
