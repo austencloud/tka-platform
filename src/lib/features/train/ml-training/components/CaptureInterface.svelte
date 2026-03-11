@@ -16,6 +16,8 @@ Hybrid sync: saves locally first, then syncs to Firebase in background.
   import { getMLTrainingStorage } from "../services/MLTrainingStorageManager";
   import { getAuthSync } from "$lib/shared/auth/firebase";
   import type { PropType, CaptureSession } from "../domain/models";
+  import { container } from "$lib/shared/di";
+  import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
 
   // Extracted components
@@ -189,7 +191,6 @@ Hybrid sync: saves locally first, then syncs to Firebase in background.
         }
       );
     } catch (error) {
-      console.error("Firebase sync failed:", error);
       // Don't throw - sync failure shouldn't break the UI
       syncProgress = {
         sessionId: session.id,
@@ -199,6 +200,21 @@ Hybrid sync: saves locally first, then syncs to Firebase in background.
         syncedFrames: 0,
         error: error instanceof Error ? error.message : "Sync failed",
       };
+      try {
+        const errorHandler = container.items.errorHandler as IErrorHandler;
+        errorHandler.showUserError({
+          message: "Training data upload didn't complete",
+          technicalDetails: error instanceof Error ? error.message : String(error),
+          error: error instanceof Error ? error : new Error(String(error)),
+          severity: "warning",
+          context: {
+            module: "train",
+            action: "upload-training-data",
+          },
+        });
+      } catch {
+        console.error("Firebase sync failed:", error);
+      }
     }
   }
 

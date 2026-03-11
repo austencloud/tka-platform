@@ -26,6 +26,8 @@ import {
   updateTrackMetadata,
 } from "../../persistence/audio-library-metadata-sync";
 import type { IAudioStorageManager } from "../contracts/IAudioStorageManager";
+import { container } from "$lib/shared/di";
+import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 
 /**
  * Generate unique track ID
@@ -146,11 +148,14 @@ export class AudioLibrary implements IAudioLibrary {
         track.cloudUrl = cloudUrl;
       }
     } catch (error) {
-      console.warn(
-        "☁️ Background upload failed (local copy still available):",
-        error
-      );
-      // Don't throw - local copy is still usable
+      try {
+        const errorHandler = container.items.errorHandler as IErrorHandler;
+        errorHandler.showWarning(
+          "Audio saved locally but cloud backup failed. It won't be available on other devices."
+        );
+      } catch {
+        console.warn("Background upload failed (local copy still available):", error);
+      }
     }
   }
 
@@ -220,7 +225,21 @@ export class AudioLibrary implements IAudioLibrary {
         progress: 0,
         message,
       });
-      console.error("Download from cloud failed:", error);
+      try {
+        const errorHandler = container.items.errorHandler as IErrorHandler;
+        errorHandler.showUserError({
+          message: "Audio track couldn't be loaded",
+          technicalDetails: error instanceof Error ? error.message : String(error),
+          error: error instanceof Error ? error : new Error(String(error)),
+          severity: "warning",
+          context: {
+            module: "compose",
+            action: "load-audio",
+          },
+        });
+      } catch {
+        console.error("Download from cloud failed:", error);
+      }
       return null;
     }
   }
@@ -231,7 +250,14 @@ export class AudioLibrary implements IAudioLibrary {
 
   async removeFromLibrary(trackId: string): Promise<void> {
     // Delete from IndexedDB
-    await deleteAudio(trackId).catch(() => {});
+    await deleteAudio(trackId).catch((error) => {
+      try {
+        const errorHandler = container.items.errorHandler as IErrorHandler;
+        errorHandler.showWarning("Audio file may not be fully removed from local storage.");
+      } catch {
+        console.warn("Failed to delete audio from IndexedDB:", error);
+      }
+    });
 
     // Delete from Firestore
     await deleteTrackMetadata(trackId);
@@ -261,8 +287,12 @@ export class AudioLibrary implements IAudioLibrary {
       this.library = await loadLibraryFromFirestore();
       this.libraryLoaded = true;
     } catch (error) {
-      console.warn("Failed to sync audio library:", error);
-      // Keep existing library if sync fails
+      try {
+        const errorHandler = container.items.errorHandler as IErrorHandler;
+        errorHandler.showWarning("Couldn't load your audio library from the cloud. Showing locally cached tracks.");
+      } catch {
+        console.warn("Failed to sync audio library:", error);
+      }
       this.libraryLoaded = true;
     }
   }
