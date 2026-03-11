@@ -212,10 +212,7 @@ export class EffectPointEditorState {
 				if (typeof p.dx !== "number" || typeof p.dy !== "number") {
 					return "Invalid point: each point needs dx, dy (numbers)";
 				}
-				const intensity = this.descriptor.getIntensity(p);
-				if (typeof intensity !== "number" || isNaN(intensity)) {
-					return `Invalid point: each point needs a valid ${this.descriptor.intensityLabel} (number)`;
-				}
+	
 			}
 			this.pushUndo("Import JSON");
 			this.points = parsed.points;
