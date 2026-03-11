@@ -10,6 +10,7 @@ import {
   clearErrorHistory,
   getErrorHistory,
 } from "$lib/shared/error/state/error-state.svelte";
+import { showErrorToast } from "$lib/shared/error/state/error-toast-state.svelte";
 
 /**
  * Error Handling Service Implementation
@@ -74,7 +75,7 @@ export class ErrorHandler implements IErrorHandler {
   // ========================================
 
   showUserError(options: ShowErrorOptions): string {
-    // Also log internally
+    // Log internally regardless of which tier handles the display
     if (options.error) {
       this.handleError(
         options.error,
@@ -82,6 +83,23 @@ export class ErrorHandler implements IErrorHandler {
       );
     }
 
+    const severity = options.severity ?? "error";
+
+    if (severity === "warning" || severity === "info") {
+      // Toast tier: non-blocking notification in the corner
+      const id = showErrorToast(options);
+
+      // Auto-report warnings to telemetry so the developer sees patterns.
+      // Info toasts are purely informational and don't need reporting.
+      if (severity === "warning") {
+        this.reportToTelemetry(options);
+      }
+
+      return id;
+    }
+
+    // Modal tier: blocking dialog for errors the user can't work around.
+    // User can optionally add a comment and submit a bug report.
     return showErrorState(options);
   }
 
@@ -99,16 +117,35 @@ export class ErrorHandler implements IErrorHandler {
   }
 
   showWarning(message: string, context?: Partial<ErrorContext>): string {
-    return showErrorState({
+    return this.showUserError({
       message,
       context,
       severity: "warning",
-      duration: 5000,
     });
   }
 
   dismissError(): void {
     dismissErrorState();
+  }
+
+  // ========================================
+  // Telemetry (fire-and-forget for toast-tier errors)
+  // ========================================
+
+  /**
+   * Silently report a warning-level error to the errorTelemetry Firestore
+   * collection. Uses dynamic import so Firebase isn't loaded until the first
+   * warning actually fires (same pattern as reportBug).
+   */
+  private reportToTelemetry(options: ShowErrorOptions): void {
+    import("$lib/shared/error/services/implementations/ErrorTelemetryReporter")
+      .then(({ ErrorTelemetryReporter }) => {
+        const reporter = new ErrorTelemetryReporter();
+        reporter.report(options);
+      })
+      .catch((err) =>
+        console.error("[ErrorHandler] Telemetry import failed:", err)
+      );
   }
 
   // ========================================

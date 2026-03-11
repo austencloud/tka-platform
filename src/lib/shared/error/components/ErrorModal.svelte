@@ -177,10 +177,10 @@
 
         {#if error.reportable}
           <div class="report-section">
-            <p class="report-prompt">Help us fix this issue:</p>
+            <p class="report-prompt">What were you trying to do?</p>
             <textarea
               class="comment-input"
-              placeholder="What were you doing when this happened? (optional)"
+              placeholder="e.g. I was saving a 16-beat sequence and clicked Save..."
               bind:value={userComment}
               rows="2"
             ></textarea>
