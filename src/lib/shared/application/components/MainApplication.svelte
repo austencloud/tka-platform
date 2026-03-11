@@ -14,6 +14,7 @@
   import { myFeedbackDetailState } from "$lib/features/feedback/state/my-feedback-detail-state.svelte";
   import FirstRunWizard from "../../onboarding/components/first-run/FirstRunWizard.svelte";
   import CreateTutorialWizard from "../../onboarding/components/create-tutorial/CreateTutorialWizard.svelte";
+  import TutorialPrompt from "../../onboarding/components/create-tutorial/TutorialPrompt.svelte";
   import { firstRunState } from "../../onboarding/state/first-run-state.svelte.ts";
   import { appEntryState } from "../../onboarding/state/app-entry-state.svelte.ts";
   import AttributionPrompt from "../../attribution/components/AttributionPrompt.svelte";
@@ -486,7 +487,7 @@
       />
     {/if}
   {:else if appEntryState.isCreateTutorial()}
-    <!-- Create tutorial wizard (post-onboarding) -->
+    <!-- Create tutorial wizard (user accepted the prompt) -->
     <CreateTutorialWizard
       onComplete={() => appEntryState.completeEntry()}
       onSkip={() => appEntryState.skipToComplete()}
@@ -494,6 +495,14 @@
   {:else}
     <!-- Main Interface - Full app -->
     <MainInterface />
+
+    <!-- Tutorial prompt overlays the main app so the user sees the real layout behind it -->
+    {#if appEntryState.isTutorialPrompt()}
+      <TutorialPrompt
+        onAccept={() => appEntryState.acceptTutorial()}
+        onSkip={() => appEntryState.declineTutorial()}
+      />
+    {/if}
 
     <!-- Auth sheet (route-based) -->
     <AuthSheet

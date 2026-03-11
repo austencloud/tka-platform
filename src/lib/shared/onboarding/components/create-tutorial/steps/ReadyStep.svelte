@@ -1,9 +1,8 @@
 <!--
   ReadyStep - Final step of the create tutorial
 
-  Shows a workspace mockup with the user's real sequence rendered in a StepGrid,
-  buttons in their actual positions glowing with numbered indicators, and a
-  legend panel explaining each button.
+  Desktop: workspace mockup with numbered buttons + legend panel (side by side).
+  Mobile: accordion list of tools (no mockup — user just built the sequence).
 -->
 <script lang="ts">
   import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
@@ -17,6 +16,13 @@
   }
 
   const { onAdvance }: Props = $props();
+
+  // Accordion state for mobile
+  let expandedIndex = $state<number | null>(null);
+
+  function toggleAccordion(index: number) {
+    expandedIndex = expandedIndex === index ? null : index;
+  }
 
   // Convert tutorial data to StepGrid-compatible format
   const startPositionStep = $derived.by(() => {
@@ -106,10 +112,9 @@
   <h1 class="title">Your workspace</h1>
   <p class="subtitle">Here's where everything lives.</p>
 
-  <div class="workspace-mockup">
-    <!-- LEFT: Workspace preview with buttons in real positions -->
+  <!-- Desktop: side-by-side mockup + legend -->
+  <div class="workspace-mockup desktop-only">
     <div class="workspace-panel">
-      <!-- Top bar: Undo (left) | Word (center) | Save (right) -->
       <div class="top-bar">
         <div class="button-spot">
           <span class="badge">1</span>
@@ -149,7 +154,6 @@
         </div>
       </div>
 
-      <!-- Step grid showing the real sequence -->
       <div class="grid-area">
         {#if beatSteps.length > 0}
           <StepGrid
@@ -158,14 +162,12 @@
           />
         {/if}
 
-        <!-- Tap hint overlay -->
         <div class="tap-hint">
           <i class="fas fa-hand-pointer" aria-hidden="true"></i>
           <span>Tap any beat to edit it</span>
         </div>
       </div>
 
-      <!-- Bottom bar: Actions (left) | View (center) | Clear (right) -->
       <div class="bottom-bar">
         <div class="button-spot">
           <span class="badge">3</span>
@@ -190,7 +192,6 @@
       </div>
     </div>
 
-    <!-- RIGHT: Legend panel -->
     <div class="legend-panel">
       {#each BUTTONS as btn, i}
         <div class="legend-item">
@@ -202,6 +203,30 @@
         </div>
       {/each}
     </div>
+  </div>
+
+  <!-- Mobile: accordion list, no mockup -->
+  <div class="accordion-list mobile-only">
+    {#each BUTTONS as btn, i}
+      <button
+        class="accordion-item"
+        class:expanded={expandedIndex === i}
+        onclick={() => toggleAccordion(i)}
+        aria-expanded={expandedIndex === i}
+      >
+        <div class="accordion-header">
+          <span class="legend-badge {btn.colorClass}">{i + 1}</span>
+          <span class="accordion-label">{btn.label}</span>
+          <i
+            class="fas fa-chevron-down accordion-chevron"
+            aria-hidden="true"
+          ></i>
+        </div>
+        {#if expandedIndex === i}
+          <p class="accordion-body">{btn.description}</p>
+        {/if}
+      </button>
+    {/each}
   </div>
 
   <button class="go-button" onclick={onAdvance}>
@@ -216,7 +241,6 @@
     flex-direction: column;
     align-items: center;
     gap: 14px;
-    /* Fill more of the screen */
     max-width: 1100px;
     width: 100%;
     text-align: center;
@@ -224,6 +248,9 @@
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border-radius: 24px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    /* Ensure content doesn't overflow behind the wizard step-dots */
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
   }
 
   .title {
@@ -240,8 +267,9 @@
     line-height: 1.5;
   }
 
-  /* Workspace mockup: side-by-side, fills available space */
-  .workspace-mockup {
+  /* ── Desktop layout ── */
+
+  .desktop-only {
     display: grid;
     grid-template-columns: 3fr 2fr;
     gap: 20px;
@@ -250,7 +278,10 @@
     min-height: 0;
   }
 
-  /* Left panel: workspace preview */
+  .mobile-only {
+    display: none;
+  }
+
   .workspace-panel {
     display: flex;
     flex-direction: column;
@@ -258,7 +289,6 @@
     border-radius: 12px;
     overflow: hidden;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    /* Fill vertical space */
     min-height: clamp(280px, 45vh, 550px);
   }
 
@@ -285,7 +315,6 @@
     overflow: hidden;
   }
 
-  /* Tap hint floating at bottom of grid */
   .tap-hint {
     position: absolute;
     bottom: 8px;
@@ -311,12 +340,8 @@
   }
 
   @keyframes tap-hint-pulse {
-    0%, 100% {
-      opacity: 0.7;
-    }
-    50% {
-      opacity: 1;
-    }
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
   }
 
   .bottom-bar {
@@ -327,7 +352,6 @@
     flex-shrink: 0;
   }
 
-  /* Button spots with numbered badges */
   .button-spot {
     position: relative;
     display: flex;
@@ -353,7 +377,6 @@
     line-height: 1;
   }
 
-  /* Mock buttons matching real button styles */
   .mock-button {
     display: flex;
     align-items: center;
@@ -386,18 +409,9 @@
   }
 
   .mock-button.error {
-    background: color-mix(
-      in srgb,
-      var(--semantic-error, #ef4444) 80%,
-      transparent
-    );
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 80%, transparent);
     border: 1px solid
       color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
-  }
-
-  /* Glow animation on buttons */
-  .mock-button.glow {
-    animation: button-glow 2.4s ease-in-out infinite;
   }
 
   .mock-button.glow.accent {
@@ -454,7 +468,8 @@
     }
   }
 
-  /* Legend panel */
+  /* ── Desktop legend (flat list) ── */
+
   .legend-panel {
     display: flex;
     flex-direction: column;
@@ -521,7 +536,66 @@
     line-height: 1.4;
   }
 
-  /* Go button */
+  /* ── Mobile accordion ── */
+
+  .accordion-list {
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .accordion-item {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 0;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 10px;
+    color: var(--theme-text, #fff);
+    cursor: pointer;
+    text-align: left;
+    transition: border-color var(--duration-fast, 150ms) var(--ease-out);
+  }
+
+  .accordion-item.expanded {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+  }
+
+  .accordion-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+  }
+
+  .accordion-label {
+    flex: 1;
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+
+  .accordion-chevron {
+    font-size: 0.7rem;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    transition: transform var(--duration-fast, 150ms) var(--ease-out);
+  }
+
+  .accordion-item.expanded .accordion-chevron {
+    transform: rotate(180deg);
+  }
+
+  .accordion-body {
+    padding: 0 14px 12px 48px;
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    line-height: 1.45;
+  }
+
+  /* ── Go button ── */
+
   .go-button {
     display: flex;
     align-items: center;
@@ -564,26 +638,30 @@
     outline-offset: 2px;
   }
 
-  /* Mobile: stack vertically */
+  /* ── Mobile: swap mockup for accordion ── */
+
   @media (max-width: 640px) {
-    .workspace-mockup {
-      grid-template-columns: 1fr;
+    .desktop-only {
+      display: none;
     }
 
-    .workspace-panel {
-      min-height: clamp(240px, 40vh, 420px);
+    .mobile-only {
+      display: flex;
     }
 
-    .legend-panel {
-      flex-direction: row;
-      flex-wrap: wrap;
-      gap: 10px;
-      padding: 10px;
+    .tutorial-step {
+      padding: 16px;
+      gap: 12px;
+      max-height: calc(100vh - 100px);
     }
 
-    .legend-item {
-      flex: 1 1 45%;
-      min-width: 140px;
+    .title {
+      font-size: 1.25rem;
+    }
+
+    .go-button {
+      padding: 14px 28px;
+      width: 100%;
     }
   }
 
@@ -592,33 +670,32 @@
       padding: 14px;
       gap: 10px;
     }
-    .title {
-      font-size: 1.25rem;
-    }
+
     .go-button {
       padding: 12px 24px;
     }
-    .mock-button {
-      width: 42px;
-      height: 42px;
-      font-size: 0.95rem;
-    }
   }
 
+  /* ── Reduced motion ── */
+
   @media (prefers-reduced-motion: reduce) {
-    .mock-button.glow,
     .mock-button.glow.accent,
     .mock-button.glow.success,
     .mock-button.glow.error {
       animation: none;
       box-shadow: 0 0 12px var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
     }
-    .go-button {
+
+    .go-button,
+    .accordion-item,
+    .accordion-chevron {
       transition: none;
     }
+
     .go-button:active {
       transform: none;
     }
+
     .tap-hint {
       animation: none;
       opacity: 0.85;

@@ -26,9 +26,33 @@
 
   const beatCount = $derived(createTutorialState.beats.length);
   const beatsRemaining = $derived(createTutorialState.beatsRemaining);
+  const isLastBeat = $derived(beatsRemaining === 1);
 
   // Use the grid mode stored when the start position was picked
   const currentGridMode = $derived(createTutorialState.gridMode);
+
+  // On the last beat, only show options that loop back to the start position
+  // so the user's first sequence is a seamless loop.
+  const loopFilter = $derived.by(() => {
+    if (!isLastBeat) return undefined;
+
+    const startPos = createTutorialState.startPosition;
+    if (!startPos) return undefined;
+
+    const targetPosition = startPos.startPosition;
+    const targetBlueOri = startPos.motions?.blue?.startOrientation;
+    const targetRedOri = startPos.motions?.red?.startOrientation;
+
+    return (option: PictographData): boolean => {
+      if (option.endPosition !== targetPosition) return false;
+
+      // Also match orientations so the loop is seamless
+      if (targetBlueOri && option.motions?.blue?.endOrientation !== targetBlueOri) return false;
+      if (targetRedOri && option.motions?.red?.endOrientation !== targetRedOri) return false;
+
+      return true;
+    };
+  });
 
   function handleOptionSelected(option: PictographData) {
     createTutorialState.addBeat(option);
@@ -44,7 +68,7 @@
     {#if beatsRemaining > 1}
       Pick a move. {beatsRemaining} beats left.
     {:else}
-      Last one. Pick your final beat.
+      Pick a move that loops back to your start position.
     {/if}
   </p>
 
@@ -54,6 +78,7 @@
         {currentSequence}
         {currentGridMode}
         onOptionSelected={handleOptionSelected}
+        filterPredicate={loopFilter}
       />
     {:else}
       <p class="loading">Loading options...</p>
@@ -101,13 +126,22 @@
     padding: 40px 0;
   }
 
+  @media (max-width: 640px) {
+    .picker-container {
+      height: clamp(340px, 62vh, 560px);
+    }
+  }
+
   @media (max-width: 480px) {
     .tutorial-step {
-      padding: 16px;
-      gap: 10px;
+      padding: 12px;
+      gap: 8px;
     }
     .title {
       font-size: 1.25rem;
+    }
+    .picker-container {
+      height: clamp(360px, 68vh, 560px);
     }
   }
 

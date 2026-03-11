@@ -15,6 +15,7 @@
 export type AppEntryPhase =
   | "wizard-active"
   | "wizard-exiting"
+  | "tutorial-prompt"
   | "create-tutorial"
   | "complete";
 
@@ -42,7 +43,7 @@ function createAppEntryState() {
   const initialPhase: AppEntryPhase = completed
     ? "complete"
     : firstRunDone
-      ? "create-tutorial"
+      ? "tutorial-prompt"
       : "wizard-active";
 
   const state = $state<AppEntryState>({
@@ -95,8 +96,29 @@ function createAppEntryState() {
       state.phase = "wizard-exiting";
 
       setTimeout(() => {
-        state.phase = "create-tutorial";
+        state.phase = "tutorial-prompt";
       }, WIZARD_EXIT_DURATION);
+    },
+
+    /**
+     * Check if the tutorial prompt should be showing.
+     */
+    isTutorialPrompt(): boolean {
+      return state.phase === "tutorial-prompt";
+    },
+
+    /**
+     * User accepted the tutorial prompt — show the full walkthrough.
+     */
+    acceptTutorial() {
+      state.phase = "create-tutorial";
+    },
+
+    /**
+     * User declined the tutorial prompt — skip to main app.
+     */
+    declineTutorial() {
+      this.completeEntry();
     },
 
     /**
@@ -129,6 +151,7 @@ function createAppEntryState() {
       state.phase = "wizard-exiting";
 
       setTimeout(() => {
+        // Skip the prompt when replaying from Settings — user already opted in
         state.phase = "create-tutorial";
       }, 100); // Brief delay for DOM reset
     },
