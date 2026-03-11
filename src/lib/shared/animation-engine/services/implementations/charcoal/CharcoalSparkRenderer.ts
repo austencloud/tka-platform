@@ -185,6 +185,10 @@ export class CharcoalSparkRenderer implements ICharcoalRenderer {
 	// Current params (updated externally via setParams)
 	private currentParams: CharcoalSparkParams = { ...DEFAULT_CHARCOAL_PARAMS };
 
+	// Scale factor for emission on smaller canvases (1.0 = reference 950px)
+	private canvasScale = 1.0;
+	private static readonly REFERENCE_SIZE = 950;
+
 	// ======================================================================
 	// IFireOverlayRenderer implementation
 	// ======================================================================
@@ -204,6 +208,9 @@ export class CharcoalSparkRenderer implements ICharcoalRenderer {
 		this.dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
 		this.canvas.width = Math.round(width * this.dpr);
 		this.canvas.height = Math.round(height * this.dpr);
+
+		const areaRatio = (width * height) / (CharcoalSparkRenderer.REFERENCE_SIZE ** 2);
+		this.canvasScale = Math.max(0.1, Math.min(1.0, areaRatio));
 
 		container.appendChild(this.canvas);
 
@@ -252,6 +259,12 @@ export class CharcoalSparkRenderer implements ICharcoalRenderer {
 		this.dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
 		this.canvas.width = Math.round(width * this.dpr);
 		this.canvas.height = Math.round(height * this.dpr);
+
+		// Scale emission density by canvas area relative to reference size.
+		// A 300px canvas gets ~10% of the particles of a 950px canvas,
+		// keeping visual density proportional instead of overwhelming small previews.
+		const areaRatio = (width * height) / (CharcoalSparkRenderer.REFERENCE_SIZE ** 2);
+		this.canvasScale = Math.max(0.1, Math.min(1.0, areaRatio));
 	}
 
 	renderCharcoal(input: FireFrameInput, config: FireOverlayConfig): void {
@@ -359,12 +372,14 @@ export class CharcoalSparkRenderer implements ICharcoalRenderer {
 		params: CharcoalSparkParams,
 		dt: number
 	): void {
+		const scale = this.canvasScale;
+
 		// Burst emission on high jerk (direction reversals)
 		if (tip.jerk > params.burstThreshold) {
 			const excess = tip.jerk - params.burstThreshold;
 			const count = Math.min(
-				Math.floor(excess * params.burstMultiplier),
-				params.burstMax
+				Math.floor(excess * params.burstMultiplier * scale),
+				Math.floor(params.burstMax * scale)
 			);
 			for (let i = 0; i < count; i++) {
 				this.spawnParticle(tip, params);
@@ -372,15 +387,14 @@ export class CharcoalSparkRenderer implements ICharcoalRenderer {
 		}
 
 		// Ambient emission during sustained movement — proportional to speed.
-		// Faster tips produce proportionally more sparks with no ceiling,
-		// so a fast dash showers embers while a slow crawl barely trickles.
+		// Scaled by canvas area so small previews aren't overwhelmed.
 		const tipKey = `${tip.propIndex}_${tip.tipIndex}`;
 
 		if (tip.speed > params.ambientSpeedThreshold) {
-			const speedFactor = tip.speed / 150; // linear, uncapped: 300 vu/s = 2× rate
+			const speedFactor = tip.speed / 150;
 			const accumulated =
 				(this.ambientAccumulators.get(tipKey) ?? 0) +
-				params.ambientRate * speedFactor * dt;
+				params.ambientRate * speedFactor * scale * dt;
 			const toEmit = Math.floor(accumulated);
 
 			this.ambientAccumulators.set(tipKey, accumulated - toEmit);
@@ -389,11 +403,9 @@ export class CharcoalSparkRenderer implements ICharcoalRenderer {
 				this.spawnParticle(tip, params);
 			}
 		} else if (params.idleRate > 0) {
-			// Idle emission: stationary or near-stationary tip still sheds embers.
-			// These spawn with minimal horizontal velocity so gravity pulls them down.
 			const accumulated =
 				(this.ambientAccumulators.get(tipKey) ?? 0) +
-				params.idleRate * dt;
+				params.idleRate * scale * dt;
 			const toEmit = Math.floor(accumulated);
 
 			this.ambientAccumulators.set(tipKey, accumulated - toEmit);
