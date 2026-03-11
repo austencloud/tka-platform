@@ -69,6 +69,7 @@
   let isSaving = $state(false);
   let saveStep = $state(0);
   let renderProgress = $state({ current: 0, total: 0 });
+  let publishToCommunity = $state(false);
 
   // Get the save service
   let librarySaveService: ILibrarySaveService | null = null;
@@ -163,20 +164,34 @@
   const hasDuplicate = $derived(duplicateCheck.hasDuplicate);
   const duplicateCount = $derived(duplicateCheck.existingSequences.length);
 
+  // The saved version of this sequence (if it exists in the user's library)
+  const savedSequence = $derived.by(() => {
+    const id = sequence?.id;
+    if (!id) return null;
+    return libraryState.getSequenceById(id) ?? null;
+  });
+
+  // Whether the sequence is currently published to the community library
+  const isAlreadyPublished = $derived(savedSequence?.visibility === "public");
 
   // Dynamic header content based on context
-  const headerTitle = $derived(
-    showShareContext ? "Add to Gallery" : "Add to Gallery"
-  );
+  const headerTitle = "Save to Library";
   const headerSubtitle = $derived(
-    showShareContext
-      ? "Add your sequence to the gallery to share it"
-      : "Publish this sequence to the gallery"
+    isFlagged
+      ? "This sequence can't be published due to content moderation."
+      : "Save this sequence to your private library. You can also choose to make it public for the community to see and use."
   );
 
   // Sync isOpen with show prop
   $effect(() => {
     isOpen = show;
+  });
+
+  // Default the community toggle to match the current published state when panel opens
+  $effect(() => {
+    if (show) {
+      publishToCommunity = isAlreadyPublished;
+    }
   });
 
   // Run content moderation when tkaName changes
@@ -247,7 +262,7 @@
         sequence,
         {
           name: tkaName,
-          visibility: "public",
+          visibility: publishToCommunity && !isFlagged ? "public" : "private",
           tags: [],
           notes: notes.trim(),
         },
@@ -473,6 +488,37 @@
         </p>
       {/if}
 
+      <!-- Community visibility section -->
+      {#if !isFlagged}
+        <div class="community-section">
+          <label class="toggle-row">
+            <div class="toggle-label">
+              <i class="fas fa-globe" aria-hidden="true"></i>
+              <div class="toggle-label-text">
+                <span class="toggle-label-main">Make this sequence public</span>
+                <span class="toggle-label-sub">Anyone can find and view it in the community library</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="toggle-button"
+              class:toggle-on={publishToCommunity}
+              onclick={() => (publishToCommunity = !publishToCommunity)}
+              disabled={isSaving}
+              aria-pressed={publishToCommunity}
+              aria-label={publishToCommunity
+                ? "Will publish to community on save"
+                : "Will save to personal library only"}
+            >
+              <span class="toggle-track">
+                <span class="toggle-thumb"></span>
+              </span>
+            </button>
+          </label>
+
+        </div>
+      {/if}
+
       <!-- Notes (optional) -->
       <div class="optional-section">
         <ExpandableField
@@ -509,13 +555,13 @@
       >
         {#if isSaving}
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-          Publishing...
+          Saving...
         {:else if isFlagged}
           <i class="fas fa-ban" aria-hidden="true"></i>
           Cannot Publish
         {:else}
-          <i class="fas fa-globe" aria-hidden="true"></i>
-          Add to Gallery
+          <i class="fas fa-bookmark" aria-hidden="true"></i>
+          Save to Library
         {/if}
       </button>
     </div>
@@ -879,10 +925,108 @@
     }
   }
 
+  /* Community section */
+  .community-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px;
+    background: var(--theme-card-bg);
+    border: 1.5px solid var(--theme-stroke);
+    border-radius: 12px;
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    gap: 12px;
+    user-select: none;
+  }
+
+  .toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text);
+  }
+
+  .toggle-label i {
+    color: var(--theme-accent);
+    width: 16px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .toggle-label-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .toggle-label-main {
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text);
+  }
+
+  .toggle-label-sub {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim);
+  }
+
+  .toggle-button {
+    appearance: none;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .toggle-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .toggle-track {
+    display: block;
+    width: 44px;
+    height: 24px;
+    border-radius: 12px;
+    background: var(--theme-stroke);
+    position: relative;
+    transition: background var(--duration-normal) ease;
+  }
+
+  .toggle-on .toggle-track {
+    background: var(--theme-accent);
+  }
+
+  .toggle-thumb {
+    display: block;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: white;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transition: transform var(--duration-normal) ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  .toggle-on .toggle-thumb {
+    transform: translateX(20px);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .button,
     .textarea-field,
-    .close-button {
+    .close-button,
+    .toggle-track,
+    .toggle-thumb {
       transition: none;
     }
   }

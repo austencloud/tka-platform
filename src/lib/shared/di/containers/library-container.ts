@@ -20,6 +20,7 @@ import type { IFirebaseVideoUploader } from "$lib/shared/share/services/contract
 import type { IContentModerator } from "$lib/features/moderation/services/contracts/IContentModerator";
 import type { IContentAppealManager } from "$lib/features/moderation/services/contracts/IContentAppealManager";
 import type { IConflictResolver } from "$lib/shared/offline/services/contracts/IConflictResolver";
+import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
 
 /**
  * Library Repository dependencies
@@ -41,11 +42,12 @@ interface LibrarySaveServiceDeps {
 }
 
 /**
- * Public Index Syncer dependencies (content moderation)
+ * Public Index Syncer dependencies (content moderation + browse cache)
  */
 interface PublicIndexSyncerDeps {
   contentModerator?: IContentModerator;
   contentAppealManager?: IContentAppealManager;
+  browseLoader?: IBrowseLoader;
 }
 
 /**
@@ -76,7 +78,8 @@ export function createLibraryContainer(deps: {
   // where moderation is not needed (e.g. local dev, non-SSR containers).
   const publicIndexSyncer = new PublicIndexSyncer(
     deps.publicIndexSyncer?.contentModerator,
-    deps.publicIndexSyncer?.contentAppealManager
+    deps.publicIndexSyncer?.contentAppealManager,
+    deps.publicIndexSyncer?.browseLoader
   );
 
   return createContainer().add({
@@ -94,7 +97,8 @@ export function createLibraryContainer(deps: {
       new LibrarySaveService(
         deps.librarySaveService.sharer ?? null,
         deps.librarySaveService.firebaseVideoUploader ?? null,
-        deps.librarySaveService.tagManager ?? null
+        deps.librarySaveService.tagManager ?? null,
+        publicIndexSyncer
       ),
   });
 }
