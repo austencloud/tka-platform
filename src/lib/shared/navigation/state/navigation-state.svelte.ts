@@ -284,11 +284,17 @@ export function createNavigationState() {
               // URL has valid tab for this module - use it
               activeTab = urlTab;
             } else {
-              // Invalid or missing tab - use module's default tab
-              activeTab =
-                normalizedModule === "create"
-                  ? DEFAULT_CREATE_TAB
-                  : urlModuleDefinition.sections[0]?.id || "";
+              // No tab in URL - check persisted per-module tab first, then default.
+              // This preserves the user's last tab across HMR reloads and page refreshes.
+              const savedTab = loadModuleTab(normalizedModule);
+              if (savedTab && urlModuleDefinition.sections.some((s) => s.id === savedTab)) {
+                activeTab = savedTab;
+              } else {
+                activeTab =
+                  normalizedModule === "create"
+                    ? DEFAULT_CREATE_TAB
+                    : urlModuleDefinition.sections[0]?.id || "";
+              }
             }
           } else {
             // Module has no tabs

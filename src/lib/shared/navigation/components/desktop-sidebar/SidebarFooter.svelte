@@ -1,5 +1,5 @@
 <!-- Sidebar Footer Component -->
-<!-- Footer with account, inbox, network status, and voice mic -->
+<!-- Footer with settings, network status, account, and voice mic -->
 <script lang="ts">
   import { container } from "$lib/shared/di";
   import { inboxState } from "../../../inbox/state/inbox-state.svelte";
@@ -62,11 +62,6 @@
   }
 
   const hasUnread = $derived(inboxState.totalUnreadCount > 0);
-  const badgeCount = $derived(
-    inboxState.totalUnreadCount > 99
-      ? "99+"
-      : String(inboxState.totalUnreadCount)
-  );
 
   function handleSettingsClick() {
     // Haptic feedback
@@ -93,43 +88,25 @@
   }
 </script>
 
-<!-- Footer with account, inbox (hidden when in settings mode) -->
+<!-- Footer with settings, account (hidden when in settings mode) -->
 <div
   class="sidebar-footer"
   class:collapsed={isCollapsed}
   style="--button-accent-color: #64748b;"
 >
   {#if !isInSettings}
-    <!-- Account Row + Popover (replaces Settings button) -->
-    <div class="account-section" bind:this={accountSectionEl} style="position: relative;">
-      <AccountRow
-        variant={isCollapsed ? "collapsed" : "expanded"}
-        onclick={togglePopover}
-      />
-      <AccountPopover
-        isOpen={popoverOpen}
-        onClose={closePopover}
-        onSettingsClick={handleSettingsClick}
-        anchorElement={accountSectionEl}
-      />
-    </div>
-
-    <!-- Inbox Button -->
+    <!-- Settings Button -->
     <button
-      class="footer-button inbox-button"
+      class="footer-button settings-button"
       class:collapsed={isCollapsed}
-      class:has-unread={hasUnread}
-      onclick={handleInboxClick}
-      aria-label="Open inbox{hasUnread ? `, ${inboxState.totalUnreadCount} unread` : ''}"
+      onclick={handleSettingsClick}
+      aria-label="Open settings"
     >
       <div class="button-icon">
-        <i class="fas fa-inbox" aria-hidden="true"></i>
-        {#if hasUnread}
-          <span class="unread-badge" aria-hidden="true">{badgeCount}</span>
-        {/if}
+        <i class="fas fa-cog" aria-hidden="true"></i>
       </div>
       {#if !isCollapsed}
-        <span class="button-label">Inbox</span>
+        <span class="button-label">Settings</span>
       {/if}
     </button>
 
@@ -140,6 +117,22 @@
     {#if isAdmin}
       <ModuleQuickToggle {isCollapsed} />
     {/if}
+
+    <!-- Account Row + Popover (at bottom of footer) -->
+    <div class="account-section" bind:this={accountSectionEl} style="position: relative;">
+      <AccountRow
+        variant={isCollapsed ? "collapsed" : "expanded"}
+        onclick={togglePopover}
+      />
+      <AccountPopover
+        isOpen={popoverOpen}
+        onClose={closePopover}
+        onInboxClick={handleInboxClick}
+        {hasUnread}
+        unreadCount={inboxState.totalUnreadCount}
+        anchorElement={accountSectionEl}
+      />
+    </div>
   {/if}
 
   <!-- Voice mic -->
@@ -162,7 +155,7 @@
 
 <style>
   /* ============================================================================
-     SIDEBAR FOOTER - Inbox button + account row
+     SIDEBAR FOOTER - Settings button + account row
      ============================================================================ */
   .sidebar-footer {
     display: flex;
@@ -186,7 +179,7 @@
   }
 
   /* ============================================================================
-     FOOTER BUTTONS (shared styles for inbox)
+     FOOTER BUTTONS (shared styles)
      ============================================================================ */
   .footer-button {
     width: 100%;
@@ -224,12 +217,8 @@
   }
 
   /* ============================================================================
-     INBOX BUTTON
+     BUTTON ICON
      ============================================================================ */
-  .inbox-button.has-unread {
-    border-color: color-mix(in srgb, var(--semantic-info) 40%, var(--theme-accent));
-  }
-
   .button-icon {
     position: relative;
     width: 32px;
@@ -243,14 +232,14 @@
     transition: all var(--duration-normal) ease;
   }
 
-  .inbox-button.collapsed .button-icon {
+  .footer-button.collapsed .button-icon {
     width: 100%;
     height: 100%;
     background: transparent;
     border-radius: 12px;
   }
 
-  .inbox-button:hover .button-icon {
+  .footer-button:hover .button-icon {
     background: var(--theme-card-hover-bg);
   }
 
@@ -275,41 +264,6 @@
   }
 
   /* ============================================================================
-     UNREAD BADGE
-     ============================================================================ */
-  .unread-badge {
-    position: absolute;
-    top: -6px;
-    right: -6px;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
-    background: var(--semantic-error, #ef4444);
-    border-radius: 9px;
-    color: white;
-    font-size: 0.6875rem;
-    font-weight: 700;
-    line-height: 18px;
-    text-align: center;
-    box-shadow: 0 2px 4px hsl(0 0% 0% / 0.3);
-    pointer-events: none;
-    animation: badgePop var(--duration-emphasis) cubic-bezier(0.34, 1.56, 0.64, 1);
-    z-index: 1;
-  }
-
-  @keyframes badgePop {
-    0% {
-      transform: scale(0);
-    }
-    50% {
-      transform: scale(1.2);
-    }
-    100% {
-      transform: scale(1);
-    }
-  }
-
-  /* ============================================================================
      ACCESSIBILITY
      ============================================================================ */
   @media (prefers-reduced-motion: reduce) {
@@ -317,10 +271,6 @@
     .footer-button,
     .button-icon {
       transition: none !important;
-    }
-
-    .unread-badge {
-      animation: none;
     }
   }
 

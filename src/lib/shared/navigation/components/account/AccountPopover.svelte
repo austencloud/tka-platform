@@ -5,10 +5,12 @@
   import { container } from "../../../di";
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
 
-  let { isOpen, onClose, onSettingsClick, anchorElement } = $props<{
+  let { isOpen, onClose, onInboxClick, hasUnread = false, unreadCount = 0, anchorElement } = $props<{
     isOpen: boolean;
     onClose: () => void;
-    onSettingsClick: () => void;
+    onInboxClick: () => void;
+    hasUnread?: boolean;
+    unreadCount?: number;
     anchorElement: HTMLElement | null;
   }>();
 
@@ -82,9 +84,9 @@
     }
   }
 
-  function handleSettings() {
+  function handleInbox() {
     triggerHaptic();
-    onSettingsClick();
+    onInboxClick();
     onClose();
   }
 
@@ -98,9 +100,14 @@
     onClose();
   }
 
-  function handleSignIn() {
+  async function handleSignIn() {
     triggerHaptic();
-    onSettingsClick();
+    try {
+      const authenticator = container.items.authenticator;
+      await authenticator.signInWithGoogle();
+    } catch {
+      // Sign-in failure handled by auth UI
+    }
     onClose();
   }
 
@@ -150,10 +157,18 @@
       <button
         class="action-button"
         role="menuitem"
-        onclick={handleSettings}
+        onclick={handleInbox}
       >
-        <i class="fas fa-cog action-icon" aria-hidden="true"></i>
-        Settings
+        <div class="action-icon-wrapper">
+          <i class="fas fa-inbox action-icon" aria-hidden="true"></i>
+          {#if hasUnread}
+            <span class="popover-unread-dot" aria-hidden="true"></span>
+          {/if}
+        </div>
+        Inbox
+        {#if hasUnread && unreadCount > 0}
+          <span class="inbox-count">{unreadCount > 99 ? "99+" : unreadCount}</span>
+        {/if}
       </button>
 
       {#if isAuthenticated}
@@ -203,11 +218,11 @@
     left: 0;
     right: 0;
     min-width: 220px;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    background: rgb(18, 18, 28);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 12px;
     box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.4),
+      0 8px 32px rgba(0, 0, 0, 0.5),
       0 0 0 1px rgba(255, 255, 255, 0.05);
     z-index: 200;
     overflow: hidden;
@@ -331,6 +346,35 @@
 
   .action-button:hover .action-icon {
     opacity: 1;
+  }
+
+  /* Inbox icon wrapper for unread dot positioning */
+  .action-icon-wrapper {
+    position: relative;
+    width: 16px;
+    text-align: center;
+  }
+
+  .action-icon-wrapper .action-icon {
+    width: auto;
+  }
+
+  .popover-unread-dot {
+    position: absolute;
+    top: -2px;
+    right: -4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--semantic-error, #ef4444);
+  }
+
+  .inbox-count {
+    margin-left: auto;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--semantic-info, #3b82f6);
+    opacity: 0.8;
   }
 
   /* Sign out hover turns red */
