@@ -7,6 +7,7 @@
   import WhatsNewChecker from "../../settings/components/WhatsNewChecker.svelte";
   import MigrationChecker from "../../migration/components/MigrationChecker.svelte";
   import ErrorModal from "../../error/components/ErrorModal.svelte";
+  import ErrorToast from "../../error/components/ErrorToast.svelte";
   import InboxDrawer from "../../inbox/components/InboxDrawer.svelte";
   import InboxSubscriptionProvider from "../../inbox/components/InboxSubscriptionProvider.svelte";
   import MyFeedbackDetail from "$lib/features/feedback/components/my-feedback/MyFeedbackDetail.svelte";
@@ -540,6 +541,8 @@
 
     <!-- Global Error Modal -->
     <ErrorModal />
+    <!-- Non-blocking error toasts (warnings, info) -->
+    <ErrorToast />
 
     <!-- Deferred Attribution Prompt (appears after engagement threshold) -->
     <AttributionPrompt />
