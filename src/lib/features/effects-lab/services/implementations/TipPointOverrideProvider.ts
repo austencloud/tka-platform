@@ -1,4 +1,4 @@
-import type { PropTipConfig } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
+import { PROP_TIP_POINTS, type PropTipConfig } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
 import type { IEffectPointOverrideProvider } from "../contracts/IEffectPointOverrideProvider";
 import type { IEffectPointsPersister, EffectPoint } from "../contracts/IEffectPointsPersister";
 
@@ -54,14 +54,7 @@ export class TipPointOverrideProvider implements IEffectPointOverrideProvider {
 
   getOverriddenTypes(): string[] {
     const types: string[] = [];
-    const candidates = [
-      "staff", "fan", "club", "buugeng", "triad", "minipoi",
-      "doublestaff", "sword", "bigstaff", "bigfan", "bigclub",
-      "minihoop", "bighoop", "bigbuugeng", "fractalgeng", "trigeng",
-      "triquetra", "chicken", "guitar", "ukulele", "doublestar",
-      "eightrings", "quiad", "torch", "poi",
-    ];
-    for (const key of candidates) {
+    for (const key of Object.keys(PROP_TIP_POINTS)) {
       if (this.persister.getPoints(key) !== null) {
         types.push(key);
       }

@@ -183,25 +183,6 @@ export class EffectPointEditorState {
 		return JSON.stringify(config, null, 2);
 	}
 
-	/**
-	 * Copy points from another provider (e.g. fire → LED).
-	 * Maps positions (dx, dy) directly and uses this descriptor's default intensity.
-	 */
-	copyFromProvider(sourceProvider: IEffectPointOverrideProvider): void {
-		const sourceOverride = sourceProvider.getOverride(this.selectedPropType);
-		if (!sourceOverride || sourceOverride.points.length === 0) {
-			this.showActionFeedback("No points to copy");
-			return;
-		}
-		this.pushUndo("Copy from other effect");
-		this.points = sourceOverride.points.map((p: { dx: number; dy: number }) =>
-			this.descriptor.createPoint(p.dx, p.dy),
-		);
-		this.selectedPointIndex = -1;
-		this.autoSave();
-		this.showActionFeedback(`Copied ${this.points.length} points`);
-	}
-
 	importJSON(json: string): string | null {
 		try {
 			const parsed = JSON.parse(json);
