@@ -259,6 +259,7 @@ const libraryContainer = typeof window !== 'undefined' ? createLibraryContainer(
   publicIndexSyncer: {
     contentModerator: moderationContainer.items.contentModerator,
     contentAppealManager: moderationContainer.items.contentAppealManager,
+    browseLoader: browseContainer.items.browseLoader,
   },
 }) : null as any;
 

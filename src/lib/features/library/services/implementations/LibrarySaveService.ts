@@ -15,10 +15,13 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { ISharer } from "$lib/shared/share/services/contracts/ISharer";
 import type { IFirebaseVideoUploader } from "$lib/shared/share/services/contracts/IFirebaseVideoUploader";
 import type { ITagManager } from "../contracts/ITagManager";
+import type { IPublicIndexSyncer } from "../contracts/IPublicIndexSyncer";
+import type { LibrarySequence } from "../../domain/models/LibrarySequence";
 import { TAG_COLORS } from "../../domain/models/Tag";
 import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/ShareOptions";
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 import { SequencePersister } from "$lib/features/create/shared/services/SequencePersister";
+import { getAuthSync } from "$lib/shared/auth/firebase";
 import type {
   ILibrarySaveService,
   SaveToLibraryOptions,
@@ -30,16 +33,19 @@ export class LibrarySaveService implements ILibrarySaveService {
   private readonly shareService: ISharer | null;
   private readonly uploadService: IFirebaseVideoUploader | null;
   private readonly tagService: ITagManager | null;
+  private readonly publicIndexSyncer: IPublicIndexSyncer | null;
   private readonly persistenceService: SequencePersister;
 
   constructor(
     shareService: ISharer | null,
     uploadService: IFirebaseVideoUploader | null,
-    tagService: ITagManager | null
+    tagService: ITagManager | null,
+    publicIndexSyncer: IPublicIndexSyncer | null = null
   ) {
     this.shareService = shareService ?? null;
     this.uploadService = uploadService ?? null;
     this.tagService = tagService ?? null;
+    this.publicIndexSyncer = publicIndexSyncer;
     this.persistenceService = new SequencePersister();
   }
 
@@ -82,6 +88,52 @@ export class LibrarySaveService implements ILibrarySaveService {
       notes,
       thumbnailUrl,
     });
+
+    // The sequence is saved. Now update the community library to match.
+    // This happens quietly in the background — if it takes a moment or fails,
+    // the sequence is already in the user's personal library safe and sound.
+    if (visibility === "private" && this.publicIndexSyncer) {
+      // Saving as private removes the sequence from the community library.
+      // deleteDoc is idempotent, so this is safe even if the sequence was
+      // never published — Firestore just silently does nothing.
+      this.publicIndexSyncer
+        .removeFromPublicIndex(sequenceId)
+        .catch((error) =>
+          console.error("[LibrarySaveService] Public index removal failed:", error)
+        );
+    } else if (visibility === "public" && this.publicIndexSyncer) {
+      const user = getAuthSync().currentUser;
+      if (user) {
+        const savedThumbnails = thumbnailUrl
+          ? [thumbnailUrl, ...(sequence.thumbnails || [])]
+          : (sequence.thumbnails || []);
+
+        const seqForSync: LibrarySequence = {
+          ...sequence,
+          id: sequenceId,
+          name,
+          displayName: displayName || undefined,
+          ownerId: user.uid,
+          source: "created" as const,
+          visibility: "public" as const,
+          thumbnails: savedThumbnails,
+          collectionIds: [],
+          tagIds: [],
+          sequenceTags: [],
+          forkCount: 0,
+          viewCount: 0,
+          starCount: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        this.publicIndexSyncer
+          .syncToPublicIndex(seqForSync, user.uid)
+          .catch((error) =>
+            console.error("[LibrarySaveService] Public index sync failed:", error)
+          );
+      }
+    }
 
     // Step 5: Refresh library state
     emitProgress(5);

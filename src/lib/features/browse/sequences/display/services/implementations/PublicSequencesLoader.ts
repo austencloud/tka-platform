@@ -66,8 +66,20 @@ export class PublicSequencesLoader implements IBrowseLoader {
       await this.loadSequenceMetadata();
     }
 
-    // Look up sourceRef from cache
-    const sourceRef = this.sourceRefCache.get(sequenceName);
+    // We normally find a sequence by its word (e.g. "ABBD"). But if the user
+    // edited and re-saved it with a different word (e.g. "ABBDJ"), our lookup
+    // table still has the old word and won't find the new one. In that case,
+    // we fall back to locating it by its unique ID instead, which never changes
+    // no matter how many times the sequence is edited.
+    let sourceRef = this.sourceRefCache.get(sequenceName);
+    if (!sourceRef) {
+      const cached = this.cachedSequences?.find(
+        (s) => s.name === sequenceName || s.word === sequenceName
+      );
+      if (cached?.ownerId && cached.id) {
+        sourceRef = `users/${cached.ownerId}/sequences/${cached.id}`;
+      }
+    }
     if (!sourceRef) {
       console.warn(`[PublicSequencesLoader] No sequence found for "${sequenceName}"`);
       return null;
@@ -97,6 +109,27 @@ export class PublicSequencesLoader implements IBrowseLoader {
   removeFromCache(sequenceId: string): void {
     if (this.cachedSequences) {
       this.cachedSequences = this.cachedSequences.filter((s) => s.id !== sequenceId);
+    }
+  }
+
+  /**
+   * Add a sequence directly to the in-memory cache.
+   * Called after publishing so the sequence appears in the gallery immediately.
+   * If the cache isn't loaded yet, this is a no-op — the sequence will be fetched
+   * from Firestore naturally on the next gallery load.
+   */
+  addToCache(sequence: SequenceData): void {
+    if (!this.cachedSequences) return;
+    const existingIndex = this.cachedSequences.findIndex((s) => s.id === sequence.id);
+    if (existingIndex >= 0) {
+      // Replace the existing entry so re-saves with a new word show correctly.
+      this.cachedSequences = [
+        ...this.cachedSequences.slice(0, existingIndex),
+        sequence,
+        ...this.cachedSequences.slice(existingIndex + 1),
+      ];
+    } else {
+      this.cachedSequences = [...this.cachedSequences, sequence];
     }
   }
 

@@ -170,6 +170,9 @@ const libraryContainer = createLibraryContainer({
     firebaseVideoUploader: shareContainer.items.firebaseVideoUploader,
     tagManager: coreContainer.items.tagManager,
   },
+  publicIndexSyncer: {
+    browseLoader: browseContainer.items.browseLoader,
+  },
 });
 
 // QR container needs browseLoader and sequenceEncoder

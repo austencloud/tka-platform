@@ -42,7 +42,7 @@
   }
 
   const tooltip = $derived(
-    isDisabled ? "Create a sequence first" : "Add to Gallery"
+    isDisabled ? "Create a sequence first" : "Save to Library"
   );
 </script>
 
@@ -52,7 +52,7 @@
   onclick={handleClick}
   disabled={isDisabled}
   title={tooltip}
-  aria-label="Add to Gallery"
+  aria-label="Save to Library"
 >
   <i class="fa-solid fa-bookmark" aria-hidden="true"></i>
 </button>
