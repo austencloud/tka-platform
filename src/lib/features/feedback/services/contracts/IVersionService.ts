@@ -64,6 +64,15 @@ export interface IVersionService {
   addChangelogEntry(version: string, entry: ChangelogEntry): Promise<void>;
 
   /**
+   * Update contributor IDs for a specific changelog entry and recompute version-level contributors
+   */
+  updateEntryContributors(
+    version: string,
+    index: number,
+    contributorIds: string[]
+  ): Promise<void>;
+
+  /**
    * Delete a changelog entry from a version
    */
   deleteChangelogEntry(version: string, index: number): Promise<void>;
