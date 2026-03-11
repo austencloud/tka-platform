@@ -6,28 +6,23 @@
 
 	let intensity = $state(vm.getFireIntensity());
 	let colorBlend = $state(vm.getFireColorBlend());
-	let smokeLevel = $state(vm.getFireSmokeLevel());
 
 	function handleVisibilityChange(): void {
 		intensity = vm.getFireIntensity();
 		colorBlend = vm.getFireColorBlend();
-		smokeLevel = vm.getFireSmokeLevel();
 	}
 
 	vm.registerObserver(handleVisibilityChange);
 	onDestroy(() => vm.unregisterObserver(handleVisibilityChange));
 
 	function formatIntensity(v: number): string {
-		return `${Math.round(v * 100)}%`;
+		const pct = Math.round(((v - 0.45) / (1 - 0.45)) * 100);
+		return `${pct}%`;
 	}
 
 	function formatColorBlend(v: number): string {
 		if (v < 0.1) return "Natural";
 		if (v > 0.9) return "Colored";
-		return `${Math.round(v * 100)}%`;
-	}
-
-	function formatSmoke(v: number): string {
 		return `${Math.round(v * 100)}%`;
 	}
 
@@ -37,8 +32,7 @@
 
 	const isDefault = $derived(
 		Math.abs(intensity - 0.7) < 0.03 &&
-		Math.abs(colorBlend - 0.5) < 0.03 &&
-		Math.abs(smokeLevel - 0.1) < 0.03
+		Math.abs(colorBlend - 0.5) < 0.03
 	);
 </script>
 
@@ -48,7 +42,7 @@
 		<input
 			id="ctx-fire-intensity"
 			type="range"
-			min="0"
+			min="0.45"
 			max="1"
 			step="0.05"
 			value={intensity}
@@ -69,20 +63,6 @@
 			oninput={(e) => vm.setFireColorBlend(Number((e.target as HTMLInputElement).value))}
 		/>
 		<span class="slider-value">{formatColorBlend(colorBlend)}</span>
-	</div>
-
-	<div class="slider-row">
-		<label for="ctx-fire-smoke">Smoke</label>
-		<input
-			id="ctx-fire-smoke"
-			type="range"
-			min="0"
-			max="1"
-			step="0.05"
-			value={smokeLevel}
-			oninput={(e) => vm.setFireSmokeLevel(Number((e.target as HTMLInputElement).value))}
-		/>
-		<span class="slider-value">{formatSmoke(smokeLevel)}</span>
 	</div>
 
 	<button

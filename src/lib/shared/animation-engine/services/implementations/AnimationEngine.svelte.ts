@@ -81,8 +81,6 @@ import {
   CHARCOAL_FIRE_PHYSICS,
   CHARCOAL_COLOR_CURVE,
   intensityToPhysics,
-  smokeLevelToPhysics,
-  smokeLevelToOpacity,
 } from "../../domain/types/FireTypes";
 import { LedTipTracker } from "./LedTipTracker";
 import { WebGLLedRenderer } from "./led/WebGLLedRenderer";
@@ -287,8 +285,7 @@ export class AnimationEngine {
   private prevRedMotionVisible: boolean = true;
   private prevFireEffect: boolean = false;
   private prevColorBlend: number = 0.5;
-  private prevSmokeLevel: number = 0.1;
-  private prevUseCharcoal: boolean = false;
+  private prevCharcoalEffect: boolean = false;
   private prevFireIntensity: number = 0.7;
   private prevCharcoalParamsJson: string = "";
   private prevEffortPreset: EffortId = "linear";
@@ -359,8 +356,7 @@ export class AnimationEngine {
     this.prevFireEffect = visibilityManager.isFireEffectEnabled();
     this.fireConfig.enabled = this.prevFireEffect;
     this.prevColorBlend = visibilityManager.getFireColorBlend();
-    this.prevSmokeLevel = visibilityManager.getFireSmokeLevel();
-    this.prevUseCharcoal = visibilityManager.getFireUseCharcoal();
+    this.prevCharcoalEffect = visibilityManager.isCharcoalEffectEnabled();
     this.prevFireIntensity = visibilityManager.getFireIntensity();
     this.prevCharcoalParamsJson = JSON.stringify(visibilityManager.getCharcoalParams());
     this.prevEffortPreset = visibilityManager.getEffortPreset();
@@ -372,20 +368,13 @@ export class AnimationEngine {
     this.fireConfig.flameHeight = this.prevFireIntensity;
     this.fireConfig.fuelRendererType = "fluid";
 
-    const basePhysics = this.prevUseCharcoal ? CHARCOAL_FIRE_PHYSICS : BASE_FIRE_PHYSICS;
+    const basePhysics = BASE_FIRE_PHYSICS;
     const intensityOverrides = intensityToPhysics(this.prevFireIntensity);
-    // Charcoal has its own buoyancy/upwardBias tuned for gravity — don't let intensity override them
-    if (this.prevUseCharcoal) {
-      delete intensityOverrides.buoyancyStrength;
-      delete intensityOverrides.upwardBias;
-    }
     this.fireConfig.physicsPreset = {
       ...basePhysics,
       ...intensityOverrides,
-      ...smokeLevelToPhysics(this.prevSmokeLevel),
     };
-    this.fireConfig.colorCurve = this.prevUseCharcoal ? CHARCOAL_COLOR_CURVE : BASE_COLOR_CURVE;
-    this.fireConfig.smokeOpacity = smokeLevelToOpacity(this.prevSmokeLevel);
+    this.fireConfig.colorCurve = BASE_COLOR_CURVE;
     this.fireConfig.charcoalParams = visibilityManager.getCharcoalParams();
     // Initialize LED state from visibility manager
     this.ledConfig.enabled = visibilityManager.isLedEffectEnabled();
@@ -490,48 +479,38 @@ export class AnimationEngine {
           this.setFireConfig({ enabled: fireEnabled });
         }
 
+        // Sync charcoal effect toggle (independent from fire)
+        const charcoalEnabled = vm.isCharcoalEffectEnabled();
+        if (charcoalEnabled !== this.prevCharcoalEffect) {
+          this.prevCharcoalEffect = charcoalEnabled;
+          this.syncCharcoalOverlay();
+        }
+
         // Sync fire slider values → physics
         const colorBlend = vm.getFireColorBlend();
-        const smokeLevel = vm.getFireSmokeLevel();
-        const useCharcoal = vm.getFireUseCharcoal();
         const fireIntensity = vm.getFireIntensity();
 
         const slidersChanged =
           colorBlend !== this.prevColorBlend ||
-          smokeLevel !== this.prevSmokeLevel ||
-          useCharcoal !== this.prevUseCharcoal ||
           fireIntensity !== this.prevFireIntensity;
 
         if (slidersChanged) {
           this.prevColorBlend = colorBlend;
-          this.prevSmokeLevel = smokeLevel;
-          this.prevUseCharcoal = useCharcoal;
           this.prevFireIntensity = fireIntensity;
 
-          if (useCharcoal) {
-            // Charcoal mode: set params and swap to spark renderer
-            this.setFireConfig({
-              enabled: true,
-              charcoalParams: vm.getCharcoalParams(),
-            });
-          } else {
-            // Fluid mode: apply physics-based config
-            const basePhysics = BASE_FIRE_PHYSICS;
-            const intOverrides = intensityToPhysics(fireIntensity);
-            this.setFireConfig({
-              colorBlend,
-              fuelRendererType: "fluid",
-              intensity: fireIntensity,
-              flameHeight: fireIntensity,
-              physicsPreset: {
-                ...basePhysics,
-                ...intOverrides,
-                ...smokeLevelToPhysics(smokeLevel),
-              },
-              colorCurve: BASE_COLOR_CURVE,
-              smokeOpacity: smokeLevelToOpacity(smokeLevel),
-            });
-          }
+          const basePhysics = BASE_FIRE_PHYSICS;
+          const intOverrides = intensityToPhysics(fireIntensity);
+          this.setFireConfig({
+            colorBlend,
+            fuelRendererType: "fluid",
+            intensity: fireIntensity,
+            flameHeight: fireIntensity,
+            physicsPreset: {
+              ...basePhysics,
+              ...intOverrides,
+            },
+            colorCurve: BASE_COLOR_CURVE,
+          });
         }
 
         // Reset fire tip tracker when effort preset changes.
@@ -555,9 +534,9 @@ export class AnimationEngine {
 
         // Sync charcoal params independently of the fire sliders above.
         // Charcoal param changes (gravity, burst threshold, etc.) don't affect
-        // colorBlend/smokeLevel/useCharcoal/fireIntensity, so slidersChanged
-        // won't detect them. Forward directly to the renderer when changed.
-        if (useCharcoal && this.charcoalRenderer?.isInitialized()) {
+        // fire sliders, so slidersChanged won't detect them.
+        // Forward directly to the renderer when changed.
+        if (charcoalEnabled && this.charcoalRenderer?.isInitialized()) {
           const currentCharcoalJson = JSON.stringify(vm.getCharcoalParams());
           if (currentCharcoalJson !== this.prevCharcoalParamsJson) {
             this.prevCharcoalParamsJson = currentCharcoalJson;
@@ -618,12 +597,11 @@ export class AnimationEngine {
 
     // Create overlays that weren't created yet (e.g. enabled before HMR/reload
     // but the $effect hasn't triggered, or the rAF hasn't fired yet).
-    if (
-      this.fireConfig.enabled &&
-      !this.fireRenderer?.isInitialized() &&
-      !this.charcoalRenderer?.isInitialized()
-    ) {
+    if (this.fireConfig.enabled && !this.fireRenderer?.isInitialized()) {
       this.syncFireOverlay();
+    }
+    if (this.prevCharcoalEffect && !this.charcoalRenderer?.isInitialized()) {
+      this.syncCharcoalOverlay();
     }
     if (this.ledConfig.enabled && !this.ledRenderer?.isInitialized()) {
       this.syncLedOverlay();
@@ -1292,47 +1270,12 @@ export class AnimationEngine {
 
   /**
    * Initialize or destroy the fire overlay based on config.enabled.
-   * Creates the WebGL canvas lazily on first enable, removes on disable.
+   * Fire and charcoal are independent effects with independent renderers.
    */
   private syncFireOverlay(): void {
-    const useCharcoal = this.prevUseCharcoal;
     const enabled = this.fireConfig.enabled;
 
-    if (enabled && useCharcoal) {
-      // Charcoal mode: use spark renderer, tear down fluid renderer
-      if (this.fireRenderer?.isInitialized()) {
-        this.fireRenderer.dispose();
-        this.fireRenderer = null;
-        this.renderLoopService?.updateConfig({ fireRenderer: null });
-      }
-
-      if (!this.charcoalRenderer?.isInitialized()) {
-        if (!this.containerElement) return;
-        this.charcoalRenderer = new CharcoalSparkRenderer();
-        const success = this.charcoalRenderer.initialize(
-          this.containerElement,
-          this.canvasSize,
-          this.canvasSize
-        );
-        if (success) {
-          if (this.fireConfig.charcoalParams) {
-            this.charcoalRenderer.setParams(this.fireConfig.charcoalParams);
-          }
-          this.renderLoopService?.updateConfig({
-            charcoalRenderer: this.charcoalRenderer,
-          });
-        } else {
-          this.charcoalRenderer = null;
-        }
-      }
-    } else if (enabled && !useCharcoal) {
-      // Fire mode: use WebGL fluid renderer, tear down charcoal renderer
-      if (this.charcoalRenderer?.isInitialized()) {
-        this.charcoalRenderer.dispose();
-        this.charcoalRenderer = null;
-        this.renderLoopService?.updateConfig({ charcoalRenderer: null });
-      }
-
+    if (enabled) {
       if (!this.fireRenderer?.isInitialized()) {
         if (!this.containerElement) return;
         this.fireRenderer = new WebGLFireRenderer();
@@ -1350,20 +1293,59 @@ export class AnimationEngine {
         }
       }
     } else {
-      // Disabled: tear down both
       if (this.fireRenderer?.isInitialized()) {
         this.fireRenderer.dispose();
         this.fireRenderer = null;
       }
+      this.renderLoopService?.updateConfig({ fireRenderer: null });
+      if (!this.prevCharcoalEffect) {
+        this.fireTipTracker?.reset();
+      }
+    }
+  }
+
+  /**
+   * Initialize or destroy the charcoal overlay based on charcoalEffect state.
+   * Charcoal is an independent effect with its own particle renderer.
+   */
+  private syncCharcoalOverlay(): void {
+    const enabled = this.prevCharcoalEffect;
+
+    if (enabled) {
+      if (!this.charcoalRenderer?.isInitialized()) {
+        if (!this.containerElement) return;
+        this.charcoalRenderer = new CharcoalSparkRenderer();
+        const success = this.charcoalRenderer.initialize(
+          this.containerElement,
+          this.canvasSize,
+          this.canvasSize
+        );
+        if (success) {
+          const vm = getAnimationVisibilityManager();
+          this.charcoalRenderer.setParams(vm.getCharcoalParams());
+          this.renderLoopService?.updateConfig({
+            charcoalRenderer: this.charcoalRenderer,
+          });
+        } else {
+          this.charcoalRenderer = null;
+        }
+      }
+    } else {
       if (this.charcoalRenderer?.isInitialized()) {
         this.charcoalRenderer.dispose();
         this.charcoalRenderer = null;
       }
-      this.renderLoopService?.updateConfig({
-        fireRenderer: null,
-        charcoalRenderer: null,
-      });
-      this.fireTipTracker?.reset();
+      this.renderLoopService?.updateConfig({ charcoalRenderer: null });
+      if (!this.fireConfig.enabled) {
+        this.fireTipTracker?.reset();
+      }
+    }
+
+    // Trigger a render to start/stop charcoal loop
+    if (this.renderLoopService && this.lastPropsRef) {
+      this.renderLoopService.triggerRender(() =>
+        this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
+      );
     }
   }
 
@@ -1376,10 +1358,6 @@ export class AnimationEngine {
     // Forward quality setting to renderer if present
     if (config.quality !== undefined && this.fireRenderer) {
       this.fireRenderer.setQuality(config.quality);
-    }
-    // Forward charcoal params to spark renderer
-    if (config.charcoalParams && this.charcoalRenderer?.isInitialized()) {
-      this.charcoalRenderer.setParams(config.charcoalParams);
     }
     this.syncFireOverlay();
 
@@ -1813,8 +1791,8 @@ export class AnimationEngine {
     fp.bluePropType = bluePropType;
     fp.redPropType = redPropType;
 
-    // Fire overlay config
-    fp.fireConfig = this.fireConfig.enabled ? this.fireConfig : null;
+    // Fire/charcoal overlay config — pass when either effect is active
+    fp.fireConfig = (this.fireConfig.enabled || this.prevCharcoalEffect) ? this.fireConfig : null;
     fp.darkMode = this.prevDarkMode;
     // Prop colors for colored flames (default blue/red)
     fp.propColors = DEFAULT_PROP_FLAME_COLORS;

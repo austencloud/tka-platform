@@ -33,8 +33,6 @@
     BASE_FIRE_PHYSICS,
     BASE_COLOR_CURVE,
     intensityToPhysics,
-    smokeLevelToPhysics,
-    smokeLevelToOpacity,
   } from "$lib/shared/animation-engine/domain/types/FireTypes";
 
   // LED
@@ -86,7 +84,6 @@
     // Fire
     fireIntensity: number;
     fireColorBlend: number;
-    fireSmokeLevel: number;
     // LED
     ledBrightness: number;
     ledPatternId: string;
@@ -121,7 +118,6 @@
         merged.sourceMode = fire.sourceMode;
         merged.fireIntensity = fire.intensity;
         merged.fireColorBlend = fire.colorBlend;
-        merged.fireSmokeLevel = fire.smokeLevel;
       }
 
       const ledRaw = localStorage.getItem("led-lab-state");
@@ -182,7 +178,6 @@
         sourceMode,
         fireIntensity: intensity,
         fireColorBlend: colorBlend,
-        fireSmokeLevel: smokeLevel,
         ledBrightness: ledBrightness,
         ledPatternId,
         ledPrimaryColor,
@@ -218,7 +213,6 @@
   let fireEnabled = $state(true);
   let intensity = $state(persisted.fireIntensity ?? 0.7);
   let colorBlend = $state(persisted.fireColorBlend ?? 0.5);
-  let smokeLevel = $state(persisted.fireSmokeLevel ?? 0.1);
 
   let isAdmin = $derived(authState.isAdmin);
 
@@ -226,7 +220,6 @@
     const mergedPhysics = {
       ...BASE_FIRE_PHYSICS,
       ...intensityToPhysics(intensity),
-      ...smokeLevelToPhysics(smokeLevel),
     };
     return {
       enabled: fireEnabled,
@@ -238,7 +231,6 @@
       physicsPreset: mergedPhysics,
       colorCurve: BASE_COLOR_CURVE,
       colorBlend,
-      smokeOpacity: smokeLevelToOpacity(smokeLevel),
     };
   });
 
@@ -310,7 +302,6 @@
         visibilityManager.setFireEffect(true);
         visibilityManager.setFireIntensity(intensity);
         visibilityManager.setFireColorBlend(colorBlend);
-        visibilityManager.setFireSmokeLevel(smokeLevel);
       } else {
         visibilityManager.setFireEffect(false);
       }
@@ -356,13 +347,6 @@
     if (mode !== "fire" && mode !== "charcoal") return;
     untrack(() => visibilityManager.setFireColorBlend(val));
   });
-  $effect(() => {
-    const val = smokeLevel;
-    const mode = activeMode;
-    if (mode !== "fire" && mode !== "charcoal") return;
-    untrack(() => visibilityManager.setFireSmokeLevel(val));
-  });
-
   // Playback state polling
   $effect(() => {
     const check = () => {
@@ -417,7 +401,6 @@
     void sourceMode;
     void intensity;
     void colorBlend;
-    void smokeLevel;
     void ledBrightness;
     void ledPatternId;
     void ledPrimaryColor;
@@ -629,7 +612,6 @@
     const mergedPhysics = {
       ...BASE_FIRE_PHYSICS,
       ...intensityToPhysics(intensity),
-      ...smokeLevelToPhysics(smokeLevel),
     };
     await publisher.publish({
       firePoints: overrideProvider.exportAll(),

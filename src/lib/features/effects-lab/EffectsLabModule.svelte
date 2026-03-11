@@ -45,11 +45,9 @@
   // Activate the effect for a given mode
   function activateMode(mode: EffectMode) {
     if (mode === "fire") {
-      visibilityManager.setFireUseCharcoal(false);
       visibilityManager.setFireEffect(true);
     } else if (mode === "charcoal") {
-      visibilityManager.setFireUseCharcoal(true);
-      visibilityManager.setFireEffect(true);
+      visibilityManager.setCharcoalEffect(true);
     } else if (mode === "led") {
       visibilityManager.setLedEffect(true);
     }
@@ -59,17 +57,14 @@
   // Deactivate the effect for a given mode
   function deactivateMode(mode: EffectMode) {
     if (mode === "fire") visibilityManager.setFireEffect(false);
-    if (mode === "charcoal") {
-      visibilityManager.setFireEffect(false);
-      visibilityManager.setFireUseCharcoal(false);
-    }
+    if (mode === "charcoal") visibilityManager.setCharcoalEffect(false);
     if (mode === "led") visibilityManager.setLedEffect(false);
   }
 
   // On mount: disable effects that don't belong to the active mode, then activate it
   function initializeMode(current: EffectMode) {
     if (current !== "fire" && current !== "charcoal") visibilityManager.setFireEffect(false);
-    if (current !== "charcoal") visibilityManager.setFireUseCharcoal(false);
+    if (current !== "charcoal") visibilityManager.setCharcoalEffect(false);
     if (current !== "led") visibilityManager.setLedEffect(false);
     activateMode(current);
   }

@@ -361,11 +361,9 @@ out vec4 fragColor;
 uniform sampler2D u_temperature;
 uniform sampler2D u_fuel;
 uniform sampler2D u_colorField;
-uniform sampler2D u_soot;
 uniform float u_displayIntensity;
 uniform float u_colorBlend; // 0.0 = natural, 0.5 = tinted, 1.0 = colored
 uniform float u_time;       // seconds, for FBM noise animation
-uniform float u_smokeOpacity; // 0.0 = invisible, 0.5 = heavy smoke
 
 // Per-fuel-source color curve (replaces hardcoded blackbody ramp)
 uniform vec3 u_colorCold;   // FireColorCurve.coldColor
@@ -536,59 +534,8 @@ void main() {
     alpha = max(alpha, max(core, max(body * 0.9, glow * 0.5)));
   }
 
-  // --- Layer 3: Smoke/soot absorption ---
-  // Beer-Lambert: soot density absorbs light, yielding dark translucent smoke
-  float sootDensity = texture(u_soot, v_uv).x;
-  if (sootDensity > 0.01 && u_smokeOpacity > 0.001) {
-    float absorption = 1.0 - exp(-sootDensity * 4.0);
-    float smokeAlpha = absorption * u_smokeOpacity;
-    vec3 smokeColor = vec3(0.08, 0.06, 0.05);
-    color = mix(color, smokeColor * smokeAlpha, smokeAlpha);
-    alpha = max(alpha, smokeAlpha * 0.3);
-  }
-
   alpha = min(alpha, 1.0);
   fragColor = vec4(color * alpha, alpha);
-}
-`;
-
-// ============================================================
-// Soot generation: combustion byproduct + cooling gas → soot density
-// ============================================================
-
-export const SOOT_GENERATION_FRAG = `#version 300 es
-precision highp float;
-
-in vec2 v_uv;
-out vec4 fragColor;
-
-uniform sampler2D u_soot;
-uniform sampler2D u_temperature;
-uniform sampler2D u_fuel;
-uniform float u_dt;
-uniform float u_sootYield;
-uniform float u_sootCoolThreshold;
-uniform float u_sootCoolRate;
-uniform float u_sootDissipation;
-
-void main() {
-  float soot = texture(u_soot, v_uv).x;
-  float temp = texture(u_temperature, v_uv).x;
-  float fuel = texture(u_fuel, v_uv).x;
-
-  // Combustion byproduct: burned fuel produces soot
-  float combustionSoot = fuel * temp * u_sootYield;
-
-  // Cooling gas: gas below threshold emits visible smoke
-  float coolFactor = max(0.0, u_sootCoolThreshold - temp) / u_sootCoolThreshold;
-  float coolingSoot = coolFactor * u_sootCoolRate * u_dt;
-
-  // Accumulate soot, decay over time
-  soot += (combustionSoot + coolingSoot) * u_dt;
-  soot -= u_sootDissipation * u_dt;
-  soot = max(soot, 0.0);
-
-  fragColor = vec4(soot, 0.0, 0.0, 1.0);
 }
 `;
 

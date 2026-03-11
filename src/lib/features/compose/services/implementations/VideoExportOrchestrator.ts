@@ -823,7 +823,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       fire: visibilityManager.isFireEffectEnabled(),
       led: visibilityManager.isLedEffectEnabled(),
       trails: visibilityManager.isTrailsVisible(),
-      charcoal: visibilityManager.getFireUseCharcoal(),
+      charcoal: visibilityManager.isCharcoalEffectEnabled(),
     };
 
     if (overrides.fire !== undefined) {
@@ -836,7 +836,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       visibilityManager.setTrailStyle(overrides.trails ? "on" : "off");
     }
     if (overrides.charcoal !== undefined) {
-      visibilityManager.setFireUseCharcoal(overrides.charcoal);
+      visibilityManager.setCharcoalEffect(overrides.charcoal);
     }
 
     return saved;
@@ -854,7 +854,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
     visibilityManager.setFireEffect(saved.fire);
     visibilityManager.setLedEffect(saved.led);
     visibilityManager.setTrailStyle(saved.trails ? "on" : "off");
-    visibilityManager.setFireUseCharcoal(saved.charcoal);
+    visibilityManager.setCharcoalEffect(saved.charcoal);
   }
 
   private waitForAnimationFrame(): Promise<void> {

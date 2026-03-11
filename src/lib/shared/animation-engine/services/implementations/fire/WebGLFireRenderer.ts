@@ -44,7 +44,6 @@ import {
   GRADIENT_SUBTRACT_FRAG,
   CLEAR_FRAG,
   DISPLAY_FRAG,
-  SOOT_GENERATION_FRAG,
   BLOOM_COMPOSITE_FRAG,
 } from "./FluidShaderSources";
 import {
@@ -134,7 +133,6 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
   private gradientSubtractProgram: ShaderProgram | null = null;
   private clearProgram: ShaderProgram | null = null;
   private displayProgram: ShaderProgram | null = null;
-  private sootGenerationProgram: ShaderProgram | null = null;
   private bloomDownsampleProgram: ShaderProgram | null = null;
   private bloomUpsampleProgram: ShaderProgram | null = null;
   private bloomCompositeProgram: ShaderProgram | null = null;
@@ -147,7 +145,6 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
   private colorField: DoubleFBO | null = null;
 
   // Soot density field (combustion byproduct, rendered as dark smoke)
-  private soot: DoubleFBO | null = null;
 
   // Single-buffered fields (no ping-pong needed)
   private divergenceFBO: FBOAttachment | null = null;
@@ -361,11 +358,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
    * which change the fire physics (buoyancy, turbulence, trail shape).
    */
   private computeConfigHash(config: FireOverlayConfig, playbackSpeed?: number, sequenceContentHash?: string): string {
-    const p = config.physicsPreset;
-    const smokeHash = p
-      ? `${p.sootYield}_${p.sootCoolRate}_${p.sootDissipation}_${p.sootAdvectionDissipation}`
-      : "default";
-    return `${config.fuelSourceId ?? "default"}_${config.intensity}_${config.flameHeight}_${config.quality}_${config.colorBlend ?? 0}_${config.smokeOpacity ?? 0.06}_${smokeHash}_${playbackSpeed ?? 1}_${sequenceContentHash ?? ""}`;
+    return `${config.fuelSourceId ?? "default"}_${config.intensity}_${config.flameHeight}_${config.quality}_${config.colorBlend ?? 0}_${playbackSpeed ?? 1}_${sequenceContentHash ?? ""}`;
   }
 
   /**
@@ -452,7 +445,6 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
       this.temperature,
       this.fuel,
       this.pressure,
-      this.soot,
       this.colorField,
     ];
 
@@ -609,11 +601,6 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
       this.advect(this.colorField, this.colorField.read, p.fuelDissipation, dt, texelSize);
     }
 
-    // 8. Soot generation + advection
-    if (this.soot && this.sootGenerationProgram) {
-      this.applySootGeneration(dt);
-      this.advect(this.soot, this.soot.read, p.sootAdvectionDissipation, dt, texelSize);
-    }
   }
 
   // ============================================================
@@ -755,35 +742,6 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.temperature!.write.fbo);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
     this.swapFBO(this.temperature!);
-  }
-
-  private applySootGeneration(dt: number): void {
-    const gl = this.gl!;
-    const prog = this.sootGenerationProgram!;
-    const p = this.physics;
-    gl.useProgram(prog.program);
-
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, this.soot!.read.texture);
-    gl.uniform1i(prog.uniforms.get("u_soot")!, 0);
-
-    gl.activeTexture(gl.TEXTURE1);
-    gl.bindTexture(gl.TEXTURE_2D, this.temperature!.read.texture);
-    gl.uniform1i(prog.uniforms.get("u_temperature")!, 1);
-
-    gl.activeTexture(gl.TEXTURE2);
-    gl.bindTexture(gl.TEXTURE_2D, this.fuel!.read.texture);
-    gl.uniform1i(prog.uniforms.get("u_fuel")!, 2);
-
-    gl.uniform1f(prog.uniforms.get("u_dt")!, dt);
-    gl.uniform1f(prog.uniforms.get("u_sootYield")!, p.sootYield);
-    gl.uniform1f(prog.uniforms.get("u_sootCoolThreshold")!, p.sootCoolThreshold);
-    gl.uniform1f(prog.uniforms.get("u_sootCoolRate")!, p.sootCoolRate);
-    gl.uniform1f(prog.uniforms.get("u_sootDissipation")!, p.sootDissipation);
-
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.soot!.write.fbo);
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
-    this.swapFBO(this.soot!);
   }
 
   private computeDivergence(texelSize: [number, number]): void {
@@ -1013,16 +971,6 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     }
     gl.uniform1i(prog.uniforms.get("u_colorField")!, 2);
 
-    // Soot density field for smoke rendering
-    gl.activeTexture(gl.TEXTURE3);
-    if (this.soot) {
-      gl.bindTexture(gl.TEXTURE_2D, this.soot.read.texture);
-    } else {
-      gl.bindTexture(gl.TEXTURE_2D, this.fuel!.read.texture); // fallback: no soot
-    }
-    gl.uniform1i(prog.uniforms.get("u_soot")!, 3);
-    gl.uniform1f(prog.uniforms.get("u_smokeOpacity")!, config.smokeOpacity ?? 0.06);
-
     // Color blend factor (0.0 = natural, 0.5 = tinted, 1.0 = fully colored)
     gl.uniform1f(prog.uniforms.get("u_colorBlend")!, config.colorBlend ?? 0);
 
@@ -1125,7 +1073,6 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.divergenceFBO = this.createSingleFBO(w, h);
     this.curlFBO = this.createSingleFBO(w, h);
     this.colorField = this.createDoubleFBO(w, h);
-    this.soot = this.createDoubleFBO(w, h);
 
     // Display FBO for bloom pipeline (fire rendered here, then bloomed)
     this.displayFBO = this.createFBO(
@@ -1185,7 +1132,6 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     destroyDouble(this.temperature);
     destroyDouble(this.fuel);
     destroyDouble(this.colorField);
-    destroyDouble(this.soot);
     destroySingle(this.divergenceFBO);
     destroySingle(this.curlFBO);
     destroySingle(this.displayFBO);
@@ -1196,7 +1142,6 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.temperature = null;
     this.fuel = null;
     this.colorField = null;
-    this.soot = null;
     this.divergenceFBO = null;
     this.curlFBO = null;
     this.displayFBO = null;
@@ -1218,15 +1163,11 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.gradientSubtractProgram = this.buildProgram(GRADIENT_SUBTRACT_FRAG, ["u_velocity", "u_pressure", "u_texelSize"]);
     this.clearProgram = this.buildProgram(CLEAR_FRAG, ["u_clearValue"]);
     this.displayProgram = this.buildProgram(DISPLAY_FRAG, [
-      "u_temperature", "u_fuel", "u_colorField", "u_soot",
-      "u_displayIntensity", "u_smokeOpacity",
+      "u_temperature", "u_fuel", "u_colorField",
+      "u_displayIntensity",
       "u_tipCount", "u_aspectCorrect", "u_colorBlend",
       "u_colorCold", "u_colorMid", "u_colorHot", "u_colorCore",
       "u_time",
-    ]);
-    this.sootGenerationProgram = this.buildProgram(SOOT_GENERATION_FRAG, [
-      "u_soot", "u_temperature", "u_fuel", "u_dt",
-      "u_sootYield", "u_sootCoolThreshold", "u_sootCoolRate", "u_sootDissipation",
     ]);
     this.bloomDownsampleProgram = this.buildProgram(BLOOM_DOWNSAMPLE_FRAG, [
       "u_source", "u_texelSize",
@@ -1242,7 +1183,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
       this.vorticityProgram, this.buoyancyProgram, this.combustionProgram,
       this.divergenceProgram, this.jacobiProgram, this.gradientSubtractProgram,
       this.clearProgram, this.displayProgram,
-      this.sootGenerationProgram, this.bloomDownsampleProgram,
+      this.bloomDownsampleProgram,
       this.bloomUpsampleProgram, this.bloomCompositeProgram,
     ];
 
@@ -1350,7 +1291,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
         this.vorticityProgram, this.buoyancyProgram, this.combustionProgram,
         this.divergenceProgram, this.jacobiProgram, this.gradientSubtractProgram,
         this.clearProgram, this.displayProgram,
-        this.sootGenerationProgram, this.bloomDownsampleProgram,
+        this.bloomDownsampleProgram,
         this.bloomUpsampleProgram, this.bloomCompositeProgram,
       ];
       for (const p of programs) {
@@ -1369,7 +1310,6 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.gradientSubtractProgram = null;
     this.clearProgram = null;
     this.displayProgram = null;
-    this.sootGenerationProgram = null;
     this.bloomDownsampleProgram = null;
     this.bloomUpsampleProgram = null;
     this.bloomCompositeProgram = null;

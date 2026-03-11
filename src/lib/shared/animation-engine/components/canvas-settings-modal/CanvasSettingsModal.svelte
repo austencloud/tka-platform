@@ -24,6 +24,7 @@
   import FireCategory from "./categories/FireCategory.svelte";
   import CharcoalCategory from "./categories/CharcoalCategory.svelte";
   import LedCategory from "./categories/LedCategory.svelte";
+  import TrailsCategory from "./categories/TrailsCategory.svelte";
   import PlaybackCategory from "./categories/PlaybackCategory.svelte";
   import EffortCategory from "./categories/EffortCategory.svelte";
   import DisplayCategory from "./categories/DisplayCategory.svelte";
@@ -66,13 +67,13 @@
 
   // ── Reactive state from visibility manager ──
   let fireEnabled = $state(vm.isFireEffectEnabled());
-  let charcoalEnabled = $state(vm.getFireUseCharcoal());
+  let charcoalEnabled = $state(vm.isCharcoalEffectEnabled());
   let ledEnabled = $state(vm.isLedEffectEnabled());
   let trailsVisible = $state(vm.isTrailsVisible());
 
   function syncFromManager(): void {
     fireEnabled = vm.isFireEffectEnabled();
-    charcoalEnabled = vm.getFireUseCharcoal();
+    charcoalEnabled = vm.isCharcoalEffectEnabled();
     ledEnabled = vm.isLedEffectEnabled();
     trailsVisible = vm.isTrailsVisible();
   }
@@ -90,22 +91,21 @@
   });
 
   function selectEffect(effect: ActiveEffect) {
-    // Turn everything off first
-    if (vm.isFireEffectEnabled()) vm.setFireEffect(false);
-    if (vm.isLedEffectEnabled()) vm.setLedEffect(false);
-    if (vm.isTrailsVisible()) vm.setTrailStyle("off");
-    vm.setFireUseCharcoal(false);
-
-    // Turn on the selected one
+    // Each setter handles mutual exclusion internally
     if (effect === "fire") {
       vm.setFireEffect(true);
     } else if (effect === "charcoal") {
-      vm.setFireUseCharcoal(true);
-      vm.setFireEffect(true);
+      vm.setCharcoalEffect(true);
     } else if (effect === "led") {
       vm.setLedEffect(true);
     } else if (effect === "trails") {
       vm.setTrailStyle("on");
+    } else {
+      // "none" — turn everything off
+      vm.setFireEffect(false);
+      vm.setCharcoalEffect(false);
+      vm.setLedEffect(false);
+      vm.setTrailStyle("off");
     }
   }
 
@@ -228,6 +228,10 @@
       {:else if activeEffect === "led"}
         <div class="control-group" data-animate="4">
           <LedCategory />
+        </div>
+      {:else if activeEffect === "trails"}
+        <div class="control-group" data-animate="4">
+          <TrailsCategory />
         </div>
       {/if}
 
