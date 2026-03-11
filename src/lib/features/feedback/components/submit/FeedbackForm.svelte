@@ -18,7 +18,8 @@
   import FeedbackTextarea from "./FeedbackTextarea.svelte";
   import SubmitButton from "./SubmitButton.svelte";
   import Toast from "./Toast.svelte";
-  import MobileInputToolbar from "./MobileInputToolbar.svelte";
+  import MobileInputToolbar from "$lib/shared/components/MobileInputToolbar.svelte";
+  import VoiceInputButton from "./VoiceInputButton.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // Props
@@ -282,20 +283,47 @@
     <MobileInputToolbar
       visible={isTextareaFocused}
       disabled={formState.isSubmitting}
-      isFormValid={formState.isFormValid}
-      isSubmitting={formState.isSubmitting}
-      {voiceRecorder}
+      doneLabel={t("feedback_done")}
       onDone={handleMobileToolbarDone}
-      onSubmit={() => formState.submit()}
-      onRecordingStart={handleRecordingStart}
-      onRecordingEnd={handleRecordingEnd}
       onKeyboardHeightChange={(height) => {
         if (height > 0) {
           hasSeenVirtualKeyboard = true;
         }
         onKeyboardHeightChange?.(height);
       }}
-    />
+    >
+      {#snippet leftContent()}
+        <VoiceInputButton
+          {voiceRecorder}
+          onRecordingStart={handleRecordingStart}
+          onRecordingEnd={handleRecordingEnd}
+          disabled={formState.isSubmitting}
+        />
+        <button
+          type="button"
+          class="toolbar-submit-button"
+          onmousedown={(e) => {
+            // Prevent blur from textarea so submit completes before keyboard dismisses
+            e.preventDefault();
+            formState.submit();
+          }}
+          ontouchstart={(e) => {
+            // Same for touch - prevent blur, then submit
+            e.preventDefault();
+            formState.submit();
+          }}
+          disabled={formState.isSubmitting || !formState.isFormValid}
+          aria-label={t("feedback_submit")}
+        >
+          {#if formState.isSubmitting}
+            <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+          {:else}
+            <i class="fas fa-paper-plane" aria-hidden="true"></i>
+          {/if}
+          <span>{t("feedback_submit")}</span>
+        </button>
+      {/snippet}
+    </MobileInputToolbar>
   {/if}
 {/if}
 
@@ -344,6 +372,45 @@
     }
   }
 
+  /* Submit button inside the mobile toolbar's leftContent snippet */
+  .toolbar-submit-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    min-height: var(--min-touch-target); /* WCAG AAA touch target */
+
+    background: var(--theme-accent, #4a9eff);
+    border: none;
+    border-radius: 8px;
+
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+
+    cursor: pointer;
+    transition: all 150ms ease;
+    touch-action: manipulation;
+  }
+
+  .toolbar-submit-button:hover:not(:disabled) {
+    background: var(--theme-accent-strong, #5aafff);
+    transform: translateY(-1px);
+  }
+
+  .toolbar-submit-button:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  .toolbar-submit-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .toolbar-submit-button i {
+    font-size: 14px;
+  }
+
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     *,
@@ -352,6 +419,10 @@
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
+    }
+
+    .toolbar-submit-button {
+      transition: none;
     }
   }
 </style>
