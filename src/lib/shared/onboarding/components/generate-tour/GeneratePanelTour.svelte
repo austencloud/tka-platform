@@ -202,57 +202,32 @@
 
   .tour-card {
     position: fixed;
-    /* Anchor to left side, vertically centered */
-    left: 16px;
-    top: 50%;
-    transform: translateY(-50%);
+    left: 50%;
+    bottom: max(env(safe-area-inset-bottom, 0px), 16px);
+    transform: translateX(-50%);
     z-index: 250;
     display: flex;
     flex-direction: column;
     gap: 12px;
-    max-width: 340px;
+    max-width: 380px;
     width: calc(100% - 32px);
-    max-height: 80vh;
+    max-height: 55vh;
     padding: 16px;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 16px;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-    animation: slideIn var(--duration-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideUp var(--duration-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  @keyframes slideIn {
+  @keyframes slideUp {
     from {
       opacity: 0;
-      transform: translateY(-50%) translateX(-20px);
+      transform: translateX(-50%) translateY(20px);
     }
     to {
       opacity: 1;
-      transform: translateY(-50%) translateX(0);
-    }
-  }
-
-  /* Mobile: bottom-anchored sheet style */
-  @media (max-width: 1023px) {
-    .tour-card {
-      left: 50%;
-      top: auto;
-      bottom: max(env(safe-area-inset-bottom, 0px), 12px);
-      transform: translateX(-50%);
-      max-width: 400px;
-      max-height: 55vh;
-      animation: slideUp var(--duration-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    @keyframes slideUp {
-      from {
-        opacity: 0;
-        transform: translateX(-50%) translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-      }
+      transform: translateX(-50%) translateY(0);
     }
   }
 
