@@ -23,8 +23,8 @@
   import { InfiniteSequenceGenerator } from "$lib/features/landing/services/implementations/InfiniteSequenceGenerator";
   import { SpinnerMetricsRepository } from "$lib/features/landing/services/implementations/SpinnerMetricsRepository";
   import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
-  import { SequenceChainingOrchestrator } from "$lib/features/effects-lab/services/implementations/SequenceChainingOrchestrator";
-  import type { ISequenceChainingOrchestrator } from "$lib/features/effects-lab/services/contracts/ISequenceChainingOrchestrator";
+  import { SequenceChainingOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceChainingOrchestrator";
+  import type { ISequenceChainingOrchestrator } from "$lib/shared/animation-engine/services/contracts/ISequenceChainingOrchestrator";
   import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";

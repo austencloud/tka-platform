@@ -23,10 +23,10 @@
   import { applyEffort } from "../domain/effort-easing-unified";
   import EffortComparisonGrid from "./EffortComparisonGrid.svelte";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
-  import SourceControls from "$lib/features/effects-lab/components/SourceControls.svelte";
+  import SourceControls from "$lib/shared/animation-engine/components/SourceControls.svelte";
   import TempoControl from "$lib/shared/sequence-viewer/components/TempoControl.svelte";
   import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
-  import type { SourceMode } from "$lib/features/effects-lab/services/contracts/ISequenceChainingOrchestrator";
+  import type { SourceMode } from "$lib/shared/animation-engine/services/contracts/ISequenceChainingOrchestrator";
 
   import { AngleCalculator } from "$lib/features/compose/services/implementations/AngleCalculator";
   import { MotionCalculator } from "$lib/features/compose/services/implementations/MotionCalculator";

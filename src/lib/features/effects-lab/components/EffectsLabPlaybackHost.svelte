@@ -50,10 +50,9 @@
   import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
-  import { SequenceChainingOrchestrator } from "../services/implementations/SequenceChainingOrchestrator";
-  import type { ISequenceChainingOrchestrator, SourceMode } from "../services/contracts/ISequenceChainingOrchestrator";
+  import { SequenceChainingOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceChainingOrchestrator";
+  import type { ISequenceChainingOrchestrator, SourceMode } from "$lib/shared/animation-engine/services/contracts/ISequenceChainingOrchestrator";
 
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { getEffectDescriptor, type EffectMode } from "../domain/EffectDescriptor";
 
   // Child control panels
@@ -61,8 +60,7 @@
   import CharcoalControlsPanel from "./CharcoalControlsPanel.svelte";
   import LedControlPanel from "./LedControlPanel.svelte";
   import TrailControlsPanel from "./TrailControlsPanel.svelte";
-  import SourceControls from "./SourceControls.svelte";
-  import PublishControls from "./PublishControls.svelte";
+  import SourceControls from "$lib/shared/animation-engine/components/SourceControls.svelte";
   import EffectModeBar from "./EffectModeBar.svelte";
 
   interface Props {
@@ -214,8 +212,6 @@
   let intensity = $state(persisted.fireIntensity ?? 0.7);
   let colorBlend = $state(persisted.fireColorBlend ?? 0.5);
 
-  let isAdmin = $derived(authState.isAdmin);
-
   let fireConfig = $derived.by(() => {
     const mergedPhysics = {
       ...BASE_FIRE_PHYSICS,
@@ -278,6 +274,7 @@
   // Save global effect states so we can restore them when leaving the Effects Lab.
   // The Effects Lab takes exclusive control of fire/LED/trail visibility.
   const savedFireEnabled = visibilityManager.isFireEffectEnabled();
+  const savedCharcoalEnabled = visibilityManager.isCharcoalEffectEnabled();
   const savedLedEnabled = visibilityManager.isLedEffectEnabled();
   const savedTrailStyle = visibilityManager.getTrailStyle();
 
@@ -297,13 +294,18 @@
         visibilityManager.setTrailStyle("off");
       }
 
-      // Fire (shared by fire + charcoal modes)
-      if (mode === "fire" || mode === "charcoal") {
+      // Fire
+      if (mode === "fire") {
         visibilityManager.setFireEffect(true);
+        visibilityManager.setCharcoalEffect(false);
         visibilityManager.setFireIntensity(intensity);
         visibilityManager.setFireColorBlend(colorBlend);
+      } else if (mode === "charcoal") {
+        visibilityManager.setCharcoalEffect(true);
+        visibilityManager.setFireEffect(false);
       } else {
         visibilityManager.setFireEffect(false);
+        visibilityManager.setCharcoalEffect(false);
       }
 
       // LED
@@ -315,19 +317,19 @@
     });
   });
 
-  // Fire visibility syncs — only push values when in fire/charcoal mode.
+  // Fire visibility syncs — only push values when in fire mode.
   // Without the mode guard, fireEnabled ($state(true)) would re-enable fire
   // even after the mode-switch effect disables it for non-fire modes.
   $effect(() => {
     const val = fireEnabled;
     const mode = activeMode;
-    if (mode === "fire" || mode === "charcoal") {
+    if (mode === "fire") {
       untrack(() => visibilityManager.setFireEffect(val));
     }
   });
   $effect(() => {
     const mode = activeMode;
-    if (mode !== "fire" && mode !== "charcoal") return;
+    if (mode !== "fire") return;
     const syncBack = () => {
       const managerState = visibilityManager.isFireEffectEnabled();
       if (managerState !== fireEnabled) fireEnabled = managerState;
@@ -338,13 +340,13 @@
   $effect(() => {
     const val = intensity;
     const mode = activeMode;
-    if (mode !== "fire" && mode !== "charcoal") return;
+    if (mode !== "fire") return;
     untrack(() => visibilityManager.setFireIntensity(val));
   });
   $effect(() => {
     const val = colorBlend;
     const mode = activeMode;
-    if (mode !== "fire" && mode !== "charcoal") return;
+    if (mode !== "fire") return;
     untrack(() => visibilityManager.setFireColorBlend(val));
   });
   // Playback state polling
@@ -439,6 +441,7 @@
 
   // ─── Initialization ───────────────────────────────────────────────────
   onMount(async () => {
+    window.addEventListener("keydown", handleKeydown);
     try {
       sequenceService = container.items.sequenceRepository;
       const propInterpolator = container.items.propInterpolationService;
@@ -513,6 +516,7 @@
   }
 
   onDestroy(() => {
+    window.removeEventListener("keydown", handleKeydown);
     if (playbackStartTimer !== null) clearTimeout(playbackStartTimer);
     chainingOrchestrator?.dispose();
     playbackController?.dispose();
@@ -520,6 +524,7 @@
 
     // Restore global effect states that were active before the Effects Lab took over
     visibilityManager.setFireEffect(savedFireEnabled);
+    visibilityManager.setCharcoalEffect(savedCharcoalEnabled);
     visibilityManager.setLedEffect(savedLedEnabled);
     visibilityManager.setTrailStyle(savedTrailStyle);
   });
@@ -604,20 +609,14 @@
     charcoalParams = { ...DEFAULT_CHARCOAL_PARAMS };
   }
 
-  // ─── Fire publish ─────────────────────────────────────────────────────
-  async function publishToProduction() {
-    const publisher = container.items.fireDefaultsPublisher;
-    const overrideProvider = container.items.firePointOverrideProvider;
-
-    const mergedPhysics = {
-      ...BASE_FIRE_PHYSICS,
-      ...intensityToPhysics(intensity),
-    };
-    await publisher.publish({
-      firePoints: overrideProvider.exportAll(),
-      propPhysics: {},
-      globalPhysics: mergedPhysics,
-    });
+  // ─── Spacebar play/pause ──────────────────────────────────────────
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.code === "Space" && !e.repeat) {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      e.preventDefault();
+      togglePlayback();
+    }
   }
 </script>
 
@@ -749,35 +748,6 @@
         <TrailControlsPanel />
       {/if}
 
-      <!-- Debug panel for fire/charcoal -->
-      {#if (activeMode === "fire" || activeMode === "charcoal") && animationState.bluePropState}
-        <div class="control-section debug-section">
-          <h3>Debug</h3>
-          <div class="debug-info">
-            <div class="debug-row">
-              <span>Blue prop</span>
-              <span class="debug-val">
-                {animationState.bluePropState
-                  ? `angle: ${(animationState.bluePropState.centerPathAngle * 180 / Math.PI).toFixed(0)}deg`
-                  : "null"}
-              </span>
-            </div>
-            <div class="debug-row">
-              <span>Red prop</span>
-              <span class="debug-val">
-                {animationState.redPropState
-                  ? `angle: ${(animationState.redPropState.centerPathAngle * 180 / Math.PI).toFixed(0)}deg`
-                  : "null"}
-              </span>
-            </div>
-          </div>
-        </div>
-      {/if}
-
-      <!-- Admin publish for fire mode -->
-      {#if activeMode === "fire" && isAdmin}
-        <PublishControls onPublish={publishToProduction} />
-      {/if}
     </div>
   </div>
 </div>
@@ -909,28 +879,6 @@
     --led-green-mid: rgba(0, 255, 136, 0.15);
     --led-green-border: rgba(0, 255, 136, 0.3);
     --led-green-border-strong: rgba(0, 255, 136, 0.5);
-  }
-
-  .debug-section {
-    border-color: color-mix(in srgb, var(--theme-text) 5%, transparent);
-  }
-
-  .debug-info {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .debug-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-  }
-
-  .debug-val {
-    font-family: var(--font-mono, monospace);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 
   @media (prefers-reduced-motion: reduce) {
