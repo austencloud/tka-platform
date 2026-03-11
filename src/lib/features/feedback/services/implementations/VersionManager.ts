@@ -258,6 +258,64 @@ export class VersionService implements IVersionService {
     }
   }
 
+  async updateEntryContributors(
+    version: string,
+    index: number,
+    contributorIds: string[]
+  ): Promise<void> {
+    const firestore = await getFirestoreInstance();
+    const versionRef = doc(firestore, VERSIONS_COLLECTION, version);
+    const versionDoc = await getDoc(versionRef);
+
+    if (!versionDoc.exists()) {
+      throw new Error(`Version ${version} not found`);
+    }
+
+    const data = versionDoc.data();
+    const changelogEntries =
+      (data["changelogEntries"] as ChangelogEntry[]) || [];
+
+    if (index < 0 || index >= changelogEntries.length) {
+      throw new Error(`Invalid changelog entry index: ${index}`);
+    }
+
+    // Update the specific entry's contributor list
+    const existing = changelogEntries[index]!;
+    changelogEntries[index] = {
+      ...existing,
+      contributorIds: contributorIds.length > 0 ? contributorIds : undefined,
+    };
+
+    // Recompute the version-level contributor list as the union of all entries
+    const allContributorIds = new Set<string>();
+    for (const entry of changelogEntries) {
+      if (entry.contributorIds) {
+        for (const id of entry.contributorIds) {
+          allContributorIds.add(id);
+        }
+      }
+    }
+
+    const versionContributorIds =
+      allContributorIds.size > 0 ? [...allContributorIds] : undefined;
+
+    try {
+      await updateDoc(versionRef, {
+        changelogEntries,
+        ...(versionContributorIds
+          ? { contributorIds: versionContributorIds }
+          : { contributorIds: [] }),
+      });
+    } catch (error) {
+      console.error(
+        "[VersionManager] Failed to update entry contributors:",
+        error
+      );
+      toast.error("Failed to update contributors. Please try again.");
+      throw error;
+    }
+  }
+
   async deleteChangelogEntry(version: string, index: number): Promise<void> {
     const firestore = await getFirestoreInstance();
     const versionRef = doc(firestore, VERSIONS_COLLECTION, version);
@@ -485,7 +543,9 @@ export class VersionService implements IVersionService {
     const changelogData = data["changelogEntries"] as
       | ChangelogEntry[]
       | undefined;
+    const contributorIds = data["contributorIds"] as string[] | undefined;
     const releaseNotes = data["releaseNotes"] as string | undefined;
+    const highlightsData = data["highlights"] as string[] | undefined;
 
     return {
       version: data["version"] as string,
@@ -500,6 +560,8 @@ export class VersionService implements IVersionService {
           }
         : { bugs: 0, features: 0, general: 0 },
       changelogEntries: changelogData,
+      contributorIds: contributorIds || undefined,
+      highlights: highlightsData,
     };
   }
 }
