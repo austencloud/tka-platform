@@ -37,25 +37,11 @@ Reviews voice command sessions recorded by the Voice Session Analysis System. Id
 
 2. **Review the output and identify actionable items:**
 
-   **For T2 promotion candidates (3+ consistent LLM hits):**
-   - These are transcripts the LLM resolves identically every time
-   - Suggest the specific regex pattern to add to the appropriate sub-interpreter
-   - Show which file to modify:
-     - Navigation commands: `src/lib/shared/voice-control/services/implementations/interpreters/NavigationInterpreter.ts`
-     - Settings commands: `src/lib/shared/voice-control/services/implementations/interpreters/SettingsInterpreter.ts`
-     - Playback commands: `src/lib/shared/voice-control/services/implementations/interpreters/PlaybackInterpreter.ts`
-     - UI commands: `src/lib/shared/voice-control/services/implementations/interpreters/UIInterpreter.ts`
+   **T2 promotion candidates (3+ consistent LLM hits):** Suggest regex pattern + target sub-interpreter file in `src/lib/shared/voice-control/services/implementations/interpreters/`.
 
-   **For recurring failures:**
-   - Determine if it's a missing command (needs new interpreter support) or a recognition issue
-   - If missing command: suggest implementation approach
-   - If recognition issue: note it but don't suggest code changes
+   **Recurring failures:** Missing command (suggest implementation) vs recognition issue (note only).
 
-   **For latency concerns:**
-   - T1 should be <5ms (regex is instant)
-   - T2 should be <500ms (LLM call)
-   - T3 is variable (streaming chat)
-   - Flag anything significantly above these baselines
+   **Latency concerns:** T1 <5ms, T2 <500ms, T3 variable. Flag outliers.
 
 3. **Present findings with priorities:**
    ```
@@ -116,29 +102,6 @@ node scripts/fetch-feedback.js submit --type enhancement --module lab --tab voic
 
 ---
 
-## Example Output
+## Output Format
 
-```
-## Voice Control Analysis (50 sessions, 342 events)
-
-### T2 Promotion Candidates
-
-1. "go to settings" -> navigation:navigate(settings) (7 hits, 95% LLM confidence)
-   Suggested regex: /(?:go\s+to|open)\s+settings/i
-   File: NavigationInterpreter.ts
-
-2. "play the sequence" -> playback:play(sequence) (5 hits, 92% LLM confidence)
-   Suggested regex: /play\s+(?:the\s+)?sequence/i
-   File: PlaybackInterpreter.ts
-
-### Recurring Failures
-
-1. "undo that" (4 occurrences) - No undo command exists yet
-   Recommendation: Add undo support to UIInterpreter
-
-### Trends
-
-- Overall success rate: 78% (up from 71% last week)
-- T1 hit rate increasing (more regex patterns catching commands)
-- Average T2 latency: 380ms (normal)
-```
+Present findings in three tiers: High Priority (T2 promotions with suggested regex), Medium Priority (recurring failures with fixes), Low Priority (latency/trends). Include hit counts, confidence %, and target files.

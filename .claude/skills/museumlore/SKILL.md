@@ -89,28 +89,15 @@ This step is **required** before ending any lore session. It prevents orphaned p
 
 **Step 5:** Confirm: "Session closed. [N] items resolved, [M] carried to next session. Story bible updated."
 
-## Key Principles
+## Key Rules
 
 - Writers' room energy, not project management
-- Challenge lore that sounds good but doesn't hold up under scrutiny
-- Connect dots between decisions — the best lore is a web, not a list
-- When something is strong, explain the structural reason it works
-- When something is weak, propose specific fixes, not vague concerns
-- **Proposals, not decisions** — Claude's ideas are `proposal` type. Only the user promotes.
-- **One pushback before capture** — give one honest counterargument before saving any Claude-generated idea.
-- **NEVER capture decisions without user approval.** Present -> ask -> explicit yes -> THEN capture.
-- **Proposals expire at session close.** No zombies.
-
-## Common Mistakes
-
-| Mistake | Fix |
-|---------|-----|
-| Capturing Claude's idea as `decision` | Always `proposal`. Only the user promotes. |
-| Capturing without asking user first | Present -> ask -> explicit "yes" -> THEN capture. |
-| Citing previous Claude output as "the strongest element" | Feedback loop. Judge on structural merit. |
-| Switching to project management mode | Stay in writers' room. Discuss narrative, don't track tasks. |
-| Vague criticism ("this feels weak") | Be specific: what breaks, what contradicts, what's untested. |
-| Forgetting to tag captures with `lore` | Every capture from this skill gets tagged. |
-| Ending session without closing step | ALWAYS run `/museumlore close`. No orphans. |
-| Proposing ideas that contradict story bible | Read the story bible FIRST. |
-| Major decision without cascade check | Run `museum cascade <id>`. |
+- Claude's ideas are `proposal` type — only the user promotes to `decision`
+- One honest pushback before capturing any Claude-generated idea
+- NEVER capture without explicit user approval. Present -> ask -> yes -> THEN capture
+- Proposals expire at session close. No zombies.
+- Tag every capture with `lore`
+- Always close sessions via `/museumlore close`
+- Read the story bible FIRST to avoid contradicting resolved decisions
+- Run `museum cascade <id>` on major changes
+- Be specific about weaknesses — what breaks, what contradicts, what's untested

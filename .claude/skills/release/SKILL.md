@@ -42,22 +42,9 @@ node scripts/fetch-feedback.js list --status completed
 | "Added CSP headers" | SKIP |
 | "Toggle cards don't register taps" | "Toggle buttons respond better to taps" |
 
-### What NOT to feature prominently
-- Technical/cosmetic changes (backgrounds, particle effects) - consolidate into one line
-- Implementation details users don't care about
-
 ### Always Exclude
 
-| Category | Why |
-|----------|-----|
-| Lab modules (effort-lab, effects-lab, etc.) | Developer-only. Not user-facing. |
-| Learn tab (all mentions) | Not released yet. Exclude until user says otherwise. |
-| Endless spinner changes | Not user-facing. |
-| CLI/auth infrastructure | Users don't see this. |
-| Docs/contributor onboarding | Internal. |
-
-### Mark internal-only items
-`node scripts/fetch-feedback.js <id> internal-only true`
+Lab modules, Learn tab, endless spinner, CLI/auth infrastructure, docs/contributor onboarding. Mark internal items: `node scripts/fetch-feedback.js <id> internal-only true`
 
 ## Step 3: Show Preview
 

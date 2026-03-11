@@ -68,58 +68,17 @@ Score each remaining item 1-5 on each factor. VQ > 1.0 stays. VQ < 1.0 gets cut 
 - "While I'm in here, I might as well..." — NO. File it and move on.
 - A single item has been in-progress for more than 2 sessions
 
-## The Tracker File
+## Tracker File
 
-The source of truth lives at `docs/plans/mvp-tracker.md`. This skill reads and updates that file. The file structure:
+Source of truth: `docs/plans/mvp-tracker.md`. Items have priority (P0 blocker / P1 must-have / P2 should-have), status (not-started / in-progress / complete), and acceptance criteria.
 
-```markdown
-# MVP Tracker - TKA Platform
-**Target: March 17, 2026**
-
-## Area: [Name]
-Status: X/Y complete
-
-### [ID] Item Name
-- **Priority:** P0 (blocker) | P1 (must-have) | P2 (should-have)
-- **Status:** not-started | in-progress | complete
-- **Acceptance criteria:**
-  - [ ] Criterion 1
-  - [ ] Criterion 2
-- **Completed:** (date + verification evidence when done)
-- **Notes:** (context, decisions, links)
-```
-
-## Priority Definitions
-
-| Priority | Meaning | Example |
-|----------|---------|---------|
-| P0 | App is broken/unusable without this | Share button exports nothing |
-| P1 | Core flow works but users will be confused/stuck | No loading state on Browse |
-| P2 | Noticeable gap but users can work around it | Codex visual polish |
-
-## Progress Display Format
-
-```
-MVP Progress: 12/34 items (35%)
-Target: March 17, 2026 (12 days remaining)
-
-Create:     [####------] 4/10
-Browse:     [##--------] 2/8
-Learn:      [#---------] 1/7
-Share:      [###-------] 3/5
-Cross-cut:  [##--------] 2/4
-```
-
-## WIP Limit
-
-**Maximum 2 items in-progress at once.** If 2 items are already in-progress, one must be completed or cut before starting another. This prevents the "everything is 80% done" trap.
+Show progress as bar chart per area with overall percentage and days remaining.
 
 ## Rules
 
-1. **Never add items without user approval.** Present the proposal, get a yes.
-2. **Push back on scope creep.** "That sounds like a post-MVP feature. Want to add it to the backlog instead?"
-3. **Verification required for completion.** "I ran X and confirmed Y" or "User confirmed Z works."
-4. **One next item at a time.** `/mvp next` returns ONE thing, not a list.
-5. **Track decisions.** When we decide something is out of scope, note it in the tracker under a "Post-MVP" section so it doesn't come back.
-6. **"While I'm in here..."** is scope creep in disguise. File it, move on.
-7. **P0s first, always.** Don't touch P1s while P0s remain. Don't touch P2s while P1s remain.
+- **WIP limit: 2 items max.** Complete or cut before starting another.
+- **P0s first.** Don't touch P1s while P0s remain.
+- **Never add without user approval.** Push back on scope creep.
+- **Verification required for completion.** Evidence, not claims.
+- **`/mvp next` returns ONE item**, not a list.
+- **"While I'm in here..."** is scope creep. File it, move on.
