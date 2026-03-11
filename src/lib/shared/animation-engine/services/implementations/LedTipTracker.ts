@@ -14,7 +14,7 @@ import type { ILedTipTracker, LedTipTrackerConfig } from "../contracts/ILedTipTr
 import type { LedTipData, LedOverlayConfig } from "../../domain/types/LedTypes";
 import { hexToLedColor, resolveHandColor } from "../../domain/types/LedTypes";
 import type { PropState } from "../../domain/PropState";
-import { getLedPoints } from "../../domain/types/PropLedPoints";
+import { getTipPoints } from "../../domain/types/PropTipPoints";
 import { getLedPattern, evaluatePattern } from "../../domain/types/LedPatterns";
 import { PropPositionCalculator } from "./PropPositionCalculator";
 import type { PropEndpointConfig } from "../contracts/IPropPositionCalculator";
@@ -79,10 +79,10 @@ export class LedTipTracker implements ILedTipTracker {
 		const redBaseColor = hexToLedColor(resolveHandColor(ledConfig, 1));
 
 		// Count total LEDs across both props for pattern evaluation
-		const blueLedConfig = getLedPoints(config.bluePropType);
-		const redLedConfig = getLedPoints(config.redPropType);
+		const blueTipConfig = getTipPoints(config.bluePropType);
+		const redTipConfig = getTipPoints(config.redPropType);
 		const totalLedCount =
-			(blueLedConfig?.points.length ?? 0) + (redLedConfig?.points.length ?? 0);
+			(blueTipConfig?.points.length ?? 0) + (redTipConfig?.points.length ?? 0);
 
 		// Time in seconds for pattern evaluation
 		const timeSeconds = currentTime / 1000;
@@ -109,7 +109,7 @@ export class LedTipTracker implements ILedTipTracker {
 		}
 
 		if (redProp) {
-			const blueLedCount = blueLedConfig?.points.length ?? 0;
+			const blueLedCount = blueTipConfig?.points.length ?? 0;
 			totalTips = this.emitPropTips(
 				redProp,
 				config.canvasSize,
@@ -159,8 +159,8 @@ export class LedTipTracker implements ILedTipTracker {
 		timeSeconds: number,
 		ledGlobalOffset: number
 	): number {
-		const ledConfig = getLedPoints(propType);
-		const points = ledConfig.points;
+		const tipConfig = getTipPoints(propType);
+		const points = tipConfig.points;
 
 		if (points.length === 0) return outputStartIndex;
 
@@ -202,7 +202,7 @@ export class LedTipTracker implements ILedTipTracker {
 				worldY,
 				propIndex,
 				i,
-				lp.brightness,
+				1.0,
 				color,
 				currentTime,
 				outputIndex
