@@ -103,6 +103,14 @@ export interface SequenceData {
   readonly notes?: string;
   /** Effort timeline: phrase-level effort easing curves spanning multiple beats */
   readonly effortTimeline?: EffortTimeline | null;
+  /** Prop configuration the creator intended this sequence to be viewed with.
+   * Captured silently at save time from the viewer's current prop settings.
+   * null = legacy sequence with no intent recorded. */
+  readonly intendedProp?: {
+    readonly bluePropType: PropType;
+    readonly redPropType: PropType;
+    readonly catDogMode: boolean;
+  } | null;
 }
 
 export function createSequenceData(
@@ -179,6 +187,7 @@ export function createSequenceData(
     }),
     ...(data.notes !== undefined && { notes: data.notes }),
     ...(data.effortTimeline !== undefined && { effortTimeline: data.effortTimeline }),
+    ...(data.intendedProp !== undefined && { intendedProp: data.intendedProp }),
   };
   return result;
 }
