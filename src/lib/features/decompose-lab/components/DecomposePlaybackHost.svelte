@@ -628,12 +628,16 @@
           </button>
         </div>
       {:else}
-        <DecomposeLayout>
+        <DecomposeLayout
+          steps={animationState.sequenceData?.steps ?? []}
+          currentStep={animationState.currentStep}
+        >
           {#snippet heroCanvas()}
             <AnimatorCanvas
               {...propsForView(slotState.heroView)}
               {...sharedCanvasProps()}
               focused={true}
+              hideProgressBar={true}
             />
           {/snippet}
           {#snippet smallLeftCanvas()}

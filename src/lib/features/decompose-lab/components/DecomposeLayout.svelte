@@ -1,23 +1,39 @@
 <!--
   DecomposeLayout.svelte
 
-  Seamless three-canvas layout: hero canvas on top (2/3 height),
-  two small canvases below (1/3 height, side by side). No borders
-  between them — looks like one cohesive unit. Tapping a small
-  canvas swaps it with the hero.
+  Seamless three-canvas layout forming one tall rectangle:
+  - Hero canvas (full width) on top
+  - Two small canvases (each half width) directly below, flush
+  - Single progress bar at the very bottom
+
+  No gaps, no borders — one cohesive visual unit.
+  Tapping a small canvas swaps it with the hero.
 -->
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { HandView } from "../state/decompose-state.svelte";
   import { getDecomposeContext } from "../context/decompose-context";
+  import SegmentedSequenceProgressBar from "$lib/shared/animation-engine/components/layers/SegmentedSequenceProgressBar.svelte";
 
   interface Props {
     heroCanvas: Snippet;
     smallLeftCanvas: Snippet;
     smallRightCanvas: Snippet;
+    steps: readonly StepData[];
+    currentStep: number;
+    onSeek?: ((targetStep: number) => void) | null;
   }
 
-  let { heroCanvas, smallLeftCanvas, smallRightCanvas }: Props = $props();
+  let {
+    heroCanvas,
+    smallLeftCanvas,
+    smallRightCanvas,
+    steps = [],
+    currentStep = 0,
+    onSeek = null,
+  }: Props = $props();
+
   const { slotState } = getDecomposeContext();
 
   function handleSmallClick(slot: "left" | "right") {
@@ -53,6 +69,18 @@
       {@render smallRightCanvas()}
     </button>
   </div>
+
+  {#if steps.length > 0}
+    <div class="progress-slot">
+      <SegmentedSequenceProgressBar
+        {steps}
+        {currentStep}
+        visible={true}
+        variant="gradient"
+        {onSeek}
+      />
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -95,6 +123,10 @@
   .small-slot:focus-visible {
     outline: 2px solid var(--theme-accent, #f59e0b);
     outline-offset: -2px;
+  }
+
+  .progress-slot {
+    flex-shrink: 0;
   }
 
   @media (prefers-reduced-motion: reduce) {
