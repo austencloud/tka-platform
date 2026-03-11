@@ -88,8 +88,8 @@ export const EFFORTS: readonly EffortDescriptor[] = [
     subtitle: "overshoot, rebound",
     color: "#f59e0b",
     params: [
-      { key: "amplitude", label: "Amplitude", min: 0.5, max: 3, step: 0.1, defaultValue: 0.8 },
-      { key: "frequency", label: "Frequency", min: 1, max: 5, step: 0.5, defaultValue: 1.5 },
+      { key: "amplitude", label: "Amplitude", min: 0.1, max: 1.5, step: 0.05, defaultValue: 0.4 },
+      { key: "frequency", label: "Frequency", min: 0.5, max: 3, step: 0.25, defaultValue: 1.0 },
     ],
   },
   {
