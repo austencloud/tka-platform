@@ -1,5 +1,5 @@
 ---
-description: Analyze voice command sessions for patterns, failures, and T2 promotion candidates
+description: Use when reviewing voice session data for recurring failures, patterns, or T2 promotion candidates
 argument-hint: "[analyze|stats|<session-id>]"
 ---
 

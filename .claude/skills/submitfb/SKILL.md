@@ -1,5 +1,5 @@
 ---
-description: Submit feedback to tracking system
+description: Use when submitting a bug report, feature request, or feedback item to the tracker
 ---
 
 # Submit Feedback
@@ -10,6 +10,10 @@ Extract from conversation context:
 - **Type:** bug / feature / general
 - **Priority:** low / medium / high / critical
 - **Module/Tab:** If mentioned, otherwise system/general
+
+## Scope
+
+Submission only. For working on existing feedback, use `/fb`. For marking items done, use `/done`.
 
 ## Show Preview
 

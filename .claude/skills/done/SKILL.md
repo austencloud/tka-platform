@@ -1,10 +1,14 @@
 ---
-description: Mark feedback completed or auto-create and complete
+description: Use when completing a feedback item or logging a quick fix as done
 ---
 
 # Done Command
 
 **Args:** `$ARGUMENTS`
+
+## Scope
+
+For working on feedback (reading, claiming, implementing): use `/fb`. This skill only marks items done or quick-logs completed work.
 
 ## Mode Detection
 

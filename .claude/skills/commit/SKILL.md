@@ -1,5 +1,5 @@
 ---
-description: Analyze changes and commit in logical chunks
+description: Use when committing changes that span multiple concerns or modules
 ---
 
 # Smart Commit

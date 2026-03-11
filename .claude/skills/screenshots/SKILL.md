@@ -1,5 +1,5 @@
 ---
-description: Multi-device screenshot gallery for layout debugging. One command, 9 devices, gallery pops open.
+description: Use when checking layout across devices, debugging responsive issues, or capturing pre-release screenshots
 ---
 
 # Multi-Device Screenshots

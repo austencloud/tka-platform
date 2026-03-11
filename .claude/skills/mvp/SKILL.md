@@ -1,5 +1,5 @@
 ---
-description: Track MVP scope, priorities, and progress toward March 17, 2026 launch
+description: Use when checking MVP progress, adding scope, or deciding what to work on next toward launch
 argument-hint: "[status|scope|next|add <area> <item>|complete <id>]"
 ---
 

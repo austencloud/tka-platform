@@ -1,5 +1,5 @@
 ---
-description: Find and remove unused code from the codebase
+description: Use when cleaning up unused code, after major refactors, or during codebase hygiene passes
 argument-hint: "[scope | --list | --claims | --stats]"
 ---
 
