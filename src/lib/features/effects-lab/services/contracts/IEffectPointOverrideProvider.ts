@@ -1,6 +1,6 @@
 /**
  * Unified interface for effect point override storage.
- * Used by both FirePointOverrideProvider and LedPointOverrideProvider.
+ * Implemented by TipPointOverrideProvider.
  *
  * Two-layer storage model:
  * - Working state: auto-saved on every edit in the Effects Lab editor
