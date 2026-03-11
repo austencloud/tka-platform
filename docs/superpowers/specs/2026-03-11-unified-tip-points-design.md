@@ -100,13 +100,12 @@ Trail consumers (`TrailCapturer`, `TrailPathGenerator`, `AnimationPathCache`) ca
 | Update | `EffectDescriptor.ts` | Simplify, all use `getTipPoints()` |
 | Update | `EffectPointEditorTab.svelte` | Single provider, no mode branching |
 | Update | `EffectPointEditorState` | Remove effect-specific point types |
+| Update | `EffectPointSvgCanvas.svelte` | Remove `getIntensity`/`intensityLabel` refs |
+| Update | `EffectPointListPanel.svelte` | Remove intensity sliders, copy-from UI |
 | Update | `effects-lab-container.ts` | Wire single provider |
-| Update | `TrailCapturer.ts` | Use `getTipPoints()` |
-| Update | `TrailPathGenerator.ts` | Use `getTipPoints()` |
-| Update | `AnimationPathCache.ts` | Use `getTipPoints()` |
-| Update | `EffectsLayer.svelte` (3D) | Use `getTipPoints()` |
-| Update | `effect-state.svelte.ts` (3D) | Use `getTipPoints()` |
 | Update | `FireDefaultsLoader.ts` | Adapt to unified type |
+
+Note: `TrailCapturer.ts`, `TrailPathGenerator.ts`, `AnimationPathCache.ts`, `EffectsLayer.svelte` (3D), and `effect-state.svelte.ts` (3D) do NOT import from the old tip point registries. Their `getTrailPoints` methods are internal trail-history methods, not tip registry lookups. No changes needed.
 
 ## What Doesn't Change
 
