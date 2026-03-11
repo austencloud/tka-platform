@@ -11,6 +11,7 @@
     FeedbackType,
     FeedbackPriority,
   } from "../../domain/models/feedback-models";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   const { item, isExpanded, onToggle } = $props<{
     item: TrackerItem;
@@ -38,13 +39,13 @@
       const hours = Math.floor(diff / (1000 * 60 * 60));
       if (hours === 0) {
         const minutes = Math.floor(diff / (1000 * 60));
-        return minutes <= 1 ? "Just now" : `${minutes}m ago`;
+        return minutes <= 1 ? t("feedback_just_now") : t("feedback_minutes_ago", { count: minutes });
       }
-      return `${hours}h ago`;
+      return t("feedback_hours_ago", { count: hours });
     }
-    if (days === 1) return "Yesterday";
-    if (days < 7) return `${days}d ago`;
-    if (days < 30) return `${Math.floor(days / 7)}w ago`;
+    if (days === 1) return t("feedback_yesterday");
+    if (days < 7) return t("feedback_days_ago", { count: days });
+    if (days < 30) return t("feedback_weeks_ago", { count: Math.floor(days / 7) });
     return date.toLocaleDateString();
   }
 

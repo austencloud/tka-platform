@@ -10,6 +10,7 @@
     PRIORITY_CONFIG,
   } from "../../domain/models/feedback-models";
   import { generateAvatarUrl } from "$lib/shared/foundation/utils/avatar-generator";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   const { item, isSelected, onClick, onStatusChange, onDelete } = $props<{
     item: FeedbackItem;
@@ -89,12 +90,12 @@
       const hours = Math.floor(diff / (1000 * 60 * 60));
       if (hours === 0) {
         const minutes = Math.floor(diff / (1000 * 60));
-        return minutes <= 1 ? "Just now" : `${minutes}m ago`;
+        return minutes <= 1 ? t("feedback_time_just_now") : t("feedback_time_minutes_ago", { count: minutes });
       }
-      return `${hours}h ago`;
+      return t("feedback_time_hours_ago", { count: hours });
     }
-    if (days === 1) return "Yesterday";
-    if (days < 7) return `${days}d ago`;
+    if (days === 1) return t("feedback_time_yesterday");
+    if (days < 7) return t("feedback_time_days_ago", { count: days });
     return date.toLocaleDateString();
   }
 
@@ -218,7 +219,7 @@
     >
       <div class="action-content" style="transform: scale({leftActionScale})">
         <i class="fas fa-trash-alt" aria-hidden="true"></i>
-        <span>Delete</span>
+        <span>{t("feedback_delete")}</span>
       </div>
     </div>
   {/if}
@@ -232,10 +233,10 @@
         <i class="fas fa-check-circle" aria-hidden="true"></i>
         <span
           >{item.status === "new"
-            ? "Start"
+            ? t("feedback_swipe_start")
             : item.status === "in_progress"
-              ? "Resolve"
-              : "Reopen"}</span
+              ? t("feedback_swipe_resolve")
+              : t("feedback_swipe_reopen")}</span
         >
       </div>
     </div>

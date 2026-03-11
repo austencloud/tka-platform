@@ -175,31 +175,31 @@ export const CHARCOAL_SLIDER_GROUPS: CharcoalSliderGroup[] = [
 	},
 ];
 
-/** Default charcoal spark parameters — balanced steel-wool starting point. */
+/** Default charcoal spark parameters — Austen's dialed-in steel-wool look (82/58/60). */
 export const DEFAULT_CHARCOAL_PARAMS: CharcoalSparkParams = {
-	burstThreshold: 120,
-	burstMultiplier: 25,
-	burstMax: 120,
-	ambientRate: 30,
-	ambientSpeedThreshold: 15,
-	idleRate: 3,
-	gravity: 250,
+	burstThreshold: 45,
+	burstMultiplier: 108,
+	burstMax: 540,
+	ambientRate: 214,
+	ambientSpeedThreshold: 5,
+	idleRate: 21,
+	gravity: 261,
 	drag: 0.93,
-	velocityInheritance: 0.75,
-	perturbSpeedMin: 8,
-	perturbSpeedMax: 35,
-	spreadAngle: Math.PI * 0.15,
-	lifetimeMin: 0.6,
-	lifetimeMax: 1.6,
-	sizeMin: 5,
-	sizeMax: 12,
+	velocityInheritance: 0.55,
+	perturbSpeedMin: 31,
+	perturbSpeedMax: 122,
+	spreadAngle: Math.PI * 0.58,
+	lifetimeMin: 1.87,
+	lifetimeMax: 4.98,
+	sizeMin: 6,
+	sizeMax: 14,
 	shrinkOverLife: true,
 	coreColor: [255, 242, 210],
 	midColor: [255, 150, 35],
 	coolColor: [170, 45, 2],
-	emberGlowRadius: 22,
-	emberGlowIntensity: 1.6,
-	maxParticles: 600,
+	emberGlowRadius: 28,
+	emberGlowIntensity: 1.96,
+	maxParticles: 4136,
 };
 
 // ============================================================================
@@ -218,9 +218,9 @@ export interface CharcoalSemanticValues {
 
 /** Default semantic values that correspond to DEFAULT_CHARCOAL_PARAMS. */
 export const DEFAULT_CHARCOAL_SEMANTIC: CharcoalSemanticValues = {
-	intensity: 0.33,
-	spread: 0.4,
-	glow: 0.5,
+	intensity: 0.82,
+	spread: 0.47,  // gravity 261 in [480, 15] range
+	glow: 0.60,
 };
 
 /** Lerp helper: map t [0-1] to [a, b]. */
@@ -240,23 +240,23 @@ export function semanticToCharcoalParams(semantic: CharcoalSemanticValues): Char
 
 	return {
 		// Intensity controls emission volume
-		ambientRate: Math.round(lerp(5, 80, intensity)),
-		burstMultiplier: Math.round(lerp(8, 40, intensity)),
-		burstMax: Math.round(lerp(40, 200, intensity)),
-		burstThreshold: Math.round(lerp(180, 80, intensity)), // Lower threshold = more bursts at high intensity
-		ambientSpeedThreshold: 15,
-		maxParticles: Math.round(lerp(200, 1200, intensity)),
-		idleRate: Math.round(lerp(0, 8, intensity)),
+		ambientRate: Math.round(lerp(5, 260, intensity)),
+		burstMultiplier: Math.round(lerp(8, 130, intensity)),
+		burstMax: Math.round(lerp(40, 650, intensity)),
+		burstThreshold: Math.round(lerp(180, 15, intensity)),
+		ambientSpeedThreshold: lerp(15, 3, intensity),
+		maxParticles: Math.round(lerp(200, 5000, intensity)),
+		idleRate: Math.round(lerp(0, 25, intensity)),
 
-		// Spread controls how far sparks travel
-		gravity: Math.round(lerp(600, 80, spread)), // Low spread = heavy gravity (tight), high = floaty
-		drag: lerp(0.88, 0.97, spread),
-		velocityInheritance: lerp(0.9, 0.5, spread), // Low spread = follow tip, high = scatter
-		perturbSpeedMin: Math.round(lerp(4, 15, spread)),
-		perturbSpeedMax: Math.round(lerp(15, 60, spread)),
-		spreadAngle: lerp(Math.PI * 0.08, Math.PI * 0.4, spread),
-		lifetimeMin: Number(lerp(0.3, 1.2, spread).toFixed(2)),
-		lifetimeMax: Number(lerp(0.8, 3.0, spread).toFixed(2)),
+		// Spread controls how far sparks travel (floor raised — below old 20% was useless)
+		gravity: Math.round(lerp(480, 15, spread)),
+		drag: lerp(0.88, 0.99, spread),
+		velocityInheritance: lerp(0.78, 0.3, spread),
+		perturbSpeedMin: Math.round(lerp(13, 50, spread)),
+		perturbSpeedMax: Math.round(lerp(52, 200, spread)),
+		spreadAngle: lerp(Math.PI * 0.24, Math.PI * 0.9, spread),
+		lifetimeMin: Number(lerp(0.84, 3.0, spread).toFixed(2)),
+		lifetimeMax: Number(lerp(2.24, 8.0, spread).toFixed(2)),
 
 		// Glow controls visual brightness
 		sizeMin: Math.round(lerp(3, 8, glow)),
@@ -275,8 +275,8 @@ export function semanticToCharcoalParams(semantic: CharcoalSemanticValues): Char
 /** Extract semantic values from concrete CharcoalSparkParams (best-effort inverse). */
 export function charcoalParamsToSemantic(params: CharcoalSparkParams): CharcoalSemanticValues {
 	return {
-		intensity: invLerp(5, 80, params.ambientRate),
-		spread: invLerp(600, 80, params.gravity), // Inverted: low gravity = high spread
+		intensity: invLerp(5, 260, params.ambientRate),
+		spread: invLerp(480, 15, params.gravity), // Inverted: low gravity = high spread
 		glow: invLerp(0.4, 3.0, params.emberGlowIntensity),
 	};
 }

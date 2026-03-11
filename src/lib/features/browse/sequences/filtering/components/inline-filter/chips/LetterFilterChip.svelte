@@ -4,6 +4,7 @@ Displays the active letter when filtering.
 -->
 <script lang="ts">
   import FilterChipBase from "../FilterChipBase.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   interface Props {
     activeLetter: string | null;
@@ -12,7 +13,7 @@ Displays the active letter when filtering.
 
   let { activeLetter, onOpenSheet }: Props = $props();
 
-  const label = $derived(activeLetter ? `Letter ${activeLetter}` : "Letter");
+  const label = $derived(activeLetter ? t('browse_filter_letter', { letter: activeLetter }) : t('browse_chip_letter'));
   const isActive = $derived(activeLetter !== null);
 </script>
 

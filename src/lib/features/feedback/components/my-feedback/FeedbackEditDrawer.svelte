@@ -13,6 +13,7 @@
   } from "../../domain/models/feedback-models";
   import { responsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
   import { onMount } from "svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     isOpen: boolean;
@@ -98,7 +99,7 @@
       }
       isOpen = false;
     } catch (err) {
-      error = err instanceof Error ? err.message : "Failed to save changes";
+      error = err instanceof Error ? err.message : t("feedback_save_failed");
     } finally {
       isSaving = false;
     }
@@ -115,7 +116,7 @@
 <Drawer
   bind:isOpen
   placement={drawerPlacement}
-  ariaLabel={appendMode ? "Add notes to feedback" : "Edit feedback"}
+  ariaLabel={appendMode ? t("feedback_add_notes_aria") : t("feedback_edit_aria")}
   class="feedback-edit-drawer {isSideBySide ? 'side-panel' : 'bottom-sheet'}"
   showHandle={!isSideBySide}
 >
@@ -124,7 +125,7 @@
     style="--active-type-color: {currentTypeConfig.color}"
   >
     <DrawerHeader
-      title={appendMode ? "Add Notes" : "Edit Feedback"}
+      title={appendMode ? t("feedback_add_notes") : t("feedback_edit_feedback")}
       onClose={handleCancel}
     />
 
@@ -142,7 +143,7 @@
 
         <!-- Original Description (read-only) -->
         <div class="field">
-          <span class="field-label">Original Feedback</span>
+          <span class="field-label">{t("feedback_original_feedback")}</span>
           <div class="original-description">
             <span
               class="type-indicator"
@@ -161,14 +162,14 @@
         <!-- Additional Notes -->
         <div class="field">
           <label for="additional-notes" class="field-label"
-            >Additional Notes</label
+            >{t("feedback_additional_notes")}</label
           >
           <div class="textarea-wrapper">
             <textarea
               id="additional-notes"
               class="field-textarea"
               bind:value={additionalNotes}
-              placeholder="Add clarification, more details, or updates..."
+              placeholder={t("feedback_additional_notes_placeholder")}
               rows="4"
             ></textarea>
           </div>
@@ -178,7 +179,7 @@
               class:met={additionalNotes.trim().length >= 5}
             >
               {#if additionalNotes.trim().length < 5}
-                {5 - additionalNotes.trim().length} more needed
+                {t("feedback_chars_needed", { count: 5 - additionalNotes.trim().length })}
               {:else}
                 <i class="fas fa-check" aria-hidden="true"></i>
               {/if}
@@ -189,7 +190,7 @@
         <!-- Full Edit Mode -->
         <!-- Type Selector -->
         <fieldset class="type-selector">
-          <legend class="sr-only">Feedback Type</legend>
+          <legend class="sr-only">{t("feedback_type")}</legend>
           <div class="segment-control">
             {#each Object.entries(TYPE_CONFIG) as [type, config]}
               <button
@@ -214,7 +215,7 @@
 
         <!-- Description Field -->
         <div class="field">
-          <label for="edit-description" class="field-label">Description</label>
+          <label for="edit-description" class="field-label">{t("feedback_description")}</label>
           <div class="textarea-wrapper">
             <textarea
               id="edit-description"
@@ -230,7 +231,7 @@
               class:met={editDescription.trim().length >= 10}
             >
               {#if editDescription.trim().length < 10}
-                {10 - editDescription.trim().length} more needed
+                {t("feedback_chars_needed", { count: 10 - editDescription.trim().length })}
               {:else}
                 <i class="fas fa-check" aria-hidden="true"></i>
               {/if}
@@ -250,7 +251,7 @@
       <!-- Actions -->
       <div class="form-actions">
         <button type="button" class="cancel-btn" onclick={handleCancel}>
-          Cancel
+          {t("feedback_cancel")}
         </button>
         <button
           type="button"
@@ -261,13 +262,13 @@
         >
           {#if isSaving}
             <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
-            <span>Saving...</span>
+            <span>{t("feedback_saving")}</span>
           {:else}
             <i
               class="fas {appendMode ? 'fa-plus' : 'fa-check'}"
               aria-hidden="true"
             ></i>
-            <span>{appendMode ? "Add Notes" : "Save Changes"}</span>
+            <span>{appendMode ? t("feedback_add_notes") : t("feedback_save_changes")}</span>
           {/if}
         </button>
       </div>

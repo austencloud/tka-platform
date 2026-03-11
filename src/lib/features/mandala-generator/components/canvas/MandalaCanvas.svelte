@@ -1,5 +1,6 @@
 <script lang="ts">
   import { getContext, onMount } from "svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type {
     MandalaElement,
     TransformedElement,
@@ -255,7 +256,7 @@
   ondrop={handleDrop}
   role="application"
   tabindex="0"
-  aria-label="Mandala design canvas - click to place elements, press Escape to deselect"
+  aria-label={t('mandala_canvas_aria')}
 >
   <svg
     class="mandala-canvas"
@@ -364,13 +365,11 @@
 
   <!-- Canvas info overlay -->
   <div class="canvas-info">
-    <span class="info-label">{config.foldCount}-fold</span>
+    <span class="info-label">{t('mandala_n_fold', { count: String(config.foldCount) })}</span>
     {#if config.enableMirror}
-      <span class="info-label">Mirror: {config.mirrorAxis}</span>
+      <span class="info-label">{t('mandala_mirror_label', { axis: config.mirrorAxis })}</span>
     {/if}
-    <span class="info-label"
-      >{elements.length} element{elements.length !== 1 ? "s" : ""}</span
-    >
+    <span class="info-label">{t('mandala_element_count', { count: String(elements.length) })}</span>
   </div>
 </div>
 

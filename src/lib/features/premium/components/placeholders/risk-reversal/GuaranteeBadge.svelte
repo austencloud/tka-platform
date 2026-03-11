@@ -1,5 +1,7 @@
 <!-- GuaranteeBadge - Money-back guarantee badge -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
+
   interface Props {
     days?: number;
     link?: string;
@@ -13,12 +15,12 @@
     <i class="fas fa-shield-check" aria-hidden="true"></i>
   </div>
   <div class="badge-content">
-    <div class="badge-title">{days}-Day Money-Back Guarantee</div>
+    <div class="badge-title">{t('premium_guarantee_title', { days })}</div>
     <div class="badge-description">
-      Not satisfied? Get a full refund within {days} days, no questions asked.
+      {t('premium_guarantee_description', { days })}
     </div>
     {#if link}
-      <a href={link} class="terms-link">View terms</a>
+      <a href={link} class="terms-link">{t('premium_guarantee_view_terms')}</a>
     {/if}
   </div>
 </div>

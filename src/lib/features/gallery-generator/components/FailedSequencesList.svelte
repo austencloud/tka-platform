@@ -4,6 +4,7 @@
   Collapsible list of sequences that failed to render.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { galleryGeneratorState } from "../state/gallery-generator-state.svelte";
 
   const state = galleryGeneratorState;
@@ -11,7 +12,7 @@
 
 {#if state.failedSequences.length > 0 && !state.isRendering}
   <details class="failed-section">
-    <summary>Failed ({state.failedSequences.length})</summary>
+    <summary>{t('gallery_gen_failed_heading', { count: String(state.failedSequences.length) })}</summary>
     <div class="failed-list">
       {#each state.failedSequences as failed}
         <div class="failed-item">

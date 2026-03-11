@@ -5,6 +5,7 @@
   Phase 1 (Hand Tracking) is the only interactive phase for now.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { PhaseInfo } from "./domain/models";
   import PhaseOverview from "./components/PhaseOverview.svelte";
   import Phase1Panel from "./components/Phase1Panel.svelte";
@@ -63,8 +64,8 @@
 
 <div class="skel2tka-lab">
   <header class="lab-header">
-    <h2>Skel2TKA Pipeline</h2>
-    <p class="subtitle">Convert video of prop spinning into TKA notation</p>
+    <h2>{t('skel2tka_title')}</h2>
+    <p class="subtitle">{t('skel2tka_subtitle')}</p>
   </header>
 
   <PhaseOverview {phases} {activePhase} onPhaseSelect={handlePhaseSelect} />
@@ -75,7 +76,7 @@
     {:else}
       <div class="locked-message">
         <i class="fas fa-lock"></i>
-        <span>Phase {activePhase} is not yet implemented.</span>
+        <span>{t('skel2tka_phase_locked', { phase: String(activePhase) })}</span>
       </div>
     {/if}
   </div>

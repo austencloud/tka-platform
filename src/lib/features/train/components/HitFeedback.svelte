@@ -4,6 +4,8 @@
   Shows combo counter, score feedback, and animations for successful hits.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
+
   interface Props {
     combo: number;
     lastHit: boolean | null;
@@ -40,7 +42,7 @@
 <div class="hit-feedback">
   <!-- Total Score Display -->
   <div class="score-display">
-    <span class="score-label">Score</span>
+    <span class="score-label">{t('train_score_label')}</span>
     <span class="score-value">{totalScore.toLocaleString()}</span>
   </div>
 
@@ -48,7 +50,7 @@
   {#if combo > 0}
     <div class="combo-display" class:high-combo={combo >= 10}>
       <span class="combo-value">{combo}x</span>
-      <span class="combo-label">COMBO</span>
+      <span class="combo-label">{t('train_combo_label')}</span>
     </div>
   {/if}
 
@@ -57,10 +59,10 @@
     {#key feedbackKey}
       <div class="feedback-popup" class:hit={lastHit} class:miss={!lastHit}>
         {#if lastHit}
-          <div class="hit-text">HIT!</div>
+          <div class="hit-text">{t('train_hit')}</div>
           <div class="points-text">+{lastPoints}</div>
         {:else}
-          <div class="miss-text">MISS</div>
+          <div class="miss-text">{t('train_miss')}</div>
         {/if}
       </div>
     {/key}

@@ -10,6 +10,7 @@
   - Space: play/pause
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { IOverlayRenderer } from "../../services/contracts/IOverlayRenderer";
   import type { Phase1Result } from "../../domain/models";
   import type { DetectionFrame } from "$lib/features/train/domain/models/DetectionFrame";
@@ -220,19 +221,19 @@
 
   <div class="controls">
     <div class="scrubber-row">
-      <button class="control-btn" onclick={prevBeat} title="Previous beat (Shift+Left)" aria-label="Previous beat">
+      <button class="control-btn" onclick={prevBeat} title={t('skel2tka_prev_beat_hint')} aria-label={t('skel2tka_prev_beat')}>
         <i class="fas fa-step-backward"></i>
       </button>
-      <button class="control-btn" onclick={prevFrame} title="Previous frame (Left)" aria-label="Previous frame">
+      <button class="control-btn" onclick={prevFrame} title={t('skel2tka_prev_frame_hint')} aria-label={t('skel2tka_prev_frame')}>
         <i class="fas fa-chevron-left"></i>
       </button>
-      <button class="control-btn play-btn" onclick={togglePlayback} title="Play/Pause (Space)" aria-label={isPlaying ? "Pause" : "Play"}>
+      <button class="control-btn play-btn" onclick={togglePlayback} title={t('skel2tka_play_pause_hint')} aria-label={isPlaying ? t('skel2tka_pause') : t('skel2tka_play')}>
         <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}"></i>
       </button>
-      <button class="control-btn" onclick={nextFrame} title="Next frame (Right)" aria-label="Next frame">
+      <button class="control-btn" onclick={nextFrame} title={t('skel2tka_next_frame_hint')} aria-label={t('skel2tka_next_frame')}>
         <i class="fas fa-chevron-right"></i>
       </button>
-      <button class="control-btn" onclick={nextBeat} title="Next beat (Shift+Right)" aria-label="Next beat">
+      <button class="control-btn" onclick={nextBeat} title={t('skel2tka_next_beat_hint')} aria-label={t('skel2tka_next_beat')}>
         <i class="fas fa-step-forward"></i>
       </button>
     </div>
@@ -245,14 +246,14 @@
         value={currentFrameIndex}
         oninput={handleSliderChange}
         class="frame-slider"
-        aria-label="Frame scrubber"
+        aria-label={t('skel2tka_frame_scrubber')}
       />
     </div>
 
     <div class="keyboard-hints">
-      <span><kbd>&larr;</kbd><kbd>&rarr;</kbd> frame</span>
-      <span><kbd>Shift</kbd>+<kbd>&larr;</kbd><kbd>&rarr;</kbd> beat</span>
-      <span><kbd>Space</kbd> play</span>
+      <span><kbd>&larr;</kbd><kbd>&rarr;</kbd> {t('skel2tka_kbd_frame')}</span>
+      <span><kbd>Shift</kbd>+<kbd>&larr;</kbd><kbd>&rarr;</kbd> {t('skel2tka_kbd_beat')}</span>
+      <span><kbd>Space</kbd> {t('skel2tka_kbd_play')}</span>
     </div>
   </div>
 

@@ -3,6 +3,7 @@
 		REPORT_CATEGORIES,
 		type ReportCategory
 	} from '../domain/models/report-models';
+	import { t } from '$lib/shared/i18n/i18n.svelte';
 
 	interface Props {
 		selected: ReportCategory | null;
@@ -55,8 +56,8 @@
 	}
 </script>
 
-<div class="category-selector" role="radiogroup" aria-label="Report category">
-	<p class="label" id="category-label">Select a reason for reporting:</p>
+<div class="category-selector" role="radiogroup" aria-label={t('moderation_report_category')}>
+	<p class="label" id="category-label">{t('moderation_select_reason')}</p>
 
 	<div class="categories" role="presentation" onkeydown={handleKeydown}>
 		{#each categories as [key, config], index}

@@ -1721,12 +1721,13 @@ export class AnimationEngine {
    */
   private updateHandPresenceCache(): void {
     const seq = this.prevSequenceData;
-    const cacheKey = seq ? (seq.id || seq.word || "") + "-" + seq.steps.length : null;
+    const steps = seq?.steps;
+    const cacheKey = seq ? (seq.id || seq.word || "") + "-" + (steps?.length ?? 0) : null;
 
     if (cacheKey === this.handPresenceCacheKey) return;
     this.handPresenceCacheKey = cacheKey;
 
-    if (!seq || seq.steps.length === 0) {
+    if (!seq || !steps || steps.length === 0) {
       this.sequenceHasBlueMotion = true;
       this.sequenceHasRedMotion = true;
       return;
@@ -1741,7 +1742,7 @@ export class AnimationEngine {
     if (startPos?.motions?.red) hasRed = true;
 
     // Check all steps
-    for (const step of seq.steps) {
+    for (const step of steps) {
       if (step.motions?.blue) hasBlue = true;
       if (step.motions?.red) hasRed = true;
       if (hasBlue && hasRed) break;

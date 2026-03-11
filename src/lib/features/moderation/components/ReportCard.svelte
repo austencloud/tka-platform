@@ -5,6 +5,7 @@
 		getStatusConfig,
 		formatReportDate
 	} from '../domain/models/report-models';
+	import { t } from '$lib/shared/i18n/i18n.svelte';
 
 	interface Props {
 		report: UserReport;
@@ -37,12 +38,12 @@
 
 	<div class="card-body">
 		<div class="reported-user">
-			<span class="label">Reported:</span>
+			<span class="label">{t('moderation_reported')}:</span>
 			<span class="value">{report.reportedUserDisplayName}</span>
 		</div>
 
 		<p class="description">
-			{report.description || 'No description provided'}
+			{report.description || t('moderation_no_description')}
 		</p>
 	</div>
 

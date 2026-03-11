@@ -9,6 +9,7 @@
 	 */
 
 	import { onMount } from 'svelte';
+	import { t } from "$lib/shared/i18n/i18n.svelte.js";
 	import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
 	import type {
 		PublicSessionInfo,
@@ -106,7 +107,7 @@
 	async function handleJoinByLink() {
 		const sessionId = extractSessionId(inviteLink);
 		if (!sessionId) {
-			alert('Invalid invite link');
+			alert(t("gallery_session_invalid_link"));
 			return;
 		}
 
@@ -126,12 +127,12 @@
 	// Format time ago
 	function formatTimeAgo(timestamp: number): string {
 		const seconds = Math.floor((Date.now() - timestamp) / 1000);
-		if (seconds < 60) return 'just now';
+		if (seconds < 60) return t("gallery_time_just_now");
 		const minutes = Math.floor(seconds / 60);
-		if (minutes < 60) return `${minutes}m ago`;
+		if (minutes < 60) return t("gallery_time_minutes_ago", { count: minutes.toString() });
 		const hours = Math.floor(minutes / 60);
-		if (hours < 24) return `${hours}h ago`;
-		return `${Math.floor(hours / 24)}d ago`;
+		if (hours < 24) return t("gallery_time_hours_ago", { count: hours.toString() });
+		return t("gallery_time_days_ago", { count: Math.floor(hours / 24).toString() });
 	}
 
 	onMount(() => {
@@ -153,16 +154,16 @@
 	<div class="backdrop" onclick={onClose} role="presentation"></div>
 
 	<!-- Drawer -->
-	<div class="drawer" role="dialog" aria-label="Multiplayer Session">
-		<DrawerHeader title="Multiplayer Gallery" {onClose} />
+	<div class="drawer" role="dialog" aria-label={t("gallery_session_dialog_label")}>
+		<DrawerHeader title={t("gallery_session_drawer_title")} {onClose} />
 
 		<!-- Leave session button if in session -->
 		{#if isInSession}
 			<div class="in-session-banner">
-				<span>You're in a session</span>
+				<span>{t("gallery_session_in_session")}</span>
 				<button class="leave-button" onclick={handleLeave}>
 					<i class="fas fa-sign-out-alt" aria-hidden="true"></i>
-					Leave
+					{t("gallery_leave")}
 				</button>
 			</div>
 		{/if}
@@ -175,7 +176,7 @@
 				onclick={() => (activeTab = 'browse')}
 			>
 				<i class="fas fa-globe" aria-hidden="true"></i>
-				Browse
+				{t("gallery_session_tab_browse")}
 			</button>
 			<button
 				class="tab"
@@ -183,7 +184,7 @@
 				onclick={() => (activeTab = 'create')}
 			>
 				<i class="fas fa-plus" aria-hidden="true"></i>
-				Create
+				{t("gallery_session_tab_create")}
 			</button>
 			<button
 				class="tab"
@@ -191,7 +192,7 @@
 				onclick={() => (activeTab = 'link')}
 			>
 				<i class="fas fa-link" aria-hidden="true"></i>
-				Join Link
+				{t("gallery_session_tab_join_link")}
 			</button>
 		</nav>
 
@@ -203,13 +204,13 @@
 					{#if isLoading}
 						<div class="loading">
 							<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-							Loading sessions...
+							{t("gallery_session_loading")}
 						</div>
 					{:else if publicSessions.length === 0}
 						<div class="empty-state">
 							<i class="fas fa-door-open" aria-hidden="true"></i>
-							<p>No public sessions available</p>
-							<p class="hint">Create one to start exploring with others!</p>
+							<p>{t("gallery_session_empty")}</p>
+							<p class="hint">{t("gallery_session_empty_hint")}</p>
 						</div>
 					{:else}
 						{#each publicSessions as session (session.id)}
@@ -220,7 +221,7 @@
 							>
 								<div class="session-info">
 									<span class="session-name">{session.name}</span>
-									<span class="session-host">by {session.hostDisplayName}</span>
+									<span class="session-host">{t("gallery_by_author", { author: session.hostDisplayName })}</span>
 								</div>
 								<div class="session-meta">
 									<span class="player-count">
@@ -235,26 +236,26 @@
 
 					<button class="refresh-button" onclick={() => onRefresh?.()} disabled={isLoading || !onRefresh}>
 						<i class="fas fa-sync-alt" class:fa-spin={isLoading} aria-hidden="true"></i>
-						Refresh
+						{t("gallery_session_refresh")}
 					</button>
 				</div>
 			{:else if activeTab === 'create'}
 				<!-- Create new session -->
 				<form class="create-form" onsubmit={(e) => { e.preventDefault(); handleCreate(); }}>
 					<div class="form-group">
-						<label for="session-name">Session Name</label>
+						<label for="session-name">{t("gallery_session_name_label")}</label>
 						<input
 							id="session-name"
 							type="text"
 							bind:value={sessionName}
-							placeholder="My Gallery Tour"
+							placeholder={t("gallery_session_name_placeholder")}
 							maxlength={50}
 							required
 						/>
 					</div>
 
 					<div class="form-group" role="radiogroup" aria-labelledby="visibility-label">
-						<span id="visibility-label" class="form-label-text">Visibility</span>
+						<span id="visibility-label" class="form-label-text">{t("gallery_session_visibility_label")}</span>
 						<div class="visibility-options">
 							<label class="visibility-option">
 								<input
@@ -265,8 +266,8 @@
 								/>
 								<span class="option-content">
 									<i class="fas fa-globe" aria-hidden="true"></i>
-									<span class="option-label">Public</span>
-									<span class="option-desc">Anyone can join</span>
+									<span class="option-label">{t("gallery_session_public")}</span>
+									<span class="option-desc">{t("gallery_session_public_desc")}</span>
 								</span>
 							</label>
 							<label class="visibility-option">
@@ -278,8 +279,8 @@
 								/>
 								<span class="option-content">
 									<i class="fas fa-lock" aria-hidden="true"></i>
-									<span class="option-label">Private</span>
-									<span class="option-desc">Invite link only</span>
+									<span class="option-label">{t("gallery_session_private")}</span>
+									<span class="option-desc">{t("gallery_session_private_desc")}</span>
 								</span>
 							</label>
 						</div>
@@ -288,10 +289,10 @@
 					<button type="submit" class="create-button" disabled={isCreating || !sessionName.trim()}>
 						{#if isCreating}
 							<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-							Creating...
+							{t("gallery_session_creating")}
 						{:else}
 							<i class="fas fa-plus" aria-hidden="true"></i>
-							Create Session
+							{t("gallery_session_create_button")}
 						{/if}
 					</button>
 				</form>
@@ -299,22 +300,22 @@
 				<!-- Join by invite link -->
 				<form class="link-form" onsubmit={(e) => { e.preventDefault(); handleJoinByLink(); }}>
 					<div class="form-group">
-						<label for="invite-link">Invite Link or Session ID</label>
+						<label for="invite-link">{t("gallery_session_invite_label")}</label>
 						<input
 							id="invite-link"
 							type="text"
 							bind:value={inviteLink}
-							placeholder="https://... or session ID"
+							placeholder={t("gallery_session_invite_placeholder")}
 						/>
 					</div>
 
 					<button type="submit" class="join-button" disabled={isJoining || !inviteLink.trim()}>
 						{#if isJoining}
 							<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-							Joining...
+							{t("gallery_session_joining")}
 						{:else}
 							<i class="fas fa-sign-in-alt" aria-hidden="true"></i>
-							Join Session
+							{t("gallery_session_join_button")}
 						{/if}
 					</button>
 				</form>

@@ -6,6 +6,7 @@
     TrackerStatusFilter,
   } from "../../state/feedback-tracker-state.svelte";
   import TrackerCard from "./TrackerCard.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   const { trackerState }: {
     trackerState: FeedbackTrackerState;
@@ -19,27 +20,27 @@
   }
 
   // Type filter options
-  const typeOptions: { value: TrackerTypeFilter; label: string; icon: string }[] = [
-    { value: "all", label: "All", icon: "fa-layer-group" },
-    { value: "bug", label: "Bugs", icon: "fa-bug" },
-    { value: "feature", label: "Features", icon: "fa-lightbulb" },
-    { value: "general", label: "General", icon: "fa-comment" },
-  ];
+  const typeOptions = $derived([
+    { value: "all" as TrackerTypeFilter, label: t("feedback_filter_all"), icon: "fa-layer-group" },
+    { value: "bug" as TrackerTypeFilter, label: t("feedback_filter_bugs"), icon: "fa-bug" },
+    { value: "feature" as TrackerTypeFilter, label: t("feedback_filter_features"), icon: "fa-lightbulb" },
+    { value: "general" as TrackerTypeFilter, label: t("feedback_filter_general"), icon: "fa-comment" },
+  ]);
 
   // Status filter options
-  const statusOptions: { value: TrackerStatusFilter; label: string; icon: string }[] = [
-    { value: "all", label: "All", icon: "fa-layer-group" },
-    { value: "reported", label: "Reported", icon: "fa-inbox" },
-    { value: "in-progress", label: "In Progress", icon: "fa-spinner" },
-    { value: "fixed", label: "Fixed", icon: "fa-check-circle" },
-  ];
+  const statusOptions = $derived([
+    { value: "all" as TrackerStatusFilter, label: t("feedback_filter_all"), icon: "fa-layer-group" },
+    { value: "reported" as TrackerStatusFilter, label: t("feedback_filter_reported"), icon: "fa-inbox" },
+    { value: "in-progress" as TrackerStatusFilter, label: t("feedback_filter_in_progress"), icon: "fa-spinner" },
+    { value: "fixed" as TrackerStatusFilter, label: t("feedback_filter_fixed"), icon: "fa-check-circle" },
+  ]);
 </script>
 
 <div class="tracker-list">
   <!-- Filter bar -->
   <div class="filter-bar">
     <div class="filter-row">
-      <span class="filter-label">Type</span>
+      <span class="filter-label">{t("feedback_filter_type")}</span>
       <div class="filter-chips" role="radiogroup" aria-label="Filter by type">
         {#each typeOptions as opt}
           <button
@@ -58,7 +59,7 @@
     </div>
 
     <div class="filter-row">
-      <span class="filter-label">Status</span>
+      <span class="filter-label">{t("feedback_filter_status")}</span>
       <div class="filter-chips" role="radiogroup" aria-label="Filter by status">
         {#each statusOptions as opt}
           <button
@@ -82,7 +83,7 @@
     {#if trackerState.isLoading}
       <div class="loading-state" role="status" aria-live="polite" aria-busy="true">
         <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-        <span>Loading feedback...</span>
+        <span>{t("feedback_loading_feedback")}</span>
       </div>
     {:else if trackerState.error}
       <div class="error-state" role="alert" aria-live="assertive">
@@ -92,8 +93,8 @@
     {:else if trackerState.items.length === 0}
       <div class="empty-state">
         <i class="fas fa-inbox" aria-hidden="true"></i>
-        <h2>No feedback found</h2>
-        <p>Try changing your filters, or check back later.</p>
+        <h2>{t("feedback_no_results")}</h2>
+        <p>{t("feedback_no_results_hint")}</p>
       </div>
     {:else}
       <div class="card-list">

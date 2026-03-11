@@ -6,6 +6,7 @@
   Renders as a step chart since positions are discrete.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { HandTimeline } from "../domain/models";
   import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
@@ -141,10 +142,10 @@
 
   <div class="legend">
     <span class="legend-item">
-      <span class="legend-dot blue-dot"></span> Blue hand
+      <span class="legend-dot blue-dot"></span> {t('skel2tka_blue_hand')}
     </span>
     <span class="legend-item">
-      <span class="legend-dot red-dot"></span> Red hand
+      <span class="legend-dot red-dot"></span> {t('skel2tka_red_hand')}
     </span>
   </div>
 </div>

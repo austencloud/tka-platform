@@ -5,6 +5,7 @@
   Shows LOOP type, slice size, sequence number, and viewer count.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { BroadcastStateClient } from "../domain/models/broadcast-models";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
@@ -48,17 +49,17 @@
       </span>
       <span class="separator">·</span>
       <span class="beat-count">
-        {broadcastState.currentSequence.totalSteps} steps
+        {t('landing_live_steps', { count: broadcastState.currentSequence.totalSteps })}
       </span>
     </div>
 
     <div class="sequence-number">
-      Sequence #{broadcastState.sequenceNumber}
+      {t('landing_live_sequence_number', { number: broadcastState.sequenceNumber })}
     </div>
   {:else}
     <div class="connecting">
       <ProgressRing percent={-1} size={24} strokeWidth={2} />
-      <span>Connecting to live broadcast...</span>
+      <span>{t('landing_live_connecting')}</span>
     </div>
   {/if}
 </div>

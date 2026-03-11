@@ -6,11 +6,12 @@
 -->
 <script lang="ts">
   import { ARENA_COLOR } from "../../domain/constants/arena-constants";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 </script>
 
 <div class="arena-divider" aria-hidden="true">
   <div class="vs-badge" style="--arena-accent: {ARENA_COLOR}">
-    <span class="vs-text">VS</span>
+    <span class="vs-text">{t('arena_battle_vs')}</span>
   </div>
 </div>
 

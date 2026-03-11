@@ -1,5 +1,7 @@
 <!-- TrustBadges - Display trust indicators and credentials -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
+
   interface Badge {
     id: string;
     type: "festival" | "security" | "community";
@@ -15,21 +17,20 @@
 
   let { badges = [] }: Props = $props();
 
-  const defaultBadges: Badge[] = [
+  const defaultBadges: Badge[] = $derived([
     {
       id: "stripe",
-      type: "security",
-      name: "Secure payments by Stripe",
+      type: "security" as const,
+      name: t('premium_badge_stripe'),
       icon: "fa-lock",
     },
     {
       id: "ssl",
-      type: "security",
-      name: "256-bit SSL encryption",
+      type: "security" as const,
+      name: t('premium_badge_ssl'),
       icon: "fa-shield-alt",
     },
-    // Add festivals after collecting data
-  ];
+  ]);
 
   const displayBadges = $derived(badges.length > 0 ? badges : defaultBadges);
 </script>

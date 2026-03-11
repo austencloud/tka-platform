@@ -31,6 +31,7 @@
   import GridSection from "./GridSection.svelte";
   import ControlBar from "./ControlBar.svelte";
   import GridSettingsInline from "./GridSettingsInline.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     sequence: SequenceData | null;
@@ -150,7 +151,7 @@
       <section class="sequence-cell">
         <button class="sequence-info" onclick={onBrowseSequences}>
           <span class="seq-name">{sequence.word || sequence.name}</span>
-          <span class="seq-meta">{sequence.steps?.length || 0} steps</span>
+          <span class="seq-meta">{t('train_step_count', { count: sequence.steps?.length || 0 })}</span>
           <i class="fas fa-exchange-alt" aria-hidden="true"></i>
         </button>
       </section>
@@ -175,7 +176,7 @@
         aria-controls="grid-settings-panel"
       >
         <i class="fas fa-sliders-h" aria-hidden="true"></i>
-        <span>Grid Settings</span>
+        <span>{t('train_grid_settings')}</span>
         <i
           class="fas fa-chevron-{showGridSettings ? 'up' : 'down'} toggle-icon"
           aria-hidden="true"

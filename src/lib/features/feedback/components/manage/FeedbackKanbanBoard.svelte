@@ -10,6 +10,7 @@
   import { STATUS_CONFIG } from "../../domain/models/feedback-models";
   import KanbanMobileView from "./KanbanMobileView.svelte";
   import KanbanDesktopView from "./KanbanDesktopView.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     manageState: FeedbackManageState;
@@ -44,7 +45,7 @@
       (item) => item.id === action.feedbackId
     );
     if (!itemExists) {
-      toast.warning("Item no longer exists");
+      toast.warning(t("feedback_item_no_longer_exists"));
       return;
     }
 
@@ -60,10 +61,10 @@
         timestamp: Date.now(),
       });
       const statusLabel = STATUS_CONFIG[action.previousStatus]?.label || action.previousStatus;
-      toast.info(`Moved back to ${statusLabel}`);
+      toast.info(t("feedback_moved_back_to", { status: statusLabel }));
     } catch (err) {
       console.error("[FeedbackKanbanBoard] Failed to undo:", err);
-      toast.error("Failed to undo");
+      toast.error(t("feedback_failed_undo"));
     } finally {
       isProcessingUndoRedo = false;
     }
@@ -81,7 +82,7 @@
       (item) => item.id === action.feedbackId
     );
     if (!itemExists) {
-      toast.warning("Item no longer exists");
+      toast.warning(t("feedback_item_no_longer_exists"));
       return;
     }
 
@@ -100,10 +101,10 @@
         false // Don't clear redo stack
       );
       const statusLabel = STATUS_CONFIG[action.previousStatus]?.label || action.previousStatus;
-      toast.info(`Restored to ${statusLabel}`);
+      toast.info(t("feedback_restored_to", { status: statusLabel }));
     } catch (err) {
       console.error("[FeedbackKanbanBoard] Failed to redo:", err);
-      toast.error("Failed to redo");
+      toast.error(t("feedback_failed_redo"));
     } finally {
       isProcessingUndoRedo = false;
     }
@@ -199,11 +200,11 @@
 
     try {
       await manageState.deleteFeedback(boardState.itemToTrash.id);
-      toast.info("Feedback deleted");
+      toast.info(t("feedback_deleted"));
       boardState.resetTrashDialog();
     } catch (err) {
       console.error("Failed to delete feedback:", err);
-      toast.error("Failed to delete feedback");
+      toast.error(t("feedback_failed_delete"));
     } finally {
       boardState.setIsSubmittingTrash(false);
     }
@@ -268,7 +269,7 @@
             <div class="dialog-icon">
               <i class="fas fa-clock" aria-hidden="true"></i>
             </div>
-            <h3 class="dialog-title" id="defer-dialog-title">Defer Feedback</h3>
+            <h3 class="dialog-title" id="defer-dialog-title">{t("feedback_defer_title")}</h3>
             <button
               type="button"
               class="close-button"
@@ -281,7 +282,7 @@
 
           <div class="dialog-body">
             <div class="feedback-preview">
-              <span class="preview-label">Item:</span>
+              <span class="preview-label">{t("feedback_defer_item_label")}</span>
               <span class="preview-title"
                 >{boardState.itemToDefer.title ||
                   boardState.itemToDefer.description.substring(0, 60)}</span
@@ -291,7 +292,7 @@
             <div class="form-field">
               <label for="defer-date" class="field-label">
                 <i class="fas fa-calendar" aria-hidden="true"></i>
-                Reactivate on
+                {t("feedback_defer_reactivate_on")}
               </label>
               <input
                 id="defer-date"
@@ -308,7 +309,7 @@
             <div class="form-field">
               <label for="defer-notes" class="field-label">
                 <i class="fas fa-sticky-note" aria-hidden="true"></i>
-                Reason (optional)
+                {t("feedback_defer_reason")}
               </label>
               <textarea
                 id="defer-notes"
@@ -316,7 +317,7 @@
                 value={boardState.deferNotes}
                 onchange={(e) =>
                   boardState?.setDeferNotes(e.currentTarget.value)}
-                placeholder="Why are you deferring this? (e.g., 'Wait for Svelte 6', 'Revisit after Q1')"
+                placeholder={t("feedback_defer_placeholder")}
                 rows="3"
               ></textarea>
             </div>
@@ -329,7 +330,7 @@
               onclick={handleDeferCancel}
               disabled={boardState.isSubmittingDefer}
             >
-              Cancel
+              {t("feedback_cancel")}
             </button>
             <button
               type="button"
@@ -339,10 +340,10 @@
             >
               {#if boardState.isSubmittingDefer}
                 <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-                Deferring...
+                {t("feedback_deferring")}
               {:else}
                 <i class="fas fa-clock" aria-hidden="true"></i>
-                Defer
+                {t("feedback_defer")}
               {/if}
             </button>
           </div>
@@ -373,7 +374,7 @@
             <div class="dialog-icon trash-icon">
               <i class="fas fa-trash-alt" aria-hidden="true"></i>
             </div>
-            <h3 class="dialog-title" id="trash-dialog-title">Delete Feedback</h3>
+            <h3 class="dialog-title" id="trash-dialog-title">{t("feedback_delete_title")}</h3>
             <button
               type="button"
               class="close-button"
@@ -386,7 +387,7 @@
 
           <div class="dialog-body">
             <div class="feedback-preview trash-preview">
-              <span class="preview-label">Item:</span>
+              <span class="preview-label">{t("feedback_defer_item_label")}</span>
               <span class="preview-title"
                 >{boardState.itemToTrash.title ||
                   boardState.itemToTrash.description.substring(0, 60)}</span
@@ -394,7 +395,7 @@
             </div>
 
             <p class="trash-warning">
-              This will permanently delete this feedback item. This cannot be undone.
+              {t("feedback_delete_warning")}
             </p>
           </div>
 
@@ -405,7 +406,7 @@
               onclick={handleTrashCancel}
               disabled={boardState.isSubmittingTrash}
             >
-              Cancel
+              {t("feedback_cancel")}
             </button>
             <button
               type="button"
@@ -415,10 +416,10 @@
             >
               {#if boardState.isSubmittingTrash}
                 <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-                Deleting...
+                {t("feedback_deleting")}
               {:else}
                 <i class="fas fa-trash-alt" aria-hidden="true"></i>
-                Delete
+                {t("feedback_delete")}
               {/if}
             </button>
           </div>
@@ -439,7 +440,7 @@
         tabindex="0"
       >
         <i class="fas fa-undo" aria-hidden="true"></i>
-        <span>Ctrl+Z to undo</span>
+        <span>{t("feedback_undo_hint")}</span>
         <button
           type="button"
           class="undo-hint-dismiss"

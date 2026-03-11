@@ -177,6 +177,25 @@ export function createFeedbackDetailState(
     }
   }
 
+  async function saveAssignment(userId?: string, displayName?: string) {
+    if (readOnly || !manageState) return;
+    try {
+      await manageState.updateFeedback(item.id, {
+        assignedTo: userId,
+        assignedToName: displayName,
+      });
+      // Update local item so UI reflects immediately
+      item = {
+        ...item,
+        assignedTo: userId,
+        assignedToName: displayName,
+        updatedAt: new Date(),
+      };
+    } catch (err) {
+      console.error("Failed to save assignment:", err);
+    }
+  }
+
   // Formatting helpers (delegate to service)
   function formatDate(date: Date): string {
     return formatting.formatDate(date);
@@ -271,6 +290,7 @@ export function createFeedbackDetailState(
     // Methods
     restoreOriginal,
     saveChanges,
+    saveAssignment,
     handleFieldBlur,
     handleStatusChange,
     handleDelete,

@@ -14,7 +14,9 @@
   import FeedbackStatusSelector from "./detail/FeedbackStatusSelector.svelte";
   import FeedbackActionBar from "./detail/FeedbackActionBar.svelte";
   import FeedbackStatusHistory from "./detail/FeedbackStatusHistory.svelte";
+  import FeedbackAssigneeSelector from "./detail/FeedbackAssigneeSelector.svelte";
   import MediaSpotlight from "$lib/components/media/spotlight/MediaSpotlight.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     item: FeedbackItem;
@@ -155,7 +157,7 @@
       <section class="section resolution-section">
         <h3 class="section-title">
           <i class="fas fa-check-circle" aria-hidden="true"></i>
-          Resolution
+          {t("feedback_resolution")}
         </h3>
         <div class="resolution-card">
           <p class="resolution-text">{item.adminNotes}</p>
@@ -175,7 +177,7 @@
       class="title-input"
       bind:value={detailState.editTitle}
       onblur={() => detailState.handleFieldBlur()}
-      placeholder="Untitled feedback..."
+      placeholder={t("feedback_untitled_placeholder")}
       readonly={readOnly}
     />
 
@@ -184,7 +186,7 @@
 
     <!-- Description Section - Primary content -->
     <section class="section">
-      <h3 class="section-title">Description</h3>
+      <h3 class="section-title">{t("feedback_description")}</h3>
       <textarea
         class="inline-edit-textarea auto-resize"
         bind:this={descriptionTextarea}
@@ -316,6 +318,9 @@
         </div>
       {/if}
     </section>
+
+    <!-- Assignee Selector -->
+    <FeedbackAssigneeSelector {detailState} {readOnly} />
 
     <!-- Subtasks Panel -->
     <FeedbackSubtaskPanel subtasks={item.subtasks || []} />

@@ -5,6 +5,7 @@
 -->
 <script lang="ts">
   import type { PersonalBest } from "../../services/contracts/IPerformanceHistoryTracker";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     bests: PersonalBest[];
@@ -34,9 +35,9 @@
     const diff = now.getTime() - date.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-    if (days === 0) return "Today";
-    if (days === 1) return "Yesterday";
-    if (days < 7) return `${days} days ago`;
+    if (days === 0) return t('train_time_today');
+    if (days === 1) return t('train_time_yesterday');
+    if (days < 7) return t('train_time_days_ago', { count: days });
     return date.toLocaleDateString();
   }
 </script>
@@ -60,7 +61,7 @@
         </div>
         <div class="stat">
           <i class="fas fa-fire"></i>
-          <span>{best.bestCombo} combo</span>
+          <span>{best.bestCombo} {t('train_combo_label').toLowerCase()}</span>
         </div>
         <div class="stat date">
           <i class="fas fa-calendar"></i>

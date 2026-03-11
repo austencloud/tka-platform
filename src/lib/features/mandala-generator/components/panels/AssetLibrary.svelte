@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { mandalaState } from "../../state/mandala-state.svelte";
   import { TKA_BLUE, TKA_RED } from "../../domain/models/mandala-config";
   import { onMount } from "svelte";
@@ -430,14 +431,14 @@
       class:active={activeTab === "arrows"}
       onclick={() => setTab("arrows")}
     >
-      Arrows
+      {t('mandala_arrows')}
     </button>
     <button
       class="tab"
       class:active={activeTab === "staffs"}
       onclick={() => setTab("staffs")}
     >
-      Staffs
+      {t('mandala_staffs')}
     </button>
   </div>
 
@@ -466,7 +467,7 @@
         class:active={!filter}
         onclick={() => setFilter(null)}
       >
-        All ({ALL_ARROW_VARIATIONS.length})
+        {t('mandala_filter_all', { count: String(ALL_ARROW_VARIATIONS.length) })}
       </button>
       {#each MOTION_TYPES as motion (motion.id)}
         <button
@@ -563,7 +564,7 @@
   </div>
 
   <!-- Instructions -->
-  <div class="instructions">Click or drag to add to canvas</div>
+  <div class="instructions">{t('mandala_drag_instruction')}</div>
 </div>
 
 <style>

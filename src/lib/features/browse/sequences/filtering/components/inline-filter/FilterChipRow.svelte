@@ -4,6 +4,7 @@ Chips stay in original order (never reorder on selection - Baymard research).
 -->
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   interface Props {
     children: Snippet;
@@ -12,7 +13,7 @@ Chips stay in original order (never reorder on selection - Baymard research).
   let { children }: Props = $props();
 </script>
 
-<div class="filter-chip-row" role="toolbar" aria-label="Filter options">
+<div class="filter-chip-row" role="toolbar" aria-label={t('browse_filter_options')}>
   {@render children()}
 </div>
 

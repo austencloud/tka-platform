@@ -5,6 +5,7 @@
   User clicks the correct position to override what the pipeline detected.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
   let {
@@ -40,7 +41,7 @@
   ];
 </script>
 
-<div class="grid-picker" role="radiogroup" aria-label="{hand} hand position">
+<div class="grid-picker" role="radiogroup" aria-label={t('skel2tka_hand_position_picker', { hand })}>
   <div class="compass-rose">
     {#each buttons as btn}
       <button
@@ -54,7 +55,7 @@
         onclick={() => onSelect(btn.location)}
         role="radio"
         aria-checked={selected === btn.location}
-        aria-label="{btn.label} position"
+        aria-label={t('skel2tka_grid_position', { position: btn.label })}
       >
         {btn.label}
       </button>

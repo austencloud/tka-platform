@@ -5,6 +5,7 @@
 -->
 <script lang="ts">
   import type { AdaptiveConfig } from "../../state/train-practice-state.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     config: AdaptiveConfig;
@@ -15,15 +16,15 @@
 </script>
 
 <div class="config-panel">
-  <h3>Adaptive Mode Settings</h3>
+  <h3>{t('train_adaptive_settings_title')}</h3>
   <p class="description">
-    Automatically advance when your hands match the expected positions.
+    {t('train_adaptive_settings_desc')}
   </p>
 
   <div class="setting-group">
     <label for="sensitivity">
-      Sensitivity
-      <span class="hint">(frames to match: {config.sensitivity})</span>
+      {t('train_sensitivity')}
+      <span class="hint">({t('train_frames_to_match', { count: config.sensitivity })})</span>
     </label>
     <input
       id="sensitivity"
@@ -36,8 +37,8 @@
         onUpdate({ sensitivity: parseInt(e.currentTarget.value) })}
     />
     <div class="range-labels">
-      <span>More Sensitive</span>
-      <span>Less Sensitive</span>
+      <span>{t('train_more_sensitive')}</span>
+      <span>{t('train_less_sensitive')}</span>
     </div>
   </div>
 
@@ -48,10 +49,10 @@
         checked={config.autoAdvance}
         onchange={(e) => onUpdate({ autoAdvance: e.currentTarget.checked })}
       />
-      <span>Auto-advance to next beat</span>
+      <span>{t('train_auto_advance')}</span>
     </label>
     <p class="hint">
-      When disabled, you'll need to manually confirm each beat.
+      {t('train_auto_advance_hint')}
     </p>
   </div>
 </div>

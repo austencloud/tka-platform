@@ -17,6 +17,7 @@
   import { onMount, onDestroy } from "svelte";
   import VirtualJoystick from "$lib/shared/components/touch/VirtualJoystick.svelte";
   import { getInputCapabilities } from "$lib/shared/input/InputCapabilities.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   const inputCaps = getInputCapabilities();
 
@@ -210,7 +211,7 @@
   <div class="touch-controls">
     {#if lookTouchId === null}
       <div class="look-hint">
-        Drag to look around
+        {t("gallery_touch_drag_to_look")}
       </div>
     {/if}
   </div>

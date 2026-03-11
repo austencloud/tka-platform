@@ -25,6 +25,7 @@
     PROP_TYPE_DISPLAY_REGISTRY,
     getAllPropTypes,
   } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   // All prop types for the random pool (excludes POI which is momentum-based)
   const ALL_ARENA_PROPS = getAllPropTypes().filter(pt => pt !== PropType.POI);
@@ -82,7 +83,7 @@
       userId = auth.currentUser?.uid ?? null;
 
       if (!userId) {
-        arenaState.error = "Sign in to vote on sequences";
+        arenaState.error = t('arena_battle_sign_in_required');
         arenaState.isLoading = false;
         return;
       }
@@ -93,7 +94,7 @@
       arenaState.isLoading = false;
     } catch (err) {
       console.error("[Arena] Failed to initialize:", err);
-      arenaState.error = "Failed to load arena";
+      arenaState.error = t('arena_battle_load_failed');
       arenaState.isLoading = false;
     }
 
@@ -139,7 +140,7 @@
       await orchestrator.vote(winnerId);
     } catch (err) {
       console.error("[Arena] Vote failed:", err);
-      arenaState.error = "Vote failed. Please try again.";
+      arenaState.error = t('arena_battle_vote_failed');
       if (mounted) {
         voteResult = null;
         winnerWord = "";
@@ -207,7 +208,7 @@
   {:else if arenaState.isLoading}
     <div class="battle-loading" role="status" aria-live="polite" aria-busy="true">
       <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
-      <p>Loading matchup...</p>
+      <p>{t('arena_battle_loading')}</p>
     </div>
   {:else if arenaState.currentMatchup}
     {@const matchup = arenaState.currentMatchup}
@@ -248,18 +249,18 @@
           class="skip-button"
           onclick={skip}
           disabled={transitioning}
-          aria-label="Skip this matchup"
+          aria-label={t('arena_battle_skip_matchup')}
           type="button"
         >
           <i class="fas fa-forward" aria-hidden="true"></i>
-          Skip
+          {t('arena_action_skip')}
         </button>
 
         {#if showKeyboardHints}
           <div class="keyboard-hints" aria-hidden="true">
-            <kbd>&larr;</kbd> Left
-            <kbd>&rarr;</kbd> Right
-            <kbd>Space</kbd> Skip
+            <kbd>&larr;</kbd> {t('arena_battle_key_left')}
+            <kbd>&rarr;</kbd> {t('arena_battle_key_right')}
+            <kbd>Space</kbd> {t('arena_action_skip')}
           </div>
         {/if}
       </div>
@@ -269,7 +270,7 @@
           class="prop-button"
           onclick={() => propDrawerOpen = true}
           type="button"
-          aria-label="Change prop type: {currentPropLabel}"
+          aria-label={t('arena_battle_change_prop', { prop: currentPropLabel })}
           title={currentPropLabel}
         >
           <img src={currentPropImage} alt={currentPropLabel} class="prop-button-icon" />
@@ -280,8 +281,8 @@
           class:active={randomPropMode}
           onclick={toggleRandomProp}
           type="button"
-          aria-label={randomPropMode ? "Random mode active" : "Enable random prop mode"}
-          title={randomPropMode ? "Random (click to choose)" : "Shuffle"}
+          aria-label={t(randomPropMode ? 'arena_battle_random_active' : 'arena_battle_random_enable')}
+          title={t(randomPropMode ? 'arena_battle_random_click_to_choose' : 'arena_battle_shuffle')}
         >
           <i class="fas fa-shuffle" aria-hidden="true"></i>
         </button>
@@ -303,7 +304,7 @@
   {:else}
     <div class="battle-empty" role="status">
       <i class="fas fa-inbox" aria-hidden="true"></i>
-      <p>No matchups available right now</p>
+      <p>{t('arena_battle_empty')}</p>
     </div>
   {/if}
 </div>

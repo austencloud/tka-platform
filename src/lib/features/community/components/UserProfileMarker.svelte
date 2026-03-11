@@ -7,6 +7,7 @@
 <script lang="ts">
   import type { UserLocationWithProfile } from "../domain/models/user-location";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   let {
     user,
@@ -24,7 +25,7 @@
 </script>
 
 <div class="marker-popup">
-  <button class="close-btn" onclick={onClose} aria-label="Close">
+  <button class="close-btn" onclick={onClose} aria-label={t('community_close')}>
     <i class="fas fa-times" aria-hidden="true"></i>
   </button>
 
@@ -46,17 +47,17 @@
   <div class="stats-grid">
     <div class="stat">
       <i class="fas fa-star" aria-hidden="true"></i>
-      <span class="stat-label">Level</span>
+      <span class="stat-label">{t('community_stat_level')}</span>
       <span class="stat-value">{user.currentLevel}</span>
     </div>
     <div class="stat">
       <i class="fas fa-bolt" aria-hidden="true"></i>
-      <span class="stat-label">XP</span>
+      <span class="stat-label">{t('community_stat_xp')}</span>
       <span class="stat-value">{user.totalXP.toLocaleString()}</span>
     </div>
     <div class="stat">
       <i class="fas fa-layer-group" aria-hidden="true"></i>
-      <span class="stat-label">Sequences</span>
+      <span class="stat-label">{t('community_stat_sequences')}</span>
       <span class="stat-value">{user.sequenceCount}</span>
     </div>
   </div>
@@ -77,7 +78,7 @@
   {/if}
 
   <button class="view-profile-btn" onclick={handleViewProfile}>
-    View Full Profile
+    {t('community_view_profile')}
     <i class="fas fa-arrow-right" aria-hidden="true"></i>
   </button>
 </div>

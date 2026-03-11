@@ -13,6 +13,7 @@
   import type { RenderingBackend } from "../state/gallery-settings.svelte";
   import { isWebGPUSupported } from "$lib/shared/3d-core/rendering/create-renderer";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     /** Rendering backend preference */
@@ -117,7 +118,7 @@
   <!-- Loading state while checking WebGPU support -->
   <div class="canvas-loading">
     <ProgressRing percent={-1} size={32} strokeWidth={3} />
-    <span>Initializing renderer...</span>
+    <span>{t("gallery_initializing_renderer")}</span>
   </div>
 {/if}
 

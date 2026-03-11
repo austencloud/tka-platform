@@ -6,6 +6,7 @@
   Stores consent in user profile for persistence.
 -->
 <script lang="ts">
+	import { t } from '$lib/shared/i18n/i18n.svelte';
 	import BaseModal from '$lib/shared/foundation/ui/modal/BaseModal.svelte';
 	import ModalHeader from '$lib/shared/foundation/ui/modal/ModalHeader.svelte';
 	import ModalFooter from '$lib/shared/foundation/ui/modal/ModalFooter.svelte';
@@ -42,7 +43,7 @@
 			const userId = authState.user?.uid;
 
 			if (!userId) {
-				error = 'You must be signed in to access the Hall of Shame.';
+				error = t('hall_of_shame_sign_in_message');
 				return;
 			}
 
@@ -52,7 +53,7 @@
 			setTimeout(onVerified, 250);
 		} catch (err) {
 			console.error('[HallOfShameGate] Verification error:', err);
-			error = 'Failed to record verification. Please try again.';
+			error = t('hall_of_shame_verification_error');
 		} finally {
 			isSubmitting = false;
 		}
@@ -62,8 +63,8 @@
 <BaseModal bind:open={isOpen} onclose={handleClose} size="sm" animation="pop" labelledBy="age-gate-title">
 	{#snippet header()}
 		<ModalHeader
-			title="Age Verification Required"
-			subtitle="This section contains adult content"
+			title={t('hall_of_shame_gate_title')}
+			subtitle={t('hall_of_shame_gate_subtitle')}
 			icon="fa-skull"
 			iconColor="#ef4444"
 			onClose={handleClose}
@@ -77,13 +78,11 @@
 		</div>
 
 		<p class="warning-text">
-			The <strong>Hall of Shame</strong> contains vulgar and adult-themed sequences
-			that have been flagged by our moderation system.
+			{t('hall_of_shame_gate_warning')}
 		</p>
 
 		<p class="disclaimer">
-			By proceeding, you confirm that you are legally permitted to view adult content
-			in your jurisdiction.
+			{t('hall_of_shame_gate_disclaimer')}
 		</p>
 
 		<label class="checkbox-label">
@@ -92,7 +91,7 @@
 				bind:checked={confirmed}
 				disabled={isSubmitting}
 			/>
-			<span>I confirm I am 18 years or older</span>
+			<span>{t('hall_of_shame_confirm_age')}</span>
 		</label>
 
 		{#if error}
@@ -106,7 +105,7 @@
 	{#snippet footer()}
 		<ModalFooter>
 			<button class="secondary" onclick={handleClose} disabled={isSubmitting}>
-				Cancel
+				{t('hall_of_shame_cancel')}
 			</button>
 			<button
 				class="primary danger"
@@ -115,9 +114,9 @@
 			>
 				{#if isSubmitting}
 					<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-					Verifying...
+					{t('hall_of_shame_verifying')}
 				{:else}
-					Enter Hall of Shame
+					{t('hall_of_shame_enter')}
 				{/if}
 			</button>
 		</ModalFooter>

@@ -4,6 +4,7 @@
   Dark/light mode toggle and prop type selector for pictograph rendering.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import {
     galleryGeneratorState,
     CORE_PROP_TYPES,
@@ -20,7 +21,7 @@
 
 <div class="settings-panel">
   <div class="setting-row">
-    <span class="setting-label">Style</span>
+    <span class="setting-label">{t('gallery_gen_style')}</span>
     <div class="chip-group">
       <button
         class="chip"
@@ -28,7 +29,7 @@
         onclick={() => state.setLightMode(false)}
         disabled={state.isRendering}
       >
-        Dark
+        {t('gallery_gen_dark')}
       </button>
       <button
         class="chip"
@@ -36,13 +37,13 @@
         onclick={() => state.setLightMode(true)}
         disabled={state.isRendering}
       >
-        Light
+        {t('gallery_gen_light')}
       </button>
     </div>
   </div>
 
   <div class="setting-row">
-    <span class="setting-label">Prop Type</span>
+    <span class="setting-label">{t('gallery_gen_prop_type')}</span>
     <select
       class="prop-select"
       value={state.selectedPropType ?? ""}
@@ -52,7 +53,7 @@
       }}
       disabled={state.isRendering}
     >
-      <option value="">Default (no override)</option>
+      <option value="">{t('gallery_gen_default_prop')}</option>
       {#each CORE_PROP_TYPES as prop}
         <option value={prop}>{formatPropName(prop)}</option>
       {/each}

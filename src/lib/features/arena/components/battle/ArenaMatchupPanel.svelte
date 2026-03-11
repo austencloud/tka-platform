@@ -9,6 +9,7 @@
   import type { ArenaEntry, ArenaRating } from "../../domain/models/arena-models";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import InlineAnimationPlayer from "$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   let {
     entry,
@@ -55,7 +56,7 @@
   class:disabled
   role="button"
   tabindex={disabled ? -1 : 0}
-  aria-label="Vote for {entry.word}"
+  aria-label={t('arena_battle_vote_for', { word: entry.word })}
   aria-disabled={disabled}
   onclick={handleClick}
   onkeydown={handleKeydown}
@@ -69,9 +70,9 @@
   <div class="sequence-meta">
     <span class="word-label">{entry.word}</span>
     {#if entry.ownerDisplayName}
-      <span class="author-label">by {entry.ownerDisplayName}</span>
+      <span class="author-label">{t('arena_by_creator', { name: entry.ownerDisplayName })}</span>
     {/if}
-    <span class="beat-count">{data.steps?.length || data.sequenceLength || 0} beats</span>
+    <span class="beat-count">{t('arena_label_beats', { count: data.steps?.length || data.sequenceLength || 0 })}</span>
   </div>
 </div>
 

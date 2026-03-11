@@ -19,6 +19,7 @@
   import StatusTimeline from "./StatusTimeline.svelte";
   import { useUserPreview } from "$lib/shared/debug/context/user-preview-context";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   let {
     item,
@@ -252,13 +253,13 @@
           {#if item.updatedAt}
             <span class="updated">
               <i class="fas fa-clock" aria-hidden="true"></i>
-              Updated {formatDate(item.updatedAt)}
+              {t("feedback_updated_date", { date: formatDate(item.updatedAt) })}
             </span>
           {/if}
         </div>
 
         <div class="description-section">
-          <h3>Your Feedback</h3>
+          <h3>{t("feedback_your_feedback")}</h3>
           <p class="description">{item.description}</p>
         </div>
 
@@ -278,7 +279,7 @@
           <div class="screenshots-section">
             <h3>
               <i class="fas fa-images" aria-hidden="true"></i>
-              Screenshots ({item.imageUrls.length})
+              {t("feedback_screenshots_count", { count: item.imageUrls.length })}
             </h3>
             <div class="screenshots-grid">
               {#each item.imageUrls as imageUrl, index}
@@ -305,7 +306,7 @@
         <!-- Context info -->
         {#if item.capturedModule}
           <div class="context-section">
-            <h3>Context</h3>
+            <h3>{t("feedback_context")}</h3>
             <div class="context-tags">
               <span class="context-tag">
                 <i class="fas fa-cube" aria-hidden="true"></i>
@@ -326,7 +327,7 @@
           <div class="response-section">
             <h3>
               <i class="fas fa-check-circle" aria-hidden="true"></i>
-              Resolution
+              {t("feedback_resolution")}
             </h3>
             <div class="response-card resolution">
               <p class="response-message">
@@ -335,7 +336,7 @@
               <div class="resolution-meta">
                 {#if item.updatedAt}
                   <span class="response-date">
-                    Resolved {formatDate(item.updatedAt)}
+                    {t("feedback_resolved_date", { date: formatDate(item.updatedAt) })}
                   </span>
                 {/if}
                 {#if item.fixedInVersion}
@@ -375,10 +376,9 @@
           <div class="dialog-icon">
             <i class="fas fa-trash-alt" aria-hidden="true"></i>
           </div>
-          <h3>Delete Feedback?</h3>
+          <h3>{t("feedback_delete_confirm_title")}</h3>
           <p>
-            This action cannot be undone. Your feedback will be permanently
-            removed.
+            {t("feedback_delete_confirm_message")}
           </p>
           <div class="dialog-actions">
             <button
@@ -387,7 +387,7 @@
               disabled={isDeleting}
               type="button"
             >
-              Cancel
+              {t("feedback_cancel")}
             </button>
             <button
               class="confirm-btn"
@@ -397,9 +397,9 @@
             >
               {#if isDeleting}
                 <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-                Deleting...
+                {t("feedback_deleting")}
               {:else}
-                Delete
+                {t("feedback_delete")}
               {/if}
             </button>
           </div>

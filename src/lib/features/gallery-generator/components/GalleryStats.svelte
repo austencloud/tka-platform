@@ -4,19 +4,20 @@
   Summary statistics display.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { galleryGeneratorState } from "../state/gallery-generator-state.svelte";
 
   const state = galleryGeneratorState;
 </script>
 
 <div class="summary-stats">
-  <span class="stat pending">{state.pendingSequences.length} pending</span>
-  <span class="stat completed">{state.renderedImages.length} rendered</span>
+  <span class="stat pending">{t('gallery_gen_stat_pending', { count: String(state.pendingSequences.length) })}</span>
+  <span class="stat completed">{t('gallery_gen_stat_rendered', { count: String(state.renderedImages.length) })}</span>
   {#if state.previewCount > 0}
-    <span class="stat preview">{state.previewCount} to write</span>
+    <span class="stat preview">{t('gallery_gen_stat_to_write', { count: String(state.previewCount) })}</span>
   {/if}
   {#if state.failedSequences.length > 0}
-    <span class="stat failed">{state.failedSequences.length} failed</span>
+    <span class="stat failed">{t('gallery_gen_stat_failed', { count: String(state.failedSequences.length) })}</span>
   {/if}
 </div>
 

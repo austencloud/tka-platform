@@ -121,7 +121,7 @@ export class FeedbackStatusService implements IFeedbackStatusService {
   async updateFeedback(
     feedbackId: string,
     updates: Partial<
-      Pick<FeedbackItem, "type" | "title" | "description" | "priority">
+      Pick<FeedbackItem, "type" | "title" | "description" | "priority" | "assignedTo" | "assignedToName">
     >
   ): Promise<void> {
     const firestore = await getFirestoreInstance();
@@ -137,6 +137,10 @@ export class FeedbackStatusService implements IFeedbackStatusService {
       updateData["description"] = updates.description;
     if (updates.priority !== undefined)
       updateData["priority"] = updates.priority || null;
+    if (updates.assignedTo !== undefined)
+      updateData["assignedTo"] = updates.assignedTo || null;
+    if (updates.assignedToName !== undefined)
+      updateData["assignedToName"] = updates.assignedToName || null;
 
     await updateDoc(docRef, updateData);
   }

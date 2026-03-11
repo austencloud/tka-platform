@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
   import type { ArenaLeaderboardEntry } from "../../domain/models/arena-models";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   let { entries }: { entries: ArenaLeaderboardEntry[] } = $props();
 
@@ -20,8 +21,8 @@
 
 {#if movers.length > 0}
   <div class="movers-section">
-    <h3 class="movers-title">Biggest movers</h3>
-    <div class="movers-strip themed-scrollbar" role="list" aria-label="Biggest rank changes">
+    <h3 class="movers-title">{t('arena_leaderboard_biggest_movers')}</h3>
+    <div class="movers-strip themed-scrollbar" role="list" aria-label={t('arena_leaderboard_biggest_rank_changes')}>
       {#each movers as mover (mover.entry.id)}
         <div
           class="mover-chip"

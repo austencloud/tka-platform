@@ -29,6 +29,7 @@
   import PracticeBentoLayout from "./practice/PracticeBentoLayout.svelte";
   import ModePickerSheet from "./practice/ModePickerSheet.svelte";
   import GridSettingsSheet from "./practice/GridSettingsSheet.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     sequence?: SequenceData | null;
@@ -134,7 +135,7 @@
     } catch (error) {
       console.error("Failed to initialize detection:", error);
       trainState.setError(
-        "Failed to initialize hand detection. Please refresh and try again."
+        t('train_detection_init_failed')
       );
     }
   }

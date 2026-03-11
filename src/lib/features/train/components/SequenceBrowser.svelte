@@ -8,6 +8,7 @@
   import { container } from "$lib/shared/di";
   import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     show?: boolean;
@@ -47,7 +48,7 @@
       sequences = loaded;
     } catch (err) {
       console.error("Failed to load sequences:", err);
-      error = err instanceof Error ? err.message : "Failed to load sequences";
+      error = err instanceof Error ? err.message : t('train_load_sequences_failed');
     } finally {
       isLoading = false;
     }
@@ -68,7 +69,7 @@
 <Drawer isOpen={show} onclose={onClose}>
   <div class="sequence-browser">
     <header class="browser-header">
-      <h2>Select a Sequence</h2>
+      <h2>{t('train_select_sequence')}</h2>
       <button class="close-button" onclick={onClose} aria-label="Close">
         <i class="fas fa-times" aria-hidden="true"></i>
       </button>
@@ -79,7 +80,7 @@
       <i class="fas fa-search" aria-hidden="true"></i>
       <input
         type="text"
-        placeholder="Search sequences..."
+        placeholder={t('train_search_sequences')}
         bind:value={searchQuery}
       />
     </div>
@@ -89,21 +90,21 @@
       {#if isLoading}
         <div class="loading-state">
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-          <p>Loading sequences...</p>
+          <p>{t('train_loading_sequences')}</p>
         </div>
       {:else if error}
         <div class="error-state">
           <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
           <p>{error}</p>
-          <button onclick={loadSequences}>Retry</button>
+          <button onclick={loadSequences}>{t('train_retry')}</button>
         </div>
       {:else if filteredSequences.length === 0}
         <div class="empty-state">
           <i class="fas fa-folder-open" aria-hidden="true"></i>
           <p>
             {searchQuery
-              ? "No sequences found matching your search"
-              : "No sequences available"}
+              ? t('train_no_sequences_match')
+              : t('train_no_sequences')}
           </p>
         </div>
       {:else}
@@ -114,11 +115,11 @@
               onclick={() => handleSelect(sequence)}
             >
               <div class="sequence-info">
-                <h3>{sequence.word || sequence.name || "Untitled"}</h3>
+                <h3>{sequence.word || sequence.name || t('train_untitled')}</h3>
                 <div class="sequence-meta">
                   <span
                     ><i class="fas fa-drum" aria-hidden="true"></i>
-                    {sequence.steps?.length || 0} steps</span
+                    {t('train_step_count', { count: sequence.steps?.length || 0 })}</span
                   >
                   {#if sequence.author}
                     <span

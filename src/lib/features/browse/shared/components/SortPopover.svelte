@@ -8,6 +8,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { BrowseSortMethod } from "../domain/enums/browse-enums";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   interface SortOption {
     id: BrowseSortMethod;
@@ -23,10 +24,10 @@
   let { currentMethod, onSortChange }: Props = $props();
 
   const sortOptions: SortOption[] = [
-    { id: BrowseSortMethod.ALPHABETICAL, label: "Alphabetical", icon: "fa-font" },
-    { id: BrowseSortMethod.DATE_ADDED, label: "Newest first", icon: "fa-clock" },
-    { id: BrowseSortMethod.DIFFICULTY_LEVEL, label: "Difficulty", icon: "fa-signal" },
-    { id: BrowseSortMethod.SEQUENCE_LENGTH, label: "Length", icon: "fa-ruler" },
+    { id: BrowseSortMethod.ALPHABETICAL, label: t('browse_sort_alphabetical'), icon: "fa-font" },
+    { id: BrowseSortMethod.DATE_ADDED, label: t('browse_sort_newest'), icon: "fa-clock" },
+    { id: BrowseSortMethod.DIFFICULTY_LEVEL, label: t('browse_sort_difficulty'), icon: "fa-signal" },
+    { id: BrowseSortMethod.SEQUENCE_LENGTH, label: t('browse_sort_length'), icon: "fa-ruler" },
   ];
 
   // Short labels for the chip display
@@ -174,7 +175,7 @@
     type="button"
     aria-haspopup="listbox"
     aria-expanded={isOpen}
-    aria-label="Sort by {currentLabel}"
+    aria-label={t('browse_sort_by_label', { method: currentLabel })}
   >
     <i class="fas fa-arrow-down-short-wide sort-icon" aria-hidden="true"></i>
     <span class="trigger-label">{currentLabel}</span>
@@ -192,7 +193,7 @@
       class:visible={isVisible}
       bind:this={popoverEl}
       role="listbox"
-      aria-label="Sort options"
+      aria-label={t('browse_sort_options')}
       aria-activedescendant={focusedIndex >= 0 ? `sort-option-${focusedIndex}` : undefined}
       onkeydown={handleKeydown}
       tabindex="-1"

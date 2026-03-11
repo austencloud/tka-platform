@@ -5,6 +5,7 @@
   Shows flame icon with current streak count.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
   import type { IStreakTracker } from "$lib/shared/gamification/services/contracts/IStreakTracker";
@@ -35,7 +36,7 @@
   class="streak-badge"
   class:active={isActive}
   class:loading={isLoading}
-  title={isActive ? `${currentStreak} day streak!` : "Start your streak today!"}
+  title={isActive ? t('watch_streak_active', { count: currentStreak }) : t('watch_streak_start')}
 >
   <div class="flame-container">
     <svg class="flame-icon" viewBox="0 0 24 24" aria-hidden="true">

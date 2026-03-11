@@ -5,6 +5,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { auth } from "$lib/shared/auth/firebase";
   import { container } from "$lib/shared/di";
   import GlobalUserMap from "./components/GlobalUserMap.svelte";
@@ -31,7 +32,7 @@
       locations = await orchestrator.getPublicLocations();
     } catch (error) {
       console.error("Failed to load locations:", error);
-      toast.error("Failed to load community map");
+      toast.error(t('community_error_load_map'));
     } finally {
       isLoading = false;
     }
@@ -55,7 +56,7 @@
   async function handleAcceptSharing() {
     const userId = auth.currentUser?.uid;
     if (!userId) {
-      toast.error("Please sign in to share your location");
+      toast.error(t('community_error_sign_in'));
       return;
     }
 
@@ -63,7 +64,7 @@
       const success = await orchestrator.requestLocationSharing(userId);
 
       if (success) {
-        toast.success("Your city has been added to the map!");
+        toast.success(t('community_success_city_added'));
         hasSharedLocation = true;
 
         // Reload locations to show the new marker
@@ -74,11 +75,11 @@
         const position = await locationProvider.getCurrentLocation();
         userLocation = { lat: position.lat, lng: position.lng };
       } else {
-        toast.error("Failed to add your city. Please check browser permissions.");
+        toast.error(t('community_error_add_city'));
       }
     } catch (error) {
       console.error("Location sharing error:", error);
-      toast.error("Failed to access your location");
+      toast.error(t('community_error_access_location'));
     }
   }
 
@@ -92,12 +93,12 @@
 
     try {
       await orchestrator.removeLocation(userId);
-      toast.success("Your city has been removed from the map");
+      toast.success(t('community_success_city_removed'));
       hasSharedLocation = false;
       await loadLocations();
     } catch (error) {
       console.error("Failed to remove city:", error);
-      toast.error("Failed to remove your city");
+      toast.error(t('community_error_remove_city'));
     }
   }
 
@@ -107,7 +108,7 @@
 
     try {
       await orchestrator.updateLocation(userId);
-      toast.success("Your city has been updated!");
+      toast.success(t('community_success_city_updated'));
       await loadLocations();
 
       // Get user's location for map centering
@@ -116,7 +117,7 @@
       userLocation = { lat: position.lat, lng: position.lng };
     } catch (error) {
       console.error("Failed to update city:", error);
-      toast.error("Failed to update your city");
+      toast.error(t('community_error_update_city'));
     }
   }
 </script>
@@ -126,11 +127,10 @@
     <div class="header-content">
       <h1>
         <i class="fas fa-globe" aria-hidden="true"></i>
-        TKA Community Map
+        {t('community_title')}
       </h1>
       <p class="subtitle">
-        {locations.length}
-        {locations.length === 1 ? "practitioner" : "practitioners"} worldwide
+        {t('community_practitioners_count', { count: locations.length })}
       </p>
     </div>
 
@@ -139,16 +139,16 @@
         {#if hasSharedLocation}
           <button class="control-btn update-btn" onclick={handleUpdateLocation}>
             <i class="fas fa-sync-alt" aria-hidden="true"></i>
-            Update City
+            {t('community_update_city')}
           </button>
           <button class="control-btn remove-btn" onclick={handleRemoveLocation}>
             <i class="fas fa-trash" aria-hidden="true"></i>
-            Remove
+            {t('community_remove')}
           </button>
         {:else}
           <button class="control-btn share-btn" onclick={() => (showConsentSheet = true)}>
             <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
-            Share City
+            {t('community_share_city')}
           </button>
         {/if}
       </div>
@@ -159,7 +159,7 @@
     {#if !PUBLIC_GOOGLE_MAPS_API_KEY || PUBLIC_GOOGLE_MAPS_API_KEY === "your-google-maps-api-key"}
       <div class="api-key-warning">
         <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-        <h2>Google Maps API Key Required</h2>
+        <h2>{t('community_api_key_required')}</h2>
         <p>
           Add <code>PUBLIC_GOOGLE_MAPS_API_KEY</code> to your <code>.env</code> file to enable the community map.
         </p>
@@ -177,7 +177,7 @@
     {:else if isLoading}
       <div class="loading-state">
         <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-        <p>Loading community map...</p>
+        <p>{t('community_loading_map')}</p>
       </div>
     {:else}
       <GlobalUserMap

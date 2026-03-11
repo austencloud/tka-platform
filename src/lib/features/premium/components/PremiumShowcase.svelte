@@ -4,6 +4,7 @@
   Composed from small, focused primitives for effective AI-assisted development.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import { captureEvent } from "$lib/shared/analytics/services/posthog";
   import { container } from "$lib/shared/di";
   import type { ISubscriptionManager } from "../../../shared/subscription/services/contracts/ISubscriptionManager";
@@ -94,58 +95,53 @@
     }
   }
 
-  const features = [
+  const features = $derived([
     {
-      name: "Sequence Generator",
+      name: t('premium_feature_sequence_generator'),
       icon: "fa-wand-magic-sparkles",
-      free: "Daily limit",
-      premium: "Unlimited",
+      free: t('premium_feature_daily_limit'),
+      premium: t('premium_feature_unlimited'),
     },
     {
-      name: "Compose Module",
+      name: t('premium_feature_compose_module'),
       icon: "fa-photo-film",
-      free: "Not available",
-      premium: "Full access",
+      free: t('premium_feature_not_available'),
+      premium: t('premium_feature_full_access'),
     },
     {
-      name: "Train Module",
+      name: t('premium_feature_train_module'),
       icon: "fa-running",
-      free: "Not available",
-      premium: "Full access",
+      free: t('premium_feature_not_available'),
+      premium: t('premium_feature_full_access'),
     },
-  ];
+  ]);
 </script>
 
 <div class="premium-showcase">
   <!-- Hero -->
   <PremiumHero
-    title="Create Without Limits"
-    subtitle="Support TKA's development • Built by Austen Cloud"
+    title={t('premium_hero_title')}
+    subtitle={t('premium_hero_subtitle')}
   />
 
   <!-- Price Highlight (Mobile Only) -->
-  <PriceHighlight price={10} period="month" />
+  <PriceHighlight price={10} period={t('premium_period_month')} />
 
   <!-- Early Access Banner -->
   <div class="banner-section">
     <EarlyAccessBanner
-      message="TKA Scribe is in active development. Your feedback shapes the platform."
+      message={t('premium_early_access_message')}
     />
   </div>
 
   <!-- About TKA -->
   <section class="about-section">
-    <InfoCard title="About TKA">
+    <InfoCard title={t('premium_about_title')}>
       <p>
-        The Kinetic Alphabet is a notation system for prop manipulation
-        choreography. Like musicians reading sheet music, flow artists can write
-        sequences, jump between steps, and share ideas without scrubbing through
-        video. TKA Scribe is the digital version of what started as a physical
-        book distributed at flow festivals.
+        {t('premium_about_description')}
       </p>
       <p>
-        This is a work-in-progress and is continually growing. Your support
-        plays an essential role in this system's development.
+        {t('premium_about_support')}
       </p>
     </InfoCard>
   </section>
@@ -154,19 +150,19 @@
   <section class="cta-section desktop-only">
     <PremiumCTA
       price={10}
-      period="month"
+      period={t('premium_period_month')}
       {isLoading}
       disabled={!PRICE_ID}
       onSubscribe={() => handleSubscribe("desktop")}
     />
     <p class="support-note">
-      Your subscription funds server costs, hosting, and ongoing development.
+      {t('premium_support_note')}
     </p>
   </section>
 
   <!-- Feature Comparison -->
   <section class="comparison-section">
-    <h2>What's Included</h2>
+    <h2>{t('premium_whats_included')}</h2>
     <FeatureComparisonTable {features} />
   </section>
 
@@ -182,7 +178,7 @@
 
   <!-- Close Button (for modal mode) -->
   {#if onClose}
-    <button class="close-button" onclick={onClose} aria-label="Close">
+    <button class="close-button" onclick={onClose} aria-label={t('premium_close')}>
       <i class="fas fa-times" aria-hidden="true"></i>
     </button>
   {/if}
@@ -191,7 +187,7 @@
 <!-- Sticky mobile CTA (hidden on desktop) -->
 <StickyPremiumCTA
   price={10}
-  period="month"
+  period={t('premium_period_month')}
   {isLoading}
   disabled={!PRICE_ID}
   onSubscribe={() => handleSubscribe("mobile")}

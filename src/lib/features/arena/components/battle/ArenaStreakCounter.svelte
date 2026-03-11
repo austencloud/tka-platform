@@ -5,6 +5,8 @@
   Scale-bounces on increment. Milestone effects at 5, 10, 25, 50, 100.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
+
   let { streak = 0 }: { streak: number } = $props();
 
   let prevStreak = $state(0);
@@ -38,7 +40,7 @@
     class:bouncing
     class:milestone
     role="status"
-    aria-label="Current streak: {streak}"
+    aria-label={t('arena_battle_streak', { count: streak })}
   >
     <svg
       class="flame-icon"

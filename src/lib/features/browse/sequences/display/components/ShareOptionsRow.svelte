@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
+
   /**
    * ShareOptionsRow
    *
@@ -30,37 +32,37 @@
     class="share-option-btn"
     disabled={isCopying}
     onclick={onCopy}
-    aria-label="Copy image to clipboard"
+    aria-label={t('browse_copy_to_clipboard')}
   >
     {#if isCopying}
       <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-      <span>Copying...</span>
+      <span>{t('browse_copying')}</span>
     {:else if copySuccess}
       <i class="fas fa-check" aria-hidden="true"></i>
-      <span>Copied!</span>
+      <span>{t('browse_copied')}</span>
     {:else}
       <i class="fas fa-copy" aria-hidden="true"></i>
-      <span>Copy</span>
+      <span>{t('browse_copy')}</span>
     {/if}
   </button>
 
   <button
     class="share-option-btn"
     onclick={onDownload}
-    aria-label="Download image"
+    aria-label={t('browse_download_image')}
   >
     <i class="fas fa-download" aria-hidden="true"></i>
-    <span>Download</span>
+    <span>{t('browse_download')}</span>
   </button>
 
   {#if canNativeShare}
     <button
       class="share-option-btn"
       onclick={onNativeShare}
-      aria-label="Share via system"
+      aria-label={t('browse_share_via_system')}
     >
       <i class="fas fa-share" aria-hidden="true"></i>
-      <span>Share</span>
+      <span>{t('browse_share')}</span>
     </button>
   {/if}
 </div>

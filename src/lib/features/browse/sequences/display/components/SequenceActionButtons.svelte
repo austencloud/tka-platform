@@ -10,6 +10,8 @@ Displays:
 - Maximize button
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
+
   interface Props {
     isFavorite?: boolean;
     isOwned?: boolean;
@@ -43,7 +45,7 @@ Displays:
     class="action-btn action-btn-primary"
     class:favorited={isFavorite}
     onclick={onFavorite}
-    aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+    aria-label={isFavorite ? t('browse_remove_favorite') : t('browse_add_favorite')}
   >
     <svg
       width="20"
@@ -57,7 +59,7 @@ Displays:
         d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
       />
     </svg>
-    <span>{isFavorite ? "Saved" : "Save"}</span>
+    <span>{isFavorite ? t('browse_saved') : t('browse_save')}</span>
   </button>
 
   <!-- Edit or Fork button -->
@@ -65,7 +67,7 @@ Displays:
     <button
       class="action-btn"
       onclick={onEdit}
-      aria-label="Edit sequence"
+      aria-label={t('browse_edit_sequence')}
     >
       <svg
         width="20"
@@ -83,7 +85,7 @@ Displays:
     <button
       class="action-btn"
       onclick={onFork}
-      aria-label="Fork sequence"
+      aria-label={t('browse_fork_sequence')}
     >
       <svg
         width="20"
@@ -106,7 +108,7 @@ Displays:
   <button
     class="action-btn"
     onclick={onShare}
-    aria-label="Share sequence"
+    aria-label={t('browse_share_sequence')}
   >
     <svg
       width="20"
@@ -128,7 +130,7 @@ Displays:
   <button
     class="action-btn action-btn-videos"
     onclick={onVideos}
-    aria-label={videoCount > 0 ? `View ${videoCount} videos` : "Record performance"}
+    aria-label={videoCount > 0 ? t('browse_view_videos', { count: String(videoCount) }) : t('browse_record_performance')}
   >
     <svg
       width="20"
@@ -144,7 +146,7 @@ Displays:
     {#if videoCount > 0}
       <span class="video-count">{videoCount}</span>
     {:else}
-      <span>Record</span>
+      <span>{t('browse_record')}</span>
     {/if}
   </button>
 
@@ -153,7 +155,7 @@ Displays:
     <button
       class="action-btn action-btn-danger"
       onclick={onDelete}
-      aria-label="Delete sequence"
+      aria-label={t('browse_delete_sequence')}
     >
       <svg
         width="20"
@@ -175,7 +177,7 @@ Displays:
   <button
     class="action-btn action-btn-maximize"
     onclick={onMaximize}
-    aria-label="Maximize details"
+    aria-label={t('browse_maximize_details')}
   >
     <svg
       width="20"
@@ -189,7 +191,7 @@ Displays:
         d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"
       />
     </svg>
-    <span>Maximize</span>
+    <span>{t('browse_maximize')}</span>
   </button>
 </div>
 

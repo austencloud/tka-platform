@@ -9,6 +9,7 @@
    */
 
   import { browser } from "$app/environment";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import BrowserTab from "./components/BrowserTab.svelte";
   import ValidatorTab from "./components/ValidatorTab.svelte";
 
@@ -39,10 +40,10 @@
 <div class="poi-lab">
   <header class="header">
     <div class="title-row">
-      <h1>Poi Lab</h1>
-      <span class="badge">Admin</span>
+      <h1>{t('poi_lab_title')}</h1>
+      <span class="badge">{t('poi_lab_admin_badge')}</span>
     </div>
-    <p class="subtitle">Validate sequences for poi physics constraints</p>
+    <p class="subtitle">{t('poi_lab_subtitle')}</p>
     <nav class="tabs">
       <button
         class="tab"
@@ -50,7 +51,7 @@
         onclick={() => (activeTab = "browser")}
       >
         <i class="fas fa-th" aria-hidden="true"></i>
-        Browser
+        {t('poi_lab_tab_browser')}
       </button>
       <button
         class="tab"
@@ -58,7 +59,7 @@
         onclick={() => (activeTab = "validator")}
       >
         <i class="fas fa-check-double" aria-hidden="true"></i>
-        Validator
+        {t('poi_lab_tab_validator')}
       </button>
     </nav>
   </header>

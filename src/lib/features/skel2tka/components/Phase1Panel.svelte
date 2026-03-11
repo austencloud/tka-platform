@@ -12,6 +12,7 @@
   8. Accepted/corrected results save as training data
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { container } from "$lib/shared/di";
   import type { Phase1Result } from "../domain/models";
   import type { SanityCheckReport } from "../domain/verification-models";
@@ -75,13 +76,13 @@
     try {
       // Step 0: Initialize MediaPipe if needed (~9MB download on first use)
       if (!landmarker.isInitialized) {
-        progressLabel = "Downloading hand detection model";
+        progressLabel = t('skel2tka_downloading_model');
         await landmarker.initialize();
       }
 
       // Step 1: Extract frames
       pipelineState = "extracting";
-      progressLabel = "Extracting frames";
+      progressLabel = t('skel2tka_extracting_frames');
       const frames = await frameExtractor.extractFrames(
         file,
         { fps: 15 },
@@ -98,12 +99,12 @@
 
       // Step 2: Analyze hands
       pipelineState = "analyzing";
-      progressLabel = "Analyzing hands";
+      progressLabel = t('skel2tka_analyzing_hands');
       const timeline = await handAnalyzer.analyze(frames, 15, duration, onProgress);
 
       // Step 3: Detect beats
       pipelineState = "detecting-beats";
-      progressLabel = "Detecting beats";
+      progressLabel = t('skel2tka_detecting_beats');
       const beats = beatDetector.detectBeats(timeline);
 
       const processingTimeMs = performance.now() - startTime;
@@ -116,7 +117,7 @@
       pipelineState = "complete";
     } catch (err) {
       console.error("[Skel2TKA] Phase 1 error:", err);
-      errorMessage = err instanceof Error ? err.message : "Analysis failed";
+      errorMessage = err instanceof Error ? err.message : t('skel2tka_analysis_failed');
       pipelineState = "error";
     }
   }
@@ -197,11 +198,11 @@
       await trainingPersister.save(pair);
 
       const stats = await trainingPersister.getStats();
-      verificationMessage = `Training pair saved (${stats.totalPairs} total: ${stats.acceptedPairs} accepted, ${stats.correctedPairs} corrected)`;
+      verificationMessage = t('skel2tka_training_saved', { total: String(stats.totalPairs), accepted: String(stats.acceptedPairs), corrected: String(stats.correctedPairs) });
       pipelineState = "verified";
     } catch (err) {
       console.error("[Skel2TKA] Failed to save training pair:", err);
-      verificationMessage = "Failed to save training data. Check console for details.";
+      verificationMessage = t('skel2tka_training_save_failed');
       pipelineState = "verified";
     }
   }
@@ -266,9 +267,9 @@
   {#if (pipelineState === "complete" || pipelineState === "verified") && result}
     <div class="results-section">
       <div class="results-header">
-        <h3>Results</h3>
+        <h3>{t('skel2tka_results')}</h3>
         <span class="timing">
-          {result.timeline.frames.length} frames analyzed in {(result.processingTimeMs / 1000).toFixed(1)}s
+          {t('skel2tka_frames_analyzed', { frames: String(result.timeline.frames.length), seconds: (result.processingTimeMs / 1000).toFixed(1) })}
         </span>
       </div>
 

@@ -8,6 +8,7 @@
 -->
 <script lang="ts">
 	import type { DisplayPreference } from '../../domain/models/connect-models';
+	import { t } from '$lib/shared/i18n/i18n.svelte';
 
 	interface Props {
 		value: DisplayPreference;

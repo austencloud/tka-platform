@@ -14,6 +14,7 @@
   import { createMultiplayerState, type MultiplayerStateInstance } from "./multiplayer/state/multiplayer-state.svelte";
   import GalleryScene from "./components/GalleryScene.svelte";
   import GalleryHUD from "./components/GalleryHUD.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // Museum model path
   const MUSEUM_MODEL_PATH = "/models/art-gallery.glb";
@@ -70,7 +71,7 @@
     } catch (error) {
       console.error("[GalleryModule] Failed to initialize:", error);
       galleryState.setError(
-        error instanceof Error ? error.message : "Failed to load gallery"
+        error instanceof Error ? error.message : t("gallery_error_load_failed")
       );
       galleryState.setLoading(false);
     }
@@ -144,7 +145,7 @@
       });
     } catch (error) {
       console.error('[GalleryModule] Failed to create session:', error);
-      galleryState.setError('Failed to create multiplayer session');
+      galleryState.setError(t("gallery_error_create_session"));
     }
   }
 
@@ -153,7 +154,7 @@
     try {
       const success = await multiplayerState.joinSession(sessionId);
       if (!success) {
-        galleryState.setError('Failed to join session - it may be full or no longer available');
+        galleryState.setError(t("gallery_error_join_session"));
       }
     } catch (error) {
       console.error('[GalleryModule] Failed to join session:', error);

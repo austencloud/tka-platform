@@ -11,6 +11,7 @@
   - Keyboard accessible
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { SpinnerMode } from "../domain/models/spinner-models";
 
   let {
@@ -52,7 +53,7 @@
   });
 </script>
 
-<div class="mode-toggle" role="tablist" aria-label="Spinner mode selection">
+<div class="mode-toggle" role="tablist" aria-label={t('landing_spinner_mode_selection')}>
   {#each modes as modeOption (modeOption.id)}
     <button
       class="mode-option"

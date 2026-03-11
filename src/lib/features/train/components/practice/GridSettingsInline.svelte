@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     gridScale: number;
@@ -41,7 +42,7 @@
 <div class="settings-inline">
   <!-- Grid Mode Toggle -->
   <div class="setting-row">
-    <span class="setting-label">Mode</span>
+    <span class="setting-label">{t('train_grid_mode')}</span>
     <div class="mode-toggle">
       <button
         class="toggle-option"
@@ -64,7 +65,7 @@
 
   <!-- Grid Scale -->
   <div class="setting-row">
-    <span class="setting-label">Size</span>
+    <span class="setting-label">{t('train_grid_size')}</span>
     <div class="scale-controls">
       <button
         class="scale-btn"
@@ -94,7 +95,7 @@
   <!-- Props Visibility -->
   {#if onPropsVisibilityChange}
     <div class="setting-row">
-      <span class="setting-label">Props</span>
+      <span class="setting-label">{t('train_props')}</span>
       <button
         class="visibility-toggle"
         class:active={propsVisible}
@@ -105,7 +106,7 @@
           class="fas {propsVisible ? 'fa-eye' : 'fa-eye-slash'}"
           aria-hidden="true"
         ></i>
-        <span>{propsVisible ? "Visible" : "Hidden"}</span>
+        <span>{propsVisible ? t('train_visible') : t('train_hidden')}</span>
       </button>
     </div>
   {/if}

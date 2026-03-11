@@ -10,6 +10,7 @@
   import { onMount } from "svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     isOpen: boolean;
@@ -76,8 +77,8 @@
         <i class="fas fa-th" aria-hidden="true"></i>
       </div>
       <div class="header-content">
-        <h3 class="panel-title">Grid Settings</h3>
-        <p class="panel-subtitle">Adjust grid overlay appearance</p>
+        <h3 class="panel-title">{t('train_grid_settings')}</h3>
+        <p class="panel-subtitle">{t('train_grid_settings_subtitle')}</p>
       </div>
       <button
         class="close-btn"
@@ -93,7 +94,7 @@
       <!-- Grid Mode Switcher -->
       <div class="setting-section">
         <span class="section-label" id="detection-mode-label"
-          >Detection Mode</span
+          >{t('train_detection_mode')}</span
         >
         <div
           class="mode-buttons"
@@ -106,7 +107,7 @@
             onclick={() => onModeChange(GridMode.BOX)}
           >
             <i class="fas fa-square" aria-hidden="true"></i>
-            <span>Box</span>
+            <span>{t('train_box')}</span>
           </button>
           <button
             class="mode-btn"
@@ -114,21 +115,21 @@
             onclick={() => onModeChange(GridMode.DIAMOND)}
           >
             <i class="fas fa-diamond" aria-hidden="true"></i>
-            <span>Diamond</span>
+            <span>{t('train_diamond')}</span>
           </button>
         </div>
         <p class="mode-hint">
           {#if gridMode === GridMode.BOX}
-            Detects intercardinal points (NE, SE, SW, NW)
+            {t('train_box_hint')}
           {:else}
-            Detects cardinal points (N, E, S, W)
+            {t('train_diamond_hint')}
           {/if}
         </p>
       </div>
 
       <!-- Grid Scale Controls (using buttons to avoid swipe conflicts) -->
       <div class="setting-section">
-        <span class="section-label">Grid Size</span>
+        <span class="section-label">{t('train_grid_size')}</span>
         <div class="scale-controls">
           <button
             class="scale-btn"
@@ -148,7 +149,7 @@
             <i class="fas fa-plus" aria-hidden="true"></i>
           </button>
           {#if gridScale !== 1.0}
-            <button class="reset-btn" onclick={resetScale}>Reset</button>
+            <button class="reset-btn" onclick={resetScale}>{t('train_reset')}</button>
           {/if}
         </div>
       </div>
@@ -156,7 +157,7 @@
       <!-- Prop Visibility Toggle -->
       {#if onPropsVisibilityChange}
         <div class="setting-section">
-          <span class="section-label" id="prop-display-label">Prop Display</span
+          <span class="section-label" id="prop-display-label">{t('train_prop_display')}</span
           >
           <button
             class="toggle-btn"
@@ -168,7 +169,7 @@
               class="fas {propsVisible ? 'fa-eye' : 'fa-eye-slash'}"
               aria-hidden="true"
             ></i>
-            <span>{propsVisible ? "Props Visible" : "Props Hidden"}</span>
+            <span>{propsVisible ? t('train_props_visible') : t('train_props_hidden')}</span>
           </button>
         </div>
       {/if}
@@ -176,14 +177,14 @@
       <!-- Camera Switch -->
       {#if onSwitchCamera}
         <div class="setting-section">
-          <span class="section-label">Camera</span>
+          <span class="section-label">{t('train_camera')}</span>
           <button
             class="toggle-btn camera-btn"
             onclick={onSwitchCamera}
             aria-label="Switch camera"
           >
             <i class="fas fa-sync-alt" aria-hidden="true"></i>
-            <span>Switch Camera</span>
+            <span>{t('train_switch_camera')}</span>
           </button>
         </div>
       {/if}

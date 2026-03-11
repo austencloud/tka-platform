@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { mandalaState } from "../state/mandala-state.svelte";
   import { MandalaController } from "../state/mandala-controller";
   import { MandalaTransformer } from "../services/implementations/MandalaTransformer";
@@ -112,45 +113,45 @@
           class="action-btn"
           onclick={handleUndo}
           disabled={!mandalaState.canUndo}
-          title="Undo"
+          title={t('mandala_undo')}
         >
-          Undo
+          {t('mandala_undo')}
         </button>
         <button
           class="action-btn"
           onclick={handleRedo}
           disabled={!mandalaState.canRedo}
-          title="Redo"
+          title={t('mandala_redo')}
         >
-          Redo
+          {t('mandala_redo')}
         </button>
         <button
           class="action-btn"
           onclick={handleClear}
           disabled={!mandalaState.hasElements}
-          title="Clear"
+          title={t('mandala_clear')}
         >
-          Clear
+          {t('mandala_clear')}
         </button>
         <button
           class="action-btn primary"
           onclick={handleExport}
           disabled={!mandalaState.hasElements}
-          title="Export"
+          title={t('mandala_export')}
         >
-          Export
+          {t('mandala_export')}
         </button>
       </div>
 
       <!-- Controls in collapsible sections -->
       <div class="mobile-controls">
         <details class="control-section" open>
-          <summary>Asset Library</summary>
+          <summary>{t('mandala_asset_library')}</summary>
           <AssetLibrary onAssetSelect={handleAssetSelect} />
         </details>
 
         <details class="control-section">
-          <summary>Symmetry</summary>
+          <summary>{t('mandala_symmetry')}</summary>
           <SymmetryControls />
         </details>
       </div>
@@ -161,7 +162,7 @@
       <!-- Left panel: Asset Library -->
       <aside class="left-panel">
         <div class="panel-header">
-          <h2>Asset Library</h2>
+          <h2>{t('mandala_asset_library')}</h2>
         </div>
         <AssetLibrary onAssetSelect={handleAssetSelect} />
       </aside>
@@ -169,7 +170,7 @@
       <!-- Center: Canvas -->
       <main class="center-panel">
         <div class="panel-header">
-          <h2>Canvas</h2>
+          <h2>{t('mandala_canvas')}</h2>
           <div class="action-bar">
             <button
               class="action-btn"
@@ -199,7 +200,7 @@
               class="action-btn primary"
               onclick={handleExport}
               disabled={!mandalaState.hasElements}
-              title="Export"
+              title={t('mandala_export')}
             >
               Export
             </button>
@@ -213,7 +214,7 @@
       <!-- Right panel: Controls -->
       <aside class="right-panel">
         <div class="panel-header">
-          <h2>Symmetry</h2>
+          <h2>{t('mandala_symmetry')}</h2>
         </div>
         <SymmetryControls />
 
@@ -221,16 +222,16 @@
         {#if mandalaState.selectedElement}
           <div class="properties-panel">
             <div class="panel-header">
-              <h3>Properties</h3>
+              <h3>{t('mandala_properties')}</h3>
             </div>
             <div class="property-row">
-              <span class="property-label">Type</span>
+              <span class="property-label">{t('mandala_type')}</span>
               <span class="property-value"
                 >{mandalaState.selectedElement.type}</span
               >
             </div>
             <div class="property-row">
-              <span class="property-label">Rotation</span>
+              <span class="property-label">{t('mandala_rotation')}</span>
               <input
                 type="range"
                 min="0"
@@ -251,7 +252,7 @@
               >
             </div>
             <div class="property-row">
-              <span class="property-label">Scale</span>
+              <span class="property-label">{t('mandala_scale')}</span>
               <input
                 type="range"
                 min="0.1"
@@ -277,13 +278,13 @@
                 class="action-btn"
                 onclick={() => controller.duplicateSelectedElement()}
               >
-                Duplicate
+                {t('mandala_duplicate')}
               </button>
               <button
                 class="action-btn danger"
                 onclick={() => controller.removeSelectedElement()}
               >
-                Delete
+                {t('mandala_delete')}
               </button>
             </div>
           </div>

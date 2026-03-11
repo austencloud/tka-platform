@@ -12,6 +12,7 @@
   import type { Exhibit } from "../../domain/models/Exhibit";
   import { FRAME_HEIGHT, FRAME_BORDER } from "../../domain/constants/gallery-dimensions";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     /** The exhibit to label */
@@ -61,7 +62,7 @@
       exhibit.sequence.word ||
       exhibit.sequence.displayName ||
       exhibit.sequence.name ||
-      "Untitled";
+      t("gallery_untitled");
     ctx.fillText(title.slice(0, 20), 128, 8);
 
     // Author text
@@ -69,7 +70,7 @@
     if (author) {
       ctx.fillStyle = "#666666";
       ctx.font = "14px Arial";
-      ctx.fillText(`by ${author.slice(0, 18)}`, 128, 36);
+      ctx.fillText(t("gallery_by_author", { author: author.slice(0, 18) }), 128, 36);
     }
 
     const texture = new CanvasTexture(canvas);

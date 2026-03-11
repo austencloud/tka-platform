@@ -5,6 +5,7 @@
 -->
 <script lang="ts">
   import type { StepConfig } from "../../state/train-practice-state.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     config: StepConfig;
@@ -15,9 +16,9 @@
 </script>
 
 <div class="config-panel">
-  <h3>Step-by-Step Mode Settings</h3>
+  <h3>{t('train_step_config_title')}</h3>
   <p class="description">
-    Progress through the sequence one beat at a time at your own pace.
+    {t('train_step_config_desc')}
   </p>
 
   <div class="setting-group">
@@ -27,13 +28,13 @@
         checked={config.voiceCues}
         onchange={(e) => onUpdate({ voiceCues: e.currentTarget.checked })}
       />
-      <span>Enable voice cues</span>
+      <span>{t('train_step_voice_cues')}</span>
     </label>
-    <p class="hint">Announces the next position verbally.</p>
+    <p class="hint">{t('train_step_voice_cues_hint')}</p>
   </div>
 
   <div class="setting-group">
-    <label for="voiceKeyword">Voice command keyword</label>
+    <label for="voiceKeyword">{t('train_step_voice_keyword')}</label>
     <input
       id="voiceKeyword"
       type="text"
@@ -41,11 +42,11 @@
       oninput={(e) => onUpdate({ voiceKeyword: e.currentTarget.value })}
       placeholder="next"
     />
-    <p class="hint">Say this word to advance to the next beat.</p>
+    <p class="hint">{t('train_step_voice_keyword_hint')}</p>
   </div>
 
   <div class="setting-group">
-    <label for="confirmation">Advancement method</label>
+    <label for="confirmation">{t('train_step_advance_method')}</label>
     <select
       id="confirmation"
       value={config.requiredConfirmation}
@@ -57,11 +58,11 @@
             | "both",
         })}
     >
-      <option value="tap">Tap/Click button</option>
-      <option value="voice">Voice command</option>
-      <option value="both">Tap or Voice</option>
+      <option value="tap">{t('train_step_advance_tap')}</option>
+      <option value="voice">{t('train_step_advance_voice')}</option>
+      <option value="both">{t('train_step_advance_both')}</option>
     </select>
-    <p class="hint">How to move to the next beat.</p>
+    <p class="hint">{t('train_step_advance_hint')}</p>
   </div>
 </div>
 

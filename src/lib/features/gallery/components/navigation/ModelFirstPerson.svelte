@@ -14,6 +14,7 @@
   import { CameraMode } from "$lib/shared/3d-core/camera/types";
   import { cameraPreferences } from "$lib/shared/3d-core/camera/camera-preferences.svelte";
   import { SCALE } from "$lib/shared/3d-core/scale/scale-constants";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     /** Starting position [x, y, z] */
@@ -534,8 +535,8 @@
 {#if isLocked}
   <div class="mode-indicator">
     <i class="fas" class:fa-eye={cameraMode === CameraMode.FIRST_PERSON} class:fa-user={cameraMode === CameraMode.THIRD_PERSON}></i>
-    <span>{cameraMode === CameraMode.FIRST_PERSON ? "1st Person" : "3rd Person"}</span>
-    <span class="hint">V to switch</span>
+    <span>{cameraMode === CameraMode.FIRST_PERSON ? t("gallery_camera_first_person") : t("gallery_camera_third_person")}</span>
+    <span class="hint">{t("gallery_camera_switch_hint")}</span>
   </div>
 {/if}
 

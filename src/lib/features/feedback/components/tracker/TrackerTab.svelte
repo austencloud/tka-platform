@@ -2,6 +2,7 @@
 <script lang="ts">
   import { createFeedbackTrackerState } from "../../state/feedback-tracker-state.svelte";
   import TrackerList from "./TrackerList.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   const state = createFeedbackTrackerState();
 
@@ -21,8 +22,8 @@
         <i class="fas fa-binoculars" aria-hidden="true"></i>
       </div>
       <div class="header-text">
-        <h1>Feedback Tracker</h1>
-        <p>Reported bugs, features in progress, and recent fixes</p>
+        <h1>{t("feedback_tracker_title")}</h1>
+        <p>{t("feedback_tracker_subtitle")}</p>
       </div>
     </div>
   </header>

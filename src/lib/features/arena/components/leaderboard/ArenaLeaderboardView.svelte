@@ -16,6 +16,7 @@
   } from "../../domain/models/arena-models";
   import { container } from "$lib/shared/di";
   import type { IArenaOrchestrator } from "../../services/contracts/IArenaOrchestrator";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   const orchestrator: IArenaOrchestrator = container?.items?.arenaOrchestrator;
 
@@ -40,7 +41,7 @@
       }
     } catch (err) {
       console.error("[Arena] Failed to load leaderboard:", err);
-      error = "Failed to load leaderboard";
+      error = t('arena_leaderboard_error');
     } finally {
       loading = false;
     }
@@ -56,7 +57,7 @@
   {#if loading}
     <div class="leaderboard-loading" role="status" aria-live="polite" aria-busy="true">
       <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
-      <p>Loading rankings...</p>
+      <p>{t('arena_leaderboard_loading')}</p>
     </div>
   {:else if error}
     <div class="leaderboard-error" role="alert">
@@ -66,13 +67,13 @@
   {:else if leaderboard.length === 0}
     <div class="leaderboard-empty" role="status">
       <i class="fas fa-trophy" aria-hidden="true"></i>
-      <p>No ranked sequences yet. Be the first to vote.</p>
+      <p>{t('arena_leaderboard_empty')}</p>
     </div>
   {:else}
     <ArenaPodium entries={podiumEntries} onselect={handleSelect} />
 
     {#if rankedEntries.length > 0}
-      <div class="ranked-list themed-scrollbar" role="list" aria-label="Ranked sequences">
+      <div class="ranked-list themed-scrollbar" role="list" aria-label={t('arena_leaderboard_ranked_sequences')}>
         {#each rankedEntries as entry (entry.entry.id)}
           <ArenaLeaderboardRow {entry} onselect={() => handleSelect(entry.entry.id)} />
         {/each}

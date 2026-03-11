@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
   import type { ArenaUserStats } from "../../domain/models/arena-models";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   let { stats }: { stats: ArenaUserStats | null } = $props();
 </script>
@@ -14,7 +15,7 @@
   <div class="personal-stats">
     <div class="stat-item">
       <span class="stat-value">{stats.totalVotes}</span>
-      <span class="stat-label">votes cast</span>
+      <span class="stat-label">{t('arena_stats_votes_cast')}</span>
     </div>
     {#if stats.firstVoteDate}
       <div class="stat-item">
@@ -25,7 +26,7 @@
             year: "numeric",
           })}
         </span>
-        <span class="stat-label">first vote</span>
+        <span class="stat-label">{t('arena_stats_first_vote')}</span>
       </div>
     {/if}
   </div>

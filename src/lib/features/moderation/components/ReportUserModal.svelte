@@ -5,6 +5,7 @@
 	import { toast } from '$lib/shared/toast/state/toast-state.svelte';
 	import ReportCategorySelector from './ReportCategorySelector.svelte';
 	import type { ReportCategory } from '../domain/models/report-models';
+	import { t } from '$lib/shared/i18n/i18n.svelte';
 
 	const MAX_DESCRIPTION_LENGTH = 1000;
 
@@ -79,7 +80,7 @@
 		}
 
 		if (!reportModalState.targetUser) {
-			reportModalState.setError('No user selected');
+			reportModalState.setError(t('moderation_no_user_selected'));
 			return;
 		}
 
@@ -96,9 +97,9 @@
 			});
 
 			reportModalState.setSuccess();
-			toast.success('Report submitted. Thank you for helping keep our community safe.');
+			toast.success(t('moderation_report_submitted_success'));
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Failed to submit report';
+			const message = error instanceof Error ? error.message : t('moderation_submit_failed');
 			reportModalState.setError(message);
 			toast.error(message);
 		} finally {
@@ -143,21 +144,21 @@
 					<div class="success-icon">
 						<i class="fa-solid fa-check-circle" aria-hidden="true"></i>
 					</div>
-					<h2 id="report-modal-title">Report Submitted</h2>
-					<p>Thank you for your report. Our team will review it and take appropriate action.</p>
+					<h2 id="report-modal-title">{t('moderation_report_submitted')}</h2>
+					<p>{t('moderation_report_submitted_message')}</p>
 					<button type="button" class="btn-primary" onclick={handleClose}>
-						Done
+						{t('moderation_done')}
 					</button>
 				</div>
 			{:else}
 				<!-- Report Form -->
 				<header class="modal-header">
-					<h2 id="report-modal-title">Report User</h2>
+					<h2 id="report-modal-title">{t('moderation_report_user')}</h2>
 					<button
 						type="button"
 						class="close-btn"
 						onclick={handleClose}
-						aria-label="Close modal"
+						aria-label={t('moderation_close_modal')}
 					>
 						<i class="fa-solid fa-xmark" aria-hidden="true"></i>
 					</button>
@@ -166,7 +167,7 @@
 				<div class="modal-body">
 					{#if reportModalState.targetUser}
 						<div class="target-user">
-							<span class="target-label">Reporting:</span>
+							<span class="target-label">{t('moderation_reporting')}:</span>
 							<span class="target-name">{reportModalState.targetUser.displayName}</span>
 						</div>
 					{/if}
@@ -178,16 +179,16 @@
 
 					<div class="description-field">
 						<label for="report-description">
-							Additional details
+							{t('moderation_additional_details')}
 							{#if reportModalState.selectedCategory === 'other'}
-								<span class="required">(required)</span>
+								<span class="required">({t('moderation_required')})</span>
 							{:else}
-								<span class="optional">(optional)</span>
+								<span class="optional">({t('moderation_optional')})</span>
 							{/if}
 						</label>
 						<textarea
 							id="report-description"
-							placeholder="Provide any additional context that would help us investigate..."
+							placeholder={t('moderation_description_placeholder')}
 							value={reportModalState.description}
 							oninput={handleDescriptionInput}
 							rows="4"
@@ -208,7 +209,7 @@
 
 				<footer class="modal-footer">
 					<button type="button" class="btn-secondary" onclick={handleClose}>
-						Cancel
+						{t('moderation_cancel')}
 					</button>
 					<button
 						type="button"
@@ -218,10 +219,10 @@
 					>
 						{#if reportModalState.isSubmitting}
 							<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
-							Submitting...
+							{t('moderation_submitting')}
 						{:else}
 							<i class="fa-solid fa-flag" aria-hidden="true"></i>
-							Submit Report
+							{t('moderation_submit_report')}
 						{/if}
 					</button>
 				</footer>

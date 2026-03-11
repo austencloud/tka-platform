@@ -5,6 +5,7 @@ Options: All, Level 1, Level 2, Level 3. Each shows contextual count.
 <script lang="ts">
   import FilterChipBase from "../FilterChipBase.svelte";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
@@ -25,7 +26,7 @@ Options: All, Level 1, Level 2, Level 3. Each shows contextual count.
     hapticService = container.items.hapticFeedback ?? null;
   });
 
-  const label = $derived(activeLevel ? `Level ${activeLevel}` : "Level");
+  const label = $derived(activeLevel ? t('browse_filter_level', { level: String(activeLevel) }) : t('browse_chip_level'));
   const isActive = $derived(activeLevel !== null);
 
   // Compute counts lazily when dropdown is open
@@ -39,10 +40,10 @@ Options: All, Level 1, Level 2, Level 3. Each shows contextual count.
   });
 
   const levels: { value: number | null; label: string }[] = [
-    { value: null, label: "All Levels" },
-    { value: 1, label: "Level 1" },
-    { value: 2, label: "Level 2" },
-    { value: 3, label: "Level 3" },
+    { value: null, label: t('browse_all_levels') },
+    { value: 1, label: t('browse_level_n', { n: '1' }) },
+    { value: 2, label: t('browse_level_n', { n: '2' }) },
+    { value: 3, label: t('browse_level_n', { n: '3' }) },
   ];
 
   function handleToggle() {

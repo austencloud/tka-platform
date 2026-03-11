@@ -14,6 +14,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     onSequenceSelect: (sequence: SequenceData) => void;
@@ -58,11 +59,11 @@
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-    if (minutes < 1) return "Just now";
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    if (days === 1) return "Yesterday";
-    if (days < 7) return `${days}d ago`;
+    if (minutes < 1) return t('train_time_just_now');
+    if (minutes < 60) return t('train_time_minutes_ago', { count: minutes });
+    if (hours < 24) return t('train_time_hours_ago', { count: hours });
+    if (days === 1) return t('train_time_yesterday');
+    if (days < 7) return t('train_time_days_ago', { count: days });
 
     return new Date(timestamp).toLocaleDateString("en-US", {
       month: "short",
@@ -79,9 +80,9 @@
     </div>
 
     <!-- Title -->
-    <h2 class="prompt-title">Select a Sequence to Practice</h2>
+    <h2 class="prompt-title">{t('train_select_sequence')}</h2>
     <p class="prompt-subtitle">
-      Choose a sequence to start your training session
+      {t('train_select_sequence_subtitle')}
     </p>
 
     <!-- Recent Sequences (if any) -->
@@ -89,7 +90,7 @@
       <div class="recent-section" in:fly={{ y: 10, duration: 200, delay: 100 }}>
         <div class="recent-header">
           <i class="fas fa-history" aria-hidden="true"></i>
-          <span>Recent</span>
+          <span>{t('train_recent')}</span>
         </div>
         <div class="recent-grid">
           {#each recentSequences as recent, index (recent.id)}
@@ -100,7 +101,7 @@
             >
               <div class="recent-name">{recent.word ?? recent.name}</div>
               <div class="recent-meta">
-                <span class="beat-count">{recent.stepCount} steps</span>
+                <span class="beat-count">{t('train_step_count', { count: recent.stepCount })}</span>
                 <span class="time-ago"
                   >{formatTimeAgo(recent.lastPracticedAt)}</span
                 >
@@ -122,7 +123,7 @@
       }}
     >
       <i class="fas fa-folder-open" aria-hidden="true"></i>
-      <span>Browse All Sequences</span>
+      <span>{t('train_browse_all')}</span>
     </button>
   </div>
 

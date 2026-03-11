@@ -5,6 +5,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { UserLocationWithProfile } from "../domain/models/user-location";
   import UserProfileMarker from "./UserProfileMarker.svelte";
   import { goto } from "$app/navigation";
@@ -160,7 +161,7 @@
     <button
       class="popup-overlay"
       onclick={closePopup}
-      aria-label="Close popup"
+      aria-label={t('community_close_popup')}
       type="button"
     ></button>
     <div class="popup-wrapper">
@@ -175,8 +176,8 @@
   {#if locations.length === 0}
     <div class="empty-state">
       <i class="fas fa-map-marked-alt" aria-hidden="true"></i>
-      <p>No users have shared their location yet.</p>
-      <p class="subtext">Be the first to join the global TKA community!</p>
+      <p>{t('community_no_users_shared')}</p>
+      <p class="subtext">{t('community_be_first')}</p>
     </div>
   {/if}
 </div>

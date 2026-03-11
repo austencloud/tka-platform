@@ -8,6 +8,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     sequence: SequenceData | null;
@@ -36,12 +37,12 @@
   {#if sequence}
     <div class="sequence-content">
       <span class="sequence-name">{sequence.word || sequence.name}</span>
-      <span class="sequence-steps">{totalSteps} steps</span>
+      <span class="sequence-steps">{t('train_step_count', { count: totalSteps })}</span>
     </div>
   {:else}
     <div class="sequence-content">
       <i class="fas fa-folder-open" aria-hidden="true"></i>
-      <span class="sequence-name">Select Sequence</span>
+      <span class="sequence-name">{t('train_select_sequence_short')}</span>
     </div>
   {/if}
 </button>

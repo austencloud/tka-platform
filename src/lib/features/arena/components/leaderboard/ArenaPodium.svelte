@@ -6,6 +6,7 @@
 <script lang="ts">
   import type { ArenaLeaderboardEntry } from "../../domain/models/arena-models";
   import ArenaPodiumCard from "./ArenaPodiumCard.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   let {
     entries,
@@ -23,7 +24,7 @@
 </script>
 
 {#if entries.length > 0}
-  <div class="podium" role="list" aria-label="Top 3 ranked sequences">
+  <div class="podium" role="list" aria-label={t('arena_leaderboard_top_3')}>
     {#each podiumOrder() as entry (entry.entry.id)}
       <div role="listitem">
         <ArenaPodiumCard {entry} onselect={() => onselect(entry.entry.id)} />

@@ -7,6 +7,7 @@
 	 */
 
 	import { onMount, tick } from 'svelte';
+	import { t } from "$lib/shared/i18n/i18n.svelte.js";
 	import type { ChatMessage } from '../domain/multiplayer-models';
 
 	interface Props {
@@ -84,11 +85,11 @@
 </script>
 
 {#if open}
-	<div class="chat-panel" role="region" aria-label="Session Chat">
+	<div class="chat-panel" role="region" aria-label={t("gallery_chat_region_label")}>
 		<!-- Header -->
 		<header class="chat-header">
-			<h3>Chat</h3>
-			<button class="close-button" onclick={onClose} aria-label="Close chat">
+			<h3>{t("gallery_chat_title")}</h3>
+			<button class="close-button" onclick={onClose} aria-label={t("gallery_chat_close")}>
 				<i class="fas fa-times" aria-hidden="true"></i>
 			</button>
 		</header>
@@ -98,7 +99,7 @@
 			{#if messages.length === 0}
 				<div class="empty-state">
 					<i class="fas fa-comments" aria-hidden="true"></i>
-					<p>No messages yet</p>
+					<p>{t("gallery_chat_empty")}</p>
 				</div>
 			{:else}
 				{#each messages as message (message.id)}
@@ -147,11 +148,11 @@
 				bind:this={inputElement}
 				type="text"
 				bind:value={inputText}
-				placeholder="Type a message..."
+				placeholder={t("gallery_chat_placeholder")}
 				maxlength={500}
 				disabled={isSending}
 			/>
-			<button type="submit" disabled={isSending || !inputText.trim()} aria-label="Send message">
+			<button type="submit" disabled={isSending || !inputText.trim()} aria-label={t("gallery_chat_send")}>
 				{#if isSending}
 					<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
 				{:else}

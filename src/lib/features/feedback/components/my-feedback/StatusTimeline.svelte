@@ -5,6 +5,7 @@
     FeedbackStatus,
   } from "../../domain/models/feedback-models";
   import { STATUS_CONFIG } from "../../domain/models/feedback-models";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   let {
     history = [],
@@ -77,7 +78,7 @@
 <div class="timeline-container">
   <h3 class="timeline-header">
     <i class="fas fa-history" aria-hidden="true"></i>
-    Status History
+    {t("feedback_status_history")}
   </h3>
 
   <div class="timeline">
@@ -103,7 +104,7 @@
             <p class="timeline-notes">{entry.notes}</p>
           {/if}
           {#if entry.actor}
-            <span class="actor">by {entry.actor}</span>
+            <span class="actor">{t("feedback_by_actor", { name: entry.actor })}</span>
           {/if}
         </div>
       </div>
@@ -114,7 +115,7 @@
       <div class="resolution-summary">
         <i class="fas fa-check-circle" aria-hidden="true"></i>
         <div class="resolution-content">
-          <span class="resolution-label">What was done:</span>
+          <span class="resolution-label">{t("feedback_what_was_done")}</span>
           <p class="resolution-text">{userFacingNotes}</p>
           {#if fixedInVersion}
             <span class="version-tag">

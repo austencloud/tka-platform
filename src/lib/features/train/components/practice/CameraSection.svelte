@@ -16,6 +16,7 @@
   import { container } from "$lib/shared/di";
   import type { IPositionDetector } from "../../services/contracts/IPositionDetector";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
   interface Props {
@@ -193,7 +194,7 @@
   <!-- Countdown overlay -->
   {#if mode === TrainMode.COUNTDOWN && countdownValue !== null}
     <div class="countdown-overlay">
-      <span class="countdown-number">{countdownValue || "GO!"}</span>
+      <span class="countdown-number">{countdownValue || t('train_go')}</span>
     </div>
   {/if}
 
@@ -204,7 +205,7 @@
         {#if currentCombo > 0}
           <div class="combo">
             <span class="combo-value">{currentCombo}x</span>
-            <span class="combo-label">Combo</span>
+            <span class="combo-label">{t('train_combo_label')}</span>
           </div>
         {/if}
         <div class="score">
@@ -217,7 +218,7 @@
           class:hit={lastHitResult}
           class:miss={!lastHitResult}
         >
-          {lastHitResult ? `+${lastHitPoints}` : "MISS"}
+          {lastHitResult ? `+${lastHitPoints}` : t('train_miss')}
         </div>
       {/if}
     </div>

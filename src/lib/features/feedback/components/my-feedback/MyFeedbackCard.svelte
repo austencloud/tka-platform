@@ -9,6 +9,7 @@
     STATUS_CONFIG,
     TYPE_CONFIG,
   } from "../../domain/models/feedback-models";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   const { item, isSelected, onClick } = $props<{
     item: FeedbackItem;
@@ -32,12 +33,12 @@
       const hours = Math.floor(diff / (1000 * 60 * 60));
       if (hours === 0) {
         const minutes = Math.floor(diff / (1000 * 60));
-        return minutes <= 1 ? "Just now" : `${minutes}m ago`;
+        return minutes <= 1 ? t("feedback_just_now") : t("feedback_minutes_ago", { count: minutes });
       }
-      return `${hours}h ago`;
+      return t("feedback_hours_ago", { count: hours });
     }
-    if (days === 1) return "Yesterday";
-    if (days < 7) return `${days}d ago`;
+    if (days === 1) return t("feedback_yesterday");
+    if (days < 7) return t("feedback_days_ago", { count: days });
     return date.toLocaleDateString();
   }
 </script>
@@ -70,11 +71,7 @@
     {#if item.imageUrls && item.imageUrls.length > 0}
       <div class="screenshot-indicator">
         <i class="fas fa-images" aria-hidden="true"></i>
-        <span
-          >{item.imageUrls.length} screenshot{item.imageUrls.length !== 1
-            ? "s"
-            : ""}</span
-        >
+        <span>{t("feedback_screenshot_count", { count: item.imageUrls.length })}</span>
       </div>
     {/if}
 
@@ -83,7 +80,7 @@
       {#if item.adminResponse}
         <span class="has-response">
           <i class="fas fa-reply" aria-hidden="true"></i>
-          Response
+          {t("feedback_response")}
         </span>
       {/if}
     </div>

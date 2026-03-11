@@ -1,5 +1,6 @@
 <!-- UserCount - Display active user count for social proof -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
   interface Props {
     totalUsers?: number;
     premiumUsers?: number;
@@ -25,9 +26,9 @@
     <i class="fas fa-users" aria-hidden="true"></i>
     <span class="count">{formatCount(totalUsers)}</span>
   </div>
-  <p class="tagline">flow artists creating with TKA</p>
+  <p class="tagline">{t('premium_user_count_tagline')}</p>
   {#if showGrowth && premiumUsers > 0}
-    <p class="growth">{formatCount(premiumUsers)} premium members</p>
+    <p class="growth">{t('premium_user_count_premium_members', { count: formatCount(premiumUsers) })}</p>
   {/if}
 </div>
 

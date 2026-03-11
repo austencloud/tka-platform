@@ -2,6 +2,8 @@
   FeatureComparisonTable - Side-by-side Premium vs Free comparison
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
+
   interface Feature {
     name: string;
     free: string;
@@ -19,13 +21,13 @@
 <div class="comparison">
   <div class="header">
     <div class="feature-col">
-      <h3>Feature</h3>
+      <h3>{t('premium_table_feature')}</h3>
     </div>
     <div class="free-col">
-      <h3>Free</h3>
+      <h3>{t('premium_table_free')}</h3>
     </div>
     <div class="premium-col">
-      <h3>Premium</h3>
+      <h3>{t('premium_table_premium')}</h3>
     </div>
   </div>
 
@@ -37,10 +39,10 @@
         {/if}
         <span>{feature.name}</span>
       </div>
-      <div class="free-col" data-label="Free">
+      <div class="free-col" data-label={t('premium_table_free')}>
         <span>{feature.free}</span>
       </div>
-      <div class="premium-col" data-label="Premium">
+      <div class="premium-col" data-label={t('premium_table_premium')}>
         <span>{feature.premium}</span>
       </div>
     </div>

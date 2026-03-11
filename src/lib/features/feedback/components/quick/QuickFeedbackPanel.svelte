@@ -22,6 +22,7 @@
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   const debug = createComponentLogger("QuickFeedbackPanel");
 
@@ -77,7 +78,7 @@
 
     // Show recovery hint if they had content but didn't submit
     if (hasContent && !wasSubmitted) {
-      toast.info("Draft saved. Press F to continue.", 3000);
+      toast.info(t("feedback_draft_saved_hint"), 3000);
     }
     // Don't reset form state - drafts should persist!
   }
@@ -128,7 +129,7 @@
       setTimeout(() => {
         handleClose();
         toast.success(
-          "Feedback submitted! Thank you for helping improve TKA Scribe.",
+          t("feedback_submitted_toast"),
           3000
         );
 
@@ -170,7 +171,7 @@
       <header class="panel-header" class:hidden={isInputMode}>
         <div class="header-title">
           <i class="fas fa-comment-dots" aria-hidden="true"></i>
-          <h2>Quick Feedback</h2>
+          <h2>{t("feedback_quick_title")}</h2>
         </div>
         <button
           class="close-btn"
@@ -208,7 +209,7 @@
           <kbd>f</kbd>
           <span>or</span>
           <kbd>Esc</kbd>
-          <span>to close</span>
+          <span>{t("feedback_to_close")}</span>
         </div>
       {/if}
 

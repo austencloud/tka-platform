@@ -5,6 +5,7 @@
   and the blue/red grid locations. Provides a textual summary of the sequence.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { DetectedBeat } from "../domain/models";
 
   interface Props {
@@ -34,16 +35,16 @@
 </script>
 
 <div class="sequence-output">
-  <h3 class="section-title">Detected Beats ({beats.length})</h3>
+  <h3 class="section-title">{t('skel2tka_detected_beats', { count: String(beats.length) })}</h3>
 
   {#if beats.length === 0}
-    <p class="empty-state">No beats detected. Try a video with visible hand movements.</p>
+    <p class="empty-state">{t('skel2tka_no_beats')}</p>
   {:else}
     <div class="beat-list">
       {#each beats as beat}
         <div class="beat-card">
           <div class="beat-header">
-            <span class="beat-number">Beat {beat.index + 1}</span>
+            <span class="beat-number">{t('skel2tka_beat_number', { beat: String(beat.index + 1) })}</span>
             <span class="beat-time">
               {formatTime(beat.startTime)} - {formatTime(beat.endTime)}
             </span>
@@ -72,14 +73,14 @@
           </div>
 
           <div class="beat-meta">
-            {beat.frameCount} frames
+            {t('skel2tka_frame_count', { count: String(beat.frameCount) })}
           </div>
         </div>
       {/each}
     </div>
 
     <div class="summary">
-      <span class="summary-label">Sequence:</span>
+      <span class="summary-label">{t('skel2tka_sequence_label')}</span>
       <span class="summary-value">
         {beats.map((b) => b.positionLabel ?? "?").join(" -> ")}
       </span>

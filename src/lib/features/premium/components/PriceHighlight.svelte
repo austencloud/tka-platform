@@ -2,6 +2,8 @@
   PriceHighlight - Quick price display for above the fold on mobile
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
+
   interface Props {
     price: number;
     period: string;
@@ -12,10 +14,10 @@
 
 <div class="price-highlight">
   <div class="price-badge">
-    <span class="amount">${price}</span>
-    <span class="period">/{period}</span>
+    <span class="amount">{t('premium_price_amount', { price })}</span>
+    <span class="period">{t('premium_price_period', { period })}</span>
   </div>
-  <p class="tagline">Create freely • Support TKA's growth</p>
+  <p class="tagline">{t('premium_price_tagline')}</p>
 </div>
 
 <style>

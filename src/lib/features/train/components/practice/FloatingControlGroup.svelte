@@ -12,6 +12,7 @@
   import type { DisplayView } from "../../state/train-practice-state.svelte";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     displayView: DisplayView;
@@ -53,13 +54,13 @@
   const viewLabel = $derived(() => {
     switch (displayView) {
       case "camera-canvas":
-        return "Canvas";
+        return t('train_view_canvas');
       case "camera-grid":
-        return "Grid";
+        return t('train_view_grid');
       case "camera-canvas-grid":
-        return "Both";
+        return t('train_view_both');
       default:
-        return "View";
+        return t('train_view_label');
     }
   });
 
@@ -81,13 +82,13 @@
   const modeLabel = $derived(() => {
     switch (practiceMode) {
       case PracticeMode.ADAPTIVE:
-        return "Adaptive";
+        return t('train_mode_adaptive');
       case PracticeMode.STEP_BY_STEP:
-        return "Step";
+        return t('train_mode_step');
       case PracticeMode.TIMED:
-        return "Timed";
+        return t('train_mode_timed');
       default:
-        return "Mode";
+        return t('train_mode_label');
     }
   });
 

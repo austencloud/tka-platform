@@ -20,6 +20,7 @@ Follows Svelte 5 runes + microservices architecture.
     BrowseNavigationItem,
   } from "../domain/models/navigation-models";
   import type { IHapticFeedback } from "../../../../../shared/application/services/contracts/IHapticFeedback";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   // ✅ PURE RUNES: Props using modern Svelte 5 runes
   const {
@@ -150,15 +151,15 @@ Follows Svelte 5 runes + microservices architecture.
             <div class="section-items" transition:slide={{ duration: 200 }}>
               {#if section.type === "letter"}
                 <!-- Special grid layout for letters with arrow key navigation -->
-                <div class="letter-grid" role="grid" aria-label="Filter by starting letter">
+                <div class="letter-grid" role="grid" aria-label={t('browse_filter_by_starting_letter')}>
                   {#each section.items as item, index (item.id)}
                     <button
                       class="letter-item"
                       class:active={item.isActive}
                       onclick={() => handleItemClick(section, item)}
                       onkeydown={(e) => handleLetterGridKeydown(e, section, index)}
-                      title="{item.label} ({item.count} sequences)"
-                      aria-label="{item.label}, {item.count} sequences"
+                      title={t('browse_letter_sequences', { letter: item.label, count: String(item.count) })}
+                      aria-label={t('browse_letter_sequences', { letter: item.label, count: String(item.count) })}
                       tabindex={index === 0 ? 0 : -1}
                     >
                       <span class="letter-label">{item.label}</span>
@@ -198,11 +199,11 @@ Follows Svelte 5 runes + microservices architecture.
       <div class="sidebar-footer">
         <div class="footer-stats">
           <div class="stat-item">
-            <span class="stat-label">Total Sequences:</span>
+            <span class="stat-label">{t('browse_total_sequences')}:</span>
             <span class="stat-value">{totalSequences}</span>
           </div>
           <div class="stat-item">
-            <span class="stat-label">Sections:</span>
+            <span class="stat-label">{t('browse_sections')}:</span>
             <span class="stat-value">{expandedCount}/{sections.length}</span>
           </div>
         </div>

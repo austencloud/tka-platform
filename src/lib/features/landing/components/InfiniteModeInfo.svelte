@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
   import { fade, fly } from "svelte/transition";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { GeneratedSequenceInfo } from "../domain/models/spinner-models";
   import {
     LOOPType,
@@ -109,20 +110,20 @@
         </span>
       {/key}
       <span class="loop-details">
-        {sliceLabel} · {totalSteps} steps
+        {sliceLabel} · {t('landing_infinite_steps', { count: totalSteps })}
       </span>
     </div>
 
     <!-- First Rendering Badge -->
     {#if badgeVisible}
       <span class="first-rendering-badge" in:fade out:fade={{ delay: 200 }}>
-        First rendering ever
+        {t('landing_infinite_first_rendering')}
       </span>
     {/if}
 
     <!-- Timestamp -->
     <span class="timestamp">
-      Generated {formatTimestamp(sequenceInfo.generatedAt)}
+      {t('landing_infinite_generated_at', { timestamp: formatTimestamp(sequenceInfo.generatedAt) })}
     </span>
   </div>
 {/if}

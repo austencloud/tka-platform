@@ -361,7 +361,11 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
    * which change the fire physics (buoyancy, turbulence, trail shape).
    */
   private computeConfigHash(config: FireOverlayConfig, playbackSpeed?: number, sequenceContentHash?: string): string {
-    return `${config.fuelSourceId ?? "default"}_${config.intensity}_${config.flameHeight}_${config.quality}_${config.colorBlend ?? 0}_${playbackSpeed ?? 1}_${sequenceContentHash ?? ""}`;
+    const p = config.physicsPreset;
+    const smokeHash = p
+      ? `${p.sootYield}_${p.sootCoolRate}_${p.sootDissipation}_${p.sootAdvectionDissipation}`
+      : "default";
+    return `${config.fuelSourceId ?? "default"}_${config.intensity}_${config.flameHeight}_${config.quality}_${config.colorBlend ?? 0}_${config.smokeOpacity ?? 0.06}_${smokeHash}_${playbackSpeed ?? 1}_${sequenceContentHash ?? ""}`;
   }
 
   /**

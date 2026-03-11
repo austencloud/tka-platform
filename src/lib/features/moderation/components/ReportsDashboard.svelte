@@ -4,16 +4,17 @@
 	import { REPORT_STATUSES, REPORT_CATEGORIES, type ReportStatus, type ReportCategory } from '../domain/models/report-models';
 	import ReportCard from './ReportCard.svelte';
 	import ReportDetailPanel from './ReportDetailPanel.svelte';
+	import { t } from '$lib/shared/i18n/i18n.svelte';
 
-	const statusTabs: { key: ReportStatus | 'all'; label: string }[] = [
-		{ key: 'all', label: 'All' },
-		{ key: 'new', label: 'New' },
-		{ key: 'reviewing', label: 'Reviewing' },
-		{ key: 'resolved', label: 'Resolved' }
+	const statusTabs: { key: ReportStatus | 'all'; labelKey: string }[] = [
+		{ key: 'all', labelKey: 'moderation_tab_all' },
+		{ key: 'new', labelKey: 'moderation_tab_new' },
+		{ key: 'reviewing', labelKey: 'moderation_tab_reviewing' },
+		{ key: 'resolved', labelKey: 'moderation_tab_resolved' }
 	];
 
 	const categoryOptions: { key: ReportCategory | 'all'; label: string }[] = [
-		{ key: 'all', label: 'All Categories' },
+		{ key: 'all', label: t('moderation_all_categories') },
 		...Object.entries(REPORT_CATEGORIES).map(([key, config]) => ({
 			key: key as ReportCategory,
 			label: config.label
@@ -88,10 +89,10 @@
 	<header class="dashboard-header">
 		<h1>
 			<i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
-			User Reports
+			{t('moderation_user_reports')}
 		</h1>
 		{#if adminReportsState.counts.new > 0}
-			<span class="new-badge">{adminReportsState.counts.new} new</span>
+			<span class="new-badge">{t('moderation_new_count', { count: adminReportsState.counts.new })}</span>
 		{/if}
 	</header>
 
@@ -112,7 +113,7 @@
 							role="tab"
 							aria-selected={activeTab === tab.key}
 						>
-							<span class="tab-label">{tab.label}</span>
+							<span class="tab-label">{t(tab.labelKey)}</span>
 							{#if getTabCount(tab.key) > 0}
 								<span class="tab-count">{getTabCount(tab.key)}</span>
 							{/if}
@@ -125,7 +126,7 @@
 					<select
 						value={selectedCategory}
 						onchange={(e) => handleCategoryChange((e.target as HTMLSelectElement).value as ReportCategory | 'all')}
-						aria-label="Filter by category"
+						aria-label={t('moderation_filter_by_category')}
 					>
 						{#each categoryOptions as option}
 							<option value={option.key}>{option.label}</option>
@@ -139,20 +140,20 @@
 				{#if adminReportsState.isLoading}
 					<div class="loading-state">
 						<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
-						<span>Loading reports...</span>
+						<span>{t('moderation_loading_reports')}</span>
 					</div>
 				{:else if adminReportsState.error}
 					<div class="error-state">
 						<i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
 						<span>{adminReportsState.error}</span>
 						<button type="button" onclick={() => adminReportsState.loadReports()}>
-							Retry
+							{t('moderation_retry')}
 						</button>
 					</div>
 				{:else if adminReportsState.reports.length === 0}
 					<div class="empty-state">
 						<i class="fa-solid fa-inbox" aria-hidden="true"></i>
-						<span>No reports found</span>
+						<span>{t('moderation_no_reports')}</span>
 					</div>
 				{:else}
 					{#each adminReportsState.reports as report (report.id)}
@@ -163,7 +164,7 @@
 						/>
 					{/each}
 
-					<!-- Load More Button -->
+					<!-- {t('moderation_load_more')} Button -->
 					{#if adminReportsState.hasMore}
 						<button
 							type="button"
@@ -173,10 +174,10 @@
 						>
 							{#if adminReportsState.isLoadingMore}
 								<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
-								Loading...
+								{t('moderation_loading')}
 							{:else}
 								<i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
-								Load More
+								{t('moderation_load_more')}
 							{/if}
 						</button>
 					{/if}
@@ -199,7 +200,7 @@
 		onkeydown={handleMobileKeydown}
 		role="dialog"
 		aria-modal="true"
-		aria-label="Report details"
+		aria-label={t('moderation_report_details')}
 		tabindex="-1"
 	>
 		<div class="mobile-drawer">

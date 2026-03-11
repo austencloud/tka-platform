@@ -4,15 +4,15 @@
   Shown when the feed has no content.
 -->
 <script lang="ts">
-  // Simple empty state - no filter logic needed
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 </script>
 
 <div class="feed-empty">
   <div class="empty-icon">
     <i class="fas fa-stream" aria-hidden="true"></i>
   </div>
-  <h2 class="empty-title">Your feed is empty</h2>
-  <p class="empty-message">Follow creators or check back later for new content.</p>
+  <h2 class="empty-title">{t('watch_empty_title')}</h2>
+  <p class="empty-message">{t('watch_empty_message')}</p>
 </div>
 
 <style>

@@ -65,7 +65,7 @@
       const firstName = authState.user.displayName.split(" ")[0];
       return `${greeting}, ${firstName}`;
     }
-    return "Watch";
+    return t('watch_title');
   });
 
   // Settings-derived prop types

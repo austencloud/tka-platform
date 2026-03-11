@@ -6,6 +6,7 @@
   import type { IAudioAnalyzer } from "../../services/contracts/IAudioAnalyzer";
   import type { IVoiceRecorder, VoiceRecordingResult } from "../../services/contracts/IVoiceRecorder";
   import type { DraftSaveStatus } from "../../services/contracts/IFormDraftPersister";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   let {
     value,
@@ -86,7 +87,7 @@
 
 <div class="field" class:input-mode={isInputMode}>
   <label for="fb-description" class="sr-only"
-    >Feedback description (minimum 10 characters)</label
+    >{t("feedback_description_label")}</label
   >
   <div class="textarea-wrapper">
     {#if isVoiceRecording && audioAnalyzer}
@@ -97,7 +98,7 @@
       <div class="waveform-strip transcribing" transition:slide={{ duration: 200 }}>
         <div class="transcribing-content">
           <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
-          <span>Transcribing...</span>
+          <span>{t("feedback_transcribing")}</span>
         </div>
       </div>
     {/if}
@@ -112,7 +113,7 @@
       onkeydown={onKeydown}
       onfocus={handleFocus}
       onblur={handleBlur}
-      placeholder={`${placeholder}${isTouchDevice ? "" : " (Shift+Enter to submit)"}`}
+      placeholder={`${placeholder}${isTouchDevice ? "" : t("feedback_shift_enter_submit")}`}
       rows="6"
       inputmode="text"
       enterkeyhint="done"
@@ -139,7 +140,7 @@
         aria-atomic="true"
       >
         {#if !charsMet}
-          {charsNeeded} more needed
+          {t("feedback_chars_needed", { count: charsNeeded })}
         {:else}
           <i class="fas fa-check" aria-hidden="true"></i>
         {/if}
@@ -147,7 +148,7 @@
       {#if draftStatus === "saved"}
         <span class="draft-saved" aria-live="polite">
           <i class="fas fa-cloud-upload-alt" aria-hidden="true"></i>
-          Draft saved
+          {t("feedback_draft_saved")}
         </span>
       {/if}
       {#if error}
@@ -162,8 +163,8 @@
           type="button"
           class="clear-text-btn"
           onclick={onClearText}
-          aria-label="Clear feedback text"
-          title="Clear text"
+          aria-label={t("feedback_clear_text")}
+          title={t("feedback_clear_text")}
         >
           <i class="fas fa-times" aria-hidden="true"></i>
         </button>

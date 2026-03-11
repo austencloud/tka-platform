@@ -10,6 +10,7 @@
 	import ModalFooter from '$lib/shared/foundation/ui/modal/ModalFooter.svelte';
 	import { container } from '$lib/shared/di';
 	import type { FlaggedTerm, CreateAppealData } from '../domain/models/content-moderation-models';
+	import { t } from '$lib/shared/i18n/i18n.svelte';
 
 	interface Props {
 		/** The word/content that was flagged */
@@ -48,7 +49,7 @@
 
 	async function handleSubmit() {
 		if (!appealReason.trim()) {
-			submitError = 'Please explain why you believe this content should be allowed.';
+			submitError = t('moderation_appeal_explain_required');
 			return;
 		}
 
@@ -60,7 +61,7 @@
 			const userId = (container.items.authenticator as any)?.currentUser?.uid;
 
 			if (!userId) {
-				throw new Error('You must be signed in to submit an appeal.');
+				throw new Error(t('moderation_sign_in_required'));
 			}
 
 			const data: CreateAppealData = {
@@ -76,7 +77,7 @@
 			onAppealSubmitted?.();
 			handleClose();
 		} catch (error) {
-			submitError = error instanceof Error ? error.message : 'Failed to submit appeal.';
+			submitError = error instanceof Error ? error.message : t('moderation_appeal_submit_failed');
 		} finally {
 			isSubmitting = false;
 		}
@@ -86,8 +87,8 @@
 <BaseModal bind:open={isOpen} onclose={handleClose} size="md" animation="pop" labelledBy="appeal-modal-title">
 	{#snippet header()}
 		<ModalHeader
-			title="Appeal Content Moderation"
-			subtitle="Request review of flagged content"
+			title={t('moderation_appeal_title')}
+			subtitle={t('moderation_appeal_subtitle')}
 			icon="fa-gavel"
 			iconColor="#f59e0b"
 			onClose={handleClose}
@@ -98,18 +99,18 @@
 	<div class="appeal-content">
 		<!-- Flagged content display -->
 		<div class="flagged-section" data-animate="2">
-			<h3 class="section-title">Flagged Content</h3>
+			<h3 class="section-title">{t('moderation_flagged_content')}</h3>
 			<div class="flagged-word">{word}</div>
 		</div>
 
-		<!-- Why it was flagged -->
+		<!-- {t('moderation_why_flagged')} -->
 		<div class="reasons-section" data-animate="3">
-			<h3 class="section-title">Why it was flagged</h3>
+			<h3 class="section-title">{t('moderation_why_flagged')}</h3>
 			<ul class="reasons-list">
 				{#each flaggedTerms as term}
 					<li>
 						<span class="reason-category">{categoryLabels[term.category] || term.category}</span>
-						<span class="reason-term">Matched: "{term.matchedPattern}"</span>
+						<span class="reason-term">{t('moderation_matched')}: "{term.matchedPattern}"</span>
 					</li>
 				{/each}
 			</ul>
@@ -119,20 +120,19 @@
 		<div class="info-box" data-animate="4">
 			<i class="fas fa-info-circle info-icon" aria-hidden="true"></i>
 			<div class="info-text">
-				<p>Your content can still be saved privately or shared via link. This moderation only prevents public gallery visibility.</p>
+				<p>{t('moderation_appeal_info')}</p>
 			</div>
 		</div>
 
 		<!-- Appeal form -->
 		<div class="appeal-form" data-animate="5">
-			<h3 class="section-title">Your Appeal</h3>
+			<h3 class="section-title">{t('moderation_your_appeal')}</h3>
 			<p class="form-description">
-				Explain why you believe this content should be allowed in the public gallery.
-				An admin will review your request.
+				{t('moderation_appeal_form_description')}
 			</p>
 			<textarea
 				bind:value={appealReason}
-				placeholder="Example: This is the name of a place/person, not offensive content..."
+				placeholder={t('moderation_appeal_placeholder')}
 				rows="4"
 				disabled={isSubmitting}
 			></textarea>
@@ -150,14 +150,14 @@
 	{#snippet footer()}
 		<ModalFooter>
 			<button class="secondary" onclick={handleClose} disabled={isSubmitting}>
-				Cancel
+				{t('moderation_cancel')}
 			</button>
 			<button class="primary" onclick={handleSubmit} disabled={isSubmitting || !appealReason.trim()}>
 				{#if isSubmitting}
 					<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-					Submitting...
+					{t('moderation_submitting')}
 				{:else}
-					Submit Appeal
+					{t('moderation_submit_appeal')}
 				{/if}
 			</button>
 		</ModalFooter>

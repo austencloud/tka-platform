@@ -6,6 +6,7 @@
   candidates, latency stats, and success rate trends.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { IVoiceSessionRepository } from "$lib/features/voice-sessions/services/contracts/IVoiceSessionRepository";
   import type { IVoiceSessionAnalyzer, SessionAnalysis } from "$lib/features/voice-sessions/services/contracts/IVoiceSessionAnalyzer";
   import type { VoiceSession, ResolutionTier } from "$lib/shared/voice-control/domain/voice-session-types";
@@ -64,11 +65,11 @@
 </script>
 
 <section class="analysis-section">
-  <button class="section-header" onclick={() => { collapsed = !collapsed; if (!collapsed && !analysis && !loading) runAnalysis(); }} aria-expanded={!collapsed} aria-label={collapsed ? "Expand pattern analysis" : "Collapse pattern analysis"}>
+  <button class="section-header" onclick={() => { collapsed = !collapsed; if (!collapsed && !analysis && !loading) runAnalysis(); }} aria-expanded={!collapsed} aria-label={collapsed ? t('voice_sessions_expand_analysis') : t('voice_sessions_collapse_analysis')}>
     <h2>
-      Pattern Analysis
+      {t('voice_sessions_pattern_analysis')}
       {#if analysis}
-        <span class="count-badge">{analysis.sessionCount} sessions</span>
+        <span class="count-badge">{t('voice_sessions_session_count', { count: String(analysis.sessionCount) })}</span>
       {/if}
     </h2>
     <i class="fas {collapsed ? 'fa-chevron-right' : 'fa-chevron-down'}" aria-hidden="true"></i>
@@ -79,13 +80,13 @@
       {#if loading}
         <div class="state-message">
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-          <span>Analyzing sessions...</span>
+          <span>{t('voice_sessions_analyzing')}</span>
         </div>
       {:else if error}
         <div class="state-message error-state">
           <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
           <span>{error}</span>
-          <button class="action-btn" onclick={runAnalysis}>Retry</button>
+          <button class="action-btn" onclick={runAnalysis}>{t('voice_sessions_retry')}</button>
         </div>
       {:else if analysis}
         <div class="analysis-results">
@@ -93,27 +94,27 @@
           <div class="overview-row">
             <div class="overview-stat">
               <span class="stat-value">{analysis.sessionCount}</span>
-              <span class="stat-label">Sessions</span>
+              <span class="stat-label">{t('voice_sessions_sessions')}</span>
             </div>
             <div class="overview-stat">
               <span class="stat-value">{analysis.totalEvents}</span>
-              <span class="stat-label">Events</span>
+              <span class="stat-label">{t('voice_sessions_events')}</span>
             </div>
             <div class="overview-stat">
               <span class="stat-value">{analysis.tier2Candidates.length}</span>
-              <span class="stat-label">T2 Candidates</span>
+              <span class="stat-label">{t('voice_sessions_t2_candidates')}</span>
             </div>
             <div class="overview-stat">
               <span class="stat-value">{analysis.unresolvedPatterns.length}</span>
-              <span class="stat-label">Unresolved</span>
+              <span class="stat-label">{t('voice_sessions_unresolved')}</span>
             </div>
           </div>
 
           <!-- T2 Promotion Candidates -->
           {#if analysis.tier2Candidates.length > 0}
             <div class="insight-group">
-              <h3>T2 Promotion Candidates</h3>
-              <p class="insight-desc">Transcripts consistently resolved by LLM. Add these as T1 regex patterns.</p>
+              <h3>{t('voice_sessions_t2_promotion')}</h3>
+              <p class="insight-desc">{t('voice_sessions_t2_promotion_desc')}</p>
               {#each analysis.tier2Candidates as candidate}
                 <div class="insight-card candidate">
                   <div class="insight-main">
@@ -133,8 +134,8 @@
           <!-- Top Failing Transcripts -->
           {#if analysis.topFailingTranscripts.length > 0}
             <div class="insight-group">
-              <h3>Top Failures</h3>
-              <p class="insight-desc">Transcripts that fail or go unresolved most often.</p>
+              <h3>{t('voice_sessions_top_failures')}</h3>
+              <p class="insight-desc">{t('voice_sessions_top_failures_desc')}</p>
               {#each analysis.topFailingTranscripts.slice(0, 10) as failure}
                 <div class="insight-card failure">
                   <div class="insight-main">
@@ -157,7 +158,7 @@
           <!-- Latency by Tier -->
           {#if analysis.latencyByTier.length > 0}
             <div class="insight-group">
-              <h3>Latency by Tier</h3>
+              <h3>{t('voice_sessions_latency_by_tier')}</h3>
               <div class="latency-grid">
                 {#each analysis.latencyByTier as latency}
                   <div class="latency-card">
@@ -176,7 +177,7 @@
           <!-- Success Rate Trend -->
           {#if analysis.successRateTrend.length > 1}
             <div class="insight-group">
-              <h3>Success Rate Trend</h3>
+              <h3>{t('voice_sessions_success_trend')}</h3>
               <div class="trend-list">
                 {#each analysis.successRateTrend as point}
                   <div class="trend-row">
@@ -195,8 +196,8 @@
           <!-- Unresolved Patterns -->
           {#if analysis.unresolvedPatterns.length > 0}
             <div class="insight-group">
-              <h3>Unresolved Patterns</h3>
-              <p class="insight-desc">Commands the system can't handle at all.</p>
+              <h3>{t('voice_sessions_unresolved_patterns')}</h3>
+              <p class="insight-desc">{t('voice_sessions_unresolved_desc')}</p>
               {#each analysis.unresolvedPatterns.slice(0, 8) as pattern}
                 <div class="insight-card unresolved">
                   <div class="insight-main">
@@ -213,14 +214,14 @@
 
           <button class="action-btn refresh-btn" onclick={runAnalysis}>
             <i class="fas fa-sync-alt" aria-hidden="true"></i>
-            Re-analyze
+            {t('voice_sessions_reanalyze')}
           </button>
         </div>
       {:else}
         <div class="state-message">
           <i class="fas fa-chart-bar" aria-hidden="true"></i>
-          <span>Click to analyze saved sessions</span>
-          <button class="action-btn" onclick={runAnalysis}>Run Analysis</button>
+          <span>{t('voice_sessions_click_to_analyze')}</span>
+          <button class="action-btn" onclick={runAnalysis}>{t('voice_sessions_run_analysis')}</button>
         </div>
       {/if}
     </div>

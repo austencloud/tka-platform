@@ -4,6 +4,7 @@
   import { getFirestoreInstance } from '$lib/shared/auth/firebase';
   import { authState, getEffectiveUserId } from '$lib/shared/auth/state/authState.svelte';
   import { warningAcknowledger } from '../services/implementations/WarningAcknowledger';
+  import { t } from '$lib/shared/i18n/i18n.svelte';
 
   let isAcknowledging = $state(false);
   let hasActiveWarning = $state(false);
@@ -90,9 +91,9 @@
     <div class="warning-content">
       <i class="fa-solid fa-triangle-exclamation warning-icon" aria-hidden="true"></i>
       <div class="warning-text">
-        <p class="warning-title">Your account has received a warning</p>
+        <p class="warning-title">{t('moderation_warning_title')}</p>
         <p class="warning-message">
-          Please review our community guidelines. Repeated violations may result in account restrictions.
+          {t('moderation_warning_message')}
         </p>
       </div>
     </div>
@@ -104,7 +105,7 @@
       {#if isAcknowledging}
         <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
       {:else}
-        Acknowledge
+        {t('moderation_acknowledge')}
       {/if}
     </button>
   </div>

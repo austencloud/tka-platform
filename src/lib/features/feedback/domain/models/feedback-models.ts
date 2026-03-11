@@ -172,6 +172,10 @@ export interface FeedbackItem {
   // Source tracking
   source?: FeedbackSource; // "app" = in-app form, "terminal" = CLI/dev log
 
+  // Assignment
+  assignedTo?: string; // userId of assigned developer (from contributors)
+  assignedToName?: string; // Display name for fast rendering
+
   // Admin management
   status: FeedbackStatus;
   adminNotes?: string; // Admin-only: internal summary of what was fixed

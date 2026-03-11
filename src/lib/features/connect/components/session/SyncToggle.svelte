@@ -5,6 +5,8 @@
   Shows clear visual state and disables when not in session.
 -->
 <script lang="ts">
+	import { t } from '$lib/shared/i18n/i18n.svelte';
+
 	interface Props {
 		isSolo: boolean;
 		onToggle: () => void;

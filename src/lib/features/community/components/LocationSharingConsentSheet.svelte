@@ -34,7 +34,7 @@
   respectLayoutMode={true}
   closeOnBackdrop={false}
   closeOnEscape={false}
-  ariaLabel="Location Sharing Consent"
+  ariaLabel={t('community_consent_aria_label')}
   showHandle={false}
   class="location-consent-sheet"
 >
@@ -43,46 +43,45 @@
       <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
     </div>
 
-    <h2>Share Your City?</h2>
+    <h2>{t('community_consent_title')}</h2>
 
     <p class="description">
-      Join the TKA global community map. We'll show your city (not your exact location)
-      to display the worldwide reach of The Kinetic Alphabet and connect practitioners.
+      {t('community_consent_description')}
     </p>
 
     <div class="benefits">
       <div class="benefit-item">
         <i class="fas fa-users" aria-hidden="true"></i>
-        <span>See where other TKA users practice</span>
+        <span>{t('community_consent_benefit_see_users')}</span>
       </div>
       <div class="benefit-item">
         <i class="fas fa-globe" aria-hidden="true"></i>
-        <span>Browse the global TKA community</span>
+        <span>{t('community_consent_benefit_browse')}</span>
       </div>
       <div class="benefit-item">
         <i class="fas fa-graduation-cap" aria-hidden="true"></i>
-        <span>Help showcase TKA's reach for grants and education</span>
+        <span>{t('community_consent_benefit_showcase')}</span>
       </div>
     </div>
 
     <div class="privacy-notice">
-      <h3><i class="fas fa-shield-alt" aria-hidden="true"></i> Your Privacy</h3>
+      <h3><i class="fas fa-shield-alt" aria-hidden="true"></i> {t('community_consent_privacy_title')}</h3>
       <ul>
-        <li>We only store your city name, not your exact address</li>
-        <li>Your marker appears at your city center, not your home</li>
-        <li>Other users can see your profile when clicking your city's marker</li>
-        <li>You can delete your location from the map anytime</li>
-        <li>No tracking beyond the community map feature</li>
+        <li>{t('community_consent_privacy_city_only')}</li>
+        <li>{t('community_consent_privacy_city_center')}</li>
+        <li>{t('community_consent_privacy_profile_visible')}</li>
+        <li>{t('community_consent_privacy_delete_anytime')}</li>
+        <li>{t('community_consent_privacy_no_tracking')}</li>
       </ul>
     </div>
 
     <div class="action-buttons">
       <button class="btn-accept" onclick={handleAccept}>
         <i class="fas fa-check" aria-hidden="true"></i>
-        Share My City
+        {t('community_consent_accept')}
       </button>
       <button class="btn-decline" onclick={handleDecline}>
-        Not Now
+        {t('community_consent_decline')}
       </button>
     </div>
   </div>

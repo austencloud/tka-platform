@@ -19,6 +19,7 @@ Responsive behavior:
   import { onMount } from "svelte";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   let hapticService: IHapticFeedback;
   let deviceDetector: IDeviceDetector | null = null;
@@ -44,17 +45,17 @@ Responsive behavior:
   const sortMethods = [
     {
       value: BrowseSortMethod.ALPHABETICAL,
-      label: "Letter",
+      label: t('browse_chip_letter'),
       icon: "fa-font",
     },
     {
       value: BrowseSortMethod.SEQUENCE_LENGTH,
-      label: "Length",
+      label: t('browse_chip_length'),
       icon: "fa-ruler-horizontal",
     },
     {
       value: BrowseSortMethod.DATE_ADDED,
-      label: "Date",
+      label: t('browse_sort_date'),
       icon: "fa-calendar",
     },
   ];
@@ -67,22 +68,22 @@ Responsive behavior:
   function getHeaderText(sortMethod: BrowseSortMethod): string {
     switch (sortMethod) {
       case BrowseSortMethod.ALPHABETICAL:
-        return "Jump to Letter";
+        return t('browse_jump_to_letter');
       case BrowseSortMethod.DIFFICULTY_LEVEL:
-        return "Jump to Level";
+        return t('browse_jump_to_level');
       case BrowseSortMethod.SEQUENCE_LENGTH:
-        return "Jump to Length";
+        return t('browse_jump_to_length');
       case BrowseSortMethod.DATE_ADDED:
-        return "Jump to Date";
+        return t('browse_jump_to_date');
       default:
-        return "Quick Navigation";
+        return t('browse_quick_navigation');
     }
   }
 
   // Get button label - simplified
   function getButtonLabel(sortMethod: BrowseSortMethod): string {
     const method = sortMethods.find((m) => m.value === sortMethod);
-    return `Sort: ${method?.label || "Letter"}`;
+    return `${t('browse_sort_prefix')}: ${method?.label || t('browse_chip_letter')}`;
   }
 
   // Handle sort method change
@@ -222,7 +223,7 @@ Responsive behavior:
     <div class="dropdown-menu" id="navigation-dropdown-menu">
       <!-- Sort Method Section -->
       <div class="menu-section">
-        <div class="section-header">Sort By</div>
+        <div class="section-header">{t('browse_sort_by')}</div>
         <div class="sort-methods">
           {#each sortMethods as method (method.value)}
             <button
@@ -267,10 +268,10 @@ Responsive behavior:
 
 <!-- Mobile: Drawer Sheet -->
 {#if isMobile}
-  <Drawer bind:isOpen placement="bottom" ariaLabel="Sort & Jump">
+  <Drawer bind:isOpen placement="bottom" ariaLabel={t('browse_sort_jump')}>
     <!-- Sort Method Section -->
     <div class="mobile-section">
-      <div class="mobile-section-header">Sort By</div>
+      <div class="mobile-section-header">{t('browse_sort_by')}</div>
       <div class="mobile-sort-methods">
         {#each sortMethods as method (method.value)}
           <button

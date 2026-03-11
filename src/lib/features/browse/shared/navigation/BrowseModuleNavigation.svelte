@@ -12,6 +12,7 @@ Tabs: Sequences, Collections, Creators
     BrowseModuleType,
     BrowseTabConfig,
   } from "./types/browse-tab-types";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   const { currentTab = "gallery", onTabChange = () => {} } = $props<{
     currentTab?: BrowseModuleType;
@@ -22,9 +23,9 @@ Tabs: Sequences, Collections, Creators
 
   // Note: Library is now integrated into Sequences via scope toggle (Community / My Library)
   const tabs: BrowseTabConfig[] = [
-    { id: "gallery", label: "Sequences", icon: "fa-layer-group" },
-    { id: "collections", label: "Collections", icon: "fa-folder" },
-    { id: "creators", label: "Creators", icon: "fa-users" },
+    { id: "gallery", label: t('browse_tab_sequences'), icon: "fa-layer-group" },
+    { id: "collections", label: t('browse_tab_collections'), icon: "fa-folder" },
+    { id: "creators", label: t('browse_tab_creators'), icon: "fa-users" },
   ];
 
   function handleTabClick(tabId: BrowseModuleType) {
@@ -37,7 +38,7 @@ Tabs: Sequences, Collections, Creators
   });
 </script>
 
-<nav class="browse-tab-navigation" aria-label="Browse navigation">
+<nav class="browse-tab-navigation" aria-label={t('browse_nav_label')}>
   <div class="tabs-container">
     {#each tabs as tab}
       <button

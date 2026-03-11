@@ -12,6 +12,7 @@
   import type { StabilityReport } from "../../services/contracts/IStabilityAnalyzer";
   import { container } from "$lib/shared/di";
   import type { IArenaOrchestrator } from "../../services/contracts/IArenaOrchestrator";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   const orchestrator: IArenaOrchestrator = container?.items?.arenaOrchestrator;
 
@@ -23,7 +24,7 @@
     try {
       userStats = await orchestrator.loadUserStats();
     } catch (err) {
-      error = "Sign in to see your arena stats";
+      error = t('arena_stats_sign_in_required');
     } finally {
       loading = false;
     }
@@ -34,7 +35,7 @@
   {#if loading}
     <div class="detail-loading" role="status" aria-live="polite" aria-busy="true">
       <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
-      <p>Loading stats...</p>
+      <p>{t('arena_stats_loading')}</p>
     </div>
   {:else if error}
     <div class="detail-message" role="status">
@@ -42,31 +43,31 @@
       <p>{error}</p>
     </div>
   {:else if userStats}
-    <h2 class="section-title">Your Arena Stats</h2>
+    <h2 class="section-title">{t('arena_stats_title')}</h2>
 
     <div class="stats-grid">
       <div class="stat-card">
         <span class="stat-value">{userStats.totalVotes}</span>
-        <span class="stat-label">total votes</span>
+        <span class="stat-label">{t('arena_stats_total_votes')}</span>
       </div>
       <div class="stat-card">
         <span class="stat-value">{userStats.longestStreak}</span>
-        <span class="stat-label">longest streak</span>
+        <span class="stat-label">{t('arena_stats_longest_streak')}</span>
       </div>
     </div>
 
     {#if userStats.firstVoteDate}
       <div class="joined-info">
-        Voting since {userStats.firstVoteDate.toLocaleDateString(undefined, {
+        {t('arena_stats_voting_since', { date: userStats.firstVoteDate.toLocaleDateString(undefined, {
           month: "long",
           year: "numeric",
-        })}
+        }) })}
       </div>
     {/if}
   {:else}
     <div class="detail-message" role="status">
       <i class="fas fa-trophy" aria-hidden="true"></i>
-      <p>Start voting in Battle to see your stats here</p>
+      <p>{t('arena_stats_empty')}</p>
     </div>
   {/if}
 </div>

@@ -6,6 +6,7 @@
 <script lang="ts">
   import type { ArenaLeaderboardEntry } from "../../domain/models/arena-models";
   import ArenaRatingBadge from "./ArenaRatingBadge.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   let {
     entry,
@@ -34,7 +35,7 @@
   class="leaderboard-row"
   onclick={onselect}
   type="button"
-  aria-label="Rank {entry.rank}: {entry.entry.word}, rating {Math.round(entry.rating.displayRating)}"
+  aria-label={t('arena_leaderboard_rank_detail', { rank: entry.rank, word: entry.entry.word, rating: Math.round(entry.rating.displayRating) })}
 >
   <span class="rank">{entry.rank}</span>
 
@@ -48,7 +49,7 @@
   <div class="entry-info">
     <span class="word">{entry.entry.word}</span>
     {#if entry.entry.ownerDisplayName}
-      <span class="author">by {entry.entry.ownerDisplayName}</span>
+      <span class="author">{t('arena_by_creator', { name: entry.entry.ownerDisplayName })}</span>
     {/if}
   </div>
 

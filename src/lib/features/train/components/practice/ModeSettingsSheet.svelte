@@ -13,6 +13,7 @@
   import AdaptiveModeConfig from "./AdaptiveModeConfig.svelte";
   import StepModeConfig from "./StepModeConfig.svelte";
   import TimedModeConfig from "./TimedModeConfig.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import type {
     AdaptiveConfig,
     StepConfig,
@@ -64,25 +65,25 @@
       case PracticeMode.ADAPTIVE:
         return {
           icon: "fa-brain",
-          title: "Adaptive Mode",
-          description: "Auto-advance when you match positions",
+          title: t('train_adaptive_mode_title'),
+          description: t('train_adaptive_mode_desc'),
         };
       case PracticeMode.STEP_BY_STEP:
         return {
           icon: "fa-shoe-prints",
-          title: "Step-by-Step Mode",
-          description: "Advance manually or with voice",
+          title: t('train_step_mode_title'),
+          description: t('train_step_mode_desc'),
         };
       case PracticeMode.TIMED:
         return {
           icon: "fa-stopwatch",
-          title: "Timed Mode",
-          description: "Follow beat timing with scoring",
+          title: t('train_timed_mode_title'),
+          description: t('train_timed_mode_desc'),
         };
       default:
         return {
           icon: "fa-cog",
-          title: "Settings",
+          title: t('train_settings'),
           description: "",
         };
     }

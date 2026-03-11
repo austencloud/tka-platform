@@ -5,6 +5,7 @@
   Composes smaller components and manages the render/write workflow.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { container } from "$lib/shared/di";
@@ -69,7 +70,7 @@
       const sequences = await loaderService.loadSequenceMetadata();
       state.setSequences(sequences);
     } catch (err) {
-      state.setError(err instanceof Error ? err.message : "Failed to load");
+      state.setError(err instanceof Error ? err.message : t('gallery_gen_failed_to_load'));
       console.error("Gallery Generator init failed:", err);
     } finally {
       state.setLoading(false);
@@ -112,7 +113,7 @@
    */
   async function handleRenderAll() {
     if (!galleryRenderer || state.pendingSequences.length === 0) {
-      state.setError("All sequences already rendered. Clear to re-run.");
+      state.setError(t('gallery_gen_all_rendered_clear'));
       return;
     }
 
@@ -220,13 +221,13 @@
    */
   async function handleUploadToCloud() {
     if (!cloudUploader || !state.selectedPropType) {
-      state.setError("Please select a prop type before uploading to cloud.");
+      state.setError(t('gallery_gen_select_prop_first'));
       return;
     }
 
     const toUpload = state.renderedImages;
     if (toUpload.length === 0) {
-      state.setError("No images to upload. Render some first.");
+      state.setError(t('gallery_gen_no_images_to_upload'));
       return;
     }
 
@@ -282,9 +283,9 @@
 
 <div class="generator-page">
   <header class="page-header">
-    <h1>Gallery Generator</h1>
+    <h1>{t('gallery_gen_title')}</h1>
     <p class="subtitle">
-      Render gallery images to static/gallery/ (dev mode only)
+      {t('gallery_gen_subtitle')}
     </p>
   </header>
 

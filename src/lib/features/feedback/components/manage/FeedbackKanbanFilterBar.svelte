@@ -9,6 +9,7 @@
     FeedbackType,
     FeedbackPriority,
   } from "../../domain/models/feedback-models";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   const { manageState } = $props<{
     manageState: FeedbackManageState;
@@ -35,7 +36,7 @@
     <input
       type="text"
       class="search-input"
-      placeholder="Search..."
+      placeholder={t("feedback_search_short")}
       value={manageState.searchQuery}
       oninput={(e) => manageState.setSearchQuery(e.currentTarget.value)}
     />

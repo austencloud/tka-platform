@@ -11,7 +11,7 @@ import { tDynamic } from "./i18n.svelte.js";
 import { MODULE_DEFINITIONS } from "../navigation/config/module-definitions.js";
 
 // Cache of admin-only module IDs for fast lookup
-const ADMIN_ONLY_MODULES = new Set(
+const ADMIN_ONLY_MODULES: Set<string> = new Set(
   MODULE_DEFINITIONS.filter((m) => m.adminOnly).map((m) => m.id)
 );
 

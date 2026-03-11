@@ -6,6 +6,7 @@
    * and transition for poi physics constraints.
    */
 
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { container } from "$lib/shared/di";
   import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
@@ -33,7 +34,7 @@
 
   async function validateSequence() {
     if (!sequenceInput.trim()) {
-      error = "Please enter a sequence to validate";
+      error = t('poi_lab_error_empty_input');
       validationResult = null;
       return;
     }
@@ -50,7 +51,7 @@
         .filter((c) => /[A-Z]/.test(c));
 
       if (letters.length === 0) {
-        error = "No valid letters found in input";
+        error = t('poi_lab_error_no_letters');
         isValidating = false;
         return;
       }
@@ -65,7 +66,7 @@
       }
 
       if (pictographs.length === 0) {
-        error = "Could not find pictographs for the given letters";
+        error = t('poi_lab_error_no_pictographs');
         isValidating = false;
         return;
       }
@@ -95,7 +96,7 @@
         transitionViolations,
       };
     } catch (e) {
-      error = e instanceof Error ? e.message : "Validation failed";
+      error = e instanceof Error ? e.message : t('poi_lab_error_validation_failed');
     } finally {
       isValidating = false;
     }
@@ -118,20 +119,19 @@
 
 <div class="validator-tab">
   <div class="input-section">
-    <h3>Sequence Validator</h3>
+    <h3>{t('poi_lab_validator_title')}</h3>
     <p class="description">
-      Enter a word to validate. Each letter will be checked for poi physics legality,
-      including motion constraints and transitions.
+      {t('poi_lab_validator_description')}
     </p>
 
     <div class="input-row">
       <input
         type="text"
         bind:value={sequenceInput}
-        placeholder="Enter a word (e.g., CAT, SPIN)"
+        placeholder={t('poi_lab_validator_placeholder')}
         class="sequence-input"
         onkeydown={(e) => e.key === "Enter" && validateSequence()}
-        aria-label="Sequence to validate"
+        aria-label={t('poi_lab_validator_input_label')}
       />
       <button
         class="validate-btn"
@@ -143,17 +143,17 @@
         {:else}
           <i class="fas fa-check-double" aria-hidden="true"></i>
         {/if}
-        Validate
+        {t('poi_lab_validate_button')}
       </button>
       {#if validationResult || error}
-        <button class="clear-btn" onclick={clearValidation} aria-label="Clear validation">
+        <button class="clear-btn" onclick={clearValidation} aria-label={t('poi_lab_clear_button')}>
           <i class="fas fa-times" aria-hidden="true"></i>
         </button>
       {/if}
     </div>
 
     <div class="examples">
-      <span class="examples-label">Try:</span>
+      <span class="examples-label">{t('poi_lab_try_label')}</span>
       {#each examples as ex}
         <button
           class="example-chip"
@@ -187,22 +187,22 @@
         </div>
         <div class="result-text">
           <span class="result-title">
-            {validationResult.isValid ? "Valid Poi Sequence" : "Invalid Poi Sequence"}
+            {validationResult.isValid ? t('poi_lab_result_valid') : t('poi_lab_result_invalid')}
           </span>
           <span class="result-subtitle">
-            {validationResult.stepResults.length} steps analyzed
+            {t('poi_lab_steps_analyzed', { count: String(validationResult.stepResults.length) })}
           </span>
         </div>
       </div>
 
       <!-- Beat-by-beat results -->
       <div class="beat-results">
-        <h4>Beat Analysis</h4>
+        <h4>{t('poi_lab_beat_analysis')}</h4>
         <div class="steps-grid">
           {#each validationResult.stepResults as beat}
             <div class="beat-card" class:valid={beat.isValid} class:invalid={!beat.isValid}>
               <div class="beat-header">
-                <span class="beat-number">Beat {beat.stepIndex}</span>
+                <span class="beat-number">{t('poi_lab_beat_number', { beat: String(beat.stepIndex) })}</span>
                 <span class="beat-letter">{beat.letter}</span>
                 <span class="beat-status">
                   {#if beat.isValid}
@@ -227,7 +227,7 @@
       <!-- Transition violations -->
       {#if validationResult.transitionViolations.length > 0}
         <div class="transition-results">
-          <h4>Transition Issues</h4>
+          <h4>{t('poi_lab_transition_issues')}</h4>
           <div class="transition-list">
             {#each validationResult.transitionViolations as v}
               <div class="transition-violation">
@@ -242,7 +242,7 @@
   {:else if !error && !isValidating}
     <div class="empty-state">
       <i class="fas fa-clipboard-check" aria-hidden="true"></i>
-      <p>Enter a word and click Validate to check for poi legality</p>
+      <p>{t('poi_lab_empty_state')}</p>
     </div>
   {/if}
 </div>

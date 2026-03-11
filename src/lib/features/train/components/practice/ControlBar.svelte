@@ -8,6 +8,7 @@
   import { TrainMode, PracticeMode } from "../../domain/enums/TrainEnums";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     mode: TrainMode;
@@ -53,13 +54,13 @@
   const modeLabel = $derived(() => {
     switch (practiceMode) {
       case PracticeMode.ADAPTIVE:
-        return "Adaptive";
+        return t('train_mode_adaptive');
       case PracticeMode.STEP_BY_STEP:
-        return "Step";
+        return t('train_mode_step');
       case PracticeMode.TIMED:
-        return "Timed";
+        return t('train_mode_timed');
       default:
-        return "Mode";
+        return t('train_mode_label');
     }
   });
 
@@ -99,10 +100,10 @@
       {:else}
         <i class="fas fa-play" aria-hidden="true"></i>
       {/if}
-      <span class="btn-label">Play</span>
+      <span class="btn-label">{t('train_play')}</span>
     {:else if mode === TrainMode.PERFORMING}
       <i class="fas fa-stop" aria-hidden="true"></i>
-      <span class="btn-label">Stop</span>
+      <span class="btn-label">{t('train_stop')}</span>
     {/if}
   </button>
 
@@ -127,7 +128,7 @@
       class="fas {hasSequence ? 'fa-exchange-alt' : 'fa-folder-open'}"
       aria-hidden="true"
     ></i>
-    <span class="btn-label">Seq</span>
+    <span class="btn-label">{t('train_seq')}</span>
   </button>
 
   <!-- Settings Button (Orange/Amber) -->
@@ -137,7 +138,7 @@
     aria-label="Mode settings"
   >
     <i class="fas fa-cog" aria-hidden="true"></i>
-    <span class="btn-label">Set</span>
+    <span class="btn-label">{t('train_settings_short')}</span>
   </button>
 </div>
 
