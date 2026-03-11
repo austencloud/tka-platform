@@ -95,8 +95,10 @@
   const isOnTutorialChoiceStep = $derived(false);
 
   // Get filtered settings sections using feature flag service
+  // The "contributors" tab is admin-only (managing credited developers)
   const filteredSettingsSections = $derived(
     SETTINGS_TABS.filter((section) => {
+      if (section.id === "contributors" && !featureFlagService.isAdmin) return false;
       return featureFlagService.canAccessTab("settings", section.id);
     })
   );
@@ -327,6 +329,14 @@
         in:slide={{ duration: 250, axis: "y" }}
         out:slide={{ duration: 200, axis: "y" }}
       >
+        <!-- Settings Header (expanded only) -->
+        {#if !isCollapsed}
+          <div class="settings-header">
+            <i class="fas fa-cog settings-header-icon" aria-hidden="true"></i>
+            <span class="settings-header-text">Settings</span>
+          </div>
+        {/if}
+
         <!-- Back Button Header -->
         <button
           class="settings-back-button"
@@ -626,6 +636,30 @@
   .settings-back-button:focus-visible {
     outline: 2px solid color-mix(in srgb, var(--theme-accent) 70%, transparent);
     outline-offset: 2px;
+  }
+
+  /* ============================================================================
+     SETTINGS HEADER
+     ============================================================================ */
+  .settings-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 14px 12px;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    opacity: 0.7;
+  }
+
+  .settings-header-icon {
+    font-size: var(--font-size-sm);
+  }
+
+  .settings-header-text {
+    flex: 1;
   }
 
   /* ============================================================================
