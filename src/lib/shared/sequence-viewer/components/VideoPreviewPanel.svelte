@@ -6,7 +6,6 @@
 -->
 <script lang="ts">
   import { fade } from "svelte/transition";
-  import { cubicOut } from "svelte/easing";
 
   interface Props {
     blobUrl: string;
@@ -57,7 +56,7 @@
 
 <div
   class="preview-panel"
-  in:fade={{ duration: 200, easing: cubicOut }}
+  in:fade={{ duration: 200 }}
   role="region"
   aria-label="Video export preview"
 >

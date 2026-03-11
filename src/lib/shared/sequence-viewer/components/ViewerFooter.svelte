@@ -40,6 +40,8 @@
     onSave: () => void;
     onEdit: () => void;
     onGetApp?: () => void;
+    onExportVideo?: () => void;
+    onExportImage?: () => void;
     onRampStart?: () => void;
     onRampStop?: () => void;
     isOwned?: boolean;
@@ -63,6 +65,8 @@
     onSave,
     onEdit,
     onGetApp,
+    onExportVideo,
+    onExportImage,
     onRampStart,
     onRampStop,
     isOwned = false,
@@ -189,6 +193,26 @@
         <i class="fas fa-hammer" aria-hidden="true"></i>
       </button>
     {/if}
+    {#if onExportVideo}
+      <button
+        type="button"
+        class="landscape-btn export-video"
+        onclick={onExportVideo}
+        aria-label="Export video"
+      >
+        <i class="fas fa-video" aria-hidden="true"></i>
+      </button>
+    {/if}
+    {#if onExportImage}
+      <button
+        type="button"
+        class="landscape-btn export-image"
+        onclick={onExportImage}
+        aria-label="Export image"
+      >
+        <i class="fas fa-image" aria-hidden="true"></i>
+      </button>
+    {/if}
     {#if isOwned && onDeleteRequest}
       <button
         type="button"
@@ -223,6 +247,8 @@
       {onSave}
       {onEdit}
       {onGetApp}
+      {onExportVideo}
+      {onExportImage}
       {onRampStart}
       {onRampStop}
       {isOwned}
@@ -281,6 +307,28 @@
           >
             <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
             <span>Get App</span>
+          </button>
+        {/if}
+        {#if onExportVideo}
+          <button
+            type="button"
+            class="action-btn export-video"
+            onclick={onExportVideo}
+            aria-label="Export video"
+          >
+            <i class="fas fa-video" aria-hidden="true"></i>
+            <span>Video</span>
+          </button>
+        {/if}
+        {#if onExportImage}
+          <button
+            type="button"
+            class="action-btn export-image"
+            onclick={onExportImage}
+            aria-label="Export image"
+          >
+            <i class="fas fa-image" aria-hidden="true"></i>
+            <span>Image</span>
           </button>
         {/if}
         {#if isOwned && onDeleteRequest}

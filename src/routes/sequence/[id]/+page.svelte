@@ -18,6 +18,7 @@
   import { goto } from "$app/navigation";
   import { browser } from "$app/environment";
   import { onMount, onDestroy } from "svelte";
+  import { fade } from "svelte/transition";
   import { container } from "$lib/shared/di";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { ILetterDeriver } from "$lib/shared/navigation/services/contracts/ILetterDeriver";
@@ -44,9 +45,6 @@
   import type { ActiveEffect } from "$lib/shared/sequence-viewer/components/ExportVideoDrawer.svelte";
   import ExportImagePanel from "$lib/shared/sequence-viewer/components/ExportImagePanel.svelte";
   import VideoPreviewPanel from "$lib/shared/sequence-viewer/components/VideoPreviewPanel.svelte";
-  import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
-  import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import RampProgressIndicator from "$lib/shared/sequence-viewer/components/RampProgressIndicator.svelte";
   import RouteViewerHeader from "./RouteViewerHeader.svelte";
@@ -539,141 +537,123 @@
           {/if}
 
           {#if ctx.hasSequence && ctx.effectiveSequence}
-            {#if ctx.editingPane === "animation"}
-              <!-- Video export: animation preview + settings panel -->
-              <div class="export-preview-layout" class:desktop={!isMobile}>
-                <div class="export-animation-preview">
-                  {#if ctx.animationLoading}
-                    <div class="loading-state">
-                      <ProgressRing percent={-1} size={32} strokeWidth={3} />
-                    </div>
-                  {:else if ctx.modalAnimationState.error}
-                    <div class="error-state">
-                      <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-                      <span>{ctx.modalAnimationState.error}</span>
-                    </div>
-                  {:else}
-                    <AnimatorCanvas
-                      sequenceData={ctx.modalAnimationState.sequenceData}
-                      currentStep={ctx.currentStepLocal}
-                      isPlaying={true}
-                      blueProp={ctx.modalAnimationState.bluePropState}
-                      redProp={ctx.modalAnimationState.redPropState}
-                      gridMode={ctx.effectiveSequence?.gridMode}
-                      letter={ctx.currentLetter}
-                      stepData={ctx.currentStepData}
-                      word={ctx.effectiveSequence?.word}
-                      onCanvasReady={ctx.handleCanvasReady}
-                    />
-                  {/if}
-                  <div class="export-settings-badge" aria-hidden="true">
-                    {ctx.exportOptions.videoResolution}p · {ctx.exportOptions.videoFps}fps
-                  </div>
-                </div>
-                {#if ctx.previewBlobUrl}
-                  <VideoPreviewPanel
-                    blobUrl={ctx.previewBlobUrl}
-                    onDismiss={ctx.dismissPreview}
-                    onRedownload={() => {
-                      const a = document.createElement("a");
-                      a.href = ctx.previewBlobUrl!;
-                      a.download = `${ctx.effectiveSequence?.word || "sequence"}.mp4`;
-                      a.click();
-                    }}
-                  />
-                {:else}
-                  <ExportVideoDrawer
-                    exportOptions={ctx.exportOptions}
-                    viewerEffects={getActiveEffects()}
-                    isExporting={ctx.isExporting}
-                    exportProgress={ctx.exportProgress}
-                    canvasReady={ctx.canvasReady}
-                    layout={isMobile ? "bottom" : "sidebar"}
-                    singlePlayDuration={ctx.singlePlayDuration}
-                    isPlaying={ctx.isPlayingLocal}
-                    bpm={ctx.bpmLocal}
-                    onPlaybackToggle={ctx.handlePlaybackToggle}
-                    onBpmChange={ctx.handleBpmChange}
-                    onExport={ctx.handleExport}
-                    onCancel={ctx.handleCancelExport}
-                  />
-                {/if}
-              </div>
-            {:else if ctx.editingPane === "image"}
-              <!-- Image export: choreo card preview + settings panel -->
-              <div class="export-preview-layout" class:desktop={!isMobile}>
-                <div class="export-animation-preview">
-                  <ChoreoCard
-                    sequence={ctx.effectiveSequence}
-                    showWord={ctx.exportOptions.imageShowWord}
-                    showStepNumbers={ctx.exportOptions.imageShowStepNumbers}
-                    showDifficultyLevel={ctx.exportOptions.imageShowDifficulty}
-                    includeStartPosition={ctx.exportOptions.imageIncludeStartPosition}
-                    showCreatorName={ctx.exportOptions.imageShowCreatorName}
-                    showNotes={ctx.exportOptions.imageShowNotes}
-                    darkMode={ctx.exportOptions.imageDarkMode}
-                    userName={ctx.userName}
-                    columnCount={ctx.exportOptions.imageColumnCount != null
-                      ? ctx.exportOptions.imageColumnCount + (ctx.exportOptions.imageIncludeStartPosition ? 1 : 0)
-                      : null}
-                    forceContain={true}
-                    bluePropType={ctx.bluePropType}
-                    redPropType={ctx.redPropType}
-                    catDogModeEnabled={ctx.catDogModeEnabled}
-                  />
-                </div>
-                <ExportImagePanel
-                  exportOptions={ctx.exportOptions}
-                  isExporting={ctx.isExporting}
-                  onExport={ctx.handleExport}
-                />
-              </div>
-            {:else}
-              <!-- Split view: Animation and Image side by side, tap to focus -->
+            {@const isVideoExportActive = ctx.editingPane === "animation"}
+            {@const isImageExportActive = ctx.editingPane === "image"}
+            {@const isAnyExportActive = isVideoExportActive || isImageExportActive}
+            <div
+              class="viewer-and-export"
+              class:export-active={isAnyExportActive}
+              class:desktop={!isMobile}
+            >
+              <!-- Single persistent ViewerSplitPane — never destroyed, CSS grid transitions handle focus -->
               <ViewerSplitPane
                 sequence={ctx.effectiveSequence}
                 playback={ctx.splitPanePlayback}
-                imageComposition={ctx.splitPaneImageComposition}
+                imageComposition={isImageExportActive
+                  ? {
+                      showWord: ctx.exportOptions.imageShowWord,
+                      showStepNumbers: ctx.exportOptions.imageShowStepNumbers,
+                      showDifficulty: ctx.exportOptions.imageShowDifficulty,
+                      showStartPos: ctx.exportOptions.imageIncludeStartPosition,
+                      showCreatorName: ctx.exportOptions.imageShowCreatorName,
+                      showNotes: ctx.exportOptions.imageShowNotes,
+                      darkMode: ctx.exportOptions.imageDarkMode,
+                      columnCount: ctx.exportOptions.imageColumnCount != null
+                        ? ctx.exportOptions.imageColumnCount + (ctx.exportOptions.imageIncludeStartPosition ? 1 : 0)
+                        : null,
+                      forceContain: true,
+                      userName: ctx.splitPaneImageComposition.userName,
+                    }
+                  : ctx.splitPaneImageComposition}
                 propRendering={ctx.splitPanePropRendering}
-                layout={{ isFullscreen: ctx.isFullscreen, fullscreenStackVertical: ctx.fullscreenStackVertical, isMobile, isLandscapeMobile: false, focusedPane: ctx.editingPane }}
+                layout={{
+                  isFullscreen: ctx.isFullscreen,
+                  fullscreenStackVertical: ctx.fullscreenStackVertical,
+                  isMobile,
+                  isLandscapeMobile: false,
+                  focusedPane: ctx.editingPane,
+                  suppressCloseButton: false,
+                }}
                 onFocusPane={ctx.enterEditMode}
                 onUnfocusPane={ctx.exitEditMode}
                 onStepClick={ctx.handleStepClick}
                 onCanvasReady={ctx.handleCanvasReady}
               />
-            {/if}
+              {#if isAnyExportActive}
+                <div class="export-panel-container" class:sidebar={!isMobile && isVideoExportActive} transition:fade={{ duration: 200 }}>
+                  {#if isVideoExportActive}
+                    {#if ctx.previewBlobUrl}
+                      <VideoPreviewPanel
+                        blobUrl={ctx.previewBlobUrl}
+                        onDismiss={ctx.dismissPreview}
+                        onRedownload={() => {
+                          const a = document.createElement("a");
+                          a.href = ctx.previewBlobUrl!;
+                          a.download = `${ctx.effectiveSequence?.word || "sequence"}.mp4`;
+                          a.click();
+                        }}
+                      />
+                    {:else}
+                      <ExportVideoDrawer
+                        exportOptions={ctx.exportOptions}
+                        viewerEffects={getActiveEffects()}
+                        isExporting={ctx.isExporting}
+                        exportProgress={ctx.exportProgress}
+                        canvasReady={ctx.canvasReady}
+                        layout={isMobile ? "bottom" : "sidebar"}
+                        singlePlayDuration={ctx.singlePlayDuration}
+                        isPlaying={ctx.isPlayingLocal}
+                        bpm={ctx.bpmLocal}
+                        onPlaybackToggle={ctx.handlePlaybackToggle}
+                        onBpmChange={ctx.handleBpmChange}
+                        onExport={ctx.handleExport}
+                        onCancel={ctx.handleCancelExport}
+                      />
+                    {/if}
+                  {:else if isImageExportActive}
+                    <ExportImagePanel
+                      exportOptions={ctx.exportOptions}
+                      isExporting={ctx.isExporting}
+                      onExport={ctx.handleExport}
+                    />
+                  {/if}
+                </div>
+              {/if}
+            </div>
           {/if}
         </div>
 
-        <!-- Footer (only in split view, not when editing/exporting — those panels have inline controls) -->
-        {#if !ctx.isFullscreen && !ctx.editingPane}
-          <ViewerFooter
-            bpm={ctx.bpmLocal}
-            isPlaying={ctx.isPlayingLocal}
-            isLoggedIn={ctx.isLoggedIn}
-            rampActive={ctx.rampActive}
-            onBpmChange={ctx.handleBpmChange}
-            onPlayPause={ctx.handlePlaybackToggle}
-            onStepBack={ctx.stepFullBeatBackward}
-            onStepForward={ctx.stepFullBeatForward}
-            onStepHalfBack={ctx.stepHalfBeatBackward}
-            onStepHalfForward={ctx.stepHalfBeatForward}
-            onRestartToStart={ctx.restartToStart}
-            onSave={ctx.handleSave}
-            onEdit={ctx.handleEditInConstructor}
-            onGetApp={ctx.handleGetApp}
-            onRampStart={ctx.handleRampStart}
-            onRampStop={ctx.handleRampStop}
-            isOwned={ctx.isOwned}
-            onDeleteRequest={() => (deleteConfirmOpen = true)}
-          />
-          {#if ctx.rampActive}
-            <RampProgressIndicator
-              progress={ctx.rampState.progress}
-              onStop={ctx.handleRampStop}
-              variant="floating"
+        <!-- Footer: CSS collapse (not Svelte transition) so height change is gradual -->
+        {#if !ctx.isFullscreen}
+          <div class="footer-collapse" class:collapsed={!!ctx.editingPane}>
+            <ViewerFooter
+              bpm={ctx.bpmLocal}
+              isPlaying={ctx.isPlayingLocal}
+              isLoggedIn={ctx.isLoggedIn}
+              rampActive={ctx.rampActive}
+              onBpmChange={ctx.handleBpmChange}
+              onPlayPause={ctx.handlePlaybackToggle}
+              onStepBack={ctx.stepFullBeatBackward}
+              onStepForward={ctx.stepFullBeatForward}
+              onStepHalfBack={ctx.stepHalfBeatBackward}
+              onStepHalfForward={ctx.stepHalfBeatForward}
+              onRestartToStart={ctx.restartToStart}
+              onSave={ctx.handleSave}
+              onEdit={ctx.handleEditInConstructor}
+              onGetApp={ctx.handleGetApp}
+              onRampStart={ctx.handleRampStart}
+              onRampStop={ctx.handleRampStop}
+              isOwned={ctx.isOwned}
+              onDeleteRequest={() => (deleteConfirmOpen = true)}
             />
-          {/if}
+            {#if ctx.rampActive}
+              <RampProgressIndicator
+                progress={ctx.rampState.progress}
+                onStop={ctx.handleRampStop}
+                variant="floating"
+              />
+            {/if}
+          </div>
         {/if}
       </div>
 
@@ -791,31 +771,51 @@
     outline-offset: 2px;
   }
 
-  /* Export preview layout */
-  .export-preview-layout {
+  /* Viewer + export panel container.
+     The split pane is absolute inside this; export panel overlays the right side.
+     This prevents the parent from resizing when the export panel appears. */
+  .viewer-and-export {
     position: relative;
     flex: 1;
-    display: flex;
-    flex-direction: column;
+    min-height: 0;
     overflow: hidden;
   }
 
-  .export-preview-layout.desktop {
-    flex-direction: row;
-    align-items: stretch;
-    gap: 16px;
-    padding: 16px;
+  /* Export panel — absolute overlay so it doesn't steal width from split pane */
+  .export-panel-container {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 5;
+    overflow: hidden;
+    overflow-y: auto;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
-  .export-animation-preview {
-    position: relative;
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 0;
-    min-width: 0;
-    max-width: 800px;
+  /* Mobile: export panel at bottom instead of right */
+  @media (max-width: 767px) {
+    .export-panel-container {
+      top: auto;
+      left: 0;
+      border-left: none;
+      border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    }
+  }
+
+  /* Footer collapse — CSS transition so parent height changes gradually */
+  .footer-collapse {
+    overflow: hidden;
+    max-height: 200px;
+    transition: max-height 250ms cubic-bezier(0.2, 0, 0, 1),
+                opacity 250ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  .footer-collapse.collapsed {
+    max-height: 0;
+    opacity: 0;
+    pointer-events: none;
   }
 
   .export-settings-badge {
@@ -834,20 +834,6 @@
     z-index: 5;
   }
 
-  .export-preview-layout .loading-state,
-  .export-preview-layout .error-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
-    font-size: var(--font-size-min, 14px);
-  }
-
-  .export-preview-layout .error-state {
-    color: var(--semantic-error, #f87171);
-  }
 
   /* Mobile drawer appearance */
   @media (max-width: 767px) {
