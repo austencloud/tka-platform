@@ -16,7 +16,7 @@ import {
 import { auth, getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
 import type { FirePhysicsParams } from "../../domain/types/FireTypes";
-import type { PropFirePointConfig } from "../../domain/types/PropFirePoints";
+import type { PropTipConfig } from "../../domain/types/PropTipPoints";
 import type { IFireDefaultsPublisher } from "../contracts/IFireDefaultsPublisher";
 
 const FIRESTORE_DOC_PATH = "config/fireDefaults";
@@ -36,7 +36,7 @@ export class FireDefaultsPublisher implements IFireDefaultsPublisher {
 	// ------------------------------------------------------------------
 
 	async publish(data: {
-		firePoints: Record<string, PropFirePointConfig>;
+		firePoints: Record<string, PropTipConfig>;
 		propPhysics: Record<string, FirePhysicsParams>;
 		globalPhysics: FirePhysicsParams;
 	}): Promise<void> {

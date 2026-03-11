@@ -3,7 +3,7 @@
  *
  * Tracks prop fire-point positions across frames and computes velocity vectors
  * via finite differencing. Supports variable tip counts per prop type by
- * reading from PropFirePoints configuration.
+ * reading from PropTipPoints configuration.
  *
  * Zero-alloc hot path: reuses StoredTip and output arrays each frame.
  */

@@ -1,5 +1,5 @@
 import type { FirePhysicsParams } from "../../domain/types/FireTypes";
-import type { PropFirePointConfig } from "../../domain/types/PropFirePoints";
+import type { PropTipConfig } from "../../domain/types/PropTipPoints";
 
 /**
  * Loads admin-published fire defaults from Firestore.
@@ -14,10 +14,10 @@ export interface IFireDefaultsLoader {
 	isLoaded(): boolean;
 
 	/** Get admin-published fire points for a prop type. Returns null if no admin override. */
-	getFirePoints(propType: string): PropFirePointConfig | null;
+	getFirePoints(propType: string): PropTipConfig | null;
 
 	/** Get all published fire point configs as a Record. */
-	getAllFirePoints(): Record<string, PropFirePointConfig>;
+	getAllFirePoints(): Record<string, PropTipConfig>;
 
 	/** Get admin-published physics for a prop type. Falls back to global physics. */
 	getPhysics(propType: string): FirePhysicsParams | null;
