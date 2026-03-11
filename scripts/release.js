@@ -1284,9 +1284,9 @@ async function main() {
       feedbackItems,
       selectedHighlights
     );
-  } else if (useGitHistory) {
-    // Still create version document for What's New modal, just don't archive feedback
-    console.log("✓ Creating version record in Firestore (git history mode)...");
+  } else {
+    // Create version document even with 0 feedback (changelog still needs to be stored)
+    console.log("✓ Creating version record in Firestore...");
     await createFirestoreVersion(suggestedVersion, changelog, selectedHighlights);
   }
 

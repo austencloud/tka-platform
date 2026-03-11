@@ -176,7 +176,7 @@
       ]
     },
     "shared/i18n": {
-      "lastAuditedAt": "2026-01-18T06:26:50.432Z",
+      "lastAuditedAt": "2026-03-11T01:20:39.702Z",
       "name": "Shared: I18n",
       "type": "shared",
       "grades": {
@@ -190,7 +190,7 @@
         "security": "A+"
       },
       "overallGrade": "A+",
-      "notes": "Security documentation added for param sanitization requirements. ARIA live region added for locale change announcements. All 8 dimensions now A+.",
+      "notes": null,
       "issues": []
     },
     "features/admin/components": {
