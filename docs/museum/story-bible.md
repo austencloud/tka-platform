@@ -148,6 +148,21 @@ The "Vessel" concept is retired. There is no reincarnating soul. Historical figu
 
 The Bellweather Incident (~1993) is the founding act of the modern Scribe movement. The Order and the player both believe the defector is an unknown ex-member. On second playthrough, breadcrumbs reveal the defector was K — the same person whose voice has narrated the museum for four years AND whose annotations fill it. K was technically proficient, covered his tracks, and was never identified.
 
+### The Retro Museum Games
+
+K personally built digital versions of the museum archive across multiple computing eras. These are K's own project, not institutional digitization — K was the technical employee, and building these was an extension of his obsessive system-building nature. The player discovers these as playable terminals inside the UE5 museum.
+
+| Era | Platform | Visual Style | K's State |
+|-----|----------|-------------|-----------|
+| 1989 | DOS text adventure | Green/amber phosphor, blinking cursor | True believer. Pure Order framing. Faithful reproduction of institutional voice. |
+| ~1993 | NES-era 2D | 8-bit sprites, 4-color palette, top-down | Cracks showing. Descriptions slightly warmer than they should be. |
+| 1998 | SNES-era 2D | 16-bit pixel art, parallax, rich palettes | Beauty the Order wouldn't have approved. Exhibits linger. |
+| 2003 | Half-Life 1 era 3D | Early 3D, vertex snapping, fog | Never completed. The collapse interrupted K's work. |
+
+The retro versions contain no annotations — K hadn't returned yet. They are pure Order voice, and the absence of K's warmth makes its presence in the UE5 museum hit harder by contrast. The player who finds a DOS terminal in a back office and boots it up experiences the same museum stripped of everything that makes it feel alive.
+
+Each version is optional content (tier two) — artifacts inside the physical museum, not prerequisites. The text adventure is the MVP, forcing all the writing work. Later visual versions reskin content that already exists in text form. (Tracker: YES1GD39)
+
 ---
 
 ## Protocol Lethe
@@ -200,7 +215,7 @@ The museum's tonal arc mirrors institutional decay:
 
 ### K (The Annotator — and the Narrator)
 
-**Internal identity:** K is male, born ~1968. He/him in the world bible. Player-facing material avoids gendered pronouns entirely. The narrator voice is Austen's, which reads male, but players process it as "the museum guide" rather than a character on first playthrough. The connection between narrator and annotator — if the player makes it — supersedes the gender question.
+**Internal identity:** K is male, born ~1968. Likely autistic — obsessive system-building, pattern recognition that made him crack before anyone else, structural defection method (precise bureaucratic incisions, not dramatic gestures), dry humor consistent across voice and writing, technically gifted in ways the Order exploited. He/him in the world bible. Player-facing material avoids gendered pronouns entirely. The narrator voice is Austen's, which reads male, but players process it as "the museum guide" rather than a character on first playthrough. The connection between narrator and annotator — if the player makes it — supersedes the gender question.
 
 **K is both voices.** The narrator (recorded 1985-2003, starting at age 21) and the annotator (written years later, K post-return) are the same person. The player hears K's voice and reads K's handwriting throughout the entire game without knowing they belong to the same person.
 
@@ -209,6 +224,8 @@ The museum's tonal arc mirrors institutional decay:
 **What the player pieces together (attentive/second playthrough):** K was an Order member. K recorded the narration. K leaked the software. K sabotaged the bureaucracy. K returned to the sealed building and transformed the archive. The narrator and the annotator are the same person at different stages of life. Every annotation is K responding to his own younger voice. Every narration line the player already heard gets recontextualized.
 
 **K's humor register:** Deadpan primary, sardonic secondary, absurdist occasional. Matches the project's humor profile. The annotator's humor is warmer — the amusement of someone who knows exactly how absurd this all is. The narrator's humor is unintentional — K at 21 doesn't know he's being funny. The contrast between the two is itself a joke.
+
+**K's cognitive fingerprint (the verbal tic):** Both voices share a subtle structural pattern — K acknowledges what something *looks like* before saying what it *means*. Narrator version: "The markings appear random at first glance — scattered across the limestone in no discernible pattern. They are, in fact, a complete four-beat sequence." Annotator version: "Looks like scratches. It's a lesson plan." Same mind, same apparent→actual structure, different compression level. Used in ~30% of passages for each voice. Not a catchphrase — a way of thinking. The pattern is invisible on first playthrough and obvious on second. Needs dedicated writing workshopping before committing to final form. (Tracker: taYETMk3)
 
 **For K's full backstory, see K's Arc below.**
 
@@ -289,7 +306,7 @@ The Order has documented flow state for longer than anyone can verify and called
 Three rooms experienced in order, not as choices. Scrooge effect: present vs. how things could be.
 
 1. **Room 1: Fear / Suppression** -- The Order's response. Containment, warning, dread. "This knowledge is a public health hazard. Seal the archive. Walk away."
-2. **Room 2: Isolation** -- Soloists spinning alone. Not an empty void — people are practicing, but separated. No connection, no transmission, no community. The real threat to niche art isn't suppression, it's atomization. Nobody sharing. Everyone alone with their prop.
+2. **Room 2: Isolation** -- Managed isolation, not solitude. Flow artists assigned to individual cubicles by the Bureau of Kinetic Containment — spinning alone three feet apart with walls between them. The comedy: someone built cubicle walls for flow artists. The horror: they could stand up and see each other but don't. Player can wander between cubicles, try to interact, find they can't reach anyone — knock on doors, nobody answers (headphones, absorbed). Automated Order messages about "maintaining individual containment protocols" if the player tries to remove walls. Stanley Parable energy through player agency in an empty system. Each person has something whole and beautiful — the problem is nobody's sharing it, not that anyone's piece is incomplete. **Solo practice respect clause:** The museum must never frame solo practice as negative. A person spinning alone in a field is participating — that's valid and beautiful. The isolation critique targets institutional isolation only: managed aloneness, assigned cubicles, monitored sessions. The dystopia is "you're alone and someone is watching," not "you're alone." (Tracker: YeqdkSNA, nJGivjCY)
 3. **Room 3: Explosion of Collaboration** -- Real people spinning together. Imperfect technique. Fully alive. Birds chirping, trees, light, warmth. The emotional counter. The activity that 40,000 years of history has been arguing over, just happening.
 
 After Room 3: a wax figure near the exit, perfectly still, holding out a folded pamphlet. The player takes it (they will — players interact with everything). It unfolds in their hands like a real museum program: exhibition hours (24/7), curator's note, special thanks to every Scribe who came before. A QR code sits among the program details, not announced, just present. A real suggested donation link (actual money, straight to the developer). A brief transitional moment — elevator, moving walkway, or corridor — gives the player nothing to do but look at the pamphlet. "Press E to read pamphlet." They'll do it.
