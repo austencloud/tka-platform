@@ -1,7 +1,7 @@
 ﻿<!--
 CardBasedSettingsContainer - Minimal card grid renderer
 Delegates ALL logic to services (SRP compliant)
-Supports help mode: when active, clicking cards opens help instead of normal action
+Supports tour mode: highlights the active tour stop card
 -->
 <script lang="ts">
   import { container } from "$lib/shared/di";
@@ -26,7 +26,6 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     LOOPType,
     SliceSize,
   } from "../circular/domain/models/circular-models";
-  import type { GeneratorHelpId } from "../domain/generator-help-content";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
@@ -51,9 +50,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     onGenerateClicked,
     startEndState,
     hasSettingsChanged = false,
-    helpMode = false,
-    helpModeExiting = false,
-    onHelpSelect,
+    tourActiveStop = null,
     wordInputValue = "",
     onWordInput,
     onWordSubmit,
@@ -67,9 +64,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     onGenerateClicked: (options: any) => Promise<void>;
     startEndState?: StartEndOptionsState;
     hasSettingsChanged?: boolean;
-    helpMode?: boolean;
-    helpModeExiting?: boolean;
-    onHelpSelect?: (controlId: GeneratorHelpId) => void;
+    tourActiveStop?: string | null;
     wordInputValue?: string;
     onWordInput?: (value: string) => void;
     onWordSubmit?: () => void;
@@ -81,35 +76,6 @@ Supports help mode: when active, clicking cards opens help instead of normal act
 
   // Get panel coordination state from context (for LOOP expanded overlay)
   const panelState = getContext<PanelCoordinationState>("panelState");
-
-  // Map card IDs to help IDs
-  const cardIdToHelpId: Record<string, GeneratorHelpId> = {
-    "level": "level",
-    "length": "length",
-    "word-input": "generation-mode",
-    "grid-mode": "grid-mode",
-    "turn-intensity": "turn-intensity",
-    "customize": "prop-continuity",
-    "loop": "loop-type",
-    "slice-size": "slice-size",
-    "generate-button": "generate",
-  };
-
-  function handleCardClick(cardId: string, event: MouseEvent) {
-    if (!helpMode || !onHelpSelect) return;
-
-    const helpId = cardIdToHelpId[cardId];
-    if (helpId) {
-      event.preventDefault();
-      event.stopPropagation();
-      onHelpSelect(helpId);
-    }
-  }
-
-  // Check if a card has help available
-  function hasHelp(cardId: string): boolean {
-    return cardId in cardIdToHelpId;
-  }
 
   // Services - use $state to make them reactive
   let typographyService = $state<IResponsiveTypographer | null>(null);
@@ -338,17 +304,15 @@ Supports help mode: when active, clicking cards opens help instead of normal act
 
 </script>
 
-<div class="card-settings-container" class:help-mode={helpMode} class:help-mode-exiting={helpModeExiting} style="--header-font-size: {headerFontSize}">
+<div class="card-settings-container" class:tour-active={!!tourActiveStop} style="--header-font-size: {headerFontSize}">
 
   {#each cards as card (card.id)}
-    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
     <div
       class="card-wrapper"
-      class:help-clickable={helpMode && hasHelp(card.id)}
+      class:tour-highlight={tourActiveStop === card.id}
+      class:tour-dim={!!tourActiveStop && tourActiveStop !== card.id}
       style:grid-column="span {card.gridColumnSpan}"
       animate:flip={{ duration: 300, easing: quintOut }}
-      onclick={(e) => handleCardClick(card.id, e)}
-      role={helpMode && hasHelp(card.id) ? "button" : undefined}
     >
       {#if card.id === "level"}
         <LevelCard {...card.props as any} color={cardColors.level.color} shadowColor={cardColors.level.shadowColor} />
@@ -442,42 +406,31 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     min-width: 0;
   }
 
-  /* Help mode styles */
-  .card-settings-container.help-mode .card-wrapper.help-clickable {
-    cursor: pointer;
+  /* Tour highlighting */
+  .card-wrapper.tour-dim {
+    opacity: 0.2;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
   }
 
-  /* Block pointer events on actual cards in help mode - wrapper handles clicks */
-  .card-settings-container.help-mode .card-wrapper.help-clickable > :global(*) {
+  .card-wrapper.tour-highlight {
+    position: relative;
+    z-index: 210;
     pointer-events: none;
   }
 
-  /* Glow border - always present but invisible by default for smooth transitions */
-  .card-wrapper.help-clickable::after {
+  .card-wrapper.tour-highlight::after {
     content: "";
     position: absolute;
     inset: -2px;
     border-radius: 14px;
     border: 2px solid rgba(59, 130, 246, 0.6);
-    box-shadow: 0 0 8px rgba(59, 130, 246, 0.2);
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
     pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.25s ease-out;
+    animation: tour-card-glow 1.5s ease-in-out infinite;
   }
 
-  /* Show and animate the glow in help mode */
-  .card-settings-container.help-mode .card-wrapper.help-clickable::after {
-    opacity: 1;
-    animation: help-card-pulse 1.5s ease-in-out infinite;
-  }
-
-  /* Fade out glow during exit */
-  .card-settings-container.help-mode-exiting .card-wrapper.help-clickable::after {
-    opacity: 0;
-    animation: none;
-  }
-
-  @keyframes help-card-pulse {
+  @keyframes tour-card-glow {
     0%, 100% {
       border-color: rgba(59, 130, 246, 0.4);
       box-shadow: 0 0 8px rgba(59, 130, 246, 0.2);
@@ -486,6 +439,11 @@ Supports help mode: when active, clicking cards opens help instead of normal act
       border-color: rgba(59, 130, 246, 0.8);
       box-shadow: 0 0 16px rgba(59, 130, 246, 0.4);
     }
+  }
+
+  .card-settings-container.tour-active {
+    position: relative;
+    z-index: 210;
   }
 
   /*
@@ -514,10 +472,14 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     }
   }
 
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
   @media (prefers-reduced-motion: reduce) {
-    .help-clickable {
+    .card-wrapper.tour-dim {
+      transition: none;
+    }
+    .card-wrapper.tour-highlight::after {
       animation: none;
+      border-color: rgba(59, 130, 246, 0.6);
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
     }
   }
 
