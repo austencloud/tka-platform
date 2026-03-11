@@ -17,6 +17,9 @@
   import VersionHeader from "./VersionHeader.svelte";
   import NoChangelogState from "./NoChangelogState.svelte";
   import ActionToast from "./ActionToast.svelte";
+  import { container } from "$lib/shared/di";
+  import type { Contributor } from "$lib/features/feedback/domain/models/contributor-models";
+  import type { IContributorLoader } from "$lib/features/feedback/services/contracts/IContributorLoader";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { changelogEditState } from "./state/changelog-edit-state.svelte";
   import { versionService } from "$lib/features/feedback/services/implementations/VersionManager";
@@ -32,6 +35,12 @@
     showCloseButton?: boolean;
     onClose?: () => void;
   } = $props();
+
+  // Contributor state
+  let allContributors = $state<Contributor[]>([]);
+  const contributorMap = $derived(
+    new Map(allContributors.map((c) => [c.id, c]))
+  );
 
   // UI state
   let currentlyEditingId = $state<string | null>(null);
@@ -291,7 +300,49 @@
     return lines.join("\n").trim();
   }
 
+  async function handleUpdateEntryContributors(
+    cat: ChangelogCategory,
+    catIdx: number,
+    contributorIds: string[]
+  ) {
+    if (!version) return;
+    const entries = version.changelogEntries || [];
+    const catEntries = entries.filter((e) => e.category === cat);
+    const entry = catEntries[catIdx];
+    if (!entry) return;
+    const absIdx = entries.indexOf(entry);
+
+    await versionService.updateEntryContributors(
+      version.version,
+      absIdx,
+      contributorIds
+    );
+
+    // Update local state so the UI reflects the change immediately
+    version.changelogEntries![absIdx] = {
+      ...version.changelogEntries![absIdx]!,
+      contributorIds: contributorIds.length > 0 ? contributorIds : undefined,
+    };
+    version.changelogEntries = [...version.changelogEntries!];
+
+    // Recompute version-level contributors as union of all entries
+    const allIds = new Set<string>();
+    for (const e of version.changelogEntries!) {
+      if (e.contributorIds) {
+        for (const id of e.contributorIds) allIds.add(id);
+      }
+    }
+    version.contributorIds = allIds.size > 0 ? [...allIds] : undefined;
+
+    onVersionUpdated?.();
+  }
+
   onMount(() => {
+    const loader = container.items.contributorLoader as IContributorLoader;
+    loader.getAll().then((list) => {
+      allContributors = list;
+    });
+
     window.addEventListener("keydown", handleKeydown);
     return () => {
       window.removeEventListener("keydown", handleKeydown);
@@ -351,6 +402,9 @@
             onConfirmAdd={confirmAdd}
             onStartEdit={startEdit}
             onEndEdit={endEdit}
+            {allContributors}
+            {contributorMap}
+            onUpdateEntryContributors={(i, ids) => handleUpdateEntryContributors(cat, i, ids)}
           />
         {/if}
       {/each}
