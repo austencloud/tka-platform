@@ -158,7 +158,7 @@
     hasActiveEffect && !premiumNudgeDismissed,
   );
 
-  const effectsNudge = CAPABILITY_NUDGES["capability:export:effects"];
+  const effectsNudge = CAPABILITY_NUDGES["capability:export:effects"]!;
 
   /** Summary of current settings for the bottom bar chip */
   const settingsSummary = $derived(
