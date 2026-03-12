@@ -11,17 +11,36 @@
  */
 
 import { execSync, spawn } from "child_process";
+import { existsSync } from "fs";
 
 const PORT = 5173;
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
 const WATCH_INTERVAL_MS = 5000; // Check for devices every 5 seconds
 
-// Known wireless device IP - update port if wireless debugging is restarted
-const WIRELESS_DEVICE_IP = "192.168.12.179";
-
 // Check if running in watch mode
 const WATCH_MODE = process.argv.includes("--watch");
+
+// Find adb executable - check PATH first, then known locations
+function findAdb() {
+  try {
+    execSync("adb version", { stdio: "pipe" });
+    return "adb";
+  } catch {}
+
+  const knownPaths = [
+    process.env.LOCALAPPDATA + "\\Android\\Sdk\\platform-tools\\adb.exe",
+    "C:\\Users\\" + (process.env.USERNAME || "Austen") + "\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe",
+  ];
+
+  for (const p of knownPaths) {
+    if (existsSync(p)) return `"${p}"`;
+  }
+
+  return null;
+}
+
+const ADB = findAdb();
 
 function exec(cmd) {
   try {
@@ -36,7 +55,7 @@ function sleep(ms) {
 }
 
 function getConnectedDevices() {
-  const output = exec("adb devices");
+  const output = exec(`${ADB} devices`);
   if (!output) return [];
 
   return output
@@ -46,18 +65,54 @@ function getConnectedDevices() {
     .map((line) => line.split("\t")[0]);
 }
 
+function getOfflineDevices() {
+  const output = exec(`${ADB} devices`);
+  if (!output) return [];
+
+  return output
+    .split("\n")
+    .slice(1)
+    .filter((line) => line.includes("offline"))
+    .map((line) => line.split("\t")[0]);
+}
+
 function setupReversePort(device) {
   // Remove existing reverse for this port
-  exec(`adb -s ${device} reverse --remove tcp:${PORT} 2>/dev/null`);
+  exec(`${ADB} -s ${device} reverse --remove tcp:${PORT} 2>/dev/null`);
 
   // Set up new reverse
-  const result = exec(`adb -s ${device} reverse tcp:${PORT} tcp:${PORT}`);
+  const result = exec(`${ADB} -s ${device} reverse tcp:${PORT} tcp:${PORT}`);
   return result !== null;
 }
 
 function verifyReversePort(device) {
-  const list = exec(`adb -s ${device} reverse --list`);
+  const list = exec(`${ADB} -s ${device} reverse --list`);
   return list && list.includes(`tcp:${PORT}`);
+}
+
+function tryMdnsConnect() {
+  // adb mdns services lists all wireless debugging devices on the network
+  const mdnsOutput = exec(`${ADB} mdns services`);
+  if (!mdnsOutput) return false;
+
+  // Look for adb-tls-connect entries (wireless debugging)
+  // Format: "service-name	_adb-tls-connect._tcp.	ip:port"
+  const lines = mdnsOutput.split("\n");
+  for (const line of lines) {
+    if (!line.includes("adb-tls-connect")) continue;
+
+    // Extract IP:port from the line
+    const match = line.match(/(\d+\.\d+\.\d+\.\d+):(\d+)/);
+    if (match) {
+      const addr = `${match[1]}:${match[2]}`;
+      console.log(`   📡 Found device via mDNS: ${addr}`);
+      const result = exec(`${ADB} connect ${addr}`);
+      if (result && result.includes("connected")) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 async function main() {
@@ -65,51 +120,51 @@ async function main() {
   console.log("─".repeat(40));
 
   // Check if adb is available
-  if (!exec("adb version")) {
-    console.log("⚠️  ADB not found in PATH. Skipping device setup.");
+  if (!ADB) {
+    console.log("⚠️  ADB not found. Skipping device setup.");
     console.log("   Install Android SDK Platform-Tools to enable mobile testing.");
     return { success: false, devices: [] };
+  }
+
+  // Disconnect any offline/stale devices first
+  const offlineDevices = getOfflineDevices();
+  for (const d of offlineDevices) {
+    console.log(`   Disconnecting stale device: ${d}`);
+    exec(`${ADB} disconnect ${d}`);
   }
 
   // Get connected devices
   let devices = getConnectedDevices();
 
   if (devices.length === 0) {
-    console.log("📱 No devices connected. Trying wireless reconnect...");
+    console.log("📱 No devices connected. Trying auto-discovery...");
 
-    // Try to reconnect to any previously paired wireless devices
-    exec("adb reconnect offline");
+    // Step 1: Try reconnecting previously paired devices
+    exec(`${ADB} reconnect offline`);
     await sleep(RETRY_DELAY_MS);
     devices = getConnectedDevices();
 
-    // If still no devices, try connecting to the known wireless device
-    if (devices.length === 0 && WIRELESS_DEVICE_IP) {
-      console.log(`📡 Scanning ${WIRELESS_DEVICE_IP} for wireless debugging port...`);
-
-      // adb mdns discovery can find the device if it's advertising
-      const mdnsOutput = exec("adb mdns services");
-      if (mdnsOutput && mdnsOutput.includes(WIRELESS_DEVICE_IP)) {
-        // Extract the port from mdns output
-        const portMatch = mdnsOutput.match(
-          new RegExp(`${WIRELESS_DEVICE_IP.replace(/\./g, "\\.")}:(\\d+)`)
-        );
-        if (portMatch) {
-          const port = portMatch[1];
-          console.log(`   Found port ${port}, connecting...`);
-          exec(`adb connect ${WIRELESS_DEVICE_IP}:${port}`);
-          await sleep(RETRY_DELAY_MS);
-          devices = getConnectedDevices();
-        }
+    // Step 2: Try mDNS discovery (finds wireless debugging devices on the network)
+    if (devices.length === 0) {
+      console.log("📡 Scanning network via mDNS...");
+      if (tryMdnsConnect()) {
+        await sleep(RETRY_DELAY_MS);
+        devices = getConnectedDevices();
       }
+    }
 
-      // If mdns didn't work, try the last known connection
-      if (devices.length === 0) {
-        // Check adb's known devices list for a recent port
-        const adbOutput = exec("adb devices -l") || "";
-        if (!adbOutput.includes(WIRELESS_DEVICE_IP)) {
-          console.log("   mdns discovery didn't find device.");
-          console.log("   Tip: if port changed, run: adb connect " + WIRELESS_DEVICE_IP + ":<port>");
-        }
+    // Step 3: If still nothing, check if adb has any known devices
+    if (devices.length === 0) {
+      const knownOutput = exec(`${ADB} devices -l`) || "";
+      // Sometimes adb knows about devices but they need a kick
+      exec(`${ADB} kill-server`);
+      await sleep(1500);
+      exec(`${ADB} start-server`);
+      await sleep(RETRY_DELAY_MS);
+
+      if (tryMdnsConnect()) {
+        await sleep(RETRY_DELAY_MS);
+        devices = getConnectedDevices();
       }
     }
   }
@@ -124,7 +179,9 @@ async function main() {
     console.log("   adb pair <ip>:<pairing-port>");
     console.log("   adb connect <ip>:<connect-port>");
     console.log("");
-    console.log("📡 Server will start anyway. Device will auto-connect when available.");
+    console.log("   Or run: npm run adb:watch (auto-connects when device appears)");
+    console.log("");
+    console.log("📡 Server will start anyway.");
     return { success: false, devices: [] };
   }
 
@@ -180,6 +237,16 @@ async function watchForDevices() {
 
     const devices = getConnectedDevices();
     const newDevices = devices.filter((d) => !configuredDevices.has(d));
+
+    // If no devices at all, try mDNS discovery periodically
+    if (devices.length === 0 && configuredDevices.size === 0) {
+      tryMdnsConnect();
+      await sleep(RETRY_DELAY_MS);
+      const retryDevices = getConnectedDevices();
+      retryDevices.forEach((d) => {
+        if (!configuredDevices.has(d)) newDevices.push(d);
+      });
+    }
 
     if (newDevices.length > 0) {
       console.log("");

@@ -133,6 +133,7 @@
     max-width: 72px;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.8);

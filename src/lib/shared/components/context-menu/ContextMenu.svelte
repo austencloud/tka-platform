@@ -315,6 +315,7 @@
     use:portal
     style="left: {submenuPosition.left}px; top: {submenuPosition.top}px;"
     role="menu"
+    tabindex="-1"
     onmouseenter={handleSubmenuPanelEnter}
     onmouseleave={() => handleSubmenuLeave()}
     oncontextmenu={(e) => e.preventDefault()}

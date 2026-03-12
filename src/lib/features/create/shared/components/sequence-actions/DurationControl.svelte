@@ -229,6 +229,7 @@
     padding: 2px 4px;
     outline: none;
     -moz-appearance: textfield;
+    appearance: textfield;
   }
 
   .duration-input::-webkit-inner-spin-button,

@@ -124,9 +124,4 @@
     color: var(--theme-text, white);
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .preset-btn {
-      transition: none;
-    }
-  }
 </style>

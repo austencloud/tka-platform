@@ -136,8 +136,6 @@
     margin-top: 16px;
   }
 
-  .bsod-cursor {
-    /* Blink driven by JS (setInterval) to bypass retro-overrides.css
-       which kills all CSS animations with !important */
-  }
+  /* .bsod-cursor blink driven by JS (setInterval) to bypass retro-overrides.css
+     which kills all CSS animations with !important */
 </style>

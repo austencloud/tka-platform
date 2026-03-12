@@ -83,7 +83,7 @@ Staleness check: `node scripts/check-lore-staleness.cjs`
 | Skill | Purpose |
 |-------|---------|
 | `/museum` | Full department briefing (dispatches 7 parallel agents) or focused department view |
-| `/museumlore` | Writers' room lore discussion. Mandatory session-close protocol. |
+| `/museum-lore` | Writers' room lore discussion. Mandatory session-close protocol. |
 
 ---
 

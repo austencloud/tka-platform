@@ -263,5 +263,165 @@
   "lib/features/create/generate/components/CompactSettingsToolbar.svelte": {
     "auditDate": "2026-03-01",
     "reason": "Single-purpose compact chip toolbar. 510/1191 lines are scoped CSS (inherent to Svelte). Script is well-organized orchestration of 9 configurable chips with morph animations. Expand panels already extracted (Style, LOOP, StartEnd). No clean extraction candidates — 4/4 perspectives agree."
+  },
+  "lib/features/retro/dos/services/implementations/AsciiRenderer.ts": {
+    "auditDate": "2026-03-12",
+    "reason": "Pure-function ASCII renderer. Size is inherent: ~200 lines coordinate tables, ~100 lines docs, ~800 lines rendering pipeline (6 stages). One responsibility, well-sectioned, no extractable pieces."
+  },
+  "lib/features/effects-lab/components/EffectsLabPlaybackHost.svelte": {
+    "auditDate": "2026-03-12",
+    "reason": "Orchestrator for Effects Lab: hosts canvas + routes state to 4 effect mode control panels (already extracted). Size from 4 effect states + persistence + visibility sync. Clear section headers, no extractable UI or logic."
+  },
+  "lib/features/tika/TikaModule.svelte": {
+    "auditDate": "2026-03-12",
+    "reason": "Module root orchestrating AI chat, session management, compare mode, and mastery context. All concerns share same dependencies (auth, chat, memory). Template well-decomposed into child components. generateCopyForAI is a minor extraction candidate but not worth the file overhead."
+  },
+  "lib/features/phrase-effort-lab/PhraseEffortLabModule.svelte": {
+    "auditDate": "2026-03-12",
+    "reason": "Single-feature lab module. 375 lines CSS (35%), rest is phrase interpolation with blend crossfade + RAF loop. Template well-decomposed into child components. No extractable pieces."
+  },
+  "lib/features/disassemble-lab/components/DisassemblePlaybackHost.svelte": {
+    "auditDate": "2026-03-12",
+    "reason": "Near-twin of EffectsLabPlaybackHost (already audited). Same orchestration pattern with added 3-canvas hand isolation via DisassembleLayout. No extractable pieces."
+  },
+  "lib/shared/sequence-viewer/components/ExportVideoDrawer.svelte": {
+    "auditDate": "2026-03-12",
+    "reason": "Presentational component: 168 lines script, 425 lines template, 540 lines CSS. Template has ~155 lines duplicated between mobile/desktop layouts (common responsive pattern). CSS drives the size. Minor extraction candidate (shared settings body) but no convergence — 2/4 perspectives."
+  },
+  "lib/features/tika/components/InlineQuiz.svelte": {
+    "auditDate": "2026-03-12",
+    "reason": "Presentational quiz component: 167 lines script, 628 lines CSS (61%). CSS from 3 display modes × 4 answer states × hover/focus/disabled. One responsibility, no extractable pieces."
+  },
+  "routes/sequence/[id]/+page.svelte": {
+    "auditDate": "2026-03-12",
+    "reason": "Route page: loads sequence via 3 paths (handoff/encoded/legacy), delegates to SequenceViewerOrchestrator. All route-specific concerns (URL params, swipe, mobile redirect). Template is prop-wiring. No extractable pieces."
+  },
+  "lib/shared/animation-engine/services/implementations/charcoal/CharcoalSparkRenderer.ts": {
+    "auditDate": "2026-03-12",
+    "reason": "WebGL2 point-sprite particle renderer. Single responsibility: emit, simulate, and draw charcoal sparks via GPU. 970 lines includes GLSL shaders, particle pool, physics, and buffer management — all cohesive to the rendering pipeline."
+  },
+  "lib/features/feedback/components/manage/FeedbackKanbanBoard.svelte": {
+    "auditDate": "2026-03-12",
+    "reason": "Kanban board host: routes mobile/desktop views, hosts defer+trash dialogs, handles undo/redo. 55% CSS. Dialogs are board-specific and share styles — extraction would create thin wrappers."
+  },
+  "lib/features/tika/services/implementations/TikaQuizGenerator.ts": {
+    "auditDate": "2026-03-12",
+    "reason": "Quiz generator service. Single responsibility: create TKA quizzes across 7 types. ~280 lines are static question pools, rest is generation logic. Cohesive service with one interface."
+  },
+  "lib/shared/navigation/components/DesktopNavigationSidebar.svelte": {
+    "auditDate": "2026-03-12",
+    "reason": "Navigation sidebar orchestrator. Already decomposed into 7 child components. 38% CSS. Handles collapsed/expanded routing and settings/modules switching — all navigation concern."
+  },
+  "lib/features/lab/components/screenshots/ScreenshotGallery.svelte": {
+    "auditDate": "2026-03-12",
+    "reason": "Gallery orchestrator. Already decomposed: 3 state factories + 7 child components + external packages. 35% CSS. Script is a filtering pipeline wiring children — pure orchestration."
+  },
+  "lib/features/effort-lab/components/EffortLabPlaybackHost.svelte": {
+    "auditDate": "2026-03-12",
+    "reason": "Effort Lab playback orchestrator. Owns RAF loop + prop interpolation for 8 simultaneous easing canvases. 28% CSS. Script is a cohesive animation pipeline — splitting RAF from reactive state would create thin wrappers."
+  },
+  "lib/features/library/services/implementations/LibraryRepository.ts": {
+    "auditDate": "2026-03-12",
+    "reason": "Firestore library repository. Single domain: user sequence CRUD + subscriptions + batch ops. saveSequence has post-write side effects but they're all fire-and-forget from the same persistence event — extraction would create thin wrappers."
+  },
+  "lib/shared/3d-core/debug/game-bridge.ts": {
+    "auditDate": "2026-03-12",
+    "reason": "WebSocket bridge for MCP game controller. Single protocol implementation: connect, auth, dispatch methods, emit events. Method handlers all share bindings — extraction would create thin wrappers."
+  },
+  "lib/features/create/shared/components/sequence-actions/DurationPatternDrawer.svelte": {
+    "auditDate": "2026-03-12",
+    "reason": "Duration pattern save/apply drawer. 46% CSS. 185-line script. Template has two modes with category filtering — all one feature. Delegates to PatternItemCard and DurationPreviewGrid."
+  },
+  "lib/features/compose/services/implementations/TrailCapturer.ts": {
+    "auditDate": "2026-03-12",
+    "reason": "Trail point capture service. Single responsibility: distance-based adaptive sampling with cache backfill, loop detection, and memory pruning. Includes inlined CircularBuffer for O(1) operations."
+  },
+  "lib/shared/navigation-coordinator/navigation-coordinator.svelte.ts": {
+    "auditDate": "2026-03-12",
+    "reason": "Single responsibility: coordinate navigation state (module/section changes, view transitions, browser history). All concerns are tightly coupled navigation facets."
+  },
+  "lib/features/assemble-lab/components/InteractiveGrid.svelte": {
+    "auditDate": "2026-03-12",
+    "reason": "Single responsibility: interactive SVG grid for visual sequence building. All layers (props, ghosts, hit targets, animations) share one SVG viewBox coordinate space."
+  },
+  "lib/shared/application/components/MainApplication.svelte": {
+    "auditDate": "2026-03-12",
+    "reason": "App shell composition root: wires initialization, auth gating, global overlays, theme, and keyboard shortcuts. All facets of the single 'application shell' responsibility."
+  },
+  "lib/shared/render/services/implementations/ImageComposer.ts": {
+    "auditDate": "2026-03-12",
+    "reason": "Orchestrator with 10 injected services. composeSequenceImage is a linear pipeline (layout→canvas→cells→QR→borders→header→footer). Size comes from step count, not responsibility count."
+  },
+  "lib/shared/sequence-viewer/components/SequencePanel.svelte": {
+    "auditDate": "2026-03-12",
+    "reason": "Deprecated legacy component (replacement: SequenceViewerDrawerHost + /sequence/[id]). Delegates to SequenceViewer, QuickShareRow, ExportControlsSection. Will be removed, not decomposed."
+  },
+  "lib/features/create/shared/components/sequence-actions/StepEditorPanel.svelte": {
+    "auditDate": "2026-03-12",
+    "reason": "Orchestrator panel: delegates to TurnsEditMode, StartPositionEditMode, DurationControl, PictographContainer, ArrowAdjustmentPanel. 41% CSS. Script is derived state + simple handlers."
+  },
+  "lib/features/browse/sequences/display/components/PropAwareThumbnail.svelte": {
+    "auditDate": "2026-03-12",
+    "reason": "Thin presentation component: all logic delegated to DI services (IThumbnailKeyDeriver, IThumbnailRenderOrchestrator). Script is lifecycle + lazy-loading orchestration. 32% CSS for states."
+  },
+  "lib/features/lab/tabs/PropButtonLab.svelte": {
+    "auditDate": "2026-03-12",
+    "reason": "Lab tab: 63% CSS. Script (~300 lines) is undo/redo + override persistence + slider handlers. Single responsibility: visual tuning for prop compositions."
+  },
+  "lib/shared/inbox/components/messages/NewMessageSheet.svelte": {
+    "auditDate": "2026-03-12",
+    "reason": "Single flow: select recipients → create conversation. 50% CSS for multi-section sheet UI. Script is user selection + search + creation logic."
+  },
+  "lib/shared/messaging/services/implementations/ConversationManager.ts": {
+    "auditDate": "2026-03-12",
+    "reason": "Firestore conversation repository: CRUD, group management, subscriptions, read status. All methods operate on the same collection with shared auth. Same pattern as LibraryRepository."
+  },
+  "lib/shared/messaging/services/implementations/Messenger.ts": {
+    "auditDate": "2026-03-12",
+    "reason": "Firestore messaging service: send, fetch, subscribe, mark-read, delete, edit, reactions, typing. All operate on same subcollection. Standard messaging API surface."
+  },
+  "lib/features/feedback/components/manage/FeedbackKanbanCard.svelte": {
+    "auditDate": "2026-03-12",
+    "reason": "Single card component with drag support. 49% CSS for visual states (selected, claim health, priority, badges). Script is derived formatting + drag handlers."
+  },
+  "lib/shared/animation-engine/state/animation-visibility-state.svelte.ts": {
+    "auditDate": "2026-03-12",
+    "reason": "Settings state: getter/setter pairs for animation visibility (fire, charcoal, LED, trails, grid, speed, dark mode). Mutual exclusion logic + localStorage persistence. Boilerplate-heavy but single responsibility."
+  },
+  "lib/features/compose/tabs/arrange/ArrangeTab.svelte": {
+    "auditDate": "2026-03-12",
+    "reason": "Orchestrator tab wiring 7 child components (GridLayoutControls, CompositionGrid, CellEditor, PlaybackBar, StaggerControls, SequencePickerModal, SaveCompositionModal). All extractable sections already extracted."
+  },
+  "lib/shared/inbox/components/InboxDrawer.svelte": {
+    "auditDate": "2026-03-12",
+    "reason": "Inbox drawer orchestrator: switches between ConversationList, MessageThread, NewMessageSheet, GroupSettingsSheet, and notification views. State-machine navigation with drawer snap points."
+  },
+  "routes/landing/components/LandingAnimationDemo.svelte": {
+    "auditDate": "2026-03-12",
+    "reason": "Self-contained landing page animation: loads random sequences and plays them in an endless loop via EndlessSpinnerOrchestrator + AnimatorCanvas. Animation lifecycle is inherently complex."
+  },
+  "routes/test/terrain-research/+page.svelte": {
+    "auditDate": "2026-03-12",
+    "reason": "Test/research page under /test/. Self-contained research dashboard with 53% CSS. Not production code — no decomposition ROI."
+  },
+  "lib/features/compose/tabs/arrange/components/grid/CompositionGrid.svelte": {
+    "auditDate": "2026-03-12",
+    "reason": "Grid renderer with cell spanning and drag-to-resize. Delegates to CellCanvas and CellResizeHandles. Script handles grid layout math + drag/pointer handlers. Single UI responsibility."
+  },
+  "lib/features/retro/win95/components/shell/RetroDesktop.svelte": {
+    "auditDate": "2026-03-12",
+    "reason": "Easter egg: Win95-style desktop shell. Composes taskbar, desktop icons, windows, start menu. Self-contained retro feature — no decomposition value."
+  },
+  "lib/shared/debug/state/user-preview-state.svelte.ts": {
+    "auditDate": "2026-03-12",
+    "reason": "Admin debug tool: reads another user's Firestore data (profile, sequences, collections, achievements, notifications, settings) for preview. All queries serve one purpose: populating the preview panel."
+  },
+  "lib/features/compose/timeline/components/TimelinePanel.svelte": {
+    "auditDate": "2026-03-12",
+    "reason": "DAW-style timeline editor container. Orchestrates ControlsBar, MonitorPanel, MediaBrowser, Timeline tracks. Layout management for a complex NLE interface."
+  },
+  "lib/shared/foundation/ui/Drawer.svelte": {
+    "auditDate": "2026-03-12",
+    "reason": "Foundation UI component: already decomposed into SwipeToDismiss, FocusTrap, SnapPoints, DrawerEffects, DrawerStack. 8 effects manage inherently complex interactive behavior (swipe, focus, snap, lifecycle)."
   }
 }

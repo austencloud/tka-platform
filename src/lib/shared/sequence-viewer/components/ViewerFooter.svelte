@@ -708,25 +708,6 @@
      TEMPO CONTROL SECTION
      =========================== */
 
-  /* ===========================
-     PLAYBACK-ONLY ROW (video export)
-     =========================== */
-
-  .playback-only-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 4px 8px;
-  }
-
-  .playback-only-divider {
-    width: 1px;
-    height: 24px;
-    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    flex-shrink: 0;
-  }
-
   .tempo-section {
     min-width: 0;
     max-width: 500px;

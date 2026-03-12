@@ -126,7 +126,7 @@ node scripts/museum-dev.js session-end <sessionId> --transcript ./transcript.md
    - **Question** -> answer (`museum <id> answer "..."`) or tag with `carries-to-next-session`
 3. No orphaned proposals or unanswered questions should remain
 
-**For lore sessions:** Use `/museumlore` instead — it adds story bible sync and stricter close hygiene.
+**For lore sessions:** Use `/museum-lore` instead — it adds story bible sync and stricter close hygiene.
 
 ### For "create <type> <title>":
 
