@@ -9,6 +9,7 @@ import type { DocumentSnapshot } from "firebase/firestore";
 import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
 import type { CreatorSortCriteria } from "$lib/shared/community/domain/models/enhanced-user-profile";
 import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
 const DEFAULT_PAGE_SIZE = 30;
 
@@ -89,8 +90,17 @@ function createCreatorsDataState() {
     // If already loading, skip
     if (isLoading) return;
 
+    // Cache for use by togglePropFilter, which needs to reload without
+    // requiring the caller to pass repository/userId again.
+    cachedRepository = repository;
+    cachedCurrentUserId = currentUserId;
+
     isLoading = true;
     error = null;
+
+    // Prop filter applied to all query branches when active.
+    const propFilter =
+      selectedPropFilters.length > 0 ? selectedPropFilters : undefined;
 
     try {
       if (sortBy === "favoriteProp") {
@@ -103,6 +113,7 @@ function createCreatorsDataState() {
             sortDirection: "desc",
             limit: 1000,
             cursor: null,
+            ...(propFilter ? { propFilter } : {}),
           },
           currentUserId
         );
@@ -117,6 +128,7 @@ function createCreatorsDataState() {
             sortDirection,
             limit: pageSize,
             cursor: null,
+            ...(propFilter ? { propFilter } : {}),
           },
           currentUserId
         );
@@ -195,6 +207,29 @@ function createCreatorsDataState() {
 
     // Reload with new sort
     await loadCreators(repository, currentUserId);
+  }
+
+  /**
+   * Toggle a prop filter on or off, then reload from the first page.
+   *
+   * Uses the cached repository from the most recent loadCreators call so the
+   * caller doesn't need to pass it again on every chip tap.
+   */
+  async function togglePropFilter(prop: PropType): Promise<void> {
+    if (selectedPropFilters.includes(prop)) {
+      selectedPropFilters = selectedPropFilters.filter((p) => p !== prop);
+    } else {
+      selectedPropFilters = [...selectedPropFilters, prop];
+    }
+
+    // Reset pagination so we fetch from the start with the new filter set.
+    users = [];
+    lastDocSnapshot = null;
+    hasMore = true;
+
+    if (cachedRepository) {
+      await loadCreators(cachedRepository, cachedCurrentUserId);
+    }
   }
 
   /**
@@ -390,10 +425,16 @@ function createCreatorsDataState() {
       return isSearching;
     },
 
+    // Prop filter state
+    get selectedPropFilters() {
+      return selectedPropFilters;
+    },
+
     // Actions
     loadCreators,
     loadMoreCreators,
     changeSortOrder,
+    togglePropFilter,
     loadFeaturedCreators,
     setSearchQuery,
     clearSearch,
@@ -472,6 +513,11 @@ export const creatorsDataState = {
     return getCreatorsDataState().isSearching;
   },
 
+  // Prop filter state
+  get selectedPropFilters() {
+    return getCreatorsDataState().selectedPropFilters;
+  },
+
   // Actions
   loadCreators(repository: IUserRepository, currentUserId?: string) {
     return getCreatorsDataState().loadCreators(repository, currentUserId);
@@ -491,6 +537,9 @@ export const creatorsDataState = {
       repository,
       currentUserId
     );
+  },
+  togglePropFilter(prop: PropType) {
+    return getCreatorsDataState().togglePropFilter(prop);
   },
   loadFeaturedCreators(repository: IUserRepository, limit?: number) {
     return getCreatorsDataState().loadFeaturedCreators(repository, limit);
