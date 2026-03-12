@@ -43,6 +43,7 @@ import { GlobalFeatureFlagPersister } from "./implementations/GlobalFeatureFlagP
 import { UserFeatureFlagPersister } from "./implementations/UserFeatureFlagPersister";
 import type { GlobalFlagOverrides } from "./contracts/IGlobalFeatureFlagPersister";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+import { PREMIUM_CAPABILITY_CONFIGS } from "$lib/shared/subscription/domain/capability-flag-configs";
 
 // ============================================================================
 // POSTHOG FLAG NAMING CONVENTIONS
@@ -249,9 +250,11 @@ function generateFeatureFlagsFromModules(): FeatureFlagConfig[] {
   return flags;
 }
 
-// Default feature flags from navigation modules
-const _DEFAULT_FEATURE_FLAGS: FeatureFlagConfig[] =
-  generateFeatureFlagsFromModules();
+// Default feature flags from navigation modules, merged with premium capability configs
+const _DEFAULT_FEATURE_FLAGS: FeatureFlagConfig[] = [
+  ...generateFeatureFlagsFromModules(),
+  ...PREMIUM_CAPABILITY_CONFIGS,
+];
 
 // ============================================================================
 // PRIVATE HELPERS
