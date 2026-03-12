@@ -802,11 +802,22 @@
     border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
-  /* Mobile: export panel at bottom instead of right */
+  /* Mobile: export panel is inline in flex layout, not absolute */
   @media (max-width: 767px) {
+    .viewer-and-export.export-active {
+      display: flex;
+      flex-direction: column;
+    }
+
     .export-panel-container {
+      position: relative;
       top: auto;
-      left: 0;
+      right: auto;
+      bottom: auto;
+      left: auto;
+      width: 100%;
+      flex-shrink: 0;
+      overflow: visible;
       border-left: none;
       border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     }

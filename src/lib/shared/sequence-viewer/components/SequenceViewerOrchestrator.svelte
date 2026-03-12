@@ -729,17 +729,22 @@
   // FOCUS MODE
   // ============================================================================
 
+  // Track whether playback was active before entering image export,
+  // so we can restore the prior state when exiting.
+  let wasPlayingBeforeImageExport = false;
+
   function enterEditMode(pane: 'animation' | 'image') {
     hapticService?.trigger("selection");
     editingPane = pane;
 
     // Video export: start playback for live preview
-    // Image export: pause playback
+    // Image export: pause playback (save state for restore)
     if (pane === "animation") {
       if (!isPlayingLocal && playbackController) {
         playbackController.togglePlayback();
       }
     } else if (pane === "image") {
+      wasPlayingBeforeImageExport = isPlayingLocal;
       if (isPlayingLocal && playbackController) {
         playbackController.togglePlayback();
       }
@@ -751,8 +756,16 @@
 
   function exitEditMode() {
     hapticService?.trigger("selection");
+    const wasPaneImage = editingPane === "image";
     editingPane = null;
     sequenceModalExporter.dismissPreview();
+
+    // Restore playback state after image export
+    if (wasPaneImage && wasPlayingBeforeImageExport && !isPlayingLocal && playbackController) {
+      playbackController.togglePlayback();
+    }
+    wasPlayingBeforeImageExport = false;
+
     accessibilityHelper.announce("Split view restored");
   }
 
