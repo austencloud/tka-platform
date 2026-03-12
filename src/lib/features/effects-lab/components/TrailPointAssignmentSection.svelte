@@ -3,8 +3,10 @@
 
   Lets users assign trail endpoints to existing tip points or custom
   positions. Appears below the Actions section in the Tip Points tab.
-  Both trail endpoints use the same source — tap a numbered tip point
-  chip to assign it, or tap Auto/Off/Custom.
+
+  Mode chips (Auto / Off) control the overall mode.
+  In "tip" mode, two labeled rows (L / R) let you assign a different
+  tip point to each trail endpoint independently.
 -->
 <script lang="ts">
   import type { EffectPointEditorState } from "../state/effect-point-editor-state.svelte";
@@ -16,60 +18,98 @@
 
   const { editorState }: Props = $props();
 
-  // Both sides use the same source, so just read from left
-  let source = $derived(editorState.trailConfig?.left ?? null);
+  let leftSource = $derived(editorState.trailConfig?.left ?? null);
+  let rightSource = $derived(editorState.trailConfig?.right ?? null);
 
-  function getActiveChip(s: TrailPointSource | null): string {
-    if (!s) return "auto";
-    if (s.type === "none") return "off";
-    if (s.type === "tip") return `tip-${s.index}`;
-    if (s.type === "custom") return "custom";
+  // Current mode: "auto" (no config), "off" (none), "tip" (at least one is tip-assigned), "custom"
+  type Mode = "auto" | "off" | "tip" | "custom";
+
+  function deriveMode(): Mode {
+    if (!editorState.trailConfig) return "auto";
+    const l = editorState.trailConfig.left;
+    if (l.type === "none") return "off";
+    if (l.type === "custom") return "custom";
+    if (l.type === "tip") return "tip";
     return "auto";
   }
 
-  let activeChip = $derived(getActiveChip(source));
+  let mode = $derived(deriveMode());
 
-  function selectChip(chipId: string) {
-    if (chipId === "auto") {
+  // Which tip index is active for each side (-1 = none selected)
+  let leftTipIndex = $derived(leftSource?.type === "tip" ? leftSource.index : -1);
+  let rightTipIndex = $derived(rightSource?.type === "tip" ? rightSource.index : -1);
+
+  function selectMode(newMode: Mode) {
+    if (newMode === "auto") {
       editorState.clearTrailConfig();
       return;
     }
 
-    let newSource: TrailPointSource;
-    if (chipId === "off") {
-      newSource = { type: "none" };
-    } else if (chipId === "custom") {
-      if (source?.type === "custom") {
-        newSource = source;
-      } else {
-        newSource = { type: "custom", dx: 0, dy: 0 };
-      }
-    } else if (chipId.startsWith("tip-")) {
-      const index = parseInt(chipId.replace("tip-", ""), 10);
-      newSource = { type: "tip", index };
-    } else {
+    if (newMode === "off") {
+      const config: TrailPointConfig = {
+        left: { type: "none" },
+        right: { type: "none" },
+      };
+      editorState.saveTrailConfig(config);
       return;
     }
 
-    // Same source for both endpoints
-    const config: TrailPointConfig = { left: newSource, right: newSource };
+    if (newMode === "tip") {
+      // Default to tip 0 for both when entering tip mode
+      const config: TrailPointConfig = {
+        left: { type: "tip", index: 0 },
+        right: { type: "tip", index: editorState.points.length > 1 ? 1 : 0 },
+      };
+      editorState.saveTrailConfig(config);
+      return;
+    }
+
+    if (newMode === "custom") {
+      const config: TrailPointConfig = {
+        left: leftSource?.type === "custom" ? leftSource : { type: "custom", dx: 0, dy: 0 },
+        right: rightSource?.type === "custom" ? rightSource : { type: "custom", dx: 0, dy: 0 },
+      };
+      editorState.saveTrailConfig(config);
+    }
+  }
+
+  function selectTip(side: "left" | "right", tipIndex: number) {
+    const otherSide = side === "left" ? rightSource : leftSource;
+    const thisSide: TrailPointSource = { type: "tip", index: tipIndex };
+
+    // Preserve the other side's current value, or default to tip 0
+    const otherValue: TrailPointSource = otherSide?.type === "tip"
+      ? otherSide
+      : { type: "tip", index: 0 };
+
+    const config: TrailPointConfig = side === "left"
+      ? { left: thisSide, right: otherValue }
+      : { left: otherValue, right: thisSide };
+
     editorState.saveTrailConfig(config);
   }
 
-  function handleCustomDxDy(field: "dx" | "dy", raw: string) {
+  function handleCustomDxDy(side: "left" | "right", field: "dx" | "dy", raw: string) {
     const value = parseFloat(raw);
     if (!Number.isFinite(value)) return;
     const rounded = Math.round(value * 10) / 10;
 
-    if (source?.type !== "custom") return;
+    const currentSource = side === "left" ? leftSource : rightSource;
+    if (currentSource?.type !== "custom") return;
 
     const updated: TrailPointSource = {
       type: "custom",
-      dx: field === "dx" ? rounded : source.dx,
-      dy: field === "dy" ? rounded : source.dy,
+      dx: field === "dx" ? rounded : currentSource.dx,
+      dy: field === "dy" ? rounded : currentSource.dy,
     };
 
-    const config: TrailPointConfig = { left: updated, right: updated };
+    const other = side === "left" ? rightSource : leftSource;
+    const otherValue: TrailPointSource = other ?? { type: "custom", dx: 0, dy: 0 };
+
+    const config: TrailPointConfig = side === "left"
+      ? { left: updated, right: otherValue }
+      : { left: otherValue, right: updated };
+
     editorState.saveTrailConfig(config);
   }
 </script>
@@ -80,80 +120,141 @@
     Trail Points
   </h3>
   <p class="section-desc">
-    Pick where trail lines emit from. Auto uses prop geometry.
+    Pick where trail lines emit from. Tip mode lets you assign each end separately.
   </p>
 
-  <div class="chip-row" role="radiogroup" aria-label="Trail endpoint source">
-    <!-- Auto chip -->
+  <!-- Mode selector -->
+  <div class="chip-row" role="radiogroup" aria-label="Trail point mode">
     <button
       class="chip"
-      class:active={activeChip === "auto"}
+      class:active={mode === "auto"}
       role="radio"
-      aria-checked={activeChip === "auto"}
-      onclick={() => selectChip("auto")}
+      aria-checked={mode === "auto"}
+      onclick={() => selectMode("auto")}
       title="Use geometric calculation (default)"
     >Auto</button>
 
-    <!-- Tip point chips -->
-    {#each editorState.points as _, i}
-      <button
-        class="chip chip-tip"
-        class:active={activeChip === `tip-${i}`}
-        role="radio"
-        aria-checked={activeChip === `tip-${i}`}
-        onclick={() => selectChip(`tip-${i}`)}
-        title="Tip {i + 1}: ({editorState.points[i].dx}, {editorState.points[i].dy})"
-      >{i + 1}</button>
-    {/each}
-
-    <!-- Custom chip -->
     <button
       class="chip"
-      class:active={activeChip === "custom"}
+      class:active={mode === "tip"}
       role="radio"
-      aria-checked={activeChip === "custom"}
-      onclick={() => selectChip("custom")}
+      aria-checked={mode === "tip"}
+      onclick={() => selectMode("tip")}
+      title="Assign tip points to each trail end"
+    >Tip</button>
+
+    <button
+      class="chip"
+      class:active={mode === "custom"}
+      role="radio"
+      aria-checked={mode === "custom"}
+      onclick={() => selectMode("custom")}
       title="Custom dx/dy offset"
     >
       <i class="fas fa-pen" aria-hidden="true"></i>
     </button>
 
-    <!-- Off chip -->
     <button
       class="chip chip-off"
-      class:active={activeChip === "off"}
+      class:active={mode === "off"}
       role="radio"
-      aria-checked={activeChip === "off"}
-      onclick={() => selectChip("off")}
+      aria-checked={mode === "off"}
+      onclick={() => selectMode("off")}
       title="No trails"
     >
       <i class="fas fa-ban" aria-hidden="true"></i>
     </button>
   </div>
 
+  <!-- Tip assignment rows (L / R) -->
+  {#if mode === "tip"}
+    <div class="endpoint-rows">
+      <div class="endpoint-row">
+        <span class="endpoint-label">End 1</span>
+        <div class="chip-row" role="radiogroup" aria-label="Trail end 1">
+          {#each editorState.points as _, i}
+            <button
+              class="chip chip-tip"
+              class:active={leftTipIndex === i}
+              role="radio"
+              aria-checked={leftTipIndex === i}
+              onclick={() => selectTip("left", i)}
+              title="Tip {i + 1}: ({editorState.points[i].dx}, {editorState.points[i].dy})"
+            >{i + 1}</button>
+          {/each}
+        </div>
+      </div>
+      <div class="endpoint-row">
+        <span class="endpoint-label">End 2</span>
+        <div class="chip-row" role="radiogroup" aria-label="Trail end 2">
+          {#each editorState.points as _, i}
+            <button
+              class="chip chip-tip"
+              class:active={rightTipIndex === i}
+              role="radio"
+              aria-checked={rightTipIndex === i}
+              onclick={() => selectTip("right", i)}
+              title="Tip {i + 1}: ({editorState.points[i].dx}, {editorState.points[i].dy})"
+            >{i + 1}</button>
+          {/each}
+        </div>
+      </div>
+    </div>
+  {/if}
+
   <!-- Custom coordinate inputs -->
-  {#if source?.type === "custom"}
-    <div class="custom-coords">
-      <label class="coord-field">
-        <span class="coord-label">dx</span>
-        <input
-          type="number"
-          class="coord-input"
-          step="0.1"
-          value={source.dx}
-          onchange={(e) => handleCustomDxDy("dx", (e.target as HTMLInputElement).value)}
-        />
-      </label>
-      <label class="coord-field">
-        <span class="coord-label">dy</span>
-        <input
-          type="number"
-          class="coord-input"
-          step="0.1"
-          value={source.dy}
-          onchange={(e) => handleCustomDxDy("dy", (e.target as HTMLInputElement).value)}
-        />
-      </label>
+  {#if mode === "custom"}
+    <div class="custom-section">
+      <div class="endpoint-row">
+        <span class="endpoint-label">End 1</span>
+        <div class="custom-coords">
+          <label class="coord-field">
+            <span class="coord-label">dx</span>
+            <input
+              type="number"
+              class="coord-input"
+              step="0.1"
+              value={leftSource?.type === "custom" ? leftSource.dx : 0}
+              onchange={(e) => handleCustomDxDy("left", "dx", (e.target as HTMLInputElement).value)}
+            />
+          </label>
+          <label class="coord-field">
+            <span class="coord-label">dy</span>
+            <input
+              type="number"
+              class="coord-input"
+              step="0.1"
+              value={leftSource?.type === "custom" ? leftSource.dy : 0}
+              onchange={(e) => handleCustomDxDy("left", "dy", (e.target as HTMLInputElement).value)}
+            />
+          </label>
+        </div>
+      </div>
+      <div class="endpoint-row">
+        <span class="endpoint-label">End 2</span>
+        <div class="custom-coords">
+          <label class="coord-field">
+            <span class="coord-label">dx</span>
+            <input
+              type="number"
+              class="coord-input"
+              step="0.1"
+              value={rightSource?.type === "custom" ? rightSource.dx : 0}
+              onchange={(e) => handleCustomDxDy("right", "dx", (e.target as HTMLInputElement).value)}
+            />
+          </label>
+          <label class="coord-field">
+            <span class="coord-label">dy</span>
+            <input
+              type="number"
+              class="coord-input"
+              step="0.1"
+              value={rightSource?.type === "custom" ? rightSource.dy : 0}
+              onchange={(e) => handleCustomDxDy("right", "dy", (e.target as HTMLInputElement).value)}
+            />
+          </label>
+        </div>
+      </div>
     </div>
   {/if}
 </div>
@@ -241,11 +342,42 @@
     box-shadow: 0 0 8px color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
   }
 
+  /* L/R endpoint rows */
+  .endpoint-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: var(--spacing-sm, 8px);
+  }
+
+  .endpoint-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .endpoint-label {
+    font-family: var(--font-mono, monospace);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    width: 40px;
+    flex-shrink: 0;
+    text-align: center;
+  }
+
   /* Custom coordinate inputs */
+  .custom-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: var(--spacing-sm, 8px);
+  }
+
   .custom-coords {
     display: flex;
     gap: 6px;
-    margin-top: var(--spacing-sm, 8px);
+    flex: 1;
   }
 
   .coord-field {
