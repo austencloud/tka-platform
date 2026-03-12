@@ -26,7 +26,7 @@
 			return;
 		}
 		if (
-			(e.key === "Delete" || e.key === "Backspace") &&
+			e.key === "Delete" &&
 			editorState.selectedPointIndex >= 0
 		) {
 			const tag = (e.target as HTMLElement)?.tagName;

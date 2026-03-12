@@ -110,7 +110,6 @@
         focusDxInput(index);
         break;
       case "Delete":
-      case "Backspace":
         e.preventDefault();
         editorState.deletePoint(index);
         // Focus the next row (or previous if we deleted the last)
