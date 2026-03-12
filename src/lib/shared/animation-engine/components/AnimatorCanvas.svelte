@@ -140,9 +140,11 @@ Last audit: 2025-12-27
 
   function toggleDisassemble() {
     if (viewState === "assembled") {
-      // Measure the content-wrapper rect before switching to transition view
-      if (contentWrapperEl) {
-        assembledRect = contentWrapperEl.getBoundingClientRect();
+      // Measure the square canvas-wrapper rect (not the content-wrapper which includes
+      // word header + progress bar and is non-square — scaling square slots to a
+      // non-square target causes visible distortion)
+      if (containerElement) {
+        assembledRect = containerElement.getBoundingClientRect();
       }
       viewState = "disassembling";
     } else if (viewState === "disassembled") {

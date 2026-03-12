@@ -1,11 +1,12 @@
-import { collection, query, where, orderBy, limit as firestoreLimit, getDocs, getFirestore } from "firebase/firestore";
+import { collection, query, where, orderBy, limit as firestoreLimit, getDocs } from "firebase/firestore";
+import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
 import type { ICreatorPropFilter } from "../contracts/ICreatorPropFilter";
 
 export class CreatorPropFilter implements ICreatorPropFilter {
   async queryByProp(prop: PropType, maxResults: number): Promise<UserProfile[]> {
-    const db = getFirestore();
+    const db = await getFirestoreInstance();
     const q = query(
       collection(db, "users"),
       where("propsISpinWith", "array-contains", prop),
