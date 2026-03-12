@@ -26,6 +26,7 @@ import { UsernameValidator } from "../../auth/services/implementations/UsernameV
 
 // Subscription services
 import { SubscriptionManager } from "../../subscription/services/implementations/SubscriptionManager";
+import { PremiumGateChecker } from "../../subscription/services/implementations/PremiumGateChecker";
 
 // Device services — import the module-level singletons, NOT the classes
 // These are the single source of truth for viewport/device state.
@@ -112,6 +113,7 @@ const profilePictureManager = new ProfilePictureManager();
 const usernameValidator = new UsernameValidator();
 const userDocumentManager = new UserDocumentManager(profilePictureManager, usernameValidator);
 const subscriptionManager = new SubscriptionManager();
+const premiumGateChecker = new PremiumGateChecker();
 const profileApiClient = new ProfileApiClient();
 const stepUpAuthCoordinator = new StepUpAuthCoordinator();
 
@@ -172,6 +174,7 @@ export const coreContainer = createContainer()
     profilePictureManager: () => profilePictureManager,
     userDocumentManager: () => userDocumentManager,
     subscriptionManager: () => subscriptionManager,
+    premiumGateChecker: () => premiumGateChecker,
     profileApiClient: () => profileApiClient,
     stepUpAuthCoordinator: () => stepUpAuthCoordinator,
     usernameValidator: () => usernameValidator,
