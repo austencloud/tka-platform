@@ -43,17 +43,13 @@ Provides consistent styling and interaction patterns for all generation setting 
     hapticService = container.items.hapticFeedback;
     rippleService = container.items.rippleEffect;
 
-    // 🌊 Attach ripple effect to clickable cards
     if (clickable && cardElement) {
-      const cleanup = rippleService.attachRipple(cardElement, {
-        color: "rgba(255, 255, 255, 0.4)",
-        duration: 600,
-        opacity: 0.5,
+      return rippleService.attachRipple(cardElement, {
+        color: "rgba(255, 255, 255, 0.25)",
+        duration: 350,
+        opacity: 0.15,
       });
-
-      return cleanup;
     }
-
     return undefined;
   });
 

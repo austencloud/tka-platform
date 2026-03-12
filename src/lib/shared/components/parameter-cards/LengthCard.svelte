@@ -48,9 +48,9 @@ Can operate as stepper (inline) or panel opener (click to select)
 
     if (mode === "panel-opener" && cardElement && rippleService) {
       return rippleService.attachRipple(cardElement, {
-        color: "rgba(255, 255, 255, 0.4)",
-        duration: 600,
-        opacity: 0.5,
+        color: "rgba(255, 255, 255, 0.25)",
+        duration: 350,
+        opacity: 0.15,
       });
     }
     return undefined;

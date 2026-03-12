@@ -332,7 +332,7 @@ Design variants supported:
   .segments-track {
     position: relative;
     width: 100%;
-    height: 6px;
+    height: 8px;
     background: var(--theme-stroke, rgba(0, 0, 0, 0.08));
   }
 
