@@ -14,6 +14,7 @@ These commands load their full workflow via skills. See the skill for details:
 - `/concepts` - Learn tab concept lesson development and tracking
 - `/lab` - Triage lab tabs: graduate, keep, archive, or delete experiments
 - `/skill-audit` - Audit a skill against writing-skills quality standards
+- `/premium` - Audit premium gating status or classify new features as free/premium
 
 ---
 
