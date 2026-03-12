@@ -82,11 +82,15 @@ interface HandPathData {
 - Deterministic: same trajectory always produces the same hash
 
 **Rendering (choreo card):**
-- Float arrows for location-to-location movement (the straight float arrow)
-- Dash arrows for same-position holds (start == end)
-- No arrow for static (single location, no movement)
-- No props rendered. Neutral color (theme accent or gray).
-- No glyph (letters require two hands)
+
+Hand paths use the three HandMotionType families, derivable from consecutive location pairs:
+- **Shift** (adjacent locations, e.g. S→W): rendered with float arrow (arc path, but no pro/anti distinction without rotation data)
+- **Dash** (opposite locations, e.g. S→N): rendered with dash arrow (straight line across grid)
+- **Static** (same location, e.g. S→S): no arrow
+
+No props rendered. Neutral color (theme accent or gray). No glyph (letters require two hands).
+
+The HandMotionType for each beat is derivable from the locations: adjacent = shift, opposite = dash, same = static. The arc direction (CW/CCW) for shifts is also derivable from the ordered pair.
 
 ### Tier 2: SoloPropData
 
@@ -148,6 +152,8 @@ interface SoloPropData {
 2. **Hand-agnostic.** No `MotionColor`. When combining two solo props into a full sequence, the user assigns which is blue (left hand) and which is red (right hand).
 
 3. **Contains its `HandPathData`.** The hand path is extracted from `steps[].startLocation` and the final `steps[-1].endLocation`. This is structural, not a separate query.
+
+4. **MotionType in solo props.** `SoloPropStepData` stores the full `MotionType` (pro/anti/float/dash/static). Pro vs anti is meaningful even without a second hand — it describes the prop's rotation relative to the hand's travel direction. Dash and static MotionTypes correspond directly to the dash and static HandMotionTypes (straight-line across grid, and no movement, respectively). Pro/anti only occur on shifts (arc movements to adjacent grid points).
 
 **Canonical form for hashing:**
 - Each step serialized as: `"startLoc:endLoc:motionType:rotDir:turns:startOri:endOri[:handPath[:skewSteps:skewDir]]"`
