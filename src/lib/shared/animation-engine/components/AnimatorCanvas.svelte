@@ -46,7 +46,7 @@ Last audit: 2025-12-27
   import type { LedOverlayConfig } from "../domain/types/LedTypes";
   import CanvasContextMenuHost from "./canvas-context-menu/CanvasContextMenuHost.svelte";
   import CanvasSettingsModal from "./canvas-settings-modal/CanvasSettingsModal.svelte";
-  import DecomposeCanvasView from "./DecomposeCanvasView.svelte";
+  import DisassembleTransition from "./DisassembleTransition.svelte";
   import type { SettingsPanelCategory } from "./canvas-context-menu/CanvasContextMenuBuilder";
   import { onMount, onDestroy, untrack } from "svelte";
 
@@ -77,7 +77,7 @@ Last audit: 2025-12-27
     // Tunnel mode: hide TKA glyph and beat numbers (combined motions don't form a letter)
     hideTkaGlyph = false,
     hideStepNumbers = false,
-    // Hide progress bar for this instance (e.g. small canvases in Decompose tab)
+    // Hide progress bar for this instance (e.g. small canvases in Disassemble tab)
     hideProgressBar = false,
     // Whether sequence returns to start position - controls trail clearing on loop
     isSeamlesslyLoopable = undefined,
@@ -128,20 +128,45 @@ Last audit: 2025-12-27
     fillContainer?: boolean;
   } = $props();
 
-  // Decompose mode state
-  let decomposed = $state(false);
+  // Disassemble mode state machine
+  type ViewState = "assembled" | "disassembling" | "disassembled" | "reassembling";
+  let viewState = $state<ViewState>("assembled");
+  let assembledRect = $state<DOMRect | null>(null);
+  let contentWrapperEl: HTMLDivElement | undefined = $state();
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
 
-  function toggleDecompose() {
-    decomposed = !decomposed;
+  // Derived boolean for context menu display
+  const isDisassembledView = $derived(viewState !== "assembled");
+
+  function toggleDisassemble() {
+    if (viewState === "assembled") {
+      // Measure the content-wrapper rect before switching to transition view
+      if (contentWrapperEl) {
+        assembledRect = contentWrapperEl.getBoundingClientRect();
+      }
+      viewState = "disassembling";
+    } else if (viewState === "disassembled") {
+      viewState = "reassembling";
+    }
+    // Ignore during active transitions
+  }
+
+  function handleTransitionComplete() {
+    if (viewState === "disassembling") {
+      viewState = "disassembled";
+    } else if (viewState === "reassembling") {
+      viewState = "assembled";
+    }
   }
 
   function handlePointerDown(e: PointerEvent) {
     // Only primary button, only touch/pen (not mouse — mouse uses context menu)
     if (e.button !== 0 || e.pointerType === "mouse" || disableContextMenu) return;
+    const x = e.clientX;
+    const y = e.clientY;
     longPressTimer = setTimeout(() => {
       longPressTimer = null;
-      toggleDecompose();
+      contextMenuHost?.openContextMenu(x, y);
     }, 500);
   }
 
@@ -299,8 +324,9 @@ Last audit: 2025-12-27
   }
 </script>
 
-{#if decomposed}
-  <!-- Decompose mode: three synchronized canvases -->
+{#if viewState !== "assembled"}
+  <!-- Disassembled / transitioning: single component stays mounted for all non-assembled states.
+       Avoids canvas re-initialization flash by keeping the three AnimatorCanvases alive. -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="animation-container"
@@ -310,7 +336,9 @@ Last audit: 2025-12-27
     onpointerup={cancelLongPress}
     onpointercancel={cancelLongPress}
   >
-    <DecomposeCanvasView
+    <DisassembleTransition
+      direction={viewState === "disassembling" ? "disassemble" : viewState === "reassembling" ? "reassemble" : "idle"}
+      {assembledRect}
       {blueProp}
       {redProp}
       gridVisible={gridVisible}
@@ -324,15 +352,15 @@ Last audit: 2025-12-27
       word={word}
       fireConfig={fireConfig}
       ledConfig={ledConfig}
-      onCollapse={toggleDecompose}
+      oncomplete={handleTransitionComplete}
     />
 
     {#if !disableContextMenu}
       <CanvasContextMenuHost
         bind:this={contextMenuHost}
         onOpenPanel={handleOpenPanel}
-        {decomposed}
-        onToggleDecompose={toggleDecompose}
+        disassembled={isDisassembledView}
+        onToggleDisassemble={toggleDisassemble}
       />
     {/if}
   </div>
@@ -355,14 +383,14 @@ Last audit: 2025-12-27
     onpointercancel={cancelLongPress}
   >
     <!-- Inner wrapper: adaptive layout (vertical in portrait, horizontal in landscape) -->
-    <div class="content-wrapper" data-dark-mode={darkModeEnabled ? "true" : "false"}>
+    <div class="content-wrapper" bind:this={contentWrapperEl} data-dark-mode={darkModeEnabled ? "true" : "false"}>
       <!-- Word header - position adapts to layout mode -->
       <div class="header-slot">
         <WordHeader
           {word}
           visible={wordHeaderVisible}
           darkMode={darkModeEnabled}
-          activeStepNumber={isPlaying ? Math.floor(currentStep) : null}
+          activeStepNumber={isPlaying && currentStep >= 1 && currentStep < (sequenceData?.steps?.length ?? 0) + 0.99 ? Math.floor(currentStep) : null}
         />
       </div>
 
@@ -384,8 +412,9 @@ Last audit: 2025-12-27
           stepNumbersVisible={effectiveBeatNumbersVisible}
           beatPositionVisible={effectiveBeatPositionVisible}
           darkMode={darkModeEnabled}
-          isAtStartPosition={currentStep < 1 && sequenceData !== null}
+          isAtStartPosition={!hideStepNumbers && currentStep < 1 && sequenceData !== null}
           isAtEndPosition={
+            !hideStepNumbers &&
             sequenceData !== null &&
             !effectiveIsSeamlesslyLoopable &&
             currentStep >= (sequenceData.steps?.length ?? 0) + 0.99
@@ -417,8 +446,8 @@ Last audit: 2025-12-27
       <CanvasContextMenuHost
         bind:this={contextMenuHost}
         onOpenPanel={handleOpenPanel}
-        {decomposed}
-        onToggleDecompose={toggleDecompose}
+        disassembled={isDisassembledView}
+        onToggleDisassemble={toggleDisassemble}
       />
 
       <CanvasSettingsModal
@@ -470,7 +499,7 @@ Last audit: 2025-12-27
     border: 1.5px solid var(--theme-panel-bg, #1a1a2e);
     border-radius: 4px;
     overflow: hidden;
-    transition: border-color var(--duration-fast) ease-out;
+    transition: border-color 350ms ease;
   }
 
   .content-wrapper[data-dark-mode="true"] {
@@ -506,20 +535,20 @@ Last audit: 2025-12-27
   }
 
   .canvas-wrapper :global(canvas) {
-    background: var(--canvas-bg, #f5f5f5);
+    background: #f5f5f5;
     display: block;
     width: 100%;
     height: 100%;
     object-fit: contain;
+    transition: background-color 350ms ease;
   }
 
   .canvas-wrapper[data-dark-mode="true"] :global(canvas) {
-    --canvas-bg: #0a0a0f;
+    background: #0a0a0f;
   }
 
   .canvas-wrapper[data-transparent="true"] :global(canvas) {
     background: transparent !important;
-    --canvas-bg: transparent;
   }
 
   /* ===========================================
@@ -602,13 +631,13 @@ Last audit: 2025-12-27
 
   /* ===========================================
      FILL CONTAINER MODE: Edge-to-edge rendering
-     Used by DecomposeCanvasView sub-canvases.
+     Used by DisassembleCanvasView sub-canvases.
      Strips centering, borders, and square constraint
      so the canvas fills its parent slot completely.
      =========================================== */
 
   /* Fill mode: canvas stretches to fill its parent slot completely.
-     Used by decompose views so canvases sit flush against each other. */
+     Used by disassemble views so canvases sit flush against each other. */
   .animation-container[data-fill] {
     align-items: stretch;
     justify-content: stretch;
@@ -635,7 +664,8 @@ Last audit: 2025-12-27
 
   @media (prefers-reduced-motion: reduce) {
     .content-wrapper,
-    .header-slot {
+    .header-slot,
+    .canvas-wrapper :global(canvas) {
       transition: none;
     }
   }
