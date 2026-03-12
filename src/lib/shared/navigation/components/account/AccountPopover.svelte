@@ -5,6 +5,7 @@
   import { container } from "../../../di";
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
   import RobustAvatar from "../../../components/avatar/RobustAvatar.svelte";
+  import MyPropsCard from "./MyPropsCard.svelte";
 
   let { isOpen, onClose, onInboxClick, hasUnread = false, unreadCount = 0, anchorElement } = $props<{
     isOpen: boolean;
@@ -150,6 +151,12 @@
       </div>
     </div>
 
+    {#if isAuthenticated}
+      <div class="props-section">
+        <MyPropsCard onOpenPropEditor={() => { onClose(); }} />
+      </div>
+    {/if}
+
     <!-- Actions -->
     <div class="actions">
       <button
@@ -285,6 +292,14 @@
   }
 
   /* ==========================================================================
+     PROPS SECTION
+     ========================================================================== */
+  .props-section {
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  /* ==========================================================================
      ACTIONS
      ========================================================================== */
   .actions {
@@ -372,7 +387,6 @@
      VERSION FOOTER
      ========================================================================== */
   .version-footer {
-    padding: 8px 16px 12px;
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
@@ -380,10 +394,11 @@
     display: flex;
     align-items: center;
     gap: 6px;
+    width: 100%;
     background: none;
     border: none;
-    padding: 4px 0;
-    font-size: var(--font-size-compact, 12px);
+    padding: 10px 16px 12px;
+    font-size: var(--font-size-sm, 14px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
     opacity: 0.6;
     cursor: pointer;
