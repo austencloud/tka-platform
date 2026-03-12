@@ -36,6 +36,7 @@ import type {
 } from "../contracts/IExportGlyphPrerenderer";
 import type { IBackgroundVideoEncoder } from "../contracts/IBackgroundVideoEncoder";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+import { fireCacheInvalidation } from "$lib/shared/animation-engine/state/fire-invalidation-signal.svelte";
 
 // ---------------------------------------------------------------------------
 // Export dimension & bitrate helpers
@@ -291,10 +292,10 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         await this.compositeRenderer.cacheStaticGrid();
       }
 
-      // CRITICAL: Use actual canvas pixel size, not CSS display size
-      // The canvas.width is the actual pixel dimension used for rendering
-      // getBoundingClientRect().width would give the CSS display size which is different
-      const actualCanvasSize = canvas.width;
+      // Use the source dimensions captured at export start, NOT live canvas.width.
+      // On mobile, the canvas can resize mid-export when UI layout shifts (e.g.,
+      // export panel appearing). Using the snapshot avoids size mismatches.
+      const actualCanvasSize = sourceWidth;
 
       // Get additional visibility settings (showWordHeader already checked above)
       const showTkaGlyph = visibilityManager.getVisibility("tkaGlyph");
@@ -420,7 +421,16 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
 
             // Animation content goes below header (and above progress bar)
             const canvasY = headerHeight > 0 ? headerHeight : 0;
-            offscreenCtx.drawImage(canvas, 0, canvasY);
+
+            // Use 9-arg drawImage to handle canvas resize during export.
+            // On mobile, UI layout shifts (export panel appearing) can shrink the
+            // canvas container mid-export. The 9-arg form scales the current canvas
+            // content to fill the expected area regardless of its current backing size.
+            offscreenCtx.drawImage(
+              canvas,
+              0, 0, canvas.width, canvas.height,          // source: full current canvas
+              0, canvasY, sourceWidth, sourceWidth          // dest: fill expected square area
+            );
 
             // Composite WebGL overlay canvases (fire, charcoal sparks, LED effects)
             // These are sibling canvases in the same container, layered via z-index
@@ -430,7 +440,11 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
               for (const overlay of overlayCanvases) {
                 if (overlay === canvas) continue; // Skip the main canvas
                 if (overlay.width === 0 || overlay.height === 0) continue; // Skip uninitialized
-                offscreenCtx.drawImage(overlay, 0, canvasY);
+                offscreenCtx.drawImage(
+                  overlay,
+                  0, 0, overlay.width, overlay.height,    // source: full overlay
+                  0, canvasY, sourceWidth, sourceWidth      // dest: same target area
+                );
               }
             }
           }
@@ -687,6 +701,13 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       if (options.compositeMode && options.compositeMode !== "none") {
         this.compositeRenderer.dispose();
       }
+
+      // Invalidate fire frame cache — the frame-by-frame jumpToStep capture
+      // desyncs the cached fire simulation from the actual animation position.
+      fireCacheInvalidation.trigger();
+
+      // Let callers reset additional transient state if needed.
+      options.onCleanup?.();
     }
   }
 

@@ -5,9 +5,9 @@ AnimatorCanvas.svelte - Canvas2D Animation Canvas
 ARCHITECTURAL NOTE
 ================================================================================
 
-This component is a thin wrapper (~120 lines) around AnimationEngine.
+This component is a thin wrapper around AnimationEngine.
 
-All orchestration logic (previously 23 effects) has been extracted to:
+All orchestration logic has been extracted to:
   src/lib/shared/animation-engine/services/implementations/AnimationEngine.svelte.ts
 
 The component's role:
@@ -16,11 +16,7 @@ The component's role:
 3. Pass props to engine.update() in single $effect
 4. Derive state from engine.state
 5. Render template (canvas-wrapper, GlyphOverlay, ProgressOverlay)
-
-This follows the standard canvas animation pattern:
-- Thin component (~120 lines)
-- Fat engine class (~500 lines)
-- Services handle specific concerns
+6. Disassemble/reassemble: same DOM tree, CSS transitions only
 
 Last audit: 2025-12-27
 ================================================================================
@@ -46,9 +42,10 @@ Last audit: 2025-12-27
   import type { LedOverlayConfig } from "../domain/types/LedTypes";
   import CanvasContextMenuHost from "./canvas-context-menu/CanvasContextMenuHost.svelte";
   import CanvasSettingsModal from "./canvas-settings-modal/CanvasSettingsModal.svelte";
-  import DisassembleTransition from "./DisassembleTransition.svelte";
   import type { SettingsPanelCategory } from "./canvas-context-menu/CanvasContextMenuBuilder";
   import { onDestroy, untrack } from "svelte";
+  import { fireCacheInvalidation } from "../state/fire-invalidation-signal.svelte";
+  import AnimatorCanvasSelf from "./AnimatorCanvas.svelte";
 
   // Props
   let {
@@ -66,36 +63,22 @@ Last audit: 2025-12-27
     onCanvasReady = () => {},
     onPlaybackToggle = () => {},
     trailSettings: externalTrailSettings = $bindable(),
-    // Prop type overrides - bypass settings when provided (useful for demos/previews)
     bluePropType = null,
     redPropType = null,
-    // Word for header display
     word = null,
-    // Preview-only dark mode override - when provided, bypasses global setting
-    // Used in sequence viewer preview so dark mode toggle doesn't affect global app state
     previewDarkMode = null,
-    // Tunnel mode: hide TKA glyph and beat numbers (combined motions don't form a letter)
     hideTkaGlyph = false,
     hideStepNumbers = false,
-    // Hide progress bar for this instance (e.g. small canvases in Disassemble tab)
     hideProgressBar = false,
-    // Whether sequence returns to start position - controls trail clearing on loop
     isSeamlesslyLoopable = undefined,
-    // Progress bar visual variant
     progressBarVariant = "gradient",
-    // Progress bar seek callback
     onProgressBarSeek = null,
-    // When true, always show word header and progress bar regardless of aspect ratio.
-    // Used when the animation canvas is the only visible content (focused/expanded pane).
     focused = false,
-    // Fire overlay configuration — when provided, overrides the engine's defaults
     fireConfig = undefined,
-    // LED overlay configuration — when provided, overrides the engine's defaults
     ledConfig = undefined,
-    // When true, suppresses context menu and settings modal (used inside CanvasSettingsModal to prevent recursion)
     disableContextMenu = false,
-    // When true, canvas fills its parent edge-to-edge (no centering, no border, no square constraint)
     fillContainer = false,
+    onInitialized: onInitializedCallback = undefined,
   }: {
     blueProp: PropState | null;
     redProp: PropState | null;
@@ -126,45 +109,71 @@ Last audit: 2025-12-27
     ledConfig?: Partial<LedOverlayConfig>;
     disableContextMenu?: boolean;
     fillContainer?: boolean;
+    /** Fires when the canvas engine has initialized and rendered its first frame */
+    onInitialized?: () => void;
   } = $props();
 
   // Disassemble mode state machine
+  // assembled → disassembling → disassembled → reassembling → assembled
+  // All transitions happen via CSS on the SAME DOM tree. No overlay swaps.
   type ViewState = "assembled" | "disassembling" | "disassembled" | "reassembling";
   let viewState = $state<ViewState>("assembled");
-  let assembledRect = $state<DOMRect | null>(null);
   let contentWrapperEl: HTMLDivElement | undefined = $state();
+  let splitCanvasesEl: HTMLDivElement | undefined = $state();
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
 
-  // Derived boolean for context menu display
+  // Mount split canvases collapsed, expand only after both engines are initialized
+  let splitExpanded = $state(false);
+  let splitReadyCount = $state(0);
+
   const isDisassembledView = $derived(viewState !== "assembled");
+  // Show split canvases in DOM for all non-assembled states
+  const showSplitCanvases = $derived(viewState !== "assembled");
+
+  function handleSplitCanvasReady() {
+    splitReadyCount++;
+  }
 
   function toggleDisassemble() {
     if (viewState === "assembled") {
-      // Measure the square canvas-wrapper rect (not the content-wrapper which includes
-      // word header + progress bar and is non-square — scaling square slots to a
-      // non-square target causes visible distortion)
-      if (containerElement) {
-        assembledRect = containerElement.getBoundingClientRect();
-      }
+      splitReadyCount = 0;
       viewState = "disassembling";
+      // Split canvases mount collapsed. They'll fire onInitialized when ready.
     } else if (viewState === "disassembled") {
+      // Collapse split canvases, then remove them when transition ends
+      splitExpanded = false;
       viewState = "reassembling";
     }
     // Ignore during active transitions
   }
 
-  function handleTransitionComplete() {
+  // Expand split canvases once both engines have initialized and rendered
+  $effect(() => {
+    if (viewState === "disassembling" && splitReadyCount >= 2) {
+      // Both split canvases are initialized. Expand on next frame so the
+      // browser has laid out the collapsed state first (CSS transition trigger).
+      untrack(() => {
+        requestAnimationFrame(() => {
+          splitExpanded = true;
+        });
+      });
+    }
+  });
+
+  // Listen for CSS transition end to finalize state changes
+  function handleSplitTransitionEnd(e: TransitionEvent) {
+    // Only react to max-height transitions on the split-canvases element itself
+    if (e.target !== splitCanvasesEl || e.propertyName !== "max-height") return;
+
     if (viewState === "disassembling") {
-      console.log(`[DISASM] ${performance.now().toFixed(1)}ms — disassembling → disassembled`);
       viewState = "disassembled";
     } else if (viewState === "reassembling") {
-      console.log(`[DISASM] ${performance.now().toFixed(1)}ms — reassembling → assembled`);
       viewState = "assembled";
+      splitExpanded = false;
     }
   }
 
   function handlePointerDown(e: PointerEvent) {
-    // Only primary button, only touch/pen (not mouse — mouse uses context menu)
     if (e.button !== 0 || e.pointerType === "mouse" || disableContextMenu) return;
     const x = e.clientX;
     const y = e.clientY;
@@ -181,8 +190,6 @@ Last audit: 2025-12-27
     }
   }
 
-  // Container element — must be $state so the initialization $effect
-  // re-runs when bind:this assigns a new element after disassemble/reassemble
   let containerElement: HTMLDivElement | undefined = $state();
   let contextMenuHost: CanvasContextMenuHost | undefined = $state();
 
@@ -198,10 +205,9 @@ Last audit: 2025-12-27
   // Engine instance
   const engine = new AnimationEngine();
 
-  // Visibility manager - direct observation for reliable reactivity
+  // Visibility manager
   const visibilityManager = getAnimationVisibilityManager();
 
-  // Local visibility state updated via observer (more reliable than engine state propagation)
   let tkaGlyphVisible = $state(visibilityManager.getVisibility("tkaGlyph"));
   let stepNumbersVisible = $state(visibilityManager.getVisibility("stepNumbers"));
   let beatPositionVisible = $state(visibilityManager.getVisibility("beatPosition"));
@@ -210,17 +216,14 @@ Last audit: 2025-12-27
   let progressBarVisible = $state(visibilityManager.getVisibility("progressBar"));
   let fireEffectEnabled = $state(visibilityManager.isFireEffectEnabled());
 
-  // Effective dark mode: use preview override if provided, otherwise global
   const darkModeEnabled = $derived(
     previewDarkMode !== null ? previewDarkMode : globalDarkMode
   );
 
-  // Effective visibility: combine global settings with hide props (for tunnel mode)
   const effectiveTkaGlyphVisible = $derived(tkaGlyphVisible && !hideTkaGlyph);
   const effectiveBeatNumbersVisible = $derived(stepNumbersVisible && !hideStepNumbers);
   const effectiveBeatPositionVisible = $derived(beatPositionVisible);
 
-  // Derive loopability: use prop if provided, otherwise check from sequence data
   const effectiveIsSeamlesslyLoopable = $derived.by(() => {
     if (isSeamlesslyLoopable !== undefined) return isSeamlesslyLoopable;
     if (!sequenceData) return false;
@@ -243,7 +246,18 @@ Last audit: 2025-12-27
     visibilityManager.unregisterObserver(handleVisibilityChange);
   });
 
-  // Derived state from engine (non-visibility state)
+  // When an external caller (e.g. video export orchestrator) signals that the
+  // fire frame cache is stale, invalidate it so the simulation re-records.
+  let lastFireInvalidationSignal = fireCacheInvalidation.signal;
+  $effect(() => {
+    const sig = fireCacheInvalidation.signal;
+    if (sig !== lastFireInvalidationSignal) {
+      lastFireInvalidationSignal = sig;
+      untrack(() => engine.invalidateFireCache());
+    }
+  });
+
+  // Derived state from engine
   const rendererLoading = $derived(engine.state.rendererLoading);
   const rendererError = $derived(engine.state.rendererError);
   const isInitialized = $derived(engine.state.isInitialized);
@@ -255,15 +269,13 @@ Last audit: 2025-12-27
   const displayedStepNumber = $derived(engine.state.displayedStepNumber);
   const displayedMusicalPosition = $derived(engine.state.displayedMusicalPosition);
 
-  // Initialize engine when container element appears (or reappears after disassemble/reassemble).
-  // Using $effect instead of onMount because the {#if} branching destroys and recreates
-  // the .canvas-wrapper DOM element. The engine must reinitialize with the new element.
+  // Initialize engine when container element appears.
+  // The hero canvas stays mounted always — no teardown during disassemble.
   $effect(() => {
     const el = containerElement;
     if (!el) return;
 
     untrack(() => {
-      console.log(`[DISASM] ${performance.now().toFixed(1)}ms — engine init $effect: containerElement appeared. viewState=${viewState}`);
       engine.initialize(el, {
         onCanvasReady,
         onTrailSettingsChange: (settings) => {
@@ -274,18 +286,13 @@ Last audit: 2025-12-27
 
     return () => {
       untrack(() => {
-        console.log(`[DISASM] ${performance.now().toFixed(1)}ms — engine dispose (containerElement removed)`);
         engine.dispose();
       });
     };
   });
 
-  // Single effect to pass all props to engine.
-  // Fire/LED configs are synced BEFORE engine.update() so the first render frame
-  // uses correct physics — not the defaults that would show a brief flash of
-  // full-intensity fire on tab switch.
+  // Single effect to pass all props to engine
   $effect(() => {
-    // Read reactive props outside untrack
     const currentFireConfig = fireConfig;
     const currentLedConfig = ledConfig;
     const props = {
@@ -307,7 +314,6 @@ Last audit: 2025-12-27
       isSeamlesslyLoopable,
     };
     untrack(() => {
-      // Sync fire/LED config before update so render frame uses correct values
       if (currentFireConfig) {
         engine.setFireConfig(currentFireConfig);
       }
@@ -318,10 +324,10 @@ Last audit: 2025-12-27
     });
   });
 
-  // Process pending glyphs when initialized
   $effect(() => {
     if (isInitialized) {
       engine.processPendingGlyph();
+      untrack(() => onInitializedCallback?.());
     }
   });
 
@@ -341,168 +347,158 @@ Last audit: 2025-12-27
   }
 </script>
 
-<!-- Host container: position-relative so transition overlay can stack on top of assembled view -->
-<div class="animator-host">
-  <!-- Assembled view: mounted during "assembled" AND "reassembling" so the engine
-       initializes behind the transition overlay. When the FLIP ends and the overlay
-       unmounts, this view is already rendered — no intermediate frame. -->
-  {#if viewState === "assembled" || viewState === "reassembling"}
-    <!-- Hidden GlyphRenderer that converts TKAGlyph to SVG for Canvas2D rendering -->
-    {#if letter}
-      <GlyphRenderer {letter} {stepData} onSvgReady={handleGlyphSvgReady} />
-    {/if}
+<!-- Hidden GlyphRenderer that converts TKAGlyph to SVG for Canvas2D rendering -->
+{#if letter}
+  <GlyphRenderer {letter} {stepData} onSvgReady={handleGlyphSvgReady} />
+{/if}
 
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+  class="animation-container"
+  data-focused={focused || undefined}
+  data-fill={fillContainer || undefined}
+  data-view={viewState}
+  oncontextmenu={handleContextMenu}
+  onpointerdown={handlePointerDown}
+  onpointermove={cancelLongPress}
+  onpointerup={cancelLongPress}
+  onpointercancel={cancelLongPress}
+>
+  <div class="content-wrapper" bind:this={contentWrapperEl} data-dark-mode={darkModeEnabled ? "true" : "false"}>
+    <div class="header-slot">
+      <WordHeader
+        {word}
+        visible={wordHeaderVisible}
+        darkMode={darkModeEnabled}
+        activeStepNumber={currentStep >= 1 && currentStep < (sequenceData?.steps?.length ?? 0) + 0.99 ? Math.floor(currentStep) : null}
+      />
+    </div>
+
     <div
-      class="animation-container assembled-layer"
-      data-focused={focused || undefined}
-      data-fill={fillContainer || undefined}
-      oncontextmenu={handleContextMenu}
-      onpointerdown={handlePointerDown}
-      onpointermove={cancelLongPress}
-      onpointerup={cancelLongPress}
-      onpointercancel={cancelLongPress}
+      class="canvas-wrapper"
+      bind:this={containerElement}
+      data-transparent={backgroundAlpha === 0 ? "true" : "false"}
+      data-dark-mode={darkModeEnabled ? "true" : "false"}
     >
-      <div class="content-wrapper" bind:this={contentWrapperEl} data-dark-mode={darkModeEnabled ? "true" : "false"}>
-        <div class="header-slot">
-          <WordHeader
-            {word}
-            visible={wordHeaderVisible}
-            darkMode={darkModeEnabled}
-            activeStepNumber={isPlaying && currentStep >= 1 && currentStep < (sequenceData?.steps?.length ?? 0) + 0.99 ? Math.floor(currentStep) : null}
-          />
-        </div>
+      <GlyphOverlay
+        {letter}
+        {displayedLetter}
+        {displayedTurnsTuple}
+        {displayedStepNumber}
+        {displayedMusicalPosition}
+        {stepData}
+        tkaGlyphVisible={effectiveTkaGlyphVisible}
+        stepNumbersVisible={effectiveBeatNumbersVisible}
+        beatPositionVisible={effectiveBeatPositionVisible}
+        darkMode={darkModeEnabled}
+        isAtStartPosition={!hideStepNumbers && currentStep < 1 && sequenceData !== null}
+        isAtEndPosition={
+          !hideStepNumbers &&
+          sequenceData !== null &&
+          !effectiveIsSeamlesslyLoopable &&
+          currentStep >= (sequenceData.steps?.length ?? 0) + 0.99
+        }
+      />
 
-        <div
-          class="canvas-wrapper"
-          bind:this={containerElement}
-          data-transparent={backgroundAlpha === 0 ? "true" : "false"}
-          data-dark-mode={darkModeEnabled ? "true" : "false"}
-        >
-          <GlyphOverlay
+      <ProgressOverlay
+        {isPreRendering}
+        {preRenderProgress}
+        {preRenderedFramesReady}
+      />
+    </div>
+
+    <!-- Split canvases: blue-only and red-only, expand below hero during disassemble -->
+    {#if showSplitCanvases}
+      <div
+        class="split-canvases"
+        class:expanded={splitExpanded}
+        bind:this={splitCanvasesEl}
+        ontransitionend={handleSplitTransitionEnd}
+      >
+        <div class="split-canvas">
+          <AnimatorCanvasSelf
+            {blueProp}
+            redProp={null}
+            {gridVisible}
+            {gridMode}
+            backgroundAlpha={0}
             {letter}
-            {displayedLetter}
-            {displayedTurnsTuple}
-            {displayedStepNumber}
-            {displayedMusicalPosition}
             {stepData}
-            tkaGlyphVisible={effectiveTkaGlyphVisible}
-            stepNumbersVisible={effectiveBeatNumbersVisible}
-            beatPositionVisible={effectiveBeatPositionVisible}
-            darkMode={darkModeEnabled}
-            isAtStartPosition={!hideStepNumbers && currentStep < 1 && sequenceData !== null}
-            isAtEndPosition={
-              !hideStepNumbers &&
-              sequenceData !== null &&
-              !effectiveIsSeamlesslyLoopable &&
-              currentStep >= (sequenceData.steps?.length ?? 0) + 0.99
-            }
-          />
-
-          <ProgressOverlay
-            {isPreRendering}
-            {preRenderProgress}
-            {preRenderedFramesReady}
+            {sequenceData}
+            {currentStep}
+            {isPlaying}
+            {fireConfig}
+            {ledConfig}
+            fillContainer={true}
+            hideTkaGlyph={true}
+            hideStepNumbers={true}
+            hideProgressBar={true}
+            disableContextMenu={true}
+            focused={false}
+            onInitialized={handleSplitCanvasReady}
           />
         </div>
-
-        <div class="progress-slot">
-          <SegmentedSequenceProgressBar
-            steps={sequenceData?.steps ?? []}
-            currentStep={currentStep}
-            visible={progressBarVisible && !hideProgressBar}
-            darkMode={darkModeEnabled}
-            variant={progressBarVariant}
-            showLabels={progressBarVariant === "labeled" || progressBarVariant === "gradient-labeled"}
-            onSeek={onProgressBarSeek}
+        <div class="split-canvas">
+          <AnimatorCanvasSelf
+            blueProp={null}
+            {redProp}
+            {gridVisible}
+            {gridMode}
+            backgroundAlpha={0}
+            {letter}
+            {stepData}
+            {sequenceData}
+            {currentStep}
+            {isPlaying}
+            {fireConfig}
+            {ledConfig}
+            fillContainer={true}
+            hideTkaGlyph={true}
+            hideStepNumbers={true}
+            hideProgressBar={true}
+            disableContextMenu={true}
+            focused={false}
+            onInitialized={handleSplitCanvasReady}
           />
         </div>
       </div>
+    {/if}
 
-      {#if !disableContextMenu}
-        <CanvasContextMenuHost
-          bind:this={contextMenuHost}
-          onOpenPanel={handleOpenPanel}
-          disassembled={isDisassembledView}
-          onToggleDisassemble={toggleDisassemble}
-        />
-
-        <CanvasSettingsModal
-          bind:open={settingsModalOpen}
-          initialCategory={settingsModalCategory}
-          {sequenceData}
-          {blueProp}
-          {redProp}
-          {letter}
-          {stepData}
-          {word}
-        />
-      {/if}
-    </div>
-  {/if}
-
-  <!-- Transition overlay: renders on top during disassembling/disassembled/reassembling.
-       During reassembly, the assembled view is already rendering behind this. -->
-  {#if viewState !== "assembled"}
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div
-      class="animation-container transition-layer"
-      oncontextmenu={handleContextMenu}
-      onpointerdown={handlePointerDown}
-      onpointermove={cancelLongPress}
-      onpointerup={cancelLongPress}
-      onpointercancel={cancelLongPress}
-    >
-      <DisassembleTransition
-        direction={viewState === "disassembling" ? "disassemble" : viewState === "reassembling" ? "reassemble" : "idle"}
-        {assembledRect}
-        {blueProp}
-        {redProp}
-        gridVisible={gridVisible}
-        gridMode={gridMode}
-        backgroundAlpha={backgroundAlpha}
-        letter={letter}
-        stepData={stepData}
-        sequenceData={sequenceData}
+    <div class="progress-slot">
+      <SegmentedSequenceProgressBar
+        steps={sequenceData?.steps ?? []}
         currentStep={currentStep}
-        isPlaying={isPlaying}
-        word={word}
-        fireConfig={fireConfig}
-        ledConfig={ledConfig}
-        oncomplete={handleTransitionComplete}
+        visible={progressBarVisible && !hideProgressBar}
+        darkMode={darkModeEnabled}
+        variant={progressBarVariant}
+        showLabels={progressBarVariant === "labeled" || progressBarVariant === "gradient-labeled"}
+        onSeek={onProgressBarSeek}
       />
-
-      {#if !disableContextMenu}
-        <CanvasContextMenuHost
-          bind:this={contextMenuHost}
-          onOpenPanel={handleOpenPanel}
-          disassembled={isDisassembledView}
-          onToggleDisassemble={toggleDisassemble}
-        />
-      {/if}
     </div>
+  </div>
+
+  {#if !disableContextMenu}
+    <CanvasContextMenuHost
+      bind:this={contextMenuHost}
+      onOpenPanel={handleOpenPanel}
+      disassembled={isDisassembledView}
+      onToggleDisassemble={toggleDisassemble}
+    />
+
+    <CanvasSettingsModal
+      bind:open={settingsModalOpen}
+      initialCategory={settingsModalCategory}
+      {sequenceData}
+      {blueProp}
+      {redProp}
+      {letter}
+      {stepData}
+      {word}
+    />
   {/if}
 </div>
 
 <style>
-  /* Host: position context for stacking assembled + transition layers */
-  .animator-host {
-    position: relative;
-    width: 100%;
-    height: 100%;
-  }
-
-  /* Both layers fill the host. Transition renders on top during overlap. */
-  .assembled-layer,
-  .transition-layer {
-    position: absolute;
-    inset: 0;
-  }
-
-  .transition-layer {
-    z-index: 10;
-  }
-
   /* Outer container: centers content, establishes container query context */
   .animation-container {
     display: flex;
@@ -517,6 +513,7 @@ Last audit: 2025-12-27
      PORTRAIT MODE (default): Vertical stack
      [Header]
      [Square Canvas]
+     [Split Canvases - only when disassembled]
      [Progress Bar]
      =========================================== */
 
@@ -537,7 +534,10 @@ Last audit: 2025-12-27
     border: 1.5px solid var(--theme-panel-bg, #1a1a2e);
     border-radius: 4px;
     overflow: hidden;
-    transition: border-color 350ms ease;
+    /* Smooth width change during disassemble (content-wrapper narrows to fit split row) */
+    transition: border-color 350ms ease,
+                width 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                max-width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .content-wrapper[data-dark-mode="true"] {
@@ -565,6 +565,48 @@ Last audit: 2025-12-27
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  /* ===========================================
+     SPLIT CANVASES: Blue-only and Red-only
+     Expand below hero during disassemble.
+     Same DOM tree — no swap, CSS transitions only.
+     =========================================== */
+
+  .split-canvases {
+    display: flex;
+    width: 100%;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    /* Collapse: fade out quickly, no delay */
+    transition: max-height 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 0.2s ease-in;
+  }
+
+  .split-canvases.expanded {
+    /* Each half-width canvas is square, so row height = 50% of wrapper width */
+    max-height: 50cqw;
+    opacity: 1;
+    /* Expand: delay opacity so engines have time to render before becoming visible */
+    transition: max-height 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 0.3s ease-out 0.2s;
+  }
+
+  .split-canvas {
+    width: 50%;
+    aspect-ratio: 1 / 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* When split canvases are showing, narrow the content-wrapper so the taller
+     layout (hero + split row) fits vertically. The 2:3 aspect ratio means
+     width = (available_height - chrome) * 2/3 */
+  .animation-container[data-view="disassembling"] .content-wrapper,
+  .animation-container[data-view="disassembled"] .content-wrapper {
+    width: min(calc(100cqw - 12px), calc((100cqh - 5rem) * 2 / 3));
+    max-width: calc((100cqh - 5rem) * 2 / 3);
   }
 
   /* Progress slot: in portrait, takes natural height at bottom */
@@ -598,32 +640,22 @@ Last audit: 2025-12-27
      CONSTRAINED MODE: Canvas-only when squeezed
      When container is wider than tall (aspect ratio > 1.15),
      hide chrome and maximize the square canvas.
-     This prevents wasted horizontal space when the animation
-     pane is wider than the portrait-mode canvas needs.
      =========================================== */
 
   @container (min-aspect-ratio: 1.15) {
     .content-wrapper {
-      /* Size based on shorter dimension (height), minus progress bar overhead (~2.5rem) */
       width: calc(100cqh - 2.5rem);
       max-width: calc(100cqh - 2.5rem);
-      /* Remove overhead calculation - square canvas + progress bar */
       height: auto;
-      /* Tighter border in constrained mode */
       border-width: 1px;
     }
 
-    /* Smoothly collapse header - word is visible in choreo card below */
     .header-slot {
       max-height: 0;
       opacity: 0;
     }
 
-    /* Progress bar stays visible in constrained mode */
-
-    /* Canvas fills the available space */
     .canvas-wrapper {
-      /* Square based on parent width (which equals height minus progress) */
       width: 100%;
       height: 100cqw;
     }
@@ -631,18 +663,11 @@ Last audit: 2025-12-27
 
   /* ===========================================
      FOCUSED MODE: Always show word + progress bar
-     When the animation canvas is the only visible
-     content (pane expanded), override constrained
-     mode to always show chrome.
      =========================================== */
 
   .animation-container[data-focused] .content-wrapper {
-    /* Size canvas side = min(container_width, container_height - chrome_overhead)
-     * Chrome: word header (~53px) + progress bar (~32px) + border (~3px) = ~88px
-     * Use 6.5rem (104px) for breathing room */
     width: min(calc(100cqw - 12px), calc(100cqh - 6.5rem - 12px));
     max-width: calc(100cqh - 6.5rem);
-    /* Safety net: never exceed container height */
     max-height: calc(100cqh - 4px);
     height: auto;
   }
@@ -655,14 +680,33 @@ Last audit: 2025-12-27
   .animation-container[data-focused] .canvas-wrapper {
     width: 100%;
     height: 100cqw;
-    /* Allow shrinking as last resort if chrome + canvas exceeds max-height */
     flex-shrink: 1;
     min-height: 0;
   }
 
+  /* Focused + constrained: when container is wider than tall (e.g. mobile
+     video export with settings open), reduce chrome overhead so the square
+     canvas can use more of the limited height. */
+  @container (min-aspect-ratio: 1.15) {
+    .animation-container[data-focused] .content-wrapper {
+      width: min(calc(100cqw - 12px), calc(100cqh - 3.5rem - 12px));
+      max-width: calc(100cqh - 3.5rem);
+    }
+
+    .animation-container[data-focused] .header-slot {
+      max-height: 28px !important;
+    }
+  }
+
+  /* Focused + disassembled: content-wrapper narrows for the split row */
+  .animation-container[data-focused][data-view="disassembling"] .content-wrapper,
+  .animation-container[data-focused][data-view="disassembled"] .content-wrapper {
+    width: min(calc(100cqw - 12px), calc((100cqh - 6.5rem) * 2 / 3));
+    max-width: calc((100cqh - 6.5rem) * 2 / 3);
+  }
+
   /* ===========================================
      EXTREMELY CONSTRAINED: Minimal chrome
-     When aspect ratio > 2.5, remove all borders
      =========================================== */
 
   @container (min-aspect-ratio: 2.5) {
@@ -674,13 +718,9 @@ Last audit: 2025-12-27
 
   /* ===========================================
      FILL CONTAINER MODE: Edge-to-edge rendering
-     Used by DisassembleCanvasView sub-canvases.
-     Strips centering, borders, and square constraint
-     so the canvas fills its parent slot completely.
+     Used by sub-canvases in split view.
      =========================================== */
 
-  /* Fill mode: canvas stretches to fill its parent slot completely.
-     Used by disassemble views so canvases sit flush against each other. */
   .animation-container[data-fill] {
     align-items: stretch;
     justify-content: stretch;
@@ -696,7 +736,6 @@ Last audit: 2025-12-27
 
   .animation-container[data-fill] .canvas-wrapper {
     flex: 1;
-    /* Override the square constraint — fill remaining space after header/progress */
     height: auto !important;
     min-height: 0;
   }
@@ -709,6 +748,7 @@ Last audit: 2025-12-27
     .content-wrapper,
     .header-slot,
     .progress-slot,
+    .split-canvases,
     .canvas-wrapper :global(canvas) {
       transition: none;
     }
