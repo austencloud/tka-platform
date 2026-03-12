@@ -323,7 +323,7 @@
         {blueProp}
         {redProp}
         {...shared}
-        {word}
+        word={direction === "reassemble" ? null : word}
         focused={true}
       />
     </div>

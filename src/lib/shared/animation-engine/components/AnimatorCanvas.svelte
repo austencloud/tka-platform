@@ -134,6 +134,9 @@ Last audit: 2025-12-27
   let assembledRect = $state<DOMRect | null>(null);
   let contentWrapperEl: HTMLDivElement | undefined = $state();
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+  // Brief flag: when true, header/progress start collapsed and CSS-transition open.
+  // Prevents the visual "snap" when chrome appears after reassembly.
+  let reassembleEntry = $state(false);
 
   // Derived boolean for context menu display
   const isDisassembledView = $derived(viewState !== "assembled");
@@ -157,7 +160,16 @@ Last audit: 2025-12-27
     if (viewState === "disassembling") {
       viewState = "disassembled";
     } else if (viewState === "reassembling") {
+      // Chrome starts collapsed so there's no layout snap when
+      // the assembled view mounts with header + progress bar.
+      reassembleEntry = true;
       viewState = "assembled";
+      // Wait 2 rAFs (one for mount, one for paint) then let CSS transitions expand
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          reassembleEntry = false;
+        });
+      });
     }
   }
 
@@ -387,6 +399,7 @@ Last audit: 2025-12-27
     class="animation-container"
     data-focused={focused || undefined}
     data-fill={fillContainer || undefined}
+    data-reassemble-entry={reassembleEntry || undefined}
     oncontextmenu={handleContextMenu}
     onpointerdown={handlePointerDown}
     onpointermove={cancelLongPress}
@@ -543,6 +556,11 @@ Last audit: 2025-12-27
   /* Progress slot: in portrait, takes natural height at bottom */
   .progress-slot {
     flex-shrink: 0;
+    overflow: hidden;
+    max-height: 100px;
+    opacity: 1;
+    transition: max-height 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+                opacity 0.2s ease-out;
   }
 
   .canvas-wrapper :global(canvas) {
@@ -670,12 +688,27 @@ Last audit: 2025-12-27
   }
 
   /* ===========================================
+     REASSEMBLE ENTRY: Smooth chrome reveal
+     After reassembly FLIP completes, the assembled view mounts
+     with chrome collapsed. Removing the attribute triggers CSS
+     transitions to smoothly expand header + progress bar.
+     MUST appear after focused/fill/constrained overrides to win cascade.
+     =========================================== */
+
+  .animation-container[data-reassemble-entry] .header-slot,
+  .animation-container[data-reassemble-entry] .progress-slot {
+    max-height: 0 !important;
+    opacity: 0 !important;
+  }
+
+  /* ===========================================
      REDUCED MOTION
      =========================================== */
 
   @media (prefers-reduced-motion: reduce) {
     .content-wrapper,
     .header-slot,
+    .progress-slot,
     .canvas-wrapper :global(canvas) {
       transition: none;
     }
