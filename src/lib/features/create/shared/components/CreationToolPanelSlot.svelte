@@ -16,7 +16,7 @@
   import { getCreateModuleContext } from "../context/create-module-context";
   import GeneratePanel from "../../generate/components/GeneratePanel.svelte";
   import ConstructTabContent from "./ConstructTabContent.svelte";
-  import AssembleToolPanel from "../../visual-builder/components/AssembleToolPanel.svelte";
+  import AssembleToolPanel from "../../assemble/components/AssembleToolPanel.svelte";
   import { desktopSidebarState } from "$lib/shared/layout/desktop-sidebar-state.svelte";
 
   // Get context

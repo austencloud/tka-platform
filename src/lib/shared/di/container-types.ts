@@ -29,7 +29,7 @@ import type { TrigridLabContainer } from "./containers/trigrid-lab-container";
 import type { MultiGridContainer } from "./containers/multi-grid-container";
 import type { EffectsLabContainer } from "./containers/effects-lab-container";
 import type { ArenaContainer } from "./containers/arena-container";
-import type { VisualBuilderContainer } from "./containers/visual-builder-container";
+import type { AssembleContainer } from "./containers/assemble-container";
 import type { LabContainer } from "./containers/lab-container";
 
 // ============================================================================
@@ -101,7 +101,7 @@ type TrigridLabItems = ItemsOf<TrigridLabContainer>;
 type MultiGridItems = ItemsOf<MultiGridContainer>;
 type EffectsLabItems = ItemsOf<EffectsLabContainer>;
 type ArenaItems = ItemsOf<ArenaContainer>;
-type VisualBuilderItems = ItemsOf<VisualBuilderContainer>;
+type AssembleItems = ItemsOf<AssembleContainer>;
 type LabItems = ItemsOf<LabContainer>;
 
 // Factory containers
@@ -208,7 +208,7 @@ export type IAppContainerItems =
 	ComposeArrangeItems &
 	Skel2TKAItems &
 	LabItems &
-	VisualBuilderItems &
+	AssembleItems &
 	ArenaItems &
 	EffectsLabItems &
 	MuseumItems &

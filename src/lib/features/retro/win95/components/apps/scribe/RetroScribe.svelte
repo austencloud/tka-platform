@@ -16,7 +16,7 @@
   import RetroStatusBar from "../../primitives/RetroStatusBar.svelte";
   import RetroGenerateTab from "./RetroGenerateTab.svelte";
   import RetroConstructTab from "./RetroConstructTab.svelte";
-  import RetroVisualBuilderTab from "./RetroVisualBuilderTab.svelte";
+  import RetroAssembleTab from "./RetroAssembleTab.svelte";
   import RetroSaveDialog from "./RetroSaveDialog.svelte";
   import { RETRO_ICONS } from "../../rendering/retro-icons";
 
@@ -210,7 +210,7 @@
         {:else if activeTab === "construct"}
           <RetroConstructTab onstatuschange={handleStatusChange} />
         {:else if activeTab === "assemble"}
-          <RetroVisualBuilderTab onstatuschange={handleStatusChange} />
+          <RetroAssembleTab onstatuschange={handleStatusChange} />
         {/if}
       {/snippet}
     </RetroTabControl>

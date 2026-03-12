@@ -730,8 +730,8 @@ export const LAB_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
   },
   {
-    id: "visual-builder",
-    label: "Visual Builder",
+    id: "assemble-lab",
+    label: "Assemble Lab",
     icon: '<i class="fas fa-hand-pointer" aria-hidden="true"></i>',
     description: "Click grid points to build sequences",
     color: "#06b6d4",
