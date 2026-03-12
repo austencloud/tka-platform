@@ -13,6 +13,7 @@
   } from "$lib/shared/foundation/utils/color-extractor";
   import { formatTimeAgo } from "$lib/shared/i18n/i18n-formatters";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
+  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
 
   interface Props {
     user: EnhancedUserProfile;
@@ -134,6 +135,16 @@
       <p class="pronouns">{user.pronouns}</p>
     {/if}
     <p class="username">@{user.username}</p>
+
+    {#if user.favoriteProp}
+      <div class="favorite-prop-badge" title={getPropTypeDisplayInfo(user.favoriteProp).label}>
+        <img
+          src={getPropTypeDisplayInfo(user.favoriteProp).image}
+          alt={getPropTypeDisplayInfo(user.favoriteProp).label}
+          class="prop-icon"
+        />
+      </div>
+    {/if}
 
     <!-- Stats -->
     <div class="user-stats">
@@ -477,6 +488,24 @@
       width: 44px;
       height: 44px;
     }
+  }
+
+  /* Favorite prop badge */
+  .favorite-prop-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin: 2px auto 0;
+  }
+
+  .prop-icon {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    opacity: 0.8;
   }
 
   /* ============================================================================
