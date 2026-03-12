@@ -15,6 +15,7 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import type { EffectPointEditorState } from "../state/effect-point-editor-state.svelte";
+  import TrailPointAssignmentSection from "./TrailPointAssignmentSection.svelte";
 
   interface Props {
     editorState: EffectPointEditorState;
@@ -372,6 +373,9 @@
       </div>
     {/if}
   </div>
+
+  <!-- Trail Points -->
+  <TrailPointAssignmentSection {editorState} />
 
   <!-- Status -->
   <div class="status-bar">
