@@ -692,6 +692,209 @@
       "deadCount": 0,
       "removedCount": 0,
       "deferredCount": 0
+    },
+    "shared/components": {
+      "scannedAt": "2026-03-12T20:00:07.073Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/debug": {
+      "scannedAt": "2026-03-12T20:01:04.099Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/device": {
+      "scannedAt": "2026-03-12T20:01:32.482Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/di": {
+      "scannedAt": "2026-03-12T20:02:16.020Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/foundation": {
+      "scannedAt": "2026-03-12T20:03:05.272Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/gamification": {
+      "scannedAt": "2026-03-12T20:04:07.821Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "features/assemble-lab": {
+      "scannedAt": "2026-03-12T20:15:53.662Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/inbox": {
+      "scannedAt": "2026-03-12T20:16:09.920Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/input": {
+      "scannedAt": "2026-03-12T20:17:47.366Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/lan-sync": {
+      "scannedAt": "2026-03-12T20:18:52.417Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/mobile": {
+      "scannedAt": "2026-03-12T20:19:49.388Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/multi-grid": {
+      "scannedAt": "2026-03-12T20:20:28.967Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/navigation": {
+      "scannedAt": "2026-03-12T20:23:03.003Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/offline": {
+      "scannedAt": "2026-03-12T20:23:32.774Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/onboarding": {
+      "scannedAt": "2026-03-12T20:24:09.202Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/persistence": {
+      "scannedAt": "2026-03-12T20:25:22.509Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/pictograph": {
+      "scannedAt": "2026-03-12T20:28:01.117Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/sequence-review": {
+      "scannedAt": "2026-03-12T20:29:26.675Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/render": {
+      "scannedAt": "2026-03-12T20:30:30.869Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/sequence-viewer": {
+      "scannedAt": "2026-03-12T20:33:36.112Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/settings": {
+      "scannedAt": "2026-03-12T20:34:25.787Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/share": {
+      "scannedAt": "2026-03-12T20:35:05.075Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/share-hub": {
+      "scannedAt": "2026-03-12T20:35:51.011Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/sync": {
+      "scannedAt": "2026-03-12T20:37:43.302Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/transitions": {
+      "scannedAt": "2026-03-12T20:38:50.308Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/ui": {
+      "scannedAt": "2026-03-12T20:39:37.396Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/utils": {
+      "scannedAt": "2026-03-12T20:40:24.678Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/video-collaboration": {
+      "scannedAt": "2026-03-12T20:41:22.828Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/voice-control": {
+      "scannedAt": "2026-03-12T20:42:21.035Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
     }
   },
   "items": {},
@@ -721,7 +924,11 @@
     "lib/features/train/components/practice/PracticeViewContainer.svelte",
     "lib/features/train/components/practice/PracticeModeToggle.svelte",
     "lib/shared/3d-animation/services/implementations/StageSceneAdapter.ts",
-    "lib/shared/3d-animation/StageWorld.svelte"
+    "lib/shared/3d-animation/StageWorld.svelte",
+    "lib/shared/debug/state/test-preview-state.svelte.ts",
+    "lib/shared/device/utils/device-utils.ts",
+    "lib/shared/persistence/domain/models/FilteringModels.ts",
+    "lib/shared/sequence-viewer/services/contracts/ISequenceViewerNavigator.ts"
   ],
   "stats": {
     "totalRemoved": 0,

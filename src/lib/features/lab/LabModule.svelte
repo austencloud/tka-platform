@@ -41,7 +41,7 @@
     skel2tka: () => import("$lib/features/skel2tka/Skel2TKALab.svelte"),
     trigrid: () => import("$lib/features/trigrid-lab/TriGridLabModule.svelte"),
     duration: () => import("$lib/features/duration-lab/DurationLabModule.svelte"),
-    "visual-builder": () => import("$lib/features/visual-builder-lab/VisualBuilderLabModule.svelte"),
+    "assemble-lab": () => import("$lib/features/assemble-lab/AssembleLabModule.svelte"),
     effects: () => import("$lib/features/effects-lab/EffectsLabModule.svelte"),
     disassemble: () => import("$lib/features/disassemble-lab/DisassembleLab.svelte"),
     museum: () => import("$lib/features/museum/MuseumDestination.svelte"),

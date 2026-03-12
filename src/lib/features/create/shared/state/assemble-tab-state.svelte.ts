@@ -2,7 +2,7 @@
  * Assemble Tab State
  *
  * Manages the Assemble tab's integration into the Create module.
- * Owns an isolated SequenceState, UndoController, and builder state (from visual-builder-lab).
+ * Owns an isolated SequenceState, UndoController, and builder state (from assemble-lab).
  *
  * The reactive bridge converts BuilderStep[] (visual builder's per-hand model)
  * into StepData[] (what SequenceState/StepGrid needs), keeping both in sync.
@@ -21,9 +21,9 @@ import type {
 } from "../services/contracts/IUndoManager";
 import { createUndoController } from "./create-module/undo-controller.svelte";
 import { undoManager } from "../services/implementations/UndoManager";
-import { createVisualBuilderState } from "$lib/features/visual-builder-lab/state/visual-builder-state.svelte";
-import type { VisualBuilderState } from "$lib/features/visual-builder-lab/state/visual-builder-state.svelte";
-import { BuilderStepConverter } from "$lib/features/visual-builder-lab/services/implementations/BuilderStepConverter";
+import { createAssembleState } from "$lib/features/assemble-lab/state/assemble-state.svelte";
+import type { AssembleState } from "$lib/features/assemble-lab/state/assemble-state.svelte";
+import { BuilderStepConverter } from "$lib/features/assemble-lab/services/implementations/BuilderStepConverter";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createStepData } from "../domain/factories/createStepData";
 import { createStartPositionData } from "../domain/factories/createStartPositionData";
@@ -40,8 +40,8 @@ export function createAssembleTabState(
   let isInitialized = $state(false);
   let error = $state<string | null>(null);
 
-  // Builder state (per-hand click model from visual-builder-lab)
-  const builderState: VisualBuilderState = createVisualBuilderState();
+  // Builder state (per-hand click model from assemble-lab)
+  const builderState: AssembleState = createAssembleState();
 
   // Converter service
   const converter = new BuilderStepConverter();
