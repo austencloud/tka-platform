@@ -113,7 +113,7 @@
 							role="tab"
 							aria-selected={activeTab === tab.key}
 						>
-							<span class="tab-label">{t(tab.labelKey)}</span>
+							<span class="tab-label">{t(tab.labelKey as any)}</span>
 							{#if getTabCount(tab.key) > 0}
 								<span class="tab-count">{getTabCount(tab.key)}</span>
 							{/if}

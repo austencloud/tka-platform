@@ -14,6 +14,7 @@
     createStepGridDisplayState,
     isPendingGenerationAnimation,
     setPendingGenerationAnimation,
+    consumeSuppressNextAnimation,
   } from "$lib/features/create/shared/workspace-panel/sequence-display/state/step-grid-display-state.svelte";
   import { createScrollState } from "$lib/features/create/shared/workspace-panel/sequence-display/state/scroll-state.svelte";
   import {
@@ -199,6 +200,15 @@
   $effect(() => {
     const currentStepCount = steps.length;
     const beatsArrayChanged = steps !== previousStepsRef;
+
+    // Undo/redo/jumpToState sets this flag before restoring.
+    // Skip all entrance animations and just update tracking refs.
+    if (beatsArrayChanged && consumeSuppressNextAnimation()) {
+      displayState.cleanupAnimation();
+      previousStepCount = currentStepCount;
+      previousStepsRef = steps;
+      return;
+    }
 
     if (isFirstRender && currentStepCount > 0) {
       isFirstRender = false;

@@ -14,12 +14,12 @@ Three touch targets: left arrow cycles back, center label opens drawer, right ar
 
   const { orientation, onOrientationChange, color }: Props = $props();
 
-  const CYCLE_ORDER = [
+  const CYCLE_ORDER: Orientation[] = [
     Orientation.IN,
     Orientation.CLOCK,
     Orientation.OUT,
     Orientation.COUNTER,
-  ] as const;
+  ];
 
   const ORIENTATION_DISPLAY: Record<string, { label: string; icon: string }> = {
     [Orientation.IN]: { label: "In", icon: "fa-compress-arrows-alt" },
@@ -41,12 +41,12 @@ Three touch targets: left arrow cycles back, center label opens drawer, right ar
 
   function cyclePrev() {
     const idx = (currentIndex() + 1) % CYCLE_ORDER.length;
-    onOrientationChange(CYCLE_ORDER[idx]);
+    onOrientationChange(CYCLE_ORDER[idx]!);
   }
 
   function cycleNext() {
     const idx = (currentIndex() - 1 + CYCLE_ORDER.length) % CYCLE_ORDER.length;
-    onOrientationChange(CYCLE_ORDER[idx]);
+    onOrientationChange(CYCLE_ORDER[idx]!);
   }
 
   function openDrawer() {

@@ -1,9 +1,9 @@
 <!--
   SequencePanel.svelte
 
-  @deprecated LEGACY COMPONENT - Use SequenceDetailsModal instead.
+  @deprecated LEGACY COMPONENT - Use SequenceViewerDrawerHost (mobile) or /sequence/[id] route (desktop) instead.
   This component uses the deprecated SequenceViewer. New sequence viewing/editing
-  should use SequenceDetailsModal which provides split view with export capabilities.
+  should use the current sequence viewer which provides split view with export capabilities.
 
   Legacy description (for reference):
   Unified sequence viewer panel that works in both Browse (Browse) and Edit (Create) modes.
@@ -289,7 +289,7 @@
 
   function handleMaximize() {
     hapticService?.trigger("selection");
-    // Delegate fullscreen to parent - parent can decide to open SequenceDetailsModal
+    // Delegate fullscreen to parent - parent can decide to open the sequence viewer
     onAction?.("fullscreen", effectiveSequence);
   }
 

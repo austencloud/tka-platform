@@ -5,6 +5,8 @@
  * accessibility considerations and browser compatibility.
  */
 
+import type { EffortId, EffortParams } from "$lib/features/effort-lab/domain/effort-types";
+
 export type HapticFeedbackType =
   | "selection" // Standard pulse for all interactive elements (70ms)
   | "success" // Success pattern (100ms, 30ms pause, 50ms)
@@ -70,4 +72,22 @@ export interface IHapticFeedback {
    * @param config Partial configuration to update
    */
   updateConfig(config: Partial<HapticFeedbackConfig>): void;
+
+  /**
+   * Trigger a haptic pattern derived from an effort's easing curve.
+   * The vibration pattern mirrors the effort's motion character:
+   * bounce produces decreasing-intensity impacts, elastic produces
+   * overshoot wobble, anticipation produces a pullback stutter
+   * then a release hit, etc.
+   *
+   * @param effortId - Which effort quality to feel
+   * @param params - Optional effort parameters (bounce count, pullback, etc.)
+   * @param durationMs - Total pattern duration (default: 400ms)
+   * @returns Boolean indicating if feedback was triggered
+   */
+  triggerEffort(
+    effortId: EffortId,
+    params?: EffortParams,
+    durationMs?: number
+  ): boolean;
 }

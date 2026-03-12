@@ -11,6 +11,8 @@
  */
 
 import { browser } from "$app/environment";
+import type { EffortId, EffortParams } from "$lib/features/effort-lab/domain/effort-types";
+import { EffortHapticMapper } from "$lib/features/effort-lab/services/implementations/EffortHapticMapper";
 import type {
   HapticFeedbackConfig,
   HapticFeedbackType,
@@ -58,6 +60,9 @@ export class HapticFeedback implements IHapticFeedback {
 
   // Cached iOS haptic element (reused for performance)
   private iosHapticInput: HTMLInputElement | null = null;
+
+  // Effort-to-haptic pattern converter (lazy-initialized)
+  private effortMapper: EffortHapticMapper | null = null;
 
   constructor() {
     this.initializeService();
@@ -140,6 +145,34 @@ export class HapticFeedback implements IHapticFeedback {
 
   public updateConfig(config: Partial<HapticFeedbackConfig>): void {
     this.config = { ...this.config, ...config };
+  }
+
+  public triggerEffort(
+    effortId: EffortId,
+    params?: EffortParams,
+    durationMs?: number
+  ): boolean {
+    if (!this.canTriggerFeedback()) {
+      return false;
+    }
+
+    this.lastFeedbackTime = Date.now();
+
+    if (!this.effortMapper) {
+      this.effortMapper = new EffortHapticMapper();
+    }
+
+    if (this.supportsIOSHaptic) {
+      const pulseCount = this.effortMapper.getIOSPulseCount(effortId, params);
+      return this.triggerIOSHaptic(pulseCount);
+    }
+
+    if (this.supportsVibrationAPI) {
+      const pattern = this.effortMapper.generatePattern(effortId, params, durationMs);
+      return this.vibrate(pattern);
+    }
+
+    return false;
   }
 
   // ============================================================================

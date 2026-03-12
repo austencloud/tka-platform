@@ -15,11 +15,11 @@
 
   interface CanvasContextMenuHostProps {
     onOpenPanel?: (category: SettingsPanelCategory) => void;
-    decomposed?: boolean;
-    onToggleDecompose?: () => void;
+    disassembled?: boolean;
+    onToggleDisassemble?: () => void;
   }
 
-  const { onOpenPanel, decomposed = false, onToggleDecompose }: CanvasContextMenuHostProps = $props();
+  const { onOpenPanel, disassembled = false, onToggleDisassemble }: CanvasContextMenuHostProps = $props();
 
   let menuState: ContextMenuState = $state({ open: false });
   let menuItemsVersion: number = $state(0);
@@ -50,8 +50,8 @@
         menuState = { open: false };
         onOpenPanel?.(category);
       },
-      decomposed,
-      onToggleDecompose,
+      disassembled,
+      onToggleDisassemble,
     });
   });
 

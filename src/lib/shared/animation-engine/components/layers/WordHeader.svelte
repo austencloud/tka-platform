@@ -318,22 +318,26 @@ Supports letter highlighting during animation playback.
 
   /* Dark mode letter styles */
   .word-header.dark-mode .letter {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.25));
+    color: rgba(255, 255, 255, 0.15);
   }
 
   .word-header.dark-mode .letter.active {
-    color: var(--theme-text, rgba(255, 255, 255, 1));
-    text-shadow: 0 0 20px color-mix(in srgb, var(--theme-text) 50%, transparent);
+    color: #ffffff;
+    text-shadow:
+      0 0 8px rgba(255, 255, 255, 0.6),
+      0 0 24px rgba(255, 255, 255, 0.3);
   }
 
   /* Global dark class fallback */
   :global(:root.dark) .word-header:not([data-controlled]) .letter {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.25));
+    color: rgba(255, 255, 255, 0.15);
   }
 
   :global(:root.dark) .word-header:not([data-controlled]) .letter.active {
-    color: var(--theme-text, rgba(255, 255, 255, 1));
-    text-shadow: 0 0 20px color-mix(in srgb, var(--theme-text) 50%, transparent);
+    color: #ffffff;
+    text-shadow:
+      0 0 8px rgba(255, 255, 255, 0.6),
+      0 0 24px rgba(255, 255, 255, 0.3);
   }
 
   :global(:root.dark) .word-header:not([data-controlled]) .letter.animated {

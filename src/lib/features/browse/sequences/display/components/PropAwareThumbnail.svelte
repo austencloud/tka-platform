@@ -321,7 +321,7 @@
           thumbnailUrl = result.url;
           // Ensure loading overlay clears — prevents race where a re-queued
           // render sets status back to "queued" while thumbnailUrl persists
-          status = { state: "complete", url: result.url };
+          status = { state: "complete", url: result.url ?? "" };
         }
       })
       .catch((err) => {

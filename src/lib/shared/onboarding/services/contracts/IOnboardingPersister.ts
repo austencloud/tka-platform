@@ -19,12 +19,6 @@ export interface OnboardingStatus {
       completedAt: string | null;
     };
   };
-  /** Sidebar tour status (desktop only) */
-  sidebarTour: {
-    completed: boolean;
-    skipped: boolean;
-    completedAt: string | null;
-  };
   /** Last version user has seen in What's New modal */
   lastSeenVersion: string | null;
 }
@@ -89,31 +83,6 @@ export interface IOnboardingPersister {
    * Merges local progress with cloud progress, keeping most complete state.
    */
   syncLocalToCloud(): Promise<void>;
-
-  // =========================================================================
-  // Sidebar Tour
-  // =========================================================================
-
-  /**
-   * Check if sidebar tour has been completed or skipped.
-   * Uses cached status if available, otherwise checks localStorage.
-   */
-  hasCompletedSidebarTour(): boolean;
-
-  /**
-   * Mark sidebar tour as completed.
-   */
-  markSidebarTourCompleted(): Promise<void>;
-
-  /**
-   * Mark sidebar tour as skipped (user chose "Browse on my own").
-   */
-  markSidebarTourSkipped(): Promise<void>;
-
-  /**
-   * Reset sidebar tour status (for replay).
-   */
-  resetSidebarTour(): Promise<void>;
 
   // =========================================================================
   // What's New Version Tracking

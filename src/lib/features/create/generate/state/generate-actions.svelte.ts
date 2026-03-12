@@ -19,6 +19,8 @@ import {
   templateToPattern,
 } from "$lib/features/create/shared/domain/templates/duration-templates";
 import type { SpellModeState } from "./spell-mode-state.svelte";
+import type { UndoMetadata, UndoOperationType } from "$lib/features/create/shared/services/contracts/IUndoManager";
+import { UndoOperationType as UndoOp } from "$lib/features/create/shared/services/contracts/IUndoManager";
 import type { IVariationExplorationOrchestrator } from "$lib/features/create/spell/services/contracts/IVariationExplorationOrchestrator";
 import type { IRandomSequenceGenerator } from "$lib/features/create/spell/services/contracts/IRandomSequenceGenerator";
 import type { ISpellServiceLoader } from "$lib/features/create/spell/services/contracts/ISpellServiceLoader";
@@ -39,7 +41,8 @@ export function createGenerationActionsState(
   getSequenceState?: () => SequenceState | undefined,
   getIsSequential?: () => boolean,
   getConfig?: () => UIGenerationConfig | undefined,
-  getSpellState?: () => SpellModeState | undefined
+  getSpellState?: () => SpellModeState | undefined,
+  pushUndoSnapshot?: (type: UndoOperationType, metadata?: UndoMetadata) => void
 ) {
   let isGenerating = $state(false);
   let lastGeneratedSequence = $state<SequenceData | null>(null);
@@ -85,6 +88,11 @@ export function createGenerationActionsState(
           }
         }
       }
+
+      // Snapshot current state before replacing so the user can undo back to it
+      pushUndoSnapshot?.(UndoOp.GENERATE_SEQUENCE, {
+        description: "Generate sequence",
+      });
 
       lastGeneratedSequence = generatedSequence;
       needsCycleCompletion =
@@ -311,6 +319,11 @@ export function createGenerationActionsState(
         }
       }
 
+      // Snapshot current state before replacing so the user can undo back to it
+      pushUndoSnapshot?.(UndoOp.SPELL_GENERATE, {
+        description: `Spell generate: ${spellState.inputWord}`,
+      });
+
       lastGeneratedSequence = loopedSequence;
       needsCycleCompletion = false; // Spell mode doesn't use orientation cycle completion
       const currentConfig = getConfig?.();
@@ -532,6 +545,11 @@ export function createGenerationActionsState(
 
     const currentSequence = sequenceState.currentSequence;
     if (!currentSequence) return;
+
+    // Snapshot before extending so the user can undo the cycle completion
+    pushUndoSnapshot?.(UndoOp.EXTEND_SEQUENCE, {
+      description: "Complete orientation cycle",
+    });
 
     const existingBeatCount = currentSequence.steps.length;
     const extended = orientationCycleExtender.extendIfNeeded(currentSequence);

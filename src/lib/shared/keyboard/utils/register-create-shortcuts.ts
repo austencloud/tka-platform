@@ -14,6 +14,8 @@ import { executeClearSequenceWorkflow } from "$lib/features/create/shared/utils/
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { getSettings, updateSettings } from "$lib/shared/application/state/app-state.svelte";
 import { container } from "$lib/shared/di";
+import { getAllPropTypes } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
 const debug = createComponentLogger("CreateShortcuts");
 
@@ -76,8 +78,8 @@ export function registerCreateShortcuts(
 
       const { panelState } = ref;
 
-      // Check if any animation panel is open (Animation Panel, Share Hub, or Sequence Details Modal)
-      if (panelState.isAnimationPanelOpen || panelState.isShareHubPanelOpen || panelState.isSequenceDetailsModalOpen) {
+      // Check if any animation panel is open (Animation Panel, Share Hub, or Sequence Viewer)
+      if (panelState.isAnimationPanelOpen || panelState.isShareHubPanelOpen || panelState.isSequenceViewerOpen) {
         // Animation is visible - toggle play/pause
         const playbackController = getAnimationPlaybackRef();
         if (playbackController) {
@@ -87,8 +89,8 @@ export function registerCreateShortcuts(
         // No animation panel open - check if we have a sequence first
         const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
         if (sequenceState?.hasSequence()) {
-          // Open the unified Sequence Details Modal (full-screen with animation + image views)
-          panelState.openSequenceDetailsModal();
+          // Open the sequence viewer (full-screen with animation + image views)
+          panelState.openSequenceViewer();
         }
       }
     },
@@ -98,23 +100,23 @@ export function registerCreateShortcuts(
   service.register({
     id: "create.close-share-hub",
     label: "Close Panel",
-    description: "Close the Share Hub panel or Sequence Details Modal",
+    description: "Close the Share Hub panel or Sequence Viewer",
     key: "Escape",
     modifiers: [],
     context: ["create", "share-hub"], // Works in both contexts
     scope: "animation",
     priority: "high",
     condition: () => {
-      // Only when Share Hub panel or Sequence Details Modal is open
+      // Only when Share Hub panel or Sequence Viewer is open
       const ref = getCreateModuleRef();
-      return (ref?.panelState.isShareHubPanelOpen || ref?.panelState.isSequenceDetailsModalOpen) ?? false;
+      return (ref?.panelState.isShareHubPanelOpen || ref?.panelState.isSequenceViewerOpen) ?? false;
     },
     action: () => {
       const ref = getCreateModuleRef();
       if (!ref) return;
 
-      if (ref.panelState.isSequenceDetailsModalOpen) {
-        ref.panelState.closeSequenceDetailsModal();
+      if (ref.panelState.isSequenceViewerOpen) {
+        ref.panelState.closeSequenceViewer();
       } else if (ref.panelState.isShareHubPanelOpen) {
         ref.panelState.closeShareHubPanel();
       }
@@ -685,6 +687,33 @@ export function registerCreateShortcuts(
       debug.log("] - Increase value (not yet implemented)");
       // TODO: Integrate with edit panel controls
       // increaseCurrentValue();
+    },
+  });
+
+  // ==================== Easter Eggs ====================
+
+  // Ctrl+Shift+P - Shuffle to a random prop type
+  service.register({
+    id: "create.shuffle-prop",
+    label: "Shuffle Prop",
+    description: "Pick a random prop type",
+    key: "p",
+    modifiers: ["alt"],
+    context: "create",
+    scope: "sequence-management",
+    priority: "medium",
+    action: async () => {
+      const settings = getSettings();
+      const currentProp = settings.bluePropType ?? PropType.STAFF;
+      const allProps = getAllPropTypes();
+      const otherProps = allProps.filter((p) => p !== currentProp);
+      const randomProp = otherProps[Math.floor(Math.random() * otherProps.length)]!;
+
+      const hapticService = container.items.hapticFeedback;
+      hapticService?.trigger("selection");
+
+      await updateSettings({ bluePropType: randomProp, redPropType: randomProp });
+      debug.log(`Shuffled prop to: ${randomProp}`);
     },
   });
 }

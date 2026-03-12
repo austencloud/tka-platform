@@ -39,6 +39,7 @@ Card-based architecture with integrated Generate button:
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { PropType as PropTypeEnum } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import type { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
 
   // Get context for panel coordination (optional - may not be available in all contexts)
   const context = tryGetCreateModuleContext();
@@ -248,7 +249,7 @@ Card-based architecture with integrated Generate button:
       panelState.closeLOOPPanel();
       configState.updateConfig({ loopEnabled: false });
     }}
-    sliceSize={configState.config.sliceSize}
+    sliceSize={configState.config.sliceSize as SliceSize}
     onSliceSizeChange={(size) => configState.updateConfig({ sliceSize: size })}
   />
 
@@ -259,20 +260,7 @@ Card-based architecture with integrated Generate button:
   />
 {/if}
 
-<!-- Tour overlay — renders a second card grid inside the modal with highlighting -->
-{#snippet tourCardPreview()}
-  <CardBasedSettingsContainer
-    config={configState.config}
-    isFreeformMode={!hasWord}
-    updateConfig={() => {}}
-    isGenerating={false}
-    onGenerateClicked={async () => {}}
-    {hasSettingsChanged}
-    wordInputValue={spellModeState.inputWord}
-    tourActiveStop={generateTourState.isActive ? generateTourState.currentStop : null}
-  />
-{/snippet}
-<GeneratePanelTour cardPreview={tourCardPreview} />
+<GeneratePanelTour />
 
 <style>
   .generate-panel {

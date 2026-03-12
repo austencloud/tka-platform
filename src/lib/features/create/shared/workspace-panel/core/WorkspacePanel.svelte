@@ -133,10 +133,25 @@
     try {
       // Special case: Start position (stepNumber 0) - clear it instead of removing
       if (stepNumber === 0) {
+        // For assemble tab, reset the builder state entirely
+        if (navigationState.activeTab === "assemble") {
+          const assembleTabState = createModuleState.assembleTabState;
+          assembleTabState?.assembleBuilderState?.reset();
+          return;
+        }
         sequenceState?.setStartPosition(null);
         sequenceState?.clearSelection();
         // Close step editor panel since workspace is now empty
         panelState?.closeStepEditorPanel();
+        return;
+      }
+
+      // For assemble tab, truncate builder steps instead of modifying sequence state
+      // (the reactive bridge would overwrite any direct sequence state changes)
+      if (navigationState.activeTab === "assemble") {
+        const assembleTabState = createModuleState.assembleTabState;
+        const stepIndex = stepNumber - 1;
+        assembleTabState?.assembleBuilderState?.truncateAtStep(stepIndex);
         return;
       }
 

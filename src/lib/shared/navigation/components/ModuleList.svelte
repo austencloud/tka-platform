@@ -736,29 +736,58 @@
 
   /* ============================================================================
      WIDESCREEN DEVICES (Z-Fold unfolded, tablets)
-     Drawer is now content-sized, so grid just needs comfortable sizing
+     Use 4 columns to reduce row count and prevent vertical stretching
      ============================================================================ */
   @media (min-width: 700px) and (min-height: 500px) {
-    .module-grid.layout-six,
-    .module-grid.layout-five,
+    .section-title {
+      margin: 0 0 8px 4px;
+    }
+
+    .dev-section {
+      padding-top: 10px;
+    }
+
+    .module-section {
+      margin-bottom: 10px;
+    }
+
+    /* Force 4 columns on all layout variants to reduce row count */
+    .module-grid,
+    .module-grid.layout-few,
     .module-grid.layout-quad,
-    .module-grid.layout-few {
-      gap: 16px;
+    .module-grid.layout-five,
+    .module-grid.layout-six,
+    .module-grid.layout-many {
+      flex: 0 1 auto;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: auto;
+      align-content: start;
+      gap: 10px;
+    }
+
+    /* Reset the 400px five-module centering hacks for 4-col layout */
+    .module-grid.layout-five .module-cell:nth-child(4),
+    .module-grid.layout-five .module-cell:nth-child(5) {
+      grid-column: auto;
+      max-width: none;
+      width: 100%;
+      margin: 0;
+      justify-self: auto;
     }
 
     .module-grid .module-cell {
-      min-height: 110px;
+      min-height: 72px;
+      max-height: 88px;
     }
 
-    /* Slightly larger icons on widescreen */
     .module-grid .cell-icon {
-      font-size: clamp(28px, 4vw, 40px);
-      width: clamp(40px, 5.5vw, 56px);
-      height: clamp(40px, 5.5vw, 56px);
+      font-size: clamp(22px, 2.8vw, 32px);
+      width: clamp(32px, 4vw, 44px);
+      height: clamp(32px, 4vw, 44px);
     }
 
     .module-grid .cell-label {
-      font-size: clamp(13px, 1.5vw, 16px);
+      font-size: clamp(11px, 1.3vw, 14px);
     }
   }
 

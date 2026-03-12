@@ -14,10 +14,7 @@
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
-  import { setActiveModule } from "$lib/shared/application/state/ui/ui-state.svelte";
   import { appEntryState } from "$lib/shared/onboarding/state/app-entry-state.svelte.ts";
-  import { sidebarTourState } from "$lib/shared/onboarding/state/sidebar-tour-state.svelte";
-  import { resetSidebarTour } from "$lib/shared/onboarding/config/storage-keys";
 
   let { currentSettings, onSettingUpdate } = $props<{
     currentSettings: AppSettings;
@@ -53,16 +50,6 @@
     appEntryState.replay();
   }
 
-  function handleReplaySidebarTour() {
-    hapticService?.trigger("selection");
-    // Navigate to Create module so the sidebar is visible (desktop) or app is in normal state
-    setActiveModule("create");
-    resetSidebarTour();
-    // Brief delay for navigation to complete
-    setTimeout(() => {
-      sidebarTourState.showPrompt();
-    }, 300);
-  }
 </script>
 
 <div class="preferences-tab" class:visible={isVisible}>
@@ -121,14 +108,6 @@
         <span>Replay create tutorial</span>
       </button>
 
-      <button
-        type="button"
-        class="guide-button"
-        onclick={handleReplaySidebarTour}
-      >
-        <i class="fas fa-map-signs" aria-hidden="true"></i>
-        <span>Replay sidebar tour</span>
-      </button>
     </div>
   </section>
 

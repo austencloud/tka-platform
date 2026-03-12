@@ -15,7 +15,8 @@ const HANDOFF_STORAGE_KEY = 'tka_sequence_handoff';
 const ROUTE_HANDOFF_STORAGE_KEY = 'tka_sequence_route_handoff';
 
 /**
- * Handoff data passed from SequenceDetailsModal/Route to Compose
+ * Handoff data passed from the sequence viewer (SequenceViewerDrawerHost on mobile,
+ * /sequence/[id] route on desktop) to Compose
  */
 export interface SequenceHandoff {
 	/** The sequence to visualize */
@@ -68,7 +69,7 @@ export interface SequenceRouteHandoff {
 
 /**
  * Save handoff data to sessionStorage for consumption after navigation.
- * Called by SequenceDetailsModal before navigating to Compose.
+ * Called by the sequence viewer before navigating to Compose.
  */
 export function saveSequenceHandoff(handoff: SequenceHandoff): void {
 	try {

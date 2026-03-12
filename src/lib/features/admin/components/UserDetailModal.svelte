@@ -191,6 +191,9 @@
                 {#if userProfile.isDisabled}
                   <span class="badge disabled">Disabled</span>
                 {/if}
+                {#if userProfile.isHidden}
+                  <span class="badge hidden">Hidden</span>
+                {/if}
                 <span class="badge role" style="--role-color: {getRoleColor(userProfile.role)}">
                   {userProfile.role || "user"}
                 </span>
@@ -261,6 +264,9 @@
               <div class="status-badges">
                 {#if userProfile.isDisabled}
                   <span class="badge disabled">Disabled</span>
+                {/if}
+                {#if userProfile.isHidden}
+                  <span class="badge hidden">Hidden</span>
                 {/if}
                 <span class="badge role" style="--role-color: {getRoleColor(userProfile.role)}">
                   {userProfile.role || "user"}
@@ -375,6 +381,9 @@
               <div class="status-badges">
                 {#if userProfile.isDisabled}
                   <span class="badge disabled">Disabled</span>
+                {/if}
+                {#if userProfile.isHidden}
+                  <span class="badge hidden">Hidden</span>
                 {/if}
                 <span class="badge role" style="--role-color: {getRoleColor(userProfile.role)}">
                   {userProfile.role || "user"}
@@ -695,6 +704,11 @@
   .badge.disabled {
     background: color-mix(in srgb, var(--semantic-error) 20%, transparent);
     color: var(--semantic-error);
+  }
+
+  .badge.hidden {
+    background: color-mix(in srgb, var(--semantic-warning) 20%, transparent);
+    color: var(--semantic-warning);
   }
 
   .badge.role {

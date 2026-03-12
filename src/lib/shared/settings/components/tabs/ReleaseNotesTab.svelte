@@ -203,6 +203,7 @@
     flex-shrink: 0;
     width: 280px;
     overflow-y: auto;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border-right: 1px solid var(--theme-stroke);
   }
 
@@ -211,6 +212,7 @@
     flex: 1;
     min-width: 0;
     overflow-y: auto;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
   }
 
   /* Default: wide mode - show compact list and detail */

@@ -88,10 +88,27 @@ export function createAssembleTabState(
     if (cleanupEffects) return;
 
     cleanupEffects = $effect.root(() => {
-      // Reset letter cache when steps are cleared
+      // Reset or trim letter cache when steps change
       $effect(() => {
-        if (builderState.blueSteps.length === 0 && builderState.redSteps.length === 0) {
+        const blueLen = builderState.blueSteps.length;
+        const redLen = builderState.redSteps.length;
+        if (blueLen === 0 && redLen === 0) {
           letterCache = new Map();
+        } else {
+          // Trim cache entries that no longer have corresponding steps
+          // (e.g., after truncation via delete)
+          const paired = Math.min(blueLen, redLen);
+          let trimmed = false;
+          const newCache = new Map(letterCache);
+          for (const key of newCache.keys()) {
+            if (key >= paired) {
+              newCache.delete(key);
+              trimmed = true;
+            }
+          }
+          if (trimmed) {
+            letterCache = newCache;
+          }
         }
       });
 

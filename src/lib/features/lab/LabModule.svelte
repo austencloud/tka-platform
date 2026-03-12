@@ -43,7 +43,7 @@
     duration: () => import("$lib/features/duration-lab/DurationLabModule.svelte"),
     "visual-builder": () => import("$lib/features/visual-builder-lab/VisualBuilderLabModule.svelte"),
     effects: () => import("$lib/features/effects-lab/EffectsLabModule.svelte"),
-    decompose: () => import("$lib/features/decompose-lab/DecomposeLab.svelte"),
+    disassemble: () => import("$lib/features/disassemble-lab/DisassembleLab.svelte"),
     museum: () => import("$lib/features/museum/MuseumDestination.svelte"),
     "prop-buttons": () => import("./tabs/PropButtonLab.svelte"),
     retro: () => import("$lib/features/retro/win95/components/RetroLab.svelte"),
@@ -52,6 +52,7 @@
     "retro-pictograph": () => import("./tabs/RetroPictographLab.svelte"),
     effort: () => import("$lib/features/effort-lab/EffortLabModule.svelte"),
     "phrase-effort": () => import("$lib/features/phrase-effort-lab/PhraseEffortLabModule.svelte"),
+    "audio-toolkit": () => import("./tabs/audio-lab/AudioToolkitLab.svelte"),
   };
 
   // Get current tab, default to first tab

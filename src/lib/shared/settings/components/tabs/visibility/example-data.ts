@@ -233,7 +233,6 @@ export function getAabbPictographSteps() {
 
 export const exampleStartPositionData: StartPositionData = {
   isStartPosition: true,
-  stepNumber: 0,
   id: "visibility-preview-start",
   letter: Letter.ALPHA,
   startPosition: GridPosition.ALPHA1,

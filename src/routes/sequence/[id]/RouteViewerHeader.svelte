@@ -87,7 +87,12 @@
     </div>
 
     <div class="header-center">
-      <h2 class="sequence-title">Sequence Viewer</h2>
+      <div class="title-group">
+        <h2 class="sequence-title">Sequence Viewer</h2>
+        {#if isMobile}
+          <p class="export-hint">Tap either view to export it</p>
+        {/if}
+      </div>
     </div>
 
     <div class="header-right">
@@ -224,6 +229,13 @@
     outline-offset: 2px;
   }
 
+  .title-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
   /* Sequence title in header */
   .sequence-title,
   .mode-title {
@@ -236,6 +248,13 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .export-hint {
+    margin: 0;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
+    font-weight: 400;
   }
 
   @media (prefers-reduced-motion: reduce) {

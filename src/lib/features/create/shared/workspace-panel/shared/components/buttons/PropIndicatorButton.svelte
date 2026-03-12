@@ -5,8 +5,8 @@
   Tap toggles the prop selection drawer (mounted at CreateModule level).
 -->
 <script lang="ts">
-  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
+  import { getSettings, updateSettings } from "$lib/shared/application/state/app-state.svelte";
+  import { getPropTypeDisplayInfo, getAllPropTypes } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { propDrawerState } from "$lib/shared/settings/state/prop-drawer-state.svelte";
   import { container } from "$lib/shared/di";
@@ -16,7 +16,27 @@
   const bluePropType = $derived(settings.bluePropType ?? PropType.STAFF);
   const displayInfo = $derived(getPropTypeDisplayInfo(bluePropType));
 
-  function handleClick() {
+  function shuffleToRandomProp() {
+    const allProps = getAllPropTypes();
+    const otherProps = allProps.filter((p) => p !== bluePropType);
+    const randomProp = otherProps[Math.floor(Math.random() * otherProps.length)]!;
+
+    try {
+      const hapticService = container.items.hapticFeedback;
+      hapticService?.trigger("selection");
+    } catch {
+      // Haptic not available
+    }
+
+    updateSettings({ bluePropType: randomProp, redPropType: randomProp });
+  }
+
+  function handleClick(event: MouseEvent) {
+    if (event.shiftKey) {
+      shuffleToRandomProp();
+      return;
+    }
+
     try {
       const hapticService = container.items.hapticFeedback;
       hapticService?.trigger("selection");
@@ -29,7 +49,7 @@
 
 <button
   class="prop-indicator-button glass-button"
-  onclick={handleClick}
+  onclick={(e) => handleClick(e)}
   aria-label="Change prop type. Current: {displayInfo.label}"
   title={displayInfo.label}
   data-testid="prop-indicator-button"

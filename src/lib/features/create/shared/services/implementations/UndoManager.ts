@@ -165,14 +165,41 @@ export class UndoManager implements IUndoManager {
   }
 
   /**
-   * Undo the last operation
+   * Undo the last operation.
+   * If activeSection is provided, only undoes entries from that tab.
    */
-  undo(): UndoHistoryEntry | null {
+  undo(activeSection?: string | null): UndoHistoryEntry | null {
     if (!this.canUndo) {
       return null;
     }
 
-    // Pop from undo history
+    if (activeSection) {
+      // Find the most recent entry belonging to this tab
+      let targetIndex = -1;
+      for (let i = this._undoHistory.length - 1; i >= 0; i--) {
+        if (this._undoHistory[i]!.beforeState.activeSection === activeSection) {
+          targetIndex = i;
+          break;
+        }
+      }
+      if (targetIndex === -1) return null;
+
+      // Remove from undo history and move to redo history
+      const [entry] = this._undoHistory.splice(targetIndex, 1);
+      if (!entry) return null;
+      this._redoHistory.push(entry);
+
+      this.saveHistory().catch((error) => {
+        console.error(
+          "❌ UndoManager: Failed to save history after undo:",
+          error
+        );
+      });
+      this.notifyChange();
+      return entry;
+    }
+
+    // No filter — pop the last entry (legacy behavior)
     const entry = this._undoHistory.pop();
     if (!entry) {
       return null;
@@ -193,6 +220,15 @@ export class UndoManager implements IUndoManager {
     this.notifyChange();
 
     return entry;
+  }
+
+  /**
+   * Check if there are undoable entries for a specific tab
+   */
+  canUndoForSection(activeSection: string): boolean {
+    return this._undoHistory.some(
+      (e) => e.beforeState.activeSection === activeSection
+    );
   }
 
   /**
@@ -264,14 +300,26 @@ export class UndoManager implements IUndoManager {
   }
 
   /**
-   * Get description of last undoable action
+   * Get description of last undoable action.
+   * If activeSection is provided, returns description of the last entry from that tab.
    */
-  getLastUndoDescription(): string | null {
+  getLastUndoDescription(activeSection?: string | null): string | null {
     if (!this.canUndo) {
       return null;
     }
 
-    const lastEntry = this._undoHistory[this._undoHistory.length - 1];
+    let lastEntry;
+    if (activeSection) {
+      for (let i = this._undoHistory.length - 1; i >= 0; i--) {
+        if (this._undoHistory[i]!.beforeState.activeSection === activeSection) {
+          lastEntry = this._undoHistory[i];
+          break;
+        }
+      }
+    } else {
+      lastEntry = this._undoHistory[this._undoHistory.length - 1];
+    }
+
     if (!lastEntry) {
       return null;
     }

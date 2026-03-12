@@ -48,7 +48,7 @@ Last audit: 2025-12-27
   import CanvasSettingsModal from "./canvas-settings-modal/CanvasSettingsModal.svelte";
   import DisassembleTransition from "./DisassembleTransition.svelte";
   import type { SettingsPanelCategory } from "./canvas-context-menu/CanvasContextMenuBuilder";
-  import { onMount, onDestroy, untrack } from "svelte";
+  import { onDestroy, untrack } from "svelte";
 
   // Props
   let {
@@ -177,8 +177,9 @@ Last audit: 2025-12-27
     }
   }
 
-  // Container element
-  let containerElement: HTMLDivElement;
+  // Container element — must be $state so the initialization $effect
+  // re-runs when bind:this assigns a new element after disassemble/reassemble
+  let containerElement: HTMLDivElement | undefined = $state();
   let contextMenuHost: CanvasContextMenuHost | undefined = $state();
 
   // Settings modal state
@@ -250,16 +251,24 @@ Last audit: 2025-12-27
   const displayedStepNumber = $derived(engine.state.displayedStepNumber);
   const displayedMusicalPosition = $derived(engine.state.displayedMusicalPosition);
 
-  // Initialize engine when container mounts
-  onMount(() => {
-    engine.initialize(containerElement, {
-      onCanvasReady,
-      onTrailSettingsChange: (settings) => {
-        externalTrailSettings = settings;
-      },
+  // Initialize engine when container element appears (or reappears after disassemble/reassemble).
+  // Using $effect instead of onMount because the {#if} branching destroys and recreates
+  // the .canvas-wrapper DOM element. The engine must reinitialize with the new element.
+  $effect(() => {
+    const el = containerElement;
+    if (!el) return;
+
+    untrack(() => {
+      engine.initialize(el, {
+        onCanvasReady,
+        onTrailSettingsChange: (settings) => {
+          externalTrailSettings = settings;
+        },
+      });
     });
+
     return () => {
-      engine.dispose();
+      untrack(() => engine.dispose());
     };
   });
 

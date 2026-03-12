@@ -303,6 +303,7 @@
                         <ExportImagePanel
                           exportOptions={ctx.exportOptions}
                           isExporting={ctx.isExporting}
+                          layout={isMobileWidth ? "bottom" : "sidebar"}
                           onExport={ctx.handleExport}
                           onClose={ctx.exitEditMode}
                         />

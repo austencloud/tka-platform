@@ -1804,6 +1804,13 @@ export class AnimationEngine {
     const visibilityManager = getAnimationVisibilityManager();
     fp.playbackSpeed = visibilityManager.getSpeed();
 
+    // Step mode: disable fire frame cache so flames track actual prop positions.
+    // The cache records during continuous playback and replays using wall-clock time,
+    // which drifts from prop positions during step mode's discrete pauses.
+    if (fp.fireConfig) {
+      fp.fireConfig.disableFrameCache = visibilityManager.getPlaybackMode() === "step";
+    }
+
     // Sequence identity for fire cache invalidation (new sequence = invalidate stale fire frames)
     fp.sequenceContentHash = this.lastSequenceContentHash ?? undefined;
 

@@ -7,6 +7,7 @@
 <script lang="ts">
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
+  import { desktopSidebarState } from "../../layout/desktop-sidebar-state.svelte";
   import type { ModuleDefinition, ModuleId } from "../domain/types";
   import ModuleList from "./ModuleList.svelte";
   import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
@@ -50,6 +51,13 @@
   let drawerPlacement = $derived<"left" | "bottom">(
     responsiveSettings?.isLandscapeMobile ? "left" : "bottom"
   );
+
+  // Auto-close drawer when desktop sidebar appears (e.g. viewport resized wider)
+  $effect(() => {
+    if (desktopSidebarState.isVisible && isOpen) {
+      isOpen = false;
+    }
+  });
 
   function closeDrawer() {
     hapticService?.trigger("selection");
@@ -431,6 +439,17 @@
 
     .module-switcher-content {
       padding: 16px 16px 32px; /* Maintain generous padding on mobile */
+    }
+  }
+
+  /* Widescreen bottom drawer: tighten padding so content is compact */
+  @media (min-width: 700px) and (min-height: 500px) {
+    .module-switcher-content {
+      padding: 12px 20px 16px;
+    }
+
+    .module-switcher-header {
+      padding: 12px 16px 10px;
     }
   }
 
