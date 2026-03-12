@@ -39,8 +39,22 @@
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
   import ChoreoCardContextMenuHost from "./choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
+  import {
+    openSendSequenceSheet,
+    buildSequenceSharePayload,
+    buildThumbnailUrl,
+  } from "$lib/shared/inbox/state/send-sequence-state.svelte";
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 
   const overlay = getSequenceOverlayState();
+
+  function handleSendTo() {
+    const seq = overlay.sequence;
+    if (!seq) return;
+    const propType = seq.intendedProp?.bluePropType ?? settingsService.settings.bluePropType ?? "staff";
+    const thumbnailUrl = buildThumbnailUrl(seq.word || seq.name, String(propType), false);
+    openSendSequenceSheet(buildSequenceSharePayload({ ...seq, thumbnailUrl }));
+  }
 
   // Width detection for responsive layout in split pane
   let isMobileWidth = $state(true);
@@ -282,6 +296,7 @@
                     exportOptions={ctx.exportOptions}
                     onEditNotes={() => ctx.enterEditMode("image")}
                     onExportImage={() => ctx.handleExport()}
+                    onSendTo={overlay.sequence ? handleSendTo : undefined}
                   />
                   {#if isAnyExportActive}
                     <div class="export-panel-container" class:sidebar={!isMobileWidth && isVideoExportActive}>
@@ -318,6 +333,7 @@
                         <ExportImagePanel
                           exportOptions={ctx.exportOptions}
                           isExporting={ctx.isExporting}
+                          beatCount={ctx.effectiveSequence?.steps?.length ?? 0}
                           layout={isMobileWidth ? "bottom" : "sidebar"}
                           onExport={ctx.handleExport}
                           onClose={ctx.exitEditMode}
@@ -623,6 +639,19 @@
       overflow: visible;
       border-left: none;
       border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    }
+
+    /* When in mobile export mode, make ViewerSplitPane participate in the flex
+       flow instead of being absolute-positioned. This ensures the export controls
+       bar stays visible below the scrollable card area. Without this, the
+       absolute-positioned split pane fills the entire parent and the export
+       panel gets pushed offscreen by the tall choreo card. */
+    .viewer-and-export.export-active :global(.view-container) {
+      position: relative;
+      inset: auto;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
     }
   }
 

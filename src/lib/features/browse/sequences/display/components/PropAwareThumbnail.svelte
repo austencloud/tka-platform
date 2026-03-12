@@ -56,6 +56,8 @@
     visibility?: ThumbnailVisibilitySettings;
     // Skip IntersectionObserver and load immediately (use in modals/pickers)
     eager?: boolean;
+    /** When true, don't intercept right-click — let the parent handle it */
+    suppressContextMenu?: boolean;
   }
 
   const {
@@ -77,6 +79,7 @@
     customNotesText,
     visibility,
     eager = false,
+    suppressContextMenu = false,
   }: Props = $props();
 
   // State
@@ -451,7 +454,7 @@
   data-ctx-container
   bind:this={containerRef}
   style:aspect-ratio={aspectRatio}
-  oncontextmenu={handleContextMenu}
+  oncontextmenu={suppressContextMenu ? undefined : handleContextMenu}
 >
   {#if thumbnailUrl && !hasError}
     <img

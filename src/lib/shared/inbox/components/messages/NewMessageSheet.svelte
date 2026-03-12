@@ -22,11 +22,12 @@
   interface Props {
     recipientId?: string | null;
     recipientName?: string | null;
+    groupMode?: boolean;
     onConversationCreated: (conversationId: string) => void;
     onCancel: () => void;
   }
 
-  let { recipientId, recipientName, onConversationCreated, onCancel }: Props =
+  let { recipientId, recipientName, groupMode = false, onConversationCreated, onCancel }: Props =
     $props();
 
   // Form state
@@ -290,9 +291,15 @@
       <!-- User search -->
       <div class="search-section">
         <p class="search-label">
-          {selectedUsers.length === 0
-            ? "Search for someone to message:"
-            : "Add more people:"}
+          {#if groupMode && selectedUsers.length === 0}
+            Select 2 or more people to start a group:
+          {:else if groupMode && selectedUsers.length === 1}
+            Add at least one more person:
+          {:else if selectedUsers.length === 0}
+            Search for someone to message:
+          {:else}
+            Add more people:
+          {/if}
         </p>
         <UserSearchInput
           selectedUserId={searchUserId}

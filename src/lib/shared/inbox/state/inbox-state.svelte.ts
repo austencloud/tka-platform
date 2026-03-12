@@ -55,6 +55,7 @@ class InboxState {
   // Compose state (for new message)
   composeRecipientId = $state<string | null>(null);
   composeRecipientName = $state<string | null>(null);
+  composeGroupMode = $state(false);
 
   // Reply state - message being replied to
   replyToMessage = $state<Message | null>(null);
@@ -95,6 +96,7 @@ class InboxState {
     this.currentView = "list";
     this.composeRecipientId = null;
     this.composeRecipientName = null;
+    this.composeGroupMode = false;
     this.replyToMessage = null;
     this.editingMessage = null;
     this.typingUsers = [];
@@ -170,12 +172,21 @@ class InboxState {
   startCompose(recipientId?: string, recipientName?: string) {
     this.composeRecipientId = recipientId || null;
     this.composeRecipientName = recipientName || null;
+    this.composeGroupMode = false;
+    this.currentView = "compose";
+  }
+
+  startGroupCompose() {
+    this.composeGroupMode = true;
+    this.composeRecipientId = null;
+    this.composeRecipientName = null;
     this.currentView = "compose";
   }
 
   cancelCompose() {
     this.composeRecipientId = null;
     this.composeRecipientName = null;
+    this.composeGroupMode = false;
     this.currentView = "list";
   }
 

@@ -94,6 +94,10 @@
             alt={sequenceWord}
             class="thumbnail"
             loading="lazy"
+            onerror={(e) => {
+              const container = (e.currentTarget as HTMLElement).parentElement;
+              if (container) container.style.display = "none";
+            }}
           />
         </div>
       {/if}

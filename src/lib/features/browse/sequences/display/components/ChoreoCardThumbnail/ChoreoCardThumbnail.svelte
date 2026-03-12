@@ -24,6 +24,11 @@ Variation support:
   import { container } from "$lib/shared/di";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/ShareOptions";
+  import {
+    openSendSequenceSheet,
+    buildSequenceSharePayload,
+    buildThumbnailUrl,
+  } from "$lib/shared/inbox/state/send-sequence-state.svelte";
   import PropAwareThumbnail from "../PropAwareThumbnail.svelte";
   import VariationPill from "./VariationPill.svelte";
 
@@ -115,70 +120,92 @@ Variation support:
   // ── Context menu (admin-only) ──────────────────────────────────────
   let contextMenuState: ContextMenuState = $state({ open: false });
 
+  function handleSendTo() {
+    const seq = displayedSequence;
+    closeContextMenu();
+    const propType = seq.intendedProp?.bluePropType ?? bluePropType ?? "staff";
+    // Cloud thumbnails are keyed by sequence.word (not .name) — matches PropAwareThumbnail
+    const thumbnailUrl = buildThumbnailUrl(seq.word || seq.name, propType, lightMode);
+    openSendSequenceSheet(buildSequenceSharePayload({ ...seq, thumbnailUrl }));
+  }
+
   const contextMenuItems: ContextMenuEntry[] = $derived.by(() => {
     const seq = displayedSequence;
-    return [
+    const items: ContextMenuEntry[] = [
       {
-        id: "save-image",
-        label: "Save image",
-        icon: "fa-download",
-        async action() {
-          try {
-            const { sharer } = await import(
-              "$lib/shared/share/services/implementations/Sharer"
-            );
-            await sharer.downloadImage(seq, { ...DEFAULT_SHARE_OPTIONS, format: "PNG" });
-            toast.success("Image saved");
-          } catch (err) {
-            console.error("Save image failed:", err);
-            toast.error("Failed to save image");
-          }
-        },
-      },
-      {
-        id: "copy-image",
-        label: "Copy image",
-        icon: "fa-copy",
-        async action() {
-          try {
-            const { sharer } = await import(
-              "$lib/shared/share/services/implementations/Sharer"
-            );
-            const blob = await sharer.getImageBlob(seq, { ...DEFAULT_SHARE_OPTIONS, format: "PNG" });
-            await navigator.clipboard.write([
-              new ClipboardItem({ "image/png": blob }),
-            ]);
-            toast.success("Image copied to clipboard");
-          } catch (err) {
-            console.error("Copy image failed:", err);
-            toast.error("Failed to copy image");
-          }
-        },
-      },
-      {
-        id: "copy-for-claude",
-        label: "Copy for Claude",
-        icon: "fa-robot",
-        async action() {
-          try {
-            const copier = container.items.claudeCodeCopier;
-            const result = await copier.copyForClaude(seq);
-            if (result.success) {
-              toast.success("Copied for Claude");
-            } else {
-              toast.error("Failed to copy for Claude");
-            }
-          } catch (err) {
-            console.error("Copy for Claude failed:", err);
-            toast.error("Failed to copy for Claude");
-          }
-        },
+        id: "send-to",
+        label: "Send to...",
+        icon: "fa-paper-plane",
+        action: handleSendTo,
       },
     ];
+
+    // Admin-only items
+    if (featureFlagService.isAdmin) {
+      items.push(
+        { type: "separator" } as ContextMenuEntry,
+        {
+          id: "save-image",
+          label: "Save image",
+          icon: "fa-download",
+          async action() {
+            try {
+              const { sharer } = await import(
+                "$lib/shared/share/services/implementations/Sharer"
+              );
+              await sharer.downloadImage(seq, { ...DEFAULT_SHARE_OPTIONS, format: "PNG" });
+              toast.success("Image saved");
+            } catch (err) {
+              console.error("Save image failed:", err);
+              toast.error("Failed to save image");
+            }
+          },
+        },
+        {
+          id: "copy-image",
+          label: "Copy image",
+          icon: "fa-copy",
+          async action() {
+            try {
+              const { sharer } = await import(
+                "$lib/shared/share/services/implementations/Sharer"
+              );
+              const blob = await sharer.getImageBlob(seq, { ...DEFAULT_SHARE_OPTIONS, format: "PNG" });
+              await navigator.clipboard.write([
+                new ClipboardItem({ "image/png": blob }),
+              ]);
+              toast.success("Image copied to clipboard");
+            } catch (err) {
+              console.error("Copy image failed:", err);
+              toast.error("Failed to copy image");
+            }
+          },
+        },
+        {
+          id: "copy-for-claude",
+          label: "Copy for Claude",
+          icon: "fa-robot",
+          async action() {
+            try {
+              const copier = container.items.claudeCodeCopier;
+              const result = await copier.copyForClaude(seq);
+              if (result.success) {
+                toast.success("Copied for Claude");
+              } else {
+                toast.error("Failed to copy for Claude");
+              }
+            } catch (err) {
+              console.error("Copy for Claude failed:", err);
+              toast.error("Failed to copy for Claude");
+            }
+          },
+        },
+      );
+    }
+    return items;
   });
 
   function handleContextMenu(e: MouseEvent) {
-    if (!featureFlagService.isAdmin) return;
     e.preventDefault();
     contextMenuState = { open: true, x: e.clientX, y: e.clientY };
   }
@@ -210,6 +237,7 @@ Variation support:
       {catDogModeEnabled}
       {lightMode}
       {eager}
+      suppressContextMenu={true}
       userName={displayedSequence.ownerDisplayName}
     />
   </div>

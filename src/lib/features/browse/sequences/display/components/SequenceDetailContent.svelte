@@ -32,6 +32,11 @@ Used by both desktop side panel and mobile slide-up overlay.
   import DetailHeader from "./DetailHeader.svelte";
   import ShareOptionsRow from "./ShareOptionsRow.svelte";
   import SequenceActionButtons from "./SequenceActionButtons.svelte";
+  import {
+    openSendSequenceSheet,
+    buildSequenceSharePayload,
+    buildThumbnailUrl,
+  } from "$lib/shared/inbox/state/send-sequence-state.svelte";
 
   // State imports
   import { browseNavigationState } from "../../../shared/state/browse-navigation-state.svelte";
@@ -223,6 +228,13 @@ Used by both desktop side panel and mobile slide-up overlay.
     onAction("fullscreen", seq);
   }
 
+  function handleSendTo() {
+    hapticService?.trigger("selection");
+    const propType = propSettings.bluePropType ?? "staff";
+    const thumbnailUrl = buildThumbnailUrl(sequence.word || sequence.name, String(propType), lightMode);
+    openSendSequenceSheet(buildSequenceSharePayload({ ...sequence, thumbnailUrl }));
+  }
+
   function handleCreatorClick() {
     if (!sequence.ownerId) return;
     hapticService?.trigger("selection");
@@ -374,6 +386,7 @@ Used by both desktop side panel and mobile slide-up overlay.
     onEdit={() => handleAction("edit")}
     onFork={() => handleAction("fork")}
     onShare={() => handleAction("share")}
+    onSendTo={handleSendTo}
     onVideos={handleVideosClick}
     onDelete={() => handleAction("delete")}
     onMaximize={handleMaximize}

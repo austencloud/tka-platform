@@ -93,8 +93,8 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="morph-toolbar" onkeydown={handleKeydown}>
-  <!-- Single row: play + actions + BPM chip (always visible) -->
-  <div class="playback-row">
+  <!-- Single row: play + actions + BPM chip (hidden when controls expanded) -->
+  <div class="playback-row" class:hidden={controlsExpanded}>
     <button
       type="button"
       class="play-btn"
@@ -232,6 +232,11 @@
     align-items: center;
     gap: 8px;
     width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .playback-row.hidden {
+    display: none;
   }
 
   /* ===========================
@@ -285,13 +290,13 @@
      =========================== */
 
   .chip-trigger {
-    flex: 1;
+    flex: 1 1 80px;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
     height: var(--min-touch-target);
-    min-width: 0;
+    min-width: 80px;
     padding: 0 16px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -336,6 +341,7 @@
     gap: 6px;
     height: 44px;
     padding: 0 14px;
+    flex-shrink: 0;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 22px;

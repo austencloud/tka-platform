@@ -55,6 +55,12 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import LoadingGate from "$lib/shared/components/loading/LoadingGate.svelte";
   import ChoreoCardContextMenuHost from "$lib/shared/sequence-viewer/components/choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
+  import {
+    openSendSequenceSheet,
+    buildSequenceSharePayload,
+    buildThumbnailUrl,
+  } from "$lib/shared/inbox/state/send-sequence-state.svelte";
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 
   // ============================================================================
   // ROUTE-SPECIFIC STATE
@@ -118,6 +124,14 @@
 
   // Cleanup
   let resizeCleanup: (() => void) | null = null;
+
+  function handleSendTo() {
+    const seq = sequence;
+    if (!seq) return;
+    const propType = seq.intendedProp?.bluePropType ?? settingsService.settings.bluePropType ?? "staff";
+    const thumbnailUrl = buildThumbnailUrl(seq.word || seq.name, String(propType), false);
+    openSendSequenceSheet(buildSequenceSharePayload({ ...seq, thumbnailUrl }));
+  }
 
   // ============================================================================
   // LIFECYCLE
@@ -590,6 +604,7 @@
                 exportOptions={ctx.exportOptions}
                 onEditNotes={() => ctx.enterEditMode("image")}
                 onExportImage={() => ctx.handleExport()}
+                onSendTo={sequence ? handleSendTo : undefined}
               />
               {#if isAnyExportActive}
                 <div class="export-panel-container" class:sidebar={!isMobile && isVideoExportActive} transition:fade={{ duration: 200 }}>
@@ -626,6 +641,7 @@
                     <ExportImagePanel
                       exportOptions={ctx.exportOptions}
                       isExporting={ctx.isExporting}
+                      beatCount={ctx.effectiveSequence?.steps?.length ?? 0}
                       onExport={ctx.handleExport}
                       onClose={ctx.exitEditMode}
                     />
@@ -853,23 +869,6 @@
     opacity: 0;
     pointer-events: none;
   }
-
-  .export-settings-badge {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    padding: 4px 10px;
-    background: rgba(0, 0, 0, 0.7);
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: 6px;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-    letter-spacing: 0.03em;
-    pointer-events: none;
-    z-index: 5;
-  }
-
 
   /* Mobile drawer appearance */
   @media (max-width: 767px) {

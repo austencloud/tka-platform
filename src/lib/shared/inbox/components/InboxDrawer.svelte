@@ -196,6 +196,10 @@
     inboxState.startCompose();
   }
 
+  function handleNewGroup() {
+    inboxState.startGroupCompose();
+  }
+
   function handleBack() {
     hapticService?.trigger("selection");
     inboxState.backToList();
@@ -378,8 +382,16 @@
           {inboxState.activeTab === "notifications" ? "Notifications" : "Messages"}
         </h2>
 
-        <!-- New message button (unified flow for direct and group) -->
+        <!-- New message and create group buttons -->
         {#if inboxState.activeTab === "messages"}
+          <button
+            class="header-action-btn primary"
+            onclick={handleNewGroup}
+            aria-label="Create group"
+            title="Create group"
+          >
+            <i class="fas fa-user-group" aria-hidden="true"></i>
+          </button>
           <button
             class="header-action-btn primary"
             onclick={handleNewMessage}
@@ -456,7 +468,7 @@
         >
           <i class="fas fa-arrow-left" aria-hidden="true"></i>
         </button>
-        <h2 id="inbox-title">New Message</h2>
+        <h2 id="inbox-title">{inboxState.composeGroupMode ? "New Group" : "New Message"}</h2>
         <div class="spacer"></div>
       {:else if inboxState.currentView === "group-settings"}
         <!-- GroupSettingsSheet has its own header, just show close -->
@@ -508,6 +520,7 @@
         <NewMessageSheet
           recipientId={inboxState.composeRecipientId}
           recipientName={inboxState.composeRecipientName}
+          groupMode={inboxState.composeGroupMode}
           onConversationCreated={handleConversationSelect}
           onCancel={handleCancelCompose}
         />
