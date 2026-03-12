@@ -1,0 +1,75 @@
+<h2>Disassemble / Reassemble Transition</h2>
+<p class="subtitle">How should the canvas animate between assembled and disassembled states?</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Clone &amp; Split</h3>
+      <p>The single canvas visually "clones" into three copies. The blue and red hands separate from the original — blue slides down-left, red slides down-right — while simultaneously scaling to 50%. The hero slides up slightly. All three canvases keep animating throughout.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Feels like pulling apart a mechanism</li>
+          <li>User sees the hands physically separate</li>
+          <li>Animation never pauses — seamless continuity</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Needs overlay/clone elements during transition</li>
+          <li>Most complex to implement (fake canvases during morph)</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Shrink &amp; Reveal</h3>
+      <p>The assembled canvas shrinks to hero size (slides up, scales to ~67% width). As it moves, two empty slots fade in below. Then the blue and red canvases fade/scale in from 0% to 100% in their slots. Two-phase: shrink hero, then reveal children.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Simpler — no clone trickery needed</li>
+          <li>Clear two-step sequence is easy to follow</li>
+          <li>Works with existing AnimatorCanvas instances</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Brief moment where small slots are empty (less seamless)</li>
+          <li>Feels less "mechanical" — more like a UI transition</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Crossfade Morph</h3>
+      <p>The assembled layout crossfades directly to the disassembled layout. Both exist simultaneously during the transition with opposing opacity. Simple, fast, clean — like a page turn.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Simplest to implement</li>
+          <li>Fast — no waiting for multi-stage animation</li>
+          <li>Familiar pattern (modal/page transitions)</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Doesn't communicate the "pulling apart" concept</li>
+          <li>Feels generic — not delightful or educational</li>
+          <li>Misses the opportunity to show what's happening</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 2rem; padding: 1.5rem; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
+  <h3 style="margin-top:0">Your Vision (for reference)</h3>
+  <p style="color: rgba(255,255,255,0.6); line-height: 1.6;">
+    "The grid, arrow, and prop elements all duplicate while the animation stays consistent.
+    They each animate with a translation down to their appropriate areas, scaling down while doing so.
+    The hero animates upwards and scales to its new location.
+    The animation which might be playing continues seamlessly."
+  </p>
+  <p style="color: rgba(255,255,255,0.5); font-size: 0.9em;">
+    → This maps closest to <strong style="color: rgba(255,255,255,0.8);">Option A (Clone &amp; Split)</strong>
+  </p>
+</div>

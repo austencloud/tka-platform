@@ -652,6 +652,12 @@
       flex: 1;
       min-height: 0;
       overflow: hidden;
+      /* The canvas is square, so height is driven by width. On portrait mobile,
+         the animation pane would stretch to fill all vertical space, centering
+         a small square canvas in a tall black box. Cap the height so the canvas
+         fills the pane with minimal dead space. Width + overhead (header ~53px,
+         progress ~32px, border ~3px, margin ~12px ≈ 100px). */
+      max-height: calc(100vw + 100px);
     }
   }
 

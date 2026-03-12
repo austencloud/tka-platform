@@ -47,17 +47,34 @@
     return `${getPropTypeDisplayInfo(bluePropType).label} / ${getPropTypeDisplayInfo(redPropType!).label}`;
   });
 
+  // Quick-switch cycles through common prop types when there's nothing to toggle against
+  const quickSwitchTypes: PropType[] = [
+    PropType.STAFF,
+    PropType.FAN,
+    PropType.CLUB,
+    PropType.BUUGENG,
+    PropType.TRIAD,
+    PropType.MINIHOOP,
+  ];
+
   function handleToggle() {
-    if (!hasIntendedProp) {
+    if (hasIntendedProp) {
+      // Toggle between creator's intended prop and viewer's settings
+      if (propSource === "intended") {
+        onSourceChange("viewer-settings");
+      } else {
+        onSourceChange("intended");
+      }
       return;
     }
 
-    // Cycle: intended → viewer-settings → intended
-    if (propSource === "intended") {
-      onSourceChange("viewer-settings");
-    } else {
-      onSourceChange("intended");
-    }
+    // No intended prop — cycle through prop types as a quick switcher.
+    // Find current prop in the list, advance to next.
+    const current = bluePropType ?? PropType.STAFF;
+    const currentIndex = quickSwitchTypes.indexOf(current);
+    const nextIndex = (currentIndex + 1) % quickSwitchTypes.length;
+    const nextProp = quickSwitchTypes[nextIndex];
+    onQuickSwitch(nextProp, nextProp, false);
   }
 </script>
 

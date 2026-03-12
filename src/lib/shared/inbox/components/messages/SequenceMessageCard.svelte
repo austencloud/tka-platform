@@ -9,9 +9,8 @@
 
   import { onMount } from "svelte";
   import type { MessageAttachment } from "$lib/shared/messaging/domain/models/message-models";
+  import { goto } from "$app/navigation";
   import { inboxState } from "../../state/inbox-state.svelte";
-  import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
-  import { setPendingSequenceView } from "$lib/features/browse/state/pending-sequence.svelte";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 
@@ -55,11 +54,8 @@
     // Close the inbox drawer first
     inboxState.close();
 
-    // Set the pending sequence to view
-    setPendingSequenceView(sequenceId);
-
-    // Navigate to Browse gallery tab
-    await handleModuleChange("browse", "gallery");
+    // Navigate directly to the sequence viewer route
+    await goto(`/sequence/${sequenceId}`);
   }
 </script>
 

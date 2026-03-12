@@ -125,7 +125,7 @@ Variation support:
     closeContextMenu();
     const propType = seq.intendedProp?.bluePropType ?? bluePropType ?? "staff";
     // Cloud thumbnails are keyed by sequence.word (not .name) — matches PropAwareThumbnail
-    const thumbnailUrl = buildThumbnailUrl(seq.word || seq.name, propType, lightMode);
+    const thumbnailUrl = buildThumbnailUrl(seq.word || seq.name, propType, false);
     openSendSequenceSheet(buildSequenceSharePayload({ ...seq, thumbnailUrl }));
   }
 

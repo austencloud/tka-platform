@@ -1359,6 +1359,21 @@ export class AnimationEngine {
   }
 
   /**
+   * Pause canvas resize observation during CSS transitions.
+   * Prevents canvas buffer clears that cause black frames.
+   */
+  pauseResize(): void {
+    this.canvasResizerService?.pauseObservation();
+  }
+
+  /**
+   * Resume canvas resize observation after transitions complete.
+   */
+  resumeResize(): void {
+    this.canvasResizerService?.resumeObservation();
+  }
+
+  /**
    * Set fire overlay configuration. Called by visibility state changes.
    */
   setFireConfig(config: Partial<FireOverlayConfig>): void {

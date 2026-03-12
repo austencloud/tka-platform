@@ -25,6 +25,7 @@ export class CanvasResizer implements ICanvasResizer {
   private container: HTMLDivElement | null = null;
   private renderer: ResizableRenderer | null = null;
   private resizeObserver: ResizeObserver | null = null;
+  private paused = false;
 
   // Bound reference to resize handler for event listener cleanup
   private boundResizeHandler = () => this.handleResize();
@@ -63,8 +64,19 @@ export class CanvasResizer implements ICanvasResizer {
     return this.performResize();
   }
 
+  pauseObservation(): void {
+    this.paused = true;
+  }
+
+  resumeObservation(): void {
+    this.paused = false;
+    // Catch up to whatever size the container is now
+    this.handleResize();
+  }
+
   dispose(): void {
     this.teardown();
+    this.paused = false;
     this.container = null;
     this.renderer = null;
     this.state.currentSize = DEFAULT_CANVAS_SIZE;
@@ -73,6 +85,7 @@ export class CanvasResizer implements ICanvasResizer {
   }
 
   private handleResize(): void {
+    if (this.paused) return;
     this.performResize();
   }
 

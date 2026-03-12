@@ -137,9 +137,13 @@ Last audit: 2025-12-27
   function toggleDisassemble() {
     if (viewState === "assembled") {
       splitReadyCount = 0;
+      // Pause ResizeObserver so the CSS width transition doesn't clear the canvas buffer
+      engine.pauseResize();
       viewState = "disassembling";
       // Split canvases mount collapsed. They'll fire onInitialized when ready.
     } else if (viewState === "disassembled") {
+      // Pause ResizeObserver before CSS width transition back to full size
+      engine.pauseResize();
       // Collapse split canvases, then remove them when transition ends
       splitExpanded = false;
       viewState = "reassembling";
@@ -167,9 +171,13 @@ Last audit: 2025-12-27
 
     if (viewState === "disassembling") {
       viewState = "disassembled";
+      // Resume ResizeObserver — catch up to the new (narrower) container size
+      engine.resumeResize();
     } else if (viewState === "reassembling") {
       viewState = "assembled";
       splitExpanded = false;
+      // Resume ResizeObserver — catch up to the restored full-width container
+      engine.resumeResize();
     }
   }
 
