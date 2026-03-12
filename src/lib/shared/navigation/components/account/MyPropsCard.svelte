@@ -5,27 +5,17 @@
   Tapping opens a drawer/sheet for full prop selection using BentoPropGrid.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
-  import { createPropPreferenceState } from "$lib/shared/community/state/prop-preference-state.svelte";
-  import type { IPropPreferencePersister } from "$lib/shared/community/services/contracts/IPropPreferencePersister";
+  import type { PropPreferenceState } from "$lib/shared/community/state/prop-preference-state.svelte";
 
   interface Props {
+    propState: PropPreferenceState | null;
     onOpenPropEditor: () => void;
   }
 
-  let { onOpenPropEditor }: Props = $props();
+  let { propState, onOpenPropEditor }: Props = $props();
 
-  const userId = $derived(authState.user?.uid);
-
-  const propState = $derived.by(() => {
-    if (!userId) return null;
-    const persister = container.items.propPreferencePersister as IPropPreferencePersister;
-    return createPropPreferenceState(persister, userId);
-  });
-
-  const favoriteProp = $derived(propState?.favoriteProp);
+  const favoriteProp = $derived(propState?.favoriteProp ?? null);
   const propsCount = $derived(propState?.propsISpinWith.length ?? 0);
   const loading = $derived(propState?.loading ?? true);
 </script>
