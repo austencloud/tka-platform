@@ -72,7 +72,7 @@
       grid-template-rows: 1fr;
       grid-template-columns: 1fr;
       gap: 0;
-      padding: 8px;
+      padding: 0px;
     }
 
     .header-section,

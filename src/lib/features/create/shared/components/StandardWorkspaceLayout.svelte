@@ -96,6 +96,12 @@
   // Generator tab always shows workspace (for help button accessibility)
   const isGeneratorTab = $derived(navigationState.activeTab === "generate");
 
+  // Assemble tab: collapse tool panel when sequence is complete
+  const isAssembleComplete = $derived(
+    navigationState.activeTab === "assemble" &&
+    CreateModuleState.assembleTabState?.assembleBuilderState?.phase === "complete"
+  );
+
   // Workspace should be visible if:
   // - NOT in input mode (keyboard up on mobile)
   // - Generator tab (always visible with empty prompt)
@@ -147,6 +153,7 @@
   class="layout-wrapper"
   class:side-by-side={shouldUseSideBySideLayout}
   class:workspace-visible={shouldShowWorkspace}
+  class:tool-panel-collapsed={isAssembleComplete}
   class:generator-active={isGeneratorTab}
 >
   <!-- Workspace Panel - Visible based on tab and content -->

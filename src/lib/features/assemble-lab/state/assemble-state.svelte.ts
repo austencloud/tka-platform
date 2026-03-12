@@ -248,7 +248,7 @@ export function createAssembleState() {
   /** Switch to a specific hand, restoring that hand's last position */
   function switchToHand(hand: MotionColor): void {
     if (hand === activeHand) return;
-    if (phase === "animating" || phase === "complete") return;
+    if (phase === "complete") return;
 
     activeHand = hand;
     const steps = hand === MotionColor.BLUE ? blueSteps : redSteps;

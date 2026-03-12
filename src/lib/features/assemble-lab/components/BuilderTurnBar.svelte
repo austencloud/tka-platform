@@ -2,7 +2,8 @@
   BuilderTurnBar.svelte - Phase-aware control bar below the grid (desktop).
 
   Shows orientation pills during "placing" phase, turn count + rotation
-  direction during "building" phase. Dimmed when idle/animating, hidden
+  direction during "building" phase. Stays active during animation so users
+  can adjust settings for the next action. Dimmed when idle, hidden
   when sequence is complete. Hidden on mobile (replaced by popover).
 -->
 <script lang="ts">
@@ -20,8 +21,8 @@
   const isIdle = $derived(builderState.phase === "idle");
   const isComplete = $derived(builderState.phase === "complete");
 
-  const barActive = $derived(isPlacing || isBuilding);
-  const barDimmed = $derived(isAnimating || isIdle);
+  const barActive = $derived(isPlacing || isBuilding || isAnimating);
+  const barDimmed = $derived(isIdle);
   const barHidden = $derived(isComplete);
 
   // Track which content to show. During animating/done, keep showing whatever
@@ -35,8 +36,12 @@
     // animating/done/complete: keep lastActiveContent unchanged
   });
 
-  const showPlacing = $derived(isPlacing || (barDimmed && lastActiveContent === "placing"));
-  const showBuilding = $derived(isBuilding || (barDimmed && lastActiveContent === "building"));
+  const showPlacing = $derived(
+    isPlacing || ((barDimmed || isAnimating) && lastActiveContent === "placing")
+  );
+  const showBuilding = $derived(
+    isBuilding || ((barDimmed || isAnimating) && lastActiveContent === "building")
+  );
   const showPlaceholder = $derived(!showPlacing && !showBuilding && !isComplete);
 
   // ── Orientation ──
@@ -170,6 +175,7 @@
   .bar-content {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 4px;
     width: 100%;
   }
@@ -271,8 +277,6 @@
   .turns-strip {
     display: flex;
     gap: 4px;
-    flex: 1;
-    min-width: 0;
     overflow-x: auto;
     scrollbar-width: none;
   }

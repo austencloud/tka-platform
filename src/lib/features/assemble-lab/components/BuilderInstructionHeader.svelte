@@ -5,7 +5,7 @@
   and a blue/red hand switcher on desktop so users can freely switch
   between hands while building.
   On mobile, renders as a compact semi-transparent overlay (switcher hidden;
-  mobile uses the HandPickerButton in the ButtonPanel instead).
+  mobile uses the hand buttons on the grid canvas in BuilderControls).
 -->
 <script lang="ts">
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -21,8 +21,15 @@
       : "var(--prop-red, #ed1c24)"
   );
 
+  const otherHandLabel = $derived(isBlueHand ? "Red" : "Blue");
+  const otherHandSteps = $derived(
+    isBlueHand ? builderState.redSteps.length : builderState.blueSteps.length
+  );
+  const activeStepCount = $derived(
+    isBlueHand ? builderState.blueSteps.length : builderState.redSteps.length
+  );
+
   const phaseMessage = $derived.by(() => {
-    const handLabel = isBlueHand ? "Blue" : "Red";
     switch (builderState.phase) {
       case "idle": return "Tap a starting point";
       case "placing": return "Tap destination";
@@ -33,14 +40,32 @@
     }
   });
 
-  // Hand switcher: show as soon as any hand has at least one step.
-  // Stays visible during animation to prevent layout shift — just dims.
-  const showHandSwitcher = $derived(
+  // Contextual hint about the other hand — shown below the main instruction
+  const otherHandHint = $derived.by(() => {
+    if (builderState.phase === "complete" || builderState.phase === "idle") return "";
+    if (otherHandSteps === 0 && activeStepCount > 0) {
+      return `Switch to ${otherHandLabel} when ready`;
+    }
+    if (otherHandSteps > 0 && activeStepCount !== otherHandSteps) {
+      const diff = Math.abs(activeStepCount - otherHandSteps);
+      if (activeStepCount > otherHandSteps) {
+        return `${otherHandLabel} needs ${diff} more step${diff > 1 ? "s" : ""} to match`;
+      }
+    }
+    return "";
+  });
+
+  // Hand switcher: always rendered to reserve space (prevents layout shift).
+  // Visible once any hand has steps, hidden on complete.
+  const switcherVisible = $derived(
     builderState.phase !== "complete" &&
     (builderState.blueSteps.length > 0 || builderState.redSteps.length > 0)
   );
 
-  const switcherDimmed = $derived(builderState.phase === "animating");
+  const switcherHidden = $derived(
+    builderState.phase === "complete" ||
+    (builderState.blueSteps.length === 0 && builderState.redSteps.length === 0)
+  );
 
   // Pulse the inactive hand's button when it has no steps yet
   const blueNeedsAttention = $derived(!isBlueHand && builderState.blueSteps.length === 0);
@@ -65,38 +90,48 @@
     <span class="step-text">{phaseMessage}</span>
   </div>
 
-  {#if showHandSwitcher}
-    <div class="hand-switcher" class:dimmed={switcherDimmed} role="radiogroup" aria-label="Active hand">
-      <button
-        class="hand-switch-btn"
-        class:active={isBlueHand}
-        class:needs-attention={blueNeedsAttention}
-        style="--btn-color: var(--prop-blue, #2e8bf0)"
-        role="radio"
-        aria-checked={isBlueHand}
-        aria-label="Switch to blue hand ({builderState.blueSteps.length} steps)"
-        onclick={switchToBlue}
-      >
-        <span class="hand-dot" aria-hidden="true"></span>
-        <span class="hand-label">Blue</span>
-        <span class="step-count">{builderState.blueSteps.length}</span>
-      </button>
-      <button
-        class="hand-switch-btn"
-        class:active={!isBlueHand}
-        class:needs-attention={redNeedsAttention}
-        style="--btn-color: var(--prop-red, #ed1c24)"
-        role="radio"
-        aria-checked={!isBlueHand}
-        aria-label="Switch to red hand ({builderState.redSteps.length} steps)"
-        onclick={switchToRed}
-      >
-        <span class="hand-dot" aria-hidden="true"></span>
-        <span class="hand-label">Red</span>
-        <span class="step-count">{builderState.redSteps.length}</span>
-      </button>
-    </div>
-  {/if}
+  <span class="other-hand-hint" class:hint-hidden={!otherHandHint}>
+    {otherHandHint || "\u00A0"}
+  </span>
+
+  <div
+    class="hand-switcher"
+    class:switcher-hidden={switcherHidden}
+    role="radiogroup"
+    aria-label="Active hand"
+    aria-hidden={switcherHidden}
+  >
+    <button
+      class="hand-switch-btn"
+      class:active={isBlueHand}
+      class:needs-attention={blueNeedsAttention}
+      style="--btn-color: var(--prop-blue, #2e8bf0)"
+      role="radio"
+      aria-checked={isBlueHand}
+      aria-label="Switch to blue hand ({builderState.blueSteps.length} steps)"
+      tabindex={switcherHidden ? -1 : 0}
+      onclick={switchToBlue}
+    >
+      <span class="hand-dot" aria-hidden="true"></span>
+      <span class="hand-label">Blue</span>
+      <span class="step-count">{builderState.blueSteps.length}</span>
+    </button>
+    <button
+      class="hand-switch-btn"
+      class:active={!isBlueHand}
+      class:needs-attention={redNeedsAttention}
+      style="--btn-color: var(--prop-red, #ed1c24)"
+      role="radio"
+      aria-checked={!isBlueHand}
+      aria-label="Switch to red hand ({builderState.redSteps.length} steps)"
+      tabindex={switcherHidden ? -1 : 0}
+      onclick={switchToRed}
+    >
+      <span class="hand-dot" aria-hidden="true"></span>
+      <span class="hand-label">Red</span>
+      <span class="step-count">{builderState.redSteps.length}</span>
+    </button>
+  </div>
 </div>
 
 <style>
@@ -108,6 +143,19 @@
     flex-direction: column;
     align-items: center;
     gap: 8px;
+  }
+
+  .other-hand-hint {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    min-height: 1.2em;
+    transition: opacity 0.15s ease;
+  }
+
+  .other-hand-hint.hint-hidden {
+    opacity: 0;
   }
 
   .step-title {
@@ -137,10 +185,11 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background: var(--theme-card-bg, rgba(0, 0, 0, 0.4));
     padding: 3px;
+    transition: opacity 0.15s ease;
   }
 
-  .hand-switcher.dimmed {
-    opacity: 0.3;
+  .hand-switcher.switcher-hidden {
+    opacity: 0;
     pointer-events: none;
   }
 
@@ -248,8 +297,13 @@
       display: none;
     }
 
-    /* Hide hand switcher on mobile — ButtonPanel has HandPickerButton */
+    /* Hide hand switcher on mobile — BuilderControls has hand buttons on canvas */
     .hand-switcher {
+      display: none;
+    }
+
+    /* Hide hint on mobile — hand buttons already show step counts */
+    .other-hand-hint {
       display: none;
     }
   }
