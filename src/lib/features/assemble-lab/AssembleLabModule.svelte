@@ -1,31 +1,29 @@
 <!--
-  AssembleLabModule.svelte - Visual Sequence Builder Lab
+  AssembleLabModule.svelte - Standalone assemble lab (accessed from Lab tab).
 
-  Click grid points to build sequences step-by-step. Each hand's path
-  is built independently: blue first, then red. Prop animates along
-  arc/line paths on each click.
-
-  Layout: Grid-centric. The pictograph square dominates the view,
-  sized to fill available space while maintaining 1:1 aspect ratio.
-  Controls overlay the grid as corner clusters. Step strip below.
+  Tap grid points to build both hands' paths in any order.
+  Prop animates along arc/line paths on each click.
 -->
 <script lang="ts">
   import { createAssembleState } from "./state/assemble-state.svelte";
   import InteractiveGrid from "./components/InteractiveGrid.svelte";
   import BuilderControls from "./components/BuilderControls.svelte";
+  import BuilderInstructionHeader from "./components/BuilderInstructionHeader.svelte";
+  import BuilderTurnBar from "./components/BuilderTurnBar.svelte";
   import StepStrip from "./components/StepStrip.svelte";
 
   const builderState = createAssembleState();
 </script>
 
 <div class="assemble">
-  <!-- Grid + overlaid controls -->
+  <BuilderInstructionHeader {builderState} />
+
   <div class="grid-container">
     <InteractiveGrid {builderState} />
     <BuilderControls {builderState} />
   </div>
 
-  <!-- Step strip: rendered mini pictographs for each step -->
+  <BuilderTurnBar {builderState} />
   <StepStrip {builderState} />
 </div>
 
