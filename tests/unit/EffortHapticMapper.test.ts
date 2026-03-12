@@ -105,9 +105,8 @@ describe("EffortHapticMapper", () => {
 			expect(mapper.getIOSPulseCount("dab")).toBe(1);
 		});
 
-		it("bounce = bounce count", () => {
-			expect(mapper.getIOSPulseCount("bounce", { bounces: 4 })).toBe(4);
-			expect(mapper.getIOSPulseCount("bounce", { bounces: 6 })).toBe(6);
+		it("bounce = 3 pulses (fixed classic bounce)", () => {
+			expect(mapper.getIOSPulseCount("bounce")).toBe(3);
 		});
 
 		it("anticipation = 2 (pullback + release)", () => {

@@ -36,10 +36,17 @@ describe("Unified Effort Easing", () => {
 	});
 
 	describe("Laban effort character", () => {
-		it("glide (light+sustained) is ahead of punch (strong+sudden) at t=0.5", () => {
+		it("punch (front-loaded) arrives faster than glide at t=0.5", () => {
 			const glideVal = applyEffort("glide", 0.5);
 			const punchVal = applyEffort("punch", 0.5);
-			expect(glideVal).toBeGreaterThan(punchVal);
+			// Punch is front-loaded (snap at start of beat) so it's ahead of glide
+			expect(punchVal).toBeGreaterThan(glideVal);
+		});
+
+		it("dab (front-loaded, sudden) arrives faster than glide (sustained) at t=0.5", () => {
+			const glideVal = applyEffort("glide", 0.5);
+			const dabVal = applyEffort("dab", 0.5);
+			expect(dabVal).toBeGreaterThan(glideVal);
 		});
 	});
 
