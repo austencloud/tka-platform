@@ -16,6 +16,8 @@
  *   }
  */
 
+import type { TrailPointConfig } from "$lib/shared/animation-engine/domain/types/TrailPointTypes";
+
 export interface EffectPoint {
 	dx: number;
 	dy: number;
@@ -41,4 +43,18 @@ export interface IEffectPointsPersister {
 
 	/** Tear down Firestore listener and clear observers. */
 	dispose(): void;
+
+	// --- Trail assignments ---
+
+	/** Save trail point assignments for a prop type. localStorage immediate, Firestore debounced. */
+	saveTrailAssignment(propType: string, config: TrailPointConfig): void;
+
+	/** Get cached trail assignment for a prop type, or null if none stored. */
+	getTrailAssignment(propType: string): TrailPointConfig | null;
+
+	/** Get all prop types that have trail assignments. */
+	getTrailAssignmentTypes(): string[];
+
+	/** Remove trail assignment for a prop type, reverting to geometric fallback. */
+	removeTrailAssignment(propType: string): void;
 }
