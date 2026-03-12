@@ -30,12 +30,16 @@
   const isBuilding = $derived(builderState.phase === "building");
   const isBlueHand = $derived(builderState.activeHand === MotionColor.BLUE);
 
-  // Show action row when there's a relevant action to take
+  // Show action row when there's a relevant action to take.
+  // Keep visible during animation (dimmed) to prevent layout shift.
   const showActions = $derived(
-    (builderState.canFinishHand && !isAnimating) ||
-    (builderState.canGoBack && !isAnimating) ||
+    builderState.canFinishHand ||
+    builderState.canGoBack ||
     isComplete
   );
+
+  // Dim action row during animation — buttons stay in place but look inactive
+  const actionsDimmed = $derived(isAnimating);
 
   const ORIENTATIONS = [
     { value: Orientation.IN, label: "In", ariaLabel: "In orientation" },
@@ -102,24 +106,8 @@
 
 <!-- Grid overlay -->
 <div class="controls-overlay">
-  <!-- Top-left: orientation pills (desktop only) -->
-  <div class="ori-row" class:visible={isPlacing}>
-    <div class="pill-group" role="radiogroup" aria-label="Starting orientation">
-      {#each ORIENTATIONS as ori}
-        <button
-          class="pill"
-          class:active={builderState.currentOrientation === ori.value}
-          role="radio"
-          aria-checked={builderState.currentOrientation === ori.value}
-          aria-label={ori.ariaLabel}
-          disabled={!isPlacing}
-          onclick={() => builderState.setOrientation(ori.value)}
-        >
-          {ori.label}
-        </button>
-      {/each}
-    </div>
-  </div>
+  <!-- Spacer for top (desktop ori-row removed — now in BuilderTurnBar) -->
+  <div></div>
 
   <!-- Bottom-left: context-sensitive trigger (mobile only) -->
   <div class="bottom-trigger-area">
@@ -221,8 +209,8 @@
 </div>
 
 <!-- Action row: below the grid, full-width -->
-<div class="action-row" class:visible={showActions} style="--hand-color: {handColor}">
-  {#if builderState.canGoBack && !isAnimating}
+<div class="action-row" class:visible={showActions} class:dimmed={actionsDimmed} style="--hand-color: {handColor}">
+  {#if builderState.canGoBack}
     <button
       class="action-btn back-btn"
       onclick={() => builderState.goBackToBlue()}
@@ -233,7 +221,7 @@
     </button>
   {/if}
 
-  {#if builderState.canFinishHand && !isAnimating && isBlueHand}
+  {#if builderState.canFinishHand && isBlueHand}
     <button
       class="action-btn done-btn"
       onclick={() => builderState.finishHand()}
@@ -244,7 +232,7 @@
     </button>
   {/if}
 
-  {#if builderState.canFinishHand && !isAnimating && !isBlueHand}
+  {#if builderState.canFinishHand && !isBlueHand}
     <button
       class="action-btn done-btn red-done"
       onclick={() => builderState.finishHand()}
@@ -278,70 +266,6 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-  }
-
-  /* ── Orientation pills (top-left, desktop only) ── */
-  .ori-row {
-    align-self: flex-start;
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(-4px);
-    transition: opacity 0.2s ease, transform 0.2s ease;
-  }
-
-  .ori-row.visible {
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateY(0);
-  }
-
-  /* Hide desktop pill bar on mobile — replaced by popover trigger */
-  @media (max-width: 768px) {
-    .ori-row {
-      display: none;
-    }
-  }
-
-  .pill-group {
-    display: flex;
-    gap: 2px;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
-    padding: 3px;
-  }
-
-  .pill {
-    padding: 6px 12px;
-    border: none;
-    border-radius: 7px;
-    background: transparent;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 500;
-    cursor: pointer;
-    min-height: var(--min-touch-target);
-    min-width: var(--min-touch-target);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.15s ease, color 0.15s ease;
-  }
-
-  .pill:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.06);
-    color: rgba(255, 255, 255, 0.85);
-  }
-
-  .pill.active {
-    background: rgba(255, 255, 255, 0.12);
-    color: #fff;
-  }
-
-  .pill:disabled {
-    cursor: default;
   }
 
   /* ── Bottom-left trigger area (mobile only) ── */
@@ -522,14 +446,19 @@
     flex-shrink: 0;
     opacity: 0;
     pointer-events: none;
-    min-height: 0;
+    /* Always reserve space to prevent layout shift */
+    min-height: var(--min-touch-target, 44px);
     transition: opacity 0.2s ease;
   }
 
   .action-row.visible {
     opacity: 1;
     pointer-events: auto;
-    min-height: var(--min-touch-target, 44px);
+  }
+
+  .action-row.dimmed {
+    opacity: 0.3;
+    pointer-events: none;
   }
 
   /* Mobile: overlay the action row on the grid, bottom-right corner */
@@ -541,11 +470,7 @@
       left: auto;
       z-index: 10;
       padding: 0;
-      min-height: 0;
-    }
-
-    .action-row.visible {
-      min-height: 0;
+      min-height: 0; /* No space reservation needed — absolute positioned */
     }
 
     .action-btn {
@@ -614,7 +539,6 @@
   }
 
   /* === Focus indicators === */
-  .pill:focus-visible,
   .popover-pill:focus-visible,
   .popover-rotation:focus-visible,
   .compact-trigger:focus-visible {
@@ -629,10 +553,8 @@
 
   /* === Reduced motion === */
   @media (prefers-reduced-motion: reduce) {
-    .ori-row,
     .action-row,
     .action-btn,
-    .pill,
     .compact-trigger,
     .trigger-wrapper,
     .compact-trigger i,

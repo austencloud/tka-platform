@@ -69,10 +69,10 @@ export function createVisualBuilderState() {
     || phase === "placing"
   );
   const canFinishHand = $derived(
-    phase === "building" && activeSteps.length > 0
+    (phase === "building" || phase === "animating") && activeSteps.length > 0
   );
   const canGoBack = $derived(
-    activeHand === MotionColor.RED && (phase === "idle" || phase === "placing")
+    activeHand === MotionColor.RED && (phase === "idle" || phase === "placing" || phase === "animating")
   );
 
   /** First click — place prop at a grid point */
@@ -81,6 +81,9 @@ export function createVisualBuilderState() {
     currentOrientation = Orientation.IN;
     phase = "placing";
   }
+
+  // Action queued during animation — executed when animation completes
+  let pendingAction: (() => void) | null = null;
 
   /** Subsequent clicks — create a motion from currentPosition to the clicked point */
   async function addMotion(endLocation: GridLocation): Promise<void> {
@@ -118,6 +121,13 @@ export function createVisualBuilderState() {
     currentPosition = endLocation;
     currentOrientation = endOri;
     phase = "building";
+
+    // Execute any action queued during animation (e.g. finishHand, goBack)
+    if (pendingAction) {
+      const action = pendingAction;
+      pendingAction = null;
+      action();
+    }
   }
 
   /** Main click handler — routes to placeFirstPoint or addMotion */
@@ -141,6 +151,12 @@ export function createVisualBuilderState() {
 
   /** Finish current hand's path, switch to other hand or complete */
   function finishHand(): void {
+    // If animating, queue it to run after animation completes
+    if (phase === "animating") {
+      pendingAction = finishHand;
+      return;
+    }
+
     if (activeHand === MotionColor.BLUE) {
       // Switch to red
       activeHand = MotionColor.RED;
@@ -156,6 +172,12 @@ export function createVisualBuilderState() {
   /** Go back from red hand to blue hand (restore blue's last position) */
   function goBackToBlue(): void {
     if (activeHand !== MotionColor.RED) return;
+
+    // If animating, queue it to run after animation completes
+    if (phase === "animating") {
+      pendingAction = goBackToBlue;
+      return;
+    }
 
     activeHand = MotionColor.BLUE;
 
