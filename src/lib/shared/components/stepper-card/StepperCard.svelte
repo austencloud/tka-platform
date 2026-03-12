@@ -62,15 +62,13 @@ Landscape: Left half decrements, right half increments (horizontal layout)
     hapticService = container.items.hapticFeedback;
     rippleService = container.items.rippleEffect;
 
-    // Attach ripple effect
     if (cardElement) {
       return rippleService.attachRipple(cardElement, {
-        color: "rgba(255, 255, 255, 0.4)",
-        duration: 600,
-        opacity: 0.5,
+        color: "rgba(255, 255, 255, 0.25)",
+        duration: 350,
+        opacity: 0.15,
       });
     }
-
     return undefined;
   });
 

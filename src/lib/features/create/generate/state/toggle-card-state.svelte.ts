@@ -89,13 +89,13 @@ export function createToggleCardState<T>(props: {
         resizeObserver.observe(cardElement);
       }
 
-      // Attach ripple effect to card
+      // Attach subtle ripple effect to card
       const cleanupRipple =
         cardElement && rippleService
           ? rippleService.attachRipple(cardElement, {
-              color: "rgba(255, 255, 255, 0.4)",
-              duration: 600,
-              opacity: 0.5,
+              color: "rgba(255, 255, 255, 0.25)",
+              duration: 350,
+              opacity: 0.15,
             })
           : () => {};
 
