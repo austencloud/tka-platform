@@ -48,6 +48,8 @@ export interface VideoExportOrchestratorOptions {
   showStepNumbers?: boolean;
   /** Include start position in composite grid (default: false) */
   includeStartPosition?: boolean;
+  /** Called after export completes (success or failure) to reset transient state like fire caches */
+  onCleanup?: () => void;
 }
 
 export interface IVideoExportOrchestrator {

@@ -82,7 +82,7 @@
   let heroSlotEl: HTMLDivElement;
   let smallLeftSlotEl: HTMLDivElement;
   let smallRightSlotEl: HTMLDivElement;
-  let progressSlotEl: HTMLDivElement;
+  let progressSlotEl = $state<HTMLDivElement>();
 
   const DURATION = 600;
   const EASING = "cubic-bezier(0.16, 1, 0.3, 1)";
@@ -257,14 +257,10 @@
       fill: "both" as FillMode,
     });
 
-    // Progress bar: fade out during first half
-    if (progressSlotEl) {
-      progressSlotEl.animate([{ opacity: 1 }, { opacity: 0 }, { opacity: 0 }], {
-        duration: DURATION,
-        easing: "ease-in",
-        fill: "both" as FillMode,
-      });
-    }
+    // Progress bar: stays visible during reassembly so the end state matches the
+    // assembled view (which has its own progress bar in the same position).
+    // Fading it out caused a visible snap when the assembled view appeared with
+    // a progress bar that wasn't in the FLIP end state.
 
     mainAnim.finished.then(() => {
       console.log(`[DISASM] ${performance.now().toFixed(1)}ms — reassemble FLIP finished. Cancelling animations, calling oncomplete`);

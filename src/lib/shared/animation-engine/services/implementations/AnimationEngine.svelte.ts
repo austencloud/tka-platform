@@ -1007,6 +1007,15 @@ export class AnimationEngine {
   }
 
   /**
+   * Invalidate the fire frame cache so the simulation re-records from scratch.
+   * Call after video export (which uses jumpToStep frame-by-frame) to prevent
+   * stale cached fire frames from replaying when normal playback resumes.
+   */
+  invalidateFireCache(): void {
+    this.fireRenderer?.clearSimulation();
+  }
+
+  /**
    * Dispose all resources
    */
   dispose(): void {
