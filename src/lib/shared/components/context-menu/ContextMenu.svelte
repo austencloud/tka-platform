@@ -34,6 +34,7 @@
   let submenuTimer: ReturnType<typeof setTimeout> | null = $state(null);
   let loadingItemId: string | null = $state(null);
   let submenuPosition = $state({ left: 0, top: 0 });
+  let submenuOpensLeft = $state(false);
 
   /** Svelte action: moves the node to document.body so position:fixed works correctly */
   function portal(node: HTMLElement) {
@@ -157,13 +158,15 @@
 
       // Prefer right of the menu, fall back to left
       let left: number;
-      if (menuRect.right + submenuWidth + margin < vw) {
+      const opensRight = menuRect.right + submenuWidth + margin < vw;
+      if (opensRight) {
         left = menuRect.right + 2;
       } else {
         left = menuRect.left - submenuWidth - 2;
         if (left < margin) left = margin;
       }
 
+      submenuOpensLeft = !opensRight;
       submenuPosition = { left, top: itemRect.top - 4 };
     }, 150);
   }
@@ -293,7 +296,7 @@
             {/if}
             <span class="menu-item-label">{entry.label}</span>
             {#if hasChildren}
-              <i class="fas fa-chevron-right menu-item-chevron" aria-hidden="true"></i>
+              <i class="fas menu-item-chevron" class:fa-chevron-right={!submenuOpensLeft || activeSubmenuId !== entry.id} class:fa-chevron-left={submenuOpensLeft && activeSubmenuId === entry.id} aria-hidden="true"></i>
             {/if}
           </button>
         </div>
@@ -307,6 +310,7 @@
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="submenu"
+    class:opens-left={submenuOpensLeft}
     bind:this={submenuElement}
     use:portal
     style="left: {submenuPosition.left}px; top: {submenuPosition.top}px;"
@@ -351,10 +355,21 @@
     }
   }
 
-  @keyframes submenu-enter {
+  @keyframes submenu-enter-right {
     from {
       opacity: 0;
       transform: translateX(-6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes submenu-enter-left {
+    from {
+      opacity: 0;
+      transform: translateX(6px);
     }
     to {
       opacity: 1;
@@ -521,6 +536,10 @@
     opacity: 0.8;
   }
 
+  .menu-item.submenu-active .menu-item-chevron.fa-chevron-left {
+    transform: translateX(-2px);
+  }
+
   .submenu {
     position: fixed;
     z-index: 10000;
@@ -537,7 +556,11 @@
     max-height: calc(100vh - 16px);
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2)) transparent;
-    animation: submenu-enter 160ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: submenu-enter-right 160ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .submenu.opens-left {
+    animation-name: submenu-enter-left;
   }
 
   /* Submenu items get staggered entrance too */
@@ -554,6 +577,7 @@
   @media (prefers-reduced-motion: reduce) {
     .context-menu,
     .submenu,
+    .submenu.opens-left,
     .menu-item-wrapper,
     .submenu .menu-item {
       animation: none;
