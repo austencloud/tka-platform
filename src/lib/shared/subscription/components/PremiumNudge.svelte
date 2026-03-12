@@ -39,6 +39,8 @@
 
 <style>
 	.nudge-callout {
+		--premium-gold: #fbbf24;
+		--premium-gold-contrast: #1a1a2e;
 		background: var(--theme-card-bg, rgba(30, 30, 45, 0.98));
 		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		border-radius: var(--radius-md, 8px);
@@ -73,7 +75,7 @@
 	}
 
 	.nudge-icon {
-		color: #fbbf24;
+		color: var(--premium-gold);
 		font-size: 0.875rem;
 		flex-shrink: 0;
 	}
@@ -91,8 +93,8 @@
 	}
 
 	.nudge-cta {
-		background: #fbbf24;
-		color: #1a1a2e;
+		background: var(--premium-gold);
+		color: var(--premium-gold-contrast);
 		border: none;
 		border-radius: var(--radius-sm, 6px);
 		padding: 0.375rem 0.75rem;

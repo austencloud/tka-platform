@@ -1,7 +1,7 @@
 import type { CapabilityFeatureId } from "$lib/shared/auth/domain/models/FeatureFlag";
 
 export interface NudgeConfig {
-	capability: string;
+	capability: CapabilityFeatureId;
 	description: string;
 	premiumBenefit: string;
 }
