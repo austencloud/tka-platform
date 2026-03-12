@@ -45,6 +45,13 @@
     };
   }
 
+  /** Trigger a short haptic pulse on devices that support it */
+  function haptic() {
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate(8);
+    }
+  }
+
   // Position clamping after render
   $effect(() => {
     if (!menuState.open || !menuElement) return;
@@ -122,6 +129,7 @@
     if (item.disabled || item.children?.length) return;
     if (!item.action) return;
 
+    haptic();
     loadingItemId = item.id;
     try {
       await item.action();
@@ -190,7 +198,53 @@
       if (submenuTimer) clearTimeout(submenuTimer);
     };
   });
+
+  /** Build inline accent style for checked items that have an iconColor */
+  function checkedAccentStyle(item: ContextMenuItem): string {
+    if (!item.checked || !item.iconColor) return "";
+    return `background: color-mix(in srgb, ${item.iconColor} 12%, transparent);`;
+  }
 </script>
+
+<!-- Shared snippet for rendering a menu item's icon column.
+     When an item has both checked state AND a colored icon, we show both:
+     a small check/blank indicator followed by the colored icon. -->
+{#snippet itemIcons(item: ContextMenuItem, loading: boolean)}
+  {#if loading}
+    <i class="fas fa-spinner fa-spin menu-item-icon" aria-hidden="true"></i>
+  {:else if item.checked !== undefined && item.icon}
+    <!-- Dual-column: check indicator + colored icon -->
+    <i
+      class="fas menu-item-check"
+      class:fa-check={item.checked}
+      class:checked={item.checked}
+      class:unchecked={!item.checked}
+      aria-hidden="true"
+    ></i>
+    <i
+      class="fas {item.icon} menu-item-icon"
+      style={item.iconColor ? `color: ${item.iconColor}` : ""}
+      aria-hidden="true"
+    ></i>
+  {:else if item.checked !== undefined}
+    <!-- Check-only (no icon) -->
+    <i
+      class="fas menu-item-icon"
+      class:fa-check={item.checked}
+      class:checked={item.checked}
+      class:unchecked={!item.checked}
+      aria-hidden="true"
+    ></i>
+  {:else if item.icon}
+    <i
+      class="fas {item.icon} menu-item-icon"
+      style={item.iconColor ? `color: ${item.iconColor}` : ""}
+      aria-hidden="true"
+    ></i>
+  {:else}
+    <span class="menu-item-icon-spacer"></span>
+  {/if}
+{/snippet}
 
 <!-- Main context menu - portaled to body -->
 {#if menuState.open}
@@ -204,7 +258,7 @@
     tabindex="-1"
     oncontextmenu={(e) => e.preventDefault()}
   >
-    {#each items as entry}
+    {#each items as entry, i}
       {#if isSeparator(entry)}
         <div class="menu-separator" role="separator"></div>
       {:else if isHeader(entry)}
@@ -215,6 +269,7 @@
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class="menu-item-wrapper"
+          style="--item-index: {i};"
           onmouseenter={(e) => hasChildren && handleSubmenuEnter(entry, e)}
           onmouseleave={() => hasChildren && handleSubmenuLeave()}
         >
@@ -228,26 +283,9 @@
             aria-label={entry.label}
             disabled={entry.disabled || isLoading}
             onclick={() => handleItemClick(entry)}
+            style={checkedAccentStyle(entry)}
           >
-            {#if isLoading}
-              <i class="fas fa-spinner fa-spin menu-item-icon" aria-hidden="true"></i>
-            {:else if entry.checked !== undefined}
-              <i
-                class="fas menu-item-icon"
-                class:fa-check={entry.checked}
-                class:checked={entry.checked}
-                class:unchecked={!entry.checked}
-                aria-hidden="true"
-              ></i>
-            {:else if entry.icon}
-              <i
-                class="fas {entry.icon} menu-item-icon"
-                style={entry.iconColor ? `color: ${entry.iconColor}` : ""}
-                aria-hidden="true"
-              ></i>
-            {:else}
-              <span class="menu-item-icon-spacer"></span>
-            {/if}
+            {@render itemIcons(entry, isLoading)}
             {#if entry.rawIcon}
               <span class="menu-item-raw-icon" style={entry.rawIconColor ? `color: ${entry.rawIconColor}` : ""}>
                 {@html entry.rawIcon}
@@ -277,7 +315,7 @@
     onmouseleave={() => handleSubmenuLeave()}
     oncontextmenu={(e) => e.preventDefault()}
   >
-    {#each activeSubmenuEntry.children ?? [] as child}
+    {#each activeSubmenuEntry.children ?? [] as child, j}
       {#if isSeparator(child)}
         <div class="menu-separator" role="separator"></div>
       {:else if isMenuItem(child)}
@@ -290,26 +328,9 @@
           aria-label={child.label}
           disabled={child.disabled || isChildLoading}
           onclick={() => handleItemClick(child)}
+          style="{checkedAccentStyle(child)} --item-index: {j};"
         >
-          {#if isChildLoading}
-            <i class="fas fa-spinner fa-spin menu-item-icon" aria-hidden="true"></i>
-          {:else if child.checked !== undefined}
-            <i
-              class="fas menu-item-icon"
-              class:fa-check={child.checked}
-              class:checked={child.checked}
-              class:unchecked={!child.checked}
-              aria-hidden="true"
-            ></i>
-          {:else if child.icon}
-            <i
-              class="fas {child.icon} menu-item-icon"
-              style={child.iconColor ? `color: ${child.iconColor}` : ""}
-              aria-hidden="true"
-            ></i>
-          {:else}
-            <span class="menu-item-icon-spacer"></span>
-          {/if}
+          {@render itemIcons(child, isChildLoading)}
           <span class="menu-item-label">{child.label}</span>
         </button>
       {/if}
@@ -318,6 +339,40 @@
 {/if}
 
 <style>
+  /* ── Entrance animations ── */
+  @keyframes menu-enter {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes submenu-enter {
+    from {
+      opacity: 0;
+      transform: translateX(-6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes item-enter {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .context-menu {
     position: fixed;
     z-index: 9999;
@@ -327,10 +382,14 @@
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
     border-radius: 8px;
-    box-shadow: 0 8px 24px var(--theme-shadow, rgba(0, 0, 0, 0.6)), 0 2px 8px var(--theme-shadow, rgba(0, 0, 0, 0.4));
+    box-shadow:
+      0 8px 24px var(--theme-shadow, rgba(0, 0, 0, 0.6)),
+      0 2px 8px var(--theme-shadow, rgba(0, 0, 0, 0.4));
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2)) transparent;
+    animation: menu-enter 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    transform-origin: top left;
   }
 
   .menu-header {
@@ -352,6 +411,8 @@
 
   .menu-item-wrapper {
     position: relative;
+    animation: item-enter 160ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(var(--item-index, 0) * 30ms);
   }
 
   .menu-item {
@@ -367,12 +428,18 @@
     font-size: var(--font-size-sm, 14px);
     cursor: pointer;
     text-align: left;
-    transition: background var(--duration-fast, 100ms) ease;
+    transition:
+      background 120ms ease,
+      transform 120ms ease;
   }
 
   .menu-item:hover:not(.disabled),
   .menu-item.submenu-active {
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+  }
+
+  .menu-item:active:not(.disabled) {
+    transform: scale(0.97);
   }
 
   .menu-item.disabled {
@@ -395,10 +462,20 @@
     flex-shrink: 0;
   }
 
+  /* Small check indicator used in dual-column mode (check + icon) */
+  .menu-item-check {
+    width: 12px;
+    text-align: center;
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+
+  .menu-item-check.checked,
   .menu-item-icon.checked {
     color: var(--semantic-success, #22c55e);
   }
 
+  .menu-item-check.unchecked,
   .menu-item-icon.unchecked {
     opacity: 0;
   }
@@ -435,6 +512,12 @@
     font-size: var(--font-size-compact, 12px);
     opacity: 0.5;
     flex-shrink: 0;
+    transition: transform 120ms ease;
+  }
+
+  .menu-item.submenu-active .menu-item-chevron {
+    transform: translateX(2px);
+    opacity: 0.8;
   }
 
   .submenu {
@@ -446,11 +529,20 @@
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
     border-radius: 8px;
-    box-shadow: 0 8px 24px var(--theme-shadow, rgba(0, 0, 0, 0.6)), 0 2px 8px var(--theme-shadow, rgba(0, 0, 0, 0.4));
+    box-shadow:
+      0 8px 24px var(--theme-shadow, rgba(0, 0, 0, 0.6)),
+      0 2px 8px var(--theme-shadow, rgba(0, 0, 0, 0.4));
     overflow-y: auto;
     max-height: calc(100vh - 16px);
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2)) transparent;
+    animation: submenu-enter 160ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  /* Submenu items get staggered entrance too */
+  .submenu .menu-item {
+    animation: item-enter 140ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(var(--item-index, 0) * 25ms);
   }
 
   .menu-item:focus-visible {
@@ -459,7 +551,18 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .context-menu,
+    .submenu,
+    .menu-item-wrapper,
+    .submenu .menu-item {
+      animation: none;
+    }
+
     .menu-item {
+      transition: none;
+    }
+
+    .menu-item-chevron {
       transition: none;
     }
   }
