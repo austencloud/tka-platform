@@ -23,7 +23,8 @@
 
 <style>
 	.premium-badge {
-		color: #fbbf24;
+		--premium-gold: #fbbf24;
+		color: var(--premium-gold);
 		display: inline-flex;
 		align-items: center;
 		cursor: help;
