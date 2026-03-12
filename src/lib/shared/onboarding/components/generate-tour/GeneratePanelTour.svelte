@@ -110,19 +110,21 @@
   const tourOverrides: Partial<Record<GenerateTourStop, Partial<GeneratorHelpItem>>> = {
     "word-input": {
       name: "Spell a Word",
+      shortDesc: "Type a word or go random",
       fullDesc: "Type a word and the generator turns each letter into a move. Leave it blank for a random sequence.",
       bullets: undefined,
       images: undefined,
     },
     "customize": {
       name: "Customize",
+      shortDesc: "Fine-tune your sequence",
       fullDesc: "Tweak how your sequence feels. Prop continuity, rhythm templates, and start/end positions all live here.",
       bullets: undefined,
       images: undefined,
     },
     "loop": {
       name: "LOOP",
-      fullDesc: "A LOOP sequence ends where it started, so you can repeat it forever. There are 6 types: Rotated, Mirrored, Swapped, Inverted, and combinations of those.",
+      fullDesc: "A LOOP sequence ends where it started, so you can repeat it forever. Four base types — Rotated, Mirrored, Swapped, and Inverted — can be combined for even more variety.",
       bullets: undefined,
       images: undefined,
     },
@@ -269,8 +271,8 @@
    */
   :global(dialog.tour-modal) {
     width: min(92vw, 560px) !important;
-    height: min(85vh, 680px) !important;
-    max-height: 85vh !important;
+    height: min(75vh, 580px) !important;
+    max-height: 75vh !important;
   }
 
   /* ===== Mini Card Grid ===== */
