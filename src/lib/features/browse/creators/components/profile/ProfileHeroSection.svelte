@@ -3,6 +3,7 @@
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import AvatarImage from "./AvatarImage.svelte";
   import { reportModalState } from "$lib/features/moderation/state/report-modal-state.svelte";
+  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
 
   let {
     userProfile,
@@ -60,6 +61,26 @@
         <i class="fab fa-instagram" aria-hidden="true"></i>
         <span>@{userProfile.instagramUsername}</span>
       </a>
+    {/if}
+
+    {#if userProfile.propsISpinWith && userProfile.propsISpinWith.length > 0}
+      <div class="props-row">
+        {#each userProfile.propsISpinWith as prop}
+          <div
+            class="profile-prop-icon"
+            class:favorite={prop === userProfile.favoriteProp}
+            title={getPropTypeDisplayInfo(prop).label}
+          >
+            <img
+              src={getPropTypeDisplayInfo(prop).image}
+              alt={getPropTypeDisplayInfo(prop).label}
+            />
+            {#if prop === userProfile.favoriteProp}
+              <span class="favorite-star" aria-label="Favorite">★</span>
+            {/if}
+          </div>
+        {/each}
+      </div>
     {/if}
 
     {#if currentUserId && !isOwnProfile}
@@ -329,5 +350,41 @@
   .instagram-link:focus-visible {
     outline: 3px solid #E4405F;
     outline-offset: 2px;
+  }
+
+  .props-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 8px 0;
+  }
+
+  .profile-prop-icon {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+  }
+
+  .profile-prop-icon.favorite {
+    opacity: 1;
+  }
+
+  .profile-prop-icon img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+  }
+
+  .favorite-star {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    font-size: 10px;
+    color: gold;
   }
 </style>
