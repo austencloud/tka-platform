@@ -20,6 +20,8 @@ Shows:
   } from "../domain/concepts";
   import type { LearnConcept, ConceptCategory, LearningProgress } from "../domain/types";
   import type { IConceptProgressTracker } from "../services/contracts/IConceptProgressTracker";
+  import { CAPABILITY_NUDGES } from "$lib/shared/subscription/domain/capability-nudges";
+  import PremiumNudge from "$lib/shared/subscription/components/PremiumNudge.svelte";
   import ProgressMiniMap from "./ProgressMiniMap.svelte";
   import HeroConceptCard from "./HeroConceptCard.svelte";
   import ConceptContext from "./ConceptContext.svelte";
@@ -101,8 +103,33 @@ Shows:
     return { completed, total: concepts.length };
   }
 
+  // Premium gating — Foundation is free, everything else shows preview nudge
+  const curriculumNudge = CAPABILITY_NUDGES["capability:learn:full-curriculum"]!;
+  let premiumNudgeVisible = $state(false);
+  let pendingPremiumConcept = $state<LearnConcept | null>(null);
+
+  function isPremiumGatedCategory(category: ConceptCategory): boolean {
+    return category !== "foundation";
+  }
+
   function handleConceptStart(concept: LearnConcept) {
+    if (isPremiumGatedCategory(concept.category) && !premiumNudgeVisible) {
+      // Show preview nudge, then proceed
+      premiumNudgeVisible = true;
+      pendingPremiumConcept = concept;
+      return;
+    }
     onConceptClick?.(concept);
+  }
+
+  function handleNudgeDismiss() {
+    premiumNudgeVisible = false;
+    // In preview mode, proceed to the concept after dismissal
+    if (pendingPremiumConcept) {
+      const concept = pendingPremiumConcept;
+      pendingPremiumConcept = null;
+      onConceptClick?.(concept);
+    }
   }
 
   function toggleShowAll() {
@@ -171,17 +198,33 @@ Shows:
             {category}
             completedCount={categoryProgress.completed}
             totalCount={categoryProgress.total}
+            premiumGated={isPremiumGatedCategory(category)}
           />
           <div class="concept-list">
             {#each concepts as concept (concept.id)}
               {@const status = conceptProgressService.getConceptStatus(
                 concept.id
               )}
-              <ConceptCard {concept} {status} onClick={onConceptClick} />
+              <ConceptCard
+                {concept}
+                {status}
+                premiumGated={isPremiumGatedCategory(concept.category)}
+                onClick={handleConceptStart}
+              />
             {/each}
           </div>
         </section>
       {/each}
+    </div>
+  {/if}
+
+  {#if premiumNudgeVisible}
+    <div class="premium-nudge-overlay">
+      <PremiumNudge
+        nudge={curriculumNudge}
+        preview={true}
+        onDismiss={handleNudgeDismiss}
+      />
     </div>
   {/if}
 </div>
@@ -357,6 +400,14 @@ Shows:
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 0.625rem;
     padding: 0;
+  }
+
+  .premium-nudge-overlay {
+    position: fixed;
+    bottom: 5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
   }
 
   @media (prefers-reduced-motion: reduce) {
