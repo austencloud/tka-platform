@@ -3,11 +3,12 @@
 
 	interface Props {
 		nudge: NudgeConfig;
+		preview?: boolean;
 		onContinueWithout?: () => void;
 		onDismiss?: () => void;
 	}
 
-	let { nudge, onContinueWithout, onDismiss }: Props = $props();
+	let { nudge, preview = false, onContinueWithout, onDismiss }: Props = $props();
 
 	function handleGoPremium() {
 		window.dispatchEvent(
@@ -25,16 +26,29 @@
 <div class="nudge-callout" role="status" aria-label="Premium feature">
 	<div class="nudge-header">
 		<i class="fas fa-crown nudge-icon" aria-hidden="true"></i>
-		<span class="nudge-benefit">{nudge.premiumBenefit}</span>
-	</div>
-	<div class="nudge-actions">
-		<button class="nudge-cta" onclick={handleGoPremium}>Go Premium</button>
-		{#if onContinueWithout}
-			<button class="nudge-secondary" onclick={handleContinueWithout}>
-				Continue without
-			</button>
+		{#if preview}
+			<span class="nudge-benefit">
+				{nudge.premiumBenefit} — this will be a Premium feature.
+				For now, it's on the house.
+			</span>
+		{:else}
+			<span class="nudge-benefit">{nudge.premiumBenefit}</span>
 		{/if}
 	</div>
+	{#if preview}
+		<div class="nudge-actions">
+			<button class="nudge-secondary" onclick={() => onDismiss?.()}>Got it</button>
+		</div>
+	{:else}
+		<div class="nudge-actions">
+			<button class="nudge-cta" onclick={handleGoPremium}>Go Premium</button>
+			{#if onContinueWithout}
+				<button class="nudge-secondary" onclick={handleContinueWithout}>
+					Continue without
+				</button>
+			{/if}
+		</div>
+	{/if}
 </div>
 
 <style>

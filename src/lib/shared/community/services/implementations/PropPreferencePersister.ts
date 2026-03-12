@@ -1,4 +1,5 @@
-import { doc, getDoc, updateDoc, getFirestore } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { IPropPreferencePersister, PropPreferences, CatdogCombo } from "../contracts/IPropPreferencePersister";
 
@@ -10,7 +11,7 @@ const DEFAULT_PREFS: PropPreferences = {
 
 export class PropPreferencePersister implements IPropPreferencePersister {
   async load(userId: string): Promise<PropPreferences> {
-    const db = getFirestore();
+    const db = await getFirestoreInstance();
     const userDoc = await getDoc(doc(db, "users", userId));
     if (!userDoc.exists()) return { ...DEFAULT_PREFS };
     const data = userDoc.data();
@@ -23,7 +24,7 @@ export class PropPreferencePersister implements IPropPreferencePersister {
 
   async save(userId: string, prefs: PropPreferences): Promise<void> {
     this.validate(prefs);
-    const db = getFirestore();
+    const db = await getFirestoreInstance();
     await updateDoc(doc(db, "users", userId), {
       propsISpinWith: prefs.propsISpinWith,
       favoriteProp: prefs.favoriteProp,

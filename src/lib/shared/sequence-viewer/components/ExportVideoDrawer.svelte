@@ -129,16 +129,6 @@
     }
   });
 
-  let premiumNudgeDismissed = $state(false);
-
-  const hasActiveEffect = $derived(
-    effectChips.some((e) => e.active),
-  );
-
-  const showPremiumPreviewNudge = $derived(
-    hasActiveEffect && !premiumNudgeDismissed,
-  );
-
   function toggleEffect(id: string) {
     const current = exportOptions.videoEffectOverrides;
     if (!current) return;
@@ -157,6 +147,18 @@
         ] ?? e.active,
     })),
   );
+
+  let premiumNudgeDismissed = $state(false);
+
+  const hasActiveEffect = $derived(
+    effectChips.some((e) => e.active),
+  );
+
+  const showPremiumPreviewNudge = $derived(
+    hasActiveEffect && !premiumNudgeDismissed,
+  );
+
+  const effectsNudge = CAPABILITY_NUDGES["capability:export:effects"];
 
   /** Summary of current settings for the bottom bar chip */
   const settingsSummary = $derived(
@@ -392,7 +394,7 @@
           {#if showPremiumPreviewNudge}
             <div class="premium-nudge-wrapper">
               <PremiumNudge
-                nudge={CAPABILITY_NUDGES["capability:export:effects"]}
+                nudge={effectsNudge}
                 preview={true}
                 onDismiss={() => premiumNudgeDismissed = true}
               />
@@ -531,7 +533,7 @@
       {#if showPremiumPreviewNudge}
         <div class="premium-nudge-wrapper">
           <PremiumNudge
-            nudge={CAPABILITY_NUDGES["capability:export:effects"]}
+            nudge={effectsNudge}
             preview={true}
             onDismiss={() => premiumNudgeDismissed = true}
           />
