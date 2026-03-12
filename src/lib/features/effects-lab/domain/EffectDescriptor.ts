@@ -19,8 +19,6 @@ export interface EffectDescriptor {
   accentColorMid: string;
   /** Border accent (rgba) */
   accentColorBorder: string;
-  /** Whether this effect type has a point placement editor */
-  hasPointEditor: boolean;
   /** Create a new point at the given coordinates */
   createPoint(dx: number, dy: number): TipPoint;
   /** Load default points for a prop type from the unified registry */
@@ -40,7 +38,6 @@ export const FIRE_DESCRIPTOR: EffectDescriptor = {
   accentColor: "#f97316",
   accentColorMid: "rgba(249, 115, 22, 0.15)",
   accentColorBorder: "rgba(249, 115, 22, 0.3)",
-  hasPointEditor: true,
   createPoint: sharedCreatePoint,
   getDefaultPoints: sharedGetDefaultPoints,
 };
@@ -52,7 +49,6 @@ export const LED_DESCRIPTOR: EffectDescriptor = {
   accentColor: "#00ff88",
   accentColorMid: "rgba(0, 255, 136, 0.15)",
   accentColorBorder: "rgba(0, 255, 136, 0.3)",
-  hasPointEditor: true,
   createPoint: sharedCreatePoint,
   getDefaultPoints: sharedGetDefaultPoints,
 };
@@ -64,7 +60,6 @@ export const TRAILS_DESCRIPTOR: EffectDescriptor = {
   accentColor: "#3b82f6",
   accentColorMid: "rgba(59, 130, 246, 0.15)",
   accentColorBorder: "rgba(59, 130, 246, 0.3)",
-  hasPointEditor: false,
   createPoint: sharedCreatePoint,
   getDefaultPoints: () => [],
 };
@@ -76,7 +71,6 @@ export const CHARCOAL_DESCRIPTOR: EffectDescriptor = {
   accentColor: "#f59e0b",
   accentColorMid: "rgba(245, 158, 11, 0.15)",
   accentColorBorder: "rgba(245, 158, 11, 0.3)",
-  hasPointEditor: true,
   createPoint: sharedCreatePoint,
   getDefaultPoints: sharedGetDefaultPoints,
 };

@@ -6,15 +6,13 @@
 -->
 <script lang="ts">
 	import { onDestroy } from "svelte";
-	import type { EffectDescriptor } from "../domain/EffectDescriptor";
 	import type { EffectPointEditorState } from "../state/effect-point-editor-state.svelte";
 
 	interface Props {
 		editorState: EffectPointEditorState;
-		descriptor: EffectDescriptor;
 	}
 
-	let { editorState, descriptor }: Props = $props();
+	let { editorState }: Props = $props();
 
 	interface PropFamily {
 		label: string;
@@ -106,7 +104,7 @@
 
 <div
 	class="prop-selector"
-	style="--effect-accent: {descriptor.accentColor}; --effect-accent-mid: {descriptor.accentColorMid}; --effect-accent-border: {descriptor.accentColorBorder}"
+	style="--effect-accent: var(--theme-accent, #8b5cf6); --effect-accent-mid: rgba(139, 92, 246, 0.15); --effect-accent-border: rgba(139, 92, 246, 0.3)"
 >
 	<!-- Custom family dropdown -->
 	<div class="family-dropdown">
