@@ -23,10 +23,8 @@
   import { applyEffort } from "../domain/effort-easing-unified";
   import EffortComparisonGrid from "./EffortComparisonGrid.svelte";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
-  import SourceControls from "$lib/shared/animation-engine/components/SourceControls.svelte";
-  import TempoControl from "$lib/shared/sequence-viewer/components/TempoControl.svelte";
-  import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
   import type { SourceMode } from "$lib/shared/animation-engine/services/contracts/ISequenceChainingOrchestrator";
+  import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
   import { AngleCalculator } from "$lib/features/compose/services/implementations/AngleCalculator";
   import { MotionCalculator } from "$lib/features/compose/services/implementations/MotionCalculator";
@@ -445,38 +443,105 @@
 </script>
 
 <div class="effort-playback-host">
-  <!-- Controls Bar -->
+  <!-- Single-row controls bar for all sizes -->
   <div class="controls-bar">
-    <div class="controls-left">
-      <SourceControls
-        {sourceMode}
-        {sequence}
-        {isChainingNow}
-        onSourceChange={handleSourceChange}
-        onPick={() => (showPicker = true)}
-        onSkip={handleSkip}
-        onShuffle={handleShuffle}
-      />
+    <!-- Source mode toggle -->
+    <div class="source-toggle" role="radiogroup" aria-label="Sequence source">
+      <button
+        role="radio"
+        class="source-btn"
+        class:active={sourceMode === "pick"}
+        aria-checked={sourceMode === "pick"}
+        onclick={() => { handleSourceChange("pick"); showPicker = true; }}
+      >
+        <i class="fas fa-hand-pointer" aria-hidden="true"></i>
+        <span class="source-label">Pick</span>
+      </button>
+      <button
+        role="radio"
+        class="source-btn"
+        class:active={sourceMode === "library"}
+        aria-checked={sourceMode === "library"}
+        onclick={() => handleSourceChange("library")}
+      >
+        <i class="fas fa-book" aria-hidden="true"></i>
+        <span class="source-label">Library</span>
+      </button>
+      <button
+        role="radio"
+        class="source-btn"
+        class:active={sourceMode === "infinite"}
+        aria-checked={sourceMode === "infinite"}
+        onclick={() => handleSourceChange("infinite")}
+      >
+        <i class="fas fa-infinity" aria-hidden="true"></i>
+        <span class="source-label">Infinite</span>
+      </button>
     </div>
 
-    <div class="controls-right">
-      {#if hasCustomParams}
-        <button class="reset-btn" onclick={resetToDefaults} title="Reset sliders to defaults">
-          <i class="fas fa-undo" aria-hidden="true"></i>
-          Reset
+    <!-- Action buttons (skip/shuffle) -->
+    {#if sourceMode !== "pick"}
+      <button
+        class="action-btn"
+        onclick={handleSkip}
+        disabled={isChainingNow || !sequence}
+        aria-label="Skip to next sequence"
+      >
+        <i class="fas fa-forward" aria-hidden="true"></i>
+      </button>
+      {#if sourceMode === "infinite"}
+        <button
+          class="action-btn"
+          onclick={handleShuffle}
+          disabled={isChainingNow || !sequence}
+          aria-label="Shuffle"
+        >
+          <i class="fas fa-random" aria-hidden="true"></i>
         </button>
       {/if}
-      <TempoControl
-        {bpm}
-        onBpmChange={handleBpmChange}
-        showPresets={false}
-        showRamp={false}
-      />
-      <TransportControls
-        {isPlaying}
-        onPlaybackToggle={togglePlayback}
-      />
+    {/if}
+
+    <!-- Sequence info -->
+    {#if sequence}
+      <span class="seq-info">
+        {simplifyAndTruncate(sequence.word || sequence.name || "Unnamed")}
+        <span class="seq-beats">{sequence.steps?.length || 0}b</span>
+      </span>
+    {/if}
+
+    <!-- Spacer pushes right-side controls -->
+    <div class="spacer"></div>
+
+    <!-- Reset (only when params are customized) -->
+    {#if hasCustomParams}
+      <button class="action-btn" onclick={resetToDefaults} title="Reset sliders to defaults" aria-label="Reset parameters">
+        <i class="fas fa-undo" aria-hidden="true"></i>
+      </button>
+    {/if}
+
+    <!-- BPM display with +/- -->
+    <div class="bpm-control">
+      <button class="bpm-btn" onclick={() => handleBpmChange(Math.max(20, bpm - 5))} aria-label="Decrease BPM">
+        <i class="fas fa-minus" aria-hidden="true"></i>
+      </button>
+      <div class="bpm-display">
+        <span class="bpm-value">{bpm}</span>
+        <span class="bpm-label">BPM</span>
+      </div>
+      <button class="bpm-btn" onclick={() => handleBpmChange(Math.min(300, bpm + 5))} aria-label="Increase BPM">
+        <i class="fas fa-plus" aria-hidden="true"></i>
+      </button>
     </div>
+
+    <!-- Play/Pause -->
+    <button
+      class="play-btn"
+      onclick={togglePlayback}
+      disabled={steps.length === 0}
+      aria-label={isPlaying ? "Pause" : "Play"}
+    >
+      <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
+    </button>
   </div>
 
   <!-- Grid Area -->
@@ -529,49 +594,180 @@
     overflow: hidden;
   }
 
+  /* ── Single-row controls bar ─────────────────── */
   .controls-bar {
+    flex-shrink: 0;
     display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: var(--spacing-sm, 8px);
-    padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
-  .reset-btn {
+  .spacer {
+    flex: 1;
+  }
+
+  /* ── Source toggle (pill group) ──────────────── */
+  .source-toggle {
+    display: flex;
+    gap: 1px;
+    background: color-mix(in srgb, var(--theme-text) 3%, transparent);
+    border-radius: 6px;
+    padding: 2px;
+  }
+
+  .source-btn {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 12px;
+    justify-content: center;
+    gap: 5px;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    background: transparent;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .source-btn.active {
+    background: rgba(249, 115, 22, 0.15);
+    color: #fb923c;
+  }
+
+  .source-btn:hover:not(.active) {
+    color: var(--theme-text, white);
+    background: color-mix(in srgb, var(--theme-text) 6%, transparent);
+  }
+
+  .source-btn i {
+    font-size: 11px;
+  }
+
+  /* ── Action buttons (skip, shuffle, reset) ──── */
+  .action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 6px;
+    background: transparent;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: 12px;
     cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .reset-btn:hover {
-    color: var(--theme-text, #ffffff);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-    background: rgba(255, 255, 255, 0.04);
-  }
-
-  .controls-left {
     flex-shrink: 0;
   }
 
-  .controls-right {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md, 16px);
-    flex-wrap: wrap;
+  .action-btn:hover {
+    color: var(--theme-text, white);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    background: color-mix(in srgb, var(--theme-text) 6%, transparent);
   }
 
+  .action-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  /* ── Sequence info chip ─────────────────────── */
+  .seq-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background: color-mix(in srgb, var(--theme-text) 3%, transparent);
+    border-radius: 4px;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    color: var(--theme-text, white);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 160px;
+  }
+
+  .seq-beats {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+
+  /* ── BPM control ────────────────────────────── */
+  .bpm-control {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+
+  .bpm-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 4px;
+    background: transparent;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: 10px;
+    cursor: pointer;
+  }
+
+  .bpm-btn:hover {
+    color: var(--theme-text, white);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+  }
+
+  .bpm-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1;
+    min-width: 36px;
+  }
+
+  .bpm-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--theme-text, white);
+  }
+
+  .bpm-label {
+    font-size: 8px;
+    font-weight: 500;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    text-transform: uppercase;
+  }
+
+  /* ── Play button ────────────────────────────── */
+  .play-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 50%;
+    background: var(--theme-accent, #8b5cf6);
+    color: white;
+    font-size: 13px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .play-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  /* ── Grid area ──────────────────────────────── */
   .grid-area {
     flex: 1;
     min-height: 0;
@@ -597,5 +793,28 @@
   .empty-state p {
     font-size: var(--font-size-min, 14px);
     margin: 0;
+  }
+
+  /* ── Mobile: hide source labels ─────────────── */
+  @media (max-width: 600px) {
+    .source-label {
+      display: none;
+    }
+
+    .source-btn {
+      padding: 6px 8px;
+    }
+
+    .seq-info {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .source-btn,
+    .action-btn,
+    .bpm-btn {
+      transition: none;
+    }
   }
 </style>

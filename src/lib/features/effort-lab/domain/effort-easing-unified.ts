@@ -65,8 +65,30 @@ function dab(t: number, params?: EffortParams): number {
 	);
 }
 
+/**
+ * Press and punch are "heavy" efforts (high weight) whose raw Laban curves
+ * are back-loaded — the motion crammed into the last 20-30% of the beat.
+ * When practicing, you say "eight" at the start of the beat and expect to
+ * see position 8. But with back-loaded curves, the props are still at
+ * position 7 until the beat is almost over.
+ *
+ * The fix: flip the curve so the snap happens at the START of the beat.
+ * f(t) = 1 - laban(1-t) reflects the back-loaded curve into a front-loaded
+ * one. The props arrive immediately, then hold for the rest of the beat.
+ * Glide and dab are unaffected (they're light efforts, already intuitive).
+ */
+function frontLoadedLabanEasing(
+	t: number,
+	weight: number,
+	time: number
+): number {
+	if (t <= 0) return 0;
+	if (t >= 1) return 1;
+	return 1 - applyLabanEasing(1 - t, weight, time);
+}
+
 function press(t: number, params?: EffortParams): number {
-	return applyLabanEasing(
+	return frontLoadedLabanEasing(
 		t,
 		resolve("press", "weight", params),
 		resolve("press", "time", params)
@@ -74,7 +96,7 @@ function press(t: number, params?: EffortParams): number {
 }
 
 function punch(t: number, params?: EffortParams): number {
-	return applyLabanEasing(
+	return frontLoadedLabanEasing(
 		t,
 		resolve("punch", "weight", params),
 		resolve("punch", "time", params)
@@ -88,7 +110,15 @@ function punch(t: number, params?: EffortParams): number {
 /**
  * Elastic ease-out: overshoot then settle.
  * Models a staff swinging past its target and settling back.
- * amplitude (default 0.4) controls overshoot magnitude (~8% at default).
+ *
+ * Uses a physically-based damped spring instead of the standard elastic-out
+ * formula (easings.net). The standard formula is `1 + oscillation * decay`
+ * which starts at ~1.0 on frame 1 and just wobbles — the approach to the
+ * target is invisible. A damped spring starts at 0, ramps up toward 1 with
+ * visible acceleration, overshoots past 1 around t=0.4-0.5, then settles.
+ * The eye can track the entire motion.
+ *
+ * amplitude (default 0.4) controls overshoot magnitude (~9% at default).
  * frequency (default 1.0) controls oscillation count (higher = more wobble).
  */
 function elastic(t: number, params?: EffortParams): number {
@@ -98,11 +128,23 @@ function elastic(t: number, params?: EffortParams): number {
 	const amplitude = resolve("elastic", "amplitude", params);
 	const frequency = resolve("elastic", "frequency", params);
 
-	// Based on the standard elastic ease-out (easings.net) but scaled down.
-	// The raw formula overshoots by ~18%; amplitude*0.5 scales that to ~8% at default.
-	const period = (2 * Math.PI) / (3 * frequency);
-	const raw = Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * period);
-	return 1 + raw * amplitude * 0.35;
+	// Damped spring: x(t) = 1 - e^(-ζωt) * [cos(ωd·t) + (ζω/ωd)·sin(ωd·t)]
+	// The amplitude slider maps inversely to damping ratio (ζ):
+	// amp=0.1 → zeta=0.71 (heavy damping, subtle ~4% overshoot)
+	// amp=0.4 → zeta=0.61 (moderate, one clear ~9% overshoot peaking at t≈0.4)
+	// amp=0.8 → zeta=0.47 (springy, ~19% overshoot)
+	// amp=1.5 → zeta=0.23 (very springy, ~48% overshoot with multiple oscillations)
+	const zeta = Math.max(0.1, 0.75 - amplitude * 0.35);
+	const omega = 10 * frequency; // Natural frequency
+	const omegaD = omega * Math.sqrt(Math.max(1 - zeta * zeta, 0.001));
+
+	const decay = Math.exp(-zeta * omega * t);
+	const cosine = Math.cos(omegaD * t);
+	const sine = Math.sin(omegaD * t);
+
+	// Full damped spring response from rest (position 0 → target 1).
+	// Includes both cosine and sine terms for correct initial velocity.
+	return 1 - decay * (cosine + ((zeta * omega) / omegaD) * sine);
 }
 
 /**
