@@ -1,0 +1,423 @@
+<!--
+  DisassembleTransition.svelte
+
+  Renders three synchronized AnimatorCanvases in the disassembled layout.
+  Stays mounted for all non-assembled states (disassembling, disassembled, reassembling)
+  to avoid canvas re-initialization flashes.
+
+  Animates entrance/exit using FLIP technique with Web Animations API.
+  When direction is "idle", just renders the static disassembled layout.
+-->
+<script lang="ts">
+  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+  import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+  import type { PropState } from "../domain/PropState";
+  import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import type { FireOverlayConfig } from "../domain/types/FireTypes";
+  import type { LedOverlayConfig } from "../domain/types/LedTypes";
+  import AnimatorCanvas from "./AnimatorCanvas.svelte";
+  import SegmentedSequenceProgressBar from "./layers/SegmentedSequenceProgressBar.svelte";
+  import { untrack } from "svelte";
+
+  interface Props {
+    direction: "disassemble" | "reassemble" | "idle";
+    assembledRect: DOMRect | null;
+    blueProp: PropState | null;
+    redProp: PropState | null;
+    gridVisible?: boolean;
+    gridMode?: GridMode | null;
+    backgroundAlpha?: number;
+    letter?: Letter | null;
+    stepData?: StartPositionData | StepData | null;
+    sequenceData?: SequenceData | null;
+    currentStep?: number;
+    isPlaying?: boolean;
+    word?: string | null;
+    fireConfig?: Partial<FireOverlayConfig>;
+    ledConfig?: Partial<LedOverlayConfig>;
+    oncomplete: () => void;
+  }
+
+  let {
+    direction,
+    assembledRect,
+    blueProp,
+    redProp,
+    gridVisible = true,
+    gridMode = null,
+    backgroundAlpha = 0,
+    letter = null,
+    stepData = null,
+    sequenceData = null,
+    currentStep = 0,
+    isPlaying = false,
+    word = null,
+    fireConfig = undefined,
+    ledConfig = undefined,
+    oncomplete,
+  }: Props = $props();
+
+  // Shared props for all three sub-canvases
+  const shared = $derived({
+    gridVisible,
+    gridMode,
+    backgroundAlpha,
+    letter,
+    stepData,
+    sequenceData,
+    currentStep,
+    isPlaying,
+    word: null as string | null,
+    fireConfig,
+    ledConfig,
+    disableContextMenu: true,
+    hideProgressBar: true,
+    fillContainer: true,
+  });
+
+  // Element references for FLIP measurement
+  let viewElement: HTMLDivElement;
+  let heroSlotEl: HTMLDivElement;
+  let smallLeftSlotEl: HTMLDivElement;
+  let smallRightSlotEl: HTMLDivElement;
+  let progressSlotEl: HTMLDivElement;
+
+  const DURATION = 600;
+  const EASING = "cubic-bezier(0.16, 1, 0.3, 1)";
+
+  function getAssembledRect(containerRect: DOMRect): {
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+  } {
+    if (assembledRect) return assembledRect;
+    // Fallback: estimate a centered square (75% of height to account for chrome)
+    const side = Math.min(containerRect.width, containerRect.height * 0.75);
+    return {
+      left: containerRect.left + (containerRect.width - side) / 2,
+      top: containerRect.top + (containerRect.height - side) / 2,
+      width: side,
+      height: side,
+    };
+  }
+
+  function calcFlipTransform(
+    slotRect: DOMRect,
+    targetRect: { left: number; top: number; width: number; height: number }
+  ) {
+    const slotCenterX = slotRect.left + slotRect.width / 2;
+    const slotCenterY = slotRect.top + slotRect.height / 2;
+    const targetCenterX = targetRect.left + targetRect.width / 2;
+    const targetCenterY = targetRect.top + targetRect.height / 2;
+
+    return {
+      tx: targetCenterX - slotCenterX,
+      ty: targetCenterY - slotCenterY,
+      sx: targetRect.width / slotRect.width,
+      sy: targetRect.height / slotRect.height,
+    };
+  }
+
+  function animateDisassemble(
+    assembled: { left: number; top: number; width: number; height: number }
+  ) {
+    const heroRect = heroSlotEl.getBoundingClientRect();
+    const leftRect = smallLeftSlotEl.getBoundingClientRect();
+    const rightRect = smallRightSlotEl.getBoundingClientRect();
+
+    const heroFlip = calcFlipTransform(heroRect, assembled);
+    const leftFlip = calcFlipTransform(leftRect, assembled);
+    const rightFlip = calcFlipTransform(rightRect, assembled);
+
+    const opts = { duration: DURATION, easing: EASING, fill: "both" as FillMode };
+
+    // Hero: translate+scale from assembled to natural position
+    heroSlotEl.animate(
+      [
+        {
+          transform: `translate(${heroFlip.tx}px, ${heroFlip.ty}px) scale(${heroFlip.sx}, ${heroFlip.sy})`,
+        },
+        { transform: "translate(0, 0) scale(1)" },
+      ],
+      opts
+    );
+
+    // Blue-only: translate+scale from assembled to bottom-left
+    smallLeftSlotEl.animate(
+      [
+        {
+          transform: `translate(${leftFlip.tx}px, ${leftFlip.ty}px) scale(${leftFlip.sx}, ${leftFlip.sy})`,
+        },
+        { transform: "translate(0, 0) scale(1)" },
+      ],
+      opts
+    );
+    // Blue-only: fade in during first 25%
+    smallLeftSlotEl.animate([{ opacity: 0 }, { opacity: 1 }], {
+      duration: DURATION * 0.25,
+      easing: "ease-out",
+      fill: "both" as FillMode,
+    });
+
+    // Red-only: translate+scale from assembled to bottom-right
+    const mainAnim = smallRightSlotEl.animate(
+      [
+        {
+          transform: `translate(${rightFlip.tx}px, ${rightFlip.ty}px) scale(${rightFlip.sx}, ${rightFlip.sy})`,
+        },
+        { transform: "translate(0, 0) scale(1)" },
+      ],
+      opts
+    );
+    // Red-only: fade in during first 25%
+    smallRightSlotEl.animate([{ opacity: 0 }, { opacity: 1 }], {
+      duration: DURATION * 0.25,
+      easing: "ease-out",
+      fill: "both" as FillMode,
+    });
+
+    // Progress bar: fade in during second half
+    if (progressSlotEl) {
+      progressSlotEl.animate([{ opacity: 0 }, { opacity: 0 }, { opacity: 1 }], {
+        duration: DURATION,
+        easing: "ease-out",
+        fill: "both" as FillMode,
+      });
+    }
+
+    mainAnim.finished.then(() => {
+      // Cancel all fill:both animations so the elements return to their natural state
+      // (prevents stale transforms from lingering when the component stays mounted)
+      cancelAllAnimations();
+      oncomplete();
+    });
+  }
+
+  function animateReassemble(
+    assembled: { left: number; top: number; width: number; height: number }
+  ) {
+    const heroRect = heroSlotEl.getBoundingClientRect();
+    const leftRect = smallLeftSlotEl.getBoundingClientRect();
+    const rightRect = smallRightSlotEl.getBoundingClientRect();
+
+    const heroFlip = calcFlipTransform(heroRect, assembled);
+    const leftFlip = calcFlipTransform(leftRect, assembled);
+    const rightFlip = calcFlipTransform(rightRect, assembled);
+
+    const opts = { duration: DURATION, easing: EASING, fill: "both" as FillMode };
+
+    // Hero: from natural position to assembled
+    const mainAnim = heroSlotEl.animate(
+      [
+        { transform: "translate(0, 0) scale(1)" },
+        {
+          transform: `translate(${heroFlip.tx}px, ${heroFlip.ty}px) scale(${heroFlip.sx}, ${heroFlip.sy})`,
+        },
+      ],
+      opts
+    );
+
+    // Blue-only: from bottom-left to assembled
+    smallLeftSlotEl.animate(
+      [
+        { transform: "translate(0, 0) scale(1)" },
+        {
+          transform: `translate(${leftFlip.tx}px, ${leftFlip.ty}px) scale(${leftFlip.sx}, ${leftFlip.sy})`,
+        },
+      ],
+      opts
+    );
+    // Blue-only: fade out during last 25%
+    smallLeftSlotEl.animate([{ opacity: 1 }, { opacity: 0 }], {
+      duration: DURATION * 0.25,
+      delay: DURATION * 0.75,
+      easing: "ease-in",
+      fill: "both" as FillMode,
+    });
+
+    // Red-only: from bottom-right to assembled
+    smallRightSlotEl.animate(
+      [
+        { transform: "translate(0, 0) scale(1)" },
+        {
+          transform: `translate(${rightFlip.tx}px, ${rightFlip.ty}px) scale(${rightFlip.sx}, ${rightFlip.sy})`,
+        },
+      ],
+      opts
+    );
+    // Red-only: fade out during last 25%
+    smallRightSlotEl.animate([{ opacity: 1 }, { opacity: 0 }], {
+      duration: DURATION * 0.25,
+      delay: DURATION * 0.75,
+      easing: "ease-in",
+      fill: "both" as FillMode,
+    });
+
+    // Progress bar: fade out during first half
+    if (progressSlotEl) {
+      progressSlotEl.animate([{ opacity: 1 }, { opacity: 0 }, { opacity: 0 }], {
+        duration: DURATION,
+        easing: "ease-in",
+        fill: "both" as FillMode,
+      });
+    }
+
+    mainAnim.finished.then(() => {
+      cancelAllAnimations();
+      oncomplete();
+    });
+  }
+
+  // Cancel all Web Animations on animated elements so fill:both values don't linger
+  function cancelAllAnimations() {
+    for (const el of [heroSlotEl, smallLeftSlotEl, smallRightSlotEl, progressSlotEl]) {
+      if (el) {
+        for (const anim of el.getAnimations()) {
+          anim.cancel();
+        }
+      }
+    }
+  }
+
+  // React to direction changes — triggers animation when direction becomes
+  // "disassemble" or "reassemble", does nothing when "idle"
+  $effect(() => {
+    const dir = direction;
+    if (dir === "idle") return;
+
+    // Read all non-direction dependencies outside the reactive tracking
+    return untrack(() => {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        oncomplete();
+        return;
+      }
+
+      const frameId = requestAnimationFrame(() => {
+        if (!viewElement || !heroSlotEl || !smallLeftSlotEl || !smallRightSlotEl) {
+          oncomplete();
+          return;
+        }
+
+        const containerRect = viewElement.getBoundingClientRect();
+        const assembled = getAssembledRect(containerRect);
+
+        if (dir === "disassemble") {
+          animateDisassemble(assembled);
+        } else {
+          animateReassemble(assembled);
+        }
+      });
+
+      return () => cancelAnimationFrame(frameId);
+    });
+  });
+</script>
+
+<div class="disassemble-view" bind:this={viewElement}>
+  <div class="disassemble-unit">
+    <div class="hero-slot" bind:this={heroSlotEl}>
+      <AnimatorCanvas
+        {blueProp}
+        {redProp}
+        {...shared}
+        {word}
+        focused={true}
+      />
+    </div>
+
+    <div class="small-slots">
+      <div class="small-slot" bind:this={smallLeftSlotEl}>
+        <AnimatorCanvas
+          {blueProp}
+          redProp={null}
+          {...shared}
+          focused={false}
+          hideTkaGlyph={true}
+          hideStepNumbers={true}
+        />
+      </div>
+
+      <div class="small-slot" bind:this={smallRightSlotEl}>
+        <AnimatorCanvas
+          blueProp={null}
+          {redProp}
+          {...shared}
+          focused={false}
+          hideTkaGlyph={true}
+          hideStepNumbers={true}
+        />
+      </div>
+    </div>
+
+    {#if sequenceData?.steps?.length}
+      <div class="progress-slot" bind:this={progressSlotEl}>
+        <SegmentedSequenceProgressBar
+          steps={sequenceData.steps}
+          {currentStep}
+          visible={true}
+          variant="gradient"
+        />
+      </div>
+    {/if}
+  </div>
+</div>
+
+<style>
+  .disassemble-view {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    container-type: size;
+  }
+
+  .disassemble-unit {
+    --chrome: 50px;
+    width: min(100cqw, calc((100cqh - var(--chrome)) * 2 / 3));
+    display: flex;
+    flex-direction: column;
+  }
+
+  .hero-slot {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+  }
+
+  .small-slots {
+    display: flex;
+    width: 100%;
+  }
+
+  .small-slot {
+    position: relative;
+    width: 50%;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+  }
+
+  .progress-slot {
+    width: 100%;
+  }
+
+  .progress-slot :global(.segmented-progress-container) {
+    padding: 2px 0;
+  }
+
+  .progress-slot :global(.segments-track) {
+    height: 12px;
+  }
+
+  .progress-slot :global(.segment-divider) {
+    border-right-color: var(
+      --theme-stroke-strong,
+      rgba(255, 255, 255, 0.8)
+    ) !important;
+  }
+</style>

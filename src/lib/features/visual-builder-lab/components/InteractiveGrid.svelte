@@ -289,8 +289,14 @@
 
 <div class="interactive-grid" role="application" aria-label="Visual sequence builder grid">
   <svg viewBox="0 0 950 950" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-    <!-- Layer 0: Dark background matching pictograph style -->
-    <rect x="0" y="0" width="950" height="950" class="grid-background" />
+    <!-- Layer 0: Gradient background (semi-transparent on mobile via CSS) -->
+    <defs>
+      <linearGradient id="grid-bg-gradient" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="rgb(20, 25, 40)" />
+        <stop offset="100%" stop-color="rgb(10, 12, 22)" />
+      </linearGradient>
+    </defs>
+    <rect class="grid-bg" x="0" y="0" width="950" height="950" fill="url(#grid-bg-gradient)" />
 
     <!-- Layer 1: Grid lines and points -->
     <GridSvg gridMode={builderState.gridMode} />
@@ -447,11 +453,26 @@
 <style>
   .interactive-grid {
     width: 100%;
-    height: 100%;
+    max-height: 100%;
     aspect-ratio: 1;
-    border-radius: 12px;
+    border-radius: 20px;
     overflow: hidden;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border: 1.5px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+
+  /* On mobile the grid fills the entire tool panel, so use a
+     semi-transparent background to let the app background peek through */
+  @media (max-width: 768px) {
+    .interactive-grid {
+      border-radius: 16px;
+      border-color: rgba(255, 255, 255, 0.06);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .interactive-grid :global(.grid-bg) {
+      opacity: 0.85;
+    }
   }
 
   .interactive-grid svg {
@@ -460,10 +481,7 @@
     display: block;
   }
 
-  /* Solid background matching pictograph containers */
-  .grid-background {
-    fill: var(--dm-pictograph-bg, #0a0a0f);
-  }
+  /* Background now uses SVG gradient defined in <defs> */
 
   /* Prop SVG groups (real prop rendering) */
   .prop-svg-group {
@@ -543,10 +561,10 @@
     animation: pulse-red 1.8s ease-in-out infinite;
   }
 
-  /* Current position — solid ring, no pulse */
+  /* Current position — solid ring, no pulse, still clickable */
   .hit-target.current-position {
     animation: none;
-    cursor: default;
+    cursor: pointer;
   }
 
   .hit-target.current-position.active-hand-blue {
@@ -598,9 +616,9 @@
       stroke-width: 2;
     }
     50% {
-      fill: color-mix(in srgb, var(--prop-blue, #2e8bf0) 16%, transparent);
-      stroke: color-mix(in srgb, var(--prop-blue, #2e8bf0) 80%, transparent);
-      stroke-width: 3;
+      fill: color-mix(in srgb, var(--prop-blue, #2e8bf0) 20%, transparent);
+      stroke: color-mix(in srgb, var(--prop-blue, #2e8bf0) 90%, transparent);
+      stroke-width: 3.5;
     }
     100% {
       fill: color-mix(in srgb, var(--prop-blue, #2e8bf0) 6%, transparent);
@@ -617,9 +635,9 @@
       stroke-width: 2;
     }
     50% {
-      fill: color-mix(in srgb, var(--prop-red, #ed1c24) 16%, transparent);
-      stroke: color-mix(in srgb, var(--prop-red, #ed1c24) 80%, transparent);
-      stroke-width: 3;
+      fill: color-mix(in srgb, var(--prop-red, #ed1c24) 20%, transparent);
+      stroke: color-mix(in srgb, var(--prop-red, #ed1c24) 90%, transparent);
+      stroke-width: 3.5;
     }
     100% {
       fill: color-mix(in srgb, var(--prop-red, #ed1c24) 6%, transparent);

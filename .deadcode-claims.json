@@ -1,8 +1,196 @@
 {
   "claims": {
-    "features/admin": {
-      "claimedAt": "2026-01-21T22:29:16.487Z",
-      "agentId": "agent-1769034556488-wvp26b"
+    "shared/community": {
+      "claimedAt": "2026-03-11T22:33:52.443Z",
+      "agentId": "agent-1773268432443-zz3tpa"
+    },
+    "shared/components": {
+      "claimedAt": "2026-03-11T22:44:55.854Z",
+      "agentId": "agent-1773269095855-qod3sz"
+    },
+    "shared/debug": {
+      "claimedAt": "2026-03-11T22:45:06.338Z",
+      "agentId": "agent-1773269106338-4s44p0"
+    },
+    "shared/device": {
+      "claimedAt": "2026-03-11T22:45:16.341Z",
+      "agentId": "agent-1773269116341-zodyp3"
+    },
+    "shared/di": {
+      "claimedAt": "2026-03-11T22:45:19.691Z",
+      "agentId": "agent-1773269119692-44uazn"
+    },
+    "shared/foundation": {
+      "claimedAt": "2026-03-11T22:45:45.325Z",
+      "agentId": "agent-1773269145326-v2y6qz"
+    },
+    "shared/gamification": {
+      "claimedAt": "2026-03-11T22:45:50.763Z",
+      "agentId": "agent-1773269150763-06zuks"
+    },
+    "shared/inbox": {
+      "claimedAt": "2026-03-11T22:46:07.701Z",
+      "agentId": "agent-1773269167701-pdt9ux"
+    },
+    "shared/input": {
+      "claimedAt": "2026-03-11T22:46:20.982Z",
+      "agentId": "agent-1773269180982-upy8ve"
+    },
+    "shared/lan-sync": {
+      "claimedAt": "2026-03-11T22:46:29.968Z",
+      "agentId": "agent-1773269189968-9kc2pw"
+    },
+    "shared/legal": {
+      "claimedAt": "2026-03-11T22:46:38.267Z",
+      "agentId": "agent-1773269198268-34gsxq"
+    },
+    "shared/messaging": {
+      "claimedAt": "2026-03-11T22:46:45.757Z",
+      "agentId": "agent-1773269205757-vvresw"
+    },
+    "shared/mobile": {
+      "claimedAt": "2026-03-11T22:46:52.907Z",
+      "agentId": "agent-1773269212907-776smi"
+    },
+    "shared/multi-grid": {
+      "claimedAt": "2026-03-11T22:47:09.853Z",
+      "agentId": "agent-1773269229853-4j24rm"
+    },
+    "shared/navigation": {
+      "claimedAt": "2026-03-11T22:47:14.062Z",
+      "agentId": "agent-1773269234063-27dmrk"
+    },
+    "shared/navigation-coordinator": {
+      "claimedAt": "2026-03-11T22:47:25.564Z",
+      "agentId": "agent-1773269245565-rus5l9"
+    },
+    "shared/offline": {
+      "claimedAt": "2026-03-11T22:47:28.118Z",
+      "agentId": "agent-1773269248118-zogjvb"
+    },
+    "shared/onboarding": {
+      "claimedAt": "2026-03-11T22:47:31.343Z",
+      "agentId": "agent-1773269251343-766adr"
+    },
+    "shared/panels": {
+      "claimedAt": "2026-03-11T22:47:37.054Z",
+      "agentId": "agent-1773269257054-9q4gpr"
+    },
+    "shared/persistence": {
+      "claimedAt": "2026-03-11T22:47:39.658Z",
+      "agentId": "agent-1773269259658-8fgr2w"
+    },
+    "shared/pictograph": {
+      "claimedAt": "2026-03-11T22:47:43.768Z",
+      "agentId": "agent-1773269263768-fxg2f4"
+    },
+    "shared/presence": {
+      "claimedAt": "2026-03-11T22:48:07.746Z",
+      "agentId": "agent-1773269287746-db8cat"
+    },
+    "shared/push": {
+      "claimedAt": "2026-03-11T22:48:10.605Z",
+      "agentId": "agent-1773269290605-v6egpi"
+    },
+    "shared/pwa": {
+      "claimedAt": "2026-03-11T22:48:13.606Z",
+      "agentId": "agent-1773269293606-k8gr4m"
+    },
+    "shared/qr": {
+      "claimedAt": "2026-03-11T22:48:16.219Z",
+      "agentId": "agent-1773269296219-kkzhgd"
+    },
+    "shared/render": {
+      "claimedAt": "2026-03-11T22:48:19.239Z",
+      "agentId": "agent-1773269299240-1o96ca"
+    },
+    "shared/sequence-engine": {
+      "claimedAt": "2026-03-11T22:48:30.329Z",
+      "agentId": "agent-1773269310330-hnsmbn"
+    },
+    "shared/sequence-review": {
+      "claimedAt": "2026-03-11T22:48:34.029Z",
+      "agentId": "agent-1773269314030-goi62g"
+    },
+    "shared/sequence-viewer": {
+      "claimedAt": "2026-03-11T22:48:37.265Z",
+      "agentId": "agent-1773269317266-ec41sb"
+    },
+    "shared/services": {
+      "claimedAt": "2026-03-11T22:48:49.187Z",
+      "agentId": "agent-1773269329187-spmmh9"
+    },
+    "shared/settings": {
+      "claimedAt": "2026-03-11T22:48:51.831Z",
+      "agentId": "agent-1773269331832-gcwuf2"
+    },
+    "shared/share": {
+      "claimedAt": "2026-03-11T22:49:04.839Z",
+      "agentId": "agent-1773269344840-bvx1t4"
+    },
+    "shared/share-hub": {
+      "claimedAt": "2026-03-11T22:49:08.880Z",
+      "agentId": "agent-1773269348881-kjvx93"
+    },
+    "shared/state": {
+      "claimedAt": "2026-03-11T22:49:14.406Z",
+      "agentId": "agent-1773269354407-9p8wma"
+    },
+    "shared/subscription": {
+      "claimedAt": "2026-03-11T22:49:17.121Z",
+      "agentId": "agent-1773269357121-o44t6u"
+    },
+    "shared/sync": {
+      "claimedAt": "2026-03-11T22:49:19.741Z",
+      "agentId": "agent-1773269359742-hf6bq2"
+    },
+    "shared/theme": {
+      "claimedAt": "2026-03-11T22:49:26.408Z",
+      "agentId": "agent-1773269366408-0nt4f5"
+    },
+    "shared/toast": {
+      "claimedAt": "2026-03-11T22:49:29.236Z",
+      "agentId": "agent-1773269369237-vnqaa3"
+    },
+    "shared/transitions": {
+      "claimedAt": "2026-03-11T22:49:31.733Z",
+      "agentId": "agent-1773269371734-50bo6r"
+    },
+    "shared/types": {
+      "claimedAt": "2026-03-11T22:49:34.722Z",
+      "agentId": "agent-1773269374722-6zd3wc"
+    },
+    "shared/ui": {
+      "claimedAt": "2026-03-11T22:49:37.157Z",
+      "agentId": "agent-1773269377157-61d0pl"
+    },
+    "shared/ui-animation": {
+      "claimedAt": "2026-03-11T22:49:40.447Z",
+      "agentId": "agent-1773269380447-tk00ce"
+    },
+    "shared/user-search": {
+      "claimedAt": "2026-03-11T22:49:43.155Z",
+      "agentId": "agent-1773269383156-pnhi0g"
+    },
+    "shared/utils": {
+      "claimedAt": "2026-03-11T22:49:45.804Z",
+      "agentId": "agent-1773269385804-rnzh74"
+    },
+    "shared/validation": {
+      "claimedAt": "2026-03-11T22:49:49.748Z",
+      "agentId": "agent-1773269389748-n9njlw"
+    },
+    "shared/video": {
+      "claimedAt": "2026-03-11T22:49:52.214Z",
+      "agentId": "agent-1773269392215-9cp12i"
+    },
+    "shared/video-collaboration": {
+      "claimedAt": "2026-03-11T22:49:54.808Z",
+      "agentId": "agent-1773269394808-qkyvpt"
+    },
+    "shared/video-record": {
+      "claimedAt": "2026-03-11T22:49:59.296Z",
+      "agentId": "agent-1773269399297-w46jxv"
     }
   }
 }

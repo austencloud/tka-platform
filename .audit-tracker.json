@@ -961,6 +961,39 @@
       "overallGrade": "A+",
       "notes": null,
       "issues": []
+    },
+    "features/disassemble-lab": {
+      "lastAuditedAt": "2026-03-11T21:45:37.745Z",
+      "name": "Disassemble Lab",
+      "type": "module",
+      "grades": {
+        "architecture": "A+",
+        "codeQuality": "A+",
+        "svelte5": "A+",
+        "accessibility": "A+",
+        "uxStates": "A",
+        "uiConsistency": "B",
+        "performance": "A+",
+        "security": "A+"
+      },
+      "overallGrade": "A",
+      "notes": null,
+      "issues": [
+        {
+          "severity": "serious",
+          "dimension": "uiConsistency",
+          "file": "features/disassemble-lab/components/DisassembleLayout.svelte",
+          "line": 119,
+          "description": "Hardcoded rgba(255, 255, 255, 0.8) for border-right-color; replace with theme variable"
+        },
+        {
+          "severity": "moderate",
+          "dimension": "codeQuality",
+          "file": "features/disassemble-lab/context/disassemble-context.ts",
+          "line": 10,
+          "description": "Missing return type on setDisassembleContext"
+        }
+      ]
     }
   },
   "targets": [],

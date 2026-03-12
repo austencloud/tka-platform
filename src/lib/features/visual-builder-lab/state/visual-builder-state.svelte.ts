@@ -198,6 +198,36 @@ export function createVisualBuilderState() {
     phase = blueSteps.length > 0 || redSteps.length > 0 ? "building" : "placing";
   }
 
+  /**
+   * Truncate both hands' steps at the given index (removes step at index and all after).
+   * Used when the user deletes a pictograph from the workspace grid.
+   * Since each pictograph maps to one index in both blueSteps and redSteps,
+   * we truncate both arrays to that index.
+   */
+  function truncateAtStep(stepIndex: number): void {
+    if (stepIndex <= 0) {
+      // Removing the first step clears everything
+      reset();
+      return;
+    }
+
+    blueSteps = blueSteps.slice(0, stepIndex);
+    redSteps = redSteps.slice(0, stepIndex);
+
+    // Restore current position from the last remaining step of the active hand
+    const activeArr = activeHand === MotionColor.BLUE ? blueSteps : redSteps;
+    if (activeArr.length > 0) {
+      const last = activeArr[activeArr.length - 1]!;
+      currentPosition = last.endPosition;
+      currentOrientation = last.endOrientation;
+      phase = "building";
+    } else {
+      currentPosition = null;
+      currentOrientation = Orientation.IN;
+      phase = "idle";
+    }
+  }
+
   /** Full reset */
   function reset(): void {
     phase = "idle";
@@ -220,6 +250,25 @@ export function createVisualBuilderState() {
 
   function setOrientation(ori: Orientation): void {
     currentOrientation = ori;
+  }
+
+  /** Switch to a specific hand, restoring that hand's last position */
+  function switchToHand(hand: MotionColor): void {
+    if (hand === activeHand) return;
+    if (phase === "animating" || phase === "complete") return;
+
+    activeHand = hand;
+    const steps = hand === MotionColor.BLUE ? blueSteps : redSteps;
+    if (steps.length > 0) {
+      const last = steps[steps.length - 1]!;
+      currentPosition = last.endPosition;
+      currentOrientation = last.endOrientation;
+      phase = "building";
+    } else {
+      currentPosition = null;
+      currentOrientation = Orientation.IN;
+      phase = "idle";
+    }
   }
 
   function setAnimationCallback(cb: (step: BuilderStep) => Promise<void>): void {
@@ -249,10 +298,12 @@ export function createVisualBuilderState() {
     finishHand,
     goBackToBlue,
     undoStep,
+    truncateAtStep,
     reset,
     setRotationDirection,
     setTurnCount,
     setOrientation,
+    switchToHand,
     setAnimationCallback,
   };
 }
