@@ -461,8 +461,12 @@
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 
-  /* On mobile the grid fills the entire tool panel, so use a
-     semi-transparent background to let the app background peek through */
+  /* Semi-transparent background on all viewports */
+  .interactive-grid :global(.grid-bg) {
+    opacity: 0.9;
+  }
+
+  /* Slightly more transparent on mobile */
   @media (max-width: 768px) {
     .interactive-grid {
       border-radius: 16px;

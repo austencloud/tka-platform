@@ -1,38 +1,60 @@
 <!--
-  BuilderTurnBar.svelte - Turn count and rotation direction selector.
+  BuilderTurnBar.svelte - Phase-aware control bar below the grid (desktop).
 
-  Renders as a card below the grid with bubbly pill buttons.
-  On mobile, becomes a semi-transparent overlay with horizontal scrolling.
-  Dimmed during idle/animating, hidden when sequence is complete.
+  Shows orientation pills during "placing" phase, turn count + rotation
+  direction during "building" phase. Dimmed when idle/animating, hidden
+  when sequence is complete. Hidden on mobile (replaced by popover).
 -->
 <script lang="ts">
-  import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import {
+    Orientation,
+    RotationDirection,
+  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { VisualBuilderState } from "../state/visual-builder-state.svelte";
 
   let { builderState }: { builderState: VisualBuilderState } = $props();
 
-  const isActive = $derived(
-    builderState.phase === "placing" || builderState.phase === "building"
-  );
+  const isPlacing = $derived(builderState.phase === "placing");
+  const isBuilding = $derived(builderState.phase === "building");
   const isAnimating = $derived(builderState.phase === "animating");
   const isDonePhase = $derived(builderState.phase === "done");
   const isIdle = $derived(builderState.phase === "idle");
   const isComplete = $derived(builderState.phase === "complete");
 
-  const motionEnabled = $derived(isActive);
-  const motionDimmed = $derived(isAnimating || isIdle || isDonePhase);
-  const motionHidden = $derived(isComplete);
+  const barActive = $derived(isPlacing || isBuilding);
+  const barDimmed = $derived(isAnimating || isIdle || isDonePhase);
+  const barHidden = $derived(isComplete);
 
+  // Track which content to show. During animating/done, keep showing whatever
+  // was last active (building or placing) to prevent layout shift.
+  let lastActiveContent = $state<"placing" | "building" | "idle">("idle");
+
+  $effect(() => {
+    if (isPlacing) lastActiveContent = "placing";
+    else if (isBuilding) lastActiveContent = "building";
+    else if (isIdle) lastActiveContent = "idle";
+    // animating/done/complete: keep lastActiveContent unchanged
+  });
+
+  const showPlacing = $derived(isPlacing || (barDimmed && lastActiveContent === "placing"));
+  const showBuilding = $derived(isBuilding || (barDimmed && lastActiveContent === "building"));
+  const showPlaceholder = $derived(!showPlacing && !showBuilding && !isComplete);
+
+  // ── Orientation ──
+  const ORIENTATIONS = [
+    { value: Orientation.IN, label: "In", ariaLabel: "In orientation" },
+    { value: Orientation.OUT, label: "Out", ariaLabel: "Out orientation" },
+    { value: Orientation.CLOCK, label: "CW", ariaLabel: "Clockwise orientation" },
+    { value: Orientation.COUNTER, label: "CCW", ariaLabel: "Counter-clockwise orientation" },
+  ] as const;
+
+  // ── Turns ──
   const TURN_OPTIONS = [0, 0.5, 1, 1.5, 2, 2.5, 3] as const;
 
   function turnAriaLabel(t: number): string {
     if (t === 0) return "No turns";
     if (t === 0.5) return "Half turn";
     if (t === 1) return "1 turn";
-    if (t === 1.5) return "1 and a half turns";
-    if (t === 2) return "2 turns";
-    if (t === 2.5) return "2 and a half turns";
-    if (t === 3) return "3 turns";
     return `${t} turns`;
   }
 
@@ -59,63 +81,155 @@
 </script>
 
 <div
-  class="turn-bar-card"
-  class:dimmed={motionDimmed}
-  class:hidden-bar={motionHidden}
+  class="control-bar"
+  class:dimmed={barDimmed}
+  class:hidden-bar={barHidden}
 >
-  <button
-    class="rotation-toggle"
-    onclick={toggleRotation}
-    disabled={!motionEnabled}
-    aria-disabled={!motionEnabled}
-    aria-label={rotAriaLabel}
-  >
-    <i class="fas fa-rotate-right" class:flipped={isFlipped} aria-hidden="true"></i>
-    <span class="rot-label">{rotLabel}</span>
-  </button>
+  <!-- Placing phase: orientation pills (persists during animating/done to prevent layout shift) -->
+  {#if showPlacing}
+    <div class="bar-content" role="radiogroup" aria-label="Starting orientation">
+      <span class="bar-label">Orientation</span>
+      <div class="divider" aria-hidden="true"></div>
+      {#each ORIENTATIONS as ori}
+        <button
+          class="bar-pill"
+          class:active={builderState.currentOrientation === ori.value}
+          role="radio"
+          aria-checked={builderState.currentOrientation === ori.value}
+          aria-label={ori.ariaLabel}
+          onclick={() => builderState.setOrientation(ori.value)}
+        >
+          {ori.label}
+        </button>
+      {/each}
+    </div>
+  {/if}
 
-  <div class="divider" aria-hidden="true"></div>
-
-  <div class="turns-strip" role="radiogroup" aria-label="Turn count">
-    {#each TURN_OPTIONS as t}
+  <!-- Building phase: rotation direction + turn count (persists during animating/done) -->
+  {#if showBuilding}
+    <div class="bar-content">
       <button
-        class="turn-pill"
-        class:active={builderState.turnCount === t}
-        role="radio"
-        aria-checked={builderState.turnCount === t}
-        aria-label={turnAriaLabel(t)}
-        disabled={!motionEnabled}
-        aria-disabled={!motionEnabled}
-        onclick={() => builderState.setTurnCount(t)}
+        class="rotation-toggle"
+        onclick={toggleRotation}
+        aria-label={rotAriaLabel}
       >
-        {t}
+        <i class="fas fa-rotate-right" class:flipped={isFlipped} aria-hidden="true"></i>
+        <span class="rot-label">{rotLabel}</span>
       </button>
-    {/each}
-  </div>
+
+      <div class="divider" aria-hidden="true"></div>
+
+      <div class="turns-strip" role="radiogroup" aria-label="Turn count">
+        {#each TURN_OPTIONS as t}
+          <button
+            class="bar-pill"
+            class:active={builderState.turnCount === t}
+            role="radio"
+            aria-checked={builderState.turnCount === t}
+            aria-label={turnAriaLabel(t)}
+            onclick={() => builderState.setTurnCount(t)}
+          >
+            {t}
+          </button>
+        {/each}
+      </div>
+    </div>
+  {/if}
+
+  <!-- Idle only (no prior content to persist): show placeholder -->
+  {#if showPlaceholder}
+    <div class="bar-content bar-placeholder">
+      <span class="bar-label muted">Tap a grid point to begin</span>
+    </div>
+  {/if}
 </div>
 
 <style>
-  .turn-bar-card {
+  .control-bar {
     display: flex;
     align-items: center;
-    gap: 0;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border-radius: 16px;
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     padding: 8px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
     flex-shrink: 0;
+    min-height: 60px;
     transition: opacity 0.2s ease;
   }
 
-  .turn-bar-card.dimmed {
+  .control-bar.dimmed {
     opacity: 0.3;
     pointer-events: none;
   }
 
-  .turn-bar-card.hidden-bar {
+  .control-bar.hidden-bar {
     opacity: 0;
     pointer-events: none;
+  }
+
+  .bar-content {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+  }
+
+  .bar-placeholder {
+    justify-content: center;
+  }
+
+  .bar-label {
+    padding: 0 12px;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+
+  .bar-label.muted {
+    text-transform: none;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
+  }
+
+  .divider {
+    width: 1px;
+    height: 28px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    margin: 0 6px;
+    flex-shrink: 0;
+  }
+
+  .bar-pill {
+    flex: 0 0 auto;
+    padding: 10px 14px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    cursor: pointer;
+    min-height: var(--min-touch-target, 44px);
+    min-width: var(--min-touch-target, 44px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .bar-pill:hover {
+    background: var(--theme-accent-bg, rgba(99, 102, 241, 0.08));
+    color: var(--theme-text, #fff);
+  }
+
+  .bar-pill.active {
+    background: var(--theme-accent-bg, rgba(99, 102, 241, 0.12));
+    color: var(--theme-accent, #6366f1);
+    border: 1.5px solid var(--theme-accent-border, rgba(99, 102, 241, 0.3));
   }
 
   .rotation-toggle {
@@ -135,12 +249,8 @@
     flex-shrink: 0;
   }
 
-  .rotation-toggle:hover:not(:disabled) {
+  .rotation-toggle:hover {
     background: var(--theme-accent-hover, rgba(99, 102, 241, 0.15));
-  }
-
-  .rotation-toggle:disabled {
-    cursor: default;
   }
 
   .rotation-toggle i {
@@ -159,14 +269,6 @@
     color: var(--theme-accent, #6366f1);
   }
 
-  .divider {
-    width: 1px;
-    height: 28px;
-    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    margin: 0 6px;
-    flex-shrink: 0;
-  }
-
   .turns-strip {
     display: flex;
     gap: 4px;
@@ -180,70 +282,15 @@
     display: none;
   }
 
-  .turn-pill {
-    flex: 0 0 auto;
-    padding: 10px 10px;
-    border: none;
-    border-radius: 10px;
-    background: transparent;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    cursor: pointer;
-    min-height: var(--min-touch-target, 44px);
-    min-width: var(--min-touch-target, 44px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.15s ease, color 0.15s ease;
-  }
-
-  .turn-pill:hover:not(:disabled) {
-    background: var(--theme-accent-bg, rgba(99, 102, 241, 0.08));
-    color: var(--theme-text, #fff);
-  }
-
-  .turn-pill.active {
-    background: var(--theme-accent-bg, rgba(99, 102, 241, 0.12));
-    color: var(--theme-accent, #6366f1);
-    border: 1.5px solid var(--theme-accent-border, rgba(99, 102, 241, 0.3));
-  }
-
-  .turn-pill:disabled {
-    cursor: default;
-  }
-
-  /* ── Mobile: semi-transparent overlay style ── */
+  /* Hidden on mobile — BuilderControls popover handles it */
   @media (max-width: 768px) {
-    .turn-bar-card {
-      background: rgba(10, 12, 22, 0.7);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border-color: rgba(255, 255, 255, 0.06);
-      border-radius: 14px;
-      padding: 4px 6px;
-      box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.3);
-    }
-
-    .rotation-toggle {
-      padding: 8px 10px;
-      min-height: 40px;
-    }
-
-    .turn-pill {
-      min-height: 40px;
-      min-width: 40px;
-      padding: 8px 8px;
-    }
-
-    .divider {
-      height: 24px;
-      margin: 0 4px;
+    .control-bar {
+      display: none;
     }
   }
 
   /* Focus indicators */
-  .turn-pill:focus-visible,
+  .bar-pill:focus-visible,
   .rotation-toggle:focus-visible {
     outline: 2px solid #ffffff;
     outline-offset: 2px;
@@ -251,8 +298,8 @@
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .turn-bar-card,
-    .turn-pill,
+    .control-bar,
+    .bar-pill,
     .rotation-toggle,
     .rotation-toggle i {
       transition: none;
