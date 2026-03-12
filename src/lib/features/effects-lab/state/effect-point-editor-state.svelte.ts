@@ -2,6 +2,7 @@ import type { IEffectPointOverrideProvider } from "../services/contracts/IEffect
 import type { IEffectPointsPersister } from "../services/contracts/IEffectPointsPersister";
 import type { TipPoint } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
 import { getTipPoints } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
+import type { TrailPointConfig } from "$lib/shared/animation-engine/domain/types/TrailPointTypes";
 
 const MAX_UNDO_DEPTH = 20;
 const SAVE_INDICATOR_DURATION = 1200;
@@ -33,6 +34,7 @@ export class EffectPointEditorState {
 	isDragging = $state(false);
 	saveIndicatorVisible = $state(false);
 	actionFeedback = $state<string | null>(null);
+	trailConfig = $state<TrailPointConfig | null>(null);
 
 	private undoStack: UndoEntry[] = [];
 	private provider: IEffectPointOverrideProvider;
@@ -205,6 +207,18 @@ export class EffectPointEditorState {
 		}
 	}
 
+	saveTrailConfig(config: TrailPointConfig): void {
+		this.trailConfig = config;
+		this.provider.saveTrailAssignment(this.selectedPropType, config);
+		this.showSaveIndicator();
+	}
+
+	clearTrailConfig(): void {
+		this.trailConfig = null;
+		this.provider.removeTrailAssignment(this.selectedPropType);
+		this.showSaveIndicator();
+	}
+
 	getUserDefaultTypes(): string[] {
 		return this.provider.getUserDefaultTypes();
 	}
@@ -226,6 +240,9 @@ export class EffectPointEditorState {
 				getTipPoints(this.selectedPropType).points,
 			);
 		}
+
+		// Load trail assignment for this prop
+		this.trailConfig = this.provider.getTrailAssignment(this.selectedPropType) ?? null;
 	}
 
 	private autoSave(): void {
