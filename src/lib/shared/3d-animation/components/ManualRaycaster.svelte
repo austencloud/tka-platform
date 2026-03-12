@@ -145,10 +145,10 @@
   }
 
   onMount(() => {
-    // Get the canvas from the renderer
-    canvasElement = renderer?.current.domElement ?? null;
+    // Get the canvas from the renderer — guard against renderer not yet initialized
+    canvasElement = renderer?.current?.domElement ?? null;
     if (!canvasElement) {
-      console.error("[ManualRaycaster] Could not find canvas element");
+      console.warn("[ManualRaycaster] Renderer not ready at mount, skipping event setup");
       return;
     }
 

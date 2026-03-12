@@ -164,19 +164,15 @@
     left: 0 !important;
   }
 
-  /* On desktop, constrain to a reasonable width so it's not awkwardly wide */
+  /* On desktop, constrain width and center horizontally */
   @media (min-width: 768px) {
     :global(.my-props-drawer) {
       max-width: 420px;
-      left: 50% !important;
-      right: auto !important;
-      transform: translateX(-50%) !important;
+      left: 0 !important;
+      right: 0 !important;
+      margin: 0 auto;
       border-radius: 16px 16px 0 0;
       min-height: auto;
-    }
-
-    :global(.my-props-drawer[data-state="closed"]) {
-      transform: translateX(-50%) translate3d(0, 100%, 0) !important;
     }
   }
 
