@@ -231,7 +231,7 @@ Used by both desktop side panel and mobile slide-up overlay.
   function handleSendTo() {
     hapticService?.trigger("selection");
     const propType = propSettings.bluePropType ?? "staff";
-    const thumbnailUrl = buildThumbnailUrl(sequence.word || sequence.name, String(propType), lightMode);
+    const thumbnailUrl = buildThumbnailUrl(sequence.word || sequence.name, String(propType), false);
     openSendSequenceSheet(buildSequenceSharePayload({ ...sequence, thumbnailUrl }));
   }
 

@@ -1825,6 +1825,7 @@
     flex-shrink: 0;
     width: 100%;
     box-sizing: border-box;
+    overflow: hidden;
     transition: background-color 350ms ease, border-color 350ms ease;
   }
 

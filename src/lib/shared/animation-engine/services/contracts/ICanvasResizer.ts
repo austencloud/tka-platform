@@ -62,6 +62,18 @@ export interface ICanvasResizer {
   resize(currentSize: number): Promise<number>;
 
   /**
+   * Pause resize observation during CSS transitions to prevent canvas buffer clears.
+   * The canvas stays at its current buffer size; CSS scales it visually.
+   */
+  pauseObservation(): void;
+
+  /**
+   * Resume resize observation after transition completes.
+   * Performs one catch-up resize to match the new container dimensions.
+   */
+  resumeObservation(): void;
+
+  /**
    * Clean up all resources
    */
   dispose(): void;

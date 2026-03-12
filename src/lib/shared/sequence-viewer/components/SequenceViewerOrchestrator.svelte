@@ -855,11 +855,15 @@
     } else if (exportType === "animation" && (!playbackController || !animationCanvas)) {
       showToast("Animation not ready yet. Wait a moment and try again.", "error");
       return;
-    } else if (exportType === "image" && sequence) {
+    } else if (exportType === "image" && effectiveSequence) {
+      if (!effectiveSequence.steps || effectiveSequence.steps.length === 0) {
+        showToast("Sequence has no beats to export.", "error");
+        return;
+      }
       const opts = exportOptions.getImageOptions();
       await sequenceModalExporter.exportImage(
         opts,
-        { sequence, userName: authState.user?.displayName ?? "" },
+        { sequence: effectiveSequence, userName: authState.user?.displayName ?? "" },
         callbacks
       );
     }

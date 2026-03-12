@@ -1,0 +1,110 @@
+<h2>Export hint placement</h2>
+<p class="subtitle">Where should "Tap to export" appear on mobile?</p>
+
+<div class="cards">
+  <!-- Option A: Between header and split pane -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#1a1a2e;border-radius:8px;overflow:hidden;font-family:system-ui;color:white;font-size:11px;">
+        <!-- Header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.1);">
+          <span style="opacity:0.6;">← Back</span>
+          <span style="font-weight:600;">ΔOSX-</span>
+          <span style="opacity:0.6;">⚙</span>
+        </div>
+        <!-- HINT BAR -->
+        <div style="text-align:center;padding:6px 12px;background:rgba(99,102,241,0.08);border-bottom:1px solid rgba(99,102,241,0.15);color:rgba(255,255,255,0.5);font-size:10px;letter-spacing:0.3px;">
+          Tap either view to export it
+        </div>
+        <!-- Split pane -->
+        <div style="display:flex;height:140px;">
+          <div style="flex:1;background:rgba(255,255,255,0.03);display:flex;align-items:center;justify-content:center;border-right:1px solid rgba(255,255,255,0.08);">
+            <div style="width:60px;height:60px;border-radius:50%;border:2px solid rgba(139,92,246,0.4);display:flex;align-items:center;justify-content:center;font-size:18px;">▶</div>
+          </div>
+          <div style="flex:1;background:rgba(255,255,255,0.03);display:flex;align-items:center;justify-content:center;">
+            <div style="width:70px;height:80px;border:1px solid rgba(255,255,255,0.15);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;opacity:0.5;">Choreo Card</div>
+          </div>
+        </div>
+        <!-- Footer -->
+        <div style="padding:8px 12px;border-top:1px solid rgba(255,255,255,0.1);display:flex;gap:6px;align-items:center;">
+          <div style="width:28px;height:28px;border-radius:50%;border:1px solid rgba(139,92,246,0.4);display:flex;align-items:center;justify-content:center;font-size:10px;">▶</div>
+          <div style="flex:1;height:28px;border-radius:14px;border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:9px;opacity:0.5;">60 BPM</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A: Below header</h3>
+      <p>Persistent bar between header and content. Always visible, never blocks media.</p>
+    </div>
+  </div>
+
+  <!-- Option B: Between split pane and footer -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#1a1a2e;border-radius:8px;overflow:hidden;font-family:system-ui;color:white;font-size:11px;">
+        <!-- Header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.1);">
+          <span style="opacity:0.6;">← Back</span>
+          <span style="font-weight:600;">ΔOSX-</span>
+          <span style="opacity:0.6;">⚙</span>
+        </div>
+        <!-- Split pane -->
+        <div style="display:flex;height:140px;">
+          <div style="flex:1;background:rgba(255,255,255,0.03);display:flex;align-items:center;justify-content:center;border-right:1px solid rgba(255,255,255,0.08);">
+            <div style="width:60px;height:60px;border-radius:50%;border:2px solid rgba(139,92,246,0.4);display:flex;align-items:center;justify-content:center;font-size:18px;">▶</div>
+          </div>
+          <div style="flex:1;background:rgba(255,255,255,0.03);display:flex;align-items:center;justify-content:center;">
+            <div style="width:70px;height:80px;border:1px solid rgba(255,255,255,0.15);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;opacity:0.5;">Choreo Card</div>
+          </div>
+        </div>
+        <!-- HINT BAR -->
+        <div style="text-align:center;padding:6px 12px;background:rgba(99,102,241,0.08);border-top:1px solid rgba(99,102,241,0.15);color:rgba(255,255,255,0.5);font-size:10px;letter-spacing:0.3px;">
+          Tap either view to export it
+        </div>
+        <!-- Footer -->
+        <div style="padding:8px 12px;border-top:1px solid rgba(255,255,255,0.1);display:flex;gap:6px;align-items:center;">
+          <div style="width:28px;height:28px;border-radius:50%;border:1px solid rgba(139,92,246,0.4);display:flex;align-items:center;justify-content:center;font-size:10px;">▶</div>
+          <div style="flex:1;height:28px;border-radius:14px;border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:9px;opacity:0.5;">60 BPM</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B: Above footer</h3>
+      <p>Sits between content and playback controls. Closer to the action buttons.</p>
+    </div>
+  </div>
+
+  <!-- Option C: Inline labels on each pane -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#1a1a2e;border-radius:8px;overflow:hidden;font-family:system-ui;color:white;font-size:11px;">
+        <!-- Header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.1);">
+          <span style="opacity:0.6;">← Back</span>
+          <span style="font-weight:600;">ΔOSX-</span>
+          <span style="opacity:0.6;">⚙</span>
+        </div>
+        <!-- Split pane with inline labels -->
+        <div style="display:flex;height:140px;">
+          <div style="flex:1;background:rgba(255,255,255,0.03);display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid rgba(255,255,255,0.08);position:relative;">
+            <div style="width:60px;height:60px;border-radius:50%;border:2px solid rgba(139,92,246,0.4);display:flex;align-items:center;justify-content:center;font-size:18px;">▶</div>
+            <div style="position:absolute;bottom:6px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);padding:3px 10px;border-radius:10px;font-size:9px;color:rgba(255,255,255,0.6);white-space:nowrap;">Tap for video</div>
+          </div>
+          <div style="flex:1;background:rgba(255,255,255,0.03);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;">
+            <div style="width:70px;height:80px;border:1px solid rgba(255,255,255,0.15);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;opacity:0.5;">Choreo Card</div>
+            <div style="position:absolute;bottom:6px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);padding:3px 10px;border-radius:10px;font-size:9px;color:rgba(255,255,255,0.6);white-space:nowrap;">Tap for image</div>
+          </div>
+        </div>
+        <!-- Footer -->
+        <div style="padding:8px 12px;border-top:1px solid rgba(255,255,255,0.1);display:flex;gap:6px;align-items:center;">
+          <div style="width:28px;height:28px;border-radius:50%;border:1px solid rgba(139,92,246,0.4);display:flex;align-items:center;justify-content:center;font-size:10px;">▶</div>
+          <div style="flex:1;height:28px;border-radius:14px;border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:9px;opacity:0.5;">60 BPM</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C: Inline pane labels</h3>
+      <p>Small pill labels at the bottom of each pane. Specific per-pane: "Tap for video" / "Tap for image".</p>
+    </div>
+  </div>
+</div>
