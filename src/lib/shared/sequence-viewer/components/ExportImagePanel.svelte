@@ -17,6 +17,7 @@
     exportOptions: ExportOptionsStateManager;
     isExporting: boolean;
     layout?: PanelLayout;
+    beatCount: number;
     onExport: () => void;
     onClose?: () => void;
   }
@@ -25,6 +26,7 @@
     exportOptions,
     isExporting,
     layout = "bottom",
+    beatCount,
     onExport,
     onClose,
   }: Props = $props();
@@ -39,7 +41,7 @@
     return `${cols} col · ${theme}`;
   });
 
-  const columnOptions = [
+  const allColumnOptions = [
     { label: "Auto", value: null },
     { label: "2", value: 2 },
     { label: "3", value: 3 },
@@ -47,6 +49,21 @@
     { label: "5", value: 5 },
     { label: "6", value: 6 },
   ] as const;
+
+  // Max columns = beat count only. The start position is an extra cell
+  // that doesn't count toward the column limit.
+  const columnOptions = $derived(
+    allColumnOptions.filter((opt) => opt.value === null || opt.value <= beatCount)
+  );
+
+  // If the current selection exceeds the beat count (e.g. user switched
+  // to a shorter sequence), reset to Auto.
+  $effect(() => {
+    const current = exportOptions.imageColumnCount;
+    if (current !== null && current > beatCount) {
+      exportOptions.setImageColumnCount(null);
+    }
+  });
 </script>
 
 {#if layout === "bottom"}
@@ -288,6 +305,9 @@
   .mobile-export {
     position: relative;
     flex-shrink: 0;
+    /* Cap total height so choreo card preview keeps breathing room */
+    max-height: 45vh;
+    overflow-y: auto;
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
   }
@@ -367,14 +387,14 @@
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     overflow-y: auto;
-    max-height: 50vh;
+    max-height: 35vh;
   }
 
   .inline-settings-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 16px 6px;
+    padding: 6px 12px 4px;
   }
 
   .inline-settings-title {
@@ -409,8 +429,23 @@
   .inline-settings-body {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 4px 16px 12px;
+    gap: 8px;
+    padding: 2px 12px 8px;
+  }
+
+  /* Compact shared controls within mobile inline settings */
+  .inline-settings .setting-row {
+    gap: 8px;
+  }
+  .inline-settings .setting-label {
+    min-width: 56px;
+  }
+  .inline-settings .chip-group {
+    gap: 6px;
+  }
+  .inline-settings .chip {
+    min-height: 34px;
+    padding: 4px 10px;
   }
 
   /* ============================================================

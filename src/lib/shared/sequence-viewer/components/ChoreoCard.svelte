@@ -230,6 +230,9 @@
   let isLoading = $state(true);
   let isRendering = false;
   let renderQueued = false;
+  // Suppress ResizeObserver-driven updates during sequential cell loading.
+  // Explicit calls from renderAllCells() still work; only observer callbacks are blocked.
+  let suppressObserverUpdates = false;
   let cellWidth = $state(0);
   let hasMixedDurations = $state(false);
   let durationRows = $state<TimelineRow[]>([]);
@@ -244,6 +247,7 @@
   // render in light mode even though the images are rendered for dark mode.
   let activeDarkMode = $state(darkMode);
   let lastContentKey = "";
+  let lastImageKey = "";
 
   // Container-based sizing for "contain" behavior
   let containerElement: HTMLDivElement | undefined = $state();
@@ -252,7 +256,9 @@
 
   // Scroll mode for long sequences (>16 beats)
   const SCROLL_THRESHOLD = 16;
-  const needsScroll = $derived(!forceContain && (sequence?.steps?.length ?? 0) > SCROLL_THRESHOLD);
+  // Whether the sequence exceeds scroll threshold (independent of forceContain)
+  const isLongSequence = $derived((sequence?.steps?.length ?? 0) > SCROLL_THRESHOLD);
+  const needsScroll = $derived(!forceContain && isLongSequence);
   let gridScrollRef: HTMLDivElement | undefined = $state();
 
   // Orientation cycle pass dividers
@@ -366,8 +372,10 @@
     if (columnCount !== null && columnCount > 0) {
       return columnCount;
     }
-    // Scroll mode uses a fixed 5-column layout — match the async render
-    if (needsScroll) {
+    // Long sequences use fixed 5 columns whether scrolling or force-contained.
+    // This keeps the cell grid positions consistent so entering export mode
+    // doesn't trigger a full re-render with different column positions.
+    if (isLongSequence) {
       return 5;
     }
     // Use the layout service directly for an instant column count
@@ -375,14 +383,16 @@
     return cols;
   });
 
-  // Effective rows — same instant-update pattern as effectiveColumns
+  // Effective rows — must match effective columns to keep aspect ratio correct.
+  // When columnCount is overridden or isLongSequence forces 5 columns, calculate
+  // rows from that column count instead of the layout table (which assumes its own columns).
   const effectiveRows = $derived.by(() => {
     if (!sequence?.steps?.length) return rows || 0;
     const stepCount = sequence.steps.length;
 
-    // Scroll mode: match the async render's row calculation
-    if (needsScroll) {
-      const cols = 5;
+    // If we know the column count (override or long-sequence), derive rows from it
+    const cols = effectiveColumns;
+    if (cols > 0 && (columnCount !== null || isLongSequence)) {
       const stepsPerRow = includeStartPosition ? cols - 1 : cols;
       const firstRowSteps = Math.min(stepsPerRow, stepCount);
       const remainingSteps = stepCount - firstRowSteps;
@@ -425,7 +435,10 @@
   // Scaled sizes based on grid element width
   const scaledHeaderHeight = $derived.by(() => {
     if (!cellWidth || !Number.isFinite(cellWidth)) return 0;
-    return Math.floor(cellWidth / 3);
+    const proportional = Math.floor(cellWidth / 3);
+    // On-screen viewing needs a minimum readable height (24px).
+    // Export/forceContain mode uses exact proportional sizing for WYSIWYG fidelity.
+    return forceContain ? proportional : Math.max(proportional, 24);
   });
 
   const scaledFooterHeight = $derived.by(() => {
@@ -433,9 +446,9 @@
     return Math.floor(cellWidth / 7);
   });
 
-  const badgeSize = $derived(Math.max(16, scaledHeaderHeight * 0.9));
-  const badgePadding = $derived(Math.max(2, scaledHeaderHeight * 0.05));
-  const badgeNumberFontSize = $derived(Math.max(8, Math.floor(badgeSize / 1.75)));
+  const badgeSize = $derived(scaledHeaderHeight * 0.9);
+  const badgePadding = $derived(scaledHeaderHeight * 0.05);
+  const badgeNumberFontSize = $derived(Math.floor(badgeSize / 1.75));
   // Footer font size scales proportionally - no minimum constraint for WYSIWYG preview
   const footerFontSize = $derived(Math.floor(scaledFooterHeight * 0.55));
   const footerMargin = $derived(Math.floor(scaledFooterHeight * 0.3));
@@ -559,6 +572,45 @@
     return Number.isInteger(d) ? `${d}×` : `${d}×`;
   }
 
+  /**
+   * Fast relayout: update grid positions and column/row counts without re-rendering images.
+   * Used when only columnCount or includeStartPosition changes — the pictograph images
+   * are identical, only their positions in the grid change.
+   */
+  function relayoutCells() {
+    if (!sequence?.steps?.length || cells.length === 0) return;
+
+    const stepCount = sequence.steps.length;
+    const cols = effectiveColumns;
+    const rws = effectiveRows;
+
+    columns = cols;
+    rows = rws;
+
+    // Recalculate grid positions for all existing cells
+    cells = cells.map(cell => {
+      const { gridColumn, gridRow } = calculateGridPosition(cell.index, cols);
+      return { ...cell, gridColumn, gridRow };
+    });
+
+    // Update the global cache entry with new positions
+    const renderOptions = buildRenderOptions();
+    const isDark = darkMode;
+    const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, isDark);
+    storePreviewInCache(cacheKey, {
+      cells: cells.map(c => ({
+        index: c.index, label: c.label, imageUrl: c.imageUrl,
+        gridColumn: c.gridColumn, gridRow: c.gridRow, duration: c.duration,
+      })),
+      columns: cols,
+      rows: rws,
+      durationRows,
+      hasMixedDurations,
+      durationColCount,
+      passDividerGridRows,
+    });
+  }
+
   async function renderAllCells() {
     if (!sequence?.steps?.length) {
       isLoading = false;
@@ -590,8 +642,8 @@
         const firstRowSteps = Math.min(stepsPerRow, stepCount);
         const remainingSteps = stepCount - firstRowSteps;
         rws = 1 + Math.ceil(remainingSteps / stepsPerRow);
-      } else if (needsScroll) {
-        // Long sequences: fixed 5 columns, scrollable grid
+      } else if (isLongSequence) {
+        // Long sequences: fixed 5 columns (both scroll mode and export/forceContain)
         cols = 5;
         const stepsPerRow = includeStartPosition ? cols - 1 : cols;
         const firstRowSteps = Math.min(stepsPerRow, stepCount);
@@ -706,6 +758,22 @@
         passDividerGridRows = [];
       }
 
+      // Pre-calculate contain dimensions and cellWidth BEFORE inserting cells.
+      // The containerElement (.choreo-card-root) has parent-determined dimensions
+      // (width: 100%; height: 100%), so its size is valid even before cells exist.
+      // Without this, the first frame shows auto-sized content that snaps to
+      // calculated dimensions on the next frame — a visible jump.
+      updateContainedDimensions();
+      if (containedWidth && cols > 0) {
+        const newCw = containedWidth / cols;
+        if (Math.abs(newCw - cellWidth) > 0.5) cellWidth = newCw;
+      }
+
+      // Lock observer-driven updates for the duration of cell loading.
+      // Individual cell content swaps cause ResizeObserver firings that
+      // cascade into header/footer height changes and card repositioning.
+      suppressObserverUpdates = true;
+
       // Show grid with full dimensions immediately (placeholders fill all cells)
       cells = placeholderCells;
       isLoading = false;
@@ -769,6 +837,11 @@
       console.error("Failed to render cells:", error);
     } finally {
       isRendering = false;
+      suppressObserverUpdates = false;
+      // Measurements were suppressed during rendering to prevent per-cell jumps.
+      // Run them once now that all cells are loaded.
+      updateCellWidth();
+      updateContainedDimensions();
       // If a render was requested while we were busy, run it now
       if (renderQueued) {
         renderQueued = false;
@@ -1070,6 +1143,11 @@
 
   // Calculate "contain" dimensions - fill container while maintaining aspect ratio
   function updateContainedDimensions() {
+    // Don't recalculate during cell loading — aspect ratio and container
+    // size are stable, but ResizeObserver firings from cell content swaps
+    // can cause micro-fluctuations that shift the card.
+    if (suppressObserverUpdates) return;
+
     if (!containerElement || !previewAspectRatio || !Number.isFinite(previewAspectRatio)) return;
 
     // Use content area (clientWidth minus padding), not clientWidth which includes padding.
@@ -1099,8 +1177,22 @@
       const contentRatio = previewAspectRatio;
       const containerRatio = containerWidth / containerHeight;
 
-      if (fitWidth || contentRatio > containerRatio) {
-        // Wide card or mobile export: constrain by width
+      if (fitWidth) {
+        // Mobile export: constrain by width for full-fidelity rendering,
+        // but cap to container height so tall cards don't overflow the preview.
+        const widthConstrained = containerWidth;
+        const hFromWidth = containerWidth / contentRatio;
+        if (Number.isFinite(hFromWidth) && hFromWidth > containerHeight) {
+          // Card would be taller than container — constrain by height instead
+          newHeight = containerHeight;
+          const w = containerHeight * contentRatio;
+          newWidth = Number.isFinite(w) ? w : null;
+        } else {
+          newWidth = widthConstrained;
+          newHeight = Number.isFinite(hFromWidth) ? hFromWidth : null;
+        }
+      } else if (contentRatio > containerRatio) {
+        // Wide card: constrain by width
         newWidth = containerWidth;
         const h = containerWidth / contentRatio;
         newHeight = Number.isFinite(h) ? h : null;
@@ -1136,6 +1228,11 @@
 
   // Track cell width for responsive sizing using ResizeObserver
   function updateCellWidth() {
+    // Don't update cellWidth while cells are loading sequentially —
+    // fractional size changes from cell content swaps cascade into
+    // header/footer height changes that cause visible jumps.
+    if (suppressObserverUpdates) return;
+
     if (previewStackElement && columns > 0) {
       const stackWidth = previewStackElement.clientWidth;
       const newCellWidth = Number.isFinite(stackWidth / columns) ? stackWidth / columns : 0;
@@ -1151,7 +1248,10 @@
   let lastEffectRenderKey = "";
 
   // Re-render when relevant props or visibility settings change.
-  // Detects dark-mode-only changes and uses cross-fade instead of sequential re-render.
+  // Three fast paths avoid full sequential re-render:
+  //   1. Dark-mode-only change → cross-fade existing images
+  //   2. Column/layout-only change → relayout grid positions (no image re-render)
+  //   3. Everything else → full re-render
   $effect(() => {
     // Track all props that affect rendering by reading them (creates Svelte dependency)
     const stepLetters = sequence?.steps?.map(s => s.letter ?? "?").join("") ?? "";
@@ -1170,28 +1270,36 @@
 
     const durationKey = sequence?.steps?.map(s => s.duration ?? 1).join(",") ?? "";
 
-    // Content key: everything EXCEPT dark mode (used to detect dark-mode-only changes)
-    const contentKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bpt}-${rpt}-${cdm}-${ssn}-${cc}-${isp}-${snr}-${hpv}-${stka}-${sr}-${durationKey}`;
+    // Image key: props that affect the actual pictograph images (NOT grid positions)
+    const imageKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bpt}-${rpt}-${cdm}-${ssn}-${snr}-${hpv}-${stka}-${sr}-${durationKey}`;
+    // Layout key: props that only affect grid positions (column count, start position)
+    const layoutKey = `${cc}-${isp}`;
+    // Full content key combines both
+    const contentKey = `${imageKey}-${layoutKey}`;
     const renderKey = `${contentKey}-${dm}`;
 
     if (!hasMounted) return;
     if (renderKey === lastEffectRenderKey) return;
 
-    // Detect if ONLY dark mode changed (content is identical, cells already loaded).
-    // Use untrack() for cells read — we only need a snapshot of whether cells are loaded,
-    // NOT a reactive dependency. Without untrack, every cell mutation during rendering
-    // re-triggers this effect (even though the key guard returns early, it's wasteful
-    // and can cause timing issues with Svelte's batching).
     const contentChanged = contentKey !== lastContentKey;
+    const imageChanged = imageKey !== lastImageKey;
     const cellsLoaded = untrack(() => cells.length > 0 && cells.some(c => c.isLoaded));
     const isDarkModeOnly = !contentChanged && cellsLoaded;
+    // Layout-only: images are identical but columns/start position changed
+    const isLayoutOnly = !imageChanged && contentChanged && cellsLoaded;
 
     lastEffectRenderKey = renderKey;
     lastContentKey = contentKey;
+    lastImageKey = imageKey;
 
     if (isDarkModeOnly) {
       untrack(() => {
         crossfadeDarkMode();
+      });
+    } else if (isLayoutOnly) {
+      activeDarkMode = dm;
+      untrack(() => {
+        relayoutCells();
       });
     } else {
       activeDarkMode = dm;
@@ -1289,11 +1397,12 @@
   });
 
   onMount(() => {
-    // Initialize content key so the $effect can detect dark-mode-only changes
+    // Initialize keys so the $effect can detect dark-mode-only and layout-only changes
     const stepLetters = sequence?.steps?.map(s => s.letter ?? "?").join("") ?? "";
     const stepCount = sequence?.steps?.length ?? 0;
     const durationKey = sequence?.steps?.map(s => s.duration ?? 1).join(",") ?? "";
-    lastContentKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bluePropType}-${redPropType}-${catDogModeEnabled}-${showStepNumbers}-${columnCount}-${forceContain}-${includeStartPosition}-${showNonRadial}-${handPointVis}-${showTKA}-${showReversals}-${durationKey}`;
+    lastImageKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bluePropType}-${redPropType}-${catDogModeEnabled}-${showStepNumbers}-${showNonRadial}-${handPointVis}-${showTKA}-${showReversals}-${durationKey}`;
+    lastContentKey = `${lastImageKey}-${columnCount}-${includeStartPosition}`;
     lastEffectRenderKey = `${lastContentKey}-${darkMode}`;
     renderAllCells().then(() => {
       hasMounted = true;
@@ -1375,6 +1484,7 @@
     <div
       class="preview-stack"
       class:scroll-mode={needsScroll}
+      class:smooth-resize={hasMounted}
       style={needsScroll ? '' : `width: ${containedWidth ? `${containedWidth}px` : 'auto'}; height: ${containedHeight ? `${containedHeight}px` : 'auto'};`}
       bind:this={previewStackElement}
     >
@@ -1406,7 +1516,7 @@
           {#if showWord && sequence.word}
             <span
               class="word-title"
-              style="font-size: {Math.max(10, Math.floor(scaledHeaderHeight * 0.66))}px;"
+              style="font-size: {Math.floor(scaledHeaderHeight * 0.66)}px;"
               transition:fade|local={{ duration: 200 }}
             >
               {simplifyAndTruncate(sequence.word, 12)}
@@ -1541,7 +1651,7 @@
               <div
                 class="cell-flip-wrapper"
                 style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
-                animate:flip={{ duration: 250, easing: cubicOut }}
+                animate:flip={{ duration: hasMounted ? 250 : 0, easing: cubicOut }}
               >
               {#if onStepClick && cell.index >= 0}
                 <button
@@ -1577,7 +1687,7 @@
             <div
               class="cell-flip-wrapper"
               style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
-              animate:flip={{ duration: 250, easing: cubicOut }}
+              animate:flip={{ duration: hasMounted ? 250 : 0, easing: cubicOut }}
             >
             {#if onStepClick && cell.index >= 0}
               <button
@@ -1687,8 +1797,12 @@
     min-width: 0;
     min-height: 0;
     overflow: hidden;
-    /* Smooth width transition when column count changes (e.g. start position toggle).
-       Height is NOT transitioned — row count stays the same, so height should stay fixed. */
+  }
+
+  /* Smooth width transition only AFTER initial render is complete.
+     During initial cell loading, width transitions cause visible jumps
+     as the contain dimensions settle. */
+  .preview-stack.smooth-resize {
     transition: width 250ms cubic-bezier(0.2, 0, 0, 1);
   }
 
@@ -1970,7 +2084,7 @@
     left: 5.3%;
     font-family: Georgia, serif;
     font-weight: bold;
-    font-size: clamp(8px, 10.526cqw, 28px);
+    font-size: min(10.526cqw, 28px);
     line-height: 1;
     color: #231f20;
     pointer-events: none;
@@ -1988,7 +2102,7 @@
     right: 4%;
     font-family: system-ui, sans-serif;
     font-weight: 600;
-    font-size: clamp(7px, 7.5cqw, 16px);
+    font-size: min(7.5cqw, 16px);
     line-height: 1;
     color: rgba(0, 0, 0, 0.55);
     pointer-events: none;
