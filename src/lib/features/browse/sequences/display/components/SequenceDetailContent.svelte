@@ -89,11 +89,26 @@ Used by both desktop side panel and mobile slide-up overlay.
   const visibilityManager = getAnimationVisibilityManager();
   const lightMode = $derived(!visibilityManager.isDarkMode());
 
-  // Prop settings for variation thumbnails
-  const propSettings = $derived({
-    bluePropType: settingsService.settings.bluePropType as PropType | undefined,
-    redPropType: settingsService.settings.redPropType as PropType | undefined,
-    catDogMode: settingsService.settings.catDogMode,
+  // Prop settings for variation thumbnails — uses the intended prop cascade:
+  // (1) sequence intendedProp → (2) creator favoriteProp → (3) viewer settings
+  const propSettings = $derived.by(() => {
+    const viewerBlue = settingsService.settings.bluePropType as PropType | undefined;
+    const viewerRed = settingsService.settings.redPropType as PropType | undefined;
+    const viewerCatDog = settingsService.settings.catDogMode ?? false;
+
+    if (sequence.intendedProp) {
+      return {
+        bluePropType: sequence.intendedProp.bluePropType,
+        redPropType: sequence.intendedProp.redPropType,
+        catDogMode: sequence.intendedProp.catDogMode,
+      };
+    }
+
+    return {
+      bluePropType: viewerBlue,
+      redPropType: viewerRed,
+      catDogMode: viewerCatDog,
+    };
   });
 
   const isCatDog = $derived(
@@ -204,7 +219,7 @@ Used by both desktop side panel and mobile slide-up overlay.
   function handleMaximize() {
     hapticService?.trigger("selection");
     const seq = fullSequence ?? sequence;
-    // Always delegate to parent via onAction - parent can decide to open SequenceDetailsModal
+    // Always delegate to parent via onAction - parent can decide to open the sequence viewer
     onAction("fullscreen", seq);
   }
 
