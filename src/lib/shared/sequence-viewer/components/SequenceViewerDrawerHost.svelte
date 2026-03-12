@@ -260,7 +260,7 @@
                       isMobile: isMobileWidth,
                       isLandscapeMobile: isLandscape,
                       focusedPane: ctx.editingPane,
-                      suppressCloseButton: false,
+                      suppressCloseButton: ctx.editingPane !== null,
                     }}
                     onRenderProgress={ctx.onRenderProgress}
                     onFocusPane={ctx.enterEditMode}
@@ -304,6 +304,7 @@
                           exportOptions={ctx.exportOptions}
                           isExporting={ctx.isExporting}
                           onExport={ctx.handleExport}
+                          onClose={ctx.exitEditMode}
                         />
                       {/if}
                     </div>
@@ -336,6 +337,13 @@
                 onRampStop={ctx.handleRampStop}
                 isOwned={ctx.isOwned}
                 onDeleteRequest={() => (deleteConfirmOpen = true)}
+                propSource={ctx.propSource}
+                hasIntendedProp={ctx.hasIntendedProp}
+                bluePropType={ctx.bluePropType}
+                redPropType={ctx.redPropType}
+                onPropSourceChange={ctx.handlePropSourceChange}
+                onQuickSwitchProp={ctx.handleQuickSwitchProp}
+                onSetAsIntended={ctx.handleSetAsIntended}
               />
             </div>
           </div>

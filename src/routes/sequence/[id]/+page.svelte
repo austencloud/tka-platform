@@ -572,7 +572,7 @@
                   isMobile,
                   isLandscapeMobile: false,
                   focusedPane: ctx.editingPane,
-                  suppressCloseButton: false,
+                  suppressCloseButton: ctx.editingPane !== null,
                 }}
                 onFocusPane={ctx.enterEditMode}
                 onUnfocusPane={ctx.exitEditMode}
@@ -615,6 +615,7 @@
                       exportOptions={ctx.exportOptions}
                       isExporting={ctx.isExporting}
                       onExport={ctx.handleExport}
+                      onClose={ctx.exitEditMode}
                     />
                   {/if}
                 </div>
@@ -645,6 +646,13 @@
               onRampStop={ctx.handleRampStop}
               isOwned={ctx.isOwned}
               onDeleteRequest={() => (deleteConfirmOpen = true)}
+              propSource={ctx.propSource}
+              hasIntendedProp={ctx.hasIntendedProp}
+              bluePropType={ctx.bluePropType}
+              redPropType={ctx.redPropType}
+              onPropSourceChange={ctx.handlePropSourceChange}
+              onQuickSwitchProp={ctx.handleQuickSwitchProp}
+              onSetAsIntended={ctx.handleSetAsIntended}
             />
             {#if ctx.rampActive}
               <RampProgressIndicator

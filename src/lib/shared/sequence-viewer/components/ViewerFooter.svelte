@@ -19,9 +19,10 @@
   - Stay visible when paused
 -->
 <script lang="ts">
-  import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
   import TempoControl from "./TempoControl.svelte";
   import ViewerMorphToolbar from "./ViewerMorphToolbar.svelte";
+  import PropSwitcher from "./PropSwitcher.svelte";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
   interface Props {
     bpm: number;
@@ -46,6 +47,14 @@
     onRampStop?: () => void;
     isOwned?: boolean;
     onDeleteRequest?: () => void;
+    // Prop switcher
+    propSource?: "intended" | "creator-favorite" | "viewer-settings" | "quick-switch";
+    hasIntendedProp?: boolean;
+    bluePropType?: PropType;
+    redPropType?: PropType;
+    onPropSourceChange?: (source: "intended" | "viewer-settings" | "quick-switch") => void;
+    onQuickSwitchProp?: (blue: PropType, red: PropType, catDog: boolean) => void;
+    onSetAsIntended?: () => Promise<void>;
   }
 
   let {
@@ -71,6 +80,13 @@
     onRampStop,
     isOwned = false,
     onDeleteRequest,
+    propSource,
+    hasIntendedProp,
+    bluePropType,
+    redPropType,
+    onPropSourceChange,
+    onQuickSwitchProp,
+    onSetAsIntended,
   }: Props = $props();
 
   // Landscape BPM popover state
@@ -93,10 +109,8 @@
     if (!footerEl) return;
 
     const selectLayout = () => {
-      const actionCount = isLoggedIn ? 4 : 3; // Save, Construct, Export Video, Export Image (logged in) or Get App, Export Video, Export Image (logged out) + Delete if owned
-      const actionsWidth = actionCount * 100 + (actionCount - 1) * 10;
-      const minDesktopWidth = 272 + 16 + 400 + 16 + actionsWidth + 32;
-
+      // Three equal thirds need room: tempo with presets (~450px) + transport (~160px) + actions (~200px) + gaps
+      const minDesktopWidth = 960;
       layout = footerEl!.clientWidth >= minDesktopWidth ? "desktop" : "mid";
     };
 
@@ -193,26 +207,6 @@
         <i class="fas fa-hammer" aria-hidden="true"></i>
       </button>
     {/if}
-    {#if onExportVideo}
-      <button
-        type="button"
-        class="landscape-btn export-video"
-        onclick={onExportVideo}
-        aria-label="Export video"
-      >
-        <i class="fas fa-video" aria-hidden="true"></i>
-      </button>
-    {/if}
-    {#if onExportImage}
-      <button
-        type="button"
-        class="landscape-btn export-image"
-        onclick={onExportImage}
-        aria-label="Export image"
-      >
-        <i class="fas fa-image" aria-hidden="true"></i>
-      </button>
-    {/if}
     {#if isOwned && onDeleteRequest}
       <button
         type="button"
@@ -247,26 +241,23 @@
       {onSave}
       {onEdit}
       {onGetApp}
-      {onExportVideo}
-      {onExportImage}
       {onRampStart}
       {onRampStop}
       {isOwned}
       {onDeleteRequest}
+      {propSource}
+      {hasIntendedProp}
+      {bluePropType}
+      {redPropType}
+      onPropSourceChange={onPropSourceChange}
+      onQuickSwitchProp={onQuickSwitchProp}
+      onSetAsIntended={onSetAsIntended}
     />
   {:else}
-    <!-- Desktop: Single row layout -->
+    <!-- Desktop: tempo (shrink) | transport (fixed center) | actions (shrink) -->
     <div class="desktop-row">
-      <div class="playback-section">
-        <TransportControls
-          {isPlaying}
-          onPlaybackToggle={onPlayPause}
-          onStepHalfBeatBackward={onStepHalfBack ?? (() => {})}
-          onStepHalfBeatForward={onStepHalfForward ?? (() => {})}
-          onStepFullBeatBackward={onStepBack}
-          onStepFullBeatForward={onStepForward}
-          {onRestartToStart}
-        />
+      <!-- Left: tempo controls — takes whatever space it needs, no more -->
+      <div class="footer-side footer-left">
         <div class="tempo-section">
           <TempoControl
             {bpm}
@@ -278,70 +269,94 @@
         </div>
       </div>
 
-      <div class="actions-section">
-        {#if isLoggedIn}
+      <!-- Center: play + step controls — fixed width, always centered -->
+      <div class="footer-center">
+        {#if onRestartToStart}
           <button
             type="button"
-            class="action-btn save"
-            onclick={onSave}
-            aria-label="Save to Library"
+            class="step-btn"
+            onclick={onRestartToStart}
+            aria-label="Restart from beginning"
           >
-            <i class="fas fa-bookmark" aria-hidden="true"></i>
-            <span>Save</span>
-          </button>
-          <button
-            type="button"
-            class="action-btn construct"
-            onclick={onEdit}
-            aria-label="Construct"
-          >
-            <i class="fas fa-hammer" aria-hidden="true"></i>
-            <span>Construct</span>
-          </button>
-        {:else}
-          <button
-            type="button"
-            class="action-btn get-app"
-            onclick={onGetApp}
-            aria-label="Get TKA Scribe"
-          >
-            <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
-            <span>Get App</span>
+            <i class="fas fa-backward-fast" aria-hidden="true"></i>
           </button>
         {/if}
-        {#if onExportVideo}
-          <button
-            type="button"
-            class="action-btn export-video"
-            onclick={onExportVideo}
-            aria-label="Export video"
-          >
-            <i class="fas fa-video" aria-hidden="true"></i>
-            <span>Video</span>
-          </button>
-        {/if}
-        {#if onExportImage}
-          <button
-            type="button"
-            class="action-btn export-image"
-            onclick={onExportImage}
-            aria-label="Export image"
-          >
-            <i class="fas fa-image" aria-hidden="true"></i>
-            <span>Image</span>
-          </button>
-        {/if}
-        {#if isOwned && onDeleteRequest}
-          <button
-            type="button"
-            class="action-btn delete"
-            onclick={onDeleteRequest}
-            aria-label="Delete sequence"
-          >
-            <i class="fas fa-trash" aria-hidden="true"></i>
-            <span>Delete</span>
-          </button>
-        {/if}
+        <button
+          type="button"
+          class="play-btn"
+          class:playing={isPlaying}
+          onclick={onPlayPause}
+          aria-label={isPlaying ? "Pause" : "Play"}
+        >
+          <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
+        </button>
+        <button
+          type="button"
+          class="step-btn"
+          onclick={onStepForward}
+          aria-label="Next beat"
+        >
+          <i class="fas fa-forward-step" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <!-- Right: action buttons — takes whatever space it needs -->
+      <div class="footer-side footer-right">
+        <div class="actions-section">
+          {#if hasIntendedProp || isOwned}
+            <PropSwitcher
+              propSource={propSource ?? "viewer-settings"}
+              hasIntendedProp={hasIntendedProp ?? false}
+              {bluePropType}
+              {redPropType}
+              isOwned={isOwned ?? false}
+              onSourceChange={onPropSourceChange ?? (() => {})}
+              onQuickSwitch={onQuickSwitchProp ?? (() => {})}
+              onSetAsIntended={onSetAsIntended ?? (async () => {})}
+            />
+          {/if}
+          {#if isLoggedIn}
+            <button
+              type="button"
+              class="action-btn save"
+              onclick={onSave}
+              aria-label="Save to Library"
+            >
+              <i class="fas fa-bookmark" aria-hidden="true"></i>
+              <span>Save</span>
+            </button>
+            <button
+              type="button"
+              class="action-btn construct"
+              onclick={onEdit}
+              aria-label="Construct"
+            >
+              <i class="fas fa-hammer" aria-hidden="true"></i>
+              <span>Construct</span>
+            </button>
+          {:else}
+            <button
+              type="button"
+              class="action-btn get-app"
+              onclick={onGetApp}
+              aria-label="Get TKA Scribe"
+            >
+              <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
+              <span>Get App</span>
+            </button>
+          {/if}
+          {#if isOwned && onDeleteRequest}
+            <button
+              type="button"
+              class="action-btn delete"
+              onclick={onDeleteRequest}
+              aria-label="Delete sequence"
+            >
+              <i class="fas fa-trash" aria-hidden="true"></i>
+              <span>Delete</span>
+            </button>
+          {/if}
+        </div>
       </div>
     </div>
   {/if}
@@ -421,8 +436,6 @@
   /* Color-coded landscape buttons */
   .landscape-btn.save { color: #22c55e; border-color: rgba(34, 197, 94, 0.25); }
   .landscape-btn.construct { color: #f59e0b; border-color: rgba(245, 158, 11, 0.25); }
-  .landscape-btn.export-video { color: #3b82f6; border-color: rgba(59, 130, 246, 0.25); }
-  .landscape-btn.export-image { color: #06b6d4; border-color: rgba(6, 182, 212, 0.25); }
   .landscape-btn.delete { color: var(--semantic-error); border-color: color-mix(in srgb, var(--semantic-error) 25%, transparent); }
 
   .landscape-divider {
@@ -505,25 +518,96 @@
   .desktop-row {
     display: flex;
     align-items: center;
-    gap: 16px;
-    /* Clip overflow during the one-frame calibration render
-       when the layout is testing whether desktop fits */
-    overflow: hidden;
+    gap: 12px;
   }
 
-  .playback-section {
+  /* Sides take their natural width, don't grow beyond content */
+  .footer-side {
     display: flex;
     align-items: center;
-    gap: 16px;
-    flex: 1;
-    min-width: 0;
+    flex-shrink: 0;
+  }
+
+  .footer-left {
+    justify-content: flex-start;
+  }
+
+  .footer-right {
+    justify-content: flex-end;
+    margin-left: auto;
+  }
+
+  /* Center transport: pushed to center by the sides */
+  .footer-center {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
   }
 
   .actions-section {
     display: flex;
     align-items: center;
     gap: 10px;
-    flex-shrink: 0;
+  }
+
+  .step-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
+    border-radius: 50%;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-sm, 14px);
+    cursor: pointer;
+    transition: all var(--duration-fast, 150ms) ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .step-btn:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    color: var(--theme-text, white);
+  }
+
+  .step-btn:active {
+    transform: scale(0.9);
+    transition-duration: 0ms;
+  }
+
+  .play-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
+    border-radius: 50%;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1.5px solid var(--theme-accent, rgba(139, 92, 246, 0.4));
+    color: var(--theme-accent, rgba(139, 92, 246, 1));
+    font-size: var(--font-size-lg, 18px);
+    cursor: pointer;
+    transition: all var(--duration-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px var(--theme-shadow, rgba(0, 0, 0, 0.2));
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .play-btn.playing {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    color: var(--theme-text, white);
+  }
+
+  .play-btn:hover {
+    transform: scale(1.05);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+  }
+
+  .play-btn:active {
+    transform: scale(0.92);
+    transition-duration: 0ms;
   }
 
   /* ===========================
@@ -609,28 +693,6 @@
     border-color: rgba(34, 197, 94, 0.4);
   }
 
-  .action-btn.export-video {
-    background: rgba(59, 130, 246, 0.1);
-    border-color: rgba(59, 130, 246, 0.25);
-    color: #3b82f6;
-  }
-
-  .action-btn.export-video:hover {
-    background: rgba(59, 130, 246, 0.2);
-    border-color: rgba(59, 130, 246, 0.4);
-  }
-
-  .action-btn.export-image {
-    background: rgba(6, 182, 212, 0.1);
-    border-color: rgba(6, 182, 212, 0.25);
-    color: #06b6d4;
-  }
-
-  .action-btn.export-image:hover {
-    background: rgba(6, 182, 212, 0.2);
-    border-color: rgba(6, 182, 212, 0.4);
-  }
-
   .action-btn.delete {
     background: color-mix(in srgb, var(--semantic-error) 10%, transparent);
     border-color: color-mix(in srgb, var(--semantic-error) 25%, transparent);
@@ -666,7 +728,6 @@
   }
 
   .tempo-section {
-    flex: 1;
     min-width: 0;
     max-width: 500px;
   }

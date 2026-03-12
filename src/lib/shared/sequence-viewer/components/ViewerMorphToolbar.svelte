@@ -3,17 +3,18 @@
 
   Mobile/mid-width footer layout for the Sequence Viewer.
 
-  Default state:
-  Row 1: [Save] [Construct] [Video] [Image] [Delete]
-  Row 2: [▶ Play] [── 60 BPM ──]
+  Default state (single row):
+  [▶ Play] [── 60 BPM ──] [Save] [Construct]
 
-  Controls expanded (replaces both rows inline):
+  Controls expanded (replaces row):
   Row 1: [< « ▶ » >] transport controls
   Row 2: [- 60 BPM +] [Ramp] [✕ close]
 -->
 <script lang="ts">
   import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
   import TempoControl from "./TempoControl.svelte";
+  import PropSwitcher from "./PropSwitcher.svelte";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
   interface Props {
     bpm: number;
@@ -31,12 +32,18 @@
     onSave: () => void;
     onEdit: () => void;
     onGetApp?: () => void;
-    onExportVideo?: () => void;
-    onExportImage?: () => void;
     onRampStart?: () => void;
     onRampStop?: () => void;
     isOwned?: boolean;
     onDeleteRequest?: () => void;
+    // Prop switcher
+    propSource?: "intended" | "creator-favorite" | "viewer-settings" | "quick-switch";
+    hasIntendedProp?: boolean;
+    bluePropType?: PropType;
+    redPropType?: PropType;
+    onPropSourceChange?: (source: "intended" | "viewer-settings" | "quick-switch") => void;
+    onQuickSwitchProp?: (blue: PropType, red: PropType, catDog: boolean) => void;
+    onSetAsIntended?: () => Promise<void>;
   }
 
   let {
@@ -54,12 +61,17 @@
     onSave,
     onEdit,
     onGetApp,
-    onExportVideo,
-    onExportImage,
     onRampStart,
     onRampStop,
     isOwned = false,
     onDeleteRequest,
+    propSource,
+    hasIntendedProp,
+    bluePropType,
+    redPropType,
+    onPropSourceChange,
+    onQuickSwitchProp,
+    onSetAsIntended,
   }: Props = $props();
 
   let controlsExpanded = $state(false);
@@ -81,8 +93,87 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="morph-toolbar" onkeydown={handleKeydown}>
+  <!-- Single row: play + actions + BPM chip (always visible) -->
+  <div class="playback-row">
+    <button
+      type="button"
+      class="play-btn"
+      class:playing={isPlaying}
+      onclick={onPlayPause}
+      aria-label={isPlaying ? "Pause animation" : "Play animation"}
+    >
+      <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
+    </button>
+
+    {#if isLoggedIn}
+      <button
+        type="button"
+        class="action-btn save"
+        onclick={onSave}
+        aria-label="Save to Library"
+      >
+        <i class="fas fa-bookmark" aria-hidden="true"></i>
+        <span>Save</span>
+      </button>
+      <button
+        type="button"
+        class="action-btn construct"
+        onclick={onEdit}
+        aria-label="Open in Constructor"
+      >
+        <i class="fas fa-hammer" aria-hidden="true"></i>
+        <span>Construct</span>
+      </button>
+    {:else}
+      <button
+        type="button"
+        class="action-btn get-app"
+        onclick={onGetApp}
+        aria-label="Get TKA Scribe"
+      >
+        <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
+        <span>Get App</span>
+      </button>
+    {/if}
+
+    {#if isLoggedIn && isOwned && onDeleteRequest}
+      <button
+        type="button"
+        class="action-btn delete"
+        onclick={onDeleteRequest}
+        aria-label="Delete sequence"
+      >
+        <i class="fas fa-trash" aria-hidden="true"></i>
+        <span>Delete</span>
+      </button>
+    {/if}
+
+    {#if hasIntendedProp || isOwned}
+      <PropSwitcher
+        propSource={propSource ?? "viewer-settings"}
+        hasIntendedProp={hasIntendedProp ?? false}
+        {bluePropType}
+        {redPropType}
+        isOwned={isOwned ?? false}
+        onSourceChange={onPropSourceChange ?? (() => {})}
+        onQuickSwitch={onQuickSwitchProp ?? (() => {})}
+        onSetAsIntended={onSetAsIntended ?? (async () => {})}
+      />
+    {/if}
+
+    <button
+      type="button"
+      class="chip-trigger"
+      class:active={controlsExpanded}
+      onclick={openControls}
+      aria-label="Playback controls: {bpm} BPM"
+    >
+      <span class="chip-value">{bpm} BPM</span>
+    </button>
+  </div>
+
+  <!-- Expanded controls: slides up from below the main row -->
   {#if controlsExpanded}
-    <!-- CONTROLS MODE: transport + tempo inline, replaces action/chip rows -->
     <div class="controls-inline">
       <div class="transport-row">
         <TransportControls
@@ -116,97 +207,6 @@
         </button>
       </div>
     </div>
-  {:else}
-    <!-- DEFAULT MODE: action buttons + play/BPM row -->
-    <div class="action-row-top">
-      {#if isLoggedIn}
-        <button
-          type="button"
-          class="action-btn save"
-          onclick={onSave}
-          aria-label="Save to Library"
-        >
-          <i class="fas fa-bookmark" aria-hidden="true"></i>
-          <span>Save</span>
-        </button>
-        <button
-          type="button"
-          class="action-btn construct"
-          onclick={onEdit}
-          aria-label="Open in Constructor"
-        >
-          <i class="fas fa-hammer" aria-hidden="true"></i>
-          <span>Construct</span>
-        </button>
-      {:else}
-        <button
-          type="button"
-          class="action-btn get-app"
-          onclick={onGetApp}
-          aria-label="Get TKA Scribe"
-        >
-          <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
-          <span>Get App</span>
-        </button>
-      {/if}
-
-      {#if onExportVideo}
-        <button
-          type="button"
-          class="action-btn export-video"
-          onclick={onExportVideo}
-          aria-label="Export video"
-        >
-          <i class="fas fa-video" aria-hidden="true"></i>
-          <span>Video</span>
-        </button>
-      {/if}
-      {#if onExportImage}
-        <button
-          type="button"
-          class="action-btn export-image"
-          onclick={onExportImage}
-          aria-label="Export image"
-        >
-          <i class="fas fa-image" aria-hidden="true"></i>
-          <span>Image</span>
-        </button>
-      {/if}
-
-      {#if isLoggedIn && isOwned && onDeleteRequest}
-        <button
-          type="button"
-          class="action-btn delete"
-          onclick={onDeleteRequest}
-          aria-label="Delete sequence"
-        >
-          <i class="fas fa-trash" aria-hidden="true"></i>
-          <span>Delete</span>
-        </button>
-      {/if}
-    </div>
-
-    <div class="playback-row">
-      <button
-        type="button"
-        class="play-btn"
-        class:playing={isPlaying}
-        onclick={onPlayPause}
-        aria-label={isPlaying ? "Pause animation" : "Play animation"}
-      >
-        <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
-      </button>
-
-      <button
-        type="button"
-        class="chip-trigger"
-        class:active={controlsExpanded}
-        onclick={openControls}
-        aria-label="Playback controls: {bpm} BPM"
-      >
-        <span class="chip-value">{bpm} BPM</span>
-      </button>
-    </div>
   {/if}
 </div>
 
@@ -224,25 +224,7 @@
   }
 
   /* ===========================
-     ROW 1: ACTION BUTTONS
-     =========================== */
-
-  .action-row-top {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    width: 100%;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .action-row-top::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* ===========================
-     ROW 2: PLAY + CHIP TRIGGERS
+     SINGLE ROW: PLAY + CHIP + ACTIONS
      =========================== */
 
   .playback-row {
@@ -421,28 +403,6 @@
     border-color: rgba(34, 197, 94, 0.4);
   }
 
-  .action-btn.export-video {
-    background: rgba(59, 130, 246, 0.1);
-    border-color: rgba(59, 130, 246, 0.25);
-    color: #3b82f6;
-  }
-
-  .action-btn.export-video:hover {
-    background: rgba(59, 130, 246, 0.2);
-    border-color: rgba(59, 130, 246, 0.4);
-  }
-
-  .action-btn.export-image {
-    background: rgba(6, 182, 212, 0.1);
-    border-color: rgba(6, 182, 212, 0.25);
-    color: #06b6d4;
-  }
-
-  .action-btn.export-image:hover {
-    background: rgba(6, 182, 212, 0.2);
-    border-color: rgba(6, 182, 212, 0.4);
-  }
-
   .action-btn.delete {
     background: color-mix(in srgb, var(--semantic-error) 10%, transparent);
     border-color: color-mix(in srgb, var(--semantic-error) 25%, transparent);
@@ -463,6 +423,19 @@
     flex-direction: column;
     gap: 8px;
     width: 100%;
+    animation: slide-up 200ms cubic-bezier(0.4, 0, 0.2, 1) both;
+    transform-origin: bottom;
+  }
+
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .transport-row {
@@ -523,8 +496,10 @@
     .play-btn,
     .action-btn,
     .chip-trigger,
-    .close-controls-btn {
+    .close-controls-btn,
+    .controls-inline {
       transition: none;
+      animation: none;
     }
 
     .play-btn:active,
