@@ -4,6 +4,13 @@
   Point list with delete buttons, and auto-saved actions
   (set default, reset, copy, import). Edits unified tip points
   shared by all effects.
+
+  Keyboard navigation:
+    Up/Down arrows  — move between points
+    Enter           — focus dx input for editing
+    Tab             — dx → dy → next point's dx (skips action buttons)
+    Escape          — return focus to point row
+    Delete          — delete selected point
 -->
 <script lang="ts">
   import { onDestroy } from "svelte";
@@ -20,6 +27,11 @@
   let importError = $state<string | null>(null);
   let copyFeedback = $state(false);
   let copyFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Refs for programmatic focus
+  let rowEls: HTMLDivElement[] = [];
+  let dxInputEls: HTMLInputElement[] = [];
+  let dyInputEls: HTMLInputElement[] = [];
 
   onDestroy(() => {
     if (copyFeedbackTimer !== null) clearTimeout(copyFeedbackTimer);
@@ -61,6 +73,133 @@
   function handleAddAtCenter() {
     editorState.addPoint(0, 0);
   }
+
+  function selectAndFocusRow(index: number) {
+    editorState.selectedPointIndex = index;
+    // Wait for DOM update before focusing
+    requestAnimationFrame(() => rowEls[index]?.focus());
+  }
+
+  function focusDxInput(index: number) {
+    requestAnimationFrame(() => {
+      const input = dxInputEls[index];
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    });
+  }
+
+  function handleRowKeydown(e: KeyboardEvent, index: number) {
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        if (index < editorState.points.length - 1) {
+          selectAndFocusRow(index + 1);
+        }
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        if (index > 0) {
+          selectAndFocusRow(index - 1);
+        }
+        break;
+      case "Enter":
+        e.preventDefault();
+        editorState.selectedPointIndex = index;
+        focusDxInput(index);
+        break;
+      case "Delete":
+      case "Backspace":
+        e.preventDefault();
+        editorState.deletePoint(index);
+        // Focus the next row (or previous if we deleted the last)
+        requestAnimationFrame(() => {
+          const newLen = editorState.points.length;
+          if (newLen > 0) {
+            const nextIndex = Math.min(index, newLen - 1);
+            selectAndFocusRow(nextIndex);
+          }
+        });
+        break;
+    }
+  }
+
+  function handleInputKeydown(e: KeyboardEvent, pointIndex: number, field: "dx" | "dy") {
+    switch (e.key) {
+      case "Escape":
+        // Return focus to the row
+        e.preventDefault();
+        rowEls[pointIndex]?.focus();
+        break;
+      case "Tab":
+        if (!e.shiftKey) {
+          // Forward tab: dx → dy → next point's dx
+          if (field === "dx") {
+            e.preventDefault();
+            const dyInput = dyInputEls[pointIndex];
+            if (dyInput) { dyInput.focus(); dyInput.select(); }
+          } else if (field === "dy") {
+            // Jump to next point's dx
+            const nextIndex = pointIndex + 1;
+            if (nextIndex < editorState.points.length) {
+              e.preventDefault();
+              editorState.selectedPointIndex = nextIndex;
+              focusDxInput(nextIndex);
+            }
+            // else: let Tab naturally leave the list
+          }
+        } else {
+          // Shift+Tab: reverse — dy → dx → previous point's dy
+          if (field === "dy") {
+            e.preventDefault();
+            const dxInput = dxInputEls[pointIndex];
+            if (dxInput) { dxInput.focus(); dxInput.select(); }
+          } else if (field === "dx") {
+            const prevIndex = pointIndex - 1;
+            if (prevIndex >= 0) {
+              e.preventDefault();
+              editorState.selectedPointIndex = prevIndex;
+              requestAnimationFrame(() => {
+                const dyInput = dyInputEls[prevIndex];
+                if (dyInput) { dyInput.focus(); dyInput.select(); }
+              });
+            }
+            // else: let Shift+Tab naturally leave the list
+          }
+        }
+        break;
+      case "Enter":
+        // Commit and move to next point's same field
+        e.preventDefault();
+        (e.target as HTMLInputElement).blur();
+        {
+          const nextIndex = pointIndex + 1;
+          if (nextIndex < editorState.points.length) {
+            editorState.selectedPointIndex = nextIndex;
+            if (field === "dx") focusDxInput(nextIndex);
+            else {
+              requestAnimationFrame(() => {
+                const dyInput = dyInputEls[nextIndex];
+                if (dyInput) { dyInput.focus(); dyInput.select(); }
+              });
+            }
+          } else {
+            // Last point — return to row
+            rowEls[pointIndex]?.focus();
+          }
+        }
+        break;
+    }
+  }
+
+  // When clicking an input, also select the point and highlight the value
+  function handleInputClick(e: MouseEvent, index: number) {
+    e.stopPropagation();
+    editorState.selectedPointIndex = index;
+    const input = e.target as HTMLInputElement;
+    input.select();
+  }
 </script>
 
 <div
@@ -90,18 +229,19 @@
         No points. Click the canvas or use "Add at Center."
       </div>
     {:else}
-      <div class="point-list">
+      <div class="point-list" role="listbox" aria-label="Tip points">
         {#each editorState.points as point, i (i)}
           <div
             class="point-row"
             class:selected={editorState.selectedPointIndex === i}
-            onclick={() => { editorState.selectedPointIndex = i; }}
-            onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); editorState.selectedPointIndex = i; } }}
-            role="button"
-            tabindex="0"
-            aria-label="Select point {i + 1}"
+            bind:this={rowEls[i]}
+            onclick={() => selectAndFocusRow(i)}
+            onkeydown={(e) => handleRowKeydown(e, i)}
+            role="option"
+            tabindex={editorState.selectedPointIndex === i ? 0 : -1}
+            aria-selected={editorState.selectedPointIndex === i}
+            aria-label="Point {i + 1}: dx {point.dx}, dy {point.dy}"
           >
-            <!-- Row 1: index, coords, icon buttons -->
             <div class="point-top-row">
               <span class="point-index">{i + 1}</span>
               <div class="point-coords">
@@ -111,9 +251,13 @@
                     type="number"
                     class="coord-input"
                     step="0.1"
+                    bind:this={dxInputEls[i]}
                     value={point.dx}
+                    tabindex={-1}
                     onchange={(e) => handleCoordChange(i, "dx", (e.target as HTMLInputElement).value)}
-                    onclick={(e) => e.stopPropagation()}
+                    onclick={(e) => handleInputClick(e, i)}
+                    onkeydown={(e) => handleInputKeydown(e, i, "dx")}
+                    onfocus={() => { editorState.selectedPointIndex = i; }}
                   />
                 </label>
                 <label class="coord-field">
@@ -122,14 +266,19 @@
                     type="number"
                     class="coord-input"
                     step="0.1"
+                    bind:this={dyInputEls[i]}
                     value={point.dy}
+                    tabindex={-1}
                     onchange={(e) => handleCoordChange(i, "dy", (e.target as HTMLInputElement).value)}
-                    onclick={(e) => e.stopPropagation()}
+                    onclick={(e) => handleInputClick(e, i)}
+                    onkeydown={(e) => handleInputKeydown(e, i, "dy")}
+                    onfocus={() => { editorState.selectedPointIndex = i; }}
                   />
                 </label>
               </div>
               <button
                 class="icon-btn center-btn"
+                tabindex={-1}
                 onclick={(e) => { e.stopPropagation(); handleCenterPoint(i); }}
                 aria-label="Move point {i + 1} to center"
                 title="Move to center (0, 0)"
@@ -138,6 +287,7 @@
               </button>
               <button
                 class="icon-btn delete-btn"
+                tabindex={-1}
                 onclick={(e) => { e.stopPropagation(); editorState.deletePoint(i); }}
                 aria-label="Delete point {i + 1}"
                 title="Delete point"
