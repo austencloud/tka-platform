@@ -413,8 +413,8 @@
   .section-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    grid-auto-rows: 1fr;
-    gap: 6px;
+    grid-auto-rows: minmax(0, 1fr);
+    gap: 4px;
     flex: 1;
     min-height: 0;
   }
@@ -427,18 +427,18 @@
   }
 
   /* ===== BUTTON BASE STYLES ===== */
-  /* Default: horizontal layout (icon left, label right) — fits all panel widths */
+  /* Desktop: horizontal layout (icon left, label right) for compact rows */
   .grid-btn {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     gap: 8px;
-    padding: 14px 18px;
-    border-radius: 10px;
+    padding: 6px 10px;
+    border-radius: 8px;
     cursor: pointer;
     transition: all var(--duration-fast) ease;
-    text-align: center;
+    text-align: left;
     min-height: var(--min-touch-target, 44px);
     height: 100%;
   }
@@ -457,10 +457,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 52px;
-    height: 52px;
-    border-radius: 12px;
-    font-size: 1.4rem;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    font-size: 0.9rem;
     flex-shrink: 0;
     color: white;
   }
@@ -468,13 +468,13 @@
   .btn-text {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
     gap: 1px;
     min-width: 0;
   }
 
   .btn-label {
-    font-size: 1rem;
+    font-size: var(--font-size-sm, 14px);
     font-weight: 600;
     color: rgba(255, 255, 255, 0.95);
     white-space: nowrap;
@@ -487,8 +487,12 @@
     display: none;
   }
 
-  /* Mobile mode: hide descriptions, smaller icons */
+  /* Mobile mode: vertical column layout with smaller icons */
   .actions-container.mobile .grid-btn {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
     padding: 8px 4px;
     gap: 4px;
   }
@@ -496,6 +500,9 @@
     width: 36px;
     height: 36px;
     font-size: var(--font-size-base);
+  }
+  .actions-container.mobile .btn-text {
+    align-items: center;
   }
   .actions-container.mobile .btn-label {
     font-size: var(--font-size-compact, 12px);
@@ -645,8 +652,8 @@
   }
 
   .actions-container.compact .grid-btn {
-    padding: 4px 8px;
-    gap: 6px;
+    padding: 4px 6px;
+    gap: 4px;
   }
 
   .actions-container.compact .btn-label {

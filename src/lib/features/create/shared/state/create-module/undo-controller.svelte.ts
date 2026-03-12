@@ -14,6 +14,12 @@ import type {
 import { UndoOperationType } from "../../services/contracts/IUndoManager";
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+// @ts-ignore tsc doesn't recognize Svelte module script exports, but svelte-check does
+import { clearPropPositionCache } from "$lib/shared/pictograph/prop/components/PropSvg.svelte";
+// @ts-ignore tsc doesn't recognize Svelte module script exports, but svelte-check does
+import { clearArrowPositionCache } from "$lib/shared/pictograph/arrow/rendering/components/ArrowSvg.svelte";
+import { setSuppressNextAnimation } from "../../workspace-panel/sequence-display/state/step-grid-display-state.svelte";
+import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
 type UndoControllerDeps = {
   UndoManager: IUndoManager;
@@ -46,6 +52,26 @@ export function createUndoController({
   UndoManager.onChange(() => {
     undoChangeCounter++;
   });
+
+  /**
+   * Suppress all visual transitions before restoring a sequence.
+   * Disables: StepGrid entrance animations, prop/arrow CSS transitions,
+   * and position cache slide-in effects.
+   */
+  function suppressTransitionsForRestore() {
+    setSuppressNextAnimation(true);
+    clearPropPositionCache();
+    clearArrowPositionCache();
+
+    // Temporarily disable CSS transitions on props/arrows via the
+    // "transforming" flag (adds .no-transition class). Re-enable after
+    // the browser paints the restored state.
+    const visManager = getAnimationVisibilityManager();
+    visManager.setTransforming(true);
+    requestAnimationFrame(() => {
+      visManager.setTransforming(false);
+    });
+  }
 
   function pushUndoSnapshot(type: UndoOperationType, metadata?: UndoMetadata) {
     if (
@@ -84,13 +110,17 @@ export function createUndoController({
   }
 
   function undo(): boolean {
-    // Get description before undo (entry moves to redo after)
-    const undoDescription = UndoManager.getLastUndoDescription();
+    const currentSection = getActiveSection();
 
-    const lastEntry = UndoManager.undo();
+    // Only undo entries from the current tab
+    const lastEntry = UndoManager.undo(currentSection);
     if (!lastEntry) {
       return false;
     }
+
+    const undoDescription =
+      lastEntry.metadata?.description ||
+      UndoManager.getOperationDescription(lastEntry.type);
 
     // Show brief toast confirming the undo
     if (undoDescription) {
@@ -105,51 +135,10 @@ export function createUndoController({
       return true;
     }
 
-    const currentSequence = sequenceState.currentSequence;
-    const restoredSequence = lastEntry.beforeState.sequence;
+    suppressTransitionsForRestore();
 
-    if (currentSequence && restoredSequence) {
-      const currentStepCount = currentSequence.steps.length;
-      const restoredStepCount = restoredSequence.steps.length;
-
-      if (currentStepCount > restoredStepCount) {
-        const stepsToRemove: number[] = [];
-        for (let i = restoredStepCount; i < currentStepCount; i++) {
-          stepsToRemove.push(i);
-        }
-
-        sequenceState.animationState.startRemovingBeats(stepsToRemove);
-        if (onUndoingOptionCallback) {
-          onUndoingOptionCallback(true);
-        }
-
-        const fadeAnimationDuration = 250;
-        setTimeout(() => {
-          sequenceState.setCurrentSequence(restoredSequence);
-          sequenceState.animationState.endRemovingBeats();
-
-          if (onUndoingOptionCallback) {
-            onUndoingOptionCallback(false);
-          }
-
-          restoreSelection(lastEntry.beforeState.selectedStepNumber);
-          if (lastEntry.beforeState.activeSection) {
-            void setActiveSectionInternal(
-              lastEntry.beforeState.activeSection,
-              false
-            );
-          }
-
-          if (syncPickerStateCallback) {
-            syncPickerStateCallback();
-          }
-        }, fadeAnimationDuration);
-
-        return true;
-      }
-    }
-
-    sequenceState.setCurrentSequence(restoredSequence);
+    // Restore the sequence directly
+    sequenceState.setCurrentSequence(lastEntry.beforeState.sequence);
     restoreSelection(lastEntry.beforeState.selectedStepNumber);
     if (lastEntry.beforeState.activeSection) {
       void setActiveSectionInternal(lastEntry.beforeState.activeSection, false);
@@ -183,6 +172,8 @@ export function createUndoController({
       // If no afterState, just return true (the service already moved it back to undo history)
       return true;
     }
+
+    suppressTransitionsForRestore();
 
     // Restore the sequence from the after state
     sequenceState.setCurrentSequence(afterState.sequence);
@@ -220,6 +211,8 @@ export function createUndoController({
     // Perform the jump in the manager
     const result = UndoManager.jumpToState(entryId);
     if (!result) return false;
+
+    suppressTransitionsForRestore();
 
     // Restore the state from the entry's beforeState
     if (entry.type === UndoOperationType.SELECT_START_POSITION) {
@@ -259,7 +252,7 @@ export function createUndoController({
     setOnUndoingOptionCallback,
     get canUndo() {
       void undoChangeCounter;
-      return UndoManager.canUndo;
+      return UndoManager.canUndoForSection(getActiveSection());
     },
     get canRedo() {
       void undoChangeCounter;

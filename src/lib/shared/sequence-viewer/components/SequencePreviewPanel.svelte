@@ -1,9 +1,9 @@
 <!--
   SequencePreviewPanel.svelte
 
-  @deprecated LEGACY COMPONENT - Use SequenceDetailsModal instead.
+  @deprecated LEGACY COMPONENT - Use SequenceViewerDrawerHost (mobile) or /sequence/[id] route (desktop) instead.
   This component uses the deprecated SequenceViewer. New sequence previews
-  should use SequenceDetailsModal with its split view and export capabilities.
+  should use the current sequence viewer with its split view and export capabilities.
 
   Legacy description (for reference):
   Internal sequence preview panel used within Create module and Browse gallery.

@@ -47,10 +47,10 @@ export class CreateModuleHandlers implements ICreateModuleHandlers {
   }
 
   /**
-   * Handle share hub button click - opens the unified Sequence Details Modal
+   * Handle share hub button click - opens the sequence viewer
    */
   handleOpenShareHubPanel(panelState: PanelCoordinationState): void {
-    panelState.openSequenceDetailsModal();
+    panelState.openSequenceViewer();
   }
 
   /**

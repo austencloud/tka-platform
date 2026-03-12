@@ -28,6 +28,8 @@
   import ShareHubButton from "./buttons/ShareHubButton.svelte";
   import GeneratorHelpButton from "./buttons/GeneratorHelpButton.svelte";
   import PropIndicatorButton from "./buttons/PropIndicatorButton.svelte";
+  import HandPickerButton from "./buttons/HandPickerButton.svelte";
+  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
     // TEMPORARY: Animation style toggle for A/B testing - delete after choosing preferred style
   import { practiceAnimationStyle } from "../../../state/practice-animation-style.svelte";
 
@@ -62,6 +64,17 @@
   );
   const canClearSequence = $derived(CreateModuleState.canClearSequence());
   const isShareHubOpen = $derived(panelState.isShareHubPanelOpen);
+
+  // Assemble tab hand picker
+  const isAssembleTab = $derived(navigationState.activeTab === "assemble");
+  const assembleBuilderState = $derived(CreateModuleState.assembleTabState?.assembleBuilderState);
+  const activeHand = $derived(assembleBuilderState?.activeHand ?? MotionColor.BLUE);
+
+  function toggleHand(): void {
+    if (!assembleBuilderState) return;
+    const next = activeHand === MotionColor.BLUE ? MotionColor.RED : MotionColor.BLUE;
+    assembleBuilderState.switchToHand(next);
+  }
 
   // Count center-zone buttons to key the container (for smooth cross-fade on layout changes)
   // Note: SequenceActions is now in left zone, not center
@@ -132,8 +145,13 @@
       {/key}
     </div>
 
-    <!-- RIGHT ZONE: Help button (mobile only) + Clear Sequence button (rightmost) -->
+    <!-- RIGHT ZONE: Hand picker (assemble, mobile) + Help (generate, mobile) + Clear -->
     <div class="right-zone">
+      {#if isAssembleTab && assembleBuilderState}
+        <div class="mobile-only" transition:presenceTransition>
+          <HandPickerButton {activeHand} onToggle={toggleHand} />
+        </div>
+      {/if}
       {#if showGeneratorHelp}
         <div
           class="mobile-only"

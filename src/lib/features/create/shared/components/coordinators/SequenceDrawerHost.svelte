@@ -310,12 +310,11 @@
     }
   }
 
-  // Intercept modal opening and navigate to viewer instead
-  // When panelState.isSequenceDetailsModalOpen becomes true, open the sequence viewer
+  // When panelState.isSequenceViewerOpen becomes true, open the sequence viewer
   $effect(() => {
-    if (panelState.isSequenceDetailsModalOpen && currentSequence) {
-      // Close the modal state immediately
-      panelState.closeSequenceDetailsModal();
+    if (panelState.isSequenceViewerOpen && currentSequence) {
+      // Clear the flag immediately
+      panelState.closeSequenceViewer();
 
       const { returnPath, returnLabel } = getReturnContext();
       openSequenceViewer(currentSequence, { returnPath, returnLabel });

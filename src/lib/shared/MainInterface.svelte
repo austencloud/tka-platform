@@ -43,10 +43,7 @@
   import PWAInstallationManager from "./pwa/PWAInstallationManager.svelte";
     import {
     desktopSidebarState,
-    setDesktopSidebarCollapsed,
   } from "./layout/desktop-sidebar-state.svelte";
-  import SidebarTourOverlay from "./onboarding/components/sidebar-tour/SidebarTourOverlay.svelte";
-  import { appEntryState } from "./onboarding/state/app-entry-state.svelte.ts";
   // Keyboard shortcuts
 
   import { deepLinker } from "./navigation/services/implementations/DeepLinker";
@@ -284,15 +281,6 @@
       onSectionChange={handleSectionChange}
       {isEntryAnimating}
     />
-    <!-- Sidebar Tour (desktop only, existing users who never did the guided build) -->
-    {#if appEntryState.isComplete()}
-      <SidebarTourOverlay
-        sidebarCollapsed={desktopSidebarState.isCollapsed}
-        onExpandSidebar={() => setDesktopSidebarCollapsed(false)}
-        onRestoreSidebar={(wasCollapsed) =>
-          setDesktopSidebarCollapsed(wasCollapsed)}
-      />
-    {/if}
   {/if}
 
   <!-- Content + Navigation Wrapper (flex layout) -->

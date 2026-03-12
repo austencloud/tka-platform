@@ -1,13 +1,13 @@
 <!--
   SequenceViewer.svelte
 
-  @deprecated LEGACY COMPONENT - Use SequenceDetailsModal instead.
-  This component is scheduled for removal. All new features should use SequenceDetailsModal
+  @deprecated LEGACY COMPONENT - Use SequenceViewerDrawerHost (mobile) or /sequence/[id] route (desktop) instead.
+  This component is scheduled for removal. All new features should use the current sequence viewer
   which provides the full-screen split view experience with animation + image side-by-side.
 
   Migration path:
-  - For viewing sequences: Use SequenceDetailsModal
-  - For exports: Export functionality is being added to SequenceDetailsModal
+  - Mobile: Use SequenceViewerDrawerHost (drawer overlay)
+  - Desktop: Navigate to the /sequence/[id] route page
 
   Legacy description (for reference):
   Unified media viewer with CTA button to switch between Image and Animation modes.

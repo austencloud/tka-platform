@@ -257,7 +257,6 @@ async function suppressOnboarding(page: Page): Promise<void> {
     ([keys, storageKeys]) => {
       localStorage.setItem(storageKeys.LAST_SEEN_VERSION, "99.99.99");
       localStorage.setItem(storageKeys.LANDING_DISMISSED, "true");
-      localStorage.setItem(storageKeys.SIDEBAR_TOUR_COMPLETED, "true");
       // Suppress first-run wizard (beta consent + onboarding steps)
       localStorage.setItem("tka-first-run-completed", "true");
       localStorage.setItem("tka-first-run-completed-at", new Date().toISOString());

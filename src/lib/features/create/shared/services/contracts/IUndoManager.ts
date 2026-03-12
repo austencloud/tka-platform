@@ -133,12 +133,19 @@ export interface IUndoManager {
   ): string;
 
   /**
-   * Undo the last operation
-   * Moves the entry from undo history to redo history
+   * Undo the last operation.
+   * If activeSection is provided, only undoes the most recent entry from that tab.
+   * Moves the entry from undo history to redo history.
    *
+   * @param activeSection - Optional tab filter (e.g. "construct", "generate", "assemble")
    * @returns The history entry that was undone, or null if nothing to undo
    */
-  undo(): UndoHistoryEntry | null;
+  undo(activeSection?: string | null): UndoHistoryEntry | null;
+
+  /**
+   * Check if there are undoable entries for a specific tab
+   */
+  canUndoForSection(activeSection: string): boolean;
 
   /**
    * Redo the last undone operation

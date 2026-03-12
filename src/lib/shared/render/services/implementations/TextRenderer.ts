@@ -183,8 +183,9 @@ export class TextRenderer implements ITextRenderer {
     ctx.lineTo(canvas.width, headerHeight - 0.5);
     ctx.stroke();
 
-    // Calculate font size based on header height (90% of header height)
-    const finalFontSize = headerHeight * 0.9;
+    // Calculate font size based on header height (66% of header height)
+    // Matches ChoreoCard preview scaling (0.55 * 1.2 = 0.66 for 20% larger)
+    const finalFontSize = Math.max(10, Math.floor(headerHeight * 0.66));
 
     // Set font properties - bold weight for emphasis
     // Dark Mode uses white text, normal mode uses dark gray

@@ -416,7 +416,7 @@
     for (let i = 0; i < 4; i++) {
       const startBeat = i * sectionSize + 1;
       const endBeat = i === 3 ? totalBeats : (i + 1) * sectionSize;
-      const phrase = createEffortPhrase(efforts[i], startBeat, endBeat);
+      const phrase = createEffortPhrase(efforts[i]!, startBeat, endBeat);
       newTimeline = insertPhrase(newTimeline, phrase);
     }
 

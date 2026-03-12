@@ -30,6 +30,7 @@ export class Shortcut implements ShortcutDefinition {
   enabled: boolean;
   isSingleKey: boolean;
   forceExecute: boolean;
+  preserveDrawers: boolean;
 
   constructor(definition: ShortcutDefinition) {
     this.id = definition.id;
@@ -45,6 +46,7 @@ export class Shortcut implements ShortcutDefinition {
     this.enabled = definition.enabled;
     this.isSingleKey = definition.isSingleKey;
     this.forceExecute = definition.forceExecute;
+    this.preserveDrawers = definition.preserveDrawers;
 
     // Only assign optional properties if they exist in the definition
     if ("description" in definition) {

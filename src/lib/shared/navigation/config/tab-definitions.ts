@@ -746,8 +746,8 @@ export const LAB_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
   },
   {
-    id: "decompose",
-    label: "Decompose",
+    id: "disassemble",
+    label: "Disassemble",
     icon: '<i class="fas fa-layer-group" aria-hidden="true"></i>',
     description: "Isolate and study individual hand paths",
     color: "#06b6d4",
@@ -816,6 +816,14 @@ export const LAB_TABS: Section[] = [
     description: "Paint effort qualities across beats to shape how a sequence moves",
     color: "#a78bfa",
     gradient: "linear-gradient(135deg, #c084fc 0%, #a78bfa 100%)",
+  },
+  {
+    id: "audio-toolkit",
+    label: "Audio Toolkit",
+    icon: '<i class="fas fa-waveform" aria-hidden="true"></i>',
+    description: "Archived audio components: waveform, beat markers, tempo regions, beat tapper",
+    color: "#8b5cf6",
+    gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
   },
 ];
 

@@ -4,7 +4,7 @@
  * Allows voice commands and keyboard shortcuts to trigger viewer actions
  * (export, save, share, compose) without needing Svelte context.
  *
- * Set by SequenceDetailsModal when a sequence is loaded, cleared when it closes.
+ * Set by SequenceViewerDrawerHost when a sequence is loaded, cleared when it closes.
  */
 
 export interface SequenceViewerActions {

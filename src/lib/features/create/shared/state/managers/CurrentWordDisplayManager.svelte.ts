@@ -117,10 +117,10 @@ export function createCurrentWordDisplayEffect(
           displayText = CreateModuleState.sequenceState.sequenceWord() ?? "";
         }
       }
-      // PRIORITY 4: Guided mode - header text
+      // PRIORITY 4: Assemble tab - show letters as they resolve, empty until paired
       else if (CreateModuleState.activeSection === "assemble") {
-        displayText =
-          CreateModuleState.guidedModeHeaderText || "Guided Builder";
+        const assembleWord = CreateModuleState.getActiveTabSequenceState().sequenceWord?.() ?? "";
+        displayText = assembleWord;
       }
       // Default: Show current word
       else {

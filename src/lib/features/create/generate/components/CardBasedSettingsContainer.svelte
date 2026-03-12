@@ -54,7 +54,6 @@ Delegates ALL logic to services (SRP compliant)
     onWordSubmit,
     needsCycleCompletion = false,
     onCompleteCycle,
-    tourActiveStop = null,
     isMobile = false,
     onOpenWordInput,
   } = $props<{
@@ -72,8 +71,6 @@ Delegates ALL logic to services (SRP compliant)
     needsCycleCompletion?: boolean;
     /** Called when user clicks "Complete Cycle" */
     onCompleteCycle?: () => void;
-    /** When set, highlights this card and dims others (used by tour modal) */
-    tourActiveStop?: string | null;
     /** Whether the app is in mobile layout — used to open word input overlay */
     isMobile?: boolean;
     /** Called when user taps the word card on mobile to open the overlay */
@@ -310,13 +307,11 @@ Delegates ALL logic to services (SRP compliant)
 
 </script>
 
-<div class="card-settings-container" class:tour-active={!!tourActiveStop} style="--header-font-size: {headerFontSize}">
+<div class="card-settings-container" style="--header-font-size: {headerFontSize}">
 
   {#each cards as card (card.id)}
     <div
       class="card-wrapper"
-      class:tour-highlight={tourActiveStop === card.id}
-      class:tour-dim={!!tourActiveStop && tourActiveStop !== card.id}
       style:grid-column="span {card.gridColumnSpan}"
       animate:flip={{ duration: 300, easing: quintOut }}
     >
@@ -437,52 +432,9 @@ Delegates ALL logic to services (SRP compliant)
     }
   }
 
-  /* Tour highlighting — used when rendered inside the tour modal */
-  .card-wrapper.tour-dim {
-    opacity: 0.2;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
-  }
-
-  .card-wrapper.tour-highlight {
-    position: relative;
-    z-index: 1;
-  }
-
-  .card-wrapper.tour-highlight::after {
-    content: "";
-    position: absolute;
-    inset: -2px;
-    border-radius: 14px;
-    border: 2px solid rgba(59, 130, 246, 0.6);
-    box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
-    pointer-events: none;
-    animation: tour-card-glow 1.5s ease-in-out infinite;
-  }
-
-  @keyframes tour-card-glow {
-    0%, 100% {
-      border-color: rgba(59, 130, 246, 0.4);
-      box-shadow: 0 0 8px rgba(59, 130, 246, 0.2);
-    }
-    50% {
-      border-color: rgba(59, 130, 246, 0.8);
-      box-shadow: 0 0 16px rgba(59, 130, 246, 0.4);
-    }
-  }
-
-  /* Accessibility: Respect reduced motion preference */
   @media (prefers-reduced-motion: reduce) {
     .card-wrapper {
       transition: none;
-    }
-    .card-wrapper.tour-dim {
-      transition: none;
-    }
-    .card-wrapper.tour-highlight::after {
-      animation: none;
-      border-color: rgba(59, 130, 246, 0.6);
-      box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
     }
   }
 

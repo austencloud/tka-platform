@@ -2,7 +2,7 @@
   SequenceViewerActions.svelte - Action buttons for the Sequence Viewer
 
   @deprecated LEGACY COMPONENT - Used by deprecated SequenceViewer.
-  New action patterns should be integrated into SequenceDetailsModal.
+  New action patterns should be integrated into SequenceViewerDrawerHost.
 
   Legacy description (for reference):
   Handles the action buttons with their various states.

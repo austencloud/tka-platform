@@ -11,7 +11,7 @@ import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-pane
 
 /**
  * Handles loading and initializing sequence animation data.
- * Extracts animation loading logic from SequenceDetailsModal.
+ * Extracts animation loading logic from the sequence viewer.
  */
 export class SequenceAnimationLoader implements ISequenceAnimationLoader {
   private _isLoading = false;

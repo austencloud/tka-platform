@@ -13,8 +13,9 @@
   - Footer section (name, notes, birthday) - each animates independently
 -->
 <script lang="ts">
-  // Transitions removed - they caused NaN keyframe errors on initial mount
-  // when the container hadn't been sized yet (aspect-ratio elements)
+  import { fade, fly, scale } from "svelte/transition";
+  import { flip } from "svelte/animate";
+  import { cubicOut } from "svelte/easing";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
   import type { PreviewCellRenderOptions } from "../services/contracts/IPreviewCellRenderer";
@@ -202,6 +203,7 @@
     gridColumn: number;     // 1-based CSS grid column
     gridRow: number;        // 1-based CSS grid row
     duration: number;       // Duration units (1.0 = standard)
+    fadeOutUrl?: string;    // Previous image URL during dark mode cross-fade
   }
 
   // State
@@ -216,6 +218,15 @@
   let durationRows = $state<TimelineRow[]>([]);
   /** Max duration units in any single row (including start position), for CSS --col-count */
   let durationColCount = $state(0);
+
+  // Cross-fade state: smooth dark mode transitions without sequential spinners
+  let crossfadeActive = $state(false);
+  let crossfadeTimer: ReturnType<typeof setTimeout> | null = null;
+  // Initialize to the prop value so the first render has the correct dark mode class.
+  // Do NOT initialize to false — that causes a one-frame flash where backgrounds
+  // render in light mode even though the images are rendered for dark mode.
+  let activeDarkMode = $state(darkMode);
+  let lastContentKey = "";
 
   // Container-based sizing for "contain" behavior
   let containerElement: HTMLDivElement | undefined = $state();
@@ -312,40 +323,63 @@
 
   const currentLevelStyle = $derived(levelStyles[difficultyLevel] ?? defaultLevelStyle);
 
-  // Filtered cells based on includeStartPosition
+  // Filtered cells based on includeStartPosition.
+  // When start position is hidden, recalculate grid positions so steps
+  // fill the grid from column 1 (instead of leaving a gap at column 1).
   const visibleCells = $derived.by(() => {
     if (includeStartPosition) {
       return cells;
     }
-    // Filter out start position (index === -1)
-    return cells.filter(cell => cell.index !== -1);
+    const cols = effectiveColumns || 4;
+    return cells
+      .filter(cell => cell.index !== -1)
+      .map(cell => ({
+        ...cell,
+        gridColumn: (cell.index % cols) + 1,
+        gridRow: Math.floor(cell.index / cols) + 1,
+      }));
   });
 
-  // Effective columns (changes when start position is toggled off)
+  // Effective columns — synchronously computed from layout tables so the grid
+  // updates immediately when includeStartPosition toggles (before async re-render).
   const effectiveColumns = $derived.by(() => {
-    if (!columns) return 0;
-    if (includeStartPosition) return columns;
-    // When start position is hidden, first row might have one less item
-    // But we keep the same column count for layout consistency
-    return columns;
+    if (!sequence?.steps?.length) return columns || 0;
+    const stepCount = sequence.steps.length;
+
+    if (columnCount !== null && columnCount > 0) {
+      return columnCount;
+    }
+    // Use the layout service directly for an instant column count
+    const [cols] = layoutCalculator.calculateLayout(stepCount, includeStartPosition);
+    return cols;
+  });
+
+  // Effective rows — same instant-update pattern as effectiveColumns
+  const effectiveRows = $derived.by(() => {
+    if (!sequence?.steps?.length) return rows || 0;
+    const stepCount = sequence.steps.length;
+
+    const [, rws] = layoutCalculator.calculateLayout(stepCount, includeStartPosition);
+    return rws;
   });
 
   // Compute aspect ratio for the entire preview (width / height)
   // This ensures the preview maintains correct proportions regardless of container size
   const previewAspectRatio = $derived.by(() => {
-    if (!columns || !rows) return 1;
+    if (!effectiveColumns || !effectiveRows) return 1;
 
-    // Width in cell units — always use columns (grid column count).
-    const gridWidth = columns;
+    // Width in cell units — use effectiveColumns so the aspect ratio updates
+    // instantly when includeStartPosition toggles (before async re-render).
+    const gridWidth = effectiveColumns;
 
     // In duration mode, each row's pixel height = cardWidth / durationColCount
     // (because the widest row fills the card, and images maintain aspect ratio).
     // In cell units: rowHeight = columns / durationColCount.
     // For uniform grid: rowHeight = 1 cell unit (square cells).
     const rowHeightInCellUnits = (hasMixedDurations && durationColCount > 0)
-      ? columns / durationColCount
+      ? effectiveColumns / durationColCount
       : 1;
-    const gridHeight = rows * rowHeightInCellUnits;
+    const gridHeight = effectiveRows * rowHeightInCellUnits;
 
     // Header adds ~1/3 cell height, footer adds ~1/7 cell height
     const headerFraction = showHeader ? 1/3 : 0;
@@ -355,7 +389,10 @@
     const totalHeight = gridHeight + headerFraction + footerFraction;
 
     // Aspect ratio = width / height
-    return gridWidth / totalHeight;
+    const ratio = gridWidth / totalHeight;
+    // DEBUG: track aspect ratio changes during start position toggle
+    console.log(`[ChoreoCard aspect] cols=${effectiveColumns} rows=${effectiveRows} gridW=${gridWidth} gridH=${gridHeight.toFixed(2)} header=${headerFraction.toFixed(3)} footer=${footerFraction.toFixed(3)} totalH=${totalHeight.toFixed(3)} → ratio=${ratio.toFixed(4)}`);
+    return ratio;
   });
 
   // Scaled sizes based on grid element width
@@ -412,24 +449,25 @@
       return { gridColumn: 1, gridRow: 1 };
     }
 
-    // Steps per row (excluding the start column after row 1)
-    const stepsPerRow = cols - 1;
+    if (includeStartPosition) {
+      // With start position: col 1 is reserved for start, steps start at col 2
+      const stepsPerRow = cols - 1;
+      const firstRowSteps = cols - 1;
 
-    // First row after start position
-    const firstRowSteps = cols - 1; // How many steps fit in row 1 after start
+      if (stepIndex < firstRowSteps) {
+        return { gridColumn: stepIndex + 2, gridRow: 1 };
+      }
 
-    if (stepIndex < firstRowSteps) {
-      // This step is in the first row (same row as start)
-      // Column is offset by 2 (col 1 is start)
-      return { gridColumn: stepIndex + 2, gridRow: 1 };
+      const remainingIndex = stepIndex - firstRowSteps;
+      const row = Math.floor(remainingIndex / stepsPerRow) + 2;
+      const col = (remainingIndex % stepsPerRow) + 2;
+      return { gridColumn: col, gridRow: row };
+    } else {
+      // Without start position: all columns available for steps
+      const col = (stepIndex % cols) + 1;
+      const row = Math.floor(stepIndex / cols) + 1;
+      return { gridColumn: col, gridRow: row };
     }
-
-    // Steps after the first row
-    const remainingIndex = stepIndex - firstRowSteps;
-    const row = Math.floor(remainingIndex / stepsPerRow) + 2; // +2 because row 1 is start row
-    const col = (remainingIndex % stepsPerRow) + 2; // +2 because col 1 is start column
-
-    return { gridColumn: col, gridRow: row };
   }
 
   /**
@@ -521,19 +559,19 @@
       if (columnCount !== null && columnCount > 0) {
         // Manual column override (e.g., export mode)
         cols = columnCount;
-        const stepsPerRow = cols - 1;
+        const stepsPerRow = includeStartPosition ? cols - 1 : cols;
         const firstRowSteps = Math.min(stepsPerRow, stepCount);
         const remainingSteps = stepCount - firstRowSteps;
         rws = 1 + Math.ceil(remainingSteps / stepsPerRow);
       } else if (needsScroll) {
         // Long sequences: fixed 5 columns, scrollable grid
         cols = 5;
-        const stepsPerRow = cols - 1;
+        const stepsPerRow = includeStartPosition ? cols - 1 : cols;
         const firstRowSteps = Math.min(stepsPerRow, stepCount);
         const remainingSteps = stepCount - firstRowSteps;
         rws = 1 + Math.ceil(remainingSteps / stepsPerRow);
       } else {
-        [cols, rws] = layoutService.calculateLayout(stepCount, true);
+        [cols, rws] = layoutService.calculateLayout(stepCount, includeStartPosition);
       }
 
       columns = cols;
@@ -542,7 +580,7 @@
       // Start position is handled as a separate column barrier, NOT inline in the first row.
       let computedDurationRows: TimelineRow[] = [];
       if (mixed) {
-        const rowCapacity = cols - 1; // cols includes start position column
+        const rowCapacity = includeStartPosition ? cols - 1 : cols;
         computedDurationRows = calculateTimelineRows(sequence.steps, rowCapacity, false);
         rws = computedDurationRows.length;
         durationRows = computedDurationRows;
@@ -712,10 +750,174 @@
     }
   }
 
+  /**
+   * Cross-fade between dark and light mode without showing sequential spinners.
+   * Renders all new-mode images in the background while keeping old images visible,
+   * then swaps all at once with a simultaneous opacity cross-fade.
+   */
+  async function crossfadeDarkMode() {
+    if (!sequence?.steps?.length || cells.length === 0) return;
+
+    if (isRendering) {
+      renderQueued = true;
+      return;
+    }
+    isRendering = true;
+
+    // Flush any pending cleanup timer from a previous cross-fade BEFORE
+    // reading the cache. Without this, a rapid toggle (dark→light→dark within
+    // 400ms) can pull URLs from the cache that the pending timer is about to
+    // revoke — causing ERR_FILE_NOT_FOUND when the timer fires during our await.
+    if (crossfadeTimer) {
+      clearTimeout(crossfadeTimer);
+      crossfadeTimer = null;
+      crossfadeActive = false;
+      // Immediately run the cleanup that was scheduled:
+      // revoke fadeOutUrls and purge cache entries referencing them.
+      const toRevoke: string[] = [];
+      cells = cells.map(c => {
+        if (c.fadeOutUrl?.startsWith("blob:")) toRevoke.push(c.fadeOutUrl);
+        return { ...c, fadeOutUrl: undefined };
+      });
+      if (toRevoke.length > 0) {
+        const revokedSet = new Set(toRevoke);
+        for (const [key, entry] of globalPreviewCache) {
+          if (entry.cells.some(c => revokedSet.has(c.imageUrl))) {
+            globalPreviewCache.delete(key);
+          }
+        }
+        for (const url of toRevoke) URL.revokeObjectURL(url);
+      }
+    }
+
+    try {
+      const isDark = darkMode;
+      const renderOptions = buildRenderOptions();
+
+      // Check global cache first — may already have the target mode rendered
+      const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, isDark);
+      const cached = globalPreviewCache.get(cacheKey);
+
+      let newUrls: Map<number, string>;
+
+      if (cached) {
+        newUrls = new Map(cached.cells.map(c => [c.index, c.imageUrl]));
+      } else {
+        // Render all cells in background without updating DOM
+        newUrls = new Map();
+        const firstStep = sequence.steps[0];
+
+        if (sequence.startPosition || firstStep) {
+          const startData = sequence.startPosition || createStartPositionFromBeatStart(firstStep!);
+          const imageUrl = await previewCellRenderer.renderCell(startData, undefined, isDark, renderOptions);
+          newUrls.set(-1, imageUrl);
+        }
+
+        const mixed = detectMixedDurations(sequence.steps);
+        for (let i = 0; i < sequence.steps.length; i++) {
+          const step = sequence.steps[i];
+          if (!step) continue;
+          const stepDuration = step.duration ?? 1;
+          const cellRenderOptions = (mixed && stepDuration !== 1)
+            ? { ...renderOptions, widthMultiplier: stepDuration }
+            : renderOptions;
+          const imageUrl = await previewCellRenderer.renderCell(step, i + 1, isDark, cellRenderOptions);
+          newUrls.set(i, imageUrl);
+        }
+
+        // Store in cache for future use
+        storePreviewInCache(cacheKey, {
+          cells: cells.map(c => ({
+            ...c,
+            imageUrl: newUrls.get(c.index) ?? c.imageUrl,
+            fadeOutUrl: undefined,
+          })),
+          columns,
+          rows,
+          durationRows: [...durationRows],
+          hasMixedDurations,
+          durationColCount,
+          passDividerGridRows: [...passDividerGridRows],
+        });
+      }
+
+      // If another render was requested while we were working, abort the cross-fade
+      if (renderQueued) {
+        for (const url of newUrls.values()) {
+          if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+        }
+        return;
+      }
+
+      // Batch swap: set fadeOutUrl to old image, imageUrl to new image
+      cells = cells.map(c => ({
+        ...c,
+        fadeOutUrl: c.imageUrl,
+        imageUrl: newUrls.get(c.index) ?? c.imageUrl,
+      }));
+
+      // Wait for DOM to render both images (old at opacity 1, new at opacity 0)
+      await new Promise<void>(resolve => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      });
+
+      // Trigger the cross-fade: backgrounds transition and images fade simultaneously
+      activeDarkMode = isDark;
+      crossfadeActive = true;
+
+      // Clean up after the CSS transition completes
+      if (crossfadeTimer) clearTimeout(crossfadeTimer);
+      crossfadeTimer = setTimeout(() => {
+        crossfadeActive = false;
+        const toRevoke: string[] = [];
+        cells = cells.map(c => {
+          if (c.fadeOutUrl?.startsWith("blob:")) toRevoke.push(c.fadeOutUrl);
+          return { ...c, fadeOutUrl: undefined };
+        });
+        // Invalidate any globalPreviewCache entries that reference the revoked URLs.
+        // Without this, toggling dark→light→dark serves revoked blob URLs from cache.
+        if (toRevoke.length > 0) {
+          const revokedSet = new Set(toRevoke);
+          for (const [key, entry] of globalPreviewCache) {
+            if (entry.cells.some(c => revokedSet.has(c.imageUrl))) {
+              globalPreviewCache.delete(key);
+            }
+          }
+        }
+        for (const url of toRevoke) URL.revokeObjectURL(url);
+        crossfadeTimer = null;
+      }, 400);
+    } catch (error) {
+      console.error("Failed to cross-fade dark mode:", error);
+      // Fallback: apply dark mode immediately
+      activeDarkMode = darkMode;
+    } finally {
+      isRendering = false;
+      if (renderQueued) {
+        renderQueued = false;
+        crossfadeActive = false;
+        if (crossfadeTimer) { clearTimeout(crossfadeTimer); crossfadeTimer = null; }
+        cells = cells.map(c => ({ ...c, fadeOutUrl: undefined }));
+        renderAllCells();
+      }
+    }
+  }
+
   function clearCellUrls() {
-    // Revoke blob URLs to free memory (blob URLs hold a reference to the blob)
+    // Collect all blob URLs that are still referenced by the globalPreviewCache.
+    // Revoking those would poison the cache — a new ChoreoCard mounting for
+    // the same sequence would hit the cache and get revoked URLs (ERR_FILE_NOT_FOUND).
+    const cachedUrls = new Set<string>();
+    for (const entry of globalPreviewCache.values()) {
+      for (const c of entry.cells) {
+        if (c.imageUrl.startsWith("blob:")) cachedUrls.add(c.imageUrl);
+      }
+    }
+    // Only revoke URLs that are NOT in the cache
     for (const cell of cells) {
-      if (cell.imageUrl.startsWith("blob:")) URL.revokeObjectURL(cell.imageUrl);
+      if (cell.imageUrl.startsWith("blob:") && !cachedUrls.has(cell.imageUrl)) {
+        URL.revokeObjectURL(cell.imageUrl);
+      }
     }
     cells = [];
   }
@@ -897,6 +1099,13 @@
     const widthChanged = newWidth !== containedWidth && (newWidth === null || containedWidth === null || Math.abs(newWidth - containedWidth) > 0.5);
     const heightChanged = newHeight !== containedHeight && (newHeight === null || containedHeight === null || Math.abs(newHeight - containedHeight) > 0.5);
 
+    // DEBUG: track what's changing during start position toggle
+    if (widthChanged || heightChanged) {
+      const contentRatio = previewAspectRatio;
+      const containerRatio = containerWidth / containerHeight;
+      console.log(`[ChoreoCard contain] cols=${effectiveColumns} rows=${effectiveRows} ratio=${contentRatio.toFixed(3)} containerRatio=${containerRatio.toFixed(3)} constraint=${contentRatio > containerRatio ? 'WIDTH' : 'HEIGHT'} | w: ${containedWidth?.toFixed(1)} → ${newWidth?.toFixed(1)} | h: ${containedHeight?.toFixed(1)} → ${newHeight?.toFixed(1)}`);
+    }
+
     if (widthChanged) containedWidth = newWidth;
     if (heightChanged) containedHeight = newHeight;
   }
@@ -917,7 +1126,8 @@
   let hasMounted = false;
   let lastEffectRenderKey = "";
 
-  // Re-render when relevant props or visibility settings change
+  // Re-render when relevant props or visibility settings change.
+  // Detects dark-mode-only changes and uses cross-fade instead of sequential re-render.
   $effect(() => {
     // Track all props that affect rendering by reading them (creates Svelte dependency)
     const stepLetters = sequence?.steps?.map(s => s.letter ?? "?").join("") ?? "";
@@ -934,16 +1144,36 @@
     const dm = darkMode;
 
     const durationKey = sequence?.steps?.map(s => s.duration ?? 1).join(",") ?? "";
-    // Build a key from all tracked values to detect actual changes
-    const renderKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bpt}-${rpt}-${cdm}-${ssn}-${cc}-${snr}-${hpv}-${stka}-${sr}-${dm}-${durationKey}`;
+
+    // Content key: everything EXCEPT dark mode (used to detect dark-mode-only changes)
+    const contentKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bpt}-${rpt}-${cdm}-${ssn}-${cc}-${snr}-${hpv}-${stka}-${sr}-${durationKey}`;
+    const renderKey = `${contentKey}-${dm}`;
 
     if (!hasMounted) return;
     if (renderKey === lastEffectRenderKey) return;
-    lastEffectRenderKey = renderKey;
 
-    untrack(() => {
-      renderAllCells();
-    });
+    // Detect if ONLY dark mode changed (content is identical, cells already loaded).
+    // Use untrack() for cells read — we only need a snapshot of whether cells are loaded,
+    // NOT a reactive dependency. Without untrack, every cell mutation during rendering
+    // re-triggers this effect (even though the key guard returns early, it's wasteful
+    // and can cause timing issues with Svelte's batching).
+    const contentChanged = contentKey !== lastContentKey;
+    const cellsLoaded = untrack(() => cells.length > 0 && cells.some(c => c.isLoaded));
+    const isDarkModeOnly = !contentChanged && cellsLoaded;
+
+    lastEffectRenderKey = renderKey;
+    lastContentKey = contentKey;
+
+    if (isDarkModeOnly) {
+      untrack(() => {
+        crossfadeDarkMode();
+      });
+    } else {
+      activeDarkMode = dm;
+      untrack(() => {
+        renderAllCells();
+      });
+    }
   });
 
   // Set up ResizeObserver for container-based "contain" sizing
@@ -1031,6 +1261,12 @@
   });
 
   onMount(() => {
+    // Initialize content key so the $effect can detect dark-mode-only changes
+    const stepLetters = sequence?.steps?.map(s => s.letter ?? "?").join("") ?? "";
+    const stepCount = sequence?.steps?.length ?? 0;
+    const durationKey = sequence?.steps?.map(s => s.duration ?? 1).join(",") ?? "";
+    lastContentKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bluePropType}-${redPropType}-${catDogModeEnabled}-${showStepNumbers}-${columnCount}-${showNonRadial}-${handPointVis}-${showTKA}-${showReversals}-${durationKey}`;
+    lastEffectRenderKey = `${lastContentKey}-${darkMode}`;
     renderAllCells().then(() => {
       hasMounted = true;
     });
@@ -1038,6 +1274,7 @@
 
   onDestroy(() => {
     clearCellUrls();
+    if (crossfadeTimer) clearTimeout(crossfadeTimer);
     if (resizeObserver) {
       resizeObserver.disconnect();
     }
@@ -1047,8 +1284,31 @@
   });
 </script>
 
+<!-- Shared cell content: handles cross-fade images, step numbers, and duration badges -->
+{#snippet cellContent(cell: CellData, showDurBadge: boolean)}
+  {#if cell.isLoaded}
+    {#if cell.fadeOutUrl}
+      <img class="cell-image cell-fade-old" class:fading={crossfadeActive} src={cell.fadeOutUrl} alt="" draggable="false" />
+    {/if}
+    <img
+      class="cell-image"
+      class:cell-fade-new={!!cell.fadeOutUrl}
+      class:reveal={crossfadeActive}
+      src={cell.imageUrl}
+      alt={cell.label}
+      draggable="false"
+    />
+    {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={activeDarkMode} transition:fade|local={{ duration: 150 }}>{cell.label}</span>{/if}
+    {#if showDurBadge && hasMixedDurations && cell.duration !== 1}<span class="duration-badge" class:dark-mode={activeDarkMode}>{formatDuration(cell.duration)}</span>{/if}
+  {:else}
+    <div class="cell-spinner-container">
+      <ProgressRing percent={-1} size={20} strokeWidth={2} />
+    </div>
+  {/if}
+{/snippet}
+
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="choreo-card-root" class:dark-mode={darkMode} class:scroll-mode={needsScroll} class:force-contain={forceContain} data-ctx-container bind:this={containerElement} oncontextmenu={(e) => { handleContextMenu(e); if (!featureFlagService.isAdmin) handleCellContextMenu(e); }}>
+<div class="choreo-card-root" class:dark-mode={activeDarkMode} class:scroll-mode={needsScroll} class:force-contain={forceContain} data-ctx-container bind:this={containerElement} oncontextmenu={(e) => { handleContextMenu(e); if (!featureFlagService.isAdmin) handleCellContextMenu(e); }}>
   {#if isLoading && cells.length === 0}
     <div class="loading-placeholder">
       <ProgressRing percent={-1} size={32} strokeWidth={3} />
@@ -1065,6 +1325,7 @@
         <div
           class="header-section"
           style="height: {scaledHeaderHeight}px;"
+          transition:fly|local={{ y: -20, duration: 250, easing: cubicOut }}
         >
           {#if showDifficultyLevel}
             <div
@@ -1078,6 +1339,7 @@
                 left: {badgePadding}px;
                 font-size: {badgeNumberFontSize}px;
               "
+              transition:scale|local={{ duration: 200, easing: cubicOut }}
             >
               {difficultyLevel}
             </div>
@@ -1086,7 +1348,8 @@
           {#if showWord && sequence.word}
             <span
               class="word-title"
-              style="font-size: {Math.max(10, Math.floor(scaledHeaderHeight * 0.55))}px;"
+              style="font-size: {Math.max(10, Math.floor(scaledHeaderHeight * 0.66))}px;"
+              transition:fade|local={{ duration: 200 }}
             >
               {simplifyAndTruncate(sequence.word, 12)}
             </span>
@@ -1096,11 +1359,12 @@
             <div
               class="loop-icon-badge"
               style="height: {badgeSize}px; right: {badgePadding}px;"
+              transition:fade|local={{ duration: 200 }}
             >
               <LOOPIconStrip
                 activeComponents={loopComponents}
                 size={Math.floor(badgeSize * 0.6)}
-                darkMode={darkMode}
+                darkMode={activeDarkMode}
                 showFreeformWhenEmpty={false}
               />
             </div>
@@ -1117,17 +1381,12 @@
           <div class="grid-scroll-container themed-scrollbar" bind:this={gridScrollRef}>
             <div class="duration-layout" style="--max-units: {durationColCount}; --step-max: {stepMaxUnits};">
               {#if includeStartPosition && startCell}
-                <div class="duration-start-col">
+                <div class="duration-start-col" transition:fade|local={{ duration: 200 }}>
                   <div
                     class="pictograph-cell"
                     class:current={showHighlight && highlightedStepIndex === -1}
                   >
-                    {#if startCell.isLoaded}
-                      <img class="cell-image" src={startCell.imageUrl} alt={startCell.label} draggable="false" />
-                      {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={darkMode}>Start</span>{/if}
-                    {:else}
-                      <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
-                    {/if}
+                    {@render cellContent(startCell, false)}
                   </div>
                 </div>
               {/if}
@@ -1147,12 +1406,7 @@
                               type="button"
                               aria-label="Go to step {cell.label}"
                             >
-                              {#if cell.isLoaded}
-                                <img class="cell-image" src={cell.imageUrl} alt={cell.label} draggable="false" />
-                                {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
-                              {:else}
-                                <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
-                              {/if}
+                              {@render cellContent(cell, false)}
                             </button>
                           {:else}
                             <div
@@ -1160,12 +1414,7 @@
                               class:current={showHighlight && highlightedStepIndex === cell.index}
                               class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
                             >
-                              {#if cell.isLoaded}
-                                <img class="cell-image" src={cell.imageUrl} alt={cell.label} draggable="false" />
-                                {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
-                              {:else}
-                                <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
-                              {/if}
+                              {@render cellContent(cell, false)}
                             </div>
                           {/if}
                         </div>
@@ -1184,12 +1433,7 @@
                   class="pictograph-cell"
                   class:current={showHighlight && highlightedStepIndex === -1}
                 >
-                  {#if startCell.isLoaded}
-                    <img class="cell-image" src={startCell.imageUrl} alt={startCell.label} draggable="false" />
-                    {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={darkMode}>Start</span>{/if}
-                  {:else}
-                    <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
-                  {/if}
+                  {@render cellContent(startCell, false)}
                 </div>
               </div>
             {/if}
@@ -1209,12 +1453,7 @@
                             type="button"
                             aria-label="Go to step {cell.label}"
                           >
-                            {#if cell.isLoaded}
-                              <img class="cell-image" src={cell.imageUrl} alt={cell.label} draggable="false" />
-                              {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
-                            {:else}
-                              <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
-                            {/if}
+                            {@render cellContent(cell, false)}
                           </button>
                         {:else}
                           <div
@@ -1222,12 +1461,7 @@
                             class:current={showHighlight && highlightedStepIndex === cell.index}
                             class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
                           >
-                          {#if cell.isLoaded}
-                            <img class="cell-image" src={cell.imageUrl} alt={cell.label} draggable="false" />
-                            {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
-                          {:else}
-                            <div class="cell-spinner-container"><ProgressRing percent={-1} size={20} strokeWidth={2} /></div>
-                          {/if}
+                            {@render cellContent(cell, false)}
                         </div>
                       {/if}
                     </div>
@@ -1246,54 +1480,32 @@
             style="grid-template-columns: repeat({effectiveColumns}, 1fr);"
           >
             {#each visibleCells as cell (cell.index)}
+              <div
+                class="cell-flip-wrapper"
+                style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
+                animate:flip={{ duration: 250, easing: cubicOut }}
+              >
               {#if onStepClick && cell.index >= 0}
                 <button
                   class="pictograph-cell clickable"
                   class:current={showHighlight && highlightedStepIndex === cell.index}
                   class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
-                  style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
                   onclick={() => onStepClick(cell.index)}
                   type="button"
                   aria-label="Go to step {cell.label}"
                 >
-                  {#if cell.isLoaded}
-                    <img
-                      class="cell-image"
-                      src={cell.imageUrl}
-                      alt={cell.label}
-                      draggable="false"
-                    />
-                    {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
-                    {#if hasMixedDurations && cell.duration !== 1}<span class="duration-badge" class:dark-mode={darkMode}>{formatDuration(cell.duration)}</span>{/if}
-                  {:else}
-                    <div class="cell-spinner-container">
-                      <ProgressRing percent={-1} size={20} strokeWidth={2} />
-                    </div>
-                  {/if}
+                  {@render cellContent(cell, true)}
                 </button>
               {:else}
                 <div
                   class="pictograph-cell"
                   class:current={showHighlight && highlightedStepIndex === cell.index}
                   class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
-                  style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
                 >
-                  {#if cell.isLoaded}
-                    <img
-                      class="cell-image"
-                      src={cell.imageUrl}
-                      alt={cell.label}
-                      draggable="false"
-                    />
-                    {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
-                    {#if hasMixedDurations && cell.duration !== 1}<span class="duration-badge" class:dark-mode={darkMode}>{formatDuration(cell.duration)}</span>{/if}
-                  {:else}
-                    <div class="cell-spinner-container">
-                      <ProgressRing percent={-1} size={20} strokeWidth={2} />
-                    </div>
-                  {/if}
+                  {@render cellContent(cell, true)}
                 </div>
               {/if}
+              </div>
             {/each}
           </div>
         </div>
@@ -1304,54 +1516,32 @@
           style="grid-template-columns: repeat({effectiveColumns}, 1fr);"
         >
           {#each visibleCells as cell (cell.index)}
+            <div
+              class="cell-flip-wrapper"
+              style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
+              animate:flip={{ duration: 250, easing: cubicOut }}
+            >
             {#if onStepClick && cell.index >= 0}
               <button
                 class="pictograph-cell clickable"
                 class:current={showHighlight && highlightedStepIndex === cell.index}
                 class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
-                style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
                 onclick={() => onStepClick(cell.index)}
                 type="button"
                 aria-label="Go to step {cell.label}"
               >
-                {#if cell.isLoaded}
-                  <img
-                    class="cell-image"
-                    src={cell.imageUrl}
-                    alt={cell.label}
-                    draggable="false"
-                  />
-                  {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
-                    {#if hasMixedDurations && cell.duration !== 1}<span class="duration-badge" class:dark-mode={darkMode}>{formatDuration(cell.duration)}</span>{/if}
-                {:else}
-                  <div class="cell-spinner-container">
-                    <ProgressRing percent={-1} size={20} strokeWidth={2} />
-                  </div>
-                {/if}
+                {@render cellContent(cell, true)}
               </button>
             {:else}
               <div
                 class="pictograph-cell"
                 class:current={showHighlight && highlightedStepIndex === cell.index}
                 class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
-                style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
               >
-                {#if cell.isLoaded}
-                  <img
-                    class="cell-image"
-                    src={cell.imageUrl}
-                    alt={cell.label}
-                    draggable="false"
-                  />
-                  {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={darkMode}>{cell.label}</span>{/if}
-                    {#if hasMixedDurations && cell.duration !== 1}<span class="duration-badge" class:dark-mode={darkMode}>{formatDuration(cell.duration)}</span>{/if}
-                {:else}
-                  <div class="cell-spinner-container">
-                    <ProgressRing percent={-1} size={20} strokeWidth={2} />
-                  </div>
-                {/if}
+                {@render cellContent(cell, true)}
               </div>
             {/if}
+            </div>
           {/each}
         </div>
       {/if}
@@ -1361,21 +1551,22 @@
         <div
           class="footer-section"
           style="height: {scaledFooterHeight}px; padding-left: {footerMargin}px; padding-right: {footerMargin}px; font-size: {footerFontSize}px;"
+          transition:fly|local={{ y: 20, duration: 250, easing: cubicOut }}
         >
           {#if showCreatorName && effectiveUserName}
-            <span class="footer-name">
+            <span class="footer-name" transition:fly|local={{ x: -20, duration: 200, easing: cubicOut }}>
               {effectiveUserName}
             </span>
           {/if}
 
           {#if showNotes}
-            <span class="footer-notes">
+            <span class="footer-notes" transition:fade|local={{ duration: 200 }}>
               {customNotesText}
             </span>
           {/if}
 
           {#if showBirthday}
-            <span class="footer-birthday">
+            <span class="footer-birthday" transition:fly|local={{ x: 20, duration: 200, easing: cubicOut }}>
               🎂 {birthdayDate}
             </span>
           {/if}
@@ -1438,6 +1629,9 @@
     min-width: 0;
     min-height: 0;
     overflow: hidden;
+    /* Smooth width transition when column count changes (e.g. start position toggle).
+       Height is NOT transitioned — row count stays the same, so height should stay fixed. */
+    transition: width 250ms cubic-bezier(0.2, 0, 0, 1);
   }
 
   /* In scroll mode, fill the parent edge-to-edge instead of using
@@ -1459,6 +1653,7 @@
     flex-shrink: 0;
     width: 100%;
     box-sizing: border-box;
+    transition: background-color 350ms ease, border-color 350ms ease;
   }
 
   .dark-mode .header-section {
@@ -1490,6 +1685,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 60%;
+    transition: color 350ms ease;
   }
 
   .dark-mode .word-title {
@@ -1531,6 +1727,7 @@
     max-width: 100%;
     overflow: hidden;
     background: #f5f5f5;
+    transition: background-color 350ms ease;
   }
 
   .dark-mode .duration-layout {
@@ -1543,6 +1740,7 @@
     display: flex;
     align-items: flex-start;
     background: #f5f5f5;
+    transition: background-color 350ms ease;
   }
 
   .dark-mode .duration-start-col {
@@ -1585,6 +1783,7 @@
     min-width: 0;
     /* Background matches pictograph so wider cells have seamless side fill */
     background: #f5f5f5;
+    transition: background-color 350ms ease;
   }
 
   .dark-mode .duration-cell {
@@ -1616,11 +1815,23 @@
     overflow: hidden;
     /* Light mode background for empty cells */
     background: #f5f5f5;
+    transition: background-color 350ms ease;
   }
 
   .dark-mode .grid-section {
     /* Dark mode background for empty cells */
     background: #000;
+  }
+
+  /* Wrapper for FLIP animation — a real grid item so Svelte can measure bounding rects.
+     The pictograph-cell inside fills it completely. */
+  .cell-flip-wrapper {
+    overflow: hidden;
+  }
+
+  .cell-flip-wrapper > .pictograph-cell {
+    width: 100%;
+    height: 100%;
   }
 
   /* Individual pictograph cell */
@@ -1640,6 +1851,7 @@
     font: inherit;
     color: inherit;
     cursor: default;
+    transition: border-color 350ms ease;
   }
 
   button.pictograph-cell {
@@ -1660,6 +1872,33 @@
     object-fit: cover;
     -webkit-user-drag: none;
     user-select: none;
+  }
+
+  /* Cross-fade: old image fades out while new image fades in simultaneously.
+     Both images are stacked in the same cell during the transition. */
+  .cell-fade-old {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1;
+    opacity: 1;
+    transition: opacity 350ms ease;
+    pointer-events: none;
+  }
+
+  .cell-fade-old.fading {
+    opacity: 0;
+  }
+
+  .cell-image.cell-fade-new {
+    opacity: 0;
+    transition: opacity 350ms ease;
+  }
+
+  .cell-image.cell-fade-new.reveal {
+    opacity: 1;
   }
 
   /* Step number overlay — rendered as HTML instead of baked into blobs
@@ -1775,6 +2014,7 @@
     flex-shrink: 0;
     width: 100%;
     box-sizing: border-box;
+    transition: background-color 350ms ease, border-color 350ms ease, color 350ms ease;
   }
 
   .dark-mode .footer-section {
@@ -1799,7 +2039,17 @@
 
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */
   @media (prefers-reduced-motion: reduce) {
-    .pictograph-cell {
+    .preview-stack,
+    .pictograph-cell,
+    .header-section,
+    .grid-section,
+    .footer-section,
+    .word-title,
+    .duration-layout,
+    .duration-start-col,
+    .duration-cell,
+    .cell-fade-old,
+    .cell-image.cell-fade-new {
       transition: none;
     }
 

@@ -1,7 +1,7 @@
 /**
  * Export Options State Manager
  *
- * Manages export options for SequenceDetailsModal with localStorage persistence.
+ * Manages export options for the sequence viewer with localStorage persistence.
  * Options are scoped by export type (video/image) and view mode (split/animation).
  */
 

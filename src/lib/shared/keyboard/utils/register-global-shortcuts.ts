@@ -297,6 +297,7 @@ export function registerGlobalShortcuts(
       if (allProps.length === 0) return;
 
       const currentProp = settingsService.settings.bluePropType;
+      if (!currentProp) return;
       const currentIndex = allProps.indexOf(currentProp);
       const nextIndex = (currentIndex + 1) % allProps.length;
       const nextProp = allProps[nextIndex];

@@ -456,7 +456,6 @@ export const STORAGE_KEYS = {
   LAST_SEEN_VERSION: "tka-last-seen-version",
   LANDING_DISMISSED: "tka-landing-dismissed",
   MODERN_SETTINGS: "tka-modern-web-settings",
-  SIDEBAR_TOUR_COMPLETED: "tka-sidebar-tour-completed",
 } as const;
 
 // ─── Storage Key Validation ─────────────────────────────────────────────────
@@ -474,11 +473,6 @@ interface KeyCheck {
 }
 
 const KEY_CHECKS: KeyCheck[] = [
-  {
-    key: "SIDEBAR_TOUR_COMPLETED",
-    file: "src/lib/shared/onboarding/config/storage-keys.ts",
-    pattern: /SIDEBAR_TOUR_COMPLETED_KEY\s*=\s*"([^"]+)"/,
-  },
   {
     key: "LAST_SEEN_VERSION",
     file: "src/lib/shared/settings/state/whats-new-state.svelte.ts",

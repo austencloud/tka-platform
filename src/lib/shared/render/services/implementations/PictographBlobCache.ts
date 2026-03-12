@@ -27,7 +27,9 @@ const STORE_NAME = "blobs";
 // (startOrientation, endOrientation, rotationDirection). v2 entries are stale.
 // v4: ImageComposer write-through was contaminating entries with baked-in step numbers.
 // All pre-v4 entries may have step numbers in "nonum" blobs — clear everything.
-const DB_VERSION = 4;
+// v5: Dark mode cross-fade implementation may have cached images with wrong theme colors.
+// All pre-v5 entries may have light-mode colors in dark-mode keyed entries — clear everything.
+const DB_VERSION = 5;
 
 interface CachedBlobEntry {
   /** Hash key for the pictograph configuration (includes size) */
@@ -62,11 +64,12 @@ export class PictographBlobCache implements IPictographBlobCache {
         if (!db.objectStoreNames.contains(STORE_NAME)) {
           const store = db.createObjectStore(STORE_NAME, { keyPath: "key" });
           store.createIndex("timestamp", "timestamp", { unique: false });
-        } else if (oldVersion < 4) {
+        } else if (oldVersion < 5) {
           // v1→v2: keys added visibility settings.
           // v2→v3: keys added orientation data.
           // v3→v4: ImageComposer write-through contamination (step numbers baked in).
-          // All pre-v4 entries may be stale — clear them.
+          // v4→v5: dark mode cross-fade may have cached wrong theme colors.
+          // All pre-v5 entries may be stale — clear them.
           const tx = (event.target as IDBOpenDBRequest).transaction!;
           tx.objectStore(STORE_NAME).clear();
         }

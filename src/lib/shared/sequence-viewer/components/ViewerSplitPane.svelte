@@ -137,6 +137,7 @@
           focused={layout.focusedPane === "animation"}
         />
       {/if}
+
     </div>
   </div>
 
@@ -193,6 +194,7 @@
           redPropType={propRendering.redPropType}
           catDogModeEnabled={propRendering.catDogModeEnabled}
         />
+
       </div>
     </div>
   </div>
