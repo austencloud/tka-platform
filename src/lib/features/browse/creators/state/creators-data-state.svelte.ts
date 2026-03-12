@@ -41,11 +41,46 @@ function createCreatorsDataState() {
   let searchResults = $state<EnhancedUserProfile[] | null>(null);
   let isSearching = $state(false);
 
+  // Prop filter state (multi-select)
+  let selectedPropFilters = $state<PropType[]>([]);
+
+  // Cached repository reference so togglePropFilter can reload without needing
+  // the caller to pass repository/userId again on every filter change.
+  let cachedRepository: IUserRepository | null = null;
+  let cachedCurrentUserId: string | undefined = undefined;
+
   // Track if initial load has happened
   let isInitialized = $state(false);
 
   /**
-   * Load initial page of creators with current sort settings
+   * Group creators by their favoriteProp field.
+   *
+   * Creators who have set a favorite prop come first, sorted alphabetically
+   * by prop name so the same prop types cluster together. Those with no
+   * favorite prop fall to the bottom in whatever order they arrived.
+   */
+  function groupByFavoriteProp(
+    results: EnhancedUserProfile[]
+  ): EnhancedUserProfile[] {
+    const withFav = results.filter((u) => u.favoriteProp);
+    const withoutFav = results.filter((u) => !u.favoriteProp);
+
+    withFav.sort((a, b) => {
+      const aProp = a.favoriteProp ?? "";
+      const bProp = b.favoriteProp ?? "";
+      return aProp.localeCompare(bProp);
+    });
+
+    return [...withFav, ...withoutFav];
+  }
+
+  /**
+   * Load initial page of creators with current sort settings.
+   *
+   * When sortBy is "favoriteProp" we fetch all creators in one shot using a
+   * neutral server sort and apply the grouping client-side. Cursor-based
+   * pagination doesn't compose with a client-side reorder, so "group by prop"
+   * loads the full set and disables the "load more" path.
    */
   async function loadCreators(
     repository: IUserRepository,
@@ -58,19 +93,39 @@ function createCreatorsDataState() {
     error = null;
 
     try {
-      const result = await repository.getUsersPaginated(
-        {
-          sortBy,
-          sortDirection,
-          limit: pageSize,
-          cursor: null,
-        },
-        currentUserId
-      );
+      if (sortBy === "favoriteProp") {
+        // Fetch all creators with a neutral sort, then group client-side.
+        // We use a generous limit (1000) — typical creator counts are well
+        // below this, and grouping only makes sense when you can see all groups.
+        const result = await repository.getUsersPaginated(
+          {
+            sortBy: "lastActive",
+            sortDirection: "desc",
+            limit: 1000,
+            cursor: null,
+          },
+          currentUserId
+        );
 
-      users = result.users;
-      lastDocSnapshot = result.lastDocSnapshot;
-      hasMore = result.hasMore;
+        users = groupByFavoriteProp(result.users);
+        lastDocSnapshot = null;
+        hasMore = false; // Pagination disabled for grouped view
+      } else {
+        const result = await repository.getUsersPaginated(
+          {
+            sortBy,
+            sortDirection,
+            limit: pageSize,
+            cursor: null,
+          },
+          currentUserId
+        );
+
+        users = result.users;
+        lastDocSnapshot = result.lastDocSnapshot;
+        hasMore = result.hasMore;
+      }
+
       isInitialized = true;
     } catch (err) {
       console.error("[CreatorsDataState] Failed to load creators:", err);
@@ -84,13 +139,15 @@ function createCreatorsDataState() {
   }
 
   /**
-   * Load next page of creators (append to existing list)
+   * Load next page of creators (append to existing list).
+   * Not used when sortBy is "favoriteProp" — that view loads all at once.
    */
   async function loadMoreCreators(
     repository: IUserRepository,
     currentUserId?: string
   ): Promise<void> {
-    // Don't load more if: already loading, no more to load, or no cursor
+    // Don't load more if: already loading, no more to load, no cursor,
+    // or we're in the grouped view which doesn't paginate
     if (isLoadingMore || !hasMore || !lastDocSnapshot) return;
 
     isLoadingMore = true;
