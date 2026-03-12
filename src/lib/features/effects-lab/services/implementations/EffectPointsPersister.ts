@@ -25,6 +25,7 @@ import type {
 	IEffectPointsPersister,
 	EffectPoint,
 } from "../contracts/IEffectPointsPersister";
+import type { TrailPointConfig, TrailPointSource } from "$lib/shared/animation-engine/domain/types/TrailPointTypes";
 
 const LOG_PREFIX = "[EffectPointsPersister]";
 const FIRESTORE_DOC_PATH = "config/effectPoints";
@@ -37,6 +38,7 @@ function isPermissionError(error: unknown): boolean {
 
 export class EffectPointsPersister implements IEffectPointsPersister {
 	private points: Record<string, EffectPoint[]> = {};
+	private trailAssignments: Record<string, TrailPointConfig> = {};
 	private observers: Array<() => void> = [];
 	private unsubscribe: Unsubscribe | null = null;
 	private debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -104,6 +106,51 @@ export class EffectPointsPersister implements IEffectPointsPersister {
 		const pts = this.points[key];
 		if (!pts || pts.length === 0) return null;
 		return pts.map((p) => ({ ...p }));
+	}
+
+	// ------------------------------------------------------------------
+	// saveTrailAssignment()
+	// ------------------------------------------------------------------
+
+	saveTrailAssignment(propType: string, config: TrailPointConfig): void {
+		const key = propType.toLowerCase();
+		this.trailAssignments[key] = { left: { ...config.left }, right: { ...config.right } };
+
+		this.writeLocalStorage();
+
+		this.pendingWrites.add("__trailAssignments__");
+		this.scheduleDebouncedWrite();
+	}
+
+	// ------------------------------------------------------------------
+	// getTrailAssignment()
+	// ------------------------------------------------------------------
+
+	getTrailAssignment(propType: string): TrailPointConfig | null {
+		const key = propType.toLowerCase();
+		return this.trailAssignments[key] ?? null;
+	}
+
+	// ------------------------------------------------------------------
+	// getTrailAssignmentTypes()
+	// ------------------------------------------------------------------
+
+	getTrailAssignmentTypes(): string[] {
+		return Object.keys(this.trailAssignments);
+	}
+
+	// ------------------------------------------------------------------
+	// removeTrailAssignment()
+	// ------------------------------------------------------------------
+
+	removeTrailAssignment(propType: string): void {
+		const key = propType.toLowerCase();
+		delete this.trailAssignments[key];
+
+		this.writeLocalStorage();
+
+		this.pendingWrites.add("__trailAssignments__");
+		this.scheduleDebouncedWrite();
 	}
 
 	// ------------------------------------------------------------------
@@ -177,10 +224,16 @@ export class EffectPointsPersister implements IEffectPointsPersister {
 			};
 
 			for (const key of keysToWrite) {
+				// Skip internal sentinel — trail assignments handled below
+				if (key === "__trailAssignments__") continue;
 				const pts = this.points[key];
 				if (pts) {
 					update[key] = pts;
 				}
+			}
+
+			if (keysToWrite.has("__trailAssignments__")) {
+				update["trailAssignments"] = { ...this.trailAssignments };
 			}
 
 			await trackWrite(() => setDoc(docRef, update, { merge: true }));
@@ -237,7 +290,7 @@ export class EffectPointsPersister implements IEffectPointsPersister {
 		const newPoints: Record<string, EffectPoint[]> = {};
 
 		for (const [key, value] of Object.entries(data)) {
-			if (key === "updatedAt" || key === "updatedBy") continue;
+			if (key === "updatedAt" || key === "updatedBy" || key === "trailAssignments") continue;
 
 			const pts = this.parsePointsArray(value);
 			if (pts) {
@@ -246,6 +299,19 @@ export class EffectPointsPersister implements IEffectPointsPersister {
 		}
 
 		this.points = newPoints;
+
+		// Parse trail assignments
+		const rawAssignments = data["trailAssignments"];
+		if (rawAssignments && typeof rawAssignments === "object") {
+			const parsed: Record<string, TrailPointConfig> = {};
+			for (const [key, value] of Object.entries(rawAssignments as Record<string, unknown>)) {
+				const config = this.parseTrailAssignment(value);
+				if (config) {
+					parsed[key.toLowerCase()] = config;
+				}
+			}
+			this.trailAssignments = parsed;
+		}
 	}
 
 	private parsePointsArray(raw: unknown): EffectPoint[] | null {
@@ -276,6 +342,27 @@ export class EffectPointsPersister implements IEffectPointsPersister {
 		return valid.length > 0 ? valid : null;
 	}
 
+	private parseTrailAssignment(raw: unknown): TrailPointConfig | null {
+		if (!raw || typeof raw !== "object") return null;
+		const obj = raw as Record<string, unknown>;
+		const left = this.parseTrailSource(obj.left);
+		const right = this.parseTrailSource(obj.right);
+		if (!left || !right) return null;
+		return { left, right };
+	}
+
+	private parseTrailSource(raw: unknown): TrailPointSource | null {
+		if (!raw || typeof raw !== "object") return null;
+		const obj = raw as Record<string, unknown>;
+		const type = obj.type;
+		if (type === "none") return { type: "none" };
+		if (type === "tip" && typeof obj.index === "number") return { type: "tip", index: obj.index };
+		if (type === "custom" && typeof obj.dx === "number" && typeof obj.dy === "number") {
+			return { type: "custom", dx: obj.dx, dy: obj.dy };
+		}
+		return null;
+	}
+
 	// ------------------------------------------------------------------
 	// Private: Notify observers
 	// ------------------------------------------------------------------
@@ -304,6 +391,7 @@ export class EffectPointsPersister implements IEffectPointsPersister {
 
 			const result: Record<string, EffectPoint[]> = {};
 			for (const [key, value] of Object.entries(parsed)) {
+				if (key === "__trailAssignments__") continue;
 				const pts = this.parsePointsArray(value);
 				if (pts) {
 					result[key] = pts;
@@ -311,6 +399,19 @@ export class EffectPointsPersister implements IEffectPointsPersister {
 			}
 
 			this.points = result;
+
+			// Parse trail assignments from localStorage cache
+			const rawAssignments = parsed["__trailAssignments__"];
+			if (rawAssignments && typeof rawAssignments === "object") {
+				const assignments: Record<string, TrailPointConfig> = {};
+				for (const [key, value] of Object.entries(rawAssignments as Record<string, unknown>)) {
+					const config = this.parseTrailAssignment(value);
+					if (config) {
+						assignments[key] = config;
+					}
+				}
+				this.trailAssignments = assignments;
+			}
 		} catch {
 			// Corrupted cache — start fresh
 		}
@@ -320,7 +421,10 @@ export class EffectPointsPersister implements IEffectPointsPersister {
 		try {
 			localStorage.setItem(
 				LOCAL_CACHE_KEY,
-				JSON.stringify(this.points)
+				JSON.stringify({
+					...this.points,
+					__trailAssignments__: this.trailAssignments,
+				})
 			);
 		} catch {
 			// localStorage might be full or unavailable
