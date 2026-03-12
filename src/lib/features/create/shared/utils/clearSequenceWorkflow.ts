@@ -74,6 +74,16 @@ export async function executeClearSequenceWorkflow(
       constructTabState.clearError();
     }
 
+    // Clear Assemble tab's visual builder state (must happen BEFORE clearing
+    // sequence state, otherwise the builder's $effect will immediately re-sync
+    // its steps back into the sequence)
+    if (activeTab === "assemble") {
+      const assembleBuilder = CreateModuleState.assembleTabState?.assembleBuilderState;
+      if (assembleBuilder) {
+        assembleBuilder.reset();
+      }
+    }
+
     // Clear the active tab's sequence state using the captured reference
     if (activeTabSequenceState) {
       activeTabSequenceState.setCurrentSequence(null);

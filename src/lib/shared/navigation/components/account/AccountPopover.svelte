@@ -4,8 +4,12 @@
   import { whatsNewState } from "../../../settings/state/whats-new-state.svelte";
   import { container } from "../../../di";
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
+  import type { IPropPreferencePersister } from "../../../community/services/contracts/IPropPreferencePersister";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { createPropPreferenceState } from "../../../community/state/prop-preference-state.svelte";
   import RobustAvatar from "../../../components/avatar/RobustAvatar.svelte";
   import MyPropsCard from "./MyPropsCard.svelte";
+  import PropSelectionSheet from "../../../settings/components/tabs/prop-type/PropSelectionSheet.svelte";
 
   let { isOpen, onClose, onInboxClick, hasUnread = false, unreadCount = 0, anchorElement } = $props<{
     isOpen: boolean;
@@ -119,7 +123,28 @@
     onClose();
   }
 
+  // Prop editor sheet state
+  let showPropSheet = $state(false);
 
+  const userId = $derived(authState.user?.uid);
+  const propState = $derived.by(() => {
+    if (!userId) return null;
+    const persister = container.items.propPreferencePersister as IPropPreferencePersister;
+    return createPropPreferenceState(persister, userId);
+  });
+
+  function handleOpenPropEditor() {
+    triggerHaptic();
+    onClose();
+    // Small delay so popover closes before sheet opens
+    requestAnimationFrame(() => {
+      showPropSheet = true;
+    });
+  }
+
+  function handlePropSelect(propType: PropType) {
+    propState?.toggleProp(propType);
+  }
 </script>
 
 {#if isOpen}
@@ -153,7 +178,7 @@
 
     {#if isAuthenticated}
       <div class="props-section">
-        <MyPropsCard onOpenPropEditor={() => { onClose(); }} />
+        <MyPropsCard onOpenPropEditor={handleOpenPropEditor} />
       </div>
     {/if}
 
@@ -211,6 +236,16 @@
       </button>
     </div>
   </div>
+{/if}
+
+<!-- Prop selection sheet (renders outside popover so it's not clipped) -->
+{#if propState}
+  <PropSelectionSheet
+    bind:isOpen={showPropSheet}
+    selectedPropType={propState.favoriteProp ?? PropType.STAFF}
+    title="My Props"
+    onSelect={handlePropSelect}
+  />
 {/if}
 
 <style>
