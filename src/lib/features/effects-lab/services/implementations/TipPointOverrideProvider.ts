@@ -1,6 +1,7 @@
 import { PROP_TIP_POINTS, type PropTipConfig } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
 import type { IEffectPointOverrideProvider } from "../contracts/IEffectPointOverrideProvider";
 import type { IEffectPointsPersister, EffectPoint } from "../contracts/IEffectPointsPersister";
+import type { TrailPointConfig } from "$lib/shared/animation-engine/domain/types/TrailPointTypes";
 
 /** Deep-copy that works on Svelte 5 $state proxies (structuredClone cannot clone them). */
 function deepCopy<T>(value: T): T {
@@ -106,6 +107,25 @@ export class TipPointOverrideProvider implements IEffectPointOverrideProvider {
 
   getUserDefaultTypes(): string[] {
     return this.getOverriddenTypes();
+  }
+
+  getTrailAssignment(propType: string): TrailPointConfig | null {
+    const key = propType.toLowerCase();
+    return this.persister.getTrailAssignment(key);
+  }
+
+  saveTrailAssignment(propType: string, config: TrailPointConfig): void {
+    const key = propType.toLowerCase();
+    this.persister.saveTrailAssignment(key, config);
+  }
+
+  getTrailAssignmentTypes(): string[] {
+    return this.persister.getTrailAssignmentTypes();
+  }
+
+  removeTrailAssignment(propType: string): void {
+    const key = propType.toLowerCase();
+    this.persister.removeTrailAssignment(key);
   }
 
   private isValidConfig(config: unknown): config is PropTipConfig {

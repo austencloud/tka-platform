@@ -1,3 +1,5 @@
+import type { TrailPointConfig } from "$lib/shared/animation-engine/domain/types/TrailPointTypes";
+
 /**
  * Unified interface for effect point override storage.
  * Implemented by TipPointOverrideProvider.
@@ -50,4 +52,18 @@ export interface IEffectPointOverrideProvider {
 
 	/** Get all prop types that have user-defined defaults. */
 	getUserDefaultTypes(): string[];
+
+	// --- Trail assignments ---
+
+	/** Get trail point assignment for a prop type, or null if using geometric fallback. */
+	getTrailAssignment(propType: string): TrailPointConfig | null;
+
+	/** Save trail point assignment for a prop type. */
+	saveTrailAssignment(propType: string, config: TrailPointConfig): void;
+
+	/** Get all prop types that have trail assignments. */
+	getTrailAssignmentTypes(): string[];
+
+	/** Remove trail point assignment for a prop type, reverting to geometric fallback. */
+	removeTrailAssignment(propType: string): void;
 }
