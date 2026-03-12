@@ -208,7 +208,10 @@
                   <span class="drawer-back-label">{overlay.returnLabel}</span>
                 </button>
 
-                <div class="drawer-header-title">Sequence Viewer</div>
+                <div class="drawer-header-title-group">
+                  <div class="drawer-header-title">Sequence Viewer</div>
+                  <div class="export-hint">Tap either view to export it</div>
+                </div>
 
                 <div class="drawer-header-actions">
                   <button
@@ -443,15 +446,37 @@
     text-overflow: ellipsis;
   }
 
-  .drawer-header-title {
+  .drawer-header-title-group {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    pointer-events: none;
+  }
+
+  .drawer-header-title {
     font-size: var(--font-size-sm, 14px);
     font-weight: 600;
     color: var(--theme-text, #ffffff);
     white-space: nowrap;
+  }
+
+  /* Standalone title (export mode) needs its own absolute centering */
+  .drawer-header-title:not(.drawer-header-title-group .drawer-header-title) {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
     pointer-events: none;
+  }
+
+  .export-hint {
+    font-size: var(--font-size-xs, 11px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    font-weight: 400;
+    white-space: nowrap;
   }
 
   .drawer-header-actions {
@@ -525,7 +550,7 @@
     border-bottom: none;
   }
 
-  .landscape .drawer-header-title {
+  .landscape .drawer-header-title-group {
     display: none;
   }
 
@@ -569,9 +594,21 @@
   }
 
   @media (max-width: 767px) {
+    /* Mobile: export panel is inline in the flex layout, not absolute */
+    .viewer-and-export.export-active {
+      display: flex;
+      flex-direction: column;
+    }
+
     .export-panel-container {
+      position: relative;
       top: auto;
-      left: 0;
+      right: auto;
+      bottom: auto;
+      left: auto;
+      width: 100%;
+      flex-shrink: 0;
+      overflow: visible;
       border-left: none;
       border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     }

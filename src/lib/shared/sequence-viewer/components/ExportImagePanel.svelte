@@ -7,7 +7,8 @@
     Settings open in a slide-up overlay. Choreo card gets full screen space.
 -->
 <script lang="ts">
-  import { fade } from "svelte/transition";
+  import { fade, slide } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
   import type { ExportOptionsStateManager } from "../state/export-options-state.svelte";
 
   type PanelLayout = "sidebar" | "bottom";
@@ -58,64 +59,27 @@
     role="region"
     aria-label="Image export"
   >
-    <div class="mobile-bar">
-      <button
-        type="button"
-        class="bar-export-btn"
-        onclick={onExport}
-        disabled={isExporting}
-        aria-label="Export image"
-      >
-        {#if isExporting}
-          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-          Exporting...
-        {:else}
-          <i class="fas fa-download" aria-hidden="true"></i>
-          Export Image
-        {/if}
-      </button>
-
-      <button
-        type="button"
-        class="bar-settings-btn"
-        class:active={settingsOpen}
-        onclick={() => (settingsOpen = !settingsOpen)}
-        aria-label="Export settings"
-        aria-expanded={settingsOpen}
-      >
-        <i class="fas fa-cog" aria-hidden="true"></i>
-        <span class="settings-summary">{settingsSummary}</span>
-      </button>
-    </div>
-
-    <!-- Settings overlay (slides up) -->
+    <!-- Inline settings (collapsible, no overlay) -->
     {#if settingsOpen}
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
-        class="settings-backdrop"
-        onclick={() => (settingsOpen = false)}
-        onkeydown={(e) => { if (e.key === "Escape") settingsOpen = false; }}
-      ></div>
-      <!-- svelte-ignore a11y_interactive_supports_focus -->
-      <div
-        class="settings-sheet"
-        role="dialog"
+        class="inline-settings"
+        role="region"
         aria-label="Image export settings"
-        onkeydown={(e) => { if (e.key === "Escape") settingsOpen = false; }}
+        transition:slide={{ duration: 250, easing: cubicOut }}
       >
-        <div class="sheet-header">
-          <span class="sheet-title">Image Settings</span>
+        <div class="inline-settings-header">
+          <span class="inline-settings-title">Image Settings</span>
           <button
             type="button"
-            class="sheet-close"
+            class="inline-settings-close"
             onclick={() => (settingsOpen = false)}
             aria-label="Close settings"
           >
-            <i class="fas fa-times" aria-hidden="true"></i>
+            <i class="fas fa-chevron-down" aria-hidden="true"></i>
           </button>
         </div>
 
-        <div class="sheet-body">
+        <div class="inline-settings-body">
           <!-- Include toggles -->
           <div class="setting-row">
             <span class="setting-label">Include</span>
@@ -180,6 +144,36 @@
         </div>
       </div>
     {/if}
+
+    <div class="mobile-bar">
+      <button
+        type="button"
+        class="bar-export-btn"
+        onclick={onExport}
+        disabled={isExporting}
+        aria-label="Export image"
+      >
+        {#if isExporting}
+          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+          Exporting...
+        {:else}
+          <i class="fas fa-download" aria-hidden="true"></i>
+          Export Image
+        {/if}
+      </button>
+
+      <button
+        type="button"
+        class="bar-settings-btn"
+        class:active={settingsOpen}
+        onclick={() => (settingsOpen = !settingsOpen)}
+        aria-label="Export settings"
+        aria-expanded={settingsOpen}
+      >
+        <i class="fas fa-cog" aria-hidden="true"></i>
+        <span class="settings-summary">{settingsSummary}</span>
+      </button>
+    </div>
   </div>
 {:else}
   <!-- ============================================================
@@ -366,80 +360,57 @@
   }
 
   /* ============================================================
-   * MOBILE SETTINGS SHEET (slide-up overlay)
+   * MOBILE INLINE SETTINGS (collapsible, no overlay)
    * ============================================================ */
 
-  .settings-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    z-index: 50;
-  }
-
-  .settings-sheet {
-    position: absolute;
-    bottom: 100%;
-    left: 0;
-    right: 0;
-    z-index: 51;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-bottom: none;
-    border-radius: 16px 16px 0 0;
-    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4);
-    animation: sheet-slide-up 200ms cubic-bezier(0.4, 0, 0.2, 1) both;
-    max-height: 60vh;
+  .inline-settings {
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     overflow-y: auto;
+    max-height: 50vh;
   }
 
-  @keyframes sheet-slide-up {
-    from { opacity: 0; transform: translateY(16px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .sheet-header {
+  .inline-settings-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 16px 8px;
-    position: sticky;
-    top: 0;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    z-index: 1;
+    padding: 10px 16px 6px;
   }
 
-  .sheet-title {
-    font-size: var(--font-size-min, 14px);
+  .inline-settings-title {
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
-    color: var(--theme-text, white);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
-  .sheet-close {
+  .inline-settings-close {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: 14px;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: transparent;
+    border: none;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    font-size: 12px;
     cursor: pointer;
     transition: all 0.15s ease;
     -webkit-tap-highlight-color: transparent;
   }
 
-  .sheet-close:hover {
+  .inline-settings-close:hover {
     background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
     color: var(--theme-text, white);
   }
 
-  .sheet-body {
+  .inline-settings-body {
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    padding: 8px 16px 16px;
+    gap: 12px;
+    padding: 4px 16px 12px;
   }
 
   /* ============================================================
@@ -621,7 +592,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     .chip, .export-btn, .bar-export-btn,
-    .bar-settings-btn, .settings-sheet {
+    .bar-settings-btn, .inline-settings-close {
       transition: none !important;
       animation: none !important;
     }

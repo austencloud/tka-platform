@@ -122,6 +122,7 @@
     // Layout override
     columnCount?: number | null;  // Override auto-calculated column count (null = auto)
     forceContain?: boolean;  // Force contain mode even for long sequences (disables scroll)
+    fitWidth?: boolean;  // Always constrain by width (mobile export: let parent scroll for tall cards)
     // Render progress callback (loaded cells, total cells)
     onRenderProgress?: (loaded: number, total: number) => void;
   }
@@ -147,6 +148,7 @@
     onStepClick,
     columnCount = null,
     forceContain = false,
+    fitWidth = false,
     onRenderProgress,
   }: Props = $props();
 
@@ -389,10 +391,7 @@
     const totalHeight = gridHeight + headerFraction + footerFraction;
 
     // Aspect ratio = width / height
-    const ratio = gridWidth / totalHeight;
-    // DEBUG: track aspect ratio changes during start position toggle
-    console.log(`[ChoreoCard aspect] cols=${effectiveColumns} rows=${effectiveRows} gridW=${gridWidth} gridH=${gridHeight.toFixed(2)} header=${headerFraction.toFixed(3)} footer=${footerFraction.toFixed(3)} totalH=${totalHeight.toFixed(3)} → ratio=${ratio.toFixed(4)}`);
-    return ratio;
+    return gridWidth / totalHeight;
   });
 
   // Scaled sizes based on grid element width
@@ -1065,16 +1064,18 @@
     } else if (forceContain) {
       // Force-contain mode: fit to whichever dimension is more constrained,
       // same as normal contain. overflow:visible on root handles any overflow.
+      // When fitWidth is set (mobile export), always constrain by width so
+      // the card renders at full fidelity and the parent pane scrolls.
       const contentRatio = previewAspectRatio;
       const containerRatio = containerWidth / containerHeight;
 
-      if (contentRatio > containerRatio) {
-        // Wide card: constrain by width
+      if (fitWidth || contentRatio > containerRatio) {
+        // Wide card or mobile export: constrain by width
         newWidth = containerWidth;
         const h = containerWidth / contentRatio;
         newHeight = Number.isFinite(h) ? h : null;
       } else {
-        // Tall card: constrain by height, let width be natural
+        // Tall card on desktop: constrain by height, let width be natural
         newHeight = containerHeight;
         const w = containerHeight * contentRatio;
         newWidth = Number.isFinite(w) ? w : null;
@@ -1098,13 +1099,6 @@
     // Only update state if values actually changed (prevents ResizeObserver → state → resize loop)
     const widthChanged = newWidth !== containedWidth && (newWidth === null || containedWidth === null || Math.abs(newWidth - containedWidth) > 0.5);
     const heightChanged = newHeight !== containedHeight && (newHeight === null || containedHeight === null || Math.abs(newHeight - containedHeight) > 0.5);
-
-    // DEBUG: track what's changing during start position toggle
-    if (widthChanged || heightChanged) {
-      const contentRatio = previewAspectRatio;
-      const containerRatio = containerWidth / containerHeight;
-      console.log(`[ChoreoCard contain] cols=${effectiveColumns} rows=${effectiveRows} ratio=${contentRatio.toFixed(3)} containerRatio=${containerRatio.toFixed(3)} constraint=${contentRatio > containerRatio ? 'WIDTH' : 'HEIGHT'} | w: ${containedWidth?.toFixed(1)} → ${newWidth?.toFixed(1)} | h: ${containedHeight?.toFixed(1)} → ${newHeight?.toFixed(1)}`);
-    }
 
     if (widthChanged) containedWidth = newWidth;
     if (heightChanged) containedHeight = newHeight;
@@ -1809,8 +1803,11 @@
     min-height: 0;
     min-width: 0;
     width: 100%;
-    /* Let rows size to content - prevents gaps from 1fr row sizing */
-    grid-auto-rows: auto;
+    /* Fill remaining space in the flex column (after header/footer) without overflowing.
+       During width transitions, fewer columns at the old wider width would make cells
+       temporarily taller than the container — flex + min-height: 0 prevents overflow. */
+    flex: 1;
+    grid-auto-rows: 1fr;
     max-width: 100%;
     overflow: hidden;
     /* Light mode background for empty cells */

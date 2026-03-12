@@ -17,6 +17,21 @@
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import ChoreoCard from "./ChoreoCard.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+
+  // Derive trail settings from the global singleton so canvas settings changes
+  // (e.g. switching from "one end" to "both ends") propagate to this canvas
+  const trailSettings = $derived.by(() => {
+    const t = animationSettings.trail;
+    void t.enabled;
+    void t.mode;
+    void t.fadeDurationMs;
+    void t.lineWidth;
+    void t.maxOpacity;
+    void t.trackingMode;
+    void t.effect;
+    return { ...t };
+  });
 
   interface Props {
     sequence: SequenceData;
@@ -98,7 +113,10 @@
     aria-label={layout.focusedPane === "animation" ? "Exit focus mode" : "Focus on animation"}
     aria-expanded={layout.focusedPane === "animation"}
   >
-    <div class="media-pane animation-pane">
+    <div
+      class="media-pane animation-pane"
+      class:export-sidebar-active={layout.focusedPane === "animation" && !layout.isMobile}
+    >
       <!-- Close button - shown when focused (desktop only) -->
       {#if layout.focusedPane === "animation" && !layout.isMobile && !layout.suppressCloseButton}
         <div
@@ -133,6 +151,7 @@
           letter={playback.currentLetter}
           stepData={playback.currentStepData}
           word={sequence?.word}
+          {trailSettings}
           {onCanvasReady}
           focused={layout.focusedPane === "animation"}
         />
@@ -174,8 +193,8 @@
 
         <ChoreoCard
           {sequence}
-          highlightedStepIndex={playback.highlightedStepIndex}
-          showHighlight={playback.isPlaying || playback.highlightedStepIndex !== null}
+          highlightedStepIndex={layout.focusedPane === "image" ? null : playback.highlightedStepIndex}
+          showHighlight={layout.focusedPane === "image" ? false : (playback.isPlaying || playback.highlightedStepIndex !== null)}
           {onStepClick}
           {onRenderProgress}
           showWord={imageComposition.showWord}
@@ -189,6 +208,7 @@
           darkMode={imageComposition.darkMode}
           columnCount={imageComposition.columnCount}
           forceContain={imageComposition.forceContain}
+          fitWidth={layout.isMobile && layout.focusedPane === "image"}
           userName={imageComposition.userName}
           bluePropType={propRendering.bluePropType}
           redPropType={propRendering.redPropType}
@@ -305,10 +325,20 @@
     transition: padding-right 250ms cubic-bezier(0.2, 0, 0, 1);
   }
 
-  /* When the image export sidebar is active on desktop, add right padding
-     so the ChoreoCard content doesn't extend behind the export panel overlay.
+  /* Mobile: when focused for image export, allow the choreo card to scroll
+     if it's taller than the viewport (e.g. many rows with few columns) */
+  @media (max-width: 767px) {
+    .focused .preview-pane {
+      overflow-y: auto;
+      align-items: flex-start;
+    }
+  }
+
+  /* When an export sidebar is active on desktop, add right padding
+     so content doesn't extend behind the export panel overlay.
      Uses the --export-sidebar-width variable set by the parent host component. */
-  .preview-pane.export-sidebar-active {
+  .preview-pane.export-sidebar-active,
+  .animation-pane.export-sidebar-active {
     padding-right: var(--export-sidebar-width, 320px);
   }
 
