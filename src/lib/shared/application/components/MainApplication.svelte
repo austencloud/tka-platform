@@ -20,6 +20,7 @@
   import AttributionPrompt from "../../attribution/components/AttributionPrompt.svelte";
   import { getAttributionPromptState } from "../../attribution/state/attribution-prompt-state.svelte";
   import SequenceViewerDrawerHost from "../../sequence-viewer/components/SequenceViewerDrawerHost.svelte";
+  import SendSequenceSheetHost from "../../inbox/components/SendSequenceSheetHost.svelte";
   import HeyTikaListener from "../../voice-control/components/HeyTikaListener.svelte";
   import VoiceControlIndicator from "../../voice-control/components/VoiceControlIndicator.svelte";
   import VoiceCommandHelpOverlay from "../../voice-control/components/VoiceCommandHelpOverlay.svelte";
@@ -578,6 +579,9 @@
       <VoiceCommandHelpOverlay />
     {/if}
   {/if}
+
+  <!-- Send Sequence Sheet (global overlay for "Send to..." actions) -->
+  <SendSequenceSheetHost />
 
   <!-- Sequence Viewer Drawer (mobile overlay) - outside auth gate so external links work -->
   <SequenceViewerDrawerHost />

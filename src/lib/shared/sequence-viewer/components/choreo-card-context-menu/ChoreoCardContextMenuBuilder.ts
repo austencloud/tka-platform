@@ -44,6 +44,7 @@ export interface ChoreoCardContextMenuDeps {
   // Actions
   onEditNotes?: () => void;
   onExportImage?: () => void;
+  onSendTo?: () => void;
 }
 
 const COLUMN_OPTIONS: { label: string; value: number | null }[] = [
@@ -156,7 +157,7 @@ export function buildChoreoCardContextMenuItems(
   ];
 
   // ── Actions ──
-  if (deps.onEditNotes || deps.onExportImage) {
+  if (deps.onEditNotes || deps.onExportImage || deps.onSendTo) {
     items.push({ type: "separator" as const });
 
     if (deps.onEditNotes) {
@@ -174,6 +175,15 @@ export function buildChoreoCardContextMenuItems(
         label: "Export Image",
         icon: "fa-download",
         action: deps.onExportImage,
+      });
+    }
+
+    if (deps.onSendTo) {
+      items.push({
+        id: "send-to",
+        label: "Send to\u2026",
+        icon: "fa-paper-plane",
+        action: deps.onSendTo,
       });
     }
   }

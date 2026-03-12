@@ -15,9 +15,10 @@
     exportOptions: ExportOptionsStateManager;
     onEditNotes?: () => void;
     onExportImage?: () => void;
+    onSendTo?: () => void;
   }
 
-  const { isExportMode, exportOptions, onEditNotes, onExportImage }: Props = $props();
+  const { isExportMode, exportOptions, onEditNotes, onExportImage, onSendTo }: Props = $props();
 
   let menuState: ContextMenuState = $state({ open: false });
 
@@ -70,6 +71,7 @@
 
         onEditNotes: onEditNotes ? () => { closeContextMenu(); onEditNotes(); } : undefined,
         onExportImage: onExportImage ? () => { closeContextMenu(); onExportImage(); } : undefined,
+        onSendTo: onSendTo ? () => { closeContextMenu(); onSendTo(); } : undefined,
       });
     } else {
       // Touch compositionVersion to create reactive dependency on observer
@@ -99,6 +101,7 @@
 
         onEditNotes: onEditNotes ? () => { closeContextMenu(); onEditNotes(); } : undefined,
         onExportImage: onExportImage ? () => { closeContextMenu(); onExportImage(); } : undefined,
+        onSendTo: onSendTo ? () => { closeContextMenu(); onSendTo(); } : undefined,
       });
     }
   });
