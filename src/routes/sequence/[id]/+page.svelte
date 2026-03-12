@@ -54,6 +54,7 @@
   import { getIabBannerVisible, IAB_BANNER_HEIGHT } from "$lib/shared/auth/state/iab-banner-state.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import LoadingGate from "$lib/shared/components/loading/LoadingGate.svelte";
+  import ChoreoCardContextMenuHost from "$lib/shared/sequence-viewer/components/choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
 
   // ============================================================================
   // ROUTE-SPECIFIC STATE
@@ -105,6 +106,9 @@
   // Delete confirmation state
   let deleteConfirmOpen = $state(false);
   let isDeleting = $state(false);
+
+  // ChoreoCard context menu
+  let choreoCardMenuHost: ChoreoCardContextMenuHost | undefined = $state();
 
   // DrawerStack registration - blocks pull-to-refresh on mobile
   const drawerId = generateDrawerId();
@@ -578,6 +582,14 @@
                 onUnfocusPane={ctx.exitEditMode}
                 onStepClick={ctx.handleStepClick}
                 onCanvasReady={ctx.handleCanvasReady}
+                onChoreoCardContextMenu={(x, y) => choreoCardMenuHost?.openContextMenu(x, y)}
+              />
+              <ChoreoCardContextMenuHost
+                bind:this={choreoCardMenuHost}
+                isExportMode={isImageExportActive}
+                exportOptions={ctx.exportOptions}
+                onEditNotes={() => ctx.enterEditMode("image")}
+                onExportImage={() => ctx.handleExport()}
               />
               {#if isAnyExportActive}
                 <div class="export-panel-container" class:sidebar={!isMobile && isVideoExportActive} transition:fade={{ duration: 200 }}>

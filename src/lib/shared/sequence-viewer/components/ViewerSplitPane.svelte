@@ -44,6 +44,7 @@
     onUnfocusPane: () => void;
     onStepClick: (stepIndex: number) => void;
     onCanvasReady: (canvas: HTMLCanvasElement | null) => void;
+    onChoreoCardContextMenu?: (x: number, y: number) => void;
   }
 
   let {
@@ -57,6 +58,7 @@
     onUnfocusPane,
     onStepClick,
     onCanvasReady,
+    onChoreoCardContextMenu,
   }: Props = $props();
 
   function handleAnimationClick() {
@@ -213,6 +215,7 @@
           bluePropType={propRendering.bluePropType}
           redPropType={propRendering.redPropType}
           catDogModeEnabled={propRendering.catDogModeEnabled}
+          onContextMenu={onChoreoCardContextMenu}
         />
 
       </div>
@@ -326,8 +329,13 @@
   }
 
   /* Mobile: when focused for image export, allow the choreo card to scroll
-     if it's taller than the viewport (e.g. many rows with few columns) */
+     if it's taller than the viewport (e.g. many rows with few columns).
+     Must unlock overflow at every level of the clipping chain. */
   @media (max-width: 767px) {
+    .split-column.preview-column.focused {
+      overflow-y: auto;
+    }
+
     .focused .preview-pane {
       overflow-y: auto;
       align-items: flex-start;
