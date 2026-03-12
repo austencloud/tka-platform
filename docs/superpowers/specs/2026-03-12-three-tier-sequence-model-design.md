@@ -69,8 +69,11 @@ interface HandPathData {
 **Grid mode derivation rules:**
 - All cardinal locations (N, E, S, W) only → `DIAMOND`
 - All intercardinal locations (NE, SE, SW, NW) only → `BOX`
-- Mix of cardinal and intercardinal → `SKEWED`
-- Any CENTER location → `CENTRIC`
+- Mix of cardinal and intercardinal (no center) → `SKEWED`
+- CENTER with cardinals only → `CENTRIC` (diamond-based centric)
+- CENTER with intercardinals only → `CENTRIC` (box-based centric)
+- CENTER with mixed cardinal/intercardinal → `CENTRIC` (skewed centric)
+- The base grid mode (diamond/box/skewed) for centric paths can be derived by filtering out CENTER and checking the remaining locations
 - These are implied, not stored as primary data. The `impliedGridMode` field is a denormalized derivation for queries.
 
 **Canonical form for hashing:**
@@ -147,7 +150,8 @@ interface SoloPropData {
 3. **Contains its `HandPathData`.** The hand path is extracted from `steps[].startLocation` and the final `steps[-1].endLocation`. This is structural, not a separate query.
 
 **Canonical form for hashing:**
-- Each step serialized as: `"startLoc:endLoc:motionType:rotDir:turns:startOri:endOri"`
+- Each step serialized as: `"startLoc:endLoc:motionType:rotDir:turns:startOri:endOri[:handPath[:skewSteps:skewDir]]"`
+  - `handPath`, `skewSteps`, `skewDir` included when non-null (they affect motion identity)
 - Steps joined with `|`
 - Includes start position: `"startLoc:startOri|step1|step2|..."`
 
@@ -170,7 +174,7 @@ interface StepPairingData {
   readonly redReversal: boolean;
   readonly startPosition: GridPosition | null;  // two-hand spatial relationship (alpha3, beta5, etc.)
   readonly endPosition: GridPosition | null;
-  readonly duration: number;
+  // Duration is NOT stored here — derived from solo prop steps (blue's duration is authoritative)
 }
 
 interface SequenceData {
@@ -235,21 +239,41 @@ interface SequenceData {
 - Grid position group (alpha/beta/gamma/etc.): derived from the spatial relationship between the two start locations
 - `StartPositionData` as a standalone type is no longer stored; it's computed when needed
 
-**The `deriveSteps()` function:**
+**The `IStepDeriver` service:**
+
+Step derivation requires rendering infrastructure (arrow placement calculators, prop placement calculators, viewer preferences for prop type and grid mode). This makes it a DI service, not a pure function.
 
 ```typescript
-function deriveSteps(
-  blueSoloProp: SoloPropData,
-  redSoloProp: SoloPropData,
-  stepPairings: readonly StepPairingData[]
-): StepData[] {
-  // Zips blue step i + red step i + pairing i → StepData
-  // Rehydrates MotionData from SoloPropStepData (adds placement data, color, prop type from viewer prefs)
-  // Produces the exact StepData[] type all existing consumers expect
+// services/contracts/IStepDeriver.ts
+interface IStepDeriver {
+  deriveSteps(
+    blueSoloProp: SoloPropData,
+    redSoloProp: SoloPropData,
+    stepPairings: readonly StepPairingData[],
+    viewerPrefs: ViewerPreferences
+  ): StepData[];
+
+  deriveStartPosition(sequence: SequenceData): StartPositionData;
 }
 ```
 
-This is a pure function. Existing consumers call it once and get the same `StepData[]` they've always worked with. Can be memoized in reactive state with `$derived`.
+Dependencies: `IArrowLocationCalculator`, `IPropPlacementCalculator`, viewer settings (prop type, grid mode, colors).
+
+Produces the exact `StepData[]` type all existing consumers expect. Can be called once and memoized in reactive state with `$derived`.
+
+**Transitional `steps` getter:**
+
+During migration, `createSequenceData()` attaches a getter via `Object.defineProperty` that calls `deriveSteps()` internally. This lets consumers migrate incrementally:
+
+```typescript
+// Works during transition — delegates to deriveSteps() under the hood
+const steps = sequence.steps;
+
+// Final form — explicit, no magic
+const steps = stepDeriver.deriveSteps(sequence.blueSoloProp, sequence.redSoloProp, sequence.stepPairings, prefs);
+```
+
+The getter is removed once all consumers are migrated.
 
 ---
 
@@ -311,26 +335,36 @@ publicSoloProps/{soloPropId}          — public solo prop gallery
 publicSequences/{seqId}              — public sequence gallery (existing)
 ```
 
-### Unified Query Layer
+### Per-Tier Repositories
 
-A single `IArtifactRepository` service queries across tiers:
+Each tier gets its own repository (per project naming conventions — name by what it does):
 
 ```typescript
-interface IArtifactRepository {
-  // Tier-specific queries
-  getHandPaths(filters: HandPathFilters): Promise<HandPathData[]>;
-  getSoloProps(filters: SoloPropFilters): Promise<SoloPropData[]>;
-  getSequences(filters: SequenceFilters): Promise<SequenceData[]>;
-
-  // Cross-tier queries
-  getSequencesUsingPath(pathHash: string): Promise<SequenceData[]>;
-  getSequencesUsingSoloProp(soloHash: string): Promise<SequenceData[]>;
-
-  // Save operations
-  saveHandPath(path: HandPathData): Promise<void>;
-  saveSoloProp(soloProp: SoloPropData): Promise<void>;
-  saveSequence(sequence: SequenceData): Promise<void>;
+// services/contracts/IHandPathRepository.ts
+interface IHandPathRepository {
+  get(id: string): Promise<HandPathData | null>;
+  getByHash(contentHash: string): Promise<HandPathData | null>;
+  list(filters: HandPathFilters): Promise<HandPathData[]>;
+  save(path: HandPathData): Promise<void>;
+  delete(id: string): Promise<void>;
 }
+
+// services/contracts/ISoloPropRepository.ts
+interface ISoloPropRepository {
+  get(id: string): Promise<SoloPropData | null>;
+  getByHash(contentHash: string): Promise<SoloPropData | null>;
+  list(filters: SoloPropFilters): Promise<SoloPropData[]>;
+  save(soloProp: SoloPropData): Promise<void>;
+  delete(id: string): Promise<void>;
+}
+```
+
+The existing `ISequenceRepository` gains cross-tier query methods:
+
+```typescript
+// Added to existing ISequenceRepository
+getByPathHash(pathHash: string): Promise<SequenceData[]>;
+getBySoloHash(soloHash: string): Promise<SequenceData[]>;
 ```
 
 ### Security Rules
@@ -339,6 +373,48 @@ Hand paths and solo props follow the same ownership model as sequences:
 - Users can read/write their own artifacts
 - Public artifacts are readable by all, writable only by owner
 - Publishing creates a copy in the public collection
+
+### Document Size Estimate
+
+A 16-beat sequence with full compositional structure:
+- 2x `SoloPropData` with 16 steps each: ~32 step objects × ~120 bytes = ~3.8 KB
+- 2x `HandPathData` with locations + bigrams: ~0.5 KB each = ~1 KB
+- 16x `StepPairingData`: ~80 bytes each = ~1.3 KB
+- 4x content hashes (22 chars each): ~0.1 KB
+- Existing metadata (thumbnails, tags, notes, video URLs): ~2-5 KB
+- **Total: ~8-12 KB per document**
+
+Firestore's 1 MiB limit is >80x larger than the worst case. Even a hypothetical 128-beat sequence would be ~60 KB. No risk.
+
+---
+
+## Circular & LOOP Semantics
+
+Properties that span both hands (and thus only exist at Tier 3):
+
+| Property | Tier | Rationale |
+|----------|------|-----------|
+| `isClosed` | HandPathData (Tier 1) | Per-hand: first location == last location |
+| `isCircular` | SequenceData (Tier 3) | Combined: start position == end position for BOTH hands + letter-level check |
+| `loopType` | SequenceData (Tier 3) | Requires combined letter word to detect LOOP patterns |
+| `orientationCycleCount` | SequenceData (Tier 3) | Depends on both hands' orientation patterns together |
+| `canonicalSignature` | SequenceData (Tier 3) | Rotation-invariant hash of combined sequence |
+
+A solo prop can be "closed" (returns to start location + orientation) but cannot be "circular" in the TKA sense — circularity is a two-hand property that requires the combined grid position to cycle.
+
+---
+
+## MCP Server Integration
+
+The MCP server's sequence builder (`mcp-server/src/core/sequence-builder.ts`) produces `MotionData` arrays directly. Generated sequences must be converted to the three-tier model before being handed to the Scribe app.
+
+**Conversion point:** After the MCP server returns raw `MotionData[]` per hand, a `ISequenceComposer` service:
+1. Converts blue `MotionData[]` → `SoloPropData` (strips rendering fields, builds hand path)
+2. Converts red `MotionData[]` → `SoloPropData`
+3. Computes step pairings (letters already resolved by the builder)
+4. Assembles full `SequenceData`
+
+This conversion lives in the Scribe app, not in the MCP server. The MCP server's output format doesn't change — the Scribe app's ingestion layer handles the transformation.
 
 ---
 
@@ -434,26 +510,25 @@ One-time migration script that transforms each existing `SequenceData`:
 
 ### Consumer Migration
 
-All current consumers of `steps: StepData[]` must be updated to use `deriveSteps()`. These consumers include:
+All current consumers of `steps: StepData[]` must be updated. The transitional getter (see "Transitional `steps` getter" above) prevents a Big Bang migration — consumers work unchanged during transition and are migrated incrementally to explicit `IStepDeriver` calls.
 
-- **Sequence viewer** — animation playback
-- **Choreo card renderer** — pictograph display
+Known consumer categories (814 `.steps` references across 222 files):
+
+- **Sequence viewer** — animation playback (`AnimatorCanvas`, `DisassembleTransition`)
+- **Choreo card renderer** — pictograph display (`ChoreoCard`, sequence viewer components)
 - **Sequence exporter** — file/image export
 - **Generate panel** — sequence generation output
 - **Assemble tab** — construction output
 - **Animator canvas** — real-time animation
 - **Browse gallery** — sequence cards
+- **Sequence encoder/decoder** — URL sharing (`SequenceEncoder`)
+- **Canonical signature computation** — equivalence detection
+- **LOOP detection** — circular pattern analysis
+- **Reversal detection** — per-step reversal flags
+- **Effort timeline** — phrase-level effort mapping
+- **`createSequenceData()` / `addStepToSequence()` / `removeStepFromSequence()`** — factory and mutation helpers (must be rewritten for compositional model)
 
-The `deriveSteps()` function returns the exact same `StepData[]` type, so the change at each call site is:
-```typescript
-// Before
-const steps = sequence.steps;
-
-// After
-const steps = deriveSteps(sequence.blueSoloProp, sequence.redSoloProp, sequence.stepPairings);
-```
-
-This can be wrapped in a convenience function on the sequence itself or provided as a service.
+The transitional getter means each of these can be migrated independently without blocking others.
 
 ### StartPositionData Migration
 
