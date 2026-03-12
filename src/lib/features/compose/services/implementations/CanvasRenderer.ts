@@ -147,8 +147,9 @@ export class CanvasRenderer implements ICanvasRenderer {
    * Get the progress bar height for a given canvas size
    */
   getProgressBarHeight(canvasSize: number): number {
-    // Padding (top + bottom) + track height, proportional to canvas
-    return canvasSize * 0.03;
+    // Padding (top + bottom) + track height, proportional to canvas.
+    // Matches in-app SegmentedSequenceProgressBar: ~24px container with 6px track
+    return canvasSize * 0.04;
   }
 
   /**
@@ -320,8 +321,8 @@ export class CanvasRenderer implements ICanvasRenderer {
     // Match WordHeader.svelte: simplify + truncate to 12 letter units
     const displayText = simplifyAndTruncate(word, 12).toUpperCase();
 
-    const headerHeight = canvasSize * 0.05;
-    const fontSize = headerHeight * 0.55;
+    const headerHeight = canvasSize * 0.07;
+    const fontSize = headerHeight * 0.45;
 
     ctx.save();
 
@@ -443,7 +444,7 @@ export class CanvasRenderer implements ICanvasRenderer {
     if (totalSteps <= 0) return;
 
     const barHeight = this.getProgressBarHeight(canvasSize);
-    const trackHeight = barHeight * 0.2; // 20% of bar area for the actual track
+    const trackHeight = barHeight * 0.35; // Match in-app track proportion
     const trackY = y + (barHeight - trackHeight) / 2; // vertically centered
 
     ctx.save();
@@ -531,6 +532,6 @@ export class CanvasRenderer implements ICanvasRenderer {
    * Used by VideoExportOrchestrator to calculate total canvas dimensions
    */
   getHeaderHeight(canvasSize: number): number {
-    return canvasSize * 0.05;
+    return canvasSize * 0.07;
   }
 }
