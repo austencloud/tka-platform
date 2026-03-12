@@ -34,7 +34,6 @@
   // Keep visible during animation (dimmed) to prevent layout shift.
   const showActions = $derived(
     builderState.canFinishHand ||
-    builderState.canGoBack ||
     isComplete
   );
 
@@ -210,31 +209,9 @@
 
 <!-- Action row: below the grid, full-width -->
 <div class="action-row" class:visible={showActions} class:dimmed={actionsDimmed} style="--hand-color: {handColor}">
-  {#if builderState.canGoBack}
+  {#if builderState.canFinishHand}
     <button
-      class="action-btn back-btn"
-      onclick={() => builderState.goBackToBlue()}
-      aria-label="Go back to blue hand"
-    >
-      <i class="fas fa-chevron-left" aria-hidden="true"></i>
-      <span>Back</span>
-    </button>
-  {/if}
-
-  {#if builderState.canFinishHand && isBlueHand}
-    <button
-      class="action-btn done-btn"
-      onclick={() => builderState.finishHand()}
-      aria-label="Finish blue hand and start red"
-    >
-      <span>Next: Red</span>
-      <i class="fas fa-chevron-right" aria-hidden="true"></i>
-    </button>
-  {/if}
-
-  {#if builderState.canFinishHand && !isBlueHand}
-    <button
-      class="action-btn done-btn red-done"
+      class="action-btn done-btn complete-btn"
       onclick={() => builderState.finishHand()}
       aria-label="Complete sequence"
     >
@@ -508,24 +485,13 @@
     background: color-mix(in srgb, var(--hand-color) 30%, var(--theme-card-bg, rgba(0, 0, 0, 0.6)));
   }
 
-  .done-btn.red-done {
-    border-color: var(--prop-red, #ed1c24);
-    background: color-mix(in srgb, var(--prop-red, #ed1c24) 15%, var(--theme-card-bg, rgba(0, 0, 0, 0.6)));
+  .done-btn.complete-btn {
+    border-color: var(--theme-accent, #6366f1);
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, var(--theme-card-bg, rgba(0, 0, 0, 0.6)));
   }
 
-  .done-btn.red-done:hover {
-    background: color-mix(in srgb, var(--prop-red, #ed1c24) 30%, var(--theme-card-bg, rgba(0, 0, 0, 0.6)));
-  }
-
-  .back-btn {
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    background: var(--theme-card-bg, rgba(0, 0, 0, 0.5));
-    color: rgba(255, 255, 255, 0.8);
-  }
-
-  .back-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.25);
+  .done-btn.complete-btn:hover {
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 30%, var(--theme-card-bg, rgba(0, 0, 0, 0.6)));
   }
 
   .new-btn {

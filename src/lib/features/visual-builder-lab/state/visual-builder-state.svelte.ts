@@ -69,10 +69,9 @@ export function createVisualBuilderState() {
     || phase === "placing"
   );
   const canFinishHand = $derived(
-    (phase === "building" || phase === "animating") && activeSteps.length > 0
-  );
-  const canGoBack = $derived(
-    activeHand === MotionColor.RED && (phase === "idle" || phase === "placing" || phase === "animating")
+    (phase === "building" || phase === "animating") &&
+    blueSteps.length > 0 &&
+    redSteps.length > 0
   );
 
   /** First click — place prop at a grid point */
@@ -149,7 +148,7 @@ export function createVisualBuilderState() {
     }
   }
 
-  /** Finish current hand's path, switch to other hand or complete */
+  /** Mark the sequence as complete (both hands must have steps) */
   function finishHand(): void {
     // If animating, queue it to run after animation completes
     if (phase === "animating") {
@@ -157,42 +156,9 @@ export function createVisualBuilderState() {
       return;
     }
 
-    if (activeHand === MotionColor.BLUE) {
-      // Switch to red
-      activeHand = MotionColor.RED;
-      currentPosition = null;
-      currentOrientation = Orientation.IN;
-      phase = "idle";
-    } else {
-      // Both hands done
-      phase = "complete";
-    }
+    phase = "complete";
   }
 
-  /** Go back from red hand to blue hand (restore blue's last position) */
-  function goBackToBlue(): void {
-    if (activeHand !== MotionColor.RED) return;
-
-    // If animating, queue it to run after animation completes
-    if (phase === "animating") {
-      pendingAction = goBackToBlue;
-      return;
-    }
-
-    activeHand = MotionColor.BLUE;
-
-    // Restore blue's last known position
-    if (blueSteps.length > 0) {
-      const lastBlueStep = blueSteps[blueSteps.length - 1]!;
-      currentPosition = lastBlueStep.endPosition;
-      currentOrientation = lastBlueStep.endOrientation;
-      phase = "building";
-    } else {
-      currentPosition = null;
-      currentOrientation = Orientation.IN;
-      phase = "idle";
-    }
-  }
 
   /** Undo last step from active hand */
   function undoStep(): void {
@@ -313,12 +279,10 @@ export function createVisualBuilderState() {
     get isBlueComplete() { return isBlueComplete; },
     get canUndo() { return canUndo; },
     get canFinishHand() { return canFinishHand; },
-    get canGoBack() { return canGoBack; },
 
     // Actions
     handlePointClick,
     finishHand,
-    goBackToBlue,
     undoStep,
     truncateAtStep,
     reset,
