@@ -19,6 +19,7 @@
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { FirstRunStep } from "../../domain/first-run-types";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import type { IPropPreferencePersister } from "$lib/shared/community/services/contracts/IPropPreferencePersister";
 
   import WelcomeStep from "./steps/WelcomeStep.svelte";
   import DisplayNameStep from "./steps/DisplayNameStep.svelte";
@@ -206,6 +207,23 @@
     } catch (error) {
       console.error("Failed to apply prop type:", error);
     }
+
+    // Persist to user profile as prop preference
+    try {
+      const userId = authState.user?.uid;
+      if (userId) {
+        const persister = container.items.propPreferencePersister as IPropPreferencePersister;
+        await persister.save(userId, {
+          propsISpinWith: [prop],
+          favoriteProp: prop,
+          favoriteCatdog: null,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to save prop preference to profile:", error);
+      // Non-blocking — onboarding continues even if profile save fails
+    }
+
     handleNext("pictographMode");
   }
 
