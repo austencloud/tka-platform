@@ -421,7 +421,7 @@
     gap: 8px;
     width: 100%;
     padding: 7px 10px;
-    min-height: 36px;
+    min-height: 44px;
     background: transparent;
     border: none;
     border-radius: 6px;
@@ -432,14 +432,6 @@
     transition:
       background 120ms ease,
       transform 120ms ease;
-  }
-
-  /* WCAG AAA: 44px minimum touch targets on touch devices */
-  @media (pointer: coarse) {
-    .menu-item {
-      min-height: 44px;
-      padding: 10px 12px;
-    }
   }
 
   .menu-item:hover:not(.disabled),
