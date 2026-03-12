@@ -31,6 +31,7 @@
   import VirtualizedCreatorGrid from "./VirtualizedCreatorGrid.svelte";
   import FeaturedCreatorsSection from "./FeaturedCreatorsSection.svelte";
   import CreatorsSortBar from "./CreatorsSortBar.svelte";
+  import PropFilterChips from "./PropFilterChips.svelte";
 
   let searchQuery = $state("");
   let followingInProgress = $state<Set<string>>(new Set());
@@ -225,6 +226,16 @@
       {/if}
     </div>
 
+    <!-- Prop filter chips (hidden during search) -->
+    {#if !searchResults}
+      <div class="prop-filter-row-container">
+        <PropFilterChips
+          selectedProps={creatorsDataState.selectedPropFilters}
+          onToggle={creatorsDataState.togglePropFilter}
+        />
+      </div>
+    {/if}
+
     <PanelContent>
       {#if error}
         <PanelState type="error" title={t("browse_error")} message={error} />
@@ -324,6 +335,11 @@
     color: var(--theme-text-dim);
   }
 
+  /* Prop filter chips row - same horizontal alignment as search-sort-row */
+  .prop-filter-row-container {
+    padding: 0 32px 0 24px;
+  }
+
   /* Search + Sort row - aligned with grid cards */
   .search-sort-row {
     display: flex;
@@ -370,6 +386,10 @@
       gap: 8px;
       /* Left: PanelContent mobile (16px) + virtual-row (4px) = 20px
          Right: Same + scrollbar (8px) = 28px */
+      padding: 0 28px 0 20px;
+    }
+
+    .prop-filter-row-container {
       padding: 0 28px 0 20px;
     }
 
