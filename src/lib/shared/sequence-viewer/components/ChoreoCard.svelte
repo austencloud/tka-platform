@@ -125,6 +125,8 @@
     fitWidth?: boolean;  // Always constrain by width (mobile export: let parent scroll for tall cards)
     // Render progress callback (loaded cells, total cells)
     onRenderProgress?: (loaded: number, total: number) => void;
+    // Context menu callback (right-click / long-press)
+    onContextMenu?: (x: number, y: number) => void;
   }
 
   const {
@@ -150,7 +152,20 @@
     forceContain = false,
     fitWidth = false,
     onRenderProgress,
+    onContextMenu,
   }: Props = $props();
+
+  // Long-press for touch context menu (matches animation canvas pattern)
+  let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+  let longPressOrigin: { x: number; y: number } | null = null;
+
+  function cancelLongPress(): void {
+    if (longPressTimer !== null) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+    }
+    longPressOrigin = null;
+  }
 
   // Constants
   // Render at high resolution for crisp display on 4K monitors
@@ -351,6 +366,10 @@
     if (columnCount !== null && columnCount > 0) {
       return columnCount;
     }
+    // Scroll mode uses a fixed 5-column layout — match the async render
+    if (needsScroll) {
+      return 5;
+    }
     // Use the layout service directly for an instant column count
     const [cols] = layoutCalculator.calculateLayout(stepCount, includeStartPosition);
     return cols;
@@ -360,6 +379,15 @@
   const effectiveRows = $derived.by(() => {
     if (!sequence?.steps?.length) return rows || 0;
     const stepCount = sequence.steps.length;
+
+    // Scroll mode: match the async render's row calculation
+    if (needsScroll) {
+      const cols = 5;
+      const stepsPerRow = includeStartPosition ? cols - 1 : cols;
+      const firstRowSteps = Math.min(stepsPerRow, stepCount);
+      const remainingSteps = stepCount - firstRowSteps;
+      return 1 + Math.ceil(remainingSteps / stepsPerRow);
+    }
 
     const [, rws] = layoutCalculator.calculateLayout(stepCount, includeStartPosition);
     return rws;
@@ -1059,7 +1087,9 @@
 
     if (needsScroll) {
       // Scroll mode: CSS handles sizing (width/height: 100% on .preview-stack).
-      // No JS contain calculation needed — just skip.
+      // Clear JS dimensions so CSS takes over.
+      containedWidth = null;
+      containedHeight = null;
       return;
     } else if (forceContain) {
       // Force-contain mode: fit to whichever dimension is more constrained,
@@ -1131,6 +1161,7 @@
     const cdm = catDogModeEnabled;
     const ssn = showStepNumbers;
     const cc = columnCount;
+    const isp = includeStartPosition;
     const snr = showNonRadial;
     const hpv = handPointVis;
     const stka = showTKA;
@@ -1140,7 +1171,7 @@
     const durationKey = sequence?.steps?.map(s => s.duration ?? 1).join(",") ?? "";
 
     // Content key: everything EXCEPT dark mode (used to detect dark-mode-only changes)
-    const contentKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bpt}-${rpt}-${cdm}-${ssn}-${cc}-${snr}-${hpv}-${stka}-${sr}-${durationKey}`;
+    const contentKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bpt}-${rpt}-${cdm}-${ssn}-${cc}-${isp}-${snr}-${hpv}-${stka}-${sr}-${durationKey}`;
     const renderKey = `${contentKey}-${dm}`;
 
     if (!hasMounted) return;
@@ -1195,10 +1226,13 @@
     };
   });
 
-  // Recalculate contained dimensions when aspect ratio changes
+  // Recalculate contained dimensions when aspect ratio or sizing mode changes
   $effect(() => {
-    // Track previewAspectRatio dependency
+    // Track all dependencies that affect the sizing calculation
     const _ratio = previewAspectRatio;
+    const _fc = forceContain;
+    const _ns = needsScroll;
+    const _fw = fitWidth;
     updateContainedDimensions();
   });
 
@@ -1259,7 +1293,7 @@
     const stepLetters = sequence?.steps?.map(s => s.letter ?? "?").join("") ?? "";
     const stepCount = sequence?.steps?.length ?? 0;
     const durationKey = sequence?.steps?.map(s => s.duration ?? 1).join(",") ?? "";
-    lastContentKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bluePropType}-${redPropType}-${catDogModeEnabled}-${showStepNumbers}-${columnCount}-${showNonRadial}-${handPointVis}-${showTKA}-${showReversals}-${durationKey}`;
+    lastContentKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bluePropType}-${redPropType}-${catDogModeEnabled}-${showStepNumbers}-${columnCount}-${forceContain}-${includeStartPosition}-${showNonRadial}-${handPointVis}-${showTKA}-${showReversals}-${durationKey}`;
     lastEffectRenderKey = `${lastContentKey}-${darkMode}`;
     renderAllCells().then(() => {
       hasMounted = true;
@@ -1268,6 +1302,7 @@
 
   onDestroy(() => {
     clearCellUrls();
+    cancelLongPress();
     if (crossfadeTimer) clearTimeout(crossfadeTimer);
     if (resizeObserver) {
       resizeObserver.disconnect();
@@ -1302,7 +1337,36 @@
 {/snippet}
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="choreo-card-root" class:dark-mode={activeDarkMode} class:scroll-mode={needsScroll} class:force-contain={forceContain} data-ctx-container bind:this={containerElement} oncontextmenu={(e) => { handleContextMenu(e); if (!featureFlagService.isAdmin) handleCellContextMenu(e); }}>
+<div class="choreo-card-root" class:dark-mode={activeDarkMode} class:scroll-mode={needsScroll} class:force-contain={forceContain} data-ctx-container bind:this={containerElement}
+  oncontextmenu={(e: MouseEvent) => {
+    if (onContextMenu) {
+      e.preventDefault();
+      onContextMenu(e.clientX, e.clientY);
+    }
+    handleContextMenu(e);
+    if (!featureFlagService.isAdmin) handleCellContextMenu(e);
+  }}
+  onpointerdown={(e: PointerEvent) => {
+    if (e.button !== 0 || e.pointerType === "mouse" || !onContextMenu) return;
+    const x = e.clientX;
+    const y = e.clientY;
+    longPressOrigin = { x, y };
+    longPressTimer = setTimeout(() => {
+      longPressTimer = null;
+      longPressOrigin = null;
+      onContextMenu(x, y);
+    }, 500);
+  }}
+  onpointermove={(e: PointerEvent) => {
+    if (longPressOrigin) {
+      const dx = e.clientX - longPressOrigin.x;
+      const dy = e.clientY - longPressOrigin.y;
+      if (dx * dx + dy * dy > 100) cancelLongPress();
+    }
+  }}
+  onpointerup={() => cancelLongPress()}
+  onpointercancel={() => cancelLongPress()}
+>
   {#if isLoading && cells.length === 0}
     <div class="loading-placeholder">
       <ProgressRing percent={-1} size={32} strokeWidth={3} />

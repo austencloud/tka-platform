@@ -38,6 +38,7 @@
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
+  import ChoreoCardContextMenuHost from "./choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
 
   const overlay = getSequenceOverlayState();
 
@@ -67,6 +68,9 @@
   // Delete confirmation state
   let deleteConfirmOpen = $state(false);
   let isDeleting = $state(false);
+
+  // ChoreoCard context menu
+  let choreoCardMenuHost: ChoreoCardContextMenuHost | undefined = $state();
 
   // Animation visibility for video export effects
   const animationVisibility = getAnimationVisibilityManager();
@@ -270,6 +274,14 @@
                     onUnfocusPane={ctx.exitEditMode}
                     onStepClick={ctx.handleStepClick}
                     onCanvasReady={ctx.handleCanvasReady}
+                    onChoreoCardContextMenu={(x, y) => choreoCardMenuHost?.openContextMenu(x, y)}
+                  />
+                  <ChoreoCardContextMenuHost
+                    bind:this={choreoCardMenuHost}
+                    isExportMode={isImageExportActive}
+                    exportOptions={ctx.exportOptions}
+                    onEditNotes={() => ctx.enterEditMode("image")}
+                    onExportImage={() => ctx.handleExport()}
                   />
                   {#if isAnyExportActive}
                     <div class="export-panel-container" class:sidebar={!isMobileWidth && isVideoExportActive}>
