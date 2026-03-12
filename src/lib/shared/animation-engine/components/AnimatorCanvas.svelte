@@ -134,9 +134,6 @@ Last audit: 2025-12-27
   let assembledRect = $state<DOMRect | null>(null);
   let contentWrapperEl: HTMLDivElement | undefined = $state();
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
-  // Brief flag: when true, header/progress start collapsed and CSS-transition open.
-  // Prevents the visual "snap" when chrome appears after reassembly.
-  let reassembleEntry = $state(false);
 
   // Derived boolean for context menu display
   const isDisassembledView = $derived(viewState !== "assembled");
@@ -158,18 +155,11 @@ Last audit: 2025-12-27
 
   function handleTransitionComplete() {
     if (viewState === "disassembling") {
+      console.log(`[DISASM] ${performance.now().toFixed(1)}ms — disassembling → disassembled`);
       viewState = "disassembled";
     } else if (viewState === "reassembling") {
-      // Chrome starts collapsed so there's no layout snap when
-      // the assembled view mounts with header + progress bar.
-      reassembleEntry = true;
+      console.log(`[DISASM] ${performance.now().toFixed(1)}ms — reassembling → assembled`);
       viewState = "assembled";
-      // Wait 2 rAFs (one for mount, one for paint) then let CSS transitions expand
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          reassembleEntry = false;
-        });
-      });
     }
   }
 
@@ -273,6 +263,7 @@ Last audit: 2025-12-27
     if (!el) return;
 
     untrack(() => {
+      console.log(`[DISASM] ${performance.now().toFixed(1)}ms — engine init $effect: containerElement appeared. viewState=${viewState}`);
       engine.initialize(el, {
         onCanvasReady,
         onTrailSettingsChange: (settings) => {
@@ -282,7 +273,10 @@ Last audit: 2025-12-27
     });
 
     return () => {
-      untrack(() => engine.dispose());
+      untrack(() => {
+        console.log(`[DISASM] ${performance.now().toFixed(1)}ms — engine dispose (containerElement removed)`);
+        engine.dispose();
+      });
     };
   });
 
@@ -347,148 +341,168 @@ Last audit: 2025-12-27
   }
 </script>
 
-{#if viewState !== "assembled"}
-  <!-- Disassembled / transitioning: single component stays mounted for all non-assembled states.
-       Avoids canvas re-initialization flash by keeping the three AnimatorCanvases alive. -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div
-    class="animation-container"
-    oncontextmenu={handleContextMenu}
-    onpointerdown={handlePointerDown}
-    onpointermove={cancelLongPress}
-    onpointerup={cancelLongPress}
-    onpointercancel={cancelLongPress}
-  >
-    <DisassembleTransition
-      direction={viewState === "disassembling" ? "disassemble" : viewState === "reassembling" ? "reassemble" : "idle"}
-      {assembledRect}
-      {blueProp}
-      {redProp}
-      gridVisible={gridVisible}
-      gridMode={gridMode}
-      backgroundAlpha={backgroundAlpha}
-      letter={letter}
-      stepData={stepData}
-      sequenceData={sequenceData}
-      currentStep={currentStep}
-      isPlaying={isPlaying}
-      word={word}
-      fireConfig={fireConfig}
-      ledConfig={ledConfig}
-      oncomplete={handleTransitionComplete}
-    />
-
-    {#if !disableContextMenu}
-      <CanvasContextMenuHost
-        bind:this={contextMenuHost}
-        onOpenPanel={handleOpenPanel}
-        disassembled={isDisassembledView}
-        onToggleDisassemble={toggleDisassemble}
-      />
+<!-- Host container: position-relative so transition overlay can stack on top of assembled view -->
+<div class="animator-host">
+  <!-- Assembled view: mounted during "assembled" AND "reassembling" so the engine
+       initializes behind the transition overlay. When the FLIP ends and the overlay
+       unmounts, this view is already rendered — no intermediate frame. -->
+  {#if viewState === "assembled" || viewState === "reassembling"}
+    <!-- Hidden GlyphRenderer that converts TKAGlyph to SVG for Canvas2D rendering -->
+    {#if letter}
+      <GlyphRenderer {letter} {stepData} onSvgReady={handleGlyphSvgReady} />
     {/if}
-  </div>
-{:else}
-  <!-- Hidden GlyphRenderer that converts TKAGlyph to SVG for Canvas2D rendering -->
-  {#if letter}
-    <GlyphRenderer {letter} {stepData} onSvgReady={handleGlyphSvgReady} />
+
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="animation-container assembled-layer"
+      data-focused={focused || undefined}
+      data-fill={fillContainer || undefined}
+      oncontextmenu={handleContextMenu}
+      onpointerdown={handlePointerDown}
+      onpointermove={cancelLongPress}
+      onpointerup={cancelLongPress}
+      onpointercancel={cancelLongPress}
+    >
+      <div class="content-wrapper" bind:this={contentWrapperEl} data-dark-mode={darkModeEnabled ? "true" : "false"}>
+        <div class="header-slot">
+          <WordHeader
+            {word}
+            visible={wordHeaderVisible}
+            darkMode={darkModeEnabled}
+            activeStepNumber={isPlaying && currentStep >= 1 && currentStep < (sequenceData?.steps?.length ?? 0) + 0.99 ? Math.floor(currentStep) : null}
+          />
+        </div>
+
+        <div
+          class="canvas-wrapper"
+          bind:this={containerElement}
+          data-transparent={backgroundAlpha === 0 ? "true" : "false"}
+          data-dark-mode={darkModeEnabled ? "true" : "false"}
+        >
+          <GlyphOverlay
+            {letter}
+            {displayedLetter}
+            {displayedTurnsTuple}
+            {displayedStepNumber}
+            {displayedMusicalPosition}
+            {stepData}
+            tkaGlyphVisible={effectiveTkaGlyphVisible}
+            stepNumbersVisible={effectiveBeatNumbersVisible}
+            beatPositionVisible={effectiveBeatPositionVisible}
+            darkMode={darkModeEnabled}
+            isAtStartPosition={!hideStepNumbers && currentStep < 1 && sequenceData !== null}
+            isAtEndPosition={
+              !hideStepNumbers &&
+              sequenceData !== null &&
+              !effectiveIsSeamlesslyLoopable &&
+              currentStep >= (sequenceData.steps?.length ?? 0) + 0.99
+            }
+          />
+
+          <ProgressOverlay
+            {isPreRendering}
+            {preRenderProgress}
+            {preRenderedFramesReady}
+          />
+        </div>
+
+        <div class="progress-slot">
+          <SegmentedSequenceProgressBar
+            steps={sequenceData?.steps ?? []}
+            currentStep={currentStep}
+            visible={progressBarVisible && !hideProgressBar}
+            darkMode={darkModeEnabled}
+            variant={progressBarVariant}
+            showLabels={progressBarVariant === "labeled" || progressBarVariant === "gradient-labeled"}
+            onSeek={onProgressBarSeek}
+          />
+        </div>
+      </div>
+
+      {#if !disableContextMenu}
+        <CanvasContextMenuHost
+          bind:this={contextMenuHost}
+          onOpenPanel={handleOpenPanel}
+          disassembled={isDisassembledView}
+          onToggleDisassemble={toggleDisassemble}
+        />
+
+        <CanvasSettingsModal
+          bind:open={settingsModalOpen}
+          initialCategory={settingsModalCategory}
+          {sequenceData}
+          {blueProp}
+          {redProp}
+          {letter}
+          {stepData}
+          {word}
+        />
+      {/if}
+    </div>
   {/if}
 
-  <!-- Outer container centers the content -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div
-    class="animation-container"
-    data-focused={focused || undefined}
-    data-fill={fillContainer || undefined}
-    data-reassemble-entry={reassembleEntry || undefined}
-    oncontextmenu={handleContextMenu}
-    onpointerdown={handlePointerDown}
-    onpointermove={cancelLongPress}
-    onpointerup={cancelLongPress}
-    onpointercancel={cancelLongPress}
-  >
-    <!-- Inner wrapper: adaptive layout (vertical in portrait, horizontal in landscape) -->
-    <div class="content-wrapper" bind:this={contentWrapperEl} data-dark-mode={darkModeEnabled ? "true" : "false"}>
-      <!-- Word header - position adapts to layout mode -->
-      <div class="header-slot">
-        <WordHeader
-          {word}
-          visible={wordHeaderVisible}
-          darkMode={darkModeEnabled}
-          activeStepNumber={isPlaying && currentStep >= 1 && currentStep < (sequenceData?.steps?.length ?? 0) + 0.99 ? Math.floor(currentStep) : null}
-        />
-      </div>
-
-      <!-- Canvas wrapper maintains 1:1 aspect ratio for animation only -->
-      <div
-        class="canvas-wrapper"
-        bind:this={containerElement}
-        data-transparent={backgroundAlpha === 0 ? "true" : "false"}
-        data-dark-mode={darkModeEnabled ? "true" : "false"}
-      >
-        <GlyphOverlay
-          {letter}
-          {displayedLetter}
-          {displayedTurnsTuple}
-          {displayedStepNumber}
-          {displayedMusicalPosition}
-          {stepData}
-          tkaGlyphVisible={effectiveTkaGlyphVisible}
-          stepNumbersVisible={effectiveBeatNumbersVisible}
-          beatPositionVisible={effectiveBeatPositionVisible}
-          darkMode={darkModeEnabled}
-          isAtStartPosition={!hideStepNumbers && currentStep < 1 && sequenceData !== null}
-          isAtEndPosition={
-            !hideStepNumbers &&
-            sequenceData !== null &&
-            !effectiveIsSeamlesslyLoopable &&
-            currentStep >= (sequenceData.steps?.length ?? 0) + 0.99
-          }
-        />
-
-        <ProgressOverlay
-          {isPreRendering}
-          {preRenderProgress}
-          {preRenderedFramesReady}
-        />
-      </div>
-
-      <!-- Progress bar - position adapts to layout mode -->
-      <div class="progress-slot">
-        <SegmentedSequenceProgressBar
-          steps={sequenceData?.steps ?? []}
-          currentStep={currentStep}
-          visible={progressBarVisible && !hideProgressBar}
-          darkMode={darkModeEnabled}
-          variant={progressBarVariant}
-          showLabels={progressBarVariant === "labeled" || progressBarVariant === "gradient-labeled"}
-          onSeek={onProgressBarSeek}
-        />
-      </div>
-    </div>
-
-    {#if !disableContextMenu}
-      <CanvasContextMenuHost
-        bind:this={contextMenuHost}
-        onOpenPanel={handleOpenPanel}
-        disassembled={isDisassembledView}
-        onToggleDisassemble={toggleDisassemble}
-      />
-
-      <CanvasSettingsModal
-        bind:open={settingsModalOpen}
-        initialCategory={settingsModalCategory}
-        {sequenceData}
+  <!-- Transition overlay: renders on top during disassembling/disassembled/reassembling.
+       During reassembly, the assembled view is already rendering behind this. -->
+  {#if viewState !== "assembled"}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="animation-container transition-layer"
+      oncontextmenu={handleContextMenu}
+      onpointerdown={handlePointerDown}
+      onpointermove={cancelLongPress}
+      onpointerup={cancelLongPress}
+      onpointercancel={cancelLongPress}
+    >
+      <DisassembleTransition
+        direction={viewState === "disassembling" ? "disassemble" : viewState === "reassembling" ? "reassemble" : "idle"}
+        {assembledRect}
         {blueProp}
         {redProp}
-        {letter}
-        {stepData}
-        {word}
+        gridVisible={gridVisible}
+        gridMode={gridMode}
+        backgroundAlpha={backgroundAlpha}
+        letter={letter}
+        stepData={stepData}
+        sequenceData={sequenceData}
+        currentStep={currentStep}
+        isPlaying={isPlaying}
+        word={word}
+        fireConfig={fireConfig}
+        ledConfig={ledConfig}
+        oncomplete={handleTransitionComplete}
       />
-    {/if}
-  </div>
-{/if}
+
+      {#if !disableContextMenu}
+        <CanvasContextMenuHost
+          bind:this={contextMenuHost}
+          onOpenPanel={handleOpenPanel}
+          disassembled={isDisassembledView}
+          onToggleDisassemble={toggleDisassemble}
+        />
+      {/if}
+    </div>
+  {/if}
+</div>
 
 <style>
+  /* Host: position context for stacking assembled + transition layers */
+  .animator-host {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Both layers fill the host. Transition renders on top during overlap. */
+  .assembled-layer,
+  .transition-layer {
+    position: absolute;
+    inset: 0;
+  }
+
+  .transition-layer {
+    z-index: 10;
+  }
+
   /* Outer container: centers content, establishes container query context */
   .animation-container {
     display: flex;
@@ -685,20 +699,6 @@ Last audit: 2025-12-27
     /* Override the square constraint — fill remaining space after header/progress */
     height: auto !important;
     min-height: 0;
-  }
-
-  /* ===========================================
-     REASSEMBLE ENTRY: Smooth chrome reveal
-     After reassembly FLIP completes, the assembled view mounts
-     with chrome collapsed. Removing the attribute triggers CSS
-     transitions to smoothly expand header + progress bar.
-     MUST appear after focused/fill/constrained overrides to win cascade.
-     =========================================== */
-
-  .animation-container[data-reassemble-entry] .header-slot,
-  .animation-container[data-reassemble-entry] .progress-slot {
-    max-height: 0 !important;
-    opacity: 0 !important;
   }
 
   /* ===========================================
