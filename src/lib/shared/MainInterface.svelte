@@ -58,6 +58,11 @@
   import ShortcutsHelp from "./keyboard/components/ShortcutsHelp.svelte";
   import KeyboardShortcutCoordinator from "./keyboard/coordinators/KeyboardShortcutCoordinator.svelte";
 
+  // My Props drawer — rendered here (outside sidebar) because the sidebar's
+  // backdrop-filter creates a containing block that traps position:fixed
+  import MyPropsDrawer from "./navigation/components/account/MyPropsDrawer.svelte";
+  import { myPropsDrawerState } from "./navigation/components/account/my-props-drawer-state.svelte";
+
   // 🚀 Performance: Module prefetching
   import {
     preloadCriticalModules,
@@ -347,6 +352,16 @@
   <!-- Toast Notifications -->
   <ToastContainer />
 </div>
+
+<!-- My Props drawer — must render outside .main-interface to escape
+     the sidebar's backdrop-filter containing block -->
+{#if myPropsDrawerState.propState}
+  <MyPropsDrawer
+    bind:isOpen={myPropsDrawerState.isOpen}
+    propState={myPropsDrawerState.propState}
+    onclose={() => { myPropsDrawerState.close(); }}
+  />
+{/if}
 
 <style>
   /* Skip link - visually hidden until focused (sr-only pattern) */

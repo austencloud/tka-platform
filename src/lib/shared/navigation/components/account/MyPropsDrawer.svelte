@@ -101,6 +101,7 @@
   placement="bottom"
   ariaLabel="My props editor"
   class="my-props-drawer"
+  backdropClass="my-props-backdrop"
   onclose={closeDrawer}
 >
   <div class="drawer-content">
@@ -149,9 +150,34 @@
 </Drawer>
 
 <style>
+  /* Backdrop: dim the screen behind the drawer */
+  :global(.my-props-backdrop) {
+    background: rgba(0, 0, 0, 0.5) !important;
+    /* Override desktop sidebar constraint — this drawer covers everything */
+    left: 0 !important;
+  }
+
   :global(.my-props-drawer) {
     --sheet-bg: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     --sheet-filter: none;
+    /* Override desktop sidebar constraint — center on full viewport */
+    left: 0 !important;
+  }
+
+  /* On desktop, constrain to a reasonable width so it's not awkwardly wide */
+  @media (min-width: 768px) {
+    :global(.my-props-drawer) {
+      max-width: 420px;
+      left: 50% !important;
+      right: auto !important;
+      transform: translateX(-50%) !important;
+      border-radius: 16px 16px 0 0;
+      min-height: auto;
+    }
+
+    :global(.my-props-drawer[data-state="closed"]) {
+      transform: translateX(-50%) translate3d(0, 100%, 0) !important;
+    }
   }
 
   .drawer-content {

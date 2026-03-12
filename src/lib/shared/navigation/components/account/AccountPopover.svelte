@@ -8,7 +8,7 @@
   import { createPropPreferenceState } from "../../../community/state/prop-preference-state.svelte";
   import RobustAvatar from "../../../components/avatar/RobustAvatar.svelte";
   import MyPropsCard from "./MyPropsCard.svelte";
-  import MyPropsDrawer from "./MyPropsDrawer.svelte";
+  import { myPropsDrawerState } from "./my-props-drawer-state.svelte";
 
   let { isOpen, onClose, onInboxClick, hasUnread = false, unreadCount = 0, anchorElement } = $props<{
     isOpen: boolean;
@@ -122,9 +122,6 @@
     onClose();
   }
 
-  // Prop editor drawer state
-  let showPropsDrawer = $state(false);
-
   const userId = $derived(authState.user?.uid);
   const propState = $derived.by(() => {
     if (!userId) return null;
@@ -135,9 +132,12 @@
   function handleOpenPropEditor() {
     triggerHaptic();
     onClose();
-    // Small delay so popover closes before drawer opens
+    // Open drawer via shared state so it renders at the document root,
+    // outside the sidebar's backdrop-filter containing block
     requestAnimationFrame(() => {
-      showPropsDrawer = true;
+      if (propState) {
+        myPropsDrawerState.open(propState);
+      }
     });
   }
 </script>
@@ -233,14 +233,6 @@
   </div>
 {/if}
 
-<!-- My Props drawer (renders outside popover so it's not clipped) -->
-{#if propState}
-  <MyPropsDrawer
-    bind:isOpen={showPropsDrawer}
-    {propState}
-    onclose={() => { showPropsDrawer = false; }}
-  />
-{/if}
 
 <style>
   /* ==========================================================================
