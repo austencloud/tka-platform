@@ -17,10 +17,12 @@ Displays:
   let {
     concept,
     status,
+    premiumGated = false,
     onClick,
   }: {
     concept: LearnConcept;
     status: ConceptStatus;
+    premiumGated?: boolean;
     onClick?: (concept: LearnConcept) => void;
   } = $props();
 
@@ -80,6 +82,10 @@ Displays:
     <span class="check"
       ><i class="fa-solid fa-check" aria-hidden="true"></i></span
     >
+  {:else if premiumGated}
+    <span class="premium-crown" title="Premium feature">
+      <i class="fas fa-crown" aria-hidden="true"></i>
+    </span>
   {/if}
 </button>
 
@@ -171,6 +177,18 @@ Displays:
     font-size: var(--font-size-compact, 12px);
     color: white;
     flex-shrink: 0;
+  }
+
+  .premium-crown {
+    --premium-gold: #fbbf24;
+    position: absolute;
+    top: 0.375rem;
+    right: 0.375rem;
+    font-size: 0.625rem;
+    color: var(--premium-gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   /* Focus state */

@@ -15,10 +15,12 @@ Displays:
     category,
     completedCount = 0,
     totalCount = 0,
+    premiumGated = false,
   }: {
     category: ConceptCategory;
     completedCount?: number;
     totalCount?: number;
+    premiumGated?: boolean;
   } = $props();
 
   const categoryInfo = $derived(
@@ -31,6 +33,12 @@ Displays:
     ><i class="fa-solid {categoryInfo.icon}" aria-hidden="true"></i></span
   >
   <span class="name">{categoryInfo.name}</span>
+  {#if premiumGated}
+    <span class="premium-tag">
+      <i class="fas fa-crown" aria-hidden="true"></i>
+      Premium
+    </span>
+  {/if}
   <span class="count">{completedCount}/{totalCount}</span>
   <div class="line"></div>
 </div>
@@ -57,6 +65,21 @@ Displays:
     color: var(--category-color);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+  }
+
+  .premium-tag {
+    --premium-gold: #fbbf24;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--premium-gold);
+    letter-spacing: 0.03em;
+  }
+
+  .premium-tag i {
+    font-size: 0.625rem;
   }
 
   .count {
