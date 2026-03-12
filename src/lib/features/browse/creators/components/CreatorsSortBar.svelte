@@ -25,6 +25,7 @@
   const sortOptions: SortOption[] = [
     { value: "lastActive", label: "Recently Active", icon: "fa-clock" },
     { value: "joinedDate", label: "Recently Joined", icon: "fa-calendar" },
+    { value: "favoriteProp", label: "Group by prop", icon: "fa-layer-group" },
   ];
 
   // Get current option (always defined since we have a default)
