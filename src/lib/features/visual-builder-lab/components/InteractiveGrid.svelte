@@ -8,7 +8,7 @@
   0. Dark background rect
   1. GridSvg (grid lines and hand points)
   2. Completed step motion arrows (lines with arrowheads)
-  3. Ghost blue prop (animated in sync with red during red building phase)
+  3. Ghost prop for inactive hand (animated in sync during the other hand's building phase)
   4. Active hand's prop indicator (animated <g> driven by SvgPropAnimator)
   5. Hit target circles (always on top for click capture)
 -->
@@ -52,6 +52,7 @@
   // SVG element ref for the active prop's animated group
   let activePropGroupRef: SVGGElement | null = $state(null);
   let ghostBluePropGroupRef: SVGGElement | null = $state(null);
+  let ghostRedPropGroupRef: SVGGElement | null = $state(null);
 
   // Track whether the active prop just appeared (for scale-in animation)
   let justPlaced = $state(false);
@@ -145,6 +146,17 @@
     return `translate(${x}px, ${y}px) rotate(${rotation}deg) translate(${-center.x}px, ${-center.y}px)`;
   }
 
+  // Fade out an SVG element over a duration, synchronized with the active prop animation
+  function fadeOutElement(element: SVGGElement, durationMs: number): Promise<void> {
+    return new Promise((resolve) => {
+      const anim = element.animate(
+        [{ opacity: 0.35 }, { opacity: 0 }],
+        { duration: durationMs, easing: "ease-out", fill: "forwards" },
+      );
+      anim.onfinish = () => resolve();
+    });
+  }
+
   // Register animation callback on state so addMotion() can trigger animation
   $effect(() => {
     builderState.setAnimationCallback(async (step: BuilderStep) => {
@@ -165,7 +177,8 @@
         })
       );
 
-      // During red building, animate ghost blue through its corresponding step
+      // During red building, animate ghost blue through its corresponding step,
+      // or fade it out if blue has no step at this beat
       if (
         builderState.activeHand === MotionColor.RED &&
         ghostBluePropGroupRef &&
@@ -186,6 +199,37 @@
               propCenter: bluePropData.svgData.center,
             })
           );
+        } else {
+          // Blue has no step here — fade out in sync with the active prop's animation
+          animations.push(fadeOutElement(ghostBluePropGroupRef, ANIMATION_DURATION_MS));
+        }
+      }
+
+      // During blue building (after going back), animate ghost red through its corresponding step,
+      // or fade it out if red has no step at this beat
+      if (
+        builderState.activeHand === MotionColor.BLUE &&
+        ghostRedPropGroupRef &&
+        redPropData?.svgData
+      ) {
+        const redIndex = builderState.blueSteps.length;
+        const redStep = builderState.redSteps[redIndex];
+        if (redStep) {
+          animations.push(
+            ghostAnimator.animate({
+              element: ghostRedPropGroupRef,
+              startPosition: redStep.startPosition,
+              endPosition: redStep.endPosition,
+              rotationDirection: redStep.rotationDirection,
+              turnCount: redStep.turnCount,
+              startOrientation: redStep.startOrientation,
+              durationMs: ANIMATION_DURATION_MS,
+              propCenter: redPropData.svgData.center,
+            })
+          );
+        } else {
+          // Red has no step here — fade out in sync with the active prop's animation
+          animations.push(fadeOutElement(ghostRedPropGroupRef, ANIMATION_DURATION_MS));
         }
       }
 
@@ -253,23 +297,53 @@
     return steps[0]!.startOrientation;
   });
 
-  // Ghost blue: tracks rest position during red building (syncs with red step count)
+  // Ghost blue: tracks rest position during red building (syncs with red step count).
+  // Returns null once red goes past blue's last step — the ghost fades out.
   const ghostBlueState = $derived.by(() => {
     if (builderState.activeHand !== MotionColor.RED) return null;
     if (builderState.blueSteps.length === 0) return null;
     if (builderState.phase === "complete") return null;
 
     const redStepsDone = builderState.redSteps.length;
+
+    // Red has gone past all blue steps — blue doesn't exist at this beat.
+    // Use > not >= so the ghost stays visible when both hands are at the same count.
+    if (redStepsDone > builderState.blueSteps.length) return null;
+
     if (redStepsDone === 0) {
       return {
         position: builderState.blueSteps[0]!.startPosition,
         orientation: builderState.blueSteps[0]!.startOrientation,
       };
     }
-    const lastIdx = Math.min(redStepsDone - 1, builderState.blueSteps.length - 1);
     return {
-      position: builderState.blueSteps[lastIdx]!.endPosition,
-      orientation: builderState.blueSteps[lastIdx]!.endOrientation,
+      position: builderState.blueSteps[redStepsDone - 1]!.endPosition,
+      orientation: builderState.blueSteps[redStepsDone - 1]!.endOrientation,
+    };
+  });
+
+  // Ghost red: tracks rest position during blue building when red has steps ahead.
+  // Returns null once blue goes past red's last step — the ghost fades out.
+  const ghostRedState = $derived.by(() => {
+    if (builderState.activeHand !== MotionColor.BLUE) return null;
+    if (builderState.redSteps.length === 0) return null;
+    if (builderState.phase === "complete") return null;
+
+    const blueStepsDone = builderState.blueSteps.length;
+
+    // Blue has gone past all red steps — red doesn't exist at this beat.
+    // Use > not >= so the ghost stays visible when both hands are at the same count.
+    if (blueStepsDone > builderState.redSteps.length) return null;
+
+    if (blueStepsDone === 0) {
+      return {
+        position: builderState.redSteps[0]!.startPosition,
+        orientation: builderState.redSteps[0]!.startOrientation,
+      };
+    }
+    return {
+      position: builderState.redSteps[blueStepsDone - 1]!.endPosition,
+      orientation: builderState.redSteps[blueStepsDone - 1]!.endOrientation,
     };
   });
 
@@ -303,7 +377,8 @@
 
     <!-- Layer 2: Reserved for future motion visualization -->
 
-    <!-- Layer 3: Ghost blue prop (animated in sync during red building) -->
+    <!-- Layer 3: Ghost props (the inactive hand animated in sync during building).
+         Fades out when the active hand goes past the other hand's last step. -->
     {#if ghostBlueState && builderState.phase !== "complete"}
       {@const ghostTarget = findTarget(ghostBlueState.position)}
       {#if ghostTarget}
@@ -326,6 +401,33 @@
             cy={ghostTarget.y}
             r={FALLBACK_RADIUS}
             class="prop-fallback blue-fallback dimmed-prop"
+          />
+        {/if}
+      {/if}
+    {/if}
+
+    {#if ghostRedState && builderState.phase !== "complete"}
+      {@const ghostRedTarget = findTarget(ghostRedState.position)}
+      {#if ghostRedTarget}
+        {#if redPropData?.svgData}
+          <g
+            bind:this={ghostRedPropGroupRef}
+            class="prop-svg-group dimmed-prop"
+            style="transform: {propTransform(
+              ghostRedTarget.x,
+              ghostRedTarget.y,
+              getRotation(ghostRedState.position, ghostRedState.orientation),
+              redPropData.svgData.center,
+            )}"
+          >
+            {@html redPropData.svgData.svgContent}
+          </g>
+        {:else}
+          <circle
+            cx={ghostRedTarget.x}
+            cy={ghostRedTarget.y}
+            r={FALLBACK_RADIUS}
+            class="prop-fallback red-fallback dimmed-prop"
           />
         {/if}
       {/if}
