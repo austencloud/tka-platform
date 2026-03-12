@@ -87,6 +87,14 @@
     bluePropType: PropType | undefined;
     redPropType: PropType | undefined;
     catDogModeEnabled: boolean | undefined;
+
+    // Prop source tracking
+    propSource: "intended" | "creator-favorite" | "viewer-settings" | "quick-switch";
+    hasIntendedProp: boolean;
+    handlePropSourceChange: (source: "intended" | "viewer-settings" | "quick-switch") => void;
+    handleQuickSwitchProp: (blue: PropType, red: PropType, catDog: boolean) => void;
+    handleSetAsIntended: () => Promise<void>;
+
     imgShowWord: boolean;
     imgShowStartPos: boolean;
     imgShowDifficulty: boolean;
@@ -155,6 +163,7 @@
   import { browser } from "$app/environment";
   import { container } from "$lib/shared/di";
   import { notifyLibraryMutated } from "$lib/shared/library/library-events";
+  import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { ISequenceDataProvider } from "$lib/shared/sequence-viewer/services/contracts/ISequenceDataProvider";
@@ -295,6 +304,50 @@
   const bluePropType = $derived(settings.bluePropType);
   const redPropType = $derived(settings.redPropType);
   const catDogModeEnabled = $derived(settings.catDogMode);
+
+  // Prop source tracking — which prop config is currently active
+  let propSourceOverride = $state<"intended" | "viewer-settings" | "quick-switch" | null>(null);
+  let quickSwitchBlue = $state<PropType | undefined>(undefined);
+  let quickSwitchRed = $state<PropType | undefined>(undefined);
+  let quickSwitchCatDog = $state<boolean>(false);
+
+  const hasIntendedProp = $derived(!!sequence?.intendedProp);
+
+  // Default to "intended" if sequence has intendedProp, otherwise "viewer-settings"
+  const propSource = $derived(
+    propSourceOverride ?? (hasIntendedProp ? "intended" : "viewer-settings")
+  );
+
+  // Resolve the active prop config based on source
+  const activeBlueProp = $derived.by(() => {
+    if (propSource === "intended" && sequence?.intendedProp) {
+      return sequence.intendedProp.bluePropType;
+    }
+    if (propSource === "quick-switch" && quickSwitchBlue) {
+      return quickSwitchBlue;
+    }
+    return bluePropType; // viewer settings
+  });
+
+  const activeRedProp = $derived.by(() => {
+    if (propSource === "intended" && sequence?.intendedProp) {
+      return sequence.intendedProp.redPropType;
+    }
+    if (propSource === "quick-switch" && quickSwitchRed) {
+      return quickSwitchRed;
+    }
+    return redPropType; // viewer settings
+  });
+
+  const activeCatDog = $derived.by(() => {
+    if (propSource === "intended" && sequence?.intendedProp) {
+      return sequence.intendedProp.catDogMode;
+    }
+    if (propSource === "quick-switch") {
+      return quickSwitchCatDog;
+    }
+    return catDogModeEnabled; // viewer settings
+  });
 
   // Animation visibility
   const animationVisibility = getAnimationVisibilityManager();
@@ -957,11 +1010,56 @@
     }
     try {
       const libraryRepo = container.items.libraryRepository;
-      await libraryRepo.saveSequence(sequence);
+      // Attach current prop config as intended prop
+      const sequenceWithIntent = createSequenceData({
+        ...sequence,
+        intendedProp: {
+          bluePropType: bluePropType ?? PropType.STAFF,
+          redPropType: redPropType ?? PropType.STAFF,
+          catDogMode: catDogModeEnabled ?? false,
+        },
+      });
+      await libraryRepo.saveSequence(sequenceWithIntent);
       showToast("Saved to library", "success");
     } catch (error) {
       console.error("Failed to save sequence:", error);
       showToast("Failed to save sequence", "error");
+    }
+  }
+
+  function handlePropSourceChange(source: "intended" | "viewer-settings" | "quick-switch") {
+    propSourceOverride = source;
+  }
+
+  function handleQuickSwitchProp(blue: PropType, red: PropType, catDog: boolean) {
+    quickSwitchBlue = blue;
+    quickSwitchRed = red;
+    quickSwitchCatDog = catDog;
+    propSourceOverride = "quick-switch";
+  }
+
+  async function handleSetAsIntended() {
+    if (!sequence || !isOwned) return;
+    const currentBlue = activeBlueProp;
+    const currentRed = activeRedProp;
+    const currentCatDog = activeCatDog;
+    if (!currentBlue || !currentRed) return;
+
+    try {
+      const libraryRepo = container.items.libraryRepository;
+      const updatedSequence = createSequenceData({
+        ...sequence,
+        intendedProp: {
+          bluePropType: currentBlue,
+          redPropType: currentRed,
+          catDogMode: currentCatDog ?? false,
+        },
+      });
+      await libraryRepo.saveSequence(updatedSequence);
+      showToast("Intended prop updated", "success");
+    } catch (error) {
+      console.error("Failed to update intended prop:", error);
+      showToast("Failed to update intended prop", "error");
     }
   }
 
@@ -1162,10 +1260,18 @@
     rampActive,
     rampState,
 
-    // Settings
-    bluePropType,
-    redPropType,
-    catDogModeEnabled,
+    // Settings (active prop values, resolved from source)
+    bluePropType: activeBlueProp,
+    redPropType: activeRedProp,
+    catDogModeEnabled: activeCatDog,
+
+    // Prop source tracking
+    propSource,
+    hasIntendedProp,
+    handlePropSourceChange,
+    handleQuickSwitchProp,
+    handleSetAsIntended,
+
     imgShowWord,
     imgShowStartPos,
     imgShowDifficulty,
@@ -1244,9 +1350,9 @@
       userName: authState.user?.displayName || "",
     },
     splitPanePropRendering: {
-      bluePropType,
-      redPropType,
-      catDogModeEnabled,
+      bluePropType: activeBlueProp,
+      redPropType: activeRedProp,
+      catDogModeEnabled: activeCatDog,
     },
   });
 </script>
