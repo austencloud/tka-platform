@@ -4,6 +4,7 @@ import { TipPointOverrideProvider } from "$lib/features/effects-lab/services/imp
 import { FireDefaultsLoader } from "$lib/shared/animation-engine/services/implementations/FireDefaultsLoader";
 import { FireDefaultsPublisher } from "$lib/shared/animation-engine/services/implementations/FireDefaultsPublisher";
 import { setTipPointOverrideProvider } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
+import { setTrailPointOverrideProvider } from "$lib/shared/animation-engine/domain/types/TrailPointTypes";
 
 /**
  * Effects Lab DI container.
@@ -30,6 +31,11 @@ export const effectsLabContainer = createContainer()
 			// Hook into the domain-level tip point lookup so overrides
 			// take effect automatically in all tip trackers
 			setTipPointOverrideProvider((propType) => provider.getOverride(propType));
+
+			// Hook trail point assignments into the domain-level lookup
+			// so PropPositionCalculator can resolve trail configs without
+			// depending on the effects-lab feature layer
+			setTrailPointOverrideProvider((propType) => provider.getTrailAssignment(propType));
 
 			// Load admin-published defaults from Firestore; strip flameScale
 			// from legacy fire point data to produce position-only tip configs
