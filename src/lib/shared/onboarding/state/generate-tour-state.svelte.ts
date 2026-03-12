@@ -97,6 +97,14 @@ function createGenerateTourState() {
       localStorage.setItem(TOUR_COMPLETED_KEY, "true");
     },
 
+    /** Jump directly to a specific stop (from clicking a mini card). */
+    goToStop(stop: GenerateTourStop) {
+      const index = STOPS.indexOf(stop);
+      if (index >= 0) {
+        data.currentStopIndex = index;
+      }
+    },
+
     /** Replay the tour (from help button after first completion) */
     restart() {
       data.isActive = true;

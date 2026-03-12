@@ -27,12 +27,14 @@
     span: number;
   }
 
+  // Gradients match card-colors.ts (DEFAULT_COLORS) exactly.
+  // LOOP uses theme accent (#6366f1 indigo) since it's a special animated card.
   const MINI_CARDS: MiniCard[] = [
     {
       id: "word-input",
       header: "WORD",
       value: "A - Z",
-      gradient: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6d28d9 100%)",
+      gradient: "linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%)",
       span: 4,
     },
     {
@@ -74,14 +76,14 @@
       id: "loop",
       header: "LOOP",
       value: "Rotated",
-      gradient: "linear-gradient(135deg, #ec4899 0%, #db2777 50%, #be185d 100%)",
+      gradient: "linear-gradient(135deg, #6366f1 0%, #818cf8 50%, #6366f1 100%)",
       span: 2,
     },
     {
       id: "slice-size",
       header: "SLICE",
       value: "Quartered",
-      gradient: "linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%)",
+      gradient: "linear-gradient(135deg, #ec4899 0%, #db2777 50%, #be185d 100%)",
       span: 2,
     },
     {
@@ -156,7 +158,7 @@
 <BaseModal
   open={isOpen}
   onclose={handleClose}
-  size="fit"
+  size="md"
   class="tour-modal"
   animation="pop"
   labelledBy="tour-modal-title"
@@ -165,6 +167,7 @@
     <!-- Mini card grid -->
     <div class="card-grid" role="img" aria-label="Generator cards — {currentContent.name} highlighted">
       {#each MINI_CARDS as card}
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class="mini-card"
           class:active={card.id === generateTourState.currentStop}
@@ -172,6 +175,11 @@
           class:generate-btn={card.id === "generate-button"}
           style:grid-column="span {card.span}"
           style:background={card.gradient}
+          onclick={() => generateTourState.goToStop(card.id)}
+          role="button"
+          tabindex="0"
+          aria-label="View {card.header || card.value} help"
+          onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); generateTourState.goToStop(card.id); } }}
         >
           {#if card.header}
             <span class="card-header">{card.header}</span>
@@ -246,10 +254,23 @@
 </BaseModal>
 
 <style>
-  /* Modal: content-driven height, reasonable width */
+  /*
+   * Dialog sizing: viewport-proportional, never overflows.
+   * Uses size="md" from BaseModal which gives us flex column layout
+   * with modal-body { flex: 1 }. We override width/height here.
+   *
+   * Layout stack (all flex):
+   *   dialog  →  modal-content-wrapper  →  modal-body
+   *     ├─ card-grid      (flex-shrink: 0 — always fully visible)
+   *     ├─ tour-info       (flex: 1 — fills remaining space)
+   *     │   ├─ info-header (flex-shrink: 0)
+   *     │   └─ info-body   (flex: 1, overflow-y: auto — scrolls if needed)
+   *     └─ footer          (flex-shrink: 0 — always visible, handled by BaseModal)
+   */
   :global(dialog.tour-modal) {
     width: min(92vw, 560px) !important;
-    max-height: 90vh !important;
+    height: min(85vh, 680px) !important;
+    max-height: 85vh !important;
   }
 
   /* ===== Mini Card Grid ===== */
@@ -259,6 +280,7 @@
     gap: 5px;
     padding: 14px 16px;
     background: rgba(0, 0, 0, 0.25);
+    flex-shrink: 0;
   }
 
   .mini-card {
@@ -267,15 +289,16 @@
     align-items: center;
     justify-content: center;
     gap: 2px;
-    padding: 8px 6px;
+    padding: 10px 6px;
     border-radius: 10px;
     transition: opacity 0.25s ease, box-shadow 0.25s ease;
     position: relative;
-    min-height: 48px;
+    min-height: 65px;
+    cursor: pointer;
   }
 
   .mini-card.generate-btn {
-    min-height: 40px;
+    min-height: 65px;
   }
 
   .card-header {
@@ -299,7 +322,6 @@
     font-size: 14px;
   }
 
-  /* Active card: glow border */
   .mini-card.active {
     box-shadow:
       0 0 0 2px rgba(59, 130, 246, 0.7),
@@ -312,20 +334,21 @@
   }
 
   /* ===== Info Section ===== */
-  /* Fixed height so the modal doesn't shift between stops */
+  /* Takes all remaining space between card grid and footer */
   .tour-info {
     padding: 14px 20px;
     display: flex;
     flex-direction: column;
     gap: 10px;
-    height: 320px;
-    min-height: 320px;
+    flex: 1;
+    min-height: 0;
   }
 
   .info-header {
     display: flex;
     align-items: center;
     gap: 12px;
+    flex-shrink: 0;
   }
 
   .info-icon {
@@ -380,6 +403,7 @@
     color: var(--theme-text, white);
   }
 
+  /* Scrollable content area — only this part scrolls */
   .info-body {
     display: flex;
     flex-direction: column;
@@ -490,6 +514,7 @@
   @media (max-width: 520px) {
     :global(dialog.tour-modal) {
       width: calc(100% - 24px) !important;
+      height: min(85vh, 600px) !important;
     }
 
     .card-grid {
