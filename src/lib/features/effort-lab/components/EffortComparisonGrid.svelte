@@ -53,17 +53,30 @@
 <style>
   .effort-comparison-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: var(--spacing-md, 16px);
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: 1fr 1fr;
+    gap: var(--spacing-sm, 8px);
     flex: 1;
     min-height: 0;
-    overflow-y: auto;
-    padding: var(--spacing-md, 16px);
+    overflow: hidden;
+    padding: var(--spacing-sm, 8px);
   }
 
   @media (max-width: 900px) {
     .effort-comparison-grid {
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      padding: 6px;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .effort-comparison-grid {
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(4, 1fr);
+      overflow-y: auto;
+      gap: 4px;
+      padding: 4px;
     }
   }
 </style>

@@ -50,4 +50,14 @@
     color: #a78bfa;
     border: 1px solid rgba(139, 92, 246, 0.3);
   }
+
+  @media (max-width: 500px) {
+    .effort-lab-header {
+      padding: 4px 8px;
+    }
+
+    .effort-lab-title {
+      font-size: var(--font-size-min, 14px);
+    }
+  }
 </style>

@@ -51,14 +51,18 @@
       {stepData}
       {currentStep}
       {isPlaying}
-      {word}
       backgroundAlpha={0}
       focused={false}
       disableContextMenu={true}
       hideTkaGlyph={false}
       hideStepNumbers={true}
+      hideProgressBar={true}
+      fillContainer={true}
       fireConfig={{ disableFrameCache: true }}
     />
+
+    <!-- Overlay badge visible on all sizes, essential on mobile where footer is hidden -->
+    <span class="effort-badge">{descriptor.label}</span>
   </div>
 
   <div class="card-footer">
@@ -96,20 +100,33 @@
     display: flex;
     flex-direction: column;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border: 1.5px solid var(--accent, var(--theme-stroke, rgba(255, 255, 255, 0.1)));
     border-radius: var(--border-radius-lg, 12px);
     overflow: hidden;
-    transition: border-color 0.2s ease;
-  }
-
-  .effort-card:hover {
-    border-color: var(--accent);
+    min-height: 0;
   }
 
   .canvas-container {
-    aspect-ratio: 1;
+    flex: 1;
+    min-height: 0;
     width: 100%;
     position: relative;
+  }
+
+  .effort-badge {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: #fff;
+    background: var(--accent, rgba(255, 255, 255, 0.2));
+    border-radius: 4px;
+    pointer-events: none;
+    opacity: 0.85;
+    z-index: 1;
   }
 
   .card-footer {
@@ -178,5 +195,26 @@
     min-width: 3ch;
     text-align: right;
     flex-shrink: 0;
+  }
+
+  /* Mobile: canvas-only cards with overlay badge, no footer or sliders */
+  @media (max-width: 600px) {
+    .effort-card {
+      border-radius: 8px;
+    }
+
+    .card-footer {
+      display: none;
+    }
+
+    .param-sliders {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .effort-card {
+      transition: none;
+    }
   }
 </style>
