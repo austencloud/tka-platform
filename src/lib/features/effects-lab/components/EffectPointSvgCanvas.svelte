@@ -112,18 +112,26 @@
     }
   }
 
-  function svgPointFromEvent(e: MouseEvent): { dx: number; dy: number } | null {
+  function svgPointFromClientCoords(clientX: number, clientY: number): { dx: number; dy: number } | null {
     if (!svgEl) return null;
     const ctm = svgEl.getScreenCTM();
     if (!ctm) return null;
     const inv = ctm.inverse();
-    const pt = new DOMPoint(e.clientX, e.clientY).matrixTransform(inv);
+    const pt = new DOMPoint(clientX, clientY).matrixTransform(inv);
     // Convert from viewBox coords (prop centered in base viewBox) to prop-local coords
     const centerX = baseViewBoxWidth / 2;
     const centerY = baseViewBoxHeight / 2;
     const dx = Math.round((pt.x - centerX) * 10) / 10;
     const dy = Math.round((pt.y - centerY) * 10) / 10;
     return { dx, dy };
+  }
+
+  function svgPointFromEvent(e: MouseEvent): { dx: number; dy: number } | null {
+    return svgPointFromClientCoords(e.clientX, e.clientY);
+  }
+
+  function svgPointFromTouch(t: Touch): { dx: number; dy: number } | null {
+    return svgPointFromClientCoords(t.clientX, t.clientY);
   }
 
   function handleWheel(e: WheelEvent) {
@@ -247,6 +255,94 @@
     window.addEventListener("mouseup", onUp);
   }
 
+  // ─── Touch: drag a point ──────────────────────────────────────────────
+
+  function handlePointTouchStart(e: TouchEvent, index: number) {
+    if (e.touches.length !== 1) return;
+    e.preventDefault();
+    e.stopPropagation();
+    editorState.beginDrag(index);
+
+    const point = editorState.points[index];
+    if (!point) return;
+    const origin = { dx: point.dx, dy: point.dy };
+    dragOrigin = origin;
+    constraintAxis = null;
+
+    const firstTouch = e.touches[0];
+    if (!firstTouch) return;
+    const touchOrigin = svgPointFromTouch(firstTouch);
+
+    const onTouchMove = (moveEvent: TouchEvent) => {
+      if (moveEvent.touches.length !== 1) return;
+      moveEvent.preventDefault();
+      const moveTouch = moveEvent.touches[0];
+      if (!moveTouch) return;
+      const coords = svgPointFromTouch(moveTouch);
+      if (!coords || !touchOrigin) return;
+      const moveDx = coords.dx - touchOrigin.dx;
+      const moveDy = coords.dy - touchOrigin.dy;
+      editorState.updatePointPosition(index, origin.dx + moveDx, origin.dy + moveDy);
+    };
+
+    const onTouchEnd = () => {
+      editorState.endDrag();
+      dragOrigin = null;
+      constraintAxis = null;
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+      window.removeEventListener("touchcancel", onTouchEnd);
+    };
+
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
+    window.addEventListener("touchend", onTouchEnd);
+    window.addEventListener("touchcancel", onTouchEnd);
+  }
+
+  // ─── Touch: tap canvas to add, two-finger pan ──────────────────────
+
+  function handleCanvasTouchStart(e: TouchEvent) {
+    if (e.touches.length === 2) {
+      // Two-finger pan
+      e.preventDefault();
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      if (!t1 || !t2) return;
+      const midX = (t1.clientX + t2.clientX) / 2;
+      const midY = (t1.clientY + t2.clientY) / 2;
+      isPanning = true;
+      panStart = { x: midX, y: midY, panX, panY };
+
+      const onPanMove = (moveEvent: TouchEvent) => {
+        if (moveEvent.touches.length < 2 || !panStart || !svgEl) return;
+        moveEvent.preventDefault();
+        const mt1 = moveEvent.touches[0];
+        const mt2 = moveEvent.touches[1];
+        if (!mt1 || !mt2) return;
+        const newMidX = (mt1.clientX + mt2.clientX) / 2;
+        const newMidY = (mt1.clientY + mt2.clientY) / 2;
+        const rect = svgEl.getBoundingClientRect();
+        const scaleX = viewBoxWidth / rect.width;
+        const scaleY = viewBoxHeight / rect.height;
+        panX = panStart.panX + (newMidX - panStart.x) * scaleX;
+        panY = panStart.panY + (newMidY - panStart.y) * scaleY;
+      };
+
+      const onPanEnd = () => {
+        isPanning = false;
+        panStart = null;
+        window.removeEventListener("touchmove", onPanMove);
+        window.removeEventListener("touchend", onPanEnd);
+        window.removeEventListener("touchcancel", onPanEnd);
+      };
+
+      window.addEventListener("touchmove", onPanMove, { passive: false });
+      window.addEventListener("touchend", onPanEnd);
+      window.addEventListener("touchcancel", onPanEnd);
+    }
+    // Single-finger tap to add is handled via onclick (fires after touchend)
+  }
+
   function handleCanvasMouseMove(e: MouseEvent) {
     const coords = svgPointFromEvent(e);
     hoverCoords = coords;
@@ -342,6 +438,7 @@
     onmousemove={handleCanvasMouseMove}
     onmouseleave={handleCanvasMouseLeave}
     onwheel={handleWheel}
+    ontouchstart={handleCanvasTouchStart}
   >
     <!-- Background grid -->
     <defs>
@@ -378,6 +475,7 @@
         class:selected={isSelected}
         transform="translate({cx}, {cy})"
         onmousedown={(e) => handlePointMouseDown(e, i)}
+        ontouchstart={(e) => handlePointTouchStart(e, i)}
         onclick={(e) => { e.stopPropagation(); editorState.selectedPointIndex = i; }}
         onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); editorState.selectedPointIndex = i; } }}
         role="button"
