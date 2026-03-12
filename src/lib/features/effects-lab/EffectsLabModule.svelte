@@ -77,11 +77,6 @@
     activeMode = mode;
     activateMode(mode);
     try { sessionStorage.setItem(MODE_KEY, mode); } catch { /* ignore */ }
-    // If switching to a mode without point editor, fall back to tuning
-    const desc = getEffectDescriptor(mode);
-    if (!desc.hasPointEditor && activeTab === "points") {
-      setTab("tuning");
-    }
   }
 
   // Clean up when the entire module unmounts (navigating away from Effects Lab)
@@ -98,7 +93,7 @@
   let PointEditorComponent = $state<any>(null);
 
   $effect(() => {
-    if (descriptor.hasPointEditor && activeTab === "points" && !PointEditorComponent) {
+    if (activeTab === "points" && !PointEditorComponent) {
       import("./components/EffectPointEditorTab.svelte").then((mod) => {
         PointEditorComponent = mod.default;
       });
@@ -128,19 +123,17 @@
         <i class="fas fa-sliders-h" aria-hidden="true"></i>
         Tuning
       </button>
-      {#if descriptor.hasPointEditor}
-        <button
-          role="tab"
-          class="tab"
-          class:active={activeTab === "points"}
-          aria-selected={activeTab === "points"}
-          style="--tab-color: {descriptor.accentColor}"
-          onclick={() => setTab("points")}
-        >
-          <i class="fas fa-crosshairs" aria-hidden="true"></i>
-          {descriptor.label} Points
-        </button>
-      {/if}
+      <button
+        role="tab"
+        class="tab"
+        class:active={activeTab === "points"}
+        aria-selected={activeTab === "points"}
+        style="--tab-color: var(--theme-accent, #8b5cf6)"
+        onclick={() => setTab("points")}
+      >
+        <i class="fas fa-crosshairs" aria-hidden="true"></i>
+        Tip Points
+      </button>
     </div>
   </header>
 
@@ -148,9 +141,9 @@
     <div class="tuning-host" class:hidden={activeTab !== "tuning"}>
       <EffectsLabPlaybackHost {activeMode} onModeChange={setMode} />
     </div>
-    {#if activeTab === "points" && descriptor.hasPointEditor}
+    {#if activeTab === "points"}
       {#if PointEditorComponent}
-        <PointEditorComponent {descriptor} />
+        <PointEditorComponent />
       {:else}
         <div class="loading">Loading...</div>
       {/if}

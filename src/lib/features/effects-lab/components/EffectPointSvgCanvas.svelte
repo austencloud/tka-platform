@@ -1,22 +1,20 @@
 <!--
   EffectPointSvgCanvas.svelte
 
-  Interactive SVG viewer: renders the prop shape, displays effect point
+  Interactive SVG viewer: renders the prop shape, displays tip point
   markers, supports click-to-add and drag-to-reposition.
-  Shared across all effect types (fire, LED, etc.) via EffectDescriptor.
+  Shared across all effects — edits the unified tip point registry.
 -->
 <script lang="ts">
   import { onMount } from "svelte";
   import { PROP_DIMENSIONS, DEFAULT_PROP_DIMENSIONS, type PropDimensions } from "$lib/shared/animation-engine/services/contracts/IPropTextureLoader";
-  import type { EffectDescriptor } from "../domain/EffectDescriptor";
   import type { EffectPointEditorState } from "../state/effect-point-editor-state.svelte";
 
   interface Props {
     editorState: EffectPointEditorState;
-    descriptor: EffectDescriptor;
   }
 
-  const { editorState, descriptor }: Props = $props();
+  const { editorState }: Props = $props();
 
   let svgEl: SVGSVGElement | undefined = $state();
   let propShapeGroup: SVGGElement | undefined = $state();
@@ -328,7 +326,7 @@
   role="application"
   onkeydown={handleKeyDown}
   onkeyup={handleKeyUp}
-  style="--effect-accent: {descriptor.accentColor}; --effect-accent-border: {descriptor.accentColorBorder}"
+  style="--effect-accent: var(--theme-accent, #8b5cf6); --effect-accent-border: rgba(139, 92, 246, 0.3)"
 >
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
   <svg

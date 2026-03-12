@@ -1,6 +1,7 @@
 import type { IEffectPointOverrideProvider } from "../services/contracts/IEffectPointOverrideProvider";
 import type { IEffectPointsPersister } from "../services/contracts/IEffectPointsPersister";
-import type { EffectDescriptor } from "../domain/EffectDescriptor";
+import type { TipPoint } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
+import { getTipPoints } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
 
 const MAX_UNDO_DEPTH = 20;
 const SAVE_INDICATOR_DURATION = 1200;
@@ -42,10 +43,9 @@ export class EffectPointEditorState {
 
 	constructor(
 		provider: IEffectPointOverrideProvider,
-		private descriptor: EffectDescriptor,
 		persister?: IEffectPointsPersister,
 	) {
-		this.storageKey = `effects-lab-selected-prop-${descriptor.id}`;
+		this.storageKey = "effects-lab-selected-prop";
 		this.provider = provider;
 		const saved = this.loadSelectedPropType();
 		if (saved) this.selectedPropType = saved;
@@ -95,7 +95,7 @@ export class EffectPointEditorState {
 
 	addPoint(dx: number, dy: number): void {
 		this.pushUndo("Add point");
-		const newPoint = this.descriptor.createPoint(dx, dy);
+		const newPoint: TipPoint = { dx, dy };
 		this.points = [...this.points, newPoint];
 		this.selectedPointIndex = this.points.length - 1;
 		this.autoSave();
@@ -170,7 +170,7 @@ export class EffectPointEditorState {
 			this.showActionFeedback("Reset to your default");
 		} else {
 			this.points = deepCopy(
-				this.descriptor.getDefaultPoints(this.selectedPropType),
+				getTipPoints(this.selectedPropType).points,
 			);
 			this.showActionFeedback("Reset to system defaults");
 		}
@@ -223,7 +223,7 @@ export class EffectPointEditorState {
 			this.points = deepCopy(override.points);
 		} else {
 			this.points = deepCopy(
-				this.descriptor.getDefaultPoints(this.selectedPropType),
+				getTipPoints(this.selectedPropType).points,
 			);
 		}
 	}

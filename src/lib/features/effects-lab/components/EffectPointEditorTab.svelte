@@ -3,7 +3,7 @@
 
   Orchestrator: composes EffectPropTypeSelector + EffectPointSvgCanvas + EffectPointListPanel.
   Creates and manages the editor state, wires keyboard shortcuts.
-  Accepts an EffectDescriptor to parameterize for fire/LED/future effects.
+  Edits unified tip points shared by all effects.
 -->
 <script lang="ts">
 	import { onMount, onDestroy } from "svelte";
@@ -11,19 +11,13 @@
 	import { EffectPointEditorState } from "../state/effect-point-editor-state.svelte";
 	import type { IEffectPointOverrideProvider } from "../services/contracts/IEffectPointOverrideProvider";
 	import type { IEffectPointsPersister } from "../services/contracts/IEffectPointsPersister";
-	import type { EffectDescriptor } from "../domain/EffectDescriptor";
 	import EffectPropTypeSelector from "./EffectPropTypeSelector.svelte";
 	import EffectPointSvgCanvas from "./EffectPointSvgCanvas.svelte";
 	import EffectPointListPanel from "./EffectPointListPanel.svelte";
 
-	interface Props {
-		descriptor: EffectDescriptor;
-	}
-	let { descriptor }: Props = $props();
-
 	const provider = container.items.tipPointOverrideProvider as IEffectPointOverrideProvider;
 	const persister = container.items.effectPointsPersister as IEffectPointsPersister;
-	const editorState = new EffectPointEditorState(provider, descriptor, persister);
+	const editorState = new EffectPointEditorState(provider, persister);
 
 	function handleKeyDown(e: KeyboardEvent) {
 		if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
@@ -53,12 +47,12 @@
 </script>
 
 <div class="editor-tab">
-	<EffectPropTypeSelector {editorState} {descriptor} />
+	<EffectPropTypeSelector {editorState} />
 
 	<div class="editor-content">
-		<EffectPointSvgCanvas {editorState} {descriptor} />
+		<EffectPointSvgCanvas {editorState} />
 		<div class="list-panel-wrapper">
-			<EffectPointListPanel {editorState} {descriptor} />
+			<EffectPointListPanel {editorState} />
 		</div>
 	</div>
 </div>

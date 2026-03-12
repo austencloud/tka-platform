@@ -2,20 +2,18 @@
   EffectPointListPanel.svelte
 
   Point list with delete buttons, and auto-saved actions
-  (set default, reset, copy, import). Adapts to any effect
-  type via EffectDescriptor.
+  (set default, reset, copy, import). Edits unified tip points
+  shared by all effects.
 -->
 <script lang="ts">
   import { onDestroy } from "svelte";
-  import type { EffectDescriptor } from "../domain/EffectDescriptor";
   import type { EffectPointEditorState } from "../state/effect-point-editor-state.svelte";
 
   interface Props {
     editorState: EffectPointEditorState;
-    descriptor: EffectDescriptor;
   }
 
-  const { editorState, descriptor }: Props = $props();
+  const { editorState }: Props = $props();
 
   let showImport = $state(false);
   let importText = $state("");
@@ -67,7 +65,7 @@
 
 <div
   class="list-panel themed-scrollbar"
-  style="--effect-accent: {descriptor.accentColor}; --effect-accent-mid: {descriptor.accentColorMid}; --effect-accent-border: {descriptor.accentColorBorder}; --effect-accent-dim: color-mix(in srgb, {descriptor.accentColor} 8%, transparent)"
+  style="--effect-accent: var(--theme-accent, #8b5cf6); --effect-accent-mid: rgba(139, 92, 246, 0.15); --effect-accent-border: rgba(139, 92, 246, 0.3); --effect-accent-dim: rgba(139, 92, 246, 0.08)"
 >
   <!-- Point list -->
   <div class="section">
