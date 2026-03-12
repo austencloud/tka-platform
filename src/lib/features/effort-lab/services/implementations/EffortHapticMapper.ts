@@ -66,10 +66,8 @@ export class EffortHapticMapper implements IEffortHapticMapper {
 				const freq = params?.frequency ?? 1.0;
 				return Math.round(2 + freq);
 			}
-			case "bounce": {
-				const bounces = params?.bounces ?? 3;
-				return bounces;
-			}
+			case "bounce":
+				return 3;
 			case "anticipation":
 				return 2;
 			default:

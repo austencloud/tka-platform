@@ -58,7 +58,7 @@ function glide(t: number, params?: EffortParams): number {
 }
 
 function dab(t: number, params?: EffortParams): number {
-	return applyLabanEasing(
+	return frontLoadedLabanEasing(
 		t,
 		resolve("dab", "weight", params),
 		resolve("dab", "time", params)
@@ -148,49 +148,29 @@ function elastic(t: number, params?: EffortParams): number {
 }
 
 /**
- * Bounce ease-out: parabolic arcs of diminishing height.
- * Uses the classic bounce algorithm scaled by bounce count.
+ * Bounce ease-out: the classic CSS bounce algorithm.
+ * Four parabolic arcs of decreasing height, like a ball settling.
+ * No parameters — the standard curve already feels right.
  */
-function bounce(t: number, params?: EffortParams): number {
+function bounce(t: number, _params?: EffortParams): number {
 	if (t <= 0) return 0;
 	if (t >= 1) return 1;
 
-	const bounces = resolve("bounce", "bounces", params);
-
-	// Standard bounce easing adapted for variable bounce count.
-	// The multiplier controls how quickly bounces decay.
 	const n1 = 7.5625;
 	const d1 = 2.75;
 
-	// Scale the number of bounces relative to 3 (the standard).
-	// More bounces = compress the time domain.
-	const scale = bounces / 3;
-	const ts = t; // Already in [0,1]
-
-	// Use standard bounce-out algorithm
-	let result: number;
-	if (ts < 1 / d1) {
-		result = n1 * ts * ts;
-	} else if (ts < 2 / d1) {
-		const adj = ts - 1.5 / d1;
-		result = n1 * adj * adj + 0.75;
-	} else if (ts < 2.5 / d1) {
-		const adj = ts - 2.25 / d1;
-		result = n1 * adj * adj + 0.9375;
+	if (t < 1 / d1) {
+		return n1 * t * t;
+	} else if (t < 2 / d1) {
+		const adj = t - 1.5 / d1;
+		return n1 * adj * adj + 0.75;
+	} else if (t < 2.5 / d1) {
+		const adj = t - 2.25 / d1;
+		return n1 * adj * adj + 0.9375;
 	} else {
-		const adj = ts - 2.625 / d1;
-		result = n1 * adj * adj + 0.984375;
+		const adj = t - 2.625 / d1;
+		return n1 * adj * adj + 0.984375;
 	}
-
-	// For non-default bounce counts, blend with a power curve
-	// to keep the overall shape while adjusting intensity.
-	if (Math.abs(scale - 1) > 0.01) {
-		const power = 1 / scale;
-		const simple = Math.pow(t, power);
-		result = result * 0.7 + simple * 0.3;
-	}
-
-	return Math.min(result, 1);
 }
 
 /**

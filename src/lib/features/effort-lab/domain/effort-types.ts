@@ -97,9 +97,7 @@ export const EFFORTS: readonly EffortDescriptor[] = [
     label: "Bounce",
     subtitle: "percussive rebounds",
     color: "#ec4899",
-    params: [
-      { key: "bounces", label: "Bounces", min: 2, max: 6, step: 1, defaultValue: 3 },
-    ],
+    params: [],
   },
   {
     id: "anticipation",
@@ -107,7 +105,7 @@ export const EFFORTS: readonly EffortDescriptor[] = [
     subtitle: "wind-up, release",
     color: "#6366f1",
     params: [
-      { key: "pullback", label: "Pullback", min: 0.1, max: 0.5, step: 0.05, defaultValue: 0.2 },
+      { key: "pullback", label: "Pullback", min: 0.1, max: 0.5, step: 0.05, defaultValue: 0.3 },
     ],
   },
 ] as const;

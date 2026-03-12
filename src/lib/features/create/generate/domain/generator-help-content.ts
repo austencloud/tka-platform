@@ -44,10 +44,10 @@ export const generatorHelpContent: GeneratorHelpItem[] = [
     shortDesc: "How complex the turns are",
     fullDesc:
       "Controls how many additional turns your props can do during each step.",
-    images: [
-      { src: "/images/level_images/level_1.png", label: "Level 1 — No turns" },
-      { src: "/images/level_images/level_2.png", label: "Level 2 — Whole turns" },
-      { src: "/images/level_images/level_3.png", label: "Level 3 — All turns + float" },
+    bullets: [
+      "Level 1: No additional turns — just hand paths",
+      "Level 2: Whole turns added",
+      "Level 3: All turns including float",
     ],
     tip: "Start at Level 1 to learn the foundation, then progress to Level 3 for full variety.",
   },
@@ -116,11 +116,9 @@ export const generatorHelpContent: GeneratorHelpItem[] = [
     fullDesc:
       "Limits the maximum number of additional turns per step. Lower intensity means gentler, simpler movements.",
     bullets: [
-      "Minimal (≤0.5): Quarter turns max - very gentle",
-      "Light (≤1.0): Up to half turns (180°)",
-      "Moderate (≤1.5): Up to three quarter turns (270°)",
-      "Strong (≤2.0): Up to full rotations (360°)",
-      "Intense (≤2.5+): Maximum spinning",
+      "Lower = gentler, simpler movements",
+      "Higher = more spinning, more dynamic",
+      "The card color shifts green→red to match",
     ],
     tip: "The color gradient (green→red) indicates intensity visually.",
   },
