@@ -17,6 +17,8 @@ import type {
   PropEndpointResult,
   PropEndpointPair,
 } from "../contracts/IPropPositionCalculator";
+import { getTrailPointConfig, type TrailPointSource } from "../../domain/types/TrailPointTypes";
+import { getTipPoints } from "../../domain/types/PropTipPoints";
 
 /** Viewbox size for coordinate calculations */
 const VIEWBOX_SIZE = 950;
@@ -41,6 +43,14 @@ export class PropPositionCalculator implements IPropPositionCalculator {
       return center;
     }
 
+    // Check for trail point assignment override
+    const trailConfig = getTrailPointConfig(propType);
+    if (trailConfig) {
+      const source = endType === 0 ? trailConfig.left : trailConfig.right;
+      return this.resolveTrailEndpoint(source, propType, config, center);
+    }
+
+    // Geometric fallback: offset from center along rotation axis
     const gridScaleFactor = config.canvasSize / VIEWBOX_SIZE;
     const staffHalfWidth = (config.propDimensions.width / 2) * gridScaleFactor;
     const staffEndOffset = endType === 1 ? staffHalfWidth : -staffHalfWidth;
@@ -66,6 +76,16 @@ export class PropPositionCalculator implements IPropPositionCalculator {
       };
     }
 
+    // Check for trail point assignment override
+    const trailConfig = getTrailPointConfig(propType);
+    if (trailConfig) {
+      return {
+        left: this.resolveTrailEndpoint(trailConfig.left, propType, config, center),
+        right: this.resolveTrailEndpoint(trailConfig.right, propType, config, center),
+      };
+    }
+
+    // Geometric fallback
     const gridScaleFactor = config.canvasSize / VIEWBOX_SIZE;
     const staffHalfWidth = (config.propDimensions.width / 2) * gridScaleFactor;
 
@@ -109,6 +129,57 @@ export class PropPositionCalculator implements IPropPositionCalculator {
     return {
       x: centerX + Math.cos(prop.centerPathAngle) * scaledHalfwayRadius * inwardFactor,
       y: centerY + Math.sin(prop.centerPathAngle) * scaledHalfwayRadius * inwardFactor,
+    };
+  }
+
+  /**
+   * Resolve a trail point source to an offset from center.
+   * Returns null for "none" sources (trail disabled for this end).
+   */
+  private resolveTrailSource(
+    source: TrailPointSource,
+    propType: string | null | undefined,
+    config: PropEndpointConfig
+  ): { offsetX: number; offsetY: number } | null {
+    if (source.type === "none") return null;
+
+    const gridScaleFactor = config.canvasSize / VIEWBOX_SIZE;
+
+    if (source.type === "tip") {
+      const tipConfig = getTipPoints(propType);
+      const tipPoint = tipConfig.points[source.index];
+      if (!tipPoint) return null;
+      return {
+        offsetX: tipPoint.dx * gridScaleFactor,
+        offsetY: tipPoint.dy * gridScaleFactor,
+      };
+    }
+
+    if (source.type === "custom") {
+      return {
+        offsetX: source.dx * gridScaleFactor,
+        offsetY: source.dy * gridScaleFactor,
+      };
+    }
+
+    return null;
+  }
+
+  /**
+   * Resolve a trail endpoint to a pixel position.
+   * For "none" sources, returns center (trail renderer should skip).
+   */
+  private resolveTrailEndpoint(
+    source: TrailPointSource,
+    propType: string | null | undefined,
+    config: PropEndpointConfig,
+    center: PropEndpointResult
+  ): PropEndpointResult {
+    const resolved = this.resolveTrailSource(source, propType, config);
+    if (!resolved) return { ...center };
+    return {
+      x: center.x + resolved.offsetX,
+      y: center.y + resolved.offsetY,
     };
   }
 }
