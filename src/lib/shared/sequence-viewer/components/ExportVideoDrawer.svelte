@@ -211,6 +211,7 @@
     {:else}
       <!-- Inline settings (collapsible, no overlay) -->
       {#if settingsOpen}
+        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
         <div
           class="inline-settings"
           role="region"
@@ -412,6 +413,7 @@
     role="region"
     aria-label="Video export settings"
   >
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="panel-body" onkeydown={preventSpaceActivation}>
       {#if onPlaybackToggle && onBpmChange}
         <div class="playback-row">
@@ -715,14 +717,14 @@
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     overflow-y: auto;
-    max-height: 50vh;
+    max-height: 35vh;
   }
 
   .inline-settings-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 16px 6px;
+    padding: 6px 12px 4px;
   }
 
   .inline-settings-title {
@@ -757,18 +759,33 @@
   .inline-settings-body {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 4px 16px 12px;
+    gap: 8px;
+    padding: 2px 12px 8px;
   }
 
   .inline-settings-footer {
-    padding: 0 16px 10px;
+    padding: 0 12px 6px;
     text-align: center;
   }
 
   .bpm-inline {
     flex: 1;
     min-width: 0;
+  }
+
+  /* Compact shared controls within mobile inline settings */
+  .inline-settings .setting-row {
+    gap: 8px;
+  }
+  .inline-settings .setting-label {
+    min-width: 56px;
+  }
+  .inline-settings .chip-group {
+    gap: 6px;
+  }
+  .inline-settings .chip {
+    min-height: 34px;
+    padding: 4px 10px;
   }
 
   /* ============================================================

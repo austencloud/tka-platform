@@ -100,6 +100,7 @@ Replaces the old GenerationModeCard (Freeform/Spell toggle).
   }
 </script>
 
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
   class="word-input-card"
   class:has-word={hasWord}

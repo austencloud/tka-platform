@@ -177,6 +177,7 @@
             class="toggle-btn"
             class:active={showFigure}
             onclick={() => showFigure = !showFigure}
+            aria-label={showFigure ? "Hide figure" : "Show figure"}
           >
             <i class="fas fa-person" aria-hidden="true"></i>
           </button>
@@ -189,7 +190,7 @@
         <div class="card-header">
           <span class="dot blue-dot"></span>
           <span>Blue</span>
-          <button class="vis-btn" onclick={() => blueVisible = !blueVisible}>
+          <button class="vis-btn" onclick={() => blueVisible = !blueVisible} aria-label={blueVisible ? "Hide blue prop" : "Show blue prop"}>
             <i class="fas {blueVisible ? 'fa-eye' : 'fa-eye-slash'}" aria-hidden="true"></i>
           </button>
         </div>
@@ -203,6 +204,7 @@
                 <circle cx="50" cy="50" r="38" class="grid-circle" />
                 <circle cx="50" cy="50" r="3" class="center-dot" />
                 {#each points as point}
+                  <!-- svelte-ignore a11y_click_events_have_key_events -->
                   <g
                     class="point-group"
                     class:selected={blueLocation === point.loc}
@@ -243,11 +245,11 @@
             <div class="stepper">
               <span class="field-label">Turns</span>
               <div class="stepper-controls">
-                <button class="step-btn blue-hover" onclick={() => blueTurns = Math.max(0, blueTurns - 0.5)} disabled={blueTurns <= 0}>
+                <button class="step-btn blue-hover" onclick={() => blueTurns = Math.max(0, blueTurns - 0.5)} disabled={blueTurns <= 0} aria-label="Decrease blue turns">
                   <i class="fas fa-minus" aria-hidden="true"></i>
                 </button>
                 <span class="step-value">{formatTurns(blueTurns)}</span>
-                <button class="step-btn blue-hover" onclick={() => blueTurns = Math.min(4, blueTurns + 0.5)} disabled={blueTurns >= 4}>
+                <button class="step-btn blue-hover" onclick={() => blueTurns = Math.min(4, blueTurns + 0.5)} disabled={blueTurns >= 4} aria-label="Increase blue turns">
                   <i class="fas fa-plus" aria-hidden="true"></i>
                 </button>
               </div>
@@ -268,7 +270,7 @@
         <div class="card-header">
           <span class="dot red-dot"></span>
           <span>Red</span>
-          <button class="vis-btn" onclick={() => redVisible = !redVisible}>
+          <button class="vis-btn" onclick={() => redVisible = !redVisible} aria-label={redVisible ? "Hide red prop" : "Show red prop"}>
             <i class="fas {redVisible ? 'fa-eye' : 'fa-eye-slash'}" aria-hidden="true"></i>
           </button>
         </div>
@@ -282,6 +284,7 @@
                 <circle cx="50" cy="50" r="38" class="grid-circle" />
                 <circle cx="50" cy="50" r="3" class="center-dot" />
                 {#each points as point}
+                  <!-- svelte-ignore a11y_click_events_have_key_events -->
                   <g
                     class="point-group"
                     class:selected={redLocation === point.loc}
@@ -322,11 +325,11 @@
             <div class="stepper">
               <span class="field-label">Turns</span>
               <div class="stepper-controls">
-                <button class="step-btn red-hover" onclick={() => redTurns = Math.max(0, redTurns - 0.5)} disabled={redTurns <= 0}>
+                <button class="step-btn red-hover" onclick={() => redTurns = Math.max(0, redTurns - 0.5)} disabled={redTurns <= 0} aria-label="Decrease red turns">
                   <i class="fas fa-minus" aria-hidden="true"></i>
                 </button>
                 <span class="step-value">{formatTurns(redTurns)}</span>
-                <button class="step-btn red-hover" onclick={() => redTurns = Math.min(4, redTurns + 0.5)} disabled={redTurns >= 4}>
+                <button class="step-btn red-hover" onclick={() => redTurns = Math.min(4, redTurns + 0.5)} disabled={redTurns >= 4} aria-label="Increase red turns">
                   <i class="fas fa-plus" aria-hidden="true"></i>
                 </button>
               </div>

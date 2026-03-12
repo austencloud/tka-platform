@@ -152,10 +152,6 @@
 		color: var(--theme-text, rgba(255, 255, 255, 0.9));
 	}
 
-	.warning-text strong {
-		color: #ef4444;
-	}
-
 	.disclaimer {
 		margin: 0;
 		font-size: var(--font-size-compact, 12px);

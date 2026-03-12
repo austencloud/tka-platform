@@ -493,6 +493,30 @@ service cloud.firestore {
       }
 
       // -------------------------------------------------------------------------
+      // VOICE SESSIONS (Voice Practice Data)
+      // -------------------------------------------------------------------------
+      match /voiceSessions/{sessionId} {
+        allow read, create, update: if isOwner(userId);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      // -------------------------------------------------------------------------
+      // TURN PATTERNS (Sequence Turn Pattern Templates)
+      // -------------------------------------------------------------------------
+      match /turnPatterns/{patternId} {
+        allow read, create, update: if isOwner(userId);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      // -------------------------------------------------------------------------
+      // ROTATION DIRECTION PATTERNS (Sequence Rotation Direction Templates)
+      // -------------------------------------------------------------------------
+      match /rotationDirectionPatterns/{patternId} {
+        allow read, create, update: if isOwner(userId);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      // -------------------------------------------------------------------------
       // FCM PUSH TOKENS (Device registration for push notifications)
       // -------------------------------------------------------------------------
       match /fcmTokens/{tokenId} {
@@ -615,10 +639,10 @@ service cloud.firestore {
 
         // Updating messages:
         // - Sender can update any field (edit content, delete, etc.)
-        // - Any participant can update reactions (to add/remove their reaction)
+        // - Any participant can update reactions, read status
         allow update: if isConversationParticipant(conversationId)
           && (resource.data.senderId == request.auth.uid
-              || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions']));
+              || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions', 'readBy', 'readAt']));
 
         // No hard deleting messages (soft delete via isDeleted flag)
         allow delete: if false;

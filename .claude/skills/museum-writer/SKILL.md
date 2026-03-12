@@ -7,7 +7,7 @@ description: Use when writing museum exhibit text, K's narration scripts, Order 
 
 ## Overview
 
-Writing craft skill for The Kinetic Archive. Covers character voices, document types, tone calibration, joke discipline, and the verbal tic system. This is the writers' room — not lore decisions (use `/museumlore`) or project tracking (use `/museum`).
+Writing craft skill for The Kinetic Archive. Covers character voices, document types, tone calibration, joke discipline, and the verbal tic system. This is the writers' room — not lore decisions (use `/museum-lore`) or project tracking (use `/museum`).
 
 **Read before writing any museum prose.** Load voice-guide.md for detailed character sheets.
 
@@ -172,6 +172,6 @@ These documents represent the quality bar. New writing gets measured against the
 
 ## Integration with Other Skills
 
-- **`/museumlore`** — Lore decisions and story bible sync. Use BEFORE writing to confirm canon.
+- **`/museum-lore`** — Lore decisions and story bible sync. Use BEFORE writing to confirm canon.
 - **`/museum`** — Project tracking. Log writing tasks with `writing` tag.
 - **`/ai-bust`** — Run on museum prose to catch AI-isms. Museum text must pass the fire jam test.

@@ -425,7 +425,6 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .toggle-btn,
     .pattern-card,
     .brightness-btn,
     .color-mode-btn {

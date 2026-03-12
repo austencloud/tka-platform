@@ -1,5 +1,5 @@
 ---
-name: museumlore
+name: museum-lore
 description: Use when discussing, analyzing, or brainstorming museum lore and narrative elements for The Kinetic Archive, or when conversation focuses on worldbuilding, story consistency, or narrative design
 ---
 
@@ -11,7 +11,7 @@ Lore-focused discussion mode for The Kinetic Archive. Writers' room energy. This
 
 **When to use this vs `/museum`:**
 - `/museum` = project management, department briefings, all 7 departments, all tracker commands
-- `/museumlore` = narrative discussion, story bible sync, lore sessions with strict close protocol
+- `/museum-lore` = narrative discussion, story bible sync, lore sessions with strict close protocol
 
 ## The Two-Layer Rule
 
@@ -97,7 +97,7 @@ This step is **required** before ending any lore session. It prevents orphaned p
 - NEVER capture without explicit user approval. Present -> ask -> yes -> THEN capture
 - Proposals expire at session close. No zombies.
 - Tag every capture with `lore`
-- Always close sessions via `/museumlore close`
+- Always close sessions via `/museum-lore close`
 - Read the story bible FIRST to avoid contradicting resolved decisions
 - Run `museum cascade <id>` on major changes
 - Be specific about weaknesses — what breaks, what contradicts, what's untested
