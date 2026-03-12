@@ -21,8 +21,8 @@ function parseCoord(coordString: string): { x: number; y: number } {
 	return { x: parseFloat(xStr!), y: parseFloat(yStr!) };
 }
 
-/** SVG-unit radius for hit targets. At typical render sizes, this maps to ~48px (WCAG AAA). */
-const HIT_TARGET_RADIUS = 45;
+/** SVG-unit radius for hit targets. At typical render sizes, this maps to ~64px (WCAG AAA). */
+const HIT_TARGET_RADIUS = 60;
 
 const DIAMOND_TARGETS: GridHitTarget[] = [
 	{ location: GridLocation.NORTH, ...parseCoord("(475.0, 331.9)"), label: "North" },

@@ -12,6 +12,8 @@ import {
   TWO_PI,
 } from "$lib/features/compose/shared/domain/math-constants";
 import type { AnimationParams, ISvgPropAnimator } from "../contracts/ISvgPropAnimator";
+import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+import { applyEffort } from "$lib/features/effort-lab/domain/effort-easing-unified";
 
 // 950x950 SVG coordinate space
 const CENTER = 475;
@@ -51,11 +53,10 @@ function lerpAngle(a: number, b: number, t: number): number {
   return normPos(a + d * t);
 }
 
-/** Cubic ease-in-out */
-function easeInOut(t: number): number {
-  return t < 0.5
-    ? 4 * t * t * t
-    : 1 - Math.pow(-2 * t + 2, 3) / 2;
+/** Apply the user's chosen effort easing, defaulting to linear */
+function applyEasing(t: number): number {
+  const preset = getAnimationVisibilityManager().getEffortPreset();
+  return applyEffort(preset, t);
 }
 
 /** Determine if motion is a dash (opposite points) vs shift (adjacent) vs static (same) */
@@ -137,7 +138,7 @@ export class SvgPropAnimator implements ISvgPropAnimator {
       const tick = (now: number) => {
         const elapsed = now - startTime;
         const rawProgress = Math.min(elapsed / duration, 1);
-        const t = easeInOut(rawProgress);
+        const t = applyEasing(rawProgress);
 
         // Interpolate center position
         let displayAngle: number;

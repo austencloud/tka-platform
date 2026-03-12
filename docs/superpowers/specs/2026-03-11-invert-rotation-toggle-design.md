@@ -15,7 +15,7 @@ The step editor currently shows two separate CW/CCW buttons per hand for rotatio
 - Label: always "Invert"
 - Icon: shows **current** direction — `fa-rotate-right` when CW, `fa-rotate-left` when CCW
 - Tap: flips to the opposite direction
-- Disabled when `showRotation` is false (float motions / 0 turns)
+- Disabled when `showRotation` is false (controlled by parent — covers float motions and any other case where rotation isn't applicable). The `showRotation` prop is the single source of truth for disable state; no internal `turns === "fl"` guard needed.
 
 ### Layout
 
@@ -31,7 +31,7 @@ The step editor currently shows two separate CW/CCW buttons per hand for rotatio
        [ ↻ Invert ]
 ```
 
-Both modes are two rows. The invert button spans a comfortable width since it's the only button in its row.
+Both modes become two rows. Note: compact mode was previously a single row (`[CW] [-] [turns] [+] [CCW]`). This is an intentional layout change — two compact rows with a centered invert button below is cleaner than cramming everything into one line.
 
 ### Interface
 
@@ -40,13 +40,14 @@ The component's `Props` interface is unchanged. `onRotationChange` callback stay
 ```typescript
 function handleInvert(e: MouseEvent) {
   e.stopPropagation();
-  if (turns === "fl") return;
   const opposite = rotationDirection === RotationDirection.CLOCKWISE
     ? RotationDirection.COUNTER_CLOCKWISE
     : RotationDirection.CLOCKWISE;
   onRotationChange(opposite);
 }
 ```
+
+Disable state is handled by the `showRotation` prop on the button's `disabled` attribute, not by an internal guard.
 
 No changes needed in `TurnsEditMode.svelte` or any parent component.
 

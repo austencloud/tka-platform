@@ -1,13 +1,12 @@
 <!--
-  BuilderControls.svelte - Corner cluster overlay for the visual builder
+  BuilderControls.svelte - Context-sensitive overlay controls for the visual builder.
 
-  Three clusters positioned absolutely over the grid:
-  - Top-left: phase instruction + orientation picker
-  - Bottom-left: rotation direction + turn count
-  - Bottom-right: undo, done/new, trash
-
-  Controls are ALWAYS rendered. Never destroyed. Phase changes only affect
-  opacity and pointer-events, so the grid never shifts.
+  Bottom-left trigger (mobile only):
+    - "placing" phase → orientation popover (In/Out/CW/CCW)
+    - "building" phase → turns popover (rotation direction + turn count)
+  Top-left orientation pills shown on desktop only.
+  Action row (Next:Red / Complete / Back / New) below grid on desktop,
+  overlaid bottom-right on mobile.
 -->
 <script lang="ts">
   import {
@@ -19,41 +18,24 @@
 
   let { builderState }: { builderState: VisualBuilderState } = $props();
 
-  const handLabel = $derived(
-    builderState.activeHand === MotionColor.BLUE ? "Blue" : "Red"
-  );
-
   const handColor = $derived(
     builderState.activeHand === MotionColor.BLUE
       ? "var(--prop-blue, #2e8bf0)"
       : "var(--prop-red, #ed1c24)"
   );
 
-  const phaseMessage = $derived.by(() => {
-    switch (builderState.phase) {
-      case "idle": return `Tap start for ${handLabel.toLowerCase()}`;
-      case "placing": return `Tap destination`;
-      case "building":
-      case "animating": return "Tap next point";
-      case "done": return `${handLabel} path set`;
-      case "complete": return "Sequence complete";
-      default: return "";
-    }
-  });
-
-  // Visibility/state derivations — controls never unmount, only dim or hide
   const isAnimating = $derived(builderState.phase === "animating");
-  const isActive = $derived(
-    builderState.phase === "placing" || builderState.phase === "building"
-  );
   const isComplete = $derived(builderState.phase === "complete");
-  const isDonePhase = $derived(builderState.phase === "done");
-  const isIdle = $derived(builderState.phase === "idle");
+  const isPlacing = $derived(builderState.phase === "placing");
+  const isBuilding = $derived(builderState.phase === "building");
+  const isBlueHand = $derived(builderState.activeHand === MotionColor.BLUE);
 
-  const showOrientation = $derived(builderState.phase === "placing");
-  const motionEnabled = $derived(isActive);
-  const motionDimmed = $derived(isAnimating || isIdle || isDonePhase);
-  const motionHidden = $derived(isComplete);
+  // Show action row when there's a relevant action to take
+  const showActions = $derived(
+    (builderState.canFinishHand && !isAnimating) ||
+    (builderState.canGoBack && !isAnimating) ||
+    isComplete
+  );
 
   const ORIENTATIONS = [
     { value: Orientation.IN, label: "In", ariaLabel: "In orientation" },
@@ -62,18 +44,30 @@
     { value: Orientation.COUNTER, label: "CCW", ariaLabel: "Counter-clockwise orientation" },
   ] as const;
 
+  // ── Orientation popover state ──
+  let oriPopoverOpen = $state(false);
+
+  const currentOriLabel = $derived(
+    ORIENTATIONS.find(o => o.value === builderState.currentOrientation)?.label ?? "In"
+  );
+
+  function selectOrientation(ori: Orientation): void {
+    builderState.setOrientation(ori);
+    oriPopoverOpen = false;
+  }
+
+  // ── Turns popover state ──
+  let turnsPopoverOpen = $state(false);
+
   const TURN_OPTIONS = [0, 0.5, 1, 1.5, 2, 2.5, 3] as const;
 
-  function turnAriaLabel(t: number): string {
-    if (t === 0) return "No turns";
-    if (t === 0.5) return "Half turn";
-    if (t === 1) return "1 turn";
-    if (t === 1.5) return "1 and a half turns";
-    if (t === 2) return "2 turns";
-    if (t === 2.5) return "2 and a half turns";
-    if (t === 3) return "3 turns";
-    return `${t} turns`;
-  }
+  const rotLabel = $derived(
+    builderState.rotationDirection === RotationDirection.CLOCKWISE ? "CW" : "CCW"
+  );
+
+  const isFlipped = $derived(
+    builderState.rotationDirection === RotationDirection.COUNTER_CLOCKWISE
+  );
 
   function toggleRotation(): void {
     const next = builderState.rotationDirection === RotationDirection.CLOCKWISE
@@ -82,255 +76,213 @@
     builderState.setRotationDirection(next);
   }
 
-  const rotLabel = $derived(
-    builderState.rotationDirection === RotationDirection.CLOCKWISE ? "CW" : "CCW"
+  function selectTurn(t: number): void {
+    builderState.setTurnCount(t);
+    turnsPopoverOpen = false;
+  }
+
+  function turnAriaLabel(t: number): string {
+    if (t === 0) return "No turns";
+    if (t === 0.5) return "Half turn";
+    return `${t} turn${t > 1 ? "s" : ""}`;
+  }
+
+  const triggerLabel = $derived(
+    `${rotLabel} ${builderState.turnCount}`
   );
 
-  const rotAriaLabel = $derived(
-    builderState.rotationDirection === RotationDirection.CLOCKWISE
-      ? "Rotation direction: Clockwise"
-      : "Rotation direction: Counter-clockwise"
-  );
-
-  const isBlueHand = $derived(builderState.activeHand === MotionColor.BLUE);
-
-  const isFlipped = $derived(
-    builderState.rotationDirection === RotationDirection.COUNTER_CLOCKWISE
-  );
+  // Close any open popover when phase changes
+  $effect(() => {
+    // Read phase to track it
+    const _phase = builderState.phase;
+    oriPopoverOpen = false;
+    turnsPopoverOpen = false;
+  });
 </script>
 
-<div class="controls-overlay" style="--hand-color: {handColor}">
-  <!-- TOP-LEFT: Instruction badge + orientation pills -->
-  <div class="cluster top-left">
-    <div class="instruction-badge" aria-live="polite" aria-atomic="true">
-      <span class="hand-dot" aria-hidden="true"></span>
-      <span class="instruction-text">{phaseMessage}</span>
-    </div>
-
-    <div class="ori-row" class:visible={showOrientation}>
-      <div class="pill-group" role="radiogroup" aria-label="Starting orientation">
-        {#each ORIENTATIONS as ori}
-          <button
-            class="pill"
-            class:active={builderState.currentOrientation === ori.value}
-            role="radio"
-            aria-checked={builderState.currentOrientation === ori.value}
-            aria-label={ori.ariaLabel}
-            disabled={!showOrientation}
-            onclick={() => builderState.setOrientation(ori.value)}
-          >
-            {ori.label}
-          </button>
-        {/each}
-      </div>
+<!-- Grid overlay -->
+<div class="controls-overlay">
+  <!-- Top-left: orientation pills (desktop only) -->
+  <div class="ori-row" class:visible={isPlacing}>
+    <div class="pill-group" role="radiogroup" aria-label="Starting orientation">
+      {#each ORIENTATIONS as ori}
+        <button
+          class="pill"
+          class:active={builderState.currentOrientation === ori.value}
+          role="radio"
+          aria-checked={builderState.currentOrientation === ori.value}
+          aria-label={ori.ariaLabel}
+          disabled={!isPlacing}
+          onclick={() => builderState.setOrientation(ori.value)}
+        >
+          {ori.label}
+        </button>
+      {/each}
     </div>
   </div>
 
-  <!-- BOTTOM-LEFT: Rotation + turns -->
-  <div
-    class="cluster bottom-left"
-    class:dimmed={motionDimmed}
-    class:hidden-cluster={motionHidden}
-  >
-    <div class="motion-card">
-      <button
-        class="rotation-toggle"
-        onclick={toggleRotation}
-        disabled={!motionEnabled}
-        aria-disabled={!motionEnabled}
-        aria-label={rotAriaLabel}
-      >
-        <i class="fas fa-rotate-right" class:flipped={isFlipped} aria-hidden="true"></i>
-        <span class="rot-label">{rotLabel}</span>
-      </button>
+  <!-- Bottom-left: context-sensitive trigger (mobile only) -->
+  <div class="bottom-trigger-area">
+    <!-- Orientation trigger: during placing phase -->
+    {#if isPlacing}
+      <div class="trigger-wrapper visible">
+        <button
+          class="compact-trigger"
+          onclick={() => { oriPopoverOpen = !oriPopoverOpen; }}
+          aria-label="Orientation: {currentOriLabel}"
+          aria-expanded={oriPopoverOpen}
+        >
+          <i class="fas fa-compass" aria-hidden="true"></i>
+          <span class="trigger-text">{currentOriLabel}</span>
+        </button>
 
-      <div class="divider" aria-hidden="true"></div>
+        {#if oriPopoverOpen}
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div
+            class="popover-backdrop"
+            onclick={() => { oriPopoverOpen = false; }}
+            onkeydown={() => {}}
+            role="presentation"
+          ></div>
 
-      <div class="turns-strip" role="radiogroup" aria-label="Turn count">
-        {#each TURN_OPTIONS as t}
-          <button
-            class="turn-pill"
-            class:active={builderState.turnCount === t}
-            role="radio"
-            aria-checked={builderState.turnCount === t}
-            aria-label={turnAriaLabel(t)}
-            disabled={!motionEnabled}
-            aria-disabled={!motionEnabled}
-            onclick={() => builderState.setTurnCount(t)}
-          >
-            {t}
-          </button>
-        {/each}
+          <div class="popover-panel" role="dialog" aria-label="Starting orientation">
+            <div class="popover-pills" role="radiogroup" aria-label="Orientation">
+              {#each ORIENTATIONS as ori}
+                <button
+                  class="popover-pill"
+                  class:active={builderState.currentOrientation === ori.value}
+                  role="radio"
+                  aria-checked={builderState.currentOrientation === ori.value}
+                  aria-label={ori.ariaLabel}
+                  onclick={() => selectOrientation(ori.value)}
+                >
+                  {ori.label}
+                </button>
+              {/each}
+            </div>
+          </div>
+        {/if}
       </div>
-    </div>
+    {/if}
+
+    <!-- Turns trigger: during building phase -->
+    {#if isBuilding}
+      <div class="trigger-wrapper visible">
+        <button
+          class="compact-trigger"
+          onclick={() => { turnsPopoverOpen = !turnsPopoverOpen; }}
+          aria-label="Turn settings: {triggerLabel}"
+          aria-expanded={turnsPopoverOpen}
+        >
+          <i class="fas fa-rotate-right" class:flipped={isFlipped} aria-hidden="true"></i>
+          <span class="trigger-text">{triggerLabel}</span>
+        </button>
+
+        {#if turnsPopoverOpen}
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div
+            class="popover-backdrop"
+            onclick={() => { turnsPopoverOpen = false; }}
+            onkeydown={() => {}}
+            role="presentation"
+          ></div>
+
+          <div class="popover-panel" role="dialog" aria-label="Turn count and rotation direction">
+            <button
+              class="popover-rotation"
+              onclick={toggleRotation}
+              aria-label="Toggle rotation direction"
+            >
+              <i class="fas fa-rotate-right" class:flipped={isFlipped} aria-hidden="true"></i>
+              <span>{rotLabel}</span>
+            </button>
+
+            <div class="popover-divider" aria-hidden="true"></div>
+
+            <div class="popover-pills" role="radiogroup" aria-label="Turn count">
+              {#each TURN_OPTIONS as t}
+                <button
+                  class="popover-pill"
+                  class:active={builderState.turnCount === t}
+                  role="radio"
+                  aria-checked={builderState.turnCount === t}
+                  aria-label={turnAriaLabel(t)}
+                  onclick={() => selectTurn(t)}
+                >
+                  {t}
+                </button>
+              {/each}
+            </div>
+          </div>
+        {/if}
+      </div>
+    {/if}
   </div>
+</div>
 
-  <!-- BOTTOM-RIGHT: Actions -->
-  <div class="cluster bottom-right">
-    <!-- Undo -->
+<!-- Action row: below the grid, full-width -->
+<div class="action-row" class:visible={showActions} style="--hand-color: {handColor}">
+  {#if builderState.canGoBack && !isAnimating}
     <button
-      class="action-icon undo"
-      class:visible={builderState.canUndo && !isAnimating}
-      class:dimmed={isAnimating && builderState.canUndo}
-      onclick={() => builderState.undoStep()}
-      disabled={!builderState.canUndo || isAnimating}
-      aria-disabled={!builderState.canUndo || isAnimating}
-      aria-label="Undo last step"
-    >
-      <i class="fas fa-undo" aria-hidden="true"></i>
-    </button>
-
-    <!-- Back to blue (when on red hand, before placing points) -->
-    <button
-      class="back-btn"
-      class:visible={builderState.canGoBack && !isAnimating}
+      class="action-btn back-btn"
       onclick={() => builderState.goBackToBlue()}
-      disabled={!builderState.canGoBack || isAnimating}
       aria-label="Go back to blue hand"
     >
       <i class="fas fa-chevron-left" aria-hidden="true"></i>
       <span>Back</span>
     </button>
+  {/if}
 
-    <!-- Next: Red Hand (blue hand active) -->
+  {#if builderState.canFinishHand && !isAnimating && isBlueHand}
     <button
-      class="done-btn"
-      class:visible={builderState.canFinishHand && !isAnimating && isBlueHand}
-      class:dimmed={isAnimating && builderState.canFinishHand && isBlueHand}
+      class="action-btn done-btn"
       onclick={() => builderState.finishHand()}
-      disabled={!builderState.canFinishHand || isAnimating}
-      aria-disabled={!builderState.canFinishHand || isAnimating}
       aria-label="Finish blue hand and start red"
     >
       <span>Next: Red</span>
       <i class="fas fa-chevron-right" aria-hidden="true"></i>
     </button>
+  {/if}
 
-    <!-- Complete (red hand active) -->
+  {#if builderState.canFinishHand && !isAnimating && !isBlueHand}
     <button
-      class="done-btn red-done"
-      class:visible={builderState.canFinishHand && !isAnimating && !isBlueHand}
-      class:dimmed={isAnimating && builderState.canFinishHand && !isBlueHand}
+      class="action-btn done-btn red-done"
       onclick={() => builderState.finishHand()}
-      disabled={!builderState.canFinishHand || isAnimating}
-      aria-disabled={!builderState.canFinishHand || isAnimating}
       aria-label="Complete sequence"
     >
       <i class="fas fa-check" aria-hidden="true"></i>
       <span>Complete</span>
     </button>
+  {/if}
 
-    <!-- New Sequence (complete phase) -->
+  {#if isComplete}
     <button
-      class="new-btn"
-      class:visible={isComplete}
+      class="action-btn new-btn"
       onclick={() => builderState.reset()}
-      disabled={!isComplete}
-      aria-disabled={!isComplete}
       aria-label="Start new sequence"
     >
       <i class="fas fa-plus" aria-hidden="true"></i>
       <span>New</span>
     </button>
-
-    <!-- Trash / reset -->
-    <button
-      class="action-icon trash"
-      class:visible={builderState.stepCount > 0 && !isComplete && !isAnimating}
-      class:dimmed={isAnimating && builderState.stepCount > 0}
-      onclick={() => builderState.reset()}
-      disabled={builderState.stepCount === 0 || isComplete || isAnimating}
-      aria-disabled={builderState.stepCount === 0 || isComplete || isAnimating}
-      aria-label="Reset all"
-    >
-      <i class="fas fa-trash-alt" aria-hidden="true"></i>
-    </button>
-  </div>
+  {/if}
 </div>
 
 <style>
-  /* === Overlay container — covers grid, passes clicks through === */
+  /* === Grid overlay === */
   .controls-overlay {
     position: absolute;
     inset: 0;
     pointer-events: none;
     z-index: 10;
-    padding: 12px;
+    padding: 8px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
   }
 
-  /* === Corner clusters === */
-  .cluster {
-    display: flex;
-    pointer-events: none;
-  }
-
-  .cluster.top-left {
-    align-self: flex-start;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .cluster.bottom-left {
-    align-self: flex-start;
-    transition: opacity 0.2s ease;
-  }
-
-  .cluster.bottom-right {
-    position: absolute;
-    bottom: 12px;
-    right: 12px;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 8px;
-  }
-
-  .cluster.dimmed {
-    opacity: 0.3;
-    pointer-events: none;
-  }
-
-  .cluster.hidden-cluster {
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  /* === Instruction badge (top-left) === */
-  .instruction-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 14px;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
-    pointer-events: auto;
-  }
-
-  .hand-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: var(--hand-color);
-    flex-shrink: 0;
-    box-shadow: 0 0 6px color-mix(in srgb, var(--hand-color) 50%, transparent);
-  }
-
-  .instruction-text {
-    font-size: var(--font-size-min, 14px);
-    color: rgba(255, 255, 255, 0.9);
-    font-weight: 500;
-    white-space: nowrap;
-    letter-spacing: 0.01em;
-  }
-
-  /* === Orientation row (top-left, under instruction) === */
+  /* ── Orientation pills (top-left, desktop only) ── */
   .ori-row {
+    align-self: flex-start;
     opacity: 0;
     pointer-events: none;
     transform: translateY(-4px);
@@ -343,7 +295,13 @@
     transform: translateY(0);
   }
 
-  /* === Shared pill styles === */
+  /* Hide desktop pill bar on mobile — replaced by popover trigger */
+  @media (max-width: 768px) {
+    .ori-row {
+      display: none;
+    }
+  }
+
   .pill-group {
     display: flex;
     gap: 2px;
@@ -386,290 +344,285 @@
     cursor: default;
   }
 
-  /* === Motion card (bottom-left) === */
-  .motion-card {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
-    padding: 3px;
+  /* ── Bottom-left trigger area (mobile only) ── */
+  .bottom-trigger-area {
+    align-self: flex-start;
+    /* Hidden on desktop — full turn bar / pill bar handles it */
+    display: none;
+  }
+
+  @media (max-width: 768px) {
+    .bottom-trigger-area {
+      display: block;
+    }
+  }
+
+  .trigger-wrapper {
+    position: relative;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .trigger-wrapper.visible {
+    opacity: 1;
     pointer-events: auto;
   }
 
-  .rotation-toggle {
+  .compact-trigger {
     display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 6px 12px;
-    border: none;
-    border-radius: 7px;
-    background: transparent;
-    color: rgba(255, 255, 255, 0.8);
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1.5px solid var(--theme-accent-border, rgba(99, 102, 241, 0.3));
+    border-radius: 12px;
+    background: rgba(10, 12, 22, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: var(--theme-accent, #6366f1);
     font-size: var(--font-size-min, 14px);
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
-    min-height: var(--min-touch-target);
-    transition: background 0.15s ease;
+    min-height: var(--min-touch-target, 44px);
+    transition: background 0.15s ease, border-color 0.15s ease;
   }
 
-  .rotation-toggle:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.06);
+  .compact-trigger:hover {
+    background: rgba(99, 102, 241, 0.12);
+    border-color: var(--theme-accent, #6366f1);
   }
 
-  .rotation-toggle:disabled {
-    cursor: default;
-  }
-
-  .rotation-toggle i {
-    font-size: 13px;
+  .compact-trigger i {
+    font-size: 14px;
     transition: transform 0.2s ease;
   }
 
-  .rotation-toggle i.flipped {
+  .compact-trigger i.flipped {
     transform: scaleX(-1);
   }
 
-  .rot-label {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    color: rgba(255, 255, 255, 0.7);
+  .trigger-text {
+    letter-spacing: 0.03em;
   }
 
-  .divider {
+  /* Popover backdrop — full-screen tap-to-close */
+  .popover-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+  }
+
+  /* Shared popover panel — anchored above the trigger */
+  .popover-panel {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: rgba(10, 12, 22, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 6px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    animation: popover-in 0.15s ease-out;
+  }
+
+  @keyframes popover-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .popover-rotation {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 10px;
+    background: var(--theme-accent-bg, rgba(99, 102, 241, 0.1));
+    color: var(--theme-accent, #6366f1);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    cursor: pointer;
+    min-height: var(--min-touch-target, 44px);
+    flex-shrink: 0;
+    transition: background 0.15s ease;
+  }
+
+  .popover-rotation:hover {
+    background: var(--theme-accent-hover, rgba(99, 102, 241, 0.15));
+  }
+
+  .popover-rotation i {
+    font-size: 14px;
+    transition: transform 0.2s ease;
+  }
+
+  .popover-rotation i.flipped {
+    transform: scaleX(-1);
+  }
+
+  .popover-divider {
     width: 1px;
-    height: 20px;
+    height: 28px;
     background: rgba(255, 255, 255, 0.1);
-    margin: 0 2px;
+    margin: 0 4px;
     flex-shrink: 0;
   }
 
-  .turns-strip {
+  .popover-pills {
     display: flex;
-    gap: 1px;
+    gap: 2px;
   }
 
-  .turn-pill {
-    padding: 6px 8px;
+  .popover-pill {
+    padding: 10px 10px;
     border: none;
-    border-radius: 7px;
+    border-radius: 10px;
     background: transparent;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
     cursor: pointer;
-    min-height: var(--min-touch-target);
-    min-width: 40px;
+    min-height: var(--min-touch-target, 44px);
+    min-width: var(--min-touch-target, 44px);
     display: flex;
     align-items: center;
     justify-content: center;
     transition: background 0.15s ease, color 0.15s ease;
   }
 
-  .turn-pill:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.06);
-    color: rgba(255, 255, 255, 0.85);
+  .popover-pill:hover {
+    background: rgba(99, 102, 241, 0.08);
+    color: var(--theme-text, #fff);
   }
 
-  .turn-pill.active {
-    background: rgba(255, 255, 255, 0.12);
-    color: #fff;
+  .popover-pill.active {
+    background: rgba(99, 102, 241, 0.12);
+    color: var(--theme-accent, #6366f1);
+    border: 1.5px solid var(--theme-accent-border, rgba(99, 102, 241, 0.3));
   }
 
-  .turn-pill:disabled {
-    cursor: default;
-  }
-
-  /* === Action buttons (bottom-right) === */
-  .action-icon {
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 15px;
-    cursor: pointer;
+  /* === Action row — below the grid, full-width === */
+  .action-row {
     display: flex;
-    align-items: center;
     justify-content: center;
-    pointer-events: none;
+    gap: 8px;
+    padding: 6px 0;
+    flex-shrink: 0;
     opacity: 0;
-    transform: scale(0.85);
-    transition: opacity 0.2s ease, transform 0.2s ease, background 0.15s ease,
-      border-color 0.15s ease, color 0.15s ease;
-  }
-
-  .action-icon.visible {
-    pointer-events: auto;
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  .action-icon.dimmed {
     pointer-events: none;
-    opacity: 0.3;
-    transform: scale(1);
+    min-height: 0;
+    transition: opacity 0.2s ease;
   }
 
-  .action-icon:hover:not(:disabled) {
-    border-color: rgba(255, 255, 255, 0.2);
-    color: #fff;
+  .action-row.visible {
+    opacity: 1;
+    pointer-events: auto;
+    min-height: var(--min-touch-target, 44px);
   }
 
-  .action-icon.trash:hover:not(:disabled) {
-    border-color: var(--semantic-error, #ef4444);
-    color: var(--semantic-error, #ef4444);
-    background: rgba(239, 68, 68, 0.1);
+  /* Mobile: overlay the action row on the grid, bottom-right corner */
+  @media (max-width: 768px) {
+    .action-row {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      left: auto;
+      z-index: 10;
+      padding: 0;
+      min-height: 0;
+    }
+
+    .action-row.visible {
+      min-height: 0;
+    }
+
+    .action-btn {
+      background: rgba(10, 12, 22, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
   }
 
-  /* Done button — pill shape with hand color accent */
-  .done-btn {
+  .action-btn {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 10px 18px;
-    border-radius: 10px;
-    border: 1.5px solid var(--hand-color);
-    background: color-mix(in srgb, var(--hand-color) 15%, rgba(0, 0, 0, 0.6));
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    color: #fff;
+    padding: 10px 20px;
+    border-radius: 12px;
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
     cursor: pointer;
-    min-height: var(--min-touch-target);
-    pointer-events: none;
-    opacity: 0;
-    transform: scale(0.9);
-    transition: opacity 0.2s ease, transform 0.2s ease, background 0.15s ease;
+    min-height: var(--min-touch-target, 44px);
+    transition: background 0.15s ease;
   }
 
-  .done-btn.visible {
-    pointer-events: auto;
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  .done-btn.dimmed {
-    pointer-events: none;
-    opacity: 0.3;
-    transform: scale(1);
-  }
-
-  .done-btn:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--hand-color) 30%, rgba(0, 0, 0, 0.6));
-  }
-
-  .done-btn i {
+  .action-btn i {
     font-size: 12px;
   }
 
-  /* Red hand complete button — uses red accent */
+  .done-btn {
+    border: 1.5px solid var(--hand-color);
+    background: color-mix(in srgb, var(--hand-color) 15%, var(--theme-card-bg, rgba(0, 0, 0, 0.6)));
+    color: #fff;
+  }
+
+  .done-btn:hover {
+    background: color-mix(in srgb, var(--hand-color) 30%, var(--theme-card-bg, rgba(0, 0, 0, 0.6)));
+  }
+
   .done-btn.red-done {
     border-color: var(--prop-red, #ed1c24);
-    background: color-mix(in srgb, var(--prop-red, #ed1c24) 15%, rgba(0, 0, 0, 0.6));
+    background: color-mix(in srgb, var(--prop-red, #ed1c24) 15%, var(--theme-card-bg, rgba(0, 0, 0, 0.6)));
   }
 
-  .done-btn.red-done:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--prop-red, #ed1c24) 30%, rgba(0, 0, 0, 0.6));
+  .done-btn.red-done:hover {
+    background: color-mix(in srgb, var(--prop-red, #ed1c24) 30%, var(--theme-card-bg, rgba(0, 0, 0, 0.6)));
   }
 
-  /* Back button — ghost style to go back to previous hand */
   .back-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 18px;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    background: var(--theme-card-bg, rgba(0, 0, 0, 0.5));
     color: rgba(255, 255, 255, 0.8);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 500;
-    cursor: pointer;
-    min-height: var(--min-touch-target);
-    pointer-events: none;
-    opacity: 0;
-    transform: scale(0.9);
-    transition: opacity 0.2s ease, transform 0.2s ease, background 0.15s ease;
   }
 
-  .back-btn.visible {
-    pointer-events: auto;
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  .back-btn:hover:not(:disabled) {
+  .back-btn:hover {
     background: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.25);
   }
 
-  .back-btn:focus-visible {
-    outline: 2px solid #ffffff;
-    outline-offset: 3px;
-  }
-
-  .back-btn i {
-    font-size: 11px;
-  }
-
-  /* New sequence button */
   .new-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 18px;
-    border-radius: 10px;
     border: 1.5px solid var(--theme-accent, #6366f1);
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, rgba(0, 0, 0, 0.6));
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, var(--theme-card-bg, rgba(0, 0, 0, 0.6)));
     color: #fff;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    cursor: pointer;
-    min-height: var(--min-touch-target);
-    pointer-events: none;
-    opacity: 0;
-    transform: scale(0.9);
-    transition: opacity 0.2s ease, transform 0.2s ease, background 0.15s ease;
   }
 
-  .new-btn.visible {
-    pointer-events: auto;
-    opacity: 1;
-    transform: scale(1);
+  .new-btn:hover {
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 30%, var(--theme-card-bg, rgba(0, 0, 0, 0.6)));
   }
 
-  .new-btn:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 30%, rgba(0, 0, 0, 0.6));
-  }
-
-  .new-btn i {
-    font-size: 12px;
-  }
-
-  /* === Focus indicators — white ring for high contrast against dark overlay === */
+  /* === Focus indicators === */
   .pill:focus-visible,
-  .turn-pill:focus-visible,
-  .rotation-toggle:focus-visible {
+  .popover-pill:focus-visible,
+  .popover-rotation:focus-visible,
+  .compact-trigger:focus-visible {
     outline: 2px solid #ffffff;
     outline-offset: 2px;
   }
 
-  .action-icon:focus-visible,
-  .done-btn:focus-visible,
-  .new-btn:focus-visible {
+  .action-btn:focus-visible {
     outline: 2px solid #ffffff;
     outline-offset: 3px;
   }
@@ -677,41 +630,18 @@
   /* === Reduced motion === */
   @media (prefers-reduced-motion: reduce) {
     .ori-row,
-    .cluster.bottom-left,
-    .action-icon,
-    .done-btn,
-    .back-btn,
-    .new-btn,
+    .action-row,
+    .action-btn,
     .pill,
-    .turn-pill,
-    .rotation-toggle,
-    .rotation-toggle i {
+    .compact-trigger,
+    .trigger-wrapper,
+    .compact-trigger i,
+    .popover-rotation i {
       transition: none;
     }
-  }
 
-  /* === Mobile === */
-  @media (max-width: 768px) {
-    .controls-overlay {
-      padding: 8px;
-    }
-
-    .cluster.bottom-right {
-      bottom: 8px;
-      right: 8px;
-    }
-
-    .motion-card {
-      padding: 2px;
-    }
-
-    .turn-pill {
-      padding: 5px 6px;
-      min-width: 40px;
-    }
-
-    .rotation-toggle {
-      padding: 5px 10px;
+    .popover-panel {
+      animation: none;
     }
   }
 </style>
