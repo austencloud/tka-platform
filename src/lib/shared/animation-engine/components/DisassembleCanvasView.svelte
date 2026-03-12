@@ -147,6 +147,7 @@
     width: 100%;
     aspect-ratio: 1 / 1;
     overflow: hidden;
+    z-index: 2;
   }
 
   .small-slots {
@@ -159,6 +160,7 @@
     width: 50%;
     aspect-ratio: 1 / 1;
     overflow: hidden;
+    z-index: 1;
   }
 
   .progress-slot {
