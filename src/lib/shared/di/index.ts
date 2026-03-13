@@ -22,6 +22,7 @@ import { createContainer } from "iti";
 // ============================================================================
 // SIMPLE CONTAINERS (export const xyzContainer = createContainer()...)
 // ============================================================================
+import { compositionContainer } from "./containers/composition-container";
 import { coreContainer } from "./containers/core-container";
 import { dataContainer } from "./containers/data-container";
 import { keyboardContainer } from "./containers/keyboard-container";
@@ -370,6 +371,8 @@ function buildAppContainer(): any {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let c: any = createContainer();
 
+  // Compositional model services (hand path, solo prop, decompose/derive)
+  c = c.add(compositionContainer.items);
   // Core infrastructure (must be first)
   c = c.add(coreContainer.items);
   // Data and persistence
