@@ -1,0 +1,134 @@
+import type { ISequenceDecomposer } from "../contracts/ISequenceDecomposer";
+import type { ISoloPropFactory } from "../contracts/ISoloPropFactory";
+import type { SequenceData } from "../../domain/models/SequenceData";
+import type { SoloPropData } from "../../domain/models/SoloPropData";
+import type { SoloPropStepData } from "../../domain/models/SoloPropStepData";
+import type { StepPairingData } from "../../domain/models/StepPairingData";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import {
+  Orientation,
+  MotionType,
+  RotationDirection,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+
+// Strips the rendering-only fields from a MotionData to produce a SoloPropStepData.
+//
+// The fields we drop — color, propType, isVisible, gridMode, arrowLocation,
+// arrowPlacementData, propPlacementData, prefloatMotionType,
+// prefloatRotationDirection — are all viewer preferences or derived rendering
+// state. They carry no domain meaning and are re-derived by StepDeriver on the
+// way back out.
+//
+// Duration is NOT on MotionData. The caller must inject it from StepData.
+function motionToSoloPropStep(
+  motion: MotionData,
+  duration: number
+): SoloPropStepData {
+  return {
+    startLocation: motion.startLocation,
+    endLocation: motion.endLocation,
+    startOrientation: motion.startOrientation,
+    endOrientation: motion.endOrientation,
+    motionType: motion.motionType,
+    rotationDirection: motion.rotationDirection,
+    turns: motion.turns,
+    handPath: motion.handPath ?? null,
+    skewSteps: motion.skewSteps ?? null,
+    skewDir: motion.skewDir ?? null,
+    duration,
+  };
+}
+
+// Builds a static placeholder SoloPropStepData for a step whose motion is
+// missing (incomplete/blank beats). The step will round-trip incorrectly but
+// won't blow up the factory.
+function makePlaceholderStep(
+  location: GridLocation,
+  orientation: Orientation,
+  duration: number
+): SoloPropStepData {
+  return {
+    startLocation: location,
+    endLocation: location,
+    startOrientation: orientation,
+    endOrientation: orientation,
+    motionType: MotionType.STATIC,
+    rotationDirection: RotationDirection.NO_ROTATION,
+    turns: 0,
+    duration,
+  };
+}
+
+export class SequenceDecomposer implements ISequenceDecomposer {
+  constructor(private readonly soloPropFactory: ISoloPropFactory) {}
+
+  extractBlueSoloProp(sequence: SequenceData): SoloPropData {
+    return this.extractSoloProp(sequence, "blue");
+  }
+
+  extractRedSoloProp(sequence: SequenceData): SoloPropData {
+    return this.extractSoloProp(sequence, "red");
+  }
+
+  extractStepPairings(sequence: SequenceData): readonly StepPairingData[] {
+    return sequence.steps.map((step) => ({
+      letter: step.letter ?? null,
+      blueReversal: step.blueReversal,
+      redReversal: step.redReversal,
+      startPosition: step.startPosition ?? null,
+      endPosition: step.endPosition ?? null,
+    }));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Private helpers
+  // ---------------------------------------------------------------------------
+
+  private extractSoloProp(
+    sequence: SequenceData,
+    color: "blue" | "red"
+  ): SoloPropData {
+    // Resolve the authoritative start location and orientation.
+    //
+    // Priority order:
+    // 1. startPosition (the modern, canonical field)
+    // 2. startingPosition (legacy alias — same semantic, different field name)
+    // 3. steps[0] motion (last-resort: read the initial state from the first beat)
+    // 4. Hard default: NORTH / IN — only reached on empty or fully-corrupt data
+    const startPositionMotions =
+      sequence.startPosition?.motions ?? sequence.startingPosition?.motions;
+
+    const startLocationFromPos = startPositionMotions?.[color]?.startLocation;
+    const startOrientationFromPos =
+      startPositionMotions?.[color]?.startOrientation;
+
+    const firstStepMotion = sequence.steps[0]?.motions?.[color];
+
+    const startLocation: GridLocation =
+      startLocationFromPos ??
+      firstStepMotion?.startLocation ??
+      GridLocation.NORTH;
+
+    const startOrientation: Orientation =
+      startOrientationFromPos ??
+      firstStepMotion?.startOrientation ??
+      Orientation.IN;
+
+    // Convert each StepData motion into a SoloPropStepData. Duration lives on
+    // StepData (not MotionData), so we inject it per-step here.
+    const steps: SoloPropStepData[] = sequence.steps.map((step) => {
+      const motion = step.motions?.[color];
+
+      if (!motion) {
+        // A step missing one colour is unusual but possible in blank beats.
+        // Produce a static placeholder so the factory doesn't throw.
+        return makePlaceholderStep(startLocation, startOrientation, step.duration);
+      }
+
+      return motionToSoloPropStep(motion, step.duration);
+    });
+
+    return this.soloPropFactory.create(steps, startLocation, startOrientation);
+  }
+}
