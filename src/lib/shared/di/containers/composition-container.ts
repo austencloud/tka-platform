@@ -12,7 +12,6 @@ const stepDeriver = new StepDeriver();
 const sequenceDecomposer = new SequenceDecomposer(soloPropFactory);
 
 export const compositionContainer = createContainer()
-	.add({ contentHasher: () => contentHasher })
 	.add({ handPathFactory: () => handPathFactory })
 	.add({ soloPropFactory: () => soloPropFactory })
 	.add({ stepDeriver: () => stepDeriver })
