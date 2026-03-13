@@ -41,4 +41,20 @@ export interface ISequenceRepository {
    * @returns Promise resolving to array of all sequences
    */
   getAllSequences(): Promise<SequenceData[]>;
+
+  /**
+   * Get all sequences whose blue or red path hash matches the given value.
+   * Used to find every sequence that contains a particular hand path.
+   * @param pathHash - contentHash of the HandPathData to search for
+   * @returns Promise resolving to matching sequences
+   */
+  getByPathHash(pathHash: string): Promise<SequenceData[]>;
+
+  /**
+   * Get all sequences whose blue or red solo prop hash matches the given value.
+   * Used to find every sequence that contains a particular solo prop.
+   * @param soloHash - contentHash of the SoloPropData to search for
+   * @returns Promise resolving to matching sequences
+   */
+  getBySoloHash(soloHash: string): Promise<SequenceData[]>;
 }
