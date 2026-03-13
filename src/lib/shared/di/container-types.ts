@@ -31,6 +31,7 @@ import type { EffectsLabContainer } from "./containers/effects-lab-container";
 import type { ArenaContainer } from "./containers/arena-container";
 import type { AssembleContainer } from "./containers/assemble-container";
 import type { LabContainer } from "./containers/lab-container";
+import type { CompositionContainer } from "./containers/composition-container";
 
 // ============================================================================
 // Container type imports — factory (ReturnType<typeof create...>) containers
@@ -87,6 +88,7 @@ type ItemsOf<C> = C extends { items: infer I } ? { [K in keyof I]: I[K] } : neve
 // ============================================================================
 
 // Simple containers
+type CompositionItems = ItemsOf<CompositionContainer>;
 type CoreItems = ItemsOf<CoreContainer>;
 type DataItems = ItemsOf<DataContainerType>;
 type KeyboardItems = ItemsOf<KeyboardContainer>;
@@ -159,6 +161,7 @@ interface StandaloneItems {
 // ============================================================================
 export type IAppContainerItems =
 	// Core infrastructure
+	CompositionItems &
 	CoreItems &
 	DataItems &
 	NavigationContainerItems &
