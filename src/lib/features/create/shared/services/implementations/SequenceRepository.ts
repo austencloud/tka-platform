@@ -10,6 +10,8 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { ISequenceHydrator } from "$lib/shared/foundation/services/contracts/ISequenceHydrator";
+import { container } from "$lib/shared/di";
 import type { StepData } from "../../domain/models/StepData";
 import type { SequenceCreateRequest } from "../../domain/models/sequence-models";
 import type { IPersistenceService } from "../contracts/IPersister";
@@ -39,6 +41,17 @@ export class SequenceRepository implements ISequenceRepository {
     private readonly normalizationService: ISequenceNormalizer,
     private readonly sequenceImportService?: ISequenceImporter
   ) {}
+
+  // If compositional fields are present, derive steps from them so the
+  // compositional model is the source of truth for all downstream readers.
+  private hydrateSequence(seq: SequenceData): SequenceData {
+    try {
+      const hydrator = container.items.sequenceHydrator as ISequenceHydrator;
+      return hydrator.hydrate(seq);
+    } catch {
+      return seq;
+    }
+  }
 
   /**
    * Create a new sequence
@@ -95,6 +108,7 @@ export class SequenceRepository implements ISequenceRepository {
   async getSequence(id: string): Promise<SequenceData | null> {
     try {
       let sequence = await this.persistenceService.loadSequence(id);
+      if (sequence) sequence = this.hydrateSequence(sequence);
 
       // If sequence not found, try to import from PNG metadata if import service is available
       if (!sequence && this.sequenceImportService) {
@@ -139,8 +153,9 @@ export class SequenceRepository implements ISequenceRepository {
     try {
       const sequences = await this.persistenceService.loadAllSequences();
 
-      // Apply reversal detection and normalization to all sequences
-      return sequences.map((sequence) => {
+      // Hydrate (derive steps from compositional model) then apply post-processing
+      return sequences.map((raw) => {
+        const sequence = this.hydrateSequence(raw);
         // Apply reversal detection
         const processed = this.reversalDetector.processReversals(sequence);
 
@@ -182,7 +197,7 @@ export class SequenceRepository implements ISequenceRepository {
       );
 
       const snap = await getDocs(q);
-      return snap.docs.map((d) => ({ ...d.data(), id: d.id } as SequenceData));
+      return snap.docs.map((d) => this.hydrateSequence({ ...d.data(), id: d.id } as SequenceData));
     } catch (error) {
       console.error("[SequenceRepository] getByPathHash failed:", error);
       return [];
@@ -212,7 +227,7 @@ export class SequenceRepository implements ISequenceRepository {
       );
 
       const snap = await getDocs(q);
-      return snap.docs.map((d) => ({ ...d.data(), id: d.id } as SequenceData));
+      return snap.docs.map((d) => this.hydrateSequence({ ...d.data(), id: d.id } as SequenceData));
     } catch (error) {
       console.error("[SequenceRepository] getBySoloHash failed:", error);
       return [];

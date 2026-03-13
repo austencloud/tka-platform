@@ -25,6 +25,7 @@ import type { IBrowseLoader } from "../contracts/IBrowseLoader";
 import type { PublicSequenceIndex } from "$lib/features/library/domain/models/PublicSequenceIndex";
 import { container } from "$lib/shared/di";
 import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
+import type { ISequenceHydrator } from "$lib/shared/foundation/services/contracts/ISequenceHydrator";
 
 export class PublicSequencesLoader implements IBrowseLoader {
   private cachedSequences: SequenceData[] | null = null;
@@ -248,7 +249,7 @@ export class PublicSequencesLoader implements IBrowseLoader {
     data: Record<string, unknown>,
     id: string
   ): SequenceData {
-    return {
+    const seq: SequenceData = {
       id,
       name: (data.name as string) ?? "",
       displayName: data.displayName as string | undefined,
@@ -275,6 +276,23 @@ export class PublicSequencesLoader implements IBrowseLoader {
       ownerId: data.ownerId as string | undefined,
       ownerDisplayName: data.ownerDisplayName as string | undefined,
       ownerAvatarUrl: data.ownerAvatarUrl as string | undefined,
+      // Pass through compositional fields so the hydrator can derive steps
+      blueSoloProp: data.blueSoloProp as SequenceData["blueSoloProp"],
+      redSoloProp: data.redSoloProp as SequenceData["redSoloProp"],
+      stepPairings: data.stepPairings as SequenceData["stepPairings"],
+      bluePathHash: data.bluePathHash as string | undefined,
+      redPathHash: data.redPathHash as string | undefined,
+      blueSoloHash: data.blueSoloHash as string | undefined,
+      redSoloHash: data.redSoloHash as string | undefined,
     };
+
+    // If compositional fields are present, derive steps from them so
+    // the compositional model is the single source of truth.
+    try {
+      const hydrator = container.items.sequenceHydrator as ISequenceHydrator;
+      return hydrator.hydrate(seq);
+    } catch {
+      return seq;
+    }
   }
 }

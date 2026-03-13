@@ -40,6 +40,7 @@ import type { IConflictResolver } from "$lib/shared/offline/services/contracts/I
 import type { ISequenceContentHasher } from "../contracts/ISequenceContentHasher";
 import { migrateSequenceTags } from "../migrations/tag-migration";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { ISequenceHydrator } from "$lib/shared/foundation/services/contracts/ISequenceHydrator";
 import type {
   ILibraryRepository,
   LibraryStats,
@@ -347,6 +348,18 @@ export class LibraryRepository implements ILibraryRepository {
       }
     }
 
+    // Recompute compositional fields (blueSoloProp, redSoloProp, stepPairings,
+    // content hashes) from the current steps so Firestore always has fresh
+    // compositional data — even if the sequence was modified via the old
+    // steps-based mutation API.
+    try {
+      const hydrator = container.items.sequenceHydrator as ISequenceHydrator;
+      libSeq = hydrator.ensureComposition(libSeq) as LibrarySequence;
+    } catch {
+      // Composition services not available (e.g. during SSR or early boot).
+      // Save without compositional fields — the migration script can backfill.
+    }
+
     // Write sequence document using setDoc — works offline, queues in Firestore cache
     // IMPORTANT: birthday is set once on creation and NEVER changes
     const rawWriteData = {
@@ -506,7 +519,15 @@ export class LibraryRepository implements ILibraryRepository {
       return null;
     }
 
-    return this.mapDocToLibrarySequence(docSnap.data(), sequenceId);
+    const seq = this.mapDocToLibrarySequence(docSnap.data(), sequenceId);
+
+    // Hydrate: derive steps from compositional fields if present
+    try {
+      const hydrator = container.items.sequenceHydrator as ISequenceHydrator;
+      return hydrator.hydrate(seq) as LibrarySequence;
+    } catch {
+      return seq;
+    }
   }
 
   async updateSequence(
