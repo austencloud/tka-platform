@@ -16,6 +16,8 @@ import type { StartPositionData } from "../../../../features/create/shared/domai
 import type { GridPositionGroup } from "../../../pictograph/grid/domain/enums/grid-enums";
 import type { PropType } from "../../../pictograph/prop/domain/enums/PropType";
 import type { LOOPType } from "../../../../features/create/generate/circular/domain/models/circular-models";
+import type { SoloPropData } from "./SoloPropData";
+import type { StepPairingData } from "./StepPairingData";
 
 export interface SequenceData {
   readonly id: string;
@@ -111,6 +113,24 @@ export interface SequenceData {
     readonly redPropType: PropType;
     readonly catDogMode: boolean;
   } | null;
+
+  // === Compositional structure (optional during migration) ===
+  /** Solo prop path for the blue performer, derived from steps decomposition */
+  readonly blueSoloProp?: SoloPropData;
+  /** Solo prop path for the red performer, derived from steps decomposition */
+  readonly redSoloProp?: SoloPropData;
+  /** Per-beat pairings linking each blue motion to its corresponding red motion */
+  readonly stepPairings?: readonly StepPairingData[];
+
+  // === Content hashes for cross-tier queries ===
+  /** Hash of the blue performer's combined dual-prop path (for equivalence detection) */
+  readonly bluePathHash?: string;
+  /** Hash of the red performer's combined dual-prop path (for equivalence detection) */
+  readonly redPathHash?: string;
+  /** Hash of the blue performer's solo prop path only */
+  readonly blueSoloHash?: string;
+  /** Hash of the red performer's solo prop path only */
+  readonly redSoloHash?: string;
 }
 
 export function createSequenceData(
@@ -188,6 +208,15 @@ export function createSequenceData(
     ...(data.notes !== undefined && { notes: data.notes }),
     ...(data.effortTimeline !== undefined && { effortTimeline: data.effortTimeline }),
     ...(data.intendedProp !== undefined && { intendedProp: data.intendedProp }),
+    // Compositional structure passthrough
+    ...(data.blueSoloProp !== undefined && { blueSoloProp: data.blueSoloProp }),
+    ...(data.redSoloProp !== undefined && { redSoloProp: data.redSoloProp }),
+    ...(data.stepPairings !== undefined && { stepPairings: data.stepPairings }),
+    // Content hash passthrough
+    ...(data.bluePathHash !== undefined && { bluePathHash: data.bluePathHash }),
+    ...(data.redPathHash !== undefined && { redPathHash: data.redPathHash }),
+    ...(data.blueSoloHash !== undefined && { blueSoloHash: data.blueSoloHash }),
+    ...(data.redSoloHash !== undefined && { redSoloHash: data.redSoloHash }),
   };
   return result;
 }
