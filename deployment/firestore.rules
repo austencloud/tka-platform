@@ -44,6 +44,29 @@ service cloud.firestore {
         && (userData.role == 'admin' || userData.role == 'tester' || userData.role == 'premium' || userData.isAdmin == true);
     }
 
+    // -------------------------------------------------------------------------
+    // DEVELOPER SYSTEM HELPERS (uses developers collection)
+    // -------------------------------------------------------------------------
+
+    // Check if user is an approved, active developer
+    function isApprovedDeveloper() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/developers/$(request.auth.uid))
+        && get(/databases/$(database)/documents/developers/$(request.auth.uid)).data.active == true;
+    }
+
+    // Check if user has admin role in the developers collection
+    function isDeveloperAdmin() {
+      return isApprovedDeveloper()
+        && get(/databases/$(database)/documents/developers/$(request.auth.uid)).data.role == "admin";
+    }
+
+    // Check if user has contributor role in the developers collection
+    function isContributor() {
+      return isApprovedDeveloper()
+        && get(/databases/$(database)/documents/developers/$(request.auth.uid)).data.role == "contributor";
+    }
+
     // Check if user has verified their age (18+) for Hall of Shame access
     function isAgeVerified() {
       let userData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
@@ -79,7 +102,9 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Fire defaults configuration - readable by all (including anonymous), writable by admins
+    // Fire effect defaults - readable by all (including pre-auth), writable by admins
+    // Must allow unauthenticated reads: FireDefaultsLoader runs during DI
+    // container construction before auth completes
     match /config/fireDefaults {
       allow read: if true;
       allow write: if isAdmin();
@@ -348,14 +373,6 @@ service cloud.firestore {
       }
 
       // -------------------------------------------------------------------------
-      // COMPOSITIONS (Compose Module - Sequence Arrangements)
-      // -------------------------------------------------------------------------
-      match /compositions/{compositionId} {
-        allow read, create, update: if isOwner(userId);
-        allow delete: if isOwner(userId) || isAdmin();
-      }
-
-      // -------------------------------------------------------------------------
       // ONBOARDING STATUS
       // -------------------------------------------------------------------------
       match /onboarding/{docId} {
@@ -367,16 +384,6 @@ service cloud.firestore {
       // SEQUENCE DRAFTS (Autosave)
       // -------------------------------------------------------------------------
       match /drafts/{draftId} {
-        allow read, create, update: if isOwner(userId);
-        allow delete: if isOwner(userId) || isAdmin();
-      }
-
-      // -------------------------------------------------------------------------
-      // USER CONNECTIONS (Private Notes About Other Users)
-      // -------------------------------------------------------------------------
-      // Users can only read/write their own connection data
-      // Connection data is private notes about other users, only visible to the author
-      match /connections/{connectionId} {
         allow read, create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
@@ -423,6 +430,26 @@ service cloud.firestore {
         allow delete: if isOwner(userId) || isAdmin();
       }
 
+      // -------------------------------------------------------------------------
+      // COMPOSITIONAL MODEL: Hand Paths (Tier 1) and Solo Props (Tier 2)
+      // -------------------------------------------------------------------------
+      // User-owned artifacts for the three-tier compositional sequence model.
+      // Same ownership pattern as sequences.
+
+      match /handPaths/{pathId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId);
+        allow update: if isOwner(userId) || isAdmin();
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      match /soloProps/{soloPropId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId);
+        allow update: if isOwner(userId) || isAdmin();
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
       // Weekly challenge progress
       match /weeklyProgress/{progressId} {
         allow read, create, update: if isOwner(userId);
@@ -450,28 +477,43 @@ service cloud.firestore {
       }
 
       // -------------------------------------------------------------------------
-      // TIKA INTERACTION TRACKING (Topic discussion & quiz stats)
+      // TIKA INTERACTIONS (Topic Discussion Tracking)
       // -------------------------------------------------------------------------
       match /tikaInteractions/{topicId} {
         allow read, create, update: if isOwner(userId);
+        allow delete: if isOwner(userId) || isAdmin();
       }
 
       // -------------------------------------------------------------------------
-      // LEARNING PROGRESS (Concept mastery & progress tracking)
+      // TIKA VERIFICATIONS (Server-side audit log)
+      // -------------------------------------------------------------------------
+      match /tikaVerifications/{verificationId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId);
+        allow update: if false; // Immutable audit trail
+        allow delete: if isAdmin();
+      }
+
+      // -------------------------------------------------------------------------
+      // LEARNING PROGRESS (Concept Progress Tracking)
       // -------------------------------------------------------------------------
       match /learningProgress/{docId} {
         allow read, create, update: if isOwner(userId);
+        allow delete: if isOwner(userId) || isAdmin();
       }
 
       // -------------------------------------------------------------------------
-      // QUIZ HISTORY (Learn module quiz attempts)
+      // QUIZ HISTORY (Append-only Quiz Attempts)
       // -------------------------------------------------------------------------
       match /quizHistory/{attemptId} {
-        allow read, create: if isOwner(userId);
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if false; // Quiz attempts are immutable
+        allow delete: if isAdmin();
       }
 
       // -------------------------------------------------------------------------
-      // VOICE SESSIONS (Voice Command Recording & Analysis)
+      // VOICE SESSIONS (Voice Practice Data)
       // -------------------------------------------------------------------------
       match /voiceSessions/{sessionId} {
         allow read, create, update: if isOwner(userId);
@@ -562,7 +604,7 @@ service cloud.firestore {
     match /conversations/{conversationId} {
       // Participants can read their conversations, admins can read any (for preview mode)
       allow read: if isAuthenticated()
-        && (resource == null || request.auth.uid in resource.data.participants || isAdmin());
+        && (request.auth.uid in resource.data.participants || isAdmin());
 
       // Creating a conversation - user must be in participants list OR be admin (for impersonation)
       // Direct (1:1): exactly 2 participants, type must be "direct" or missing
@@ -617,12 +659,10 @@ service cloud.firestore {
 
         // Updating messages:
         // - Sender can update any field (edit content, delete, etc.)
-        // - Any participant can update reactions (to add/remove their reaction)
-        // - Any participant can mark messages as read (readBy + readAt fields)
+        // - Any participant can update reactions, read status
         allow update: if isConversationParticipant(conversationId)
           && (resource.data.senderId == request.auth.uid
-              || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
-              || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy', 'readAt']));
+              || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions', 'readBy', 'readAt']));
 
         // No hard deleting messages (soft delete via isDeleted flag)
         allow delete: if false;
@@ -706,96 +746,54 @@ service cloud.firestore {
     }
 
     // ============================================================================
-    // VERSIONS COLLECTION (Release Management)
+    // CONTRIBUTORS COLLECTION (Release Notes Attribution)
     // ============================================================================
 
-    // App versions - all authenticated users can read release notes, only admins can write
-    match /versions/{versionId} {
+    // Curated list of developers credited in release notes.
+    // Each doc references a user account (userId field).
+    // Anyone authenticated can read (badges shown in What's New modal).
+    // Only admins can add/remove contributors.
+    match /contributors/{contributorId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
 
     // ============================================================================
-    // AGENT SESSIONS (Feedback System Identity Tracking)
+    // VERSIONS COLLECTION (Release Management)
     // ============================================================================
 
-    // Agent sessions - tracks which agents/sessions have active claims
-    // Used for bulletproof claim coordination
-    match /agentSessions/{sessionId} {
-      // Testers/admins can read all sessions (for debugging/monitoring)
+    // App versions - testers/admins can read, only admins can write
+    match /versions/{versionId} {
       allow read: if isTester();
-
-      // Sessions can only be created/updated by the owning user
-      // (verified server-side via Cloud Functions)
-      allow create: if isAuthenticated()
-        && request.resource.data.userId == request.auth.uid;
-
-      allow update: if isAuthenticated()
-        && resource.data.userId == request.auth.uid;
-
-      // Only admins or the owner can delete sessions
-      allow delete: if isAuthenticated()
-        && (resource.data.userId == request.auth.uid || isAdmin());
-    }
-
-    // ============================================================================
-    // EMERGENCY ACTIONS (Audit Trail)
-    // ============================================================================
-
-    // Emergency action log - tracks forced claim takeovers
-    // Write-only by Cloud Functions (Admin SDK), read by admins
-    match /emergencyActions/{actionId} {
-      allow read: if isAdmin();
-      allow create, update, delete: if false; // Admin SDK only
-    }
-
-    // ============================================================================
-    // ACTIVE FILE EDITS (Conflict Detection)
-    // ============================================================================
-
-    // Tracks which files are being edited by which agent/claim
-    // Enables conflict detection when multiple agents touch same file
-    match /activeFileEdits/{editId} {
-      // Testers can read to check for conflicts
-      allow read: if isTester();
-
-      // Write through Cloud Functions only for race safety
-      allow create, update, delete: if false;
+      allow write: if isAdmin();
     }
 
     // ============================================================================
     // FEEDBACK COLLECTION
     // ============================================================================
 
-    // Feedback items - users can submit and read their own, testers/admins can manage all
+    // Feedback items - users can submit and read their own, testers/admins/developers can manage
     match /feedback/{feedbackId} {
-      // Any authenticated user can read feedback (powers the public Tracker tab)
-      allow read: if isAuthenticated();
+      // Users can read their own feedback, testers/admins can read all
+      // Any authenticated user can read (for developer CLI access)
+      allow read: if isAuthenticated()
+        && (resource.data.userId == request.auth.uid || isTester() || isApprovedDeveloper());
 
       // Any authenticated user can submit feedback (must set their own userId)
       allow create: if isAuthenticated()
         && request.resource.data.userId == request.auth.uid;
 
-      // Only testers/admins can update feedback (status changes, admin notes, etc.)
-      allow update: if isTester();
+      // Testers/admins OR approved developers can update feedback
+      allow update: if isTester() || isApprovedDeveloper();
 
-      // Only admins can delete feedback
-      allow delete: if isAdmin();
+      // Admins can delete any feedback; contributors can delete their own
+      allow delete: if isAdmin() || isDeveloperAdmin()
+        || (isContributor() && resource.data.userId == request.auth.uid);
 
       // Subtasks subcollection
       match /subtasks/{subtaskId} {
         allow read: if isTester();
         allow write: if isTester();
-      }
-
-      // Work journal subcollection - tamper-proof audit trail
-      // Read by testers for debugging, write ONLY via Admin SDK (Cloud Functions)
-      // This ensures the journal cannot be tampered with by clients
-      match /journal/{entryId} {
-        allow read: if isTester();
-        // IMPORTANT: All journal writes go through Cloud Functions
-        // This makes the journal tamper-proof - no client can delete/modify entries
-        allow create, update, delete: if false;
       }
     }
 
@@ -865,6 +863,28 @@ service cloud.firestore {
     }
 
     // ============================================================================
+    // PUBLIC HAND PATHS AND SOLO PROPS
+    // ============================================================================
+
+    // Public hand paths - browsable by anyone, writable by owner
+    match /publicHandPaths/{pathId} {
+      allow read: if true;
+      allow create, update: if isAuthenticated()
+        && request.resource.data.ownerId == request.auth.uid;
+      allow delete: if isAuthenticated()
+        && resource.data.ownerId == request.auth.uid;
+    }
+
+    // Public solo props - browsable by anyone, writable by owner
+    match /publicSoloProps/{soloPropId} {
+      allow read: if true;
+      allow create, update: if isAuthenticated()
+        && request.resource.data.ownerId == request.auth.uid;
+      allow delete: if isAuthenticated()
+        && resource.data.ownerId == request.auth.uid;
+    }
+
+    // ============================================================================
     // GLOBAL ARROW ADJUSTMENTS
     // Admin-only collection for arrow position overrides
     // ============================================================================
@@ -880,47 +900,20 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Global arrow adjustment history - append-only audit trail
-    // Records every save/delete/undo/reset action on arrow adjustments
-    match /global_arrow_adjustment_history/{entryId} {
-      // Admins can read history (for the ArrowAdjustmentHistory panel)
-      allow read: if isAdmin();
-
-      // Admins can create entries (fire-and-forget from persister)
-      allow create: if isAdmin();
-
-      // History is immutable - no updates or deletes
-      allow update, delete: if false;
-    }
-
     // ============================================================================
     // APP METRICS (Public Counters)
     // ============================================================================
 
     // App-wide metrics like global counters for the endless spinner
-    // Public read, but writes are restricted to prevent abuse
+    // Public read/write for anonymous users to participate in global counters
     match /appMetrics/{metricId} {
       // ANYONE can read metrics (for displaying global counters)
       allow read: if true;
 
-      // Create: authenticated users can initialize the document
-      // Must include totalGenerated starting at 0 or 1
-      allow create: if isAuthenticated()
-        && request.resource.data.totalGenerated >= 0
-        && request.resource.data.totalGenerated <= 1;
-
-      // Update: authenticated users can increment the counter
-      // - Only totalGenerated and lastGeneratedAt fields can be modified
-      // - totalGenerated can only increase (prevents resetting to 0)
-      // - Increase limited to +10 per write to prevent massive jumps
-      allow update: if isAuthenticated()
-        && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['totalGenerated', 'lastGeneratedAt'])
-        && request.resource.data.totalGenerated > resource.data.totalGenerated
-        && request.resource.data.totalGenerated <= resource.data.totalGenerated + 10;
-
-      // Delete: only admins (for cleanup)
-      allow delete: if isAdmin();
+      // ANYONE can write (atomic increment of totalGenerated counter)
+      // This is intentionally permissive to allow anonymous users
+      // to contribute to the "sequences ever generated" counter
+      allow write: if true;
     }
 
     // ============================================================================
@@ -1112,6 +1105,58 @@ service cloud.firestore {
 
       // Only admins can write labels
       allow write: if isAdmin();
+    }
+
+    // ============================================================================
+    // SYSTEM DECKS (Curated Sequence Collections)
+    // ============================================================================
+
+    // System decks - readable by all authenticated users, writable by admins only
+    // These are curated collections of sequences (e.g., Level 1 LOOP deck)
+    match /decks/{deckId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+
+      // Sequences within a deck
+      match /sequences/{sequenceId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin();
+      }
+    }
+
+    // ============================================================================
+    // DEVELOPERS COLLECTION (Multi-Developer Access Control)
+    // ============================================================================
+
+    // Developers collection - the authority on who can access developer tools
+    // Any approved developer can read the roster; only admin can manage it
+    match /developers/{uid} {
+      // Authenticated users can read their own record (needed for role lookup at login)
+      // Approved developers can read all records (for list-developers command)
+      allow read: if isAuthenticated() && request.auth.uid == uid
+                  || isApprovedDeveloper();
+      allow write: if isDeveloperAdmin();
+    }
+
+    // ============================================================================
+    // AGENT SESSIONS (Developer CLI Sessions)
+    // ============================================================================
+
+    // Agent sessions - tracks active developer CLI sessions
+    // Any approved developer can read/write session data
+    match /agentSessions/{sessionId} {
+      allow read, write: if isApprovedDeveloper();
+    }
+
+    // ============================================================================
+    // MAIL COLLECTION (Email Trigger Extension)
+    // ============================================================================
+
+    // Mail collection - documents trigger the Firebase email extension
+    // Approved developers can create mail documents; no reads needed
+    match /mail/{mailId} {
+      allow create: if isApprovedDeveloper();
+      allow read: if false;
     }
 
     // ============================================================================

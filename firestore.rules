@@ -430,6 +430,26 @@ service cloud.firestore {
         allow delete: if isOwner(userId) || isAdmin();
       }
 
+      // -------------------------------------------------------------------------
+      // COMPOSITIONAL MODEL: Hand Paths (Tier 1) and Solo Props (Tier 2)
+      // -------------------------------------------------------------------------
+      // User-owned artifacts for the three-tier compositional sequence model.
+      // Same ownership pattern as sequences.
+
+      match /handPaths/{pathId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId);
+        allow update: if isOwner(userId) || isAdmin();
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      match /soloProps/{soloPropId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId);
+        allow update: if isOwner(userId) || isAdmin();
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
       // Weekly challenge progress
       match /weeklyProgress/{progressId} {
         allow read, create, update: if isOwner(userId);
@@ -836,6 +856,28 @@ service cloud.firestore {
       allow read: if true;
 
       // Only the owner can write (via sync from their private library)
+      allow create, update: if isAuthenticated()
+        && request.resource.data.ownerId == request.auth.uid;
+      allow delete: if isAuthenticated()
+        && resource.data.ownerId == request.auth.uid;
+    }
+
+    // ============================================================================
+    // PUBLIC HAND PATHS AND SOLO PROPS
+    // ============================================================================
+
+    // Public hand paths - browsable by anyone, writable by owner
+    match /publicHandPaths/{pathId} {
+      allow read: if true;
+      allow create, update: if isAuthenticated()
+        && request.resource.data.ownerId == request.auth.uid;
+      allow delete: if isAuthenticated()
+        && resource.data.ownerId == request.auth.uid;
+    }
+
+    // Public solo props - browsable by anyone, writable by owner
+    match /publicSoloProps/{soloPropId} {
+      allow read: if true;
       allow create, update: if isAuthenticated()
         && request.resource.data.ownerId == request.auth.uid;
       allow delete: if isAuthenticated()
