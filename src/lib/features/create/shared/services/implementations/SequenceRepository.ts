@@ -18,6 +18,18 @@ import type { IReversalDetector } from "../contracts/IReversalDetector";
 import type { ISequenceRepository } from "../contracts/ISequenceRepository";
 import type { ISequenceNormalizer } from "$lib/features/compose/services/contracts/ISequenceNormalizer";
 import type { ISequenceDomainManager } from "../contracts/ISequenceDomainManager";
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  or,
+} from "firebase/firestore";
+import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
+import {
+  getUserSequencesPath,
+} from "$lib/features/library/data/firestore-paths";
 
 export class SequenceRepository implements ISequenceRepository {
   constructor(
@@ -143,6 +155,66 @@ export class SequenceRepository implements ISequenceRepository {
       });
     } catch (error) {
       console.error("Failed to get all sequences:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Find all sequences that reference a specific hand path, on either the blue
+   * or red performer's side. Queries Firestore directly because the
+   * local persistence layer (Dexie) doesn't index these hash fields.
+   */
+  async getByPathHash(pathHash: string): Promise<SequenceData[]> {
+    try {
+      const uid = authState.effectiveUserId;
+      if (!uid) return [];
+
+      const firestore = await getFirestoreInstance();
+      const ref = collection(firestore, getUserSequencesPath(uid));
+
+      // Firestore OR query: match on bluePathHash OR redPathHash
+      const q = query(
+        ref,
+        or(
+          where("bluePathHash", "==", pathHash),
+          where("redPathHash", "==", pathHash)
+        )
+      );
+
+      const snap = await getDocs(q);
+      return snap.docs.map((d) => ({ ...d.data(), id: d.id } as SequenceData));
+    } catch (error) {
+      console.error("[SequenceRepository] getByPathHash failed:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Find all sequences that reference a specific solo prop, on either the blue
+   * or red performer's side. Queries Firestore directly because the
+   * local persistence layer (Dexie) doesn't index these hash fields.
+   */
+  async getBySoloHash(soloHash: string): Promise<SequenceData[]> {
+    try {
+      const uid = authState.effectiveUserId;
+      if (!uid) return [];
+
+      const firestore = await getFirestoreInstance();
+      const ref = collection(firestore, getUserSequencesPath(uid));
+
+      // Firestore OR query: match on blueSoloHash OR redSoloHash
+      const q = query(
+        ref,
+        or(
+          where("blueSoloHash", "==", soloHash),
+          where("redSoloHash", "==", soloHash)
+        )
+      );
+
+      const snap = await getDocs(q);
+      return snap.docs.map((d) => ({ ...d.data(), id: d.id } as SequenceData));
+    } catch (error) {
+      console.error("[SequenceRepository] getBySoloHash failed:", error);
       return [];
     }
   }
