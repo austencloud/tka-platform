@@ -109,6 +109,13 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
         originalCreatorName: sequence.forkAttribution?.originalCreatorName,
         publishedAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
+        // Compositional hash fields for cross-tier queries (find sequences
+        // that share a hand path or solo prop). The full compositional objects
+        // live in the user's library doc — these hashes are just query keys.
+        bluePathHash: sequence.bluePathHash,
+        redPathHash: sequence.redPathHash,
+        blueSoloHash: sequence.blueSoloHash,
+        redSoloHash: sequence.redSoloHash,
       };
 
       // Strip undefined fields — Firestore rejects them in setDoc
