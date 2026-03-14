@@ -230,4 +230,12 @@ export const DETECTOR_REGISTRY: DetectorRegistration[] = [
     containerKey: "ledThresholdDetector",
     capabilities: { supportsLive: true, supportsOcclusion: false, requiresGPU: false },
   },
+  {
+    id: "color-match-v1",
+    name: "Color Match",
+    description: "Detects endpoints by matching specific colors. Works in varied lighting.",
+    version: "1.0.0",
+    containerKey: "colorEndpointDetector",
+    capabilities: { supportsLive: true, supportsOcclusion: false, requiresGPU: false },
+  },
 ];
