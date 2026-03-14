@@ -32,6 +32,7 @@ import type { ArenaContainer } from "./containers/arena-container";
 import type { AssembleContainer } from "./containers/assemble-container";
 import type { LabContainer } from "./containers/lab-container";
 import type { CompositionContainer } from "./containers/composition-container";
+import type { VideoTrailsContainer } from "./containers/video-trails-container";
 
 // ============================================================================
 // Container type imports — factory (ReturnType<typeof create...>) containers
@@ -105,6 +106,7 @@ type EffectsLabItems = ItemsOf<EffectsLabContainer>;
 type ArenaItems = ItemsOf<ArenaContainer>;
 type AssembleItems = ItemsOf<AssembleContainer>;
 type LabItems = ItemsOf<LabContainer>;
+type VideoTrailsItems = ItemsOf<VideoTrailsContainer>;
 
 // Factory containers
 type FeedbackItems = ItemsOf<FeedbackContainer>;
@@ -217,5 +219,7 @@ export type IAppContainerItems =
 	MuseumItems &
 	// Push notifications (FCM token management)
 	PushItems &
+	// Video Trails services (endpoint detection, tip adaptation, export)
+	VideoTrailsItems &
 	// Standalone services
 	StandaloneItems;
