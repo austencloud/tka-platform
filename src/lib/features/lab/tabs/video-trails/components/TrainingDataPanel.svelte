@@ -172,7 +172,7 @@
     // Seek to each corrected frame, capture the image, and build the training pair.
     // Seeking is async — we wait for seeked event before drawing.
     for (let i = 0; i < correctedFrameNumbers.length; i++) {
-      const frameIndex = correctedFrameNumbers[i];
+      const frameIndex = correctedFrameNumbers[i]!;
       const targetTime = frameIndex / fps;
 
       await new Promise<void>((resolve) => {
