@@ -19,6 +19,21 @@
     saveStaticPictograph,
     type PictographFileKey,
   } from "../services/implementations/StaticPictographWriter";
+  import { SvgSanitizer } from "../services/implementations/SvgSanitizer";
+
+  /**
+   * Module-level SVG cache shared across all InlinePictograph instances.
+   * Keyed by "letter-variation-gridMode[-propType]" — same key pattern as PNG cache.
+   * Themeable SVGs work in both light/dark mode, so one cache entry serves all themes.
+   */
+  const svgCache = new Map<string, string>();
+  const svgSanitizer = new SvgSanitizer();
+
+  function buildSvgCacheKey(p: InlinePictograph): string {
+    const parts = [p.letter, String(p.variation ?? 0), p.gridMode ?? "diamond"];
+    if (p.propType) parts.push(p.propType);
+    return parts.join("-");
+  }
 
   // Props - size is optional; when not provided, uses responsive CSS sizing
   let {
@@ -36,6 +51,13 @@
   let imageUrl = $state<string | null>(null);
   let loading = $state(true);
   let error = $state(false);
+  let svgMarkup = $state<string | null>(null);
+  let useSvg = $state(true);
+
+  const prefersReducedMotion =
+    typeof window !== "undefined"
+      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      : false;
 
   // Generate cache key (includes grid mode and prop type for uniqueness)
   function getCacheKey(letter: string, variation: number, imageSize: number): string {
@@ -75,9 +97,71 @@
     }
   }
 
+  async function fetchSvgPictograph(): Promise<boolean> {
+    const cacheKey = buildSvgCacheKey(pictograph);
+
+    const cached = svgCache.get(cacheKey);
+    if (cached) {
+      svgMarkup = cached;
+      return true;
+    }
+
+    try {
+      const response = await fetch("/api/tika/pictograph", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          letter: pictograph.letter,
+          variation: pictograph.variation ?? 0,
+          gridMode: pictograph.gridMode ?? "diamond",
+          format: "svg",
+          options: {
+            darkMode: true,
+            size: apiSize,
+            showTKA: true,
+            showGrid: true,
+            ...(pictograph.propType && {
+              bluePropType: pictograph.propType,
+              redPropType: pictograph.propType,
+            }),
+          },
+        }),
+      });
+
+      if (!response.ok) return false;
+
+      const data = await response.json();
+      if (!data.svgMarkup) return false;
+
+      const sanitized = svgSanitizer.sanitize(data.svgMarkup);
+      svgCache.set(cacheKey, sanitized);
+      svgMarkup = sanitized;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   // Fetch pictograph on mount or when pictograph changes
   $effect(() => {
-    fetchPictograph();
+    const _letter = pictograph.letter;
+    if (!_letter) return;
+
+    loading = true;
+    error = false;
+    svgMarkup = null;
+
+    (async () => {
+      if (useSvg) {
+        const svgSuccess = await fetchSvgPictograph();
+        if (svgSuccess) {
+          loading = false;
+          return;
+        }
+        useSvg = false;
+      }
+      await fetchPictograph();
+    })();
   });
 
   async function fetchPictograph() {
@@ -175,6 +259,13 @@
     <div class="error-state">
       <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
       <span>{pictograph.letter}</span>
+    </div>
+  {:else if svgMarkup}
+    <div
+      class="svg-pictograph"
+      class:animate={!prefersReducedMotion}
+    >
+      {@html svgMarkup}
     </div>
   {:else if imageUrl}
     <img src={imageUrl} alt="Letter {pictograph.letter}" />
@@ -277,6 +368,72 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
   }
 
+  /* SVG inline rendering */
+  .svg-pictograph {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .svg-pictograph :global(svg) {
+    width: var(--size, 120px);
+    max-width: 40vw;
+    height: auto;
+    border-radius: 8px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .inline-pictograph.responsive .svg-pictograph :global(svg) {
+    width: clamp(180px, 50vw, 320px);
+    max-width: none;
+  }
+
+  /* GPU-accelerated progressive reveal */
+  .svg-pictograph.animate :global(.svg-bg),
+  .svg-pictograph.animate :global(.svg-grid),
+  .svg-pictograph.animate :global(.svg-prop),
+  .svg-pictograph.animate :global(.svg-arrow),
+  .svg-pictograph.animate :global(.svg-glyph) {
+    will-change: transform, opacity;
+  }
+
+  .svg-pictograph.animate :global(.svg-bg) {
+    animation: svgReveal 0.3s ease-out both;
+    animation-delay: 0ms;
+  }
+
+  .svg-pictograph.animate :global(.svg-grid) {
+    animation: svgReveal 0.3s ease-out both;
+    animation-delay: 80ms;
+  }
+
+  .svg-pictograph.animate :global(.svg-prop) {
+    animation: svgReveal 0.35s ease-out both;
+    animation-delay: 200ms;
+  }
+
+  .svg-pictograph.animate :global(.svg-arrow) {
+    animation: svgReveal 0.35s ease-out both;
+    animation-delay: 350ms;
+  }
+
+  .svg-pictograph.animate :global(.svg-glyph) {
+    animation: svgReveal 0.3s ease-out both;
+    animation-delay: 480ms;
+  }
+
+  @keyframes svgReveal {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
   /* Mobile adjustments */
   @media (max-width: 480px) {
     .inline-pictograph img,
@@ -290,6 +447,14 @@
   @media (prefers-reduced-motion: reduce) {
     .placeholder i {
       animation: none;
+    }
+    .svg-pictograph :global(.svg-bg),
+    .svg-pictograph :global(.svg-grid),
+    .svg-pictograph :global(.svg-prop),
+    .svg-pictograph :global(.svg-arrow),
+    .svg-pictograph :global(.svg-glyph) {
+      animation: none !important;
+      opacity: 1 !important;
     }
   }
 </style>
