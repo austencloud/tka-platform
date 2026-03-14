@@ -188,6 +188,10 @@ export interface RenderVisibilityOptions {
   // Prop type options (null = use default staff)
   bluePropType?: string | null;
   redPropType?: string | null;
+  /** When true, use CSS custom properties for colors */
+  themeable?: boolean;
+  /** When true, omit XML declaration for inline HTML embedding */
+  inline?: boolean;
 }
 
 // ============================================================================
@@ -244,7 +248,7 @@ export class StandaloneRenderer {
    * Render a pictograph to PNG buffer
    */
   async renderToPng(input: PictographInput, options: RenderVisibilityOptions = {}): Promise<Buffer> {
-    const svg = await this.renderToSvg(input, options);
+    const svg = await this.renderToSvg(input, { ...options, themeable: false, inline: false });
     return this.svgToPng(svg, options.size || 400);
   }
 
@@ -275,52 +279,54 @@ export class StandaloneRenderer {
       showRedMotion = true,
       bluePropType = null,
       redPropType = null,
+      themeable = false,
+      inline = false,
     } = options;
 
     const gridMode = this.parseGridMode(input.gridMode);
     const svgParts: string[] = [];
 
     // 1. Background
-    const bgColor = darkMode ? "#0a0a0f" : "#ffffff";
-    svgParts.push(`<rect width="${VIEWBOX_SIZE}" height="${VIEWBOX_SIZE}" fill="${bgColor}"/>`);
+    const bgColor = this.resolveColor("--dm-bg", "#0a0a0f", "#ffffff", darkMode, themeable);
+    svgParts.push(`<g class="svg-bg"><rect width="${VIEWBOX_SIZE}" height="${VIEWBOX_SIZE}" fill="${bgColor}"/></g>`);
 
     // 2. Grid
     if (showGrid) {
-      const gridSvg = this.renderGrid(gridMode, darkMode);
-      if (gridSvg) svgParts.push(gridSvg);
+      const gridSvg = this.renderGrid(gridMode, darkMode, themeable);
+      if (gridSvg) svgParts.push(`<g class="svg-grid">${gridSvg}</g>`);
     }
 
     // 3. Props (using CORRECT placement logic with beta offset)
     // Pass BOTH propTypes to each renderProp call so beta offset can detect when both are hands
     if (showBlueMotion) {
-      const blueProp = this.renderProp(input, input.blueMotion, gridMode, darkMode, bluePropType, redPropType);
-      if (blueProp) svgParts.push(blueProp);
+      const blueProp = this.renderProp(input, input.blueMotion, gridMode, darkMode, bluePropType, redPropType, themeable);
+      if (blueProp) svgParts.push(`<g class="svg-prop svg-prop-blue">${blueProp}</g>`);
     }
     if (showRedMotion) {
-      const redProp = this.renderProp(input, input.redMotion, gridMode, darkMode, bluePropType, redPropType);
-      if (redProp) svgParts.push(redProp);
+      const redProp = this.renderProp(input, input.redMotion, gridMode, darkMode, bluePropType, redPropType, themeable);
+      if (redProp) svgParts.push(`<g class="svg-prop svg-prop-red">${redProp}</g>`);
     }
 
     // 4. Arrows (using CORRECT placement logic WITH adjustments)
     if (showBlueMotion) {
-      const blueArrow = this.renderArrow(input, input.blueMotion, gridMode, darkMode);
-      if (blueArrow) svgParts.push(blueArrow);
+      const blueArrow = this.renderArrow(input, input.blueMotion, gridMode, darkMode, themeable);
+      if (blueArrow) svgParts.push(`<g class="svg-arrow svg-arrow-blue">${blueArrow}</g>`);
     }
     if (showRedMotion) {
-      const redArrow = this.renderArrow(input, input.redMotion, gridMode, darkMode);
-      if (redArrow) svgParts.push(redArrow);
+      const redArrow = this.renderArrow(input, input.redMotion, gridMode, darkMode, themeable);
+      if (redArrow) svgParts.push(`<g class="svg-arrow svg-arrow-red">${redArrow}</g>`);
     }
 
     // 5. Position glyph (top center)
     if (showPositions && input.startPosition && input.endPosition) {
-      const positionSvg = this.renderPositionGlyph(input.startPosition, input.endPosition, darkMode);
-      if (positionSvg) svgParts.push(positionSvg);
+      const positionSvg = this.renderPositionGlyph(input.startPosition, input.endPosition, darkMode, themeable);
+      if (positionSvg) svgParts.push(`<g class="svg-glyph svg-glyph-position">${positionSvg}</g>`);
     }
 
     // 6. Elemental glyph (top right) - only for Type1 letters
     if (showElemental && input.letter && input.startPosition) {
-      const elementalSvg = this.renderElementalGlyph(input.letter, input.startPosition, darkMode);
-      if (elementalSvg) svgParts.push(elementalSvg);
+      const elementalSvg = this.renderElementalGlyph(input.letter, input.startPosition, darkMode, themeable);
+      if (elementalSvg) svgParts.push(`<g class="svg-glyph svg-glyph-elemental">${elementalSvg}</g>`);
     }
 
     // 7. TKA Letter glyph with turn numbers (bottom left)
@@ -329,15 +335,16 @@ export class StandaloneRenderer {
         input.letter,
         input.blueMotion?.turns,
         input.redMotion?.turns,
-        darkMode
+        darkMode,
+        themeable
       );
-      if (letterSvg) svgParts.push(letterSvg);
+      if (letterSvg) svgParts.push(`<g class="svg-glyph svg-glyph-letter">${letterSvg}</g>`);
     }
 
     // 8. VTG glyph (bottom right)
     if (showVTG && input.letter && input.startPosition) {
-      const vtgSvg = this.renderVTGGlyph(input.letter, input.startPosition, darkMode);
-      if (vtgSvg) svgParts.push(vtgSvg);
+      const vtgSvg = this.renderVTGGlyph(input.letter, input.startPosition, darkMode, themeable);
+      if (vtgSvg) svgParts.push(`<g class="svg-glyph svg-glyph-vtg">${vtgSvg}</g>`);
     }
 
     // 9. Reversal indicators (left edge)
@@ -345,22 +352,34 @@ export class StandaloneRenderer {
       const reversalSvg = this.renderReversalIndicators(
         input.blueReversal ?? false,
         input.redReversal ?? false,
-        darkMode
+        darkMode,
+        themeable
       );
-      if (reversalSvg) svgParts.push(reversalSvg);
+      if (reversalSvg) svgParts.push(`<g class="svg-glyph svg-glyph-reversal">${reversalSvg}</g>`);
     }
 
-    return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}" width="${VIEWBOX_SIZE}" height="${VIEWBOX_SIZE}">
+    const xmlDecl = inline ? "" : `<?xml version="1.0" encoding="UTF-8"?>\n`;
+    return `${xmlDecl}<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}" width="${VIEWBOX_SIZE}" height="${VIEWBOX_SIZE}" role="img" aria-label="Pictograph${input.letter ? ` for letter ${input.letter}` : ''}">
 ${svgParts.join("\n")}
 </svg>`;
+  }
+
+  // ==========================================================================
+  // COLOR RESOLUTION
+  // ==========================================================================
+
+  private resolveColor(cssVar: string, darkValue: string, lightValue: string, darkMode: boolean, themeable: boolean): string {
+    if (themeable) {
+      return `var(${cssVar}, ${darkValue})`;
+    }
+    return darkMode ? darkValue : lightValue;
   }
 
   // ==========================================================================
   // GRID RENDERING
   // ==========================================================================
 
-  private renderGrid(gridMode: GridMode, darkMode: boolean): string {
+  private renderGrid(gridMode: GridMode, darkMode: boolean, themeable: boolean = false): string {
     const gridFileName = gridMode === GridMode.BOX ? "box_grid.svg" : gridMode === GridMode.SKEWED ? "skewed_grid.svg" : "diamond_grid.svg";
     const gridPath = join(this.projectRoot, "static/images/grid", gridFileName);
 
@@ -382,7 +401,7 @@ ${svgParts.join("\n")}
       // 3. Layer 2 points use fill:none (not visible in normal mode)
       //
       // Solution: Add explicit fill to circles without fill attribute
-      const gridColor = darkMode ? "#d0d0d0" : "#000000";
+      const gridColor = this.resolveColor("--dm-grid-point", "#d0d0d0", "#000000", darkMode, themeable);
       const opacity = darkMode ? "0.85" : "1.0"; // Solid black in light mode
 
       // Add fill attribute to circles that don't have one
@@ -472,7 +491,8 @@ ${svgParts.join("\n")}
     gridMode: GridMode,
     darkMode: boolean,
     bluePropType: string | null = null,
-    redPropType: string | null = null
+    redPropType: string | null = null,
+    themeable: boolean = false
   ): string {
     // Get the end location and orientation
     const endLocation = motion.endLocation.toLowerCase() as GridLocation;
@@ -523,8 +543,8 @@ ${svgParts.join("\n")}
       // Apply color - replace any existing fill colors with the prop color
       // Staff SVG uses #2e3192 as its base color
       const color = motion.color === "blue"
-        ? (darkMode ? BLUE_COLOR : BLUE_COLOR_LIGHT)
-        : (darkMode ? RED_COLOR : RED_COLOR_LIGHT);
+        ? this.resolveColor("--dm-motion-blue", BLUE_COLOR_DARK, BLUE_COLOR_LIGHT, darkMode, themeable)
+        : this.resolveColor("--dm-motion-red", RED_COLOR_DARK, RED_COLOR_LIGHT, darkMode, themeable);
 
       innerContent = innerContent.replace(/#000000/gi, color);
       innerContent = innerContent.replace(/black/gi, color);
@@ -552,7 +572,7 @@ ${svgParts.join("\n")}
   // ARROW RENDERING (USING CORRECT PLACEMENT + ADJUSTMENTS)
   // ==========================================================================
 
-  private renderArrow(pictograph: PictographInput, motion: MotionInput, gridMode: GridMode, darkMode: boolean): string {
+  private renderArrow(pictograph: PictographInput, motion: MotionInput, gridMode: GridMode, darkMode: boolean, themeable: boolean = false): string {
     const motionType = motion.motionType.toLowerCase();
 
     // Static motions don't have arrows
@@ -696,8 +716,8 @@ ${svgParts.join("\n")}
       // Apply color - replace any existing fill colors with the arrow color
       // Arrow SVGs use #2e3192 as their base color
       const color = motion.color === "blue"
-        ? (darkMode ? BLUE_COLOR : BLUE_COLOR_LIGHT)
-        : (darkMode ? RED_COLOR : RED_COLOR_LIGHT);
+        ? this.resolveColor("--dm-motion-blue", BLUE_COLOR_DARK, BLUE_COLOR_LIGHT, darkMode, themeable)
+        : this.resolveColor("--dm-motion-red", RED_COLOR_DARK, RED_COLOR_LIGHT, darkMode, themeable);
 
       innerContent = innerContent.replace(/#000000/gi, color);
       innerContent = innerContent.replace(/black/gi, color);
@@ -773,7 +793,8 @@ ${svgParts.join("\n")}
     redTurns: number | "fl" | undefined,
     letterWidth: number,
     letterHeight: number,
-    darkMode: boolean
+    darkMode: boolean,
+    themeable: boolean = false
   ): string {
     const parts: string[] = [];
 
@@ -788,13 +809,13 @@ ${svgParts.join("\n")}
 
     // Render top turn number (blue motion)
     if (blueTurns !== undefined && blueTurns !== 0) {
-      const topTurnSvg = this.renderSingleTurnNumber(blueTurns, baseX, topY, "blue", darkMode);
+      const topTurnSvg = this.renderSingleTurnNumber(blueTurns, baseX, topY, "blue", darkMode, themeable);
       if (topTurnSvg) parts.push(topTurnSvg);
     }
 
     // Render bottom turn number (red motion)
     if (redTurns !== undefined && redTurns !== 0) {
-      const bottomTurnSvg = this.renderSingleTurnNumber(redTurns, baseX, bottomY, "red", darkMode);
+      const bottomTurnSvg = this.renderSingleTurnNumber(redTurns, baseX, bottomY, "red", darkMode, themeable);
       if (bottomTurnSvg) parts.push(bottomTurnSvg);
     }
 
@@ -809,7 +830,8 @@ ${svgParts.join("\n")}
     x: number,
     y: number,
     color: "blue" | "red",
-    darkMode: boolean
+    darkMode: boolean,
+    themeable: boolean = false
   ): string {
     // Convert turns value to filename
     const filename = turns === "fl" ? "float.svg" : `${turns}.svg`;
@@ -842,8 +864,8 @@ ${svgParts.join("\n")}
       // IMPORTANT: We must convert CSS class fills to inline fills because multiple
       // embedded SVGs with the same class names (.cls-1) will conflict in the document
       const fillColor = color === "blue"
-        ? (darkMode ? BLUE_COLOR : BLUE_COLOR_LIGHT)
-        : (darkMode ? RED_COLOR : RED_COLOR_LIGHT);
+        ? this.resolveColor("--dm-motion-blue", BLUE_COLOR_DARK, BLUE_COLOR_LIGHT, darkMode, themeable)
+        : this.resolveColor("--dm-motion-red", RED_COLOR_DARK, RED_COLOR_LIGHT, darkMode, themeable);
 
       // Remove the entire <defs><style>...</style></defs> block to avoid CSS conflicts
       innerContent = innerContent.replace(/<defs>[\s\S]*?<\/defs>/gi, "");
@@ -876,14 +898,15 @@ ${svgParts.join("\n")}
     letter: string,
     blueTurns: number | "fl" | undefined,
     redTurns: number | "fl" | undefined,
-    darkMode: boolean
+    darkMode: boolean,
+    themeable: boolean = false
   ): string {
     // Determine the correct type folder for this letter
     const typeFolder = LETTER_TYPE_FOLDER[letter] || "Type1";
     const letterPath = join(this.projectRoot, "static/images/letters_trimmed", typeFolder, `${letter}.svg`);
 
     if (!existsSync(letterPath)) {
-      const textColor = darkMode ? "#e6e6e6" : "#000000";
+      const textColor = this.resolveColor("--dm-glyph-fill", "#e6e6e6", "#000000", darkMode, themeable);
       return `<text x="${TKA_GLYPH_X}" y="${TKA_GLYPH_Y + 80}" font-family="Georgia, serif" font-size="100" font-weight="bold" fill="${textColor}">${letter}</text>`;
     }
 
@@ -905,17 +928,18 @@ ${svgParts.join("\n")}
       const innerMatch = letterSvg.match(/<svg[^>]*>([\s\S]*)<\/svg>/i);
       let innerContent = innerMatch ? innerMatch[1] : letterSvg;
 
-      // Apply dark mode color
+      // Apply dark mode / themeable color
       // Many SVGs don't specify fill color (defaulting to black) - we need to add explicit fill
-      if (darkMode) {
-        innerContent = innerContent.replace(/#000000/gi, "#e6e6e6");
-        innerContent = innerContent.replace(/black/gi, "#e6e6e6");
+      const glyphFill = this.resolveColor("--dm-glyph-fill", "#e6e6e6", "#000000", darkMode, themeable);
+      if (darkMode || themeable) {
+        innerContent = innerContent.replace(/#000000/gi, glyphFill);
+        innerContent = innerContent.replace(/black/gi, glyphFill);
         // For paths without explicit fill, add one (handles SVGs that rely on default black)
-        innerContent = innerContent.replace(/<path(?![^>]*fill=)/gi, '<path fill="#e6e6e6" ');
+        innerContent = innerContent.replace(/<path(?![^>]*fill=)/gi, `<path fill="${glyphFill}" `);
       }
 
       // Render turn numbers (positioned relative to letter)
-      const turnNumbersSvg = this.renderTurnNumbers(blueTurns, redTurns, width, height, darkMode);
+      const turnNumbersSvg = this.renderTurnNumbers(blueTurns, redTurns, width, height, darkMode, themeable);
 
       // Combine letter and turn numbers in a group
       return `<g transform="translate(${TKA_GLYPH_X}, ${TKA_GLYPH_Y})">
@@ -926,12 +950,12 @@ ${turnNumbersSvg}
 </g>`;
     } catch (error) {
       console.error("[Renderer] Failed to load letter:", error);
-      const textColor = darkMode ? "#e6e6e6" : "#000000";
+      const textColor = this.resolveColor("--dm-glyph-fill", "#e6e6e6", "#000000", darkMode, themeable);
       return `<text x="${TKA_GLYPH_X}" y="${TKA_GLYPH_Y + 80}" font-family="Georgia, serif" font-size="100" font-weight="bold" fill="${textColor}">${letter}</text>`;
     }
   }
 
-  private renderVTGGlyph(letter: string, startPosition: string, darkMode: boolean): string {
+  private renderVTGGlyph(letter: string, startPosition: string, darkMode: boolean, themeable: boolean = false): string {
     const vtgMode = this.calculateVTGMode(letter, startPosition);
     if (!vtgMode) return "";
 
@@ -948,13 +972,14 @@ ${turnNumbersSvg}
       const innerMatch = vtgSvg.match(/<svg[^>]*>([\s\S]*)<\/svg>/i);
       let innerContent = innerMatch ? innerMatch[1] : vtgSvg;
 
-      // Apply dark mode color
+      // Apply dark mode / themeable color
       // Many SVGs don't specify fill color (defaulting to black) - we need to add explicit fill
-      if (darkMode) {
-        innerContent = innerContent.replace(/#000000/gi, "#e6e6e6");
-        innerContent = innerContent.replace(/black/gi, "#e6e6e6");
+      const glyphFill = this.resolveColor("--dm-glyph-fill", "#e6e6e6", "#000000", darkMode, themeable);
+      if (darkMode || themeable) {
+        innerContent = innerContent.replace(/#000000/gi, glyphFill);
+        innerContent = innerContent.replace(/black/gi, glyphFill);
         // For paths without explicit fill, add one (handles SVGs that rely on default black)
-        innerContent = innerContent.replace(/<path(?![^>]*fill=)/gi, '<path fill="#e6e6e6" ');
+        innerContent = innerContent.replace(/<path(?![^>]*fill=)/gi, `<path fill="${glyphFill}" `);
       }
 
       // Position in bottom-right corner
@@ -978,7 +1003,7 @@ ${turnNumbersSvg}
    * Render elemental glyph (top-right corner)
    * Only shows for Type1 letters (A-V)
    */
-  private renderElementalGlyph(letter: string, startPosition: string, darkMode: boolean): string {
+  private renderElementalGlyph(letter: string, startPosition: string, darkMode: boolean, themeable: boolean = false): string {
     const letterUpper = letter.toUpperCase();
 
     // Only show for Type1 letters
@@ -1080,7 +1105,7 @@ ${turnNumbersSvg}
     }
   }
 
-  private renderPositionGlyph(startPosition: string, endPosition: string, darkMode: boolean): string {
+  private renderPositionGlyph(startPosition: string, endPosition: string, darkMode: boolean, themeable: boolean = false): string {
     const startGroup = this.extractPositionGroup(startPosition);
     const endGroup = this.extractPositionGroup(endPosition);
 
@@ -1122,7 +1147,7 @@ ${turnNumbersSvg}
         // Remove CSS style blocks (resvg doesn't handle CSS in nested SVGs)
         content = content.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
 
-        const fillColor = darkMode ? "#e6e6e6" : "#231F20";
+        const fillColor = this.resolveColor("--dm-glyph-fill", "#e6e6e6", "#231F20", darkMode, themeable);
 
         if (isArrow) {
           // Arrow SVG uses .st0 for stroke line, .st1 for fill polygon
@@ -1134,10 +1159,10 @@ ${turnNumbersSvg}
         }
 
         // Replace any remaining color references
-        if (darkMode) {
-          content = content.replace(/#231F20/gi, "#e6e6e6");
-          content = content.replace(/#000000/gi, "#e6e6e6");
-          content = content.replace(/black/gi, "#e6e6e6");
+        if (darkMode || themeable) {
+          content = content.replace(/#231F20/gi, fillColor);
+          content = content.replace(/#000000/gi, fillColor);
+          content = content.replace(/black/gi, fillColor);
         }
         return { content, viewBox };
       };
@@ -1204,16 +1229,22 @@ ${turnNumbersSvg}
   private renderReversalIndicators(
     blueReversal: boolean,
     redReversal: boolean,
-    darkMode: boolean
+    darkMode: boolean,
+    themeable: boolean = false
   ): string {
     // Use shared core calculation for positioning
     const { dots } = calculateReversalPositions(blueReversal, redReversal, darkMode);
 
     if (dots.length === 0) return "";
 
-    const circles = dots.map(
-      dot => `<circle cx="${dot.cx}" cy="${dot.cy}" r="${dot.r}" fill="${dot.color}"/>`
-    );
+    const circles = dots.map(dot => {
+      const fill = themeable
+        ? (dot.color === BLUE_COLOR_DARK || dot.color === BLUE_COLOR_LIGHT
+          ? this.resolveColor("--dm-motion-blue", BLUE_COLOR_DARK, BLUE_COLOR_LIGHT, darkMode, themeable)
+          : this.resolveColor("--dm-motion-red", RED_COLOR_DARK, RED_COLOR_LIGHT, darkMode, themeable))
+        : dot.color;
+      return `<circle cx="${dot.cx}" cy="${dot.cy}" r="${dot.r}" fill="${fill}"/>`;
+    });
 
     return `<g class="reversal-indicators">${circles.join("\n")}</g>`;
   }
