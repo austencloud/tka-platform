@@ -13,7 +13,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ISharer } from "$lib/shared/share/services/contracts/ISharer";
-import type { IFirebaseVideoUploader } from "$lib/shared/share/services/contracts/IFirebaseVideoUploader";
+import type { IVideoUploader } from "$lib/shared/share/services/contracts/IVideoUploader";
 import type { ITagManager } from "../contracts/ITagManager";
 import type { ILibraryRepository } from "../contracts/ILibraryRepository";
 import { TAG_COLORS } from "../../domain/models/Tag";
@@ -32,13 +32,13 @@ import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
 export class LibrarySaveService implements ILibrarySaveService {
   private readonly shareService: ISharer | null;
-  private readonly uploadService: IFirebaseVideoUploader | null;
+  private readonly uploadService: IVideoUploader | null;
   private readonly tagService: ITagManager | null;
   private readonly libraryRepository: ILibraryRepository;
 
   constructor(
     shareService: ISharer | null,
-    uploadService: IFirebaseVideoUploader | null,
+    uploadService: IVideoUploader | null,
     tagService: ITagManager | null,
     libraryRepository: ILibraryRepository
   ) {

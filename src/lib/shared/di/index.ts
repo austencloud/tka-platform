@@ -256,7 +256,7 @@ const libraryContainer = typeof window !== 'undefined' ? createLibraryContainer(
   },
   librarySaveService: {
     sharer: shareContainer.items.sharer,
-    firebaseVideoUploader: shareContainer.items.firebaseVideoUploader,
+    videoUploader: shareContainer.items.videoUploader,
     tagManager: coreContainer.items.tagManager,
   },
   publicIndexSyncer: {

@@ -16,7 +16,7 @@ import type { IAchievementManager } from "$lib/shared/gamification/services/cont
 import type { ITagManager } from "$lib/features/library/services/contracts/ITagManager";
 import type { IOrientationCycleDetector } from "$lib/features/create/generate/circular/services/contracts/IOrientationCycleDetector";
 import type { ISharer } from "$lib/shared/share/services/contracts/ISharer";
-import type { IFirebaseVideoUploader } from "$lib/shared/share/services/contracts/IFirebaseVideoUploader";
+import type { IVideoUploader } from "$lib/shared/share/services/contracts/IVideoUploader";
 import type { IContentModerator } from "$lib/features/moderation/services/contracts/IContentModerator";
 import type { IContentAppealManager } from "$lib/features/moderation/services/contracts/IContentAppealManager";
 import type { IConflictResolver } from "$lib/shared/offline/services/contracts/IConflictResolver";
@@ -38,7 +38,7 @@ interface LibraryRepositoryDeps {
  */
 interface LibrarySaveServiceDeps {
   sharer?: ISharer | null;
-  firebaseVideoUploader?: IFirebaseVideoUploader | null;
+  videoUploader?: IVideoUploader | null;
   tagManager?: ITagManager | null;
 }
 
@@ -102,7 +102,7 @@ export function createLibraryContainer(deps: {
     librarySaveService: () =>
       new LibrarySaveService(
         deps.librarySaveService.sharer ?? null,
-        deps.librarySaveService.firebaseVideoUploader ?? null,
+        deps.librarySaveService.videoUploader ?? null,
         deps.librarySaveService.tagManager ?? null,
         libraryRepository
       ),

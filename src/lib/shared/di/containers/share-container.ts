@@ -4,7 +4,7 @@
  * Contains all share-related services:
  * - Sharer, ShareHubExportOrchestrator
  * - InstagramLinker, MediaBundler
- * - FirebaseVideoUploader, RecordingPersister
+ * - R2Presigner, R2VideoUploader, RecordingPersister
  * - CollaborativeVideoManager, CloudThumbnailCache
  */
 
@@ -14,7 +14,8 @@ import { Sharer } from "$lib/shared/share/services/implementations/Sharer";
 import { ShareHubExportOrchestrator } from "$lib/shared/share-hub/services/implementations/ShareHubExportOrchestrator";
 import { InstagramLinker } from "$lib/shared/share/services/implementations/InstagramLinker";
 import { MediaBundler } from "$lib/shared/share/services/implementations/MediaBundler";
-import { FirebaseVideoUploader } from "$lib/shared/share/services/implementations/FirebaseVideoUploader";
+import { R2Presigner } from "$lib/shared/share/services/implementations/R2Presigner";
+import { R2VideoUploader } from "$lib/shared/share/services/implementations/R2VideoUploader";
 import { RecordingPersister } from "$lib/shared/video-record/services/implementations/RecordingPersister";
 import { CollaborativeVideoManager } from "$lib/shared/video-collaboration/services/implementations/CollaborativeVideoManager";
 import { CloudThumbnailCache } from "$lib/features/browse/sequences/display/services/implementations/CloudThumbnailCache";
@@ -30,15 +31,19 @@ export function createShareContainer(sequenceRenderer: ISequenceRenderer) {
   const baseContainer = createContainer()
     .add({
       instagramLinker: () => new InstagramLinker(),
-      firebaseVideoUploader: () => new FirebaseVideoUploader(),
+      r2Presigner: () => new R2Presigner(),
       recordingPersister: () => new RecordingPersister(),
       collaborativeVideoManager: () => new CollaborativeVideoManager(),
-      // Singleton for Firebase Storage (crowd-sourced rendering)
       cloudThumbnailCache: () => new CloudThumbnailCache(),
     });
 
+  // Layer 1.5: Services that depend on r2Presigner
+  const withUploader = baseContainer.add((ctx) => ({
+    videoUploader: () => new R2VideoUploader(ctx.r2Presigner),
+  }));
+
   // Layer 2: Services that depend on external dependencies
-  const withSharer = baseContainer.add({
+  const withSharer = withUploader.add({
     sharer: () => new Sharer(sequenceRenderer),
     sequenceImageSharer: () => new SequenceImageSharer(sequenceRenderer),
   });

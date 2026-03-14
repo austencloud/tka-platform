@@ -16,7 +16,8 @@
   } from "../SaveToLibraryDialog.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import type { RecordingResult } from "$lib/shared/video-record/services/contracts/IVideoRecorder";
-  import { FirebaseVideoUploader } from "$lib/shared/share/services/implementations/FirebaseVideoUploader";
+  import { container } from "$lib/shared/di";
+  import type { IVideoUploader } from "$lib/shared/share/services/contracts/IVideoUploader";
   import { RecordingPersister } from "$lib/shared/video-record/services/implementations/RecordingPersister";
   import {
     createRecordingMetadata,
@@ -30,8 +31,8 @@
   const ctx = getCreateModuleContext();
   const { CreateModuleState, panelState } = ctx;
 
-  // Services (lazy-loaded)
-  let uploadService: FirebaseVideoUploader | null = $state(null);
+  // Services
+  const uploadService = container.items.videoUploader as IVideoUploader;
   let persistenceService: RecordingPersister | null = $state(null);
 
   // UI State
@@ -40,7 +41,6 @@
   let pendingRecording: RecordingResult | null = $state(null);
 
   onMount(() => {
-    uploadService = new FirebaseVideoUploader();
     persistenceService = new RecordingPersister();
   });
 
@@ -157,7 +157,7 @@
     recording: RecordingResult,
     sequenceId: string
   ) {
-    if (!uploadService || !persistenceService) {
+    if (!persistenceService) {
       logger.error("Services not initialized");
       return;
     }
@@ -169,7 +169,7 @@
       const uploadResult = await uploadService.uploadPerformanceVideo(
         sequenceId,
         recording.videoBlob!,
-        (progress) => logger.log(`Upload progress: ${progress}%`)
+        { onProgress: (progress) => logger.log(`Upload progress: ${progress}%`) }
       );
 
       // Create metadata using upload result
@@ -177,7 +177,7 @@
         userId: "", // Will be populated by service
         sequenceId,
         videoUrl: uploadResult.url,
-        storagePath: uploadResult.storagePath,
+        storagePath: uploadResult.key,
         duration: recording.duration ?? 0,
         fileSize: recording.videoBlob!.size,
         mimeType: recording.videoBlob!.type,
