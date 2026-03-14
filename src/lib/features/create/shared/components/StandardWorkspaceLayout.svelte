@@ -190,6 +190,17 @@
         />
       </div>
     {/if}
+
+    <!-- Build Another overlay - shown when assemble sequence is complete.
+         Positioned above the ButtonPanel using its measured height. -->
+    {#if isAssembleComplete}
+      <div class="build-another-overlay" style:bottom="{buttonPanelHeight + 16}px">
+        <button class="build-another-btn" onclick={onClearSequence}>
+          <i class="fas fa-plus" aria-hidden="true"></i>
+          <span>Build Another</span>
+        </button>
+      </div>
+    {/if}
   </div>
 
   <!-- Tool Panel -->
@@ -241,6 +252,15 @@
 
   .layout-wrapper.side-by-side.workspace-visible {
     grid-template-columns: 1fr 1fr;
+  }
+
+  /* Assemble complete: collapse tool panel, workspace takes full height */
+  .layout-wrapper.workspace-visible.tool-panel-collapsed:not(.side-by-side) {
+    grid-template-rows: 1fr 0fr;
+  }
+
+  .layout-wrapper.side-by-side.workspace-visible.tool-panel-collapsed {
+    grid-template-columns: 1fr 0fr;
   }
 
   /* Shared container styles */
@@ -308,6 +328,55 @@
     }
   }
 
+
+  /* Build Another overlay — appears over workspace when assemble is complete */
+  .build-another-overlay {
+    position: absolute;
+    /* bottom is set dynamically via inline style based on buttonPanelHeight */
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    z-index: 20;
+    pointer-events: none;
+  }
+
+  .build-another-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: 14px;
+    border: 1.5px solid var(--theme-accent, #6366f1);
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, var(--theme-panel-bg, rgba(18, 18, 28, 0.98)));
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    cursor: pointer;
+    pointer-events: auto;
+    min-height: var(--min-touch-target, 44px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    transition: background 0.15s ease;
+  }
+
+  .build-another-btn:hover {
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 30%, var(--theme-panel-bg, rgba(18, 18, 28, 0.98)));
+  }
+
+  .build-another-btn:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 3px;
+  }
+
+  .build-another-btn i {
+    font-size: 12px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .build-another-btn {
+      transition: none;
+    }
+  }
 
   /* Simple prompt when workspace is empty */
   .empty-prompt {
