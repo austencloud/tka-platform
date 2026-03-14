@@ -93,6 +93,7 @@ import { labContainer } from "./containers/lab-container";
 import { assembleContainer } from "./containers/assemble-container";
 import { arenaContainer } from "./containers/arena-container";
 import { effectsLabContainer } from "./containers/effects-lab-container";
+import { videoTrailsContainer } from "./containers/video-trails-container";
 import { createMuseumContainer } from "./containers/museum-container";
 import { createPushContainer } from "./containers/push-container";
 // Deep link resolution for cross-tab/cross-user URLs
@@ -443,6 +444,8 @@ function buildAppContainer(): any {
   c = c.add(arenaContainer.items);
   // Effects Lab services (fire + LED point override providers, fuel sources)
   c = c.add(effectsLabContainer.items);
+  // Video Trails services (endpoint detection, tip adaptation, export)
+  c = c.add(videoTrailsContainer.items);
   // Museum services (persistence, interaction detection)
   c = c.add(museumContainer.items);
   // Push notification services (FCM token management)
