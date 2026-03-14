@@ -179,46 +179,62 @@ export function createKanbanBoardState(
   const canUndo = $derived(undoStack.length > 0);
   const canRedo = $derived(redoStack.length > 0);
 
-  // Detect column at a screen position
+  // Detect column at a screen position using two strategies:
+  // 1. elementFromPoint + DOM walk (precise, works when finger is over a child element)
+  // 2. Bounding rect scan (fallback, works even if ghost or gap is under the finger)
   function getColumnAtPosition(
     x: number,
     y: number
   ): FeedbackStatus | "deferred" | "trash" | null {
+    const validStatuses: FeedbackStatus[] = ["new", "in-progress", "in-review", "completed"];
+
+    // Strategy 1: Walk DOM from elementFromPoint
     const element = document.elementFromPoint(x, y);
-    if (!element) return null;
+    if (element) {
+      let current: Element | null = element;
+      while (current) {
+        if (current.classList?.contains("defer-drop-zone")) return "deferred";
+        if (current.classList?.contains("archive-drop-zone")) return "archived" as FeedbackStatus;
+        if (current.classList?.contains("trash-drop-zone")) return "trash";
 
-    let current: Element | null = element;
-    while (current) {
-      // Check for defer drop zone
-      if (current.classList?.contains("defer-drop-zone")) {
-        return "deferred";
+        if (current.classList?.contains("kanban-column")) {
+          const id = current.id;
+          if (id?.startsWith("column-")) {
+            const status = id.replace("column-", "") as FeedbackStatus;
+            if (validStatuses.includes(status)) return status;
+          }
+        }
+        current = current.parentElement;
       }
+    }
 
-      // Check for archive drop zone
-      if (current.classList?.contains("archive-drop-zone")) {
-        return "archived";
-      }
-
-      // Check for trash drop zone
-      if (current.classList?.contains("trash-drop-zone")) {
-        return "trash";
-      }
-
-      if (current.classList?.contains("kanban-column")) {
-        const ariaLabel = current.getAttribute("aria-label");
-        if (ariaLabel) {
-          const statusLabel = ariaLabel.replace(" column", "").toLowerCase();
-          const statusMap: Record<string, FeedbackStatus> = {
-            new: "new",
-            "in progress": "in-progress",
-            "in review": "in-review",
-            completed: "completed",
-          };
-          return statusMap[statusLabel] || null;
+    // Strategy 2: Bounding rect scan — catches gaps, overlays, or ghost interference
+    // Check special drop zones first
+    for (const cls of ["defer-drop-zone", "archive-drop-zone", "trash-drop-zone"] as const) {
+      const zone = document.querySelector(`.${cls}`);
+      if (zone) {
+        const rect = zone.getBoundingClientRect();
+        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+          if (cls === "defer-drop-zone") return "deferred";
+          if (cls === "archive-drop-zone") return "archived" as FeedbackStatus;
+          return "trash";
         }
       }
-      current = current.parentElement;
     }
+
+    // Check kanban columns by bounding rect
+    const columns = document.querySelectorAll(".kanban-column");
+    for (const col of columns) {
+      const rect = col.getBoundingClientRect();
+      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+        const id = col.id;
+        if (id?.startsWith("column-")) {
+          const status = id.replace("column-", "") as FeedbackStatus;
+          if (validStatuses.includes(status)) return status;
+        }
+      }
+    }
+
     return null;
   }
 

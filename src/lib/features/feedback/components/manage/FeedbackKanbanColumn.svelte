@@ -41,7 +41,7 @@
     onDragStart: (item: FeedbackItem) => void;
     onDragEnd: () => void;
     onTouchDrag?: (item: FeedbackItem, x: number, y: number) => void;
-    onTouchEnd?: (x: number, y: number) => void;
+    onTouchEnd?: (x: number, y: number) => void | Promise<void>;
     onDragOver: () => void;
     onDragLeave: () => void;
     onDrop: () => void;
