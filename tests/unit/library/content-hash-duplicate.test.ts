@@ -1,0 +1,231 @@
+/**
+ * Content Hash Duplicate Detection Tests
+ *
+ * HIGH VALUE: Two sequences with identical motion content produce the same hash,
+ * which the repository uses to block exact duplicates from being saved.
+ * If this breaks, users get phantom "variations" that are actually clones.
+ *
+ * Tests the SequenceContentHasher directly — the Firestore query in
+ * LibraryRepository.saveSequence() relies on these hashes being correct.
+ */
+
+import { describe, expect, it } from "vitest";
+import { SequenceContentHasher } from "../../../src/lib/features/library/services/implementations/SequenceContentHasher";
+import { MotionColor } from "../../../src/lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+
+// Minimal motion data that satisfies the hasher's extraction
+function makeMotion(overrides: Record<string, unknown> = {}) {
+  return {
+    motionType: "pro",
+    rotationDirection: "cw",
+    startLocation: "n",
+    endLocation: "s",
+    turns: 1,
+    startOrientation: "in",
+    endOrientation: "out",
+    handPath: null,
+    gridMode: "diamond",
+    skewSteps: null,
+    skewDir: null,
+    ...overrides,
+  };
+}
+
+function makeStep(overrides: Record<string, unknown> = {}) {
+  return {
+    letter: "A",
+    blueReversal: false,
+    redReversal: false,
+    isBlank: false,
+    duration: 1,
+    motions: {
+      [MotionColor.BLUE]: makeMotion(),
+      [MotionColor.RED]: makeMotion(),
+    },
+    gridMode: "diamond",
+    ...overrides,
+  };
+}
+
+function makeSequence(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "test-id",
+    name: "test",
+    word: "A",
+    steps: [makeStep()],
+    gridMode: "diamond",
+    startPosition: {
+      motions: {
+        [MotionColor.BLUE]: makeMotion(),
+        [MotionColor.RED]: makeMotion(),
+      },
+      gridMode: "diamond",
+    },
+    ...overrides,
+  } as any;
+}
+
+describe("SequenceContentHasher — Duplicate Detection", () => {
+  const hasher = new SequenceContentHasher();
+
+  it("identical sequences produce the same hash", async () => {
+    const a = makeSequence();
+    const b = makeSequence();
+
+    const hashA = await hasher.computeHash(a);
+    const hashB = await hasher.computeHash(b);
+
+    expect(hashA).toBe(hashB);
+  });
+
+  it("metadata changes do NOT affect the hash", async () => {
+    const base = makeSequence();
+    const withDifferentMeta = makeSequence({
+      id: "different-id",
+      name: "totally different name",
+      word: "DIFFERENT",
+      tags: ["foo", "bar"],
+      visibility: "private",
+      thumbnails: ["http://example.com/thumb.png"],
+      notes: "some notes",
+      ownerDisplayName: "Someone Else",
+    });
+
+    const hashBase = await hasher.computeHash(base);
+    const hashMeta = await hasher.computeHash(withDifferentMeta);
+
+    expect(hashBase).toBe(hashMeta);
+  });
+
+  it("different orientation produces a different hash", async () => {
+    const a = makeSequence();
+    const b = makeSequence({
+      steps: [
+        makeStep({
+          motions: {
+            [MotionColor.BLUE]: makeMotion({ startOrientation: "out" }),
+            [MotionColor.RED]: makeMotion(),
+          },
+        }),
+      ],
+    });
+
+    const hashA = await hasher.computeHash(a);
+    const hashB = await hasher.computeHash(b);
+
+    expect(hashA).not.toBe(hashB);
+  });
+
+  it("different turn count produces a different hash", async () => {
+    const a = makeSequence();
+    const b = makeSequence({
+      steps: [
+        makeStep({
+          motions: {
+            [MotionColor.BLUE]: makeMotion({ turns: 2 }),
+            [MotionColor.RED]: makeMotion(),
+          },
+        }),
+      ],
+    });
+
+    const hashA = await hasher.computeHash(a);
+    const hashB = await hasher.computeHash(b);
+
+    expect(hashA).not.toBe(hashB);
+  });
+
+  it("different location produces a different hash", async () => {
+    const a = makeSequence();
+    const b = makeSequence({
+      steps: [
+        makeStep({
+          motions: {
+            [MotionColor.BLUE]: makeMotion({ endLocation: "e" }),
+            [MotionColor.RED]: makeMotion(),
+          },
+        }),
+      ],
+    });
+
+    const hashA = await hasher.computeHash(a);
+    const hashB = await hasher.computeHash(b);
+
+    expect(hashA).not.toBe(hashB);
+  });
+
+  it("different letter produces a different hash", async () => {
+    const a = makeSequence();
+    const b = makeSequence({
+      steps: [makeStep({ letter: "B" })],
+    });
+
+    const hashA = await hasher.computeHash(a);
+    const hashB = await hasher.computeHash(b);
+
+    expect(hashA).not.toBe(hashB);
+  });
+
+  it("different grid mode produces a different hash", async () => {
+    const a = makeSequence({ gridMode: "diamond" });
+    const b = makeSequence({ gridMode: "box" });
+
+    const hashA = await hasher.computeHash(a);
+    const hashB = await hasher.computeHash(b);
+
+    expect(hashA).not.toBe(hashB);
+  });
+
+  it("hash is a 64-character hex string (SHA-256)", async () => {
+    const hash = await hasher.computeHash(makeSequence());
+
+    expect(hash).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("reversal flag difference produces a different hash", async () => {
+    const a = makeSequence();
+    const b = makeSequence({
+      steps: [makeStep({ blueReversal: true })],
+    });
+
+    const hashA = await hasher.computeHash(a);
+    const hashB = await hasher.computeHash(b);
+
+    expect(hashA).not.toBe(hashB);
+  });
+
+  it("undefined step gridMode inherits from sequence and matches explicit value", async () => {
+    // This was the actual bug: one sequence had step.gridMode = undefined
+    // (inheriting "diamond" from the sequence), while its duplicate had
+    // step.gridMode = "diamond" explicitly. They should hash the same.
+    const withExplicit = makeSequence({
+      gridMode: "diamond",
+      steps: [makeStep({ gridMode: "diamond" })],
+    });
+    const withInherited = makeSequence({
+      gridMode: "diamond",
+      steps: [makeStep({ gridMode: undefined })],
+    });
+
+    const hashExplicit = await hasher.computeHash(withExplicit);
+    const hashInherited = await hasher.computeHash(withInherited);
+
+    expect(hashExplicit).toBe(hashInherited);
+  });
+
+  it("null step gridMode also inherits from sequence", async () => {
+    const withExplicit = makeSequence({
+      gridMode: "box",
+      steps: [makeStep({ gridMode: "box" })],
+    });
+    const withNull = makeSequence({
+      gridMode: "box",
+      steps: [makeStep({ gridMode: null })],
+    });
+
+    const hashExplicit = await hasher.computeHash(withExplicit);
+    const hashNull = await hasher.computeHash(withNull);
+
+    expect(hashExplicit).toBe(hashNull);
+  });
+});
