@@ -27,24 +27,21 @@ export function createPropPreferenceState(
   }
 
   async function toggleProp(prop: PropType) {
-    saving = true;
-    try {
-      if (propsISpinWith.includes(prop)) {
-        propsISpinWith = propsISpinWith.filter((p) => p !== prop);
-        if (favoriteProp === prop) favoriteProp = null;
-        if (
-          favoriteCatdog &&
-          (favoriteCatdog.bluePropType === prop || favoriteCatdog.redPropType === prop)
-        ) {
-          favoriteCatdog = null;
-        }
-        await persister.removeProp(userId, prop);
-      } else {
-        propsISpinWith = [...propsISpinWith, prop];
-        await persister.addProp(userId, prop);
+    // Update local state first (optimistic), then persist in background.
+    // No saving flag — toggles are instant and don't need a loading indicator.
+    if (propsISpinWith.includes(prop)) {
+      propsISpinWith = propsISpinWith.filter((p) => p !== prop);
+      if (favoriteProp === prop) favoriteProp = null;
+      if (
+        favoriteCatdog &&
+        (favoriteCatdog.bluePropType === prop || favoriteCatdog.redPropType === prop)
+      ) {
+        favoriteCatdog = null;
       }
-    } finally {
-      saving = false;
+      await persister.removeProp(userId, prop);
+    } else {
+      propsISpinWith = [...propsISpinWith, prop];
+      await persister.addProp(userId, prop);
     }
   }
 

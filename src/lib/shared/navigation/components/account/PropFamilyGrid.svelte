@@ -66,14 +66,8 @@
 <style>
   .prop-family-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-    padding: 0 16px;
-  }
-
-  @media (max-width: 360px) {
-    .prop-family-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+    padding: 0 8px;
   }
 </style>

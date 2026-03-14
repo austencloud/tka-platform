@@ -124,6 +124,7 @@
     cursor: default;
     border-color: transparent;
     background: transparent;
+    justify-content: center;
   }
 
   /* ==========================================================================
@@ -159,6 +160,10 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     animation: label-fade-in var(--duration-normal) ease-out var(--duration-fast) both;
+  }
+
+  .drawer .account-label {
+    flex: none;
   }
 
   .chevron {

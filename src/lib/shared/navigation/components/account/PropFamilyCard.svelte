@@ -31,6 +31,9 @@
   aria-label="{label}{selected ? ' (selected)' : ''}{isFavorite ? ' (favorite)' : ''}"
   onclick={handleClick}
   {disabled}
+  style:border-color={selected ? 'var(--theme-accent, #6366f1)' : undefined}
+  style:background={selected ? 'color-mix(in srgb, var(--theme-accent) 15%, transparent)' : undefined}
+  style:box-shadow={selected ? '0 0 0 1px var(--theme-accent, #6366f1), 0 0 16px color-mix(in srgb, var(--theme-accent) 30%, transparent)' : undefined}
 >
   {#if isFavorite}
     <span class="favorite-badge" aria-label="Favorite">
@@ -59,20 +62,19 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 8px;
     position: relative;
-    padding: 10px 4px;
+    padding: 12px 8px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 10px;
+    border-radius: 12px;
     cursor: pointer;
     transition:
       border-color var(--duration-fast, 150ms) ease,
       background var(--duration-fast, 150ms) ease,
       transform var(--duration-fast, 150ms) ease;
-    min-height: 44px;
-    min-width: 44px;
-    aspect-ratio: 1 / 1;
+    min-height: var(--min-touch-target, 50px);
+    min-width: var(--min-touch-target, 50px);
   }
 
   .prop-family-card:hover:not(.disabled) {
@@ -87,8 +89,10 @@
 
   .prop-family-card.selected {
     border-color: var(--theme-accent, #6366f1);
-    background: color-mix(in srgb, var(--theme-accent) 10%, transparent);
-    transform: scale(1.02);
+    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
+    box-shadow:
+      0 0 0 1px var(--theme-accent, #6366f1),
+      0 0 16px color-mix(in srgb, var(--theme-accent) 30%, transparent);
   }
 
   .prop-family-card.disabled {
@@ -127,13 +131,14 @@
   }
 
   .prop-image {
-    width: 48px;
-    height: 48px;
+    width: clamp(40px, 50%, 72px);
+    height: auto;
+    aspect-ratio: 1;
     object-fit: contain;
   }
 
   .prop-label {
-    font-size: var(--font-size-compact, 12px);
+    font-size: var(--font-size-sm, 14px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     text-align: center;
     line-height: 1.2;

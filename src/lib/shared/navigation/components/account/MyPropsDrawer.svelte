@@ -1,5 +1,5 @@
 <!--
-  MyPropsDrawer.svelte — Two-phase drawer for selecting props and picking a favorite.
+  MyPropsDrawer.svelte — Two-phase modal for selecting props and picking a favorite.
 
   Phase 1: "What do you spin?" — curated prop family grid with multi-select
   Phase 2: "Your go-to?" — pick one favorite from selections (shown when 2+ selected)
@@ -7,7 +7,7 @@
   Content morphs in place. No navigation, no step indicators.
 -->
 <script lang="ts">
-  import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import PropFamilyGrid from "./PropFamilyGrid.svelte";
   import { PROP_FAMILIES } from "./PropFamilyGrid.svelte";
   import SelectionFooterBar from "./SelectionFooterBar.svelte";
@@ -70,25 +70,24 @@
     if (gridSelections.length === 1 && singleProp) {
       propState.setFavorite(singleProp);
     }
-    closeDrawer();
+    closeModal();
   }
 
   function handleFavoriteSelected(propType: PropType) {
     propState.setFavorite(propType);
-    // FavoritePicker has a 400ms delay built in before calling this
-    closeDrawer();
+    closeModal();
   }
 
   function handleBack() {
     phase = "select";
   }
 
-  function closeDrawer() {
+  function closeModal() {
     phase = "select";
     onclose();
   }
 
-  // Reset phase when drawer opens
+  // Reset phase when modal opens
   $effect(() => {
     if (isOpen) {
       phase = "select";
@@ -96,17 +95,15 @@
   });
 </script>
 
-<Drawer
-  bind:isOpen
-  placement="bottom"
-  ariaLabel="My props editor"
-  class="my-props-drawer"
-  backdropClass="my-props-backdrop"
-  onclose={closeDrawer}
+<BaseModal
+  bind:open={isOpen}
+  onclose={() => closeModal()}
+  size="fit"
+  animation="pop"
+  class="my-props-modal"
 >
-  <div class="drawer-content">
-    <!-- Header -->
-    <div class="drawer-header">
+  {#snippet header()}
+    <div class="modal-header">
       {#if phase === "favorite"}
         <button
           class="back-button"
@@ -117,27 +114,27 @@
           Back
         </button>
       {/if}
-      <h2 class="drawer-title" aria-live="polite">{headerText}</h2>
+      <h2 class="modal-title" aria-live="polite">{headerText}</h2>
     </div>
+  {/snippet}
 
-    <!-- Phase content -->
-    <div class="phase-container">
-      {#if phase === "select"}
-        <PropFamilyGrid
-          selectedProps={gridSelections}
-          favoriteProp={propState.favoriteProp ? getBasePropType(propState.favoriteProp) : null}
-          disabled={propState.loading}
-          ontoggle={handleToggle}
-        />
-      {:else}
-        <FavoritePicker
-          selectedProps={gridSelections}
-          onfavorite={handleFavoriteSelected}
-        />
-      {/if}
-    </div>
+  <div class="phase-container">
+    {#if phase === "select"}
+      <PropFamilyGrid
+        selectedProps={gridSelections}
+        favoriteProp={propState.favoriteProp ? getBasePropType(propState.favoriteProp) : null}
+        disabled={propState.loading}
+        ontoggle={handleToggle}
+      />
+    {:else}
+      <FavoritePicker
+        selectedProps={gridSelections}
+        onfavorite={handleFavoriteSelected}
+      />
+    {/if}
+  </div>
 
-    <!-- Footer (Phase 1 only) -->
+  {#snippet footer()}
     {#if phase === "select"}
       <SelectionFooterBar
         selectedProps={gridSelections}
@@ -146,53 +143,25 @@
         ondone={handleDone}
       />
     {/if}
-  </div>
-</Drawer>
+  {/snippet}
+</BaseModal>
 
 <style>
-  /* Backdrop: dim the screen behind the drawer */
-  :global(.my-props-backdrop) {
-    background: rgba(0, 0, 0, 0.5) !important;
-    /* Override desktop sidebar constraint — this drawer covers everything */
-    left: 0 !important;
+  /* Override the fit size to be content-responsive instead of fixed 480px.
+     ~8 columns on 4K, ~4 on laptop, ~2 on phone. */
+  :global(.my-props-modal) {
+    width: min(92vw, 960px) !important;
   }
 
-  :global(.my-props-drawer) {
-    --sheet-bg: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    --sheet-filter: none;
-    /* Override desktop sidebar constraint — center on full viewport */
-    left: 0 !important;
-  }
-
-  /* On desktop, constrain width and center horizontally */
-  @media (min-width: 768px) {
-    :global(.my-props-drawer) {
-      max-width: 420px;
-      left: 0 !important;
-      right: 0 !important;
-      margin: 0 auto;
-      border-radius: 16px 16px 0 0;
-      min-height: auto;
-    }
-  }
-
-  .drawer-content {
-    display: flex;
-    flex-direction: column;
-    max-height: 85vh;
-    overflow: hidden;
-  }
-
-  .drawer-header {
+  .modal-header {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 16px 16px 12px;
-    flex-shrink: 0;
+    padding: 16px 16px 8px;
   }
 
-  .drawer-title {
-    font-size: var(--font-size-sm, 14px);
+  .modal-title {
+    font-size: var(--font-size-base, 16px);
     font-weight: 600;
     color: var(--theme-text, white);
     margin: 0;
@@ -227,11 +196,9 @@
   }
 
   .phase-container {
-    flex: 1;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2)) transparent;
-    min-height: 0;
     padding-bottom: 8px;
   }
 

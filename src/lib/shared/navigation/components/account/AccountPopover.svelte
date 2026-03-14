@@ -10,12 +10,9 @@
   import MyPropsCard from "./MyPropsCard.svelte";
   import { myPropsDrawerState } from "./my-props-drawer-state.svelte";
 
-  let { isOpen, onClose, onInboxClick, hasUnread = false, unreadCount = 0, anchorElement } = $props<{
+  let { isOpen, onClose, anchorElement } = $props<{
     isOpen: boolean;
     onClose: () => void;
-    onInboxClick: () => void;
-    hasUnread?: boolean;
-    unreadCount?: number;
     anchorElement: HTMLElement | null;
   }>();
 
@@ -87,12 +84,6 @@
     } catch {
       // Ignore if not available
     }
-  }
-
-  function handleInbox() {
-    triggerHaptic();
-    onInboxClick();
-    onClose();
   }
 
   async function handleSignOut() {
@@ -179,23 +170,6 @@
 
     <!-- Actions -->
     <div class="actions">
-      <button
-        class="action-button"
-        role="menuitem"
-        onclick={handleInbox}
-      >
-        <div class="action-icon-wrapper">
-          <i class="fas fa-inbox action-icon" aria-hidden="true"></i>
-          {#if hasUnread}
-            <span class="popover-unread-dot" aria-hidden="true"></span>
-          {/if}
-        </div>
-        Inbox
-        {#if hasUnread && unreadCount > 0}
-          <span class="inbox-count">{unreadCount > 99 ? "99+" : unreadCount}</span>
-        {/if}
-      </button>
-
       {#if isAuthenticated}
         <button
           class="action-button sign-out"
@@ -364,35 +338,6 @@
 
   .action-button:hover .action-icon {
     opacity: 1;
-  }
-
-  /* Inbox icon wrapper for unread dot positioning */
-  .action-icon-wrapper {
-    position: relative;
-    width: 16px;
-    text-align: center;
-  }
-
-  .action-icon-wrapper .action-icon {
-    width: auto;
-  }
-
-  .popover-unread-dot {
-    position: absolute;
-    top: -2px;
-    right: -4px;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--semantic-error, #ef4444);
-  }
-
-  .inbox-count {
-    margin-left: auto;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    color: var(--semantic-info, #3b82f6);
-    opacity: 0.8;
   }
 
   /* Sign out hover turns red */
