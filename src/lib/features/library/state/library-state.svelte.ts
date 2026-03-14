@@ -760,6 +760,16 @@ class LibraryStateManager {
     };
   }
 
+  /**
+   * Check if a sequence with identical motion content already exists.
+   * Compares against the contentHash stored on each library sequence.
+   * Returns the first matching sequence if found.
+   */
+  findByContentHash(hash: string): LibrarySequence | undefined {
+    if (!hash) return undefined;
+    return this.state.sequences.find((s) => s.contentHash === hash);
+  }
+
   reset() {
     this.dispose();
     this.state = {

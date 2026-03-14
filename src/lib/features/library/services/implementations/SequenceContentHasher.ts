@@ -26,26 +26,39 @@ export class SequenceContentHasher implements ISequenceContentHasher {
   }
 
   private extractContent(sequence: SequenceData): unknown {
+    // Resolve the sequence-level grid mode once. Steps and start positions
+    // that don't specify their own gridMode inherit this value. Normalizing
+    // here prevents undefined-vs-"diamond" from producing different hashes
+    // for sequences that are physically identical.
+    const seqGridMode = sequence.gridMode ?? null;
+
     return {
-      gridMode: sequence.gridMode ?? null,
+      gridMode: seqGridMode,
       startPosition: this.extractStartPosition(
-        sequence.startPosition ?? sequence.startingPosition
+        sequence.startPosition ?? sequence.startingPosition,
+        seqGridMode
       ),
-      steps: sequence.steps.map((step) => this.extractStep(step)),
+      steps: sequence.steps.map((step) =>
+        this.extractStep(step, seqGridMode)
+      ),
     };
   }
 
   private extractStartPosition(
-    sp: StartPositionData | undefined
+    sp: StartPositionData | undefined,
+    inheritedGridMode: string | null
   ): unknown {
     if (!sp) return null;
     return {
       motions: this.extractMotions(sp.motions),
-      gridMode: sp.gridMode ?? null,
+      gridMode: sp.gridMode ?? inheritedGridMode,
     };
   }
 
-  private extractStep(step: StepData): unknown {
+  private extractStep(
+    step: StepData,
+    inheritedGridMode: string | null
+  ): unknown {
     return {
       letter: step.letter ?? null,
       blueReversal: step.blueReversal,
@@ -53,7 +66,7 @@ export class SequenceContentHasher implements ISequenceContentHasher {
       isBlank: step.isBlank,
       duration: step.duration,
       motions: this.extractMotions(step.motions),
-      gridMode: step.gridMode ?? null,
+      gridMode: step.gridMode ?? inheritedGridMode,
     };
   }
 

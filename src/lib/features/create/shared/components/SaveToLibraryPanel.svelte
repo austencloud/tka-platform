@@ -33,6 +33,7 @@
   import { libraryState } from "$lib/features/library/state/library-state.svelte";
   import { notifyLibrarySequenceAdded } from "$lib/shared/library/library-events";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
+  import type { ISequenceContentHasher } from "$lib/features/library/services/contracts/ISequenceContentHasher";
 
   interface Props {
     show: boolean;
@@ -164,6 +165,35 @@
   const hasDuplicate = $derived(duplicateCheck.hasDuplicate);
   const duplicateCount = $derived(duplicateCheck.existingSequences.length);
 
+  // Exact duplicate detection — compares motion content hash against library.
+  // If the user already saved this exact sequence (same orientations, turns,
+  // positions), we show "Already saved" instead of the save button.
+  let isExactDuplicate = $state(false);
+  let contentHasher: ISequenceContentHasher | null = null;
+  try {
+    contentHasher = container.items.contentHasher;
+  } catch {
+    // Hasher not available — duplicate check won't run, save still works
+  }
+
+  $effect(() => {
+    if (!show || !sequence || !contentHasher) {
+      isExactDuplicate = false;
+      return;
+    }
+
+    // Compute hash async, then compare against loaded library sequences
+    let cancelled = false;
+    contentHasher.computeHash(sequence).then((hash) => {
+      if (cancelled) return;
+      const match = libraryState.findByContentHash(hash);
+      // Don't flag as duplicate if it's the same document being re-saved
+      isExactDuplicate = !!match && match.id !== sequence.id;
+    });
+
+    return () => { cancelled = true; };
+  });
+
   // The saved version of this sequence (if it exists in the user's library)
   const savedSequence = $derived.by(() => {
     const id = sequence?.id;
@@ -221,7 +251,7 @@
 
   // Whether the save button would be enabled
   const canSave = $derived(
-    !!tkaName && !isSaving && !isFlagged
+    !!tkaName && !isSaving && !isFlagged && !isExactDuplicate
   );
 
   // Enter key submits the panel when it's open
@@ -480,8 +510,14 @@
         </div>
       {/if}
 
-      <!-- Duplicate info -->
-      {#if hasDuplicate && !isFlagged}
+      <!-- Exact duplicate — already saved -->
+      {#if isExactDuplicate && !isFlagged}
+        <div class="already-saved-banner">
+          <i class="fas fa-check-circle" aria-hidden="true"></i>
+          <span>This exact sequence is already in your library</span>
+        </div>
+      {:else if hasDuplicate && !isFlagged}
+        <!-- Same word but different motion content — genuine variation -->
         <p class="duplicate-info">
           <i class="fas fa-layer-group" aria-hidden="true"></i>
           Saving as variation {duplicateCount + 1} of "{tkaName}"
@@ -550,12 +586,16 @@
       <button
         type="button"
         class="button button-primary"
+        class:button-saved={isExactDuplicate && !isFlagged}
         onclick={handleSave}
         disabled={!canSave}
       >
         {#if isSaving}
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
           Saving...
+        {:else if isExactDuplicate && !isFlagged}
+          <i class="fas fa-check" aria-hidden="true"></i>
+          Saved
         {:else if isFlagged}
           <i class="fas fa-ban" aria-hidden="true"></i>
           Cannot Publish
@@ -784,7 +824,26 @@
     color: var(--semantic-error, #ef4444);
   }
 
-  /* Duplicate info */
+  /* Already saved banner — clear, prominent confirmation */
+  .already-saved-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px 20px;
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 12%, transparent);
+    border: 1.5px solid color-mix(in srgb, var(--semantic-success, #22c55e) 35%, transparent);
+    border-radius: 12px;
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 600;
+    color: var(--semantic-success, #22c55e);
+  }
+
+  .already-saved-banner i {
+    font-size: 1.1em;
+  }
+
+  /* Duplicate info — same word, different content (genuine variation) */
   .duplicate-info {
     display: flex;
     align-items: center;
@@ -798,6 +857,14 @@
   .duplicate-info i {
     font-size: 0.9em;
     opacity: 0.7;
+  }
+
+  /* Saved state button — green checkmark instead of purple gradient */
+  .button-saved {
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 20%, transparent) !important;
+    box-shadow: none !important;
+    color: var(--semantic-success, #22c55e) !important;
+    cursor: default !important;
   }
 
   /* Optional fields - collapsed by default */

@@ -27,6 +27,8 @@ import type {
 } from "../contracts/ILibrarySaveService";
 import { container } from "$lib/shared/di";
 import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
+import { LibraryError } from "./LibraryRepository";
+import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
 export class LibrarySaveService implements ILibrarySaveService {
   private readonly shareService: ISharer | null;
@@ -91,6 +93,12 @@ export class LibrarySaveService implements ILibrarySaveService {
         }
       );
     } catch (error) {
+      // Duplicate detection: show a friendly toast, not the scary error modal
+      if (error instanceof LibraryError && error.code === "ALREADY_EXISTS") {
+        toast.info("This exact sequence is already in your library.");
+        throw error;
+      }
+
       const errorHandler = container.items.errorHandler as IErrorHandler;
       errorHandler.showUserError({
         message: "Couldn't save to your library",
