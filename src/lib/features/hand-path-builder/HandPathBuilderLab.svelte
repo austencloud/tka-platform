@@ -10,17 +10,111 @@
     2. Tap to build the blue hand path (min 2 points)
     3. Switch to red, tap to build the red hand path (must match blue length)
     4. Complete → save both paths to the library
+
+  Rendering: InteractiveCanvas composes AnimatorCanvas (Canvas2D) with
+  HitTargetOverlay for click detection. Path trace lines and animated
+  hand SVGs render through the SVG animation overlay layer.
 -->
 <script lang="ts">
   import { createBuilderState } from "./state/builder-state.svelte";
   import { setBuilderContext } from "./context/builder-context";
-  import BuilderGrid from "./components/BuilderGrid.svelte";
+  import InteractiveCanvas from "$lib/shared/interactive-canvas/InteractiveCanvas.svelte";
+  import { HandPropStateFactory } from "./services/implementations/HandPropStateFactory";
+  import { HandPathAnimator, getPathD } from "./services/HandPathAnimator";
+  import { propSvgLoader } from "$lib/shared/pictograph/prop/services/implementations/PropSvgLoader";
+  import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import type { PropRenderData } from "$lib/shared/pictograph/prop/domain/models/PropRenderData";
+  import type { PropState } from "$lib/shared/animation-engine/domain/PropState";
+  import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import type { HandMove } from "./state/builder-state.svelte";
   import PathPreview from "./components/PathPreview.svelte";
   import BuilderControls from "./components/BuilderControls.svelte";
   import GridModeSelector from "./components/GridModeSelector.svelte";
 
-  const state = createBuilderState();
-  setBuilderContext(state);
+  const builder = createBuilderState();
+  setBuilderContext(builder);
+
+  const propStateFactory = new HandPropStateFactory();
+  const blueAnimator = new HandPathAnimator();
+  const redAnimator = new HandPathAnimator();
+  const ANIMATION_DURATION_MS = 350;
+
+  const blueColor = "var(--prop-blue, #2e8bf0)";
+  const redColor = "var(--prop-red, #ed1c24)";
+
+  // Hand SVG render data (loaded on mount)
+  let blueHandData = $state<PropRenderData | null>(null);
+  let redHandData = $state<PropRenderData | null>(null);
+
+  // Refs for animated hand SVG elements in the animation overlay
+  let activeBlueHandRef: SVGGElement | null = $state(null);
+  let activeRedHandRef: SVGGElement | null = $state(null);
+
+  // Load hand SVGs on mount
+  $effect(() => {
+    const blueMotion = createMotionData({ propType: PropType.HAND, color: MotionColor.BLUE });
+    propSvgLoader.loadPropSvg(
+      { positionX: 0, positionY: 0, rotationAngle: 0 }, blueMotion, false,
+    ).then(data => { blueHandData = data; }).catch(() => {});
+
+    const redMotion = createMotionData({ propType: PropType.HAND, color: MotionColor.RED });
+    propSvgLoader.loadPropSvg(
+      { positionX: 0, positionY: 0, rotationAngle: 0 }, redMotion, false,
+    ).then(data => { redHandData = data; }).catch(() => {});
+  });
+
+  // Register animation callback so builder.addLocation() can animate the hand
+  $effect(() => {
+    builder.setAnimationCallback(async (move: HandMove) => {
+      const handData = builder.phase === "blue" ? blueHandData : redHandData;
+      const handRef = builder.phase === "blue" ? activeBlueHandRef : activeRedHandRef;
+      if (!handRef || !handData?.svgData) return;
+
+      const animator = builder.phase === "blue" ? blueAnimator : redAnimator;
+      await animator.animate({
+        element: handRef,
+        startPosition: move.from,
+        endPosition: move.to,
+        durationMs: ANIMATION_DURATION_MS,
+        handCenter: handData.svgData.center,
+      });
+    });
+  });
+
+  // Derive PropState for each hand from their last location (for AnimatorCanvas rendering)
+  const blueProp = $derived.by((): PropState | null => {
+    if (builder.blueLocations.length === 0) return null;
+    const lastLoc = builder.blueLocations[builder.blueLocations.length - 1]!;
+    return propStateFactory.locationToPropState(lastLoc);
+  });
+
+  const redProp = $derived.by((): PropState | null => {
+    if (builder.redLocations.length === 0) return null;
+    const lastLoc = builder.redLocations[builder.redLocations.length - 1]!;
+    return propStateFactory.locationToPropState(lastLoc);
+  });
+
+  // Map builder phase to the color the HitTargetOverlay should use
+  const activePhaseColor = $derived(
+    builder.phase === "blue" ? "blue" as const
+    : builder.phase === "red" ? "red" as const
+    : null
+  );
+
+  // Build SVG path "d" strings that follow the actual movement path
+  // (arc for shifts, straight line for dashes)
+  const bluePathDs = $derived(buildPathDs(builder.blueLocations));
+  const redPathDs = $derived(buildPathDs(builder.redLocations));
+
+  function buildPathDs(locations: readonly GridLocation[]): string[] {
+    const ds: string[] = [];
+    for (let i = 0; i < locations.length - 1; i++) {
+      ds.push(getPathD(locations[i]!, locations[i + 1]!));
+    }
+    return ds;
+  }
 </script>
 
 <div class="hand-path-builder">
@@ -34,7 +128,47 @@
   </div>
 
   <div class="grid-area">
-    <BuilderGrid />
+    <InteractiveCanvas
+      {blueProp}
+      {redProp}
+      gridMode={builder.gridMode}
+      gridVisible={true}
+      interactive={builder.phase !== "complete"}
+      {activePhaseColor}
+      currentPosition={builder.lastLocation}
+      disabled={builder.isAnimating}
+      onPointClick={(loc) => builder.addLocation(loc)}
+      bluePropType="hand"
+      redPropType="hand"
+    >
+      {#snippet animationLayer()}
+        <!-- Path trace lines following actual movement geometry -->
+        {#each bluePathDs as d, i (i)}
+          <path {d} fill="none" stroke={blueColor} stroke-width="4" stroke-linecap="round" opacity="0.7" />
+        {/each}
+        {#each redPathDs as d, i (i)}
+          <path {d} fill="none" stroke={redColor} stroke-width="4" stroke-linecap="round" opacity="0.7" />
+        {/each}
+
+        <!-- Animated hand SVGs (positioned via HandPathAnimator.animate()) -->
+        {#if builder.blueLocations.length > 0 && blueHandData?.svgData}
+          <g bind:this={activeBlueHandRef} class="hand-anim-group">
+            {@html blueHandData.svgData.svgContent}
+          </g>
+        {/if}
+        {#if builder.redLocations.length > 0 && redHandData?.svgData}
+          <g bind:this={activeRedHandRef} class="hand-anim-group">
+            {@html redHandData.svgData.svgContent}
+          </g>
+        {/if}
+
+        <!-- Complete state -->
+        {#if builder.phase === "complete"}
+          <text x="475" y="475" text-anchor="middle" dominant-baseline="middle"
+            font-size="20" fill="rgba(255,255,255,0.45)">Paths complete</text>
+        {/if}
+      {/snippet}
+    </InteractiveCanvas>
   </div>
 
   <div class="preview-area">
