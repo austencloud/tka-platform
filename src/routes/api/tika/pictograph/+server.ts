@@ -121,7 +121,7 @@ export const POST: RequestHandler = async (event) => {
 	const { request } = event
 
 	try {
-		const { letter, variation = 0, gridMode = 'diamond', options = {} } = await request.json()
+		const { letter, variation = 0, gridMode = 'diamond', options = {}, format = 'png' } = await request.json()
 
 		if (!letter) {
 			return json({ error: 'Missing letter parameter' }, { status: 400 })
@@ -202,33 +202,47 @@ export const POST: RequestHandler = async (event) => {
 			redPropType: options.redPropType ?? null
 		}
 
-		// Render to base64
-		const renderer = getStandaloneRenderer()
-		const base64 = await renderer.renderToBase64(pictographInput, visibilityOptions)
-
-		// Return image and motion data
-		return json({
-			imageBase64: base64,
-			motionData: {
-				letter: csvRow.letter,
-				startPosition: csvRow.startPosition,
-				endPosition: csvRow.endPosition,
-				blueMotion: {
-					motionType: csvRow.blueMotion.motionType,
-					startLocation: csvRow.blueMotion.startLocation,
-					endLocation: csvRow.blueMotion.endLocation,
-					rotationDirection: csvRow.blueMotion.rotationDirection
-				},
-				redMotion: {
-					motionType: csvRow.redMotion.motionType,
-					startLocation: csvRow.redMotion.startLocation,
-					endLocation: csvRow.redMotion.endLocation,
-					rotationDirection: csvRow.redMotion.rotationDirection
-				}
+		const motionData = {
+			letter: csvRow.letter,
+			startPosition: csvRow.startPosition,
+			endPosition: csvRow.endPosition,
+			blueMotion: {
+				motionType: csvRow.blueMotion.motionType,
+				startLocation: csvRow.blueMotion.startLocation,
+				endLocation: csvRow.blueMotion.endLocation,
+				rotationDirection: csvRow.blueMotion.rotationDirection
 			},
-			variationCount: variations.length,
-			variationIndex: variation
-		})
+			redMotion: {
+				motionType: csvRow.redMotion.motionType,
+				startLocation: csvRow.redMotion.startLocation,
+				endLocation: csvRow.redMotion.endLocation,
+				rotationDirection: csvRow.redMotion.rotationDirection
+			}
+		}
+
+		const renderer = getStandaloneRenderer()
+
+		if (format === 'svg') {
+			const svgMarkup = await renderer.renderToSvg(pictographInput, {
+				...visibilityOptions,
+				themeable: true,
+				inline: true,
+			})
+			return json({
+				svgMarkup,
+				motionData,
+				variationCount: variations.length,
+				variationIndex: variation,
+			})
+		} else {
+			const base64 = await renderer.renderToBase64(pictographInput, visibilityOptions)
+			return json({
+				imageBase64: base64,
+				motionData,
+				variationCount: variations.length,
+				variationIndex: variation,
+			})
+		}
 	} catch (error) {
 		console.error('[Tika API] Pictograph generation error:', error)
 		return json(
