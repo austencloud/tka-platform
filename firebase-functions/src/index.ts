@@ -50,6 +50,18 @@ export {
   httpUpdateFeedbackStatus,
 } from "./feedbackClaims";
 
+// Export R2 storage functions (presigned URLs, multipart, delete)
+export {
+  r2PresignUrl,
+  r2MultipartStart,
+  r2MultipartPartUrl,
+  r2MultipartComplete,
+  r2MultipartAbort,
+  r2MultipartListParts,
+  r2DeleteObject,
+  r2DeleteByPrefix,
+} from "./r2/index";
+
 const db = admin.firestore();
 
 // Role hierarchy: user < premium < tester < admin
