@@ -87,6 +87,13 @@ export class SimpleJsonCache implements IJsonCache {
         console.error(`JSON load failed for ${path}:`, error);
         throw error;
       }
+      // Guard against SvelteKit returning its HTML fallback page for missing
+      // static files (status 200 but content-type text/html). Without this,
+      // response.json() throws a confusing "Unexpected token '<'" SyntaxError.
+      const contentType = response.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        throw new Error(`File not found: ${path}`);
+      }
       return await response.json();
     } catch (error) {
       // Only log non-404 errors

@@ -78,6 +78,7 @@ Last audit: 2025-12-27
     ledConfig = undefined,
     disableContextMenu = false,
     fillContainer = false,
+    resizePaused = false,
     onInitialized: onInitializedCallback = undefined,
   }: {
     blueProp: PropState | null;
@@ -109,6 +110,8 @@ Last audit: 2025-12-27
     ledConfig?: Partial<LedOverlayConfig>;
     disableContextMenu?: boolean;
     fillContainer?: boolean;
+    /** When true, the engine's ResizeObserver is paused to prevent canvas buffer clears during CSS transitions */
+    resizePaused?: boolean;
     /** Fires when the canvas engine has initialized and rendered its first frame */
     onInitialized?: () => void;
   } = $props();
@@ -129,6 +132,8 @@ Last audit: 2025-12-27
   const isDisassembledView = $derived(viewState !== "assembled");
   // Show split canvases in DOM for all non-assembled states
   const showSplitCanvases = $derived(viewState !== "assembled");
+  // Pause split canvas resize during transitions — only allow resize in settled "disassembled" state
+  const splitResizePaused = $derived(viewState !== "disassembled");
 
   function handleSplitCanvasReady() {
     splitReadyCount++;
@@ -335,7 +340,28 @@ Last audit: 2025-12-27
   $effect(() => {
     if (isInitialized) {
       engine.processPendingGlyph();
-      untrack(() => onInitializedCallback?.());
+      // Wait for the render loop to paint at least one frame before
+      // signaling readiness. The initializer sets isInitialized BEFORE
+      // starting the render loop (step 8 vs step 10), so without this
+      // delay the callback fires while the canvas is still blank.
+      untrack(() => {
+        if (onInitializedCallback) {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              onInitializedCallback?.();
+            });
+          });
+        }
+      });
+    }
+  });
+
+  // Pause/resume resize observation when parent controls it via prop
+  $effect(() => {
+    if (resizePaused) {
+      engine.pauseResize();
+    } else {
+      engine.resumeResize();
     }
   });
 
@@ -443,6 +469,7 @@ Last audit: 2025-12-27
             hideProgressBar={true}
             disableContextMenu={true}
             focused={false}
+            resizePaused={splitResizePaused}
             onInitialized={handleSplitCanvasReady}
           />
         </div>
@@ -466,6 +493,7 @@ Last audit: 2025-12-27
             hideProgressBar={true}
             disableContextMenu={true}
             focused={false}
+            resizePaused={splitResizePaused}
             onInitialized={handleSplitCanvasReady}
           />
         </div>

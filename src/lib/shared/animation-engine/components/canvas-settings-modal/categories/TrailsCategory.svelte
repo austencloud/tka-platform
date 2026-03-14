@@ -1,6 +1,10 @@
 <script lang="ts">
 	import { animationSettings } from "../../../state/animation-settings-state.svelte";
 	import { TrackingMode } from "../../../domain/types/TrailTypes";
+	import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
+	import { container } from "$lib/shared/di";
+
+	const settingsState = container.items.settingsState;
 
 	const trackingOptions: ReadonlyArray<{
 		readonly id: TrackingMode;
@@ -11,7 +15,22 @@
 		{ id: TrackingMode.BOTH_ENDS, label: "Both Ends", icon: "fa-grip-lines" },
 	];
 
-	let trackingMode = $derived(animationSettings.trail.trackingMode);
+	// Check if ANY current prop is bilateral — only bilateral props can track both ends
+	const hasBilateralProp = $derived.by(() => {
+		const blue = settingsState.settings.bluePropType;
+		const red = settingsState.settings.redPropType;
+		const blueIsBilateral = blue != null && isBilateralProp(blue);
+		const redIsBilateral = red != null && isBilateralProp(red);
+		return blueIsBilateral || redIsBilateral;
+	});
+
+	let storedTrackingMode = $derived(animationSettings.trail.trackingMode);
+
+	// Effective tracking mode: unilateral props are forced to ONE END regardless of stored preference
+	let trackingMode = $derived(
+		hasBilateralProp ? storedTrackingMode : TrackingMode.RIGHT_END
+	);
+
 	let lineWidth = $derived(animationSettings.trail.lineWidth);
 	let maxOpacity = $derived(animationSettings.trail.maxOpacity);
 
@@ -36,24 +55,26 @@
 </script>
 
 <div class="trails-controls">
-	<div class="option-row">
-		<span class="option-label">Tracking</span>
-		<div class="chip-group" role="radiogroup" aria-label="Trail tracking mode">
-			{#each trackingOptions as option}
-				<button
-					class="chip"
-					class:active={trackingMode === option.id}
-					type="button"
-					role="radio"
-					aria-checked={trackingMode === option.id}
-					onclick={() => animationSettings.setTrackingMode(option.id)}
-				>
-					<i class="fas {option.icon}" aria-hidden="true"></i>
-					{option.label}
-				</button>
-			{/each}
+	{#if hasBilateralProp}
+		<div class="option-row">
+			<span class="option-label">Tracking</span>
+			<div class="chip-group" role="radiogroup" aria-label="Trail tracking mode">
+				{#each trackingOptions as option}
+					<button
+						class="chip"
+						class:active={trackingMode === option.id}
+						type="button"
+						role="radio"
+						aria-checked={trackingMode === option.id}
+						onclick={() => animationSettings.setTrackingMode(option.id)}
+					>
+						<i class="fas {option.icon}" aria-hidden="true"></i>
+						{option.label}
+					</button>
+				{/each}
+			</div>
 		</div>
-	</div>
+	{/if}
 
 	<div class="slider-row">
 		<label for="ctx-trail-width">Thickness</label>
