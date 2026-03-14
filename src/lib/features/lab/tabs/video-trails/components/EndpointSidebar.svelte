@@ -189,7 +189,8 @@
       <p class="empty-msg">No endpoints on this frame</p>
     {:else}
       {#each endpointDisplays as display, i (i)}
-        <button
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
           class="endpoint-row"
           class:selected={i === selectedEndpointIdx}
           onclick={() => onSelectEndpoint(i)}
@@ -210,7 +211,7 @@
           >
             <i class="fas fa-eye-slash" aria-hidden="true"></i>
           </button>
-        </button>
+        </div>
       {/each}
     {/if}
   </div>
