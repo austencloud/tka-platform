@@ -1,33 +1,33 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import { getVideoTrailsContext } from "../context/video-trails-context";
-  import TimelineScrubber from "../components/TimelineScrubber.svelte";
   import EndpointEditor from "../components/EndpointEditor.svelte";
-  import OcclusionMarker from "../components/OcclusionMarker.svelte";
+  import EndpointSidebar from "../components/EndpointSidebar.svelte";
+  import FrameStepper from "../components/FrameStepper.svelte";
+  import TimelineScrubber from "../components/TimelineScrubber.svelte";
   import TrainingDataPanel from "../components/TrainingDataPanel.svelte";
   import DetectorEvaluator from "../components/DetectorEvaluator.svelte";
 
+  type ToolMode = "select" | "place" | "occlude";
+
   const { state: trailsState } = getVideoTrailsContext();
 
-  let videoElement: HTMLVideoElement | null = $state(null);
+  let videoElement: HTMLVideoElement | undefined = $state();
   let canvasWidth = $state(640);
   let canvasHeight = $state(360);
-  let selectedPropIndex = $state<0 | 1>(0);
-  let selectedTipIndex = $state(0);
+  let toolMode = $state<ToolMode>("select");
+  let selectedEndpointIdx = $state(-1);
+  let slowPlaying = $state(false);
+  let slowPlayTimer = $state<ReturnType<typeof setInterval> | null>(null);
+  let showAdvancedPanel = $state(false);
 
-  // Create video element for frame rendering and wire it to the source URL
+  // Wire video element to source URL — use an in-DOM <video> element for reliable seeking
   $effect(() => {
-    if (!trailsState.source?.url) return;
+    if (!videoElement || !trailsState.source?.url) return;
+    const url = trailsState.source.url;
+    if (videoElement.src === url) return;
 
-    if (!videoElement) {
-      videoElement = document.createElement("video");
-      videoElement.crossOrigin = "anonymous";
-      videoElement.playsInline = true;
-      videoElement.muted = true;
-      videoElement.preload = "auto";
-    }
-
-    videoElement.src = trailsState.source.url;
+    videoElement.src = url;
     videoElement.onloadedmetadata = () => {
       if (!videoElement) return;
       canvasWidth = videoElement.videoWidth;
@@ -44,7 +44,76 @@
     }
   });
 
+  // Keyboard handler for the entire studio (frame navigation)
+  function handleKeydown(e: KeyboardEvent): void {
+    // Don't capture keyboard events from the canvas/editor (it has its own handler)
+    const target = e.target as HTMLElement;
+    if (target.tagName === "CANVAS" || target.closest("[role='application']")) return;
+
+    const step = e.shiftKey ? 10 : 1;
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      trailsState.setCurrentFrame(Math.max(0, trailsState.currentFrame - step));
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      trailsState.setCurrentFrame(
+        Math.min(trailsState.totalFrames - 1, trailsState.currentFrame + step),
+      );
+    } else if (e.key === " ") {
+      e.preventDefault();
+      toggleSlowPlay();
+    }
+  }
+
+  // Frame navigation
+  function stepBack1(): void {
+    trailsState.setCurrentFrame(Math.max(0, trailsState.currentFrame - 1));
+  }
+
+  function stepBack10(): void {
+    trailsState.setCurrentFrame(Math.max(0, trailsState.currentFrame - 10));
+  }
+
+  function stepForward1(): void {
+    trailsState.setCurrentFrame(Math.min(trailsState.totalFrames - 1, trailsState.currentFrame + 1));
+  }
+
+  function stepForward10(): void {
+    trailsState.setCurrentFrame(
+      Math.min(trailsState.totalFrames - 1, trailsState.currentFrame + 10),
+    );
+  }
+
+  // Slow play: advance ~4 frames per second
+  function toggleSlowPlay(): void {
+    if (slowPlaying) {
+      stopSlowPlay();
+    } else {
+      slowPlaying = true;
+      slowPlayTimer = setInterval(() => {
+        if (trailsState.currentFrame >= trailsState.totalFrames - 1) {
+          stopSlowPlay();
+          return;
+        }
+        trailsState.setCurrentFrame(trailsState.currentFrame + 1);
+      }, 250);
+    }
+  }
+
+  function stopSlowPlay(): void {
+    slowPlaying = false;
+    if (slowPlayTimer) {
+      clearInterval(slowPlayTimer);
+      slowPlayTimer = null;
+    }
+  }
+
+  function handleSelectEndpoint(idx: number): void {
+    selectedEndpointIdx = idx;
+  }
+
   onDestroy(() => {
+    stopSlowPlay();
     if (videoElement) {
       videoElement.pause();
       videoElement.src = "";
@@ -58,25 +127,116 @@
     <p>No video loaded. Go to the Workspace tab to load a source.</p>
   </div>
 {:else}
-  <div class="studio">
-    <div class="main-area">
-      <EndpointEditor
-        {videoElement}
-        width={canvasWidth}
-        height={canvasHeight}
-      />
+  <!-- Hidden video element for reliable frame seeking -->
+  <video
+    bind:this={videoElement}
+    crossorigin="anonymous"
+    playsinline
+    muted
+    preload="auto"
+    class="hidden-video"
+  ></video>
+
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="studio" onkeydown={handleKeydown} tabindex="0">
+    <!-- Toolbar strip -->
+    <div class="toolbar-strip">
+      <div class="tool-group">
+        <button
+          class="tool-btn"
+          class:active={toolMode === "select"}
+          onclick={() => (toolMode = "select")}
+          title="Select / drag endpoints (S)"
+          aria-label="Select mode"
+        >
+          <i class="fas fa-mouse-pointer" aria-hidden="true"></i>
+          <span class="tool-label">Select</span>
+        </button>
+        <button
+          class="tool-btn"
+          class:active={toolMode === "place"}
+          onclick={() => (toolMode = "place")}
+          title="Click to place new endpoint (P)"
+          aria-label="Place mode"
+        >
+          <i class="fas fa-crosshairs" aria-hidden="true"></i>
+          <span class="tool-label">Place</span>
+        </button>
+        <button
+          class="tool-btn"
+          class:active={toolMode === "occlude"}
+          onclick={() => (toolMode = "occlude")}
+          title="Click endpoint to mark occluded (X)"
+          aria-label="Occlude mode"
+        >
+          <i class="fas fa-eye-slash" aria-hidden="true"></i>
+          <span class="tool-label">Occlude</span>
+        </button>
+      </div>
+
+      <div class="toolbar-spacer"></div>
+
+      <div class="toolbar-info">
+        <span class="info-badge">
+          <i class="fas fa-crosshairs" aria-hidden="true"></i>
+          {trailsState.currentEndpoints.length} endpoints
+        </span>
+        <button
+          class="tool-btn compact"
+          class:active={showAdvancedPanel}
+          onclick={() => (showAdvancedPanel = !showAdvancedPanel)}
+          title="Toggle advanced panels"
+          aria-label="Toggle advanced panels"
+        >
+          <i class="fas fa-chart-bar" aria-hidden="true"></i>
+        </button>
+      </div>
     </div>
 
-    <div class="sidebar">
-      <OcclusionMarker
-        {selectedPropIndex}
-        {selectedTipIndex}
-      />
-      <TrainingDataPanel {videoElement} />
-      <DetectorEvaluator {videoElement} />
+    <!-- Main content area -->
+    <div class="content-area">
+      <!-- Canvas area -->
+      <div class="canvas-area">
+        <EndpointEditor
+          videoElement={videoElement ?? null}
+          width={canvasWidth}
+          height={canvasHeight}
+          {toolMode}
+          selectedIdx={selectedEndpointIdx}
+          onSelectEndpoint={handleSelectEndpoint}
+        />
+      </div>
+
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <EndpointSidebar
+          selectedEndpointIdx={selectedEndpointIdx}
+          onSelectEndpoint={handleSelectEndpoint}
+        />
+      </div>
     </div>
 
-    <div class="scrubber-row">
+    <!-- Advanced panels (collapsible) -->
+    {#if showAdvancedPanel}
+      <div class="advanced-panels">
+        <TrainingDataPanel videoElement={videoElement ?? null} />
+        <DetectorEvaluator videoElement={videoElement ?? null} />
+      </div>
+    {/if}
+
+    <!-- Frame stepper + timeline -->
+    <div class="bottom-controls">
+      <FrameStepper
+        currentFrame={trailsState.currentFrame}
+        totalFrames={trailsState.totalFrames}
+        {slowPlaying}
+        onStepBack1={stepBack1}
+        onStepBack10={stepBack10}
+        onStepForward1={stepForward1}
+        onStepForward10={stepForward10}
+        onToggleSlowPlay={toggleSlowPlay}
+      />
       <TimelineScrubber />
     </div>
   </div>
@@ -103,63 +263,171 @@
     font-size: var(--font-size-min, 14px);
   }
 
-  /* Two-column layout with timeline spanning full width below */
+  .hidden-video {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
   .studio {
     container-type: inline-size;
-    display: grid;
-    grid-template-columns: 1fr 280px;
-    grid-template-rows: 1fr auto;
-    grid-template-areas:
-      "main sidebar"
-      "scrubber scrubber";
-    gap: 12px;
+    display: flex;
+    flex-direction: column;
     height: 100%;
-    padding: 12px;
-    box-sizing: border-box;
+    gap: 0;
     overflow: hidden;
   }
 
-  .main-area {
-    grid-area: main;
+  .studio:focus-visible {
+    outline: none;
+  }
+
+  /* Toolbar strip */
+  .toolbar-strip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    flex-shrink: 0;
+  }
+
+  .tool-group {
+    display: flex;
+    gap: 2px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    padding: 2px;
+  }
+
+  .tool-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+
+  .tool-btn:hover {
+    color: var(--theme-text, #ffffff);
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .tool-btn.active {
+    color: var(--theme-accent, #f43f5e);
+    background: rgba(244, 63, 94, 0.12);
+    border-color: rgba(244, 63, 94, 0.3);
+  }
+
+  .tool-btn.compact {
+    padding: 5px 8px;
+  }
+
+  .tool-btn.compact .tool-label {
+    display: none;
+  }
+
+  .tool-label {
+    font-weight: 500;
+  }
+
+  .toolbar-spacer {
+    flex: 1;
+  }
+
+  .toolbar-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .info-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
+  }
+
+  /* Content area */
+  .content-area {
+    display: grid;
+    grid-template-columns: 1fr 260px;
+    gap: 0;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .canvas-area {
     display: flex;
     flex-direction: column;
     min-width: 0;
+    min-height: 0;
     overflow: hidden;
+    padding: 8px;
   }
 
   .sidebar {
-    grid-area: sidebar;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    padding: 8px;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2)) transparent;
   }
 
-  .scrubber-row {
-    grid-area: scrubber;
+  /* Advanced panels */
+  .advanced-panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 8px 12px;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    max-height: 300px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2)) transparent;
   }
 
-  /* Stack vertically on narrow containers */
-  @container (max-width: 640px) {
-    .studio {
+  /* Bottom controls */
+  .bottom-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px 12px 8px;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.02));
+    flex-shrink: 0;
+  }
+
+  /* Responsive: stack vertically on narrow containers */
+  @container (max-width: 700px) {
+    .content-area {
       grid-template-columns: 1fr;
-      grid-template-rows: auto auto auto;
-      grid-template-areas:
-        "main"
-        "sidebar"
-        "scrubber";
+      grid-template-rows: 1fr auto;
     }
 
     .sidebar {
-      flex-direction: row;
-      flex-wrap: wrap;
-      overflow-y: visible;
+      border-left: none;
+      border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+      max-height: 200px;
     }
 
-    .sidebar > :global(*) {
-      flex: 1 1 240px;
+    .advanced-panels {
+      grid-template-columns: 1fr;
+    }
+
+    .tool-label {
+      display: none;
     }
   }
 </style>
