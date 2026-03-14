@@ -153,7 +153,7 @@ export function createMediaBrowserState() {
 
     try {
       const fullSequence = await loaderService.loadFullSequenceData(
-        sequence.word || sequence.name || sequence.id
+        sequence.word || sequence.id
       );
       return fullSequence;
     } catch (err) {

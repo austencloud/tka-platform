@@ -218,7 +218,20 @@ export class TrailCapturer implements ITrailCapturer {
 
   updateConfig(config: Partial<TrailCaptureConfig>): void {
     const oldCanvasSize = this.config.canvasSize;
+    const oldBluePropType = this.config.bluePropType;
+    const oldRedPropType = this.config.redPropType;
     this.config = { ...this.config, ...config };
+
+    // If prop type changed, clear trails so old endpoint positions don't
+    // jump to the new prop's differently-sized endpoints
+    const bluePropChanged =
+      config.bluePropType !== undefined && config.bluePropType !== oldBluePropType;
+    const redPropChanged =
+      config.redPropType !== undefined && config.redPropType !== oldRedPropType;
+    if (bluePropChanged || redPropChanged) {
+      this.clearTrails();
+      return;
+    }
 
     // If canvas size changed, scale existing trail points to match new size
     if (config.canvasSize !== undefined && config.canvasSize !== oldCanvasSize) {
