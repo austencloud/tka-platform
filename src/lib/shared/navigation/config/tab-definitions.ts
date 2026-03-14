@@ -849,6 +849,14 @@ export const LAB_TABS: Section[] = [
     color: "#06b6d4",
     gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
   },
+  {
+    id: "video-trails",
+    label: "Video Trails",
+    icon: '<i class="fas fa-magic-wand-sparkles" aria-hidden="true"></i>',
+    description: "Detect prop endpoints in video, apply fire/LED/trail effects, build training data",
+    color: "#f43f5e",
+    gradient: "linear-gradient(135deg, #fb7185 0%, #f43f5e 100%)",
+  },
 ];
 
 // REMOVED: LANDING_PAGE_TABS - LandingPreviewModule now handles its own internal tabs
