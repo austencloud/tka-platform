@@ -143,30 +143,35 @@ export class ArrowAdjustmentCalculator implements IArrowAdjustmentCalculator {
      * Get base adjustment using streamlined lookup logic.
      * IDENTICAL to ArrowAdjustmentLookup.getBaseAdjustment()
      */
-    if (!motionData || !letter) {
-      throw new Error("Missing motion or letter data for adjustment lookup");
+    if (!motionData) {
+      throw new Error("Missing motion data for adjustment lookup");
     }
 
     try {
-      // Generate required keys for special placement lookup
-      const [, , attrKey] = this.generateLookupKeys(pictographData, motionData);
+      // Special placement lookup requires a letter for key generation.
+      // Some beats (e.g., the starting position) have no letter assigned,
+      // so we skip special placement and go straight to the default.
+      if (letter) {
+        // Generate required keys for special placement lookup
+        const [, , attrKey] = this.generateLookupKeys(pictographData, motionData);
 
-      try {
-        const specialAdjustment = await this.lookupSpecialPlacement(
-          motionData,
-          pictographData,
-          arrowColor,
-          attrKey
-        );
+        try {
+          const specialAdjustment = await this.lookupSpecialPlacement(
+            motionData,
+            pictographData,
+            arrowColor,
+            attrKey
+          );
 
-        if (specialAdjustment) {
-          return specialAdjustment;
+          if (specialAdjustment) {
+            return specialAdjustment;
+          }
+        } catch (error) {
+          console.warn(`Error in special placement lookup for ${letter}:`, error);
         }
-      } catch (error) {
-        console.warn(`Error in special placement lookup for ${letter}:`, error);
       }
 
-      // STEP 2: Fall back to default calculation
+      // Fall back to default calculation
       const defaultAdjustment = await this.calculateDefaultAdjustment(
         motionData,
         pictographData

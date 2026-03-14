@@ -233,7 +233,8 @@ export class ArrowAdjustmentOrchestrator implements IArrowAdjustmentOrchestrator
       return { currentX: currentAdjustmentAtLayer.x, currentY: currentAdjustmentAtLayer.y };
     }
 
-    // No global adjustment - try cascading lookup
+    // No global adjustment at the target layer - try cascading lookup
+    // (a less-specific layer might have an adjustment we should build on)
     const { motionData, pictographData } = selectedArrow;
     const baseKey = this.keyGenerator.generateKey(motionData, pictographData, arrowColor);
     const cascadingResult = repo.getAdjustmentCascading(baseKey, thisPropType, otherPropType);
@@ -242,11 +243,41 @@ export class ArrowAdjustmentOrchestrator implements IArrowAdjustmentOrchestrator
       return { currentX: cascadingResult.adjustment.x, currentY: cascadingResult.adjustment.y };
     }
 
-    // No global at any layer - use the calculator (same path as rendering)
+    // No global at any layer - use the calculator to get the same base value
+    // the rendering pipeline uses. Global adjustments are ABSOLUTE replacements
+    // for the entire special placement, not offsets from zero. So we must start
+    // from the same base the renderer is currently using.
+    //
+    // CRITICAL: Override propType on BOTH motionData and pictographData.motions
+    // to match what PictographPreparer does during rendering. Without this, the
+    // SpecialPlacer inside the calculator uses the raw sequence propType (e.g.,
+    // "staff") for its cascading lookup, while the renderer uses the settings
+    // propType (e.g., "fractalgeng"). This mismatch causes the arrow to jump
+    // to a wrong position on the first WASD press after a reset.
     try {
+      const motionWithPropOverride = {
+        ...motionData,
+        propType: thisPropType,
+      };
+
+      // Also override the other motion's propType in pictographData so the
+      // SpecialPlacer reads the same otherPropType the renderer would use.
+      const otherColor = arrowColor === "blue" ? "red" : "blue";
+      const otherMotion = pictographData.motions?.[otherColor];
+      const pictographWithPropOverrides = otherMotion
+        ? {
+            ...pictographData,
+            motions: {
+              ...pictographData.motions,
+              [arrowColor]: motionWithPropOverride,
+              [otherColor]: { ...otherMotion, propType: otherPropType },
+            },
+          }
+        : pictographData;
+
       const baseAdjustment = await this.arrowAdjustmentCalculator.getBaseAdjustmentPublic(
-        pictographData,
-        motionData,
+        pictographWithPropOverrides,
+        motionWithPropOverride,
         pictographData.letter || "",
         arrowColor
       );

@@ -73,7 +73,7 @@
     const current = bluePropType ?? PropType.STAFF;
     const currentIndex = quickSwitchTypes.indexOf(current);
     const nextIndex = (currentIndex + 1) % quickSwitchTypes.length;
-    const nextProp = quickSwitchTypes[nextIndex];
+    const nextProp = quickSwitchTypes[nextIndex] ?? PropType.STAFF;
     onQuickSwitch(nextProp, nextProp, false);
   }
 </script>
