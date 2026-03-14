@@ -34,11 +34,15 @@
 
   onMount(() => {
     hapticService = container.items.hapticFeedback;
+    // Capture at mount time so the cleanup doesn't access a stale/null prop
+    const mountedConversationId = conversationId;
 
     // Cleanup typing on unmount
     return () => {
       if (typingTimeout) clearTimeout(typingTimeout);
-      messagingService.setTyping(conversationId, false).catch(() => {});
+      if (mountedConversationId) {
+        messagingService.setTyping(mountedConversationId, false).catch(() => {});
+      }
     };
   });
 

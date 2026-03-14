@@ -35,6 +35,8 @@ export interface MessageAttachment {
     // Sequence-specific fields
     sequenceId?: string;
     sequenceWord?: string;
+    /** The raw sequence.word used as the cloud thumbnail storage key */
+    sequenceCloudWord?: string;
     sequenceName?: string;
     sequenceThumbnail?: string;
     sequenceAuthor?: string;

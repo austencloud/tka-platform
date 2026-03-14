@@ -13,6 +13,7 @@
   import { inboxState } from "../../state/inbox-state.svelte";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import { buildThumbnailUrl } from "../../state/send-sequence-state.svelte";
 
   interface Props {
     attachment: MessageAttachment;
@@ -35,9 +36,48 @@
     attachment.metadata?.sequenceWord || attachment.metadata?.title || "Sequence"
   );
   const sequenceName = $derived(attachment.metadata?.sequenceName);
-  const thumbnailUrl = $derived(
-    attachment.metadata?.sequenceThumbnail || attachment.thumbnailUrl
-  );
+  // sequenceCloudWord is the raw sequence.word used as the cloud storage filename.
+  // New messages include this explicitly. Old messages don't have it, so we fall
+  // back to sequenceName (which is seq.name) then sequenceWord (display name).
+  const sequenceCloudWord = $derived(attachment.metadata?.sequenceCloudWord);
+
+  // Build an ordered list of thumbnail URLs to try. The <img> onerror handler
+  // cycles through these so old messages (which may have mismatched keys) still
+  // have a chance to show a thumbnail.
+  const thumbnailCandidates: string[] = $derived.by(() => {
+    const candidates: string[] = [];
+    const seen = new Set<string>();
+
+    function add(word: string | undefined | null) {
+      if (!word || word === "Sequence") return;
+      const url = buildThumbnailUrl(String(word), "staff", false);
+      if (!seen.has(url)) {
+        seen.add(url);
+        candidates.push(url);
+      }
+    }
+
+    // Best: explicit cloud word (new messages)
+    add(sequenceCloudWord);
+    // Next: sequenceWord — for public sequences this is usually the raw word
+    // (displayName and intendedWord are typically undefined)
+    add(sequenceWord);
+    // Last: sequenceName (seq.name) — can have prefixes like "Circular" that
+    // don't match cloud storage, so try this after the raw word
+    add(sequenceName);
+
+    // Also try whatever was stored at send time (could be a different format)
+    const stored = attachment.metadata?.sequenceThumbnail || attachment.thumbnailUrl;
+    if (stored && !seen.has(stored)) {
+      candidates.push(stored);
+    }
+
+    return candidates;
+  });
+
+  // Index into the candidates list — incremented by onerror
+  let candidateIndex = $state(0);
+  const thumbnailUrl = $derived(thumbnailCandidates[candidateIndex] ?? null);
   const authorName = $derived(attachment.metadata?.sequenceAuthor);
   const stepCount = $derived(attachment.metadata?.sequenceStepCount);
 
@@ -91,8 +131,15 @@
             class="thumbnail"
             loading="lazy"
             onerror={(e) => {
-              const container = (e.currentTarget as HTMLElement).parentElement;
-              if (container) container.style.display = "none";
+              console.warn(`[SequenceMessageCard] thumbnail failed (${candidateIndex + 1}/${thumbnailCandidates.length}):`, thumbnailUrl);
+              // Try the next candidate URL before giving up
+              if (candidateIndex < thumbnailCandidates.length - 1) {
+                candidateIndex++;
+              } else {
+                console.warn(`[SequenceMessageCard] all candidates exhausted for "${sequenceWord}". metadata:`, attachment.metadata);
+                const parent = (e.currentTarget as HTMLElement).parentElement;
+                if (parent) parent.style.display = "none";
+              }
             }}
           />
         </div>
