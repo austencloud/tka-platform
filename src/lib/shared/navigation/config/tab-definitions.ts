@@ -833,6 +833,22 @@ export const LAB_TABS: Section[] = [
     color: "#06b6d4",
     gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
   },
+  {
+    id: "hand-path-explorer",
+    label: "Path Explorer",
+    icon: '<i class="fas fa-route" aria-hidden="true"></i>',
+    description: "Browse unique hand paths across your sequence library",
+    color: "#10b981",
+    gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
+  },
+  {
+    id: "hand-path-builder",
+    label: "Hand Path Builder",
+    icon: '<i class="fas fa-draw-polygon" aria-hidden="true"></i>',
+    description: "Tap grid locations to draw spatial hand paths and save them to the library",
+    color: "#06b6d4",
+    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
+  },
 ];
 
 // REMOVED: LANDING_PAGE_TABS - LandingPreviewModule now handles its own internal tabs
