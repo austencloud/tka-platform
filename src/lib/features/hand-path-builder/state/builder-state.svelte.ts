@@ -59,6 +59,12 @@ function isLocationActive(location: GridLocation, mode: GridMode): boolean {
   }
 }
 
+/** Describes a hand movement from one grid location to another */
+export interface HandMove {
+  from: GridLocation;
+  to: GridLocation;
+}
+
 const namer = new HandPathNamer();
 
 export function createBuilderState() {
@@ -66,6 +72,10 @@ export function createBuilderState() {
   let gridMode = $state<GridMode>(GridMode.DIAMOND);
   let blueLocations = $state<GridLocation[]>([]);
   let redLocations = $state<GridLocation[]>([]);
+  let isAnimating = $state(false);
+
+  // Animation callback — set by BuilderGrid to animate hand movement
+  let animationCallback: ((move: HandMove) => Promise<void>) | null = null;
 
   // Derived path names — live-update as locations are tapped
   const bluePathName = $derived(
@@ -101,18 +111,40 @@ export function createBuilderState() {
   // Can undo when there are locations in the active phase
   const canUndo = $derived(activeLocations.length > 0);
 
-  function addLocation(loc: GridLocation): void {
+  async function addLocation(loc: GridLocation): Promise<void> {
     // Ignore taps outside the active grid mode
     if (!isLocationActive(loc, gridMode)) return;
+    // Block during animation
+    if (isAnimating) return;
 
     // Don't allow adding to red if lengths would exceed blue
     if (phase === "red" && redLocations.length >= blueLocations.length) return;
 
+    const currentLocs = phase === "blue" ? blueLocations : redLocations;
+    const previousLoc = currentLocs.length > 0
+      ? currentLocs[currentLocs.length - 1]!
+      : null;
+
+    // If there's a previous location and an animation callback, animate first
+    if (previousLoc && animationCallback) {
+      isAnimating = true;
+      try {
+        await animationCallback({ from: previousLoc, to: loc });
+      } finally {
+        isAnimating = false;
+      }
+    }
+
+    // After animation completes, add the location
     if (phase === "blue") {
       blueLocations = [...blueLocations, loc];
     } else if (phase === "red") {
       redLocations = [...redLocations, loc];
     }
+  }
+
+  function setAnimationCallback(cb: (move: HandMove) => Promise<void>): void {
+    animationCallback = cb;
   }
 
   function undo(): void {
@@ -157,8 +189,10 @@ export function createBuilderState() {
     get activeLocations() { return activeLocations; },
     get lastLocation() { return lastLocation; },
     get canUndo() { return canUndo; },
+    get isAnimating() { return isAnimating; },
 
     addLocation,
+    setAnimationCallback,
     undo,
     switchToRed,
     complete,
