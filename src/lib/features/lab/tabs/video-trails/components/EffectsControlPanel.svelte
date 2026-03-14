@@ -17,9 +17,20 @@
     { key: "charcoal", label: "Charcoal", icon: "fa-meteor" },
   ];
 
+  let detectorDropdownOpen = $state(false);
+
+  const activeDetectorLabel = $derived(
+    DETECTOR_REGISTRY.find((r) => r.id === trailsState.activeDetectorId)?.name ?? "Unknown",
+  );
+
   function toggleEffect(key: EffectSection["key"]) {
     const current = trailsState.effectConfig[key];
     trailsState.setEffectConfig({ [key]: { ...current, enabled: !current.enabled } });
+  }
+
+  function selectDetector(id: string) {
+    trailsState.setActiveDetector(id);
+    detectorDropdownOpen = false;
   }
 </script>
 
@@ -39,8 +50,8 @@
   <div class="detection-section">
     <h3 class="panel-title">Detection</h3>
 
-    <label class="slider-row">
-      <span>Threshold</span>
+    <div class="slider-row">
+      <span class="slider-label">Threshold</span>
       <input
         type="range"
         min="0"
@@ -48,12 +59,13 @@
         step="0.05"
         value={trailsState.detectionConfig.threshold}
         oninput={(e) => trailsState.setDetectionConfig({ threshold: Number((e.target as HTMLInputElement).value) })}
+        aria-label="Threshold"
       />
       <span class="value">{trailsState.detectionConfig.threshold.toFixed(2)}</span>
-    </label>
+    </div>
 
-    <label class="slider-row">
-      <span>Sensitivity</span>
+    <div class="slider-row">
+      <span class="slider-label">Sensitivity</span>
       <input
         type="range"
         min="0"
@@ -61,21 +73,33 @@
         step="0.1"
         value={trailsState.detectionConfig.sensitivity}
         oninput={(e) => trailsState.setDetectionConfig({ sensitivity: Number((e.target as HTMLInputElement).value) })}
+        aria-label="Sensitivity"
       />
       <span class="value">{trailsState.detectionConfig.sensitivity.toFixed(1)}</span>
-    </label>
+    </div>
 
-    <label class="select-row">
-      <span>Detector</span>
-      <select
-        value={trailsState.activeDetectorId}
-        onchange={(e) => trailsState.setActiveDetector((e.target as HTMLSelectElement).value)}
-      >
-        {#each DETECTOR_REGISTRY as reg}
-          <option value={reg.id}>{reg.name}</option>
-        {/each}
-      </select>
-    </label>
+    <div class="select-row">
+      <span class="select-label">Detector</span>
+      <div class="custom-select">
+        <button class="select-trigger" onclick={() => (detectorDropdownOpen = !detectorDropdownOpen)}>
+          <span>{activeDetectorLabel}</span>
+          <i class="fas fa-chevron-down" aria-hidden="true"></i>
+        </button>
+        {#if detectorDropdownOpen}
+          <div class="select-dropdown">
+            {#each DETECTOR_REGISTRY as reg}
+              <button
+                class="select-option"
+                class:selected={reg.id === trailsState.activeDetectorId}
+                onclick={() => selectDetector(reg.id)}
+              >
+                {reg.name}
+              </button>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    </div>
   </div>
 </div>
 
@@ -138,6 +162,8 @@
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
+  /* --- Styled range sliders --- */
+
   .slider-row {
     display: flex;
     align-items: center;
@@ -147,11 +173,36 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
   }
 
-  .slider-row span:first-child { min-width: 70px; }
+  .slider-label { min-width: 70px; }
 
   .slider-row input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
     flex: 1;
-    accent-color: var(--theme-accent, #f43f5e);
+    height: 4px;
+    border-radius: 2px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    outline: none;
+  }
+
+  .slider-row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--theme-accent, #f43f5e);
+    cursor: pointer;
+    border: 2px solid var(--theme-panel-bg, #121220);
+  }
+
+  .slider-row input[type="range"]::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--theme-accent, #f43f5e);
+    cursor: pointer;
+    border: 2px solid var(--theme-panel-bg, #121220);
   }
 
   .value {
@@ -159,6 +210,8 @@
     text-align: right;
     font-variant-numeric: tabular-nums;
   }
+
+  /* --- Custom select dropdown --- */
 
   .select-row {
     display: flex;
@@ -169,14 +222,63 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
   }
 
-  .select-row span { min-width: 70px; }
+  .select-label { min-width: 70px; }
 
-  .select-row select {
+  .custom-select {
+    position: relative;
     flex: 1;
-    background: transparent;
+  }
+
+  .select-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    width: 100%;
+    padding: 6px 10px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 4px;
+    border-radius: 6px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     color: var(--theme-text, #ffffff);
-    padding: 4px 8px;
+    font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+  }
+
+  .select-trigger:hover {
+    border-color: var(--theme-accent, #f43f5e);
+  }
+
+  .select-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 6px;
+    overflow: hidden;
+    z-index: 10;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  .select-option {
+    display: block;
+    width: 100%;
+    padding: 8px 10px;
+    border: none;
+    background: transparent;
+    color: var(--theme-text, #ffffff);
+    font-size: var(--font-size-compact, 12px);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .select-option:hover {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+  }
+
+  .select-option.selected {
+    color: var(--theme-accent, #f43f5e);
   }
 </style>

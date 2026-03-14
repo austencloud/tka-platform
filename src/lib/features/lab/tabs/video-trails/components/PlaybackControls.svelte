@@ -49,16 +49,17 @@
     {trailsState.currentFrame} / {trailsState.totalFrames}
   </span>
 
-  <select
-    class="speed-select"
-    value={trailsState.playbackSpeed}
-    onchange={(e) => trailsState.setPlaybackSpeed(Number((e.target as HTMLSelectElement).value))}
-    aria-label="Playback speed"
-  >
+  <div class="speed-pills">
     {#each speedOptions as speed}
-      <option value={speed}>{speed}x</option>
+      <button
+        class="speed-pill"
+        class:active={trailsState.playbackSpeed === speed}
+        onclick={() => trailsState.setPlaybackSpeed(speed)}
+      >
+        {speed}x
+      </button>
     {/each}
-  </select>
+  </div>
 </div>
 
 <style>
@@ -88,10 +89,36 @@
 
   .play-btn:hover { filter: brightness(1.1); }
 
+  /* --- Styled seek bar --- */
+
   .seek-bar {
+    -webkit-appearance: none;
+    appearance: none;
     flex: 1;
     height: 4px;
-    accent-color: var(--theme-accent, #f43f5e);
+    border-radius: 2px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    outline: none;
+  }
+
+  .seek-bar::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--theme-accent, #f43f5e);
+    cursor: pointer;
+    border: 2px solid var(--theme-panel-bg, #121220);
+  }
+
+  .seek-bar::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--theme-accent, #f43f5e);
+    cursor: pointer;
+    border: 2px solid var(--theme-panel-bg, #121220);
   }
 
   .frame-counter {
@@ -103,12 +130,34 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .speed-select {
-    background: transparent;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 4px;
-    color: var(--theme-text, #ffffff);
+  /* --- Speed pill buttons --- */
+
+  .speed-pills {
+    display: flex;
+    gap: 2px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-radius: 6px;
+    padding: 2px;
+    flex-shrink: 0;
+  }
+
+  .speed-pill {
     padding: 4px 8px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .speed-pill:hover {
+    color: var(--theme-text, #ffffff);
+  }
+
+  .speed-pill.active {
+    background: var(--theme-accent, #f43f5e);
+    color: white;
   }
 </style>
