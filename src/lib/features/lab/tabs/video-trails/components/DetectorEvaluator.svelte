@@ -159,7 +159,7 @@
       // Miss: correction has a corrected position but detector returned nothing nearby
       const missCount = corrections.filter((c, idx) => {
         if (!c.corrected) return false;
-        const dist = matchDistances[idx];
+        const dist = matchDistances[idx] ?? null;
         // A "miss" means no detection at all, or the nearest was way off
         return dist === null || dist > ACCURACY_THRESHOLD_PX * 3;
       }).length;
@@ -341,7 +341,7 @@
                     </thead>
                     <tbody>
                       {#each result.corrections as correction, idx}
-                        {@const dist = result.matchDistances[idx]}
+                        {@const dist = result.matchDistances[idx] ?? null}
                         <tr class={dist !== null && dist <= ACCURACY_THRESHOLD_PX ? "row-ok" : "row-miss"}>
                           <td>{correction.propIndex === 0 ? "Blue" : "Red"}</td>
                           <td>{correction.tipIndex}</td>
