@@ -132,6 +132,7 @@
   // Derived: Build render input from props
   const renderInput = $derived<ThumbnailRenderInput>({
     sequenceName,
+    sequenceId: sequence.id,
     bluePropType,
     redPropType,
     catDogModeEnabled,
