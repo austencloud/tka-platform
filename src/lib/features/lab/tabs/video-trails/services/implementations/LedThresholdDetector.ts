@@ -61,9 +61,9 @@ export class LedThresholdDetector implements IEndpointDetector {
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const idx = (y * width + x) * 4;
-        const r = data[idx] / 255;
-        const g = data[idx + 1] / 255;
-        const b = data[idx + 2] / 255;
+        const r = data[idx]! / 255;
+        const g = data[idx + 1]! / 255;
+        const b = data[idx + 2]! / 255;
         // Standard Rec. 709 luminance, scaled by the user's sensitivity knob.
         const luminance = (colorWeights.r * r + colorWeights.g * g + colorWeights.b * b) * sensitivity;
 
@@ -148,7 +148,7 @@ export class LedThresholdDetector implements IEndpointDetector {
     let c1Idx = 0, c2Idx = 1;
     for (let i = 0; i < clusters.length; i++) {
       for (let j = i + 1; j < clusters.length; j++) {
-        const dist = Math.hypot(clusters[i].x - clusters[j].x, clusters[i].y - clusters[j].y);
+        const dist = Math.hypot(clusters[i]!.x - clusters[j]!.x, clusters[i]!.y - clusters[j]!.y);
         if (dist > maxDist) {
           maxDist = dist;
           c1Idx = i;
@@ -157,21 +157,21 @@ export class LedThresholdDetector implements IEndpointDetector {
       }
     }
 
-    let centroid0 = { x: clusters[c1Idx].x, y: clusters[c1Idx].y };
-    let centroid1 = { x: clusters[c2Idx].x, y: clusters[c2Idx].y };
+    let centroid0 = { x: clusters[c1Idx]!.x, y: clusters[c1Idx]!.y };
+    let centroid1 = { x: clusters[c2Idx]!.x, y: clusters[c2Idx]!.y };
 
     let assignments: number[] = new Array(clusters.length).fill(0);
     // 5 iterations is plenty for the small cluster counts we deal with here.
     for (let iter = 0; iter < 5; iter++) {
       for (let i = 0; i < clusters.length; i++) {
-        const d0 = Math.hypot(clusters[i].x - centroid0.x, clusters[i].y - centroid0.y);
-        const d1 = Math.hypot(clusters[i].x - centroid1.x, clusters[i].y - centroid1.y);
+        const d0 = Math.hypot(clusters[i]!.x - centroid0.x, clusters[i]!.y - centroid0.y);
+        const d1 = Math.hypot(clusters[i]!.x - centroid1.x, clusters[i]!.y - centroid1.y);
         assignments[i] = d0 <= d1 ? 0 : 1;
       }
       let sx0 = 0, sy0 = 0, n0 = 0, sx1 = 0, sy1 = 0, n1 = 0;
       for (let i = 0; i < clusters.length; i++) {
-        if (assignments[i] === 0) { sx0 += clusters[i].x; sy0 += clusters[i].y; n0++; }
-        else { sx1 += clusters[i].x; sy1 += clusters[i].y; n1++; }
+        if (assignments[i] === 0) { sx0 += clusters[i]!.x; sy0 += clusters[i]!.y; n0++; }
+        else { sx1 += clusters[i]!.x; sy1 += clusters[i]!.y; n1++; }
       }
       if (n0 > 0) centroid0 = { x: sx0 / n0, y: sy0 / n0 };
       if (n1 > 0) centroid1 = { x: sx1 / n1, y: sy1 / n1 };
@@ -179,8 +179,8 @@ export class LedThresholdDetector implements IEndpointDetector {
 
     const tipCounters = [0, 0];
     return clusters.map((c, i) => {
-      const propIndex = assignments[i] as 0 | 1;
-      const tipIndex = tipCounters[propIndex]++;
+      const propIndex = assignments[i]! as 0 | 1;
+      const tipIndex = tipCounters[propIndex]!++;
       return { ...c, propIndex, tipIndex };
     });
   }
