@@ -38,6 +38,12 @@ const BOX_TARGETS: GridHitTarget[] = [
 	{ location: GridLocation.NORTHWEST, ...parseCoord("(373.8, 373.8)"), label: "Northwest" },
 ];
 
+// Skewed = all 8 cardinal + intercardinal points (diamond hand_points + box hand_points)
+const SKEWED_TARGETS: GridHitTarget[] = [
+	...DIAMOND_TARGETS,
+	...BOX_TARGETS,
+];
+
 export class GridHitTargetCalculator implements IGridHitTargetCalculator {
 	getHitTargets(gridMode: GridMode): GridHitTarget[] {
 		switch (gridMode) {
@@ -45,8 +51,9 @@ export class GridHitTargetCalculator implements IGridHitTargetCalculator {
 				return DIAMOND_TARGETS;
 			case GridMode.BOX:
 				return BOX_TARGETS;
+			case GridMode.SKEWED:
+				return SKEWED_TARGETS;
 			default:
-				// Phase 3 will add SKEWED (8 points) and CENTRIC (9 points)
 				return DIAMOND_TARGETS;
 		}
 	}

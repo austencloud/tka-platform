@@ -61,6 +61,10 @@
   let bluePropData = $state<PropRenderData | null>(null);
   let redPropData = $state<PropRenderData | null>(null);
 
+  // Reactive prop types for rotation checks
+  const currentBluePropType = $derived(getSettings().bluePropType ?? PropType.STAFF);
+  const currentRedPropType = $derived(getSettings().redPropType ?? PropType.STAFF);
+
   // Load prop SVGs reactively when prop type changes in settings
   $effect(() => {
     const settings = getSettings();
@@ -101,8 +105,14 @@
   );
 
   // Rotation angle for active prop at current position
+  // Hands don't rotate — they sit flat at every grid position
   const activeRotation = $derived.by(() => {
     if (builderState.currentPosition === null) return 0;
+    const settings = getSettings();
+    const activePropType = builderState.activeHand === MotionColor.BLUE
+      ? (settings.bluePropType ?? PropType.STAFF)
+      : (settings.redPropType ?? PropType.STAFF);
+    if (activePropType === PropType.HAND) return 0;
     return PropRotAngleManager.calculateRotation(
       builderState.currentPosition,
       builderState.currentOrientation,
@@ -128,7 +138,9 @@
   }
 
   // Compute rotation for a prop at a specific location/orientation
-  function getRotation(location: GridLocation, orientation: Orientation): number {
+  // Hands don't rotate — always return 0 for hand props
+  function getRotation(location: GridLocation, orientation: Orientation, propType?: PropType): number {
+    if (propType === PropType.HAND) return 0;
     return PropRotAngleManager.calculateRotation(
       location,
       orientation,
@@ -373,7 +385,7 @@
             style="transform: {propTransform(
               ghostTarget.x,
               ghostTarget.y,
-              getRotation(ghostBlueState.position, ghostBlueState.orientation),
+              getRotation(ghostBlueState.position, ghostBlueState.orientation, currentBluePropType),
               bluePropData.svgData.center,
             )}"
           >
@@ -400,7 +412,7 @@
             style="transform: {propTransform(
               ghostRedTarget.x,
               ghostRedTarget.y,
-              getRotation(ghostRedState.position, ghostRedState.orientation),
+              getRotation(ghostRedState.position, ghostRedState.orientation, currentRedPropType),
               redPropData.svgData.center,
             )}"
           >
@@ -465,7 +477,7 @@
               style="transform: {propTransform(
                 blueFinalT.x,
                 blueFinalT.y,
-                getRotation(blueFinalLoc, blueFinalOrientation),
+                getRotation(blueFinalLoc, blueFinalOrientation, currentBluePropType),
                 bluePropData.svgData.center,
               )}"
             >
@@ -495,7 +507,7 @@
               style="transform: {propTransform(
                 redFinalT.x,
                 redFinalT.y,
-                getRotation(redFinal, redFinalOri),
+                getRotation(redFinal, redFinalOri, currentRedPropType),
                 redPropData.svgData.center,
               )}"
             >

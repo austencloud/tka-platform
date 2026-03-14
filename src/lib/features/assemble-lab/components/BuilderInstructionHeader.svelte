@@ -56,12 +56,7 @@
   });
 
   // Hand switcher: always rendered to reserve space (prevents layout shift).
-  // Visible once any hand has steps, hidden on complete.
-  const switcherVisible = $derived(
-    builderState.phase !== "complete" &&
-    (builderState.blueSteps.length > 0 || builderState.redSteps.length > 0)
-  );
-
+  // Hidden on complete or when both hands are empty.
   const switcherHidden = $derived(
     builderState.phase === "complete" ||
     (builderState.blueSteps.length === 0 && builderState.redSteps.length === 0)
@@ -278,32 +273,9 @@
     outline-offset: 2px;
   }
 
-  /* ── Mobile: minimal text overlay, no background strip ── */
+  /* ── Mobile: hide entirely — BuilderControls handles instruction + hand switching ── */
   @media (max-width: 768px) {
     .instruction-header {
-      padding: 6px 12px 4px;
-      background: none;
-      pointer-events: none;
-    }
-
-    .step-title {
-      font-size: 14px;
-      gap: 0;
-      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7);
-    }
-
-    /* Hide the dot on mobile — just plain white text */
-    .hand-dot-glow {
-      display: none;
-    }
-
-    /* Hide hand switcher on mobile — BuilderControls has hand buttons on canvas */
-    .hand-switcher {
-      display: none;
-    }
-
-    /* Hide hint on mobile — hand buttons already show step counts */
-    .other-hand-hint {
       display: none;
     }
   }

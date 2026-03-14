@@ -39,6 +39,9 @@ export class BuilderStepConverter implements IBuilderStepConverter {
       case HandMotionType.DASH:
         return MotionType.DASH;
       case HandMotionType.SHIFT: {
+        // Float: -0.5 turns cancels the arc rotation so the prop appears to float
+        if (step.turnCount === -0.5) return MotionType.FLOAT;
+
         const handPathDir = this.pathCalculator.calculateRotationDirection(
           step.startPosition,
           step.endPosition,

@@ -164,6 +164,7 @@
     justify-content: space-between; /* Space between left, center, right zones */
     width: 100%;
     border-radius: 24px;
+    position: relative; /* Positioning context for absolutely-centered center zone */
 
     /* Intelligent reactive padding to prevent overlap */
     padding: clamp(2px, 0.3vh, 16px) clamp(2px, 1vw, 24px);
@@ -186,20 +187,21 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-grow: 1; /* Take up available space */
-    position: relative;
+    flex-grow: 1; /* Take up available space in flex flow */
     min-height: var(--min-touch-target); /* Prevent collapse */
   }
 
-  /* CENTER ZONE: Contextual buttons centered in available space */
+  /* CENTER ZONE: Absolutely centered relative to full button panel width,
+     not the wrapper — so asymmetric left/right zones don't push it off-center */
   .center-zone {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px; /* Slightly reduced for better mobile fit */
+    gap: 12px;
     position: absolute;
     left: 50%;
-    transform: translateX(-50%);
+    top: 50%;
+    transform: translate(-50%, -50%);
     pointer-events: auto;
   }
 

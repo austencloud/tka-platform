@@ -1,10 +1,10 @@
 <!--
-  BuilderControls.svelte - Context-sensitive overlay controls for the visual builder.
+  BuilderControls.svelte - Context-sensitive overlay controls for the assemble grid.
 
-  Mobile: orientation/turns trigger (top-left), blue hand (bottom-left),
-  red hand (bottom-right) overlaid on the grid canvas.
-  Desktop: triggers hidden (BuilderTurnBar handles it).
-  Action row (Complete / New) below grid on desktop, overlaid bottom-right on mobile.
+  Mobile bottom bar: single hand toggle (left) + Complete/New action (right).
+  Top-center: instruction text with inline tappable turn/orientation control.
+  Desktop: triggers hidden (BuilderTurnBar handles turns, header handles hands).
+  Action row (Complete / New) below grid on desktop.
 -->
 <script lang="ts">
   import {
@@ -29,21 +29,20 @@
   const isIdle = $derived(builderState.phase === "idle");
   const isBlueHand = $derived(builderState.activeHand === MotionColor.BLUE);
 
-  // Show hand buttons once any hand has steps (or during placing/building)
-  const showHandButtons = $derived(
-    !isComplete && !isIdle &&
-    (builderState.blueSteps.length > 0 || builderState.redSteps.length > 0 || isPlacing || isBuilding)
+  // Show hand toggle whenever either hand has steps (hidden only when both are empty)
+  const showHandToggle = $derived(
+    builderState.blueSteps.length > 0 || builderState.redSteps.length > 0
   );
 
-  // Show action row when there's a relevant action to take.
-  const showActions = $derived(
-    builderState.canFinishHand ||
-    isComplete
-  );
-
-  // Dim action row during animation — buttons stay in place but look inactive
+  // Show action button when sequence can be completed or is complete
+  const showActions = $derived(builderState.canFinishHand || isComplete);
   const actionsDimmed = $derived(isAnimating);
 
+  // Pulse the inactive hand's side when it has 0 steps
+  const redNeedsAttention = $derived(isBlueHand && builderState.redSteps.length === 0 && builderState.blueSteps.length > 0);
+  const blueNeedsAttention = $derived(!isBlueHand && builderState.blueSteps.length === 0 && builderState.redSteps.length > 0);
+
+  // ── Orientation ──
   const ORIENTATIONS = [
     { value: Orientation.IN, label: "In", ariaLabel: "In orientation" },
     { value: Orientation.OUT, label: "Out", ariaLabel: "Out orientation" },
@@ -51,8 +50,16 @@
     { value: Orientation.COUNTER, label: "CCW", ariaLabel: "Counter-clockwise orientation" },
   ] as const;
 
-  // ── Orientation popover state ──
   let oriPopoverOpen = $state(false);
+  let oriTriggerRef: HTMLElement | null = $state(null);
+  let turnsTriggerRef: HTMLElement | null = $state(null);
+
+  // Compute popover top position from trigger's bottom edge
+  function getPopoverTop(triggerRef: HTMLElement | null): string {
+    if (!triggerRef) return "40%";
+    const rect = triggerRef.getBoundingClientRect();
+    return `${rect.bottom + 8}px`;
+  }
 
   const currentOriLabel = $derived(
     ORIENTATIONS.find(o => o.value === builderState.currentOrientation)?.label ?? "In"
@@ -63,10 +70,12 @@
     oriPopoverOpen = false;
   }
 
-  // ── Turns popover state ──
+  // ── Turns ──
   let turnsPopoverOpen = $state(false);
 
+  const FLOAT_TURN = -0.5;
   const TURN_OPTIONS = [0, 0.5, 1, 1.5, 2, 2.5, 3] as const;
+  const isFloat = $derived(builderState.turnCount === FLOAT_TURN);
 
   const rotLabel = $derived(
     builderState.rotationDirection === RotationDirection.CLOCKWISE ? "CW" : "CCW"
@@ -94,182 +103,201 @@
     return `${t} turn${t > 1 ? "s" : ""}`;
   }
 
-  const triggerLabel = $derived(
-    `${builderState.turnCount}`
-  );
-
-  // Close any open popover when phase changes
+  // Close popovers when phase changes (subscribing to phase to auto-close)
   $effect(() => {
     const _phase = builderState.phase;
     oriPopoverOpen = false;
     turnsPopoverOpen = false;
   });
 
-  function switchToBlue(): void {
-    builderState.switchToHand(MotionColor.BLUE);
+  function handlePopoverKeydown(e: KeyboardEvent): void {
+    if (e.key === "Escape") {
+      oriPopoverOpen = false;
+      turnsPopoverOpen = false;
+    }
   }
 
-  function switchToRed(): void {
-    builderState.switchToHand(MotionColor.RED);
+  // ── Instruction text ──
+  const phaseInstruction = $derived.by(() => {
+    switch (builderState.phase) {
+      case "idle": return "Tap a starting point";
+      case "placing": return "Tap destination";
+      case "building":
+      case "animating": return "Tap next point";
+      case "complete": return "Sequence complete";
+      default: return "";
+    }
+  });
+
+  function toggleHand(): void {
+    const next = isBlueHand ? MotionColor.RED : MotionColor.BLUE;
+    builderState.switchToHand(next);
   }
 </script>
 
 <!-- Grid overlay -->
 <div class="controls-overlay">
-  <!-- Top-left: context-sensitive trigger (mobile only) -->
-  <div class="top-trigger-area">
-    <!-- Orientation trigger: during placing phase -->
-    {#if isPlacing}
-      <div class="trigger-wrapper visible">
-        <button
-          class="compact-trigger"
-          onclick={() => { oriPopoverOpen = !oriPopoverOpen; }}
-          aria-label="Orientation: {currentOriLabel}"
-          aria-expanded={oriPopoverOpen}
-        >
-          <i class="fas fa-compass" aria-hidden="true"></i>
-          <span class="trigger-text">{currentOriLabel}</span>
-        </button>
+  <!-- Top-center: instruction + inline turn/orientation control (mobile only) -->
+  <div class="top-status-area">
+    <div class="status-line">
+      <span class="instruction-text">{phaseInstruction}</span>
 
-        {#if oriPopoverOpen}
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <div
-            class="popover-backdrop"
-            onclick={() => { oriPopoverOpen = false; }}
-            onkeydown={() => {}}
-            role="presentation"
-          ></div>
+      <!-- Orientation control: during placing phase -->
+      {#if isPlacing}
+        <div class="inline-control-wrapper">
+          <button
+            bind:this={oriTriggerRef}
+            class="inline-trigger"
+            onclick={() => { oriPopoverOpen = !oriPopoverOpen; }}
+            aria-label="Orientation: {currentOriLabel}"
+            aria-expanded={oriPopoverOpen}
+          >
+            <i class="fas fa-compass" aria-hidden="true"></i>
+            <span>{currentOriLabel}</span>
+          </button>
 
-          <div class="popover-panel below" role="dialog" aria-label="Starting orientation">
-            <div class="popover-pills" role="radiogroup" aria-label="Orientation">
-              {#each ORIENTATIONS as ori}
-                <button
-                  class="popover-pill"
-                  class:active={builderState.currentOrientation === ori.value}
-                  role="radio"
-                  aria-checked={builderState.currentOrientation === ori.value}
-                  aria-label={ori.ariaLabel}
-                  onclick={() => selectOrientation(ori.value)}
-                >
-                  {ori.label}
-                </button>
-              {/each}
+          {#if oriPopoverOpen}
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div
+              class="popover-backdrop"
+              onclick={() => { oriPopoverOpen = false; }}
+              onkeydown={handlePopoverKeydown}
+              role="presentation"
+            ></div>
+
+            <div class="popover-panel" style:top={getPopoverTop(oriTriggerRef)} role="dialog" aria-label="Starting orientation">
+              <div class="popover-pills" role="radiogroup" aria-label="Orientation">
+                {#each ORIENTATIONS as ori}
+                  <button
+                    class="popover-pill"
+                    class:active={builderState.currentOrientation === ori.value}
+                    role="radio"
+                    aria-checked={builderState.currentOrientation === ori.value}
+                    aria-label={ori.ariaLabel}
+                    onclick={() => selectOrientation(ori.value)}
+                  >
+                    {ori.label}
+                  </button>
+                {/each}
+              </div>
             </div>
-          </div>
-        {/if}
-      </div>
-    {/if}
+          {/if}
+        </div>
+      {/if}
 
-    <!-- Turns trigger: during building/animating phase -->
-    {#if isBuilding || isAnimating}
-      <div class="trigger-wrapper visible">
-        <button
-          class="compact-trigger"
-          onclick={() => { turnsPopoverOpen = !turnsPopoverOpen; }}
-          aria-label="Turn settings: {triggerLabel}"
-          aria-expanded={turnsPopoverOpen}
-        >
-          <i class="fas fa-rotate-right" class:flipped={isFlipped} aria-hidden="true"></i>
-          <span class="trigger-text">{triggerLabel}</span>
-        </button>
+      <!-- Turns control: during building/animating phase -->
+      {#if isBuilding || isAnimating}
+        <div class="inline-control-wrapper">
+          <button
+            bind:this={turnsTriggerRef}
+            class="inline-trigger"
+            onclick={() => { turnsPopoverOpen = !turnsPopoverOpen; }}
+            aria-label="Turn settings: {isFloat ? 'Float' : `${rotLabel} ${builderState.turnCount}`}"
+            aria-expanded={turnsPopoverOpen}
+          >
+            <i class="fas fa-rotate-right" class:flipped={isFlipped} aria-hidden="true"></i>
+            <span>{isFloat ? "fl" : builderState.turnCount}</span>
+          </button>
 
-        {#if turnsPopoverOpen}
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <div
-            class="popover-backdrop"
-            onclick={() => { turnsPopoverOpen = false; }}
-            onkeydown={() => {}}
-            role="presentation"
-          ></div>
+          {#if turnsPopoverOpen}
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div
+              class="popover-backdrop"
+              onclick={() => { turnsPopoverOpen = false; }}
+              onkeydown={handlePopoverKeydown}
+              role="presentation"
+            ></div>
 
-          <div class="popover-panel below" role="dialog" aria-label="Turn count and rotation direction">
-            <button
-              class="popover-rotation"
-              onclick={toggleRotation}
-              aria-label="Toggle rotation direction"
-            >
-              <i class="fas fa-rotate-right" class:flipped={isFlipped} aria-hidden="true"></i>
-              <span>{rotLabel}</span>
-            </button>
+            <div class="popover-panel" style:top={getPopoverTop(turnsTriggerRef)} role="dialog" aria-label="Turn count and rotation direction">
+              <button
+                class="popover-rotation"
+                onclick={toggleRotation}
+                aria-label="Toggle rotation direction"
+              >
+                <i class="fas fa-rotate-right" class:flipped={isFlipped} aria-hidden="true"></i>
+                <span>{rotLabel}</span>
+              </button>
 
-            <div class="popover-divider" aria-hidden="true"></div>
+              <div class="popover-divider" aria-hidden="true"></div>
 
-            <div class="popover-pills" role="radiogroup" aria-label="Turn count">
-              {#each TURN_OPTIONS as t}
+              <div class="popover-pills" role="radiogroup" aria-label="Turn count">
                 <button
-                  class="popover-pill"
-                  class:active={builderState.turnCount === t}
+                  class="popover-pill float-pill"
+                  class:active={isFloat}
                   role="radio"
-                  aria-checked={builderState.turnCount === t}
-                  aria-label={turnAriaLabel(t)}
-                  onclick={() => selectTurn(t)}
+                  aria-checked={isFloat}
+                  aria-label="Float (negative half turn, shifts only)"
+                  onclick={() => selectTurn(FLOAT_TURN)}
                 >
-                  {t}
+                  fl
                 </button>
-              {/each}
+                {#each TURN_OPTIONS as t}
+                  <button
+                    class="popover-pill"
+                    class:active={builderState.turnCount === t}
+                    role="radio"
+                    aria-checked={builderState.turnCount === t}
+                    aria-label={turnAriaLabel(t)}
+                    onclick={() => selectTurn(t)}
+                  >
+                    {t}
+                  </button>
+                {/each}
+              </div>
             </div>
-          </div>
-        {/if}
-      </div>
-    {/if}
+          {/if}
+        </div>
+      {/if}
+    </div>
   </div>
 
-  <!-- Bottom row: blue hand (left) + action (center) + red hand (right) — mobile only -->
-  <div class="bottom-hand-row">
-    {#if showHandButtons || showActions}
-      <button
-        class="hand-btn blue-hand"
-        class:active={isBlueHand}
-        class:hand-hidden={!showHandButtons}
-        onclick={switchToBlue}
-        aria-label="Switch to blue hand ({builderState.blueSteps.length} steps)"
-        tabindex={showHandButtons ? 0 : -1}
-      >
-        <span class="hand-dot" aria-hidden="true"></span>
-        {#if builderState.blueSteps.length > 0}
-          <span class="hand-count">{builderState.blueSteps.length}</span>
-        {/if}
-      </button>
+  <!-- Bottom bar: hand toggle (left) + Complete/New (right) — mobile only -->
+  <div class="bottom-bar">
+    <!-- Hand toggle: single pill with both hands -->
+    <button
+      class="hand-toggle"
+      class:toggle-hidden={!showHandToggle}
+      class:needs-attention-red={redNeedsAttention}
+      class:needs-attention-blue={blueNeedsAttention}
+      onclick={toggleHand}
+      aria-label="Switch hand (Blue: {builderState.blueSteps.length}, Red: {builderState.redSteps.length})"
+      tabindex={showHandToggle ? 0 : -1}
+    >
+      <span class="toggle-side blue-side" class:active-side={isBlueHand}>
+        <span class="toggle-dot blue-dot" aria-hidden="true"></span>
+        <span class="toggle-count">{builderState.blueSteps.length}</span>
+      </span>
+      <span class="toggle-divider" aria-hidden="true"></span>
+      <span class="toggle-side red-side" class:active-side={!isBlueHand}>
+        <span class="toggle-count">{builderState.redSteps.length}</span>
+        <span class="toggle-dot red-dot" aria-hidden="true"></span>
+      </span>
+    </button>
 
-      <!-- Action button: centered between hand buttons on mobile -->
-      <div class="action-slot" class:visible={showActions} class:dimmed={actionsDimmed}>
-        {#if builderState.canFinishHand}
-          <button
-            class="action-btn complete-btn"
-            onclick={() => builderState.finishHand()}
-            aria-label="Complete sequence"
-          >
-            <i class="fas fa-check" aria-hidden="true"></i>
-            <span>Complete</span>
-          </button>
-        {/if}
+    <!-- Action button: Complete or New -->
+    <div class="action-slot" class:visible={showActions} class:dimmed={actionsDimmed}>
+      {#if builderState.canFinishHand}
+        <button
+          class="action-btn complete-btn"
+          onclick={() => builderState.finishHand()}
+          aria-label="Complete sequence"
+        >
+          <i class="fas fa-check" aria-hidden="true"></i>
+          <span>Complete</span>
+        </button>
+      {/if}
 
-        {#if isComplete}
-          <button
-            class="action-btn new-btn"
-            onclick={() => builderState.reset()}
-            aria-label="Start new sequence"
-          >
-            <i class="fas fa-plus" aria-hidden="true"></i>
-            <span>New</span>
-          </button>
-        {/if}
-      </div>
-
-      <button
-        class="hand-btn red-hand"
-        class:active={!isBlueHand}
-        class:hand-hidden={!showHandButtons}
-        onclick={switchToRed}
-        aria-label="Switch to red hand ({builderState.redSteps.length} steps)"
-        tabindex={showHandButtons ? 0 : -1}
-      >
-        {#if builderState.redSteps.length > 0}
-          <span class="hand-count">{builderState.redSteps.length}</span>
-        {/if}
-        <span class="hand-dot" aria-hidden="true"></span>
-      </button>
-    {/if}
+      {#if isComplete}
+        <button
+          class="action-btn new-btn"
+          onclick={() => builderState.reset()}
+          aria-label="Start new sequence"
+        >
+          <i class="fas fa-plus" aria-hidden="true"></i>
+          <span>New</span>
+        </button>
+      {/if}
+    </div>
   </div>
 </div>
 
@@ -311,76 +339,77 @@
     justify-content: space-between;
   }
 
-  /* ── Top-left trigger area (mobile only) ── */
-  .top-trigger-area {
-    align-self: flex-start;
+  /* ── Top-center status area (mobile only) ── */
+  .top-status-area {
     display: none;
+    justify-content: center;
   }
 
   @media (max-width: 768px) {
-    .top-trigger-area {
-      display: block;
+    .top-status-area {
+      display: flex;
     }
   }
 
-  .trigger-wrapper {
-    position: relative;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease;
-  }
-
-  .trigger-wrapper.visible {
-    opacity: 1;
+  .status-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     pointer-events: auto;
   }
 
-  .compact-trigger {
+  .instruction-text {
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    color: var(--theme-text, #fff);
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7);
+  }
+
+  /* ── Inline turn/orientation trigger ── */
+  .inline-control-wrapper {
+    position: relative;
+  }
+
+  .inline-trigger {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
+    gap: 4px;
+    padding: 4px 10px;
     border: 1.5px solid var(--theme-accent-border, rgba(99, 102, 241, 0.3));
-    border-radius: 12px;
+    border-radius: 8px;
     background: rgba(10, 12, 22, 0.8);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     color: var(--theme-accent, #6366f1);
-    font-size: var(--font-size-min, 14px);
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     cursor: pointer;
-    min-height: var(--min-touch-target, 44px);
-    transition: background 0.15s ease, border-color 0.15s ease;
+    min-height: 32px;
+    transition: background 0.15s ease;
   }
 
-  .compact-trigger:hover {
+  .inline-trigger:hover {
     background: rgba(99, 102, 241, 0.12);
-    border-color: var(--theme-accent, #6366f1);
   }
 
-  .compact-trigger i {
-    font-size: 14px;
+  .inline-trigger i {
+    font-size: 12px;
     transition: transform 0.2s ease;
   }
 
-  .compact-trigger i.flipped {
+  .inline-trigger i.flipped {
     transform: scaleX(-1);
   }
 
-  .trigger-text {
-    letter-spacing: 0.03em;
-  }
-
-  /* Popover backdrop — full-screen tap-to-close */
+  /* ── Popover ── */
   .popover-backdrop {
     position: fixed;
     inset: 0;
     z-index: 99;
   }
 
-  /* Shared popover panel — opens below the trigger (moved to top-left) */
   .popover-panel {
-    position: absolute;
+    position: fixed;
     z-index: 100;
     display: flex;
     align-items: center;
@@ -393,21 +422,20 @@
     padding: 6px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     animation: popover-in 0.15s ease-out;
-  }
 
-  .popover-panel.below {
-    top: calc(100% + 8px);
-    left: 0;
+    /* Center horizontally on viewport; top set inline via style:top */
+    left: 50%;
+    transform: translateX(-50%);
   }
 
   @keyframes popover-in {
     from {
       opacity: 0;
-      transform: translateY(-6px) scale(0.95);
+      transform: translateX(-50%) translateY(-6px) scale(0.95);
     }
     to {
       opacity: 1;
-      transform: translateY(0) scale(1);
+      transform: translateX(-50%) translateY(0) scale(1);
     }
   }
 
@@ -415,7 +443,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 10px 12px;
+    padding: 8px 10px;
     border: none;
     border-radius: 10px;
     background: var(--theme-accent-bg, rgba(99, 102, 241, 0.1));
@@ -423,7 +451,7 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
     cursor: pointer;
-    min-height: var(--min-touch-target, 44px);
+    min-height: 38px;
     flex-shrink: 0;
     transition: background 0.15s ease;
   }
@@ -455,7 +483,7 @@
   }
 
   .popover-pill {
-    padding: 10px 10px;
+    padding: 8px 8px;
     border: none;
     border-radius: 10px;
     background: transparent;
@@ -463,11 +491,12 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
     cursor: pointer;
-    min-height: var(--min-touch-target, 44px);
-    min-width: var(--min-touch-target, 44px);
+    min-height: 38px;
+    min-width: 38px;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
     transition: background 0.15s ease, color 0.15s ease;
   }
 
@@ -476,14 +505,19 @@
     color: var(--theme-text, #fff);
   }
 
+  .popover-pill.float-pill {
+    font-style: italic;
+    letter-spacing: 0.02em;
+  }
+
   .popover-pill.active {
     background: rgba(99, 102, 241, 0.12);
     color: var(--theme-accent, #6366f1);
     border: 1.5px solid var(--theme-accent-border, rgba(99, 102, 241, 0.3));
   }
 
-  /* ── Bottom hand row (mobile only) ── */
-  .bottom-hand-row {
+  /* ── Bottom bar (mobile only) ── */
+  .bottom-bar {
     display: none;
     justify-content: space-between;
     align-items: flex-end;
@@ -491,17 +525,120 @@
   }
 
   @media (max-width: 768px) {
-    .bottom-hand-row {
+    .bottom-bar {
       display: flex;
     }
   }
 
-  .hand-btn.hand-hidden {
+  /* ── Hand toggle ── */
+  .hand-toggle {
+    display: flex;
+    align-items: center;
+    padding: 0;
+    border-radius: 12px;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: rgba(10, 12, 22, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    cursor: pointer;
+    pointer-events: auto;
+    min-height: var(--min-touch-target, 44px);
+    overflow: hidden;
+    transition: opacity 0.2s ease, border-color 0.2s ease;
+  }
+
+  .hand-toggle.toggle-hidden {
     opacity: 0;
     pointer-events: none;
   }
 
-  /* Action slot: centered between hand buttons on mobile */
+  .toggle-side {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: 600;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .toggle-side.active-side {
+    color: var(--theme-text, #fff);
+  }
+
+  .blue-side.active-side {
+    background: color-mix(in srgb, var(--prop-blue, #2e8bf0) 15%, transparent);
+  }
+
+  .red-side.active-side {
+    background: color-mix(in srgb, var(--prop-red, #ed1c24) 15%, transparent);
+  }
+
+  .toggle-divider {
+    width: 1px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.15);
+    flex-shrink: 0;
+  }
+
+  .toggle-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    opacity: 0.4;
+    transition: opacity 0.15s ease;
+  }
+
+  .active-side .toggle-dot {
+    opacity: 1;
+  }
+
+  .blue-dot {
+    background: var(--prop-blue, #2e8bf0);
+  }
+
+  .red-dot {
+    background: var(--prop-red, #ed1c24);
+  }
+
+  .toggle-count {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+    min-width: 14px;
+    text-align: center;
+  }
+
+  /* Pulse the red side when it needs attention */
+  .hand-toggle.needs-attention-red {
+    animation: toggle-pulse-red 2s ease-in-out infinite;
+  }
+
+  .hand-toggle.needs-attention-blue {
+    animation: toggle-pulse-blue 2s ease-in-out infinite;
+  }
+
+  @keyframes toggle-pulse-red {
+    0%, 100% {
+      border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    }
+    50% {
+      border-color: color-mix(in srgb, var(--prop-red, #ed1c24) 60%, transparent);
+      box-shadow: 0 0 12px 0 color-mix(in srgb, var(--prop-red, #ed1c24) 20%, transparent);
+    }
+  }
+
+  @keyframes toggle-pulse-blue {
+    0%, 100% {
+      border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    }
+    50% {
+      border-color: color-mix(in srgb, var(--prop-blue, #2e8bf0) 60%, transparent);
+      box-shadow: 0 0 12px 0 color-mix(in srgb, var(--prop-blue, #2e8bf0) 20%, transparent);
+    }
+  }
+
+  /* ── Action slot (mobile) ── */
   .action-slot {
     display: none;
     pointer-events: none;
@@ -525,81 +662,7 @@
     pointer-events: none;
   }
 
-  .hand-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
-    border-radius: 12px;
-    border: 1.5px solid transparent;
-    background: rgba(10, 12, 22, 0.7);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    color: rgba(255, 255, 255, 0.5);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    cursor: pointer;
-    pointer-events: auto;
-    min-height: var(--min-touch-target, 44px);
-    transition: background 0.15s ease, border-color 0.15s ease;
-  }
-
-  .hand-btn .hand-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    opacity: 0.5;
-    transition: opacity 0.15s ease;
-  }
-
-  .blue-hand .hand-dot {
-    background: var(--prop-blue, #2e8bf0);
-  }
-
-  .red-hand .hand-dot {
-    background: var(--prop-red, #ed1c24);
-  }
-
-  .hand-btn.active {
-    border-color: color-mix(in srgb, var(--btn-color, #fff) 40%, transparent);
-    background: rgba(10, 12, 22, 0.85);
-    color: #fff;
-  }
-
-  .blue-hand.active {
-    --btn-color: var(--prop-blue, #2e8bf0);
-    border-color: color-mix(in srgb, var(--prop-blue, #2e8bf0) 40%, transparent);
-  }
-
-  .red-hand.active {
-    --btn-color: var(--prop-red, #ed1c24);
-    border-color: color-mix(in srgb, var(--prop-red, #ed1c24) 40%, transparent);
-  }
-
-  .hand-btn.active .hand-dot {
-    opacity: 1;
-    box-shadow: 0 0 8px color-mix(in srgb, var(--btn-color, #fff) 50%, transparent);
-  }
-
-  .hand-count {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    min-width: 18px;
-    height: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 9px;
-    background: rgba(255, 255, 255, 0.1);
-  }
-
-  .hand-btn.active .hand-count {
-    background: color-mix(in srgb, var(--btn-color, #fff) 25%, transparent);
-    color: #fff;
-  }
-
-  /* === Action row — below the grid, full-width === */
+  /* ── Action row (desktop only) ── */
   .action-row {
     display: flex;
     justify-content: center;
@@ -622,23 +685,13 @@
     pointer-events: none;
   }
 
-  /* Mobile: action row hidden (handled by bottom-hand-row action-slot instead) */
   @media (max-width: 768px) {
     .action-row {
       display: none;
     }
   }
 
-  /* Mobile action buttons get overlay styling */
-  @media (max-width: 768px) {
-    .action-slot .action-btn {
-      background: rgba(10, 12, 22, 0.85);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-    }
-  }
-
+  /* ── Action buttons (shared) ── */
   .action-btn {
     display: flex;
     align-items: center;
@@ -659,7 +712,7 @@
   .complete-btn {
     border: 1.5px solid var(--theme-accent, #6366f1);
     background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, var(--theme-card-bg, rgba(0, 0, 0, 0.6)));
-    color: #fff;
+    color: var(--theme-text, #fff);
   }
 
   .complete-btn:hover {
@@ -669,18 +722,27 @@
   .new-btn {
     border: 1.5px solid var(--theme-accent, #6366f1);
     background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, var(--theme-card-bg, rgba(0, 0, 0, 0.6)));
-    color: #fff;
+    color: var(--theme-text, #fff);
   }
 
   .new-btn:hover {
     background: color-mix(in srgb, var(--theme-accent, #6366f1) 30%, var(--theme-card-bg, rgba(0, 0, 0, 0.6)));
   }
 
+  @media (max-width: 768px) {
+    .action-slot .action-btn {
+      background: rgba(10, 12, 22, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
+  }
+
   /* === Focus indicators === */
   .popover-pill:focus-visible,
   .popover-rotation:focus-visible,
-  .compact-trigger:focus-visible,
-  .hand-btn:focus-visible {
+  .inline-trigger:focus-visible,
+  .hand-toggle:focus-visible {
     outline: 2px solid #ffffff;
     outline-offset: 2px;
   }
@@ -694,17 +756,23 @@
   @media (prefers-reduced-motion: reduce) {
     .action-row,
     .action-btn,
-    .compact-trigger,
-    .trigger-wrapper,
-    .compact-trigger i,
+    .inline-trigger,
+    .inline-trigger i,
     .popover-rotation i,
-    .hand-btn,
-    .hand-btn .hand-dot {
+    .hand-toggle,
+    .toggle-side,
+    .toggle-dot {
       transition: none;
     }
 
     .popover-panel {
       animation: none;
+    }
+
+    .hand-toggle.needs-attention-red,
+    .hand-toggle.needs-attention-blue {
+      animation: none;
+      border-color: var(--theme-accent, #6366f1);
     }
   }
 </style>

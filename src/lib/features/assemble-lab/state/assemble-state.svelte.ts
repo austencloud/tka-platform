@@ -89,17 +89,23 @@ export function createAssembleState() {
   async function addMotion(endLocation: GridLocation): Promise<void> {
     if (currentPosition === null) return;
 
+    // Float (-0.5 turns) only applies to shifts. For dashes/statics there's
+    // no arc to cancel, so fall back to 0 turns.
+    const isSamePoint = currentPosition === endLocation;
+    const isDash = !isSamePoint && isOpposite(currentPosition, endLocation);
+    const effectiveTurns = (turnCount < 0 && (isSamePoint || isDash)) ? 0 : turnCount;
+
     // Calculate end orientation accounting for arc-based staff rotation
     const endOri = calculateEndOrientation(
       currentOrientation, currentPosition, endLocation,
-      rotationDirection, turnCount,
+      rotationDirection, effectiveTurns,
     );
 
     const step: BuilderStep = {
       startPosition: currentPosition,
       endPosition: endLocation,
       rotationDirection,
-      turnCount,
+      turnCount: effectiveTurns,
       startOrientation: currentOrientation,
       endOrientation: endOri,
     };

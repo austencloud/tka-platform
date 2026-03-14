@@ -53,7 +53,9 @@
   ] as const;
 
   // ── Turns ──
+  const FLOAT_TURN = -0.5;
   const TURN_OPTIONS = [0, 0.5, 1, 1.5, 2, 2.5, 3] as const;
+  const isFloat = $derived(builderState.turnCount === FLOAT_TURN);
 
   function turnAriaLabel(t: number): string {
     if (t === 0) return "No turns";
@@ -124,6 +126,16 @@
       <div class="divider" aria-hidden="true"></div>
 
       <div class="turns-strip" role="radiogroup" aria-label="Turn count">
+        <button
+          class="bar-pill float-pill"
+          class:active={isFloat}
+          role="radio"
+          aria-checked={isFloat}
+          aria-label="Float (negative half turn, shifts only)"
+          onclick={() => builderState.setTurnCount(FLOAT_TURN)}
+        >
+          fl
+        </button>
         {#each TURN_OPTIONS as t}
           <button
             class="bar-pill"
@@ -229,6 +241,11 @@
   .bar-pill:hover {
     background: var(--theme-accent-bg, rgba(99, 102, 241, 0.08));
     color: var(--theme-text, #fff);
+  }
+
+  .bar-pill.float-pill {
+    font-style: italic;
+    letter-spacing: 0.02em;
   }
 
   .bar-pill.active {
