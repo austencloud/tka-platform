@@ -216,6 +216,7 @@ export function createVideoTrailsState(
     get effectConfig() { return effectConfig; },
 
     get currentProject() { return currentProject; },
+    set currentProject(p: VideoTrailsProject | null) { currentProject = p; },
     get projects() { return projects; },
     get isDirty() { return isDirty; },
 
