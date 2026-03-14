@@ -68,7 +68,8 @@
 
   // Disassemble context
   import { getDisassembleContext } from "../context/disassemble-context";
-  import type { HandView } from "../state/disassemble-state.svelte";
+  import type { HandView, ViewTier } from "../state/disassemble-state.svelte";
+  import type { PropState } from "$lib/shared/animation-engine/domain/PropState";
 
   const { slotState } = getDisassembleContext();
 
@@ -331,10 +332,22 @@
   // Each canvas gets only the props matching its view.
   // Passing null for a prop causes the render pipeline to skip that hand
   // entirely (trails, fire, LED all handle null gracefully).
+
+  // In hand path mode, we zero out staffRotationAngle so the hand SVG
+  // just travels grid locations without spinning. The centerPathAngle
+  // (which encodes WHERE on the grid the hand is) stays intact.
+  function stripRotation(propState: PropState | null): PropState | null {
+    if (!propState) return null;
+    return { ...propState, staffRotationAngle: 0 };
+  }
+
   function propsForView(view: HandView) {
+    const isHandPath = slotState.viewTier === "handPaths";
+    const rawBlue = view === "red" ? null : animationState.bluePropState;
+    const rawRed = view === "blue" ? null : animationState.redPropState;
     return {
-      blueProp: view === "red" ? null : animationState.bluePropState,
-      redProp: view === "blue" ? null : animationState.redPropState,
+      blueProp: isHandPath ? stripRotation(rawBlue) : rawBlue,
+      redProp: isHandPath ? stripRotation(rawRed) : rawRed,
     };
   }
 
@@ -569,6 +582,7 @@
 
   // ─── Shared canvas props (everything except blueProp/redProp/focused) ──
   function sharedCanvasProps() {
+    const isHandPath = slotState.viewTier === "handPaths";
     return {
       gridVisible: true,
       gridMode,
@@ -585,6 +599,9 @@
       backgroundAlpha: 0,
       disableContextMenu: true,
       fillContainer: true,
+      // In hand path mode, swap props for hand SVGs
+      bluePropType: isHandPath ? "hand" : null,
+      redPropType: isHandPath ? "hand" : null,
     };
   }
 </script>
@@ -670,6 +687,40 @@
 
     <!-- Controls Panel -->
     <div class="controls-panel themed-scrollbar">
+      <!-- View tier toggle -->
+      <div class="control-section tier-bar">
+        <h3>View Tier</h3>
+        <div class="tier-buttons">
+          <button
+            class="tier-btn"
+            class:active={slotState.viewTier === "sequence"}
+            onclick={() => slotState.setViewTier("sequence")}
+            aria-label="Show full sequence"
+          >
+            <i class="fas fa-users" aria-hidden="true"></i>
+            Sequence
+          </button>
+          <button
+            class="tier-btn"
+            class:active={slotState.viewTier === "soloProps"}
+            onclick={() => slotState.setViewTier("soloProps")}
+            aria-label="Show solo props"
+          >
+            <i class="fas fa-user" aria-hidden="true"></i>
+            Solo Props
+          </button>
+          <button
+            class="tier-btn"
+            class:active={slotState.viewTier === "handPaths"}
+            onclick={() => slotState.setViewTier("handPaths")}
+            aria-label="Show hand paths only"
+          >
+            <i class="fas fa-hand-paper" aria-hidden="true"></i>
+            Hand Paths
+          </button>
+        </div>
+      </div>
+
       <EffectModeBar activeMode={activeEffectMode} onModeChange={handleEffectModeChange} />
 
       <SourceControls
@@ -857,8 +908,48 @@
     --led-green-border-strong: rgba(0, 255, 136, 0.5);
   }
 
+  .tier-buttons {
+    display: flex;
+    gap: var(--spacing-xs, 4px);
+  }
+
+  .tier-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 8px 12px;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius-md, 8px);
+    background: transparent;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 150ms ease;
+  }
+
+  .tier-btn:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    color: var(--theme-text, white);
+  }
+
+  .tier-btn.active {
+    border-color: var(--theme-accent, #8b5cf6);
+    background: rgba(139, 92, 246, 0.12);
+    color: var(--theme-accent, #8b5cf6);
+  }
+
+  .tier-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .pick-btn {
+    .pick-btn,
+    .tier-btn {
       transition: none;
     }
   }
