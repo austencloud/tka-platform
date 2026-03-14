@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { container } from "$lib/shared/di";
   import { getVideoTrailsContext } from "../context/video-trails-context";
   import { DETECTOR_REGISTRY } from "../domain/types";
@@ -29,117 +29,170 @@
   // Canvas stack reference
   let canvasStack: EffectCanvasStack | undefined = $state(undefined);
 
-  // Video plumbing
-  let videoElement: HTMLVideoElement | null = $state(null);
+  // Video element — lives in the DOM as a hidden element for reliable playback
+  let videoEl: HTMLVideoElement | undefined = $state(undefined);
   let offscreenCanvas: HTMLCanvasElement | null = null;
   let offscreenCtx: CanvasRenderingContext2D | null = null;
   let animFrameId: number | null = null;
   let canvasWidth = $state(640);
   let canvasHeight = $state(360);
 
-  // Renderers — created/disposed reactively based on effect enabled state
+  // Renderers
   let fireRenderer: WebGLFireRenderer | null = null;
   let ledRenderer: WebGLLedRenderer | null = null;
   let charcoalRenderer: CharcoalSparkRenderer | null = null;
   const trailRenderer = new Canvas2DTrailRenderer();
 
-  // Trail point accumulation buffers
+  // Trail buffers
   let blueTrailPoints: TrailPoint[] = [];
   let redTrailPoints: TrailPoint[] = [];
 
+  // Persistence key for IndexedDB
+  const VIDEO_PERSIST_KEY = "video-trails-last-video";
+
   // ---------------------------------------------------------------------------
-  // Video source loading
-  //
-  // Key principle: set ALL event handlers BEFORE setting src, because blob
-  // URLs can fire loadedmetadata/canplay very quickly after src assignment.
+  // Video persistence — store/restore video blob via IndexedDB
   // ---------------------------------------------------------------------------
 
-  let videoReady = $state(false);
+  async function persistVideoBlob(file: File): Promise<void> {
+    try {
+      const db = await openPersistDb();
+      const tx = db.transaction("blobs", "readwrite");
+      tx.objectStore("blobs").put({ key: VIDEO_PERSIST_KEY, blob: file, name: file.name });
+      await new Promise<void>((resolve, reject) => {
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    } catch {
+      // Persistence is best-effort
+    }
+  }
+
+  async function loadPersistedVideo(): Promise<{ blob: Blob; name: string } | null> {
+    try {
+      const db = await openPersistDb();
+      const tx = db.transaction("blobs", "readonly");
+      const request = tx.objectStore("blobs").get(VIDEO_PERSIST_KEY);
+      return new Promise((resolve) => {
+        request.onsuccess = () => {
+          const result = request.result;
+          if (result?.blob) resolve({ blob: result.blob, name: result.name ?? "video" });
+          else resolve(null);
+        };
+        request.onerror = () => resolve(null);
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  function openPersistDb(): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open("tka-video-trails-persist", 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains("blobs")) {
+          db.createObjectStore("blobs", { keyPath: "key" });
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // On mount: restore persisted video if available
+  // ---------------------------------------------------------------------------
+
+  onMount(async () => {
+    const persisted = await loadPersistedVideo();
+    if (persisted && !trailsState.source) {
+      const file = new File([persisted.blob], persisted.name, { type: persisted.blob.type });
+      trailsState.loadVideo(file);
+    }
+  });
+
+  // ---------------------------------------------------------------------------
+  // Video source loading — set src on the DOM <video> element
+  // ---------------------------------------------------------------------------
 
   $effect(() => {
-    if (!trailsState.source?.url) return;
+    const url = trailsState.source?.url;
+    if (!url || !videoEl) return;
 
-    // Reset readiness flag for new source
-    videoReady = false;
-
-    if (!videoElement) {
-      videoElement = document.createElement("video");
-      videoElement.crossOrigin = "anonymous";
-      videoElement.playsInline = true;
-      videoElement.muted = true;
-    }
-
-    // Register handlers BEFORE setting src
-    videoElement.onloadedmetadata = () => {
-      if (!videoElement) return;
-      canvasWidth = videoElement.videoWidth;
-      canvasHeight = videoElement.videoHeight;
-      trailsState.updateSourceMetadata({
-        duration: videoElement.duration,
-        width: videoElement.videoWidth,
-        height: videoElement.videoHeight,
-      });
-
-      offscreenCanvas = document.createElement("canvas");
-      offscreenCanvas.width = canvasWidth;
-      offscreenCanvas.height = canvasHeight;
-      offscreenCtx = offscreenCanvas.getContext("2d", { willReadFrequently: true });
-    };
-
-    videoElement.oncanplaythrough = () => {
-      videoReady = true;
-      // If user already pressed play, start now
-      if (trailsState.isPlaying && videoElement?.paused) {
-        videoElement.play().catch(() => {});
-      }
-    };
-
-    // NOW set src (triggers loading)
-    videoElement.src = trailsState.source.url;
-    videoElement.load();
+    videoEl.src = url;
+    videoEl.load();
   });
+
+  function handleVideoMetadata() {
+    if (!videoEl) return;
+    canvasWidth = videoEl.videoWidth;
+    canvasHeight = videoEl.videoHeight;
+    trailsState.updateSourceMetadata({
+      duration: videoEl.duration,
+      width: videoEl.videoWidth,
+      height: videoEl.videoHeight,
+    });
+
+    offscreenCanvas = document.createElement("canvas");
+    offscreenCanvas.width = canvasWidth;
+    offscreenCanvas.height = canvasHeight;
+    offscreenCtx = offscreenCanvas.getContext("2d", { willReadFrequently: true });
+  }
+
+  function handleVideoCanPlay() {
+    // If user already pressed play before video was ready, start now
+    if (trailsState.isPlaying && videoEl?.paused) {
+      videoEl.play().catch(() => {});
+    }
+  }
+
+  // Intercept loadVideo to also persist the blob
+  const originalLoadVideo = trailsState.loadVideo.bind(trailsState);
+  trailsState.loadVideo = (file: File) => {
+    originalLoadVideo(file);
+    persistVideoBlob(file);
+  };
 
   // ---------------------------------------------------------------------------
   // Playback control
   // ---------------------------------------------------------------------------
 
   $effect(() => {
-    if (trailsState.isPlaying && videoElement && videoReady) {
-      videoElement.playbackRate = trailsState.playbackSpeed;
-      videoElement.play().catch(() => {});
+    if (!videoEl) return;
+
+    if (trailsState.isPlaying) {
+      videoEl.playbackRate = trailsState.playbackSpeed;
+      if (videoEl.readyState >= 3) {
+        videoEl.play().catch(() => {});
+      }
       startDetectionLoop();
-    } else if (trailsState.isPlaying && videoElement && !videoReady) {
-      // Video not ready yet — start detection loop anyway so it kicks in
-      // as soon as videoReady becomes true (the effect will re-run)
-      startDetectionLoop();
-    } else if (videoElement) {
-      videoElement.pause();
+    } else {
+      videoEl.pause();
       stopDetectionLoop();
     }
   });
 
   $effect(() => {
-    if (!trailsState.isPlaying && videoElement && trailsState.source && videoReady) {
+    if (!trailsState.isPlaying && videoEl && trailsState.source && videoEl.readyState >= 2) {
       const time = trailsState.currentFrame / trailsState.source.fps;
-      if (Math.abs(videoElement.currentTime - time) > 0.01) {
-        videoElement.currentTime = time;
+      if (Math.abs(videoEl.currentTime - time) > 0.01) {
+        videoEl.currentTime = time;
       }
     }
   });
 
   // ---------------------------------------------------------------------------
-  // Renderer lifecycle — create when enabled, dispose when disabled
+  // Renderer lifecycle
   // ---------------------------------------------------------------------------
 
   $effect(() => {
     const enabled = trailsState.effectConfig.fire.enabled;
     if (enabled && !fireRenderer && canvasStack) {
-      const rendererContainer = canvasStack.getRendererContainer();
-      if (rendererContainer) {
+      const rc = canvasStack.getRendererContainer();
+      if (rc) {
         const r = new WebGLFireRenderer();
-        if (r.initialize(rendererContainer, canvasWidth, canvasHeight)) {
-          fireRenderer = r;
-        }
+        if (r.initialize(rc, canvasWidth, canvasHeight)) fireRenderer = r;
       }
     } else if (!enabled && fireRenderer) {
       fireRenderer.dispose();
@@ -150,12 +203,10 @@
   $effect(() => {
     const enabled = trailsState.effectConfig.charcoal.enabled;
     if (enabled && !charcoalRenderer && canvasStack) {
-      const rendererContainer = canvasStack.getRendererContainer();
-      if (rendererContainer) {
+      const rc = canvasStack.getRendererContainer();
+      if (rc) {
         const r = new CharcoalSparkRenderer();
-        if (r.initialize(rendererContainer, canvasWidth, canvasHeight)) {
-          charcoalRenderer = r;
-        }
+        if (r.initialize(rc, canvasWidth, canvasHeight)) charcoalRenderer = r;
       }
     } else if (!enabled && charcoalRenderer) {
       charcoalRenderer.dispose();
@@ -163,18 +214,15 @@
     }
   });
 
-  // LED init deferred to next RAF to prevent shader freeze on Windows/ANGLE
   $effect(() => {
     const enabled = trailsState.effectConfig.led.enabled;
     if (enabled && !ledRenderer && canvasStack) {
-      const rendererContainer = canvasStack.getRendererContainer();
-      if (rendererContainer) {
+      const rc = canvasStack.getRendererContainer();
+      if (rc) {
         requestAnimationFrame(() => {
           if (!enabled || ledRenderer) return;
           const r = new WebGLLedRenderer();
-          if (r.initialize(rendererContainer, canvasWidth, canvasHeight)) {
-            ledRenderer = r;
-          }
+          if (r.initialize(rc, canvasWidth, canvasHeight)) ledRenderer = r;
         });
       }
     } else if (!enabled && ledRenderer) {
@@ -194,20 +242,19 @@
   }
 
   function processCurrentFrame(): void {
-    if (!videoElement || videoElement.readyState < 2) return;
+    if (!videoEl || videoEl.readyState < 2) return;
 
-    // Always draw the current video frame to the visible canvas
-    canvasStack?.drawVideoFrame(videoElement);
+    // Always draw video frame to visible canvas
+    canvasStack?.drawVideoFrame(videoEl);
 
-    // Update frame counter from video's current time
-    const frameIndex = Math.round(videoElement.currentTime * (trailsState.source?.fps ?? 30));
+    // Update frame counter
+    const frameIndex = Math.round(videoEl.currentTime * (trailsState.source?.fps ?? 30));
     trailsState.setCurrentFrame(frameIndex);
 
-    // Run detection only if offscreen canvas is ready
+    // Detection requires offscreen canvas
     if (!offscreenCtx || !offscreenCanvas) return;
 
-    // Draw to offscreen for pixel-level detection
-    offscreenCtx.drawImage(videoElement, 0, 0, canvasWidth, canvasHeight);
+    offscreenCtx.drawImage(videoEl, 0, 0, canvasWidth, canvasHeight);
     const frameData = offscreenCtx.getImageData(0, 0, canvasWidth, canvasHeight);
     const detector = getDetector();
     const endpoints = detector.detect(frameData, trailsState.detectionConfig);
@@ -216,11 +263,10 @@
     const currentTime = performance.now();
     const effects = trailsState.effectConfig;
 
-    // 3. Map endpoints to tip formats
     const fireTips = tipAdapter.mapToFireTips(endpoints, Math.max(canvasWidth, canvasHeight), currentTime);
     const trailPoints = tipAdapter.mapToTrailPoints(endpoints, currentTime);
 
-    // 4. Accumulate trail points (blue = propIndex 0, red = propIndex 1)
+    // Trails
     if (effects.trails.enabled) {
       const trailSettings = configMapper.toTrailSettings(effects.trails);
       const maxPoints = trailSettings.maxPoints;
@@ -228,88 +274,56 @@
       for (const pt of trailPoints) {
         if (pt.propIndex === 0) {
           blueTrailPoints.push(pt);
-          if (blueTrailPoints.length > maxPoints) {
-            blueTrailPoints = blueTrailPoints.slice(-maxPoints);
-          }
+          if (blueTrailPoints.length > maxPoints) blueTrailPoints = blueTrailPoints.slice(-maxPoints);
         } else {
           redTrailPoints.push(pt);
-          if (redTrailPoints.length > maxPoints) {
-            redTrailPoints = redTrailPoints.slice(-maxPoints);
-          }
+          if (redTrailPoints.length > maxPoints) redTrailPoints = redTrailPoints.slice(-maxPoints);
         }
       }
 
-      // Clear and render trails
       const trailCanvas = canvasStack?.getTrailCanvas();
       if (trailCanvas) {
         const ctx = trailCanvas.getContext("2d");
         if (ctx) {
           ctx.clearRect(0, 0, canvasWidth, canvasHeight);
           trailRenderer.renderTrails(
-            ctx,
-            blueTrailPoints,
-            redTrailPoints,
-            trailSettings,
-            currentTime,
-            blueTrailPoints.length > 0,
-            redTrailPoints.length > 0,
+            ctx, blueTrailPoints, redTrailPoints, trailSettings,
+            currentTime, blueTrailPoints.length > 0, redTrailPoints.length > 0,
             Math.max(canvasWidth, canvasHeight),
           );
         }
       }
     }
 
-    // 5. Fire renderer
+    // Fire
     if (effects.fire.enabled && fireRenderer?.isInitialized()) {
-      const fireConfig = configMapper.toFireConfig(effects.fire);
-      const fireInput: FireFrameInput = {
-        tips: fireTips,
-        currentTime,
-        canvasWidth,
-        canvasHeight,
-        darkMode: true,
-      };
-      fireRenderer.renderFire(fireInput, fireConfig);
+      fireRenderer.renderFire(
+        { tips: fireTips, currentTime, canvasWidth, canvasHeight, darkMode: true } as FireFrameInput,
+        configMapper.toFireConfig(effects.fire),
+      );
     }
 
-    // 6. Charcoal renderer (uses FireFrameInput + FireOverlayConfig shapes)
+    // Charcoal
     if (effects.charcoal.enabled && charcoalRenderer?.isInitialized()) {
-      const charcoalInput: FireFrameInput = {
-        tips: fireTips,
-        currentTime,
-        canvasWidth,
-        canvasHeight,
-        darkMode: true,
-      };
-      // Charcoal config is simpler than fire — map the charcoal-specific fields
-      // into the FireOverlayConfig shape that CharcoalSparkRenderer expects.
-      charcoalRenderer.renderCharcoal(charcoalInput, {
-        enabled: true,
-        intensity: 0.8,
-        flameHeight: 0.5,
-        velocityReactive: true,
-        quality: 3,
-        colorBlend: 0.0,
-      });
+      charcoalRenderer.renderCharcoal(
+        { tips: fireTips, currentTime, canvasWidth, canvasHeight, darkMode: true } as FireFrameInput,
+        { enabled: true, intensity: 0.8, flameHeight: 0.5, velocityReactive: true, quality: 3, colorBlend: 0 },
+      );
     }
 
-    // 7. LED renderer
+    // LED
     if (effects.led.enabled && ledRenderer?.isInitialized()) {
       const ledConfig = configMapper.toLedConfig(effects.led);
       const ledTips = tipAdapter.mapToLedTips(endpoints, currentTime, ledConfig);
-      const ledInput: LedFrameInput = {
-        tips: ledTips,
-        currentTime,
-        canvasWidth,
-        canvasHeight,
-      };
-      ledRenderer.renderLeds(ledInput, ledConfig);
+      ledRenderer.renderLeds(
+        { tips: ledTips, currentTime, canvasWidth, canvasHeight } as LedFrameInput,
+        ledConfig,
+      );
     }
   }
 
   function startDetectionLoop(): void {
     if (animFrameId !== null) return;
-
     function loop() {
       processCurrentFrame();
       animFrameId = requestAnimationFrame(loop);
@@ -329,13 +343,12 @@
   // ---------------------------------------------------------------------------
 
   async function handleExport(config: ExportConfig): Promise<void> {
-    if (!videoElement || !canvasStack) return;
+    if (!videoEl || !canvasStack) return;
     const exporter = container.items.videoTrailsExporter;
     trailsState.setExportState({ phase: "preparing" });
-
     try {
       const canvases = canvasStack.getAllCanvases();
-      const blob = await exporter.export(videoElement, canvases, config, (s) => trailsState.setExportState(s));
+      const blob = await exporter.export(videoEl, canvases, config, (s) => trailsState.setExportState(s));
       trailsState.setExportState({ phase: "complete", blob });
     } catch (err) {
       trailsState.setExportState({ phase: "error", error: err instanceof Error ? err.message : String(err) });
@@ -349,26 +362,26 @@
   onDestroy(() => {
     stopDetectionLoop();
     tipAdapter.reset();
-
-    if (fireRenderer) {
-      fireRenderer.dispose();
-      fireRenderer = null;
-    }
-    if (ledRenderer) {
-      ledRenderer.dispose();
-      ledRenderer = null;
-    }
-    if (charcoalRenderer) {
-      charcoalRenderer.dispose();
-      charcoalRenderer = null;
-    }
-
-    if (videoElement) {
-      videoElement.pause();
-      videoElement.src = "";
-    }
+    fireRenderer?.dispose();
+    ledRenderer?.dispose();
+    charcoalRenderer?.dispose();
+    fireRenderer = null;
+    ledRenderer = null;
+    charcoalRenderer = null;
   });
 </script>
+
+<!-- Hidden video element in the DOM for reliable cross-browser playback -->
+<video
+  bind:this={videoEl}
+  class="hidden-video"
+  muted
+  playsinline
+  crossorigin="anonymous"
+  preload="auto"
+  onloadedmetadata={handleVideoMetadata}
+  oncanplay={handleVideoCanPlay}
+></video>
 
 <div class="workspace">
   <div class="main-area">
@@ -378,7 +391,7 @@
       <div class="canvas-area">
         <EffectCanvasStack
           bind:this={canvasStack}
-          {videoElement}
+          videoElement={videoEl ?? null}
           width={canvasWidth}
           height={canvasHeight}
         />
@@ -397,6 +410,15 @@
 </div>
 
 <style>
+  .hidden-video {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+    z-index: -1;
+  }
+
   .workspace {
     display: flex;
     gap: 16px;
