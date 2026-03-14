@@ -580,20 +580,11 @@ export const r2PresignUrl = onCall(
 );
 ```
 
-- [ ] **3.2** Export from `firebase-functions/src/index.ts`. Add this line after the existing exports:
+- [ ] **3.2** Export `r2PresignUrl` from `firebase-functions/src/index.ts`. Add this line after the existing exports:
 
 ```typescript
-// Export R2 storage functions (presigned URLs, multipart, delete)
-export {
-  r2PresignUrl,
-  r2MultipartStart,
-  r2MultipartPartUrl,
-  r2MultipartComplete,
-  r2MultipartAbort,
-  r2MultipartListParts,
-  r2DeleteObject,
-  r2DeleteByPrefix,
-} from "./r2/index";
+// Export R2 presign function (multipart and delete exports added in Tasks 4 and 5)
+export { r2PresignUrl } from "./r2/index";
 ```
 
 - [ ] **3.3** Verify build:
@@ -812,10 +803,24 @@ cd firebase-functions && npm run build
 
 Expected: compiles without errors.
 
-- [ ] **4.3** Commit:
+- [ ] **4.3** Update the export in `firebase-functions/src/index.ts` to include multipart functions:
+
+```typescript
+// Export R2 storage functions (presigned URLs and multipart; delete exports added in Task 5)
+export {
+  r2PresignUrl,
+  r2MultipartStart,
+  r2MultipartPartUrl,
+  r2MultipartComplete,
+  r2MultipartAbort,
+  r2MultipartListParts,
+} from "./r2/index";
+```
+
+- [ ] **4.4** Commit:
 
 ```
-git add firebase-functions/src/r2/index.ts
+git add firebase-functions/src/r2/index.ts firebase-functions/src/index.ts
 git commit -m "feat(r2): add multipart upload Cloud Functions (start, part, complete, abort, list)"
 ```
 
@@ -905,10 +910,26 @@ cd firebase-functions && npm run build
 
 Expected: compiles without errors.
 
-- [ ] **5.3** Commit:
+- [ ] **5.3** Update the export in `firebase-functions/src/index.ts` to include delete functions:
+
+```typescript
+// Export R2 storage functions (presigned URLs, multipart, delete)
+export {
+  r2PresignUrl,
+  r2MultipartStart,
+  r2MultipartPartUrl,
+  r2MultipartComplete,
+  r2MultipartAbort,
+  r2MultipartListParts,
+  r2DeleteObject,
+  r2DeleteByPrefix,
+} from "./r2/index";
+```
+
+- [ ] **5.4** Commit:
 
 ```
-git add firebase-functions/src/r2/index.ts
+git add firebase-functions/src/r2/index.ts firebase-functions/src/index.ts
 git commit -m "feat(r2): add delete Cloud Functions (single object and prefix-based batch)"
 ```
 
@@ -1135,7 +1156,7 @@ import { getFunctionsInstance } from "$lib/shared/auth/firebase";
 export class R2Presigner implements IR2Presigner {
   private async call<T>(functionName: string, data: unknown): Promise<T> {
     const { httpsCallable } = await import("firebase/functions");
-    const functions = getFunctionsInstance();
+    const functions = await getFunctionsInstance();
     const callable = httpsCallable<unknown, T>(functions, functionName);
     const result = await callable(data);
     return result.data;
@@ -1222,93 +1243,11 @@ git commit -m "feat(r2): add R2Presigner Cloud Function wrapper"
 
 ---
 
-## Task 9: UploadAbortManager Implementation
-
-**Create:** `src/lib/shared/share/services/implementations/UploadAbortManager.ts`
-
-- [ ] **9.1** Create `src/lib/shared/share/services/implementations/UploadAbortManager.ts`:
-
-```typescript
-/**
- * UploadAbortManager
- *
- * Manages cancellation for in-flight R2 uploads. Tracks active XHR
- * requests and can abort them all when the user cancels an upload.
- *
- * Named "AbortManager" per naming convention: it manages abort operations.
- */
-
-export interface IUploadAbortManager {
-  /** Create an AbortController and track it */
-  createController(id: string): AbortController;
-
-  /** Abort a specific upload by ID */
-  abort(id: string): void;
-
-  /** Abort all tracked uploads */
-  abortAll(): void;
-
-  /** Remove tracking for a completed upload */
-  remove(id: string): void;
-
-  /** Check if an upload has been aborted */
-  isAborted(id: string): boolean;
-}
-
-export class UploadAbortManager implements IUploadAbortManager {
-  private controllers = new Map<string, AbortController>();
-
-  createController(id: string): AbortController {
-    // Abort any existing controller for this ID
-    this.abort(id);
-
-    const controller = new AbortController();
-    this.controllers.set(id, controller);
-    return controller;
-  }
-
-  abort(id: string): void {
-    const controller = this.controllers.get(id);
-    if (controller && !controller.signal.aborted) {
-      controller.abort();
-    }
-    this.controllers.delete(id);
-  }
-
-  abortAll(): void {
-    for (const [id, controller] of this.controllers) {
-      if (!controller.signal.aborted) {
-        controller.abort();
-      }
-    }
-    this.controllers.clear();
-  }
-
-  remove(id: string): void {
-    this.controllers.delete(id);
-  }
-
-  isAborted(id: string): boolean {
-    const controller = this.controllers.get(id);
-    return controller?.signal.aborted ?? false;
-  }
-}
-```
-
-- [ ] **9.2** Commit:
-
-```
-git add src/lib/shared/share/services/implementations/UploadAbortManager.ts
-git commit -m "feat(r2): add UploadAbortManager for upload cancellation"
-```
-
----
-
-## Task 10: R2VideoUploader Implementation
+## Task 9: R2VideoUploader Implementation
 
 **Create:** `src/lib/shared/share/services/implementations/R2VideoUploader.ts`
 
-- [ ] **10.1** Create `src/lib/shared/share/services/implementations/R2VideoUploader.ts`:
+- [ ] **9.1** Create `src/lib/shared/share/services/implementations/R2VideoUploader.ts`:
 
 ```typescript
 /**
@@ -1560,13 +1499,15 @@ export class R2VideoUploader implements IVideoUploader {
     const fingerprint = await computeFileFingerprint(file instanceof File ? file : new File([file], "blob"));
 
     // Check for resumable state
-    const savedState = loadMultipartState()[fingerprint];
+    let savedState = loadMultipartState()[fingerprint];
     let uploadId: string;
     let key: string;
     let completedParts: Array<{ ETag: string; PartNumber: number }> = [];
 
     if (savedState && !savedState.startedAt) {
-      // Stale entry, start fresh
+      // Stale entry with no timestamp, discard it
+      removeMultipartState(fingerprint);
+      savedState = null;
     }
 
     if (savedState) {
@@ -1579,8 +1520,9 @@ export class R2VideoUploader implements IVideoUploader {
       if (expired) {
         // Upload expired, start fresh
         removeMultipartState(fingerprint);
-        uploadId = (await this.presigner.startMultipart({ fileName, contentType, userId, category, sequenceId })).uploadId;
-        key = (await this.presigner.startMultipart({ fileName, contentType, userId, category, sequenceId })).key;
+        const startResult = await this.presigner.startMultipart({ fileName, contentType, userId, category, sequenceId });
+        uploadId = startResult.uploadId;
+        key = startResult.key;
       } else {
         uploadId = savedState.uploadId;
         key = savedState.key;
@@ -1771,16 +1713,13 @@ export class R2VideoUploader implements IVideoUploader {
   }
 
   getPublicUrl(key: string): string {
-    // The public URL base is baked into the presigner responses.
-    // For standalone URL construction without a prior upload,
-    // we read it from the R2_PUBLIC_URL env var set at build time.
-    // In practice, callers always use the `url` from VideoUploadResult,
-    // so this method is rarely called directly.
-    //
-    // Since we don't have the R2_PUBLIC_URL on the client side,
-    // return the key as-is. The actual URL is always returned by
-    // the upload methods and the Cloud Functions.
-    return key;
+    // Constructs the full public URL from the R2 public base URL and the
+    // object key. VITE_R2_PUBLIC_URL must be set in .env (e.g.,
+    // VITE_R2_PUBLIC_URL=https://pub-xxx.r2.dev or a custom domain).
+    // In practice, callers usually use the `url` from VideoUploadResult,
+    // but this method is available for constructing URLs from stored keys.
+    const baseUrl = import.meta.env.VITE_R2_PUBLIC_URL || "";
+    return `${baseUrl}/${key}`;
   }
 
   async uploadVideoThumbnail(
@@ -1830,7 +1769,7 @@ export class R2VideoUploader implements IVideoUploader {
 }
 ```
 
-- [ ] **10.2** Verify it compiles:
+- [ ] **9.2** Verify it compiles:
 
 ```bash
 npm run check
@@ -1838,7 +1777,7 @@ npm run check
 
 Expected: no new errors.
 
-- [ ] **10.3** Commit:
+- [ ] **9.3** Commit:
 
 ```
 git add src/lib/shared/share/services/implementations/R2VideoUploader.ts
@@ -1847,14 +1786,14 @@ git commit -m "feat(r2): add R2VideoUploader with single, multipart, and resume 
 
 ---
 
-## Task 11: DI Container Wiring
+## Task 10: DI Container Wiring
 
 **Modify:** `src/lib/shared/di/containers/share-container.ts`
 **Modify:** `src/lib/shared/di/containers/library-container.ts`
 **Modify:** `src/lib/shared/di/container-types.ts`
 **Modify:** `src/lib/shared/di/index.ts`
 
-- [ ] **11.1** Update `src/lib/shared/di/containers/share-container.ts`:
+- [ ] **10.1** Update `src/lib/shared/di/containers/share-container.ts`:
 
 Replace the `FirebaseVideoUploader` import and registration with `R2Presigner` and `R2VideoUploader`:
 
@@ -1972,7 +1911,7 @@ export function createShareContainer(sequenceRenderer: ISequenceRenderer) {
 export type ShareContainer = ReturnType<typeof createShareContainer>;
 ```
 
-- [ ] **11.2** Update `src/lib/shared/di/containers/library-container.ts`:
+- [ ] **10.2** Update `src/lib/shared/di/containers/library-container.ts`:
 
 Replace `IFirebaseVideoUploader` with `IVideoUploader`:
 
@@ -2012,7 +1951,7 @@ deps.librarySaveService.firebaseVideoUploader ?? null,
 deps.librarySaveService.videoUploader ?? null,
 ```
 
-- [ ] **11.3** Update `src/lib/shared/di/index.ts`:
+- [ ] **10.3** Update `src/lib/shared/di/index.ts`:
 
 In the `libraryContainer` creation (around line 249), update the dep name:
 
@@ -2032,17 +1971,17 @@ librarySaveService: {
 },
 ```
 
-- [ ] **11.4** `container-types.ts` does not need manual changes. It imports `ShareContainer` and `LibraryContainer` types which will automatically reflect the new `videoUploader` and `r2Presigner` keys since those types are derived from `ReturnType<typeof createShareContainer>` and `ReturnType<typeof createLibraryContainer>`.
+- [ ] **10.4** `container-types.ts` does not need manual changes. It imports `ShareContainer` and `LibraryContainer` types which will automatically reflect the new `videoUploader` and `r2Presigner` keys since those types are derived from `ReturnType<typeof createShareContainer>` and `ReturnType<typeof createLibraryContainer>`.
 
-- [ ] **11.5** Verify build:
+- [ ] **10.5** Verify build:
 
 ```bash
 npm run check
 ```
 
-Expected: may show errors in consumer files (fixed in Task 12). The DI wiring itself should be clean.
+Expected: may show errors in consumer files (fixed in Task 11). The DI wiring itself should be clean.
 
-- [ ] **11.6** Commit:
+- [ ] **10.6** Commit:
 
 ```
 git add src/lib/shared/di/containers/share-container.ts src/lib/shared/di/containers/library-container.ts src/lib/shared/di/index.ts
@@ -2051,11 +1990,11 @@ git commit -m "refactor(r2): rewire DI containers from FirebaseVideoUploader to 
 
 ---
 
-## Task 12: Consumer Migration
+## Task 11: Consumer Migration
 
 **Modify:** Multiple files that reference `firebaseVideoUploader` or `IFirebaseVideoUploader`
 
-- [ ] **12.1** Update `src/lib/features/library/services/implementations/LibrarySaveService.ts`:
+- [ ] **11.1** Update `src/lib/features/library/services/implementations/LibrarySaveService.ts`:
 
 ```typescript
 // OLD (line 17):
@@ -2079,7 +2018,7 @@ uploadService: IVideoUploader | null,
 
 No other changes needed in this file. The `uploadSequenceThumbnail` call (line 208) already matches the new interface signature since the old call `uploadSequenceThumbnail(sequenceId, imageBlob, "png")` maps to the same positional args in the new interface.
 
-- [ ] **12.2** Update `src/lib/shared/video-collaboration/components/VideoUploadSheet.svelte`:
+- [ ] **11.2** Update `src/lib/shared/video-collaboration/components/VideoUploadSheet.svelte`:
 
 ```typescript
 // OLD (line 10):
@@ -2134,7 +2073,7 @@ const videoTimestamp = parseInt(
 );
 ```
 
-- [ ] **12.3** Update `src/lib/features/create/shared/components/coordinators/VideoRecordCoordinator.svelte`:
+- [ ] **11.3** Update `src/lib/features/create/shared/components/coordinators/VideoRecordCoordinator.svelte`:
 
 Replace the direct `FirebaseVideoUploader` instantiation with DI container access:
 
@@ -2198,7 +2137,7 @@ storagePath: uploadResult.key,
 
 Note: `createRecordingMetadata` still uses `storagePath` as a field name. That's fine for now - the R2 key serves the same purpose (identifies the file for deletion). The field name in `RecordingMetadata` can be renamed in a follow-up if desired.
 
-- [ ] **12.4** Update `src/lib/shared/video-collaboration/helpers/create-video-from-upload.ts`:
+- [ ] **11.4** Update `src/lib/shared/video-collaboration/helpers/create-video-from-upload.ts`:
 
 ```typescript
 // OLD (line 8):
@@ -2220,7 +2159,7 @@ storagePath: uploadResult.key,
 
 The `CollaborativeVideo` type still uses `storagePath` as its field name (it's a Firestore document field). The R2 key is stored in that field. Renaming the Firestore field would require a data migration, which is unnecessary for a pre-launch app, but the field semantics are the same: "path to the file for deletion."
 
-- [ ] **12.5** Update `src/lib/features/skel2tka/services/implementations/TrainingDataPersister.ts`:
+- [ ] **11.5** Update `src/lib/features/skel2tka/services/implementations/TrainingDataPersister.ts`:
 
 Comment-only change:
 
@@ -2232,7 +2171,7 @@ Comment-only change:
 // Implementation will follow the R2VideoUploader pattern
 ```
 
-- [ ] **12.6** Verify build:
+- [ ] **11.6** Verify build:
 
 ```bash
 npm run check
@@ -2240,7 +2179,7 @@ npm run check
 
 Expected: no type errors.
 
-- [ ] **12.7** Commit:
+- [ ] **11.7** Commit:
 
 ```
 git add src/lib/features/library/services/implementations/LibrarySaveService.ts src/lib/shared/video-collaboration/components/VideoUploadSheet.svelte src/lib/features/create/shared/components/coordinators/VideoRecordCoordinator.svelte src/lib/shared/video-collaboration/helpers/create-video-from-upload.ts src/lib/features/skel2tka/services/implementations/TrainingDataPersister.ts
@@ -2249,12 +2188,12 @@ git commit -m "refactor(r2): migrate all consumers from FirebaseVideoUploader to
 
 ---
 
-## Task 13: Delete Old Files
+## Task 12: Delete Old Files
 
 **Delete:** `src/lib/shared/share/services/implementations/FirebaseVideoUploader.ts`
 **Delete:** `src/lib/shared/share/services/contracts/IFirebaseVideoUploader.ts`
 
-- [ ] **13.1** Verify no remaining references to the old files:
+- [ ] **12.1** Verify no remaining references to the old files:
 
 ```bash
 grep -r "IFirebaseVideoUploader\|FirebaseVideoUploader" src/ --include="*.ts" --include="*.svelte"
@@ -2262,25 +2201,25 @@ grep -r "IFirebaseVideoUploader\|FirebaseVideoUploader" src/ --include="*.ts" --
 
 Expected: zero results (or only the files about to be deleted).
 
-- [ ] **13.2** Delete the files:
+- [ ] **12.2** Delete the files:
 
 ```bash
 git rm src/lib/shared/share/services/implementations/FirebaseVideoUploader.ts
 git rm src/lib/shared/share/services/contracts/IFirebaseVideoUploader.ts
 ```
 
-- [ ] **13.3** Commit:
+- [ ] **12.3** Commit:
 
 ```
-git add -A
+git add src/lib/shared/share/services/implementations/FirebaseVideoUploader.ts src/lib/shared/share/services/contracts/IFirebaseVideoUploader.ts
 git commit -m "refactor(r2): delete FirebaseVideoUploader and IFirebaseVideoUploader (replaced by R2)"
 ```
 
 ---
 
-## Task 14: Build Verification
+## Task 13: Build Verification
 
-- [ ] **14.1** Full build:
+- [ ] **13.1** Full build:
 
 ```bash
 npm run build
@@ -2288,7 +2227,7 @@ npm run build
 
 Expected: builds without errors.
 
-- [ ] **14.2** Type check:
+- [ ] **13.2** Type check:
 
 ```bash
 npm run check
@@ -2296,7 +2235,7 @@ npm run check
 
 Expected: no type errors.
 
-- [ ] **14.3** Run existing tests:
+- [ ] **13.3** Run existing tests:
 
 ```bash
 npm test
@@ -2304,7 +2243,7 @@ npm test
 
 Expected: all existing tests pass (none test FirebaseVideoUploader directly).
 
-- [ ] **14.4** If any errors, fix them and commit:
+- [ ] **13.4** If any errors, fix them and commit:
 
 ```
 git add -A
@@ -2313,11 +2252,11 @@ git commit -m "fix(r2): resolve build errors from R2 migration"
 
 ---
 
-## Task 15: End-to-End Testing
+## Task 14: End-to-End Testing
 
 **This task is manual. Run through each scenario in the app.**
 
-- [ ] **15.1** Upload a small video (<10MB):
+- [ ] **14.1** Upload a small video (<10MB):
   - Navigate to a saved sequence
   - Open the video record panel or video upload sheet
   - Record or select a small video
@@ -2325,30 +2264,30 @@ git commit -m "fix(r2): resolve build errors from R2 migration"
   - Verify the video appears and plays back from the R2 URL
   - Check browser DevTools Network tab: confirm PUT goes directly to R2, not Firebase Storage
 
-- [ ] **15.2** Cancel mid-upload:
+- [ ] **14.2** Cancel mid-upload:
   - Start a video upload
   - Cancel while progress is between 10-90%
   - Verify upload stops immediately
   - Verify no partial data remains (check R2 dashboard)
 
-- [ ] **15.3** Upload a sequence thumbnail:
+- [ ] **14.3** Upload a sequence thumbnail:
   - Save a sequence to library
   - Verify the thumbnail is uploaded to R2 (check URL in browser DevTools)
 
-- [ ] **15.4** Delete sequence assets:
+- [ ] **14.4** Delete sequence assets:
   - Delete a sequence that has a video and thumbnail
   - Verify R2 objects are cleaned up (check R2 dashboard)
 
-- [ ] **15.5** Test on mobile:
+- [ ] **14.5** Test on mobile:
   - Open the app on a phone (iOS Safari and Chrome Android)
   - Upload a video
   - Verify progress and playback work
 
-- [ ] **15.6** Verify zero Firebase Storage usage:
+- [ ] **14.6** Verify zero Firebase Storage usage:
   - Check Firebase Console > Storage
   - Confirm no new files are being written for videos/thumbnails/animations
 
-- [ ] **15.7** If multipart testing is needed (file >= 100MB):
+- [ ] **14.7** If multipart testing is needed (file >= 100MB):
   - Upload a large video file
   - Close the browser tab mid-upload
   - Reopen and upload the same file
@@ -2359,7 +2298,7 @@ git commit -m "fix(r2): resolve build errors from R2 migration"
 
 ## Summary of All Files Changed
 
-### Created (7 files)
+### Created (6 files)
 
 | File | Purpose |
 |------|---------|
@@ -2368,10 +2307,9 @@ git commit -m "fix(r2): resolve build errors from R2 migration"
 | `src/lib/shared/share/services/contracts/IVideoUploader.ts` | New upload interface |
 | `src/lib/shared/share/services/contracts/IR2Presigner.ts` | Cloud Function wrapper interface |
 | `src/lib/shared/share/services/implementations/R2Presigner.ts` | Cloud Function wrapper implementation |
-| `src/lib/shared/share/services/implementations/UploadAbortManager.ts` | Upload cancellation management |
 | `src/lib/shared/share/services/implementations/R2VideoUploader.ts` | Core upload orchestrator |
 
-### Modified (8 files)
+### Modified (9 files)
 
 | File | Change |
 |------|--------|
