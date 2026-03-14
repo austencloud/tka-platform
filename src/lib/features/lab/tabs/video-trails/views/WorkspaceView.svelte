@@ -120,6 +120,9 @@
     const url = trailsState.source?.url;
     if (!url || !videoEl) return;
 
+    // Guard: don't reload if src is already set to this URL
+    if (videoEl.src === url) return;
+
     videoEl.src = url;
     videoEl.load();
   });
@@ -141,7 +144,6 @@
   }
 
   function handleVideoCanPlay() {
-    // If user already pressed play before video was ready, start now
     if (trailsState.isPlaying && videoEl?.paused) {
       videoEl.play().catch(() => {});
     }
