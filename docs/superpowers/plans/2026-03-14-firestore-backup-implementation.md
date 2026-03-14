@@ -170,7 +170,7 @@ async function waitForExportCompletion(
 
   // If we get here, the export is still running after MAX_POLL_ATTEMPTS.
   // Log a warning but don't throw. The export will likely complete on its own,
-  // and the verifyFirestoreExport function (below) catches any that silently fail.
+  // and the monitoring alert will catch repeated failures.
   console.warn(
     `Export operation still running after ${(MAX_POLL_ATTEMPTS * POLL_INTERVAL_MS) / 1000}s. ` +
     `It may complete on its own. Operation: ${operationName}`
@@ -208,6 +208,7 @@ async function hasInProgressExport(
  * the existing cleanupExpiredCheckoutSessions function.
  */
 export const scheduledFirestoreExport = functions
+  .runWith({ timeoutSeconds: 540 })
   .region("us-central1")
   .pubsub.schedule("every day 03:00")
   .timeZone("UTC")
