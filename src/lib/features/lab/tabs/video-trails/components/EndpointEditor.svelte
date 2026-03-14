@@ -54,7 +54,7 @@
     // Draw each endpoint
     const endpoints = trailsState.currentEndpoints;
     for (let i = 0; i < endpoints.length; i++) {
-      const ep = endpoints[i];
+      const ep = endpoints[i]!;
       const x = dragging && dragIdx === i && dragPos ? dragPos.x : ep.x;
       const y = dragging && dragIdx === i && dragPos ? dragPos.y : ep.y;
       const isSelected = i === selectedIdx;
@@ -118,7 +118,7 @@
     const endpoints = trailsState.currentEndpoints;
     // Search in reverse so topmost (last drawn) is hit first
     for (let i = endpoints.length - 1; i >= 0; i--) {
-      const ep = endpoints[i];
+      const ep = endpoints[i]!;
       const dx = px - ep.x;
       const dy = py - ep.y;
       if (dx * dx + dy * dy <= HIT_RADIUS * HIT_RADIUS) return i;
@@ -193,7 +193,7 @@
     }
 
     if (selectedIdx < 0 || selectedIdx >= endpoints.length) return;
-    const ep = endpoints[selectedIdx];
+    const ep = endpoints[selectedIdx]!;
 
     const nudge = e.shiftKey ? 5 : 1;
 
