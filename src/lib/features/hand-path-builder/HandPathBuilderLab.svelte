@@ -57,12 +57,12 @@
     const blueMotion = createMotionData({ propType: PropType.HAND, color: MotionColor.BLUE });
     propSvgLoader.loadPropSvg(
       { positionX: 0, positionY: 0, rotationAngle: 0 }, blueMotion, false,
-    ).then(data => { blueHandData = data; }).catch(() => {});
+    ).then(data => { blueHandData = data; }).catch(console.error);
 
     const redMotion = createMotionData({ propType: PropType.HAND, color: MotionColor.RED });
     propSvgLoader.loadPropSvg(
       { positionX: 0, positionY: 0, rotationAngle: 0 }, redMotion, false,
-    ).then(data => { redHandData = data; }).catch(() => {});
+    ).then(data => { redHandData = data; }).catch(console.error);
   });
 
   // Register animation callback so builder.addLocation() can animate the hand
