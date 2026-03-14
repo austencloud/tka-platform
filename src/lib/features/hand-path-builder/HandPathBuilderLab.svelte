@@ -19,14 +19,12 @@
   import { createBuilderState } from "./state/builder-state.svelte";
   import { setBuilderContext } from "./context/builder-context";
   import InteractiveCanvas from "$lib/shared/interactive-canvas/InteractiveCanvas.svelte";
-  import { HandPropStateFactory } from "./services/implementations/HandPropStateFactory";
   import { HandPathAnimator, getPathD } from "./services/HandPathAnimator";
   import { propSvgLoader } from "$lib/shared/pictograph/prop/services/implementations/PropSvgLoader";
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { PropRenderData } from "$lib/shared/pictograph/prop/domain/models/PropRenderData";
-  import type { PropState } from "$lib/shared/animation-engine/domain/PropState";
   import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { HandMove } from "./state/builder-state.svelte";
   import PathPreview from "./components/PathPreview.svelte";
@@ -36,7 +34,6 @@
   const builder = createBuilderState();
   setBuilderContext(builder);
 
-  const propStateFactory = new HandPropStateFactory();
   const blueAnimator = new HandPathAnimator();
   const redAnimator = new HandPathAnimator();
   const ANIMATION_DURATION_MS = 350;
@@ -83,19 +80,6 @@
     });
   });
 
-  // Derive PropState for each hand from their last location (for AnimatorCanvas rendering)
-  const blueProp = $derived.by((): PropState | null => {
-    if (builder.blueLocations.length === 0) return null;
-    const lastLoc = builder.blueLocations[builder.blueLocations.length - 1]!;
-    return propStateFactory.locationToPropState(lastLoc);
-  });
-
-  const redProp = $derived.by((): PropState | null => {
-    if (builder.redLocations.length === 0) return null;
-    const lastLoc = builder.redLocations[builder.redLocations.length - 1]!;
-    return propStateFactory.locationToPropState(lastLoc);
-  });
-
   // Map builder phase to the color the HitTargetOverlay should use
   const activePhaseColor = $derived(
     builder.phase === "blue" ? "blue" as const
@@ -129,8 +113,8 @@
 
   <div class="grid-area">
     <InteractiveCanvas
-      {blueProp}
-      {redProp}
+      blueProp={null}
+      redProp={null}
       gridMode={builder.gridMode}
       gridVisible={true}
       interactive={builder.phase !== "complete"}
@@ -138,8 +122,6 @@
       currentPosition={builder.lastLocation}
       disabled={builder.isAnimating}
       onPointClick={(loc) => builder.addLocation(loc)}
-      bluePropType="hand"
-      redPropType="hand"
     >
       {#snippet animationLayer()}
         <!-- Path trace lines following actual movement geometry -->
@@ -221,6 +203,15 @@
     width: 100%;
     max-width: 400px;
     flex-shrink: 0;
+    overflow: hidden;
+    border-radius: 20px;
+  }
+
+  /* Zoom in on the grid — hands are small so we don't need the prop
+     buffer space that the assemble tab requires for staffs/fans */
+  .grid-area :global(.interactive-canvas-wrapper) {
+    transform: scale(1.55);
+    transform-origin: center center;
   }
 
   .preview-area {
