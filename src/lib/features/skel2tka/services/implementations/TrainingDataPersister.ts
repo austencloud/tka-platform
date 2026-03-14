@@ -166,7 +166,7 @@ export class TrainingDataPersister implements ITrainingDataPersister {
   async syncToFirebase(): Promise<number> {
     // Firebase sync is a planned feature.
     // For now, return 0 to indicate no pairs synced.
-    // Implementation will follow the FirebaseVideoUploader pattern
+    // Implementation will follow the R2VideoUploader pattern
     // when Firebase storage for training data is set up.
     console.warn(
       "[TrainingDataPersister] Firebase sync not yet implemented"

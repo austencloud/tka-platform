@@ -1,11 +1,11 @@
 /**
  * Helper to create a CollaborativeVideo from an upload result
  *
- * Bridges the gap between FirebaseVideoUploader (raw upload)
+ * Bridges the gap between R2VideoUploader (raw upload)
  * and CollaborativeVideoManager (collaborative metadata).
  */
 
-import type { VideoUploadResult } from "$lib/shared/share/services/contracts/IFirebaseVideoUploader";
+import type { VideoUploadResult } from "$lib/shared/share/services/contracts/IVideoUploader";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import {
   createCollaborativeVideo,
@@ -14,7 +14,7 @@ import {
 } from "../domain/CollaborativeVideo";
 
 export interface CreateVideoFromUploadOptions {
-  /** The upload result from FirebaseVideoUploader */
+  /** The upload result from R2VideoUploader */
   uploadResult: VideoUploadResult;
   /** The sequence this video performs */
   sequence: SequenceData;
@@ -41,7 +41,7 @@ export interface CreateVideoFromUploadOptions {
 /**
  * Create a CollaborativeVideo from upload results
  *
- * Use this after uploading a video with FirebaseVideoUploader
+ * Use this after uploading a video with R2VideoUploader
  * to create the collaborative metadata structure.
  *
  * @example
@@ -87,7 +87,7 @@ export function createVideoFromUpload(
   return createCollaborativeVideo(
     {
       videoUrl: uploadResult.url,
-      storagePath: uploadResult.storagePath,
+      storagePath: uploadResult.key,
       thumbnailUrl,
       duration,
       fileSize,

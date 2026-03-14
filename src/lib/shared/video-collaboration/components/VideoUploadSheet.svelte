@@ -7,7 +7,7 @@
 <script lang="ts">
   import { container } from "$lib/shared/di";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import type { IFirebaseVideoUploader } from "$lib/shared/share/services/contracts/IFirebaseVideoUploader";
+  import type { IVideoUploader } from "$lib/shared/share/services/contracts/IVideoUploader";
   import type { ICollaborativeVideoManager } from "../services/contracts/ICollaborativeVideoManager";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -37,7 +37,7 @@
   } = $props();
 
   // Services
-  const uploadService = container.items.firebaseVideoUploader;
+  const uploadService = container.items.videoUploader;
   const videoService = container.items.collaborativeVideoManager;
   const hapticService = container.items.hapticFeedback;
 
@@ -121,7 +121,7 @@
       return;
     }
     if (!uploadService) {
-      console.error("FirebaseVideoUploader not available");
+      console.error("VideoUploader not available");
       uploadError =
         "Upload service not available. Please refresh and try again.";
       return;
@@ -147,9 +147,11 @@
       const uploadResult = await uploadService.uploadPerformanceVideo(
         sequence.id,
         selectedFile,
-        (progress: number) => {
-          // Reserve 0-90% for video, 90-100% for thumbnail
-          uploadProgress = Math.round(progress * 0.9);
+        {
+          onProgress: (progress: number) => {
+            // Reserve 0-90% for video, 90-100% for thumbnail
+            uploadProgress = Math.round(progress * 0.9);
+          },
         }
       );
 
@@ -159,7 +161,7 @@
         try {
           // Extract timestamp from video path for thumbnail matching
           const videoTimestamp = parseInt(
-            uploadResult.storagePath.split("/").pop()?.split(".")[0] || "0"
+            uploadResult.key.split("/").pop()?.split(".")[0] || "0"
           );
           const thumbnailResult = await uploadService.uploadVideoThumbnail(
             sequence.id,
