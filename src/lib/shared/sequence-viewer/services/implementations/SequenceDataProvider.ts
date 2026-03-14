@@ -140,7 +140,7 @@ export class SequenceDataProvider implements ISequenceDataProvider {
     }
 
     // Fall back to word-based lookup (may return a different variation)
-    const identifier = sequence.word || sequence.name;
+    const identifier = sequence.word || sequence.id;
     if (!identifier) {
       return this.ensureWordPopulated(sequence);
     }
