@@ -1,12 +1,11 @@
 <!-- Sidebar Footer Component -->
-<!-- Footer with settings, network status, account, and voice mic -->
+<!-- Footer with settings, network status, inbox, account, and voice mic -->
 <script lang="ts">
   import { container } from "$lib/shared/di";
-  import { featureFlagService } from "../../../auth/services/PostHogFeatureFlagService.svelte";
   import NetworkStatusIndicator from "../../../offline/components/NetworkStatusIndicator.svelte";
-  import ModuleQuickToggle from "./ModuleQuickToggle.svelte";
   import { voiceControlState } from "../../../voice-control/state/voice-control-state.svelte";
   import { getSettings } from "../../../application/state/app-state.svelte";
+  import { inboxState } from "../../../inbox/state/inbox-state.svelte";
   import AccountRow from "../account/AccountRow.svelte";
 
   let { isCollapsed, onSettingsClick, isInSettings = false, onAccountClick, accountSectionElement = $bindable(null) } = $props<{
@@ -17,7 +16,8 @@
     accountSectionElement?: HTMLElement | null;
   }>();
 
-  const isAdmin = $derived(featureFlagService.isAdmin);
+  const hasUnread = $derived(inboxState.totalUnreadCount > 0);
+  const unreadCount = $derived(inboxState.totalUnreadCount);
 
   // Voice control is opt-in via Settings > Preferences
   const voiceControlOptIn = $derived(getSettings()?.voiceControlEnabled === true);
@@ -49,8 +49,17 @@
     }
   }
 
+  function handleInboxClick() {
+    try {
+      const hapticService = container.items.hapticFeedback;
+      hapticService?.trigger("selection");
+    } catch {
+      // Ignore if not available
+    }
+    inboxState.open();
+  }
+
   function handleSettingsClick() {
-    // Haptic feedback
     try {
       const hapticService = container.items.hapticFeedback;
       hapticService?.trigger("selection");
@@ -87,10 +96,30 @@
     <!-- Network Status Indicator -->
     <NetworkStatusIndicator variant="desktop" />
 
-    <!-- Module Quick Toggle (admin only) -->
-    {#if isAdmin}
-      <ModuleQuickToggle {isCollapsed} />
-    {/if}
+    <!-- Inbox Button -->
+    <button
+      class="footer-button inbox-button"
+      class:collapsed={isCollapsed}
+      onclick={handleInboxClick}
+      aria-label="Open inbox{hasUnread ? `, ${unreadCount} unread` : ''}"
+    >
+      <div class="button-icon-wrapper">
+        <div class="button-icon">
+          <i class="fas fa-inbox" aria-hidden="true"></i>
+        </div>
+        {#if hasUnread}
+          <span class="unread-badge" aria-hidden="true">
+            {unreadCount > 99 ? "99+" : unreadCount}
+          </span>
+        {/if}
+      </div>
+      {#if !isCollapsed}
+        <span class="button-label">Inbox</span>
+        {#if hasUnread && unreadCount > 0}
+          <span class="inbox-count">{unreadCount > 99 ? "99+" : unreadCount}</span>
+        {/if}
+      {/if}
+    </button>
 
     <!-- Account Row (popover rendered outside nav to avoid overflow clipping) -->
     <div class="account-section" bind:this={accountSectionElement}>
@@ -227,6 +256,54 @@
       opacity: 1;
       transform: translateX(0);
     }
+  }
+
+  /* ============================================================================
+     INBOX BUTTON
+     ============================================================================ */
+  .inbox-button {
+    color: var(--semantic-info, #3b82f6);
+    border-color: color-mix(in srgb, var(--semantic-info, #3b82f6) 25%, transparent);
+  }
+
+  .inbox-button:hover {
+    background: color-mix(in srgb, var(--semantic-info, #3b82f6) 10%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-info, #3b82f6) 40%, transparent);
+    color: var(--semantic-info, #3b82f6);
+  }
+
+  .inbox-button .button-icon {
+    background: transparent;
+  }
+
+  .button-icon-wrapper {
+    position: relative;
+  }
+
+  .unread-badge {
+    position: absolute;
+    top: -4px;
+    right: -6px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    background: var(--semantic-error, #ef4444);
+    border-radius: 8px;
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .inbox-count {
+    margin-left: auto;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--semantic-info, #3b82f6);
+    opacity: 0.8;
   }
 
   /* ============================================================================

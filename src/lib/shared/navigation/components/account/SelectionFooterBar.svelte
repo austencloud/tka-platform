@@ -50,16 +50,11 @@
     <button
       class="cta-button"
       onclick={handleCta}
-      disabled={saving}
       aria-label={ctaAriaLabel}
     >
-      {#if saving}
-        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-      {:else}
-        {ctaLabel}
-        {#if showSetFavorite}
-          <i class="fas fa-arrow-right cta-arrow" aria-hidden="true"></i>
-        {/if}
+      {ctaLabel}
+      {#if showSetFavorite}
+        <i class="fas fa-arrow-right cta-arrow" aria-hidden="true"></i>
       {/if}
     </button>
   </div>

@@ -17,7 +17,7 @@
 
   let chosenProp = $state<PropType | null>(null);
 
-  const useWideLayout = $derived(selectedProps.length > 4);
+  // No longer need layout switching — grid auto-fills
 
   function handlePick(prop: PropType) {
     chosenProp = prop;
@@ -37,7 +37,6 @@
 
 <div
   class="favorite-picker"
-  class:wide-layout={useWideLayout}
   role="group"
   aria-label="Choose your favorite prop"
 >
@@ -68,17 +67,10 @@
 
 <style>
   .favorite-picker {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    padding: 24px 16px;
-    flex-wrap: wrap;
-  }
-
-  .favorite-picker.wide-layout {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    justify-items: center;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+    padding: 16px 8px;
   }
 
   .favorite-card {
@@ -87,7 +79,7 @@
     align-items: center;
     gap: 8px;
     position: relative;
-    padding: 16px;
+    padding: 12px 8px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 12px;
@@ -95,8 +87,7 @@
     transition:
       border-color var(--duration-fast, 150ms) ease,
       transform var(--duration-fast, 150ms) ease;
-    min-width: 90px;
-    min-height: 44px;
+    min-height: var(--min-touch-target, 50px);
   }
 
   .favorite-card:hover:not(:disabled) {
@@ -148,8 +139,9 @@
   }
 
   .favorite-image {
-    width: 80px;
-    height: 80px;
+    width: clamp(40px, 50%, 72px);
+    height: auto;
+    aspect-ratio: 1;
     object-fit: contain;
   }
 

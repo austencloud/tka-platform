@@ -59,7 +59,7 @@
     gap: 10px;
     width: 100%;
     padding: 10px 12px;
-    margin: 0 4px;
+    margin: 0;
     background: color-mix(in srgb, var(--theme-accent) 8%, transparent);
     border: 1px solid color-mix(in srgb, var(--theme-accent) 20%, transparent);
     border-radius: 10px;
