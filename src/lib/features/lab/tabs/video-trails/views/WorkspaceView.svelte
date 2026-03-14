@@ -37,6 +37,12 @@
   let canvasWidth = $state(640);
   let canvasHeight = $state(360);
 
+  // Throttle detection to every Nth frame — detection is CPU-heavy (pixel scanning,
+  // flood-fill, k-means) and running it at 60fps causes choppy video playback.
+  // The video frame still draws every RAF tick for smooth visuals.
+  let detectionFrameCounter = 0;
+  const DETECTION_EVERY_N_FRAMES = 3;
+
   // Renderers
   let fireRenderer: WebGLFireRenderer | null = null;
   let ledRenderer: WebGLLedRenderer | null = null;
@@ -246,12 +252,20 @@
   function processCurrentFrame(): void {
     if (!videoEl || videoEl.readyState < 2) return;
 
-    // Always draw video frame to visible canvas
+    // Always draw video frame at full framerate for smooth visuals
     canvasStack?.drawVideoFrame(videoEl);
 
-    // Update frame counter
+    // Only update reactive state when the frame actually changes to avoid
+    // unnecessary Svelte re-renders (setCurrentFrame creates new state objects)
     const frameIndex = Math.round(videoEl.currentTime * (trailsState.source?.fps ?? 30));
-    trailsState.setCurrentFrame(frameIndex);
+    if (frameIndex !== trailsState.currentFrame) {
+      trailsState.setCurrentFrame(frameIndex);
+    }
+
+    // Throttle the expensive detection work (pixel scanning, flood-fill, k-means)
+    // to every Nth frame. Video rendering stays at full framerate above.
+    detectionFrameCounter++;
+    if (detectionFrameCounter % DETECTION_EVERY_N_FRAMES !== 0) return;
 
     // Detection requires offscreen canvas
     if (!offscreenCtx || !offscreenCanvas) return;
