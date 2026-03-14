@@ -32,7 +32,7 @@
     onDragStart: (item: FeedbackItem) => void;
     onDragEnd: () => void;
     onTouchDrag?: (item: FeedbackItem, x: number, y: number) => void;
-    onTouchEnd?: (x: number, y: number) => void;
+    onTouchEnd?: (x: number, y: number) => void | Promise<void>;
     onClick: () => void;
   }>();
 
@@ -215,10 +215,8 @@
       isDragging = true;
       createDragGhost(startX, startY);
       onDragStart(item);
-      // Haptic feedback if available
-      if (navigator.vibrate) {
-        navigator.vibrate(50);
-      }
+      // Haptic feedback if available (guarded — DevTools blocks vibrate before first tap)
+      try { navigator.vibrate?.(50); } catch { /* ignored in simulated environments */ }
     }, 150);
   }
 
@@ -230,7 +228,7 @@
 
     // If already dragging, just move the ghost
     if (isTouchDragging) {
-      e.preventDefault();
+      if (e.cancelable) e.preventDefault();
       moveDragGhost(touch.clientX, touch.clientY);
       onTouchDrag?.(item, touch.clientX, touch.clientY);
       return;
@@ -260,11 +258,11 @@
       if (navigator.vibrate) {
         navigator.vibrate(50);
       }
-      e.preventDefault();
+      if (e.cancelable) e.preventDefault();
     }
   }
 
-  function handleTouchEnd(e: TouchEvent) {
+  async function handleTouchEnd(e: TouchEvent) {
     if (longPressTimer) {
       clearTimeout(longPressTimer);
       longPressTimer = null;
@@ -276,9 +274,10 @@
       justDragged = true;
 
       // Get the final touch position for drop handling
+      // IMPORTANT: await the drop so draggedItem isn't cleared by onDragEnd before the drop processes
       const touch = e.changedTouches[0];
       if (touch && onTouchEnd) {
-        onTouchEnd(touch.clientX, touch.clientY);
+        await onTouchEnd(touch.clientX, touch.clientY);
       }
 
       removeDragGhost();
@@ -449,6 +448,8 @@
     cursor: grab;
     text-align: left;
     overflow: hidden;
+    /* Prevent browser from intercepting touch for scroll — drag is JS-handled */
+    touch-action: none;
     transition: all var(--duration-normal) var(--spring-smooth);
     box-shadow:
       0 2px 8px var(--theme-shadow),
@@ -480,6 +481,7 @@
 
   .kanban-card.drag-disabled {
     cursor: default;
+    touch-action: auto;
   }
 
   .kanban-card.drag-disabled:active {
