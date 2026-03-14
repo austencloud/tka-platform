@@ -41,12 +41,15 @@ export class ThumbnailKeyDeriver implements IThumbnailKeyDeriver {
 
     // Build cloud path (only meaningful for default settings)
     const mode = input.lightMode ? "light" : "dark";
-    const cloudPath = `thumbnails/${input.variant}/${propKey}/${input.sequenceName}_${mode}.webp`;
+    // Include sequence ID in cloud path so variations of the same word get separate thumbnails
+    const idSuffix = input.sequenceId ? `_${input.sequenceId}` : "";
+    const cloudPath = `thumbnails/${input.variant}/${propKey}/${input.sequenceName}${idSuffix}_${mode}.webp`;
 
     // Compute hash of all inputs that affect visual output
     const hashInput = usesDefaults
       ? {
           seq: input.sequenceName,
+          id: input.sequenceId ?? null,
           prop: propKey,
           mode,
           variant: input.variant,
@@ -176,6 +179,7 @@ export class ThumbnailKeyDeriver implements IThumbnailKeyDeriver {
     //   (User wants to toggle these and see thumbnails update)
     return {
       seq: input.sequenceName,
+      id: input.sequenceId ?? null,
       blue: input.bluePropType,
       red: input.redPropType,
       catDog: input.catDogModeEnabled,
