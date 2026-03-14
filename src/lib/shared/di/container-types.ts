@@ -33,6 +33,7 @@ import type { AssembleContainer } from "./containers/assemble-container";
 import type { LabContainer } from "./containers/lab-container";
 import type { CompositionContainer } from "./containers/composition-container";
 import type { VideoTrailsContainer } from "./containers/video-trails-container";
+import type { VideoInfraContainer } from "./containers/video-infra-container";
 
 // ============================================================================
 // Container type imports — factory (ReturnType<typeof create...>) containers
@@ -107,6 +108,7 @@ type ArenaItems = ItemsOf<ArenaContainer>;
 type AssembleItems = ItemsOf<AssembleContainer>;
 type LabItems = ItemsOf<LabContainer>;
 type VideoTrailsItems = ItemsOf<VideoTrailsContainer>;
+type VideoInfraItems = ItemsOf<VideoInfraContainer>;
 
 // Factory containers
 type FeedbackItems = ItemsOf<FeedbackContainer>;
@@ -221,5 +223,7 @@ export type IAppContainerItems =
 	PushItems &
 	// Video Trails services (endpoint detection, tip adaptation, export)
 	VideoTrailsItems &
+	// Shared video infrastructure (source provider, training data, frame extraction)
+	VideoInfraItems &
 	// Standalone services
 	StandaloneItems;
