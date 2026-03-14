@@ -54,6 +54,8 @@
     "phrase-effort": () => import("$lib/features/phrase-effort-lab/PhraseEffortLabModule.svelte"),
     "audio-toolkit": () => import("./tabs/audio-lab/AudioToolkitLab.svelte"),
     "3d-controls": () => import("./tabs/3d-controls-lab/ThreeDControlsLab.svelte"),
+    "hand-path-explorer": () => import("$lib/features/hand-path-explorer/HandPathExplorerLab.svelte"),
+    "hand-path-builder": () => import("$lib/features/hand-path-builder/HandPathBuilderLab.svelte"),
   };
 
   // Get current tab, default to first tab
