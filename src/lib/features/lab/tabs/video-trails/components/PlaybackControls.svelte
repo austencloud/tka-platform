@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getVideoTrailsContext } from "../context/video-trails-context";
 
-  const { state } = getVideoTrailsContext();
+  const { state: trailsState } = getVideoTrailsContext();
 
   const speedOptions = [0.25, 0.5, 1, 1.5, 2];
 
@@ -11,48 +11,48 @@
     switch (e.key) {
       case " ":
         e.preventDefault();
-        state.togglePlayback();
+        trailsState.togglePlayback();
         break;
       case "ArrowLeft":
-        state.setCurrentFrame(Math.max(0, state.currentFrame - (e.shiftKey ? 10 : 1)));
+        trailsState.setCurrentFrame(Math.max(0, trailsState.currentFrame - (e.shiftKey ? 10 : 1)));
         break;
       case "ArrowRight":
-        state.setCurrentFrame(Math.min(state.totalFrames - 1, state.currentFrame + (e.shiftKey ? 10 : 1)));
+        trailsState.setCurrentFrame(Math.min(trailsState.totalFrames - 1, trailsState.currentFrame + (e.shiftKey ? 10 : 1)));
         break;
     }
   }
 
   function handleSeek(e: Event) {
     const input = e.target as HTMLInputElement;
-    state.setCurrentFrame(Number(input.value));
+    trailsState.setCurrentFrame(Number(input.value));
   }
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
 
 <div class="playback-controls">
-  <button class="play-btn" onclick={() => state.togglePlayback()} aria-label={state.isPlaying ? "Pause" : "Play"}>
-    <i class="fas {state.isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
+  <button class="play-btn" onclick={() => trailsState.togglePlayback()} aria-label={trailsState.isPlaying ? "Pause" : "Play"}>
+    <i class="fas {trailsState.isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
   </button>
 
   <input
     type="range"
     class="seek-bar"
     min="0"
-    max={Math.max(0, state.totalFrames - 1)}
-    value={state.currentFrame}
+    max={Math.max(0, trailsState.totalFrames - 1)}
+    value={trailsState.currentFrame}
     oninput={handleSeek}
     aria-label="Seek"
   />
 
   <span class="frame-counter">
-    {state.currentFrame} / {state.totalFrames}
+    {trailsState.currentFrame} / {trailsState.totalFrames}
   </span>
 
   <select
     class="speed-select"
-    value={state.playbackSpeed}
-    onchange={(e) => state.setPlaybackSpeed(Number((e.target as HTMLSelectElement).value))}
+    value={trailsState.playbackSpeed}
+    onchange={(e) => trailsState.setPlaybackSpeed(Number((e.target as HTMLSelectElement).value))}
     aria-label="Playback speed"
   >
     {#each speedOptions as speed}

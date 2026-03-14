@@ -2,7 +2,7 @@
   import { getVideoTrailsContext } from "../context/video-trails-context";
   import { DETECTOR_REGISTRY } from "../domain/types";
 
-  const { state } = getVideoTrailsContext();
+  const { state: trailsState } = getVideoTrailsContext();
 
   interface EffectSection {
     key: "fire" | "led" | "trails" | "charcoal";
@@ -18,8 +18,8 @@
   ];
 
   function toggleEffect(key: EffectSection["key"]) {
-    const current = state.effectConfig[key];
-    state.setEffectConfig({ [key]: { ...current, enabled: !current.enabled } });
+    const current = trailsState.effectConfig[key];
+    trailsState.setEffectConfig({ [key]: { ...current, enabled: !current.enabled } });
   }
 </script>
 
@@ -27,11 +27,11 @@
   <h3 class="panel-title">Effects</h3>
 
   {#each sections as section}
-    <div class="effect-section" class:enabled={state.effectConfig[section.key].enabled}>
+    <div class="effect-section" class:enabled={trailsState.effectConfig[section.key].enabled}>
       <button class="effect-toggle" onclick={() => toggleEffect(section.key)}>
         <i class="fas {section.icon}" aria-hidden="true"></i>
         <span>{section.label}</span>
-        <span class="toggle-indicator">{state.effectConfig[section.key].enabled ? "ON" : "OFF"}</span>
+        <span class="toggle-indicator">{trailsState.effectConfig[section.key].enabled ? "ON" : "OFF"}</span>
       </button>
     </div>
   {/each}
@@ -46,10 +46,10 @@
         min="0"
         max="1"
         step="0.05"
-        value={state.detectionConfig.threshold}
-        oninput={(e) => state.setDetectionConfig({ threshold: Number((e.target as HTMLInputElement).value) })}
+        value={trailsState.detectionConfig.threshold}
+        oninput={(e) => trailsState.setDetectionConfig({ threshold: Number((e.target as HTMLInputElement).value) })}
       />
-      <span class="value">{state.detectionConfig.threshold.toFixed(2)}</span>
+      <span class="value">{trailsState.detectionConfig.threshold.toFixed(2)}</span>
     </label>
 
     <label class="slider-row">
@@ -59,17 +59,17 @@
         min="0"
         max="2"
         step="0.1"
-        value={state.detectionConfig.sensitivity}
-        oninput={(e) => state.setDetectionConfig({ sensitivity: Number((e.target as HTMLInputElement).value) })}
+        value={trailsState.detectionConfig.sensitivity}
+        oninput={(e) => trailsState.setDetectionConfig({ sensitivity: Number((e.target as HTMLInputElement).value) })}
       />
-      <span class="value">{state.detectionConfig.sensitivity.toFixed(1)}</span>
+      <span class="value">{trailsState.detectionConfig.sensitivity.toFixed(1)}</span>
     </label>
 
     <label class="select-row">
       <span>Detector</span>
       <select
-        value={state.activeDetectorId}
-        onchange={(e) => state.setActiveDetector((e.target as HTMLSelectElement).value)}
+        value={trailsState.activeDetectorId}
+        onchange={(e) => trailsState.setActiveDetector((e.target as HTMLSelectElement).value)}
       >
         {#each DETECTOR_REGISTRY as reg}
           <option value={reg.id}>{reg.name}</option>

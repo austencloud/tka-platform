@@ -5,12 +5,12 @@
   import { setVideoTrailsContext } from "./context/video-trails-context";
   import type { VideoTrailsView } from "./domain/types";
 
-  const state = createVideoTrailsState(
+  const trailsState = createVideoTrailsState(
     container.items.videoTrailsRepository,
     container.items.detectionCorrector,
     container.items.videoTipAdapter,
   );
-  setVideoTrailsContext({ state });
+  setVideoTrailsContext({ state: trailsState });
 
   const views: { id: VideoTrailsView; label: string; icon: string }[] = [
     { id: "workspace", label: "Workspace", icon: "fa-video" },
@@ -23,7 +23,7 @@
   let LibraryView: any = $state(null);
 
   $effect(() => {
-    switch (state.activeView) {
+    switch (trailsState.activeView) {
       case "workspace":
         if (!WorkspaceView) {
           import("./views/WorkspaceView.svelte").then((m) => { WorkspaceView = m.default; });
@@ -42,7 +42,7 @@
     }
   });
 
-  onDestroy(() => state.destroy());
+  onDestroy(() => trailsState.destroy());
 </script>
 
 <div class="video-trails-root">
@@ -50,10 +50,10 @@
     {#each views as view}
       <button
         class="sub-nav-tab"
-        class:active={state.activeView === view.id}
+        class:active={trailsState.activeView === view.id}
         role="tab"
-        aria-selected={state.activeView === view.id}
-        onclick={() => { state.activeView = view.id; }}
+        aria-selected={trailsState.activeView === view.id}
+        onclick={() => { trailsState.activeView = view.id; }}
       >
         <i class="fas {view.icon}" aria-hidden="true"></i>
         <span>{view.label}</span>
@@ -62,11 +62,11 @@
   </nav>
 
   <div class="view-container">
-    {#if state.activeView === "workspace" && WorkspaceView}
+    {#if trailsState.activeView === "workspace" && WorkspaceView}
       <WorkspaceView />
-    {:else if state.activeView === "detection-studio" && DetectionStudioView}
+    {:else if trailsState.activeView === "detection-studio" && DetectionStudioView}
       <DetectionStudioView />
-    {:else if state.activeView === "library" && LibraryView}
+    {:else if trailsState.activeView === "library" && LibraryView}
       <LibraryView />
     {:else}
       <div class="loading-view">Loading...</div>

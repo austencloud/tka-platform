@@ -1,15 +1,15 @@
 <script lang="ts">
   import { getVideoTrailsContext } from "../context/video-trails-context";
 
-  const { state } = getVideoTrailsContext();
+  const { state: trailsState } = getVideoTrailsContext();
 </script>
 
 <div class="studio-placeholder">
   <i class="fas fa-crosshairs" aria-hidden="true"></i>
   <h2>Detection Studio</h2>
   <p>Frame-by-frame correction coming in Phase 3.</p>
-  {#if state.correctionCount > 0}
-    <p class="stat">{state.correctionCount} corrections recorded</p>
+  {#if trailsState.correctionCount > 0}
+    <p class="stat">{trailsState.correctionCount} corrections recorded</p>
   {/if}
 </div>
 
