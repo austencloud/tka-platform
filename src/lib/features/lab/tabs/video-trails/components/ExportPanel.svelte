@@ -6,12 +6,28 @@
 
   let format = $state<"mp4" | "webm">("webm");
   let resolution = $state<"720p" | "1080p" | "original">("1080p");
+  let formatDropdownOpen = $state(false);
+  let resolutionDropdownOpen = $state(false);
 
   interface Props {
     onExport: (config: ExportConfig) => void;
   }
 
   let { onExport }: Props = $props();
+
+  const formatOptions: { value: "mp4" | "webm"; label: string }[] = [
+    { value: "webm", label: "WebM" },
+    { value: "mp4", label: "MP4" },
+  ];
+
+  const resolutionOptions: { value: "720p" | "1080p" | "original"; label: string }[] = [
+    { value: "720p", label: "720p" },
+    { value: "1080p", label: "1080p" },
+    { value: "original", label: "Original" },
+  ];
+
+  const formatLabel = $derived(formatOptions.find((o) => o.value === format)?.label ?? format);
+  const resolutionLabel = $derived(resolutionOptions.find((o) => o.value === resolution)?.label ?? resolution);
 
   function getResolution(): { width: number; height: number } {
     if (resolution === "720p") return { width: 1280, height: 720 };
@@ -37,28 +53,67 @@
     a.click();
     URL.revokeObjectURL(url);
   }
+
+  function selectFormat(value: "mp4" | "webm") {
+    format = value;
+    formatDropdownOpen = false;
+  }
+
+  function selectResolution(value: "720p" | "1080p" | "original") {
+    resolution = value;
+    resolutionDropdownOpen = false;
+  }
 </script>
 
 <div class="export-panel">
   <h3 class="panel-title">Export</h3>
 
   <div class="export-options">
-    <label class="select-row">
-      <span>Format</span>
-      <select bind:value={format}>
-        <option value="webm">WebM</option>
-        <option value="mp4">MP4</option>
-      </select>
-    </label>
+    <div class="select-row">
+      <span class="select-label">Format</span>
+      <div class="custom-select">
+        <button class="select-trigger" onclick={() => { formatDropdownOpen = !formatDropdownOpen; resolutionDropdownOpen = false; }}>
+          <span>{formatLabel}</span>
+          <i class="fas fa-chevron-down" aria-hidden="true"></i>
+        </button>
+        {#if formatDropdownOpen}
+          <div class="select-dropdown">
+            {#each formatOptions as option}
+              <button
+                class="select-option"
+                class:selected={option.value === format}
+                onclick={() => selectFormat(option.value)}
+              >
+                {option.label}
+              </button>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    </div>
 
-    <label class="select-row">
-      <span>Resolution</span>
-      <select bind:value={resolution}>
-        <option value="720p">720p</option>
-        <option value="1080p">1080p</option>
-        <option value="original">Original</option>
-      </select>
-    </label>
+    <div class="select-row">
+      <span class="select-label">Resolution</span>
+      <div class="custom-select">
+        <button class="select-trigger" onclick={() => { resolutionDropdownOpen = !resolutionDropdownOpen; formatDropdownOpen = false; }}>
+          <span>{resolutionLabel}</span>
+          <i class="fas fa-chevron-down" aria-hidden="true"></i>
+        </button>
+        {#if resolutionDropdownOpen}
+          <div class="select-dropdown">
+            {#each resolutionOptions as option}
+              <button
+                class="select-option"
+                class:selected={option.value === resolution}
+                onclick={() => selectResolution(option.value)}
+              >
+                {option.label}
+              </button>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    </div>
   </div>
 
   {#if trailsState.exportState.phase === "idle" || trailsState.exportState.phase === "complete" || trailsState.exportState.phase === "error"}
@@ -110,6 +165,8 @@
     gap: 4px;
   }
 
+  /* --- Custom select dropdown --- */
+
   .select-row {
     display: flex;
     align-items: center;
@@ -118,16 +175,67 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
   }
 
-  .select-row span { min-width: 70px; }
+  .select-label { min-width: 70px; }
 
-  .select-row select {
+  .custom-select {
+    position: relative;
     flex: 1;
-    background: transparent;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 4px;
-    color: var(--theme-text, #ffffff);
-    padding: 4px 8px;
   }
+
+  .select-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 6px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text, #ffffff);
+    font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+  }
+
+  .select-trigger:hover {
+    border-color: var(--theme-accent, #f43f5e);
+  }
+
+  .select-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 6px;
+    overflow: hidden;
+    z-index: 10;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  .select-option {
+    display: block;
+    width: 100%;
+    padding: 8px 10px;
+    border: none;
+    background: transparent;
+    color: var(--theme-text, #ffffff);
+    font-size: var(--font-size-compact, 12px);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .select-option:hover {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+  }
+
+  .select-option.selected {
+    color: var(--theme-accent, #f43f5e);
+  }
+
+  /* --- Action buttons --- */
 
   .export-btn,
   .download-btn {
