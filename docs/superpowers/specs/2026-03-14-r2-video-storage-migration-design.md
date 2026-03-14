@@ -44,7 +44,7 @@ Browser (client)                         Firebase Cloud Functions (server)
 │                      │                  │ r2MultipartAbort             │
 │                      │ ── PUT ──►      │ r2MultipartListParts         │
 │                      │  directly to    │ r2DeleteObject               │
-│                      │  R2 bucket      │                              │
+│                      │  R2 bucket      │ r2DeleteByPrefix             │
 └─────────────────────┘                  │ All use @aws-sdk/client-s3   │
                                          │ with R2 credentials from     │
                                          │ functions.config() or        │
@@ -127,6 +127,27 @@ Key changes from `IFirebaseVideoUploader`:
 3. `getPublicUrl` becomes synchronous (just concatenates base URL + key, no async Firebase SDK call)
 4. Adds `MultipartUploadState` for resume capability
 
+### Breaking Signature Changes
+
+Every consumer that calls these methods needs updating. Here are the exact changes:
+
+| Method | Old Signature (`IFirebaseVideoUploader`) | New Signature (`IVideoUploader`) |
+|--------|------------------------------------------|----------------------------------|
+| `uploadPerformanceVideo` | `(sequenceId, videoFile, onProgress?) => Promise<{url, storagePath}>` | `(sequenceId, videoFile, options?) => Promise<{url, key}>` |
+| `uploadAnimatedSequence` | `(sequenceId, animationBlob, format) => Promise<{url, storagePath}>` | `(sequenceId, animationBlob, format, options?) => Promise<{url, key}>` |
+| `uploadVideoThumbnail` | `(sequenceId, thumbnailBlob, videoTimestamp) => Promise<{url, storagePath}>` | `(sequenceId, thumbnailBlob, videoTimestamp, options?) => Promise<{url, key}>` |
+| `uploadSequenceThumbnail` | `(sequenceId, thumbnailBlob, format?) => Promise<{url, storagePath}>` | `(sequenceId, thumbnailBlob, format?, options?) => Promise<{url, key}>` |
+| `getPublicUrl` | `(storagePath) => Promise<string>` | `(key) => string` (sync) |
+| `deleteSequenceAssets` | `(sequenceId) => Promise<void>` | `(sequenceId) => Promise<void>` (unchanged) |
+
+The `onProgress` callback moves from a standalone parameter to `options.onProgress`. Any caller passing a progress callback needs to wrap it: `(p) => logger.log(p)` becomes `{ onProgress: (p) => logger.log(p) }`.
+
+The return type field rename (`storagePath` to `key`) means any destructuring like `const { storagePath } = await upload(...)` must become `const { key } = await upload(...)`.
+
+### `getPublicUrl` Async-to-Sync Migration
+
+The old `getPublicUrl` returned `Promise<string>` because it called Firebase's `getDownloadURL()` which requires a network round-trip. The new version returns `string` synchronously because it just concatenates the R2 public base URL with the object key. No callers in the current codebase `await` the result of `getPublicUrl` (they all use it inline in template expressions or assignment), so this change is safe and requires no caller updates beyond the type annotation.
+
 ### R2VideoUploader Implementation
 
 **Path:** `src/lib/shared/share/services/implementations/R2VideoUploader.ts`
@@ -177,14 +198,14 @@ This is the core client-side class. It handles:
 5. Complete multipart upload
 ```
 
-### R2PresignClient
+### R2Presigner
 
-**Path:** `src/lib/shared/share/services/implementations/R2PresignClient.ts`
+**Path:** `src/lib/shared/share/services/implementations/R2Presigner.ts`
 
-Wraps all Cloud Function calls. Keeps the R2VideoUploader focused on upload orchestration rather than HTTP plumbing.
+Wraps all Cloud Function calls. Keeps the R2VideoUploader focused on upload orchestration rather than HTTP plumbing. Named `R2Presigner` (not "Client") per the project naming convention where services are named by what they do.
 
 ```typescript
-export class R2PresignClient implements IR2PresignClient {
+export class R2Presigner implements IR2Presigner {
   /** Get a presigned PUT URL for a single file upload */
   async getUploadUrl(params: {
     fileName: string;
@@ -237,13 +258,13 @@ export class R2PresignClient implements IR2PresignClient {
 
 Each method calls the corresponding Firebase Cloud Function using `httpsCallable` from the Firebase SDK. This handles auth token propagation automatically -- the Cloud Function receives `context.auth.uid` without any manual token passing.
 
-### UploadController
+### UploadAbortManager
 
-**Path:** `src/lib/shared/share/services/implementations/UploadController.ts`
+**Path:** `src/lib/shared/share/services/implementations/UploadAbortManager.ts`
 
-Manages cancellation for in-flight uploads. Tracks active XHR requests and can abort them all when the user cancels.
+Manages cancellation for in-flight uploads. Tracks active XHR requests and can abort them all when the user cancels. Named `UploadAbortManager` (not "Controller") per the project naming convention.
 
-Ported directly from Cirque Aflame's `UploadController` class in `media-r2.ts`, adapted to be a standalone DI-registered service rather than an inline class.
+Ported from Cirque Aflame's `UploadController` class in `media-r2.ts`, adapted to be a standalone DI-registered service rather than an inline class.
 
 ---
 
@@ -261,8 +282,10 @@ import {
   CompleteMultipartUploadCommand,
   AbortMultipartUploadCommand,
   ListPartsCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   DeleteObjectCommand,
+  DeleteObjectsCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 ```
@@ -277,7 +300,7 @@ Ported from Cirque Aflame's `ringmaster/src/lib/server/r2.ts`. Key differences:
 
 **Path:** `firebase-functions/src/r2/index.ts`
 
-Seven callable Cloud Functions, each thin wrappers around the R2 client:
+Eight callable Cloud Functions, each thin wrappers around the R2 client:
 
 | Function | Purpose | Auth Required |
 |----------|---------|---------------|
@@ -287,7 +310,8 @@ Seven callable Cloud Functions, each thin wrappers around the R2 client:
 | `r2MultipartComplete` | Finalize multipart upload with ETags | Yes |
 | `r2MultipartAbort` | Abort and clean up multipart upload | Yes |
 | `r2MultipartListParts` | List uploaded parts (for resume) | Yes |
-| `r2DeleteObject` | Delete object from R2 | Yes |
+| `r2DeleteObject` | Delete a single object from R2 | Yes |
+| `r2DeleteByPrefix` | Delete all objects matching a prefix (for sequence asset cleanup) | Yes |
 
 Every function:
 1. Validates `context.auth` exists (rejects unauthenticated calls)
@@ -315,6 +339,103 @@ export const r2PresignUrl = onCall(
     // ... generate presigned URL, return { presignedUrl, publicUrl, key }
   }
 );
+```
+
+### Prefix Deletion: `r2DeleteByPrefix`
+
+R2 (and S3) does NOT support prefix-based deletion natively. Firebase Storage lets you delete a folder path, but R2 requires a two-step process: list all objects with the prefix, then batch-delete them.
+
+This function powers `deleteSequenceAssets()`. When a user deletes a sequence, the client calls this function with the sequence's prefix, and the function enumerates and removes all matching objects.
+
+```typescript
+import {
+  ListObjectsV2Command,
+  DeleteObjectsCommand,
+} from "@aws-sdk/client-s3";
+
+export const r2DeleteByPrefix = onCall(
+  { secrets: [r2AccountId, r2AccessKeyId, r2SecretAccessKey] },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be signed in");
+    }
+
+    const { prefix } = request.data;
+    if (!prefix || typeof prefix !== "string") {
+      throw new HttpsError("invalid-argument", "prefix is required");
+    }
+
+    // Auth check: prefix must start with "users/{callerUid}/"
+    // This prevents users from deleting other users' assets.
+    const expectedPrefix = `users/${request.auth.uid}/`;
+    if (!prefix.startsWith(expectedPrefix)) {
+      throw new HttpsError(
+        "permission-denied",
+        "Cannot delete objects outside your own path"
+      );
+    }
+
+    const s3 = getR2Client();
+    let continuationToken: string | undefined;
+    let totalDeleted = 0;
+
+    // Paginate through all objects with this prefix and batch-delete them.
+    // DeleteObjects handles up to 1000 keys per call.
+    do {
+      const listResult = await s3.send(
+        new ListObjectsV2Command({
+          Bucket: bucketName,
+          Prefix: prefix,
+          MaxKeys: 1000,
+          ContinuationToken: continuationToken,
+        })
+      );
+
+      const objects = listResult.Contents;
+      if (!objects || objects.length === 0) break;
+
+      await s3.send(
+        new DeleteObjectsCommand({
+          Bucket: bucketName,
+          Delete: {
+            Objects: objects.map((obj) => ({ Key: obj.Key })),
+            Quiet: true, // Don't return individual results, just errors
+          },
+        })
+      );
+
+      totalDeleted += objects.length;
+      continuationToken = listResult.IsTruncated
+        ? listResult.NextContinuationToken
+        : undefined;
+    } while (continuationToken);
+
+    return { deletedCount: totalDeleted };
+  }
+);
+```
+
+The `R2Presigner` client-side class needs a corresponding method:
+
+```typescript
+async deleteByPrefix(prefix: string): Promise<{ deletedCount: number }>;
+```
+
+The `R2VideoUploader.deleteSequenceAssets()` implementation calls this:
+
+```typescript
+async deleteSequenceAssets(sequenceId: string): Promise<void> {
+  const userId = getCurrentUserId();
+  // Delete all asset types for this sequence across all categories
+  const prefixes = [
+    `users/${userId}/recordings/${sequenceId}/`,
+    `users/${userId}/animations/${sequenceId}/`,
+    `users/${userId}/thumbnails/${sequenceId}/`,
+  ];
+  await Promise.all(
+    prefixes.map((prefix) => this.presigner.deleteByPrefix(prefix))
+  );
+}
 ```
 
 ### Dependencies Added to firebase-functions/package.json
@@ -388,6 +509,21 @@ No anonymous uploads. No cross-user uploads. The Cloud Function is the sole gate
 - **Public read:** Enabled (via R2 public bucket or custom domain). Anyone can read uploaded files by URL. This is intentional -- videos are shared content.
 - **Public write:** Disabled. All writes go through presigned URLs generated by authenticated Cloud Functions.
 - **CORS:** Configure to allow PUT from the app's origin (`https://thekineticscribe.com` and `http://localhost:5173` for dev)
+- **Lifecycle rule:** Set `AbortIncompleteMultipartUpload` to 1 day. Without this, failed or abandoned multipart uploads leave orphaned chunks in R2 that accumulate storage cost silently. R2 supports S3-compatible lifecycle rules. Configure via the Cloudflare dashboard or API:
+
+```json
+{
+  "Rules": [
+    {
+      "ID": "abort-incomplete-multipart",
+      "Status": "Enabled",
+      "AbortIncompleteMultipartUpload": {
+        "DaysAfterInitiation": 1
+      }
+    }
+  ]
+}
+```
 
 ### R2 Credentials
 
@@ -416,11 +552,30 @@ Create a dedicated API token in Cloudflare with:
 
 | Constant | Value | Rationale |
 |----------|-------|-----------|
+| `MAX_VIDEO_FILE_SIZE` | 500 MB | Hard cap for video uploads. Prevents abuse and runaway storage costs. |
+| `MAX_THUMBNAIL_FILE_SIZE` | 10 MB | Hard cap for thumbnail/image uploads. No thumbnail should be anywhere near this. |
 | `MULTIPART_THRESHOLD` | 100 MB | R2's sweet spot. Below this, single PUT is faster. |
 | `PART_SIZE` | 10 MB | Above R2's 5MB minimum. Good balance of parallelism and overhead. |
 | `MAX_CONCURRENT_PARTS` | 3 | Enough to saturate most connections without overwhelming mobile browsers. |
 | `PRESIGN_EXPIRES_SINGLE` | 900s (15 min) | Generous for slow connections but short enough to limit abuse. |
 | `PRESIGN_EXPIRES_MULTIPART` | 3600s (60 min) | Multipart uploads can be long-running. |
+
+The Cloud Function must validate `contentLength` against these limits when generating presigned URLs. Without this, a user (or attacker) could upload arbitrarily large files. The check happens server-side in `r2PresignUrl` and `r2MultipartStart`:
+
+```typescript
+const MAX_VIDEO = 500 * 1024 * 1024;   // 500 MB
+const MAX_THUMBNAIL = 10 * 1024 * 1024; // 10 MB
+
+const limit = category === "thumbnails" ? MAX_THUMBNAIL : MAX_VIDEO;
+if (contentLength > limit) {
+  throw new HttpsError(
+    "invalid-argument",
+    `File too large. Maximum ${limit / (1024 * 1024)}MB for ${category}.`
+  );
+}
+```
+
+The client should also check before calling the Cloud Function (fail fast, better UX), but the server-side check is the real enforcement.
 
 ---
 
@@ -436,16 +591,16 @@ import { FirebaseVideoUploader } from "...";
 firebaseVideoUploader: () => new FirebaseVideoUploader(),
 
 // Add:
-import { R2PresignClient } from "...";
+import { R2Presigner } from "...";
 import { R2VideoUploader } from "...";
 
-r2PresignClient: () => new R2PresignClient(),
-videoUploader: () => new R2VideoUploader(items.r2PresignClient),
+r2Presigner: () => new R2Presigner(),
+videoUploader: () => new R2VideoUploader(items.r2Presigner),
 ```
 
 ### Container Type Updates
 
-In `src/lib/shared/di/container-types.ts`, replace `firebaseVideoUploader` with `videoUploader` and `r2PresignClient`.
+In `src/lib/shared/di/container-types.ts`, replace `firebaseVideoUploader` with `videoUploader` and `r2Presigner`.
 
 ### Consumer Updates
 
@@ -457,9 +612,50 @@ All files that reference `firebaseVideoUploader` or `IFirebaseVideoUploader` nee
 | `library-container.ts` | Update dep type from `IFirebaseVideoUploader` to `IVideoUploader` |
 | `LibrarySaveService.ts` | Update import and field type |
 | `VideoUploadSheet.svelte` | `container.items.videoUploader` instead of `container.items.firebaseVideoUploader` |
-| `VideoRecordCoordinator.svelte` | Use DI instead of direct `new FirebaseVideoUploader()` |
+| `VideoRecordCoordinator.svelte` | Remove direct `new FirebaseVideoUploader()`, use DI container (see below) |
 | `create-video-from-upload.ts` | Update import of `VideoUploadResult` to new path |
+| `TrainingDataPersister.ts` | Update `syncToFirebase()` comment referencing `FirebaseVideoUploader` pattern (see below) |
 | `di/index.ts` | Update re-export name |
+
+### VideoRecordCoordinator DI Migration
+
+`VideoRecordCoordinator.svelte` currently creates its own `FirebaseVideoUploader` instance directly:
+
+```typescript
+// CURRENT (line 19, 34, 43):
+import { FirebaseVideoUploader } from "...";
+let uploadService: FirebaseVideoUploader | null = $state(null);
+onMount(() => { uploadService = new FirebaseVideoUploader(); });
+```
+
+This bypasses DI entirely. The migration:
+
+```typescript
+// NEW:
+import { container } from "$lib/shared/di";
+import type { IVideoUploader } from "...";
+
+// In onMount or at top level:
+const uploadService = container.items.videoUploader as IVideoUploader;
+```
+
+Remove the `$state(null)` pattern. The service is stateless and can be resolved from the container immediately. The null-check in `uploadRecording()` (`if (!uploadService)`) can also be removed since the container always returns an instance.
+
+Also update line 173 where `uploadPerformanceVideo` is called with a bare progress callback -- wrap it in the new `UploadOptions` object:
+
+```typescript
+// CURRENT:
+await uploadService.uploadPerformanceVideo(sequenceId, recording.videoBlob!, (progress) => logger.log(`Upload progress: ${progress}%`));
+
+// NEW:
+await uploadService.uploadPerformanceVideo(sequenceId, recording.videoBlob!, { onProgress: (progress) => logger.log(`Upload progress: ${progress}%`) });
+```
+
+And update the destructured result: `uploadResult.storagePath` becomes `uploadResult.key`.
+
+### TrainingDataPersister
+
+`TrainingDataPersister.ts` (at `src/lib/features/skel2tka/services/implementations/TrainingDataPersister.ts`) does not directly import or call `FirebaseVideoUploader`, but its `syncToFirebase()` method (line 169) contains a comment: "Implementation will follow the FirebaseVideoUploader pattern." Update this comment to reference the new `R2VideoUploader` pattern instead. This is a comment-only change, no logic update needed. The training data persister stores to IndexedDB, not to video storage.
 
 ### VideoUploadResult Import Path
 
@@ -559,9 +755,9 @@ Firebase Storage rules for video paths can also be removed, but this is low prio
 
 ## Implementation Order
 
-1. **Cloudflare setup** (manual, ~15 min): Create `tka-videos` bucket, enable public access, configure CORS, create scoped API token
-2. **Cloud Functions** (~2 hours): R2 client module + 7 callable functions + secret configuration + deploy
-3. **Client services** (~3 hours): `IVideoUploader`, `IR2PresignClient`, `R2PresignClient`, `R2VideoUploader`, `UploadController`
+1. **Cloudflare setup** (manual, ~15 min): Create `tka-videos` bucket, enable public access, configure CORS, set `AbortIncompleteMultipartUpload` lifecycle rule (1 day), create scoped API token
+2. **Cloud Functions** (~2 hours): R2 client module + 8 callable functions (including `r2DeleteByPrefix`) + secret configuration + deploy
+3. **Client services** (~3 hours): `IVideoUploader`, `IR2Presigner`, `R2Presigner`, `R2VideoUploader`, `UploadAbortManager`
 4. **DI wiring** (~30 min): Container updates, consumer updates, remove old files
 5. **Testing** (~1 hour): Upload a video end-to-end, verify progress bar, cancel mid-upload, resume after page reload, verify public URL works, test on mobile
 
