@@ -5,6 +5,7 @@
   import EndpointEditor from "../components/EndpointEditor.svelte";
   import OcclusionMarker from "../components/OcclusionMarker.svelte";
   import TrainingDataPanel from "../components/TrainingDataPanel.svelte";
+  import DetectorEvaluator from "../components/DetectorEvaluator.svelte";
 
   const { state: trailsState } = getVideoTrailsContext();
 
@@ -71,7 +72,8 @@
         {selectedPropIndex}
         {selectedTipIndex}
       />
-      <TrainingDataPanel />
+      <TrainingDataPanel {videoElement} />
+      <DetectorEvaluator {videoElement} />
     </div>
 
     <div class="scrubber-row">
