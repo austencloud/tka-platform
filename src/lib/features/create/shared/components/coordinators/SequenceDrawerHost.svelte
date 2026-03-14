@@ -430,7 +430,7 @@
     if (hasMotionData(sequence)) return ensureWordPopulated(sequence);
 
     // Try to hydrate from gallery
-    const galleryId = sequence.word || sequence.name;
+    const galleryId = sequence.word || sequence.id;
     if (galleryId) {
       const hydrated = await sequenceService.getSequence(galleryId);
       if (hydrated && hasMotionData(hydrated)) return ensureWordPopulated(hydrated);
