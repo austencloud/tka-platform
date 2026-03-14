@@ -51,7 +51,10 @@
   $effect(() => {
     if (trailsState.isPlaying && videoElement) {
       videoElement.playbackRate = trailsState.playbackSpeed;
-      videoElement.play();
+      // Guard against play() racing with source loading — catch AbortError silently
+      if (videoElement.readyState >= 2) {
+        videoElement.play().catch(() => {});
+      }
       startDetectionLoop();
     } else if (videoElement) {
       videoElement.pause();
