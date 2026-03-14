@@ -77,6 +77,15 @@
       offscreenCanvas.height = canvasHeight;
       offscreenCtx = offscreenCanvas.getContext("2d", { willReadFrequently: true });
     };
+
+    // When the video has buffered enough to play, start playback if the user
+    // already pressed play before the video was ready (readyState guard in the
+    // playback effect would have skipped the initial play() call).
+    videoElement.oncanplay = () => {
+      if (trailsState.isPlaying && videoElement && videoElement.paused) {
+        videoElement.play().catch(() => {});
+      }
+    };
   });
 
   // ---------------------------------------------------------------------------
@@ -176,7 +185,7 @@
 
     // 1. Draw video frame to offscreen for detection AND to visible canvas
     offscreenCtx.drawImage(videoElement, 0, 0, canvasWidth, canvasHeight);
-    canvasStack?.drawVideoFrame();
+    canvasStack?.drawVideoFrame(videoElement);
 
     // 2. Run endpoint detection
     const frameData = offscreenCtx.getImageData(0, 0, canvasWidth, canvasHeight);

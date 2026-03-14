@@ -15,11 +15,12 @@
   let trailCanvas: HTMLCanvasElement;
   let rendererContainer: HTMLDivElement;
 
-  export function drawVideoFrame(): void {
-    if (!videoCanvas || !videoElement || width === 0) return;
+  export function drawVideoFrame(video?: HTMLVideoElement): void {
+    const el = video ?? videoElement;
+    if (!videoCanvas || !el || width === 0) return;
     const ctx = videoCanvas.getContext("2d");
     if (!ctx) return;
-    ctx.drawImage(videoElement, 0, 0, width, height);
+    ctx.drawImage(el, 0, 0, width, height);
   }
 
   export function getTrailCanvas(): HTMLCanvasElement | null {
