@@ -49,10 +49,18 @@
 
   // ---------------------------------------------------------------------------
   // Video source loading
+  //
+  // Key principle: set ALL event handlers BEFORE setting src, because blob
+  // URLs can fire loadedmetadata/canplay very quickly after src assignment.
   // ---------------------------------------------------------------------------
+
+  let videoReady = $state(false);
 
   $effect(() => {
     if (!trailsState.source?.url) return;
+
+    // Reset readiness flag for new source
+    videoReady = false;
 
     if (!videoElement) {
       videoElement = document.createElement("video");
@@ -61,7 +69,7 @@
       videoElement.muted = true;
     }
 
-    videoElement.src = trailsState.source.url;
+    // Register handlers BEFORE setting src
     videoElement.onloadedmetadata = () => {
       if (!videoElement) return;
       canvasWidth = videoElement.videoWidth;
@@ -78,14 +86,17 @@
       offscreenCtx = offscreenCanvas.getContext("2d", { willReadFrequently: true });
     };
 
-    // When the video has buffered enough to play, start playback if the user
-    // already pressed play before the video was ready (readyState guard in the
-    // playback effect would have skipped the initial play() call).
-    videoElement.oncanplay = () => {
-      if (trailsState.isPlaying && videoElement && videoElement.paused) {
+    videoElement.oncanplaythrough = () => {
+      videoReady = true;
+      // If user already pressed play, start now
+      if (trailsState.isPlaying && videoElement?.paused) {
         videoElement.play().catch(() => {});
       }
     };
+
+    // NOW set src (triggers loading)
+    videoElement.src = trailsState.source.url;
+    videoElement.load();
   });
 
   // ---------------------------------------------------------------------------
@@ -93,11 +104,13 @@
   // ---------------------------------------------------------------------------
 
   $effect(() => {
-    if (trailsState.isPlaying && videoElement) {
+    if (trailsState.isPlaying && videoElement && videoReady) {
       videoElement.playbackRate = trailsState.playbackSpeed;
-      if (videoElement.readyState >= 2) {
-        videoElement.play().catch(() => {});
-      }
+      videoElement.play().catch(() => {});
+      startDetectionLoop();
+    } else if (trailsState.isPlaying && videoElement && !videoReady) {
+      // Video not ready yet — start detection loop anyway so it kicks in
+      // as soon as videoReady becomes true (the effect will re-run)
       startDetectionLoop();
     } else if (videoElement) {
       videoElement.pause();
@@ -106,7 +119,7 @@
   });
 
   $effect(() => {
-    if (!trailsState.isPlaying && videoElement && trailsState.source) {
+    if (!trailsState.isPlaying && videoElement && trailsState.source && videoReady) {
       const time = trailsState.currentFrame / trailsState.source.fps;
       if (Math.abs(videoElement.currentTime - time) > 0.01) {
         videoElement.currentTime = time;
@@ -181,20 +194,24 @@
   }
 
   function processCurrentFrame(): void {
-    if (!videoElement || !offscreenCtx || !offscreenCanvas) return;
+    if (!videoElement || videoElement.readyState < 2) return;
 
-    // 1. Draw video frame to offscreen for detection AND to visible canvas
-    offscreenCtx.drawImage(videoElement, 0, 0, canvasWidth, canvasHeight);
+    // Always draw the current video frame to the visible canvas
     canvasStack?.drawVideoFrame(videoElement);
 
-    // 2. Run endpoint detection
+    // Update frame counter from video's current time
+    const frameIndex = Math.round(videoElement.currentTime * (trailsState.source?.fps ?? 30));
+    trailsState.setCurrentFrame(frameIndex);
+
+    // Run detection only if offscreen canvas is ready
+    if (!offscreenCtx || !offscreenCanvas) return;
+
+    // Draw to offscreen for pixel-level detection
+    offscreenCtx.drawImage(videoElement, 0, 0, canvasWidth, canvasHeight);
     const frameData = offscreenCtx.getImageData(0, 0, canvasWidth, canvasHeight);
     const detector = getDetector();
     const endpoints = detector.detect(frameData, trailsState.detectionConfig);
-
-    const frameIndex = Math.round(videoElement.currentTime * (trailsState.source?.fps ?? 30));
     trailsState.storeFrameDetection(frameIndex, endpoints);
-    trailsState.setCurrentFrame(frameIndex);
 
     const currentTime = performance.now();
     const effects = trailsState.effectConfig;
