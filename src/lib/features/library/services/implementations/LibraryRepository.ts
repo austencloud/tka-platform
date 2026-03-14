@@ -322,6 +322,30 @@ export class LibraryRepository implements ILibraryRepository {
       );
     }
 
+    // Duplicate detection: prevent saving a sequence with identical motion content.
+    // This catches the case where a user saves the same sequence twice — the word
+    // matches AND the motion data is byte-for-byte identical. Without this check,
+    // you'd end up with two entries in the Variations pane that look identical.
+    if (isNewSequence && incomingHash) {
+      const sequencesRef = collection(
+        firestore,
+        getUserSequencesPath(userId)
+      );
+      const duplicateQuery = query(
+        sequencesRef,
+        where("contentHash", "==", incomingHash),
+        firestoreLimit(1)
+      );
+      const duplicateSnapshot = await getDocs(duplicateQuery);
+      if (!duplicateSnapshot.empty) {
+        throw new LibraryError(
+          "This exact sequence is already in your library",
+          "ALREADY_EXISTS",
+          duplicateSnapshot.docs[0]!.id
+        );
+      }
+    }
+
     // Migrate tags to sequenceTags if needed
     if (!libSeq.sequenceTags || libSeq.sequenceTags.length === 0) {
       libSeq = {
