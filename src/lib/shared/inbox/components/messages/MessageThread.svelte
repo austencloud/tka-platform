@@ -178,7 +178,7 @@
   <TypingIndicator typingUsers={inboxState.typingUsers} />
 
   <!-- Composer -->
-  {#if conversation}
+  {#if conversation?.id}
     <MessageComposer conversationId={conversation.id} />
   {/if}
 </div>

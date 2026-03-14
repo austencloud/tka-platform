@@ -156,6 +156,7 @@
         sequenceId: payload.sequenceId,
         sequenceWord: payload.sequenceWord,
       };
+      if (payload.sequenceCloudWord) metadata.sequenceCloudWord = payload.sequenceCloudWord;
       if (payload.sequenceName) metadata.sequenceName = payload.sequenceName;
       if (payload.sequenceThumbnail) metadata.sequenceThumbnail = payload.sequenceThumbnail;
       if (payload.sequenceAuthor) metadata.sequenceAuthor = payload.sequenceAuthor;

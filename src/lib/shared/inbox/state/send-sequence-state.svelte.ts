@@ -63,6 +63,7 @@ export function buildSequenceSharePayload(seq: {
   return {
     sequenceId: seq.id,
     sequenceWord: seq.displayName || seq.intendedWord || seq.word || "",
+    sequenceCloudWord: seq.word || undefined,
     sequenceName: seq.name || undefined,
     sequenceThumbnail: seq.thumbnails?.[0] || seq.thumbnailUrl || undefined,
     sequenceAuthor: seq.ownerDisplayName || seq.author || undefined,
