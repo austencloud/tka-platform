@@ -18,7 +18,7 @@
    */
 
   import { page } from "$app/stores";
-  import { goto } from "$app/navigation";
+  import { goto, pushState } from "$app/navigation";
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
   import { saveSequenceRouteHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
@@ -71,7 +71,7 @@
           skipHistoryPush: true,
         });
         await goto("/browse/gallery", { replaceState: true });
-        window.history.pushState({ sequenceOverlay: true }, "");
+        pushState('', { sequenceOverlay: true });
         return;
       }
 

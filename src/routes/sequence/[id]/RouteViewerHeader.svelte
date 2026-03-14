@@ -17,6 +17,10 @@
     onDarkModeToggle: () => void;
     /** Callback to open the settings modal */
     onSettingsOpen?: () => void;
+    /** Sequence ID for copy-link */
+    sequenceId?: string;
+    /** Sequence word for copy-link */
+    sequenceWord?: string;
   }
 
   let {
@@ -29,7 +33,22 @@
     onExitEditMode,
     onDarkModeToggle,
     onSettingsOpen,
+    sequenceId,
+    sequenceWord,
   }: Props = $props();
+
+  let copyLinkFeedback = $state(false);
+
+  function handleCopyLink() {
+    if (!sequenceId) return;
+    const base = `${window.location.origin}/sequence/${sequenceId}`;
+    const params = new URLSearchParams();
+    if (sequenceWord) params.set("word", sequenceWord);
+    navigator.clipboard.writeText(params.size > 0 ? `${base}?${params}` : base).then(() => {
+      copyLinkFeedback = true;
+      setTimeout(() => { copyLinkFeedback = false; }, 1500);
+    });
+  }
 </script>
 
 {#if editingPane}
@@ -96,6 +115,15 @@
     </div>
 
     <div class="header-right">
+      <button
+        type="button"
+        class="header-action-btn"
+        onclick={handleCopyLink}
+        aria-label="Copy link to sequence"
+        title="Copy link"
+      >
+        <i class="fas {copyLinkFeedback ? 'fa-check' : 'fa-link'}" aria-hidden="true"></i>
+      </button>
       <button
         type="button"
         class="header-action-btn"

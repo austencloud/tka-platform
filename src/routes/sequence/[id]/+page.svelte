@@ -15,7 +15,7 @@
 -->
 <script lang="ts">
   import { page } from "$app/stores";
-  import { goto } from "$app/navigation";
+  import { goto, pushState, replaceState } from "$app/navigation";
   import { browser } from "$app/environment";
   import { onMount, onDestroy } from "svelte";
   import { fade } from "svelte/transition";
@@ -317,7 +317,7 @@
       // Once MainApplication mounts, SequenceViewerDrawerHost picks up overlay state
       await goto(returnPath, { replaceState: true });
       // Push overlay history entry after navigation completes
-      window.history.pushState({ sequenceOverlay: true }, '');
+      pushState('', { sequenceOverlay: true });
       return;
     }
 
@@ -434,20 +434,29 @@
   const animationVisibility = getAnimationVisibilityManager();
 
   function getActiveEffects(): ActiveEffect[] {
-    const effects: ActiveEffect[] = [];
-    if (animationVisibility.getVisibility("fireEffect")) {
-      effects.push({ id: "fire", label: "Fire", icon: "fas fa-fire", active: true });
+    return [
+      { id: "fire", label: "Fire", icon: "fas fa-fire", active: animationVisibility.getVisibility("fireEffect") },
+      { id: "led", label: "LED", icon: "fas fa-lightbulb", active: animationVisibility.getVisibility("ledEffect") },
+      { id: "trails", label: "Trails", icon: "fas fa-wind", active: animationVisibility.getTrailStyle() !== "off" },
+      { id: "charcoal", label: "Charcoal", icon: "fas fa-smog", active: animationVisibility.isCharcoalEffectEnabled() },
+    ];
+  }
+
+  function handleExportEffectToggle(id: string, active: boolean) {
+    switch (id) {
+      case "fire":
+        animationVisibility.setFireEffect(active);
+        break;
+      case "led":
+        animationVisibility.setLedEffect(active);
+        break;
+      case "trails":
+        animationVisibility.setTrailStyle(active ? "on" : "off");
+        break;
+      case "charcoal":
+        animationVisibility.setCharcoalEffect(active);
+        break;
     }
-    if (animationVisibility.getVisibility("ledEffect")) {
-      effects.push({ id: "led", label: "LED", icon: "fas fa-lightbulb", active: true });
-    }
-    if (animationVisibility.getTrailStyle() !== "off") {
-      effects.push({ id: "trails", label: "Trails", icon: "fas fa-wind", active: true });
-    }
-    if (animationVisibility.isCharcoalEffectEnabled()) {
-      effects.push({ id: "charcoal", label: "Charcoal", icon: "fas fa-smog", active: true });
-    }
-    return effects;
   }
 
   // ============================================================================
@@ -458,7 +467,7 @@
     if (!browser) return;
     const url = new URL(window.location.href);
     url.searchParams.set(key, value);
-    window.history.replaceState({}, "", url.toString());
+    replaceState(url.toString(), {});
   }
 </script>
 
@@ -524,6 +533,8 @@
           onExitEditMode={ctx.exitEditMode}
           onDarkModeToggle={ctx.handleUnifiedDarkModeToggle}
           onSettingsOpen={() => (settingsModalOpen = true)}
+          sequenceId={sequence?.id}
+          sequenceWord={sequence?.word}
         />
 
         <!-- Main content -->
@@ -635,6 +646,7 @@
                         onBpmChange={ctx.handleBpmChange}
                         onExport={ctx.handleExport}
                         onCancel={ctx.handleCancelExport}
+                        onEffectToggle={handleExportEffectToggle}
                       />
                     {/if}
                   {:else if isImageExportActive}
