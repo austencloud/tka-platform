@@ -32,63 +32,13 @@
     return result;
   });
 
-  // Sorted frame lists for skip navigation
-  let sortedCorrectedFrames = $derived(
-    [...correctedFrameSet].sort((a, b) => a - b),
-  );
-  let sortedLowConfFrames = $derived(
-    [...trailsState.lowConfidenceFrames].sort((a, b) => a - b),
-  );
-
-  function skipTo(
-    direction: "prev" | "next",
-    type: "low-conf" | "corrected",
-  ): void {
-    const frames =
-      type === "low-conf" ? sortedLowConfFrames : sortedCorrectedFrames;
-    const current = trailsState.currentFrame;
-
-    if (direction === "next") {
-      const next = frames.find((f) => f > current);
-      if (next !== undefined) trailsState.setCurrentFrame(next);
-    } else {
-      const prev = [...frames].reverse().find((f) => f < current);
-      if (prev !== undefined) trailsState.setCurrentFrame(prev);
-    }
-  }
-
-  function handleKeydown(e: KeyboardEvent): void {
-    const step = e.shiftKey ? 10 : 1;
-    if (e.key === "ArrowLeft") {
-      e.preventDefault();
-      trailsState.setCurrentFrame(
-        Math.max(0, trailsState.currentFrame - step),
-      );
-    } else if (e.key === "ArrowRight") {
-      e.preventDefault();
-      trailsState.setCurrentFrame(
-        Math.min(trailsState.totalFrames - 1, trailsState.currentFrame + step),
-      );
-    }
-  }
-
   function handleRangeInput(e: Event): void {
     const target = e.target as HTMLInputElement;
     trailsState.setCurrentFrame(Number(target.value));
   }
 </script>
 
-<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-<div class="timeline-scrubber" onkeydown={handleKeydown} tabindex="0">
-  <div class="frame-counter">
-    <span class="frame-label">Frame</span>
-    <span class="frame-value">
-      {trailsState.currentFrame + 1}
-      <span class="frame-separator">/</span>
-      {trailsState.totalFrames}
-    </span>
-  </div>
-
+<div class="timeline-scrubber">
   <div class="scrubber-track">
     <input
       type="range"
@@ -97,6 +47,7 @@
       max={Math.max(0, trailsState.totalFrames - 1)}
       value={trailsState.currentFrame}
       oninput={handleRangeInput}
+      aria-label="Timeline scrubber"
     />
 
     <div class="marker-bar" aria-hidden="true">
@@ -106,50 +57,6 @@
           style="left: {(marker.frame / Math.max(1, trailsState.totalFrames - 1)) * 100}%; background: {marker.color};"
         ></span>
       {/each}
-    </div>
-  </div>
-
-  <div class="skip-controls">
-    <div class="skip-group">
-      <button
-        class="skip-btn"
-        onclick={() => skipTo("prev", "low-conf")}
-        title="Previous low-confidence frame"
-        disabled={sortedLowConfFrames.length === 0}
-      >
-        <i class="fas fa-angle-left" aria-hidden="true"></i>
-        <span class="skip-dot yellow"></span>
-      </button>
-      <button
-        class="skip-btn"
-        onclick={() => skipTo("next", "low-conf")}
-        title="Next low-confidence frame"
-        disabled={sortedLowConfFrames.length === 0}
-      >
-        <span class="skip-dot yellow"></span>
-        <i class="fas fa-angle-right" aria-hidden="true"></i>
-      </button>
-    </div>
-
-    <div class="skip-group">
-      <button
-        class="skip-btn"
-        onclick={() => skipTo("prev", "corrected")}
-        title="Previous corrected frame"
-        disabled={sortedCorrectedFrames.length === 0}
-      >
-        <i class="fas fa-angle-left" aria-hidden="true"></i>
-        <span class="skip-dot red"></span>
-      </button>
-      <button
-        class="skip-btn"
-        onclick={() => skipTo("next", "corrected")}
-        title="Next corrected frame"
-        disabled={sortedCorrectedFrames.length === 0}
-      >
-        <span class="skip-dot red"></span>
-        <i class="fas fa-angle-right" aria-hidden="true"></i>
-      </button>
     </div>
   </div>
 
@@ -164,135 +71,58 @@
   .timeline-scrubber {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    padding: 10px 12px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 8px;
-  }
-
-  .timeline-scrubber:focus-visible {
-    outline: 2px solid var(--theme-accent, #f43f5e);
-    outline-offset: 2px;
-  }
-
-  .frame-counter {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-  }
-
-  .frame-value {
-    font-variant-numeric: tabular-nums;
-    color: var(--theme-text, #ffffff);
-    font-weight: 500;
-  }
-
-  .frame-separator {
-    opacity: 0.4;
-    margin: 0 1px;
+    gap: 3px;
   }
 
   .scrubber-track {
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 1px;
   }
 
   .range-input {
     width: 100%;
-    height: 20px;
+    height: 16px;
     cursor: pointer;
     accent-color: var(--theme-accent, #f43f5e);
   }
 
   .marker-bar {
     position: relative;
-    height: 6px;
+    height: 5px;
     margin: 0 8px;
-    border-radius: 3px;
-    background: rgba(255, 255, 255, 0.04);
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.03);
   }
 
   .marker-dot {
     position: absolute;
     top: 1px;
-    width: 4px;
-    height: 4px;
+    width: 3px;
+    height: 3px;
     border-radius: 50%;
     transform: translateX(-50%);
   }
 
-  .skip-controls {
-    display: flex;
-    gap: 12px;
-    justify-content: center;
-  }
-
-  .skip-group {
-    display: flex;
-    gap: 2px;
-  }
-
-  .skip-btn {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    padding: 4px 8px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 4px;
-    background: transparent;
-    color: var(--theme-text, #ffffff);
-    font-size: var(--font-size-compact, 12px);
-    cursor: pointer;
-    transition: border-color 0.15s;
-  }
-
-  .skip-btn:hover:not(:disabled) {
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-  }
-
-  .skip-btn:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-  }
-
-  .skip-dot {
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-  }
-
-  .skip-dot.yellow {
-    background: #eab308;
-  }
-
-  .skip-dot.red {
-    background: #ef4444;
-  }
-
   .legend {
     display: flex;
-    gap: 12px;
+    gap: 10px;
     justify-content: center;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    font-size: 11px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
   }
 
   .legend-item {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 3px;
   }
 
   .legend-dot {
     display: inline-block;
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
     border-radius: 50%;
   }
 
