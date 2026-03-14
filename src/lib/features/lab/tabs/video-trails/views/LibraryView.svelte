@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getVideoTrailsContext } from "../context/video-trails-context";
 
-  const { state } = getVideoTrailsContext();
+  const { state: trailsState } = getVideoTrailsContext();
 </script>
 
 <div class="library-placeholder">

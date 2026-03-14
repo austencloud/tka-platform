@@ -9,7 +9,7 @@
 
   let { videoElement, width, height }: Props = $props();
 
-  const { state } = getVideoTrailsContext();
+  const { state: trailsState } = getVideoTrailsContext();
 
   let canvas: HTMLCanvasElement;
 
@@ -21,7 +21,7 @@
     ctx.clearRect(0, 0, width, height);
     ctx.drawImage(videoElement, 0, 0, width, height);
 
-    const endpoints = state.currentEndpoints;
+    const endpoints = trailsState.currentEndpoints;
     for (const ep of endpoints) {
       const radius = 8;
       ctx.beginPath();

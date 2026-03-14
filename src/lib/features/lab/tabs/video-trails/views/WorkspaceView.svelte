@@ -11,7 +11,7 @@
   import EffectsControlPanel from "../components/EffectsControlPanel.svelte";
   import ExportPanel from "../components/ExportPanel.svelte";
 
-  const { state } = getVideoTrailsContext();
+  const { state: trailsState } = getVideoTrailsContext();
 
   let videoElement: HTMLVideoElement | null = $state(null);
   let offscreenCanvas: HTMLCanvasElement | null = null;
@@ -21,7 +21,7 @@
   let canvasHeight = $state(360);
 
   $effect(() => {
-    if (!state.source?.url) return;
+    if (!trailsState.source?.url) return;
 
     if (!videoElement) {
       videoElement = document.createElement("video");
@@ -30,12 +30,12 @@
       videoElement.muted = true;
     }
 
-    videoElement.src = state.source.url;
+    videoElement.src = trailsState.source.url;
     videoElement.onloadedmetadata = () => {
       if (!videoElement) return;
       canvasWidth = videoElement.videoWidth;
       canvasHeight = videoElement.videoHeight;
-      state.updateSourceMetadata({
+      trailsState.updateSourceMetadata({
         duration: videoElement.duration,
         width: videoElement.videoWidth,
         height: videoElement.videoHeight,
@@ -49,8 +49,8 @@
   });
 
   $effect(() => {
-    if (state.isPlaying && videoElement) {
-      videoElement.playbackRate = state.playbackSpeed;
+    if (trailsState.isPlaying && videoElement) {
+      videoElement.playbackRate = trailsState.playbackSpeed;
       videoElement.play();
       startDetectionLoop();
     } else if (videoElement) {
@@ -60,8 +60,8 @@
   });
 
   $effect(() => {
-    if (!state.isPlaying && videoElement && state.source) {
-      const time = state.currentFrame / state.source.fps;
+    if (!trailsState.isPlaying && videoElement && trailsState.source) {
+      const time = trailsState.currentFrame / trailsState.source.fps;
       if (Math.abs(videoElement.currentTime - time) > 0.01) {
         videoElement.currentTime = time;
       }
@@ -69,7 +69,7 @@
   });
 
   function getDetector(): IEndpointDetector {
-    const reg = DETECTOR_REGISTRY.find((r) => r.id === state.activeDetectorId);
+    const reg = DETECTOR_REGISTRY.find((r) => r.id === trailsState.activeDetectorId);
     const key = reg?.containerKey ?? "ledThresholdDetector";
     return (container.items as Record<string, unknown>)[key] as IEndpointDetector;
   }
@@ -81,11 +81,11 @@
     const frameData = offscreenCtx.getImageData(0, 0, canvasWidth, canvasHeight);
 
     const detector = getDetector();
-    const endpoints = detector.detect(frameData, state.detectionConfig);
+    const endpoints = detector.detect(frameData, trailsState.detectionConfig);
 
-    const frameIndex = Math.round(videoElement.currentTime * (state.source?.fps ?? 30));
-    state.storeFrameDetection(frameIndex, endpoints);
-    state.setCurrentFrame(frameIndex);
+    const frameIndex = Math.round(videoElement.currentTime * (trailsState.source?.fps ?? 30));
+    trailsState.storeFrameDetection(frameIndex, endpoints);
+    trailsState.setCurrentFrame(frameIndex);
   }
 
   function startDetectionLoop(): void {
@@ -108,13 +108,13 @@
   async function handleExport(config: ExportConfig): Promise<void> {
     if (!videoElement) return;
     const exporter = container.items.videoTrailsExporter;
-    state.setExportState({ phase: "preparing" });
+    trailsState.setExportState({ phase: "preparing" });
 
     try {
-      const blob = await exporter.export(videoElement, [], config, (s) => state.setExportState(s));
-      state.setExportState({ phase: "complete", blob });
+      const blob = await exporter.export(videoElement, [], config, (s) => trailsState.setExportState(s));
+      trailsState.setExportState({ phase: "complete", blob });
     } catch (err) {
-      state.setExportState({ phase: "error", error: err instanceof Error ? err.message : String(err) });
+      trailsState.setExportState({ phase: "error", error: err instanceof Error ? err.message : String(err) });
     }
   }
 
@@ -129,7 +129,7 @@
 
 <div class="workspace">
   <div class="main-area">
-    {#if !state.source}
+    {#if !trailsState.source}
       <VideoSourcePanel />
     {:else}
       <div class="canvas-area">
@@ -140,7 +140,7 @@
   </div>
 
   <aside class="sidebar">
-    {#if state.source}
+    {#if trailsState.source}
       <VideoSourcePanel />
     {/if}
     <EffectsControlPanel />

@@ -2,7 +2,7 @@
   import { getVideoTrailsContext } from "../context/video-trails-context";
   import type { ExportConfig } from "../domain/types";
 
-  const { state } = getVideoTrailsContext();
+  const { state: trailsState } = getVideoTrailsContext();
 
   let format = $state<"mp4" | "webm">("webm");
   let resolution = $state<"720p" | "1080p" | "original">("1080p");
@@ -16,21 +16,21 @@
   function getResolution(): { width: number; height: number } {
     if (resolution === "720p") return { width: 1280, height: 720 };
     if (resolution === "1080p") return { width: 1920, height: 1080 };
-    return state.source?.resolution ?? { width: 1920, height: 1080 };
+    return trailsState.source?.resolution ?? { width: 1920, height: 1080 };
   }
 
   function handleExport() {
     onExport({
       format,
       resolution: getResolution(),
-      fps: state.source?.fps ?? 30,
+      fps: trailsState.source?.fps ?? 30,
       bitrate: resolution === "1080p" ? 8_000_000 : 4_000_000,
     });
   }
 
   function handleDownload() {
-    if (state.exportState.phase !== "complete" || !state.exportState.blob) return;
-    const url = URL.createObjectURL(state.exportState.blob);
+    if (trailsState.exportState.phase !== "complete" || !trailsState.exportState.blob) return;
+    const url = URL.createObjectURL(trailsState.exportState.blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = `video-trails-export.${format}`;
@@ -61,29 +61,29 @@
     </label>
   </div>
 
-  {#if state.exportState.phase === "idle" || state.exportState.phase === "complete" || state.exportState.phase === "error"}
-    <button class="export-btn" onclick={handleExport} disabled={!state.source}>
+  {#if trailsState.exportState.phase === "idle" || trailsState.exportState.phase === "complete" || trailsState.exportState.phase === "error"}
+    <button class="export-btn" onclick={handleExport} disabled={!trailsState.source}>
       <i class="fas fa-download" aria-hidden="true"></i>
       Export Video
     </button>
   {:else}
     <div class="progress-section">
       <div class="progress-bar">
-        <div class="progress-fill" style="width: {(state.exportState.progress ?? 0) * 100}%"></div>
+        <div class="progress-fill" style="width: {(trailsState.exportState.progress ?? 0) * 100}%"></div>
       </div>
-      <span class="progress-label">{state.exportState.phase}... {Math.round((state.exportState.progress ?? 0) * 100)}%</span>
+      <span class="progress-label">{trailsState.exportState.phase}... {Math.round((trailsState.exportState.progress ?? 0) * 100)}%</span>
     </div>
   {/if}
 
-  {#if state.exportState.phase === "complete"}
+  {#if trailsState.exportState.phase === "complete"}
     <button class="download-btn" onclick={handleDownload}>
       <i class="fas fa-file-video" aria-hidden="true"></i>
       Download
     </button>
   {/if}
 
-  {#if state.exportState.phase === "error"}
-    <p class="error-text">{state.exportState.error}</p>
+  {#if trailsState.exportState.phase === "error"}
+    <p class="error-text">{trailsState.exportState.error}</p>
   {/if}
 </div>
 

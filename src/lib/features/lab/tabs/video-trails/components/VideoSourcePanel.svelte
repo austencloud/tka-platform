@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getVideoTrailsContext } from "../context/video-trails-context";
 
-  const { state } = getVideoTrailsContext();
+  const { state: trailsState } = getVideoTrailsContext();
 
   let isDragOver = $state(false);
   let fileInput: HTMLInputElement;
@@ -11,14 +11,14 @@
     isDragOver = false;
     const file = e.dataTransfer?.files[0];
     if (file && file.type.startsWith("video/")) {
-      state.loadVideo(file);
+      trailsState.loadVideo(file);
     }
   }
 
   function handleFileSelect(e: Event) {
     const input = e.target as HTMLInputElement;
     const file = input.files?.[0];
-    if (file) state.loadVideo(file);
+    if (file) trailsState.loadVideo(file);
   }
 </script>
 
@@ -33,12 +33,12 @@
   onclick={() => fileInput?.click()}
   onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") fileInput?.click(); }}
 >
-  {#if state.source}
+  {#if trailsState.source}
     <div class="source-info">
       <i class="fas fa-film" aria-hidden="true"></i>
-      <span class="file-name">{state.source.originalFileName ?? "Video loaded"}</span>
-      {#if state.source.duration > 0}
-        <span class="duration">{state.source.duration.toFixed(1)}s</span>
+      <span class="file-name">{trailsState.source.originalFileName ?? "Video loaded"}</span>
+      {#if trailsState.source.duration > 0}
+        <span class="duration">{trailsState.source.duration.toFixed(1)}s</span>
       {/if}
     </div>
   {:else}
