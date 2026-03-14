@@ -2,13 +2,18 @@
   import { getVideoTrailsContext } from "../context/video-trails-context";
   import type { DetectedEndpoint } from "../domain/types";
 
+  type ToolMode = "select" | "place" | "occlude";
+
   interface Props {
     videoElement: HTMLVideoElement | null;
     width: number;
     height: number;
+    toolMode: ToolMode;
+    selectedIdx: number;
+    onSelectEndpoint: (idx: number) => void;
   }
 
-  const { videoElement, width, height }: Props = $props();
+  const { videoElement, width, height, toolMode, selectedIdx, onSelectEndpoint }: Props = $props();
   const { state: trailsState } = getVideoTrailsContext();
 
   const PROP_COLORS = ["#4a90d9", "#d94a4a"] as const;
@@ -16,12 +21,14 @@
   const HIT_RADIUS = 16;
 
   let canvasEl: HTMLCanvasElement | undefined = $state();
-  let selectedIdx = $state(-1);
 
   // Drag state
   let dragging = $state(false);
   let dragIdx = $state(-1);
   let dragPos = $state<{ x: number; y: number } | null>(null);
+
+  // Placement popover state
+  let placementPopover = $state<{ x: number; y: number; canvasX: number; canvasY: number } | null>(null);
 
   // Redraw whenever frame, endpoints, drag, or selection changes
   $effect(() => {
@@ -32,6 +39,7 @@
     const _w = width;
     const _h = height;
     const _video = videoElement;
+    const _mode = toolMode;
 
     draw();
   });
@@ -61,6 +69,8 @@
 
       drawEndpoint(ctx, x, y, ep, isSelected);
     }
+
+    // Draw crosshair cursor in place mode (handled via CSS cursor instead)
   }
 
   function drawEndpoint(
@@ -73,22 +83,33 @@
     const color = PROP_COLORS[ep.propIndex];
     const radius = ENDPOINT_RADIUS;
 
+    // Check if this endpoint is occluded
+    const frameCorrectionList = trailsState.corrections[trailsState.currentFrame] ?? [];
+    const correction = frameCorrectionList.find(
+      (c) => c.propIndex === ep.propIndex && c.tipIndex === ep.tipIndex,
+    );
+    const isOccluded = correction?.status === "occluded";
+
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, Math.PI * 2);
 
-    if (ep.confidence > 0.8) {
-      // High confidence: solid fill
+    if (isOccluded) {
+      // Occluded: dashed outline
+      ctx.setLineDash([3, 3]);
+      ctx.strokeStyle = color + "80";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.setLineDash([]);
+    } else if (ep.confidence > 0.8) {
       ctx.fillStyle = color;
       ctx.fill();
     } else if (ep.confidence > 0.4) {
-      // Medium confidence: half-opacity fill
       ctx.fillStyle = color + "80";
       ctx.fill();
       ctx.strokeStyle = color;
       ctx.lineWidth = 1.5;
       ctx.stroke();
     } else {
-      // Low confidence: outline only
       ctx.strokeStyle = color;
       ctx.lineWidth = 2;
       ctx.stroke();
@@ -103,6 +124,15 @@
       ctx.stroke();
     }
 
+    // Corrected indicator (small checkmark-colored ring)
+    if (correction?.status === "corrected") {
+      ctx.beginPath();
+      ctx.arc(x, y, radius + 2, 0, Math.PI * 2);
+      ctx.strokeStyle = "#22c55e";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
     // Tip index label
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 9px sans-serif";
@@ -111,12 +141,8 @@
     ctx.fillText(String(ep.tipIndex), x, y);
   }
 
-  function findEndpointAtPosition(
-    px: number,
-    py: number,
-  ): number {
+  function findEndpointAtPosition(px: number, py: number): number {
     const endpoints = trailsState.currentEndpoints;
-    // Search in reverse so topmost (last drawn) is hit first
     for (let i = endpoints.length - 1; i >= 0; i--) {
       const ep = endpoints[i]!;
       const dx = px - ep.x;
@@ -135,18 +161,44 @@
     };
   }
 
-  function handlePointerDown(e: PointerEvent): void {
-    const pos = canvasCoords(e);
-    const idx = findEndpointAtPosition(pos.x, pos.y);
+  function screenCoordsFromCanvas(canvasX: number, canvasY: number): { x: number; y: number } {
+    if (!canvasEl) return { x: 0, y: 0 };
+    const rect = canvasEl.getBoundingClientRect();
+    return {
+      x: rect.left + (canvasX / width) * rect.width,
+      y: rect.top + (canvasY / height) * rect.height,
+    };
+  }
 
-    if (idx >= 0) {
-      selectedIdx = idx;
-      dragging = true;
-      dragIdx = idx;
-      dragPos = pos;
-      canvasEl?.setPointerCapture(e.pointerId);
-    } else {
-      selectedIdx = -1;
+  function handlePointerDown(e: PointerEvent): void {
+    // Close any open placement popover on new interactions
+    placementPopover = null;
+
+    const pos = canvasCoords(e);
+
+    if (toolMode === "select") {
+      const idx = findEndpointAtPosition(pos.x, pos.y);
+      if (idx >= 0) {
+        onSelectEndpoint(idx);
+        dragging = true;
+        dragIdx = idx;
+        dragPos = pos;
+        canvasEl?.setPointerCapture(e.pointerId);
+      } else {
+        onSelectEndpoint(-1);
+      }
+    } else if (toolMode === "place") {
+      // Show placement popover at click position
+      const screenPos = screenCoordsFromCanvas(pos.x, pos.y);
+      placementPopover = { x: screenPos.x, y: screenPos.y, canvasX: pos.x, canvasY: pos.y };
+    } else if (toolMode === "occlude") {
+      const idx = findEndpointAtPosition(pos.x, pos.y);
+      if (idx >= 0) {
+        const ep = trailsState.currentEndpoints[idx];
+        if (ep) {
+          trailsState.markOccluded(trailsState.currentFrame, ep.propIndex, ep.tipIndex);
+        }
+      }
     }
   }
 
@@ -180,24 +232,46 @@
     dragPos = null;
   }
 
+  function handlePlacementSelect(propIndex: 0 | 1, tipIndex: number): void {
+    if (!placementPopover) return;
+    trailsState.correctEndpoint(trailsState.currentFrame, {
+      propIndex,
+      tipIndex,
+      detected: null,
+      corrected: { x: placementPopover.canvasX, y: placementPopover.canvasY },
+      status: "corrected",
+    });
+    placementPopover = null;
+  }
+
   function handleKeydown(e: KeyboardEvent): void {
+    // Escape closes placement popover
+    if (e.key === "Escape") {
+      placementPopover = null;
+      return;
+    }
+
     const endpoints = trailsState.currentEndpoints;
     if (endpoints.length === 0) return;
 
     if (e.key === "Tab") {
       e.preventDefault();
       if (endpoints.length > 0) {
-        selectedIdx = (selectedIdx + 1) % endpoints.length;
+        onSelectEndpoint((selectedIdx + 1) % endpoints.length);
       }
       return;
     }
 
     if (selectedIdx < 0 || selectedIdx >= endpoints.length) return;
     const ep = endpoints[selectedIdx]!;
-
     const nudge = e.shiftKey ? 5 : 1;
 
-    if (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "ArrowDown") {
+    if (
+      e.key === "ArrowLeft" ||
+      e.key === "ArrowRight" ||
+      e.key === "ArrowUp" ||
+      e.key === "ArrowDown"
+    ) {
       e.preventDefault();
       let dx = 0;
       let dy = 0;
@@ -218,17 +292,12 @@
 
     if (e.key === "o" || e.key === "O") {
       e.preventDefault();
-      trailsState.markOccluded(
-        trailsState.currentFrame,
-        ep.propIndex,
-        ep.tipIndex,
-      );
+      trailsState.markOccluded(trailsState.currentFrame, ep.propIndex, ep.tipIndex);
       return;
     }
 
     if (e.key === "Enter") {
       e.preventDefault();
-      // Accept current endpoint and advance to next frame
       trailsState.correctEndpoint(trailsState.currentFrame, {
         propIndex: ep.propIndex,
         tipIndex: ep.tipIndex,
@@ -241,6 +310,10 @@
       }
     }
   }
+
+  let cursorClass = $derived(
+    toolMode === "place" ? "cursor-crosshair" : toolMode === "occlude" ? "cursor-occlude" : "",
+  );
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
@@ -255,24 +328,64 @@
     bind:this={canvasEl}
     {width}
     {height}
+    class={cursorClass}
     onpointerdown={handlePointerDown}
     onpointermove={handlePointerMove}
     onpointerup={handlePointerUp}
   ></canvas>
 
-  <div class="editor-hints">
-    <span class="hint">Tab: cycle</span>
-    <span class="hint">Arrows: nudge</span>
-    <span class="hint">O: occluded</span>
-    <span class="hint">Enter: accept + next</span>
-  </div>
+  <!-- Placement popover -->
+  {#if placementPopover}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="placement-backdrop"
+      onclick={() => (placementPopover = null)}
+      onkeydown={(e) => e.key === "Escape" && (placementPopover = null)}
+    ></div>
+    <div
+      class="placement-popover"
+      style="left: {placementPopover.x}px; top: {placementPopover.y}px;"
+    >
+      <div class="popover-title">Place endpoint</div>
+      <button
+        class="popover-option blue"
+        onclick={() => handlePlacementSelect(0, 0)}
+      >
+        <span class="pop-dot" style="background: #4a90d9"></span>
+        Blue tip 0
+      </button>
+      <button
+        class="popover-option blue"
+        onclick={() => handlePlacementSelect(0, 1)}
+      >
+        <span class="pop-dot" style="background: #4a90d9"></span>
+        Blue tip 1
+      </button>
+      <button
+        class="popover-option red"
+        onclick={() => handlePlacementSelect(1, 0)}
+      >
+        <span class="pop-dot" style="background: #d94a4a"></span>
+        Red tip 0
+      </button>
+      <button
+        class="popover-option red"
+        onclick={() => handlePlacementSelect(1, 1)}
+      >
+        <span class="pop-dot" style="background: #d94a4a"></span>
+        Red tip 1
+      </button>
+    </div>
+  {/if}
 </div>
 
 <style>
   .endpoint-editor {
+    position: relative;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    flex: 1;
+    min-height: 0;
   }
 
   .endpoint-editor:focus-visible {
@@ -289,21 +402,72 @@
     touch-action: none;
     max-width: 100%;
     height: auto;
+    flex: 1;
+    min-height: 0;
+    object-fit: contain;
   }
 
-  .editor-hints {
+  canvas.cursor-crosshair {
+    cursor: crosshair;
+  }
+
+  canvas.cursor-occlude {
+    cursor: not-allowed;
+  }
+
+  /* Placement popover */
+  .placement-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+  }
+
+  .placement-popover {
+    position: fixed;
+    z-index: 100;
     display: flex;
-    gap: 10px;
-    justify-content: center;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    min-width: 140px;
+    transform: translate(-50%, 8px);
   }
 
-  .hint {
+  .popover-title {
     font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-    padding: 2px 6px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 3px;
-    white-space: nowrap;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
+    padding: 2px 6px 4px;
+    font-weight: 600;
+  }
+
+  .popover-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 6px 8px;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--theme-text, #ffffff);
+    font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.1s;
+  }
+
+  .popover-option:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .pop-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
   }
 </style>
