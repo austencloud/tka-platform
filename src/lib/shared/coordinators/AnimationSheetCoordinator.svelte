@@ -409,7 +409,7 @@
     }
 
     // Try to load from gallery using word/name (gallery sequences)
-    const galleryId = sequence.word || sequence.name;
+    const galleryId = sequence.word || sequence.id;
     if (galleryId) {
       try {
         const loaded = await loader.loadFullSequenceData(galleryId);

@@ -14,6 +14,7 @@ declare global {
     interface PageState {
       moduleId?: string;
       sectionId?: string;
+      sequenceOverlay?: boolean;
     }
     // interface Platform {}
   }
