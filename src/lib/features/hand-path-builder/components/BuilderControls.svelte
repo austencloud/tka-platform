@@ -1,0 +1,308 @@
+<!--
+  BuilderControls.svelte - Hand switcher, undo, clear, save, and phase controls
+
+  Guides the user through the three phases:
+  - Blue: tap locations, then "Next Hand" when done (min 2)
+  - Red: tap locations to match blue length, then "Complete"
+  - Complete: shows both path names, offers save
+
+  Save calls HandPathFactory + HandPathRepository to persist both paths.
+-->
+<script lang="ts">
+  import { getBuilderContext } from "../context/builder-context";
+  import { container } from "$lib/shared/di";
+  import { handPathRepository } from "$lib/shared/foundation/services/implementations/HandPathRepository";
+  import type { HandPathData } from "$lib/shared/foundation/domain/models/HandPathData";
+
+  const builder = getBuilderContext();
+
+  let saving = $state(false);
+  let saveError = $state<string | null>(null);
+  let savedBlue = $state<HandPathData | null>(null);
+  let savedRed = $state<HandPathData | null>(null);
+
+  // Phase instruction copy
+  const instruction = $derived.by(() => {
+    if (builder.phase === "blue") {
+      if (builder.blueLocations.length === 0) return "Tap grid points to draw the blue hand path.";
+      if (builder.blueLocations.length === 1) return "Tap at least one more point, then switch to red.";
+      return `${builder.blueLocations.length} points — tap "Next Hand" when ready.`;
+    }
+    if (builder.phase === "red") {
+      const remaining = builder.blueLocations.length - builder.redLocations.length;
+      if (builder.redLocations.length === 0) return "Now draw the red hand path.";
+      if (remaining > 0) return `${remaining} more point${remaining > 1 ? "s" : ""} to match blue.`;
+      return `Paths match — tap "Complete" to finish.`;
+    }
+    return "Both paths built.";
+  });
+
+  async function handleSave(): Promise<void> {
+    if (builder.phase !== "complete") return;
+    saving = true;
+    saveError = null;
+    savedBlue = null;
+    savedRed = null;
+
+    try {
+      const factory = container.items.handPathFactory;
+
+      const blue = factory.create(builder.blueLocations, {
+        name: builder.bluePathName,
+      });
+      const red = factory.create(builder.redLocations, {
+        name: builder.redPathName,
+      });
+
+      await Promise.all([
+        handPathRepository.save(blue),
+        handPathRepository.save(red),
+      ]);
+
+      savedBlue = blue;
+      savedRed = red;
+    } catch (err) {
+      saveError = err instanceof Error ? err.message : "Save failed.";
+    } finally {
+      saving = false;
+    }
+  }
+</script>
+
+<div class="builder-controls">
+  <!-- Phase instruction -->
+  {#if builder.phase !== "complete"}
+    <p class="instruction">{instruction}</p>
+  {/if}
+
+  <!-- Action buttons -->
+  <div class="button-row">
+    <!-- Undo -->
+    {#if builder.phase !== "complete"}
+      <button
+        class="btn btn-ghost"
+        disabled={!builder.canUndo}
+        onclick={builder.undo}
+        title="Undo last tap"
+        aria-label="Undo last tap"
+      >
+        <i class="fas fa-undo" aria-hidden="true"></i>
+        Undo
+      </button>
+    {/if}
+
+    <!-- Reset -->
+    <button
+      class="btn btn-ghost"
+      onclick={builder.reset}
+      aria-label="Reset all paths"
+    >
+      <i class="fas fa-trash-alt" aria-hidden="true"></i>
+      Reset
+    </button>
+
+    <!-- Phase advance buttons -->
+    {#if builder.phase === "blue"}
+      <button
+        class="btn btn-primary"
+        disabled={!builder.canSwitchToRed}
+        onclick={builder.switchToRed}
+        aria-label="Switch to red hand"
+      >
+        Next Hand
+        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+      </button>
+    {:else if builder.phase === "red"}
+      <button
+        class="btn btn-primary"
+        disabled={!builder.canComplete}
+        onclick={builder.complete}
+        aria-label="Complete both paths"
+      >
+        Complete
+        <i class="fas fa-check" aria-hidden="true"></i>
+      </button>
+    {/if}
+  </div>
+
+  <!-- Complete state: result panel -->
+  {#if builder.phase === "complete"}
+    <div class="result-panel">
+      <div class="result-row">
+        <span class="result-label blue-label">Blue:</span>
+        <code class="result-name">{builder.bluePathName}</code>
+      </div>
+      <div class="result-row">
+        <span class="result-label red-label">Red:</span>
+        <code class="result-name">{builder.redPathName}</code>
+      </div>
+
+      {#if savedBlue && savedRed}
+        <p class="save-success">
+          <i class="fas fa-check-circle" aria-hidden="true"></i>
+          Saved to library.
+        </p>
+      {:else if saveError}
+        <p class="save-error">
+          <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+          {saveError}
+        </p>
+      {/if}
+
+      <div class="button-row">
+        <button
+          class="btn btn-ghost"
+          onclick={builder.reset}
+          aria-label="Build a new path"
+        >
+          <i class="fas fa-plus" aria-hidden="true"></i>
+          New Path
+        </button>
+
+        {#if !savedBlue}
+          <button
+            class="btn btn-primary"
+            disabled={saving}
+            onclick={handleSave}
+            aria-label="Save both hand paths"
+          >
+            {#if saving}
+              <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+              Saving…
+            {:else}
+              <i class="fas fa-save" aria-hidden="true"></i>
+              Save Paths
+            {/if}
+          </button>
+        {/if}
+      </div>
+    </div>
+  {/if}
+</div>
+
+<style>
+  .builder-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .instruction {
+    font-size: var(--font-size-min, 14px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.55));
+    text-align: center;
+    margin: 0;
+  }
+
+  .button-row {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: background 0.15s ease, opacity 0.15s ease, color 0.15s ease;
+  }
+
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #3b82f6);
+    outline-offset: 2px;
+  }
+
+  .btn-ghost {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+  }
+
+  .btn-ghost:not(:disabled):hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--theme-text, #fff);
+  }
+
+  .btn-primary {
+    background: var(--theme-accent, #3b82f6);
+    color: #fff;
+  }
+
+  .btn-primary:not(:disabled):hover {
+    background: color-mix(in srgb, var(--theme-accent, #3b82f6) 80%, white);
+  }
+
+  /* Complete / result panel */
+  .result-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 16px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    border-radius: 12px;
+  }
+
+  .result-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .result-label {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    width: 36px;
+    flex-shrink: 0;
+  }
+
+  .blue-label {
+    color: var(--prop-blue, #2e8bf0);
+  }
+
+  .red-label {
+    color: var(--prop-red, #ed1c24);
+  }
+
+  .result-name {
+    font-family: monospace;
+    font-size: var(--font-size-min, 14px);
+    color: var(--theme-text, #fff);
+    background: rgba(255, 255, 255, 0.06);
+    padding: 3px 8px;
+    border-radius: 5px;
+  }
+
+  .save-success {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--semantic-success, #22c55e);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .save-error {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--semantic-error, #ef4444);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+</style>
