@@ -71,7 +71,7 @@
   function getDetector(): IEndpointDetector {
     const reg = DETECTOR_REGISTRY.find((r) => r.id === trailsState.activeDetectorId);
     const key = reg?.containerKey ?? "ledThresholdDetector";
-    return (container.items as Record<string, unknown>)[key] as IEndpointDetector;
+    return (container.items as unknown as Record<string, unknown>)[key] as IEndpointDetector;
   }
 
   function processCurrentFrame(): void {
