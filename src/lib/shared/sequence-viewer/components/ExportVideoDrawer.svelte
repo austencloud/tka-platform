@@ -43,6 +43,7 @@
     onBpmChange?: (bpm: number) => void;
     onExport: () => void;
     onCancel?: () => void;
+    onEffectToggle?: (id: string, active: boolean) => void;
   }
 
   let {
@@ -59,6 +60,7 @@
     onBpmChange,
     onExport,
     onCancel,
+    onEffectToggle,
   }: Props = $props();
 
   // Mobile settings drawer state
@@ -80,18 +82,13 @@
     return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
   }
 
-  const totalDuration = $derived(singlePlayDuration * exportOptions.videoLoopCount);
-  const durationLabel = $derived(
-    singlePlayDuration > 0 ? formatDuration(totalDuration) : ""
-  );
-
   const estimatedTime = $derived.by(() => {
     if (singlePlayDuration <= 0) return null;
     return estimateExportTime(
       exportOptions.videoResolution,
       exportOptions.videoFps,
       singlePlayDuration,
-      exportOptions.videoLoopCount
+      1
     );
   });
 
@@ -133,10 +130,12 @@
   function toggleEffect(id: string) {
     const current = exportOptions.videoEffectOverrides;
     if (!current) return;
+    const newValue = !current[id as keyof typeof current];
     exportOptions.setVideoEffectOverrides({
       ...current,
-      [id]: !current[id as keyof typeof current],
+      [id]: newValue,
     });
+    onEffectToggle?.(id, newValue);
   }
 
   const effectChips = $derived(
@@ -283,39 +282,6 @@
                     {opt.label}
                   </button>
                 {/each}
-              </div>
-            </div>
-
-            <!-- Repeat -->
-            <div class="setting-row">
-              <span class="setting-label">Repeat</span>
-              <div class="repeat-control">
-                <div class="repeat-stepper">
-                  <button
-                    type="button"
-                    class="stepper-btn"
-                    onclick={() =>
-                      exportOptions.setVideoLoopCount(exportOptions.videoLoopCount - 1)}
-                    disabled={exportOptions.videoLoopCount <= 1}
-                    aria-label="Decrease repeat count"
-                  >
-                    <i class="fas fa-minus" aria-hidden="true"></i>
-                  </button>
-                  <span class="repeat-value">{exportOptions.videoLoopCount}x</span>
-                  <button
-                    type="button"
-                    class="stepper-btn"
-                    onclick={() =>
-                      exportOptions.setVideoLoopCount(exportOptions.videoLoopCount + 1)}
-                    disabled={exportOptions.videoLoopCount >= 10}
-                    aria-label="Increase repeat count"
-                  >
-                    <i class="fas fa-plus" aria-hidden="true"></i>
-                  </button>
-                </div>
-                {#if durationLabel}
-                  <span class="duration-hint">{durationLabel}</span>
-                {/if}
               </div>
             </div>
 
@@ -469,38 +435,6 @@
               {opt.label}
             </button>
           {/each}
-        </div>
-      </div>
-
-      <div class="setting-row">
-        <span class="setting-label">Repeat</span>
-        <div class="repeat-control">
-          <div class="repeat-stepper">
-            <button
-              type="button"
-              class="stepper-btn"
-              onclick={() =>
-                exportOptions.setVideoLoopCount(exportOptions.videoLoopCount - 1)}
-              disabled={exportOptions.videoLoopCount <= 1}
-              aria-label="Decrease repeat count"
-            >
-              <i class="fas fa-minus" aria-hidden="true"></i>
-            </button>
-            <span class="repeat-value">{exportOptions.videoLoopCount}x</span>
-            <button
-              type="button"
-              class="stepper-btn"
-              onclick={() =>
-                exportOptions.setVideoLoopCount(exportOptions.videoLoopCount + 1)}
-              disabled={exportOptions.videoLoopCount >= 10}
-              aria-label="Increase repeat count"
-            >
-              <i class="fas fa-plus" aria-hidden="true"></i>
-            </button>
-          </div>
-          {#if durationLabel}
-            <span class="duration-hint">{durationLabel}</span>
-          {/if}
         </div>
       </div>
 
@@ -953,60 +887,6 @@
   .play-btn i { margin-left: 2px; }
   .play-btn.playing i { margin-left: 0; }
 
-  /* Repeat stepper */
-  .repeat-control {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .repeat-stepper {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .stepper-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 8px;
-    background: color-mix(in srgb, var(--theme-card-bg) 70%, transparent);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    cursor: pointer;
-    transition: all 0.15s ease;
-    font-size: 12px;
-  }
-
-  .stepper-btn:hover:not(:disabled) {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-    color: var(--theme-text, white);
-  }
-
-  .stepper-btn:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-  }
-
-  .repeat-value {
-    min-width: 36px;
-    text-align: center;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    color: var(--theme-text, white);
-  }
-
-  .duration-hint {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    white-space: nowrap;
-  }
-
   /* ============================================================
    * Footer (desktop sidebar)
    * ============================================================ */
@@ -1132,7 +1012,7 @@
    * ============================================================ */
 
   @media (prefers-reduced-motion: reduce) {
-    .chip, .stepper-btn, .play-btn, .bar-play-btn,
+    .chip, .play-btn, .bar-play-btn,
     .export-btn, .bar-export-btn, .bar-settings-btn,
     .cancel-btn, .progress-fill, .inline-settings-close {
       transition: none !important;

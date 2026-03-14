@@ -61,7 +61,7 @@
 
   $effect(() => {
     if (typeof window !== "undefined") {
-      const check = () => { isMobileWidth = window.innerWidth < 600; };
+      const check = () => { isMobileWidth = window.innerWidth < 768; };
       check();
       window.addEventListener("resize", check);
       return () => window.removeEventListener("resize", check);
@@ -78,6 +78,19 @@
 
   // Settings modal state
   let settingsModalOpen = $state(false);
+  let copyLinkFeedback = $state(false);
+
+  function handleCopyLink() {
+    const seq = overlay.sequence;
+    if (!seq) return;
+    const base = `${window.location.origin}/sequence/${seq.id}`;
+    const params = new URLSearchParams();
+    if (seq.word) params.set("word", seq.word);
+    navigator.clipboard.writeText(params.size > 0 ? `${base}?${params}` : base).then(() => {
+      copyLinkFeedback = true;
+      setTimeout(() => { copyLinkFeedback = false; }, 1500);
+    });
+  }
 
   // Delete confirmation state
   let deleteConfirmOpen = $state(false);
@@ -90,20 +103,30 @@
   const animationVisibility = getAnimationVisibilityManager();
 
   function getActiveEffects(): ActiveEffect[] {
-    const effects: ActiveEffect[] = [];
-    if (animationVisibility.getVisibility("fireEffect")) {
-      effects.push({ id: "fire", label: "Fire", icon: "fas fa-fire", active: true });
+    return [
+      { id: "fire", label: "Fire", icon: "fas fa-fire", active: animationVisibility.getVisibility("fireEffect") },
+      { id: "led", label: "LED", icon: "fas fa-lightbulb", active: animationVisibility.getVisibility("ledEffect") },
+      { id: "trails", label: "Trails", icon: "fas fa-wind", active: animationVisibility.getTrailStyle() !== "off" },
+      { id: "charcoal", label: "Charcoal", icon: "fas fa-smog", active: animationVisibility.isCharcoalEffectEnabled() },
+    ];
+  }
+
+  /** Apply effect toggles from the export panel to the live animation preview */
+  function handleExportEffectToggle(id: string, active: boolean) {
+    switch (id) {
+      case "fire":
+        animationVisibility.setFireEffect(active);
+        break;
+      case "led":
+        animationVisibility.setLedEffect(active);
+        break;
+      case "trails":
+        animationVisibility.setTrailStyle(active ? "on" : "off");
+        break;
+      case "charcoal":
+        animationVisibility.setCharcoalEffect(active);
+        break;
     }
-    if (animationVisibility.getVisibility("ledEffect")) {
-      effects.push({ id: "led", label: "LED", icon: "fas fa-lightbulb", active: true });
-    }
-    if (animationVisibility.getTrailStyle() !== "off") {
-      effects.push({ id: "trails", label: "Trails", icon: "fas fa-wind", active: true });
-    }
-    if (animationVisibility.isCharcoalEffectEnabled()) {
-      effects.push({ id: "charcoal", label: "Charcoal", icon: "fas fa-smog", active: true });
-    }
-    return effects;
   }
 
   // Sync overlay state to drawer state
@@ -235,6 +258,15 @@
                   <button
                     type="button"
                     class="header-action-btn"
+                    onclick={handleCopyLink}
+                    aria-label="Copy link to sequence"
+                    title="Copy link"
+                  >
+                    <i class="fas {copyLinkFeedback ? 'fa-check' : 'fa-link'}" aria-hidden="true"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="header-action-btn"
                     onclick={() => (settingsModalOpen = true)}
                     aria-label="Settings"
                     title="Viewer settings"
@@ -327,6 +359,7 @@
                             onBpmChange={ctx.handleBpmChange}
                             onExport={ctx.handleExport}
                             onCancel={ctx.handleCancelExport}
+                            onEffectToggle={handleExportEffectToggle}
                           />
                         {/if}
                       {:else if isImageExportActive}
@@ -652,12 +685,6 @@
       flex: 1;
       min-height: 0;
       overflow: hidden;
-      /* The canvas is square, so height is driven by width. On portrait mobile,
-         the animation pane would stretch to fill all vertical space, centering
-         a small square canvas in a tall black box. Cap the height so the canvas
-         fills the pane with minimal dead space. Width + overhead (header ~53px,
-         progress ~32px, border ~3px, margin ~12px ≈ 100px). */
-      max-height: calc(100vw + 100px);
     }
   }
 

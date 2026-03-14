@@ -10,6 +10,7 @@
  * both authenticated and unauthenticated users.
  */
 
+import { pushState } from '$app/navigation';
 import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
 
 // ============================================================================
@@ -59,7 +60,7 @@ export function openSequenceOverlay(
 
 	// Push history entry so browser back button closes the drawer
 	if (!options?.skipHistoryPush) {
-		window.history.pushState({ sequenceOverlay: true }, '');
+		pushState('', { sequenceOverlay: true });
 	}
 }
 
