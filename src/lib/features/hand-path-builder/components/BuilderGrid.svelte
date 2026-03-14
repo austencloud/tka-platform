@@ -1,54 +1,98 @@
 <!--
-  BuilderGrid.svelte - SVG tappable grid for the Hand Path Builder
+  BuilderGrid.svelte - Tappable grid for the Hand Path Builder
 
-  Renders the active grid points (based on grid mode) as tappable circles.
-  Shows the current hand's selected path as numbered dots connected by lines.
-  Hit targets are 44px+ for touch accessibility.
+  Uses the real GridSvg component and GridHitTargetCalculator.
+  Renders a single hand SVG at the current position. When a new location
+  is tapped, the hand animates from previous → new along the actual path
+  (arc for shifts, straight line for dashes). Path lines trace the real
+  movement geometry, not just straight point-to-point connectors.
 
-  SVG coordinate system uses a 400×400 viewBox.
-  Locations are placed at anatomically correct positions around the grid.
+  SVG coordinate system uses 950x950 viewBox (same as GridSvg).
 -->
 <script lang="ts">
-  import { GridLocation, GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import GridSvg from "$lib/shared/pictograph/grid/components/GridSvg.svelte";
+  import { GridHitTargetCalculator } from "$lib/features/assemble-lab/services/implementations/GridHitTargetCalculator";
+  import type { GridHitTarget } from "$lib/features/assemble-lab/services/contracts/IGridHitTargetCalculator";
+  import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { propSvgLoader } from "$lib/shared/pictograph/prop/services/implementations/PropSvgLoader";
+  import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+  import type { PropRenderData } from "$lib/shared/pictograph/prop/domain/models/PropRenderData";
+  import { HandPathAnimator, getPathD } from "../services/HandPathAnimator";
+  import type { HandMove } from "../state/builder-state.svelte";
   import { getBuilderContext } from "../context/builder-context";
 
   const builder = getBuilderContext();
+  const calculator = new GridHitTargetCalculator();
+  const blueAnimator = new HandPathAnimator();
+  const redAnimator = new HandPathAnimator();
 
-  // SVG coordinate map. 400×400 viewBox, center at 200,200.
-  const GRID_COORDS: Record<GridLocation, { x: number; y: number }> = {
-    [GridLocation.NORTH]:     { x: 200, y: 40 },
-    [GridLocation.NORTHEAST]: { x: 340, y: 60 },
-    [GridLocation.EAST]:      { x: 360, y: 200 },
-    [GridLocation.SOUTHEAST]: { x: 340, y: 340 },
-    [GridLocation.SOUTH]:     { x: 200, y: 360 },
-    [GridLocation.SOUTHWEST]: { x: 60,  y: 340 },
-    [GridLocation.WEST]:      { x: 40,  y: 200 },
-    [GridLocation.NORTHWEST]: { x: 60,  y: 60 },
-    [GridLocation.CENTER]:    { x: 200, y: 200 },
-  };
+  const ANIMATION_DURATION_MS = 350;
 
-  // Min touch target radius per WCAG (22px radius = 44px diameter)
-  const HIT_RADIUS = 26;
-  // Visual dot radius for selected locations
-  const DOT_RADIUS = 12;
+  const hitTargets = $derived(calculator.getHitTargets(builder.gridMode));
+  const hitRadius = calculator.getHitTargetRadius();
+
+  let blueHandData = $state<PropRenderData | null>(null);
+  let redHandData = $state<PropRenderData | null>(null);
+
+  let activeBlueHandRef: SVGGElement | null = $state(null);
+  let activeRedHandRef: SVGGElement | null = $state(null);
+
+  // Load hand SVGs on mount
+  $effect(() => {
+    const blueMotion = createMotionData({ propType: PropType.HAND, color: MotionColor.BLUE });
+    propSvgLoader.loadPropSvg(
+      { positionX: 0, positionY: 0, rotationAngle: 0 }, blueMotion, false,
+    ).then(data => { blueHandData = data; }).catch(() => {});
+
+    const redMotion = createMotionData({ propType: PropType.HAND, color: MotionColor.RED });
+    propSvgLoader.loadPropSvg(
+      { positionX: 0, positionY: 0, rotationAngle: 0 }, redMotion, false,
+    ).then(data => { redHandData = data; }).catch(() => {});
+  });
+
+  // Register animation callback
+  $effect(() => {
+    builder.setAnimationCallback(async (move: HandMove) => {
+      const handData = builder.phase === "blue" ? blueHandData : redHandData;
+      const handRef = builder.phase === "blue" ? activeBlueHandRef : activeRedHandRef;
+      if (!handRef || !handData?.svgData) return;
+
+      const animator = builder.phase === "blue" ? blueAnimator : redAnimator;
+      await animator.animate({
+        element: handRef,
+        startPosition: move.from,
+        endPosition: move.to,
+        durationMs: ANIMATION_DURATION_MS,
+        handCenter: handData.svgData.center,
+      });
+    });
+  });
 
   const blueColor = "var(--prop-blue, #2e8bf0)";
   const redColor = "var(--prop-red, #ed1c24)";
+  const FALLBACK_RADIUS = 28;
 
-  // Lines connecting selected locations for blue and red paths
-  const blueLines = $derived(buildLines(builder.blueLocations));
-  const redLines = $derived(buildLines(builder.redLocations));
+  function findTarget(location: GridLocation): GridHitTarget | undefined {
+    return hitTargets.find(t => t.location === location);
+  }
 
-  function buildLines(
-    locations: readonly GridLocation[]
-  ): Array<{ x1: number; y1: number; x2: number; y2: number }> {
-    const lines = [];
+  function handTransform(x: number, y: number, center: { x: number; y: number }): string {
+    return `translate(${x}px, ${y}px) translate(${-center.x}px, ${-center.y}px)`;
+  }
+
+  // Build SVG path "d" strings that follow the actual movement path
+  // (arc for shifts, straight line for dashes)
+  const bluePathDs = $derived(buildPathDs(builder.blueLocations));
+  const redPathDs = $derived(buildPathDs(builder.redLocations));
+
+  function buildPathDs(locations: readonly GridLocation[]): string[] {
+    const ds: string[] = [];
     for (let i = 0; i < locations.length - 1; i++) {
-      const a = GRID_COORDS[locations[i]!]!;
-      const b = GRID_COORDS[locations[i + 1]!]!;
-      lines.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y });
+      ds.push(getPathD(locations[i]!, locations[i + 1]!));
     }
-    return lines;
+    return ds;
   }
 
   function handleTap(loc: GridLocation): void {
@@ -60,9 +104,15 @@
     return `Add ${loc} to ${phaseLabel} hand path`;
   }
 
-  // Grid lines for the visual background (diamond cross and circle)
-  const GRID_LINE_COLOR = "rgba(255,255,255,0.12)";
-  const CIRCLE_R = 160;
+  // Active hand: last location of the current phase
+  const activeBlueTarget = $derived.by(() => {
+    if (builder.blueLocations.length === 0) return null;
+    return findTarget(builder.blueLocations[builder.blueLocations.length - 1]!);
+  });
+  const activeRedTarget = $derived.by(() => {
+    if (builder.redLocations.length === 0) return null;
+    return findTarget(builder.redLocations[builder.redLocations.length - 1]!);
+  });
 </script>
 
 <div
@@ -70,146 +120,93 @@
   role="application"
   aria-label="Hand path builder grid"
 >
-  <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-    <!-- Background -->
+  <svg viewBox="0 0 950 950" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+    <!-- Layer 0: Background -->
     <defs>
-      <radialGradient id="hpb-bg" cx="50%" cy="50%" r="50%">
-        <stop offset="0%" stop-color="rgb(22,28,46)" />
-        <stop offset="100%" stop-color="rgb(10,12,22)" />
-      </radialGradient>
+      <linearGradient id="hpb-bg-gradient" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="rgb(20, 25, 40)" />
+        <stop offset="100%" stop-color="rgb(10, 12, 22)" />
+      </linearGradient>
     </defs>
-    <rect x="0" y="0" width="400" height="400" fill="url(#hpb-bg)" />
+    <rect class="grid-bg" x="0" y="0" width="950" height="950" fill="url(#hpb-bg-gradient)" />
 
-    <!-- Grid structure lines -->
-    <!-- Horizontal -->
-    <line x1="40" y1="200" x2="360" y2="200" stroke={GRID_LINE_COLOR} stroke-width="1" />
-    <!-- Vertical -->
-    <line x1="200" y1="40" x2="200" y2="360" stroke={GRID_LINE_COLOR} stroke-width="1" />
-    <!-- Circle -->
-    <circle cx="200" cy="200" r={CIRCLE_R} fill="none" stroke={GRID_LINE_COLOR} stroke-width="1" />
-    <!-- Diagonal lines (only in skewed mode) -->
-    {#if builder.gridMode === GridMode.SKEWED}
-      <line x1="60" y1="60" x2="340" y2="340" stroke={GRID_LINE_COLOR} stroke-width="1" />
-      <line x1="340" y1="60" x2="60" y2="340" stroke={GRID_LINE_COLOR} stroke-width="1" />
+    <!-- Layer 1: Real grid lines and points -->
+    <GridSvg gridMode={builder.gridMode} />
+
+    <!-- Layer 2: Path lines that follow actual movement geometry -->
+    {#each bluePathDs as d, i (i)}
+      <path {d} fill="none" stroke={blueColor} stroke-width="4" stroke-linecap="round" opacity="0.7" />
+    {/each}
+    {#each redPathDs as d, i (i)}
+      <path {d} fill="none" stroke={redColor} stroke-width="4" stroke-linecap="round" opacity="0.7" />
+    {/each}
+
+    <!-- Layer 3: Active blue hand -->
+    {#if activeBlueTarget}
+      {#if blueHandData?.svgData}
+        <g
+          bind:this={activeBlueHandRef}
+          class="hand-svg-group"
+          class:active-glow={builder.phase === "blue"}
+          style="transform: {handTransform(activeBlueTarget.x, activeBlueTarget.y, blueHandData.svgData.center)}"
+          style:filter={builder.phase === "blue" ? `drop-shadow(0 0 6px ${blueColor})` : "none"}
+        >
+          {@html blueHandData.svgData.svgContent}
+        </g>
+      {:else}
+        <circle cx={activeBlueTarget.x} cy={activeBlueTarget.y} r={FALLBACK_RADIUS} fill={blueColor} />
+      {/if}
     {/if}
 
-    <!-- ── Path lines ── -->
+    <!-- Layer 3: Active red hand -->
+    {#if activeRedTarget}
+      {#if redHandData?.svgData}
+        <g
+          bind:this={activeRedHandRef}
+          class="hand-svg-group"
+          class:active-glow={builder.phase === "red"}
+          style="transform: {handTransform(activeRedTarget.x, activeRedTarget.y, redHandData.svgData.center)}"
+          style:filter={builder.phase === "red" ? `drop-shadow(0 0 6px ${redColor})` : "none"}
+        >
+          {@html redHandData.svgData.svgContent}
+        </g>
+      {:else}
+        <circle cx={activeRedTarget.x} cy={activeRedTarget.y} r={FALLBACK_RADIUS} fill={redColor} />
+      {/if}
+    {/if}
 
-    <!-- Blue path lines (always rendered once blue has 2+ locations) -->
-    {#each blueLines as line}
-      <line
-        x1={line.x1}
-        y1={line.y1}
-        x2={line.x2}
-        y2={line.y2}
-        stroke={blueColor}
-        stroke-width="2.5"
-        stroke-linecap="round"
-        opacity="0.7"
-      />
-    {/each}
-
-    <!-- Red path lines -->
-    {#each redLines as line}
-      <line
-        x1={line.x1}
-        y1={line.y1}
-        x2={line.x2}
-        y2={line.y2}
-        stroke={redColor}
-        stroke-width="2.5"
-        stroke-linecap="round"
-        opacity="0.7"
-      />
-    {/each}
-
-    <!-- ── Selected dots ── -->
-
-    <!-- Blue dots -->
-    {#each builder.blueLocations as loc, i (loc + "-blue-" + i)}
-      {@const coord = GRID_COORDS[loc]!}
-      {@const isLast = i === builder.blueLocations.length - 1 && builder.phase === "blue"}
-      <circle
-        cx={coord.x}
-        cy={coord.y}
-        r={DOT_RADIUS}
-        fill={blueColor}
-        opacity={isLast ? "1" : "0.75"}
-        class:pulse={isLast}
-      />
-      <!-- Step number label -->
-      <text
-        x={coord.x}
-        y={coord.y + 4}
-        text-anchor="middle"
-        dominant-baseline="middle"
-        font-size="10"
-        font-weight="700"
-        fill="white"
-        pointer-events="none"
-      >{i + 1}</text>
-    {/each}
-
-    <!-- Red dots -->
-    {#each builder.redLocations as loc, i (loc + "-red-" + i)}
-      {@const coord = GRID_COORDS[loc]!}
-      {@const isLast = i === builder.redLocations.length - 1 && builder.phase === "red"}
-      <circle
-        cx={coord.x}
-        cy={coord.y}
-        r={DOT_RADIUS}
-        fill={redColor}
-        opacity={isLast ? "1" : "0.75"}
-        class:pulse={isLast}
-      />
-      <text
-        x={coord.x}
-        y={coord.y + 4}
-        text-anchor="middle"
-        dominant-baseline="middle"
-        font-size="10"
-        font-weight="700"
-        fill="white"
-        pointer-events="none"
-      >{i + 1}</text>
-    {/each}
-
-    <!-- ── Hit targets ── (always on top for click capture) -->
+    <!-- Layer 5: Hit targets -->
     {#if builder.phase !== "complete"}
-      {#each builder.availableLocations as loc (loc)}
-        {@const coord = GRID_COORDS[loc]!}
-        {@const isSelected = builder.lastLocation === loc}
+      {#each hitTargets as target (target.location)}
         <circle
-          cx={coord.x}
-          cy={coord.y}
-          r={HIT_RADIUS}
+          cx={target.x}
+          cy={target.y}
+          r={hitRadius}
           class="hit-target"
-          class:is-selected={isSelected}
+          class:is-selected={builder.lastLocation === target.location}
           class:phase-blue={builder.phase === "blue"}
           class:phase-red={builder.phase === "red"}
+          class:disabled={builder.isAnimating}
           role="button"
           tabindex="0"
-          aria-label={getLabel(loc)}
-          onclick={() => handleTap(loc)}
+          aria-label={getLabel(target.location)}
+          onclick={() => handleTap(target.location)}
           onkeydown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
-              handleTap(loc);
+              handleTap(target.location);
             }
           }}
         />
       {/each}
     {/if}
 
-    <!-- Complete state: show both paths dimmed, no hit targets -->
+    <!-- Complete state -->
     {#if builder.phase === "complete"}
       <text
-        x="200"
-        y="200"
-        text-anchor="middle"
-        dominant-baseline="middle"
-        font-size="14"
-        fill="rgba(255,255,255,0.45)"
+        x="475" y="475"
+        text-anchor="middle" dominant-baseline="middle"
+        font-size="20" fill="rgba(255,255,255,0.45)"
       >Paths complete</text>
     {/if}
   </svg>
@@ -231,29 +228,42 @@
     display: block;
   }
 
+  .hand-svg-group {
+    pointer-events: none;
+    opacity: 0.85;
+  }
+
+  .hand-svg-group.active-glow {
+    opacity: 1;
+  }
+
   /* Hit targets */
   .hit-target {
     fill: rgba(255, 255, 255, 0.04);
     stroke: rgba(255, 255, 255, 0.25);
-    stroke-width: 2;
+    stroke-width: 2.5;
     cursor: pointer;
     transition: fill 0.14s ease, stroke 0.14s ease, stroke-width 0.14s ease;
   }
 
-  /* Phase-colored pulse on available targets */
-  .hit-target.phase-blue:not(.is-selected) {
+  .hit-target.disabled {
+    cursor: not-allowed;
+    pointer-events: none;
+    opacity: 0.3;
+  }
+
+  .hit-target.phase-blue:not(.is-selected):not(.disabled) {
     fill: color-mix(in srgb, var(--prop-blue, #2e8bf0) 8%, transparent);
     stroke: color-mix(in srgb, var(--prop-blue, #2e8bf0) 50%, transparent);
     animation: pulse-blue 1.8s ease-in-out infinite;
   }
 
-  .hit-target.phase-red:not(.is-selected) {
+  .hit-target.phase-red:not(.is-selected):not(.disabled) {
     fill: color-mix(in srgb, var(--prop-red, #ed1c24) 8%, transparent);
     stroke: color-mix(in srgb, var(--prop-red, #ed1c24) 50%, transparent);
     animation: pulse-red 1.8s ease-in-out infinite;
   }
 
-  /* Current (most-recently-tapped) position indicator */
   .hit-target.is-selected.phase-blue {
     fill: color-mix(in srgb, var(--prop-blue, #2e8bf0) 22%, transparent);
     stroke: var(--prop-blue, #2e8bf0);
@@ -268,16 +278,16 @@
     animation: none;
   }
 
-  .hit-target:hover:not(.is-selected) {
-    stroke-width: 3;
+  .hit-target:hover:not(.is-selected):not(.disabled) {
+    stroke-width: 3.5;
   }
 
-  .hit-target.phase-blue:hover:not(.is-selected) {
+  .hit-target.phase-blue:hover:not(.is-selected):not(.disabled) {
     fill: color-mix(in srgb, var(--prop-blue, #2e8bf0) 20%, transparent);
     stroke: var(--prop-blue, #2e8bf0);
   }
 
-  .hit-target.phase-red:hover:not(.is-selected) {
+  .hit-target.phase-red:hover:not(.is-selected):not(.disabled) {
     fill: color-mix(in srgb, var(--prop-red, #ed1c24) 20%, transparent);
     stroke: var(--prop-red, #ed1c24);
   }
@@ -288,32 +298,21 @@
     stroke: var(--theme-accent, #3b82f6);
   }
 
-  /* Pulse animations */
   @keyframes pulse-blue {
     0%   { fill: color-mix(in srgb, var(--prop-blue, #2e8bf0)  5%, transparent); stroke-opacity: 0.40; stroke-width: 2; }
-    50%  { fill: color-mix(in srgb, var(--prop-blue, #2e8bf0) 18%, transparent); stroke-opacity: 0.90; stroke-width: 3; }
+    50%  { fill: color-mix(in srgb, var(--prop-blue, #2e8bf0) 18%, transparent); stroke-opacity: 0.90; stroke-width: 3.5; }
     100% { fill: color-mix(in srgb, var(--prop-blue, #2e8bf0)  5%, transparent); stroke-opacity: 0.40; stroke-width: 2; }
   }
 
   @keyframes pulse-red {
     0%   { fill: color-mix(in srgb, var(--prop-red, #ed1c24)  5%, transparent); stroke-opacity: 0.40; stroke-width: 2; }
-    50%  { fill: color-mix(in srgb, var(--prop-red, #ed1c24) 18%, transparent); stroke-opacity: 0.90; stroke-width: 3; }
+    50%  { fill: color-mix(in srgb, var(--prop-red, #ed1c24) 18%, transparent); stroke-opacity: 0.90; stroke-width: 3.5; }
     100% { fill: color-mix(in srgb, var(--prop-red, #ed1c24)  5%, transparent); stroke-opacity: 0.40; stroke-width: 2; }
   }
 
-  /* Dot pulse for last placed location */
-  :global(.pulse) {
-    animation: dot-pulse 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  }
-
-  @keyframes dot-pulse {
-    from { r: 6; opacity: 0; }
-    to   { r: 12; opacity: 1; }
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    .hit-target.phase-blue,
-    .hit-target.phase-red {
+    .hit-target.phase-blue:not(.disabled),
+    .hit-target.phase-red:not(.disabled) {
       animation: none;
     }
   }
