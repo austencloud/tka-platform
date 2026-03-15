@@ -2,7 +2,14 @@
   import { getVideoTrailsContext } from "../context/video-trails-context";
   import type { DetectedEndpoint } from "../domain/types";
 
-  type ToolMode = "select" | "place" | "occlude";
+  type ToolMode = "select" | "place" | "occlude" | "guided";
+
+  interface GuidedStep {
+    propIndex: 0 | 1;
+    tipIndex: number;
+    label: string;
+    color: string;
+  }
 
   interface Props {
     videoElement: HTMLVideoElement | null;
@@ -11,9 +18,11 @@
     toolMode: ToolMode;
     selectedIdx: number;
     onSelectEndpoint: (idx: number) => void;
+    guidedStep?: GuidedStep | null;
+    onGuidedPlacement?: (x: number, y: number) => void;
   }
 
-  const { videoElement, width, height, toolMode, selectedIdx, onSelectEndpoint }: Props = $props();
+  const { videoElement, width, height, toolMode, selectedIdx, onSelectEndpoint, guidedStep = null, onGuidedPlacement }: Props = $props();
   const { state: trailsState } = getVideoTrailsContext();
 
   const PROP_COLORS = ["#4a90d9", "#d94a4a"] as const;
@@ -70,7 +79,18 @@
       drawEndpoint(ctx, x, y, ep, isSelected);
     }
 
-    // Draw crosshair cursor in place mode (handled via CSS cursor instead)
+    // Guided mode: show prompt for which endpoint to place
+    if (toolMode === "guided" && guidedStep) {
+      ctx.save();
+      ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+      ctx.fillRect(0, height - 40, width, 40);
+      ctx.fillStyle = guidedStep.color;
+      ctx.font = "bold 16px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(`Click to place: ${guidedStep.label}`, width / 2, height - 20);
+      ctx.restore();
+    }
   }
 
   function drawEndpoint(
@@ -187,8 +207,11 @@
       } else {
         onSelectEndpoint(-1);
       }
+    } else if (toolMode === "guided" && guidedStep && onGuidedPlacement) {
+      // Guided mode: click directly places the current guided endpoint
+      onGuidedPlacement(pos.x, pos.y);
     } else if (toolMode === "place") {
-      // Show placement popover at click position
+      // Manual placement: show popover to pick prop/tip
       const screenPos = screenCoordsFromCanvas(pos.x, pos.y);
       placementPopover = { x: screenPos.x, y: screenPos.y, canvasX: pos.x, canvasY: pos.y };
     } else if (toolMode === "occlude") {
@@ -312,7 +335,7 @@
   }
 
   let cursorClass = $derived(
-    toolMode === "place" ? "cursor-crosshair" : toolMode === "occlude" ? "cursor-occlude" : "",
+    toolMode === "guided" ? "cursor-crosshair" : toolMode === "place" ? "cursor-crosshair" : toolMode === "occlude" ? "cursor-occlude" : "",
   );
 </script>
 
