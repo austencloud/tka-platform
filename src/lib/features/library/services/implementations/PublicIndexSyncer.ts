@@ -14,10 +14,15 @@ import {
   setDoc,
   deleteDoc,
   serverTimestamp,
+  collection,
+  query,
+  where,
+  getDocs,
+  limit as firestoreLimit,
   type Firestore,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import { getPublicSequencePath } from "../../data/firestore-paths";
+import { getPublicSequencePath, getPublicSequencesPath } from "../../data/firestore-paths";
 import type { IPublicIndexSyncer } from "../contracts/IPublicIndexSyncer";
 import type { LibrarySequence } from "../../domain/models/LibrarySequence";
 import type { IContentModerator } from "$lib/features/moderation/services/contracts/IContentModerator";
@@ -77,6 +82,25 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
       const userDoc = await getDoc(doc(firestore, `users/${userId}`));
       const userData = userDoc.data() ?? {};
 
+      // Deduplicate by contentHash — reject if an identical sequence already exists
+      // in the public index from a different document (re-publishing the same doc is OK)
+      if (sequence.contentHash) {
+        const dupQuery = query(
+          collection(firestore, getPublicSequencesPath()),
+          where("contentHash", "==", sequence.contentHash),
+          firestoreLimit(1)
+        );
+        const dupSnapshot = await getDocs(dupQuery);
+        if (!dupSnapshot.empty) {
+          const existingDoc = dupSnapshot.docs[0]!;
+          if (existingDoc.id !== sequence.id) {
+            throw new Error(
+              `This exact sequence already exists in the gallery (published as "${existingDoc.data().word ?? existingDoc.id}")`
+            );
+          }
+        }
+      }
+
       // Detect circularity and LOOP type from step/motion data
       const { isCircular, loopType } = await this.detectLoopInfo(firestore, sequence);
 
@@ -109,13 +133,18 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
         originalCreatorName: sequence.forkAttribution?.originalCreatorName,
         publishedAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        // Compositional hash fields for cross-tier queries (find sequences
-        // that share a hand path or solo prop). The full compositional objects
-        // live in the user's library doc — these hashes are just query keys.
+        // Full motion content hash for deduplication
+        contentHash: sequence.contentHash,
+        // Compositional fields — everything needed to render without sourceRef
+        blueSoloProp: sequence.blueSoloProp,
+        redSoloProp: sequence.redSoloProp,
+        stepPairings: sequence.stepPairings,
+        // Hash fields for cross-tier queries
         bluePathHash: sequence.bluePathHash,
         redPathHash: sequence.redPathHash,
         blueSoloHash: sequence.blueSoloHash,
         redSoloHash: sequence.redSoloHash,
+        ...(sequence.creatorIntent && { creatorIntent: sequence.creatorIntent }),
       };
 
       // Strip undefined fields — Firestore rejects them in setDoc
@@ -136,8 +165,15 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
           name: sequence.name,
           displayName: sequence.displayName,
           word: sequence.word,
-          steps: [], // Gallery only needs metadata — steps are fetched on demand
+          steps: sequence.steps ?? [],
           thumbnails: sequence.thumbnails.slice(0, 3),
+          blueSoloProp: sequence.blueSoloProp,
+          redSoloProp: sequence.redSoloProp,
+          stepPairings: sequence.stepPairings,
+          bluePathHash: sequence.bluePathHash,
+          redPathHash: sequence.redPathHash,
+          blueSoloHash: sequence.blueSoloHash,
+          redSoloHash: sequence.redSoloHash,
           sequenceLength: sequence.steps.length,
           difficultyLevel: sequence.difficultyLevel,
           level,
