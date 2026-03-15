@@ -336,8 +336,6 @@
                     bind:this={choreoCardMenuHost}
                     isExportMode={isImageExportActive}
                     exportOptions={ctx.exportOptions}
-                    onEditNotes={() => ctx.enterEditMode("image")}
-                    onExportImage={() => ctx.handleExport()}
                     onSendTo={overlay.sequence ? handleSendTo : undefined}
                   />
                   {#if isAnyExportActive}

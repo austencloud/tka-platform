@@ -13,12 +13,10 @@
   interface Props {
     isExportMode: boolean;
     exportOptions: ExportOptionsStateManager;
-    onEditNotes?: () => void;
-    onExportImage?: () => void;
     onSendTo?: () => void;
   }
 
-  const { isExportMode, exportOptions, onEditNotes, onExportImage, onSendTo }: Props = $props();
+  const { isExportMode, exportOptions, onSendTo }: Props = $props();
 
   let menuState: ContextMenuState = $state({ open: false });
 
@@ -56,7 +54,6 @@
         showCreatorName: exportOptions.imageShowCreatorName,
         showNotes: exportOptions.imageShowNotes,
         showBirthday: imageComposition.showBirthday, // Always from composition manager
-        columnCount: exportOptions.imageColumnCount,
 
         setShowWord: (v) => exportOptions.setImageShowWord(v),
         setShowStepNumbers: (v) => exportOptions.setImageShowStepNumbers(v),
@@ -65,10 +62,7 @@
         setShowCreatorName: (v) => exportOptions.setImageShowCreatorName(v),
         setShowNotes: (v) => exportOptions.setImageShowNotes(v),
         setShowBirthday: (v) => imageComposition.setShowBirthday(v),
-        setColumnCount: (v) => exportOptions.setImageColumnCount(v),
 
-        onEditNotes: onEditNotes ? () => { closeContextMenu(); onEditNotes(); } : undefined,
-        onExportImage: onExportImage ? () => { closeContextMenu(); onExportImage(); } : undefined,
         onSendTo: onSendTo ? () => { closeContextMenu(); onSendTo(); } : undefined,
       });
     } else {
@@ -84,7 +78,6 @@
         showCreatorName: comp.showCreatorName,
         showNotes: comp.showNotes,
         showBirthday: comp.showBirthday,
-        columnCount: null, // No column override in normal mode
 
         setShowWord: (v) => comp.setAddWord(v),
         setShowStepNumbers: (v) => comp.setAddBeatNumbers(v),
@@ -93,10 +86,7 @@
         setShowCreatorName: (v) => comp.setShowCreatorName(v),
         setShowNotes: (v) => comp.setShowNotes(v),
         setShowBirthday: (v) => comp.setShowBirthday(v),
-        setColumnCount: () => {}, // No-op in normal mode (auto layout)
 
-        onEditNotes: onEditNotes ? () => { closeContextMenu(); onEditNotes(); } : undefined,
-        onExportImage: onExportImage ? () => { closeContextMenu(); onExportImage(); } : undefined,
         onSendTo: onSendTo ? () => { closeContextMenu(); onSendTo(); } : undefined,
       });
     }
