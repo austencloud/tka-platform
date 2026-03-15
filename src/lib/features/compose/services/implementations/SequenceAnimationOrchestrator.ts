@@ -115,8 +115,10 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
         gridMode: sequenceData.gridMode,
       };
 
-      // Store effort timeline for phrase-level easing (if present)
-      this.effortTimeline = sequenceData.effortTimeline ?? null;
+      // Store effort timeline for phrase-level easing (if present).
+      // creatorIntent.effortTimeline is the canonical location going forward;
+      // fall back to the top-level field for sequences saved before the migration.
+      this.effortTimeline = sequenceData.creatorIntent?.effortTimeline ?? sequenceData.effortTimeline ?? null;
 
       // Store motion steps - beat 1 is at index 0, beat 2 at index 1, etc.
       this.steps = steps;
