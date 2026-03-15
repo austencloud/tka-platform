@@ -25,24 +25,44 @@ export function createVideoTrailsState(
     : null) ?? "workspace";
   let activeView = $state<VideoTrailsView>(storedView);
 
+  // ---------------------------------------------------------------------------
+  // Session persistence helpers — survive HMR and soft reloads
+  // ---------------------------------------------------------------------------
+  const SESSION_PREFIX = "video-trails-";
+
+  function sessionSave(key: string, value: unknown): void {
+    try { sessionStorage.setItem(SESSION_PREFIX + key, JSON.stringify(value)); } catch { /* quota */ }
+  }
+
+  function sessionLoad<T>(key: string): T | null {
+    try {
+      const raw = sessionStorage.getItem(SESSION_PREFIX + key);
+      return raw ? (JSON.parse(raw) as T) : null;
+    } catch { return null; }
+  }
+
   // Source
   let source = $state<VideoSource | null>(null);
   let sourceMode = $state<"file" | "camera" | "sequence">("file");
 
-  // Playback
+  // Playback — restore currentFrame from session so HMR doesn't jump to 0
   let isPlaying = $state(false);
-  let currentFrame = $state(0);
+  let currentFrame = $state(sessionLoad<number>("currentFrame") ?? 0);
   let playbackSpeed = $state(1);
   let totalFrames = $state(0);
 
   // Detection
   let activeDetectorId = $state("led-threshold-v1");
   let detectionConfig = $state<DetectionConfig>({ ...DEFAULT_DETECTION_CONFIG });
-  let frameDetections = $state<Record<number, DetectedEndpoint[]>>({});
+  let frameDetections = $state<Record<number, DetectedEndpoint[]>>(
+    sessionLoad<Record<number, DetectedEndpoint[]>>("frameDetections") ?? {},
+  );
   let isDetecting = $state(false);
 
-  // Corrections
-  let corrections = $state<Record<number, EndpointCorrection[]>>({});
+  // Corrections — restored from session so placed points survive HMR
+  let corrections = $state<Record<number, EndpointCorrection[]>>(
+    sessionLoad<Record<number, EndpointCorrection[]>>("corrections") ?? {},
+  );
   let correctionCount = $derived(Object.keys(corrections).length);
 
   // Effects
@@ -105,6 +125,7 @@ export function createVideoTrailsState(
   function storeFrameDetection(frame: number, endpoints: DetectedEndpoint[]): void {
     frameDetections = { ...frameDetections, [frame]: endpoints };
     isDirty = true;
+    sessionSave("frameDetections", frameDetections);
   }
 
   function correctEndpoint(frame: number, correction: EndpointCorrection): void {
@@ -117,6 +138,7 @@ export function createVideoTrailsState(
     else updated.push(correction);
     corrections = { ...corrections, [frame]: updated };
     isDirty = true;
+    sessionSave("corrections", corrections);
   }
 
   function markOccluded(frame: number, propIndex: 0 | 1, tipIndex: number): void {
@@ -247,7 +269,7 @@ export function createVideoTrailsState(
       isDirty = true;
     },
     setActiveDetector: (id: string) => { activeDetectorId = id; },
-    setCurrentFrame: (frame: number) => { currentFrame = frame; },
+    setCurrentFrame: (frame: number) => { currentFrame = frame; sessionSave("currentFrame", frame); },
     setPlaybackSpeed: (speed: number) => { playbackSpeed = speed; },
     togglePlayback: () => { isPlaying = !isPlaying; },
     setIsDetecting: (v: boolean) => { isDetecting = v; },
