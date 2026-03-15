@@ -15,7 +15,6 @@ import { UserLocationRepository } from "$lib/features/community/services/impleme
 import { GeocodingService } from "$lib/features/community/services/implementations/GeocodingService";
 import { LocationSharingOrchestrator } from "$lib/features/community/services/implementations/LocationSharingOrchestrator";
 import { PropPreferencePersister } from "$lib/shared/community/services/implementations/PropPreferencePersister";
-import { IntendedPropResolver } from "$lib/shared/sequence-viewer/services/implementations/IntendedPropResolver";
 import { PresentationResolver } from "$lib/shared/sequence-viewer/services/implementations/PresentationResolver";
 import { CreatorPropFilter } from "$lib/features/browse/creators/services/implementations/CreatorPropFilter";
 import { env } from "$env/dynamic/public";
@@ -31,8 +30,7 @@ export const communityContainer = createContainer()
     userLocationRepository: () => new UserLocationRepository(),
     geocodingService: () => new GeocodingService(env.PUBLIC_GOOGLE_MAPS_API_KEY ?? ""),
     propPreferencePersister: () => new PropPreferencePersister(),
-    intendedPropResolver: () => new IntendedPropResolver(),
-    presentationResolver: () => new PresentationResolver(),
+presentationResolver: () => new PresentationResolver(),
     creatorPropFilter: () => new CreatorPropFilter(),
   })
   .add((deps) => ({
