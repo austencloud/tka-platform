@@ -30,11 +30,21 @@
   let menuElement: HTMLDivElement | null = $state(null);
   let submenuElement: HTMLDivElement | null = $state(null);
   let activeSubmenuId: string | null = $state(null);
-  let activeSubmenuEntry: ContextMenuItem | null = $state(null);
   let submenuTimer: ReturnType<typeof setTimeout> | null = $state(null);
   let loadingItemId: string | null = $state(null);
   let submenuPosition = $state({ left: 0, top: 0 });
   let submenuOpensLeft = $state(false);
+
+  // Derive active submenu entry from items so it stays reactive when items rebuild
+  const activeSubmenuEntry = $derived.by(() => {
+    if (!activeSubmenuId) return null;
+    for (const entry of items) {
+      if (isMenuItem(entry) && entry.id === activeSubmenuId && entry.children?.length) {
+        return entry;
+      }
+    }
+    return null;
+  });
 
   /** Svelte action: moves the node to document.body so position:fixed works correctly */
   function portal(node: HTMLElement) {
@@ -110,7 +120,6 @@
     if (e.key === "Escape") {
       if (activeSubmenuId) {
         activeSubmenuId = null;
-        activeSubmenuEntry = null;
       } else {
         onClose();
       }
@@ -126,8 +135,20 @@
     }
   }
 
-  async function handleItemClick(item: ContextMenuItem) {
-    if (item.disabled || item.children?.length) return;
+  async function handleItemClick(item: ContextMenuItem, event?: MouseEvent) {
+    // Items with children: toggle submenu on click
+    if (item.children?.length) {
+      if (submenuTimer) clearTimeout(submenuTimer);
+      if (activeSubmenuId === item.id) {
+        activeSubmenuId = null;
+      } else {
+        // Open immediately on click (no hover delay)
+        const wrapper = (event?.currentTarget as HTMLElement)?.closest(".menu-item-wrapper") as HTMLElement | null;
+        if (wrapper) openSubmenuForEntry(item, wrapper);
+      }
+      return;
+    }
+    if (item.disabled) return;
     if (!item.action) return;
 
     haptic();
@@ -142,32 +163,35 @@
     }
   }
 
+  function openSubmenuForEntry(entry: ContextMenuItem, wrapper: HTMLElement) {
+    activeSubmenuId = entry.id;
+
+    if (!wrapper || !menuElement) return;
+    const itemRect = wrapper.getBoundingClientRect();
+    const menuRect = menuElement.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const margin = 8;
+    const submenuWidth = 200;
+
+    // Prefer right of the menu, fall back to left
+    let left: number;
+    const opensRight = menuRect.right + submenuWidth + margin < vw;
+    if (opensRight) {
+      left = menuRect.right;
+    } else {
+      left = menuRect.left - submenuWidth;
+      if (left < margin) left = margin;
+    }
+
+    submenuOpensLeft = !opensRight;
+    submenuPosition = { left, top: itemRect.top - 4 };
+  }
+
   function handleSubmenuEnter(entry: ContextMenuItem, event: MouseEvent) {
     if (submenuTimer) clearTimeout(submenuTimer);
     const wrapper = event.currentTarget as HTMLElement;
     submenuTimer = setTimeout(() => {
-      activeSubmenuId = entry.id;
-      activeSubmenuEntry = entry;
-
-      if (!wrapper || !menuElement) return;
-      const itemRect = wrapper.getBoundingClientRect();
-      const menuRect = menuElement.getBoundingClientRect();
-      const vw = window.innerWidth;
-      const margin = 8;
-      const submenuWidth = 200;
-
-      // Prefer right of the menu, fall back to left
-      let left: number;
-      const opensRight = menuRect.right + submenuWidth + margin < vw;
-      if (opensRight) {
-        left = menuRect.right + 2;
-      } else {
-        left = menuRect.left - submenuWidth - 2;
-        if (left < margin) left = margin;
-      }
-
-      submenuOpensLeft = !opensRight;
-      submenuPosition = { left, top: itemRect.top - 4 };
+      openSubmenuForEntry(entry, wrapper);
     }, 150);
   }
 
@@ -175,7 +199,6 @@
     if (submenuTimer) clearTimeout(submenuTimer);
     submenuTimer = setTimeout(() => {
       activeSubmenuId = null;
-      activeSubmenuEntry = null;
     }, 200);
   }
 
@@ -187,7 +210,6 @@
   $effect(() => {
     if (!menuState.open) {
       activeSubmenuId = null;
-      activeSubmenuEntry = null;
     }
   });
 
@@ -285,7 +307,7 @@
             role="menuitem"
             aria-label={entry.label}
             disabled={entry.disabled || isLoading}
-            onclick={() => handleItemClick(entry)}
+            onclick={(e) => handleItemClick(entry, e)}
             style={checkedAccentStyle(entry)}
           >
             {@render itemIcons(entry, isLoading)}
