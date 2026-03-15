@@ -4,7 +4,7 @@
   Mobile/mid-width footer layout for the Sequence Viewer.
 
   Default state (single row):
-  [▶ Play] [── 60 BPM ──] [Save] [Construct]
+  [▶ Play] [── 60 BPM ──] [Save] [Edit]
 
   Controls expanded (replaces row):
   Row 1: [< « ▶ » >] transport controls
@@ -36,6 +36,7 @@
     onRampStop?: () => void;
     isOwned?: boolean;
     onDeleteRequest?: () => void;
+    onVideoUpload?: () => void;
     // Prop switcher
     propSource?: "intended" | "creator-favorite" | "viewer-settings" | "quick-switch";
     hasIntendedProp?: boolean;
@@ -65,6 +66,7 @@
     onRampStop,
     isOwned = false,
     onDeleteRequest,
+    onVideoUpload,
     propSource,
     hasIntendedProp,
     bluePropType,
@@ -117,12 +119,12 @@
       </button>
       <button
         type="button"
-        class="action-btn construct"
+        class="action-btn edit"
         onclick={onEdit}
-        aria-label="Open in Constructor"
+        aria-label="Edit"
       >
-        <i class="fas fa-hammer" aria-hidden="true"></i>
-        <span>Construct</span>
+        <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+        <span>Edit</span>
       </button>
     {:else}
       <button
@@ -136,6 +138,17 @@
       </button>
     {/if}
 
+    {#if isLoggedIn && isOwned && onVideoUpload}
+      <button
+        type="button"
+        class="action-btn video"
+        onclick={onVideoUpload}
+        aria-label="Upload video"
+      >
+        <i class="fas fa-video" aria-hidden="true"></i>
+        <span>Video</span>
+      </button>
+    {/if}
     {#if isLoggedIn && isOwned && onDeleteRequest}
       <button
         type="button"
@@ -387,13 +400,13 @@
     border-color: rgba(34, 197, 94, 0.4);
   }
 
-  .action-btn.construct {
+  .action-btn.edit {
     background: rgba(245, 158, 11, 0.1);
     border-color: rgba(245, 158, 11, 0.25);
     color: #f59e0b;
   }
 
-  .action-btn.construct:hover {
+  .action-btn.edit:hover {
     background: rgba(245, 158, 11, 0.2);
     border-color: rgba(245, 158, 11, 0.4);
   }

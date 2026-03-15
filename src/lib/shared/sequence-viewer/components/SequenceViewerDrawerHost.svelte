@@ -38,6 +38,7 @@
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
+  import VideoUploadSheet from "$lib/shared/video-collaboration/components/VideoUploadSheet.svelte";
   import ChoreoCardContextMenuHost from "./choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
   import {
     openSendSequenceSheet,
@@ -95,6 +96,9 @@
   // Delete confirmation state
   let deleteConfirmOpen = $state(false);
   let isDeleting = $state(false);
+
+  // Video upload state
+  let videoUploadOpen = $state(false);
 
   // ChoreoCard context menu
   let choreoCardMenuHost: ChoreoCardContextMenuHost | undefined = $state();
@@ -409,6 +413,7 @@
                 onRampStart={ctx.handleRampStart}
                 onRampStop={ctx.handleRampStop}
                 isOwned={ctx.isOwned}
+                onVideoUpload={ctx.isOwned ? () => (videoUploadOpen = true) : undefined}
                 onDeleteRequest={() => (deleteConfirmOpen = true)}
                 bluePropType={ctx.bluePropType}
                 redPropType={ctx.redPropType}
@@ -439,6 +444,15 @@
                 }
               }}
               onCancel={() => (deleteConfirmOpen = false)}
+            />
+          {/if}
+
+          {#if videoUploadOpen && overlay.sequence}
+            <VideoUploadSheet
+              show={videoUploadOpen}
+              sequence={overlay.sequence}
+              onClose={() => (videoUploadOpen = false)}
+              onUploaded={() => (videoUploadOpen = false)}
             />
           {/if}
         </div>
