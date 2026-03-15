@@ -29,7 +29,7 @@
   let videoElement: HTMLVideoElement | undefined = $state();
   let canvasWidth = $state(640);
   let canvasHeight = $state(360);
-  let toolMode = $state<ToolMode>("select");
+  let toolMode = $state<ToolMode>("guided");
   let selectedEndpointIdx = $state(-1);
   let slowPlaying = $state(false);
   let slowPlayTimer = $state<ReturnType<typeof setInterval> | null>(null);
@@ -69,7 +69,11 @@
     }
   }
 
-  // Wire video element to source URL — use an in-DOM <video> element for reliable seeking
+  // Force canvas redraw counter — incremented when video seeks to a new frame,
+  // since videoElement.currentTime is a DOM property that Svelte can't track.
+  let redrawTick = $state(0);
+
+  // Wire video element to source URL
   $effect(() => {
     if (!videoElement || !trailsState.source?.url) return;
     const url = trailsState.source.url;
@@ -81,6 +85,10 @@
       canvasWidth = videoElement.videoWidth;
       canvasHeight = videoElement.videoHeight;
     };
+    // After each seek completes, bump the redraw counter so the canvas updates
+    videoElement.onseeked = () => { redrawTick++; };
+    // Draw first frame as soon as video can display
+    videoElement.oncanplay = () => { redrawTick++; };
   });
 
   // Seek the hidden video element to the current frame whenever it changes
@@ -287,6 +295,7 @@
           onSelectEndpoint={handleSelectEndpoint}
           guidedStep={currentGuidedStep}
           onGuidedPlacement={handleGuidedPlacement}
+          {redrawTick}
         />
       </div>
 
