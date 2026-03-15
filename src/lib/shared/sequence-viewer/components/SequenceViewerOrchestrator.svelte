@@ -89,10 +89,6 @@
     catDogModeEnabled: boolean | undefined;
 
     // Prop source tracking
-    propSource: "intended" | "creator-favorite" | "viewer-settings" | "quick-switch";
-    hasIntendedProp: boolean;
-    handlePropSourceChange: (source: "intended" | "viewer-settings" | "quick-switch") => void;
-    handleQuickSwitchProp: (blue: PropType, red: PropType, catDog: boolean) => void;
     handleSetAsIntended: () => Promise<void>;
 
     imgShowWord: boolean;
@@ -187,6 +183,7 @@
   import { createTempoRampState } from "$lib/shared/sequence-viewer/state/tempo-ramp-state.svelte";
   import { page } from "$app/stores";
   import type { ShareURLMetadata } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
+  import type { IPresentationResolver, ViewingContext } from "../services/contracts/IPresentationResolver";
 
   // ============================================================================
   // PROPS
@@ -305,49 +302,25 @@
   const redPropType = $derived(settings.redPropType);
   const catDogModeEnabled = $derived(settings.catDogMode);
 
-  // Prop source tracking — which prop config is currently active
-  let propSourceOverride = $state<"intended" | "viewer-settings" | "quick-switch" | null>(null);
-  let quickSwitchBlue = $state<PropType | undefined>(undefined);
-  let quickSwitchRed = $state<PropType | undefined>(undefined);
-  let quickSwitchCatDog = $state<boolean>(false);
+  // Prop context — viewer sees creator's intended props by default ("creator-expression"),
+  // or their own settings ("notation"). User can toggle via the PropContextChip.
+  let contextOverride = $state<ViewingContext | null>(null);
+  const activeContext = $derived(contextOverride ?? "notation");
 
-  const hasIntendedProp = $derived(!!sequence?.intendedProp);
-
-  // Default to "intended" if sequence has intendedProp, otherwise "viewer-settings"
-  const propSource = $derived(
-    propSourceOverride ?? (hasIntendedProp ? "intended" : "viewer-settings")
-  );
-
-  // Resolve the active prop config based on source
-  const activeBlueProp = $derived.by(() => {
-    if (propSource === "intended" && sequence?.intendedProp) {
-      return sequence.intendedProp.bluePropType;
-    }
-    if (propSource === "quick-switch" && quickSwitchBlue) {
-      return quickSwitchBlue;
-    }
-    return bluePropType; // viewer settings
+  const presentation = $derived.by(() => {
+    const resolver = container.items.presentationResolver as IPresentationResolver;
+    return resolver.resolve(
+      sequence!,
+      activeContext,
+      bluePropType ?? PropType.STAFF,
+      redPropType ?? PropType.STAFF,
+      catDogModeEnabled ?? false
+    );
   });
 
-  const activeRedProp = $derived.by(() => {
-    if (propSource === "intended" && sequence?.intendedProp) {
-      return sequence.intendedProp.redPropType;
-    }
-    if (propSource === "quick-switch" && quickSwitchRed) {
-      return quickSwitchRed;
-    }
-    return redPropType; // viewer settings
-  });
-
-  const activeCatDog = $derived.by(() => {
-    if (propSource === "intended" && sequence?.intendedProp) {
-      return sequence.intendedProp.catDogMode;
-    }
-    if (propSource === "quick-switch") {
-      return quickSwitchCatDog;
-    }
-    return catDogModeEnabled; // viewer settings
-  });
+  const activeBlueProp = $derived(presentation.bluePropType);
+  const activeRedProp = $derived(presentation.redPropType);
+  const activeCatDog = $derived(presentation.catDogMode);
 
   // Animation visibility
   const animationVisibility = getAnimationVisibilityManager();
@@ -1043,6 +1016,15 @@
       const sequenceWithIntent = createSequenceData({
         ...sequence,
         metadata: pathShapeMetadata,
+        creatorIntent: {
+          propConfig: {
+            bluePropType: bluePropType ?? PropType.STAFF,
+            redPropType: redPropType ?? PropType.STAFF,
+            catDogMode: catDogModeEnabled ?? false,
+          },
+          ...(sequence?.creatorIntent?.effortTimeline && { effortTimeline: sequence.creatorIntent.effortTimeline }),
+          ...(sequence?.effortTimeline && { effortTimeline: sequence.effortTimeline }),
+        },
         intendedProp: {
           bluePropType: bluePropType ?? PropType.STAFF,
           redPropType: redPropType ?? PropType.STAFF,
@@ -1055,17 +1037,6 @@
       console.error("Failed to save sequence:", error);
       showToast("Failed to save sequence", "error");
     }
-  }
-
-  function handlePropSourceChange(source: "intended" | "viewer-settings" | "quick-switch") {
-    propSourceOverride = source;
-  }
-
-  function handleQuickSwitchProp(blue: PropType, red: PropType, catDog: boolean) {
-    quickSwitchBlue = blue;
-    quickSwitchRed = red;
-    quickSwitchCatDog = catDog;
-    propSourceOverride = "quick-switch";
   }
 
   async function handleSetAsIntended() {
@@ -1085,6 +1056,15 @@
       const updatedSequence = createSequenceData({
         ...sequence,
         metadata: pathShapeMetadata,
+        creatorIntent: {
+          propConfig: {
+            bluePropType: currentBlue,
+            redPropType: currentRed,
+            catDogMode: currentCatDog ?? false,
+          },
+          ...(sequence?.creatorIntent?.effortTimeline && { effortTimeline: sequence.creatorIntent.effortTimeline }),
+          ...(sequence?.effortTimeline && { effortTimeline: sequence.effortTimeline }),
+        },
         intendedProp: {
           bluePropType: currentBlue,
           redPropType: currentRed,
@@ -1302,10 +1282,6 @@
     catDogModeEnabled: activeCatDog,
 
     // Prop source tracking
-    propSource,
-    hasIntendedProp,
-    handlePropSourceChange,
-    handleQuickSwitchProp,
     handleSetAsIntended,
 
     imgShowWord,
