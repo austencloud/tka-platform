@@ -78,6 +78,13 @@ export interface SequenceData {
   readonly orientationCycleCount?: 1 | 2 | 4;
   readonly difficultyLevel?: string;
   readonly tags: readonly string[];
+  /**
+   * Extensible metadata bag for stylistic/performance properties.
+   *
+   * Known keys:
+   * - `pathShape`: "arc" | "linear" — creator's intended path shape for shift interpolation.
+   *   Absent or "arc" = default arc behavior. "linear" = straight-line shifts.
+   */
   readonly metadata: Record<string, unknown>;
 
   // Equivalence detection fields

@@ -132,7 +132,7 @@
     handleCanvasReady: (canvas: HTMLCanvasElement | null) => void;
     handleSyncToggle: () => Promise<void>;
     handleOpenInCompose: (preset?: 'stagger' | 'mirror' | 'combo-export') => Promise<void>;
-    handleEditInConstructor: () => void;
+    handleEdit: () => void;
     handleSave: () => void;
     handleShare: () => void;
     handleDelete: () => Promise<void>;
@@ -548,6 +548,14 @@
   $effect(() => {
     if (sequence && animationServicesReady && playbackController) {
       initializeAnimation(sequence);
+    }
+  });
+
+  // Restore pathShape from sequence metadata when the sequence changes
+  $effect(() => {
+    const savedPathShape = sequence?.metadata?.pathShape;
+    if (savedPathShape === "arc" || savedPathShape === "linear") {
+      getAnimationVisibilityManager().setPathShape(savedPathShape);
     }
   });
 
@@ -997,7 +1005,7 @@
   // CONSTRUCTOR NAVIGATION
   // ============================================================================
 
-  function handleEditInConstructor() {
+  function handleEdit() {
     if (!sequence) return;
     hapticService?.trigger("selection");
 
@@ -1007,7 +1015,7 @@
     // Close the viewer (stops playback, disconnects LAN, restores focus)
     handleBackInternal();
 
-    showToast({ message: "Opening in Constructor...", type: "info", duration: 2000 });
+    showToast({ message: "Opening for editing...", type: "info", duration: 2000 });
     void handleModuleChange("create", "construct");
   }
 
@@ -1027,9 +1035,14 @@
     }
     try {
       const libraryRepo = container.items.libraryRepository;
-      // Attach current prop config as intended prop
+      // Attach current prop config as intended prop, and capture pathShape in metadata
+      const currentPathShape = getAnimationVisibilityManager().getPathShape();
+      const pathShapeMetadata = currentPathShape !== "arc"
+        ? { ...sequence.metadata, pathShape: currentPathShape }
+        : sequence.metadata;
       const sequenceWithIntent = createSequenceData({
         ...sequence,
+        metadata: pathShapeMetadata,
         intendedProp: {
           bluePropType: bluePropType ?? PropType.STAFF,
           redPropType: redPropType ?? PropType.STAFF,
@@ -1064,8 +1077,14 @@
 
     try {
       const libraryRepo = container.items.libraryRepository;
+      // Capture pathShape in metadata alongside prop intent
+      const currentPathShape = getAnimationVisibilityManager().getPathShape();
+      const pathShapeMetadata = currentPathShape !== "arc"
+        ? { ...sequence.metadata, pathShape: currentPathShape }
+        : sequence.metadata;
       const updatedSequence = createSequenceData({
         ...sequence,
+        metadata: pathShapeMetadata,
         intendedProp: {
           bluePropType: currentBlue,
           redPropType: currentRed,
@@ -1326,7 +1345,7 @@
     handleCanvasReady,
     handleSyncToggle,
     handleOpenInCompose,
-    handleEditInConstructor,
+    handleEdit,
     handleSave,
     handleShare,
     handleDelete,
