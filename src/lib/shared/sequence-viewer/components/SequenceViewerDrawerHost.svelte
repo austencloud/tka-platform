@@ -412,12 +412,8 @@
                 onRampStop={ctx.handleRampStop}
                 isOwned={ctx.isOwned}
                 onDeleteRequest={() => (deleteConfirmOpen = true)}
-                propSource={ctx.propSource}
-                hasIntendedProp={ctx.hasIntendedProp}
                 bluePropType={ctx.bluePropType}
                 redPropType={ctx.redPropType}
-                onPropSourceChange={ctx.handlePropSourceChange}
-                onQuickSwitchProp={ctx.handleQuickSwitchProp}
                 onSetAsIntended={ctx.handleSetAsIntended}
               />
             </div>
