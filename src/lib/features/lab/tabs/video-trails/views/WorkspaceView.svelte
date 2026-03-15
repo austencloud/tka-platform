@@ -150,6 +150,9 @@
   }
 
   function handleVideoCanPlay() {
+    // Draw the first frame immediately so the canvas isn't black before playback
+    canvasStack?.drawVideoFrame(videoEl!);
+
     if (trailsState.isPlaying && videoEl?.paused) {
       videoEl.play().catch(() => {});
     }
