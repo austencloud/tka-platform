@@ -257,6 +257,16 @@
                 <div class="drawer-header-actions">
                   <button
                     type="button"
+                    class="header-action-btn lamp-btn"
+                    class:lit={!ctx.imgDarkMode}
+                    onclick={ctx.handleUnifiedDarkModeToggle}
+                    aria-label={ctx.imgDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+                    title={ctx.imgDarkMode ? "Light mode" : "Dark mode"}
+                  >
+                    <i class="fas fa-lightbulb" aria-hidden="true"></i>
+                  </button>
+                  <button
+                    type="button"
                     class="header-action-btn"
                     onclick={handleCopyLink}
                     aria-label="Copy link to sequence"
@@ -393,7 +403,7 @@
                 onStepHalfForward={ctx.stepHalfBeatForward}
                 onRestartToStart={ctx.restartToStart}
                 onSave={ctx.handleSave}
-                onEdit={ctx.handleEditInConstructor}
+                onEdit={ctx.handleEdit}
                 onGetApp={ctx.handleGetApp}
                 onExportVideo={() => ctx.enterEditMode('animation')}
                 onExportImage={() => ctx.enterEditMode('image')}
@@ -570,6 +580,27 @@
     outline-offset: 2px;
   }
 
+  /* Lightbulb toggle — unlit (dark mode active) */
+  .lamp-btn {
+    transition: background 150ms ease, color 150ms ease, box-shadow 150ms ease;
+  }
+
+  /* Lit state — light mode active, bulb glows */
+  .lamp-btn.lit {
+    color: #ffd966;
+    background: linear-gradient(145deg, rgba(255, 220, 100, 0.2), rgba(255, 180, 50, 0.1));
+    box-shadow: 0 0 12px rgba(255, 200, 80, 0.25);
+  }
+
+  .lamp-btn.lit i {
+    filter: drop-shadow(0 0 4px rgba(255, 200, 80, 0.7));
+  }
+
+  .lamp-btn.lit:hover {
+    background: linear-gradient(145deg, rgba(255, 220, 100, 0.3), rgba(255, 180, 50, 0.2));
+    box-shadow: 0 0 16px rgba(255, 200, 80, 0.35);
+  }
+
   /* Main area wraps body + footer in a flex column.
      Body fills remaining space; footer is a normal flex child at the bottom. */
   .drawer-main {
@@ -706,6 +737,12 @@
     grid-template-rows: 0fr;
     opacity: 0;
     pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lamp-btn {
+      transition: none;
+    }
   }
 
   /* Override Drawer defaults for full-screen sequence viewer */
