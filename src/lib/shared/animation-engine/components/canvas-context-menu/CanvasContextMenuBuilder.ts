@@ -104,6 +104,28 @@ function buildEffortChildren(
   }));
 }
 
+function buildPathShapeChildren(
+  vm: AnimationVisibilityStateManager
+): ContextMenuItem[] {
+  const current = vm.getPathShape();
+  return [
+    {
+      id: "path-arc",
+      label: "Arc",
+      icon: "fa-bezier-curve",
+      checked: current === "arc",
+      action: () => vm.setPathShape("arc"),
+    },
+    {
+      id: "path-linear",
+      label: "Linear",
+      icon: "fa-arrows-alt-h",
+      checked: current === "linear",
+      action: () => vm.setPathShape("linear"),
+    },
+  ];
+}
+
 export function buildCanvasContextMenuItems(
   deps: CanvasContextMenuDeps
 ): ContextMenuEntry[] {
@@ -123,6 +145,12 @@ export function buildCanvasContextMenuItems(
       label: "Efforts",
       icon: "fa-gauge",
       children: buildEffortChildren(vm, settings.effortPreset),
+    },
+    {
+      id: "path-shape-submenu",
+      label: "Path Shape",
+      icon: "fa-draw-polygon",
+      children: buildPathShapeChildren(vm),
     },
     { type: "separator" as const },
     ...(deps.onToggleDisassemble
