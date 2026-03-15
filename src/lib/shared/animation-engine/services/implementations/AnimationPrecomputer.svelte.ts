@@ -14,6 +14,7 @@ import type { ISequenceAnimationOrchestrator } from "$lib/features/compose/servi
 import type { ITrailCapturer } from "$lib/features/compose/services/contracts/ITrailCapturer";
 import type { IAnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
 import { AnimationPathCache } from "$lib/features/compose/services/implementations/AnimationPathCache";
+import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
 import {
   SequenceFramePreRenderer,
   type PreRenderProgress,
@@ -49,7 +50,9 @@ function getSequencePathHash(seq: SequenceData, totalSteps: number, stepDuration
       return `${bPart}|${rPart}`;
     })
     .join(";") || "";
-  return `${seq.id || seq.word || "?"}-${totalSteps}-${stepDurationMs}-${motionFingerprint}`;
+  // Include pathShape so toggling arc/linear invalidates the cache
+  const pathShape = getAnimationVisibilityManager().getPathShape();
+  return `${seq.id || seq.word || "?"}-${totalSteps}-${stepDurationMs}-${pathShape}-${motionFingerprint}`;
 }
 
 function storeInGlobalCache(hash: string, cache: AnimationPathCache): void {
