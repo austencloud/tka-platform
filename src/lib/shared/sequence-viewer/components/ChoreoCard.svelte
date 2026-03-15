@@ -320,7 +320,8 @@
   );
 
   // Show footer when any footer element is enabled
-  const showFooter = $derived(showCreatorName || showNotes || showBirthday);
+  const hasPathShapeMetadata = $derived(sequence?.metadata?.pathShape === "linear");
+  const showFooter = $derived(showCreatorName || showNotes || showBirthday || hasPathShapeMetadata);
 
   // Format birthday date
   const birthdayDate = $derived.by(() => {
@@ -1738,6 +1739,10 @@
               🎂 {birthdayDate}
             </span>
           {/if}
+
+          {#if hasPathShapeMetadata}
+            <span class="footer-path-shape">Linear shifts</span>
+          {/if}
         </div>
       {/if}
     </div>
@@ -2211,6 +2216,12 @@
 
   .footer-birthday {
     margin-left: auto;
+  }
+
+  .footer-path-shape {
+    font-size: inherit;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-style: italic;
   }
 
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */
