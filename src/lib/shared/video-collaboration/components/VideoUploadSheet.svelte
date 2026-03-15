@@ -72,10 +72,10 @@
       return;
     }
 
-    // Validate file size (max 100MB)
-    const maxSize = 100 * 1024 * 1024;
+    // Validate file size (max 500MB — files over 100MB use multipart upload automatically)
+    const maxSize = 500 * 1024 * 1024;
     if (file.size > maxSize) {
-      uploadError = "Video must be under 100MB";
+      uploadError = "Video must be under 500MB";
       return;
     }
 
@@ -285,7 +285,7 @@
         <button class="file-drop-zone" onclick={handleBrowseClick}>
           <i class="fas fa-cloud-upload-alt" aria-hidden="true"></i>
           <span class="drop-text">Select Video</span>
-          <span class="drop-hint">MP4, WebM, MOV up to 100MB</span>
+          <span class="drop-hint">MP4, WebM, MOV up to 500MB</span>
         </button>
       {:else}
         <!-- Video Preview -->
