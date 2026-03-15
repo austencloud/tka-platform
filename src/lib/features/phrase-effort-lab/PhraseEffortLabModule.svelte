@@ -49,6 +49,9 @@
   import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
   import TempoControl from "$lib/shared/sequence-viewer/components/TempoControl.svelte";
   import { libraryState } from "$lib/features/library/state/library-state.svelte";
+  import type { CreatorIntent } from "$lib/shared/foundation/domain/models/CreatorIntent";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 
   const SESSION_KEY = "phrase-effort-lab-sequence-id";
   const SESSION_TIMELINE_KEY = "phrase-effort-lab-timeline";
@@ -446,16 +449,32 @@
         firestore,
         `users/${user.uid}/sequences/${sequence.id}`,
       );
+      // Build the full creatorIntent object — Firestore dot-notation only works
+      // if the parent map exists, so we write the full object to be safe.
+      const updatedIntent: CreatorIntent = {
+        propConfig: sequence.creatorIntent?.propConfig ?? {
+          bluePropType: (settingsService.settings.bluePropType as PropType) ?? PropType.STAFF,
+          redPropType: (settingsService.settings.redPropType as PropType) ?? PropType.STAFF,
+          catDogMode: settingsService.settings.catDogMode ?? false,
+        },
+        effortTimeline: timeline,
+      };
+
       await setDoc(
         sequenceRef,
         {
           effortTimeline: timeline,
+          creatorIntent: updatedIntent,
           updatedAt: serverTimestamp(),
         },
         { merge: true },
       );
 
-      sequence = { ...sequence, effortTimeline: timeline };
+      sequence = {
+        ...sequence,
+        effortTimeline: timeline,
+        creatorIntent: updatedIntent,
+      };
       saveStatus = "saved";
       toast.success("Effort timeline saved.");
     } catch (err) {
