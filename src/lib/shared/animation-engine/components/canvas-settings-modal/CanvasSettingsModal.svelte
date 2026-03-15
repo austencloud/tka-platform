@@ -27,6 +27,7 @@
   import TrailsCategory from "./categories/TrailsCategory.svelte";
   import PlaybackCategory from "./categories/PlaybackCategory.svelte";
   import EffortCategory from "./categories/EffortCategory.svelte";
+  import PathShapeCategory from "./categories/PathShapeCategory.svelte";
   import DisplayCategory from "./categories/DisplayCategory.svelte";
   import EffectPicker from "./EffectPicker.svelte";
   import type { ActiveEffect } from "./EffectPicker.svelte";
@@ -255,6 +256,10 @@
           <div class="control-group">
             <span class="group-label">Effort</span>
             <EffortCategory />
+          </div>
+          <div class="control-group">
+            <span class="group-label">Path Shape</span>
+            <PathShapeCategory />
           </div>
         </div>
       {/if}
