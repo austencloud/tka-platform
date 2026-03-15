@@ -5,11 +5,9 @@
  * or ImageCompositionStateManager (normal mode) and produces
  * ContextMenuEntry[] for the ChoreoCard right-click menu.
  *
- * Toggle groups:
- *   - Include: Word, Start Position, Difficulty, Step Numbers
- *   - Footer: Creator Name, Notes, Birthday
- *   - Columns: Auto, 2, 3, 4, 5, 6 (submenu, radio-style)
- *   - Theme: Light / Dark toggle
+ * Structure:
+ *   - Display submenu: Word, Start Position, Difficulty, Step Numbers, Creator Name, Notes, Birthday
+ *   - Columns submenu: Auto, 2, 3, 4, 5, 6 (radio-style)
  * Plus: Edit Notes Text..., Export Image actions.
  */
 
@@ -27,7 +25,6 @@ export interface ChoreoCardContextMenuDeps {
   showCreatorName: boolean;
   showNotes: boolean;
   showBirthday: boolean;
-  darkMode: boolean;
   columnCount: number | null; // null = auto
 
   // Callbacks to toggle each setting
@@ -38,7 +35,6 @@ export interface ChoreoCardContextMenuDeps {
   setShowCreatorName: (v: boolean) => void;
   setShowNotes: (v: boolean) => void;
   setShowBirthday: (v: boolean) => void;
-  setDarkMode: (v: boolean) => void;
   setColumnCount: (v: number | null) => void;
 
   // Actions
@@ -71,9 +67,7 @@ function buildColumnChildren(
 export function buildChoreoCardContextMenuItems(
   deps: ChoreoCardContextMenuDeps
 ): ContextMenuEntry[] {
-  const items: ContextMenuEntry[] = [
-    // ── Include section ──
-    { type: "header" as const, label: "Include" },
+  const displayChildren: ContextMenuItem[] = [
     {
       id: "toggle-word",
       label: "Word",
@@ -106,10 +100,6 @@ export function buildChoreoCardContextMenuItems(
       keepOpen: true,
       action: () => deps.setShowStepNumbers(!deps.showStepNumbers),
     },
-
-    // ── Footer section ──
-    { type: "separator" as const },
-    { type: "header" as const, label: "Footer" },
     {
       id: "toggle-creator-name",
       label: "Creator Name",
@@ -134,29 +124,23 @@ export function buildChoreoCardContextMenuItems(
       keepOpen: true,
       action: () => deps.setShowBirthday(!deps.showBirthday),
     },
+  ];
 
-    // ── Columns submenu ──
-    { type: "separator" as const },
+  const items: ContextMenuEntry[] = [
+    {
+      id: "display-submenu",
+      label: "Display",
+      icon: "fa-eye",
+      children: displayChildren,
+    },
     {
       id: "columns-submenu",
       label: "Columns",
       icon: "fa-table-columns",
       children: buildColumnChildren(deps.columnCount, deps.setColumnCount),
     },
-
-    // ── Theme toggle ──
-    { type: "separator" as const },
-    {
-      id: "toggle-theme",
-      label: deps.darkMode ? "Switch to Light" : "Switch to Dark",
-      icon: deps.darkMode ? "fa-sun" : "fa-moon",
-      checked: deps.darkMode,
-      keepOpen: true,
-      action: () => deps.setDarkMode(!deps.darkMode),
-    },
   ];
 
-  // ── Actions ──
   if (deps.onEditNotes || deps.onExportImage || deps.onSendTo) {
     items.push({ type: "separator" as const });
 
