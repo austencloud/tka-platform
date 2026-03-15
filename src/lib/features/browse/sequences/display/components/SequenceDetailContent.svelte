@@ -18,6 +18,8 @@ Used by both desktop side panel and mobile slide-up overlay.
   import type { IClaudeCodeCopier } from "../services/contracts/IClaudeCodeCopier";
   import type { MediaType } from "$lib/shared/sequence-viewer/domain/types";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
+  import PropContextChip from "$lib/shared/sequence-viewer/components/PropContextChip.svelte";
+  import type { IPresentationResolver, ViewingContext } from "$lib/shared/sequence-viewer/services/contracts/IPresentationResolver";
 
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
@@ -80,6 +82,7 @@ Used by both desktop side panel and mobile slide-up overlay.
     onAction = () => {},
     onInviteCollaborators,
     onVariationSelect = () => {},
+    viewingContext = "notation",
   } = $props<{
     sequence: SequenceData;
     variations?: SequenceData[];
@@ -88,33 +91,43 @@ Used by both desktop side panel and mobile slide-up overlay.
     onAction?: (action: string, sequence: SequenceData) => void;
     onInviteCollaborators?: (video: CollaborativeVideo) => void;
     onVariationSelect?: (index: number, sequence: SequenceData) => void;
+    viewingContext?: ViewingContext;
   }>();
 
   // Light mode from visibility state
   const visibilityManager = getAnimationVisibilityManager();
   const lightMode = $derived(!visibilityManager.isDarkMode());
 
-  // Prop settings for variation thumbnails — uses the intended prop cascade:
-  // (1) sequence intendedProp → (2) creator favoriteProp → (3) viewer settings
-  const propSettings = $derived.by(() => {
-    const viewerBlue = settingsService.settings.bluePropType as PropType | undefined;
-    const viewerRed = settingsService.settings.redPropType as PropType | undefined;
+  // Ephemeral override: user toggled the chip
+  let contextOverride = $state<ViewingContext | null>(null);
+  const activeContext = $derived(contextOverride ?? viewingContext);
+
+  const presentation = $derived.by(() => {
+    const resolver = container.items.presentationResolver as IPresentationResolver;
+    const viewerBlue = settingsService.settings.bluePropType as PropType;
+    const viewerRed = settingsService.settings.redPropType as PropType;
     const viewerCatDog = settingsService.settings.catDogMode ?? false;
 
-    if (sequence.intendedProp) {
-      return {
-        bluePropType: sequence.intendedProp.bluePropType,
-        redPropType: sequence.intendedProp.redPropType,
-        catDogMode: sequence.intendedProp.catDogMode,
-      };
-    }
-
-    return {
-      bluePropType: viewerBlue,
-      redPropType: viewerRed,
-      catDogMode: viewerCatDog,
-    };
+    return resolver.resolve(
+      sequence,
+      activeContext,
+      viewerBlue,
+      viewerRed,
+      viewerCatDog
+    );
   });
+
+  const propSettings = $derived({
+    bluePropType: presentation.bluePropType,
+    redPropType: presentation.redPropType,
+    catDogMode: presentation.catDogMode,
+  });
+
+  function togglePropContext() {
+    contextOverride = activeContext === "creator-expression"
+      ? "notation"
+      : "creator-expression";
+  }
 
   const isCatDog = $derived(
     propSettings.bluePropType !== propSettings.redPropType ||
@@ -310,6 +323,19 @@ Used by both desktop side panel and mobile slide-up overlay.
     onCollapse={() => sequencePanelManager.setDetailExpanded(false)}
     {onClose}
   />
+
+  <!-- Prop context chip: shown when creator saved with different props than the viewer uses -->
+  {#if sequence.creatorIntent?.propConfig || sequence.intendedProp}
+    <PropContextChip
+      creatorDisplayName={sequence.ownerDisplayName ?? "Creator"}
+      creatorBlueProp={sequence.creatorIntent?.propConfig?.bluePropType ?? sequence.intendedProp?.bluePropType ?? ("staff" as PropType)}
+      creatorRedProp={sequence.creatorIntent?.propConfig?.redPropType ?? sequence.intendedProp?.redPropType ?? ("staff" as PropType)}
+      viewerBlueProp={settingsService.settings.bluePropType as PropType}
+      viewerRedProp={settingsService.settings.redPropType as PropType}
+      source={presentation.source}
+      onSwitch={togglePropContext}
+    />
+  {/if}
 
   <!-- Variation Strip -->
   {#if variations.length > 1}
