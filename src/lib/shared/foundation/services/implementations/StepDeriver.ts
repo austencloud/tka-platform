@@ -105,7 +105,10 @@ export class StepDeriver implements IStepDeriver {
     stepPairings: readonly StepPairingData[],
     viewerPrefs?: ViewerPreferences
   ): StepData[] {
-    const propType = viewerPrefs?.propType ?? PropType.STAFF;
+    const bluePropType = viewerPrefs?.bluePropType ?? PropType.STAFF;
+    // When catDogMode is off, both hands use the blue prop type for consistency.
+    const redPropType =
+      viewerPrefs?.catDogMode ? (viewerPrefs.redPropType ?? PropType.STAFF) : bluePropType;
     const count = stepPairings.length;
 
     // Guard: all three arrays must have the same length or downstream rendering
@@ -130,8 +133,8 @@ export class StepDeriver implements IStepDeriver {
         redStep.endLocation
       );
 
-      const blueMotion = rehydrateMotion(blueStep, MotionColor.BLUE, gridMode, propType);
-      const redMotion = rehydrateMotion(redStep, MotionColor.RED, gridMode, propType);
+      const blueMotion = rehydrateMotion(blueStep, MotionColor.BLUE, gridMode, bluePropType);
+      const redMotion = rehydrateMotion(redStep, MotionColor.RED, gridMode, redPropType);
 
       const stepData: StepData = {
         id: crypto.randomUUID(),

@@ -263,7 +263,9 @@ describe("StepDeriver", () => {
       const red = makeSoloProp([redStep]);
 
       const [step] = deriver.deriveSteps(blue, red, [makePairing()], {
-        propType: PropType.FAN,
+        bluePropType: PropType.FAN,
+        redPropType: PropType.FAN,
+        catDogMode: false,
       });
 
       expect(step!.motions.blue?.propType).toBe(PropType.FAN);
