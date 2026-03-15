@@ -1,10 +1,10 @@
 /**
- * PublicSequenceIndex - Denormalized document for efficient public browsing
+ * PublicSequenceIndex - Self-contained public sequence document
  *
- * This is a subset of LibrarySequence fields optimized for:
- * - Fast queries on the global public sequence feed (Browse)
- * - Reducing document reads when browsing
- * - Supporting search and filtering without reading full sequence data
+ * Each published sequence is a complete, immutable snapshot. It contains
+ * everything needed to render the sequence without fetching from any other
+ * collection. The sourceRef is provenance metadata ("who published this"),
+ * not a data dependency.
  *
  * Stored at: publicSequences/{sequenceId}
  *
@@ -12,10 +12,15 @@
  * - Created when a sequence's visibility is set to "public"
  * - Deleted when visibility changes away from "public"
  * - Updated when relevant sequence fields change
+ * - Deduplicated by contentHash at publish time
  */
 
+import type { SoloPropData } from "$lib/shared/foundation/domain/models/SoloPropData";
+import type { StepPairingData } from "$lib/shared/foundation/domain/models/StepPairingData";
+import type { CreatorIntent } from "$lib/shared/foundation/domain/models/CreatorIntent";
+
 /**
- * PublicSequenceIndex - Denormalized public sequence for Browse
+ * PublicSequenceIndex - Self-contained public sequence for Browse
  */
 export interface PublicSequenceIndex {
   /** Sequence ID (same as document ID and source sequence ID) */
@@ -96,6 +101,41 @@ export interface PublicSequenceIndex {
   readonly originalCreatorName?: string;
 
   // ============================================================
+  // COMPOSITIONAL DATA (self-contained rendering)
+  // ============================================================
+
+  /** Full motion content hash (SHA-256) for deduplication */
+  readonly contentHash?: string;
+
+  /** Blue performer's solo prop decomposition (steps + hand path) */
+  readonly blueSoloProp?: SoloPropData;
+
+  /** Red performer's solo prop decomposition (steps + hand path) */
+  readonly redSoloProp?: SoloPropData;
+
+  /** Per-beat pairings linking blue and red motions */
+  readonly stepPairings?: readonly StepPairingData[];
+
+  /** Hash of blue performer's dual-prop hand path */
+  readonly bluePathHash?: string;
+
+  /** Hash of red performer's dual-prop hand path */
+  readonly redPathHash?: string;
+
+  /** Hash of blue performer's solo prop */
+  readonly blueSoloHash?: string;
+
+  /** Hash of red performer's solo prop */
+  readonly redSoloHash?: string;
+
+  // ============================================================
+  // CREATOR INTENT
+  // ============================================================
+
+  /** Creator's presentation intent (prop config + effort timeline) */
+  readonly creatorIntent?: CreatorIntent | null;
+
+  // ============================================================
   // TIMESTAMPS
   // ============================================================
 
@@ -129,6 +169,7 @@ export function createPublicSequenceIndex(
       originalCreatorId: string;
       originalCreatorName: string;
     };
+    creatorIntent?: CreatorIntent | null;
   },
   owner: {
     displayName: string;
@@ -156,6 +197,7 @@ export function createPublicSequenceIndex(
     isForked: sequence.source === "forked",
     originalCreatorId: sequence.forkAttribution?.originalCreatorId,
     originalCreatorName: sequence.forkAttribution?.originalCreatorName,
+    ...(sequence.creatorIntent && { creatorIntent: sequence.creatorIntent }),
     publishedAt: now,
     updatedAt: now,
   };
