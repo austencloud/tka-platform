@@ -19,6 +19,7 @@ import type { IPropStateInterpolator } from "../contracts/IPropStateInterpolator
 import type { IAngleMathCalculator } from "../contracts/IAngleMathCalculator";
 import type { IOrientationMapper } from "../contracts/IOrientationMapper";
 import type { IMotionCalculator } from "../contracts/IMotionCalculator";
+import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
 export class PropStateInterpolator implements IPropStateInterpolator {
   constructor(
@@ -115,8 +116,14 @@ export class PropStateInterpolator implements IPropStateInterpolator {
       staffRotationAngle
     );
 
-    // DASH motions use Cartesian interpolation (straight line through center)
-    if (config.motionType === MotionType.DASH) {
+    // DASH motions always use Cartesian interpolation (straight line through center).
+    // PRO/ANTI/FLOAT use it too when the user has selected "linear" path shape.
+    const useLinear =
+      config.motionType === MotionType.DASH ||
+      (config.motionType !== MotionType.STATIC &&
+        getAnimationVisibilityManager().getPathShape() === "linear");
+
+    if (useLinear) {
       const { worldPosition, centerPathAngle } = this.interpolateDashPosition(
         config,
         startCenterAngle,
