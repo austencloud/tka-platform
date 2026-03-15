@@ -18,8 +18,12 @@ export function createVideoTrailsState(
   corrector: IDetectionCorrector,
   tipAdapter: IVideoTipAdapter,
 ) {
-  // Sub-navigation
-  let activeView = $state<VideoTrailsView>("workspace");
+  // Sub-navigation — persisted to sessionStorage so HMR doesn't bounce you back
+  const ACTIVE_VIEW_KEY = "video-trails-active-view";
+  const storedView = (typeof sessionStorage !== "undefined"
+    ? sessionStorage.getItem(ACTIVE_VIEW_KEY) as VideoTrailsView | null
+    : null) ?? "workspace";
+  let activeView = $state<VideoTrailsView>(storedView);
 
   // Source
   let source = $state<VideoSource | null>(null);
@@ -193,7 +197,7 @@ export function createVideoTrailsState(
 
   return {
     get activeView() { return activeView; },
-    set activeView(v: VideoTrailsView) { activeView = v; },
+    set activeView(v: VideoTrailsView) { activeView = v; sessionStorage.setItem(ACTIVE_VIEW_KEY, v); },
 
     get source() { return source; },
     get sourceMode() { return sourceMode; },
