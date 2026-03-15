@@ -11,8 +11,11 @@ export class DetectionCorrector implements IDetectionCorrector {
     if (!frameCorrections || frameCorrections.length === 0) return detected;
 
     const result: DetectedEndpoint[] = [];
+    const handledKeys = new Set<string>();
 
+    // First pass: apply corrections to existing detected endpoints
     for (const endpoint of detected) {
+      const key = `${endpoint.propIndex}-${endpoint.tipIndex}`;
       const correction = frameCorrections.find(
         (c) => c.propIndex === endpoint.propIndex && c.tipIndex === endpoint.tipIndex,
       );
@@ -22,8 +25,9 @@ export class DetectionCorrector implements IDetectionCorrector {
         continue;
       }
 
+      handledKeys.add(key);
+
       if (correction.status === "occluded") {
-        // Endpoint was occluded at this frame — omit it from results entirely.
         continue;
       }
 
@@ -33,15 +37,34 @@ export class DetectionCorrector implements IDetectionCorrector {
             ...endpoint,
             x: correction.corrected.x,
             y: correction.corrected.y,
-            // Manually placed points are treated as fully certain.
             confidence: 1,
           });
         }
         continue;
       }
 
-      // "accepted" — user confirmed the detection is accurate, keep as-is.
       result.push(endpoint);
+    }
+
+    // Second pass: add manually placed points that have no corresponding detection.
+    // This happens in guided mode where the user clicks to create endpoints from scratch.
+    for (const correction of frameCorrections) {
+      const key = `${correction.propIndex}-${correction.tipIndex}`;
+      if (handledKeys.has(key)) continue;
+
+      if (correction.status === "corrected" || correction.status === "interpolated") {
+        if (correction.corrected) {
+          result.push({
+            x: correction.corrected.x,
+            y: correction.corrected.y,
+            brightness: 1,
+            confidence: 1,
+            propIndex: correction.propIndex,
+            tipIndex: correction.tipIndex,
+            frameIndex,
+          });
+        }
+      }
     }
 
     return result;

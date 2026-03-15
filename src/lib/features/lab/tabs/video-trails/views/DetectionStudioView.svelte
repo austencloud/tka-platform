@@ -40,14 +40,34 @@
 
   // Guided placement state
   let guidedStepIdx = $state(0);
-  let guidedFrameStep = $state(5); // Auto-advance by N frames after completing all 4 points
+  let guidedFrameStep = $state(5);
   let currentGuidedStep = $derived<GuidedStep | null>(
     toolMode === "guided" ? (GUIDED_SEQUENCE[guidedStepIdx] ?? null) : null,
   );
 
+  // Undo stack: tracks recent placements so they can be reversed
+  interface UndoEntry {
+    frame: number;
+    propIndex: 0 | 1;
+    tipIndex: number;
+    previousGuidedStepIdx: number;
+    previousFrame: number;
+  }
+  let undoStack = $state<UndoEntry[]>([]);
+  const MAX_UNDO = 50;
+
   function handleGuidedPlacement(x: number, y: number): void {
     const step = GUIDED_SEQUENCE[guidedStepIdx];
     if (!step) return;
+
+    // Push to undo stack before making changes
+    undoStack = [...undoStack.slice(-(MAX_UNDO - 1)), {
+      frame: trailsState.currentFrame,
+      propIndex: step.propIndex,
+      tipIndex: step.tipIndex,
+      previousGuidedStepIdx: guidedStepIdx,
+      previousFrame: trailsState.currentFrame,
+    }];
 
     trailsState.correctEndpoint(trailsState.currentFrame, {
       propIndex: step.propIndex,
@@ -60,7 +80,6 @@
     // Advance to next step
     const nextIdx = guidedStepIdx + 1;
     if (nextIdx >= GUIDED_SEQUENCE.length) {
-      // All 4 placed — advance to next frame batch and reset
       guidedStepIdx = 0;
       const nextFrame = Math.min(
         trailsState.totalFrames - 1,
@@ -69,6 +88,39 @@
       trailsState.setCurrentFrame(nextFrame);
     } else {
       guidedStepIdx = nextIdx;
+    }
+  }
+
+  function undo(): void {
+    if (undoStack.length === 0) return;
+    const entry = undoStack[undoStack.length - 1]!;
+    undoStack = undoStack.slice(0, -1);
+
+    // Remove the correction that was placed
+    const frameCorrectionList = trailsState.corrections[entry.frame] ?? [];
+    const filtered = frameCorrectionList.filter(
+      (c) => !(c.propIndex === entry.propIndex && c.tipIndex === entry.tipIndex),
+    );
+
+    // We can't directly set corrections[frame] through the state factory,
+    // so we overwrite the entry with an "accepted" status (effectively removing it).
+    // But actually, the cleanest approach: place a correction that nullifies it.
+    // Since there's no "delete correction" method, we correct back to detected=null, corrected=null.
+    // Actually, we need to remove it. Let's use correctEndpoint to set status to "accepted" with
+    // no corrected position — the corrector will pass through the detected value (which is null).
+    // This effectively removes the point from currentEndpoints.
+    trailsState.correctEndpoint(entry.frame, {
+      propIndex: entry.propIndex,
+      tipIndex: entry.tipIndex,
+      detected: null,
+      corrected: null,
+      status: "accepted",
+    });
+
+    // Restore guided step and frame
+    guidedStepIdx = entry.previousGuidedStepIdx;
+    if (entry.previousFrame !== trailsState.currentFrame) {
+      trailsState.setCurrentFrame(entry.previousFrame);
     }
   }
 
@@ -108,6 +160,13 @@
     // Don't capture keyboard events from the canvas/editor (it has its own handler)
     const target = e.target as HTMLElement;
     if (target.tagName === "CANVAS" || target.closest("[role='application']")) return;
+
+    // Ctrl+Z / Cmd+Z = undo
+    if ((e.ctrlKey || e.metaKey) && e.key === "z") {
+      e.preventDefault();
+      undo();
+      return;
+    }
 
     const step = e.shiftKey ? 10 : 1;
     if (e.key === "ArrowLeft") {
@@ -269,6 +328,15 @@
       <div class="toolbar-spacer"></div>
 
       <div class="toolbar-info">
+        <button
+          class="tool-btn compact"
+          onclick={undo}
+          disabled={undoStack.length === 0}
+          title="Undo last placement (Ctrl+Z)"
+          aria-label="Undo"
+        >
+          <i class="fas fa-undo" aria-hidden="true"></i>
+        </button>
         <span class="info-badge">
           <i class="fas fa-crosshairs" aria-hidden="true"></i>
           {trailsState.currentEndpoints.length} endpoints
