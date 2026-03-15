@@ -17,11 +17,14 @@
     color: string;
   }
 
+  // Blue = viewer's left prop, Red = viewer's right prop.
+  // Thumb end = the end nearest the performer's thumb (consistent grip reference).
+  // Pinky end = the opposite end.
   const GUIDED_SEQUENCE: GuidedStep[] = [
-    { propIndex: 0, tipIndex: 0, label: "Blue thumb end", color: "#4a90d9" },
-    { propIndex: 0, tipIndex: 1, label: "Blue pinky end", color: "#4a90d9" },
-    { propIndex: 1, tipIndex: 0, label: "Red thumb end", color: "#d94a4a" },
-    { propIndex: 1, tipIndex: 1, label: "Red pinky end", color: "#d94a4a" },
+    { propIndex: 0, tipIndex: 0, label: "Left prop (blue) — thumb end", color: "#4a90d9" },
+    { propIndex: 0, tipIndex: 1, label: "Left prop (blue) — pinky end", color: "#4a90d9" },
+    { propIndex: 1, tipIndex: 0, label: "Right prop (red) — thumb end", color: "#d94a4a" },
+    { propIndex: 1, tipIndex: 1, label: "Right prop (red) — pinky end", color: "#d94a4a" },
   ];
 
   const { state: trailsState } = getVideoTrailsContext();
