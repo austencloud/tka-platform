@@ -47,6 +47,7 @@
     onRampStop?: () => void;
     isOwned?: boolean;
     onDeleteRequest?: () => void;
+    onVideoUpload?: () => void;
     // Prop switcher
     propSource?: "intended" | "creator-favorite" | "viewer-settings" | "quick-switch";
     hasIntendedProp?: boolean;
@@ -80,6 +81,7 @@
     onRampStop,
     isOwned = false,
     onDeleteRequest,
+    onVideoUpload,
     propSource,
     hasIntendedProp,
     bluePropType,
@@ -200,11 +202,21 @@
       </button>
       <button
         type="button"
-        class="landscape-btn construct"
+        class="landscape-btn edit"
         onclick={onEdit}
-        aria-label="Construct"
+        aria-label="Edit"
       >
-        <i class="fas fa-hammer" aria-hidden="true"></i>
+        <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+      </button>
+    {/if}
+    {#if isOwned && onVideoUpload}
+      <button
+        type="button"
+        class="landscape-btn video"
+        onclick={onVideoUpload}
+        aria-label="Upload video"
+      >
+        <i class="fas fa-video" aria-hidden="true"></i>
       </button>
     {/if}
     {#if isOwned && onDeleteRequest}
@@ -245,6 +257,7 @@
       {onRampStop}
       {isOwned}
       {onDeleteRequest}
+      {onVideoUpload}
       {propSource}
       {hasIntendedProp}
       {bluePropType}
@@ -327,12 +340,12 @@
             </button>
             <button
               type="button"
-              class="action-btn construct"
+              class="action-btn edit"
               onclick={onEdit}
-              aria-label="Construct"
+              aria-label="Edit"
             >
-              <i class="fas fa-hammer" aria-hidden="true"></i>
-              <span>Construct</span>
+              <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+              <span>Edit</span>
             </button>
           {:else}
             <button
@@ -343,6 +356,17 @@
             >
               <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
               <span>Get App</span>
+            </button>
+          {/if}
+          {#if isOwned && onVideoUpload}
+            <button
+              type="button"
+              class="action-btn video"
+              onclick={onVideoUpload}
+              aria-label="Upload video"
+            >
+              <i class="fas fa-video" aria-hidden="true"></i>
+              <span>Video</span>
             </button>
           {/if}
           {#if isOwned && onDeleteRequest}
@@ -435,7 +459,7 @@
 
   /* Color-coded landscape buttons */
   .landscape-btn.save { color: #22c55e; border-color: rgba(34, 197, 94, 0.25); }
-  .landscape-btn.construct { color: #f59e0b; border-color: rgba(245, 158, 11, 0.25); }
+  .landscape-btn.edit { color: #f59e0b; border-color: rgba(245, 158, 11, 0.25); }
   .landscape-btn.delete { color: var(--semantic-error); border-color: color-mix(in srgb, var(--semantic-error) 25%, transparent); }
 
   .landscape-divider {
@@ -671,13 +695,13 @@
     border-color: rgba(34, 197, 94, 0.4);
   }
 
-  .action-btn.construct {
+  .action-btn.edit {
     background: rgba(245, 158, 11, 0.1);
     border-color: rgba(245, 158, 11, 0.25);
     color: #f59e0b;
   }
 
-  .action-btn.construct:hover {
+  .action-btn.edit:hover {
     background: rgba(245, 158, 11, 0.2);
     border-color: rgba(245, 158, 11, 0.4);
   }
