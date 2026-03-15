@@ -2,6 +2,7 @@ import type { ISequenceHydrator } from "../contracts/ISequenceHydrator";
 import type { IStepDeriver } from "../contracts/IStepDeriver";
 import type { ISequenceDecomposer } from "../contracts/ISequenceDecomposer";
 import type { SequenceData } from "../../domain/models/SequenceData";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
 export class SequenceHydrator implements ISequenceHydrator {
 	constructor(
@@ -10,6 +11,28 @@ export class SequenceHydrator implements ISequenceHydrator {
 	) {}
 
 	hydrate(sequence: SequenceData): SequenceData {
+		// Read-time migration: construct creatorIntent from legacy fields
+		if (!sequence.creatorIntent) {
+			const legacyPropConfig = sequence.intendedProp;
+			const legacyEffort = sequence.effortTimeline;
+
+			if (legacyPropConfig || legacyEffort) {
+				sequence = {
+					...sequence,
+					creatorIntent: {
+						propConfig: legacyPropConfig
+							? {
+									bluePropType: legacyPropConfig.bluePropType,
+									redPropType: legacyPropConfig.redPropType,
+									catDogMode: legacyPropConfig.catDogMode,
+								}
+							: { bluePropType: PropType.STAFF, redPropType: PropType.STAFF, catDogMode: false },
+						...(legacyEffort && { effortTimeline: legacyEffort }),
+					},
+				};
+			}
+		}
+
 		// If compositional fields are present, derive steps from them.
 		// This makes compositional fields the authoritative source of truth —
 		// all 173+ consumer files that read .steps get data derived from the
