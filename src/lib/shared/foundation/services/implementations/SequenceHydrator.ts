@@ -46,7 +46,8 @@ export class SequenceHydrator implements ISequenceHydrator {
 			const steps = this.stepDeriver.deriveSteps(
 				sequence.blueSoloProp,
 				sequence.redSoloProp,
-				sequence.stepPairings
+				sequence.stepPairings,
+				{ bluePropType: PropType.STAFF, redPropType: PropType.STAFF, catDogMode: false }
 			);
 			return { ...sequence, steps };
 		}

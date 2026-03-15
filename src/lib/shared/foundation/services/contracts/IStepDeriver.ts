@@ -5,7 +5,9 @@ import type { StartPositionData } from "$lib/features/create/shared/domain/model
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
 export interface ViewerPreferences {
-  readonly propType: PropType;
+  readonly bluePropType: PropType;
+  readonly redPropType: PropType;
+  readonly catDogMode: boolean;
 }
 
 export interface IStepDeriver {
