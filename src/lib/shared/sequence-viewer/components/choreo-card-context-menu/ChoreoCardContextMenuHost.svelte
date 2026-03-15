@@ -56,7 +56,6 @@
         showCreatorName: exportOptions.imageShowCreatorName,
         showNotes: exportOptions.imageShowNotes,
         showBirthday: imageComposition.showBirthday, // Always from composition manager
-        darkMode: exportOptions.imageDarkMode,
         columnCount: exportOptions.imageColumnCount,
 
         setShowWord: (v) => exportOptions.setImageShowWord(v),
@@ -66,7 +65,6 @@
         setShowCreatorName: (v) => exportOptions.setImageShowCreatorName(v),
         setShowNotes: (v) => exportOptions.setImageShowNotes(v),
         setShowBirthday: (v) => imageComposition.setShowBirthday(v),
-        setDarkMode: (v) => exportOptions.setImageDarkMode(v),
         setColumnCount: (v) => exportOptions.setImageColumnCount(v),
 
         onEditNotes: onEditNotes ? () => { closeContextMenu(); onEditNotes(); } : undefined,
@@ -86,7 +84,6 @@
         showCreatorName: comp.showCreatorName,
         showNotes: comp.showNotes,
         showBirthday: comp.showBirthday,
-        darkMode: comp.darkMode,
         columnCount: null, // No column override in normal mode
 
         setShowWord: (v) => comp.setAddWord(v),
@@ -96,7 +93,6 @@
         setShowCreatorName: (v) => comp.setShowCreatorName(v),
         setShowNotes: (v) => comp.setShowNotes(v),
         setShowBirthday: (v) => comp.setShowBirthday(v),
-        setDarkMode: (v) => comp.setDarkMode(v),
         setColumnCount: () => {}, // No-op in normal mode (auto layout)
 
         onEditNotes: onEditNotes ? () => { closeContextMenu(); onEditNotes(); } : undefined,
