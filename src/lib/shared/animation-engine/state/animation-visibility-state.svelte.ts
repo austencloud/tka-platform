@@ -63,6 +63,8 @@ interface AnimationVisibilitySettings {
   blueMotion: boolean;
   redMotion: boolean;
   effortPreset: EffortId;
+  /** Path shape for shift interpolation: "arc" (default) or "linear" */
+  pathShape: "arc" | "linear";
 }
 
 const STORAGE_KEY = "animation-visibility-settings";
@@ -140,6 +142,7 @@ export class AnimationVisibilityStateManager {
       blueMotion: true,
       redMotion: true,
       effortPreset: "linear",
+      pathShape: "arc",
     };
   }
 
@@ -238,6 +241,8 @@ export class AnimationVisibilityStateManager {
           parsed.charcoalParams = { ...DEFAULT_CHARCOAL_PARAMS, ...parsed.charcoalParams };
         }
 
+        if (!("pathShape" in parsed)) parsed.pathShape = "arc";
+
         return {
           ...defaults,
           ...parsed,
@@ -304,7 +309,7 @@ export class AnimationVisibilityStateManager {
   getVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireIntensity" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "effortPreset"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireIntensity" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "effortPreset" | "pathShape"
     >
   ): boolean {
     return this.settings[key] as boolean;
@@ -328,7 +333,7 @@ export class AnimationVisibilityStateManager {
   setVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "fireColorBlend" | "fireIntensity" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "effortPreset"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "fireColorBlend" | "fireIntensity" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "effortPreset" | "pathShape"
     >,
     visible: boolean
   ): void {
@@ -808,13 +813,31 @@ export class AnimationVisibilityStateManager {
     this.notifyObservers();
   }
 
+  // ============================================================================
+  // PATH SHAPE
+  // ============================================================================
+
+  getPathShape(): "arc" | "linear" {
+    return this.settings.pathShape;
+  }
+
+  setPathShape(shape: "arc" | "linear"): void {
+    this.settings.pathShape = shape;
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  togglePathShape(): void {
+    this.setPathShape(this.settings.pathShape === "arc" ? "linear" : "arc");
+  }
+
   /**
    * Toggle a boolean visibility setting
    */
   toggleVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireIntensity" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "effortPreset"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireIntensity" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "effortPreset" | "pathShape"
     >
   ): void {
     this.setVisibility(key, !(this.settings[key] as boolean));
