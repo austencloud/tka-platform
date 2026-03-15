@@ -388,6 +388,11 @@ export class LibraryRepository implements ILibraryRepository {
     // IMPORTANT: birthday is set once on creation and NEVER changes
     const rawWriteData = {
       ...libSeq,
+      // Steps are derived from compositional fields on read — don't persist
+      steps: undefined,
+      startPosition: undefined,
+      startingPosition: undefined,
+      startingPositionGroup: undefined,
       contentHash: incomingHash,
       birthday: isNewSequence
         ? libSeq.birthday || serverTimestamp()
@@ -599,8 +604,11 @@ export class LibraryRepository implements ILibraryRepository {
       if (!this.publicIndexSyncer) {
         console.warn("[LibraryRepository] Visibility changed but publicIndexSyncer is null — public gallery will not reflect this change.", { sequenceId, newVisibility: updates.visibility });
       } else if (updates.visibility === "public") {
+        // Ensure compositional fields are fresh before publishing
+        const hydrator = container.items.sequenceHydrator as ISequenceHydrator;
+        const compositionReady = { ...updated, ...hydrator.ensureComposition(updated) };
         this.publicIndexSyncer
-          .syncToPublicIndex(updated, userId)
+          .syncToPublicIndex(compositionReady, userId)
           .catch((error) => {
             this.reportError(
               "Sequence updated, but it may not appear in the community gallery yet.",
@@ -1198,7 +1206,9 @@ export class LibraryRepository implements ILibraryRepository {
 
         // Track public index changes
         if (visibility === "public" && existing.visibility !== "public") {
-          toPublish.push({ ...existing, visibility });
+          const hydrator = container.items.sequenceHydrator as ISequenceHydrator;
+          const withComposition = hydrator.ensureComposition(existing);
+          toPublish.push({ ...existing, ...withComposition, visibility });
         } else if (
           visibility !== "public" &&
           existing.visibility === "public"
