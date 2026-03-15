@@ -117,6 +117,16 @@
     <div class="header-right">
       <button
         type="button"
+        class="header-action-btn lamp-btn"
+        class:lit={!darkMode}
+        onclick={onDarkModeToggle}
+        aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+        title={darkMode ? "Light mode" : "Dark mode"}
+      >
+        <i class="fas fa-lightbulb" aria-hidden="true"></i>
+      </button>
+      <button
+        type="button"
         class="header-action-btn"
         onclick={handleCopyLink}
         aria-label="Copy link to sequence"
@@ -257,6 +267,27 @@
     outline-offset: 2px;
   }
 
+  /* Lightbulb toggle — unlit (dark mode active) */
+  .lamp-btn {
+    transition: background 150ms ease, color 150ms ease, box-shadow 150ms ease;
+  }
+
+  /* Lit state — light mode active, bulb glows */
+  .lamp-btn.lit {
+    color: #ffd966;
+    background: linear-gradient(145deg, rgba(255, 220, 100, 0.2), rgba(255, 180, 50, 0.1));
+    box-shadow: 0 0 12px rgba(255, 200, 80, 0.25);
+  }
+
+  .lamp-btn.lit i {
+    filter: drop-shadow(0 0 4px rgba(255, 200, 80, 0.7));
+  }
+
+  .lamp-btn.lit:hover {
+    background: linear-gradient(145deg, rgba(255, 220, 100, 0.3), rgba(255, 180, 50, 0.2));
+    box-shadow: 0 0 16px rgba(255, 200, 80, 0.35);
+  }
+
   .title-group {
     display: flex;
     flex-direction: column;
@@ -289,6 +320,10 @@
     .route-header,
     .back-button {
       transition: none !important;
+    }
+
+    .lamp-btn {
+      transition: none;
     }
   }
 </style>
