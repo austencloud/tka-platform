@@ -13,6 +13,26 @@ import type { IPropInterpolator } from "../contracts/IPropInterpolator";
 import type { InterpolationResult } from "../contracts/IAnimationStateManager";
 import type { IAngleCalculator } from "../contracts/IAngleCalculator";
 import type { IEndpointCalculator } from "../contracts/IEndpointCalculator";
+import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+
+/**
+ * Returns true if this motion type should use Cartesian (straight-line) interpolation.
+ * DASH always uses linear. PRO, ANTI, and FLOAT (arc/shift motions) use linear only when
+ * the user has enabled "linear" pathShape in animation visibility settings.
+ * STATIC is unaffected — it doesn't move at all.
+ */
+function shouldUseLinear(motionType: MotionType): boolean {
+  if (motionType === MotionType.DASH) return true;
+  // Arc motions (PRO, ANTI, FLOAT) can toggle between arc and linear.
+  if (
+    motionType === MotionType.PRO ||
+    motionType === MotionType.ANTI ||
+    motionType === MotionType.FLOAT
+  ) {
+    return getAnimationVisibilityManager().getPathShape() === "linear";
+  }
+  return false;
+}
 
 export class PropInterpolator implements IPropInterpolator {
   constructor(
@@ -47,9 +67,9 @@ export class PropInterpolator implements IPropInterpolator {
     if (blueMotion) {
       const blueEndpoints =
         this.endpointCalculator.calculateMotionEndpoints(blueMotion);
-      const blueDash = blueMotion.motionType === MotionType.DASH;
+      const blueDash = shouldUseLinear(blueMotion.motionType);
       blueAngles = blueDash
-        ? this.interpolateDashMotion(blueEndpoints, stepProgress)
+        ? this.interpolateLinearMotion(blueEndpoints, stepProgress)
         : {
             centerPathAngle: this.angleCalculator.lerpAngle(
               blueEndpoints.startCenterAngle,
@@ -68,9 +88,9 @@ export class PropInterpolator implements IPropInterpolator {
     if (redMotion) {
       const redEndpoints =
         this.endpointCalculator.calculateMotionEndpoints(redMotion);
-      const redDash = redMotion.motionType === MotionType.DASH;
+      const redDash = shouldUseLinear(redMotion.motionType);
       redAngles = redDash
-        ? this.interpolateDashMotion(redEndpoints, stepProgress)
+        ? this.interpolateLinearMotion(redEndpoints, stepProgress)
         : {
             centerPathAngle: this.angleCalculator.lerpAngle(
               redEndpoints.startCenterAngle,
@@ -92,11 +112,11 @@ export class PropInterpolator implements IPropInterpolator {
   }
 
   /**
-   * Interpolate dash motion using Cartesian coordinates
-   * Dashes move in a straight line through the center, not around the circle
+   * Interpolate motion using Cartesian coordinates (straight line path)
+   * Used for DASH motions and shifts when pathShape is "linear"
    * Returns angle for compatibility, but the angle will be recalculated from x,y in the renderer
    */
-  private interpolateDashMotion(
+  private interpolateLinearMotion(
     endpoints: MotionEndpoints,
     progress: number
   ): {
