@@ -232,7 +232,7 @@ interface SequenceData {
   readonly redSoloHash: string;
 
   // === REMOVED ===
-  // readonly steps: readonly StepData[];           // REMOVED: derived from solo props + pairings
+  // readonly steps: readonly StepData[];           // DERIVED (not persisted): populated at read time from solo props + pairings
   // readonly startPosition?: StartPositionData;    // REMOVED: derived from solo props' start states
   // readonly startingPosition?: StartPositionData; // REMOVED: legacy alias
   // readonly startingPositionGroup?: GridPositionGroup; // REMOVED: derived from start positions
