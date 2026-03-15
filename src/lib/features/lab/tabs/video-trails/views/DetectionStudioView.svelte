@@ -8,7 +8,21 @@
   import TrainingDataPanel from "../components/TrainingDataPanel.svelte";
   import DetectorEvaluator from "../components/DetectorEvaluator.svelte";
 
-  type ToolMode = "select" | "place" | "occlude";
+  type ToolMode = "select" | "place" | "occlude" | "guided";
+
+  interface GuidedStep {
+    propIndex: 0 | 1;
+    tipIndex: number;
+    label: string;
+    color: string;
+  }
+
+  const GUIDED_SEQUENCE: GuidedStep[] = [
+    { propIndex: 0, tipIndex: 0, label: "Blue thumb end", color: "#4a90d9" },
+    { propIndex: 0, tipIndex: 1, label: "Blue pinky end", color: "#4a90d9" },
+    { propIndex: 1, tipIndex: 0, label: "Red thumb end", color: "#d94a4a" },
+    { propIndex: 1, tipIndex: 1, label: "Red pinky end", color: "#d94a4a" },
+  ];
 
   const { state: trailsState } = getVideoTrailsContext();
 
@@ -20,6 +34,40 @@
   let slowPlaying = $state(false);
   let slowPlayTimer = $state<ReturnType<typeof setInterval> | null>(null);
   let showAdvancedPanel = $state(false);
+
+  // Guided placement state
+  let guidedStepIdx = $state(0);
+  let guidedFrameStep = $state(5); // Auto-advance by N frames after completing all 4 points
+  let currentGuidedStep = $derived<GuidedStep | null>(
+    toolMode === "guided" ? (GUIDED_SEQUENCE[guidedStepIdx] ?? null) : null,
+  );
+
+  function handleGuidedPlacement(x: number, y: number): void {
+    const step = GUIDED_SEQUENCE[guidedStepIdx];
+    if (!step) return;
+
+    trailsState.correctEndpoint(trailsState.currentFrame, {
+      propIndex: step.propIndex,
+      tipIndex: step.tipIndex,
+      detected: null,
+      corrected: { x, y },
+      status: "corrected",
+    });
+
+    // Advance to next step
+    const nextIdx = guidedStepIdx + 1;
+    if (nextIdx >= GUIDED_SEQUENCE.length) {
+      // All 4 placed — advance to next frame batch and reset
+      guidedStepIdx = 0;
+      const nextFrame = Math.min(
+        trailsState.totalFrames - 1,
+        trailsState.currentFrame + guidedFrameStep,
+      );
+      trailsState.setCurrentFrame(nextFrame);
+    } else {
+      guidedStepIdx = nextIdx;
+    }
+  }
 
   // Wire video element to source URL — use an in-DOM <video> element for reliable seeking
   $effect(() => {
@@ -173,7 +221,39 @@
           <i class="fas fa-eye-slash" aria-hidden="true"></i>
           <span class="tool-label">Occlude</span>
         </button>
+
+        <div class="tool-divider"></div>
+
+        <button
+          class="tool-btn guide-btn"
+          class:active={toolMode === "guided"}
+          onclick={() => { toolMode = "guided"; guidedStepIdx = 0; }}
+          title="Guided placement: click 4 endpoints per frame, auto-advance"
+          aria-label="Guided placement mode"
+        >
+          <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
+          <span class="tool-label">Guide</span>
+        </button>
       </div>
+
+      {#if toolMode === "guided"}
+        <div class="guided-controls">
+          <span class="guided-step-label" style="color: {currentGuidedStep?.color ?? '#fff'}">
+            {guidedStepIdx + 1}/4: {currentGuidedStep?.label ?? "Done"}
+          </span>
+          <span class="guided-sep">|</span>
+          <span class="guided-advance-label">Every</span>
+          {#each [1, 3, 5, 10] as step}
+            <button
+              class="frame-step-pill"
+              class:active={guidedFrameStep === step}
+              onclick={() => { guidedFrameStep = step; }}
+            >
+              {step}f
+            </button>
+          {/each}
+        </div>
+      {/if}
 
       <div class="toolbar-spacer"></div>
 
@@ -205,6 +285,8 @@
           {toolMode}
           selectedIdx={selectedEndpointIdx}
           onSelectEndpoint={handleSelectEndpoint}
+          guidedStep={currentGuidedStep}
+          onGuidedPlacement={handleGuidedPlacement}
         />
       </div>
 
@@ -338,6 +420,56 @@
 
   .tool-label {
     font-weight: 500;
+  }
+
+  .tool-divider {
+    width: 1px;
+    height: 20px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    margin: 0 4px;
+  }
+
+  .guide-btn.active {
+    background: rgba(168, 85, 247, 0.15);
+    border-color: rgba(168, 85, 247, 0.4);
+    color: #a855f7;
+  }
+
+  .guided-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 8px;
+    font-size: var(--font-size-compact, 12px);
+  }
+
+  .guided-step-label {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .guided-sep {
+    color: var(--theme-stroke, rgba(255, 255, 255, 0.15));
+  }
+
+  .guided-advance-label {
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
+    white-space: nowrap;
+  }
+
+  .frame-step-pill {
+    padding: 2px 8px;
+    border: none;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+  }
+
+  .frame-step-pill.active {
+    background: var(--theme-accent, #f43f5e);
+    color: white;
   }
 
   .toolbar-spacer {
