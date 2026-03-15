@@ -20,9 +20,10 @@
     onSelectEndpoint: (idx: number) => void;
     guidedStep?: GuidedStep | null;
     onGuidedPlacement?: (x: number, y: number) => void;
+    redrawTick?: number;
   }
 
-  const { videoElement, width, height, toolMode, selectedIdx, onSelectEndpoint, guidedStep = null, onGuidedPlacement }: Props = $props();
+  const { videoElement, width, height, toolMode, selectedIdx, onSelectEndpoint, guidedStep = null, onGuidedPlacement, redrawTick = 0 }: Props = $props();
   const { state: trailsState } = getVideoTrailsContext();
 
   const PROP_COLORS = ["#4a90d9", "#d94a4a"] as const;
@@ -49,6 +50,7 @@
     const _h = height;
     const _video = videoElement;
     const _mode = toolMode;
+    const _tick = redrawTick;
 
     draw();
   });
