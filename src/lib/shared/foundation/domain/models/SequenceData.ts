@@ -1,6 +1,7 @@
 ﻿import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { EffortTimeline } from "$lib/features/phrase-effort-lab/domain/effort-timeline-types";
 import type { TimeSignatureKey } from "./TimeSignature";
+import type { CreatorIntent } from "./CreatorIntent";
 /**
  * Sequence Domain Model
  *
@@ -113,6 +114,10 @@ export interface SequenceData {
     readonly redPropType: PropType;
     readonly catDogMode: boolean;
   } | null;
+  /** Creator's full presentation intent: prop config + effort + future fields.
+   * Replaces intendedProp (prop only) and top-level effortTimeline.
+   * null = legacy sequence with no intent recorded. */
+  readonly creatorIntent?: CreatorIntent | null;
 
   // === Compositional structure (optional during migration) ===
   /** Solo prop path for the blue performer, derived from steps decomposition */
@@ -208,6 +213,7 @@ export function createSequenceData(
     ...(data.notes !== undefined && { notes: data.notes }),
     ...(data.effortTimeline !== undefined && { effortTimeline: data.effortTimeline }),
     ...(data.intendedProp !== undefined && { intendedProp: data.intendedProp }),
+    ...(data.creatorIntent !== undefined && { creatorIntent: data.creatorIntent }),
     // Compositional structure passthrough
     ...(data.blueSoloProp !== undefined && { blueSoloProp: data.blueSoloProp }),
     ...(data.redSoloProp !== undefined && { redSoloProp: data.redSoloProp }),
