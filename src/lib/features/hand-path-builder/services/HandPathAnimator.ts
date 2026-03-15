@@ -56,6 +56,12 @@ function applyEasing(t: number): number {
   return applyEffort(preset, t);
 }
 
+/** Should this motion use linear (Cartesian) interpolation? */
+function shouldUseLinear(isDash: boolean): boolean {
+  if (isDash) return true; // Dashes are always linear
+  return getAnimationVisibilityManager().getPathShape() === "linear";
+}
+
 /**
  * Generate SVG path points for a movement between two grid locations.
  * Returns an array of {x, y} points that trace the actual path:
@@ -70,10 +76,11 @@ export function getPathPoints(
   const startAngle = locToAngle(from);
   const endAngle = locToAngle(to);
   const isDash = isOpposite(from, to);
+  const useLinear = shouldUseLinear(isDash);
 
   const points: Array<{ x: number; y: number }> = [];
 
-  if (isDash) {
+  if (useLinear) {
     // Straight line through center
     const sx = Math.cos(startAngle);
     const sy = Math.sin(startAngle);
@@ -139,14 +146,15 @@ export class HandPathAnimator {
     const endAngle = locToAngle(endPosition);
     const isSamePoint = startPosition === endPosition;
     const isDash = !isSamePoint && isOpposite(startPosition, endPosition);
+    const useLinear = shouldUseLinear(isDash);
 
-    const startX = isDash ? Math.cos(startAngle) : 0;
-    const startY = isDash ? Math.sin(startAngle) : 0;
-    const endX = isDash ? Math.cos(endAngle) : 0;
-    const endY = isDash ? Math.sin(endAngle) : 0;
+    const startX = useLinear ? Math.cos(startAngle) : 0;
+    const startY = useLinear ? Math.sin(startAngle) : 0;
+    const endX = useLinear ? Math.cos(endAngle) : 0;
+    const endY = useLinear ? Math.sin(endAngle) : 0;
 
     if (duration <= 0 || isSamePoint) {
-      this.applyPosition(element, endAngle, isDash, endX, endY, handCenter);
+      this.applyPosition(element, endAngle, useLinear, endX, endY, handCenter);
       return;
     }
 
@@ -163,7 +171,7 @@ export class HandPathAnimator {
         let cartY = 0;
         let angle: number;
 
-        if (isDash) {
+        if (useLinear) {
           cartX = startX + (endX - startX) * t;
           cartY = startY + (endY - startY) * t;
           angle = Math.atan2(cartY, cartX);
@@ -171,7 +179,7 @@ export class HandPathAnimator {
           angle = lerpAngle(startAngle, endAngle, t);
         }
 
-        this.applyPosition(element, angle, isDash, cartX, cartY, handCenter);
+        this.applyPosition(element, angle, useLinear, cartX, cartY, handCenter);
 
         if (rawProgress < 1) {
           this.animationFrameId = requestAnimationFrame(tick);
@@ -200,7 +208,7 @@ export class HandPathAnimator {
   private applyPosition(
     element: SVGGElement,
     centerAngle: number,
-    isDash: boolean,
+    useLinear: boolean,
     cartX: number,
     cartY: number,
     handCenter: { x: number; y: number },
@@ -208,7 +216,7 @@ export class HandPathAnimator {
     let x: number;
     let y: number;
 
-    if (isDash) {
+    if (useLinear) {
       x = CENTER + cartX * GRID_RADIUS;
       y = CENTER + cartY * GRID_RADIUS;
     } else {
