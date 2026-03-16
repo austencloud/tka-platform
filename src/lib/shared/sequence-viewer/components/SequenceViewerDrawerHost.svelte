@@ -282,11 +282,12 @@
                         ? "Showing creator's props. Tap to use yours."
                         : "Showing your props. Tap to see creator's."}
                     >
+                      <span class="toggle-label">Props:</span>
                       <span
                         class="toggle-option"
                         class:active={ctx.presentation.source === "creator-intent"}
                       >
-                        {ctx.sequence.ownerDisplayName?.split(" ")[0] ?? "Creator"}'s
+                        Theirs
                       </span>
                       <span class="toggle-divider">|</span>
                       <span
@@ -621,6 +622,11 @@
 
   .prop-toggle:hover {
     border-color: var(--theme-accent, #6366f1);
+  }
+
+  .toggle-label {
+    opacity: 0.4;
+    font-weight: 400;
   }
 
   .toggle-option {
