@@ -23,8 +23,8 @@
 [
   {
     "AllowedOrigins": [
-      "https://thekineticscribe.com",
-      "https://www.thekineticscribe.com",
+      "https://tkascribe.com",
+      "https://www.tkascribe.com",
       "http://localhost:5173",
       "http://localhost:5174"
     ],
