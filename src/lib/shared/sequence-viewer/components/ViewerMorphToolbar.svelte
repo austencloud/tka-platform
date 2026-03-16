@@ -138,7 +138,7 @@
       </button>
     {/if}
 
-    {#if isLoggedIn && isOwned && onVideoUpload}
+    {#if isLoggedIn && onVideoUpload}
       <button
         type="button"
         class="action-btn video"
