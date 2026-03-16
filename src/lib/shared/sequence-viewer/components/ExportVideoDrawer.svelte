@@ -174,7 +174,7 @@
     class="mobile-export"
     transition:fade={{ duration: 200 }}
     role="region"
-    aria-label="Video export"
+    aria-label="Animation export"
   >
     {#if isExporting}
       <!-- Progress replaces the bar during export -->
@@ -214,12 +214,12 @@
         <div
           class="inline-settings"
           role="region"
-          aria-label="Video export settings"
+          aria-label="Animation export settings"
           onkeydown={preventSpaceActivation}
           transition:slide={{ duration: 250, easing: cubicOut }}
         >
           <div class="inline-settings-header">
-            <span class="inline-settings-title">Video Settings</span>
+            <span class="inline-settings-title">Animation Settings</span>
             <button
               type="button"
               class="inline-settings-close"
@@ -325,7 +325,7 @@
         </div>
       {/if}
 
-      <!-- Bottom bar: [Play] [Export Video] [Settings] -->
+      <!-- Bottom bar: [Play] [Export Animation] [Settings] -->
       <div class="mobile-bar">
         {#if onPlaybackToggle}
           <button
@@ -344,14 +344,14 @@
           class="bar-export-btn"
           onclick={onExport}
           disabled={exportDisabled}
-          aria-label="Export video"
+          aria-label="Export animation"
         >
           {#if !canvasReady}
             <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
             Loading...
           {:else}
             <i class="fas fa-download" aria-hidden="true"></i>
-            Export Video
+            Export Animation
           {/if}
         </button>
 
@@ -377,7 +377,7 @@
     class="export-panel sidebar"
     transition:fade={{ duration: 200 }}
     role="region"
-    aria-label="Video export settings"
+    aria-label="Animation export settings"
   >
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="panel-body" onkeydown={preventSpaceActivation}>
@@ -507,14 +507,14 @@
             class="export-btn"
             onclick={onExport}
             disabled={exportDisabled}
-            aria-label="Export video"
+            aria-label="Export animation"
           >
             {#if !canvasReady}
               <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
               Loading...
             {:else}
               <i class="fas fa-download" aria-hidden="true"></i>
-              Export Video
+              Export Animation
             {/if}
           </button>
           {#if timeEstimateLabel && !exportDisabled}

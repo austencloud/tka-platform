@@ -39,7 +39,10 @@ export interface SequenceData {
    * Example: "CABΔKE" (CAKE with bridge letters Δ inserted)
    */
   readonly word: string;
-  readonly steps: readonly StepData[]; // Only actual steps (stepNumber >= 1), never start position
+  /** Derived at load time from compositional fields (blueSoloProp + redSoloProp + stepPairings).
+   * Never persisted to Firestore — the hydrator re-derives it on every load.
+   * Consumers read this for iteration, counting, and display. */
+  readonly steps: readonly StepData[];
 
   // Start position storage (CONSOLIDATED):
   // Start positions are semantically distinct from steps - they have no duration, no beat number,
@@ -126,10 +129,14 @@ export interface SequenceData {
    * null = legacy sequence with no intent recorded. */
   readonly creatorIntent?: CreatorIntent | null;
 
-  // === Compositional structure (optional during migration) ===
-  /** Solo prop path for the blue performer, derived from steps decomposition */
+  // === Compositional structure (source of truth) ===
+  // These are the canonical representation persisted to Firestore.
+  // Optional on the type because construction sites (factories, decoders, mocks)
+  // may not have them yet. The SequenceHydrator guarantees they're populated
+  // at all load/save boundaries — after hydration they're always present.
+  /** Solo prop path for the blue performer — persisted to Firestore */
   readonly blueSoloProp?: SoloPropData;
-  /** Solo prop path for the red performer, derived from steps decomposition */
+  /** Solo prop path for the red performer — persisted to Firestore */
   readonly redSoloProp?: SoloPropData;
   /** Per-beat pairings linking each blue motion to its corresponding red motion */
   readonly stepPairings?: readonly StepPairingData[];

@@ -68,9 +68,9 @@
     <div class="header-center">
       <h2 class="mode-title">
         {#if editingPane === "animation"}
-          Export Video
+          Export Animation
         {:else}
-          Export Image
+          Export Card
         {/if}
       </h2>
     </div>
