@@ -35,6 +35,7 @@
     ImageCompositionProps,
     PropRenderingProps,
   } from "../domain/viewer-prop-groups";
+  import type { ResolvedPresentation, ViewingContext } from "../services/contracts/IPresentationResolver";
 
   export type ViewMode = "animation" | "image" | "split";
   export type ExportType = "animation" | "image" | "both";
@@ -87,6 +88,11 @@
     bluePropType: PropType | undefined;
     redPropType: PropType | undefined;
     catDogModeEnabled: boolean | undefined;
+
+    // Prop context toggle (for header compact toggle)
+    presentation: ResolvedPresentation | null;
+    togglePropContext: () => void;
+    activeContext: ViewingContext;
 
     // Prop source tracking
     handleSetAsIntended: () => Promise<void>;
@@ -185,7 +191,7 @@
   import { createTempoRampState } from "$lib/shared/sequence-viewer/state/tempo-ramp-state.svelte";
   import { page } from "$app/stores";
   import type { ShareURLMetadata } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
-  import type { IPresentationResolver, ViewingContext } from "../services/contracts/IPresentationResolver";
+  import type { IPresentationResolver } from "../services/contracts/IPresentationResolver";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import PropContextChip from "./PropContextChip.svelte";
 
@@ -1325,6 +1331,11 @@
     redPropType: activeRedProp,
     catDogModeEnabled: activeCatDog,
 
+    // Prop context toggle
+    presentation: presentation ?? null,
+    togglePropContext,
+    activeContext,
+
     // Prop source tracking
     handleSetAsIntended,
 
@@ -1417,20 +1428,6 @@
 <!-- Render children with full context -->
 {@render children(context)}
 
-<!-- Prop context chip: shown when creator saved with different props than the viewer uses -->
-{#if sequence && (sequence.creatorIntent?.propConfig || sequence.intendedProp)}
-  <div class="prop-context-chip-container">
-    <PropContextChip
-      creatorDisplayName={sequence.ownerDisplayName ?? "Creator"}
-      creatorBlueProp={sequence.creatorIntent?.propConfig?.bluePropType ?? sequence.intendedProp?.bluePropType ?? PropType.STAFF}
-      creatorRedProp={sequence.creatorIntent?.propConfig?.redPropType ?? sequence.intendedProp?.redPropType ?? PropType.STAFF}
-      viewerBlueProp={(settingsService.settings.bluePropType as PropType) ?? PropType.STAFF}
-      viewerRedProp={(settingsService.settings.redPropType as PropType) ?? PropType.STAFF}
-      source={presentation.source}
-      onSwitch={togglePropContext}
-    />
-  </div>
-{/if}
 
 <!-- Screen reader announcements -->
 <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">
@@ -1450,7 +1447,4 @@
     border: 0;
   }
 
-  .prop-context-chip-container {
-    padding: 8px 12px 0;
-  }
 </style>
