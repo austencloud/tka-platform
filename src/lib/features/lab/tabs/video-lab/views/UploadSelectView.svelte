@@ -9,7 +9,7 @@
   import { container } from "$lib/shared/di";
   import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
   import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
-  import PropAwareThumbnail from "$lib/features/browse/sequences/display/components/PropAwareThumbnail.svelte";
+
 
   interface Props {
     onStartMapping: (
@@ -230,16 +230,10 @@
             onclick={() => { selectedSequence = seq; }}
             type="button"
           >
-            <div class="thumbnail-wrapper">
-              <PropAwareThumbnail
-                sequence={seq}
-                variant="browse"
-                eager
-                suppressContextMenu
-              />
+            <div class="card-preview">
+              <span class="card-word-large">{seq.word ?? seq.name ?? "?"}</span>
             </div>
             <div class="card-label">
-              <span class="card-word">{seq.word ?? seq.name ?? "Untitled"}</span>
               <span class="card-beats">{seq.steps?.length || seq.word?.length || 0} beats</span>
             </div>
           </button>
@@ -465,7 +459,7 @@
 
   .sequence-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 12px;
     max-height: 360px;
     overflow-y: auto;
@@ -511,32 +505,33 @@
     outline-offset: 2px;
   }
 
-  .thumbnail-wrapper {
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    overflow: hidden;
+  .card-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 8px;
+    min-height: 60px;
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  .card-word-large {
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    text-align: center;
+    word-break: break-all;
+    line-height: 1.3;
+    letter-spacing: 0.5px;
   }
 
   .card-label {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 2px;
+    justify-content: center;
     padding: 6px 4px;
   }
 
-  .card-word {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    text-align: center;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 100%;
-  }
-
   .card-beats {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
   }
 
