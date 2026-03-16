@@ -27,12 +27,16 @@
   import type { PropRenderData } from "$lib/shared/pictograph/prop/domain/models/PropRenderData";
   import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { HandMove } from "./state/builder-state.svelte";
+  import { GridHitTargetCalculator } from "$lib/features/assemble-lab/services/implementations/GridHitTargetCalculator";
   import PathPreview from "./components/PathPreview.svelte";
   import BuilderControls from "./components/BuilderControls.svelte";
   import GridModeSelector from "./components/GridModeSelector.svelte";
 
   const builder = createBuilderState();
   setBuilderContext(builder);
+
+  const gridCalculator = new GridHitTargetCalculator();
+  const gridHandPoints = $derived(gridCalculator.getHitTargets(builder.gridMode));
 
   const blueAnimator = new HandPathAnimator();
   const redAnimator = new HandPathAnimator();
@@ -116,7 +120,7 @@
       blueProp={null}
       redProp={null}
       gridMode={builder.gridMode}
-      gridVisible={true}
+      gridVisible={false}
       interactive={builder.phase !== "complete"}
       {activePhaseColor}
       currentPosition={builder.lastLocation}
@@ -124,6 +128,13 @@
       onPointClick={(loc) => builder.addLocation(loc)}
     >
       {#snippet animationLayer()}
+        <!-- Hand points and center — rendered here instead of Canvas2D grid
+             to avoid outer points and layer 2 clutter -->
+        <circle cx="475" cy="475" r="6" fill="var(--dm-grid-color, #d0d0d0)" opacity="0.6" />
+        {#each gridHandPoints as pt (pt.location)}
+          <circle cx={pt.x} cy={pt.y} r="4.7" fill="var(--dm-grid-color, #d0d0d0)" />
+        {/each}
+
         <!-- Path trace lines following actual movement geometry -->
         {#each bluePathDs as d, i (i)}
           <path {d} fill="none" stroke={blueColor} stroke-width="4" stroke-linecap="round" opacity="0.7" />
@@ -210,9 +221,10 @@
   /* Zoom in on the grid — hands are small so we don't need the prop
      buffer space that the assemble tab requires for staffs/fans */
   .grid-area :global(.interactive-canvas-wrapper) {
-    transform: scale(1.55);
+    transform: scale(1.85);
     transform-origin: center center;
   }
+
 
   .preview-area {
     width: 100%;
