@@ -236,6 +236,7 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
   private buildCloudKey(key: ThumbnailCacheKey) {
     return {
       sequenceName: key.inputs.sequenceName,
+      sequenceId: key.inputs.sequenceId,
       propType: key.propKey as PropType,
       lightMode: key.inputs.lightMode,
       variant: key.inputs.variant,

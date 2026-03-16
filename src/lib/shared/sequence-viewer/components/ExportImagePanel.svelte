@@ -3,7 +3,7 @@
 
   Image export settings panel.
   Desktop: side panel next to choreo card preview (all settings visible).
-  Mobile: compact bottom bar with [Export Image] [Settings gear].
+  Mobile: compact bottom bar with [Export Card] [Settings gear].
     Settings open in a slide-up overlay. Choreo card gets full screen space.
 -->
 <script lang="ts">
@@ -48,6 +48,8 @@
     { label: "4", value: 4 },
     { label: "5", value: 5 },
     { label: "6", value: 6 },
+    { label: "7", value: 7 },
+    { label: "8", value: 8 },
   ] as const;
 
   // Max columns = beat count only. The start position is an extra cell
@@ -74,14 +76,14 @@
     class="mobile-export"
     transition:fade={{ duration: 200 }}
     role="region"
-    aria-label="Image export"
+    aria-label="Card export"
   >
     <!-- Inline settings (collapsible, no overlay) -->
     {#if settingsOpen}
       <div
         class="inline-settings"
         role="region"
-        aria-label="Image export settings"
+        aria-label="Card export settings"
         transition:slide={{ duration: 250, easing: cubicOut }}
       >
         <div class="inline-settings-header">
@@ -168,14 +170,14 @@
         class="bar-export-btn"
         onclick={onExport}
         disabled={isExporting}
-        aria-label="Export image"
+        aria-label="Export card"
       >
         {#if isExporting}
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
           Exporting...
         {:else}
           <i class="fas fa-download" aria-hidden="true"></i>
-          Export Image
+          Export Card
         {/if}
       </button>
 
@@ -200,7 +202,7 @@
     class="export-panel"
     transition:fade={{ duration: 200 }}
     role="region"
-    aria-label="Image export settings"
+    aria-label="Card export settings"
   >
     {#if onClose}
       <div class="panel-header">
@@ -283,14 +285,14 @@
         class="export-btn"
         onclick={onExport}
         disabled={isExporting}
-        aria-label="Export image"
+        aria-label="Export card"
       >
         {#if isExporting}
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
           Exporting...
         {:else}
           <i class="fas fa-download" aria-hidden="true"></i>
-          Export Image
+          Export Card
         {/if}
       </button>
     </div>

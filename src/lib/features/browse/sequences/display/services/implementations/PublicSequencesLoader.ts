@@ -176,19 +176,20 @@ export class PublicSequencesLoader implements IBrowseLoader {
   }
 
   /**
-   * Map PublicSequenceIndex to SequenceData for display
-   * Note: steps are empty - will be fetched on demand if needed
+   * Map PublicSequenceIndex to SequenceData for display.
+   * If compositional fields are present, hydrates full steps from them
+   * so the sequence is self-contained (no sourceRef fetch needed).
    */
   private mapPublicIndexToSequenceData(
     data: PublicSequenceIndex,
     id: string
   ): SequenceData {
-    return {
+    const seq: SequenceData = {
       id,
       name: data.name,
       displayName: (data as unknown as { displayName?: string }).displayName,
       word: data.word,
-      steps: [], // Empty - will be fetched on demand for rendering
+      steps: [], // Will be hydrated below if compositional fields are present
       thumbnails: [...data.thumbnails],
       sequenceLength: data.sequenceLength,
       level: data.level ?? this.difficultyStringToLevel(data.difficultyLevel),
@@ -207,6 +208,14 @@ export class PublicSequencesLoader implements IBrowseLoader {
       ownerId: data.ownerId,
       ownerDisplayName: data.ownerDisplayName,
       ownerAvatarUrl: data.ownerAvatarUrl,
+      // Compositional fields (if present in the public index)
+      blueSoloProp: data.blueSoloProp,
+      redSoloProp: data.redSoloProp,
+      stepPairings: data.stepPairings,
+      bluePathHash: data.bluePathHash,
+      redPathHash: data.redPathHash,
+      blueSoloHash: data.blueSoloHash,
+      redSoloHash: data.redSoloHash,
       // Fork info
       ...(data.isForked && {
         source: "forked" as const,
@@ -216,6 +225,20 @@ export class PublicSequencesLoader implements IBrowseLoader {
         },
       }),
     };
+
+    // If compositional fields are present, hydrate steps from them
+    // so the sequence is fully renderable without a sourceRef fetch
+    if (data.blueSoloProp && data.redSoloProp && data.stepPairings) {
+      try {
+        const hydrator = container.items.sequenceHydrator as ISequenceHydrator;
+        return hydrator.hydrate(seq);
+      } catch {
+        // Hydration services not available — return with empty steps
+        // (will fall back to sourceRef fetch on demand)
+      }
+    }
+
+    return seq;
   }
 
   /** Convert legacy difficultyLevel string to numeric level */

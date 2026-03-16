@@ -151,17 +151,20 @@ export class CloudThumbnailCache implements ICloudThumbnailCache {
   getStoragePath(key: CloudThumbnailKey): string {
     const variant = key.variant ?? "gallery";
     const modeSuffix = key.lightMode ? "_light" : "_dark";
-    return `thumbnails/${variant}/${key.propType}/${key.sequenceName}${modeSuffix}.webp`;
+    const idSuffix = key.sequenceId ? `_${key.sequenceId}` : "";
+    return `thumbnails/${variant}/${key.propType}/${key.sequenceName}${idSuffix}${modeSuffix}.webp`;
   }
 
   /**
    * Get cache key for in-memory cache
    * Includes variant to keep gallery and wordcard thumbnails separate
+   * Includes sequenceId so variations of the same word cache independently
    */
   private getCacheKey(key: CloudThumbnailKey): string {
     const variant = key.variant ?? "gallery";
     const modeSuffix = key.lightMode ? "_light" : "_dark";
-    return `${variant}/${key.propType}/${key.sequenceName}${modeSuffix}`;
+    const idSuffix = key.sequenceId ? `_${key.sequenceId}` : "";
+    return `${variant}/${key.propType}/${key.sequenceName}${idSuffix}${modeSuffix}`;
   }
 
   /**

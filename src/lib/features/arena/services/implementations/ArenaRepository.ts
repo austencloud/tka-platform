@@ -18,6 +18,8 @@ import type {
 } from "../../domain/models/arena-models";
 import type { MatchupCandidate } from "../contracts/IMatchupSelector";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { ISequenceHydrator } from "$lib/shared/foundation/services/contracts/ISequenceHydrator";
+import { container } from "$lib/shared/di";
 import {
   INITIAL_MU,
   INITIAL_PHI,
@@ -256,7 +258,7 @@ export class ArenaRepository implements IArenaRepository {
       if (!fullDoc.exists()) return null;
 
       const raw = fullDoc.data();
-      return {
+      const mapped: SequenceData = {
         id: fullDoc.id,
         name: (raw.name as string) ?? "",
         displayName: raw.displayName as string | undefined,
@@ -277,7 +279,15 @@ export class ArenaRepository implements IArenaRepository {
         metadata: (raw.metadata as Record<string, unknown>) ?? {},
         ownerId: raw.ownerId as string | undefined,
         ownerDisplayName: raw.ownerDisplayName as string | undefined,
+        // Pass through compositional fields from Firestore
+        blueSoloProp: raw.blueSoloProp as SequenceData["blueSoloProp"],
+        redSoloProp: raw.redSoloProp as SequenceData["redSoloProp"],
+        stepPairings: raw.stepPairings as SequenceData["stepPairings"],
       };
+
+      // Hydrate: re-derive steps from compositional fields if present
+      const hydrator = container.items.sequenceHydrator as ISequenceHydrator;
+      return hydrator.hydrate(mapped);
     } catch (err) {
       console.error(`[Arena] Failed to load full sequence from ${sourceRef}:`, err);
       return null;

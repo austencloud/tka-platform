@@ -31,6 +31,8 @@ export interface DeleteProgress {
 
 export interface CloudThumbnailKey {
   sequenceName: string;
+  /** Unique sequence ID — distinguishes variations with the same word */
+  sequenceId?: string;
   propType: PropType;
   lightMode: boolean;
   /** Cache variant - defaults to 'gallery' for backwards compatibility */

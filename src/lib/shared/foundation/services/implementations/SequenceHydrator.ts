@@ -10,6 +10,19 @@ export class SequenceHydrator implements ISequenceHydrator {
 		private readonly sequenceDecomposer: ISequenceDecomposer
 	) {}
 
+	/**
+	 * Re-derives the flat `steps` array from compositional fields.
+	 * Called at every load boundary (LibraryRepository, PublicSequencesLoader,
+	 * SequenceRepository, ArenaRepository).
+	 *
+	 * If a sequence loads with empty steps, check:
+	 *   1. Are compositional fields (blueSoloProp, redSoloProp, stepPairings)
+	 *      present on the Firestore document? If not, run the migration script:
+	 *      `node scripts/migrate-compositional.cjs`
+	 *   2. Is this hydrate() method being called at the load boundary?
+	 *      Every code path that reads from Firestore must call hydrate().
+	 *   3. Does StepDeriver.deriveSteps() throw? Check console for errors.
+	 */
 	hydrate(sequence: SequenceData): SequenceData {
 		// Read-time migration: construct creatorIntent from legacy fields
 		if (!sequence.creatorIntent) {
@@ -51,6 +64,17 @@ export class SequenceHydrator implements ISequenceHydrator {
 			);
 			return { ...sequence, steps };
 		}
+
+		// Compositional fields missing — steps won't be derived.
+		// This sequence either predates the migration or was saved by a code path
+		// that doesn't call ensureComposition(). See the hydrate() docstring above.
+		if (sequence.steps.length > 0 && !sequence.blueSoloProp) {
+			console.warn(
+				`[SequenceHydrator] Sequence "${sequence.word || sequence.id}" has steps but no compositional fields. ` +
+				`Run \`node scripts/migrate-compositional.cjs\` to backfill, or check that ensureComposition() is called at save time.`
+			);
+		}
+
 		return sequence;
 	}
 

@@ -235,7 +235,7 @@
                 </button>
 
                 <div class="drawer-header-title">
-                  {isVideoExportActive ? "Export Video" : "Export Image"}
+                  {isVideoExportActive ? "Export Animation" : "Export Card"}
                 </div>
 
                 <div class="drawer-header-actions">

@@ -57,9 +57,9 @@
         {#if !exportType}
           Export
         {:else if exportType === "animation"}
-          Export Video
+          Export Animation
         {:else}
-          Export Image
+          Export Card
         {/if}
       </h2>
     </div>
