@@ -11,6 +11,7 @@
 
 import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
 import type { ISequenceDataProvider } from '../contracts/ISequenceDataProvider';
+import type { ViewingContext } from '../contracts/IPresentationResolver';
 import { openSequenceOverlay } from '../../state/sequence-viewer-overlay-state.svelte';
 import { cellPreWarmer } from './CellPreWarmer';
 import { container } from '$lib/shared/di';
@@ -28,6 +29,8 @@ export interface OpenSequenceViewerOptions {
 	initialStep?: number;
 	/** All variations of this sequence (same word). Enables variation navigation. */
 	variations?: SequenceData[];
+	/** Controls how props are resolved: "notation" uses viewer settings, "creator-expression" uses creator's intent. */
+	viewingContext?: ViewingContext;
 }
 
 /**
@@ -81,5 +84,6 @@ export function openSequenceViewer(
 		initialBpm: options.initialBpm,
 		initialStep: options.initialStep,
 		variations: options.variations,
+		viewingContext: options.viewingContext,
 	});
 }

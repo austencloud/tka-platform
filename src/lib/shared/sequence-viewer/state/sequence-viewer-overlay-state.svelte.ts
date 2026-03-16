@@ -12,6 +12,7 @@
 
 import { pushState } from '$app/navigation';
 import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
+import type { ViewingContext } from '../services/contracts/IPresentationResolver';
 
 // ============================================================================
 // STATE
@@ -25,6 +26,7 @@ let _returnLabel = $state('Back');
 let _initialBpm = $state(60);
 let _initialStep = $state(0);
 let _dismissPath = $state<string | null>(null);
+let _viewingContext = $state<ViewingContext>('notation');
 
 // ============================================================================
 // PUBLIC API
@@ -46,6 +48,8 @@ export function openSequenceOverlay(
 		dismissPath?: string;
 		/** All variations of this sequence (same word). Enables variation navigation in the viewer. */
 		variations?: SequenceData[];
+		/** Controls how props are resolved: "notation" uses viewer settings, "creator-expression" uses creator's intent. */
+		viewingContext?: ViewingContext;
 	}
 ): void {
 	_sequence = sequence;
@@ -56,6 +60,7 @@ export function openSequenceOverlay(
 	_initialBpm = options?.initialBpm || 60;
 	_initialStep = options?.initialStep || 0;
 	_dismissPath = options?.dismissPath || null;
+	_viewingContext = options?.viewingContext ?? 'notation';
 	_isOpen = true;
 
 	// Push history entry so browser back button closes the drawer
@@ -78,6 +83,7 @@ export function closeSequenceOverlay(): void {
 	_initialBpm = 60;
 	_initialStep = 0;
 	_dismissPath = null;
+	_viewingContext = 'notation';
 }
 
 /**
@@ -113,5 +119,6 @@ export function getSequenceOverlayState() {
 		get initialBpm() { return _initialBpm; },
 		get initialStep() { return _initialStep; },
 		get dismissPath() { return _dismissPath; },
+		get viewingContext() { return _viewingContext; },
 	};
 }

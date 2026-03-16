@@ -185,6 +185,8 @@
   import { page } from "$app/stores";
   import type { ShareURLMetadata } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
   import type { IPresentationResolver, ViewingContext } from "../services/contracts/IPresentationResolver";
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import PropContextChip from "./PropContextChip.svelte";
 
   // ============================================================================
   // PROPS
@@ -207,6 +209,8 @@
     onUrlParamChange?: (key: string, value: string) => void;
     /** Whether to block clicks (e.g., during swipe). */
     blockClicks?: boolean;
+    /** Controls how props are resolved: "notation" uses viewer settings, "creator-expression" uses creator's intent. */
+    viewingContext?: ViewingContext;
     /** Children snippet receiving the full orchestrator context. */
     children: Snippet<[OrchestratorContext]>;
   }
@@ -220,6 +224,7 @@
     onBack,
     onUrlParamChange,
     blockClicks = false,
+    viewingContext = "notation",
     children,
   }: Props = $props();
 
@@ -306,7 +311,7 @@
   // Prop context — viewer sees creator's intended props by default ("creator-expression"),
   // or their own settings ("notation"). User can toggle via the PropContextChip.
   let contextOverride = $state<ViewingContext | null>(null);
-  const activeContext = $derived(contextOverride ?? "notation");
+  const activeContext = $derived(contextOverride ?? viewingContext);
 
   const presentation = $derived.by(() => {
     const resolver = container.items.presentationResolver as IPresentationResolver;
@@ -322,6 +327,11 @@
   const activeBlueProp = $derived(presentation.bluePropType);
   const activeRedProp = $derived(presentation.redPropType);
   const activeCatDog = $derived(presentation.catDogMode);
+
+  // Toggle between creator-intent and viewer-settings prop contexts
+  function togglePropContext() {
+    contextOverride = activeContext === "creator-expression" ? "notation" : "creator-expression";
+  }
 
   // Animation visibility
   const animationVisibility = getAnimationVisibilityManager();
@@ -1391,6 +1401,21 @@
 <!-- Render children with full context -->
 {@render children(context)}
 
+<!-- Prop context chip: shown when creator saved with different props than the viewer uses -->
+{#if sequence && (sequence.creatorIntent?.propConfig || sequence.intendedProp)}
+  <div class="prop-context-chip-container">
+    <PropContextChip
+      creatorDisplayName={sequence.ownerDisplayName ?? "Creator"}
+      creatorBlueProp={sequence.creatorIntent?.propConfig?.bluePropType ?? sequence.intendedProp?.bluePropType ?? PropType.STAFF}
+      creatorRedProp={sequence.creatorIntent?.propConfig?.redPropType ?? sequence.intendedProp?.redPropType ?? PropType.STAFF}
+      viewerBlueProp={(settingsService.settings.bluePropType as PropType) ?? PropType.STAFF}
+      viewerRedProp={(settingsService.settings.redPropType as PropType) ?? PropType.STAFF}
+      source={presentation.source}
+      onSwitch={togglePropContext}
+    />
+  </div>
+{/if}
+
 <!-- Screen reader announcements -->
 <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">
   {accessibilityHelper.announcement}
@@ -1407,5 +1432,9 @@
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border: 0;
+  }
+
+  .prop-context-chip-container {
+    padding: 8px 12px 0;
   }
 </style>
