@@ -13,6 +13,7 @@ import type {
   PropState,
   PropStates,
 } from "../../shared/domain/types/PropState";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
 export interface ISequenceAnimationOrchestrator {
   initializeWithDomainData(sequenceData: SequenceData): boolean;
@@ -25,6 +26,12 @@ export interface ISequenceAnimationOrchestrator {
   getCurrentLetter(): Letter | null;
   isInitialized(): boolean;
   dispose(): void;
+
+  /**
+   * Update the prop types used for rendering without full re-initialization.
+   * Called when the user toggles between creator-intent and viewer props.
+   */
+  updatePropTypes(bluePropType: PropType, redPropType: PropType): void;
 
   /**
    * Check if currently showing the start position (before beat 1)
