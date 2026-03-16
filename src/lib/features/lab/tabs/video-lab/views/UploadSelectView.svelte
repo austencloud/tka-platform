@@ -9,6 +9,7 @@
   import { container } from "$lib/shared/di";
   import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
   import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
+  import PropAwareThumbnail from "$lib/features/browse/sequences/display/components/PropAwareThumbnail.svelte";
 
   interface Props {
     onStartMapping: (
@@ -211,26 +212,36 @@
       class="search-input"
     />
 
-    <div class="sequence-list themed-scrollbar">
+    <div class="sequence-grid themed-scrollbar">
       {#if isLoadingSequences}
-        <div class="list-status">
+        <div class="grid-status">
           <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
           Loading library...
         </div>
       {:else if filteredSequences.length === 0}
-        <div class="list-status">
+        <div class="grid-status">
           {searchQuery.trim() ? "No matching sequences" : "No sequences in library"}
         </div>
       {:else}
         {#each filteredSequences as seq (seq.id)}
           <button
-            class="sequence-row"
+            class="sequence-card"
             class:selected={selectedSequence?.id === seq.id}
             onclick={() => { selectedSequence = seq; }}
             type="button"
           >
-            <span class="seq-word">{seq.word ?? seq.name ?? "Untitled"}</span>
-            <span class="seq-steps">{seq.steps?.length || seq.word?.length || 0} beats</span>
+            <div class="thumbnail-wrapper">
+              <PropAwareThumbnail
+                sequence={seq}
+                variant="browse"
+                eager
+                suppressContextMenu
+              />
+            </div>
+            <div class="card-label">
+              <span class="card-word">{seq.word ?? seq.name ?? "Untitled"}</span>
+              <span class="card-beats">{seq.steps?.length || seq.word?.length || 0} beats</span>
+            </div>
           </button>
         {/each}
       {/if}
@@ -437,7 +448,7 @@
     background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
   }
 
-  /* ---- Sequence list ---- */
+  /* ---- Sequence grid ---- */
 
   .search-input {
     padding: 10px 12px;
@@ -452,19 +463,16 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
   }
 
-  .sequence-list {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    max-height: 200px;
+  .sequence-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    max-height: 360px;
     overflow-y: auto;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 8px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.02));
     padding: 4px;
   }
 
-  .list-status {
+  .grid-status {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -472,39 +480,64 @@
     padding: 20px;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
     font-size: var(--font-size-min, 14px);
+    grid-column: 1 / -1;
   }
 
-  .sequence-row {
+  .sequence-card {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 12px;
-    border: none;
-    border-radius: 6px;
-    background: transparent;
+    flex-direction: column;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     color: var(--theme-text, #ffffff);
-    font-size: var(--font-size-min, 14px);
     cursor: pointer;
-    text-align: left;
-    transition: background 0.1s;
+    padding: 0;
+    overflow: hidden;
+    transition: border-color 0.15s, box-shadow 0.15s;
   }
 
-  .sequence-row:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
+  .sequence-card:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
   }
 
-  .sequence-row.selected {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, transparent);
-    outline: 1px solid color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
+  .sequence-card.selected {
+    border-color: var(--theme-accent, #6366f1);
+    border-width: 2px;
+    box-shadow: 0 0 12px color-mix(in srgb, var(--theme-accent, #6366f1) 25%, transparent);
   }
 
-  .seq-word {
-    font-weight: 600;
+  .sequence-card:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
   }
 
-  .seq-steps {
+  .thumbnail-wrapper {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+  }
+
+  .card-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 4px;
+  }
+
+  .card-word {
     font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    font-weight: 600;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  .card-beats {
+    font-size: 11px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
   }
 
   .selected-info {
@@ -554,7 +587,7 @@
   @media (prefers-reduced-motion: reduce) {
     .file-picker,
     .start-btn,
-    .sequence-row,
+    .sequence-card,
     .clear-btn,
     .paste-btn {
       transition: none !important;
