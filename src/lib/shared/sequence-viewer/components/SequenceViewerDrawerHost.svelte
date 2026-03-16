@@ -416,7 +416,7 @@
                 onRampStart={ctx.handleRampStart}
                 onRampStop={ctx.handleRampStop}
                 isOwned={ctx.isOwned}
-                onVideoUpload={ctx.isOwned ? () => ctx.enterEditMode('video-upload') : undefined}
+                onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
                 onDeleteRequest={() => (deleteConfirmOpen = true)}
                 bluePropType={ctx.bluePropType}
                 redPropType={ctx.redPropType}

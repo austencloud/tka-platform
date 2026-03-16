@@ -130,6 +130,7 @@
     handleOpenInCompose: (preset?: 'stagger' | 'mirror' | 'combo-export') => Promise<void>;
     handleEdit: () => void;
     handleSave: () => void;
+    handleVideoUpload: () => Promise<void>;
     handleShare: () => void;
     handleDelete: () => Promise<void>;
     handleGetApp: () => void;
@@ -1043,6 +1044,30 @@
     }
   }
 
+  async function handleVideoUpload() {
+    if (!authState.isAuthenticated) {
+      showToast("Sign in to upload videos", "info");
+      return;
+    }
+    if (!sequence) {
+      showToast("No sequence to upload video for", "info");
+      return;
+    }
+
+    // If the sequence isn't saved to the user's library yet, save it first.
+    // Videos need a persisted sequence to attach to.
+    if (!isOwned) {
+      try {
+        await handleSave();
+      } catch {
+        // handleSave already shows an error toast
+        return;
+      }
+    }
+
+    enterEditMode("video-upload");
+  }
+
   async function handleSetAsIntended() {
     if (!sequence || !isOwned) return;
     const currentBlue = activeBlueProp;
@@ -1327,6 +1352,7 @@
     handleOpenInCompose,
     handleEdit,
     handleSave,
+    handleVideoUpload,
     handleShare,
     handleDelete,
     handleGetApp,

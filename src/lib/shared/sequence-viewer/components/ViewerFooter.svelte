@@ -209,7 +209,7 @@
         <i class="fas fa-pen-to-square" aria-hidden="true"></i>
       </button>
     {/if}
-    {#if isOwned && onVideoUpload}
+    {#if isLoggedIn && onVideoUpload}
       <button
         type="button"
         class="landscape-btn video"
@@ -358,7 +358,7 @@
               <span>Get App</span>
             </button>
           {/if}
-          {#if isOwned && onVideoUpload}
+          {#if isLoggedIn && onVideoUpload}
             <button
               type="button"
               class="action-btn video"
