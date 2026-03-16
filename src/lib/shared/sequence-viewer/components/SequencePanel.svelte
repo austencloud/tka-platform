@@ -449,15 +449,15 @@
         </button>
       {/if}
 
-      <!-- Open in Constructor - always available for any sequence -->
+      <!-- Edit - opens sequence in the Constructor for editing -->
       <button
         type="button"
         class="action-btn primary"
         onclick={() => handleAction("edit")}
-        aria-label="Open in Constructor"
+        aria-label="Edit"
       >
-        <i class="fas fa-hammer" aria-hidden="true"></i>
-        <span>Open in Constructor</span>
+        <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+        <span>Edit</span>
       </button>
 
       {#if videoCount > 0 || isOwned}
