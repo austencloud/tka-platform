@@ -57,6 +57,7 @@
     "hand-path-explorer": () => import("$lib/features/hand-path-explorer/HandPathExplorerLab.svelte"),
     "hand-path-builder": () => import("$lib/features/hand-path-builder/HandPathBuilderLab.svelte"),
     "video-trails": () => import("./tabs/video-trails/VideoTrailsLab.svelte"),
+    "video-lab": () => import("./tabs/video-lab/VideoLab.svelte"),
   };
 
   // Get current tab, default to first tab

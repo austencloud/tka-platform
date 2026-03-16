@@ -857,6 +857,14 @@ export const LAB_TABS: Section[] = [
     color: "#f43f5e",
     gradient: "linear-gradient(135deg, #fb7185 0%, #f43f5e 100%)",
   },
+  {
+    id: "video-lab",
+    label: "Video Lab",
+    icon: '<i class="fas fa-film" aria-hidden="true"></i>',
+    description: "Beat mapping, BPM-synced playback, and video-to-notation alignment",
+    color: "#8b5cf6",
+    gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
+  },
 ];
 
 // REMOVED: LANDING_PAGE_TABS - LandingPreviewModule now handles its own internal tabs

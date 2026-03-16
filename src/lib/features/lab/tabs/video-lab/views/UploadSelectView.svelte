@@ -1,0 +1,563 @@
+<!--
+  UploadSelectView.svelte
+
+  First view in Video Lab. Lets the user pick a local video file (or paste a URL)
+  and select a library sequence to map beats against. Shows video preview with
+  basic info after selection.
+-->
+<script lang="ts">
+  import { container } from "$lib/shared/di";
+  import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
+  import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
+
+  interface Props {
+    onStartMapping: (
+      videoUrl: string,
+      duration: number,
+      fileSize: number,
+      sequence: LibrarySequence,
+    ) => void;
+  }
+
+  const { onStartMapping }: Props = $props();
+
+  // ---- Video source ----
+  let videoUrl = $state<string | null>(null);
+  let videoDuration = $state(0);
+  let videoFileSize = $state(0);
+  let videoFileName = $state("");
+  let pasteUrl = $state("");
+  let videoEl: HTMLVideoElement | undefined = $state();
+
+  // ---- Library sequences ----
+  let sequences = $state<LibrarySequence[]>([]);
+  let selectedSequence = $state<LibrarySequence | null>(null);
+  let isLoadingSequences = $state(false);
+  let searchQuery = $state("");
+
+  const filteredSequences = $derived(
+    searchQuery.trim()
+      ? sequences.filter((s) => {
+          const q = searchQuery.toLowerCase();
+          const word = (s.word ?? "").toLowerCase();
+          const name = (s.name ?? "").toLowerCase();
+          return word.includes(q) || name.includes(q);
+        })
+      : sequences,
+  );
+
+  const canStart = $derived(!!videoUrl && !!selectedSequence && videoDuration > 0);
+
+  // Load user's library sequences on mount
+  $effect(() => {
+    loadSequences();
+  });
+
+  async function loadSequences() {
+    isLoadingSequences = true;
+    try {
+      const repo = container.items.libraryRepository as ILibraryRepository;
+      sequences = await repo.getSequences({ sortBy: "updatedAt", sortDirection: "desc" });
+    } catch (err) {
+      console.error("Failed to load library sequences:", err);
+    } finally {
+      isLoadingSequences = false;
+    }
+  }
+
+  // ---- File handling ----
+
+  function handleFileSelect(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    // Revoke previous blob URL if any
+    if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl);
+
+    videoUrl = URL.createObjectURL(file);
+    videoFileName = file.name;
+    videoFileSize = file.size;
+    videoDuration = 0; // Will be set by loadedmetadata
+  }
+
+  function handlePasteUrl() {
+    const url = pasteUrl.trim();
+    if (!url) return;
+
+    if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl);
+
+    videoUrl = url;
+    videoFileName = url.split("/").pop() ?? "Video";
+    videoFileSize = 0; // Unknown for remote URLs
+    videoDuration = 0;
+  }
+
+  function handleLoadedMetadata() {
+    if (videoEl) {
+      videoDuration = videoEl.duration;
+    }
+  }
+
+  function clearVideo() {
+    if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl);
+    videoUrl = null;
+    videoFileName = "";
+    videoFileSize = 0;
+    videoDuration = 0;
+  }
+
+  function handleStart() {
+    if (videoUrl && selectedSequence && videoDuration > 0) {
+      onStartMapping(videoUrl, videoDuration, videoFileSize, selectedSequence);
+    }
+  }
+
+  function formatDuration(seconds: number): string {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  }
+
+  function formatFileSize(bytes: number): string {
+    if (bytes === 0) return "Unknown";
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+</script>
+
+<div class="upload-select-view">
+  <!-- Video source section -->
+  <section class="section">
+    <h3 class="section-title">
+      <i class="fas fa-video" aria-hidden="true"></i>
+      Video Source
+    </h3>
+
+    {#if videoUrl}
+      <!-- Video preview -->
+      <div class="video-preview">
+        <video
+          bind:this={videoEl}
+          src={videoUrl}
+          playsinline
+          controls
+          onloadedmetadata={handleLoadedMetadata}
+        >
+          <track kind="captions" />
+        </video>
+
+        <div class="video-info">
+          <span class="video-name">{videoFileName}</span>
+          <div class="video-meta">
+            {#if videoDuration > 0}
+              <span>{formatDuration(videoDuration)}</span>
+            {/if}
+            {#if videoFileSize > 0}
+              <span>{formatFileSize(videoFileSize)}</span>
+            {/if}
+          </div>
+        </div>
+
+        <button class="clear-btn" onclick={clearVideo} type="button" aria-label="Remove video">
+          <i class="fas fa-times" aria-hidden="true"></i>
+          Remove
+        </button>
+      </div>
+    {:else}
+      <!-- Upload options -->
+      <div class="upload-options">
+        <label class="file-picker">
+          <input type="file" accept="video/*" onchange={handleFileSelect} />
+          <i class="fas fa-upload" aria-hidden="true"></i>
+          <span>Choose a video file</span>
+        </label>
+
+        <div class="divider">
+          <span>or</span>
+        </div>
+
+        <div class="url-input-row">
+          <input
+            type="url"
+            placeholder="Paste a video URL..."
+            bind:value={pasteUrl}
+            class="url-input"
+          />
+          <button
+            class="paste-btn"
+            onclick={handlePasteUrl}
+            disabled={!pasteUrl.trim()}
+            type="button"
+          >
+            Load
+          </button>
+        </div>
+      </div>
+    {/if}
+  </section>
+
+  <!-- Sequence selector section -->
+  <section class="section">
+    <h3 class="section-title">
+      <i class="fas fa-list-ol" aria-hidden="true"></i>
+      Sequence
+    </h3>
+
+    <input
+      type="text"
+      placeholder="Search by word or name..."
+      bind:value={searchQuery}
+      class="search-input"
+    />
+
+    <div class="sequence-list themed-scrollbar">
+      {#if isLoadingSequences}
+        <div class="list-status">
+          <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+          Loading library...
+        </div>
+      {:else if filteredSequences.length === 0}
+        <div class="list-status">
+          {searchQuery.trim() ? "No matching sequences" : "No sequences in library"}
+        </div>
+      {:else}
+        {#each filteredSequences as seq (seq.id)}
+          <button
+            class="sequence-row"
+            class:selected={selectedSequence?.id === seq.id}
+            onclick={() => { selectedSequence = seq; }}
+            type="button"
+          >
+            <span class="seq-word">{seq.word ?? seq.name ?? "Untitled"}</span>
+            <span class="seq-steps">{seq.steps?.length ?? 0} beats</span>
+          </button>
+        {/each}
+      {/if}
+    </div>
+
+    {#if selectedSequence}
+      <div class="selected-info">
+        Selected: <strong>{selectedSequence.word ?? selectedSequence.name}</strong>
+        ({selectedSequence.steps?.length ?? 0} beats)
+      </div>
+    {/if}
+  </section>
+
+  <!-- Start mapping -->
+  <div class="action-bar">
+    <button
+      class="start-btn"
+      disabled={!canStart}
+      onclick={handleStart}
+      type="button"
+    >
+      <i class="fas fa-play" aria-hidden="true"></i>
+      Start Mapping
+    </button>
+  </div>
+</div>
+
+<style>
+  .upload-select-view {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 16px;
+    height: 100%;
+  }
+
+  .section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    color: var(--theme-text, #ffffff);
+  }
+
+  .section-title i {
+    color: var(--theme-accent, #6366f1);
+    font-size: 14px;
+  }
+
+  /* ---- Video preview ---- */
+
+  .video-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 10px;
+    padding: 10px;
+  }
+
+  .video-preview video {
+    width: 100%;
+    max-height: 220px;
+    border-radius: 8px;
+    background: #000;
+    object-fit: contain;
+  }
+
+  .video-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .video-name {
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    color: var(--theme-text, #ffffff);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 60%;
+  }
+
+  .video-meta {
+    display: flex;
+    gap: 12px;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+  }
+
+  .clear-btn {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 6px;
+    background: transparent;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+  }
+
+  .clear-btn:hover {
+    border-color: var(--semantic-error, #ef4444);
+    color: var(--semantic-error, #ef4444);
+  }
+
+  /* ---- Upload options ---- */
+
+  .upload-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .file-picker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 24px;
+    border: 2px dashed var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 10px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.02));
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-min, 14px);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  .file-picker:hover {
+    border-color: var(--theme-accent, #6366f1);
+    color: var(--theme-text, #ffffff);
+  }
+
+  .file-picker input {
+    display: none;
+  }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
+    font-size: var(--font-size-compact, 12px);
+  }
+
+  .divider::before,
+  .divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .url-input-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .url-input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text, #ffffff);
+    font-size: var(--font-size-min, 14px);
+  }
+
+  .url-input::placeholder {
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
+  }
+
+  .paste-btn {
+    padding: 10px 16px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text, #ffffff);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .paste-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .paste-btn:hover:not(:disabled) {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+  }
+
+  /* ---- Sequence list ---- */
+
+  .search-input {
+    padding: 10px 12px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text, #ffffff);
+    font-size: var(--font-size-min, 14px);
+  }
+
+  .search-input::placeholder {
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
+  }
+
+  .sequence-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.02));
+    padding: 4px;
+  }
+
+  .list-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 20px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
+    font-size: var(--font-size-min, 14px);
+  }
+
+  .sequence-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--theme-text, #ffffff);
+    font-size: var(--font-size-min, 14px);
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.1s;
+  }
+
+  .sequence-row:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
+  }
+
+  .sequence-row.selected {
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, transparent);
+    outline: 1px solid color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
+  }
+
+  .seq-word {
+    font-weight: 600;
+  }
+
+  .seq-steps {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+  }
+
+  .selected-info {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+  }
+
+  .selected-info strong {
+    color: var(--theme-accent, #6366f1);
+  }
+
+  /* ---- Action bar ---- */
+
+  .action-bar {
+    margin-top: auto;
+    padding-top: 12px;
+  }
+
+  .start-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 10px;
+    background: var(--theme-accent, #6366f1);
+    color: #ffffff;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    cursor: pointer;
+    transition: filter 0.15s, box-shadow 0.15s;
+  }
+
+  .start-btn:hover:not(:disabled) {
+    filter: brightness(1.1);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
+  }
+
+  .start-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .file-picker,
+    .start-btn,
+    .sequence-row,
+    .clear-btn,
+    .paste-btn {
+      transition: none !important;
+    }
+  }
+</style>
