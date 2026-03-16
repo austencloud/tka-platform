@@ -48,6 +48,7 @@
     isOwned?: boolean;
     onDeleteRequest?: () => void;
     onVideoUpload?: () => void;
+    videoCount?: number;
     // Prop switcher
     propSource?: "intended" | "creator-favorite" | "viewer-settings" | "quick-switch";
     hasIntendedProp?: boolean;
@@ -82,6 +83,7 @@
     isOwned = false,
     onDeleteRequest,
     onVideoUpload,
+    videoCount,
     propSource,
     hasIntendedProp,
     bluePropType,
@@ -217,6 +219,9 @@
         aria-label="Upload video"
       >
         <i class="fas fa-video" aria-hidden="true"></i>
+        {#if videoCount && videoCount > 0}
+          <span class="video-badge video-badge-sm">{videoCount}</span>
+        {/if}
       </button>
     {/if}
     {#if isOwned && onDeleteRequest}
@@ -258,6 +263,7 @@
       {isOwned}
       {onDeleteRequest}
       {onVideoUpload}
+      {videoCount}
       {propSource}
       {hasIntendedProp}
       {bluePropType}
@@ -367,6 +373,9 @@
             >
               <i class="fas fa-video" aria-hidden="true"></i>
               <span>Video</span>
+              {#if videoCount && videoCount > 0}
+                <span class="video-badge">{videoCount}</span>
+              {/if}
             </button>
           {/if}
           {#if isOwned && onDeleteRequest}
@@ -735,6 +744,52 @@
   .tempo-section {
     min-width: 0;
     max-width: 500px;
+  }
+
+  /* ===========================
+     VIDEO COUNT BADGE
+     =========================== */
+
+  .action-btn.video,
+  .landscape-btn.video {
+    position: relative;
+  }
+
+  .video-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: var(--theme-accent, #6366f1);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+
+  /* Smaller badge for landscape icon-only buttons */
+  .video-badge-sm {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: var(--theme-accent, #6366f1);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
   }
 
   /* ===========================
