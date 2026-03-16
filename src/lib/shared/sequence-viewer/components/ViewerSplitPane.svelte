@@ -153,6 +153,8 @@
           letter={playback.currentLetter}
           stepData={playback.currentStepData}
           word={sequence?.word}
+          bluePropType={propRendering.bluePropType}
+          redPropType={propRendering.redPropType}
           {trailSettings}
           {onCanvasReady}
           focused={layout.focusedPane === "animation"}

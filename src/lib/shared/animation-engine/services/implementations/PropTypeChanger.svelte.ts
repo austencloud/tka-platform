@@ -43,6 +43,18 @@ export class PropTypeChanger implements IPropTypeChanger {
     }
   }
 
+  overridePropTypes(bluePropType: string, redPropType: string): void {
+    if (
+      bluePropType !== this.state.bluePropType ||
+      redPropType !== this.state.redPropType
+    ) {
+      this.state.bluePropType = bluePropType;
+      this.state.redPropType = redPropType;
+      this.state.legacyPropType = bluePropType;
+      this.state.textureReloadSignal++;
+    }
+  }
+
   dispose(): void {
     this.state.bluePropType = "staff";
     this.state.redPropType = "staff";
