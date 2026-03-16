@@ -65,7 +65,7 @@
     isFullscreen: boolean;
     fullscreenControlsVisible: boolean;
     fullscreenStackVertical: boolean;
-    editingPane: 'animation' | 'image' | null;
+    editingPane: 'animation' | 'image' | 'video-upload' | null;
 
     // Export state
     isExportMode: boolean;
@@ -119,7 +119,7 @@
     handlePlaybackToggle: () => void;
     handleBpmChange: (bpm: number) => void;
     handleStepClick: (stepIndex: number) => void;
-    enterEditMode: (pane: 'animation' | 'image') => void;
+    enterEditMode: (pane: 'animation' | 'image' | 'video-upload') => void;
     exitEditMode: () => void;
     enterFullscreen: () => void;
     exitFullscreen: () => void;
@@ -269,7 +269,7 @@
   let arrivedViaStepping = $state(false);
 
   // Edit mode (single source of truth for export state)
-  let editingPane = $state<'animation' | 'image' | null>(null);
+  let editingPane = $state<'animation' | 'image' | 'video-upload' | null>(null);
 
   // Export mode (derived from editingPane)
   const isExportMode = $derived(editingPane !== null);
@@ -714,7 +714,7 @@
   // so we can restore the prior state when exiting.
   let wasPlayingBeforeImageExport = false;
 
-  function enterEditMode(pane: 'animation' | 'image') {
+  function enterEditMode(pane: 'animation' | 'image' | 'video-upload') {
     hapticService?.trigger("selection");
     editingPane = pane;
 
@@ -724,20 +724,24 @@
       if (!isPlayingLocal && playbackController) {
         playbackController.togglePlayback();
       }
-    } else if (pane === "image") {
+    } else if (pane === "image" || pane === "video-upload") {
       wasPlayingBeforeImageExport = isPlayingLocal;
       if (isPlayingLocal && playbackController) {
         playbackController.togglePlayback();
       }
     }
 
-    const label = pane === 'animation' ? 'Video' : 'Image';
-    accessibilityHelper.announce(`${label} export. Configure settings and tap Export when ready.`, "assertive");
+    if (pane === 'video-upload') {
+      accessibilityHelper.announce("Upload a performance video for this sequence.", "assertive");
+    } else {
+      const label = pane === 'animation' ? 'Animation' : 'Card';
+      accessibilityHelper.announce(`${label} export. Configure settings and tap Export when ready.`, "assertive");
+    }
   }
 
   function exitEditMode() {
     hapticService?.trigger("selection");
-    const wasPaneImage = editingPane === "image";
+    const wasPaneImage = editingPane === "image" || editingPane === "video-upload";
     editingPane = null;
     sequenceModalExporter.dismissPreview();
 
