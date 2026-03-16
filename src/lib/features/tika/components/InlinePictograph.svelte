@@ -11,6 +11,7 @@
   Uses responsive sizing when no explicit size is provided.
 -->
 <script lang="ts">
+  import { untrack } from "svelte";
   import type { InlinePictograph } from "../types";
   import { dev } from "$app/environment";
   import { tikaPictographCache } from "../services/implementations/TikaPictographCache";
@@ -142,26 +143,29 @@
     }
   }
 
-  // Fetch pictograph on mount or when pictograph changes
+  // Fetch pictograph on mount or when pictograph changes.
+  // untrack prevents state writes from re-triggering the effect.
   $effect(() => {
     const _letter = pictograph.letter;
     if (!_letter) return;
 
-    loading = true;
-    error = false;
-    svgMarkup = null;
+    untrack(() => {
+      loading = true;
+      error = false;
+      svgMarkup = null;
 
-    (async () => {
-      if (useSvg) {
-        const svgSuccess = await fetchSvgPictograph();
-        if (svgSuccess) {
-          loading = false;
-          return;
+      (async () => {
+        if (useSvg) {
+          const svgSuccess = await fetchSvgPictograph();
+          if (svgSuccess) {
+            loading = false;
+            return;
+          }
+          useSvg = false;
         }
-        useSvg = false;
-      }
-      await fetchPictograph();
-    })();
+        await fetchPictograph();
+      })();
+    });
   });
 
   async function fetchPictograph() {

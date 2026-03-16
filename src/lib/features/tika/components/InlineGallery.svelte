@@ -11,6 +11,7 @@
   Uses container queries for intelligent sizing based on item count.
 -->
 <script lang="ts">
+  import { untrack } from "svelte";
   import type { InlineGallery } from "../types";
   import { dev } from "$app/environment";
   import { tikaPictographCache } from "../services/implementations/TikaPictographCache";
@@ -19,6 +20,17 @@
     saveStaticPictograph,
     type PictographFileKey,
   } from "../services/implementations/StaticPictographWriter";
+  import { SvgSanitizer } from "../services/implementations/SvgSanitizer";
+
+  // Module-level SVG cache and sanitizer (shared across instances)
+  const svgCache = new Map<string, string>();
+  const svgSanitizer = new SvgSanitizer();
+
+  function buildSvgCacheKey(letter: string, variation: number, gridMode: string, propType?: string): string {
+    const parts = [letter, String(variation), gridMode];
+    if (propType) parts.push(propType);
+    return parts.join("-");
+  }
 
   // Props - itemSize is optional; when not provided, uses responsive sizing
   let {
@@ -47,15 +59,27 @@
   }
   let loading = $state(true);
   let loadedCount = $state(0);
+  let svgMarkups = $state<Map<string, string>>(new Map());
+
+  const prefersReducedMotion =
+    typeof window !== "undefined"
+      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      : false;
 
   // Generate cache key
   function getCacheKey(letter: string, variation: number, size: number): string {
     return `${letter}-${variation}-${size}`;
   }
 
-  // Fetch all gallery images
+  // Fetch all gallery images when gallery input changes.
+  // untrack prevents state writes (loading, loadedCount, svgMarkups, images)
+  // from re-triggering the effect during the async fetch.
   $effect(() => {
-    fetchGalleryImages();
+    const _items = gallery.items;
+    const _gridMode = gallery.gridMode;
+    untrack(() => {
+      fetchGalleryImages();
+    });
   });
 
   // Build cache key including grid mode and render context
@@ -109,134 +133,112 @@
     loading = true;
     loadedCount = 0;
     const newImages = new Map<string, string>();
-    const itemsToFetch: Array<{ letter: string; variation: number }> = [];
+    const newSvgMarkups = new Map<string, string>();
+    const itemsNeedingPng: Array<{ letter: string; variation: number }> = [];
     const fetchSize = apiItemSize();
     const context = gallery.renderContext;
+    const gridMode = gallery.gridMode ?? "diamond";
 
-    // Step 1: Check static files first (production path), then IndexedDB cache
-    for (const item of gallery.items) {
-      const variation = item.variation ?? 0;
-      const staticKey = buildStaticKey(item.letter, variation);
+    // Step 1: Try SVG for all items sequentially (one at a time to avoid
+    // overwhelming the rate limiter — multiple gallery instances may be
+    // fetching simultaneously, and each SVG render is server-side work)
+    const allItems = gallery.items.map((item) => ({
+      letter: item.letter,
+      variation: item.variation ?? 0,
+    }));
 
-      // Priority 1: Static file (instant, works in production)
+    const svgOptions: Record<string, unknown> = {
+      darkMode: true,
+      size: fetchSize,
+      showTKA: true,
+      showGrid: true,
+    };
+
+    if (context) {
+      if (context.propType) {
+        svgOptions.bluePropType = context.propType;
+        svgOptions.redPropType = context.propType;
+      }
+      if (context.hideArrows) {
+        svgOptions.showBlueMotion = false;
+        svgOptions.showRedMotion = false;
+      }
+    }
+
+    for (const { letter, variation } of allItems) {
+      const imageKey = getImageKey(letter, variation);
+      const cacheKey = buildSvgCacheKey(letter, variation, gridMode, context?.propType);
+
+      // Check SVG cache first (instant, no API call)
+      const cached = svgCache.get(cacheKey);
+      if (cached) {
+        newSvgMarkups.set(imageKey, cached);
+        loadedCount++;
+        continue;
+      }
+
+      // Fetch SVG from API (one at a time)
+      try {
+        const response = await fetch("/api/tika/pictograph", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            letter,
+            variation,
+            gridMode,
+            format: "svg",
+            options: svgOptions,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.svgMarkup) {
+            const sanitized = svgSanitizer.sanitize(data.svgMarkup);
+            svgCache.set(cacheKey, sanitized);
+            newSvgMarkups.set(imageKey, sanitized);
+            loadedCount++;
+            continue;
+          }
+        }
+      } catch {
+        // SVG fetch failed — fall through to PNG
+      }
+
+      itemsNeedingPng.push({ letter, variation });
+    }
+
+    // Update SVG state once after all items (not per-batch, avoids re-triggering effects)
+    svgMarkups = new Map(newSvgMarkups);
+
+    // Step 2: Fall back to PNG for any items that failed SVG
+    // Only check static files and IndexedDB — do NOT re-hit the API,
+    // since the SVG request already consumed our rate limit budget
+    for (const { letter, variation } of itemsNeedingPng) {
+      const staticKey = buildStaticKey(letter, variation);
+
+      // Priority 1: Static file
       const staticPath = await checkStaticFile(staticKey);
       if (staticPath) {
-        newImages.set(getImageKey(item.letter, variation), staticPath);
+        newImages.set(getImageKey(letter, variation), staticPath);
         loadedCount++;
         continue;
       }
 
       // Priority 2: IndexedDB cache
-      const cacheKey = buildCacheKey(item.letter, variation, fetchSize);
+      const cacheKey = buildCacheKey(letter, variation, fetchSize);
       const cached = await tikaPictographCache.get(cacheKey);
       if (cached) {
-        newImages.set(getImageKey(item.letter, variation), `data:image/png;base64,${cached}`);
+        newImages.set(getImageKey(letter, variation), `data:image/png;base64,${cached}`);
         loadedCount++;
         continue;
       }
 
-      // Priority 3: Need to fetch from API
-      itemsToFetch.push({ letter: item.letter, variation });
+      // No static or cached PNG available — item will show spinner
+      // (we don't re-hit the API here to avoid rate limiting)
     }
 
-    // Update images immediately with cached/static results
     images = new Map(newImages);
-
-    // In production, if items are missing, they simply won't load
-    // (the API doesn't exist in production builds)
-    // Note: dev can be undefined in some contexts, so check explicitly for false
-    if (dev === false && itemsToFetch.length > 0) {
-      console.warn(
-        `[InlineGallery] Missing ${itemsToFetch.length} pictographs in production:`,
-        itemsToFetch.map((i) => `${i.letter}-${i.variation}`)
-      );
-      loading = false;
-      return;
-    }
-
-    // If nothing to fetch, we're done
-    if (itemsToFetch.length === 0) {
-      loading = false;
-      return;
-    }
-
-    // Step 2: Fetch missing items from API (dev only) and save to static
-    const BATCH_SIZE = 4;
-
-    for (let i = 0; i < itemsToFetch.length; i += BATCH_SIZE) {
-      const batch = itemsToFetch.slice(i, i + BATCH_SIZE);
-
-      const batchPromises = batch.map(async ({ letter, variation }) => {
-        try {
-          // Build options, applying renderContext for position-teaching mode
-          const options: Record<string, unknown> = {
-            darkMode: true,
-            size: fetchSize,
-            showTKA: true,
-            showGrid: true,
-          };
-
-          // Apply render context for position-first teaching
-          if (context) {
-            if (context.propType) {
-              options.bluePropType = context.propType;
-              options.redPropType = context.propType;
-            }
-            if (context.hideArrows) {
-              options.showBlueMotion = false;
-              options.showRedMotion = false;
-            }
-          }
-
-          const response = await fetch("/api/tika/pictograph", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              letter,
-              variation,
-              gridMode: gallery.gridMode ?? "diamond",
-              options,
-            }),
-          });
-
-          if (!response.ok) return null;
-
-          const data = await response.json();
-          const base64 = data.imageBase64 as string;
-
-          // Save to static directory (dev only - builds static cache for production)
-          if (dev) {
-            const staticKey = buildStaticKey(letter, variation);
-            const saved = await saveStaticPictograph(staticKey, base64);
-            if (saved) {
-              console.log(`[InlineGallery] Saved to static: ${letter}-${variation}`);
-            }
-          }
-
-          // Also cache in IndexedDB for this session
-          const cacheKey = buildCacheKey(letter, variation, fetchSize);
-          await tikaPictographCache.set(cacheKey, base64);
-
-          return { letter, variation, imageUrl: `data:image/png;base64,${base64}` };
-        } catch (e) {
-          console.error(`[InlineGallery] Error fetching ${letter}:`, e);
-          return null;
-        }
-      });
-
-      const batchResults = await Promise.all(batchPromises);
-
-      // Update images after each batch
-      for (const result of batchResults) {
-        if (result) {
-          newImages.set(getImageKey(result.letter, result.variation), result.imageUrl);
-          loadedCount++;
-        }
-      }
-
-      images = new Map(newImages);
-    }
-
     loading = false;
   }
 </script>
@@ -252,9 +254,15 @@
 >
   <div class="gallery-items" style={itemSize ? `--item-size: ${itemSize}px` : undefined}>
     {#each gallery.items as item}
-      {@const imageUrl = images.get(getImageKey(item.letter, item.variation ?? 0))}
+      {@const imageKey = getImageKey(item.letter, item.variation ?? 0)}
+      {@const imageUrl = images.get(imageKey)}
+      {@const svgContent = svgMarkups.get(imageKey)}
       <div class="gallery-item">
-        {#if imageUrl}
+        {#if svgContent}
+          <div class="svg-pictograph" class:animate={!prefersReducedMotion}>
+            {@html svgContent}
+          </div>
+        {:else if imageUrl}
           <img src={imageUrl} alt="Letter {item.letter}" />
         {:else}
           <div class="placeholder">
@@ -439,6 +447,78 @@
     text-align: center;
   }
 
+  /* SVG inline rendering */
+  .svg-pictograph {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .svg-pictograph :global(svg) {
+    width: var(--item-size, 100px);
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+  }
+
+  .inline-gallery.comparison .svg-pictograph :global(svg) {
+    width: clamp(180px, 45vw, 320px);
+  }
+
+  .inline-gallery.small-gallery .svg-pictograph :global(svg) {
+    width: clamp(80px, 20vw, 140px);
+  }
+
+  .inline-gallery.large-gallery .svg-pictograph :global(svg) {
+    width: 100%;
+  }
+
+  /* GPU-accelerated progressive reveal */
+  .svg-pictograph.animate :global(.svg-bg),
+  .svg-pictograph.animate :global(.svg-grid),
+  .svg-pictograph.animate :global(.svg-prop),
+  .svg-pictograph.animate :global(.svg-arrow),
+  .svg-pictograph.animate :global(.svg-glyph) {
+    will-change: transform, opacity;
+  }
+
+  .svg-pictograph.animate :global(.svg-bg) {
+    animation: svgReveal 0.3s ease-out both;
+    animation-delay: 0ms;
+  }
+
+  .svg-pictograph.animate :global(.svg-grid) {
+    animation: svgReveal 0.3s ease-out both;
+    animation-delay: 80ms;
+  }
+
+  .svg-pictograph.animate :global(.svg-prop) {
+    animation: svgReveal 0.35s ease-out both;
+    animation-delay: 200ms;
+  }
+
+  .svg-pictograph.animate :global(.svg-arrow) {
+    animation: svgReveal 0.35s ease-out both;
+    animation-delay: 350ms;
+  }
+
+  .svg-pictograph.animate :global(.svg-glyph) {
+    animation: svgReveal 0.3s ease-out both;
+    animation-delay: 480ms;
+  }
+
+  @keyframes svgReveal {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
   /* Mobile adjustments */
   @media (max-width: 480px) {
     .inline-gallery.grid .gallery-items {
@@ -459,6 +539,15 @@
 
     .gallery-item {
       transition: none;
+    }
+
+    .svg-pictograph :global(.svg-bg),
+    .svg-pictograph :global(.svg-grid),
+    .svg-pictograph :global(.svg-prop),
+    .svg-pictograph :global(.svg-arrow),
+    .svg-pictograph :global(.svg-glyph) {
+      animation: none !important;
+      opacity: 1 !important;
     }
   }
 </style>
