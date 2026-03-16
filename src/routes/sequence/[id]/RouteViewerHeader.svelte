@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   interface Props {
-    editingPane: 'animation' | 'image' | null;
+    editingPane: 'animation' | 'image' | 'video-upload' | null;
     isFullscreen: boolean;
     isMobile: boolean;
     darkMode: boolean;
@@ -69,8 +69,10 @@
       <h2 class="mode-title">
         {#if editingPane === "animation"}
           Export Animation
-        {:else}
+        {:else if editingPane === "image"}
           Export Card
+        {:else}
+          Upload Video
         {/if}
       </h2>
     </div>
