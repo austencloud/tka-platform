@@ -40,14 +40,18 @@ export function getStaticPictographPath(key: PictographFileKey): string {
 
 /**
  * Check if a static pictograph file exists.
- * Uses a HEAD request to avoid downloading the full image.
+ * Uses GET + Content-Type verification because Vite dev returns 200
+ * for HEAD requests on non-existent files.
  */
 export async function staticPictographExists(key: PictographFileKey): Promise<boolean> {
   const path = getStaticPictographPath(key);
 
   try {
-    const response = await fetch(path, { method: "HEAD" });
-    return response.ok;
+    const response = await fetch(path, { method: "GET" });
+    if (!response.ok) return false;
+
+    const contentType = response.headers.get("Content-Type");
+    return contentType?.startsWith("image/") ?? false;
   } catch {
     return false;
   }

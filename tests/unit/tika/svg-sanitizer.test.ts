@@ -51,4 +51,25 @@ describe("SvgSanitizer", () => {
     const result = sanitizer.sanitize(input);
     expect(result).toContain('d="M 10 10 L 20 20 Z"');
   });
+
+  it("preserves safe style attributes (fill, stroke, color)", () => {
+    const input = '<svg><path style="fill:var(--dm-motion-blue, #3575E2)" d="M0 0"/></svg>';
+    const result = sanitizer.sanitize(input);
+    expect(result).toContain("var(--dm-motion-blue, #3575E2)");
+    expect(result).toContain("style=");
+  });
+
+  it("strips dangerous CSS properties from style attributes", () => {
+    const input = '<svg><path style="fill:red; -moz-binding:url(evil)" d="M0 0"/></svg>';
+    const result = sanitizer.sanitize(input);
+    expect(result).toContain("fill");
+    expect(result).not.toContain("-moz-binding");
+    expect(result).not.toContain("evil");
+  });
+
+  it("preserves style with color property for grid", () => {
+    const input = '<svg><g style="color: var(--dm-grid-point, #d0d0d0)"><circle cx="10" cy="10" r="5"/></g></svg>';
+    const result = sanitizer.sanitize(input);
+    expect(result).toContain("var(--dm-grid-point, #d0d0d0)");
+  });
 });

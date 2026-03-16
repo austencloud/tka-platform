@@ -10,6 +10,7 @@
   3. API generation (dev only, saves to static for future)
 -->
 <script lang="ts">
+  import { untrack } from "svelte";
   import type { InlineStepGrid } from "../types";
   import { dev } from "$app/environment";
   import { tikaPictographCache } from "../services/implementations/TikaPictographCache";
@@ -18,6 +19,11 @@
     saveStaticPictograph,
     type PictographFileKey,
   } from "../services/implementations/StaticPictographWriter";
+  import { SvgSanitizer } from "../services/implementations/SvgSanitizer";
+
+  // Module-level SVG cache and sanitizer (shared across instances)
+  const svgCache = new Map<string, string>();
+  const svgSanitizer = new SvgSanitizer();
 
   // Props
   let {
@@ -31,13 +37,24 @@
 
   // State - map of stepNumber -> image URLs (static path or base64)
   let images = $state<Map<number, string>>(new Map());
+  let svgMarkups = $state<Map<number, string>>(new Map());
   let loading = $state(true);
   let loadedCount = $state(0);
+
+  const prefersReducedMotion =
+    typeof window !== "undefined"
+      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      : false;
 
   // Generate cache key (includes grid mode)
   function getCacheKey(letter: string, variation: number, size: number): string {
     const gridMode = stepGrid.gridMode ?? "diamond";
     return `${letter}-${variation}-${size}-${gridMode}`;
+  }
+
+  function buildSvgCacheKey(letter: string, variation: number): string {
+    const gridMode = stepGrid.gridMode ?? "diamond";
+    return `${letter}-${variation}-${gridMode}`;
   }
 
   // Build static file key
@@ -49,139 +66,124 @@
     };
   }
 
-  // Check if static file exists
+  // Check if static file exists using GET + Content-Type verification.
+  // HEAD requests return 200 for non-existent files in Vite dev, so we
+  // fetch the file and verify Content-Type to confirm it's actually an image.
   async function checkStaticFile(key: PictographFileKey): Promise<string | null> {
     const path = getStaticPictographPath(key);
     try {
-      const response = await fetch(path, { method: "HEAD" });
-      return response.ok ? path : null;
+      const response = await fetch(path, { method: "GET" });
+      if (!response.ok) return null;
+
+      const contentType = response.headers.get("Content-Type");
+      if (!contentType?.startsWith("image/")) {
+        return null;
+      }
+
+      return path;
     } catch {
       return null;
     }
   }
 
-  // Fetch all step images
+  // Fetch all step images when stepGrid changes.
+  // untrack prevents state writes from re-triggering the effect.
   $effect(() => {
-    fetchStepImages();
+    const _steps = stepGrid.steps;
+    const _gridMode = stepGrid.gridMode;
+    untrack(() => {
+      fetchStepImages();
+    });
   });
 
   async function fetchStepImages() {
     loading = true;
     loadedCount = 0;
     const newImages = new Map<number, string>();
-    const stepsToFetch: Array<{ stepNumber: number; letter: string; variation: number }> = [];
+    const newSvgMarkups = new Map<number, string>();
+    const stepsNeedingPng: Array<{ stepNumber: number; letter: string; variation: number }> = [];
+    const gridMode = stepGrid.gridMode ?? "diamond";
 
-    // Step 1: Check static files first, then IndexedDB cache
+    // Step 1: Try SVG for all items sequentially (matches InlineGallery pattern)
     for (const step of stepGrid.steps) {
-      const staticKey = buildStaticKey(step.letter, step.variation);
+      const cacheKey = buildSvgCacheKey(step.letter, step.variation);
 
-      // Priority 1: Static file
-      const staticPath = await checkStaticFile(staticKey);
-      if (staticPath) {
-        newImages.set(step.stepNumber, staticPath);
-        loadedCount++;
-        continue;
-      }
-
-      // Priority 2: IndexedDB cache
-      const cacheKey = getCacheKey(step.letter, step.variation, apiItemSize);
-      const cached = await tikaPictographCache.get(cacheKey);
+      // Check SVG cache first (instant)
+      const cached = svgCache.get(cacheKey);
       if (cached) {
-        newImages.set(step.stepNumber, `data:image/png;base64,${cached}`);
+        newSvgMarkups.set(step.stepNumber, cached);
         loadedCount++;
         continue;
       }
 
-      // Priority 3: Need to fetch from API
-      stepsToFetch.push({
+      // Fetch SVG from API
+      try {
+        const response = await fetch("/api/tika/pictograph", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            letter: step.letter,
+            variation: step.variation,
+            gridMode,
+            format: "svg",
+            options: {
+              darkMode: true,
+              size: apiItemSize,
+              showTKA: true,
+              showGrid: true,
+            },
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.svgMarkup) {
+            const sanitized = svgSanitizer.sanitize(data.svgMarkup);
+            svgCache.set(cacheKey, sanitized);
+            newSvgMarkups.set(step.stepNumber, sanitized);
+            loadedCount++;
+            continue;
+          }
+        }
+      } catch {
+        // SVG fetch failed, fall through to PNG
+      }
+
+      stepsNeedingPng.push({
         stepNumber: step.stepNumber,
         letter: step.letter,
         variation: step.variation,
       });
     }
 
-    // Update images immediately with cached/static results
-    images = new Map(newImages);
+    // Update SVG state once after all items
+    svgMarkups = new Map(newSvgMarkups);
 
-    // In production, if items are missing, they simply won't load
-    // Note: dev can be undefined in some contexts, so check explicitly for false
-    if (dev === false && stepsToFetch.length > 0) {
-      console.warn(
-        `[InlineStepGrid] Missing ${stepsToFetch.length} pictographs in production:`,
-        stepsToFetch.map((s) => `${s.letter}-${s.variation}`)
-      );
-      loading = false;
-      return;
-    }
+    // Step 2: Fall back to PNG for items that failed SVG
+    for (const { stepNumber, letter, variation } of stepsNeedingPng) {
+      const staticKey = buildStaticKey(letter, variation);
 
-    // If nothing to fetch, we're done
-    if (stepsToFetch.length === 0) {
-      loading = false;
-      return;
-    }
-
-    // Step 2: Fetch missing steps from API (dev only) and save to static
-    const BATCH_SIZE = 4;
-
-    for (let i = 0; i < stepsToFetch.length; i += BATCH_SIZE) {
-      const batch = stepsToFetch.slice(i, i + BATCH_SIZE);
-
-      const batchPromises = batch.map(async ({ stepNumber, letter, variation }) => {
-        try {
-          const response = await fetch("/api/tika/pictograph", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              letter,
-              variation,
-              gridMode: stepGrid.gridMode ?? "diamond",
-              options: {
-                darkMode: true,
-                size: apiItemSize,
-                showTKA: true,
-                showGrid: true,
-              },
-            }),
-          });
-
-          if (!response.ok) return null;
-
-          const data = await response.json();
-          const base64 = data.imageBase64 as string;
-
-          // Save to static directory (dev only - builds static cache for production)
-          if (dev) {
-            const staticKey = buildStaticKey(letter, variation);
-            const saved = await saveStaticPictograph(staticKey, base64);
-            if (saved) {
-              console.log(`[InlineStepGrid] Saved to static: ${letter}-${variation}`);
-            }
-          }
-
-          // Also cache in IndexedDB for this session
-          const cacheKey = getCacheKey(letter, variation, apiItemSize);
-          await tikaPictographCache.set(cacheKey, base64);
-
-          return { stepNumber, imageUrl: `data:image/png;base64,${base64}` };
-        } catch (e) {
-          console.error(`[InlineStepGrid] Error fetching step ${stepNumber}:`, e);
-          return null;
-        }
-      });
-
-      const batchResults = await Promise.all(batchPromises);
-
-      // Update images after each batch
-      for (const result of batchResults) {
-        if (result) {
-          newImages.set(result.stepNumber, result.imageUrl);
-          loadedCount++;
-        }
+      // Priority 1: Static file
+      const staticPath = await checkStaticFile(staticKey);
+      if (staticPath) {
+        newImages.set(stepNumber, staticPath);
+        loadedCount++;
+        continue;
       }
 
-      images = new Map(newImages);
+      // Priority 2: IndexedDB cache
+      const cacheKey = getCacheKey(letter, variation, apiItemSize);
+      const cached = await tikaPictographCache.get(cacheKey);
+      if (cached) {
+        newImages.set(stepNumber, `data:image/png;base64,${cached}`);
+        loadedCount++;
+        continue;
+      }
+
+      // No static or cached PNG available — item will show spinner
     }
 
+    images = new Map(newImages);
     loading = false;
   }
 </script>
@@ -195,10 +197,15 @@
   <div class="steps-grid">
     {#each stepGrid.steps as step}
       {@const imageUrl = images.get(step.stepNumber)}
+      {@const svgContent = svgMarkups.get(step.stepNumber)}
       <div class="step-item" class:is-start={step.stepNumber === 0}>
         <div class="step-label">{step.label}</div>
         <div class="pictograph-container">
-          {#if imageUrl}
+          {#if svgContent}
+            <div class="svg-pictograph" class:animate={!prefersReducedMotion}>
+              {@html svgContent}
+            </div>
+          {:else if imageUrl}
             <img src={imageUrl} alt="{step.label}: {step.letter}" />
           {:else}
             <div class="placeholder">
@@ -351,6 +358,65 @@
     text-align: center;
   }
 
+  /* SVG inline rendering */
+  .svg-pictograph {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .svg-pictograph :global(svg) {
+    width: 100%;
+    height: auto;
+    border-radius: 6px;
+  }
+
+  /* GPU-accelerated progressive reveal */
+  .svg-pictograph.animate :global(.svg-bg),
+  .svg-pictograph.animate :global(.svg-grid),
+  .svg-pictograph.animate :global(.svg-prop),
+  .svg-pictograph.animate :global(.svg-arrow),
+  .svg-pictograph.animate :global(.svg-glyph) {
+    will-change: transform, opacity;
+  }
+
+  .svg-pictograph.animate :global(.svg-bg) {
+    animation: svgReveal 0.3s ease-out both;
+    animation-delay: 0ms;
+  }
+
+  .svg-pictograph.animate :global(.svg-grid) {
+    animation: svgReveal 0.3s ease-out both;
+    animation-delay: 80ms;
+  }
+
+  .svg-pictograph.animate :global(.svg-prop) {
+    animation: svgReveal 0.35s ease-out both;
+    animation-delay: 200ms;
+  }
+
+  .svg-pictograph.animate :global(.svg-arrow) {
+    animation: svgReveal 0.35s ease-out both;
+    animation-delay: 350ms;
+  }
+
+  .svg-pictograph.animate :global(.svg-glyph) {
+    animation: svgReveal 0.3s ease-out both;
+    animation-delay: 480ms;
+  }
+
+  @keyframes svgReveal {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
   /* Mobile: 2 columns */
   @media (max-width: 480px) {
     .steps-grid {
@@ -366,6 +432,15 @@
 
     .step-item {
       transition: none;
+    }
+
+    .svg-pictograph :global(.svg-bg),
+    .svg-pictograph :global(.svg-grid),
+    .svg-pictograph :global(.svg-prop),
+    .svg-pictograph :global(.svg-arrow),
+    .svg-pictograph :global(.svg-glyph) {
+      animation: none !important;
+      opacity: 1 !important;
     }
   }
 </style>
