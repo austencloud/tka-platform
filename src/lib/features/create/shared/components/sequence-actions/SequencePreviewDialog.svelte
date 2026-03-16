@@ -2,7 +2,7 @@
   SequencePreviewDialog.svelte
 
   A confirmation dialog that shows what sequence will be replaced and what it's being replaced with.
-  Used when replacing an existing sequence in the Constructor tab.
+  Used when replacing an existing sequence in the Construct tab.
 -->
 <script lang="ts">
   import { Dialog as DialogPrimitive } from "bits-ui";
@@ -94,7 +94,7 @@
       <div class="dialog-header">
         <span class="icon">⚠️</span>
         <DialogPrimitive.Title class="dialog-title">
-          Replace Constructor Sequence?
+          Replace Construct Sequence?
         </DialogPrimitive.Title>
       </div>
 
@@ -162,7 +162,7 @@
 
       <!-- Message -->
       <DialogPrimitive.Description class="dialog-message">
-        This will overwrite your current work in the Constructor.
+        This will overwrite your current work in Construct.
       </DialogPrimitive.Description>
 
       <!-- Actions -->

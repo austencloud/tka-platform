@@ -12,7 +12,7 @@
   type Category = "transform" | "patterns" | "edit";
 
   interface ActionDef {
-    id: ActionHelpId | "edit-turns" | "constructor";
+    id: ActionHelpId | "edit-turns" | "edit-in-construct";
     icon: string;
     label: string;
     btnColor: string;
@@ -122,7 +122,7 @@
   const editActions = $derived<ActionDef[]>([
     { id: "edit-turns", icon: "sliders-h", label: "Edit Turns", btnColor: "59, 130, 246", action: onTurns, disabled: !hasSelection, highlighted: hasSelection },
     ...(showEditInConstructor
-      ? [{ id: "constructor" as const, icon: "pen-to-square", label: "Constructor", btnColor: "124, 58, 237", action: onEditInConstructor, disabled: !hasSequence }]
+      ? [{ id: "edit-in-construct" as const, icon: "pen-to-square", label: "Edit in Construct", btnColor: "124, 58, 237", action: onEditInConstructor, disabled: !hasSequence }]
       : []),
   ]);
 
@@ -141,7 +141,7 @@
   ];
 
   function handleLongPress(actionId: string) {
-    // Only trigger help for known action help IDs (not edit-turns or constructor)
+    // Only trigger help for known action help IDs (not edit-turns or edit-in-construct)
     const helpIds: ActionHelpId[] = [
       "mirror", "flip", "swap", "invert", "rotate", "rewind",
       "turn-pattern", "direction", "duration", "extend", "shift-start",

@@ -362,7 +362,6 @@ export class LOOPDetector implements ILOOPDetector {
     const halfLength = length / 2;
     let swapCount = 0;
     let checkCount = 0;
-    let hasDifferentMotionTypes = false;
 
     for (let i = 0; i < Math.min(halfLength, 4); i++) {
       const firstStep = steps[i];
@@ -374,12 +373,13 @@ export class LOOPDetector implements ILOOPDetector {
       const secondRed = secondStep?.motions?.[MotionColor.RED];
 
       if (firstBlue && firstRed && secondBlue && secondRed) {
-        checkCount++;
+        // Skip pairs where both hands have the same motion type —
+        // swapping two identical types is trivially true and meaningless.
+        // When both hands are pro, "secondBlue.type === firstRed.type" is
+        // always true regardless of what the hands are actually doing.
+        if (firstBlue.motionType === firstRed.motionType) continue;
 
-        // Check if hands have different motion types (meaningful swap)
-        if (firstBlue.motionType !== firstRed.motionType) {
-          hasDifferentMotionTypes = true;
-        }
+        checkCount++;
 
         // Second blue should match first red, second red should match first blue
         if (
@@ -391,14 +391,9 @@ export class LOOPDetector implements ILOOPDetector {
       }
     }
 
-    // Only report swap if:
-    // 1. Majority of steps show swap pattern
-    // 2. Hands have different motion types (swap is meaningful)
-    return (
-      checkCount > 0 &&
-      swapCount >= checkCount * 0.75 &&
-      hasDifferentMotionTypes
-    );
+    // Only report swap if we found meaningful pairs (different motion types)
+    // and the majority show the swap pattern
+    return checkCount > 0 && swapCount >= checkCount * 0.75;
   }
 
   /**
@@ -559,7 +554,6 @@ export class LOOPDetector implements ILOOPDetector {
 
     let swapCount = 0;
     let checkCount = 0;
-    let hasDifferentMotionTypes = false;
 
     // Check first few beat pairs at this interval
     const pairsToCheck = Math.min(4, length - interval);
@@ -574,11 +568,11 @@ export class LOOPDetector implements ILOOPDetector {
       const secondRed = secondStep?.motions?.[MotionColor.RED];
 
       if (firstBlue && firstRed && secondBlue && secondRed) {
-        checkCount++;
+        // Skip pairs where both hands have the same motion type —
+        // swapping two identical types is trivially true and meaningless.
+        if (firstBlue.motionType === firstRed.motionType) continue;
 
-        if (firstBlue.motionType !== firstRed.motionType) {
-          hasDifferentMotionTypes = true;
-        }
+        checkCount++;
 
         if (
           secondBlue.motionType === firstRed.motionType &&
@@ -589,11 +583,7 @@ export class LOOPDetector implements ILOOPDetector {
       }
     }
 
-    return (
-      checkCount > 0 &&
-      swapCount >= checkCount * 0.75 &&
-      hasDifferentMotionTypes
-    );
+    return checkCount > 0 && swapCount >= checkCount * 0.75;
   }
 
   /**

@@ -92,7 +92,7 @@
       (onShiftStart ? 1 : 0)
   );
 
-  // Edit: Edit Turns (always) + Constructor (conditional)
+  // Edit: Edit Turns (always) + Edit in Construct (conditional)
   const editItemCount = $derived(1 + (showEditInConstructor ? 1 : 0));
 
   // Calculate row counts based on grid columns
@@ -365,7 +365,7 @@
             <i class="fas fa-pen-to-square" aria-hidden="true"></i>
           </div>
           <div class="btn-text">
-            <span class="btn-label">Constructor</span>
+            <span class="btn-label">Edit in Construct</span>
             <span class="btn-desc">Full editor</span>
           </div>
         </button>
