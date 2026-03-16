@@ -525,10 +525,11 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: calc(env(safe-area-inset-top, 0px) + 8px) 12px 8px;
+    padding: calc(env(safe-area-inset-top, 0px) + 8px) 12px 10px;
     min-height: var(--min-touch-target);
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     flex-shrink: 0;
+    overflow: visible;
   }
 
   .drawer-back-button {
@@ -576,8 +577,9 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1px;
+    gap: 3px;
     pointer-events: none;
+    overflow: visible;
   }
 
   .drawer-header-title {
@@ -605,11 +607,11 @@
   .prop-toggle {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
     background: none;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: 12px;
-    padding: 2px 8px;
+    border-radius: 14px;
+    padding: 3px 12px;
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     cursor: pointer;
@@ -766,11 +768,12 @@
     right: 0;
     bottom: 0;
     width: var(--export-sidebar-width);
-    z-index: 5;
+    z-index: 20;
     overflow: hidden;
     overflow-y: auto;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    isolation: isolate;
   }
 
   @media (max-width: 767px) {
