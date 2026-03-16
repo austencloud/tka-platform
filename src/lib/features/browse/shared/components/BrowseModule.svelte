@@ -20,6 +20,7 @@
   import { browseScrollState } from "../state/BrowseScrollState.svelte";
   import {
     browseNavigationState,
+    getCreatorIdFromURL,
     type BrowseLocation,
   } from "../state/browse-navigation-state.svelte";
   import { BrowseScrollBehavior } from "../services/implementations/BrowseScrollBehavior";
@@ -336,8 +337,18 @@
   // ============================================================================
 
   onMount(() => {
+    // Check whether the URL contains a creator profile path (/browse/creators/[userId]).
+    // If it does, override the localStorage-restored state and open that profile directly
+    // so a page refresh lands on the same profile the user was viewing.
+    const initialCreatorId = getCreatorIdFromURL();
+
     // Initialize navigation state (restores from localStorage if available)
     browseNavigationState.initialize("gallery");
+
+    if (initialCreatorId) {
+      // Override whatever localStorage had — the URL is the source of truth on load.
+      browseNavigationState.viewCreatorProfile(initialCreatorId);
+    }
 
     // Resolve event handler service from ITI container
     try {
@@ -410,10 +421,32 @@
             : "Failed to load gallery sequences";
       });
 
+    // Listen for the browser's native Back/Forward within the creators sub-path.
+    // When the user presses Back from /browse/creators/[userId], the URL changes
+    // to /browse/creators. The navigation coordinator handles module/section, but
+    // we need to also close the creator profile view.
+    function handleCreatorPopState() {
+      const creatorId = getCreatorIdFromURL();
+      if (creatorId) {
+        // Navigated forward to a creator profile (e.g., via browser Forward button)
+        if (creatorsViewState.viewingUserId !== creatorId) {
+          browseNavigationState.viewCreatorProfile(creatorId);
+        }
+      } else if (window.location.pathname.startsWith("/browse/creators")) {
+        // Navigated back to the creators list
+        if (creatorsViewState.currentView !== "list") {
+          creatorsViewState.reset();
+        }
+      }
+    }
+
+    window.addEventListener("popstate", handleCreatorPopState);
+
     // Return cleanup function
     return () => {
       cleanup?.();
       sequenceControlsManager.clear();
+      window.removeEventListener("popstate", handleCreatorPopState);
     };
   });
 
