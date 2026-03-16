@@ -38,7 +38,7 @@
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
-  import VideoUploadSheet from "$lib/shared/video-collaboration/components/VideoUploadSheet.svelte";
+  import VideoUploadPanel from "./VideoUploadPanel.svelte";
   import ChoreoCardContextMenuHost from "./choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
   import {
     openSendSequenceSheet,
@@ -96,9 +96,6 @@
   // Delete confirmation state
   let deleteConfirmOpen = $state(false);
   let isDeleting = $state(false);
-
-  // Video upload state
-  let videoUploadOpen = $state(false);
 
   // ChoreoCard context menu
   let choreoCardMenuHost: ChoreoCardContextMenuHost | undefined = $state();
@@ -218,6 +215,7 @@
       {#snippet children(ctx)}
         {@const isVideoExportActive = ctx.editingPane === "animation"}
         {@const isImageExportActive = ctx.editingPane === "image"}
+        {@const isVideoUploadActive = ctx.editingPane === "video-upload"}
         {@const isAnyExportActive = ctx.editingPane !== null}
         <div class="drawer-viewer-container" class:landscape={isLandscape}>
           <!-- Header — adapts between normal viewer and export mode -->
@@ -235,7 +233,7 @@
                 </button>
 
                 <div class="drawer-header-title">
-                  {isVideoExportActive ? "Export Animation" : "Export Card"}
+                  {isVideoExportActive ? "Export Animation" : isImageExportActive ? "Export Card" : "Upload Video"}
                 </div>
 
                 <div class="drawer-header-actions">
@@ -343,7 +341,7 @@
                     onSendTo={overlay.sequence ? handleSendTo : undefined}
                   />
                   {#if isAnyExportActive}
-                    <div class="export-panel-container" class:sidebar={!isMobileWidth && isVideoExportActive}>
+                    <div class="export-panel-container" class:sidebar={!isMobileWidth && (isVideoExportActive || isVideoUploadActive)}>
                       {#if isVideoExportActive}
                         {#if ctx.previewBlobUrl}
                           <VideoPreviewPanel
@@ -383,6 +381,11 @@
                           onExport={ctx.handleExport}
                           onClose={ctx.exitEditMode}
                         />
+                      {:else if isVideoUploadActive && overlay.sequence}
+                        <VideoUploadPanel
+                          sequence={overlay.sequence}
+                          onClose={ctx.exitEditMode}
+                        />
                       {/if}
                     </div>
                   {/if}
@@ -413,7 +416,7 @@
                 onRampStart={ctx.handleRampStart}
                 onRampStop={ctx.handleRampStop}
                 isOwned={ctx.isOwned}
-                onVideoUpload={ctx.isOwned ? () => (videoUploadOpen = true) : undefined}
+                onVideoUpload={ctx.isOwned ? () => ctx.enterEditMode('video-upload') : undefined}
                 onDeleteRequest={() => (deleteConfirmOpen = true)}
                 bluePropType={ctx.bluePropType}
                 redPropType={ctx.redPropType}
@@ -447,14 +450,6 @@
             />
           {/if}
 
-          {#if videoUploadOpen && overlay.sequence}
-            <VideoUploadSheet
-              show={videoUploadOpen}
-              sequence={overlay.sequence}
-              onClose={() => (videoUploadOpen = false)}
-              onUploaded={() => (videoUploadOpen = false)}
-            />
-          {/if}
         </div>
       {/snippet}
     </SequenceViewerOrchestrator>
