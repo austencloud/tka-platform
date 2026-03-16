@@ -32,6 +32,8 @@ Variation support:
   import PropAwareThumbnail from "../PropAwareThumbnail.svelte";
   import VariationPill from "./VariationPill.svelte";
 
+  let thumbnailRef = $state<ReturnType<typeof PropAwareThumbnail> | null>(null);
+
   // Cache for on-demand LOOP detection results (keyed by sequence ID)
   const {
     sequence,
@@ -138,6 +140,15 @@ Variation support:
         icon: "fa-paper-plane",
         action: handleSendTo,
       },
+      {
+        id: "re-render",
+        label: "Re-render",
+        icon: "fa-rotate",
+        action() {
+          closeContextMenu();
+          thumbnailRef?.forceRerender();
+        },
+      },
     ];
 
     // Admin-only items
@@ -231,6 +242,7 @@ Variation support:
     style:view-transition-name="sequence-{displayedSequence.id}"
   >
     <PropAwareThumbnail
+      bind:this={thumbnailRef}
       sequence={displayedSequence}
       {bluePropType}
       {redPropType}

@@ -7,6 +7,8 @@
   import type { ActiveFilter } from "../../../shared/domain/models/multi-filter-models";
   import { container } from "$lib/shared/di";
   import { onMount, onDestroy } from "svelte";
+  import { getSequenceOverlayState } from "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte";
+  import { browseScrollState } from "../../../shared/state/BrowseScrollState.svelte";
   import type { IBrowseThumbnailProvider } from "../services/contracts/IBrowseThumbnailProvider";
   import { PinchZoomGridController } from "../services/implementations/PinchZoomGridController";
   import BrowseGrid from "./BrowseGrid.svelte";
@@ -124,6 +126,24 @@
   onDestroy(() => {
     pinchController?.detach();
     pinchController = null;
+  });
+
+  // Restore scroll position when sequence viewer overlay closes
+  const overlayState = getSequenceOverlayState();
+  let wasOverlayOpen = false;
+
+  $effect(() => {
+    const isOpen = overlayState.isOpen;
+    if (wasOverlayOpen && !isOpen && displayContentEl) {
+      // Overlay just closed — restore saved scroll position
+      const savedScrollY = browseScrollState.lastScrollY;
+      if (savedScrollY > 0) {
+        requestAnimationFrame(() => {
+          displayContentEl?.scrollTo({ top: savedScrollY });
+        });
+      }
+    }
+    wasOverlayOpen = isOpen;
   });
 
   function handleRetry() {

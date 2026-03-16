@@ -252,6 +252,7 @@
     if (key.usesDefaults) {
       cloudCache.invalidateUrl({
         sequenceName: key.inputs.sequenceName,
+        sequenceId: key.inputs.sequenceId,
         propType: key.propKey as PropType,
         lightMode: key.inputs.lightMode,
         variant: key.inputs.variant,
@@ -415,7 +416,7 @@
   /**
    * Force re-render: delete from all cache tiers, then re-fetch from scratch.
    */
-  function forceRerender(): void {
+  export function forceRerender(): void {
     if (!keyDeriver || !orchestrator) return;
 
     const key = keyDeriver.deriveKey(renderInput);
@@ -424,6 +425,7 @@
     if (key.usesDefaults && cloudCache) {
       cloudCache.invalidateUrl({
         sequenceName: key.inputs.sequenceName,
+        sequenceId: key.inputs.sequenceId,
         propType: key.propKey as PropType,
         lightMode: key.inputs.lightMode,
         variant: key.inputs.variant,

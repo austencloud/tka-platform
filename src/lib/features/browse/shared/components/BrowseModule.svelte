@@ -328,6 +328,7 @@
       lastContainerScrollTop
     );
     lastContainerScrollTop = scrollTop;
+    browseScrollState.updateScrollPosition(scrollTop);
   }
 
   // ============================================================================
