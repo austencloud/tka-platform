@@ -5,7 +5,10 @@
  * Collection path: videos/{videoId}
  */
 
-import type { CollaborativeVideo } from "../../domain/CollaborativeVideo";
+import type {
+  CollaborativeVideo,
+  BeatMap,
+} from "../../domain/CollaborativeVideo";
 
 /**
  * Result of querying videos for a user's library
@@ -44,6 +47,14 @@ export interface ICollaborativeVideoManager {
     videoId: string,
     updates: Partial<Pick<CollaborativeVideo, "visibility" | "description">>
   ): Promise<void>;
+
+  // ---- Beat Mapping ----
+
+  /**
+   * Save or update the beat-to-timestamp mapping for a video.
+   * Any collaborator on the video can update the beat map.
+   */
+  updateBeatMap(videoId: string, beatMap: BeatMap): Promise<void>;
 
   // ---- Collaboration Management ----
 

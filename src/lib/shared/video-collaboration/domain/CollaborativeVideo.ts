@@ -63,6 +63,22 @@ export interface VideoCollaborator {
   readonly role: "creator" | "collaborator";
 }
 
+/**
+ * Maps video playback timestamps to sequence beats.
+ * Each entry in beatTimestamps marks where that beat starts in the video.
+ * This is the bridge between a performance recording and its notation.
+ */
+export interface BeatMap {
+  /** One timestamp per beat. beatTimestamps[0] = when beat 1 starts in seconds. */
+  readonly beatTimestamps: number[];
+  /** Total beats expected (matches sequence step count). */
+  readonly beatCount: number;
+  /** How this map was created. */
+  readonly source: "manual" | "auto-detected" | "hybrid";
+  /** When the mapping was last edited. */
+  readonly updatedAt: Date;
+}
+
 // ============================================================================
 // MAIN MODEL
 // ============================================================================
@@ -109,6 +125,10 @@ export interface CollaborativeVideo {
   readonly visibility: VideoVisibility;
   /** Optional description/notes */
   readonly description?: string;
+
+  // ---- Beat mapping ----
+  /** Maps video playback time to sequence beats for notation sync */
+  readonly beatMap?: BeatMap;
 
   // ---- Timestamps ----
   /** When video was uploaded */

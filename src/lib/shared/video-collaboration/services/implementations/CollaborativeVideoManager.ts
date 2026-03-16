@@ -35,6 +35,7 @@ import type {
   VideoCollaborator,
   CollaborationInvite,
   VideoVisibility,
+  BeatMap,
 } from "../../domain/CollaborativeVideo";
 import type {
   ICollaborativeVideoManager,
@@ -117,6 +118,18 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
       };
     });
 
+    // Parse beat map if present
+    const beatMapData = docData.beatMap as Record<string, unknown> | undefined;
+    const beatMap: BeatMap | undefined = beatMapData
+      ? {
+          beatTimestamps: (beatMapData.beatTimestamps as number[]) ?? [],
+          beatCount: (beatMapData.beatCount as number) ?? 0,
+          source: (beatMapData.source as BeatMap["source"]) ?? "manual",
+          updatedAt:
+            (beatMapData.updatedAt as Timestamp)?.toDate?.() ?? new Date(),
+        }
+      : undefined;
+
     return {
       id: videoId,
       videoUrl: docData.videoUrl as string,
@@ -131,6 +144,7 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
       creatorId: docData.creatorId as string,
       collaborators,
       pendingInvites,
+      beatMap,
       visibility: (docData.visibility as VideoVisibility) ?? "public",
       description: docData.description as string | undefined,
       createdAt: createdAtField?.toDate?.() ?? new Date(),
@@ -169,6 +183,14 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
         status: i.status,
         respondedAt: i.respondedAt ?? null,
       })),
+      beatMap: video.beatMap
+        ? {
+            beatTimestamps: video.beatMap.beatTimestamps,
+            beatCount: video.beatMap.beatCount,
+            source: video.beatMap.source,
+            updatedAt: video.beatMap.updatedAt,
+          }
+        : null,
       visibility: video.visibility,
       description: video.description ?? null,
       createdAt: serverTimestamp(),
@@ -285,6 +307,45 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
         error
       );
       toast.error("Failed to update video.");
+      throw error;
+    }
+  }
+
+  // ============================================================================
+  // BEAT MAPPING
+  // ============================================================================
+
+  async updateBeatMap(videoId: string, beatMap: BeatMap): Promise<void> {
+    try {
+      const firestore = await getFirestoreInstance();
+      const userId = this.getUserId();
+      const video = await this.getVideo(videoId);
+
+      if (!video) {
+        throw new Error("Video not found");
+      }
+
+      // Any collaborator can update the beat map
+      if (!video.collaborators.some((c) => c.userId === userId)) {
+        throw new Error("Only collaborators can update the beat map");
+      }
+
+      const docRef = doc(firestore, VIDEOS_COLLECTION, videoId);
+      await updateDoc(docRef, {
+        beatMap: {
+          beatTimestamps: beatMap.beatTimestamps,
+          beatCount: beatMap.beatCount,
+          source: beatMap.source,
+          updatedAt: serverTimestamp(),
+        },
+        updatedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error(
+        "❌ [CollaborativeVideoManager] Failed to update beat map:",
+        error
+      );
+      toast.error("Failed to save beat mapping.");
       throw error;
     }
   }
