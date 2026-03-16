@@ -13,7 +13,6 @@
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
   import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
-  import type { ILeaderboardManager } from "$lib/shared/community/services/contracts/ILeaderboardManager";
   import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
   import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
@@ -23,7 +22,6 @@
   import ProfileHeaderBar from "./profile/ProfileHeaderBar.svelte";
   import ProfileHeroSection from "./profile/ProfileHeroSection.svelte";
   import ProfileStatsGrid from "./profile/ProfileStatsGrid.svelte";
-  import ProfileRankings from "./profile/ProfileRankings.svelte";
   import ProfileTabs from "./profile/ProfileTabs.svelte";
   import ProfileAdminSection from "./profile/ProfileAdminSection.svelte";
   import ProfileConnectionSection from "./profile/ProfileConnectionSection.svelte";
@@ -49,39 +47,12 @@
   let isLoading = $state(true);
   let error = $state<string | null>(null);
   let followInProgress = $state(false);
-  let activeTab = $state<
-    "gallery" | "followers" | "following" | "achievements"
-  >("gallery");
+  let activeTab = $state<"gallery" | "followers" | "following">("gallery");
 
   // Services
   let userService: IUserRepository;
   let libraryService: ILibraryRepository;
   let hapticService: IHapticFeedback;
-  let leaderboardService: ILeaderboardManager;
-
-  // Personal rankings state (only for own profile)
-  interface UserRanks {
-    xp: number | null;
-    level: number | null;
-    sequences: number | null;
-    achievements: number | null;
-    streak: number | null;
-  }
-  let userRanks = $state<UserRanks>({
-    xp: null,
-    level: null,
-    sequences: null,
-    achievements: null,
-    streak: null,
-  });
-  let isLoadingRanks = $state(false);
-  let hasRanks = $derived(
-    userRanks.xp !== null ||
-      userRanks.level !== null ||
-      userRanks.sequences !== null ||
-      userRanks.achievements !== null ||
-      userRanks.streak !== null
-  );
 
   // Get current user ID
   const currentUserId = $derived(authState.user?.uid);
@@ -120,7 +91,6 @@
       userService = container.items.userRepository;
       libraryService = container.items.libraryRepository;
       hapticService = container.items.hapticFeedback;
-      leaderboardService = container.items.leaderboardManager;
 
       // Load user profile with current user context for follow status
       userProfile = await userService.getUserProfile(userId, currentUserId);
@@ -149,9 +119,6 @@
       }
 
       isLoading = false;
-
-      // Load user ranks in background
-      loadUserRanks();
     } catch (err) {
       console.error(`[UserProfilePanel] Error loading profile:`, err);
       error = err instanceof Error ? err.message : "Failed to load profile";
@@ -277,34 +244,6 @@
     }
   });
 
-  async function loadUserRanks() {
-    if (!leaderboardService) return;
-
-    isLoadingRanks = true;
-    try {
-      // Fetch ranks in parallel for the profile being viewed
-      const [xpRank, levelRank, sequencesRank, achievementsRank, streakRank] =
-        await Promise.all([
-          leaderboardService.getUserRank(userId, "xp"),
-          leaderboardService.getUserRank(userId, "level"),
-          leaderboardService.getUserRank(userId, "sequences"),
-          leaderboardService.getUserRank(userId, "achievements"),
-          leaderboardService.getUserRank(userId, "streak"),
-        ]);
-
-      userRanks = {
-        xp: xpRank,
-        level: levelRank,
-        sequences: sequencesRank,
-        achievements: achievementsRank,
-        streak: streakRank,
-      };
-    } catch (err) {
-      console.error("[UserProfilePanel] Failed to load user ranks:", err);
-    } finally {
-      isLoadingRanks = false;
-    }
-  }
 </script>
 
 <div class="profile-panel">
@@ -336,8 +275,6 @@
       />
 
       <ProfileStatsGrid {userProfile} />
-
-      <ProfileRankings {userRanks} {hasRanks} {isLoadingRanks} />
 
       <ProfileTabs
         {activeTab}
