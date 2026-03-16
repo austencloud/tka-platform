@@ -24,6 +24,7 @@
 -->
 <script lang="ts" module>
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { BeatMap } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import type { AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
@@ -39,6 +40,7 @@
 
   export type ViewMode = "animation" | "image" | "split";
   export type ExportType = "animation" | "image" | "both";
+  export type PlaybackSource = "animation" | "video";
 
   /**
    * Full context passed to children snippet.
@@ -58,6 +60,14 @@
     currentStepData: StartPositionData | StepData | null;
     highlightedStepIndex: number | null;
     animationLoading: boolean;
+
+    // Video-synced playback
+    playbackSource: PlaybackSource;
+    videoPlaybackBeatIndex: number | null;
+    activeBeatMap: BeatMap | null;
+    setPlaybackSource: (source: PlaybackSource) => void;
+    setActiveBeatMap: (beatMap: BeatMap | null) => void;
+    onVideoTimeUpdate: (currentTime: number) => void;
     modalAnimationState: AnimationPanelState;
 
     // View state
@@ -193,6 +203,7 @@
   import type { ShareURLMetadata } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
   import type { IPresentationResolver } from "../services/contracts/IPresentationResolver";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { getHighlightedBeatFromVideo } from "$lib/shared/video-collaboration/utils/beat-map-utils";
   import PropContextChip from "./PropContextChip.svelte";
 
   // ============================================================================
@@ -283,6 +294,12 @@
 
   // Edit mode (single source of truth for export state)
   let editingPane = $state<'animation' | 'image' | 'video-upload' | null>(null);
+
+  // Video-synced playback: when a beat-mapped video is playing, the choreo card's
+  // gold border follows the video's beat position instead of the animation clock.
+  let playbackSource = $state<PlaybackSource>("animation");
+  let videoPlaybackBeatIndex = $state<number | null>(null);
+  let activeBeatMap = $state<BeatMap | null>(null);
 
   // Export mode (derived from editingPane)
   const isExportMode = $derived(editingPane !== null);
@@ -400,6 +417,12 @@
   );
 
   const highlightedStepIndex = $derived.by(() => {
+    // When a video with beat map is driving playback, use its beat index
+    if (playbackSource === "video" && videoPlaybackBeatIndex !== null) {
+      return videoPlaybackBeatIndex;
+    }
+
+    // Original animation-driven logic
     if (!isPlayingLocal && currentStepLocal < 0.5) return null;
     if (currentStepLocal < 1) return -1;
     // After stepping to an integer beat, show the just-completed beat
@@ -1278,6 +1301,41 @@
   // STEP SHORTCUTS (forwarded from playback controller)
   // ============================================================================
 
+  // ============================================================================
+  // VIDEO-SYNCED PLAYBACK
+  // ============================================================================
+
+  function handleVideoTimeUpdate(currentTime: number) {
+    if (playbackSource !== "video" || !activeBeatMap) return;
+    const beatIndex = getHighlightedBeatFromVideo(
+      currentTime,
+      activeBeatMap.beatTimestamps
+    );
+    // Only update when the beat actually changes to avoid unnecessary re-renders
+    if (beatIndex !== videoPlaybackBeatIndex) {
+      videoPlaybackBeatIndex = beatIndex;
+    }
+  }
+
+  function setPlaybackSource(source: PlaybackSource) {
+    playbackSource = source;
+    if (source === "animation") {
+      videoPlaybackBeatIndex = null;
+    }
+  }
+
+  function setActiveBeatMap(beatMap: BeatMap | null) {
+    activeBeatMap = beatMap;
+    if (!beatMap) {
+      playbackSource = "animation";
+      videoPlaybackBeatIndex = null;
+    }
+  }
+
+  // ============================================================================
+  // STEPPING
+  // ============================================================================
+
   function stepHalfBeatBackward() { arrivedViaStepping = true; playbackController?.stepHalfBeatBackward(); }
   function stepHalfBeatForward() { arrivedViaStepping = true; playbackController?.stepHalfBeatForward(); }
   function stepFullBeatBackward() { arrivedViaStepping = true; playbackController?.stepFullBeatBackward(); }
@@ -1303,6 +1361,14 @@
     highlightedStepIndex,
     animationLoading,
     modalAnimationState,
+
+    // Video-synced playback
+    playbackSource,
+    videoPlaybackBeatIndex,
+    activeBeatMap,
+    setPlaybackSource,
+    setActiveBeatMap,
+    onVideoTimeUpdate: handleVideoTimeUpdate,
 
     // View state
     viewMode,
