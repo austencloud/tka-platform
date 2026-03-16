@@ -129,8 +129,10 @@
     isSaving = true;
     try {
       await onSaveFirst();
-      // After saving, the parent will update isOwned. The $effect above
-      // will re-run and transition to loading -> empty/gallery.
+      // The orchestrator's isOwned won't update reactively because the local
+      // sequence object doesn't get a new ownerId after save. So we skip
+      // waiting for the reactive update and directly load videos.
+      await loadVideos();
     } catch {
       // Parent handles the error toast
     } finally {
