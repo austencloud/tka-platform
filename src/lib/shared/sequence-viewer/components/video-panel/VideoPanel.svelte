@@ -17,6 +17,7 @@
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
+  import type { BeatMap } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import { getAuthSync } from "$lib/shared/auth/firebase";
   import {
     createVideoFromUpload,
@@ -26,6 +27,7 @@
     extractVideoThumbnail,
     type ThumbnailResult,
   } from "$lib/shared/video-collaboration/utils/thumbnail-extractor";
+  import BeatMapEditor from "../beat-mapping/BeatMapEditor.svelte";
 
   interface Props {
     sequence: SequenceData;
@@ -75,6 +77,9 @@
 
   // Inline playback: which video is currently playing in the gallery
   let playingVideoId = $state<string | null>(null);
+
+  // Beat mapping: which video is being annotated
+  let beatMappingVideo = $state<CollaborativeVideo | null>(null);
 
   // ============================================================================
   // SERVICES
@@ -306,6 +311,32 @@
   }
 
   // ============================================================================
+  // BEAT MAPPING
+  // ============================================================================
+
+  async function handleBeatMapSave(beatMap: BeatMap) {
+    if (!beatMappingVideo) return;
+
+    await videoManager.updateBeatMap(beatMappingVideo.id, beatMap);
+
+    // Update the local video list so the beat-map indicator shows immediately
+    videos = videos.map((v) =>
+      v.id === beatMappingVideo!.id ? { ...v, beatMap, updatedAt: new Date() } : v,
+    );
+
+    toast.success("Beat map saved");
+    hapticService?.trigger("success");
+
+    beatMappingVideo = null;
+    panelState = "gallery";
+  }
+
+  function handleBeatMapClose() {
+    beatMappingVideo = null;
+    panelState = "gallery";
+  }
+
+  // ============================================================================
   // HELPERS
   // ============================================================================
 
@@ -320,6 +351,11 @@
   }
 
   function handleBack() {
+    // Beat mapping: return to gallery
+    if (panelState === "beat-mapping") {
+      handleBeatMapClose();
+      return;
+    }
     // If in upload/empty sub-state and gallery has videos, go back to gallery
     if (
       (panelState === "empty" || panelState === "upload") &&
@@ -567,7 +603,7 @@
                 <button
                   type="button"
                   class="gallery-action-btn map-beats"
-                  onclick={() => { panelState = "beat-mapping"; }}
+                  onclick={() => { beatMappingVideo = video; panelState = "beat-mapping"; }}
                   title="Map beats"
                 >
                   <i class="fas fa-music" aria-hidden="true"></i>
@@ -597,27 +633,18 @@
       </div>
 
     <!-- ================================================================
-         BEAT MAPPING (placeholder)
+         BEAT MAPPING
          ================================================================ -->
-    {:else if panelState === "beat-mapping"}
-      <div class="center-state">
-        <button
-          type="button"
-          class="back-to-gallery"
-          onclick={() => { panelState = "gallery"; }}
-        >
-          <i class="fas fa-arrow-left" aria-hidden="true"></i>
-          Back to gallery
-        </button>
-        <div class="state-icon beat-map-icon">
-          <i class="fas fa-music" aria-hidden="true"></i>
-        </div>
-        <span class="state-title">Beat Mapping</span>
-        <span class="state-hint">
-          Beat mapping lets you sync video playback to sequence beats.
-          This feature is coming soon.
-        </span>
-      </div>
+    {:else if panelState === "beat-mapping" && beatMappingVideo}
+      <BeatMapEditor
+        videoUrl={beatMappingVideo.videoUrl}
+        videoDuration={beatMappingVideo.duration}
+        beatCount={sequence.steps.length}
+        initialBeatMap={beatMappingVideo.beatMap}
+        {bpm}
+        onSave={handleBeatMapSave}
+        onClose={handleBeatMapClose}
+      />
     {/if}
 
     {#if uploadError}
@@ -677,10 +704,6 @@
     font-size: 36px;
     color: var(--theme-accent, #6366f1);
     opacity: 0.7;
-  }
-
-  .beat-map-icon {
-    color: var(--semantic-success, #22c55e);
   }
 
   .state-title {
