@@ -35,6 +35,12 @@ export interface IPropTypeChanger {
   checkForChanges(settingsService: ISettingsState | null): void;
 
   /**
+   * Override prop types directly (bypasses settings).
+   * Used when the PropContextChip toggles between creator-intent and viewer props.
+   */
+  overridePropTypes(bluePropType: string, redPropType: string): void;
+
+  /**
    * Clean up resources
    */
   dispose(): void;
