@@ -230,7 +230,7 @@
             type="button"
           >
             <span class="seq-word">{seq.word ?? seq.name ?? "Untitled"}</span>
-            <span class="seq-steps">{seq.steps?.length ?? 0} beats</span>
+            <span class="seq-steps">{seq.steps?.length || seq.word?.length || 0} beats</span>
           </button>
         {/each}
       {/if}
@@ -239,7 +239,7 @@
     {#if selectedSequence}
       <div class="selected-info">
         Selected: <strong>{selectedSequence.word ?? selectedSequence.name}</strong>
-        ({selectedSequence.steps?.length ?? 0} beats)
+        ({selectedSequence.steps?.length || selectedSequence.word?.length || 0} beats)
       </div>
     {/if}
   </section>
