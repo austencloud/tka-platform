@@ -70,7 +70,7 @@
       <BeatMappingView
         {videoUrl}
         {videoDuration}
-        beatCount={selectedSequence.steps?.length ?? 8}
+        beatCount={selectedSequence.steps?.length || selectedSequence.word?.length || 8}
         sequence={selectedSequence}
         existingBeatMap={beatMap}
         onSave={handleBeatMapSaved}
