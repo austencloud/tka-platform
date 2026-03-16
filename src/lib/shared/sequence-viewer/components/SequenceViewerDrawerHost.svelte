@@ -525,7 +525,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: calc(env(safe-area-inset-top, 0px) + 8px) 12px 10px;
+    padding: calc(env(safe-area-inset-top, 0px) + 6px) 12px 6px;
     min-height: var(--min-touch-target);
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     flex-shrink: 0;
@@ -571,15 +571,14 @@
   }
 
   .drawer-header-title-group {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
+    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 3px;
     pointer-events: none;
     overflow: visible;
+    min-width: 0;
   }
 
   .drawer-header-title {
@@ -589,8 +588,8 @@
     white-space: nowrap;
   }
 
-  /* Standalone title (export mode) needs its own absolute centering */
-  .drawer-header-title:not(.drawer-header-title-group .drawer-header-title) {
+  /* Standalone title (export mode) centers itself when not in a title group */
+  .drawer-header-title:only-child {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
