@@ -38,7 +38,8 @@
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
-  import VideoUploadPanel from "./VideoUploadPanel.svelte";
+  import VideoPanel from "./video-panel/VideoPanel.svelte";
+  import type { ICollaborativeVideoManager } from "$lib/shared/video-collaboration/services/contracts/ICollaborativeVideoManager";
   import ChoreoCardContextMenuHost from "./choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
   import {
     openSendSequenceSheet,
@@ -56,6 +57,24 @@
     const thumbnailUrl = buildThumbnailUrl(seq.word || seq.name, String(propType), false);
     openSendSequenceSheet(buildSequenceSharePayload({ ...seq, thumbnailUrl }));
   }
+
+  // Video count for badge display on the Video button
+  let videoCount = $state(0);
+
+  $effect(() => {
+    const seq = overlay.sequence;
+    if (!seq?.id) {
+      videoCount = 0;
+      return;
+    }
+
+    const videoManager = container.items.collaborativeVideoManager as ICollaborativeVideoManager;
+    videoManager.getVideosForSequence(seq.id).then((videos) => {
+      videoCount = videos.length;
+    }).catch(() => {
+      videoCount = 0;
+    });
+  });
 
   // Width detection for responsive layout in split pane
   let isMobileWidth = $state(true);
@@ -254,7 +273,32 @@
 
                 <div class="drawer-header-title-group">
                   <div class="drawer-header-title">Sequence Viewer</div>
-                  <div class="export-hint">Tap either view to export it</div>
+                  {#if ctx.presentation && ctx.sequence?.creatorIntent?.propConfig && (ctx.sequence.creatorIntent.propConfig.bluePropType !== settingsService.settings.bluePropType || ctx.sequence.creatorIntent.propConfig.redPropType !== settingsService.settings.redPropType)}
+                    <button
+                      class="prop-toggle"
+                      class:creator-active={ctx.presentation.source === "creator-intent"}
+                      onclick={ctx.togglePropContext}
+                      title={ctx.presentation.source === "creator-intent"
+                        ? "Showing creator's props. Tap to use yours."
+                        : "Showing your props. Tap to see creator's."}
+                    >
+                      <span
+                        class="toggle-option"
+                        class:active={ctx.presentation.source === "creator-intent"}
+                      >
+                        {ctx.sequence.ownerDisplayName?.split(" ")[0] ?? "Creator"}'s
+                      </span>
+                      <span class="toggle-divider">|</span>
+                      <span
+                        class="toggle-option"
+                        class:active={ctx.presentation.source === "viewer-settings"}
+                      >
+                        Mine
+                      </span>
+                    </button>
+                  {:else}
+                    <div class="export-hint">Tap either view to export it</div>
+                  {/if}
                 </div>
 
                 <div class="drawer-header-actions">
@@ -383,9 +427,10 @@
                           onClose={ctx.exitEditMode}
                         />
                       {:else if isVideoUploadActive && overlay.sequence}
-                        <VideoUploadPanel
+                        <VideoPanel
                           sequence={overlay.sequence}
                           isOwned={ctx.isOwned}
+                          bpm={ctx.bpmLocal}
                           onSaveFirst={async () => { await ctx.handleSave(); }}
                           onClose={ctx.exitEditMode}
                         />
@@ -424,6 +469,7 @@
                 bluePropType={ctx.bluePropType}
                 redPropType={ctx.redPropType}
                 onSetAsIntended={ctx.handleSetAsIntended}
+                {videoCount}
               />
             </div>
           </div>
@@ -554,6 +600,42 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
     font-weight: 400;
     white-space: nowrap;
+  }
+
+  .prop-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    cursor: pointer;
+    transition: border-color 0.15s;
+    line-height: 1.4;
+    pointer-events: auto;
+  }
+
+  .prop-toggle:hover {
+    border-color: var(--theme-accent, #6366f1);
+  }
+
+  .toggle-option {
+    transition: color 0.15s, opacity 0.15s;
+    opacity: 0.5;
+  }
+
+  .toggle-option.active {
+    color: var(--theme-accent, #6366f1);
+    opacity: 1;
+    font-weight: 600;
+  }
+
+  .toggle-divider {
+    opacity: 0.3;
+    font-size: 10px;
   }
 
   .drawer-header-actions {
