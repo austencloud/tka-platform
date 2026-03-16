@@ -73,6 +73,8 @@
     {backgroundAlpha}
     {bluePropType}
     {redPropType}
+    fillContainer={true}
+    hideProgressBar={true}
     {...restProps}
   />
   {#if animationLayer}
@@ -115,6 +117,14 @@
     height: 100%;
     z-index: 8;
     pointer-events: none;
+  }
+
+  /* Remove AnimatorCanvas internal border — InteractiveCanvas owns the border.
+     This ensures the canvas fills the wrapper edge-to-edge so SVG overlay
+     coordinates (950x950 viewBox) align pixel-perfectly with the Canvas2D grid. */
+  .interactive-canvas-wrapper :global(.content-wrapper) {
+    border: none !important;
+    border-radius: 0 !important;
   }
 
   @media (max-width: 768px) {
