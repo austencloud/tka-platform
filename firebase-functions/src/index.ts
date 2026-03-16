@@ -50,7 +50,9 @@ export {
   httpUpdateFeedbackStatus,
 } from "./feedbackClaims";
 
-// Export R2 storage functions (presigned URLs, multipart, delete)
+// R2 storage functions (presigned URLs, multipart, delete)
+// Deploy after R2 secrets are configured:
+//   firebase functions:secrets:set R2_ACCOUNT_ID R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BUCKET_NAME R2_PUBLIC_URL
 export {
   r2PresignUrl,
   r2MultipartStart,
