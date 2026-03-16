@@ -177,7 +177,7 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
       await import("$lib/shared/foundation/domain/models/SequenceData");
 
     const sequenceData = createSequenceData({
-      name: word || `Sequence ${Date.now()}`,
+      name: word || "",
       word,
       steps: generatedSteps,
       startingPosition: startPosition,
@@ -284,7 +284,7 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
       : undefined;
 
     const sequence = createSequenceData({
-      name: `Circular ${word}`,
+      name: word,
       word,
       steps: circularBeats.slice(1), // Exclude start position beat
       ...(startPositionStep && { startingPosition: startPositionStep }),

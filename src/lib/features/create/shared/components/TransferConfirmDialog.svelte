@@ -34,13 +34,13 @@
   <Drawer
     {isOpen}
     onclose={handleCancel}
-    ariaLabel="Replace Constructor Content?"
+    ariaLabel="Replace Construct Content?"
   >
     {#snippet children()}
       <div class="transfer-confirmation-content">
-        <h3 class="confirmation-title">Replace Constructor Content?</h3>
+        <h3 class="confirmation-title">Replace Construct Content?</h3>
         <p class="confirmation-message">
-          The Constructor workspace already has content. Transferring this
+          The Construct workspace already has content. Transferring this
           sequence will replace it.
         </p>
         <div class="confirmation-actions">
@@ -56,8 +56,8 @@
   <!-- Desktop: Confirm Dialog -->
   <ConfirmDialog
     bind:isOpen
-    title="Replace Constructor Content?"
-    message="The Constructor workspace already has content. Transferring this sequence will replace it."
+    title="Replace Construct Content?"
+    message="The Construct workspace already has content. Transferring this sequence will replace it."
     confirmText="Replace & Transfer"
     cancelText="Cancel"
     variant="warning"

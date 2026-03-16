@@ -312,8 +312,8 @@ export function createSequenceState(services: SequenceStateServices) {
       sequence?.startingPosition || sequence?.startPosition || null;
 
     // If no explicit start position but sequence has steps, derive from the first beat
-    // This handles sequences loaded from Browse where start position info is stored
-    // in the first beat's startPosition field rather than on the sequence itself
+    // and stamp it back onto the sequence so all downstream code (transforms, saves)
+    // sees a real startPosition instead of undefined.
     if (!startPosBeat && sequence?.steps?.length) {
       try {
         const derived = startPositionDeriver.getOrDeriveStartPosition(sequence);
@@ -321,6 +321,15 @@ export function createSequenceState(services: SequenceStateServices) {
         // The StepData return type is for legacy compatibility only
         if (derived && "isStartPosition" in derived) {
           startPosBeat = derived as StartPositionData;
+
+          // Write it back onto the sequence so transforms (swap, mirror, etc.)
+          // can operate on it directly instead of seeing undefined
+          sequence = {
+            ...sequence,
+            startPosition: startPosBeat,
+            startingPosition: startPosBeat,
+          };
+          coreState.setCurrentSequence(sequence);
         }
       } catch (error) {
         console.warn("Failed to derive start position from first beat:", error);
