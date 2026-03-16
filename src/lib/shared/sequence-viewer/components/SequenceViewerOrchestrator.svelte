@@ -1054,17 +1054,6 @@
       return;
     }
 
-    // If the sequence isn't saved to the user's library yet, save it first.
-    // Videos need a persisted sequence to attach to.
-    if (!isOwned) {
-      try {
-        await handleSave();
-      } catch {
-        // handleSave already shows an error toast
-        return;
-      }
-    }
-
     enterEditMode("video-upload");
   }
 

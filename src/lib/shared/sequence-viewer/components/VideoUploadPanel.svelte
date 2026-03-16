@@ -27,10 +27,26 @@
 
   interface Props {
     sequence: SequenceData;
+    isOwned: boolean;
+    onSaveFirst: () => Promise<void>;
     onClose: () => void;
   }
 
-  let { sequence, onClose }: Props = $props();
+  let { sequence, onClose, isOwned, onSaveFirst }: Props = $props();
+
+  // Save-first state: shown when sequence isn't saved to library yet
+  let isSaving = $state(false);
+
+  async function handleSaveFirst() {
+    isSaving = true;
+    try {
+      await onSaveFirst();
+    } catch {
+      // Parent handles the error toast
+    } finally {
+      isSaving = false;
+    }
+  }
 
   // Services
   const uploadService = container.items.videoUploader as IVideoUploader;
@@ -234,7 +250,32 @@
       hidden
     />
 
-    {#if uploadSuccess}
+    {#if !isOwned}
+      <!-- Save-first prompt: sequence needs to be in the user's library before attaching videos -->
+      <div class="save-first-state">
+        <div class="save-first-icon">
+          <i class="fas fa-bookmark" aria-hidden="true"></i>
+        </div>
+        <span class="save-first-title">Save to library first</span>
+        <span class="save-first-hint">Videos are attached to saved sequences. Save this one to your library, then you can upload a performance video.</span>
+        <div class="save-first-actions">
+          <button
+            type="button"
+            class="save-first-btn"
+            onclick={handleSaveFirst}
+            disabled={isSaving}
+          >
+            {#if isSaving}
+              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+              Saving...
+            {:else}
+              <i class="fas fa-bookmark" aria-hidden="true"></i>
+              Save to Library
+            {/if}
+          </button>
+        </div>
+      </div>
+    {:else if uploadSuccess}
       <!-- Success state -->
       <div class="success-state">
         <div class="success-icon">
@@ -550,6 +591,65 @@
   /* ============================================================
    * SUCCESS STATE
    * ============================================================ */
+
+  .save-first-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex: 1;
+    min-height: 200px;
+    padding: 24px;
+    text-align: center;
+  }
+
+  .save-first-icon {
+    font-size: 36px;
+    color: var(--theme-accent, #6366f1);
+    opacity: 0.7;
+  }
+
+  .save-first-title {
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    color: var(--theme-text, #fff);
+  }
+
+  .save-first-hint {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    max-width: 280px;
+    line-height: 1.4;
+  }
+
+  .save-first-actions {
+    margin-top: 8px;
+  }
+
+  .save-first-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 24px;
+    border-radius: 8px;
+    border: none;
+    background: var(--theme-accent, #6366f1);
+    color: #fff;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .save-first-btn:hover {
+    opacity: 0.9;
+  }
+
+  .save-first-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 
   .success-state {
     display: flex;
