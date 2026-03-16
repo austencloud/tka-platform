@@ -384,6 +384,8 @@
                       {:else if isVideoUploadActive && overlay.sequence}
                         <VideoUploadPanel
                           sequence={overlay.sequence}
+                          isOwned={ctx.isOwned}
+                          onSaveFirst={async () => { await ctx.handleSave(); }}
                           onClose={ctx.exitEditMode}
                         />
                       {/if}
