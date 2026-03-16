@@ -162,6 +162,7 @@
   import { notifyLibraryMutated } from "$lib/shared/library/library-events";
   import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
+  import type { ISequenceAnimationOrchestrator } from "$lib/features/compose/services/contracts/ISequenceAnimationOrchestrator";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { ISequenceDataProvider } from "$lib/shared/sequence-viewer/services/contracts/ISequenceDataProvider";
   import { createAnimationPanelState, type AnimationStateKey } from "$lib/features/compose/state/animation-panel-state.svelte";
@@ -332,6 +333,21 @@
   function togglePropContext() {
     contextOverride = activeContext === "creator-expression" ? "notation" : "creator-expression";
   }
+
+  // When active props change (chip toggle), update the animation orchestrator's prop types
+  // so the canvas re-renders with the correct prop visuals.
+  $effect(() => {
+    const blue = activeBlueProp;
+    const red = activeRedProp;
+    if (blue && red && animationServicesReady) {
+      try {
+        const orchestrator = container.items.sequenceAnimationOrchestrator as ISequenceAnimationOrchestrator;
+        orchestrator.updatePropTypes(blue, red);
+      } catch {
+        // Animation services not ready yet — will pick up correct props on init
+      }
+    }
+  });
 
   // Animation visibility
   const animationVisibility = getAnimationVisibilityManager();

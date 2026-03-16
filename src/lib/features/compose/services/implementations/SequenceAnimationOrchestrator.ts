@@ -25,6 +25,7 @@ import { applyEffort } from "$lib/features/effort-lab/domain/effort-easing-unifi
 import { PhraseInterpolator } from "$lib/features/phrase-effort-lab/services/implementations/PhraseInterpolator";
 import { findPhraseAtBeat } from "$lib/features/phrase-effort-lab/domain/effort-timeline-types";
 import type { EffortTimeline } from "$lib/features/phrase-effort-lab/domain/effort-timeline-types";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
 /**
  * Lightweight Animation Orchestrator
@@ -644,6 +645,21 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
     }
 
     return timePosition;
+  }
+
+  /**
+   * Update the prop types used for rendering without full re-initialization.
+   * Called when the user toggles between creator-intent and viewer props.
+   */
+  updatePropTypes(bluePropType: PropType, redPropType: PropType): void {
+    if (!this.initialized) return;
+    this.metadata = {
+      ...this.metadata,
+      bluePropType,
+      redPropType,
+    };
+    // Re-initialize prop states so the canvas renders with the new prop visuals
+    this.initializePropStates();
   }
 
   /**
