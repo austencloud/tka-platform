@@ -4,7 +4,12 @@
  * Unified, persistent navigation state for the Browse module.
  * Handles all navigation within Gallery, Collections, and Creators tabs
  * with full back/forward support and localStorage persistence.
+ *
+ * URL sync: creator profile views are reflected in the URL as
+ * /browse/creators/[userId] so refreshing the page restores the profile.
  */
+
+import { browser } from "$app/environment";
 
 // Tab types matching the Browse module structure
 export type BrowseTab = "gallery" | "collections" | "creators";
@@ -32,6 +37,65 @@ interface BrowseNavigationStateData {
 
 const STORAGE_KEY = "tka-browse-nav-state";
 const MAX_HISTORY_SIZE = 50;
+
+// ============================================================================
+// URL Sync Helpers
+// ============================================================================
+
+/**
+ * Read the creator ID from the current URL path.
+ * Expects paths like /browse/creators/[userId] — returns userId or null.
+ * Safe to call on non-creators paths (returns null).
+ */
+export function getCreatorIdFromURL(): string | null {
+  if (typeof window === "undefined") return null;
+  const parts = window.location.pathname
+    .replace(/^\/+/, "")
+    .split("/")
+    .filter(Boolean);
+  // Expect: browse / creators / [userId]
+  if (parts[0] === "browse" && parts[1] === "creators" && parts[2]) {
+    return decodeURIComponent(parts[2]);
+  }
+  return null;
+}
+
+/**
+ * Push /browse/creators/[userId] into the browser history stack.
+ * Skips the push if the URL already reflects this creator (e.g., on initial load).
+ */
+function pushCreatorProfileURL(userId: string): void {
+  if (!browser) return;
+  // If the URL already points at this creator, don't duplicate the history entry.
+  const existingId = getCreatorIdFromURL();
+  if (existingId === userId) return;
+  const url = new URL(window.location.href);
+  url.pathname = `/browse/creators/${encodeURIComponent(userId)}`;
+  url.hash = "";
+  window.history.pushState(
+    { moduleId: "browse", sectionId: "creators" },
+    "",
+    url.toString()
+  );
+}
+
+/**
+ * Replace the current history entry with /browse/creators (the list view).
+ * Called when navigating back to the creators list so the URL reflects the view.
+ */
+function replaceCreatorsListURL(): void {
+  if (!browser) return;
+  const url = new URL(window.location.href);
+  // Only act when we're already in the creators subtree
+  if (!url.pathname.startsWith("/browse/creators")) return;
+  url.pathname = "/browse/creators";
+  url.hash = "";
+  window.history.replaceState(
+    { moduleId: "browse", sectionId: "creators" },
+    "",
+    url.toString()
+  );
+}
 
 /**
  * Check if two locations are equivalent (to prevent duplicate entries)
@@ -153,8 +217,9 @@ function createBrowseNavigationState() {
     },
 
     /**
-     * Go back in history
-     * Returns the location navigated to, or null if can't go back
+     * Go back in history.
+     * Returns the location navigated to, or null if can't go back.
+     * Also updates the browser URL to reflect the destination view.
      */
     goBack(): BrowseLocation | null {
       if (state.currentIndex <= 0) return null;
@@ -163,6 +228,15 @@ function createBrowseNavigationState() {
       state.currentIndex--;
       const location = state.history[state.currentIndex];
       persistState();
+
+      // Sync URL with the destination view
+      if (location) {
+        if (location.tab === "creators" && location.view === "profile" && location.contextId) {
+          pushCreatorProfileURL(location.contextId);
+        } else if (location.tab === "creators" && location.view === "list") {
+          replaceCreatorsListURL();
+        }
+      }
 
       // Reset flag after a tick
       setTimeout(() => {
@@ -210,7 +284,9 @@ function createBrowseNavigationState() {
     // ========================================================================
 
     /**
-     * Navigate to a creator's profile
+     * Navigate to a creator's profile.
+     * Also updates the browser URL to /browse/creators/[userId] so the
+     * profile survives a page refresh.
      */
     viewCreatorProfile(userId: string, displayName?: string) {
       this.navigateTo({
@@ -221,6 +297,7 @@ function createBrowseNavigationState() {
           ? { type: "displayName", value: displayName }
           : undefined,
       });
+      pushCreatorProfileURL(userId);
     },
 
     /**
@@ -284,13 +361,15 @@ function createBrowseNavigationState() {
     },
 
     /**
-     * Navigate to creators list view
+     * Navigate to creators list view.
+     * Restores the URL to /browse/creators when leaving a profile.
      */
     viewCreators() {
       this.navigateTo({
         tab: "creators",
         view: "list",
       });
+      replaceCreatorsListURL();
     },
 
     // ========================================================================
