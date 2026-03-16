@@ -210,6 +210,7 @@
       isMobile={isMobileWidth}
       initialBpm={overlay.initialBpm}
       initialStep={overlay.initialStep}
+      viewingContext={overlay.viewingContext}
       onBack={handleDismiss}
     >
       {#snippet children(ctx)}

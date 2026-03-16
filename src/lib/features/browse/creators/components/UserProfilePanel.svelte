@@ -197,6 +197,7 @@
     openSequenceViewer(sequence, {
       returnPath: `/browse/creators/${userId}`,
       returnLabel: userProfile?.displayName ?? "Creator",
+      viewingContext: "creator-expression",
     });
   }
 
