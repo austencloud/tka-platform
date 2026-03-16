@@ -227,7 +227,9 @@ export class SvgAssetLoader {
 
     try {
       const cache = getSvgImageCache();
-      const path = `/images/numbers/${key}.svg`;
+      // "fl" is the parsed turn value but the SVG file is named "float.svg"
+      const filename = key === "fl" ? "float" : key;
+      const path = `/images/numbers/${filename}.svg`;
       const img = await cache.getImageFromUrl(path);
       this.assets.turnNumbers.set(key, img);
       return img;
