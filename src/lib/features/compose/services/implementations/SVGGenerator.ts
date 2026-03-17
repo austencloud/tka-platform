@@ -207,20 +207,73 @@ export class SVGGenerator implements ISVGGenerator {
    * Fetch prop SVG from server (with caching)
    */
   private async fetchPropSvg(path: string): Promise<string> {
-    // Check cache first
+    // Level 1: In-memory cache (fastest, clears on reload)
     if (SVGGenerator.svgCache.has(path)) {
       return SVGGenerator.svgCache.get(path)!;
     }
 
-    const response = await fetch(path);
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch prop SVG from ${path}: ${response.statusText}`
-      );
+    // Level 2: Try network fetch
+    try {
+      const response = await fetch(path);
+      if (response.ok) {
+        const svgText = await response.text();
+        SVGGenerator.svgCache.set(path, svgText);
+        // Background: persist to IndexedDB for offline use
+        SVGGenerator.saveToIDB(path, svgText).catch(() => {});
+        return svgText;
+      }
+    } catch {
+      // Network failed — fall through to IndexedDB
     }
-    const svgText = await response.text();
-    SVGGenerator.svgCache.set(path, svgText);
-    return svgText;
+
+    // Level 3: IndexedDB offline cache (survives reload, works offline)
+    const cached = await SVGGenerator.loadFromIDB(path);
+    if (cached) {
+      SVGGenerator.svgCache.set(path, cached);
+      return cached;
+    }
+
+    throw new Error(`Failed to fetch prop SVG from ${path} (offline, no cache)`);
+  }
+
+  // ---- IndexedDB persistence for offline prop SVGs ----
+
+  private static idbPromise: Promise<IDBDatabase> | null = null;
+
+  private static getIDB(): Promise<IDBDatabase> {
+    if (SVGGenerator.idbPromise) return SVGGenerator.idbPromise;
+    SVGGenerator.idbPromise = new Promise((resolve, reject) => {
+      const request = indexedDB.open("tka-animated-svg-cache", 1);
+      request.onerror = () => reject(request.error);
+      request.onupgradeneeded = (event) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+        if (!db.objectStoreNames.contains("svgs")) {
+          db.createObjectStore("svgs", { keyPath: "path" });
+        }
+      };
+      request.onsuccess = () => resolve(request.result);
+    });
+    return SVGGenerator.idbPromise;
+  }
+
+  private static async saveToIDB(path: string, svgText: string): Promise<void> {
+    const db = await SVGGenerator.getIDB();
+    const tx = db.transaction("svgs", "readwrite");
+    tx.objectStore("svgs").put({ path, svgText, cachedAt: Date.now() });
+  }
+
+  private static async loadFromIDB(path: string): Promise<string | null> {
+    try {
+      const db = await SVGGenerator.getIDB();
+      const tx = db.transaction("svgs", "readonly");
+      return new Promise((resolve) => {
+        const request = tx.objectStore("svgs").get(path);
+        request.onsuccess = () => resolve(request.result?.svgText ?? null);
+        request.onerror = () => resolve(null);
+      });
+    } catch {
+      return null;
+    }
   }
 
   /**
