@@ -754,8 +754,27 @@ export class LibraryRepository implements ILibraryRepository {
     const snapshot = await getDocs(q);
     const sequences: LibrarySequence[] = [];
 
+    // Hydrate sequences: derive steps from compositional fields.
+    // Without this, sequences saved after f0f9928ae (which stopped persisting
+    // steps to Firestore) would have empty steps arrays, causing the browse
+    // gallery to miscalculate aspect ratios and show black bars.
+    let hydrator: ISequenceHydrator | null = null;
+    try {
+      hydrator = container.items.sequenceHydrator as ISequenceHydrator;
+    } catch {
+      // Hydrator not available — steps will remain as loaded from Firestore
+    }
+
     snapshot.forEach((docSnap) => {
-      sequences.push(this.mapDocToLibrarySequence(docSnap.data(), docSnap.id));
+      let seq = this.mapDocToLibrarySequence(docSnap.data(), docSnap.id);
+      if (hydrator) {
+        try {
+          seq = hydrator.hydrate(seq) as LibrarySequence;
+        } catch {
+          // Hydration failed for this sequence — use raw data
+        }
+      }
+      sequences.push(seq);
     });
 
     // Fetch owner profile to enrich sequences with display metadata
@@ -872,8 +891,21 @@ export class LibraryRepository implements ILibraryRepository {
           q,
           (snapshot) => {
             const sequences: LibrarySequence[] = [];
+            let snapshotHydrator: ISequenceHydrator | null = null;
+            try {
+              snapshotHydrator = container.items.sequenceHydrator as ISequenceHydrator;
+            } catch {
+              // Hydrator not available
+            }
             snapshot.forEach((docSnap) => {
-              const serverSeq = { ...this.mapDocToLibrarySequence(docSnap.data(), docSnap.id), ownerId: userId };
+              let serverSeq = { ...this.mapDocToLibrarySequence(docSnap.data(), docSnap.id), ownerId: userId } as LibrarySequence;
+              if (snapshotHydrator) {
+                try {
+                  serverSeq = snapshotHydrator.hydrate(serverSeq) as LibrarySequence;
+                } catch {
+                  // Hydration failed — use raw data
+                }
+              }
               sequences.push(serverSeq);
 
               // Check for conflicts on server-originated changes
