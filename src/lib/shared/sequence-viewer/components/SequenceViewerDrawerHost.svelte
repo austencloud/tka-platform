@@ -100,6 +100,20 @@
   let settingsModalOpen = $state(false);
   let copyLinkFeedback = $state(false);
 
+  // Export sidebar collapse state (desktop only)
+  let exportSidebarCollapsed = $state(false);
+
+  function toggleExportSidebar() {
+    exportSidebarCollapsed = !exportSidebarCollapsed;
+  }
+
+  // Reset sidebar visibility when entering export mode
+  $effect(() => {
+    if (overlay.isOpen) {
+      exportSidebarCollapsed = false;
+    }
+  });
+
   function handleCopyLink() {
     const seq = overlay.sequence;
     if (!seq) return;
@@ -257,7 +271,18 @@
                 </div>
 
                 <div class="drawer-header-actions">
-                  <!-- Spacer to balance grid layout -->
+                  {#if !isMobileWidth}
+                    <button
+                      type="button"
+                      class="header-action-btn"
+                      class:active={!exportSidebarCollapsed}
+                      onclick={toggleExportSidebar}
+                      aria-label={exportSidebarCollapsed ? "Show export settings" : "Hide export settings"}
+                      title={exportSidebarCollapsed ? "Show settings" : "Hide settings"}
+                    >
+                      <i class="fas fa-sliders" aria-hidden="true"></i>
+                    </button>
+                  {/if}
                 </div>
               {:else}
                 <!-- Normal viewer: dismiss + export/settings actions -->
@@ -344,6 +369,7 @@
                   class="viewer-and-export"
                   class:export-active={isAnyExportActive}
                   class:desktop={!isMobileWidth}
+                  class:sidebar-collapsed={exportSidebarCollapsed}
                 >
                   <ViewerSplitPane
                     sequence={ctx.effectiveSequence}
@@ -357,9 +383,7 @@
                           showCreatorName: ctx.exportOptions.imageShowCreatorName,
                           showNotes: ctx.exportOptions.imageShowNotes,
                           darkMode: ctx.exportOptions.imageDarkMode,
-                          columnCount: ctx.exportOptions.imageColumnCount != null
-                            ? ctx.exportOptions.imageColumnCount + (ctx.exportOptions.imageIncludeStartPosition ? 1 : 0)
-                            : null,
+                          columnCount: ctx.exportOptions.imageColumnCount,
                           forceContain: true,
                           userName: ctx.splitPaneImageComposition.userName,
                         }
@@ -670,6 +694,11 @@
     color: var(--theme-text, #ffffff);
   }
 
+  /* Active state for toggle buttons (e.g. sidebar settings toggle) */
+  .header-action-btn.active {
+    color: var(--theme-accent, #6366f1);
+  }
+
   .header-action-btn:focus-visible {
     outline: 2px solid var(--theme-accent, #f43f5e);
     outline-offset: 2px;
@@ -756,8 +785,10 @@
   }
 
   /* Viewer + export panel container.
-     The split pane fills this via width/height: 100%; export panel overlays the right side.
-     This prevents the parent from resizing when the export panel appears. */
+     Desktop: ALWAYS a grid so the sidebar column can transition smoothly from
+     0fr to 320px. If we only became a grid on export-active, the browser has no
+     starting grid state and the 320px allocation happens instantly (no transition).
+     Mobile: stays default (block), switches to flex column in export mode. */
   .viewer-and-export {
     --export-sidebar-width: 320px;
     position: relative;
@@ -766,34 +797,49 @@
     overflow: hidden;
   }
 
-  /* Export panel — absolute overlay so it doesn't steal width from split pane */
+  /* Desktop: always a grid with a sidebar column that starts collapsed.
+     IMPORTANT: use 0px (not 0fr) so CSS can interpolate between 0px → 320px.
+     fr and px are different unit types — the browser can't transition between them. */
+  .viewer-and-export.desktop {
+    display: grid;
+    grid-template-columns: 1fr 0px;
+    transition: grid-template-columns 250ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  /* Desktop: split pane is a grid child (relative, not absolute) */
+  .viewer-and-export.desktop :global(.view-container) {
+    position: relative;
+    inset: auto;
+  }
+
+  /* Desktop export active: sidebar column expands to its width */
+  .viewer-and-export.export-active.desktop {
+    grid-template-columns: 1fr var(--export-sidebar-width);
+  }
+
+  /* Desktop sidebar collapsed: column shrinks back to zero */
+  .viewer-and-export.export-active.desktop.sidebar-collapsed {
+    grid-template-columns: 1fr 0px;
+  }
+
+  /* Export panel — grid child on desktop, flex child on mobile */
   .export-panel-container {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: var(--export-sidebar-width);
-    z-index: 20;
     overflow: hidden;
     overflow-y: auto;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     isolation: isolate;
+    min-width: 0;
   }
 
   @media (max-width: 767px) {
-    /* Mobile: export panel is inline in the flex layout, not absolute */
+    /* Mobile: export panel is inline in the flex layout */
     .viewer-and-export.export-active {
       display: flex;
       flex-direction: column;
     }
 
     .export-panel-container {
-      position: relative;
-      top: auto;
-      right: auto;
-      bottom: auto;
-      left: auto;
       width: 100%;
       flex-shrink: 0;
       overflow: visible;
@@ -801,11 +847,7 @@
       border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     }
 
-    /* When in mobile export mode, make ViewerSplitPane participate in the flex
-       flow instead of being absolute-positioned. This ensures the export controls
-       bar stays visible below the scrollable card area. Without this, the
-       absolute-positioned split pane fills the entire parent and the export
-       panel gets pushed offscreen by the tall choreo card. */
+    /* Mobile: ViewerSplitPane participates in flex flow */
     .viewer-and-export.export-active :global(.view-container) {
       position: relative;
       inset: auto;
@@ -836,7 +878,8 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .lamp-btn {
+    .lamp-btn,
+    .viewer-and-export {
       transition: none;
     }
   }
