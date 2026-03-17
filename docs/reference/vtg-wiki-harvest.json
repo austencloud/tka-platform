@@ -1,0 +1,1511 @@
+{
+  "harvestDate": "2026-03-16",
+  "articlesProcessed": 168,
+  "redirects": ["VTG.wiki -> Vulcan_Tech_Gospel.wiki", "CAP.wiki -> Continuous_Assembly_Patterns.wiki", "Inspin.wiki -> Prospin.wiki", "TKA.wiki -> The_Kinetic_Alphabet.wiki", "C-CAP.wiki -> Continuous_Assembly_Patterns.wiki", "8-Step_CAP.wiki -> Continuous_Assembly_Patterns.wiki#8-Step_CAP", "Petal.wiki -> Flower_(flow_arts).wiki", "Poi_theory.wiki -> Poi.wiki#Theory", "Michael_Caden_Pike.wiki -> MCP_(flow_arts).wiki"],
+  "vtgRelevantArticles": [
+    {
+      "title": "Vulcan Tech Gospel",
+      "filename": "Vulcan_Tech_Gospel.wiki",
+      "definition": "The Vulcan Tech Gospel (VTG) is a theoretical framework for prop spinning that classifies the relationships between two spinning objects using timing, direction, and pattern shape. It was developed collaboratively at the Vulcan Lofts in Oakland, California, primarily by Noel Yee with contributions from Jordan Campbell, David 'Tankboy' Cantor, and Brian Thompson.",
+      "sections": [
+        {"heading": "History", "keyContent": "Developed at Vulcan Lofts. VTG V.1 originally focused on clubs, not poi. Brian Thompson's 'first drawing' served as the structural starting point. Pivotal moment was 2010 when Noel Yee and Jordan Campbell formalized Transition Theory. Yee describes VTG as 'sort of an open source project.'"},
+        {"heading": "The VTG Trivium", "keyContent": "Three interconnected concepts: (1) Timing and Direction, (2) Snapshots (Prop Facing), (3) Pattern (Shape). Noel Yee calls these the 'Trivium'; Drex's overview uses 'VTG Trinity'."},
+        {"heading": "Timing and Direction", "keyContent": "Timing: Together (tog) vs Split. Direction: Same vs Opposite. Four categories: SS (Split-Same), TS (Together-Same), SO (Split-Opposite), TO (Together-Opposite). Timing listed first, direction second."},
+        {"heading": "Snapshots (Prop Facing)", "keyContent": "Captures what a pattern looks like at a specific moment. Props described as 'pointing in' or 'pointing out'. Six snapshots: Tog out, Split out, Tog in, Split in, Tog split, Split tog."},
+        {"heading": "Pattern (Shape)", "keyContent": "The flower shape traced by the prop. Organized by prop-to-hand rotation ratio: 1:1 (extensions, isolations), 1:3 (four-petal flowers), 1:5. The 1:1 set derives from a 6x6 grid (36 squares, 40 patterns total). Noel Yee identifies 10 minimal beat shapes as the foundational set."},
+        {"heading": "Transition Theory", "keyContent": "Created by Noel Yee and Jordan Campbell in 2010. Four transition types: Soft, Hard, Mixed (type 1), Mixed (type 2). Builds on Alien Jon's arcs and loops concepts."},
+        {"heading": "Reference system", "keyContent": "VTG is ground-referenced. The downbeat (south) serves as anchor. Contrasts with center-referenced systems like TKA."},
+        {"heading": "Prop agnosticism", "keyContent": "Applies to all two-prop spinning: poi, double staff, fire fans, hoops, clubs, buugeng, triads. V.1 originally focused on clubs."},
+        {"heading": "Planes", "keyContent": "Wall plane (W), Wheel plane (H), Floor plane (F). Formalized by Lorq Nichols."},
+        {"heading": "Documents", "keyContent": "VTG V.1 (by Noel Yee, logo by Forest Sterns), VTG #2 Beta (co-authored with David Cantor), Book of P.H.A.T. (by Lorq Nichols), VTG Poster."},
+        {"heading": "VTG App", "keyContent": "Multiple versions. First by Kevin (NCK), animations by Alien Jon, VTG2 visuals by Zack Buer, v3 by Michael Caden Pike. Available on iOS and Android."},
+        {"heading": "Related frameworks", "keyContent": "CAPs, 9-Square Theory, QFT Notation, Shape Matrix, The Kinetic Alphabet."}
+      ],
+      "infobox": {
+        "name": "Vulcan Tech Gospel",
+        "abbreviation": "VTG",
+        "creators": "Noel Yee, Jordan Campbell, David Cantor, Brian Thompson",
+        "year": "2010",
+        "location": "Vulcan Lofts, Oakland, California",
+        "scope": "Two-prop spinning (prop-agnostic)",
+        "documents": "VTG V.1, VTG #2 (Beta), Book of P.H.A.T.",
+        "app": "VTG - Flow Arts Resource (iOS/Android)"
+      },
+      "internalLinks": ["Noel Yee", "Jordan Campbell", "David Cantor", "Brian Thompson", "Vulcan Lofts", "Lorq Nichols", "Transition Theory", "Continuous Assembly Patterns", "9-Square Theory", "QFT Notation", "Shape Matrix", "The Kinetic Alphabet", "Flow Arts Institute", "Book of P.H.A.T.", "Tech Tiles", "Alien Jon", "Cassie McKenney", "Zack Buer", "Michael Caden Pike", "Forest Sterns"],
+      "externalRefs": [
+        "https://drexfactor.com/weirdscience/2016/05/15/tech_spinning_flow_arts",
+        "https://noelyee.com/about-me/",
+        "https://noelyee.com/transition-theory-with-noel-yee/",
+        "https://sirlorq.wordpress.com/about-2/",
+        "https://www.youtube.com/watch?v=dlQNXqOM4Ns",
+        "https://drexfactor.com/weirdscience/2015/11/25/vulcan_tech_gospel_vtg_explained",
+        "https://www.youtube.com/watch?v=slotWoJFrdA",
+        "https://noelyee.com/vtg-11-necessity-of-40-patterns/",
+        "https://www.youtube.com/watch?v=VsUKQm8GGUk",
+        "https://sirlorq.wordpress.com/tech-tiles/",
+        "https://drexfactor.com/weirdscience/2010/09/29/soft_hard_and_mixed_transition_theory",
+        "https://noelyee.com/instruction/vulcan-tech-gospel/",
+        "https://flowartsinstitute.com/tutsday-timing-direction/",
+        "https://noelyee.com/hoop-vtg-11-with-cassie-mckenney/",
+        "http://spinscience.xyz/3planes/",
+        "https://flowartsinstitute.com/fai-swag-vtg-poster/",
+        "https://play.google.com/store/apps/details?id=net.firestaff.mcp.VTGv3&hl=en",
+        "https://apps.apple.com/us/app/vtg-lite-flow-arts-resource/id1473697606",
+        "https://www.etsy.com/listing/247983114/vtg-pattern-generator-1",
+        "https://flowartsinstitute.com/"
+      ],
+      "categories": ["Flow arts theory", "Notation systems", "Vulcan Lofts"],
+      "relevanceToVTG": "high",
+      "notes": "This is the main VTG article. No AI-generated marker. Well-sourced with primary references from Noel Yee's own content."
+    },
+    {
+      "title": "Timing and direction",
+      "filename": "Timing_and_direction.wiki",
+      "definition": "Timing and direction are the two fundamental variables used to describe the relationship between two spinning objects in flow arts. Together they form the foundational layer of most flow arts theory frameworks, including VTG, TKA, and Lorq Nichols' classification systems.",
+      "sections": [
+        {"heading": "Timing", "keyContent": "Together (same time): both props at same point simultaneously. Split: 180 degrees out of phase. Reference point in VTG is the downbeat (south)."},
+        {"heading": "Direction", "keyContent": "Same: both props spinning same rotational direction. Opposite: spinning in opposite directions."},
+        {"heading": "The four categories", "keyContent": "SS (Split-Same), TS (Together-Same), SO (Split-Opposite), TO (Together-Opposite). Timing listed first, direction second."},
+        {"heading": "Reference systems", "keyContent": "Ground-referenced (VTG): downbeat as anchor. Center-referenced (TKA): orientations relative to performer's center."},
+        {"heading": "In notation systems", "keyContent": "Cross-system comparison table: VTG uses SS/TS/SO/TO. TKA encodes per variation (alpha=split, beta=together). QFT uses explicit phase notation."},
+        {"heading": "Prop agnosticism", "keyContent": "Universal to any two rotating objects."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Vulcan Tech Gospel", "The Kinetic Alphabet", "Lorq Nichols", "Transition Theory", "Prospin", "Antispin", "Split time", "Same time", "QFT Notation"],
+      "externalRefs": [
+        "https://drexfactor.com/weirdscience/2015/11/25/vulcan_tech_gospel_vtg_explained",
+        "https://flowartsinstitute.com/tutsday-timing-direction/"
+      ],
+      "categories": ["Flow arts concepts", "Flow arts theory"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated marker present. Content is accurate and well-structured. The mapping of TKA alpha=split, beta=together is correct."
+    },
+    {
+      "title": "Transition Theory",
+      "filename": "Transition_Theory.wiki",
+      "definition": "Transition Theory is a framework in flow arts that describes how spinners move between different pattern states. It was created by Noel Yee and Jordan Campbell in 2010 and is considered a foundational component of the Vulcan Tech Gospel (VTG).",
+      "sections": [
+        {"heading": "History", "keyContent": "Formalized in 2010 at Vulcan Lofts. Described as the development that 'settled the core dogma of VTG.' Builds on Alien Jon's arcs and loops concepts."},
+        {"heading": "Arcs and loops", "keyContent": "Loops: poi and hand paths intersect (antispin petals, inspin petals, isolations). Arcs: hand and poi paths run parallel (extensions)."},
+        {"heading": "The four transition types", "keyContent": "Soft: both maintain direction, preserves arc/loop character. Hard: both reverse, creates mirror image. Mixed type 1: hand reverses, prop continues (mechanism behind C-CAP). Mixed type 2: hand continues, prop reverses."},
+        {"heading": "Relationship to timing and direction", "keyContent": "Soft and hard preserve timing/direction category. Mixed transitions change it. Table showing how each transition type maps from each VTG state."},
+        {"heading": "Relationship to CAPs", "keyContent": "CAPs built on mixed transitions (type 1). C-CAP's hand reversal is a mixed transition applied rhythmically every half circle."},
+        {"heading": "In notation systems", "keyContent": "TKA encodes transitions through reversal system: hand reversals = mixed type 1, prop reversals = mixed type 2, full reversals = hard."}
+      ],
+      "infobox": {
+        "name": "Transition Theory",
+        "creators": "Noel Yee, Jordan Campbell",
+        "year": "2010",
+        "location": "Vulcan Lofts, Oakland, California",
+        "scope": "Transitions between spinning patterns (prop-agnostic)"
+      },
+      "internalLinks": ["Noel Yee", "Jordan Campbell", "Vulcan Tech Gospel", "Vulcan Lofts", "Alien Jon", "Continuous Assembly Patterns", "Timing and direction", "Reversal (flow arts)", "C-CAP", "Extension (flow arts)", "Antispin", "Prospin", "Isolation (flow arts)"],
+      "externalRefs": [
+        "https://noelyee.com/transition-theory-with-noel-yee/",
+        "https://drexfactor.com/weirdscience/2010/09/29/soft_hard_and_mixed_transition_theory",
+        "https://drexfactor.com/weirdscience/2015/11/25/vulcan_tech_gospel_vtg_explained",
+        "https://sirlorq.wordpress.com/tech-tiles/"
+      ],
+      "categories": ["Flow arts theory", "Notation systems"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated marker present. The mapping of TKA reversal types to Transition Theory types is accurate and important for the domain package."
+    },
+    {
+      "title": "Noel Yee",
+      "filename": "Noel_Yee.wiki",
+      "definition": "Noel Yee is an American flow arts educator, theorist, and community organizer. He is the primary creator of the Vulcan Tech Gospel (VTG) and co-creator of Transition Theory with Jordan Campbell. He is a co-founder of the Flow Arts Institute, FireDrums, Kinetic Fire, and the Vulcan Crew.",
+      "sections": [
+        {"heading": "Background", "keyContent": "Background in science education for children. 11+ years teaching. IJA board member. Learned poi from Matt Terry and Nick Woolsey's videos. YouTube channel name references Dune novels."},
+        {"heading": "Vulcan Tech Gospel", "keyContent": "Compiled VTG framework at Vulcan Lofts. Documented 40 patterns in 1:1 ratio set."},
+        {"heading": "Transition Theory", "keyContent": "Co-created with Jordan Campbell in 2010. 'Settled the core dogma of VTG.'"},
+        {"heading": "VTG App", "keyContent": "Collaborated with Michael Pike on VTG app (iOS/Android)."},
+        {"heading": "Hoop VTG", "keyContent": "Worked with Cassie McKenney and Maiki Nope to adapt VTG for hoops."},
+        {"heading": "Media", "keyContent": "NOELTECH YouTube series (74+ episodes), STICKSOUT PODCAST (12+ episodes, 2 seasons), The Loft Show, Patreon tutorials."},
+        {"heading": "Organizations", "keyContent": "Co-founder: Flow Arts Institute, FireDrums, Kinetic Fire, Vulcan Crew."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Vulcan Tech Gospel", "Transition Theory", "Jordan Campbell", "David Cantor", "Brian Thompson", "Vulcan Lofts", "Flow Arts Institute", "Cassie McKenney", "Nick Woolsey", "Michael Caden Pike"],
+      "externalRefs": [
+        "https://noelyee.com/about-me/",
+        "https://www.patreon.com/posts/profiles-in-poi-1920634",
+        "https://noelyee.com/instruction/vulcan-tech-gospel/",
+        "https://noelyee.com/vtg-11-necessity-of-40-patterns/",
+        "https://noelyee.com/transition-theory-with-noel-yee/",
+        "https://noelyee.com/vulcan-tech-gospel-android-app/",
+        "https://noelyee.com/hoop-vtg-11-with-cassie-mckenney/",
+        "https://flowartsinstitute.com/",
+        "https://noelyee.com/"
+      ],
+      "categories": ["Flow arts practitioners"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated marker present. Describes VTG as 'my legacy.' Key quote: 'Who wrote it? I would say we've all written it over the years of spinning.'"
+    },
+    {
+      "title": "David Cantor",
+      "filename": "David_Cantor.wiki",
+      "definition": "David Cantor (known as David 'Tankboy' Cantor) is an American flow arts practitioner who co-authored the Vulcan Tech Gospel Volume 2 with Noel Yee. He taught tech poi at the Vulcan Lofts.",
+      "sections": [
+        {"heading": "Main content", "keyContent": "Defined VTG as 'a treatise on technical prop manipulation, that seeks to explain the entirety of sets of technique using a predetermined set of constants and variables.' Contributed to Book of P.H.A.T."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Vulcan Tech Gospel", "Vulcan Lofts", "Noel Yee", "Lorq Nichols", "Book of P.H.A.T."],
+      "externalRefs": [
+        "https://drexfactor.com/weirdscience/2015/11/25/vulcan_tech_gospel_vtg_explained",
+        "https://sirlorq.wordpress.com/tech-tiles/"
+      ],
+      "categories": ["Flow arts practitioners"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. Short article but contains important VTG definition quote."
+    },
+    {
+      "title": "Jordan Campbell",
+      "filename": "Jordan_Campbell.wiki",
+      "definition": "Jordan Campbell is an American flow arts theorist who co-created Transition Theory with Noel Yee in 2010 at the Vulcan Lofts.",
+      "sections": [],
+      "infobox": {},
+      "internalLinks": ["Transition Theory", "Vulcan Tech Gospel", "Noel Yee", "Vulcan Lofts"],
+      "externalRefs": ["https://noelyee.com/transition-theory-with-noel-yee/"],
+      "categories": ["Flow arts practitioners"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. Very short stub. Co-creator of Transition Theory."
+    },
+    {
+      "title": "Brian Thompson",
+      "filename": "Brian_Thompson.wiki",
+      "definition": "Brian Thompson is an American flow arts practitioner who taught club spinning hybrids at the Vulcan Lofts. He co-developed the 24-Hybrid sequence and contributed to VTG and the Book of P.H.A.T.",
+      "sections": [],
+      "infobox": {},
+      "internalLinks": ["Vulcan Tech Gospel", "Vulcan Lofts", "Book of P.H.A.T.", "Lorq Nichols"],
+      "externalRefs": [
+        "https://sirlorq.wordpress.com/about-2/",
+        "https://sirlorq.wordpress.com/tech-tiles/"
+      ],
+      "categories": ["Flow arts practitioners"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. His 'first drawing' was the structural starting point for VTG design."
+    },
+    {
+      "title": "Lorq Nichols",
+      "filename": "Lorq_Nichols.wiki",
+      "definition": "Lorq Nichols (also known as Sir Lorq) is an American flow arts theorist, educator, and circus artist. He created the Shape Matrix, the Book of P.H.A.T., the Tech Tiles visualization system, and the 324 Patterns framework. He currently teaches at the New England Center for Circus Arts (NECCA).",
+      "sections": [
+        {"heading": "Background", "keyContent": "Began contact juggling in 2000. Visited Vulcan Lofts Spring 2010, studied under Thompson, Cantor, Yee. Had been spinning ~2 years at visit time."},
+        {"heading": "Club spinning pedagogy", "keyContent": "Describes clubs as 'a static problem' vs poi's tether constraint. Three grip types: ring, claw, laser pointer."},
+        {"heading": "Book of P.H.A.T.", "keyContent": "P.H.A.T. = Patterns, Hybrids, And Transitions. 64 patterns in VTG 1:3 ratio set, 8x8 grid, color-coded."},
+        {"heading": "Shape Matrix", "keyContent": "Multiplication table for two-hand flower combinations. Created 2012, reworked 2014, viral on Poi Chat 2016 (353 shares, 462 likes)."},
+        {"heading": "Tech Tiles and 3D Pattern Player", "keyContent": "Visual notation for poi patterns. Unity-based 3D player with controls for position, plane, rotation, speed."},
+        {"heading": "324 Patterns", "keyContent": "27 arm paths x 12 shapes x 3 planes = 324 patterns."},
+        {"heading": "9 Flower Families", "keyContent": "All flower patterns organized into nine families by petal shape and orientation."},
+        {"heading": "144 Atomic Hybrids", "keyContent": "12 shapes x 9 arm paths. 'If you know a quarter of a pattern, you know the whole pattern.'"},
+        {"heading": "3 Planes System", "keyContent": "Wall (W), Wheel (H), Floor (F)."},
+        {"heading": "Driving styles", "keyContent": "Documented the taxonomy (originally by Insignia): isolation, antispin, atomics, pendulums, extension, cateye, CAP, hybrid."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Vulcan Lofts", "Brian Thompson", "David Cantor", "Noel Yee", "Book of P.H.A.T.", "Shape Matrix", "Tech Tiles", "324 Patterns", "Driving style", "Vulcan Tech Gospel"],
+      "externalRefs": [
+        "https://sirlorq.wordpress.com/about-2/",
+        "https://necenterforcircusarts.org/about/lorq-nichols/",
+        "http://spinscience.xyz/2016/03/05/shape-matrix-went-poi-chat-viral/",
+        "https://sirlorq.wordpress.com/tech-tiles-3d-pattern-player/",
+        "http://spinscience.xyz/324-patterns/",
+        "http://spinscience.xyz/2014/01/18/lorqtech-41-9-flower-families-with-trails/",
+        "https://sirlorq.wordpress.com/144ultimatepattern/",
+        "http://spinscience.xyz/3planes/",
+        "https://sirlorq.wordpress.com/tag/driving-style/",
+        "http://spinscience.xyz/",
+        "https://sirlorq.wordpress.com/",
+        "https://www.instagram.com/sirlorq/"
+      ],
+      "categories": ["Flow arts practitioners"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. Major VTG extender. His frameworks (Shape Matrix, Book of P.H.A.T., Tech Tiles, 324 Patterns, driving styles) are the primary organizational layer built on top of VTG."
+    },
+    {
+      "title": "Continuous Assembly Patterns",
+      "filename": "Continuous_Assembly_Patterns.wiki",
+      "definition": "Continuous Assembly Patterns (CAPs) are a compositional framework in flow arts for creating cyclic, repeating patterns by assembling fragments of different movements in sequence. The term encompasses three related but distinct concepts: a specific technique (the C-CAP), a family of hand-reversal patterns, and a broad theoretical approach to combining movement.",
+      "sections": [
+        {"heading": "Definitions", "keyContent": "Three definitions: (1) C-CAP: alternating extension and antispin petal via hand reversal every half circle. Nick Woolsey popularized 'Capped Antispin Patterns' expansion. (2) C-CAP family: hand-reversal mechanism applied to any two shapes. (3) Original (broadest): any pattern combining different movement fragments into a repeating cycle."},
+        {"heading": "CAPs vs hybrids", "keyContent": "Hybrids = spatial asymmetry (different patterns per hand simultaneously). CAPs = temporal asymmetry (different patterns sequentially by same hand). Hybrids are 'parallel information treatment'; CAPs are 'serial information treatment.'"},
+        {"heading": "The C-CAP mechanism", "keyContent": "Uses mixed transition from Transition Theory. Hand reverses while poi maintains direction. Converts arcs to loops and vice versa."},
+        {"heading": "8-Step CAP", "keyContent": "By Charlie Cushing. 'Two steps forward, one step back': Pattern A travels 3/4 circle, Pattern B travels 1/2 in opposite direction. 8 segments total cycling through cardinal directions."},
+        {"heading": "Mathematical framework", "keyContent": "By Zaltymbunk (Damien). Parametric equations: x = h*sin(t) + p*sin(d*t). Compact notation: Theta1 Theta2; Rho1 Rho2; d. Two patterns assembled with '&' operator."},
+        {"heading": "History", "keyContent": "Term coined by Damien (French_Saltimbanque/Zaltymbunk) on Home of Poi forums 2008-2010. Promoted by Alien Jon. Nick Woolsey made CAPs accessible. Drex documented extensively (500+ blog entries). Charlie Cushing contributed 8-Step CAP and 9-Square Theory."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Alien Jon", "Zan Moore", "Nick Woolsey", "Charlie Cushing", "Ben Drexler", "Transition Theory", "Noel Yee", "Jordan Campbell", "9-Square Theory", "Vulcan Tech Gospel", "Home of Poi", "Extension (flow arts)", "Antispin", "Hybrid (flow arts)", "Zaltymbunk", "PlayPoi"],
+      "externalRefs": [
+        "https://flowarts.life/2021/04/16/what-comes-next-poi-caps/",
+        "https://www.homeofpoi.com/en/community/forums/topics/891193/What-are-CAP-s",
+        "http://spinscience.xyz/2016/02/22/cap-definition/",
+        "https://drexfactor.com/index.php?q=weirdscience%2F2012%2F08%2F21%2Fbasic_poi_dancing_tutorial_c_caps",
+        "https://playpoi.com/learn/learning-caps-capped-antispin-patterns/",
+        "https://drexfactor.com/weirdscience/2011/11/28/drexs_tech_poi_blog_214_composites_vs_caps",
+        "https://drexfactor.com/weirdscience/2010/09/29/soft_hard_and_mixed_transition_theory",
+        "https://www.homeofpoi.com/us/community/forums/topics/934076/8-step-CAPs",
+        "https://drexfactor.com/index.php?q=weirdscience%2F2016%2F09%2F27%2Ftutorial_double_staff_8_step_cap_recipe",
+        "https://drexfactor.com/reference/math_caps",
+        "https://drexfactor.com/weirdscience/2014/05/06/mathematical_approach_classifying_poi_patterns_introduction_and_basics",
+        "https://drexfactor.com/weirdscience/2016/05/15/tech_spinning_flow_arts"
+      ],
+      "categories": ["Flow arts theory", "Poi technique", "Notation systems"],
+      "relevanceToVTG": "high",
+      "notes": "No AI-generated marker. Very thorough article. Key insight: 'CAPs are not a move, they are a way of thinking about movement.' VTG provides the grammar; CAPs are a sentence structure built from that grammar."
+    },
+    {
+      "title": "9-Square Theory",
+      "filename": "9-Square_Theory.wiki",
+      "definition": "9-Square Theory is a spatial framework for flow arts created by Charlie Cushing that quantizes the space around a spinner's body into a grid of positions.",
+      "sections": [
+        {"heading": "Concept", "keyContent": "Divides space around performer into grid positions. Movements described as transitions between positions. Operates within a single plane (typically wall plane)."},
+        {"heading": "Cushing's flower terminology", "keyContent": "Alternative terms: Lobes (replacing 'inspin petals'), Anti-lobes (replacing 'antispin petals'), Iso-spin, Pro-spin, Anti-spin. 'Did not catch on' but useful for naming toroids."},
+        {"heading": "Mathematical framework", "keyContent": "Cartesian coordinate framework with parametric equations. Variable B controls poi-to-hand beat ratio. Ted Petrovsky collaborated on plane bending and toroid extensions."},
+        {"heading": "Relationship to other frameworks", "keyContent": "VTG describes what patterns are; 9-Square maps where they occur. TKA's grid parallels 9-Square's spatial quantization. QFT (also by Cushing) provides written shorthand."}
+      ],
+      "infobox": {
+        "name": "9-Square Theory",
+        "creators": "Charlie Cushing",
+        "year": "c. 2010",
+        "scope": "Spatial grid for poi movement and transitions"
+      },
+      "internalLinks": ["Charlie Cushing", "Vulcan Tech Gospel", "Continuous Assembly Patterns", "The Kinetic Alphabet", "QFT Notation", "Plane (flow arts)", "Timing and direction"],
+      "externalRefs": [
+        "https://www.spinmorepoi.com/charlie-9-square-theory-1/",
+        "https://drexfactor.com/weirdscience/2010/04/22/video_tech_blog_83_bth_vs_cap_9_square_transitions",
+        "https://www.lanternsmith.com/"
+      ],
+      "categories": ["Flow arts theory", "Notation systems"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. Part of the 'Golden Age of poi ideas' alongside VTG and CAPs. Drex groups Unit Circle Theory, VTG, and 9-Square as attempts 'by computer savvy young men to apply combinatorics and logic to poi flowers.'"
+    },
+    {
+      "title": "The Kinetic Alphabet",
+      "filename": "The_Kinetic_Alphabet.wiki",
+      "definition": "The Kinetic Alphabet (TKA) is a notation system for flow arts that encodes two-handed prop manipulation into letters. Each letter represents one beat of motion, specifying the positions and movements of both hands and props on a spatial grid.",
+      "sections": [
+        {"heading": "Overview", "keyContent": "Pictographs showing two props (blue/red) at grid positions with motion arrows. 47 letters (A-V, W-Z, Greek letters, variants)."},
+        {"heading": "The grid", "keyContent": "Up to 9 points: 4 cardinal, 4 intercardinal, 1 center. Three modes: diamond (cardinal), box (intercardinal), skewed (mixed)."},
+        {"heading": "Positions", "keyContent": "Alpha (180deg, split), Beta (0deg, together), Gamma (90deg), Zeta (~135deg), Eta (~45deg), Tau (one at center), Terra (both at center)."},
+        {"heading": "Hand paths", "keyContent": "Four types: Static (no movement), Shift (curved arc), Dash (straight line 180deg), Hash (to/from center)."},
+        {"heading": "Prop rotation types", "keyContent": "Pro (with hand arc = inspin), Anti (against hand arc = antispin), Float (holds absolute spatial angle). Pro/anti only apply to shifts."},
+        {"heading": "Turns", "keyContent": "One turn = 180deg additional rotation. 0 turns pro = isolation. 1 turn anti = basic antispin petal."},
+        {"heading": "Letter types", "keyContent": "6 types: Type 1 (dual-shift, A-V), Type 2 (shift, W-Z+Greek), Type 3 (cross-shift, dash suffix), Type 4 (dash), Type 5 (dual-dash), Type 6 (static)."},
+        {"heading": "LOOPs", "keyContent": "Circular sequences returning to start. 6 transformations: rotated, mirrored, flipped, swapped, inverted, rewound. Can be combined."},
+        {"heading": "Levels", "keyContent": "L1: 0 turns, diamond. L2: whole turns. L3: half turns + float. L4: skewed grid. L5: centric. L6: conjoined grids. L7: interradials (8 orientations). L8: atomics (3D). L9: Rubik's cube."},
+        {"heading": "Reversals", "keyContent": "Hand reversal (= mixed type 1), Prop reversal (= mixed type 2), Full reversal (= hard transition)."},
+        {"heading": "Relationship to other frameworks", "keyContent": "Preserves VTG timing/direction. Alpha=split, beta=together. VTG is ground-referenced; TKA is center-referenced. LOOPs relate to CAPs. Grid parallels 9-Square."}
+      ],
+      "infobox": {
+        "name": "The Kinetic Alphabet",
+        "abbreviation": "TKA",
+        "creators": "Austen Cloud",
+        "year": "c. 2022",
+        "scope": "Two-handed static prop manipulation",
+        "status": "Active development"
+      },
+      "internalLinks": ["Vulcan Tech Gospel", "Continuous Assembly Patterns", "9-Square Theory", "QFT Notation", "Timing and direction", "Prospin", "Antispin", "Float (flow arts)", "Lorq Nichols", "Austen Cloud"],
+      "externalRefs": ["https://www.thekineticalphabet.com/"],
+      "categories": ["Flow arts theory", "Notation systems"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. The article says TKA was introduced 'around 2022' by Austen Cloud. Level system shown here is outdated compared to MEMORY.md (which has revised levels with L6=interradials, L7=conjoined grids). The wiki says L6=conjoined, L7=interradials. The Poi_notation article also has a wrong date (~2018)."
+    },
+    {
+      "title": "Driving style",
+      "filename": "Driving_style.wiki",
+      "definition": "Driving style is a classification system in flow arts that categorizes poi movement into eight fundamental types based on how the prop is 'driven' through space. The taxonomy was developed by Insignia and documented by Lorq Nichols.",
+      "sections": [
+        {"heading": "The eight driving styles", "keyContent": "1. Isolation (0-turn pro). 2. Antispin (petal flowers). 3. Atomics (3D patterns). 4. Pendulums (incomplete circles). 5. Extension (hand+prop travel together). 6. Cateye (oval path). 7. CAP (alternating via hand reversals). 8. Hybrid (different patterns per hand)."},
+        {"heading": "Relationships", "keyContent": "Isolation is zero-turn case of inspin. Antispin and extension are two poles of Transition Theory. CAP bridges between them. Cateye is middle ground. Pendulum uses incomplete rotation. Atomics extend 2D to 3D."},
+        {"heading": "In notation systems", "keyContent": "VTG doesn't use driving style taxonomy directly. TKA encodes underlying mechanics (pro, anti, float). Driving styles are native to Lorq/Insignia's work."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Lorq Nichols", "Isolation (flow arts)", "Antispin", "Extension (flow arts)", "Continuous Assembly Patterns", "Hybrid (flow arts)", "Flower (flow arts)", "Plane (flow arts)", "Transition Theory"],
+      "externalRefs": [
+        "https://sirlorq.wordpress.com/tag/driving-style/",
+        "https://www.youtube.com/watch?v=igZXsBnyhEU"
+      ],
+      "categories": ["Flow arts concepts", "Flow arts theory"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. The 8 driving styles map directly to TKA rotation types and turn counts. Important bridge between VTG/Lorq vocabulary and TKA's encoding."
+    },
+    {
+      "title": "Antispin",
+      "filename": "Antispin.wiki",
+      "definition": "Antispin is a type of prop rotation in flow arts where the prop rotates in the opposite direction to the hand's circular travel. If the hand orbits clockwise, an antispin prop rotates counterclockwise.",
+      "sections": [
+        {"heading": "Description", "keyContent": "Creates petal-shaped flower patterns. Petal count = (2 * turns) + 1. Creates loops in Transition Theory (intersecting paths)."},
+        {"heading": "Terminology", "keyContent": "Antispin (VTG/community), Anti (TKA), Antispin driving style (Lorq). Unlike prospin/inspin, 'antispin' is consistent across all frameworks."},
+        {"heading": "Antispin flowers", "keyContent": "VTG documents 40 patterns in 1:1 set. Lorq documented 64 patterns in 1:3 set (Book of P.H.A.T.). 9 flower families by petal shape."},
+        {"heading": "Role in CAPs", "keyContent": "Antispin petals are key building block. C-CAP alternates extension (arc) and antispin petal (loop)."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Prospin", "Flower (flow arts)", "Continuous Assembly Patterns", "Transition Theory", "Driving style", "Timing and direction", "Vulcan Tech Gospel", "The Kinetic Alphabet", "Lorq Nichols", "Book of P.H.A.T.", "Trigonometric model (poi)"],
+      "externalRefs": [
+        "https://www.drexfactor.com/index.php?q=weirdscience/2010/11/07/poi_heresies_why_3_petal_antispin_flowers_are_not_triquetras",
+        "https://drexfactor.com/weirdscience/2010/09/29/soft_hard_and_mixed_transition_theory",
+        "https://drexfactor.com/weirdscience/2015/11/25/vulcan_tech_gospel_vtg_explained",
+        "https://drexfactor.com/weirdscience/2014/05/06/mathematical_approach_classifying_poi_patterns_introduction_and_basics"
+      ],
+      "categories": ["Flow arts concepts"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. Petal count formula given as (2*turns)+1 for antispin flowers. Trigonometric model: negative d value, petal count = |1-d|."
+    },
+    {
+      "title": "Prospin",
+      "filename": "Prospin.wiki",
+      "definition": "Prospin (also called inspin) is a type of prop rotation in flow arts where the prop rotates in the same direction as the hand's circular travel.",
+      "sections": [
+        {"heading": "Description", "keyContent": "At 0 rotations: isolation. At 1 rotation: two-petal inspin flower. Feels smooth and natural to beginners."},
+        {"heading": "Terminology", "keyContent": "Inspin (VTG/community, most common), Prospin/Pro (TKA, emphasizes 'with' direction), Same-direction rotation (teaching term). 'Inspin' comes from visual effect of spinning inward."},
+        {"heading": "Relationship to isolation", "keyContent": "Isolation is 0-turn prospin. VTG: specific 1:1 inspin pattern. TKA: 0-turn pro. Lorq: separate driving style."},
+        {"heading": "Relationship to extension", "keyContent": "Extensions emerge from specific shift+pro combinations. VTG classifies as 1:1 inspin patterns."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Antispin", "Isolation (flow arts)", "Extension (flow arts)", "Flower (flow arts)", "Timing and direction", "Driving style", "Vulcan Tech Gospel", "The Kinetic Alphabet", "Lorq Nichols", "Trigonometric model (poi)"],
+      "externalRefs": [
+        "https://drexfactor.com/weirdscience/2015/11/25/vulcan_tech_gospel_vtg_explained",
+        "https://sirlorq.wordpress.com/tag/driving-style/",
+        "https://drexfactor.com/weirdscience/2014/05/06/mathematical_approach_classifying_poi_patterns_introduction_and_basics"
+      ],
+      "categories": ["Flow arts concepts"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. Inspin.wiki redirects here. Important: VTG uses 'inspin', TKA uses 'pro'. Both describe same physical motion."
+    },
+    {
+      "title": "Float (flow arts)",
+      "filename": "Float_(flow_arts).wiki",
+      "definition": "Float in flow arts is a type of prop behavior where the prop holds its absolute spatial angle during the hand's travel. The prop does not rotate; it maintains its facing relative to the room rather than relative to the performer's body.",
+      "sections": [
+        {"heading": "Description", "keyContent": "Hand arcs while prop maintains exact facing in space. Center-relative orientation changes even though absolute orientation does not. Only exists during curved hand paths (shifts)."},
+        {"heading": "Terminology", "keyContent": "Float (TKA term, third rotation type). Translation (community term). Slide (ambiguous: can mean float OR dash). Slide disambiguation provided."},
+        {"heading": "In notation systems", "keyContent": "VTG: no dedicated term. TKA: third rotation type alongside pro and anti, no turn count. Lorq: not separately classified. Trig model: d=0."},
+        {"heading": "Float vs isolation", "keyContent": "Isolation (0-turn pro): center-relative orientation stays fixed. Float: absolute spatial angle stays fixed. In isolation prop tracks the arc (pro) with zero extra turns. In float prop ignores the arc entirely."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Prospin", "Antispin", "Isolation (flow arts)", "The Kinetic Alphabet", "Dash (flow arts)", "Timing and direction", "Trigonometric model (poi)"],
+      "externalRefs": [
+        "https://drexfactor.com/weirdscience/2014/05/06/mathematical_approach_classifying_poi_patterns_introduction_and_basics"
+      ],
+      "categories": ["Flow arts concepts"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. Critical distinction between float and isolation. VTG has no dedicated float term - this is a TKA-specific concept. The slide disambiguation is important for domain knowledge."
+    },
+    {
+      "title": "Extension (flow arts)",
+      "filename": "Extension_(flow_arts).wiki",
+      "definition": "Extension in flow arts is a movement pattern where the hand and prop travel together through space without the prop tracing a petal or flower pattern.",
+      "sections": [
+        {"heading": "Description", "keyContent": "Hand traces circular path, prop moves in alignment. Large open circle rather than lobed flower. In Transition Theory, extensions are 'arcs' (parallel, non-intersecting paths)."},
+        {"heading": "In notation systems", "keyContent": "VTG: 1:1 inspin pattern. TKA: emergent from shift+pro combinations. Lorq: extension driving style. Trig model: d=+1 with specific phase."},
+        {"heading": "Role in CAPs", "keyContent": "One of two C-CAP components (the other being antispin petal). Alternates via hand reversal."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Prospin", "Isolation (flow arts)", "Antispin", "Continuous Assembly Patterns", "Transition Theory", "Driving style", "Flower (flow arts)", "Vulcan Tech Gospel", "The Kinetic Alphabet", "Lorq Nichols"],
+      "externalRefs": [
+        "https://drexfactor.com/weirdscience/2010/09/29/soft_hard_and_mixed_transition_theory",
+        "https://drexfactor.com/weirdscience/2015/11/25/vulcan_tech_gospel_vtg_explained",
+        "https://noelyee.com/vtg-11-necessity-of-40-patterns/",
+        "https://drexfactor.com/weirdscience/2013/11/14/drexs_tech_poi_blog_363_cap_vs_extension"
+      ],
+      "categories": ["Flow arts concepts"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. Key arc/loop component for Transition Theory."
+    },
+    {
+      "title": "Isolation (flow arts)",
+      "filename": "Isolation_(flow_arts).wiki",
+      "definition": "Isolation in flow arts is a technique where a prop appears to remain stationary in space while the performer's hand orbits around it.",
+      "sections": [
+        {"heading": "Terminology", "keyContent": "VTG: specific 1:1 inspin pattern. TKA: 0-turn pro. Lorq: own driving style, separate from inspin."},
+        {"heading": "Isolation vs float", "keyContent": "Isolation (0-turn pro): center-relative orientation stays fixed. Float: absolute spatial angle stays fixed. Both create appearance of non-spinning prop but from different mechanical principles."},
+        {"heading": "Isolation vs extension", "keyContent": "Both 1:1 inspin in VTG. Isolation: prop tip stationary. Extension: hand and prop travel together."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Prospin", "Float (flow arts)", "Extension (flow arts)", "Driving style", "Flower (flow arts)", "Vulcan Tech Gospel", "The Kinetic Alphabet", "Lorq Nichols"],
+      "externalRefs": [
+        "https://drexfactor.com/weirdscience/2015/11/25/vulcan_tech_gospel_vtg_explained",
+        "https://noelyee.com/vtg-11-necessity-of-40-patterns/",
+        "https://sirlorq.wordpress.com/tag/driving-style/",
+        "https://drexfactor.com/weirdscience/2014/05/06/mathematical_approach_classifying_poi_patterns_introduction_and_basics"
+      ],
+      "categories": ["Flow arts concepts"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. Critical concept: isolation = 0-turn pro. The float vs isolation distinction is one of the subtlest in flow arts theory."
+    },
+    {
+      "title": "Flower (flow arts)",
+      "filename": "Flower_(flow_arts).wiki",
+      "definition": "Flower in flow arts refers to the petal-shaped pattern traced by a prop's tip over the course of a full rotation cycle.",
+      "sections": [
+        {"heading": "Petal count", "keyContent": "Trigonometric model: petal count = |1-d|. Table: 0 petals = isolation/extension (1:1), 2 petals = inspin flower, 3 petals = antispin (1:3), etc."},
+        {"heading": "In notation systems", "keyContent": "VTG: third element of Trivium, classified by ratio (1:1=40 patterns, 1:3=64 patterns). TKA: flowers emerge from multi-turn pro and anti. Lorq: 9 flower families."},
+        {"heading": "Flowers in teaching", "keyContent": "Progression: extensions/isolations -> simple antispin flowers -> CAPs -> complex multi-petal flowers and hybrids."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Prospin", "Antispin", "Continuous Assembly Patterns", "Book of P.H.A.T.", "Shape Matrix", "Driving style", "Vulcan Tech Gospel", "The Kinetic Alphabet", "Lorq Nichols", "Nick Woolsey", "PlayPoi", "Trigonometric model (poi)"],
+      "externalRefs": [
+        "https://drexfactor.com/weirdscience/2014/05/06/mathematical_approach_classifying_poi_patterns_introduction_and_basics",
+        "https://drexfactor.com/weirdscience/2015/11/25/vulcan_tech_gospel_vtg_explained",
+        "https://noelyee.com/vtg-11-necessity-of-40-patterns/",
+        "http://spinscience.xyz/2014/01/18/lorqtech-41-9-flower-families-with-trails/",
+        "https://sirlorq.wordpress.com/tech-tiles/",
+        "http://spinscience.xyz/2016/03/05/shape-matrix-went-poi-chat-viral/",
+        "https://playpoi.com/learn/poi-flowers/"
+      ],
+      "categories": ["Flow arts concepts", "Poi technique"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. VTG ratio convention vs mathematical petal-count formula use different conventions (noted in article)."
+    },
+    {
+      "title": "Reversal (flow arts)",
+      "filename": "Reversal_(flow_arts).wiki",
+      "definition": "Reversal in flow arts is a direction change during spinning. Reversals are the fundamental mechanism that enables transitions between patterns.",
+      "sections": [
+        {"heading": "In Transition Theory", "keyContent": "Hand reversal only = mixed type 1 (C-CAP mechanism). Prop reversal only = mixed type 2. Both reverse = hard transition. Neither = soft transition."},
+        {"heading": "In TKA", "keyContent": "Three reversal types with colored dots: Hand reversal = mixed type 1. Prop reversal = mixed type 2. Full reversal = hard transition."},
+        {"heading": "Role in CAPs", "keyContent": "Hand reversal is the defining gesture of C-CAP. Every half circle, hand reverses while prop maintains spin."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Transition Theory", "Continuous Assembly Patterns", "Timing and direction", "The Kinetic Alphabet", "Noel Yee", "Jordan Campbell"],
+      "externalRefs": [
+        "https://drexfactor.com/weirdscience/2010/09/29/soft_hard_and_mixed_transition_theory"
+      ],
+      "categories": ["Flow arts concepts"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. Direct mapping between TKA reversal types and Transition Theory transition types."
+    },
+    {
+      "title": "QFT Notation",
+      "filename": "QFT_Notation.wiki",
+      "definition": "QFT Notation (Quantized Field Theory Notation) is a written shorthand system for recording poi movements, developed by Charlie Cushing.",
+      "sections": [
+        {"heading": "System", "keyContent": "8 discrete positions numbered 1-8 clockwise. Tracks: poi departure/arrival positions, direction, hand positions, hand path radius."},
+        {"heading": "Full formula", "keyContent": "a,b(h(+/-x+/-y+/-z)h'){Class}a',b'"},
+        {"heading": "Comparison with TKA", "keyContent": "Both encode precise prop movement. QFT produces formulas; TKA produces speakable words."}
+      ],
+      "infobox": {
+        "name": "QFT Notation",
+        "creators": "Charlie Cushing",
+        "scope": "Written shorthand for poi movement"
+      },
+      "internalLinks": ["Charlie Cushing", "9-Square Theory", "The Kinetic Alphabet"],
+      "externalRefs": [
+        "https://drexfactor.com/weirdscience/2011/05/18/beginners_guide_poi_qft_notation"
+      ],
+      "categories": ["Flow arts theory", "Notation systems"],
+      "relevanceToVTG": "medium",
+      "notes": "AI generated. Companion notation to 9-Square Theory. Key difference from TKA: formulas vs speakable words."
+    },
+    {
+      "title": "Charlie Cushing",
+      "filename": "Charlie_Cushing.wiki",
+      "definition": "Charlie Cushing (also known as charlicopter) is an American flow arts theorist and prop designer. He created 9-Square Theory, QFT Notation, and the 8-Step CAP. He is the founder of LanternSmith and Managing Director of Prop Logic LLC.",
+      "sections": [
+        {"heading": "9-Square Theory", "keyContent": "Spatial grid framework. 10-part video series, ~1.5 hours."},
+        {"heading": "QFT Notation", "keyContent": "Written shorthand. 8 discrete positions, full formula."},
+        {"heading": "8-Step CAP", "keyContent": "'Two steps forward, one step back.' Pattern A=3/4 circle, Pattern B=1/2 opposite direction."},
+        {"heading": "Oxbow Meteor", "keyContent": "Developed/popularized puppyhammer. Manufactured by flowtoys."}
+      ],
+      "infobox": {},
+      "internalLinks": ["9-Square Theory", "QFT Notation", "Continuous Assembly Patterns"],
+      "externalRefs": [
+        "https://www.spinmorepoi.com/charlie-9-square-theory-1/",
+        "https://drexfactor.com/weirdscience/2011/05/18/beginners_guide_poi_qft_notation",
+        "https://www.homeofpoi.com/us/community/forums/topics/934076/8-step-CAPs",
+        "https://drexfactor.com/index.php?q=weirdscience%2F2016%2F09%2F27%2Ftutorial_double_staff_8_step_cap_recipe",
+        "https://flowtoys.com/popn-flow-oxbow-full-vision"
+      ],
+      "categories": ["Flow arts practitioners"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. Key VTG-ecosystem contributor through 9-Square Theory and 8-Step CAP."
+    },
+    {
+      "title": "Ben Drexler",
+      "filename": "Ben_Drexler.wiki",
+      "definition": "Ben Drexler (known as DrexFactor) is an American flow arts writer, archivist, and theorist. He authored over 500 tech poi blog entries documenting and synthesizing the theoretical work of the flow arts community during the golden age of poi theory development (2008-2016).",
+      "sections": [
+        {"heading": "Role", "keyContent": "Primary contribution was documentation and synthesis. Documented Transition Theory, math of CAPs, 9-Square Theory, QFT Notation, VTG explained."},
+        {"heading": "Original contributions", "keyContent": "Mathematical pattern classification (trigonometric parametric equations). Graph theory applied to poi paths. Hybrid classification (monorhythm vs polyrhythm). Historical docs: 'The Eras of Poi', 'Tech Spinning in the Flow Arts'."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Vulcan Tech Gospel", "Continuous Assembly Patterns", "Transition Theory", "Trigonometric model (poi)", "Noel Yee", "Charlie Cushing", "Lorq Nichols", "Alien Jon", "Zaltymbunk", "QFT Notation", "9-Square Theory"],
+      "externalRefs": [
+        "https://drexfactor.com/weirdscience/2016/05/15/tech_spinning_flow_arts",
+        "https://drexfactor.com/weirdscience/2010/09/29/soft_hard_and_mixed_transition_theory",
+        "https://drexfactor.com/reference/math_caps",
+        "https://drexfactor.com/weirdscience/2011/05/18/beginners_guide_poi_qft_notation",
+        "https://drexfactor.com/weirdscience/2015/11/25/vulcan_tech_gospel_vtg_explained",
+        "https://drexfactor.com/weirdscience/2014/05/06/mathematical_approach_classifying_poi_patterns_introduction_and_basics",
+        "https://drexfactor.com/weirdscience/2012/12/16/drexs_tech_poi_blog_308_graph_theory_and_poi_paths",
+        "https://drexfactor.com/weirdscience/2013/01/27/timing_and_direction_based_approach_classifying_hybrids",
+        "https://drexfactor.com/weirdscience/2013/11/07/eras_poi",
+        "https://drexfactor.com/"
+      ],
+      "categories": ["Flow arts practitioners"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. The community's primary archivist. Without Drex's documentation, much of the VTG ecosystem's theoretical work would be harder to access."
+    },
+    {
+      "title": "Alien Jon",
+      "filename": "Alien_Jon.wiki",
+      "definition": "Alien Jon is an American poi performer, instructor, and early technical innovator. He developed pedagogical methods for teaching poi mechanics and co-created the Encyclo-poi-dia instructional DVD series with Zan Moore.",
+      "sections": [
+        {"heading": "Teaching philosophy", "keyContent": "Hallway visualization for clean planes. Building blocks framework: loops as universal building blocks for flowers, snakes, body tracing. 3D space emphasis. Body integration."},
+        {"heading": "Arcs and loops", "keyContent": "Articulated the arc/loop distinction later formalized in Transition Theory. Loops: poi and hand paths intersect. Arcs: parallel non-intersecting paths."},
+        {"heading": "Relationship to CAP theory", "keyContent": "Teaching focused on constituent mechanics of what would become CAP theory. CAP label coined by Damien (Zaltymbunk), not Alien Jon."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Zan Moore", "Encyclo-poi-dia", "Continuous Assembly Patterns", "Transition Theory", "Body tracing", "Noel Yee", "Home of Poi"],
+      "externalRefs": [
+        "https://flamebuoyant.com/product/encylco-poi-dia-volume-2/",
+        "https://www.youtube.com/watch?v=Ran5bl6dF78",
+        "https://www.youtube.com/watch?v=hCwe89eZd7U",
+        "https://www.youtube.com/watch?v=3ADVOYOgdcg",
+        "https://drexfactor.com/weirdscience/2010/09/29/soft_hard_and_mixed_transition_theory"
+      ],
+      "categories": ["Flow arts practitioners"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. Originated the arc/loop concepts that became foundational to Transition Theory. Created VTG app animations."
+    },
+    {
+      "title": "Nick Woolsey",
+      "filename": "Nick_Woolsey.wiki",
+      "definition": "Nick Woolsey is an American flow arts educator and the founder of PlayPoi, one of the most widely used online platforms for learning poi spinning.",
+      "sections": [
+        {"heading": "PlayPoi", "keyContent": "Founded fall 2004. 50 free beginner lessons. 18M+ YouTube views. 'Most popular destination' for learning poi."},
+        {"heading": "Teaching methodology", "keyContent": "Play-first philosophy, lead-up exercises, body mechanics over arm-driven spinning."},
+        {"heading": "Poi-Fu", "keyContent": "Body mechanics from tai chi/martial arts. Posture, pelvic floor, footwork, spine alignment."},
+        {"heading": "Poitruvian Arms", "keyContent": "Arm-training exercises without poi."}
+      ],
+      "infobox": {},
+      "internalLinks": ["PlayPoi", "Poi-Fu", "Poi learning progression", "Flower (flow arts)"],
+      "externalRefs": [
+        "https://playpoi.com/about-playpoi/",
+        "https://playpoi.com/",
+        "https://www.youtube.com/@playpoi",
+        "https://playpoi.com/learn/poi-fu/",
+        "https://playpoi.com/advanced-poi/",
+        "https://playpoi.com/leviathan/"
+      ],
+      "categories": ["Flow arts practitioners"],
+      "relevanceToVTG": "medium",
+      "notes": "AI generated. Popularized 'Capped Antispin Patterns' expansion of CAP acronym. Key figure in making VTG-derived concepts accessible to intermediate spinners."
+    },
+    {
+      "title": "Cassie McKenney",
+      "filename": "Cassie_McKenney.wiki",
+      "definition": "Cassie McKenney is an American flow arts performer who adapted the Vulcan Tech Gospel for hoops as 'Hoop VTG 1:1' with Maiki Nope.",
+      "sections": [],
+      "infobox": {},
+      "internalLinks": ["Vulcan Tech Gospel", "Hoops"],
+      "externalRefs": ["https://noelyee.com/hoop-vtg-11-with-cassie-mckenney/"],
+      "categories": ["Flow arts practitioners"],
+      "relevanceToVTG": "medium",
+      "notes": "AI generated. Short stub. Vulcan Lofts resident. Quote from Vulcan_Lofts article: 'Through living at the Vulcan and the people that I met there... I sort of built my whole life around circus.'"
+    },
+    {
+      "title": "Michael Caden Pike (MCP)",
+      "filename": "MCP_(flow_arts).wiki",
+      "definition": "Michael Caden Pike, known as MCP, is a Scottish staff spinner, software developer, and instructional content creator. Widely credited with popularizing contact staff. Developed the VTG - Flow Arts Resource app with Noel Yee.",
+      "sections": [
+        {"heading": "VTG App", "keyContent": "VTG - Flow Arts Resource: animations for VTG patterns 1:1 and 1:3 ratios, quiz modes, multiple prop types (poi, staff, club, hoop, fan, buugeng, triads)."},
+        {"heading": "Simulator apps", "keyContent": "Poi LAB, Double Staff LAB, Hoop Twinz LAB, Arm Control / Tutting Lab."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Vulcan Tech Gospel", "Noel Yee", "Contact staff", "Staff (flow arts)"],
+      "externalRefs": [
+        "https://firestaff.net/",
+        "https://tutorials.firestaff.net/",
+        "https://noelyee.com/vulcan-tech-gospel-android-app/",
+        "https://play.google.com/store/apps/details?id=net.firestaff.mcp.VTGv3&hl=en"
+      ],
+      "categories": ["Flow arts practitioners"],
+      "relevanceToVTG": "medium",
+      "notes": "AI generated. Built the current VTG v3 app. Poi LAB and Double Staff LAB are separate simulation apps."
+    },
+    {
+      "title": "Zaltymbunk",
+      "filename": "Zaltymbunk.wiki",
+      "definition": "Zaltymbunk (also known as French_Saltimbanque or Damien) is a poi theorist known for coining the term 'Continuous Assembly Pattern' (CAP) on the Home of Poi forums around 2008-2010.",
+      "sections": [
+        {"heading": "Main content", "keyContent": "Coined CAP term. Developed trigonometric model for poi using parametric equations (h, p, d parameters). Extended to three-prop interactions."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Continuous Assembly Patterns", "Trigonometric model (poi)", "Home of Poi", "Ben Drexler"],
+      "externalRefs": [
+        "https://www.homeofpoi.com/en/community/forums/topics/891193/What-are-CAP-s",
+        "https://www.reddit.com/r/poi/comments/6rt1jv/a_mathematical_model_for_2d_patterns/"
+      ],
+      "categories": ["Flow arts practitioners"],
+      "relevanceToVTG": "medium",
+      "notes": "AI generated. Originated CAP concept and mathematical framework. Real name: Damien."
+    },
+    {
+      "title": "Austen Cloud",
+      "filename": "Austen_Cloud.wiki",
+      "definition": "Austen Cloud is an American flow arts practitioner and notation developer. He created The Kinetic Alphabet (TKA), a positional notation system for two-handed prop manipulation.",
+      "sections": [
+        {"heading": "Background", "keyContent": "Interested in cataloguing positional possibilities of two-handed spinning. Mathematical approach: treating it as a combinatorial problem."},
+        {"heading": "TKA", "keyContent": "300-400 physical reference books distributed. ~200 sequence card packs. Reached practitioners in Japan, Taiwan, Australia, Europe. TKA Scribe web app in development."}
+      ],
+      "infobox": {},
+      "internalLinks": ["The Kinetic Alphabet", "Poi notation"],
+      "externalRefs": [],
+      "categories": ["Flow arts practitioners"],
+      "relevanceToVTG": "high",
+      "notes": "No AI-generated marker. Creator of TKA. The article correctly notes TKA applies to static props (double staff, fans, clubs), not tethered props (poi)."
+    },
+    {
+      "title": "Trigonometric model (poi)",
+      "filename": "Trigonometric_model_(poi).wiki",
+      "definition": "The trigonometric model for poi describes all poi patterns using parametric equations. Developed by Zaltymbunk (Damien) and documented extensively by DrexFactor.",
+      "sections": [
+        {"heading": "Core equations", "keyContent": "x = h*sin(t) + p*sin(d*t), y = h*cos(t) + p*cos(d*t). h=hand radius, p=poi length, d=relative frequency, t=time."},
+        {"heading": "Key relationships", "keyContent": "Positive d = inspin. Negative d = antispin. d=+1 = isolation or extension. d=0 = float. Petal count = |1-d|."},
+        {"heading": "Third-order motions", "keyContent": "Third rotation center added: q and f parameters."},
+        {"heading": "CAP notation", "keyContent": "Compact: Theta1 Theta2; Rho1 Rho2; d. Assembly with '&' operator."},
+        {"heading": "Graph theory", "keyContent": "Drexler applied graph theory: crosspoints as vertices, path segments as edges."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Continuous Assembly Patterns", "Flower (flow arts)", "Prospin", "Antispin", "Ben Drexler", "Zaltymbunk"],
+      "externalRefs": [
+        "https://drexfactor.com/weirdscience/2014/05/06/mathematical_approach_classifying_poi_patterns_introduction_and_basics",
+        "https://drexfactor.com/weirdscience/2014/05/07/mathematical_approach_classifying_poi_patterns_modeling_flowers_and_third_or",
+        "https://drexfactor.com/reference/math_caps",
+        "https://drexfactor.com/weirdscience/2012/12/16/drexs_tech_poi_blog_308_graph_theory_and_poi_paths",
+        "https://drexfactor.com/reference/poi_spinning_and_geometry"
+      ],
+      "categories": ["Flow arts theory"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. Generative model: untried parameter values predict undiscovered patterns. The model is the mathematical foundation underlying VTG's pattern classifications."
+    },
+    {
+      "title": "Hybrid (flow arts)",
+      "filename": "Hybrid_(flow_arts).wiki",
+      "definition": "Hybrid in flow arts refers to a pattern where the two hands perform different movements simultaneously. The asymmetry is spatial: at any given moment, the left hand is doing one thing and the right hand is doing another.",
+      "sections": [
+        {"heading": "CAPs vs hybrids", "keyContent": "Hybrids: spatial asymmetry (parallel). CAPs: temporal asymmetry (serial). Both combine unlike movements but in different dimensions."},
+        {"heading": "Classification", "keyContent": "Drexler's approach: monorhythm (same speed, different patterns) vs polyrhythm (different speeds)."},
+        {"heading": "In notation systems", "keyContent": "VTG: classified by SS/TS/SO/TO. TKA: encodes hybrids natively (different rotation types per hand). Lorq: one of 8 driving styles; Shape Matrix catalogs hybrids."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Continuous Assembly Patterns", "Shape Matrix", "Driving style", "Timing and direction", "Flower (flow arts)", "Ben Drexler"],
+      "externalRefs": [
+        "https://www.homeofpoi.com/en/community/forums/topics/915407/1/Drex-s-hybrid-theory",
+        "https://drexfactor.com/weirdscience/2011/11/28/drexs_tech_poi_blog_214_composites_vs_caps",
+        "https://drexfactor.com/weirdscience/2013/01/27/timing_and_direction_based_approach_classifying_hybrids",
+        "http://spinscience.xyz/2016/03/05/shape-matrix-went-poi-chat-viral/"
+      ],
+      "categories": ["Flow arts concepts"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. Key insight: TKA encodes hybrids natively since each letter specifies both hands."
+    },
+    {
+      "title": "Same time",
+      "filename": "Same_time.wiki",
+      "definition": "Same time (also called together time or tog) is a timing and direction state where two props pass through the same point at the same moment. Both props are in phase.",
+      "sections": [
+        {"heading": "Main content", "keyContent": "VTG: appears in TS and TO categories. Reference point is the downbeat (south). TKA: corresponds to beta positions (hands at same grid point)."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Split time", "Timing and direction", "Vulcan Tech Gospel", "The Kinetic Alphabet"],
+      "externalRefs": [
+        "https://drexfactor.com/weirdscience/2015/11/25/vulcan_tech_gospel_vtg_explained",
+        "https://flowartsinstitute.com/tutsday-timing-direction/"
+      ],
+      "categories": ["Flow arts concepts"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. Short article. Key mapping: same time = beta positions in TKA."
+    },
+    {
+      "title": "Split time",
+      "filename": "Split_time.wiki",
+      "definition": "Split time (also called split) is a timing and direction state where two props are 180 degrees out of phase.",
+      "sections": [
+        {"heading": "Main content", "keyContent": "VTG: appears in SS and SO categories. TKA: corresponds to alpha positions (hands at diametrically opposite grid points)."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Same time", "Timing and direction", "Vulcan Tech Gospel", "The Kinetic Alphabet"],
+      "externalRefs": [
+        "https://drexfactor.com/weirdscience/2015/11/25/vulcan_tech_gospel_vtg_explained",
+        "https://flowartsinstitute.com/tutsday-timing-direction/"
+      ],
+      "categories": ["Flow arts concepts"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. Short article. Key mapping: split time = alpha positions in TKA."
+    },
+    {
+      "title": "Same direction",
+      "filename": "Same_direction.wiki",
+      "definition": "Same direction is one of the four fundamental timing and direction relationships. Both props rotate clockwise or both counterclockwise.",
+      "sections": [
+        {"heading": "Main content", "keyContent": "Combined with timing yields SS and TS. Note: 'TS' stands for 'Together-Split' in VTG original terminology where 'together' = timing, 'split' = direction. This can be confusing."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Timing and direction", "Opposite direction", "Split time", "Same time"],
+      "externalRefs": [],
+      "categories": ["Flow arts concepts"],
+      "relevanceToVTG": "medium",
+      "notes": "AI generated. Flags potential VTG naming confusion: TS = Together-Split (timing first, direction second). The table in this article appears to have SS and TS reversed in their timing labels. ACCURACY CONCERN: The article says SS = Same-time Same and TS = Split-time Same. But the main VTG article says SS = Split-Same and TS = Together-Same. This article's table is INCORRECT."
+    },
+    {
+      "title": "Opposite direction",
+      "filename": "Opposite_direction.wiki",
+      "definition": "Opposite direction is one of the four fundamental timing and direction relationships. One prop clockwise, other counterclockwise.",
+      "sections": [
+        {"heading": "Main content", "keyContent": "Combined with timing yields SO and TO."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Timing and direction", "Same direction", "Split time", "Same time"],
+      "externalRefs": [],
+      "categories": ["Flow arts concepts"],
+      "relevanceToVTG": "medium",
+      "notes": "AI generated. Same table format issue as Same_direction article but content appears correct (SO = Same-time Opposite, TO = Split-time Opposite). WAIT - checking: main VTG article says SO = Split-Opposite, TO = Together-Opposite. This article says SO = Same-time Opposite. ACCURACY CONCERN: same inversion bug."
+    },
+    {
+      "title": "Quarter time",
+      "filename": "Quarter_time.wiki",
+      "definition": "Quarter time is a timing and direction relationship where two props are 90 degrees out of phase, halfway between same time and split time.",
+      "sections": [
+        {"heading": "In notation systems", "keyContent": "VTG: not a primary category. TKA: can emerge depending on variation selection. QFT: described through explicit phase notation."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Timing and direction", "Same time", "Split time"],
+      "externalRefs": [],
+      "categories": ["Flow arts concepts"],
+      "relevanceToVTG": "low",
+      "notes": "AI generated. Not part of VTG's primary framework."
+    },
+    {
+      "title": "Plane (flow arts)",
+      "filename": "Plane_(flow_arts).wiki",
+      "definition": "Plane in flow arts refers to the flat surface on which a prop traces its circular path.",
+      "sections": [
+        {"heading": "The three primary planes", "keyContent": "Wall plane (front, vertical, Y+X), Wheel plane (sagittal, Y+Z), Floor plane (horizontal, X+Z)."},
+        {"heading": "Intermediate planes", "keyContent": "Angled planes between primaries. Plane-bending transitions between planes."},
+        {"heading": "In notation systems", "keyContent": "VTG: plane is additional variable on top of 4-category system. TKA: 2D through L7, 3D at L8-L9. Lorq: 3 Planes system native. 9-Square: operates within single plane."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Timing and direction", "9-Square Theory", "324 Patterns", "Continuous Assembly Patterns", "Flower (flow arts)", "Lorq Nichols", "Ben Drexler"],
+      "externalRefs": [
+        "http://spinscience.xyz/3planes/",
+        "http://spinscience.xyz/324-patterns/",
+        "https://drexfactor.com/weirdscience/2010/04/22/video_tech_blog_83_bth_vs_cap_9_square_transitions"
+      ],
+      "categories": ["Flow arts concepts"],
+      "relevanceToVTG": "medium",
+      "notes": "AI generated. VTG core framework operates within a single plane; plane is an overlay parameter."
+    },
+    {
+      "title": "Vulcan Lofts",
+      "filename": "Vulcan_Lofts.wiki",
+      "definition": "The Vulcan Lofts was a historic live/work space in Oakland, California, housing over 50 art studios. Birthplace of much of modern flow arts theory during the late 2000s and early 2010s.",
+      "sections": [
+        {"heading": "Flow arts theory", "keyContent": "Primary development site for VTG, Transition Theory. Key people: Noel Yee, Jordan Campbell, David Cantor, Brian Thompson, Cassie McKenney, Zack Buer, Lorq Nichols (visitor)."},
+        {"heading": "Daily culture", "keyContent": "Daily spinning culture, collaborative theory development. Noel Yee's 'Loft Show' filmed from loft bed."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Vulcan Tech Gospel", "Noel Yee", "Jordan Campbell", "David Cantor", "Brian Thompson", "Cassie McKenney", "Zack Buer", "Lorq Nichols", "Transition Theory", "Book of P.H.A.T."],
+      "externalRefs": [
+        "https://drexfactor.com/weirdscience/2016/05/15/tech_spinning_flow_arts",
+        "https://noelyee.com/about-me/",
+        "https://noelyee.com/transition-theory-with-noel-yee/",
+        "https://sirlorq.wordpress.com/about-2/"
+      ],
+      "categories": ["Flow arts organizations"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. The physical place where VTG was born."
+    },
+    {
+      "title": "Vulcan Crew",
+      "filename": "Vulcan_Crew.wiki",
+      "definition": "The Vulcan Crew was a group of flow arts practitioners based at Vulcan Lofts instrumental in developing VTG.",
+      "sections": [
+        {"heading": "Core theorists", "keyContent": "Noel Yee, Jordan Campbell, David Cantor, Brian Thompson."},
+        {"heading": "Residents and collaborators", "keyContent": "Cassie McKenney, Maiki Nope, Zack Buer."},
+        {"heading": "App and media contributors", "keyContent": "Kevin (NCK) built first VTG app, Alien Jon created animations, Forest Sterns created logo, MCP built v3 app."},
+        {"heading": "Visitors", "keyContent": "Lorq Nichols (Spring 2010)."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Vulcan Lofts", "Vulcan Tech Gospel", "Noel Yee", "Jordan Campbell", "David Cantor", "Brian Thompson", "Cassie McKenney", "Zack Buer", "Alien Jon", "Forest Sterns", "Lorq Nichols", "Michael Caden Pike"],
+      "externalRefs": [
+        "https://noelyee.com/transition-theory-with-noel-yee/",
+        "https://noelyee.com/hoop-vtg-11-with-cassie-mckenney/",
+        "https://play.google.com/store/apps/details?id=net.firestaff.mcp.VTGv3&hl=en",
+        "https://sirlorq.wordpress.com/about-2/"
+      ],
+      "categories": ["Flow arts organizations", "Vulcan Lofts"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. Full roster of VTG contributors. Key Yee quote: 'Who wrote it? I would say we've all written it over the years of spinning.'"
+    },
+    {
+      "title": "Book of P.H.A.T.",
+      "filename": "Book_of_P.H.A.T..wiki",
+      "definition": "The Book of P.H.A.T. is a reference document for flow arts pattern classification created by Lorq Nichols. P.H.A.T. stands for 'Patterns, Hybrids, And Transitions.'",
+      "sections": [
+        {"heading": "Part 1: Manual to Understand", "keyContent": "Theory covering position/rotation, hand and prop positioning, static spin, driving styles, timing and direction. Grid system: circle with plus sign, four reference points."},
+        {"heading": "Part 2: 64 Patterns", "keyContent": "VTG 1:3 ratio set (four-petal antispin flowers). 8x8 grid, color-coded pink (left) and cyan (right)."},
+        {"heading": "The 1:3 ratio", "keyContent": "Prop completes 3 rotations per 1 hand rotation. Extends VTG catalog from 1:1 (40 patterns by Noel Yee) to 1:3 (64 patterns)."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Lorq Nichols", "Vulcan Tech Gospel", "Tech Tiles", "Antispin", "Flower (flow arts)", "Driving style", "Brian Thompson", "David Cantor", "Noel Yee", "324 Patterns"],
+      "externalRefs": ["https://sirlorq.wordpress.com/tech-tiles/"],
+      "categories": ["Flow arts theory", "Notation systems"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. Extends VTG's pattern catalog. The 'T' in P.H.A.T. specifically references transitions."
+    },
+    {
+      "title": "Tech Tiles",
+      "filename": "Tech_Tiles.wiki",
+      "definition": "Tech Tiles is a visual notation system for poi patterns created by Lorq Nichols.",
+      "sections": [
+        {"heading": "3D Pattern Player", "keyContent": "Interactive Unity-based tool. Controls for beginning position, plane, rotation direction, speed for left/right hand/prop."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Lorq Nichols", "Book of P.H.A.T.", "Vulcan Tech Gospel"],
+      "externalRefs": [
+        "https://sirlorq.wordpress.com/tech-tiles/",
+        "https://sirlorq.wordpress.com/tech-tiles-3d-pattern-player/"
+      ],
+      "categories": ["Flow arts theory", "Notation systems"],
+      "relevanceToVTG": "medium",
+      "notes": "AI generated. Visual notation system used in Book of P.H.A.T."
+    },
+    {
+      "title": "Shape Matrix",
+      "filename": "Shape_Matrix.wiki",
+      "definition": "Shape Matrix is a visual tool created by Lorq Nichols that cross-references left-hand and right-hand flower patterns in a multiplication-table format.",
+      "sections": [
+        {"heading": "History", "keyContent": "Created 2012, reworked 2014, viral on Poi Chat 2016 (353 shares, 462 likes)."},
+        {"heading": "Design", "keyContent": "8x8 grid. Rows = left hand flower shape, columns = right hand, cells = resulting hybrid pattern."}
+      ],
+      "infobox": {
+        "name": "Shape Matrix",
+        "creators": "Lorq Nichols",
+        "year": "2012 (reworked 2014)",
+        "scope": "Visual catalog of two-hand flower combinations"
+      },
+      "internalLinks": ["Lorq Nichols", "Hybrid (flow arts)", "Flower (flow arts)", "Book of P.H.A.T.", "Driving style"],
+      "externalRefs": ["http://spinscience.xyz/2016/03/05/shape-matrix-went-poi-chat-viral/"],
+      "categories": ["Flow arts theory", "Notation systems"],
+      "relevanceToVTG": "medium",
+      "notes": "AI generated. Multiplication table for hybrid patterns."
+    },
+    {
+      "title": "324 Patterns",
+      "filename": "324_Patterns.wiki",
+      "definition": "324 Patterns is a classification framework for poi movement created by Lorq Nichols: 27 arm paths x 12 shapes x 3 planes = 324 distinct patterns.",
+      "sections": [
+        {"heading": "12 shapes", "keyContent": "4 minimal-beat shapes (extension, isolation, 2VA, 2HA) x 3 planes = 12."},
+        {"heading": "27 arm paths", "keyContent": "9 fundamental arm positions on 3x3 grid, combined for 27 arm path transitions."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Lorq Nichols", "Plane (flow arts)", "Extension (flow arts)", "Isolation (flow arts)", "Driving style"],
+      "externalRefs": [
+        "http://spinscience.xyz/324-patterns/",
+        "https://sirlorq.wordpress.com/144ultimatepattern/"
+      ],
+      "categories": ["Flow arts theory", "Notation systems"],
+      "relevanceToVTG": "medium",
+      "notes": "AI generated. 4 minimal-beat shapes are the irreducible building blocks of poi movement."
+    },
+    {
+      "title": "9 Flower Families",
+      "filename": "9_Flower_Families.wiki",
+      "definition": "The 9 Flower Families is a classification system by Lorq Nichols that organizes all flower patterns into nine categories.",
+      "sections": [
+        {"heading": "The nine families", "keyContent": "Determined by rotation type (pro/anti), turn count, and hand path shape. Each family has characteristic visual pattern."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Flower (flow arts)", "Lorq Nichols", "Driving style", "Trigonometric model (poi)"],
+      "externalRefs": [],
+      "categories": ["Flow arts theory"],
+      "relevanceToVTG": "medium",
+      "notes": "AI generated. Visual/intuitive counterpart to trig model's mathematical descriptions."
+    },
+    {
+      "title": "144 Atomic Hybrids",
+      "filename": "144_Atomic_Hybrids.wiki",
+      "definition": "The 144 Atomic Hybrids is a classification system by Lorq Nichols cataloging 144 distinct hybrid poi patterns.",
+      "sections": [
+        {"heading": "Structure", "keyContent": "12 single-poi behaviors (4 shapes x 3 planes) x 12 = 144 combinations. Quarter-pattern principle: knowing 1/4 of pattern reveals the whole."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Lorq Nichols", "Hybrid (flow arts)", "Atomic (flow arts)", "Shape Matrix"],
+      "externalRefs": ["https://sirlorq.wordpress.com/144ultimatepattern/"],
+      "categories": ["Flow arts theory"],
+      "relevanceToVTG": "low",
+      "notes": "AI generated. Extension of Lorq's VTG-based pattern cataloging."
+    },
+    {
+      "title": "Flow Arts Institute",
+      "filename": "Flow_Arts_Institute.wiki",
+      "definition": "The Flow Arts Institute (FAI) is an educational organization for flow arts instruction. Co-founded by Noel Yee.",
+      "sections": [
+        {"heading": "Activities", "keyContent": "Publishes tutorials on timing/direction, VTG concepts. TuTsday tutorial series. Sells VTG Poster."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Noel Yee", "Vulcan Tech Gospel"],
+      "externalRefs": [
+        "https://flowartsinstitute.com/",
+        "https://flowartsinstitute.com/tutsday-timing-direction/",
+        "https://flowartsinstitute.com/fai-swag-vtg-poster/"
+      ],
+      "categories": ["Flow arts organizations"],
+      "relevanceToVTG": "medium",
+      "notes": "AI generated. The educational arm for VTG dissemination."
+    },
+    {
+      "title": "Symmetry (flow arts)",
+      "filename": "Symmetry_(flow_arts).wiki",
+      "definition": "Symmetry in flow arts describes the spatial and temporal relationships between the two sides of a dual-prop pattern.",
+      "sections": [
+        {"heading": "Types", "keyContent": "Mirror symmetry (left mirrors right), Rotational symmetry (180deg rotation invariant), Temporal symmetry (first half relates to second half), Asymmetry (hybrids)."},
+        {"heading": "In notation systems", "keyContent": "VTG: same/opposite direction is a symmetry distinction. TKA: LOOP types define symmetry transformations. Shape Matrix: rows/columns represent symmetric and asymmetric combinations."}
+      ],
+      "infobox": {},
+      "internalLinks": ["LOOP", "Hybrid (flow arts)", "Timing and direction", "Vulcan Tech Gospel", "The Kinetic Alphabet", "Shape Matrix", "Continuous Assembly Patterns"],
+      "externalRefs": [],
+      "categories": ["Flow arts concepts", "Flow arts theory"],
+      "relevanceToVTG": "medium",
+      "notes": "AI generated. TKA's LOOP transformations are explicitly symmetry operations."
+    },
+    {
+      "title": "LOOP",
+      "filename": "LOOP.wiki",
+      "definition": "In TKA, a LOOP is a circular sequence where the ending position matches the starting position, allowing the sequence to repeat continuously.",
+      "sections": [
+        {"heading": "Transformations", "keyContent": "Rotated (180deg rotation), Mirrored (left-right), Swapped (hands swap roles), Inverted (prop rotations reverse), Rewound (reversed and appended). Can be combined."},
+        {"heading": "Construction", "keyContent": "Generate base word, verify positions compatible with transformation, apply transformation for second half, concatenate."}
+      ],
+      "infobox": {},
+      "internalLinks": ["The Kinetic Alphabet", "Continuous Assembly Patterns", "Timing and direction"],
+      "externalRefs": [],
+      "categories": ["Flow arts theory", "Notation systems"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. LOOPs use algebraic transformations to guarantee closure; CAPs rely on empirical discovery or mathematical prediction."
+    },
+    {
+      "title": "Compound (TKA)",
+      "filename": "Compound_(TKA).wiki",
+      "definition": "In TKA, a compound is a sequence of two or more TKA letters performed in succession.",
+      "sections": [
+        {"heading": "Constraints", "keyContent": "Ending position of letter N must match starting position of letter N+1. Bridge letters inserted when direct transition not possible."}
+      ],
+      "infobox": {},
+      "internalLinks": ["The Kinetic Alphabet", "LOOP", "Transition (flow arts)"],
+      "externalRefs": [],
+      "categories": ["Flow arts theory"],
+      "relevanceToVTG": "medium",
+      "notes": "AI generated. Bridge letter concept is key to TKA sequence generation."
+    },
+    {
+      "title": "Position (TKA)",
+      "filename": "Position_(TKA).wiki",
+      "definition": "In TKA, a position describes the spatial configuration of both hands on the grid at a specific moment.",
+      "sections": [
+        {"heading": "Position names", "keyContent": "Alpha, Beta, Gamma, Zeta, Eta, Tau, Terra. Each has numbered variants (alpha1, beta5, gamma11, etc.)."},
+        {"heading": "Role in sequences", "keyContent": "Start/end states for each letter. Starting position must match previous letter's ending position for valid sequence."}
+      ],
+      "infobox": {},
+      "internalLinks": ["The Kinetic Alphabet", "Grid (TKA)", "Alpha position", "Beta position"],
+      "externalRefs": [],
+      "categories": ["Flow arts theory"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. Positions encode timing/direction info: alpha=split, beta=together."
+    },
+    {
+      "title": "Grid (TKA)",
+      "filename": "Grid_(TKA).wiki",
+      "definition": "In TKA, the grid is the spatial framework defining where hands can be positioned.",
+      "sections": [
+        {"heading": "Grid modes", "keyContent": "Diamond (cardinal: N,S,E,W + diagonals), Box (square pattern), Skewed (alternative geometric)."},
+        {"heading": "Grid points", "keyContent": "Cardinal (N,E,S,W) and Diagonal/non-radial (NE,SE,SW,NW). Center = performer's center."}
+      ],
+      "infobox": {},
+      "internalLinks": ["The Kinetic Alphabet", "Hand path", "9-Square Theory"],
+      "externalRefs": [],
+      "categories": ["Flow arts theory"],
+      "relevanceToVTG": "medium",
+      "notes": "AI generated. Parallels 9-Square Theory's spatial quantization."
+    },
+    {
+      "title": "Alpha position",
+      "filename": "Alpha_position.wiki",
+      "definition": "In TKA, alpha is a position corresponding to hand configurations seen in split time patterns.",
+      "sections": [
+        {"heading": "Relationship to VTG timing", "keyContent": "Split time = 180deg out of phase. Alpha positions encode the spatial equivalent."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Position (TKA)", "Beta position", "Split time", "The Kinetic Alphabet"],
+      "externalRefs": [],
+      "categories": ["Flow arts theory"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. Critical VTG-TKA bridge: alpha = split time."
+    },
+    {
+      "title": "Beta position",
+      "filename": "Beta_position.wiki",
+      "definition": "In TKA, beta is a position corresponding to hand configurations seen in same time patterns.",
+      "sections": [
+        {"heading": "Relationship to VTG timing", "keyContent": "Same time (together) = in phase. Beta positions encode the spatial equivalent."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Position (TKA)", "Alpha position", "Same time", "The Kinetic Alphabet"],
+      "externalRefs": [],
+      "categories": ["Flow arts theory"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. Critical VTG-TKA bridge: beta = same/together time."
+    },
+    {
+      "title": "Hand path",
+      "filename": "Hand_path.wiki",
+      "definition": "A hand path in flow arts theory is the trajectory that the performer's hand follows during a spinning pattern.",
+      "sections": [
+        {"heading": "Types", "keyContent": "Circular (most common), Linear (TKA: dash), Curved/arc (TKA: shift), Stationary (TKA: static)."},
+        {"heading": "In notation systems", "keyContent": "TKA: shift/dash/static/hash. 9-Square: transitions between grid points. Trig model: h parameter. VTG: implicit in pattern type."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Shift (flow arts)", "Dash (flow arts)", "Static (flow arts)", "The Kinetic Alphabet", "9-Square Theory", "Trigonometric model (poi)", "Vulcan Tech Gospel"],
+      "externalRefs": [],
+      "categories": ["Flow arts concepts", "Flow arts theory"],
+      "relevanceToVTG": "medium",
+      "notes": "AI generated. VTG treats hand paths implicitly; TKA makes them explicit."
+    },
+    {
+      "title": "Shift (flow arts)",
+      "filename": "Shift_(flow_arts).wiki",
+      "definition": "In flow arts theory, a shift refers to a hand movement that follows a curved (circular) path around the body's center.",
+      "sections": [
+        {"heading": "In TKA", "keyContent": "Type 1 (dual-shift, A-F), Type 2 (shift, G-L), Type 3 (cross-shift, M-R). Shift arc between two grid points."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Dash (flow arts)", "The Kinetic Alphabet"],
+      "externalRefs": [],
+      "categories": ["Flow arts concepts", "Flow arts theory"],
+      "relevanceToVTG": "medium",
+      "notes": "AI generated. TKA letter type ranges appear inaccurate (main TKA article says A-V for Type 1, W-Z+Greek for Type 2)."
+    },
+    {
+      "title": "Dash (flow arts)",
+      "filename": "Dash_(flow_arts).wiki",
+      "definition": "Dash in flow arts notation refers to a straight-line hand movement from one grid position to the diametrically opposite position (180 degrees across).",
+      "sections": [
+        {"heading": "In TKA", "keyContent": "Type 4 (dash): one dashes, one static. Type 5 (dual-dash): both dash. Type 3 (cross-shift): one shifts, one dashes. Pro/anti/float distinctions don't apply to dashes."}
+      ],
+      "infobox": {},
+      "internalLinks": ["The Kinetic Alphabet", "Float (flow arts)", "Timing and direction"],
+      "externalRefs": [],
+      "categories": ["Flow arts concepts"],
+      "relevanceToVTG": "medium",
+      "notes": "AI generated. Important: pro/anti/float only apply to curved paths (shifts), not straight (dashes)."
+    },
+    {
+      "title": "Static (flow arts)",
+      "filename": "Static_(flow_arts).wiki",
+      "definition": "In flow arts theory, static refers to a hand that remains in a fixed position while the prop rotates around it.",
+      "sections": [
+        {"heading": "In TKA", "keyContent": "Type 2 (one shifts, one static). Type 6 (both static, Greek letters)."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Shift (flow arts)", "Dash (flow arts)", "The Kinetic Alphabet", "Isolation (flow arts)"],
+      "externalRefs": [],
+      "categories": ["Flow arts concepts", "Flow arts theory"],
+      "relevanceToVTG": "low",
+      "notes": "AI generated. Short article."
+    },
+    {
+      "title": "Turn count",
+      "filename": "Turn_count.wiki",
+      "definition": "Turn count refers to the number of complete rotations a prop makes relative to the hand during one beat of movement.",
+      "sections": [
+        {"heading": "Description", "keyContent": "Table: 0 turns pro = isolation, 0 turns anti = N/A. 1 turn pro = simple circle. 1 turn anti = 2-petal flower. 2 turns pro = 1-petal flower (loop). 2 turns anti = 3-petal (triquetra). 3 turns anti = 4-petal (quad)."},
+        {"heading": "In notation systems", "keyContent": "TKA: displayed on glyph. L1=0 turns. L2=whole turns. L3=half turns and float. Trig model: |d| parameter. VTG: implicit in pattern type."},
+        {"heading": "Half turns", "keyContent": "0.5, 1.5, 2.5 produce asymmetric patterns."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Flower (flow arts)", "Prospin", "Antispin", "The Kinetic Alphabet"],
+      "externalRefs": [],
+      "categories": ["Flow arts concepts", "Flow arts theory"],
+      "relevanceToVTG": "high",
+      "notes": "AI generated. ACCURACY CONCERN: article says 0 turns anti is 'N/A (not physically meaningful)'. In TKA, 0-turn anti IS meaningful - it reverses center-relative orientation (prop facing 'in' becomes 'out'). The antispin article itself says '0-turn anti reverses center-relative orientation on each beat.' This article's table contradicts that."
+    },
+    {
+      "title": "Vertical timing",
+      "filename": "Vertical_timing.wiki",
+      "definition": "Vertical timing refers to the relative vertical position of two props at the point where they pass through the same horizontal line.",
+      "sections": [
+        {"heading": "In VTG", "keyContent": "Together: both at top/bottom simultaneously. Split: one at top, other at bottom."},
+        {"heading": "In TKA", "keyContent": "Represented by VTG glyph on pictographs. Position system encodes spatial relationship."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Timing and direction", "Same time", "Split time", "Vulcan Tech Gospel"],
+      "externalRefs": [],
+      "categories": ["Flow arts concepts"],
+      "relevanceToVTG": "medium",
+      "notes": "AI generated. Short article. Clarifies the physical meaning of timing categories."
+    },
+    {
+      "title": "Transition (flow arts)",
+      "filename": "Transition_(flow_arts).wiki",
+      "definition": "A transition in flow arts is any movement that takes a performer from one pattern or technique to another.",
+      "sections": [
+        {"heading": "By mechanism", "keyContent": "Soft, Hard, Mixed (from Transition Theory)."},
+        {"heading": "By what changes", "keyContent": "Timing/direction, plane, pattern type, body orientation, handedness."},
+        {"heading": "Reversals", "keyContent": "Specific category: hand direction reversal, prop spin reversal, or both."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Transition Theory", "Reversal (flow arts)", "Timing and direction", "Continuous Assembly Patterns", "The Kinetic Alphabet", "Vulcan Tech Gospel"],
+      "externalRefs": [],
+      "categories": ["Flow arts concepts"],
+      "relevanceToVTG": "medium",
+      "notes": "AI generated. General transition article linking to Transition Theory."
+    },
+    {
+      "title": "Poi notation",
+      "filename": "Poi_notation.wiki",
+      "definition": "Poi notation refers to any system for recording and communicating poi patterns in written or visual form.",
+      "sections": [
+        {"heading": "Major notation systems", "keyContent": "Table: VTG (Noel Yee, 2009), Transition Theory (Yee+Campbell, 2010), QFT (Cushing+Drex, ~2013), CAPs (Woolsey+Alien Jon, 2013), TKA (~2018), Trig model (Zaltymbunk+Drex, 2017)."},
+        {"heading": "Challenges", "keyContent": "3D in 2D notation. Continuous vs discrete. Multiple simultaneous parameters. No single standard."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Vulcan Tech Gospel", "The Kinetic Alphabet", "Continuous Assembly Patterns", "QFT Notation", "Tech Tiles", "Shape Matrix"],
+      "externalRefs": [],
+      "categories": ["Flow arts theory", "Notation systems"],
+      "relevanceToVTG": "medium",
+      "notes": "AI generated. ACCURACY CONCERNS: TKA date listed as ~2018 (should be ~2022 per Austen Cloud article). CAPs credited to Woolsey+Alien Jon (should be Zaltymbunk/Damien as originator). Dates for several systems may be approximate."
+    },
+    {
+      "title": "Cateye",
+      "filename": "Cateye.wiki",
+      "definition": "Cateye is a flow arts movement pattern where the prop tip traces an elongated, oval-shaped path, mechanically between extension and antispin.",
+      "sections": [
+        {"heading": "Main content", "keyContent": "Trig model: h=0.5, p=1, d=-1. One of 8 driving styles."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Extension (flow arts)", "Antispin", "Driving style", "Flower (flow arts)"],
+      "externalRefs": [
+        "https://drexfactor.com/weirdscience/2014/05/06/mathematical_approach_classifying_poi_patterns_introduction_and_basics",
+        "https://sirlorq.wordpress.com/tag/driving-style/"
+      ],
+      "categories": ["Flow arts concepts"],
+      "relevanceToVTG": "low",
+      "notes": "AI generated. Short article."
+    },
+    {
+      "title": "Atomic (flow arts)",
+      "filename": "Atomic_(flow_arts).wiki",
+      "definition": "Atomic refers to a movement pattern where the two hands operate independently in different spatial domains.",
+      "sections": [
+        {"heading": "As driving style", "keyContent": "One of eight categories. Distinguished from isolation and extension by different hand path radii."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Driving style", "Hybrid (flow arts)", "Lorq Nichols"],
+      "externalRefs": [],
+      "categories": ["Flow arts concepts"],
+      "relevanceToVTG": "low",
+      "notes": "AI generated. Short article. Relates to TKA Level 8."
+    },
+    {
+      "title": "Double staff",
+      "filename": "Double_staff.wiki",
+      "definition": "Double staff (also double staves or short staffs) is a flow arts practice involving simultaneous manipulation of two staff props.",
+      "sections": [
+        {"heading": "Main content", "keyContent": "Most poi frameworks apply directly: VTG, CAPs, TKA. 8-Step CAP recipes documented for double staff by Charlie Cushing."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Poi", "Timing and direction", "Continuous Assembly Patterns"],
+      "externalRefs": [
+        "https://drexfactor.com/index.php?q=weirdscience%2F2016%2F09%2F27%2Ftutorial_double_staff_8_step_cap_recipe"
+      ],
+      "categories": ["Props"],
+      "relevanceToVTG": "medium",
+      "notes": "AI generated. Key prop type for TKA. VTG V.1 originally focused on clubs, but double staff is the canonical TKA prop."
+    },
+    {
+      "title": "Zan Moore",
+      "filename": "Zan_Moore.wiki",
+      "definition": "Zan Moore is an American flow arts performer who co-created the Encyclo-poi-dia instructional DVD series with Alien Jon.",
+      "sections": [],
+      "infobox": {},
+      "internalLinks": ["Alien Jon", "Poi"],
+      "externalRefs": ["https://flamebuoyant.com/product/encylco-poi-dia-volume-2/"],
+      "categories": ["Flow arts practitioners"],
+      "relevanceToVTG": "low",
+      "notes": "AI generated. Very short stub."
+    },
+    {
+      "title": "Plane bending",
+      "filename": "Plane_bending.wiki",
+      "definition": "Plane bending is a technique where the prop's spinning plane transitions smoothly between orientations rather than maintaining a single fixed plane.",
+      "sections": [
+        {"heading": "8 Basic Bends", "keyContent": "By Lorq Nichols. 4 timing/direction states x 2 bending directions = 8 bends. Same-direction bending: shared plane. Opposite-direction bending: atomic patterns."},
+        {"heading": "Relationship to 3D spinning", "keyContent": "Gateway to 3D spinning. Trig model can describe plane-bent paths with added spatial dimension."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Lorq Nichols", "Plane (flow arts)", "Toroid", "Atomic (flow arts)"],
+      "externalRefs": [
+        "https://www.youtube.com/watch?v=RbH5WcKnfAk",
+        "https://www.youtube.com/watch?v=Ivldqe0E2Vg"
+      ],
+      "categories": ["Flow arts concepts"],
+      "relevanceToVTG": "medium",
+      "notes": "AI generated. 8 basic bends = VTG's 4 timing/direction states applied to bending."
+    },
+    {
+      "title": "Toroid",
+      "filename": "Toroid.wiki",
+      "definition": "A toroid (or torus) describes the three-dimensional shape traced by a poi head when the spinner's hand moves in a circle while the poi simultaneously traces its own circle.",
+      "sections": [
+        {"heading": "Relationship to flowers", "keyContent": "Flowers are 2D projections of toroidal paths."},
+        {"heading": "Lorq's toroid framework", "keyContent": "Bending vs anti-bending. Introverted (isobend) vs extroverted (anti-bend). Petal counts: 4-petal box, 4-petal diamond, 6, 8 petals. Grace beats for transitions. VTG.2 equivalents mapping."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Lorq Nichols", "Plane bending", "Trigonometric model (poi)", "Flower (flow arts)", "Plane (flow arts)", "Vulcan Tech Gospel", "Ben Drexler"],
+      "externalRefs": [
+        "https://www.youtube.com/watch?v=heR7dEWLc38",
+        "https://www.youtube.com/watch?v=NXo-koq8jSs",
+        "https://www.youtube.com/watch?v=6MUueKQNF2E",
+        "https://www.youtube.com/watch?v=huGdXNYtdtY",
+        "https://www.youtube.com/watch?v=24F6CFNiHpk",
+        "https://www.youtube.com/watch?v=PpAimYROhfM"
+      ],
+      "categories": ["Flow arts concepts", "Flow arts theory"],
+      "relevanceToVTG": "medium",
+      "notes": "AI generated. Flowers are 2D projections of 3D toroidal paths. Lorq maps toroids to VTG.2 categories. Cushing's alternative flower terminology 'did not catch on' but became useful for naming toroids."
+    },
+    {
+      "title": "Prop Logic",
+      "filename": "Prop_Logic.wiki",
+      "definition": "Prop Logic is a flow arts educational project by Charlie Cushing.",
+      "sections": [
+        {"heading": "Approach", "keyContent": "Integrates 9-Square Theory, QFT Notation, 8-Step CAP recipe. Emphasis on understanding structure over learning tricks in isolation."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Charlie Cushing", "9-Square Theory", "QFT Notation"],
+      "externalRefs": ["https://www.instagram.com/proplogic/"],
+      "categories": ["Flow arts organizations"],
+      "relevanceToVTG": "low",
+      "notes": "AI generated. Cushing's educational brand."
+    },
+    {
+      "title": "Triads",
+      "filename": "Triads.wiki",
+      "definition": "Triads are a flow arts prop consisting of three arms radiating from a central hub.",
+      "sections": [],
+      "infobox": {},
+      "internalLinks": ["Flow arts", "Buugeng"],
+      "externalRefs": ["https://play.google.com/store/apps/details?id=net.firestaff.mcp.VTGv3&hl=en"],
+      "categories": ["Props"],
+      "relevanceToVTG": "low",
+      "notes": "AI generated. Supported in VTG app."
+    },
+    {
+      "title": "Weave",
+      "filename": "Weave.wiki",
+      "definition": "The weave is one of the most fundamental poi patterns involving alternating crossover motions.",
+      "sections": [
+        {"heading": "Variants", "keyContent": "2-beat, 3-beat (standard), 5-beat, 7-beat, reverse, behind-the-back."},
+        {"heading": "Learning progression", "keyContent": "Forward spin -> split-time -> butterfly -> weave -> reverse weave -> BTB weave -> higher-beat."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Poi", "Butterfly (flow arts)", "Timing and direction", "Plane (flow arts)"],
+      "externalRefs": [
+        "https://www.youtube.com/watch?v=cNYW7dCQAik",
+        "https://www.youtube.com/watch?v=n3b1vRI_tzw"
+      ],
+      "categories": ["Flow arts concepts", "Poi technique"],
+      "relevanceToVTG": "low",
+      "notes": "AI generated. Common poi technique, not directly VTG theory."
+    },
+    {
+      "title": "Crosser",
+      "filename": "Crosser.wiki",
+      "definition": "A crosser is a poi technique where the arms cross over each other during the spinning pattern.",
+      "sections": [
+        {"heading": "Extensions", "keyContent": "Alien Jon teaches crosser extensions from split-time same-direction crosser position."}
+      ],
+      "infobox": {},
+      "internalLinks": ["Weave", "Behind the back", "Transition (flow arts)", "Poi", "Alien Jon"],
+      "externalRefs": [
+        "https://www.youtube.com/watch?v=TLOJcT6wdSI",
+        "https://www.youtube.com/watch?v=C_Mbmq3jFNg"
+      ],
+      "categories": ["Poi technique"],
+      "relevanceToVTG": "low",
+      "notes": "AI generated. Technique article."
+    },
+    {
+      "title": "Lockout",
+      "filename": "Lockout.wiki",
+      "definition": "A lockout is a poi technique where the arm is fully extended with locked elbow, hand path radius becomes zero.",
+      "sections": [],
+      "infobox": {},
+      "internalLinks": ["Poi", "Extension (flow arts)", "Stall"],
+      "externalRefs": [],
+      "categories": ["Poi technique"],
+      "relevanceToVTG": "low",
+      "notes": "AI generated. Limiting case of extension where hand circle collapses to a point."
+    },
+    {
+      "title": "Musicality",
+      "filename": "Musicality.wiki",
+      "definition": "Musicality in flow arts refers to synchronizing prop movement with music.",
+      "sections": [],
+      "infobox": {},
+      "internalLinks": ["Flow arts", "Flow state"],
+      "externalRefs": [],
+      "categories": ["Flow arts concepts"],
+      "relevanceToVTG": "low",
+      "notes": "AI generated. Not directly VTG theory."
+    },
+    {
+      "title": "Butterfly (flow arts)",
+      "filename": "Butterfly_(flow_arts).wiki",
+      "definition": "The butterfly is a poi pattern where both poi spin on the same side of the body in together timing.",
+      "sections": [],
+      "infobox": {},
+      "internalLinks": ["Buzzsaw", "Poi", "Same time", "Timing and direction"],
+      "externalRefs": [],
+      "categories": ["Flow arts concepts", "Poi technique"],
+      "relevanceToVTG": "low",
+      "notes": "AI generated. Short stub."
+    }
+  ],
+  "accuracyConcerns": [
+    {
+      "article": "Same_direction.wiki",
+      "issue": "The table maps SS = Same-time Same and TS = Split-time Same, but the canonical VTG article and all other sources define SS = Split-Same and TS = Together-Same. The abbreviation letters are: first letter = Timing (S=Split, T=Together), second letter = Direction (S=Same, O=Opposite). This article has the timing labels reversed.",
+      "severity": "high"
+    },
+    {
+      "article": "Opposite_direction.wiki",
+      "issue": "Same table inversion as Same_direction.wiki. SO shown as Same-time Opposite (should be Split-Opposite), TO as Split-time Opposite (should be Together-Opposite).",
+      "severity": "high"
+    },
+    {
+      "article": "Turn_count.wiki",
+      "issue": "Claims 0 turns antispin is 'N/A (not physically meaningful)'. This contradicts the Antispin article which states 0-turn anti reverses center-relative orientation. In TKA, 0-turn anti is meaningful and well-defined.",
+      "severity": "medium"
+    },
+    {
+      "article": "Poi_notation.wiki",
+      "issue": "TKA date listed as ~2018, should be ~2022 per Austen Cloud article. CAPs credited to 'Woolsey, Alien Jon' as creators (2013), but the term was coined by Zaltymbunk (Damien) 2008-2010.",
+      "severity": "medium"
+    },
+    {
+      "article": "The_Kinetic_Alphabet.wiki",
+      "issue": "Level system shown (L6=conjoined, L7=interradials) is outdated compared to MEMORY.md's revised system (L6=interradials, L7=conjoined). Also, the article's 'Flipped' LOOP transformation is listed in the main TKA article but not in the LOOP article.",
+      "severity": "medium"
+    },
+    {
+      "article": "Shift_(flow_arts).wiki",
+      "issue": "Letter type ranges (A-F for Type 1, G-L for Type 2, M-R for Type 3) contradict the main TKA article (A-V for Type 1, W-Z+Greek for Type 2).",
+      "severity": "medium"
+    }
+  ],
+  "aiGeneratedArticles": [
+    "Timing_and_direction.wiki",
+    "Transition_Theory.wiki",
+    "Noel_Yee.wiki",
+    "David_Cantor.wiki",
+    "Jordan_Campbell.wiki",
+    "Brian_Thompson.wiki",
+    "Lorq_Nichols.wiki",
+    "Driving_style.wiki",
+    "Antispin.wiki",
+    "Prospin.wiki",
+    "Extension_(flow_arts).wiki",
+    "Isolation_(flow_arts).wiki",
+    "Float_(flow_arts).wiki",
+    "Flower_(flow_arts).wiki",
+    "Quarter_time.wiki",
+    "Same_time.wiki",
+    "Split_time.wiki",
+    "Same_direction.wiki",
+    "Opposite_direction.wiki",
+    "Reversal_(flow_arts).wiki",
+    "9-Square_Theory.wiki",
+    "Shape_Matrix.wiki",
+    "The_Kinetic_Alphabet.wiki",
+    "QFT_Notation.wiki",
+    "Charlie_Cushing.wiki",
+    "Ben_Drexler.wiki",
+    "Alien_Jon.wiki",
+    "Nick_Woolsey.wiki",
+    "Cassie_McKenney.wiki",
+    "MCP_(flow_arts).wiki",
+    "Zaltymbunk.wiki",
+    "Zan_Moore.wiki",
+    "Vulcan_Lofts.wiki",
+    "Vulcan_Crew.wiki",
+    "Book_of_P.H.A.T..wiki",
+    "Tech_Tiles.wiki",
+    "Hybrid_(flow_arts).wiki",
+    "Plane_(flow_arts).wiki",
+    "Shift_(flow_arts).wiki",
+    "Dash_(flow_arts).wiki",
+    "Static_(flow_arts).wiki",
+    "Position_(TKA).wiki",
+    "Grid_(TKA).wiki",
+    "Alpha_position.wiki",
+    "Beta_position.wiki",
+    "Hand_path.wiki",
+    "Turn_count.wiki",
+    "LOOP.wiki",
+    "Compound_(TKA).wiki",
+    "Trigonometric_model_(poi).wiki",
+    "324_Patterns.wiki",
+    "9_Flower_Families.wiki",
+    "144_Atomic_Hybrids.wiki",
+    "Vertical_timing.wiki",
+    "Poi_notation.wiki",
+    "Flow_Arts_Institute.wiki",
+    "Symmetry_(flow_arts).wiki",
+    "Cateye.wiki",
+    "Weave.wiki",
+    "Butterfly_(flow_arts).wiki",
+    "Crosser.wiki",
+    "Lockout.wiki",
+    "Atomic_(flow_arts).wiki",
+    "Double_staff.wiki",
+    "Transition_(flow_arts).wiki",
+    "Triads.wiki",
+    "Musicality.wiki",
+    "Plane_bending.wiki",
+    "Toroid.wiki",
+    "Prop_Logic.wiki",
+    "Invincible_body_concept.wiki"
+  ],
+  "nonAiArticles": [
+    "Vulcan_Tech_Gospel.wiki",
+    "Continuous_Assembly_Patterns.wiki",
+    "Austen_Cloud.wiki"
+  ],
+  "keyVTGtoTKAMappings": {
+    "timing": {
+      "together/same_time": "beta positions (hands at same grid point)",
+      "split": "alpha positions (hands at opposite grid points)"
+    },
+    "direction": {
+      "same": "both props pro or both anti",
+      "opposite": "one pro, one anti (or mixed)"
+    },
+    "rotationTypes": {
+      "inspin (VTG)": "pro (TKA)",
+      "antispin (VTG)": "anti (TKA)",
+      "no VTG equivalent": "float (TKA)"
+    },
+    "transitionTheoryToReversals": {
+      "soft transition": "no reversal",
+      "hard transition": "full reversal (both hand and prop)",
+      "mixed type 1": "hand reversal (hand reverses, prop continues)",
+      "mixed type 2": "prop reversal (prop reverses, hand continues)"
+    },
+    "referenceSystem": {
+      "VTG": "ground-referenced (downbeat = south)",
+      "TKA": "center-referenced (orientations relative to performer center)"
+    }
+  }
+}
