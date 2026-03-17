@@ -5,20 +5,13 @@
  */
 
 import type { ConstraintType, ConstraintMode } from "./constraint-types.js";
+import type { MotionData } from "../../core/types/sequence-engine-types.js";
+
+export type { MotionData };
 
 // =============================================================================
-// MOTION DATA TYPES (shared with sequence builder)
+// PICTOGRAPH DATA TYPES (shared with sequence builder)
 // =============================================================================
-
-export interface MotionData {
-  color: string;
-  startLocation: string;
-  endLocation: string;
-  motionType: string;
-  rotationDirection: string;
-  startOrientation: string;
-  endOrientation: string;
-}
 
 export interface PictographData {
   letter: string;
