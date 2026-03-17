@@ -11,6 +11,7 @@
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import ModalHeader from "$lib/shared/foundation/ui/modal/ModalHeader.svelte";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
+  import { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
   import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
   import { loopDetector as circularLoopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
   import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
@@ -91,6 +92,26 @@
   });
 
   const hasDetectedLoop = $derived(activeComponents.size > 0);
+
+  // LOOP-aligned column count: align the grid to match the LOOP's slice structure
+  // so that each row visually represents one slice of the circular pattern.
+  const loopAlignedColumnCount = $derived.by(() => {
+    // Gate on circularity, not loopType — a 6-step loop is circular
+    // but may not have a recognized loopType (compound detection needs 8+ steps)
+    if (!loopDetectionResult?.isCircular) return null;
+
+    const stepCount = currentSequence?.steps?.length ?? 0;
+    if (stepCount < 4) return null;
+
+    // Try halving first. If that gives too many columns (>5), quarter instead.
+    const halved = stepCount / 2;
+    const columns = halved <= 5 ? halved : Math.ceil(stepCount / 4);
+
+    if (!Number.isInteger(halved) && halved <= 5) return null;
+    if (columns < 2) return null;
+
+    return columns;
+  });
 
   // Difficulty level badge (mirrors ChoreoCard exactly)
   const difficultyCalculator = new SequenceDifficultyCalculator();
@@ -232,6 +253,7 @@
           {activeMode}
           {isTimelineMode}
           onDurationChange={handleDurationChange}
+          manualColumnCount={loopAlignedColumnCount}
         />
       </div>
     </div>

@@ -163,10 +163,14 @@
     min-height: calc(var(--min-touch-target, 44px) * 2 + 8px);
   }
 
-  /* Compact mode: reduced gap and min-height (single row layout) */
+  /* Compact mode: single horizontal row layout for mobile
+     Invert button + turns controls + prop icon all in one line */
   .prop-pair.compact .card-content {
-    gap: 4px;
-    min-height: 38px; /* Single row of compact buttons */
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: auto;
   }
 
   /* ============================================================================

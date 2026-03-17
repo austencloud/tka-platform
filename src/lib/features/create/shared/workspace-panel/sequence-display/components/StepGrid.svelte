@@ -102,7 +102,7 @@
 
   // Computed grid layout - must use $derived.by for reactive recalculation
   const gridLayout = $derived.by(() => {
-    return calculateGridLayout(
+    const layout = calculateGridLayout(
       steps.length,
       containerWidth,
       containerHeight,
@@ -116,13 +116,16 @@
         manualColumnCount,
       }
     );
+    return layout;
   });
 
   // Timeline mode calculations - use 8 columns only in stacked layout on wide displays
   // Side-by-side layout always uses 4 columns (workspace is narrower)
+  // Manual column count (from LOOP alignment) overrides the automatic calculation
   const WIDE_THRESHOLD = 650;
   const timelineRowCapacity = $derived(
-    !isSideBySideLayout && containerWidth >= WIDE_THRESHOLD ? 8 : 4
+    manualColumnCount ??
+      (!isSideBySideLayout && containerWidth >= WIDE_THRESHOLD ? 8 : 4)
   );
   const timelineRows = $derived.by(() => {
     if (!isTimelineMode) return [];

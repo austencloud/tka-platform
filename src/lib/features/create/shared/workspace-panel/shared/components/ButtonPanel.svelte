@@ -7,7 +7,7 @@
   Layout:
   - LEFT ZONE: Undo + Clear (corrective actions)
   - CENTER ZONE: Share Hub
-  - RIGHT ZONE: Tools + Prop + Save (constructive actions)
+  - RIGHT ZONE: Tools + Save (constructive actions)
 
   Architecture:
   - Uses CreateModuleContext for state access
@@ -26,10 +26,7 @@
   import SequenceActionsButton from "./buttons/SequenceActionsButton.svelte";
   import ShareHubButton from "./buttons/ShareHubButton.svelte";
   import GeneratorHelpButton from "./buttons/GeneratorHelpButton.svelte";
-  import PropIndicatorButton from "./buttons/PropIndicatorButton.svelte";
   import SaveToLibraryButton from "./buttons/SaveToLibraryButton.svelte";
-    // TEMPORARY: Animation style toggle for A/B testing - delete after choosing preferred style
-  import { practiceAnimationStyle } from "../../../state/practice-animation-style.svelte";
 
   // Get context - ButtonPanel is ONLY used inside CreateModule, so context is always available
   const { CreateModuleState, panelState } = getCreateModuleContext();
@@ -137,7 +134,7 @@
       {/key}
     </div>
 
-    <!-- RIGHT ZONE: Help + Tools + Prop + Save (constructive actions) -->
+    <!-- RIGHT ZONE: Help + Tools + Save (constructive actions) -->
     <div class="right-zone">
       {#if showGeneratorHelp}
         <div
@@ -153,9 +150,6 @@
           <SequenceActionsButton onclick={onSequenceActionsClick} />
         </div>
       {/if}
-      <div transition:presenceTransition>
-        <PropIndicatorButton />
-      </div>
       {#if canSaveToLibrary && onSaveToLibrary}
         <div transition:presenceTransition>
           <SaveToLibraryButton
@@ -221,7 +215,7 @@
     pointer-events: auto;
   }
 
-  /* RIGHT ZONE: Tools + Prop + Save at right edge */
+  /* RIGHT ZONE: Tools + Save at right edge */
   .right-zone {
     display: flex;
     align-items: center;
@@ -356,9 +350,6 @@
       gap: 6px;
     }
   }
-
-  /* TEMPORARY: Animation style toggle for A/B testing - delete after choosing preferred style */
-
 
 
 </style>

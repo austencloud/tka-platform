@@ -240,11 +240,13 @@
     border-top: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  /* Compact mode: tighter prop type row */
+  /* Compact mode: inline with turns row, no divider */
   .prop-type-row.compact {
     gap: 4px;
-    margin-top: 2px;
-    padding-top: 4px;
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+    width: auto;
     justify-content: center;
   }
 
