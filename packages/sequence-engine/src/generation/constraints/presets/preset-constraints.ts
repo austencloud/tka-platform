@@ -6,7 +6,7 @@
  */
 
 import type { ConstraintSet } from "../types.js";
-import { ContinuityConstraint } from "../implementations/continuity-constraint.js";
+import { ContinuityConstraint } from "../style/continuity-constraint.js";
 import {
   MotionTypeConstraint,
   allProMotions,
@@ -14,18 +14,18 @@ import {
   noDashMotions,
   preferProMotions,
   preferAntiMotions,
-} from "../implementations/motion-type-constraint.js";
+} from "../style/motion-type-constraint.js";
 import {
   allClockwise,
   allCounterClockwise,
-} from "../implementations/rotation-direction-constraint.js";
-import { ReversalConstraint } from "../implementations/reversal-constraint.js";
-import { DashPreferenceConstraint, maximizeDashes } from "../implementations/dash-preference-constraint.js";
+} from "../style/rotation-direction-constraint.js";
+import { ReversalConstraint } from "../style/reversal-constraint.js";
+import { DashPreferenceConstraint, maximizeDashes } from "../style/dash-preference-constraint.js";
 import {
   HandPathReversalConstraint,
   maximizeHandPathContinuity,
   enforceHandPathContinuity,
-} from "../implementations/hand-path-constraint.js";
+} from "../style/hand-path-constraint.js";
 
 /**
  * Available preset names.

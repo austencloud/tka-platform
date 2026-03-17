@@ -16,7 +16,7 @@ import type {
 import {
   countReversals,
   calculateContinuityPercentage,
-} from "../search/search-state.js";
+} from "../../builder/search-state.js";
 
 /**
  * Generate a constraint report for a completed search state.
