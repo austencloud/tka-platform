@@ -87,8 +87,14 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
     const engineLoopType = this.mapLoopTypeToEngine(options.loopType);
     const sliceSize = this.mapSliceSize(options.sliceSize);
 
+    // The UI's length is the TOTAL output length. The seed is a fraction:
+    // halved = length / 2, quartered = length / 4. The LOOP executor
+    // extends the seed back to the full length.
+    const sliceMultiplier = sliceSize === SliceSize.QUARTERED ? 4 : 2;
+    const seedLength = Math.max(1, Math.floor(options.length / sliceMultiplier));
+
     const result = builder.build({
-      length: options.length,
+      length: seedLength,
       gridMode: String(options.gridMode),
       level,
       constraintOptions: this.mapPropContinuity(options.propContinuity),
