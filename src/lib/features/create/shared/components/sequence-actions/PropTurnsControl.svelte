@@ -108,8 +108,12 @@
     width: 100%;
   }
 
+  /* Compact: single horizontal row — invert sits left of turns */
   .turns-controls.compact {
-    gap: 4px;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    width: auto;
   }
 
   /* ============================================================================
@@ -212,12 +216,19 @@
     transition: all var(--duration-fast) ease;
   }
 
+  /* Compact: icon-only square button, positioned before turns row */
   .invert-btn.compact {
-    height: 36px;
-    padding: 0 16px;
+    order: -1;
+    width: 38px;
+    height: 38px;
+    padding: 0;
     border-radius: 8px;
-    font-size: 0.85rem;
-    gap: 6px;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+  }
+
+  .turns-controls.compact .invert-label {
+    display: none;
   }
 
   .invert-btn:active:not(:disabled) {
