@@ -9,7 +9,7 @@
 import type {
   PositionGroup,
   LetterPositionInfo,
-} from "../../domain/models/SequenceEngineTypes.js";
+} from "../../core/types/sequence-engine-types.js";
 
 /**
  * Interface for letter transition graph operations.

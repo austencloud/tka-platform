@@ -14,7 +14,7 @@ import type {
   LetterPositionInfo,
   LetterMappingsJson,
   LetterMappingData,
-} from "../../domain/models/SequenceEngineTypes.js";
+} from "../../core/types/sequence-engine-types.js";
 
 /**
  * Transition graph for letter sequence building.

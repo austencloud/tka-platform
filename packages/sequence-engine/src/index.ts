@@ -9,7 +9,7 @@
  */
 
 // Domain types
-export * from "./domain/models/SequenceEngineTypes.js";
+export * from "./core/types/sequence-engine-types.js";
 
 // Service contracts
 export type { ITransitionGraph } from "./services/contracts/ITransitionGraph.js";

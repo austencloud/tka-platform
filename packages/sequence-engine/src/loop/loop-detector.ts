@@ -8,7 +8,7 @@
  * require the complex dependency chain of the main app's LOOPDetector.
  */
 
-import type { SequenceStep } from "../domain/models/SequenceEngineTypes.js";
+import type { SequenceStep } from "../core/types/sequence-engine-types.js";
 
 /**
  * LOOP component primitives that can be detected

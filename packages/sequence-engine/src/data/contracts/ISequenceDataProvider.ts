@@ -5,7 +5,7 @@
  * Implementations differ between Node.js (MCP) and browser contexts.
  */
 
-import type { LetterMappingsJson } from "../../domain/models/SequenceEngineTypes.js";
+import type { LetterMappingsJson } from "../../core/types/sequence-engine-types.js";
 
 /**
  * Interface for loading sequence-related data.
