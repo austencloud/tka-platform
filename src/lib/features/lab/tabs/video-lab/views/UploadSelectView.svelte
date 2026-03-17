@@ -1,12 +1,14 @@
 <!--
   UploadSelectView.svelte
 
-  First view in Video Lab. Pick a local video file and select a sequence
-  using the existing SequencePickerModal.
+  Setup screen for Video Lab. Pick a video + sequence, then start mapping.
+  Desktop-first: two columns, video left, sequence right.
+  Mobile: stacks vertically.
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
+  import PropAwareThumbnail from "$lib/features/browse/sequences/display/components/PropAwareThumbnail.svelte";
 
   interface Props {
     onStartMapping: (
@@ -19,7 +21,6 @@
 
   const { onStartMapping }: Props = $props();
 
-  // ---- Video source ----
   let videoUrl = $state<string | null>(null);
   let videoDuration = $state(0);
   let videoFileSize = $state(0);
@@ -27,7 +28,6 @@
   let pasteUrl = $state("");
   let videoEl: HTMLVideoElement | undefined = $state();
 
-  // ---- Sequence selection ----
   let selectedSequence = $state<SequenceData | null>(null);
   let pickerOpen = $state(false);
 
@@ -36,7 +36,6 @@
     selectedSequence?.steps?.length || selectedSequence?.word?.length || 0
   );
 
-  // ---- Video file handling ----
   function handleFileSelect(event: Event) {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -92,132 +91,139 @@
   }
 </script>
 
-<div class="upload-select-view">
-  <div class="two-up">
-    <!-- Left: Video Source -->
-    <section class="section">
-      <h3 class="section-title">
+<div class="setup-page">
+  <div class="setup-content">
+    <!-- Left: Video -->
+    <div class="panel video-panel">
+      <h3 class="panel-title">
         <i class="fas fa-video" aria-hidden="true"></i>
-        Video Source
+        Video
       </h3>
 
-      {#if !videoUrl}
-        <label class="file-picker">
-          <input type="file" accept="video/*" onchange={handleFileSelect} hidden />
-          <i class="fas fa-cloud-upload-alt" aria-hidden="true"></i>
-          <span>Choose a video file</span>
-        </label>
-
-        <div class="or-divider">or</div>
-
-        <div class="paste-row">
-          <input
-            type="text"
-            placeholder="Paste a video URL..."
-            bind:value={pasteUrl}
-            class="paste-input"
-          />
-          <button type="button" class="paste-btn" onclick={handlePasteLoad} disabled={!pasteUrl.trim()}>
-            Load
-          </button>
+      {#if videoUrl}
+        <div class="video-loaded">
+          <!-- svelte-ignore a11y_media_has_caption -->
+          <video
+            bind:this={videoEl}
+            src={videoUrl}
+            onloadedmetadata={handleVideoLoaded}
+            controls
+            preload="metadata"
+            class="video-player"
+          ></video>
+          <div class="video-meta-row">
+            <div class="video-details">
+              <span class="meta-name">{videoFileName}</span>
+              <span class="meta-sub">
+                {#if videoFileSize > 0}{formatFileSize(videoFileSize)}{/if}
+                {#if videoDuration > 0} · {formatDuration(videoDuration)}{/if}
+              </span>
+            </div>
+            <button type="button" class="text-btn" onclick={clearVideo}>Change</button>
+          </div>
         </div>
       {:else}
-        <div class="video-preview">
-          <!-- svelte-ignore a11y_media_has_caption -->
-          <video bind:this={videoEl} src={videoUrl} onloadedmetadata={handleVideoLoaded} controls preload="metadata"></video>
-          <div class="video-info">
-            <span class="video-name">{videoFileName}</span>
-            <span class="video-meta">
-              {#if videoFileSize > 0}{formatFileSize(videoFileSize)} · {/if}
-              {#if videoDuration > 0}{formatDuration(videoDuration)}{/if}
-            </span>
-          </div>
-          <button type="button" class="clear-btn" onclick={clearVideo}>
-            <i class="fas fa-times" aria-hidden="true"></i> Change
-          </button>
+        <label class="drop-zone">
+          <input type="file" accept="video/*" onchange={handleFileSelect} hidden />
+          <i class="fas fa-film drop-icon" aria-hidden="true"></i>
+          <span class="drop-label">Drop a video here or click to browse</span>
+          <span class="drop-hint">MP4, WebM, MOV</span>
+        </label>
+        <div class="or-line"><span>or</span></div>
+        <div class="url-row">
+          <input type="text" placeholder="Paste a video URL..." bind:value={pasteUrl} class="url-input" />
+          <button type="button" class="url-btn" onclick={handlePasteLoad} disabled={!pasteUrl.trim()}>Load</button>
         </div>
       {/if}
-    </section>
+    </div>
 
-    <!-- Right: Sequence Selection -->
-    <section class="section">
-      <h3 class="section-title">
-        <i class="fas fa-list" aria-hidden="true"></i>
+    <!-- Right: Sequence -->
+    <div class="panel sequence-panel">
+      <h3 class="panel-title">
+        <i class="fas fa-th" aria-hidden="true"></i>
         Sequence
       </h3>
 
       {#if selectedSequence}
-        <div class="selected-sequence">
-          <div class="selected-info">
-            <span class="selected-word">{selectedSequence.word ?? selectedSequence.name}</span>
-            <span class="selected-beats">{beatCount} beats</span>
+        <div class="sequence-loaded">
+          <!-- Choreo card thumbnail -->
+          {#if selectedSequence.steps && selectedSequence.steps.length > 0}
+            <div class="choreo-preview">
+              <PropAwareThumbnail sequence={selectedSequence} variant="browse" eager suppressContextMenu />
+            </div>
+          {/if}
+          <div class="sequence-meta-row">
+            <div class="sequence-details">
+              <span class="meta-name">{selectedSequence.word ?? selectedSequence.name}</span>
+              <span class="meta-sub">{beatCount} beats</span>
+            </div>
+            <button type="button" class="text-btn" onclick={() => (pickerOpen = true)}>Change</button>
           </div>
-          <button type="button" class="change-btn" onclick={() => (pickerOpen = true)}>Change</button>
         </div>
       {:else}
-        <button type="button" class="pick-btn" onclick={() => (pickerOpen = true)}>
-          <i class="fas fa-th" aria-hidden="true"></i>
-          Choose a sequence
+        <button type="button" class="drop-zone" onclick={() => (pickerOpen = true)}>
+          <i class="fas fa-th-large drop-icon" aria-hidden="true"></i>
+          <span class="drop-label">Choose a sequence from your library</span>
+          <span class="drop-hint">Pick the sequence this video performs</span>
         </button>
       {/if}
-    </section>
+    </div>
   </div>
 
-  <!-- Start -->
-  <div class="start-row">
-    <button type="button" class="start-btn" onclick={handleStart} disabled={!canStart}>
-      <i class="fas fa-play" aria-hidden="true"></i>
-      Start Mapping
-    </button>
-  </div>
+  <!-- Start button - only prominent when both are selected -->
+  {#if canStart}
+    <div class="start-area">
+      <button type="button" class="start-btn" onclick={handleStart}>
+        <i class="fas fa-play" aria-hidden="true"></i>
+        Start Mapping
+      </button>
+    </div>
+  {/if}
 </div>
 
 <SequencePickerModal
   bind:open={pickerOpen}
   onClose={() => (pickerOpen = false)}
   onSelect={(seq) => { selectedSequence = seq; pickerOpen = false; }}
-  title="Select Sequence for Beat Mapping"
+  title="Select Sequence"
 />
 
 <style>
-  .upload-select-view {
+  .setup-page {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 24px;
-    padding: 20px;
+    gap: 32px;
+    padding: 24px;
     height: 100%;
-    max-width: 900px;
-    margin: 0 auto;
-    width: 100%;
+    overflow-y: auto;
   }
 
-  .two-up {
+  .setup-content {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 24px;
     width: 100%;
+    max-width: 1100px;
+    flex: 1;
+    align-content: start;
   }
 
-  @media (max-width: 640px) {
-    .two-up {
+  @media (max-width: 768px) {
+    .setup-content {
       grid-template-columns: 1fr;
     }
   }
 
-  .section {
+  /* ---- Panels ---- */
+
+  .panel {
     display: flex;
     flex-direction: column;
     gap: 12px;
   }
 
-  .start-row {
-    display: flex;
-    justify-content: center;
-    width: 100%;
-  }
-
-  .section-title {
+  .panel-title {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -227,37 +233,70 @@
     margin: 0;
   }
 
-  .file-picker {
+  .panel-title i {
+    color: var(--theme-accent, #6366f1);
+  }
+
+  /* ---- Drop zones (empty state) ---- */
+
+  .drop-zone {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
-    padding: 32px;
-    border: 2px dashed var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    justify-content: center;
+    gap: 10px;
+    padding: 48px 24px;
+    border: 2px dashed var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     cursor: pointer;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
-    font-size: var(--font-size-min, 14px);
-    transition: border-color 0.15s, color 0.15s;
+    transition: border-color 0.15s, background 0.15s;
+    min-height: 200px;
   }
 
-  .file-picker:hover {
+  .drop-zone:hover {
     border-color: var(--theme-accent, #6366f1);
-    color: var(--theme-text, #fff);
+    background: rgba(99, 102, 241, 0.04);
   }
 
-  .or-divider {
-    text-align: center;
+  .drop-icon {
+    font-size: 28px;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
+  }
+
+  .drop-label {
+    font-size: var(--font-size-min, 14px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+  }
+
+  .drop-hint {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
+  }
+
+  /* ---- URL paste ---- */
+
+  .or-line {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.25));
     font-size: var(--font-size-compact, 12px);
   }
 
-  .paste-row {
+  .or-line::before, .or-line::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.08));
+  }
+
+  .url-row {
     display: flex;
     gap: 8px;
   }
 
-  .paste-input {
+  .url-input {
     flex: 1;
     padding: 10px 12px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -267,11 +306,11 @@
     font-size: var(--font-size-min, 14px);
   }
 
-  .paste-input::placeholder {
+  .url-input::placeholder {
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
   }
 
-  .paste-btn {
+  .url-btn {
     padding: 10px 16px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
@@ -281,119 +320,111 @@
     font-size: var(--font-size-min, 14px);
   }
 
-  .paste-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .url-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-  .video-preview {
+  /* ---- Loaded states ---- */
+
+  .video-loaded, .sequence-loaded {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
   }
 
-  .video-preview video {
+  .video-player {
     width: 100%;
-    max-height: 240px;
-    border-radius: 8px;
+    aspect-ratio: 16 / 9;
     background: #000;
+    display: block;
   }
 
-  .video-info { display: flex; flex-direction: column; gap: 2px; }
+  .choreo-preview {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+  }
 
-  .video-name {
+  .video-meta-row, .sequence-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+  }
+
+  .video-details, .sequence-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .meta-name {
     font-size: var(--font-size-min, 14px);
-    font-weight: 500;
+    font-weight: 600;
     color: var(--theme-text, #fff);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .video-meta {
+  .meta-sub {
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
   }
 
-  .clear-btn {
-    align-self: flex-start;
-    padding: 6px 12px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  .text-btn {
+    padding: 6px 14px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 6px;
     background: none;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     cursor: pointer;
     font-size: var(--font-size-compact, 12px);
+    flex-shrink: 0;
   }
 
-  .pick-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 16px;
-    border: 2px dashed var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 12px;
-    background: none;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
-    cursor: pointer;
-    font-size: var(--font-size-min, 14px);
-    transition: border-color 0.15s, color 0.15s;
-  }
-
-  .pick-btn:hover {
-    border-color: var(--theme-accent, #6366f1);
+  .text-btn:hover {
     color: var(--theme-text, #fff);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
-  .selected-sequence {
+  /* ---- Start button ---- */
+
+  .start-area {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    border: 1.5px solid var(--theme-accent, #6366f1);
-    border-radius: 8px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-  }
-
-  .selected-info { display: flex; flex-direction: column; gap: 2px; }
-
-  .selected-word {
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    color: var(--theme-accent, #6366f1);
-  }
-
-  .selected-beats {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-  }
-
-  .change-btn {
-    padding: 6px 12px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 6px;
-    background: none;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    cursor: pointer;
-    font-size: var(--font-size-compact, 12px);
+    justify-content: center;
   }
 
   .start-btn {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 12px 40px;
+    gap: 10px;
+    padding: 14px 48px;
     border: none;
-    border-radius: 10px;
+    border-radius: 12px;
     background: var(--theme-accent, #6366f1);
     color: #fff;
-    font-size: var(--font-size-min, 14px);
+    font-size: 16px;
     font-weight: 600;
     cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.15s;
   }
 
-  .start-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .start-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px color-mix(in srgb, var(--theme-accent, #6366f1) 35%, transparent);
+  }
+
+  .start-btn:active {
+    transform: translateY(0);
+  }
 
   @media (prefers-reduced-motion: reduce) {
-    .file-picker, .pick-btn, .start-btn { transition: none; }
+    .drop-zone, .start-btn, .text-btn { transition: none; }
+    .start-btn:hover { transform: none; }
   }
 </style>
