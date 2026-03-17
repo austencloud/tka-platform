@@ -5,11 +5,9 @@
   Pure orchestration component - composes individual button components.
 
   Layout:
-  - LEFT ZONE: Sequence Actions (tools menu)
+  - LEFT ZONE: Undo + Clear (corrective actions)
   - CENTER ZONE: Share Hub
-  - RIGHT ZONE: Save to Library + Clear Sequence
-
-  Note: Undo is in the workspace top bar (SequenceDisplay).
+  - RIGHT ZONE: Tools + Prop + Save (constructive actions)
 
   Architecture:
   - Uses CreateModuleContext for state access
@@ -24,6 +22,7 @@
   import { getCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import ClearSequencePanelButton from "./buttons/ClearSequenceButton.svelte";
+  import UndoButton from "./buttons/UndoButton.svelte";
   import SequenceActionsButton from "./buttons/SequenceActionsButton.svelte";
   import ShareHubButton from "./buttons/ShareHubButton.svelte";
   import GeneratorHelpButton from "./buttons/GeneratorHelpButton.svelte";
@@ -109,20 +108,19 @@
 
 {#if visible}
   <div class="button-panel" transition:fade={{ duration: 200 }}>
-    <!-- LEFT ZONE: Sequence Actions button (tools/menu) + display toggles -->
+    <!-- LEFT ZONE: Undo + Clear (corrective actions) -->
     <div class="left-zone">
-      {#if showSequenceActions && onSequenceActionsClick}
+      <div transition:presenceTransition>
+        <UndoButton {CreateModuleState} />
+      </div>
+      {#if canClearSequence && onClearSequence}
         <div transition:presenceTransition>
-          <SequenceActionsButton onclick={onSequenceActionsClick} />
+          <ClearSequencePanelButton onclick={onClearSequence} />
         </div>
       {/if}
-      <div transition:presenceTransition>
-        <PropIndicatorButton />
-      </div>
     </div>
 
     <!-- CENTER ZONE: Main action button (Share Hub) -->
-    <!-- Wrapper maintains layout space during transitions -->
     <div class="center-zone-wrapper">
       {#key centerZoneButtonCount()}
         <div
@@ -130,7 +128,6 @@
           out:fade={{ duration: 150 }}
           in:fade={{ duration: 150, delay: 150 }}
         >
-          <!-- Share Hub Button (opens unified share/export panel with animation preview) -->
           {#if showShareHubButton && onShareHub}
             <div>
               <ShareHubButton onclick={onShareHub} isActive={isShareHubOpen} />
@@ -140,7 +137,7 @@
       {/key}
     </div>
 
-    <!-- RIGHT ZONE: Help (generate, mobile) + Clear -->
+    <!-- RIGHT ZONE: Help + Tools + Prop + Save (constructive actions) -->
     <div class="right-zone">
       {#if showGeneratorHelp}
         <div
@@ -151,17 +148,20 @@
           <GeneratorHelpButton onclick={() => panelState.triggerGeneratorHelpMode()} />
         </div>
       {/if}
+      {#if showSequenceActions && onSequenceActionsClick}
+        <div transition:presenceTransition>
+          <SequenceActionsButton onclick={onSequenceActionsClick} />
+        </div>
+      {/if}
+      <div transition:presenceTransition>
+        <PropIndicatorButton />
+      </div>
       {#if canSaveToLibrary && onSaveToLibrary}
         <div transition:presenceTransition>
           <SaveToLibraryButton
             sequence={currentSequence}
             onclick={onSaveToLibrary}
           />
-        </div>
-      {/if}
-      {#if canClearSequence && onClearSequence}
-        <div transition:presenceTransition>
-          <ClearSequencePanelButton onclick={onClearSequence} />
         </div>
       {/if}
     </div>
@@ -189,7 +189,7 @@
     pointer-events: none;
   }
 
-  /* LEFT ZONE: Undo button always at left edge */
+  /* LEFT ZONE: Undo + Clear at left edge */
   .left-zone {
     display: flex;
     align-items: center;
@@ -221,7 +221,7 @@
     pointer-events: auto;
   }
 
-  /* RIGHT ZONE: Toggle always at right edge */
+  /* RIGHT ZONE: Tools + Prop + Save at right edge */
   .right-zone {
     display: flex;
     align-items: center;

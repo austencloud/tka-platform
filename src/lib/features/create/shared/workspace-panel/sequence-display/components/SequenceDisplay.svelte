@@ -7,11 +7,11 @@
   import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
   import StepGrid from "./StepGrid.svelte";
   import WordLabel from "./WordLabel.svelte";
-  import UndoButton from "../../shared/components/buttons/UndoButton.svelte";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
   import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
   import { loopDetector as circularLoopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
+  import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { getIsTimelineMode } from "../state/timeline-mode.svelte";
   import { updateStepDuration } from "../../../services/implementations/step-operations/DurationHandler";
@@ -90,6 +90,24 @@
 
   const hasDetectedLoop = $derived(activeComponents.size > 0);
 
+  // Difficulty level badge (mirrors ChoreoCard exactly)
+  const difficultyCalculator = new SequenceDifficultyCalculator();
+  const difficultyLevel = $derived.by(() => {
+    if (!currentSequence?.steps?.length) return 1;
+    return difficultyCalculator.calculateDifficultyLevel([...currentSequence.steps]);
+  });
+
+  const defaultLevelStyle = { bg: "linear-gradient(135deg, #fff, #f5f5f5)", border: "#000", text: "#000" };
+  const levelStyles: Record<number, { bg: string; border: string; text: string }> = {
+    1: defaultLevelStyle,
+    2: { bg: "linear-gradient(135deg, #d4d4d4, #a8a8a8)", border: "#000", text: "#000" },
+    3: { bg: "linear-gradient(135deg, #ffd700, #b8860b)", border: "#000", text: "#000" },
+    4: { bg: "linear-gradient(135deg, #c8a2c8, #9400d3)", border: "#000", text: "#000" },
+    5: { bg: "linear-gradient(135deg, #ff4500, #8b0000)", border: "#000", text: "#fff" },
+  };
+  const currentLevelStyle = $derived(levelStyles[difficultyLevel] ?? defaultLevelStyle);
+  const hasContent = $derived((currentSequence?.steps?.length ?? 0) > 0);
+
   // Convert selectedStartPosition (PictographData) to StepData format for StepGrid
   const startPositionStep = $derived(() => {
     if (!selectedStartPosition) return null;
@@ -134,10 +152,22 @@
 <div class="sequence-container">
   <div class="content-wrapper">
     <div class="label-and-beatframe-unit">
-      <!-- Top bar: Undo/Back button (left) + Word label (center) -->
+      <!-- Top bar: Difficulty badge (left) + Word label (center) + LOOP icons (right) -->
       <div class="top-bar">
         <div class="top-left-zone">
-          <UndoButton {CreateModuleState} />
+          {#if hasContent}
+            <div
+              class="difficulty-badge"
+              style="
+                background: {currentLevelStyle.bg};
+                border-color: {currentLevelStyle.border};
+                color: {currentLevelStyle.text};
+              "
+              title="Level {difficultyLevel}"
+            >
+              {difficultyLevel}
+            </div>
+          {/if}
         </div>
         <div class="word-label-area">
           <WordLabel
@@ -151,7 +181,7 @@
           {#if hasDetectedLoop}
             <LOOPIconStrip
               {activeComponents}
-              size={18}
+              size={22}
               darkMode={true}
               showFreeformWhenEmpty={false}
             />
@@ -220,7 +250,7 @@
     transition: all var(--duration-emphasis) ease-out;
   }
 
-  /* Top bar with 3-column layout: Undo (left) | WordLabel (center) | Empty (right) */
+  /* Top bar with 3-column layout: Difficulty (left) | WordLabel (center) | LOOP icons (right) */
   .top-bar {
     display: flex;
     align-items: center;
@@ -234,14 +264,29 @@
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    min-width: 60px; /* Reserve space for undo button */
+    min-width: 40px;
+  }
+
+  /* Difficulty badge — matches ChoreoCard.svelte exactly */
+  .difficulty-badge {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: Georgia, serif;
+    font-weight: bold;
+    font-size: 18px;
+    flex-shrink: 0;
   }
 
   .top-right-zone {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    min-width: 60px; /* Balance with left zone */
+    min-width: 40px; /* Balance with left zone */
   }
 
   .word-label-area {
