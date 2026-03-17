@@ -33,6 +33,7 @@ import { Navigator } from "$lib/features/browse/sequences/navigation/services/im
 import { BrowseEventHandler } from "$lib/features/browse/shared/services/implementations/BrowseEventHandler";
 import { OptimizedBrowser } from "$lib/features/browse/shared/services/implementations/OptimizedBrowser";
 import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
+import { GalleryOfflineCache } from "$lib/shared/offline/services/implementations/GalleryOfflineCache";
 
 // Sequence detail services
 import { SequenceDetailLoader } from "$lib/features/browse/sequences/display/services/implementations/SequenceDetailLoader";
@@ -70,6 +71,10 @@ export interface BrowseContainerDeps {
 export function createBrowseContainer(deps: BrowseContainerDeps) {
   // Tier 0: Services with no internal dependencies (singletons where noted)
   const tier0 = createContainer()
+    .add({
+      // Offline cache for gallery data (zero deps — reads/writes Dexie directly)
+      galleryOfflineCache: () => new GalleryOfflineCache(),
+    })
     .add({
       // Core calculation service
       sequenceDifficultyCalculator: () => new SequenceDifficultyCalculator(),
@@ -129,10 +134,12 @@ export function createBrowseContainer(deps: BrowseContainerDeps) {
   }));
 
   // Tier 2: Sequence loader (singleton - caches loaded sequences)
-  // Now loads from Firestore publicSequences collection instead of static manifest
-  const tier2 = tier1.add({
-    browseLoader: () => new PublicSequencesLoader(),
-  });
+  // Now loads from Firestore publicSequences collection instead of static manifest.
+  // Receives galleryOfflineCache so it can persist after a successful fetch and
+  // serve cached data when the network is unavailable.
+  const tier2 = tier1.add((ctx) => ({
+    browseLoader: () => new PublicSequencesLoader(ctx.galleryOfflineCache),
+  }));
 
   // Tier 3: Services depending on external dependencies
   const tier3 = tier2

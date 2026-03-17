@@ -26,30 +26,36 @@ import type { PublicSequenceIndex } from "$lib/features/library/domain/models/Pu
 import { container } from "$lib/shared/di";
 import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 import type { ISequenceHydrator } from "$lib/shared/foundation/services/contracts/ISequenceHydrator";
+import type { IGalleryOfflineCache } from "$lib/shared/offline/services/contracts/IGalleryOfflineCache";
+import { networkStatusState } from "$lib/shared/offline/state/network-status-state.svelte";
 
 export class PublicSequencesLoader implements IBrowseLoader {
   private cachedSequences: SequenceData[] | null = null;
   private loadPromise: Promise<SequenceData[]> | null = null;
   // Map from word/name to sourceRef for efficient full data lookup
   private sourceRefCache: Map<string, string> = new Map();
+  private galleryOfflineCache: IGalleryOfflineCache | null;
+  private lastFetchedDocs: PublicSequenceIndex[] = [];
+
+  constructor(galleryOfflineCache?: IGalleryOfflineCache) {
+    this.galleryOfflineCache = galleryOfflineCache ?? null;
+    if (this.galleryOfflineCache) {
+      this.galleryOfflineCache.setConverter(
+        (data, id) => this.mapPublicIndexToSequenceData(data, id)
+      );
+    }
+  }
 
   /**
-   * Load all public sequences from Firestore
-   * Returns display metadata (no steps) for gallery grid
+   * Load all public sequences from Firestore, falling back to offline cache
+   * when the network is unavailable or the Firestore fetch fails.
+   * Returns display metadata (no steps) for gallery grid.
    */
   async loadSequenceMetadata(): Promise<SequenceData[]> {
-    // Return cached data if available
-    if (this.cachedSequences) {
-      return this.cachedSequences;
-    }
+    if (this.cachedSequences) return this.cachedSequences;
+    if (this.loadPromise) return this.loadPromise;
 
-    // Prevent duplicate loads
-    if (this.loadPromise) {
-      return this.loadPromise;
-    }
-
-    this.loadPromise = this.fetchPublicSequences();
-
+    this.loadPromise = this.fetchWithOfflineFallback();
     try {
       this.cachedSequences = await this.loadPromise;
       return this.cachedSequences;
@@ -60,15 +66,53 @@ export class PublicSequencesLoader implements IBrowseLoader {
         technicalDetails: error instanceof Error ? error.message : String(error),
         error: error instanceof Error ? error : new Error(String(error)),
         severity: "error",
-        context: {
-          module: "browse",
-          action: "load-gallery",
-        },
+        context: { module: "browse", action: "load-gallery" },
       });
       throw error;
     } finally {
       this.loadPromise = null;
     }
+  }
+
+  /**
+   * Try Firestore first (when online), fall back to IndexedDB cache when
+   * offline or when the network request fails.
+   */
+  private async fetchWithOfflineFallback(): Promise<SequenceData[]> {
+    if (networkStatusState.isOnline) {
+      try {
+        const sequences = await this.fetchPublicSequences();
+        if (this.galleryOfflineCache) {
+          this.persistToOfflineCache().catch((err) =>
+            console.warn("[PublicSequencesLoader] Offline cache persist failed:", err)
+          );
+        }
+        return sequences;
+      } catch (error) {
+        console.warn(
+          "[PublicSequencesLoader] Firestore fetch failed, trying offline cache:",
+          error
+        );
+      }
+    }
+
+    if (this.galleryOfflineCache) {
+      const hasCache = await this.galleryOfflineCache.hasCachedData();
+      if (hasCache) {
+        const cached = await this.galleryOfflineCache.loadCached();
+        for (const [key, value] of cached.sourceRefs) {
+          this.sourceRefCache.set(key, value);
+        }
+        return cached.sequences;
+      }
+    }
+
+    throw new Error("No network connection and no cached gallery data available");
+  }
+
+  private async persistToOfflineCache(): Promise<void> {
+    if (!this.galleryOfflineCache || this.lastFetchedDocs.length === 0) return;
+    await this.galleryOfflineCache.persist(this.lastFetchedDocs);
   }
 
   /**
@@ -150,6 +194,8 @@ export class PublicSequencesLoader implements IBrowseLoader {
   }
 
   private async fetchPublicSequences(): Promise<SequenceData[]> {
+    this.lastFetchedDocs = [];
+
     const firestore = await getFirestoreInstance();
     const publicSeqRef = collection(firestore, getPublicSequencesPath());
 
@@ -162,6 +208,9 @@ export class PublicSequencesLoader implements IBrowseLoader {
     snapshot.forEach((docSnap) => {
       const data = docSnap.data() as PublicSequenceIndex;
       sequences.push(this.mapPublicIndexToSequenceData(data, docSnap.id));
+
+      // Capture raw doc for offline cache persistence after this fetch
+      this.lastFetchedDocs.push({ ...data, id: docSnap.id } as PublicSequenceIndex);
 
       // Cache sourceRef for efficient full data lookup later
       if (data.sourceRef) {
