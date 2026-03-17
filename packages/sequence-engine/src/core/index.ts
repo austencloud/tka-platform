@@ -28,6 +28,7 @@ export { setLetterTransitionGraph, getLetterTransitionGraph } from "./transition
 
 // Letters
 export { LetterParser } from "./letters/LetterParser.js";
+export { LetterClassifier } from "./letters/LetterClassifier.js";
 
 // Data provider contracts
 export type { ISequenceDataProvider, LetterVariationData } from "./data/ISequenceDataProvider.js";
