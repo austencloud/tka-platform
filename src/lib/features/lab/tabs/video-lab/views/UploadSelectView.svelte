@@ -9,7 +9,7 @@
   import { container } from "$lib/shared/di";
   import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
   import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
-  import { buildThumbnailUrl } from "$lib/shared/inbox/state/send-sequence-state.svelte";
+
 
   interface Props {
     onStartMapping: (
@@ -231,15 +231,7 @@
             type="button"
           >
             <div class="card-preview">
-              {#if seq.word}
-                <img
-                  src={buildThumbnailUrl(seq.word, seq.intendedProp?.bluePropType ?? "staff", false)}
-                  alt={seq.word}
-                  class="card-thumbnail"
-                  onerror={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                />
-              {/if}
-              <span class="card-word-fallback">{seq.word ?? seq.name ?? "?"}</span>
+              <span class="card-word-display">{seq.word ?? seq.name ?? "?"}</span>
             </div>
             <div class="card-label">
               <span class="card-beats">{seq.steps?.length || seq.word?.length || 0} beats</span>
@@ -514,44 +506,23 @@
   }
 
   .card-preview {
-    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    aspect-ratio: 4 / 3;
-    overflow: hidden;
-    background: rgba(0, 0, 0, 0.3);
+    padding: 12px 8px;
+    min-height: 56px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(0, 0, 0, 0.2) 100%);
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
   }
 
-  .card-thumbnail {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-
-  .card-word-fallback {
-    position: relative;
-    z-index: 1;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
+  .card-word-display {
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
     text-align: center;
     word-break: break-all;
     line-height: 1.3;
-    padding: 4px;
-    opacity: 0.5;
-  }
-
-  /* Hide the word fallback when the image loads successfully */
-  .card-thumbnail + .card-word-fallback {
-    position: absolute;
-    bottom: 4px;
-    left: 0;
-    right: 0;
-    font-size: 10px;
-    opacity: 0.6;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    letter-spacing: 1px;
+    color: var(--theme-text, #fff);
   }
 
   .card-label {
