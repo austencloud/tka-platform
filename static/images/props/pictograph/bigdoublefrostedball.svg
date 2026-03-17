@@ -4,18 +4,18 @@
     <stop offset="0.7" stop-color="#000" stop-opacity="0"/>
     <stop offset="1" stop-color="#000" stop-opacity="0.35"/>
   </radialGradient>
-  <radialGradient id="cb-spec-L" cx="105" cy="105" r="60" gradientUnits="userSpaceOnUse">
-    <stop offset="0" stop-color="#fff" stop-opacity="0.35"/>
-    <stop offset="0.4" stop-color="#fff" stop-opacity="0.08"/>
+  <radialGradient id="cb-spec-L" cx="105" cy="105" r="90" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#fff" stop-opacity="0.2"/>
+    <stop offset="0.4" stop-color="#fff" stop-opacity="0.046"/>
     <stop offset="1" stop-color="#fff" stop-opacity="0"/>
   </radialGradient>
   <radialGradient id="cb-edge-R" cx="450" cy="150" r="150" gradientUnits="userSpaceOnUse">
     <stop offset="0.7" stop-color="#000" stop-opacity="0"/>
     <stop offset="1" stop-color="#000" stop-opacity="0.35"/>
   </radialGradient>
-  <radialGradient id="cb-spec-R" cx="405" cy="105" r="60" gradientUnits="userSpaceOnUse">
-    <stop offset="0" stop-color="#fff" stop-opacity="0.35"/>
-    <stop offset="0.4" stop-color="#fff" stop-opacity="0.08"/>
+  <radialGradient id="cb-spec-R" cx="405" cy="105" r="90" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#fff" stop-opacity="0.2"/>
+    <stop offset="0.4" stop-color="#fff" stop-opacity="0.046"/>
     <stop offset="1" stop-color="#fff" stop-opacity="0"/>
   </radialGradient>
 </defs>
