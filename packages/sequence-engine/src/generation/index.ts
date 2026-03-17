@@ -149,6 +149,12 @@ export {
   getCombinedPerHandDashScore,
 } from "./builder/bridge-scorer.js";
 
+// Domain constraints (always-on hard constraints)
+export { Type6Constraint } from "./constraints/domain/Type6Constraint.js";
+export { PropTypeConstraint } from "./constraints/domain/PropTypeConstraint.js";
+export { PositionContinuityConstraint } from "./constraints/domain/PositionContinuityConstraint.js";
+export { FloatConstraint } from "./constraints/domain/FloatConstraint.js";
+
 // Data provider contracts
 export type { IVariationProvider } from "./data/IVariationProvider.js";
 
