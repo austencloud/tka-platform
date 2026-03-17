@@ -15,6 +15,7 @@ Supports two view modes:
 	import GridSummaryStep from './grid-concept/GridSummaryStep.svelte';
 	import GridStepHeader from './grid-concept/GridStepHeader.svelte';
 	import { createGridExperienceState } from './grid-concept/grid-experience-state.svelte';
+	import GridPointTapStep from './grid-concept/GridPointTapStep.svelte';
 	import type { ExperienceViewMode } from '../../domain/types';
 
 	let {
@@ -48,7 +49,7 @@ Supports two view modes:
 
 	function focusNextAction() {
 		requestAnimationFrame(() => {
-			if (experienceState.step === 3 && summaryStepRef) {
+			if (experienceState.step === 4 && summaryStepRef) {
 				summaryStepRef.focusCompleteButton();
 			} else if (nextButtonRef) {
 				nextButtonRef.focus();
@@ -60,6 +61,7 @@ Supports two view modes:
 		if (viewMode !== 'step') return;
 
 		if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+			if (experienceState.step === 3) return; // Tap step advances via tapping
 			event.preventDefault();
 			handleNext();
 		} else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
@@ -129,7 +131,7 @@ Supports two view modes:
 		</div>
 
 		<!-- Accessibility: Skip link -->
-		{#if experienceState.step < 3}
+		{#if experienceState.step < 4}
 			<button class="skip-link" onclick={handleSkipToSummary}>Skip to summary</button>
 		{/if}
 
@@ -158,6 +160,16 @@ Supports two view modes:
 				</div>
 			</div>
 		{:else if experienceState.step === 3}
+			<!-- Step 3: Point tap interaction -->
+			<div class="step-content step-grid-content">
+				<GridPointTapStep
+					tapPhase={experienceState.tapPhase}
+					tappedPoints={experienceState.tappedPoints}
+					onTapPoint={(id) => experienceState.tapPoint(id, () => experienceState.nextStep(focusNextAction))}
+				/>
+				<ExperienceProgressIndicator currentStep={experienceState.step + 1} totalSteps={experienceState.totalSteps} />
+			</div>
+		{:else if experienceState.step === 4}
 			<GridSummaryStep
 				animateIn={experienceState.animateIn}
 				totalSteps={experienceState.totalSteps}
@@ -313,6 +325,34 @@ Supports two view modes:
 
 		.merge-animation-container {
 			max-width: 100%;
+		}
+	}
+
+	/* Height-constrained viewports (e.g. Z Fold unfolded portrait: wide but short) */
+	@media (max-height: 1000px) {
+		.grid-experience {
+			padding: var(--spacing-sm, 0.5rem);
+			padding-top: var(--spacing-md, 1rem);
+		}
+
+		.step-content {
+			gap: var(--spacing-sm, 0.5rem);
+		}
+
+		.merge-animation-container {
+			max-height: 55dvh;
+			display: flex;
+			justify-content: center;
+		}
+
+		.merge-animation-container :global(svg) {
+			max-height: 100%;
+			width: auto;
+		}
+
+		.next-button {
+			padding: 0.75rem 2rem;
+			font-size: 1rem;
 		}
 	}
 
