@@ -1199,6 +1199,7 @@
   "settings_account_settings": "Impostazioni dell'account",
   "settings_animated": "Animato",
   "settings_ask_before_clearing": "Chiedi prima di cancellare la sequenza",
+  "settings_ask_before_loop": "Ask before applying LOOP",
   "settings_available_languages": "Lingue disponibili",
   "settings_background_subtitle": "Scegli il tuo ambiente visivo",
   "settings_background_theme": "Tema di sfondo",

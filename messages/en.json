@@ -571,6 +571,7 @@
   "settings_dark_mode": "Dark Mode",
   "settings_confirmation_dialogs": "Confirmation Dialogs",
   "settings_ask_before_clearing": "Ask before clearing sequence",
+  "settings_ask_before_loop": "Ask before applying LOOP",
   "settings_tip": "Tip:",
   "settings_undo_tip": "You can always use Undo to reverse accidental changes.",
   "settings_connected_accounts": "Connected Accounts",

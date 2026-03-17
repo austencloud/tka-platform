@@ -1200,6 +1200,7 @@
   "settings_account_settings": "账户设置",
   "settings_animated": "动画",
   "settings_ask_before_clearing": "清除序列前请询问",
+  "settings_ask_before_loop": "Ask before applying LOOP",
   "settings_available_languages": "可用语言",
   "settings_background_subtitle": "选择您的视觉环境",
   "settings_background_theme": "背景主题",

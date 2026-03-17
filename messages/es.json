@@ -1200,6 +1200,7 @@
   "settings_account_settings": "Configuraciones de la cuenta",
   "settings_animated": "Animado",
   "settings_ask_before_clearing": "Preguntar antes de borrar la secuencia",
+  "settings_ask_before_loop": "Ask before applying LOOP",
   "settings_available_languages": "Idiomas disponibles",
   "settings_background_subtitle": "Elige tu entorno visual",
   "settings_background_theme": "Tema de fondo",
