@@ -244,19 +244,35 @@ export class SequenceBuilder {
           : HALF_POSITION_MAP;
     }
 
-    const beamSearch = new BeamSearch(this.variationProvider, options.gridMode);
-    const searchResult = beamSearch.searchByLength(
-      length,
-      options.startPosition,
-      constraintSet,
-      options.beamWidth ?? 10,
-      undefined, // requiredEndPosition computed inside searchByLength from loopPositionMap
-      loopPositionMap,
-    );
+    // When LOOP targeting is active and no startPosition is specified,
+    // the beam search picks a random start. Some starts may not have a
+    // valid path to the required end position in the allotted beats.
+    // Retry up to MAX_LOOP_RETRIES times with fresh random starts.
+    const maxRetries = loopPositionMap && !options.startPosition ? 10 : 1;
+    let searchResult: BeamSearchResult | undefined;
+    let lastError: string | undefined;
 
-    if (!searchResult.success && searchResult.steps.length === 0) {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const beamSearch = new BeamSearch(this.variationProvider, options.gridMode);
+      const result = beamSearch.searchByLength(
+        length,
+        options.startPosition,
+        constraintSet,
+        options.beamWidth ?? 10,
+        undefined,
+        loopPositionMap,
+      );
+
+      if (result.success || result.steps.length > 0) {
+        searchResult = result;
+        break;
+      }
+      lastError = result.error;
+    }
+
+    if (!searchResult || (!searchResult.success && searchResult.steps.length === 0)) {
       throw new Error(
-        searchResult.error ?? "No valid sequence found for length-based generation",
+        lastError ?? "No valid sequence found for length-based generation",
       );
     }
 

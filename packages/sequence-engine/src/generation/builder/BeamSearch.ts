@@ -339,16 +339,14 @@ export class BeamSearch {
         );
 
         // On the final beat, if a LOOP requires a specific end position,
-        // only keep candidates that land there. This ensures the seed
-        // sequence forms a valid arc for rotation (e.g. 180° for halved).
+        // only keep candidates that land there. This is a HARD requirement —
+        // if no candidate can reach the required position, this beam state
+        // is dead (the LOOP executor would reject it anyway).
         const isFinalBeat = i === length - 1;
         if (isFinalBeat && requiredEndPosition) {
-          const targeted = candidates.filter(
+          candidates = candidates.filter(
             (p) => p.endPosition === requiredEndPosition,
           );
-          if (targeted.length > 0) {
-            candidates = targeted;
-          }
         }
 
         if (candidates.length === 0) continue;
