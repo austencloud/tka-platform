@@ -14,12 +14,14 @@ import type { PositionGroup, LetterPositionInfo } from "@tka/sequence-engine";
  * Maintains backward compatibility with existing MCP code.
  */
 export class LetterTransitionGraph {
-  private readonly sharedGraph: TransitionGraph;
+  /** The underlying engine TransitionGraph. Exposed so the MCP can
+   *  register it with the engine's global singleton via setLetterTransitionGraph(). */
+  readonly engineGraph: TransitionGraph;
   private initialized = false;
 
   constructor() {
     const dataProvider = getNodeDataProvider();
-    this.sharedGraph = new TransitionGraph(dataProvider);
+    this.engineGraph = new TransitionGraph(dataProvider);
   }
 
   /**
@@ -29,7 +31,7 @@ export class LetterTransitionGraph {
   async initializeAsync(): Promise<void> {
     if (this.initialized) return;
 
-    await this.sharedGraph.initialize();
+    await this.engineGraph.initialize();
     this.initialized = true;
   }
 
@@ -42,7 +44,7 @@ export class LetterTransitionGraph {
     if (this.initialized) return;
 
     // Start the async initialization
-    this.sharedGraph.initialize()
+    this.engineGraph.initialize()
       .then(() => {
         this.initialized = true;
       })
@@ -56,39 +58,39 @@ export class LetterTransitionGraph {
   }
 
   canFollow(letterA: string, letterB: string): boolean {
-    return this.sharedGraph.canFollow(letterA, letterB);
+    return this.engineGraph.canFollow(letterA, letterB);
   }
 
   getValidSuccessors(letter: string): string[] {
-    return this.sharedGraph.getValidSuccessors(letter);
+    return this.engineGraph.getValidSuccessors(letter);
   }
 
   getLetterPositionInfo(letter: string): LetterPositionInfo | null {
-    return this.sharedGraph.getLetterPositionInfo(letter);
+    return this.engineGraph.getLetterPositionInfo(letter);
   }
 
   getStartPositionGroup(letter: string): PositionGroup | null {
-    return this.sharedGraph.getStartPositionGroup(letter);
+    return this.engineGraph.getStartPositionGroup(letter);
   }
 
   getEndPositionGroup(letter: string): PositionGroup | null {
-    return this.sharedGraph.getEndPositionGroup(letter);
+    return this.engineGraph.getEndPositionGroup(letter);
   }
 
   findBridgeLetters(letterA: string, letterB: string): string[] {
-    return this.sharedGraph.findBridgeLetters(letterA, letterB);
+    return this.engineGraph.findBridgeLetters(letterA, letterB);
   }
 
   findAllBridgeOptions(letterA: string, letterB: string): string[] {
-    return this.sharedGraph.findAllBridgeOptions(letterA, letterB);
+    return this.engineGraph.findAllBridgeOptions(letterA, letterB);
   }
 
   isInitialized(): boolean {
-    return this.initialized && this.sharedGraph.isInitialized();
+    return this.initialized && this.engineGraph.isInitialized();
   }
 
   getAllLetters(excludeLetters: Set<string> = new Set()): string[] {
-    return this.sharedGraph.getAllLetters(excludeLetters);
+    return this.engineGraph.getAllLetters(excludeLetters);
   }
 }
 

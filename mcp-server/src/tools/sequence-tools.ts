@@ -12,7 +12,7 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { ensureDataLoaded, saveAndOpenImage, generateRandomWord } from "../shared/server-context.js";
+import { ensureDataLoaded, ensureDataLoadedAsync, saveAndOpenImage, generateRandomWord } from "../shared/server-context.js";
 import {
   buildSequenceFromLetters,
   parseWordToLetters,
@@ -172,7 +172,7 @@ export function registerSequenceTools(server: McpServer): void {
       gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode to analyze"),
     },
     async ({ word, gridMode = "diamond" }) => {
-      const allPictographs = ensureDataLoaded(gridMode);
+      const allPictographs = await ensureDataLoadedAsync(gridMode);
       const letters = parseWordToLetters(word.toUpperCase());
 
       if (letters.length === 0) {
@@ -304,7 +304,7 @@ export function registerSequenceTools(server: McpServer): void {
       compact: z.boolean().optional().default(false).describe("Compact output - summary only without full step data (saves ~2000+ tokens for long sequences)"),
     },
     async ({ word, gridMode = "diamond", maxAttempts = 500, bridgeSelections, constraints, constraintPreset, compact = false }) => {
-      const allPictographs = ensureDataLoaded(gridMode);
+      const allPictographs = await ensureDataLoadedAsync(gridMode);
 
       // Parse word to individual letters
       const letters = parseWordToLetters(word.toUpperCase());
@@ -588,7 +588,7 @@ export function registerSequenceTools(server: McpServer): void {
         };
       }
 
-      const allPictographs = ensureDataLoaded(gridMode);
+      const allPictographs = await ensureDataLoadedAsync(gridMode);
       const letters = parseWordToLetters(word.toUpperCase());
 
       if (letters.length === 0) {
