@@ -1,3 +1,7 @@
+import {
+  pushState as svelteKitPushState,
+  replaceState as svelteKitReplaceState,
+} from "$app/navigation";
 import type { INavigator } from "../contracts/INavigator";
 import type { LabeledSequence } from "../contracts/ILOOPLabelsFirebaseRepository";
 
@@ -42,10 +46,10 @@ export class Navigator implements INavigator {
 
     if (addToHistory) {
       // Use pushState to enable browser back/forward navigation
-      window.history.pushState(state, "", url.toString());
+      svelteKitPushState(url.toString(), state);
     } else {
       // Use replaceState when we don't want to add a history entry
-      window.history.replaceState(state, "", url.toString());
+      svelteKitReplaceState(url.toString(), state);
     }
   }
 
@@ -68,7 +72,7 @@ export class Navigator implements INavigator {
 
     const url = new URL(window.location.href);
     url.searchParams.set("filter", filterMode);
-    window.history.replaceState({}, "", url.toString());
+    svelteKitReplaceState(url.toString(), {});
   }
 
   exportLabelsAsJson(labels: Map<string, LabeledSequence>): void {

@@ -106,7 +106,8 @@ export function calculateGridLayout(
   let columns: number;
 
   if (sizing.manualColumnCount !== null && sizing.manualColumnCount > 0) {
-    // Manual override: use the specified column count
+    // Manual override: manualColumnCount is the number of *beat* columns,
+    // not including the start position column (added separately as totalColumns).
     maxColumns = sizing.manualColumnCount;
     columns = Math.min(stepCount, sizing.manualColumnCount);
   } else {

@@ -16,9 +16,10 @@ Shows available lengths with contextual counts.
     availableLengths: number[];
     onSelect: (length: number | null) => void;
     getFilteredCount?: (candidateType: BrowseFilterType, candidateValue: BrowseFilterValue) => number;
+    disabled?: boolean;
   }
 
-  let { activeLength, availableLengths, onSelect, getFilteredCount }: Props = $props();
+  let { activeLength, availableLengths, onSelect, getFilteredCount, disabled = false }: Props = $props();
 
   let isOpen = $state(false);
   let hapticService: IHapticFeedback | null = null;
@@ -72,6 +73,7 @@ Shows available lengths with contextual counts.
     chipColor="#f59e0b"
     mode="dropdown"
     expanded={isOpen}
+    {disabled}
     onclick={handleToggle}
   >
     {#snippet children()}

@@ -371,7 +371,9 @@
     const stepCount = sequence.steps.length;
 
     if (columnCount !== null && columnCount > 0) {
-      return columnCount;
+      // columnCount is the number of *beat* columns the user wants.
+      // When the start position is shown, add 1 for its column.
+      return includeStartPosition ? columnCount + 1 : columnCount;
     }
     // Long sequences use fixed 5 columns whether scrolling or force-contained.
     // This keeps the cell grid positions consistent so entering export mode
