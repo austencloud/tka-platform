@@ -78,13 +78,25 @@ export {
   ROTATED_SWAPPED_HALVED_VALIDATION_SET,
 } from "./position-maps/strict-loop-position-maps.js";
 
-// Detector (analyzes sequence steps to identify LOOP patterns)
+// Detection (analyzes sequence steps to identify LOOP patterns)
 export {
   detectLOOPFromSteps,
   isSequenceCircular,
+  LOOPDetectorClass,
+  loopDetectorClass,
+  LOOPComponent,
   type LOOPComponentId,
   type LOOPDetectionResult,
+  type RichLOOPDetectionResult,
+  type CompoundPattern,
+  type DetectionConfidence,
 } from "./detection/LOOPDetector.js";
+
+// Orientation cycle detection
+export {
+  detectOrientationCycle,
+  type OrientationCycleResult,
+} from "./detection/OrientationCycleDetector.js";
 
 // Executor
 export {
@@ -126,3 +138,27 @@ export { GridPositionDeriver, gridPositionDeriver } from "../core/positions/Grid
 
 // Letter lookup
 export { findLetterByMotions } from "./LetterLookup.js";
+
+// Targeting (end position selection for LOOP generation)
+export { RotatedEndPositionSelector, rotatedEndPositionSelector } from "./targeting/RotatedEndPositionSelector.js";
+export { LOOPEndPositionSelector, loopEndPositionSelector } from "./targeting/LOOPEndPositionSelector.js";
+export {
+  PartialSequenceGenerator,
+  partialSequenceGenerator,
+  type IPartialSequenceGenerator,
+  type PartialSequenceOptions,
+} from "./targeting/PartialSequenceGenerator.js";
+
+// Extension (extending sequences with LOOP patterns)
+export {
+  SequenceExtender,
+  sequenceExtender,
+  type ExtensionType,
+  type ExtensionAnalysis,
+  type ExtensionOptions,
+} from "./extension/SequenceExtender.js";
+
+export {
+  extendForOrientationCycle,
+  type OrientationCycleExtensionResult,
+} from "./extension/OrientationCycleExtender.js";
