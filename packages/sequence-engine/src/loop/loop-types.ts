@@ -46,6 +46,9 @@ export enum LOOPType {
   /** Mirrored rotated inverted swapped - combines all four transformations */
   MIRRORED_ROTATED_INVERTED_SWAPPED = "mirrored_rotated_inverted_swapped",
 
+  /** Strict flipped - mirrors positions horizontally (north/south) */
+  STRICT_FLIPPED = "strict_flipped",
+
   /** Rewound - appends reversed sequence to double length */
   REWOUND = "rewound",
 }
@@ -69,6 +72,7 @@ export enum SliceSize {
 export const LOOP_TYPE_LABELS: Record<LOOPType, string> = {
   [LOOPType.STRICT_ROTATED]: "Rotated",
   [LOOPType.STRICT_MIRRORED]: "Mirrored",
+  [LOOPType.STRICT_FLIPPED]: "Flipped",
   [LOOPType.STRICT_SWAPPED]: "Swapped",
   [LOOPType.STRICT_INVERTED]: "Inverted",
   [LOOPType.SWAPPED_INVERTED]: "Swapped / Inverted",
@@ -88,6 +92,7 @@ export const LOOP_TYPE_LABELS: Record<LOOPType, string> = {
 export const LOOP_TYPE_DESCRIPTIONS: Record<LOOPType, string> = {
   [LOOPType.STRICT_ROTATED]: "Rotates positions around the grid",
   [LOOPType.STRICT_MIRRORED]: "Mirrors positions vertically",
+  [LOOPType.STRICT_FLIPPED]: "Mirrors positions horizontally (north/south)",
   [LOOPType.STRICT_SWAPPED]: "Swaps blue and red props",
   [LOOPType.STRICT_INVERTED]: "Inverts motion directions",
   [LOOPType.SWAPPED_INVERTED]: "Swaps colors with inverted motion",
@@ -124,6 +129,7 @@ export interface LOOPValidationResult {
 export const ALL_LOOP_TYPES: LOOPType[] = [
   LOOPType.STRICT_ROTATED,
   LOOPType.STRICT_MIRRORED,
+  LOOPType.STRICT_FLIPPED,
   LOOPType.STRICT_SWAPPED,
   LOOPType.STRICT_INVERTED,
   LOOPType.SWAPPED_INVERTED,
@@ -144,3 +150,36 @@ export const SUPPORTED_LOOP_TYPES: LOOPType[] = [
   LOOPType.REWOUND,
   LOOPType.STRICT_ROTATED,
 ];
+
+/**
+ * LOOP types that involve rotation as part of the transformation
+ */
+export const ROTATED_LOOP_TYPES = new Set<LOOPType>([
+  LOOPType.STRICT_ROTATED,
+  LOOPType.ROTATED_INVERTED,
+  LOOPType.ROTATED_SWAPPED,
+  LOOPType.MIRRORED_ROTATED,
+  LOOPType.MIRRORED_INVERTED_ROTATED,
+  LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED,
+]);
+
+/**
+ * LOOP Generation Options
+ * Configuration for generating circular words
+ */
+export interface LOOPGenerationOptions {
+  /** Total sequence length (will be multiplied based on slice size) */
+  length: number;
+  /** LOOP type to apply */
+  loopType: LOOPType;
+  /** Slice size for rotational LOOPs */
+  sliceSize: SliceSize;
+  /** Turn intensity (1-3) */
+  turnIntensity: number;
+  /** Difficulty level (1-3) */
+  level: number;
+  /** Prop continuity setting */
+  propContinuity: "continuous" | "non-continuous";
+  /** Grid mode */
+  gridMode: "box" | "diamond";
+}

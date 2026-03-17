@@ -18,6 +18,11 @@ import {
   type LOOPValidationResult,
 } from "../loop-types.js";
 
+import {
+  FLIPPED_LOOP_VALIDATION_SET,
+  HORIZONTAL_MIRROR_POSITION_MAP,
+} from "../position-maps/strict-loop-position-maps.js";
+
 // ============================================================================
 // POSITION VALIDATION SETS
 // ============================================================================
@@ -367,6 +372,10 @@ export function isLOOPValidForPositionPair(
     case LOOPType.MIRRORED_INVERTED:
       return MIRRORED_LOOP_VALIDATION_SET.has(positionPair);
 
+    // Flipped (horizontal mirror)
+    case LOOPType.STRICT_FLIPPED:
+      return FLIPPED_LOOP_VALIDATION_SET.has(positionPair);
+
     // Mirrored + Swapped
     case LOOPType.MIRRORED_SWAPPED:
       return MIRRORED_SWAPPED_VALIDATION_SET.has(positionPair);
@@ -466,6 +475,9 @@ export function getExpectedEndPosition(
     case LOOPType.MIRRORED_INVERTED:
       return VERTICAL_MIRROR_POSITION_MAP[startPosition] || null;
 
+    case LOOPType.STRICT_FLIPPED:
+      return HORIZONTAL_MIRROR_POSITION_MAP[startPosition] || null;
+
     case LOOPType.STRICT_SWAPPED:
     case LOOPType.SWAPPED_INVERTED:
       return SWAPPED_POSITION_MAP[startPosition] || null;
@@ -556,16 +568,24 @@ export function getValidEndPositionsForLoop(
       break;
 
     case LOOPType.STRICT_MIRRORED:
-    case LOOPType.MIRRORED_INVERTED:
+    case LOOPType.MIRRORED_INVERTED: {
       const mirrored = VERTICAL_MIRROR_POSITION_MAP[startPosition];
       if (mirrored) validPositions.push(mirrored);
       break;
+    }
+
+    case LOOPType.STRICT_FLIPPED: {
+      const flipped = HORIZONTAL_MIRROR_POSITION_MAP[startPosition];
+      if (flipped) validPositions.push(flipped);
+      break;
+    }
 
     case LOOPType.STRICT_SWAPPED:
-    case LOOPType.SWAPPED_INVERTED:
+    case LOOPType.SWAPPED_INVERTED: {
       const swapped = SWAPPED_POSITION_MAP[startPosition];
       if (swapped) validPositions.push(swapped);
       break;
+    }
 
     case LOOPType.STRICT_INVERTED:
       validPositions.push(startPosition); // Returns to same position
