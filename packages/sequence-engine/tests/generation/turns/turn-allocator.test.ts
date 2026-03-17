@@ -1,0 +1,126 @@
+import { describe, it, expect } from "vitest";
+import { allocateTurns, getDefaultMaxTurnIntensity } from "../../../src/generation/turns/TurnAllocator.js";
+
+describe("TurnAllocator", () => {
+  describe("allocateTurns", () => {
+    it("level 1 produces only 0 turns", () => {
+      const result = allocateTurns(10, 1);
+
+      expect(result.blue).toHaveLength(10);
+      expect(result.red).toHaveLength(10);
+
+      for (const t of result.blue) {
+        expect(t).toBe(0);
+      }
+      for (const t of result.red) {
+        expect(t).toBe(0);
+      }
+    });
+
+    it("level 2 produces values from {0, 1, 2, 3}", () => {
+      // Run enough times to get coverage of the pool
+      const allBlue = new Set<number | "fl">();
+      const allRed = new Set<number | "fl">();
+
+      for (let i = 0; i < 100; i++) {
+        const result = allocateTurns(5, 2);
+        for (const t of result.blue) allBlue.add(t);
+        for (const t of result.red) allRed.add(t);
+      }
+
+      const validValues = new Set([0, 1, 2, 3]);
+      for (const v of allBlue) {
+        expect(validValues.has(v as number)).toBe(true);
+      }
+      for (const v of allRed) {
+        expect(validValues.has(v as number)).toBe(true);
+      }
+    });
+
+    it("level 3 can include half turns and float", () => {
+      const allValues = new Set<number | "fl">();
+
+      for (let i = 0; i < 200; i++) {
+        const result = allocateTurns(5, 3);
+        for (const t of result.blue) allValues.add(t);
+        for (const t of result.red) allValues.add(t);
+      }
+
+      // With 200 iterations of 5 steps each (2000 values per hand),
+      // we should see half turns and "fl" in the output
+      const validValues = new Set<number | "fl">([0, 0.5, 1, 1.5, 2, 2.5, 3, "fl"]);
+      for (const v of allValues) {
+        expect(validValues.has(v)).toBe(true);
+      }
+
+      // Should include at least some half turns (statistically near certain)
+      expect(allValues.has(0.5)).toBe(true);
+      expect(allValues.has("fl")).toBe(true);
+    });
+
+    it("maxTurnIntensity caps the numeric values", () => {
+      const result = allocateTurns(50, 2, 1);
+
+      for (const t of result.blue) {
+        expect(typeof t === "number" && t <= 1).toBe(true);
+      }
+      for (const t of result.red) {
+        expect(typeof t === "number" && t <= 1).toBe(true);
+      }
+    });
+
+    it("maxTurnIntensity 0 at level 2 produces only 0 turns", () => {
+      const result = allocateTurns(20, 2, 0);
+
+      for (const t of result.blue) {
+        expect(t).toBe(0);
+      }
+      for (const t of result.red) {
+        expect(t).toBe(0);
+      }
+    });
+
+    it("output has correct length matching stepCount", () => {
+      for (const count of [0, 1, 5, 20]) {
+        const result = allocateTurns(count, 2);
+        expect(result.blue).toHaveLength(count);
+        expect(result.red).toHaveLength(count);
+      }
+    });
+
+    it("float passes through maxTurnIntensity filter at level 3", () => {
+      // At level 3 with maxTurnIntensity=0, the pool should be [0, "fl"]
+      const allValues = new Set<number | "fl">();
+
+      for (let i = 0; i < 100; i++) {
+        const result = allocateTurns(5, 3, 0);
+        for (const t of result.blue) allValues.add(t);
+        for (const t of result.red) allValues.add(t);
+      }
+
+      // Only 0 and "fl" should be present
+      for (const v of allValues) {
+        expect(v === 0 || v === "fl").toBe(true);
+      }
+    });
+  });
+
+  describe("getDefaultMaxTurnIntensity", () => {
+    it("returns 0 for level 1", () => {
+      expect(getDefaultMaxTurnIntensity(1)).toBe(0);
+    });
+
+    it("returns 3 for level 2", () => {
+      expect(getDefaultMaxTurnIntensity(2)).toBe(3);
+    });
+
+    it("returns 3 for level 3", () => {
+      expect(getDefaultMaxTurnIntensity(3)).toBe(3);
+    });
+
+    it("returns 0 for unknown levels", () => {
+      expect(getDefaultMaxTurnIntensity(0)).toBe(0);
+      expect(getDefaultMaxTurnIntensity(99)).toBe(0);
+    });
+  });
+});
