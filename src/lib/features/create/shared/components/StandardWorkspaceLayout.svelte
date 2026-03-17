@@ -40,6 +40,7 @@
     onClearSequence,
     onShareHub = undefined,
     onSequenceActionsClick,
+    onSaveToLibrary = undefined,
     onOptionSelected,
     onOpenFilters,
     onCloseFilters,
@@ -59,6 +60,7 @@
     onClearSequence: () => void;
     onShareHub?: () => void;
     onSequenceActionsClick: () => void;
+    onSaveToLibrary?: () => void;
     onOptionSelected: (option: PictographData) => Promise<void>;
     onOpenFilters: () => void;
     onCloseFilters: () => void;
@@ -187,6 +189,7 @@
           {onClearSequence}
           {onShareHub}
           {onSequenceActionsClick}
+          {onSaveToLibrary}
         />
       </div>
     {/if}

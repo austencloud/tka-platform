@@ -7,9 +7,9 @@
   Layout:
   - LEFT ZONE: Sequence Actions (tools menu)
   - CENTER ZONE: Share Hub
-  - RIGHT ZONE: Clear Sequence
+  - RIGHT ZONE: Save to Library + Clear Sequence
 
-  Note: Undo and Save to Library are in the workspace top bar (SequenceDisplay).
+  Note: Undo is in the workspace top bar (SequenceDisplay).
 
   Architecture:
   - Uses CreateModuleContext for state access
@@ -28,6 +28,7 @@
   import ShareHubButton from "./buttons/ShareHubButton.svelte";
   import GeneratorHelpButton from "./buttons/GeneratorHelpButton.svelte";
   import PropIndicatorButton from "./buttons/PropIndicatorButton.svelte";
+  import SaveToLibraryButton from "./buttons/SaveToLibraryButton.svelte";
     // TEMPORARY: Animation style toggle for A/B testing - delete after choosing preferred style
   import { practiceAnimationStyle } from "../../../state/practice-animation-style.svelte";
 
@@ -47,11 +48,13 @@
     onClearSequence,
     onSequenceActionsClick,
     onShareHub,
+    onSaveToLibrary,
     visible = true,
   }: {
     onClearSequence?: () => void;
     onSequenceActionsClick?: () => void;
     onShareHub?: () => void;
+    onSaveToLibrary?: () => void;
     visible?: boolean;
   } = $props();
 
@@ -62,6 +65,11 @@
   );
   const canClearSequence = $derived(CreateModuleState.canClearSequence());
   const isShareHubOpen = $derived(panelState.isShareHubPanelOpen);
+  const canSaveToLibrary = $derived(CreateModuleState.canShowActionButtons());
+  const currentSequence = $derived.by(() => {
+    const tabState = CreateModuleState.getActiveTabSequenceState();
+    return tabState?.currentSequence ?? null;
+  });
 
   // Count center-zone buttons to key the container (for smooth cross-fade on layout changes)
   // Note: SequenceActions is now in left zone, not center
@@ -141,6 +149,14 @@
           transition:presenceTransition
         >
           <GeneratorHelpButton onclick={() => panelState.triggerGeneratorHelpMode()} />
+        </div>
+      {/if}
+      {#if canSaveToLibrary && onSaveToLibrary}
+        <div transition:presenceTransition>
+          <SaveToLibraryButton
+            sequence={currentSequence}
+            onclick={onSaveToLibrary}
+          />
         </div>
       {/if}
       {#if canClearSequence && onClearSequence}
