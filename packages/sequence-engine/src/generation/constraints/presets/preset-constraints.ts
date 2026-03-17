@@ -1,182 +1,105 @@
 /**
- * Preset Constraints
+ * Preset Constraints — Compositional Aliases
  *
- * Predefined constraint configurations for common use cases.
- * These can be selected by name instead of writing natural language.
+ * Named presets are aliases for ConstraintOptions objects.
+ * All presets resolve through buildConstraintSet() for consistency.
  */
 
 import type { ConstraintSet } from "../types.js";
-import { ContinuityConstraint } from "../style/continuity-constraint.js";
-import {
-  MotionTypeConstraint,
-  allProMotions,
-  allAntiMotions,
-  noDashMotions,
-  preferProMotions,
-  preferAntiMotions,
-} from "../style/motion-type-constraint.js";
-import {
-  allClockwise,
-  allCounterClockwise,
-} from "../style/rotation-direction-constraint.js";
-import { ReversalConstraint } from "../style/reversal-constraint.js";
-import { DashPreferenceConstraint, maximizeDashes } from "../style/dash-preference-constraint.js";
-import {
-  HandPathReversalConstraint,
-  maximizeHandPathContinuity,
-  enforceHandPathContinuity,
-} from "../style/hand-path-constraint.js";
+import type { ConstraintOptions } from "../composition/constraint-options.js";
+import { buildConstraintSet } from "../composition/build-constraint-set.js";
 
-/**
- * Available preset names.
- */
 export type PresetName =
   | "smooth"
   | "smooth-hands"
   | "smooth-props"
   | "reversal"
+  | "maximum-chaos"
   | "isolation"
   | "antispin"
-  | "pro-cw"
-  | "anti-ccw"
   | "no-dash"
-  | "maximize-dash"
-  | "maximum-chaos";
+  | "no-static"
+  | "maximize-dash";
 
-/**
- * Preset definitions.
- */
-export interface PresetDefinition {
+interface PresetDefinition {
   name: PresetName;
   description: string;
-  constraintSet: ConstraintSet;
+  options: ConstraintOptions;
 }
 
-/**
- * All available presets.
- */
-export const PRESETS: PresetDefinition[] = [
+const PRESETS: PresetDefinition[] = [
   {
     name: "smooth",
-    description: "Maximize overall flow - minimize both hand path and prop reversals",
-    constraintSet: {
-      hard: [],
-      soft: [
-        new ContinuityConstraint("maximize"),
-        maximizeHandPathContinuity(),
-      ],
-    },
+    description: "Maximize overall flow — minimize both hand path and prop reversals",
+    options: { propContinuity: "maximize", handPathContinuity: "maximize" },
   },
   {
     name: "smooth-hands",
-    description: "Maximize hand path continuity - allow prop reversals if hand paths stay smooth",
-    constraintSet: {
-      hard: [],
-      soft: [maximizeHandPathContinuity()],
-    },
+    description: "Maximize hand path continuity — allow prop reversals if hand paths stay smooth",
+    options: { handPathContinuity: "maximize" },
   },
   {
     name: "smooth-props",
-    description: "Maximize prop spin continuity - allow handpath reversals if prop spins stay consistent",
-    constraintSet: {
-      hard: [],
-      soft: [new ContinuityConstraint("maximize")],
-    },
+    description: "Maximize prop spin continuity — allow hand path reversals if prop spins stay consistent",
+    options: { propContinuity: "maximize" },
   },
   {
     name: "reversal",
-    description: "Maximize prop reversals - as many direction changes as the word allows",
-    constraintSet: {
-      hard: [],
-      soft: [new ReversalConstraint("every")],
-    },
-  },
-  {
-    name: "isolation",
-    description: "All pro (isolation) motions - props rotate with hand path",
-    constraintSet: {
-      hard: [allProMotions()],
-      soft: [new ContinuityConstraint("maximize")],
-    },
-  },
-  {
-    name: "antispin",
-    description: "All antispin motions - props rotate against hand path",
-    constraintSet: {
-      hard: [allAntiMotions()],
-      soft: [new ContinuityConstraint("maximize")],
-    },
-  },
-  {
-    name: "pro-cw",
-    description: "Pro motions with clockwise rotation",
-    constraintSet: {
-      hard: [allProMotions(), allClockwise()],
-      soft: [],
-    },
-  },
-  {
-    name: "anti-ccw",
-    description: "Anti motions with counter-clockwise rotation",
-    constraintSet: {
-      hard: [allAntiMotions(), allCounterClockwise()],
-      soft: [],
-    },
-  },
-  {
-    name: "no-dash",
-    description: "No dash motions - shifts only for connected movement",
-    constraintSet: {
-      hard: [noDashMotions()],
-      soft: [new ContinuityConstraint("maximize")],
-    },
-  },
-  {
-    name: "maximize-dash",
-    description: "Maximize dash motions - prefer Type 4/5 letters (Φ, Ψ, Λ) for bridges",
-    constraintSet: {
-      hard: [],
-      soft: [maximizeDashes()],
-    },
+    description: "Maximize prop reversals — as many direction changes as the word allows",
+    options: { propContinuity: "force-reversals" },
   },
   {
     name: "maximum-chaos",
-    description: "Maximize all reversals (hand path + prop) - as chaotic as the word allows",
-    constraintSet: {
-      hard: [],
-      soft: [
-        new ReversalConstraint("every"),
-        new HandPathReversalConstraint("every"),
-      ],
-    },
+    description: "Maximize all reversals (hand path + prop) — as chaotic as the word allows",
+    options: { propContinuity: "force-reversals", handPathContinuity: "force-reversals" },
+  },
+  {
+    name: "isolation",
+    description: "Pro shifts at zero turns — props appear stationary as hands move",
+    options: { motionType: "pro", turns: 0, motionFamily: { include: ["shift"] } },
+  },
+  {
+    name: "antispin",
+    description: "All anti motions with smooth prop continuity",
+    options: { motionType: "anti", propContinuity: "maximize" },
+  },
+  {
+    name: "no-dash",
+    description: "Exclude dash motions — shifts and statics only",
+    options: { motionFamily: { exclude: ["dash"] } },
+  },
+  {
+    name: "no-static",
+    description: "Exclude static motions — shifts and dashes only",
+    options: { motionFamily: { exclude: ["static"] } },
+  },
+  {
+    name: "maximize-dash",
+    description: "Prefer dash motions — one hand stays while the other moves",
+    options: { motionFamily: { include: ["dash"] } },
   },
 ];
 
-/**
- * Get a preset by name.
- */
-export function getPreset(name: PresetName): PresetDefinition | null {
+export function getPreset(name: string): PresetDefinition | null {
   return PRESETS.find((p) => p.name === name) ?? null;
 }
 
-/**
- * Get the constraint set for a preset.
- */
-export function getPresetConstraintSet(name: PresetName): ConstraintSet | null {
-  const preset = getPreset(name);
-  return preset?.constraintSet ?? null;
+export function getPresetOptions(name: string): ConstraintOptions | null {
+  return getPreset(name)?.options ?? null;
 }
 
-/**
- * List all available preset names.
- */
+export function getPresetConstraintSet(name: string): ConstraintSet | null {
+  const preset = getPreset(name);
+  if (!preset) return null;
+  return buildConstraintSet(preset.options);
+}
+
 export function listPresetNames(): PresetName[] {
   return PRESETS.map((p) => p.name);
 }
 
-/**
- * List all presets with descriptions.
- */
-export function listPresets(): Array<{ name: PresetName; description: string }> {
+export function listPresets(): Array<{ name: string; description: string }> {
   return PRESETS.map((p) => ({ name: p.name, description: p.description }));
 }
+
+export type { PresetDefinition };

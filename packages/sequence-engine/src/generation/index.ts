@@ -98,11 +98,16 @@ export {
 export {
   getPreset,
   getPresetConstraintSet,
+  getPresetOptions,
   listPresetNames,
   listPresets,
   type PresetName,
   type PresetDefinition,
 } from "./constraints/presets/preset-constraints.js";
+
+// Composition
+export { buildConstraintSet } from "./constraints/composition/build-constraint-set.js";
+export type { ConstraintOptions } from "./constraints/composition/constraint-options.js";
 
 // Builder (legacy)
 export {

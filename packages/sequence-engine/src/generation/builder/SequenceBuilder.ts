@@ -31,8 +31,10 @@ import { Type6Constraint } from "../constraints/domain/Type6Constraint.js";
 import { PositionContinuityConstraint } from "../constraints/domain/PositionContinuityConstraint.js";
 import { FloatConstraint } from "../constraints/domain/FloatConstraint.js";
 import { PropTypeConstraint } from "../constraints/domain/PropTypeConstraint.js";
-import { getPresetConstraintSet, type PresetName } from "../constraints/presets/preset-constraints.js";
+import { getPresetOptions } from "../constraints/presets/preset-constraints.js";
+import { buildConstraintSet } from "../constraints/composition/build-constraint-set.js";
 import { parseConstraintSet } from "../constraints/parsing/constraint-parser.js";
+import type { ConstraintOptions } from "../constraints/composition/constraint-options.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Public types
@@ -56,6 +58,9 @@ export interface BuildOptions {
 
   /** Natural-language constraints (parsed into constraint set) */
   constraints?: string;
+
+  /** Structured constraint composition (alternative to preset/NL) */
+  constraintOptions?: ConstraintOptions;
 
   /** Force a specific start position (e.g. "alpha1") */
   startPosition?: string;
@@ -200,35 +205,31 @@ export class SequenceBuilder {
     }
 
     let soft: IConstraint[] = [];
-    const weights = new Map();
 
-    // Style constraints from preset
-    if (options.constraintPreset) {
-      const presetSet = getPresetConstraintSet(options.constraintPreset as PresetName);
-      if (presetSet) {
-        hard.push(...presetSet.hard);
-        soft.push(...presetSet.soft);
-        if (presetSet.weights) {
-          for (const [k, v] of presetSet.weights) {
-            weights.set(k, v);
-          }
-        }
+    // Style constraints — all three paths resolve through buildConstraintSet
+    let styleSet: ConstraintSet | undefined;
+
+    if (options.constraintOptions) {
+      styleSet = buildConstraintSet(options.constraintOptions);
+    } else if (options.constraintPreset) {
+      const presetOptions = getPresetOptions(options.constraintPreset);
+      if (presetOptions) {
+        styleSet = buildConstraintSet(presetOptions);
       }
-    }
-
-    // Style constraints from natural language
-    if (options.constraints) {
+    } else if (options.constraints) {
+      // NL parsing still goes through legacy path for now
       const { constraintSet: parsedSet } = parseConstraintSet(options.constraints);
-      hard.push(...parsedSet.hard);
-      soft.push(...parsedSet.soft);
-      if (parsedSet.weights) {
-        for (const [k, v] of parsedSet.weights) {
-          weights.set(k, v);
-        }
-      }
+      styleSet = parsedSet;
     }
 
-    return { hard, soft, weights: weights.size > 0 ? weights : undefined };
+    if (styleSet) {
+      hard.push(...styleSet.hard);
+      soft.push(...styleSet.soft);
+    }
+
+    // Preserve weights from style constraints if present
+    const weights = styleSet?.weights;
+    return { hard, soft, weights };
   }
 
   /**
