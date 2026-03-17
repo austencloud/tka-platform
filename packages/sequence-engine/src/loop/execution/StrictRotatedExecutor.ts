@@ -1,0 +1,154 @@
+/**
+ * Strict Rotated LOOP Executor
+ *
+ * Rotates hand locations based on the handpath direction of each motion.
+ * Supports both halved (180 degree) and quartered (90 degree) slice sizes.
+ */
+
+import type { ILOOPExecutor } from "./ILOOPExecutor.js";
+import type { SequenceStep, MotionData } from "../../core/types/sequence-engine-types.js";
+import { SliceSize } from "../loop-types.js";
+import {
+  HALVED_LOOPS,
+  QUARTERED_LOOPS,
+  getHandRotationDirection,
+  getLocationMapForHandRotation,
+} from "../position-maps/circular-position-maps.js";
+import { gridPositionDeriver } from "../../core/positions/GridPositionDeriver.js";
+import { updateStepOrientations } from "./orientation-helpers.js";
+
+export class StrictRotatedExecutor implements ILOOPExecutor {
+  executeLOOP(sequence: SequenceStep[], sliceSize: SliceSize): SequenceStep[] {
+    this.validateSequence(sequence, sliceSize);
+
+    const startPosition = sequence.shift();
+    if (!startPosition) {
+      throw new Error("Sequence must have a start position");
+    }
+
+    const sequenceLength = sequence.length;
+    const entriesToAdd =
+      sliceSize === SliceSize.HALVED ? sequenceLength : sequenceLength * 3;
+
+    let lastStep = sequence[sequence.length - 1]!;
+    let nextStepNumber = (lastStep.stepNumber ?? lastStep.beatIndex) + 1;
+
+    for (let i = 0; i < entriesToAdd; i++) {
+      const finalIntendedLength = sequenceLength + entriesToAdd;
+      const matchingStep = this.getPreviousMatchingBeat(
+        sequence,
+        nextStepNumber,
+        finalIntendedLength,
+        sliceSize
+      );
+
+      const newStep = this.createRotatedStep(matchingStep, lastStep, nextStepNumber);
+      const finalStep = updateStepOrientations(newStep, lastStep);
+
+      sequence.push(finalStep);
+      lastStep = finalStep;
+      nextStepNumber++;
+    }
+
+    sequence.unshift(startPosition);
+    return sequence;
+  }
+
+  private validateSequence(sequence: SequenceStep[], sliceSize: SliceSize): void {
+    if (sequence.length < 2) {
+      throw new Error("Sequence must have at least 2 steps (start position + 1 beat)");
+    }
+
+    const startPos = sequence[0]!.startPosition;
+    const endPos = sequence[sequence.length - 1]!.endPosition;
+
+    if (!startPos || !endPos) {
+      throw new Error("Sequence steps must have valid start and end positions");
+    }
+
+    const key = `${startPos},${endPos}`;
+    const validationSet =
+      sliceSize === SliceSize.HALVED ? HALVED_LOOPS : QUARTERED_LOOPS;
+
+    if (!validationSet.has(key)) {
+      throw new Error(
+        `Invalid position pair for ${sliceSize} LOOP: ${startPos} -> ${endPos}. ` +
+          `This pair cannot complete a ${sliceSize} rotation.`
+      );
+    }
+  }
+
+  private getPreviousMatchingBeat(
+    sequence: SequenceStep[],
+    stepNumber: number,
+    finalLength: number,
+    sliceSize: SliceSize
+  ): SequenceStep {
+    const sliceLength =
+      sliceSize === SliceSize.QUARTERED
+        ? Math.floor(finalLength / 4)
+        : Math.floor(finalLength / 2);
+
+    const matchingStepNumber =
+      stepNumber > sliceLength ? stepNumber - sliceLength : stepNumber;
+    const arrayIndex = matchingStepNumber - 1;
+
+    if (arrayIndex < 0 || arrayIndex >= sequence.length) {
+      throw new Error(
+        `Invalid index mapping: stepNumber ${stepNumber} -> arrayIndex ${arrayIndex} (sequence length: ${sequence.length})`
+      );
+    }
+
+    return sequence[arrayIndex]!;
+  }
+
+  private createRotatedStep(
+    matchingStep: SequenceStep,
+    previousStep: SequenceStep,
+    stepNumber: number
+  ): SequenceStep {
+    const blueHandRotDir = getHandRotationDirection(
+      matchingStep.blueMotion.startLocation,
+      matchingStep.blueMotion.endLocation
+    );
+    const redHandRotDir = getHandRotationDirection(
+      matchingStep.redMotion.startLocation,
+      matchingStep.redMotion.endLocation
+    );
+
+    const blueLocationMap = getLocationMapForHandRotation(blueHandRotDir);
+    const redLocationMap = getLocationMapForHandRotation(redHandRotDir);
+
+    const newBlueEndLoc =
+      blueLocationMap[previousStep.blueMotion.endLocation] ||
+      previousStep.blueMotion.endLocation;
+    const newRedEndLoc =
+      redLocationMap[previousStep.redMotion.endLocation] ||
+      previousStep.redMotion.endLocation;
+
+    const newEndPosition = gridPositionDeriver.getGridPositionFromLocations(
+      newBlueEndLoc,
+      newRedEndLoc
+    );
+
+    return {
+      ...matchingStep,
+      stepNumber,
+      beatIndex: stepNumber,
+      startPosition: previousStep.endPosition,
+      endPosition: newEndPosition,
+      blueMotion: {
+        ...matchingStep.blueMotion,
+        startLocation: previousStep.blueMotion.endLocation,
+        endLocation: newBlueEndLoc,
+      },
+      redMotion: {
+        ...matchingStep.redMotion,
+        startLocation: previousStep.redMotion.endLocation,
+        endLocation: newRedEndLoc,
+      },
+    };
+  }
+}
+
+export const strictRotatedExecutor = new StrictRotatedExecutor();
