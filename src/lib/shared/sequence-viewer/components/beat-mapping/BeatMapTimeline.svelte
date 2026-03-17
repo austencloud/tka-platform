@@ -26,6 +26,7 @@
 
   let timelineEl: HTMLDivElement | undefined = $state();
   let draggingIndex = $state(-1);
+  let isScrubbing = $state(false);
 
   // The fraction of the timeline that's been played (0 to 1)
   let progressFraction = $derived(
@@ -50,9 +51,15 @@
     return Math.max(min, Math.min(max, time));
   }
 
-  function handleTimelineClick(event: PointerEvent) {
-    // If we just finished a drag, don't also seek
+  function handleTimelinePointerDown(event: PointerEvent) {
+    // If tapping a marker handle, let that handler take over
     if (draggingIndex >= 0) return;
+
+    // Start scrubbing — seek immediately and continue on move
+    isScrubbing = true;
+    const target = event.currentTarget as HTMLElement;
+    target.setPointerCapture(event.pointerId);
+
     const time = getTimeFromPointer(event.clientX);
     onSeek(time);
   }
@@ -67,14 +74,21 @@
   }
 
   function handlePointerMove(event: PointerEvent) {
-    if (draggingIndex < 0) return;
-    const rawTime = getTimeFromPointer(event.clientX);
-    const clamped = clampTimestamp(draggingIndex, rawTime);
-    onTimestampChange(draggingIndex, clamped);
+    if (draggingIndex >= 0) {
+      // Dragging a beat marker
+      const rawTime = getTimeFromPointer(event.clientX);
+      const clamped = clampTimestamp(draggingIndex, rawTime);
+      onTimestampChange(draggingIndex, clamped);
+    } else if (isScrubbing) {
+      // Scrubbing the playhead
+      const time = getTimeFromPointer(event.clientX);
+      onSeek(time);
+    }
   }
 
   function handlePointerUp() {
     draggingIndex = -1;
+    isScrubbing = false;
   }
 
   function formatTime(seconds: number): string {
@@ -89,7 +103,7 @@
 <div
   class="timeline-container"
   bind:this={timelineEl}
-  onpointerdown={handleTimelineClick}
+  onpointerdown={handleTimelinePointerDown}
   onpointermove={handlePointerMove}
   onpointerup={handlePointerUp}
   onpointercancel={handlePointerUp}
