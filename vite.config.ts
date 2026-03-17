@@ -926,6 +926,9 @@ export default defineConfig({
     ],
     exclude: [
       "pdfjs-dist",
+      // Workspace packages: exclude from prebundling so changes are
+      // picked up by HMR without restarting the dev server
+      "@tka/sequence-engine",
       // ⚡ Lazy-load these heavy libraries on-demand
       "fabric", // ~500KB canvas library (loads when user uses animator)
       "page-flip", // PDF flipbook (loads in learn module)
