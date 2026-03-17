@@ -1,0 +1,540 @@
+/**
+ * Beam Search
+ *
+ * Builds TKA sequences using beam search with constraint scoring.
+ * Queries an IVariationProvider for pictograph data instead of receiving
+ * raw arrays, and integrates orientation propagation at each step.
+ *
+ * Refactored from constrained-builder.ts into a class for cleaner composition
+ * with SequenceBuilder.
+ */
+
+import type { IVariationProvider } from "../data/IVariationProvider.js";
+import type {
+  PictographData,
+  ConstraintSet,
+  SearchState,
+  VariationScore,
+  ConstraintReport,
+} from "../constraints/types.js";
+import { scoreAndRankVariations } from "./variation-scorer.js";
+import {
+  createInitialState,
+  extendState,
+  pruneBeam,
+  getBestState,
+  DEFAULT_BEAM_CONFIG,
+  type BeamSearchConfig,
+} from "./search-state.js";
+import { generateConstraintReport } from "../constraints/reporting/report-generator.js";
+import { scoreBridgeOptions } from "./bridge-scorer.js";
+import { getLetterTransitionGraph } from "../../core/transition-graph/LetterTransitionGraph.js";
+import { calculateEndOrientation } from "../../core/orientation/OrientationCalculator.js";
+import type { Orientation } from "../../core/types/sequence-engine-types.js";
+import { LetterClassifier } from "../../core/letters/LetterClassifier.js";
+
+/**
+ * Type 6 static letters — valid for starting positions.
+ */
+const TYPE_6_LETTERS = ["α", "β", "γ"];
+
+/**
+ * Result of the beam search.
+ */
+export interface BeamSearchResult {
+  /** Whether a valid sequence was found */
+  success: boolean;
+
+  /** The sequence steps (including start position at index 0) */
+  steps: PictographData[];
+
+  /** Variation indices for each step */
+  variationIndices: number[];
+
+  /** Current end position of the sequence */
+  endPosition: string;
+
+  /** Constraint satisfaction report */
+  constraintReport: ConstraintReport;
+
+  /** Error message if not successful */
+  error?: string;
+
+  /** Number of search states explored */
+  statesExplored: number;
+
+  /** Number of beam prunings performed */
+  beamPrunings: number;
+
+  /** Indices of steps that are bridge letters (not user-requested) */
+  bridgeStepIndices: number[];
+}
+
+/**
+ * Beam search for constrained sequence generation.
+ *
+ * Accepts an IVariationProvider to query pictograph data on demand,
+ * rather than receiving the full dataset upfront. This keeps memory
+ * usage proportional to the search, not the entire alphabet.
+ */
+export class BeamSearch {
+  private readonly letterClassifier = new LetterClassifier();
+
+  constructor(
+    private readonly variationProvider: IVariationProvider,
+    private readonly gridMode: string,
+  ) {}
+
+  /**
+   * Run beam search to find the best sequence for the given letters.
+   */
+  search(
+    letters: string[],
+    startPosition: string | undefined,
+    constraintSet: ConstraintSet,
+    beamWidth?: number,
+  ): BeamSearchResult {
+    const config: BeamSearchConfig = {
+      ...DEFAULT_BEAM_CONFIG,
+      beamWidth: beamWidth ?? DEFAULT_BEAM_CONFIG.beamWidth,
+    };
+
+    if (letters.length === 0) {
+      return this.failResult("No letters provided", 0, 0);
+    }
+
+    const firstLetter = letters[0]!;
+
+    // Step 1: Find first letter variations
+    const firstLetterVariations = startPosition
+      ? this.variationProvider.getVariations(firstLetter, startPosition, this.gridMode)
+      : this.getAllVariationsForLetter(firstLetter);
+
+    if (firstLetterVariations.length === 0) {
+      return this.failResult(`No variations found for letter "${firstLetter}"`, 0, 0);
+    }
+
+    // Step 2: Score first letter variations
+    const firstLetterScores = scoreAndRankVariations(
+      firstLetterVariations,
+      {
+        stepIndex: 0,
+        totalSteps: letters.length,
+        previousSteps: [],
+        letter: firstLetter,
+      },
+      constraintSet,
+    );
+
+    // Initialize beam with top-scored first variations
+    let beam: SearchState[] = [];
+    let statesExplored = 0;
+    let beamPrunings = 0;
+
+    for (const scored of firstLetterScores.slice(0, config.beamWidth)) {
+      if (!scored.hardConstraintsSatisfied) continue;
+
+      const startPictograph = this.findStartPosition(scored.variation.startPosition);
+      if (startPictograph) {
+        const initialState = createInitialState(startPictograph.variation, startPictograph.index);
+        const state = extendState(initialState, scored.variation, scored);
+        beam.push(state);
+        statesExplored++;
+      }
+    }
+
+    if (beam.length === 0) {
+      return this.failResult("No valid starting configurations found", statesExplored, beamPrunings);
+    }
+
+    // Get transition graph for bridge finding
+    const transitionGraph = getLetterTransitionGraph();
+
+    // Step 3: Beam search through remaining letters
+    for (let i = 1; i < letters.length; i++) {
+      const letter = letters[i]!;
+      const nextBeam: SearchState[] = [];
+
+      for (const state of beam) {
+        // Find variations at current end position
+        let validVariations = this.variationProvider.getVariations(
+          letter,
+          state.currentEndPosition,
+          this.gridMode,
+        );
+
+        if (validVariations.length === 0) {
+          // No direct path — try bridge letters
+          const previousLetter = state.steps[state.steps.length - 1]?.letter;
+          if (!previousLetter) continue;
+
+          const bridgeResult = this.tryBridges(
+            state,
+            previousLetter,
+            letter,
+            i,
+            letters.length,
+            constraintSet,
+            config,
+            transitionGraph,
+          );
+
+          statesExplored += bridgeResult.statesExplored;
+          nextBeam.push(...bridgeResult.newStates);
+        } else {
+          // Direct path — score and extend
+          const scores = scoreAndRankVariations(
+            validVariations,
+            {
+              stepIndex: i,
+              totalSteps: letters.length,
+              previousSteps: state.steps,
+              letter,
+            },
+            constraintSet,
+          );
+
+          for (const scored of scores.slice(0, config.beamWidth)) {
+            if (!scored.hardConstraintsSatisfied) continue;
+            nextBeam.push(extendState(state, scored.variation, scored));
+            statesExplored++;
+          }
+        }
+      }
+
+      // Prune beam
+      beam = pruneBeam(nextBeam, config.beamWidth);
+      if (nextBeam.length > config.beamWidth) {
+        beamPrunings++;
+      }
+
+      if (beam.length === 0) {
+        return this.failResult(
+          `No valid path found after letter "${letter}" (position ${i + 1})`,
+          statesExplored,
+          beamPrunings,
+        );
+      }
+    }
+
+    // Step 4: Select best final state
+    const bestState = getBestState(beam, config.minAcceptableScore);
+
+    if (!bestState) {
+      if (config.allowPartial && beam.length > 0) {
+        const partial = beam.sort((a, b) => b.cumulativeScore - a.cumulativeScore)[0];
+        if (partial) {
+          return this.buildResult(partial, constraintSet, statesExplored, beamPrunings, true);
+        }
+      }
+
+      return this.failResult(
+        `No sequence met minimum score threshold (${config.minAcceptableScore})`,
+        statesExplored,
+        beamPrunings,
+      );
+    }
+
+    return this.buildResult(bestState, constraintSet, statesExplored, beamPrunings, false);
+  }
+
+  /**
+   * Attempt single-letter and multi-letter bridges between two letters.
+   */
+  private tryBridges(
+    state: SearchState,
+    fromLetter: string,
+    toLetter: string,
+    stepIndex: number,
+    totalLetters: number,
+    constraintSet: ConstraintSet,
+    config: BeamSearchConfig,
+    transitionGraph: ReturnType<typeof getLetterTransitionGraph>,
+  ): { newStates: SearchState[]; statesExplored: number } {
+    const newStates: SearchState[] = [];
+    let statesExplored = 0;
+
+    // Try single-letter bridges first (can be scored for constraint optimization)
+    let bridgeOptions = transitionGraph.findAllBridgeOptions(fromLetter, toLetter);
+
+    if (bridgeOptions.length > 0) {
+      // Single-letter bridge: try all options in score order
+      const allPictographs = this.variationProvider.getAllVariations(this.gridMode);
+      const scoredBridges = scoreBridgeOptions(bridgeOptions, constraintSet, allPictographs);
+
+      for (const bridgeOption of scoredBridges) {
+        if (!bridgeOption) continue;
+
+        const bridgeVariations = this.variationProvider.getVariations(
+          bridgeOption.letter,
+          state.currentEndPosition,
+          this.gridMode,
+        );
+        if (bridgeVariations.length === 0) continue;
+
+        const bridgeScores = scoreAndRankVariations(
+          bridgeVariations,
+          {
+            stepIndex,
+            totalSteps: totalLetters + 1,
+            previousSteps: state.steps,
+            letter: bridgeOption.letter,
+          },
+          constraintSet,
+        );
+
+        const bestBridgeScore = bridgeScores[0];
+        if (!bestBridgeScore || !bestBridgeScore.hardConstraintsSatisfied) continue;
+
+        const stateWithBridge = extendState(state, bestBridgeScore.variation, bestBridgeScore, true);
+        statesExplored++;
+
+        // Find target letter from bridge's end position
+        const targetVariations = this.variationProvider.getVariations(
+          toLetter,
+          stateWithBridge.currentEndPosition,
+          this.gridMode,
+        );
+        if (targetVariations.length === 0) continue;
+
+        const scores = scoreAndRankVariations(
+          targetVariations,
+          {
+            stepIndex: stepIndex + 1,
+            totalSteps: totalLetters + 1,
+            previousSteps: stateWithBridge.steps,
+            letter: toLetter,
+          },
+          constraintSet,
+        );
+
+        let bridgeSucceeded = false;
+        for (const scored of scores.slice(0, config.beamWidth)) {
+          if (!scored.hardConstraintsSatisfied) continue;
+          newStates.push(extendState(stateWithBridge, scored.variation, scored));
+          statesExplored++;
+          bridgeSucceeded = true;
+        }
+
+        // First working bridge is likely best (sorted by score)
+        if (bridgeSucceeded) break;
+      }
+    } else {
+      // No single-letter bridge — fall back to BFS multi-letter path
+      const multiBridgePath = transitionGraph.findBridgeLetters(fromLetter, toLetter);
+      if (multiBridgePath.length === 0) {
+        return { newStates, statesExplored };
+      }
+
+      let currentState = state;
+      let bridgeSuccess = true;
+
+      for (const bridgeLetter of multiBridgePath) {
+        const bridgeVariations = this.variationProvider.getVariations(
+          bridgeLetter,
+          currentState.currentEndPosition,
+          this.gridMode,
+        );
+        if (bridgeVariations.length === 0) {
+          bridgeSuccess = false;
+          break;
+        }
+
+        const bridgeScores = scoreAndRankVariations(
+          bridgeVariations,
+          {
+            stepIndex,
+            totalSteps: totalLetters + multiBridgePath.length,
+            previousSteps: currentState.steps,
+            letter: bridgeLetter,
+          },
+          constraintSet,
+        );
+
+        const bestBridgeScore = bridgeScores[0];
+        if (!bestBridgeScore || !bestBridgeScore.hardConstraintsSatisfied) {
+          bridgeSuccess = false;
+          break;
+        }
+
+        currentState = extendState(currentState, bestBridgeScore.variation, bestBridgeScore, true);
+        statesExplored++;
+      }
+
+      if (!bridgeSuccess) {
+        return { newStates, statesExplored };
+      }
+
+      // Find target letter from final bridge's end position
+      const targetVariations = this.variationProvider.getVariations(
+        toLetter,
+        currentState.currentEndPosition,
+        this.gridMode,
+      );
+      if (targetVariations.length === 0) {
+        return { newStates, statesExplored };
+      }
+
+      const scores = scoreAndRankVariations(
+        targetVariations,
+        {
+          stepIndex: stepIndex + multiBridgePath.length,
+          totalSteps: totalLetters + multiBridgePath.length,
+          previousSteps: currentState.steps,
+          letter: toLetter,
+        },
+        constraintSet,
+      );
+
+      for (const scored of scores.slice(0, config.beamWidth)) {
+        if (!scored.hardConstraintsSatisfied) continue;
+        newStates.push(extendState(currentState, scored.variation, scored));
+        statesExplored++;
+      }
+    }
+
+    return { newStates, statesExplored };
+  }
+
+  /**
+   * Get all variations for a letter across all positions (when no start position given).
+   */
+  private getAllVariationsForLetter(letter: string): PictographData[] {
+    return this.variationProvider
+      .getAllVariations(this.gridMode)
+      .filter((p) => p.letter === letter);
+  }
+
+  /**
+   * Find a valid Type 6 start position pictograph.
+   */
+  private findStartPosition(
+    position: string,
+  ): { variation: PictographData; index: number } | null {
+    const allVariations = this.variationProvider.getAllVariations(this.gridMode);
+    const validStarts = allVariations.filter(
+      (p) =>
+        TYPE_6_LETTERS.includes(p.letter) &&
+        p.startPosition === position &&
+        p.endPosition === position,
+    );
+
+    if (validStarts.length === 0) return null;
+
+    const index = Math.floor(Math.random() * validStarts.length);
+    const variation = validStarts[index];
+    if (!variation) return null;
+
+    return { variation, index };
+  }
+
+  /**
+   * Propagate orientations through the sequence.
+   * Each beat's start orientation = previous beat's end orientation.
+   */
+  private propagateOrientations(steps: PictographData[]): PictographData[] {
+    if (steps.length === 0) return steps;
+
+    const result: PictographData[] = [];
+    const startPosition = steps[0];
+    if (!startPosition) return steps;
+
+    let blueOrientation = (startPosition.blueMotion.endOrientation || "in") as Orientation;
+    let redOrientation = (startPosition.redMotion.endOrientation || "in") as Orientation;
+
+    result.push(startPosition);
+
+    for (let i = 1; i < steps.length; i++) {
+      const step = steps[i];
+      if (!step) continue;
+
+      const blueEndOrientation = calculateEndOrientation({
+        motionType: step.blueMotion.motionType,
+        turns: 0,
+        rotationDirection: step.blueMotion.rotationDirection || "cw",
+        startLocation: step.blueMotion.startLocation,
+        endLocation: step.blueMotion.endLocation,
+        startOrientation: blueOrientation,
+      });
+
+      const redEndOrientation = calculateEndOrientation({
+        motionType: step.redMotion.motionType,
+        turns: 0,
+        rotationDirection: step.redMotion.rotationDirection || "cw",
+        startLocation: step.redMotion.startLocation,
+        endLocation: step.redMotion.endLocation,
+        startOrientation: redOrientation,
+      });
+
+      result.push({
+        ...step,
+        blueMotion: {
+          ...step.blueMotion,
+          startOrientation: blueOrientation,
+          endOrientation: blueEndOrientation,
+        },
+        redMotion: {
+          ...step.redMotion,
+          startOrientation: redOrientation,
+          endOrientation: redEndOrientation,
+        },
+      });
+
+      blueOrientation = blueEndOrientation;
+      redOrientation = redEndOrientation;
+    }
+
+    return result;
+  }
+
+  /**
+   * Build the final result from a search state.
+   */
+  private buildResult(
+    state: SearchState,
+    constraintSet: ConstraintSet,
+    statesExplored: number,
+    beamPrunings: number,
+    isPartial: boolean,
+  ): BeamSearchResult {
+    const report = generateConstraintReport(state, constraintSet);
+    const stepsWithOrientations = this.propagateOrientations(state.steps);
+
+    const bridgeStepIndices = state.bridgeStepIndices
+      ? Array.from(state.bridgeStepIndices).sort((a, b) => a - b)
+      : [];
+
+    return {
+      success: !isPartial && report.satisfied,
+      steps: stepsWithOrientations,
+      variationIndices: state.stepScores.map((s) => s.variationIndex),
+      endPosition: state.currentEndPosition,
+      constraintReport: report,
+      statesExplored,
+      beamPrunings,
+      bridgeStepIndices,
+      error: isPartial ? "Partial result (minimum score not met)" : undefined,
+    };
+  }
+
+  /**
+   * Build a failure result.
+   */
+  private failResult(
+    error: string,
+    statesExplored: number,
+    beamPrunings: number,
+  ): BeamSearchResult {
+    return {
+      success: false,
+      steps: [],
+      variationIndices: [],
+      endPosition: "",
+      constraintReport: { score: 0, satisfied: false, details: [] },
+      error,
+      statesExplored,
+      beamPrunings,
+      bridgeStepIndices: [],
+    };
+  }
+}
