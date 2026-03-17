@@ -109,8 +109,14 @@ export function scoreAndRankVariations(
     }
   }
 
-  // Sort by total score descending
-  return scores.sort((a, b) => b.totalScore - a.totalScore);
+  // Sort by total score descending, with random tiebreaking.
+  // Without randomization, equal-scoring candidates always appear in the
+  // same order, producing identical sequences every generation.
+  return scores.sort((a, b) => {
+    const diff = b.totalScore - a.totalScore;
+    if (Math.abs(diff) < 1e-9) return Math.random() - 0.5;
+    return diff;
+  });
 }
 
 /**
