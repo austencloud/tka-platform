@@ -41,10 +41,7 @@ import { parseConstraintSet } from "../constraints/parsing/constraint-parser.js"
 import type { ConstraintOptions } from "../constraints/composition/constraint-options.js";
 import { LOOPType, SliceSize } from "../../loop/loop-types.js";
 import { loopExecutorSelector } from "../../loop/execution/LOOPExecutorSelector.js";
-import {
-  HALF_POSITION_MAP,
-  QUARTER_POSITION_MAP_CW,
-} from "../../loop/position-maps/circular-position-maps.js";
+import { loopEndPositionSelector } from "../../loop/targeting/LOOPEndPositionSelector.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -264,37 +261,47 @@ export class SequenceBuilder {
     );
 
     // Stage 4: Beam search by length
-    // When generating a LOOP seed, the last beat must end at the position
-    // that's the correct rotation away from the start (180° for halved,
-    // 90° for quartered). Without this, the seed can end anywhere and the
-    // LOOP executor's validation rightfully rejects it.
+    // When generating a LOOP seed, the last beat must end at a specific
+    // position determined by the LOOP type and start position. Each LOOP
+    // type has its own requirement (rotated = 180°/90° away, inverted =
+    // same position, mirrored = vertically mirrored, etc.).
     //
-    // The position map is passed to searchByLength so it can compute the
-    // required end position AFTER picking the (possibly random) start.
-    let loopPositionMap: Record<string, string> | undefined;
-    if (options.loop?.useTargetedGeneration) {
-      loopPositionMap =
-        options.loop.sliceSize === SliceSize.QUARTERED
-          ? QUARTER_POSITION_MAP_CW
-          : HALF_POSITION_MAP;
-    }
-
-    // When LOOP targeting is active and no startPosition is specified,
-    // the beam search picks a random start. Some starts may not have a
-    // valid path to the required end position in the allotted beats.
-    // Retry up to MAX_LOOP_RETRIES times with fresh random starts.
-    const maxRetries = loopPositionMap && !options.startPosition ? 10 : 1;
+    // LOOPEndPositionSelector handles all LOOP types correctly.
+    // When no start position is specified, the beam search picks a random
+    // one — we retry up to 10 times if the path fails.
+    const needsLoopTargeting = options.loop?.useTargetedGeneration;
+    const maxRetries = needsLoopTargeting && !options.startPosition ? 10 : 1;
     let searchResult: BeamSearchResult | undefined;
     let lastError: string | undefined;
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
+      // For LOOP generation, compute the required end position.
+      // If startPosition is specified, compute upfront. If not,
+      // the beam search picks a random start — we compute end position
+      // from the actual start after the first beat is selected.
+      let requiredEndPosition: string | undefined;
+      let loopPositionMap: Record<string, string> | undefined;
+
+      if (needsLoopTargeting && options.startPosition) {
+        requiredEndPosition = loopEndPositionSelector.determineEndPosition(
+          options.loop!.type,
+          options.startPosition,
+          options.loop!.sliceSize,
+        ) ?? undefined;
+      } else if (needsLoopTargeting) {
+        // No start position specified — build a position map so the beam
+        // search can compute the end position from the actual random start.
+        // We build this from LOOPEndPositionSelector for all known positions.
+        loopPositionMap = this.buildLoopPositionMap(options.loop!);
+      }
+
       const beamSearch = new BeamSearch(this.variationProvider, options.gridMode);
       const result = beamSearch.searchByLength(
         length,
         options.startPosition,
         constraintSet,
         options.beamWidth ?? 10,
-        undefined,
+        requiredEndPosition,
         loopPositionMap,
       );
 
@@ -523,5 +530,31 @@ export class SequenceBuilder {
         orientationCycleMultiplier,
       },
     };
+  }
+
+  /**
+   * Build a position map for LOOP end-position targeting.
+   * Maps each possible start position to its required end position
+   * for the given LOOP type, using LOOPEndPositionSelector.
+   */
+  private buildLoopPositionMap(loopOptions: LoopOptions): Record<string, string> {
+    const map: Record<string, string> = {};
+    // All known position prefixes and counts
+    const positions = [
+      ...Array.from({ length: 8 }, (_, i) => `alpha${i + 1}`),
+      ...Array.from({ length: 8 }, (_, i) => `beta${i + 1}`),
+      ...Array.from({ length: 16 }, (_, i) => `gamma${i + 1}`),
+    ];
+    for (const pos of positions) {
+      const endPos = loopEndPositionSelector.determineEndPosition(
+        loopOptions.type,
+        pos,
+        loopOptions.sliceSize,
+      );
+      if (endPos) {
+        map[pos] = endPos;
+      }
+    }
+    return map;
   }
 }
