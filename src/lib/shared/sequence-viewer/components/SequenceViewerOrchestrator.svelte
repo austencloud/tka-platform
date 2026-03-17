@@ -889,6 +889,8 @@
           loopCount: opts.loopCount,
           resolution: opts.resolution,
           effectOverrides: opts.effectOverrides ?? undefined,
+          includeStartPosition: opts.includeStartPosition,
+          includeEndHold: opts.includeEndHold,
         },
         { canvas: animationCanvas, playbackController, panelState: modalAnimationState },
         callbacks

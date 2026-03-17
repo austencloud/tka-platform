@@ -315,6 +315,31 @@
                 />
               </div>
             {/if}
+
+            <!-- Timing -->
+            <div class="setting-row">
+              <span class="setting-label">Timing</span>
+              <div class="chip-group">
+                <button
+                  type="button"
+                  class="chip"
+                  class:active={exportOptions.videoIncludeStartPosition}
+                  onclick={() => exportOptions.setVideoIncludeStartPosition(!exportOptions.videoIncludeStartPosition)}
+                  aria-pressed={exportOptions.videoIncludeStartPosition}
+                >
+                  Start Pos
+                </button>
+                <button
+                  type="button"
+                  class="chip"
+                  class:active={exportOptions.videoIncludeEndHold}
+                  onclick={() => exportOptions.setVideoIncludeEndHold(!exportOptions.videoIncludeEndHold)}
+                  aria-pressed={exportOptions.videoIncludeEndHold}
+                >
+                  End Hold
+                </button>
+              </div>
+            </div>
           </div>
 
           {#if timeEstimateLabel}
@@ -467,6 +492,30 @@
           />
         </div>
       {/if}
+
+      <div class="setting-row">
+        <span class="setting-label">Timing</span>
+        <div class="chip-group">
+          <button
+            type="button"
+            class="chip"
+            class:active={exportOptions.videoIncludeStartPosition}
+            onclick={() => exportOptions.setVideoIncludeStartPosition(!exportOptions.videoIncludeStartPosition)}
+            aria-pressed={exportOptions.videoIncludeStartPosition}
+          >
+            Start Pos
+          </button>
+          <button
+            type="button"
+            class="chip"
+            class:active={exportOptions.videoIncludeEndHold}
+            onclick={() => exportOptions.setVideoIncludeEndHold(!exportOptions.videoIncludeEndHold)}
+            aria-pressed={exportOptions.videoIncludeEndHold}
+          >
+            End Hold
+          </button>
+        </div>
+      </div>
     </div>
 
     <div class="panel-footer">

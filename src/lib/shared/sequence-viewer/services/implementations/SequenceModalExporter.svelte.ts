@@ -93,6 +93,8 @@ export class SequenceModalExporter implements ISequenceModalExporter {
           loopCount: options.loopCount,
           resolution: options.resolution,
           effectOverrides: options.effectOverrides,
+          includeAnimationStartPosition: options.includeStartPosition,
+          includeEndHold: options.includeEndHold,
         }
       );
 

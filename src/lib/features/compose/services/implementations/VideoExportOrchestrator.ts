@@ -172,12 +172,16 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
     if (useBackgroundEncoder) {
       const bitrate = calculateBitrate(outputWidth, outputHeight, fps);
 
-      // Calculate total frames early so the worker can allocate its muxer
-      // Use duration-aware total (matches the capture loop calculation below)
+      // Calculate total frames early so the worker can allocate its muxer.
+      // Must match the capture loop: optional start position + steps + optional end hold.
       const earlySteps = panelState.sequenceData?.steps ?? [];
-      const earlyTotalDuration = earlySteps.length > 0
+      const earlyStepDuration = earlySteps.length > 0
         ? earlySteps.reduce((sum, s) => sum + (s.duration ?? 1), 0)
         : panelState.totalSteps;
+      const earlyStartDur = (options.includeAnimationStartPosition ?? true) ? 1 : 0;
+      const earlyIsLoopable = playbackController.isSeamlesslyLoopable;
+      const earlyEndDur = (options.includeEndHold ?? !earlyIsLoopable) ? 1 : 0;
+      const earlyTotalDuration = earlyStartDur + earlyStepDuration + earlyEndDur;
       const secondsPerBeat = 1.0 / panelState.speed;
       const singleLoopDurationSeconds = earlyTotalDuration * secondsPerBeat;
       const framesPerLoop = Math.ceil(singleLoopDurationSeconds * fps);
@@ -249,11 +253,20 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       const stepDurations = steps.map((s) => s.duration ?? 1);
       const totalDurationUnits = stepDurations.reduce((sum, d) => sum + d, 0) || panelState.totalSteps;
 
+      // Include optional start position (1 beat) and end hold for non-looping sequences.
+      // The animation engine uses beat 0 = start position, beat 1+ = motion steps.
+      // Without accounting for this, the exported glyph overlay is one beat ahead
+      // of the animation, and the end position is cut off abruptly.
+      const startPositionDuration = (options.includeAnimationStartPosition ?? true) ? 1 : 0;
+      const isLoopable = playbackController.isSeamlesslyLoopable;
+      const endPositionHoldDuration = (options.includeEndHold ?? !isLoopable) ? 1 : 0;
+      const totalDurationWithHolds = startPositionDuration + totalDurationUnits + endPositionHoldDuration;
+
       // Calculate effective duration at user's BPM/speed
       // At speed=1.0 (60 BPM): 1 second per beat unit
       // At speed=2.0 (120 BPM): 0.5 seconds per beat unit
       const secondsPerBeatUnit = 1.0 / panelState.speed;
-      const singleLoopDurationSeconds = totalDurationUnits * secondsPerBeatUnit;
+      const singleLoopDurationSeconds = totalDurationWithHolds * secondsPerBeatUnit;
 
       const framesPerLoop = Math.ceil(singleLoopDurationSeconds * fps);
 
@@ -371,12 +384,39 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         }
 
         // Calculate beat position for this frame using duration-weighted mapping.
-        // Maps elapsed time (as fraction of loop) to the correct beat position,
-        // so steps with longer durations occupy proportionally more frames.
+        // The timeline includes: optional start position + motion steps + optional end hold.
+        // The animation engine uses beat 0 = start position, beat 1+ = motion steps.
+        // Using calculateStateForBeat instead of jumpToStep because jumpToStep
+        // clamps at totalSteps, which truncates the last step's fractional progress.
         const frameInLoop = i % framesPerLoop;
-        const timeProgress = (frameInLoop / framesPerLoop) * totalDurationUnits;
-        const beat = this.timeToBeat(timeProgress, cumulativeDurations, stepDurations);
-        playbackController.jumpToStep(beat);
+        const timeProgress = (frameInLoop / framesPerLoop) * totalDurationWithHolds;
+
+        let beat: number;
+        let stepIndex: number;
+        let isInStartPosition = false;
+        let isInEndHold = false;
+
+        if (startPositionDuration > 0 && timeProgress < startPositionDuration) {
+          // Start position phase — show initial pose, no glyph
+          beat = timeProgress / startPositionDuration;
+          stepIndex = -1;
+          isInStartPosition = true;
+          playbackController.calculateStateForBeat(beat);
+        } else if (endPositionHoldDuration > 0 && timeProgress >= startPositionDuration + totalDurationUnits) {
+          // End position hold — freeze on the completed last motion step
+          beat = steps.length + 1;
+          stepIndex = steps.length - 1;
+          isInEndHold = true;
+          playbackController.calculateStateForBeat(beat);
+        } else {
+          // Motion steps phase — map time to step index, offset by +1 for the
+          // animation engine's beat convention (beat 0 = start, 1+ = motion)
+          const motionTime = timeProgress - startPositionDuration;
+          const rawBeat = this.timeToBeat(motionTime, cumulativeDurations, stepDurations);
+          stepIndex = Math.floor(rawBeat);
+          beat = rawBeat + 1;
+          playbackController.calculateStateForBeat(beat);
+        }
 
         // Wait for the UI + canvas to render the new beat
         await this.waitForAnimationFrame();
@@ -404,10 +444,10 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         if (canvasAvailable) {
           if (isCompositeMode) {
             // Composite mode: render animation + grid + beat highlight
-            const stepIndex = Math.floor(beat);
+            const compositeStepIndex = isInStartPosition ? 0 : Math.max(0, stepIndex);
             this.compositeRenderer.renderCompositeFrame(
               canvas,
-              stepIndex,
+              compositeStepIndex,
               offscreenCanvas
             );
           } else {
@@ -449,19 +489,21 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
             }
           }
 
-          // Get step index and cache key for the current beat
-          const stepIndex = Math.floor(beat);
+          // Use the stepIndex calculated above (already accounts for start position offset).
+          // During start position, stepIndex is -1 so no glyph or beat number is shown.
           const clampedStepIndex = Math.max(
             0,
             Math.min(stepIndex, steps.length - 1)
           );
 
-          // Calculate beat number for display (1-indexed)
-          const stepNumber = this.getStepNumberForFrame(beat, panelState);
+          // Calculate beat number for display (1-indexed, null during start position)
+          const stepNumber = isInStartPosition ? null : clampedStepIndex + 1;
 
-          // Use cache key for glyph transition detection (includes letter + turns + colors)
-          const cacheKey =
-            this.glyphPrerenderer.getCacheKeyForStep(clampedStepIndex);
+          // Use cache key for glyph transition detection (includes letter + turns + colors).
+          // During start position (stepIndex === -1), no glyph should be shown.
+          const cacheKey = isInStartPosition
+            ? ""
+            : this.glyphPrerenderer.getCacheKeyForStep(clampedStepIndex);
 
           // Detect transitions (cache key or beat number changed)
           const glyphChanged = cacheKey !== currentCacheKey;
@@ -575,15 +617,21 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
             );
           }
 
-          // Render progress bar if enabled (below canvas area)
+          // Render progress bar if enabled (below canvas area).
+          // The progress bar expects a 0-based step index float.
           if (showProgressBar && !isCompositeMode) {
             const progressBarY = headerHeight + canvas.height;
+            const progressBeat = isInStartPosition
+              ? 0
+              : isInEndHold
+                ? steps.length
+                : (beat - 1); // Undo the +1 offset to get 0-based step index
             this.canvasRenderer.renderProgressBarToCanvas(
               offscreenCtx,
               actualCanvasSize,
               progressBarY,
               steps.length,
-              beat,
+              progressBeat,
               stepDurations,
               isDarkMode
             );
