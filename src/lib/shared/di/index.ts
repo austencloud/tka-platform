@@ -97,6 +97,7 @@ import { videoTrailsContainer } from "./containers/video-trails-container";
 import { videoInfraContainer } from "./containers/video-infra-container";
 import { createMuseumContainer } from "./containers/museum-container";
 import { createPushContainer } from "./containers/push-container";
+import { createOfflineContainer } from "./containers/offline-container";
 // Deep link resolution for cross-tab/cross-user URLs
 import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
 
@@ -339,6 +340,14 @@ const connectContainer = typeof window !== 'undefined' ? createConnectContainer(
   lanSyncCoordinator: lanSyncContainer.items.lanSyncCoordinator,
 }) : null as any;
 
+// Offline container - needs networkStatusMonitor from device-sync and
+// galleryOfflineCache + thumbnailLocalCache from browse
+const offlineContainer = typeof window !== 'undefined' ? createOfflineContainer({
+  networkStatusMonitor: deviceSyncContainer.items.networkStatusMonitor,
+  galleryOfflineCache: browseContainer.items.galleryOfflineCache,
+  thumbnailLocalCache: browseContainer.items.thumbnailLocalCache,
+}) : null as any;
+
 // DeepLinkResolver - needs sequenceRepository from data and browseLoader from browse
 const deepLinkResolver = typeof window !== 'undefined' ? new DeepLinkResolver(
   dataContainer.items.sequenceRepository,
@@ -453,6 +462,8 @@ function buildAppContainer(): any {
   c = c.add(museumContainer.items);
   // Push notification services (FCM token management)
   c = c.add(pushContainer.items);
+  // Offline caching (proactive gallery + thumbnail prefetch)
+  c = c.add(offlineContainer.items);
   // Cross-container services (depend on multiple container outputs)
   c = c.add({ deepLinkResolver: () => deepLinkResolver });
   c = c.add({ sequenceDataProvider: () => sequenceDataProvider });

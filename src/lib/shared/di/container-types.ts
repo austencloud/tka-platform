@@ -69,6 +69,7 @@ import type { ConnectContainer } from "./containers/connect-container";
 import type { DeviceSyncContainer } from "./containers/device-sync-container";
 import type { MuseumContainer } from "./containers/museum-container";
 import type { PushContainer } from "./containers/push-container";
+import type { OfflineContainer } from "./containers/offline-container";
 // Containers that already export items types directly (["items"])
 import type { NavigationContainerItems } from "./containers/navigation-container";
 import type { AnimatorContainerItems } from "./containers/animator-container";
@@ -141,6 +142,7 @@ type ConnectItems = ItemsOf<ConnectContainer>;
 type DeviceSyncItems = ItemsOf<DeviceSyncContainer>;
 type MuseumItems = ItemsOf<MuseumContainer>;
 type PushItems = ItemsOf<PushContainer>;
+type OfflineItems = ItemsOf<OfflineContainer>;
 // ============================================================================
 // Upsert conflict handling
 //
@@ -221,6 +223,8 @@ export type IAppContainerItems =
 	MuseumItems &
 	// Push notifications (FCM token management)
 	PushItems &
+	// Offline caching (proactive gallery + thumbnail prefetch)
+	OfflineItems &
 	// Video Trails services (endpoint detection, tip adaptation, export)
 	VideoTrailsItems &
 	// Shared video infrastructure (source provider, training data, frame extraction)
