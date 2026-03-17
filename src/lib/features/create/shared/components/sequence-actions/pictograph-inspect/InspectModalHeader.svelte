@@ -28,16 +28,20 @@
 
 <header class="modal-header">
   <div class="header-left">
-    <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
-    <h2>Pictograph Inspector</h2>
-    <span class="beat-badge"
-      >Beat {displayData?.stepNumber ?? stepData.stepNumber}</span
-    >
+    <div class="terminal-dots">
+      <span class="dot dot-red"></span>
+      <span class="dot dot-yellow"></span>
+      <span class="dot dot-green"></span>
+    </div>
+    <h2>inspect</h2>
+    <span class="separator">/</span>
+    <span class="beat-tag">beat:{displayData?.stepNumber ?? stepData.stepNumber}</span>
     {#if displayData?.letter ?? stepData.letter}
-      <span class="letter-badge">{displayData?.letter ?? stepData.letter}</span>
+      <span class="separator">/</span>
+      <span class="letter-tag">{displayData?.letter ?? stepData.letter}</span>
     {/if}
     {#if isCalculating}
-      <span class="calculating-badge">
+      <span class="calculating">
         <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
       </span>
     {/if}
@@ -47,21 +51,19 @@
       getData={getCopyAllData}
       ariaLabel="Copy all data for AI"
       variant="icon-text"
-      size="md"
-      idleIcon="fa-copy"
-      labels={{ idle: "Copy All for AI", success: "Copied!" }}
+      size="sm"
+      idleIcon="fa-terminal"
+      labels={{ idle: "Copy AI", success: "Copied!" }}
       disabled={isCalculating}
-      class="copy-all-btn"
     />
     <CopyForAIButton
       getData={getCopyJsonData}
       ariaLabel="Copy JSON"
       variant="icon-text"
-      size="md"
-      idleIcon="fa-code"
-      labels={{ idle: "Copy JSON", success: "Copied!" }}
+      size="sm"
+      idleIcon="fa-brackets-curly"
+      labels={{ idle: "JSON", success: "Copied!" }}
       disabled={isCalculating}
-      class="copy-json-btn"
     />
     <button class="close-btn" onclick={onClose} aria-label="Close">
       <i class="fas fa-times" aria-hidden="true"></i>
@@ -74,86 +76,115 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 24px;
-    border-bottom: 1px solid var(--theme-stroke);
-    background: rgba(0, 0, 0, 0.3);
+    padding: 10px 16px;
+    border-bottom: 1px solid #30363d;
+    background: #161b22;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 10px;
+    font-family: "SF Mono", "Cascadia Code", "Fira Code", Monaco, Consolas,
+      monospace;
   }
 
   .header-left {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
   }
 
-  .header-left i {
-    color: #06b6d4;
-    font-size: 1.2rem;
+  .terminal-dots {
+    display: flex;
+    gap: 6px;
+    margin-right: 4px;
+  }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .dot-red {
+    background: #ff5f57;
+  }
+
+  .dot-yellow {
+    background: #febc2e;
+  }
+
+  .dot-green {
+    background: #28c840;
   }
 
   .header-left h2 {
     margin: 0;
-    font-size: 1.1rem;
+    font-size: 0.85rem;
     font-weight: 600;
-    color: white;
+    color: #7ee787;
+    letter-spacing: 0.5px;
   }
 
-  .beat-badge {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 4px 10px;
-    border-radius: 6px;
+  .separator {
+    color: #484f58;
+    font-size: 0.85rem;
+    font-weight: 400;
+  }
+
+  .beat-tag {
     font-size: 0.8rem;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.8);
+    font-weight: 500;
+    color: #8b949e;
   }
 
-  .letter-badge {
-    background: linear-gradient(135deg, #06b6d4, #0891b2);
-    padding: 4px 12px;
-    border-radius: 6px;
+  .letter-tag {
     font-size: 0.9rem;
     font-weight: 700;
-    color: white;
+    color: #79c0ff;
   }
 
-  .calculating-badge {
-    color: var(--theme-text-dim);
-    font-size: 0.85rem;
+  .calculating {
+    color: #8b949e;
+    font-size: 0.8rem;
   }
 
   .header-actions {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
   }
 
-  /* Note: .copy-all-btn and .copy-json-btn styles removed as they're
-     passed to child component and won't be applied due to Svelte scoping.
-     The CopyForAIButton component handles its own styling. */
-
   .close-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: none;
-    background: var(--theme-card-bg);
-    color: var(--theme-text-dim);
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    border: 1px solid #30363d;
+    background: transparent;
+    color: #8b949e;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all var(--duration-fast) ease;
-    margin-left: 8px;
+    transition: all var(--duration-fast, 0.15s) ease;
+    margin-left: 4px;
+    font-size: 0.8rem;
   }
 
   .close-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
-    color: white;
+    background: #21262d;
+    color: #e6edf3;
+    border-color: #484f58;
+  }
+
+  .close-btn:focus-visible {
+    outline: 2px solid #58a6ff;
+    outline-offset: 1px;
   }
 
   @media (max-width: 600px) {
     .header-left h2 {
+      display: none;
+    }
+
+    .terminal-dots {
       display: none;
     }
   }
