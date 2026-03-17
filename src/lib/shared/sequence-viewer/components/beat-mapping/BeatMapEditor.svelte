@@ -114,9 +114,10 @@
   }
 
   function seekTo(time: number) {
-    if (!videoEl) return;
-    videoEl.currentTime = Math.max(0, Math.min(time, videoDuration));
-    currentTime = videoEl.currentTime;
+    const clamped = Math.max(0, Math.min(time, videoDuration));
+    // Update display immediately — don't wait for the video to decode
+    currentTime = clamped;
+    if (videoEl) videoEl.currentTime = clamped;
   }
 
   function stepToBeat(direction: -1 | 1) {
