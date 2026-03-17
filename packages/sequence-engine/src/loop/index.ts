@@ -26,7 +26,7 @@ export {
   findBridgeLettersForLoop,
   HALVED_LOOPS,
   QUARTERED_LOOPS,
-} from "./loop-validator.js";
+} from "./validation/LOOPValidator.js";
 
 // Detector (analyzes sequence steps to identify LOOP patterns)
 export {
@@ -34,14 +34,14 @@ export {
   isSequenceCircular,
   type LOOPComponentId,
   type LOOPDetectionResult,
-} from "./loop-detector.js";
+} from "./detection/LOOPDetector.js";
 
 // Executor
 export {
   executeLOOP,
   type LOOPExecutionResult,
   type PictographData,
-} from "./loop-executor.js";
+} from "./execution/LOOPExecutor.js";
 
 // Letter lookup
-export { findLetterByMotions } from "./letter-lookup.js";
+export { findLetterByMotions } from "./LetterLookup.js";
