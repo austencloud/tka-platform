@@ -1,10 +1,10 @@
 /**
  * Autosave Service
  *
- * Handles automatic saving of sequence drafts to Firestore.
- * - Saves drafts every N seconds when changes detected
- * - Retrieves drafts for session recovery
- * - Cleans up old drafts
+ * Saves sequence drafts to Dexie (IndexedDB) first — no auth required,
+ * works offline, survives a page reload. If the user is authenticated,
+ * we also fire a non-blocking Firestore sync so the draft is backed up
+ * to the cloud when connectivity is available.
  *
  * Domain: Create module - Draft persistence
  */
@@ -26,44 +26,103 @@ import {
   type DraftSequence,
 } from "../domain/DraftSequence";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import { db } from "$lib/shared/persistence/database/TKADatabase";
+import { UserWorkType } from "$lib/shared/persistence/domain/enums/UserWorkType";
 
 export class Autosaver {
   private autosaveInterval: number | null = null;
   private isDirty = false;
 
   /**
-   * Save a draft to Firestore
+   * Save a draft.
+   *
+   * Always writes to Dexie first — instant, no auth needed, works offline.
+   * If the user is signed in we also kick off a Firestore sync in the
+   * background so the draft reaches the cloud, but we never await it here.
    */
   async saveDraft(
     sessionId: string,
     sequenceData: SequenceData
   ): Promise<void> {
-    const user = getAuthSync().currentUser;
-    if (!user) {
-      throw new Error("User must be authenticated to save draft");
-    }
-
-    const draftData = createDraftSequence(sessionId, user.uid, sequenceData);
-
-    const draft: DraftSequence = {
-      ...draftData,
-      createdAt: serverTimestamp() as Timestamp,
-      updatedAt: serverTimestamp() as Timestamp,
-    };
-
-    const firestore = await getFirestoreInstance();
-    const draftRef = doc(firestore, `users/${user.uid}/drafts/${sessionId}`);
-    await trackWrite(() => setDoc(draftRef, draft, { merge: true }));
+    // --- Dexie (local, always) ---
+    await db.userWork.put({
+      type: UserWorkType.SEQUENCE_DRAFT,
+      tabId: "create",
+      data: {
+        sessionId,
+        sequenceData,
+        stepCount: sequenceData.steps.length,
+        name: sequenceData.name,
+      },
+      lastModified: new Date(),
+      version: 1,
+    });
 
     this.isDirty = false;
+
+    // --- Firestore (cloud, fire-and-forget) ---
+    const user = getAuthSync().currentUser;
+    if (user) {
+      const draftData = createDraftSequence(sessionId, user.uid, sequenceData);
+      const draft: DraftSequence = {
+        ...draftData,
+        createdAt: serverTimestamp() as Timestamp,
+        updatedAt: serverTimestamp() as Timestamp,
+      };
+
+      getFirestoreInstance().then((firestore) => {
+        const draftRef = doc(
+          firestore,
+          `users/${user.uid}/drafts/${sessionId}`
+        );
+        trackWrite(() => setDoc(draftRef, draft, { merge: true })).catch(
+          (err) =>
+            console.warn("[Autosaver] Firestore draft sync failed:", err)
+        );
+      });
+    }
   }
 
   /**
-   * Load a draft by session ID
+   * Load a draft for session recovery.
+   *
+   * Checks Dexie first — if we have a local copy we use it immediately
+   * without touching the network. Falls back to Firestore only when
+   * Dexie has nothing and the user is authenticated.
    */
-  async loadDraft(sessionId: string): Promise<DraftSequence | null> {
+  async loadDraft(sessionId?: string): Promise<DraftSequence | null> {
+    // --- Dexie (local, always first) ---
+    try {
+      const localDraft = await db.userWork
+        .where("[type+tabId]")
+        .equals([UserWorkType.SEQUENCE_DRAFT, "create"])
+        .first();
+
+      if (localDraft?.data) {
+        const data = localDraft.data as {
+          sessionId: string;
+          sequenceData: SequenceData;
+          stepCount: number;
+          name?: string;
+        };
+
+        return {
+          sessionId: data.sessionId,
+          userId: "",
+          sequenceData: data.sequenceData,
+          stepCount: data.stepCount,
+          name: data.name,
+          createdAt: null as unknown as Timestamp,
+          updatedAt: null as unknown as Timestamp,
+        };
+      }
+    } catch (err) {
+      console.warn("[Autosaver] Dexie draft load failed:", err);
+    }
+
+    // --- Firestore fallback ---
     const user = getAuthSync().currentUser;
-    if (!user) return null;
+    if (!user || !sessionId) return null;
 
     const firestore = await getFirestoreInstance();
     const draftRef = doc(firestore, `users/${user.uid}/drafts/${sessionId}`);
