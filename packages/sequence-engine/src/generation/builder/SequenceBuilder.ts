@@ -1,0 +1,322 @@
+/**
+ * Sequence Builder
+ *
+ * The single entry point for all sequence generation. Orchestrates a 7-stage pipeline:
+ *
+ *   1. Parse letters from word
+ *   2. Assemble constraints (domain hard + style from preset/text)
+ *   3. Select start position
+ *   4. Allocate turns
+ *   5. Beam search
+ *   6. Post-process (orientation propagation, reversal detection, convert to SequenceStep)
+ *   7. LOOP extension (if requested)
+ *
+ * Consumers provide an IVariationProvider for their platform (MCP or browser).
+ * Everything else is handled internally.
+ */
+
+import type { IVariationProvider } from "../data/IVariationProvider.js";
+import type {
+  PictographData,
+  ConstraintSet,
+  ConstraintReport,
+  IConstraint,
+} from "../constraints/types.js";
+import type { SequenceStep } from "../../core/types/sequence-engine-types.js";
+import { LetterParser } from "../../core/letters/LetterParser.js";
+import { LetterClassifier } from "../../core/letters/LetterClassifier.js";
+import { allocateTurns, type TurnAllocation } from "../turns/TurnAllocator.js";
+import { BeamSearch, type BeamSearchResult } from "./BeamSearch.js";
+import { Type6Constraint } from "../constraints/domain/Type6Constraint.js";
+import { PositionContinuityConstraint } from "../constraints/domain/PositionContinuityConstraint.js";
+import { FloatConstraint } from "../constraints/domain/FloatConstraint.js";
+import { PropTypeConstraint } from "../constraints/domain/PropTypeConstraint.js";
+import { getPresetConstraintSet, type PresetName } from "../constraints/presets/preset-constraints.js";
+import { parseConstraintSet } from "../constraints/parsing/constraint-parser.js";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Public types
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Options for building a sequence.
+ */
+export interface BuildOptions {
+  /** The word to spell (e.g. "BOOK", "AΣ-B") */
+  word: string;
+
+  /** Grid mode for position lookups */
+  gridMode: string; // "diamond" | "box" | "skewed"
+
+  /** Difficulty level (1-3). Controls turn pool. */
+  level: number;
+
+  /** Named constraint preset (e.g. "smooth", "reversal") */
+  constraintPreset?: string;
+
+  /** Natural-language constraints (parsed into constraint set) */
+  constraints?: string;
+
+  /** Force a specific start position (e.g. "alpha1") */
+  startPosition?: string;
+
+  /** Prop type filter passed to variation provider and PropTypeConstraint */
+  propType?: string;
+
+  /** Beam width for the search (default 10) */
+  beamWidth?: number;
+
+  /** Maximum turn intensity cap (0-3). Undefined = level default. */
+  maxTurnIntensity?: number;
+
+  /** LOOP extension options. When present, the seed sequence is extended. */
+  loop?: LoopOptions;
+}
+
+/**
+ * LOOP extension configuration.
+ */
+export interface LoopOptions {
+  /** LOOP transformation type (e.g. "strict_rotated", "rewound") */
+  type: string;
+
+  /** How the sequence is sliced for rotation ("halved" | "quartered") */
+  sliceSize: string;
+
+  /** Whether to use targeted end-position generation */
+  useTargetedGeneration?: boolean;
+}
+
+/**
+ * Result of building a sequence.
+ */
+export interface BuildResult {
+  /** The generated sequence steps (index 0 = start position) */
+  sequence: SequenceStep[];
+
+  /** The start position step */
+  startPosition: SequenceStep;
+
+  /** Indices of steps that are bridge letters */
+  bridgeStepIndices: number[];
+
+  /** Constraint satisfaction report */
+  constraintReport: ConstraintReport;
+
+  /** Search performance metrics */
+  metrics: {
+    statesExplored: number;
+    beamPrunings: number;
+  };
+
+  /** Turn allocation used for the sequence */
+  turnAllocation: TurnAllocation;
+
+  /** LOOP extension metadata (present when loop options were provided) */
+  loop?: {
+    derivedWord: string;
+    seedWord: string;
+    components: string[];
+    derivedBeatIndices: number[];
+    orientationCycleMultiplier: number;
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Builder
+// ─────────────────────────────────────────────────────────────────────────────
+
+export class SequenceBuilder {
+  private readonly letterParser = new LetterParser();
+  private readonly letterClassifier = new LetterClassifier();
+
+  constructor(private readonly variationProvider: IVariationProvider) {}
+
+  /**
+   * Build a sequence through the 7-stage pipeline.
+   *
+   * @throws Error if beam search finds no valid path at all
+   */
+  build(options: BuildOptions): BuildResult {
+    // Stage 1: Parse letters
+    const letters = this.letterParser.parse(options.word);
+
+    if (letters.length === 0) {
+      throw new Error(`No letters parsed from word "${options.word}"`);
+    }
+
+    // Stage 2: Assemble constraints
+    const constraintSet = this.assembleConstraints(options);
+
+    // Stage 3: Allocate turns
+    const turnAllocation = allocateTurns(
+      letters.length,
+      options.level,
+      options.maxTurnIntensity,
+    );
+
+    // Stage 4: Beam search
+    const beamSearch = new BeamSearch(this.variationProvider, options.gridMode);
+    const searchResult = beamSearch.search(
+      letters,
+      options.startPosition,
+      constraintSet,
+      options.beamWidth ?? 10,
+    );
+
+    if (!searchResult.success && searchResult.steps.length === 0) {
+      throw new Error(
+        searchResult.error ?? `No valid sequence found for "${options.word}"`,
+      );
+    }
+
+    // Stage 5: Post-process (convert PictographData to SequenceStep)
+    const result = this.postProcess(searchResult, turnAllocation, letters);
+
+    // Stage 6: LOOP extension (if requested)
+    if (options.loop) {
+      return this.extendWithLOOP(result, options.loop);
+    }
+
+    return result;
+  }
+
+  /**
+   * Stage 2: Assemble constraints from domain rules + user preferences.
+   *
+   * Domain constraints are always-on hard constraints that enforce TKA physics.
+   * Style constraints come from presets or natural language parsing.
+   */
+  private assembleConstraints(options: BuildOptions): ConstraintSet {
+    // Always-on domain hard constraints
+    const hard: IConstraint[] = [
+      new Type6Constraint(),
+      new PositionContinuityConstraint(),
+      new FloatConstraint(),
+    ];
+
+    if (options.propType) {
+      hard.push(new PropTypeConstraint());
+    }
+
+    let soft: IConstraint[] = [];
+    const weights = new Map();
+
+    // Style constraints from preset
+    if (options.constraintPreset) {
+      const presetSet = getPresetConstraintSet(options.constraintPreset as PresetName);
+      if (presetSet) {
+        hard.push(...presetSet.hard);
+        soft.push(...presetSet.soft);
+        if (presetSet.weights) {
+          for (const [k, v] of presetSet.weights) {
+            weights.set(k, v);
+          }
+        }
+      }
+    }
+
+    // Style constraints from natural language
+    if (options.constraints) {
+      const { constraintSet: parsedSet } = parseConstraintSet(options.constraints);
+      hard.push(...parsedSet.hard);
+      soft.push(...parsedSet.soft);
+      if (parsedSet.weights) {
+        for (const [k, v] of parsedSet.weights) {
+          weights.set(k, v);
+        }
+      }
+    }
+
+    return { hard, soft, weights: weights.size > 0 ? weights : undefined };
+  }
+
+  /**
+   * Stage 5: Convert beam search PictographData into SequenceStep format
+   * with beat indices, turn allocation, and bridge flags.
+   */
+  private postProcess(
+    searchResult: BeamSearchResult,
+    turnAllocation: TurnAllocation,
+    letters: string[],
+  ): BuildResult {
+    const bridgeIndices = new Set(searchResult.bridgeStepIndices);
+    const sequence: SequenceStep[] = [];
+
+    for (let i = 0; i < searchResult.steps.length; i++) {
+      const pd = searchResult.steps[i]!;
+      const isBridge = bridgeIndices.has(i);
+
+      // Beat index: start position = 0, first letter = 1, etc.
+      // Bridge letters share the beat index of the letter they precede.
+      const beatIndex = i;
+
+      sequence.push({
+        letter: pd.letter,
+        startPosition: pd.startPosition,
+        endPosition: pd.endPosition,
+        blueMotion: {
+          motionType: pd.blueMotion.motionType,
+          startLocation: pd.blueMotion.startLocation,
+          endLocation: pd.blueMotion.endLocation,
+          rotationDirection: pd.blueMotion.rotationDirection,
+          startOrientation: pd.blueMotion.startOrientation,
+          endOrientation: pd.blueMotion.endOrientation,
+        },
+        redMotion: {
+          motionType: pd.redMotion.motionType,
+          startLocation: pd.redMotion.startLocation,
+          endLocation: pd.redMotion.endLocation,
+          rotationDirection: pd.redMotion.rotationDirection,
+          startOrientation: pd.redMotion.startOrientation,
+          endOrientation: pd.redMotion.endOrientation,
+        },
+        beatIndex,
+        stepNumber: i,
+        isBridge,
+      });
+    }
+
+    const startPosition = sequence[0]!;
+
+    return {
+      sequence,
+      startPosition,
+      bridgeStepIndices: searchResult.bridgeStepIndices,
+      constraintReport: searchResult.constraintReport,
+      metrics: {
+        statesExplored: searchResult.statesExplored,
+        beamPrunings: searchResult.beamPrunings,
+      },
+      turnAllocation,
+    };
+  }
+
+  /**
+   * Stage 6: Extend the seed sequence with a LOOP transformation.
+   *
+   * LOOP extension is delegated to the loop layer's executors and extenders.
+   * This is a placeholder that marks the integration point — full wiring
+   * requires the LOOPExecutorSelector and SequenceExtender to accept
+   * SequenceStep[] instead of app-specific types (future task).
+   */
+  private extendWithLOOP(result: BuildResult, _loopOptions: LoopOptions): BuildResult {
+    // LOOP extension wiring is deferred to the consumer layer.
+    // The loop executors (LOOPExecutorSelector, SequenceExtender, etc.)
+    // currently operate on PictographData[] and need adapter glue that
+    // maps between SequenceStep[] and PictographData[].
+    //
+    // For now, return the seed sequence unchanged with a stub loop metadata
+    // block so callers know LOOP was requested but not applied at this layer.
+    return {
+      ...result,
+      loop: {
+        derivedWord: "",
+        seedWord: result.sequence.map((s) => s.letter).join(""),
+        components: [],
+        derivedBeatIndices: [],
+        orientationCycleMultiplier: 1,
+      },
+    };
+  }
+}
