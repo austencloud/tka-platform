@@ -1,22 +1,19 @@
 <!--
   UploadSelectView.svelte
 
-  First view in Video Lab. Lets the user pick a local video file (or paste a URL)
-  and select a library sequence to map beats against. Shows video preview with
-  basic info after selection.
+  First view in Video Lab. Pick a local video file and select a sequence
+  using the existing SequencePickerModal.
 -->
 <script lang="ts">
-  import { container } from "$lib/shared/di";
-  import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
-  import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
-
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
 
   interface Props {
     onStartMapping: (
       videoUrl: string,
       duration: number,
       fileSize: number,
-      sequence: LibrarySequence,
+      sequence: SequenceData,
     ) => void;
   }
 
@@ -30,395 +27,220 @@
   let pasteUrl = $state("");
   let videoEl: HTMLVideoElement | undefined = $state();
 
-  // ---- Library sequences ----
-  let sequences = $state<LibrarySequence[]>([]);
-  let selectedSequence = $state<LibrarySequence | null>(null);
-  let isLoadingSequences = $state(false);
-  let searchQuery = $state("");
-
-  const filteredSequences = $derived(
-    searchQuery.trim()
-      ? sequences.filter((s) => {
-          const q = searchQuery.toLowerCase();
-          const word = (s.word ?? "").toLowerCase();
-          const name = (s.name ?? "").toLowerCase();
-          return word.includes(q) || name.includes(q);
-        })
-      : sequences,
-  );
+  // ---- Sequence selection ----
+  let selectedSequence = $state<SequenceData | null>(null);
+  let pickerOpen = $state(false);
 
   const canStart = $derived(!!videoUrl && !!selectedSequence && videoDuration > 0);
+  const beatCount = $derived(
+    selectedSequence?.steps?.length || selectedSequence?.word?.length || 0
+  );
 
-  // Load user's library sequences on mount
-  $effect(() => {
-    loadSequences();
-  });
-
-  async function loadSequences() {
-    isLoadingSequences = true;
-    try {
-      const repo = container.items.libraryRepository as ILibraryRepository;
-      sequences = await repo.getSequences({ sortBy: "updatedAt", sortDirection: "desc" });
-    } catch (err) {
-      console.error("Failed to load library sequences:", err);
-    } finally {
-      isLoadingSequences = false;
-    }
-  }
-
-  // ---- File handling ----
-
+  // ---- Video file handling ----
   function handleFileSelect(event: Event) {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
-
-    // Revoke previous blob URL if any
-    if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl);
-
+    cleanupVideo();
     videoUrl = URL.createObjectURL(file);
     videoFileName = file.name;
     videoFileSize = file.size;
-    videoDuration = 0; // Will be set by loadedmetadata
   }
 
-  function handlePasteUrl() {
+  function handlePasteLoad() {
     const url = pasteUrl.trim();
     if (!url) return;
-
-    if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl);
-
+    cleanupVideo();
     videoUrl = url;
-    videoFileName = url.split("/").pop() ?? "Video";
-    videoFileSize = 0; // Unknown for remote URLs
-    videoDuration = 0;
+    videoFileName = url.split("/").pop() ?? "video";
+    videoFileSize = 0;
   }
 
-  function handleLoadedMetadata() {
-    if (videoEl) {
-      videoDuration = videoEl.duration;
-    }
+  function handleVideoLoaded() {
+    if (videoEl) videoDuration = videoEl.duration;
+  }
+
+  function cleanupVideo() {
+    if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl);
+    videoUrl = null;
+    videoDuration = 0;
+    videoFileSize = 0;
+    videoFileName = "";
   }
 
   function clearVideo() {
-    if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl);
-    videoUrl = null;
-    videoFileName = "";
-    videoFileSize = 0;
-    videoDuration = 0;
+    cleanupVideo();
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement | null;
+    if (input) input.value = "";
   }
 
   function handleStart() {
-    if (videoUrl && selectedSequence && videoDuration > 0) {
-      onStartMapping(videoUrl, videoDuration, videoFileSize, selectedSequence);
-    }
-  }
-
-  function formatDuration(seconds: number): string {
-    const m = Math.floor(seconds / 60);
-    const s = Math.floor(seconds % 60);
-    return `${m}:${s.toString().padStart(2, "0")}`;
+    if (!videoUrl || !selectedSequence || videoDuration <= 0) return;
+    onStartMapping(videoUrl, videoDuration, videoFileSize, selectedSequence);
   }
 
   function formatFileSize(bytes: number): string {
-    if (bytes === 0) return "Unknown";
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    if (bytes === 0) return "";
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  function formatDuration(seconds: number): string {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   }
 </script>
 
 <div class="upload-select-view">
-  <!-- Video source section -->
+  <!-- Video Source -->
   <section class="section">
     <h3 class="section-title">
       <i class="fas fa-video" aria-hidden="true"></i>
       Video Source
     </h3>
 
-    {#if videoUrl}
-      <!-- Video preview -->
-      <div class="video-preview">
-        <video
-          bind:this={videoEl}
-          src={videoUrl}
-          playsinline
-          controls
-          onloadedmetadata={handleLoadedMetadata}
-        >
-          <track kind="captions" />
-        </video>
+    {#if !videoUrl}
+      <label class="file-picker">
+        <input type="file" accept="video/*" onchange={handleFileSelect} hidden />
+        <i class="fas fa-cloud-upload-alt" aria-hidden="true"></i>
+        <span>Choose a video file</span>
+      </label>
 
-        <div class="video-info">
-          <span class="video-name">{videoFileName}</span>
-          <div class="video-meta">
-            {#if videoDuration > 0}
-              <span>{formatDuration(videoDuration)}</span>
-            {/if}
-            {#if videoFileSize > 0}
-              <span>{formatFileSize(videoFileSize)}</span>
-            {/if}
-          </div>
-        </div>
+      <div class="or-divider">or</div>
 
-        <button class="clear-btn" onclick={clearVideo} type="button" aria-label="Remove video">
-          <i class="fas fa-times" aria-hidden="true"></i>
-          Remove
+      <div class="paste-row">
+        <input
+          type="text"
+          placeholder="Paste a video URL..."
+          bind:value={pasteUrl}
+          class="paste-input"
+        />
+        <button type="button" class="paste-btn" onclick={handlePasteLoad} disabled={!pasteUrl.trim()}>
+          Load
         </button>
       </div>
     {:else}
-      <!-- Upload options -->
-      <div class="upload-options">
-        <label class="file-picker">
-          <input type="file" accept="video/*" onchange={handleFileSelect} />
-          <i class="fas fa-upload" aria-hidden="true"></i>
-          <span>Choose a video file</span>
-        </label>
-
-        <div class="divider">
-          <span>or</span>
+      <div class="video-preview">
+        <!-- svelte-ignore a11y_media_has_caption -->
+        <video bind:this={videoEl} src={videoUrl} onloadedmetadata={handleVideoLoaded} controls preload="metadata"></video>
+        <div class="video-info">
+          <span class="video-name">{videoFileName}</span>
+          <span class="video-meta">
+            {#if videoFileSize > 0}{formatFileSize(videoFileSize)} · {/if}
+            {#if videoDuration > 0}{formatDuration(videoDuration)}{/if}
+          </span>
         </div>
-
-        <div class="url-input-row">
-          <input
-            type="url"
-            placeholder="Paste a video URL..."
-            bind:value={pasteUrl}
-            class="url-input"
-          />
-          <button
-            class="paste-btn"
-            onclick={handlePasteUrl}
-            disabled={!pasteUrl.trim()}
-            type="button"
-          >
-            Load
-          </button>
-        </div>
+        <button type="button" class="clear-btn" onclick={clearVideo}>
+          <i class="fas fa-times" aria-hidden="true"></i> Change
+        </button>
       </div>
     {/if}
   </section>
 
-  <!-- Sequence selector section -->
+  <!-- Sequence Selection -->
   <section class="section">
     <h3 class="section-title">
-      <i class="fas fa-list-ol" aria-hidden="true"></i>
+      <i class="fas fa-list" aria-hidden="true"></i>
       Sequence
     </h3>
 
-    <input
-      type="text"
-      placeholder="Search by word or name..."
-      bind:value={searchQuery}
-      class="search-input"
-    />
-
-    <div class="sequence-grid themed-scrollbar">
-      {#if isLoadingSequences}
-        <div class="grid-status">
-          <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
-          Loading library...
-        </div>
-      {:else if filteredSequences.length === 0}
-        <div class="grid-status">
-          {searchQuery.trim() ? "No matching sequences" : "No sequences in library"}
-        </div>
-      {:else}
-        {#each filteredSequences as seq (seq.id)}
-          <button
-            class="sequence-card"
-            class:selected={selectedSequence?.id === seq.id}
-            onclick={() => { selectedSequence = seq; }}
-            type="button"
-          >
-            <div class="card-preview">
-              <span class="card-word-display">{seq.word ?? seq.name ?? "?"}</span>
-            </div>
-            <div class="card-label">
-              <span class="card-beats">{seq.steps?.length || seq.word?.length || 0} beats</span>
-            </div>
-          </button>
-        {/each}
-      {/if}
-    </div>
-
     {#if selectedSequence}
-      <div class="selected-info">
-        Selected: <strong>{selectedSequence.word ?? selectedSequence.name}</strong>
-        ({selectedSequence.steps?.length || selectedSequence.word?.length || 0} beats)
+      <div class="selected-sequence">
+        <div class="selected-info">
+          <span class="selected-word">{selectedSequence.word ?? selectedSequence.name}</span>
+          <span class="selected-beats">{beatCount} beats</span>
+        </div>
+        <button type="button" class="change-btn" onclick={() => (pickerOpen = true)}>Change</button>
       </div>
+    {:else}
+      <button type="button" class="pick-btn" onclick={() => (pickerOpen = true)}>
+        <i class="fas fa-th" aria-hidden="true"></i>
+        Choose a sequence
+      </button>
     {/if}
   </section>
 
-  <!-- Start mapping -->
-  <div class="action-bar">
-    <button
-      class="start-btn"
-      disabled={!canStart}
-      onclick={handleStart}
-      type="button"
-    >
-      <i class="fas fa-play" aria-hidden="true"></i>
-      Start Mapping
-    </button>
-  </div>
+  <!-- Start -->
+  <button type="button" class="start-btn" onclick={handleStart} disabled={!canStart}>
+    <i class="fas fa-play" aria-hidden="true"></i>
+    Start Mapping
+  </button>
 </div>
+
+<SequencePickerModal
+  bind:open={pickerOpen}
+  onClose={() => (pickerOpen = false)}
+  onSelect={(seq) => { selectedSequence = seq; pickerOpen = false; }}
+  title="Select Sequence for Beat Mapping"
+/>
 
 <style>
   .upload-select-view {
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    padding: 16px;
+    gap: 24px;
+    padding: 20px;
     height: 100%;
   }
 
   .section {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
   }
 
   .section-title {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin: 0;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 700;
-    color: var(--theme-text, #ffffff);
-  }
-
-  .section-title i {
-    color: var(--theme-accent, #6366f1);
-    font-size: 14px;
-  }
-
-  /* ---- Video preview ---- */
-
-  .video-preview {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 10px;
-    padding: 10px;
-  }
-
-  .video-preview video {
-    width: 100%;
-    max-height: 220px;
-    border-radius: 8px;
-    background: #000;
-    object-fit: contain;
-  }
-
-  .video-info {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .video-name {
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
-    color: var(--theme-text, #ffffff);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 60%;
-  }
-
-  .video-meta {
-    display: flex;
-    gap: 12px;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-  }
-
-  .clear-btn {
-    align-self: flex-start;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 6px;
-    background: transparent;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-compact, 12px);
-    cursor: pointer;
-  }
-
-  .clear-btn:hover {
-    border-color: var(--semantic-error, #ef4444);
-    color: var(--semantic-error, #ef4444);
-  }
-
-  /* ---- Upload options ---- */
-
-  .upload-options {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    color: var(--theme-text, #fff);
+    margin: 0;
   }
 
   .file-picker {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 24px;
-    border: 2px dashed var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: 10px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.02));
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-min, 14px);
+    gap: 8px;
+    padding: 32px;
+    border: 2px dashed var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
     cursor: pointer;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
+    font-size: var(--font-size-min, 14px);
     transition: border-color 0.15s, color 0.15s;
   }
 
   .file-picker:hover {
     border-color: var(--theme-accent, #6366f1);
-    color: var(--theme-text, #ffffff);
+    color: var(--theme-text, #fff);
   }
 
-  .file-picker input {
-    display: none;
-  }
-
-  .divider {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+  .or-divider {
+    text-align: center;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
     font-size: var(--font-size-compact, 12px);
   }
 
-  .divider::before,
-  .divider::after {
-    content: "";
-    flex: 1;
-    height: 1px;
-    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
-  }
-
-  .url-input-row {
+  .paste-row {
     display: flex;
     gap: 8px;
   }
 
-  .url-input {
+  .paste-input {
     flex: 1;
     padding: 10px 12px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text, #ffffff);
+    color: var(--theme-text, #fff);
     font-size: var(--font-size-min, 14px);
   }
 
-  .url-input::placeholder {
+  .paste-input::placeholder {
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
   }
 
@@ -427,167 +249,125 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text, #ffffff);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
+    color: var(--theme-text, #fff);
     cursor: pointer;
-  }
-
-  .paste-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  .paste-btn:hover:not(:disabled) {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-  }
-
-  /* ---- Sequence grid ---- */
-
-  .search-input {
-    padding: 10px 12px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 8px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text, #ffffff);
     font-size: var(--font-size-min, 14px);
   }
 
-  .search-input::placeholder {
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
-  }
+  .paste-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-  .sequence-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 12px;
-    max-height: 360px;
-    overflow-y: auto;
-    padding: 4px;
-  }
-
-  .grid-status {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 20px;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
-    font-size: var(--font-size-min, 14px);
-    grid-column: 1 / -1;
-  }
-
-  .sequence-card {
+  .video-preview {
     display: flex;
     flex-direction: column;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    gap: 8px;
+  }
+
+  .video-preview video {
+    width: 100%;
+    max-height: 240px;
     border-radius: 8px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text, #ffffff);
-    cursor: pointer;
-    padding: 0;
-    overflow: hidden;
-    transition: border-color 0.15s, box-shadow 0.15s;
+    background: #000;
   }
 
-  .sequence-card:hover {
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-  }
+  .video-info { display: flex; flex-direction: column; gap: 2px; }
 
-  .sequence-card.selected {
-    border-color: var(--theme-accent, #6366f1);
-    border-width: 2px;
-    box-shadow: 0 0 12px color-mix(in srgb, var(--theme-accent, #6366f1) 25%, transparent);
-  }
-
-  .sequence-card:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 2px;
-  }
-
-  .card-preview {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 12px 8px;
-    min-height: 56px;
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(0, 0, 0, 0.2) 100%);
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
-  }
-
-  .card-word-display {
+  .video-name {
     font-size: var(--font-size-min, 14px);
-    font-weight: 700;
-    text-align: center;
-    word-break: break-all;
-    line-height: 1.3;
-    letter-spacing: 1px;
+    font-weight: 500;
     color: var(--theme-text, #fff);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .card-label {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 6px 4px;
-  }
-
-  .card-beats {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
-  }
-
-  .selected-info {
+  .video-meta {
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
   }
 
-  .selected-info strong {
-    color: var(--theme-accent, #6366f1);
+  .clear-btn {
+    align-self: flex-start;
+    padding: 6px 12px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 6px;
+    background: none;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    cursor: pointer;
+    font-size: var(--font-size-compact, 12px);
   }
 
-  /* ---- Action bar ---- */
-
-  .action-bar {
-    margin-top: auto;
-    padding-top: 12px;
-  }
-
-  .start-btn {
-    width: 100%;
+  .pick-btn {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    min-height: 48px;
-    padding: 12px 24px;
+    padding: 16px;
+    border: 2px dashed var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
+    background: none;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
+    cursor: pointer;
+    font-size: var(--font-size-min, 14px);
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  .pick-btn:hover {
+    border-color: var(--theme-accent, #6366f1);
+    color: var(--theme-text, #fff);
+  }
+
+  .selected-sequence {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border: 1.5px solid var(--theme-accent, #6366f1);
+    border-radius: 8px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+  }
+
+  .selected-info { display: flex; flex-direction: column; gap: 2px; }
+
+  .selected-word {
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    color: var(--theme-accent, #6366f1);
+  }
+
+  .selected-beats {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+  }
+
+  .change-btn {
+    padding: 6px 12px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 6px;
+    background: none;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    cursor: pointer;
+    font-size: var(--font-size-compact, 12px);
+  }
+
+  .start-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px;
     border: none;
     border-radius: 10px;
     background: var(--theme-accent, #6366f1);
-    color: #ffffff;
+    color: #fff;
     font-size: var(--font-size-min, 14px);
-    font-weight: 700;
+    font-weight: 600;
     cursor: pointer;
-    transition: filter 0.15s, box-shadow 0.15s;
+    margin-top: auto;
   }
 
-  .start-btn:hover:not(:disabled) {
-    filter: brightness(1.1);
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
-  }
-
-  .start-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
+  .start-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
   @media (prefers-reduced-motion: reduce) {
-    .file-picker,
-    .start-btn,
-    .sequence-card,
-    .clear-btn,
-    .paste-btn {
-      transition: none !important;
-    }
+    .file-picker, .pick-btn, .start-btn { transition: none; }
   }
 </style>
