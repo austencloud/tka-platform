@@ -44,8 +44,11 @@ import type { ConstraintOptions } from "../constraints/composition/constraint-op
  * Options for building a sequence.
  */
 export interface BuildOptions {
-  /** The word to spell (e.g. "BOOK", "AΣ-B") */
-  word: string;
+  /** The word to spell (e.g. "BOOK", "AΣ-B"). Either word or length must be provided. */
+  word?: string;
+
+  /** Number of beats to generate (excluding start position). Either word or length must be provided. */
+  length?: number;
 
   /** Grid mode for position lookups */
   gridMode: string; // "diamond" | "box" | "skewed"
@@ -140,9 +143,25 @@ export class SequenceBuilder {
   /**
    * Build a sequence through the 7-stage pipeline.
    *
+   * @throws Error if neither word nor length is provided
    * @throws Error if beam search finds no valid path at all
    */
   build(options: BuildOptions): BuildResult {
+    if (!options.word && !options.length) {
+      throw new Error("Either word or length must be provided");
+    }
+
+    if (options.word) {
+      return this.buildByWord(options as BuildOptions & { word: string });
+    }
+
+    return this.buildByLength(options as BuildOptions & { length: number });
+  }
+
+  /**
+   * Word-based generation: parse letters from word, beam search for each letter sequentially.
+   */
+  private buildByWord(options: BuildOptions & { word: string }): BuildResult {
     // Stage 1: Parse letters
     const letters = this.letterParser.parse(options.word);
 
@@ -176,6 +195,50 @@ export class SequenceBuilder {
     }
 
     // Stage 5: Post-process (convert PictographData to SequenceStep)
+    const result = this.postProcess(searchResult, turnAllocation, letters);
+
+    // Stage 6: LOOP extension (if requested)
+    if (options.loop) {
+      return this.extendWithLOOP(result, options.loop);
+    }
+
+    return result;
+  }
+
+  /**
+   * Length-based generation: pick random letters per beat using beam search with
+   * constraint scoring. No bridges needed since every transition is direct.
+   */
+  private buildByLength(options: BuildOptions & { length: number }): BuildResult {
+    const { length } = options;
+
+    // Stage 2: Assemble constraints
+    const constraintSet = this.assembleConstraints(options);
+
+    // Stage 3: Allocate turns
+    const turnAllocation = allocateTurns(
+      length,
+      options.level,
+      options.maxTurnIntensity,
+    );
+
+    // Stage 4: Beam search by length
+    const beamSearch = new BeamSearch(this.variationProvider, options.gridMode);
+    const searchResult = beamSearch.searchByLength(
+      length,
+      options.startPosition,
+      constraintSet,
+      options.beamWidth ?? 10,
+    );
+
+    if (!searchResult.success && searchResult.steps.length === 0) {
+      throw new Error(
+        searchResult.error ?? "No valid sequence found for length-based generation",
+      );
+    }
+
+    // Stage 5: Post-process
+    const letters = searchResult.steps.slice(1).map((s) => s.letter);
     const result = this.postProcess(searchResult, turnAllocation, letters);
 
     // Stage 6: LOOP extension (if requested)

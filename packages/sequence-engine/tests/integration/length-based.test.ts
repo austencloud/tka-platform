@@ -1,9 +1,8 @@
 /**
- * Integration tests for SequenceBuilder.
+ * Integration tests for length-based sequence generation.
  *
- * Uses a mock IVariationProvider with a minimal set of fake pictograph data
- * — enough to build 2-3 letter words and verify the full pipeline works
- * end-to-end.
+ * Verifies that SequenceBuilder can generate sequences by length (picking
+ * random letters per beat) instead of by word.
  */
 
 import { describe, it, expect, beforeEach } from "vitest";
@@ -15,7 +14,7 @@ import type { ITransitionGraph } from "../../src/core/transition-graph/ITransiti
 import type { PositionGroup, LetterPositionInfo } from "../../src/core/types/sequence-engine-types.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Mock data factory
+// Mock data factory (same pattern as full-build.test.ts)
 // ─────────────────────────────────────────────────────────────────────────────
 
 function makeMotion(overrides: Partial<MotionData> = {}): MotionData {
@@ -46,16 +45,18 @@ function makePictograph(overrides: Partial<PictographData> & { letter: string })
 // ─────────────────────────────────────────────────────────────────────────────
 // Mock pictograph dataset
 //
-// We create a minimal graph:
+// Same graph as full-build.test.ts but with enough letters at each position
+// so length-based generation always has candidates:
 //   - α at alpha1 (Type 6, start position)
-//   - A: alpha1 → beta3 (Type 1)
-//   - B: beta3 → alpha1 (Type 1)
-//   - C: alpha1 → alpha1 (Type 1)
-//   - D: beta3 → beta3 (Type 1)
+//   - α at beta3 (Type 6, start position)
+//   - A: alpha1 → beta3 (pro motions)
+//   - B: beta3 → alpha1 (pro motions)
+//   - C: alpha1 → alpha1 (pro motions)
+//   - D: beta3 → beta3 (pro motions)
 // ─────────────────────────────────────────────────────────────────────────────
 
 const MOCK_PICTOGRAPHS: PictographData[] = [
-  // Start position: α at alpha1
+  // Start positions (Type 6)
   makePictograph({
     letter: "α",
     startPosition: "alpha1",
@@ -63,8 +64,6 @@ const MOCK_PICTOGRAPHS: PictographData[] = [
     blueMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
     redMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
   }),
-
-  // Start position: α at beta3
   makePictograph({
     letter: "α",
     startPosition: "beta3",
@@ -91,7 +90,7 @@ const MOCK_PICTOGRAPHS: PictographData[] = [
     redMotion: makeMotion({ startLocation: "w", endLocation: "s" }),
   }),
 
-  // C: alpha1 → alpha1 (stays in alpha)
+  // C: alpha1 → alpha1
   makePictograph({
     letter: "C",
     startPosition: "alpha1",
@@ -100,7 +99,7 @@ const MOCK_PICTOGRAPHS: PictographData[] = [
     redMotion: makeMotion({ startLocation: "s", endLocation: "s" }),
   }),
 
-  // D: beta3 → beta3 (stays in beta)
+  // D: beta3 → beta3
   makePictograph({
     letter: "D",
     startPosition: "beta3",
@@ -134,13 +133,6 @@ class MockVariationProvider implements IVariationProvider {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mock ITransitionGraph
-//
-// Minimal implementation that knows about our mock letters' position groups:
-//   A: alpha → beta
-//   B: beta → alpha
-//   C: alpha → alpha
-//   D: beta → beta
-//   α: alpha → alpha (and beta → beta)
 // ─────────────────────────────────────────────────────────────────────────────
 
 const LETTER_POSITIONS: Record<string, { start: PositionGroup; end: PositionGroup }> = {
@@ -201,27 +193,20 @@ class MockTransitionGraph implements ITransitionGraph {
 
   findBridgeLetters(letterA: string, letterB: string): string[] {
     if (this.canFollow(letterA, letterB)) return [];
-
-    // Simple: find any letter that bridges
     const aEnd = LETTER_POSITIONS[letterA]?.end;
     const bStart = LETTER_POSITIONS[letterB]?.start;
     if (!aEnd || !bStart) return [];
-
     for (const [l, pos] of Object.entries(LETTER_POSITIONS)) {
-      if (pos.start === aEnd && pos.end === bStart) {
-        return [l];
-      }
+      if (pos.start === aEnd && pos.end === bStart) return [l];
     }
     return [];
   }
 
   findAllBridgeOptions(letterA: string, letterB: string): string[] {
     if (this.canFollow(letterA, letterB)) return [];
-
     const aEnd = LETTER_POSITIONS[letterA]?.end;
     const bStart = LETTER_POSITIONS[letterB]?.start;
     if (!aEnd || !bStart) return [];
-
     return Object.entries(LETTER_POSITIONS)
       .filter(([_, pos]) => pos.start === aEnd && pos.end === bStart)
       .map(([l]) => l);
@@ -240,7 +225,7 @@ class MockTransitionGraph implements ITransitionGraph {
 // Tests
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("SequenceBuilder integration", () => {
+describe("length-based generation", () => {
   let builder: SequenceBuilder;
 
   beforeEach(() => {
@@ -249,29 +234,52 @@ describe("SequenceBuilder integration", () => {
     builder = new SequenceBuilder(provider);
   });
 
-  it("builds a valid 2-letter sequence (AB)", () => {
+  it("generates a sequence of exactly N+1 steps (start + N beats)", () => {
     const result = builder.build({
-      word: "AB",
+      length: 4,
       gridMode: "diamond",
       level: 1,
     });
 
-    // Start position + 2 letters = 3 steps
-    expect(result.sequence.length).toBe(3);
+    // 1 start position + 4 beats = 5 steps
+    expect(result.sequence.length).toBe(5);
+  });
 
-    // First step is start position (α)
+  it("throws if neither word nor length is provided", () => {
+    expect(() =>
+      builder.build({
+        gridMode: "diamond",
+        level: 1,
+      }),
+    ).toThrow(/Either word or length must be provided/);
+  });
+
+  it("produces no bridge letters", () => {
+    const result = builder.build({
+      length: 4,
+      gridMode: "diamond",
+      level: 1,
+    });
+
+    expect(result.bridgeStepIndices).toEqual([]);
+    for (const step of result.sequence) {
+      expect(step.isBridge).toBe(false);
+    }
+  });
+
+  it("first step is always a Type 6 start position", () => {
+    const result = builder.build({
+      length: 3,
+      gridMode: "diamond",
+      level: 1,
+    });
+
     expect(result.startPosition.letter).toBe("α");
-
-    // Second step is A
-    expect(result.sequence[1]!.letter).toBe("A");
-
-    // Third step is B
-    expect(result.sequence[2]!.letter).toBe("B");
   });
 
   it("maintains position continuity through the sequence", () => {
     const result = builder.build({
-      word: "AB",
+      length: 4,
       gridMode: "diamond",
       level: 1,
     });
@@ -283,33 +291,23 @@ describe("SequenceBuilder integration", () => {
     }
   });
 
-  it("returns correct number of steps for the word", () => {
+  it("does not include Type 6 letters in generated beats", () => {
     const result = builder.build({
-      word: "ABA",
+      length: 4,
       gridMode: "diamond",
       level: 1,
     });
 
-    // Start position + 3 letters (A→B→A, all direct transitions)
-    // A goes alpha→beta, B goes beta→alpha, A goes alpha→beta
-    expect(result.sequence.length).toBe(4);
-  });
-
-  it("includes a constraint report", () => {
-    const result = builder.build({
-      word: "AB",
-      gridMode: "diamond",
-      level: 1,
-    });
-
-    expect(result.constraintReport).toBeDefined();
-    expect(typeof result.constraintReport.score).toBe("number");
-    expect(typeof result.constraintReport.satisfied).toBe("boolean");
+    // Beats are steps 1..N (step 0 is start position)
+    const beats = result.sequence.slice(1);
+    for (const beat of beats) {
+      expect(["α", "β", "γ"]).not.toContain(beat.letter);
+    }
   });
 
   it("includes search metrics", () => {
     const result = builder.build({
-      word: "AB",
+      length: 3,
       gridMode: "diamond",
       level: 1,
     });
@@ -318,21 +316,42 @@ describe("SequenceBuilder integration", () => {
     expect(typeof result.metrics.beamPrunings).toBe("number");
   });
 
-  it("includes turn allocation with correct length", () => {
+  it("includes constraint report", () => {
     const result = builder.build({
-      word: "AB",
+      length: 3,
       gridMode: "diamond",
       level: 1,
     });
 
-    // Turn allocation is for the 2 letters (not including start position)
-    expect(result.turnAllocation.blue).toHaveLength(2);
-    expect(result.turnAllocation.red).toHaveLength(2);
+    expect(result.constraintReport).toBeDefined();
+    expect(typeof result.constraintReport.score).toBe("number");
+  });
+
+  it("includes turn allocation with correct length", () => {
+    const result = builder.build({
+      length: 4,
+      gridMode: "diamond",
+      level: 1,
+    });
+
+    expect(result.turnAllocation.blue).toHaveLength(4);
+    expect(result.turnAllocation.red).toHaveLength(4);
+  });
+
+  it("respects startPosition when provided", () => {
+    const result = builder.build({
+      length: 2,
+      gridMode: "diamond",
+      level: 1,
+      startPosition: "alpha1",
+    });
+
+    expect(result.startPosition.startPosition).toBe("alpha1");
   });
 
   it("applies constraint preset without errors", () => {
     const result = builder.build({
-      word: "AB",
+      length: 3,
       gridMode: "diamond",
       level: 1,
       constraintPreset: "smooth",
@@ -341,64 +360,15 @@ describe("SequenceBuilder integration", () => {
     expect(result.sequence.length).toBeGreaterThan(0);
   });
 
-  it("throws on empty word", () => {
-    expect(() =>
-      builder.build({
-        word: "",
-        gridMode: "diamond",
-        level: 1,
-      }),
-    ).toThrow(/Either word or length must be provided/);
-  });
-
-  it("builds a single-letter word (C stays in alpha)", () => {
-    const result = builder.build({
-      word: "C",
-      gridMode: "diamond",
-      level: 1,
-    });
-
-    // Start position + 1 letter = 2 steps
-    expect(result.sequence.length).toBe(2);
-    expect(result.sequence[1]!.letter).toBe("C");
-  });
-
-  it("each step has beat index and step number", () => {
+  it("word-based generation still works alongside length-based", () => {
     const result = builder.build({
       word: "AB",
       gridMode: "diamond",
       level: 1,
     });
 
-    for (let i = 0; i < result.sequence.length; i++) {
-      const step = result.sequence[i]!;
-      expect(step.beatIndex).toBe(i);
-      expect(step.stepNumber).toBe(i);
-    }
-  });
-
-  it("inserts bridge when direct path is unavailable", () => {
-    // D starts at beta, C starts at alpha. They can't follow directly.
-    // A bridge (B: beta→alpha) should be inserted.
-    // But we need the word to start from a position that reaches D.
-    // A: alpha→beta, D: beta→beta, C: alpha→alpha
-    // The word "ADC" means: A(alpha→beta), D(beta→beta), C(alpha→alpha)
-    // D→C needs a bridge: D ends at beta, C starts at alpha. Bridge = B (beta→alpha).
-    const result = builder.build({
-      word: "ADC",
-      gridMode: "diamond",
-      level: 1,
-    });
-
-    // Should succeed with bridge insertion
-    expect(result.sequence.length).toBeGreaterThan(0);
-
-    // Check that bridge indices are populated (D→C transition needs a bridge)
-    // The bridge should be between D and C
-    if (result.bridgeStepIndices.length > 0) {
-      for (const idx of result.bridgeStepIndices) {
-        expect(result.sequence[idx]!.isBridge).toBe(true);
-      }
-    }
+    expect(result.sequence.length).toBe(3);
+    expect(result.sequence[1]!.letter).toBe("A");
+    expect(result.sequence[2]!.letter).toBe("B");
   });
 });
