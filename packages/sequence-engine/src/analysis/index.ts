@@ -1,7 +1,11 @@
 /**
- * Analysis Layer - Stub
+ * Analysis Layer
  *
- * Will contain sequence analysis tools (word feasibility, constraint checking).
- * Populated in a later task.
+ * Sequence analysis tools: reversal detection, constraint checking, word feasibility.
  */
-export {};
+
+export {
+  ReversalDetector,
+  type ReversalInfo,
+  type AnnotatedStep,
+} from "./ReversalDetector.js";
