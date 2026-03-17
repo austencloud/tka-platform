@@ -96,6 +96,7 @@ export interface AppSettings {
 
   // Workflow Settings
   skipClearConfirmation?: boolean; // Skip confirmation when clearing sequence (undo is available)
+  skipLoopConfirmation?: boolean; // Skip confirmation when applying LOOP auto-completion (undo is available)
 
   // Generator Settings
   blockedStartPositions?: GridPosition[]; // Custom blocked positions for sequence generation
