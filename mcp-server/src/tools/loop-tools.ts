@@ -8,10 +8,10 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { ensureDataLoaded, saveAndOpenImage } from "../shared/server-context.js";
-import { buildSequenceFromLetters, parseWordToLetters } from "../core/sequence-builder.js";
+import { buildSequenceFromLetters, parseWordToLetters } from "../core/sequence-builder-adapter.js";
 import { renderSequenceToImage, LOOPComponent } from "../core/sequence-renderer.js";
 import { simplifyRepeatedWord } from "../core/word-simplifier.js";
-import { allocateTurns } from "../core/turn-allocator.js";
+import { allocateTurns } from "@tka/sequence-engine/generation";
 import {
   LOOPType,
   SliceSize,
@@ -23,7 +23,7 @@ import {
   isLOOPValidForPositionPair,
   detectLOOPFromSteps,
   isSequenceCircular,
-} from "../core/loop/index.js";
+} from "@tka/sequence-engine/loop";
 
 /**
  * Auto-bridge helper: If the sequence ends at an incompatible position for the

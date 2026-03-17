@@ -18,11 +18,10 @@ import {
   parseWordToLetters,
   type SequenceResult,
   type BridgeSelections,
-} from "../core/sequence-builder.js";
+} from "../core/sequence-builder-adapter.js";
 import { renderSequenceToImage, LOOPComponent } from "../core/sequence-renderer.js";
-import { allocateTurns } from "../core/turn-allocator.js";
-import { detectLOOPFromSteps, type LOOPComponentId } from "../core/loop/index.js";
 import {
+  allocateTurns,
   parseConstraintSet,
   parseConstraints,
   emptyConstraintSet,
@@ -35,8 +34,9 @@ import {
   explainConstraintImpossibility,
   type PresetName,
   type ConstraintSet,
-} from "../core/constraints/index.js";
-import type { PictographData } from "../types/pictograph.js";
+  type PictographData,
+} from "@tka/sequence-engine/generation";
+import { detectLOOPFromSteps, type LOOPComponentId } from "@tka/sequence-engine/loop";
 
 /**
  * Build sequence from constraints or legacy mode.
@@ -77,6 +77,7 @@ function buildSequenceWithConstraints(
           blueMotion: step.blueMotion,
           redMotion: step.redMotion,
           stepNumber: i,
+          beatIndex: i,
           isBridge: bridgeIndicesSet.has(i),
         })),
         startPosition: constrainedResult.startPosition,

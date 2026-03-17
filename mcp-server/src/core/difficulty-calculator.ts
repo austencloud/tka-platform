@@ -13,7 +13,7 @@
  * so most sequences from the MCP will be Level 1.
  */
 
-import type { SequenceStep } from "./sequence-builder.js";
+import type { SequenceStep } from "./sequence-builder-adapter.js";
 
 // Non-radial orientations that indicate Level 3
 const NON_RADIAL_ORIENTATIONS = ["clock", "counter"];
