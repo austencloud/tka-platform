@@ -7,6 +7,7 @@
  * Domain: Share Hub - URL State Management
  */
 
+import { replaceState } from "$app/navigation";
 import type { ISheetRouter } from "$lib/shared/navigation/services/contracts/ISheetRouter";
 import type {
   IShareHubUrlManager,
@@ -90,7 +91,7 @@ export class ShareHubUrlManager implements IShareHubUrlManager {
     url.searchParams.delete("animStep");
     url.searchParams.delete("animGrid");
 
-    window.history.replaceState({}, "", url);
+    replaceState(url, {});
     window.dispatchEvent(new CustomEvent("route-change", { detail: {} }));
   }
 

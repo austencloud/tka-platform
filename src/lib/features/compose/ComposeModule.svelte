@@ -16,6 +16,7 @@
   import { container } from "$lib/shared/di";
   import { onMount, untrack } from "svelte";
   import { page } from "$app/stores";
+  import { replaceState } from "$app/navigation";
   import { getComposeModuleState } from "./shared/state/compose-module-state.svelte.ts";
   import type { ComposeTab } from "./shared/state/compose-module-state.svelte.ts";
   import type { IURLSyncer } from "$lib/shared/navigation/services/contracts/IURLSyncer";
@@ -113,7 +114,7 @@
 
         // Clean up URL (remove handoff param)
         url.searchParams.delete("handoff");
-        window.history.replaceState({}, "", url.pathname + url.search);
+        replaceState(url.pathname + url.search, {});
       }
     }
 

@@ -1,5 +1,5 @@
 <!-- Sidebar Header Component -->
-<!-- Contains the logo/branding and collapse toggle button -->
+<!-- Shows "TKA Scribe" branding that doubles as collapse/expand toggle -->
 <script lang="ts">
   let { isCollapsed, onLogoClick, onToggleCollapse } = $props<{
     isCollapsed: boolean;
@@ -9,38 +9,28 @@
 </script>
 
 <div class="sidebar-header">
-  <!-- Collapse Toggle Button -->
   <button
-    class="collapse-toggle"
+    class="brand-toggle"
     onclick={onToggleCollapse}
     aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
     title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
   >
-    <i class="fas fa-{isCollapsed ? 'indent' : 'outdent'}" aria-hidden="true"
-    ></i>
+    {#if isCollapsed}
+      <span class="brand-icon">TKA</span>
+    {:else}
+      <span class="brand-text">TKA Scribe</span>
+      <i class="fas fa-chevron-left toggle-icon" aria-hidden="true"></i>
+    {/if}
   </button>
 </div>
 
 <style>
-  /* ============================================================================
-     SIDEBAR HEADER - Premium Glassmorphism Design
-     ============================================================================ */
   .sidebar-header {
     border-bottom: 1px solid var(--theme-stroke);
     background: linear-gradient(
       135deg,
-      color-mix(
-          in srgb,
-          var(--theme-accent, var(--theme-accent)) 10%,
-          transparent
-        )
-        0%,
-      color-mix(
-          in srgb,
-          var(--theme-accent-strong, var(--theme-accent-strong)) 8%,
-          transparent
-        )
-        50%,
+      color-mix(in srgb, var(--theme-accent) 10%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent-strong) 8%, transparent) 50%,
       rgba(236, 72, 153, 0.06) 100%
     );
     display: flex;
@@ -48,7 +38,6 @@
     position: relative;
   }
 
-  /* Subtle glow effect at top */
   .sidebar-header::before {
     content: "";
     position: absolute;
@@ -60,106 +49,89 @@
       90deg,
       transparent,
       color-mix(in srgb, var(--theme-accent) 40%, transparent),
-      color-mix(
-        in srgb,
-        var(--theme-accent-strong, var(--theme-accent-strong)) 40%,
-        transparent
-      ),
+      color-mix(in srgb, var(--theme-accent-strong) 40%, transparent),
       transparent
     );
   }
 
-  /* ============================================================================
-     COLLAPSE TOGGLE BUTTON
-     ============================================================================ */
-  .collapse-toggle {
+  .brand-toggle {
     width: 100%;
     min-height: var(--min-touch-target);
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 10px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 10px;
-    color: var(--theme-text-dim);
+    padding: 12px 14px;
+    background: transparent;
+    border: none;
+    color: var(--theme-text);
     cursor: pointer;
-    transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
-    font-size: var(--font-size-sm);
+    transition: background var(--duration-normal) ease;
     position: relative;
     overflow: hidden;
   }
 
-  /* Shimmer effect */
-  .collapse-toggle::before {
-    content: "";
-    position: absolute;
-    inset: 0;
+  .brand-toggle:hover {
+    background: color-mix(in srgb, var(--theme-accent) 8%, transparent);
+  }
+
+  .brand-toggle:active {
+    background: color-mix(in srgb, var(--theme-accent) 12%, transparent);
+  }
+
+  .brand-toggle:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--theme-accent) 70%, transparent);
+    outline-offset: -2px;
+  }
+
+  .brand-text {
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
     background: linear-gradient(
       135deg,
-      transparent 40%,
-      var(--theme-card-bg) 50%,
-      transparent 60%
+      var(--theme-text) 0%,
+      color-mix(in srgb, var(--theme-accent) 60%, var(--theme-text)) 100%
     );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .toggle-icon {
+    position: absolute;
+    right: 12px;
+    font-size: 0.7rem;
+    color: var(--theme-text-dim);
     opacity: 0;
-    transition: opacity var(--duration-normal) ease;
+    transition:
+      opacity var(--duration-normal) ease,
+      transform var(--duration-normal) ease;
   }
 
-  .collapse-toggle:hover::before {
+  .brand-toggle:hover .toggle-icon {
     opacity: 1;
-    animation: header-shimmer 1s ease-in-out;
   }
 
-  @keyframes header-shimmer {
-    0% {
-      transform: translateX(-100%) translateY(-100%);
-    }
-    100% {
-      transform: translateX(100%) translateY(100%);
-    }
+  .brand-icon {
+    width: 100%;
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 800;
+    background: linear-gradient(
+      135deg,
+      var(--theme-text) 0%,
+      color-mix(in srgb, var(--theme-accent) 60%, var(--theme-text)) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
-  .collapse-toggle:hover {
-    background: var(--theme-card-hover-bg);
-    color: var(--theme-text);
-    border-color: var(--theme-stroke-strong);
-    box-shadow:
-      0 4px 12px rgba(0, 0, 0, 0.15),
-      inset 0 1px 0 var(--theme-stroke);
-  }
-
-  .collapse-toggle:active {
-    transform: scale(0.97);
-    transition-duration: var(--duration-instant);
-  }
-
-  .collapse-toggle i {
-    transition: transform var(--duration-emphasis) cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-
-  .collapse-toggle:hover i {
-    transform: scale(1.15);
-  }
-
-  /* Focus styles for keyboard navigation */
-  .collapse-toggle:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--theme-accent) 70%, transparent);
-    outline-offset: 2px;
-  }
-
-  /* ============================================================================
-     ANIMATIONS & TRANSITIONS
-     ============================================================================ */
   @media (prefers-reduced-motion: reduce) {
-    .collapse-toggle,
-    .collapse-toggle::before,
-    .collapse-toggle i {
+    .brand-toggle,
+    .toggle-icon {
       transition: none !important;
-      animation: none !important;
-    }
-    .collapse-toggle:hover,
-    .collapse-toggle:active {
-      transform: none;
     }
   }
 </style>

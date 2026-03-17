@@ -8,6 +8,10 @@
  */
 
 import { browser } from "$app/environment";
+import {
+  pushState as svelteKitPushState,
+  replaceState as svelteKitReplaceState,
+} from "$app/navigation";
 import type {
   ISheetRouter,
   SheetType,
@@ -121,9 +125,9 @@ export class SheetRouter implements ISheetRouter {
 
     // Update history
     if (mode === "push") {
-      window.history.pushState(state, "", url);
+      svelteKitPushState(url, state);
     } else {
-      window.history.replaceState(state, "", url);
+      svelteKitReplaceState(url, state);
     }
   }
 

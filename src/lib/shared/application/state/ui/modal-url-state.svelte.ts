@@ -14,7 +14,7 @@
  * - Use clearModalUrlState() when closing modals
  */
 
-import { goto } from "$app/navigation";
+import { goto, replaceState } from "$app/navigation";
 import { page } from "$app/stores";
 import { get } from "svelte/store";
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
@@ -188,8 +188,8 @@ export function setViewModeUrl(view: SequenceViewMode): void {
  * Update playback time in URL (debounced to avoid excessive updates)
  * Only updates if time has changed significantly (100ms threshold)
  *
- * Uses fast history.replaceState instead of SvelteKit's goto() for performance
- * since playback time updates happen frequently during animation.
+ * Uses SvelteKit's replaceState for URL updates.
+ * Debounced since playback time updates happen frequently during animation.
  */
 let lastUrlUpdateTime = 0;
 const URL_UPDATE_DEBOUNCE_MS = 500; // Update URL at most every 500ms
@@ -323,9 +323,8 @@ async function updateUrl(params: URLSearchParams): Promise<void> {
 }
 
 /**
- * Fast URL update using history.replaceState directly.
- * Bypasses SvelteKit navigation for high-frequency updates (playback time).
- * More performant but doesn't trigger SvelteKit lifecycle.
+ * Fast URL update using replaceState.
+ * Used for high-frequency updates (playback time) without full navigation.
  */
 function updateUrlFast(params: URLSearchParams): void {
   const newUrl = buildNewUrl(params);
@@ -334,9 +333,7 @@ function updateUrlFast(params: URLSearchParams): void {
   currentState = parseUrlParams(newUrl.searchParams);
 
   // Update browser URL without navigation
-  if (typeof history !== "undefined") {
-    history.replaceState(history.state, "", newUrl.toString());
-  }
+  replaceState(newUrl.toString(), {});
 }
 
 // ============================================================================

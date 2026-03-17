@@ -4,13 +4,14 @@
  * Handles keeping the browser URL in sync with the current sequence
  * so users can share by simply copying the URL bar at any time.
  *
- * Uses history.replaceState to avoid filling browser history with edits.
+ * Uses replaceState to avoid filling browser history with edits.
  * Debounces updates to avoid constant URL changes while editing.
  *
  * Domain: Navigation - Live URL Synchronization
  */
 
 import { browser } from "$app/environment";
+import { replaceState } from "$app/navigation";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { IURLSyncer, URLSyncOptions } from "../contracts/IURLSyncer";
 import type { ISequenceEncoder } from "../contracts/ISequenceEncoder";
@@ -56,7 +57,7 @@ export class URLSyncer implements IURLSyncer {
         if (window.location.search !== newSearch) {
           // Use replaceState to avoid creating history entries
           const newURL = `${window.location.pathname}${newSearch}`;
-          window.history.replaceState({}, "", newURL);
+          replaceState(newURL, {});
         }
       } catch (error) {
         console.error("Failed to sync URL with sequence:", error);
@@ -80,7 +81,7 @@ export class URLSyncer implements IURLSyncer {
 
     if (hasOpenParam) {
       urlObj.searchParams.delete("open");
-      window.history.replaceState({}, "", urlObj.toString());
+      replaceState(urlObj.toString(), {});
     }
   }
 
