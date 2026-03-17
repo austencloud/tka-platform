@@ -56,7 +56,10 @@
   }
 
   function handleVideoLoaded() {
-    if (videoEl) videoDuration = videoEl.duration;
+    if (!videoEl) return;
+    videoDuration = videoEl.duration;
+    // Seek slightly in to show a real frame instead of a black screen
+    if (videoEl.currentTime === 0) videoEl.currentTime = 0.1;
   }
 
   function cleanupVideo() {
@@ -108,7 +111,7 @@
             src={videoUrl}
             onloadedmetadata={handleVideoLoaded}
             controls
-            preload="metadata"
+            preload="auto"
             class="video-player"
           ></video>
           <div class="video-meta-row">
@@ -206,7 +209,6 @@
     width: 100%;
     max-width: 1100px;
     flex: 1;
-    align-content: start;
   }
 
   @media (max-width: 768px) {
@@ -221,6 +223,7 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+    min-height: 0;
   }
 
   .panel-title {
@@ -327,23 +330,26 @@
   .video-loaded, .sequence-loaded {
     display: flex;
     flex-direction: column;
-    gap: 10px;
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 12px;
     overflow: hidden;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    flex: 1;
   }
 
   .video-player {
     width: 100%;
-    aspect-ratio: 16 / 9;
+    flex: 1;
+    min-height: 200px;
     background: #000;
     display: block;
+    object-fit: contain;
   }
 
   .choreo-preview {
     width: 100%;
-    aspect-ratio: 4 / 3;
+    flex: 1;
+    min-height: 200px;
     overflow: hidden;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
   }
