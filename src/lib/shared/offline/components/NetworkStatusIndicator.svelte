@@ -196,7 +196,7 @@
 		bottom: 16px;
 		left: 16px;
 		z-index: 200;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+		box-shadow: var(--theme-shadow, 0 4px 12px rgba(0, 0, 0, 0.3));
 	}
 
 	/* Mobile variant - smaller, icon-only */
