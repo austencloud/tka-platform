@@ -9,7 +9,7 @@
   import { container } from "$lib/shared/di";
   import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
   import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
-
+  import { buildThumbnailUrl } from "$lib/shared/inbox/state/send-sequence-state.svelte";
 
   interface Props {
     onStartMapping: (
@@ -231,7 +231,15 @@
             type="button"
           >
             <div class="card-preview">
-              <span class="card-word-large">{seq.word ?? seq.name ?? "?"}</span>
+              {#if seq.word}
+                <img
+                  src={buildThumbnailUrl(seq.word, seq.intendedProp?.bluePropType ?? "staff", false)}
+                  alt={seq.word}
+                  class="card-thumbnail"
+                  onerror={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                />
+              {/if}
+              <span class="card-word-fallback">{seq.word ?? seq.name ?? "?"}</span>
             </div>
             <div class="card-label">
               <span class="card-beats">{seq.steps?.length || seq.word?.length || 0} beats</span>
@@ -506,21 +514,44 @@
   }
 
   .card-preview {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 16px 8px;
-    min-height: 60px;
-    background: rgba(0, 0, 0, 0.2);
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.3);
   }
 
-  .card-word-large {
-    font-size: var(--font-size-min, 14px);
-    font-weight: 700;
+  .card-thumbnail {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .card-word-fallback {
+    position: relative;
+    z-index: 1;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
     text-align: center;
     word-break: break-all;
     line-height: 1.3;
-    letter-spacing: 0.5px;
+    padding: 4px;
+    opacity: 0.5;
+  }
+
+  /* Hide the word fallback when the image loads successfully */
+  .card-thumbnail + .card-word-fallback {
+    position: absolute;
+    bottom: 4px;
+    left: 0;
+    right: 0;
+    font-size: 10px;
+    opacity: 0.6;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
   }
 
   .card-label {
