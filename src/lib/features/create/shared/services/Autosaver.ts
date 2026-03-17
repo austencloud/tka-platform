@@ -32,6 +32,7 @@ import { UserWorkType } from "$lib/shared/persistence/domain/enums/UserWorkType"
 export class Autosaver {
   private autosaveInterval: number | null = null;
   private isDirty = false;
+  private saving = false;
 
   /**
    * Save a draft.
@@ -44,25 +45,31 @@ export class Autosaver {
     sessionId: string,
     sequenceData: SequenceData
   ): Promise<void> {
-    // --- Dexie (local, always) ---
-    // Deep-clone via JSON to strip non-cloneable objects (Firestore Timestamps,
-    // class instances, functions) that IndexedDB's structured clone rejects.
-    const cloneableData = JSON.parse(JSON.stringify({
-      sessionId,
-      sequenceData,
-      stepCount: sequenceData.steps.length,
-      name: sequenceData.name,
-    }));
+    // Guard against concurrent saves (interval + manual can overlap)
+    if (this.saving) return;
+    this.saving = true;
 
-    await db.userWork.put({
-      type: UserWorkType.SEQUENCE_DRAFT,
-      tabId: "create",
-      data: cloneableData,
-      lastModified: new Date(),
-      version: 1,
-    });
+    try {
+      // --- Dexie (local, always) ---
+      // Deep-clone via JSON to strip non-cloneable objects (Firestore Timestamps,
+      // class instances, functions) that IndexedDB's structured clone rejects.
+      const cloneableData = JSON.parse(JSON.stringify({
+        sessionId,
+        sequenceData,
+        stepCount: sequenceData.steps.length,
+        name: sequenceData.name,
+      }));
 
-    this.isDirty = false;
+      await db.userWork.put({
+        type: UserWorkType.SEQUENCE_DRAFT,
+        tabId: "create",
+        data: cloneableData,
+        lastModified: new Date(),
+        version: 1,
+      });
+
+      // Only clear dirty flag after successful Dexie write
+      this.isDirty = false;
 
     // --- Firestore (cloud, fire-and-forget) ---
     const user = getAuthSync().currentUser;
@@ -84,6 +91,9 @@ export class Autosaver {
             console.warn("[Autosaver] Firestore draft sync failed:", err)
         );
       });
+    }
+    } finally {
+      this.saving = false;
     }
   }
 

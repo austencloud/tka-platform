@@ -187,8 +187,18 @@ export class OfflineCacheOrchestrator implements IOfflineCacheOrchestrator {
    */
   private waitForVisible(): Promise<void> {
     return new Promise((resolve) => {
+      // Poll cancelled flag so cancel() breaks out of the wait
+      const interval = setInterval(() => {
+        if (this.cancelled) {
+          clearInterval(interval);
+          document.removeEventListener("visibilitychange", handler);
+          resolve();
+        }
+      }, 1000);
+
       const handler = () => {
         if (!document.hidden) {
+          clearInterval(interval);
           document.removeEventListener("visibilitychange", handler);
           resolve();
         }
@@ -203,8 +213,18 @@ export class OfflineCacheOrchestrator implements IOfflineCacheOrchestrator {
    */
   private waitForOnline(): Promise<void> {
     return new Promise((resolve) => {
+      // Poll cancelled flag so cancel() breaks out of the wait
+      const interval = setInterval(() => {
+        if (this.cancelled) {
+          clearInterval(interval);
+          unsub();
+          resolve();
+        }
+      }, 1000);
+
       const unsub = this.networkMonitor.onOnlineChange((isOnline) => {
         if (isOnline) {
+          clearInterval(interval);
           unsub();
           resolve();
         }

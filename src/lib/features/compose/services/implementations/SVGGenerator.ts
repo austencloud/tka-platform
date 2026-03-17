@@ -242,9 +242,15 @@ export class SVGGenerator implements ISVGGenerator {
 
   private static getIDB(): Promise<IDBDatabase> {
     if (SVGGenerator.idbPromise) return SVGGenerator.idbPromise;
+    if (typeof indexedDB === "undefined") {
+      return Promise.reject(new Error("IndexedDB not available"));
+    }
     SVGGenerator.idbPromise = new Promise((resolve, reject) => {
       const request = indexedDB.open("tka-animated-svg-cache", 1);
-      request.onerror = () => reject(request.error);
+      request.onerror = () => {
+        SVGGenerator.idbPromise = null; // allow retry on next call
+        reject(request.error);
+      };
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
         if (!db.objectStoreNames.contains("svgs")) {
