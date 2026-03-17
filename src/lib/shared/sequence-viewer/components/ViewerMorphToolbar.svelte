@@ -13,8 +13,6 @@
 <script lang="ts">
   import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
   import TempoControl from "./TempoControl.svelte";
-  import PropSwitcher from "./PropSwitcher.svelte";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
   interface Props {
     bpm: number;
@@ -38,14 +36,6 @@
     onDeleteRequest?: () => void;
     onVideoUpload?: () => void;
     videoCount?: number;
-    // Prop switcher
-    propSource?: "intended" | "creator-favorite" | "viewer-settings" | "quick-switch";
-    hasIntendedProp?: boolean;
-    bluePropType?: PropType;
-    redPropType?: PropType;
-    onPropSourceChange?: (source: "intended" | "viewer-settings" | "quick-switch") => void;
-    onQuickSwitchProp?: (blue: PropType, red: PropType, catDog: boolean) => void;
-    onSetAsIntended?: () => Promise<void>;
   }
 
   let {
@@ -69,13 +59,6 @@
     onDeleteRequest,
     onVideoUpload,
     videoCount,
-    propSource,
-    hasIntendedProp,
-    bluePropType,
-    redPropType,
-    onPropSourceChange,
-    onQuickSwitchProp,
-    onSetAsIntended,
   }: Props = $props();
 
   let controlsExpanded = $state(false);
@@ -164,19 +147,6 @@
         <i class="fas fa-trash" aria-hidden="true"></i>
         <span>Delete</span>
       </button>
-    {/if}
-
-    {#if hasIntendedProp || isOwned}
-      <PropSwitcher
-        propSource={propSource ?? "viewer-settings"}
-        hasIntendedProp={hasIntendedProp ?? false}
-        {bluePropType}
-        {redPropType}
-        isOwned={isOwned ?? false}
-        onSourceChange={onPropSourceChange ?? (() => {})}
-        onQuickSwitch={onQuickSwitchProp ?? (() => {})}
-        onSetAsIntended={onSetAsIntended ?? (async () => {})}
-      />
     {/if}
 
     <button

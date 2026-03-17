@@ -19,11 +19,6 @@ Controls moved below the grid for better UX
   import AdvancedStartPositionPicker from "./AdvancedStartPositionPicker.svelte";
   import OrientationCycler from "./OrientationCycler.svelte";
   import PictographGrid from "./PictographGrid.svelte";
-  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { propDrawerState } from "$lib/shared/settings/state/prop-drawer-state.svelte";
-  import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
 
   // Local storage key for persisting picker preferences
   const STORAGE_KEY = "tka-start-position-picker-prefs";
@@ -149,11 +144,6 @@ Controls moved below the grid for better UX
     pickerState.currentGridMode === GridMode.DIAMOND ? "Box" : "Diamond"
   );
 
-  // Prop type display info for the prop switcher button
-  const settings = $derived(getSettings());
-  const bluePropType = $derived(settings.bluePropType ?? PropType.STAFF);
-  const propDisplayInfo = $derived(getPropTypeDisplayInfo(bluePropType));
-
   // Expose state for parent components
   export function isShowingAdvanced() {
     return showAdvancedPicker;
@@ -161,12 +151,6 @@ Controls moved below the grid for better UX
 
   export function goBackToDefault() {
     handleBackToDefault();
-  }
-
-  // Handle prop type change
-  function handlePropChange() {
-    hapticService?.trigger("selection");
-    propDrawerState.toggle();
   }
 
   // Handle position selection
@@ -282,15 +266,6 @@ Controls moved below the grid for better UX
     </div>
 
     <div class="mode-controls">
-      <button
-        class="control-button prop-button"
-        onclick={handlePropChange}
-        aria-label="Change prop type. Current: {propDisplayInfo.label}"
-      >
-        <PropCompositionPreview propType={bluePropType} size={20} />
-        <span class="control-label">{propDisplayInfo.label}</span>
-      </button>
-
       <button
         class="control-button"
         onclick={handleToggleView}
@@ -500,10 +475,6 @@ Controls moved below the grid for better UX
     height: 18px;
     flex-shrink: 0;
     opacity: 0.8;
-  }
-
-  .prop-button :global(.prop-composition-preview) {
-    flex-shrink: 0;
   }
 
   .control-label {

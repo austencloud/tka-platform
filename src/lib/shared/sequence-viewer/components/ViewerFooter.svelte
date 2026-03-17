@@ -21,8 +21,6 @@
 <script lang="ts">
   import TempoControl from "./TempoControl.svelte";
   import ViewerMorphToolbar from "./ViewerMorphToolbar.svelte";
-  import PropSwitcher from "./PropSwitcher.svelte";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
   interface Props {
     bpm: number;
@@ -49,14 +47,6 @@
     onDeleteRequest?: () => void;
     onVideoUpload?: () => void;
     videoCount?: number;
-    // Prop switcher
-    propSource?: "intended" | "creator-favorite" | "viewer-settings" | "quick-switch";
-    hasIntendedProp?: boolean;
-    bluePropType?: PropType;
-    redPropType?: PropType;
-    onPropSourceChange?: (source: "intended" | "viewer-settings" | "quick-switch") => void;
-    onQuickSwitchProp?: (blue: PropType, red: PropType, catDog: boolean) => void;
-    onSetAsIntended?: () => Promise<void>;
   }
 
   let {
@@ -84,13 +74,6 @@
     onDeleteRequest,
     onVideoUpload,
     videoCount,
-    propSource,
-    hasIntendedProp,
-    bluePropType,
-    redPropType,
-    onPropSourceChange,
-    onQuickSwitchProp,
-    onSetAsIntended,
   }: Props = $props();
 
   // Landscape BPM popover state
@@ -264,13 +247,6 @@
       {onDeleteRequest}
       {onVideoUpload}
       {videoCount}
-      {propSource}
-      {hasIntendedProp}
-      {bluePropType}
-      {redPropType}
-      onPropSourceChange={onPropSourceChange}
-      onQuickSwitchProp={onQuickSwitchProp}
-      onSetAsIntended={onSetAsIntended}
     />
   {:else}
     <!-- Desktop: tempo (shrink) | transport (fixed center) | actions (shrink) -->
@@ -322,18 +298,6 @@
       <!-- Right: action buttons — takes whatever space it needs -->
       <div class="footer-side footer-right">
         <div class="actions-section">
-          {#if hasIntendedProp || isOwned}
-            <PropSwitcher
-              propSource={propSource ?? "viewer-settings"}
-              hasIntendedProp={hasIntendedProp ?? false}
-              {bluePropType}
-              {redPropType}
-              isOwned={isOwned ?? false}
-              onSourceChange={onPropSourceChange ?? (() => {})}
-              onQuickSwitch={onQuickSwitchProp ?? (() => {})}
-              onSetAsIntended={onSetAsIntended ?? (async () => {})}
-            />
-          {/if}
           {#if isLoggedIn}
             <button
               type="button"
