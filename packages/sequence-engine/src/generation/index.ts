@@ -104,13 +104,31 @@ export {
   type PresetDefinition,
 } from "./constraints/presets/preset-constraints.js";
 
-// Builder
+// Builder (legacy)
 export {
   buildConstrainedSequence,
   emptyConstraintSet,
   type ConstrainedSequenceResult,
   type ConstrainedBuilderOptions,
 } from "./builder/constrained-builder.js";
+
+// Unified builder (preferred entry point)
+export {
+  SequenceBuilder,
+  type BuildOptions,
+  type BuildResult,
+  type LoopOptions,
+} from "./builder/SequenceBuilder.js";
+
+// Beam search (used internally by SequenceBuilder)
+export { BeamSearch, type BeamSearchResult } from "./builder/BeamSearch.js";
+
+// Turn allocation
+export {
+  allocateTurns,
+  getDefaultMaxTurnIntensity,
+  type TurnAllocation,
+} from "./turns/TurnAllocator.js";
 
 // Reporting
 export {
