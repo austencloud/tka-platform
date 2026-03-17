@@ -38,6 +38,8 @@ interface SerializedConfig {
   motionTypeFilter?: "no-dash" | "prefer-dash" | null;
   // Duration rhythm template
   durationTemplateId?: string | null;
+  // Spell mode length override
+  spellTargetLength?: number | null;
 }
 
 /**
@@ -60,6 +62,7 @@ function saveConfig(config: UIGenerationConfig): void {
       handPathMode: config.handPathMode,
       motionTypeFilter: config.motionTypeFilter,
       durationTemplateId: config.durationTemplateId,
+      spellTargetLength: config.spellTargetLength,
     };
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(serialized));
@@ -136,6 +139,9 @@ function loadConfig(): UIGenerationConfig | null {
     if (data.durationTemplateId !== undefined) {
       result.durationTemplateId = data.durationTemplateId;
     }
+    if (data.spellTargetLength !== undefined) {
+      result.spellTargetLength = data.spellTargetLength;
+    }
 
     return result as UIGenerationConfig;
   } catch (error) {
@@ -170,6 +176,7 @@ const DEFAULT_CONFIG: UIGenerationConfig = {
   handPathMode: "mixed",
   motionTypeFilter: null,
   durationTemplateId: null,
+  spellTargetLength: null,
 };
 
 // ===== Simple State Creator =====

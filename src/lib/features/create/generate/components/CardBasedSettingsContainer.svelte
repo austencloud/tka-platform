@@ -104,14 +104,36 @@ Delegates ALL logic to services (SRP compliant)
 
   // Pre-compute word length including bridges and LOOP multiplication
   let computedWordLength = $state<number | undefined>(undefined);
+  let requiredBridgeCount = $state<number>(0);
+  let naturalLength = $state<number>(0);
+  // The LOOP-multiplied natural length (without extra bridges) — used as the floor for the stepper
+  let naturalDisplayLength = $state<number>(0);
 
   $effect(() => {
     const word = wordInputValue?.trim();
     if (!word) {
       computedWordLength = undefined;
+      requiredBridgeCount = 0;
+      naturalLength = 0;
+      naturalDisplayLength = 0;
+      if (config.spellTargetLength !== null) {
+        updateConfig({ spellTargetLength: null });
+      }
       return;
     }
     computeWordLength(word, config.loopEnabled, config.loopType, config.sliceSize);
+  });
+
+  // Reset spell target when the word itself changes
+  let previousWord = $state<string>("");
+  $effect(() => {
+    const word = wordInputValue?.trim() ?? "";
+    if (word !== previousWord && previousWord !== "") {
+      if (config.spellTargetLength !== null) {
+        updateConfig({ spellTargetLength: null });
+      }
+    }
+    previousWord = word;
   });
 
   async function computeWordLength(
@@ -127,6 +149,9 @@ Delegates ALL logic to services (SRP compliant)
       const parseResult = generator.parseWord(word);
       if (!parseResult || parseResult.error || !parseResult.letters?.length) {
         computedWordLength = undefined;
+        requiredBridgeCount = 0;
+        naturalLength = 0;
+        naturalDisplayLength = 0;
         return;
       }
 
@@ -145,28 +170,57 @@ Delegates ALL logic to services (SRP compliant)
         }
       }
 
-      let totalBeats = originalLetters.length + bridgeCount;
+      requiredBridgeCount = bridgeCount;
+      naturalLength = originalLetters.length + bridgeCount;
 
-      // Apply LOOP multiplier
-      if (loopEnabled) {
-        // LOOP extension adds 1 bridge beat to connect end back to start
-        totalBeats += 1;
-
+      // Helper to apply LOOP multiplication to a pre-LOOP beat count
+      function applyLoopMultiplier(beats: number): number {
+        if (!loopEnabled) return beats;
+        let total = beats + 1; // LOOP adds 1 bridge beat
         if (ROTATED_LOOP_TYPES.has(loopType as LOOPType)) {
-          if (sliceSize === SliceSize.HALVED) {
-            totalBeats *= 2;
-          } else if (sliceSize === SliceSize.QUARTERED) {
-            totalBeats *= 4;
-          }
+          total *= sliceSize === SliceSize.QUARTERED ? 4 : 2;
         } else {
-          // Non-rotated LOOPs (mirrored, flipped, rewound) always double
-          totalBeats *= 2;
+          total *= 2;
         }
+        return total;
       }
 
-      computedWordLength = totalBeats;
+      // Natural display length = LOOP-multiplied natural (the floor for the stepper)
+      naturalDisplayLength = applyLoopMultiplier(naturalLength);
+
+      // Total display length includes extra bridges from spell target
+      const extraBridges = config.spellTargetLength
+        ? Math.max(0, config.spellTargetLength - naturalLength)
+        : 0;
+      computedWordLength = applyLoopMultiplier(naturalLength + extraBridges);
     } catch {
       computedWordLength = undefined;
+      requiredBridgeCount = 0;
+      naturalLength = 0;
+      naturalDisplayLength = 0;
+    }
+  }
+
+  function handleSpellLengthChange(newLength: number) {
+    let preLoopTarget: number;
+
+    if (config.loopEnabled) {
+      const isRotatedType = ROTATED_LOOP_TYPES.has(config.loopType as LOOPType);
+      let multiplier: number;
+      if (isRotatedType) {
+        multiplier = config.sliceSize === SliceSize.QUARTERED ? 4 : 2;
+      } else {
+        multiplier = 2;
+      }
+      preLoopTarget = Math.round(newLength / multiplier) - 1;
+    } else {
+      preLoopTarget = newLength;
+    }
+
+    if (preLoopTarget <= naturalLength) {
+      updateConfig({ spellTargetLength: null });
+    } else {
+      updateConfig({ spellTargetLength: preLoopTarget });
     }
   }
 
@@ -286,6 +340,14 @@ Delegates ALL logic to services (SRP compliant)
         handleLoopToggle,
         wordInputValue,
         computedWordLength,
+        handleSpellLengthChange,
+        bridgeInfo: wordInputValue?.trim() ? {
+          requiredBridges: requiredBridgeCount,
+          extraBridges: Math.max(0, (config.spellTargetLength ?? 0) - naturalLength),
+          totalBridges: requiredBridgeCount + Math.max(0, (config.spellTargetLength ?? 0) - naturalLength),
+          naturalLength,
+          naturalDisplayLength,
+        } : undefined,
         handleWordInput: onWordInput,
         handleWordSubmit: onWordSubmit,
         handleStartEndChange: startEndState

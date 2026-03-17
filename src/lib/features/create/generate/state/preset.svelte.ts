@@ -91,6 +91,7 @@ function createDefaultPreset(): GenerationPreset {
     handPathMode: "mixed",
     motionTypeFilter: null,
     durationTemplateId: null,
+    spellTargetLength: null,
   };
 
   return {
