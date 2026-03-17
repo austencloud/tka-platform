@@ -9,7 +9,7 @@ import type {
   SequenceStep,
   SequenceResult,
   Orientation,
-} from "../../core/types/sequence-engine-types.js";
+} from "../types/sequence-engine-types.js";
 
 /**
  * Interface for orientation calculation operations.
