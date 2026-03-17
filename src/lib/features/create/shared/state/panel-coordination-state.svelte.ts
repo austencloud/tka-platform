@@ -305,6 +305,10 @@ export interface PanelCoordinationState {
   enterDurationPreviewMode(sequence: SequenceData): void;
   exitDurationPreviewMode(apply: boolean): { sequence: SequenceData | null };
   setPreviewSequence(sequence: SequenceData): void;
+
+  // LOOP Completion Flow (triggers confirmation dialog in CreateModule)
+  requestLoopCompletion(loopType: LOOPType): void;
+  setLoopCompletionCallback(cb: (loopType: LOOPType) => void): void;
 }
 
 export function createPanelCoordinationState(): PanelCoordinationState {
@@ -420,6 +424,9 @@ export function createPanelCoordinationState(): PanelCoordinationState {
 
   // Sequence Viewer state (triggers SequenceViewerDrawerHost on mobile, /sequence/[id] on desktop)
   let isSequenceViewerOpen = $state(false);
+
+  // LOOP completion callback (set by CreateModule to handle the confirmation dialog flow)
+  let loopCompletionCallback: ((loopType: LOOPType) => void) | null = null;
 
   /**
    * CRITICAL: Close all panels to enforce mutual exclusivity
@@ -981,6 +988,15 @@ export function createPanelCoordinationState(): PanelCoordinationState {
 
     setPreviewSequence(sequence: SequenceData) {
       previewSequence = sequence;
+    },
+
+    // LOOP Completion Flow
+    requestLoopCompletion(loopType: LOOPType) {
+      loopCompletionCallback?.(loopType);
+    },
+
+    setLoopCompletionCallback(cb: (loopType: LOOPType) => void) {
+      loopCompletionCallback = cb;
     },
   };
 }

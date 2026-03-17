@@ -141,8 +141,7 @@
 
   function handleComponentSelect(_component: LOOPComponent, loopType: LOOPType) {
     showLoopPopover = false;
-    // panelState.requestLoopCompletion(loopType) — will be wired in Task 7
-    (panelState as any).requestLoopCompletion?.(loopType);
+    panelState.requestLoopCompletion(loopType);
   }
 
   // Close popover on click outside

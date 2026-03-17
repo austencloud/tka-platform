@@ -70,6 +70,10 @@
   import { createPanelHeightTracker } from "../state/managers/PanelHeightTracker.svelte";
   import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
   import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
+  import type { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
+  import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { UndoOperationType } from "../services/contracts/IUndoManager";
 
   const logger = createComponentLogger("CreateModule");
 
@@ -117,6 +121,14 @@
   // Confirmation dialog states
   let showTransferConfirmation = $state(false);
   let showClearSequenceConfirm = $state(false);
+
+  // LOOP completion state
+  let showLoopConfirm = $state(false);
+  let pendingLoopType = $state<LOOPType | null>(null);
+  let isApplyingLoop = $state(false);
+  let pendingLoopBeatCount = $state(0);
+  let pendingLoopComponentName = $state("");
+  const loopTypeResolver = new LOOPTypeResolver();
   let isMobile = $state(false);
   let sequenceToTransfer: PictographData[] | null = $state(null);
   let toolPanelElement: HTMLElement | null = $state(null);
@@ -285,6 +297,9 @@
 
         // Resolve settings service for user preferences
         settingsService = container.items.settingsState;
+
+        // Wire LOOP completion callback so the workspace header can trigger the flow
+        panelState.setLoopCompletionCallback(handleLoopCompletionRequest);
 
         initService.configureEventCallbacks(CreateModuleState, panelState);
 
@@ -490,6 +505,90 @@
     }
   }
 
+  // ============================================================================
+  // LOOP COMPLETION HANDLERS
+  // ============================================================================
+  async function handleLoopCompletionRequest(loopType: LOOPType) {
+    if (!CreateModuleState) return;
+
+    const extensionFlowCoordinator = container.items.extensionFlowCoordinator;
+    if (!extensionFlowCoordinator) return;
+
+    const activeSeqState = CreateModuleState.getActiveTabSequenceState();
+    const sequence = activeSeqState?.currentSequence;
+    if (!sequence) return;
+
+    pendingLoopComponentName = loopTypeResolver.formatForDisplay(loopType);
+
+    const result = await extensionFlowCoordinator.startFlow(sequence);
+    if (!result.canExtend || !result.analysis) {
+      toast.warning("Cannot complete this LOOP");
+      return;
+    }
+
+    const currentLen = sequence.steps?.length ?? 0;
+    const extensionType = result.analysis.extensionType;
+    if (extensionType === "half_rotation") {
+      pendingLoopBeatCount = currentLen;
+    } else if (extensionType === "quarter_rotation") {
+      pendingLoopBeatCount = currentLen * 3;
+    } else {
+      pendingLoopBeatCount = currentLen;
+    }
+
+    pendingLoopType = loopType;
+
+    if (settingsService?.currentSettings?.skipLoopConfirmation) {
+      confirmLoopCompletion();
+      return;
+    }
+
+    showLoopConfirm = true;
+  }
+
+  async function confirmLoopCompletion() {
+    if (!pendingLoopType || isApplyingLoop || !CreateModuleState) return;
+
+    const extensionFlowCoordinator = container.items.extensionFlowCoordinator;
+    if (!extensionFlowCoordinator) return;
+
+    const activeSeqState = CreateModuleState.getActiveTabSequenceState();
+    const sequence = activeSeqState?.currentSequence;
+    if (!sequence) return;
+
+    isApplyingLoop = true;
+    showLoopConfirm = false;
+
+    CreateModuleState.pushUndoSnapshot(UndoOperationType.EXTEND_SEQUENCE);
+
+    const result = await extensionFlowCoordinator.applyLoop(sequence, pendingLoopType);
+
+    if (result.success && result.sequence) {
+      activeSeqState.setCurrentSequence(result.sequence);
+      const hapticService = container.items.hapticFeedback;
+      hapticService?.trigger("success");
+      toast.success(result.message);
+    } else {
+      const hapticService = container.items.hapticFeedback;
+      hapticService?.trigger("error");
+      toast.warning(result.message);
+    }
+
+    isApplyingLoop = false;
+    pendingLoopType = null;
+  }
+
+  function cancelLoopCompletion() {
+    showLoopConfirm = false;
+    pendingLoopType = null;
+  }
+
+  function handleSkipLoopConfirmationChange(checked: boolean) {
+    if (checked && settingsService) {
+      settingsService.updateSetting("skipLoopConfirmation", true);
+    }
+  }
+
   function handleOpenFilterPanel() {
     if (!handlers) return;
     handlers.handleOpenFilterPanel(panelState);
@@ -652,6 +751,20 @@
     onConfirm={confirmClearSequence}
     onCancel={cancelClearSequence}
     onDontAskAgainChange={handleSkipClearConfirmationChange}
+  />
+
+  <!-- LOOP Completion Confirmation Dialog -->
+  <ConfirmDialog
+    bind:isOpen={showLoopConfirm}
+    title="Apply {pendingLoopComponentName} LOOP?"
+    message="This will add {pendingLoopBeatCount} beats to your sequence."
+    confirmText="Apply"
+    cancelText="Cancel"
+    variant="info"
+    showDontAskAgain={true}
+    onConfirm={confirmLoopCompletion}
+    onCancel={cancelLoopCompletion}
+    onDontAskAgainChange={handleSkipLoopConfirmationChange}
   />
 {:else}
   <!-- Loading state while async initialization completes -->
