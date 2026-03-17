@@ -37,6 +37,10 @@ import { parseConstraintSet } from "../constraints/parsing/constraint-parser.js"
 import type { ConstraintOptions } from "../constraints/composition/constraint-options.js";
 import { LOOPType, SliceSize } from "../../loop/loop-types.js";
 import { loopExecutorSelector } from "../../loop/execution/LOOPExecutorSelector.js";
+import {
+  HALF_POSITION_MAP,
+  QUARTER_POSITION_MAP_CW,
+} from "../../loop/position-maps/circular-position-maps.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Public types
@@ -225,12 +229,29 @@ export class SequenceBuilder {
     );
 
     // Stage 4: Beam search by length
+    // When generating a LOOP seed, the last beat must end at the position
+    // that's the correct rotation away from the start (180° for halved,
+    // 90° for quartered). Without this, the seed can end anywhere and the
+    // LOOP executor's validation rightfully rejects it.
+    //
+    // The position map is passed to searchByLength so it can compute the
+    // required end position AFTER picking the (possibly random) start.
+    let loopPositionMap: Record<string, string> | undefined;
+    if (options.loop?.useTargetedGeneration) {
+      loopPositionMap =
+        options.loop.sliceSize === SliceSize.QUARTERED
+          ? QUARTER_POSITION_MAP_CW
+          : HALF_POSITION_MAP;
+    }
+
     const beamSearch = new BeamSearch(this.variationProvider, options.gridMode);
     const searchResult = beamSearch.searchByLength(
       length,
       options.startPosition,
       constraintSet,
       options.beamWidth ?? 10,
+      undefined, // requiredEndPosition computed inside searchByLength from loopPositionMap
+      loopPositionMap,
     );
 
     if (!searchResult.success && searchResult.steps.length === 0) {
