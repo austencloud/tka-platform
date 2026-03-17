@@ -55,8 +55,8 @@ export function registerVTGTools(server: McpServer): void {
       if (category.tkaLetters && category.tkaLetters.length > 0) {
         lines.push(`**TKA Letters:** ${category.tkaLetters.join(", ")}`);
       }
-      if (category.elementalName) {
-        lines.push(`**Elemental Name:** ${category.elementalName}`);
+      if ((category as any).elementalName) {
+        lines.push(`**Elemental Name:** ${(category as any).elementalName}`);
       }
       return { content: [{ type: "text" as const, text: lines.join("\n") }] };
     }
@@ -74,7 +74,7 @@ export function registerVTGTools(server: McpServer): void {
         const source = c.source.sourceType === "document" ? "(VTG V1)" : "(community extension)";
         lines.push(`**${c.abbreviation} - ${c.name}** ${source}`);
         lines.push(`  Timing: ${c.timing}, Direction: ${c.direction}`);
-        if (c.elementalName) lines.push(`  Element: ${c.elementalName}`);
+        if ((c as any).elementalName) lines.push(`  Element: ${(c as any).elementalName}`);
         lines.push("");
       }
       return { content: [{ type: "text" as const, text: lines.join("\n") }] };
@@ -226,7 +226,7 @@ export function registerVTGTools(server: McpServer): void {
       }
       const cat = categories[0]!;
       return {
-        content: [{ type: "text" as const, text: `**TKA letter ${letter}** → VTG: **${cat.name}** (${cat.abbreviation})${cat.elementalName ? `\n\nElement: ${cat.elementalName}` : ""}` }],
+        content: [{ type: "text" as const, text: `**TKA letter ${letter}** → VTG: **${cat.name}** (${cat.abbreviation})${(cat as any).elementalName ? `\n\nElement: ${(cat as any).elementalName}` : ""}` }],
       };
     }
   );
