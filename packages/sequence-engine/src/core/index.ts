@@ -26,5 +26,8 @@ export type { ITransitionGraph } from "./transition-graph/ITransitionGraph.js";
 export { TransitionGraph } from "./transition-graph/TransitionGraph.js";
 export { setLetterTransitionGraph, getLetterTransitionGraph } from "./transition-graph/LetterTransitionGraph.js";
 
+// Letters
+export { LetterParser } from "./letters/LetterParser.js";
+
 // Data provider contracts
 export type { ISequenceDataProvider, LetterVariationData } from "./data/ISequenceDataProvider.js";
