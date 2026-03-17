@@ -12,7 +12,7 @@
  * reversing E's motions produces K (they are inverses of each other).
  */
 
-import type { SequenceStep } from "../domain/models/SequenceEngineTypes.js";
+import type { SequenceStep } from "../core/types/sequence-engine-types.js";
 import { LOOPType, SliceSize } from "./loop-types.js";
 import { HALVED_LOOPS, QUARTERED_LOOPS } from "./loop-validator.js";
 import { findLetterByMotions } from "./letter-lookup.js";

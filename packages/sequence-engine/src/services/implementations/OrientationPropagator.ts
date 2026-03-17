@@ -16,7 +16,7 @@ import type {
   SequenceStep,
   SequenceResult,
   Orientation,
-} from "../../domain/models/SequenceEngineTypes.js";
+} from "../../core/types/sequence-engine-types.js";
 
 /**
  * Standalone orientation calculator that delegates to the canonical implementation.

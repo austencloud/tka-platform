@@ -7,10 +7,10 @@
  * Inlined from @tka/render-core to remove that dependency.
  */
 
-import type { HandPath, Orientation } from "./domain/models/SequenceEngineTypes.js";
+import type { HandPath, Orientation } from "./core/types/sequence-engine-types.js";
 
-export type { Orientation } from "./domain/models/SequenceEngineTypes.js";
-export type { OrientationInput } from "./domain/models/SequenceEngineTypes.js";
+export type { Orientation } from "./core/types/sequence-engine-types.js";
+export type { OrientationInput } from "./core/types/sequence-engine-types.js";
 
 // ============================================================================
 // HANDPATH CALCULATOR
