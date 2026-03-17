@@ -70,6 +70,8 @@ import { LOOPDetector } from "$lib/features/create/generate/circular/services/im
 import { OrientationCycleDetector } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleDetector";
 import { OrientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
 import { GenerationOrchestrator } from "$lib/features/create/generate/shared/services/implementations/GenerationOrchestrator";
+import { BrowserVariationProvider } from "$lib/features/create/generate/shared/services/implementations/BrowserVariationProvider";
+import { BuildResultTransformer } from "$lib/features/create/generate/shared/services/implementations/BuildResultTransformer";
 
 // === LOOP Executors (15 variations) ===
 import { StrictRotatedLOOPExecutor } from "$lib/features/create/generate/circular/services/implementations/StrictRotatedLOOPExecutor";
@@ -614,16 +616,13 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
         // GenerationOrchestrator needs multiple dependencies from previous layer
         generationOrchestrator: () =>
           new GenerationOrchestrator(
-            ctx.startPositionSelector,
-            ctx.loopParameterProvider,
-            ctx.turnAllocator,
-            ctx.stepGenerationOrchestrator,
-            ctx.sequenceMetadataManager,
-            deps.reversalDetector,
-            ctx.partialSequenceGenerator,
-            ctx.loopEndPositionSelector,
-            ctx.loopExecutorSelector,
-            ctx.orientationCycleDetector
+            new BrowserVariationProvider(deps.letterQueryHandler),
+            new BuildResultTransformer(
+              ctx.sequenceMetadataManager,
+              deps.reversalDetector,
+              ctx.orientationCycleDetector
+            ),
+            ctx.sequenceMetadataManager
           ),
 
         // Spell services - Layer 4.5a: Validators (no same-layer deps)
