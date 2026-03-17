@@ -45,15 +45,19 @@ export class Autosaver {
     sequenceData: SequenceData
   ): Promise<void> {
     // --- Dexie (local, always) ---
+    // Deep-clone via JSON to strip non-cloneable objects (Firestore Timestamps,
+    // class instances, functions) that IndexedDB's structured clone rejects.
+    const cloneableData = JSON.parse(JSON.stringify({
+      sessionId,
+      sequenceData,
+      stepCount: sequenceData.steps.length,
+      name: sequenceData.name,
+    }));
+
     await db.userWork.put({
       type: UserWorkType.SEQUENCE_DRAFT,
       tabId: "create",
-      data: {
-        sessionId,
-        sequenceData,
-        stepCount: sequenceData.steps.length,
-        name: sequenceData.name,
-      },
+      data: cloneableData,
       lastModified: new Date(),
       version: 1,
     });
