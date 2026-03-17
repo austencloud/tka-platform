@@ -90,6 +90,26 @@
   const isInitializing = $derived(isLoading || !sectionsReady);
   const isEmpty = $derived(!isInitializing && !error && sequences.length === 0);
   const hasSequences = $derived(!isInitializing && !error && sequences.length > 0);
+
+  // Skeleton stays visible briefly after data arrives for smooth crossfade.
+  // showSkeleton = true while loading, then lingers 300ms after isInitializing → false.
+  let showSkeleton = $state(true);
+  let skeletonFading = $state(false);
+
+  $effect(() => {
+    if (isInitializing) {
+      showSkeleton = true;
+      skeletonFading = false;
+    } else if (showSkeleton) {
+      // Data arrived — start fade-out
+      skeletonFading = true;
+      const timer = setTimeout(() => {
+        showSkeleton = false;
+        skeletonFading = false;
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  });
   const emptyMessage = $derived(
     source === "my-library"
       ? t('browse_no_sequences_saved')
@@ -191,12 +211,9 @@
     />
   {/if}
 
-  <!-- Content area -->
+  <!-- Content area — skeleton overlays real content for seamless crossfade -->
   <div class="display-content" bind:this={displayContentEl} onscroll={handleScroll}>
-    {#if isInitializing}
-      <!-- Show skeletons until sections are fully ready -->
-      <BrowseThumbnailSkeleton viewMode="grid" count={12} />
-    {:else if error}
+    {#if error}
       <div class="error-state" role="alert" aria-live="assertive">
         <p class="error-message">{error}</p>
         <button onclick={handleRetry}> {t('browse_try_again')} </button>
@@ -205,17 +222,27 @@
       <div class="empty-state">
         <p>{emptyMessage}</p>
       </div>
-    {:else if hasSequences}
-      <BrowseGrid
-        {sequences}
-        {sections}
-        viewMode="grid"
-        {showSections}
-        {thumbnailService}
-        onAction={handleSequenceAction}
-        pinchColumnOverride={pinchColumns}
-        {isTransitioning}
-      />
+    {:else}
+      <!-- Real grid renders underneath as soon as data arrives -->
+      {#if hasSequences}
+        <BrowseGrid
+          {sequences}
+          {sections}
+          viewMode="grid"
+          {showSections}
+          {thumbnailService}
+          onAction={handleSequenceAction}
+          pinchColumnOverride={pinchColumns}
+          {isTransitioning}
+        />
+      {/if}
+
+      <!-- Skeleton overlays the grid, fades out once data arrives -->
+      {#if showSkeleton}
+        <div class="skeleton-overlay" class:fading={skeletonFading}>
+          <BrowseThumbnailSkeleton count={12} />
+        </div>
+      {/if}
     {/if}
   </div>
 </div>
@@ -235,12 +262,29 @@
   }
 
   .display-content {
+    position: relative;
     flex: 1;
     overflow-y: auto;
     padding: var(--spacing-lg);
     container-type: inline-size; /* Enable container queries for responsive grid */
     /* Allow vertical scroll + pinch zoom, let JS handle custom pinch */
     touch-action: pan-y;
+  }
+
+  /* Skeleton covers the content area and fades out when data arrives */
+  .skeleton-overlay {
+    position: absolute;
+    inset: 0;
+    padding: var(--spacing-lg);
+    background: inherit;
+    z-index: 1;
+    opacity: 1;
+    transition: opacity 300ms ease-out;
+  }
+
+  .skeleton-overlay.fading {
+    opacity: 0;
+    pointer-events: none;
   }
 
   /* Modern scrollbar - thin and subtle */
