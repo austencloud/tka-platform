@@ -30,7 +30,7 @@ import {
 } from "./search-state.js";
 import { generateConstraintReport } from "../reporting/report-generator.js";
 import { scoreBridgeOptions } from "./bridge-scorer.js";
-import { getLetterTransitionGraph } from "../../letter-transition-graph.js";
+import { getLetterTransitionGraph } from "../../core/transition-graph/LetterTransitionGraph.js";
 import { calculateEndOrientation } from "../../core/orientation/OrientationCalculator.js";
 import type { Orientation } from "../../core/types/sequence-engine-types.js";
 
