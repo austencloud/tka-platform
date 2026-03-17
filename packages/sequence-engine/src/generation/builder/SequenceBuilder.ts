@@ -354,6 +354,16 @@ export class SequenceBuilder {
       // Bridge letters share the beat index of the letter they precede.
       const beatIndex = i;
 
+      // Apply turn allocation. Index 0 = start position (no turns),
+      // beats are 1-indexed in the turn allocation arrays.
+      const beatTurnIndex = i > 0 ? i - 1 : -1;
+      const blueTurns = beatTurnIndex >= 0 && beatTurnIndex < turnAllocation.blue.length
+        ? turnAllocation.blue[beatTurnIndex]
+        : undefined;
+      const redTurns = beatTurnIndex >= 0 && beatTurnIndex < turnAllocation.red.length
+        ? turnAllocation.red[beatTurnIndex]
+        : undefined;
+
       sequence.push({
         letter: pd.letter,
         startPosition: pd.startPosition,
@@ -365,6 +375,7 @@ export class SequenceBuilder {
           rotationDirection: pd.blueMotion.rotationDirection,
           startOrientation: pd.blueMotion.startOrientation,
           endOrientation: pd.blueMotion.endOrientation,
+          turns: blueTurns,
         },
         redMotion: {
           motionType: pd.redMotion.motionType,
@@ -373,6 +384,7 @@ export class SequenceBuilder {
           rotationDirection: pd.redMotion.rotationDirection,
           startOrientation: pd.redMotion.startOrientation,
           endOrientation: pd.redMotion.endOrientation,
+          turns: redTurns,
         },
         beatIndex,
         stepNumber: i,

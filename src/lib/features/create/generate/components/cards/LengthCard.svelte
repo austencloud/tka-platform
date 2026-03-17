@@ -36,7 +36,7 @@ In spell mode, shows bridge count as subtitle and allows upward adjustment.
 
   const MAX_LENGTH = 64;
 
-  const MIN_LENGTH = $derived(minOverride ?? (loopEnabled ? 2 : 1));
+  const MIN_LENGTH = $derived(minOverride ?? (loopEnabled ? 4 : 4));
   const STEP = $derived(loopEnabled ? 2 : 1);
 
   function handleIncrement() {
