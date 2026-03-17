@@ -94,6 +94,14 @@ export interface EngineGenerationParams {
   motionTypeFilter?: "no-dash" | "prefer-dash";
   /** Force start position */
   startPosition?: string;
+  /** Force end position (last beat must end here) */
+  endPosition?: string;
+  /** Start positions to exclude from random start pool */
+  blockedStartPositions?: string[];
+  /** Letters that must NOT appear in the sequence */
+  mustNotContainLetters?: string[];
+  /** Letters that MUST appear at least once */
+  mustContainLetters?: string[];
   /** LOOP type string (triggers LOOP extension) */
   loopType?: string;
   /** Slice size for LOOP rotation */
@@ -147,8 +155,12 @@ function assembleBuildOptions(params: EngineGenerationParams): BuildOptions {
     gridMode: params.gridMode,
     level: params.level,
     startPosition: params.startPosition,
+    endPosition: params.endPosition,
     maxTurnIntensity: params.turnIntensity,
     beamWidth: params.beamWidth,
+    blockedStartPositions: params.blockedStartPositions,
+    mustNotContainLetters: params.mustNotContainLetters,
+    mustContainLetters: params.mustContainLetters,
   };
 
   // Word or length (one is required, caller validates)

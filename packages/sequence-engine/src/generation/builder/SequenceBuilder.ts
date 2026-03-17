@@ -133,6 +133,18 @@ export interface BuildOptions {
 
   /** LOOP extension options. When present, the seed sequence is extended. */
   loop?: LoopOptions;
+
+  /** Force a specific end position (e.g. "beta5"). The last beat must end here. */
+  endPosition?: string;
+
+  /** Start positions to exclude from the random start pool. */
+  blockedStartPositions?: string[];
+
+  /** Letters that must NOT appear in the generated sequence. */
+  mustNotContainLetters?: string[];
+
+  /** Letters that MUST appear at least once in the generated sequence. */
+  mustContainLetters?: string[];
 }
 
 /**
@@ -358,6 +370,19 @@ export class SequenceBuilder {
       }
     }
 
+    // Build search options for filtering
+    const searchOptions = {
+      blockedStartPositions: options.blockedStartPositions
+        ? new Set(options.blockedStartPositions)
+        : undefined,
+      mustNotContainLetters: options.mustNotContainLetters
+        ? new Set(options.mustNotContainLetters)
+        : undefined,
+      mustContainLetters: options.mustContainLetters
+        ? new Set(options.mustContainLetters)
+        : undefined,
+    };
+
     const maxRetries = needsLoopTargeting && !effectiveStartPosition ? 10 : 1;
     let searchResult: BeamSearchResult | undefined;
     let lastError: string | undefined;
@@ -382,6 +407,11 @@ export class SequenceBuilder {
         loopPositionMap = this.buildLoopPositionMap(options.loop!);
       }
 
+      // User-specified end position (non-LOOP) merges into requiredEndPositions
+      if (options.endPosition && !needsLoopTargeting) {
+        requiredEndPositions = new Set([options.endPosition]);
+      }
+
       const beamSearch = new BeamSearch(this.variationProvider, options.gridMode);
       const result = beamSearch.searchByLength(
         length,
@@ -390,9 +420,20 @@ export class SequenceBuilder {
         options.beamWidth ?? 10,
         requiredEndPositions,
         loopPositionMap,
+        searchOptions,
       );
 
       if (result.success || result.steps.length > 0) {
+        // Validate mustContainLetters if specified
+        if (searchOptions.mustContainLetters && searchOptions.mustContainLetters.size > 0) {
+          const presentLetters = new Set(result.steps.slice(1).map((s) => s.letter));
+          const missing = [...searchOptions.mustContainLetters].filter((l) => !presentLetters.has(l));
+          if (missing.length > 0) {
+            lastError = `Required letters [${missing.join(", ")}] not present in generated sequence`;
+            continue; // retry
+          }
+        }
+
         searchResult = result;
         break;
       }
@@ -499,17 +540,15 @@ export class SequenceBuilder {
       const prevBlueRot = prevStep?.blueMotion.rotationDirection;
       const prevRedRot = prevStep?.redMotion.rotationDirection;
 
-      // A pro or anti motion with 0 turns is physically impossible — you can't
-      // spin pro or anti without actually rotating. That's a float: the prop
-      // shifts to its new location without any rotation at all.
-      const blueMotionType = (blueTurns === 0 && (pd.blueMotion.motionType === "pro" || pd.blueMotion.motionType === "anti"))
-        ? "float" as const
-        : pd.blueMotion.motionType;
-      const redMotionType = (redTurns === 0 && (pd.redMotion.motionType === "pro" || pd.redMotion.motionType === "anti"))
-        ? "float" as const
-        : pd.redMotion.motionType;
-      const effectiveBlueTurns = blueMotionType === "float" && blueTurns === 0 ? "fl" as const : blueTurns;
-      const effectiveRedTurns = redMotionType === "float" && redTurns === 0 ? "fl" as const : redTurns;
+      // Float is a distinct motion state assigned by the TurnAllocator ("fl"),
+      // not an auto-conversion from 0 turns. When the allocator assigns "fl",
+      // the motion type becomes "float" and rotation is "noRotation".
+      // Zero turns on pro/anti is a valid state — the prop is at its location
+      // with no additional rotation applied.
+      const blueIsFloat = blueTurns === "fl";
+      const redIsFloat = redTurns === "fl";
+      const blueMotionType = blueIsFloat ? "float" as const : pd.blueMotion.motionType;
+      const redMotionType = redIsFloat ? "float" as const : pd.redMotion.motionType;
 
       sequence.push({
         letter: pd.letter,
@@ -519,23 +558,23 @@ export class SequenceBuilder {
           motionType: blueMotionType,
           startLocation: pd.blueMotion.startLocation,
           endLocation: pd.blueMotion.endLocation,
-          rotationDirection: blueMotionType === "float"
+          rotationDirection: blueIsFloat
             ? "noRotation"
-            : resolveRotationDirection(pd.blueMotion.rotationDirection, effectiveBlueTurns, prevBlueRot, propContinuity),
+            : resolveRotationDirection(pd.blueMotion.rotationDirection, blueTurns, prevBlueRot, propContinuity),
           startOrientation: pd.blueMotion.startOrientation,
           endOrientation: pd.blueMotion.endOrientation,
-          turns: effectiveBlueTurns,
+          turns: blueTurns,
         },
         redMotion: {
           motionType: redMotionType,
           startLocation: pd.redMotion.startLocation,
           endLocation: pd.redMotion.endLocation,
-          rotationDirection: redMotionType === "float"
+          rotationDirection: redIsFloat
             ? "noRotation"
-            : resolveRotationDirection(pd.redMotion.rotationDirection, effectiveRedTurns, prevRedRot, propContinuity),
+            : resolveRotationDirection(pd.redMotion.rotationDirection, redTurns, prevRedRot, propContinuity),
           startOrientation: pd.redMotion.startOrientation,
           endOrientation: pd.redMotion.endOrientation,
-          turns: effectiveRedTurns,
+          turns: redTurns,
         },
         beatIndex,
         stepNumber: i,
