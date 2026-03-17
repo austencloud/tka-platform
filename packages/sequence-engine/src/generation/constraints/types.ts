@@ -53,6 +53,18 @@ export interface ConstraintContext {
 
   /** The letter being placed at this step */
   letter: string;
+
+  /** Current level (determines which turns/orientations are available) */
+  level?: number;
+
+  /** Turn allocation for this step's motions */
+  turnAllocation?: { blue: number; red: number };
+
+  /** Grid mode (e.g. "diamond", "box") */
+  gridMode?: string;
+
+  /** Prop type (e.g. "staff", "fan", "club") */
+  propType?: string;
 }
 
 /**

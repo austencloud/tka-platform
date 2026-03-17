@@ -25,6 +25,12 @@ export enum ConstraintType {
 
   // Pattern constraints
   ALTERNATING = "alternating",
+
+  // Domain constraints (always-on)
+  TYPE_6 = "type6",
+  PROP_TYPE = "propType",
+  POSITION_CONTINUITY = "positionContinuity",
+  FLOAT = "float",
 }
 
 /**
@@ -41,6 +47,7 @@ export enum ConstraintCategory {
   POSITION = "position",
   TIMING = "timing",
   PATTERN = "pattern",
+  DOMAIN = "domain",
 }
 
 /**
@@ -56,4 +63,8 @@ export const CONSTRAINT_CATEGORIES: Record<ConstraintType, ConstraintCategory> =
     [ConstraintType.POSITION_GROUP]: ConstraintCategory.POSITION,
     [ConstraintType.VTG_TIMING]: ConstraintCategory.TIMING,
     [ConstraintType.ALTERNATING]: ConstraintCategory.PATTERN,
+    [ConstraintType.TYPE_6]: ConstraintCategory.DOMAIN,
+    [ConstraintType.PROP_TYPE]: ConstraintCategory.DOMAIN,
+    [ConstraintType.POSITION_CONTINUITY]: ConstraintCategory.DOMAIN,
+    [ConstraintType.FLOAT]: ConstraintCategory.DOMAIN,
   };
