@@ -88,6 +88,8 @@ import type { ILedOverlayRenderer } from "../contracts/ILedOverlayRenderer";
 import type { ILedTipTracker } from "../contracts/ILedTipTracker";
 import { DEFAULT_LED_CONFIG, ledBrightnessToFloat, type LedOverlayConfig } from "../../domain/types/LedTypes";
 import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
+import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
+import { TrackingMode } from "../../domain/types/TrailTypes";
 
 /**
  * Props passed to engine.update()
@@ -277,6 +279,11 @@ export class AnimationEngine {
   // Prop type overrides (bypass settings when provided)
   private propTypeOverrideBlue: string | null = null;
   private propTypeOverrideRed: string | null = null;
+
+  // When true, the render loop skips trail capture AND rendering for this frame.
+  // Set during prop type changes to prevent stale trail data from flashing on screen
+  // while new textures are loading asynchronously.
+  private trailsSuppressedUntilTextureLoad = false;
   private prevDarkMode: boolean = false;
   private previewDarkModeActive: boolean = false; // true when previewDarkMode prop overrides global
   private prevTrailsVisible: boolean = true;
@@ -665,6 +672,19 @@ export class AnimationEngine {
         this.state.currentRedPropType = newRed;
         this.state.currentPropType = newBlue;
 
+        // Invalidate path cache FIRST — it holds pre-computed endpoint positions
+        // for the old prop geometry. If the render loop reads stale cache data
+        // before the new textures load, it draws a jump line to the wrong position.
+        this.precomputationService?.clearCaches();
+        this.renderLoopService?.updateConfig({ pathCache: null });
+
+        // Clear trail buffers — old points are at wrong endpoint positions
+        this.trailCapturer?.clearTrails();
+
+        // Suppress trail rendering until new textures load — prevents stale
+        // endpoint data from flashing as a jump line during the async gap
+        this.trailsSuppressedUntilTextureLoad = true;
+
         // Reset additional layer textures so they reload with new prop type
         this.additionalLayerTexturesLoaded = [];
         this.additionalLayerTexturesLoading = [];
@@ -674,6 +694,10 @@ export class AnimationEngine {
 
         // Hot-swap textures
         this.loadPropTextures().then(() => {
+          // Clear trails again after texture load to discard any points
+          // captured during the async gap with old prop dimensions
+          this.trailCapturer?.clearTrails();
+          this.trailsSuppressedUntilTextureLoad = false;
           if (this.state.isInitialized) {
             this.renderLoopService?.triggerRender(() =>
               this.getFrameParams(props)
@@ -702,6 +726,18 @@ export class AnimationEngine {
             this.propTypeChangeService.state.legacyPropType;
         }
 
+        // Invalidate path cache FIRST — it holds pre-computed endpoint positions
+        // for the old prop geometry. If the render loop reads stale cache data
+        // before the new textures load, it draws a jump line to the wrong position.
+        this.precomputationService?.clearCaches();
+        this.renderLoopService?.updateConfig({ pathCache: null });
+
+        // Clear trail buffers — old points are at wrong endpoint positions
+        this.trailCapturer?.clearTrails();
+
+        // Suppress trail rendering until new textures load
+        this.trailsSuppressedUntilTextureLoad = true;
+
         // Reset additional layer textures so they reload with new prop type
         this.additionalLayerTexturesLoaded = [];
         this.additionalLayerTexturesLoading = [];
@@ -712,6 +748,8 @@ export class AnimationEngine {
         // Hot-swap textures without full re-initialization
         // The render loop keeps running with old textures until new ones load
         this.loadPropTextures().then(() => {
+          this.trailCapturer?.clearTrails();
+          this.trailsSuppressedUntilTextureLoad = false;
           // Trigger immediate re-render once new textures are ready
           if (this.state.isInitialized) {
             this.renderLoopService?.triggerRender(() =>
@@ -767,10 +805,10 @@ export class AnimationEngine {
       }
     }
 
-    // Handle trail settings changes
+    // Handle trail settings changes — enforce unilateral constraint before syncing
     if (props.externalTrailSettings !== undefined) {
       this.trailSettingsSyncService?.handleExternalSettingsSync(
-        props.externalTrailSettings
+        this.enforceUnilateralConstraint(props.externalTrailSettings)
       );
     }
 
@@ -1497,7 +1535,7 @@ export class AnimationEngine {
       canvasSize: this.canvasSize,
       bluePropDimensions: this.state.bluePropDimensions,
       redPropDimensions: this.state.redPropDimensions,
-      trailSettings: effectiveTrailSettings,
+      trailSettings: this.enforceUnilateralConstraint(effectiveTrailSettings),
       bluePropType: this.state.currentBluePropType,
       redPropType: this.state.currentRedPropType,
     });
@@ -1692,6 +1730,38 @@ export class AnimationEngine {
   }
 
   /**
+   * Enforce unilateral prop constraint on trail settings.
+   * Unilateral props (fan, club, minihoop, etc.) only have one meaningful
+   * endpoint, so BOTH_ENDS must be overridden to RIGHT_END.
+   */
+  private enforceUnilateralConstraint(settings: TrailSettings): TrailSettings {
+    if (settings.trackingMode !== TrackingMode.BOTH_ENDS) return settings;
+
+    const blue = this.state.currentBluePropType;
+    const red = this.state.currentRedPropType;
+    const blueIsBilateral = isBilateralProp(blue);
+    const redIsBilateral = isBilateralProp(red);
+
+    // Only allow BOTH_ENDS when at least one prop is bilateral
+    if (blueIsBilateral || redIsBilateral) return settings;
+
+    return { ...settings, trackingMode: TrackingMode.RIGHT_END };
+  }
+
+  /**
+   * Return trail settings with unilateral prop constraint enforced.
+   * During prop type changes, trails are suppressed entirely to prevent
+   * stale endpoint data from rendering as a visible jump line.
+   */
+  private getEffectiveTrailSettings(): TrailSettings {
+    const settings = this.enforceUnilateralConstraint(this.state.trailSettings);
+    if (this.trailsSuppressedUntilTextureLoad) {
+      return { ...settings, enabled: false };
+    }
+    return settings;
+  }
+
+  /**
    * Generate a hash string representing sequence content that affects animation.
    * Includes motion data fingerprint so transforms (rotate, mirror, etc.) trigger re-precomputation.
    */
@@ -1762,7 +1832,7 @@ export class AnimationEngine {
     const fp = this.frameParams;
     fp.stepData = props.stepData ?? null;
     fp.currentStep = props.currentStep ?? 0;
-    fp.trailSettings = this.state.trailSettings;
+    fp.trailSettings = this.getEffectiveTrailSettings();
     fp.gridVisible = props.gridVisible ?? true;
     fp.gridMode = props.gridMode ?? GridMode.DIAMOND;
     fp.letter = props.letter ?? null;

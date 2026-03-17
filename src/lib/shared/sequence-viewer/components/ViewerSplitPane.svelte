@@ -18,9 +18,13 @@
   import ChoreoCard from "./ChoreoCard.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+  import { TrackingMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
+  import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 
   // Derive trail settings from the global singleton so canvas settings changes
-  // (e.g. switching from "one end" to "both ends") propagate to this canvas
+  // (e.g. switching from "one end" to "both ends") propagate to this canvas.
+  // Also enforces unilateral prop constraint: props with one meaningful endpoint
+  // (fan, club, minihoop, etc.) always use RIGHT_END regardless of stored preference.
   const trailSettings = $derived.by(() => {
     const t = animationSettings.trail;
     void t.enabled;
@@ -30,7 +34,22 @@
     void t.maxOpacity;
     void t.trackingMode;
     void t.effect;
-    return { ...t };
+
+    const settings = { ...t };
+
+    // Enforce unilateral constraint: only bilateral props can track both ends
+    if (settings.trackingMode === TrackingMode.BOTH_ENDS) {
+      const blue = propRendering.bluePropType;
+      const red = propRendering.redPropType;
+      const hasBilateral =
+        (blue != null && isBilateralProp(String(blue))) ||
+        (red != null && isBilateralProp(String(red)));
+      if (!hasBilateral) {
+        settings.trackingMode = TrackingMode.RIGHT_END;
+      }
+    }
+
+    return settings;
   });
 
   interface Props {
@@ -117,7 +136,6 @@
   >
     <div
       class="media-pane animation-pane"
-      class:export-sidebar-active={layout.focusedPane === "animation" && !layout.isMobile}
     >
       <!-- Close button - shown when focused (desktop only) -->
       {#if layout.focusedPane === "animation" && !layout.isMobile && !layout.suppressCloseButton}
@@ -179,7 +197,6 @@
     <div class="preview-column-inner" class:focused={layout.focusedPane === "image"}>
       <div
         class="media-pane preview-pane"
-        class:export-sidebar-active={layout.focusedPane === "image" && !layout.isMobile}
       >
         <!-- Close button - shown when focused (desktop only) -->
         {#if layout.focusedPane === "image" && !layout.isMobile && !layout.suppressCloseButton}
@@ -326,8 +343,6 @@
     background: transparent;
     border-top: none;
     container-type: normal;
-    /* Smooth padding transition when export sidebar appears */
-    transition: padding-right 250ms cubic-bezier(0.2, 0, 0, 1);
   }
 
   /* Mobile: when focused for image export, allow the choreo card to scroll
@@ -344,13 +359,9 @@
     }
   }
 
-  /* When an export sidebar is active on desktop, add right padding
-     so content doesn't extend behind the export panel overlay.
-     Uses the --export-sidebar-width variable set by the parent host component. */
-  .preview-pane.export-sidebar-active,
-  .animation-pane.export-sidebar-active {
-    padding-right: var(--export-sidebar-width, 320px);
-  }
+  /* Export sidebar space is now handled by the parent's CSS grid layout
+     (grid-template-columns: 1fr var(--export-sidebar-width)).
+     No padding-right compensation needed. */
 
   /* Close button — spring pop-in, staggered 100ms after grid starts moving */
   .pane-close-btn {
