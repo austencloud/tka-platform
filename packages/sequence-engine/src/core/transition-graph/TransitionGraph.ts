@@ -7,14 +7,14 @@
  * Platform-agnostic: uses ISequenceDataProvider for data loading.
  */
 
-import type { ITransitionGraph } from "../contracts/ITransitionGraph.js";
-import type { ISequenceDataProvider } from "../../data/contracts/ISequenceDataProvider.js";
+import type { ITransitionGraph } from "./ITransitionGraph.js";
+import type { ISequenceDataProvider } from "../data/ISequenceDataProvider.js";
 import type {
   PositionGroup,
   LetterPositionInfo,
   LetterMappingsJson,
   LetterMappingData,
-} from "../../core/types/sequence-engine-types.js";
+} from "../types/sequence-engine-types.js";
 
 /**
  * Transition graph for letter sequence building.

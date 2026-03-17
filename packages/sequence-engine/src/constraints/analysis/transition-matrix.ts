@@ -13,7 +13,7 @@
 
 import type { PictographData } from "../types.js";
 import { analyzeTransition, type TransitionAnalysis } from "./transition-analyzer.js";
-import { getLetterTransitionGraph } from "../../letter-transition-graph.js";
+import { getLetterTransitionGraph } from "../../core/transition-graph/LetterTransitionGraph.js";
 
 /**
  * Compact representation of transition feasibility.

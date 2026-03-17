@@ -21,14 +21,13 @@ export {
   OrientationPropagator,
 } from "./core/orientation/OrientationPropagator.js";
 
-// Service contracts (transition graph - will move to core/ in next task)
-export type { ITransitionGraph } from "./services/contracts/ITransitionGraph.js";
+// Transition graph
+export type { ITransitionGraph } from "./core/transition-graph/ITransitionGraph.js";
+export { TransitionGraph } from "./core/transition-graph/TransitionGraph.js";
+export { setLetterTransitionGraph, getLetterTransitionGraph } from "./core/transition-graph/LetterTransitionGraph.js";
 
 // Data provider contracts
 export type {
   ISequenceDataProvider,
   LetterVariationData,
-} from "./data/contracts/ISequenceDataProvider.js";
-
-// Service implementations (transition graph - will move to core/ in next task)
-export { TransitionGraph } from "./services/implementations/TransitionGraph.js";
+} from "./core/data/ISequenceDataProvider.js";

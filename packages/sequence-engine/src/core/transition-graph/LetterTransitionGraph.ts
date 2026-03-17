@@ -6,7 +6,7 @@
  * before any code calls getLetterTransitionGraph().
  */
 
-import type { ITransitionGraph } from "./services/contracts/ITransitionGraph.js";
+import type { ITransitionGraph } from "./ITransitionGraph.js";
 
 let instance: ITransitionGraph | null = null;
 
