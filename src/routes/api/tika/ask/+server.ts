@@ -39,6 +39,15 @@ import {
   listDomainTopics,
 } from "@tka/domain";
 import {
+  searchVTG,
+  getVTGCategory,
+  getTransitionBetween,
+  vtgToTKA,
+  tkaToVTG,
+  listVTGCategories,
+} from "@vtg/domain";
+import type { VTGCategory } from "@vtg/domain";
+import {
   toDisplayOutput,
   filterLetterExplanation,
   filterTypeList,
@@ -460,7 +469,7 @@ function createTikaTools(userId: string, completedConcepts: string[], masteryCtx
 
     get_domain_topic: tool({
       description:
-        'MANDATORY for deep theoretical questions, design rationale, or "why" questions about the TKA system. Topics include: STUV anomaly (why 4 letters instead of 3), base rotation, orientation algebra, combinatorial space, hand path modifiers, level system, position symmetry, LOOPs and compositional theory, CAPs vs LOOPs, VTG deep dive, compound letters, center-relative orientation, skewed letters, elemental model, motion types. Use this when the user asks WHY something is the way it is, how the math works, or about the theoretical foundations. Returns authoritative reference content. Also use when you are unsure about a domain claim - look it up instead of guessing.',
+        'MANDATORY for deep theoretical questions about TKA specifically (not VTG — use get_vtg_info for VTG questions). Topics include: STUV anomaly, base rotation, orientation algebra, combinatorial space, hand path modifiers, level system, position symmetry, LOOPs and compositional theory, CAPs vs LOOPs, compound letters, center-relative orientation, skewed letters, motion types. Use for "why" questions about TKA design. For VTG timing/direction, transition theory, or minimal beat shapes, use get_vtg_info instead.',
       inputSchema: jsonSchema<{ query: string }>({
         type: "object",
         properties: {
@@ -519,6 +528,135 @@ function createTikaTools(userId: string, completedConcepts: string[], masteryCtx
             instructions: m.capability.instructions,
             relevance: m.relevance,
           })),
+        };
+      },
+    }),
+
+    get_vtg_info: tool({
+      description:
+        "MANDATORY for questions about VTG (Vulcan Tech Gospel), timing/direction categories (split-same, together-same, split-opposite, together-opposite), transition theory (soft/hard/mixed), minimal beat shapes, or VTG history. Returns structured VTG domain knowledge. Use INSTEAD of answering VTG questions from memory.",
+      inputSchema: jsonSchema<{ query: string }>({
+        type: "object",
+        properties: {
+          query: { type: "string", description: "The VTG topic or term to search for" },
+        },
+        required: ["query"],
+      }),
+      execute: async ({ query }) => {
+        const results = searchVTG(query).slice(0, 5);
+        if (results.length === 0) {
+          return { found: false, message: `No VTG results for "${query}".` };
+        }
+        return {
+          found: true,
+          results: results.map((r) => ({
+            type: r.type,
+            name: r.name,
+            summary: r.summary,
+          })),
+        };
+      },
+    }),
+
+    get_vtg_category: tool({
+      description:
+        "Get detailed info about a VTG timing/direction category by ID or abbreviation.",
+      inputSchema: jsonSchema<{ id: string }>({
+        type: "object",
+        properties: {
+          id: {
+            type: "string",
+            description:
+              'Category ID: "ss", "ts", "so", "to", "quarter-same", "quarter-opp" (or full form like "split-same")',
+          },
+        },
+        required: ["id"],
+      }),
+      execute: async ({ id }) => {
+        const cat = getVTGCategory(id);
+        if (!cat) {
+          const all = listVTGCategories().map((c) => `${c.id} (${c.abbreviation})`);
+          return { found: false, message: `Unknown category "${id}". Available: ${all.join(", ")}` };
+        }
+        return {
+          found: true,
+          name: cat.name,
+          abbreviation: cat.abbreviation,
+          timing: cat.timing,
+          direction: cat.direction,
+          description: cat.description,
+        };
+      },
+    }),
+
+    get_vtg_transition: tool({
+      description:
+        "Find which transition type (soft/hard/mixed) connects two VTG categories. Based on Transition Theory by Noel Yee and Jordan Campbell (2010).",
+      inputSchema: jsonSchema<{ from: string; to: string }>({
+        type: "object",
+        properties: {
+          from: { type: "string", description: 'Source category ID (e.g. "tog-same")' },
+          to: { type: "string", description: 'Target category ID (e.g. "tog-opp")' },
+        },
+        required: ["from", "to"],
+      }),
+      execute: async ({ from, to }) => {
+        const entry = getTransitionBetween(from, to);
+        if (!entry) {
+          return { found: false, message: `No transition found from "${from}" to "${to}".` };
+        }
+        return {
+          found: true,
+          from: entry.fromCategoryId,
+          to: entry.toCategoryId,
+          transitionType: entry.transitionType,
+          whatChanges: entry.whatChanges,
+        };
+      },
+    }),
+
+    vtg_to_tka: tool({
+      description: "Translate a VTG category to corresponding TKA letters.",
+      inputSchema: jsonSchema<{ categoryId: string }>({
+        type: "object",
+        properties: {
+          categoryId: { type: "string", description: 'VTG category ID (e.g. "split-same", "tog-opp")' },
+        },
+        required: ["categoryId"],
+      }),
+      execute: async ({ categoryId }) => {
+        const mapping = vtgToTKA(categoryId);
+        if (!mapping) {
+          return { found: false, message: `Unknown VTG category "${categoryId}".` };
+        }
+        return {
+          found: true,
+          categoryName: mapping.vtgCategory.name,
+          abbreviation: mapping.vtgCategory.abbreviation,
+          tkaLetters: mapping.tkaLetterTypes,
+        };
+      },
+    }),
+
+    tka_to_vtg: tool({
+      description: "Translate a TKA letter to its VTG classification.",
+      inputSchema: jsonSchema<{ letter: string }>({
+        type: "object",
+        properties: {
+          letter: { type: "string", description: 'TKA letter (e.g. "A", "D", "S")' },
+        },
+        required: ["letter"],
+      }),
+      execute: async ({ letter }) => {
+        const categories = tkaToVTG(letter);
+        const cat = categories[0];
+        if (!cat) {
+          return { found: false, message: `No VTG category found for TKA letter "${letter}".` };
+        }
+        return {
+          found: true,
+          name: cat.name,
+          abbreviation: cat.abbreviation,
         };
       },
     }),

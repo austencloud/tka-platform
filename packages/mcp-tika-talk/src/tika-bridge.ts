@@ -22,6 +22,15 @@ import {
   listDomainTopics,
 } from "@tka/domain";
 import {
+  searchVTG,
+  getVTGCategory,
+  getTransitionBetween,
+  vtgToTKA,
+  tkaToVTG,
+  listVTGCategories,
+} from "@vtg/domain";
+import type { VTGCategory } from "@vtg/domain";
+import {
   getTikaServerContainer,
   type TikaServerContainer,
 } from "../../../src/lib/features/tika/services/server/tika-server-container";
@@ -246,6 +255,69 @@ async function executeTool(
           relevance: m.relevance,
         })),
       };
+    }
+
+    case "get_vtg_info": {
+      const results = searchVTG(args.query as string).slice(0, 5);
+      if (results.length === 0) {
+        return { found: false, message: `No VTG results for "${args.query}".` };
+      }
+      return {
+        found: true,
+        results: results.map((r) => ({ type: r.type, name: r.name, summary: r.summary })),
+      };
+    }
+
+    case "get_vtg_category": {
+      const cat = getVTGCategory(args.id as string);
+      if (!cat) {
+        const all = listVTGCategories().map((c) => `${c.id} (${c.abbreviation})`);
+        return { found: false, message: `Unknown category "${args.id}". Available: ${all.join(", ")}` };
+      }
+      return {
+        found: true,
+        name: cat.name,
+        abbreviation: cat.abbreviation,
+        timing: cat.timing,
+        direction: cat.direction,
+        description: cat.description,
+      };
+    }
+
+    case "get_vtg_transition": {
+      const entry = getTransitionBetween(args.from as string, args.to as string);
+      if (!entry) {
+        return { found: false, message: `No transition found from "${args.from}" to "${args.to}".` };
+      }
+      return {
+        found: true,
+        from: entry.fromCategoryId,
+        to: entry.toCategoryId,
+        transitionType: entry.transitionType,
+        whatChanges: entry.whatChanges,
+      };
+    }
+
+    case "vtg_to_tka": {
+      const mapping = vtgToTKA(args.categoryId as string);
+      if (!mapping) {
+        return { found: false, message: `Unknown VTG category "${args.categoryId}".` };
+      }
+      return {
+        found: true,
+        categoryName: mapping.vtgCategory.name,
+        abbreviation: mapping.vtgCategory.abbreviation,
+        tkaLetters: mapping.tkaLetterTypes,
+      };
+    }
+
+    case "tka_to_vtg": {
+      const categories = tkaToVTG(args.letter as string);
+      const cat = categories[0];
+      if (!cat) {
+        return { found: false, message: `No VTG category found for TKA letter "${args.letter}".` };
+      }
+      return { found: true, name: cat.name, abbreviation: cat.abbreviation };
     }
 
     default:
@@ -497,7 +569,7 @@ function buildTools(container: TikaServerContainer) {
     }),
 
     get_domain_topic: tool({
-      description: "Look up deep theoretical TKA topics.",
+      description: "Look up deep theoretical TKA topics. For VTG questions (timing/direction, transition theory, minimal beat shapes), use get_vtg_info instead.",
       inputSchema: jsonSchema<{ query: string }>({
         type: "object",
         properties: { query: { type: "string" } },
@@ -530,6 +602,135 @@ function buildTools(container: TikaServerContainer) {
             instructions: m.capability.instructions,
             relevance: m.relevance,
           })),
+        };
+      },
+    }),
+
+    get_vtg_info: tool({
+      description:
+        "MANDATORY for questions about VTG (Vulcan Tech Gospel), timing/direction categories (split-same, together-same, split-opposite, together-opposite), transition theory (soft/hard/mixed), minimal beat shapes, or VTG history. Returns structured VTG domain knowledge. Use INSTEAD of answering VTG questions from memory.",
+      inputSchema: jsonSchema<{ query: string }>({
+        type: "object",
+        properties: {
+          query: { type: "string", description: "The VTG topic or term to search for" },
+        },
+        required: ["query"],
+      }),
+      execute: async ({ query }) => {
+        const results = searchVTG(query).slice(0, 5);
+        if (results.length === 0) {
+          return { found: false, message: `No VTG results for "${query}".` };
+        }
+        return {
+          found: true,
+          results: results.map((r) => ({
+            type: r.type,
+            name: r.name,
+            summary: r.summary,
+          })),
+        };
+      },
+    }),
+
+    get_vtg_category: tool({
+      description:
+        "Get detailed info about a VTG timing/direction category by ID or abbreviation.",
+      inputSchema: jsonSchema<{ id: string }>({
+        type: "object",
+        properties: {
+          id: {
+            type: "string",
+            description:
+              'Category ID: "ss", "ts", "so", "to", "quarter-same", "quarter-opp" (or full form like "split-same")',
+          },
+        },
+        required: ["id"],
+      }),
+      execute: async ({ id }) => {
+        const cat = getVTGCategory(id);
+        if (!cat) {
+          const all = listVTGCategories().map((c) => `${c.id} (${c.abbreviation})`);
+          return { found: false, message: `Unknown category "${id}". Available: ${all.join(", ")}` };
+        }
+        return {
+          found: true,
+          name: cat.name,
+          abbreviation: cat.abbreviation,
+          timing: cat.timing,
+          direction: cat.direction,
+          description: cat.description,
+        };
+      },
+    }),
+
+    get_vtg_transition: tool({
+      description:
+        "Find which transition type (soft/hard/mixed) connects two VTG categories. Based on Transition Theory by Noel Yee and Jordan Campbell (2010).",
+      inputSchema: jsonSchema<{ from: string; to: string }>({
+        type: "object",
+        properties: {
+          from: { type: "string", description: 'Source category ID (e.g. "tog-same")' },
+          to: { type: "string", description: 'Target category ID (e.g. "tog-opp")' },
+        },
+        required: ["from", "to"],
+      }),
+      execute: async ({ from, to }) => {
+        const entry = getTransitionBetween(from, to);
+        if (!entry) {
+          return { found: false, message: `No transition found from "${from}" to "${to}".` };
+        }
+        return {
+          found: true,
+          from: entry.fromCategoryId,
+          to: entry.toCategoryId,
+          transitionType: entry.transitionType,
+          whatChanges: entry.whatChanges,
+        };
+      },
+    }),
+
+    vtg_to_tka: tool({
+      description: "Translate a VTG category to corresponding TKA letters.",
+      inputSchema: jsonSchema<{ categoryId: string }>({
+        type: "object",
+        properties: {
+          categoryId: { type: "string", description: 'VTG category ID (e.g. "split-same", "tog-opp")' },
+        },
+        required: ["categoryId"],
+      }),
+      execute: async ({ categoryId }) => {
+        const mapping = vtgToTKA(categoryId);
+        if (!mapping) {
+          return { found: false, message: `Unknown VTG category "${categoryId}".` };
+        }
+        return {
+          found: true,
+          categoryName: mapping.vtgCategory.name,
+          abbreviation: mapping.vtgCategory.abbreviation,
+          tkaLetters: mapping.tkaLetterTypes,
+        };
+      },
+    }),
+
+    tka_to_vtg: tool({
+      description: "Translate a TKA letter to its VTG classification.",
+      inputSchema: jsonSchema<{ letter: string }>({
+        type: "object",
+        properties: {
+          letter: { type: "string", description: 'TKA letter (e.g. "A", "D", "S")' },
+        },
+        required: ["letter"],
+      }),
+      execute: async ({ letter }) => {
+        const categories = tkaToVTG(letter);
+        const cat = categories[0];
+        if (!cat) {
+          return { found: false, message: `No VTG category found for TKA letter "${letter}".` };
+        }
+        return {
+          found: true,
+          name: cat.name,
+          abbreviation: cat.abbreviation,
         };
       },
     }),
