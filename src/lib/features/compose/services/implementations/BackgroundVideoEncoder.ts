@@ -81,7 +81,9 @@ export class BackgroundVideoEncoder implements IBackgroundVideoEncoder {
     isKeyframe: boolean
   ): void {
     if (!this.worker) {
-      throw new Error("BackgroundVideoEncoder: worker not initialized");
+      // Worker was disposed (e.g., viewer closed during export). The export
+      // loop will check shouldCancel on the next iteration and abort cleanly.
+      return;
     }
 
     // Transfer the underlying ArrayBuffer so it moves to the worker without
@@ -101,7 +103,7 @@ export class BackgroundVideoEncoder implements IBackgroundVideoEncoder {
 
   async finish(): Promise<Blob> {
     if (!this.worker) {
-      throw new Error("BackgroundVideoEncoder: worker not initialized");
+      throw new Error("Export cancelled");
     }
 
     return new Promise<Blob>((resolve, reject) => {
