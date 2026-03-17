@@ -5,7 +5,7 @@
  * - Create module orchestration (14 services)
  * - Option picker (12 services)
  * - Start position (1 service)
- * - Generation pipeline (41 services including 14 LOOP executors)
+ * - Generation pipeline (39 services including 14 LOOP executors)
  * - Sequence management (10 services)
  * - Extension (6 services)
  * - Spell/Pattern (10 services)
@@ -57,8 +57,6 @@ import { LOOPParameterProvider } from "$lib/features/create/generate/shared/serv
 import { SequenceMetadataManager } from "$lib/features/create/generate/shared/services/implementations/SequenceMetadataManager";
 import { StartPositionSelector } from "$lib/features/create/generate/shared/services/implementations/StartPositionSelector";
 import { TurnAllocator } from "$lib/features/create/generate/shared/services/implementations/TurnAllocator";
-import { StepGenerationOrchestrator } from "$lib/features/create/generate/shared/services/implementations/StepGenerationOrchestrator";
-import { PartialSequenceGenerator } from "$lib/features/create/generate/circular/services/implementations/PartialSequenceGenerator";
 import { RotatedEndPositionSelector } from "$lib/features/create/generate/circular/services/implementations/RotatedEndPositionSelector";
 import { LOOPEndPositionSelector } from "$lib/features/create/generate/circular/services/implementations/LOOPEndPositionSelector";
 import { TypographyScaler } from "$lib/features/create/generate/shared/services/implementations/TypographyScaler";
@@ -583,31 +581,6 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
             ctx.pictographFilter,
             ctx.stepConverter,
             deps.arrowPositioningOrchestrator
-          ),
-
-        // StepGenerationOrchestrator needs multiple dependencies
-        stepGenerationOrchestrator: () =>
-          new StepGenerationOrchestrator(
-            deps.letterQueryHandler,
-            ctx.pictographFilter,
-            ctx.stepConverter,
-            ctx.turnManager,
-            deps.orientationCalculator,
-            deps.arrowPositioningOrchestrator
-          ),
-
-        // PartialSequenceGenerator needs multiple dependencies
-        partialSequenceGenerator: () =>
-          new PartialSequenceGenerator(
-            deps.letterQueryHandler,
-            ctx.pictographFilter,
-            ctx.stepConverter,
-            ctx.turnManager,
-            ctx.sequenceMetadataManager,
-            deps.gridPositionDeriver,
-            deps.orientationCalculator,
-            deps.arrowPositioningOrchestrator,
-            ctx.loopParameterProvider
           ),
 
       }))
