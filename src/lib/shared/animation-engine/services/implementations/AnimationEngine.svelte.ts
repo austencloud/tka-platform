@@ -296,6 +296,7 @@ export class AnimationEngine {
   private prevFireIntensity: number = 0.7;
   private prevCharcoalParamsJson: string = "";
   private prevEffortPreset: EffortId = "linear";
+  private prevPathShape: "arc" | "linear" = "arc";
 
   // Additional layer texture loading for tunnel mode (indexed by layer)
   private additionalLayerTexturesLoaded: boolean[] = [];
@@ -536,6 +537,75 @@ export class AnimationEngine {
           }
           if (this.charcoalRenderer?.isInitialized()) {
             this.charcoalRenderer.clearSimulation();
+          }
+        }
+
+        // Path shape changed (arc ↔ linear). The props follow a different
+        // trajectory, so effects that cache positions/velocities from the old
+        // path will visually lag behind the new one until their buffers flush.
+        // Reset everything that carries state from the previous path shape.
+        const pathShape = vm.getPathShape();
+        if (pathShape !== this.prevPathShape) {
+          this.prevPathShape = pathShape;
+
+          // Reset fire tip tracker — stored positions/velocities are from the old trajectory
+          this.fireTipTracker?.reset();
+
+          // Clear WebGL simulation buffers so residual fuel/sparks from the
+          // old path don't linger
+          if (this.fireRenderer?.isInitialized()) {
+            this.fireRenderer.clearSimulation();
+          }
+          if (this.charcoalRenderer?.isInitialized()) {
+            this.charcoalRenderer.clearSimulation();
+          }
+
+          // Clear existing trail points — they were captured along the old path
+          this.trailCapturer?.clearTrails();
+
+          // Immediately invalidate the path cache so the render loop stops
+          // reading stale trail positions from the old trajectory.
+          this.precomputationService?.clearCaches();
+          this.renderLoopService?.updateConfig({ pathCache: null });
+
+          // Don't suppress trails — the real-time trail capturer reads
+          // pathShape dynamically via PropInterpolator every frame, so new
+          // captures will immediately follow the correct trajectory. The
+          // 120fps cache rebuilds in the background and seamlessly takes
+          // over when ready.
+          if (
+            this.precomputationService &&
+            this.state.trailSettings.usePathCache &&
+            this.prevSequenceData
+          ) {
+            const totalSteps = this.prevSequenceData.steps.length;
+            const stepDurationMs = 1000;
+            this.precomputationService
+              .precomputeAnimationPaths(
+                this.prevSequenceData,
+                totalSteps,
+                stepDurationMs,
+                this.state.trailSettings
+              )
+              .then(() => {
+                const pathCache = this.precomputationService?.getPathCache();
+                if (pathCache && this.renderLoopService) {
+                  this.renderLoopService.updateConfig({ pathCache });
+                  // Clear real-time trail points so the cache takes over
+                  // cleanly without mixing two sources
+                  this.trailCapturer?.clearTrails();
+                }
+              })
+              .catch(() => {
+                // Precomputation failed — real-time capture continues
+              });
+          }
+
+          // Force an immediate render so the visual state updates
+          if (this.state.isInitialized) {
+            this.renderLoopService?.triggerRender(() =>
+              this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
+            );
           }
         }
 
