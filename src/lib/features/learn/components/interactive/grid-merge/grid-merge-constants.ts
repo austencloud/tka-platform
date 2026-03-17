@@ -93,7 +93,16 @@ export const CARDINAL_HAND = [
 	{ id: 'hw', x: CENTER - HAND_RADIUS, y: CENTER }
 ] as const;
 
-/** Intercardinal outer points (NE, SE, SW, NW) - box grid */
+/** Intercardinal hand points (NE, SE, SW, NW at hand radius) - box grid */
+const diagHandOffset = HAND_RADIUS * Math.cos(Math.PI / 4);
+export const INTERCARDINAL_HAND = [
+	{ id: 'hne', x: CENTER + diagHandOffset, y: CENTER - diagHandOffset },
+	{ id: 'hse', x: CENTER + diagHandOffset, y: CENTER + diagHandOffset },
+	{ id: 'hsw', x: CENTER - diagHandOffset, y: CENTER + diagHandOffset },
+	{ id: 'hnw', x: CENTER - diagHandOffset, y: CENTER - diagHandOffset }
+] as const;
+
+/** Intercardinal outer points (NE, SE, SW, NW at outer radius) - box grid */
 const diagOuterOffset = OUTER_RADIUS * Math.cos(Math.PI / 4);
 export const INTERCARDINAL_OUTER = [
 	{ id: 'ne', x: CENTER + diagOuterOffset, y: CENTER - diagOuterOffset },

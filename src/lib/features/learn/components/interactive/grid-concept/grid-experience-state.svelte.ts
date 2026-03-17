@@ -9,7 +9,7 @@ export type GridPhase = 'split' | 'diamond-labels' | 'box-labels' | 'merged';
 export type PointTypePhase = 'center' | 'hand' | 'outer';
 export type EffectivePhase = 'intro' | 'split' | 'diamond-labels' | 'box-labels' | 'merged';
 export type HighlightPhase = 'none' | 'center' | 'hand' | 'outer';
-export type TapPhase = 'center' | 'hand' | 'outer' | 'box' | 'complete';
+export type TapPhase = 'center' | 'hand' | 'outer' | 'boxHand' | 'box' | 'complete';
 
 export interface GridExperienceState {
 	step: number;
@@ -68,8 +68,9 @@ export function createGridExperienceState(isScrollMode: boolean = false) {
 		}
 		if (step === 3) {
 			if (tapPhase === 'center') return 'Step 4 of 5: Build the Grid. Tap the center point.';
-			if (tapPhase === 'hand') return 'Tap each hand point.';
+			if (tapPhase === 'hand') return 'Tap each diamond hand point.';
 			if (tapPhase === 'outer') return 'Tap each diamond outer point.';
+			if (tapPhase === 'boxHand') return 'Now the box hand points.';
 			if (tapPhase === 'box') return 'Tap each box outer point.';
 			if (tapPhase === 'complete') return 'Grid complete!';
 		}
@@ -189,6 +190,7 @@ export function createGridExperienceState(isScrollMode: boolean = false) {
 		const centerIds = ['center'];
 		const handIds = ['hn', 'he', 'hs', 'hw'];
 		const outerIds = ['n', 'e', 's', 'w'];
+		const boxHandIds = ['hne', 'hse', 'hsw', 'hnw'];
 		const boxIds = ['ne', 'se', 'sw', 'nw'];
 
 		// Validate point belongs to current phase
@@ -196,6 +198,7 @@ export function createGridExperienceState(isScrollMode: boolean = false) {
 			tapPhase === 'center' ? centerIds :
 			tapPhase === 'hand' ? handIds :
 			tapPhase === 'outer' ? outerIds :
+			tapPhase === 'boxHand' ? boxHandIds :
 			tapPhase === 'box' ? boxIds : [];
 
 		if (!validIds.includes(pointId)) return null;
@@ -203,6 +206,7 @@ export function createGridExperienceState(isScrollMode: boolean = false) {
 		tappedPoints = [...tappedPoints, pointId];
 
 		// Check if current group is complete, advance phase
+		// Flow: center → diamond hand → diamond outer → box hand → box outer → complete
 		if (tapPhase === 'center' && tappedPoints.length === 1) {
 			tapPhase = 'hand';
 			announce();
@@ -210,6 +214,9 @@ export function createGridExperienceState(isScrollMode: boolean = false) {
 			tapPhase = 'outer';
 			announce();
 		} else if (tapPhase === 'outer' && tappedPoints.filter(id => outerIds.includes(id)).length === 4) {
+			tapPhase = 'boxHand';
+			announce();
+		} else if (tapPhase === 'boxHand' && tappedPoints.filter(id => boxHandIds.includes(id)).length === 4) {
 			tapPhase = 'box';
 			announce();
 		} else if (tapPhase === 'box' && tappedPoints.filter(id => boxIds.includes(id)).length === 4) {
