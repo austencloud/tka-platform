@@ -9,7 +9,7 @@
  */
 
 import { browser } from "$app/environment";
-import { goto } from "$app/navigation";
+import { goto, replaceState } from "$app/navigation";
 import { navigationState } from "../../state/navigation-state.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type {
@@ -174,7 +174,7 @@ export class DeepLinker implements IDeepLinker {
 
     if (hasOpenParam) {
       url.searchParams.delete("open");
-      window.history.replaceState({}, "", url.toString());
+      replaceState(url.toString(), {});
     }
   }
 

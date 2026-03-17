@@ -19,6 +19,7 @@
     />
 -->
 <script lang="ts">
+  import { replaceState } from "$app/navigation";
   import AnimationShareDrawer from "../animation-engine/components/AnimationShareDrawer.svelte";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import type {
@@ -509,7 +510,7 @@
           url.searchParams.delete("animPlaying");
           url.searchParams.delete("animStep");
           url.searchParams.delete("animGrid");
-          window.history.replaceState({}, "", url);
+          replaceState(url, {});
           // Dispatch route change event
           window.dispatchEvent(new CustomEvent("route-change", { detail: {} }));
         }

@@ -1,8 +1,9 @@
 <!--
-  SequencePickerModal.svelte - Lightweight Sequence Selection Modal
+  SequencePickerModal.svelte - Sequence Selection Modal
 
-  A focused modal for selecting sequences, optimized for speed and simplicity.
-  Reuses BrowseGrid for rendering and BrowseFilter/BrowseSorter for filtering.
+  A focused modal for selecting sequences with modern inline filter chips,
+  Greek letter search, and dismissible active filter indicators.
+  Reuses BrowseGrid for rendering and browse filter components for UX parity.
 
   Props:
   - open: Control modal visibility
@@ -13,7 +14,7 @@
   - showSourceToggle: Show Community vs My Library toggle (default: true)
 -->
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
+  import { onMount } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
   import type { IBrowseFilter } from "$lib/features/browse/sequences/display/services/contracts/IBrowseFilter";
@@ -21,12 +22,16 @@
   import type { IBrowseThumbnailProvider } from "$lib/features/browse/sequences/display/services/contracts/IBrowseThumbnailProvider";
   import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
+  import type { ActiveFilter } from "$lib/features/browse/shared/domain/models/multi-filter-models";
   import { container } from "$lib/shared/di";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import BrowseGrid from "$lib/features/browse/sequences/display/components/BrowseGrid.svelte";
   import PickerToolbar from "./PickerToolbar.svelte";
-  import PickerFilterChips from "./PickerFilterChips.svelte";
-  import PickerSidebar from "./PickerSidebar.svelte";
+  import FilterChipRow from "$lib/features/browse/sequences/filtering/components/inline-filter/FilterChipRow.svelte";
+  import ActiveFilterBar from "$lib/features/browse/sequences/filtering/components/inline-filter/ActiveFilterBar.svelte";
+  import LevelFilterChip from "$lib/features/browse/sequences/filtering/components/inline-filter/chips/LevelFilterChip.svelte";
+  import FavoritesFilterChip from "$lib/features/browse/sequences/filtering/components/inline-filter/chips/FavoritesFilterChip.svelte";
+  import LengthFilterChip from "$lib/features/browse/sequences/filtering/components/inline-filter/chips/LengthFilterChip.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   // ===== Props =====
@@ -62,6 +67,7 @@
   let currentSort = $state<BrowseSortMethod>(BrowseSortMethod.ALPHABETICAL);
   let levelFilter = $state<number | null>(null);
   let favoritesOnly = $state(false);
+  let lengthFilter = $state<number | null>(null);
   let columnCount = $state(4);
   let source = $state<"community" | "my-library">("community");
   let isSelectingSequence = $state(false);
@@ -88,29 +94,32 @@
 
   function handleWheel(ev: WheelEvent) {
     if (!ev.shiftKey) return;
-
-    // Prevent horizontal scroll that Shift+wheel normally triggers
     ev.preventDefault();
 
     cumulativeScrollDelta += ev.deltaY;
 
     if (cumulativeScrollDelta > SCROLL_THRESHOLD) {
-      // Scroll down + Shift = more columns (zoom out)
       if (canZoomIn) columnCount++;
       cumulativeScrollDelta = 0;
     } else if (cumulativeScrollDelta < -SCROLL_THRESHOLD) {
-      // Scroll up + Shift = fewer columns (zoom in)
       if (canZoomOut) columnCount--;
       cumulativeScrollDelta = 0;
     }
   }
 
-  // Attach/detach wheel listener (needs { passive: false } for preventDefault)
   $effect(() => {
     const el = gridContainerRef;
     if (!el) return;
     el.addEventListener("wheel", handleWheel, { passive: false });
     return () => el.removeEventListener("wheel", handleWheel);
+  });
+
+  // ===== Available Lengths (derived from loaded sequences) =====
+  const availableLengths = $derived.by(() => {
+    const lengths = new Set(
+      sequences.map((s) => s.sequenceLength ?? s.steps?.length ?? 0)
+    );
+    return [...lengths].filter((l) => l > 0).sort((a, b) => a - b);
   });
 
   // ===== Filtering Pipeline =====
@@ -119,7 +128,7 @@
 
     let result = sequences;
 
-    // 1. Beat count (always first, from prop)
+    // 1. Beat count (prop-locked, always first)
     if (requiredBeatCount != null) {
       result = filterService.applyFilter(
         result,
@@ -146,7 +155,16 @@
       );
     }
 
-    // 4. Search
+    // 4. Length filter (user-selected, only when not prop-locked)
+    if (lengthFilter != null && requiredBeatCount == null) {
+      result = filterService.applyFilter(
+        result,
+        BrowseFilterType.LENGTH,
+        lengthFilter
+      );
+    }
+
+    // 5. Search
     if (searchQuery.trim()) {
       result = filterService.applyFilter(
         result,
@@ -155,14 +173,49 @@
       );
     }
 
-    // 5. Sort
+    // 6. Sort
     return sorterService.sortSequences(result, currentSort);
   });
 
-  // ===== Check if any filters are active (excluding beat count) =====
-  const hasActiveFilters = $derived(
-    levelFilter != null || favoritesOnly || searchQuery.trim() !== ""
-  );
+  // ===== Active Filter Tracking =====
+  const activeFilterList = $derived.by(() => {
+    const filters: ActiveFilter[] = [];
+    if (levelFilter != null) {
+      filters.push({
+        type: BrowseFilterType.DIFFICULTY,
+        value: levelFilter,
+        label: `Level ${levelFilter}`,
+        chipColor: "var(--semantic-info)",
+      });
+    }
+    if (favoritesOnly) {
+      filters.push({
+        type: BrowseFilterType.FAVORITES,
+        value: true,
+        label: "Favorites",
+        chipColor: "#ec4899",
+      });
+    }
+    if (lengthFilter != null && requiredBeatCount == null) {
+      filters.push({
+        type: BrowseFilterType.LENGTH,
+        value: lengthFilter,
+        label: `${lengthFilter} beats`,
+        chipColor: "#f59e0b",
+      });
+    }
+    if (searchQuery.trim()) {
+      filters.push({
+        type: BrowseFilterType.CONTAINS_LETTERS,
+        value: searchQuery,
+        label: `"${searchQuery}"`,
+        chipColor: "var(--theme-accent)",
+      });
+    }
+    return filters;
+  });
+
+  const hasActiveFilters = $derived(activeFilterList.length > 0);
 
   // ===== Empty state detection =====
   const isEmptyDueToFilters = $derived(
@@ -205,7 +258,6 @@
 
   // ===== Sequence Selection =====
   async function handleSequenceAction(action: string, sequence: SequenceData) {
-    // Only handle primary action (view-detail triggers selection in this context)
     if (action !== "view-detail") return;
 
     if (!loaderService) {
@@ -217,7 +269,6 @@
     try {
       isSelectingSequence = true;
 
-      // Load full sequence data including steps
       const fullSequence = await loaderService.loadFullSequenceData(
         sequence.word || sequence.name || sequence.id
       );
@@ -225,7 +276,6 @@
       if (fullSequence) {
         onSelect(fullSequence);
       } else {
-        // Fallback to basic sequence if full load fails
         console.warn(
           `Could not load full data for ${sequence.word}, using metadata`
         );
@@ -241,26 +291,38 @@
     }
   }
 
-  // ===== Filter Management =====
+  // ===== Filter Handlers =====
   function handleSortChange(method: BrowseSortMethod) {
     currentSort = method;
-  }
-
-  function handleLevelChange(level: number | null) {
-    levelFilter = level;
-  }
-
-  function handleFavoritesToggle() {
-    favoritesOnly = !favoritesOnly;
   }
 
   function handleSearchChange(query: string) {
     searchQuery = query;
   }
 
-  function handleClearFilters() {
+  function handleLevelSelect(level: number | null) {
+    levelFilter = level;
+  }
+
+  function handleFavoritesToggle(active: boolean) {
+    favoritesOnly = active;
+  }
+
+  function handleLengthSelect(length: number | null) {
+    lengthFilter = length;
+  }
+
+  function handleRemoveFilter(type: string) {
+    if (type === BrowseFilterType.DIFFICULTY) levelFilter = null;
+    else if (type === BrowseFilterType.FAVORITES) favoritesOnly = false;
+    else if (type === BrowseFilterType.LENGTH) lengthFilter = null;
+    else if (type === BrowseFilterType.CONTAINS_LETTERS) searchQuery = "";
+  }
+
+  function handleClearAllFilters() {
     levelFilter = null;
     favoritesOnly = false;
+    lengthFilter = null;
     searchQuery = "";
   }
 
@@ -272,7 +334,6 @@
     }
   });
 
-  // ===== Modal close handler =====
   function handleModalClose() {
     onClose();
   }
@@ -321,90 +382,96 @@
       </div>
     {/if}
 
-    <div class="picker-body">
-      <!-- Desktop Sidebar -->
-      <PickerSidebar
-        {levelFilter}
-        {favoritesOnly}
-        {requiredBeatCount}
-        {hasActiveFilters}
-        resultCount={filteredSequences.length}
-        onLevelChange={handleLevelChange}
-        onFavoritesToggle={handleFavoritesToggle}
-        onClearFilters={handleClearFilters}
-      />
+    <!-- Toolbar: Sort, Search, Zoom -->
+    <PickerToolbar
+      {currentSort}
+      {columnCount}
+      {canZoomIn}
+      {canZoomOut}
+      resultCount={filteredSequences.length}
+      onSearchChange={handleSearchChange}
+      onSortChange={handleSortChange}
+      onZoomIn={increaseColumns}
+      onZoomOut={decreaseColumns}
+    />
 
-      <div class="main-area">
-        <!-- Mobile-only Filter Chips -->
-        <div class="mobile-filters">
-          <PickerFilterChips
-            {levelFilter}
-            {favoritesOnly}
-            {requiredBeatCount}
-            {hasActiveFilters}
-            onLevelChange={handleLevelChange}
-            onFavoritesToggle={handleFavoritesToggle}
-            onClearFilters={handleClearFilters}
-          />
-        </div>
-
-        <!-- Toolbar: Search, Sort, Zoom -->
-        <PickerToolbar
-          {searchQuery}
-          {currentSort}
-          {columnCount}
-          {canZoomIn}
-          {canZoomOut}
-          onSearchChange={handleSearchChange}
-          onSortChange={handleSortChange}
-          onZoomIn={increaseColumns}
-          onZoomOut={decreaseColumns}
+    <!-- Filter Chips -->
+    <div class="filter-panel">
+      <FilterChipRow>
+        <LevelFilterChip
+          activeLevel={levelFilter}
+          onSelect={handleLevelSelect}
         />
+        <FavoritesFilterChip
+          active={favoritesOnly}
+          onToggle={handleFavoritesToggle}
+        />
+        {#if requiredBeatCount != null}
+          <!-- Locked length: show as disabled chip with the required count -->
+          <LengthFilterChip
+            activeLength={requiredBeatCount}
+            {availableLengths}
+            onSelect={() => {}}
+            disabled
+          />
+        {:else}
+          <LengthFilterChip
+            activeLength={lengthFilter}
+            {availableLengths}
+            onSelect={handleLengthSelect}
+          />
+        {/if}
+      </FilterChipRow>
 
-        <!-- Content Area -->
-        <div class="grid-container themed-scrollbar" class:disabled={isSelectingSequence} bind:this={gridContainerRef}>
-          {#if isLoading}
-            <div class="state-container loading">
-              <ProgressRing percent={-1} size={32} strokeWidth={3} />
-              <p>Loading sequences...</p>
-            </div>
-          {:else if error}
-            <div class="state-container error" role="alert">
-              <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-              <p>{error}</p>
-              <button onclick={loadSequences}>Retry</button>
-            </div>
-          {:else if sequences.length === 0}
-            <div class="state-container empty">
-              <i class="fas fa-folder-open" aria-hidden="true"></i>
-              <p>No sequences available</p>
-            </div>
-          {:else if filteredSequences.length === 0}
-            <div class="state-container empty">
-              <i class="fas fa-search" aria-hidden="true"></i>
-              <p>No sequences match your filters</p>
-              {#if hasActiveFilters}
-                <button onclick={handleClearFilters}>Clear Filters</button>
-              {/if}
-            </div>
-          {:else}
-            <BrowseGrid
-              sequences={filteredSequences}
-              {thumbnailService}
-              onAction={handleSequenceAction}
-              pinchColumnOverride={columnCount}
-              disableVirtualization
-              eager
-            />
+      <ActiveFilterBar
+        filters={activeFilterList}
+        onRemoveFilter={handleRemoveFilter}
+        onClearAll={handleClearAllFilters}
+      />
+    </div>
+
+    <!-- Content Area -->
+    <div class="grid-container themed-scrollbar" class:disabled={isSelectingSequence} bind:this={gridContainerRef}>
+      {#if isLoading}
+        <div class="state-container loading">
+          <ProgressRing percent={-1} size={32} strokeWidth={3} />
+          <p>Loading sequences...</p>
+        </div>
+      {:else if error}
+        <div class="state-container error" role="alert">
+          <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+          <p>{error}</p>
+          <button onclick={loadSequences}>Retry</button>
+        </div>
+      {:else if sequences.length === 0}
+        <div class="state-container empty">
+          <i class="fas fa-folder-open" aria-hidden="true"></i>
+          <p>No sequences available</p>
+        </div>
+      {:else if filteredSequences.length === 0}
+        <div class="state-container empty">
+          <i class="fas fa-search" aria-hidden="true"></i>
+          <p>No sequences match your filters</p>
+          {#if hasActiveFilters}
+            <button onclick={handleClearAllFilters}>Clear Filters</button>
           {/if}
         </div>
-      </div>
+      {:else}
+        <BrowseGrid
+          sequences={filteredSequences}
+          {thumbnailService}
+          onAction={handleSequenceAction}
+          pinchColumnOverride={columnCount}
+          disableVirtualization
+          eager
+        />
+      {/if}
     </div>
   </div>
 </BaseModal>
 
 <style>
-  /* ===== Modal Width Override - use full viewport on large screens ===== */
+  /* ===== Modal Width Override ===== */
   :global(dialog.sequence-picker-modal) {
     width: min(95vw, 2800px) !important;
   }
@@ -442,7 +509,7 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: var(--font-size-compact, 12px);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast, 150ms) ease;
   }
 
   .source-btn:hover {
@@ -466,7 +533,7 @@
     border-radius: 50%;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast, 150ms) ease;
   }
 
   .close-btn:hover {
@@ -481,6 +548,17 @@
     flex: 1;
     min-height: 0;
     position: relative;
+  }
+
+  /* ===== Filter Panel ===== */
+  .filter-panel {
+    container-type: inline-size;
+    container-name: inline-filter;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   /* ===== Grid Container ===== */
@@ -524,7 +602,7 @@
     border-radius: var(--border-radius-md, 8px);
     color: white;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast, 150ms) ease;
   }
 
   .state-container button:hover {
@@ -554,35 +632,6 @@
     margin: 0;
   }
 
-  /* ===== Sidebar + Main Layout ===== */
-  .picker-body {
-    display: flex;
-    flex: 1;
-    min-height: 0;
-  }
-
-  .main-area {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    min-height: 0;
-  }
-
-  .mobile-filters {
-    display: none;
-  }
-
-  @media (max-width: 767px) {
-    .picker-body {
-      flex-direction: column;
-    }
-
-    .mobile-filters {
-      display: block;
-    }
-  }
-
   /* ===== Mobile Responsive ===== */
   @media (max-width: 520px) {
     .picker-header {
@@ -594,12 +643,23 @@
     }
 
     .source-toggle {
-      display: none; /* Hide on mobile - too cramped */
+      display: none;
     }
 
     .grid-container {
       padding: var(--spacing-sm, 8px);
     }
+
+    .filter-panel {
+      padding: 6px 12px;
+    }
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    .source-btn,
+    .close-btn,
+    .state-container button {
+      transition: none;
+    }
+  }
 </style>

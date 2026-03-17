@@ -1,4 +1,5 @@
 import { browser } from "$app/environment";
+import { replaceState } from "$app/navigation";
 import type { ModuleId } from "../../../navigation/domain/types";
 import { featureFlagService } from "../../../auth/services/PostHogFeatureFlagService.svelte";
 import { navigationState } from "../../../navigation/state/navigation-state.svelte";
@@ -361,9 +362,9 @@ export async function initializeModulePersistence(): Promise<void> {
           JSON.stringify({ moduleId: defaultModule })
         );
         // Fix the URL if it had an invalid module
-        if (rawEffectiveModule && window.history) {
+        if (rawEffectiveModule) {
           const correctedPath = `/create/construct`;
-          window.history.replaceState(null, "", correctedPath);
+          replaceState(correctedPath, {});
         }
       }
     }
