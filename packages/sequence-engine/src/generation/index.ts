@@ -149,6 +149,9 @@ export {
   getCombinedPerHandDashScore,
 } from "./builder/bridge-scorer.js";
 
+// Data provider contracts
+export type { IVariationProvider } from "./data/IVariationProvider.js";
+
 // Feasibility analysis
 export {
   analyzeTransition,
