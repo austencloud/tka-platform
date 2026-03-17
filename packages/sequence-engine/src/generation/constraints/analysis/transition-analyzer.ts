@@ -13,7 +13,7 @@
  */
 
 import type { PictographData } from "../types.js";
-import { getHandpathDirection, HandPath } from "../implementations/hand-path-constraint.js";
+import { getHandpathDirection, HandPath } from "../style/hand-path-constraint.js";
 
 /**
  * Analysis result for a single letter-to-letter transition.

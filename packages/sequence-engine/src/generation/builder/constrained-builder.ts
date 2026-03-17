@@ -16,7 +16,7 @@ import type {
   VariationScore,
   ConstraintReport,
   ConstraintContext,
-} from "../types.js";
+} from "../constraints/types.js";
 import { scoreAndRankVariations } from "./variation-scorer.js";
 import {
   createInitialState,
@@ -28,7 +28,7 @@ import {
   DEFAULT_BEAM_CONFIG,
   type BeamSearchConfig,
 } from "./search-state.js";
-import { generateConstraintReport } from "../reporting/report-generator.js";
+import { generateConstraintReport } from "../constraints/reporting/report-generator.js";
 import { scoreBridgeOptions } from "./bridge-scorer.js";
 import { getLetterTransitionGraph } from "../../core/transition-graph/LetterTransitionGraph.js";
 import { calculateEndOrientation } from "../../core/orientation/OrientationCalculator.js";

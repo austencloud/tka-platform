@@ -7,19 +7,19 @@
 
 import { ConstraintType } from "../constraint-types.js";
 import type { IConstraint } from "../types.js";
-import { ContinuityConstraint } from "../implementations/continuity-constraint.js";
+import { ContinuityConstraint } from "../style/continuity-constraint.js";
 import {
   MotionTypeConstraint,
   type HandTarget,
-} from "../implementations/motion-type-constraint.js";
-import { RotationDirectionConstraint } from "../implementations/rotation-direction-constraint.js";
-import { ReversalConstraint } from "../implementations/reversal-constraint.js";
-import { DashPreferenceConstraint, DashAvoidanceConstraint } from "../implementations/dash-preference-constraint.js";
+} from "../style/motion-type-constraint.js";
+import { RotationDirectionConstraint } from "../style/rotation-direction-constraint.js";
+import { ReversalConstraint } from "../style/reversal-constraint.js";
+import { DashPreferenceConstraint, DashAvoidanceConstraint } from "../style/dash-preference-constraint.js";
 import {
   PerHandDashConstraint,
   type HandTarget as PerHandTarget,
-} from "../implementations/per-hand-dash-constraint.js";
-import { HandPathReversalConstraint } from "../implementations/hand-path-constraint.js";
+} from "../style/per-hand-dash-constraint.js";
+import { HandPathReversalConstraint } from "../style/hand-path-constraint.js";
 import { containsConcept, canonicalize } from "./synonyms.js";
 
 /**

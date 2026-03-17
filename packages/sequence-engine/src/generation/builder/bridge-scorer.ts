@@ -12,8 +12,8 @@
  * red hand minimize dashes") by scoring each hand's motion independently.
  */
 
-import type { ConstraintSet, IVariationConstraint, PictographData } from "../types.js";
-import type { HandTarget } from "../implementations/per-hand-dash-constraint.js";
+import type { ConstraintSet, IVariationConstraint, PictographData } from "../constraints/types.js";
+import type { HandTarget } from "../constraints/style/per-hand-dash-constraint.js";
 
 /**
  * Count dash motions in a pictograph variation.

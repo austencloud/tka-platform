@@ -10,7 +10,7 @@ import type {
   VariationScore,
   PictographData,
   ConstraintSet,
-} from "../types.js";
+} from "../constraints/types.js";
 import { scoreVariation, calculateSequenceScore } from "./variation-scorer.js";
 
 /**

@@ -5,7 +5,7 @@
  * Used by the constrained builder to rank variations during beam search.
  */
 
-import { ConstraintType } from "../constraint-types.js";
+import { ConstraintType } from "../constraints/constraint-types.js";
 import type {
   IConstraint,
   IVariationConstraint,
@@ -14,7 +14,7 @@ import type {
   VariationScore,
   PictographData,
   ConstraintScore,
-} from "../types.js";
+} from "../constraints/types.js";
 
 /**
  * Scores a single variation against all constraints in a set.
