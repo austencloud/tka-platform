@@ -1987,11 +1987,10 @@
     min-height: 0;
     min-width: 0;
     width: 100%;
-    /* Fill remaining space in the flex column (after header/footer) without overflowing.
-       During width transitions, fewer columns at the old wider width would make cells
-       temporarily taller than the container — flex + min-height: 0 prevents overflow. */
-    flex: 1;
-    grid-auto-rows: 1fr;
+    /* Cells are square (aspect-ratio: 1), so don't stretch the grid beyond
+       its content height. flex: 1 + grid-auto-rows: 1fr was distributing
+       extra space into rows, making cells taller than wide. */
+    flex: 0 0 auto;
     max-width: 100%;
     overflow: hidden;
     /* Light mode background for empty cells */
@@ -2012,7 +2011,8 @@
 
   .cell-flip-wrapper > .pictograph-cell {
     width: 100%;
-    height: 100%;
+    /* No height: 100% — that overrides aspect-ratio: 1, making cells
+       stretch to fill non-square grid rows instead of staying square. */
   }
 
   /* Individual pictograph cell */
