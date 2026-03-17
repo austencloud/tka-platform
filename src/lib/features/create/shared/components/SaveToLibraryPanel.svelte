@@ -34,6 +34,7 @@
   import { notifyLibrarySequenceAdded } from "$lib/shared/library/library-events";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import type { ISequenceContentHasher } from "$lib/features/library/services/contracts/ISequenceContentHasher";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
   interface Props {
     show: boolean;
@@ -110,6 +111,54 @@
 
   // Expandable sections
   let showNotes = $state(false);
+
+  // Responsive layout detection
+  let panelWidth = $state(0);
+  const isMobileLayout = $derived(panelWidth < 640);
+
+  // Column toggle (mobile only)
+  let columnCount = $state<number | null>(null);
+  const allColumnOptions = [
+    { label: "Auto", value: null },
+    { label: "2", value: 2 },
+    { label: "3", value: 3 },
+    { label: "4", value: 4 },
+    { label: "5", value: 5 },
+    { label: "6", value: 6 },
+    { label: "7", value: 7 },
+    { label: "8", value: 8 },
+  ] as const;
+
+  const beatCount = $derived(sequence?.steps?.length ?? 0);
+  const columnOptions = $derived(
+    allColumnOptions.filter((opt) => opt.value === null || opt.value <= beatCount)
+  );
+
+  // Prop type indicator
+  const currentSettings = $derived(getSettings());
+  const bluePropType = $derived(currentSettings.bluePropType ?? PropType.STAFF);
+  const redPropType = $derived(currentSettings.redPropType ?? PropType.STAFF);
+  const isSamePropType = $derived(bluePropType === redPropType);
+  const propTypeLabel = $derived(
+    isSamePropType
+      ? formatPropType(bluePropType)
+      : `${formatPropType(bluePropType)} / ${formatPropType(redPropType)}`
+  );
+
+  function formatPropType(pt: PropType): string {
+    const map: Record<string, string> = {
+      [PropType.STAFF]: "Staff",
+      [PropType.FAN]: "Fan",
+      [PropType.CLUB]: "Club",
+      [PropType.BUUGENG]: "Buugeng",
+      [PropType.MINIHOOP]: "Mini Hoop",
+      [PropType.TRIAD]: "Triad",
+      [PropType.DOUBLESTAR]: "Double Star",
+      [PropType.BIGDOUBLESTAR]: "Big Double Star",
+      [PropType.QUIAD]: "Quiad",
+    };
+    return map[pt] ?? pt;
+  }
 
   // Content moderation state
   let moderationResult = $state<ContentModerationResult | null>(null);
@@ -253,6 +302,20 @@
   const canSave = $derived(
     !!tkaName && !isSaving && !isFlagged && !isExactDuplicate
   );
+
+  // ResizeObserver for responsive layout detection
+  let panelInnerEl: HTMLDivElement | null = null;
+
+  $effect(() => {
+    if (!panelInnerEl) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        panelWidth = entry.contentRect.width;
+      }
+    });
+    observer.observe(panelInnerEl);
+    return () => observer.disconnect();
+  });
 
   // Enter key submits the panel when it's open
   $effect(() => {
@@ -414,7 +477,7 @@
   onClose={handleClose}
   ariaLabel="Add to Gallery"
 >
-  <div class="panel-inner">
+  <div class="panel-inner" bind:this={panelInnerEl}>
     <SheetDragHandle />
 
     {#if isSaving}
@@ -443,19 +506,50 @@
     <div class="panel-body">
       <!-- Sequence Preview -->
       {#if sequence}
-        <div class="choreo-group">
-          <div class="choreo-preview">
-            <ChoreoCard
-              sequence={{ ...sequence, word: tkaName }}
-              {darkMode}
-              userName={creatorName}
-              showCreatorName={true}
-              showBirthday={true}
-              showNotes={false}
-              showDifficultyLevel={true}
-              showLoopGlyph={true}
-            />
+        {#if isMobileLayout}
+          <!-- Mobile: show preview since workspace is hidden -->
+          <div class="choreo-group">
+            <div class="choreo-preview">
+              <ChoreoCard
+                sequence={{ ...sequence, word: tkaName }}
+                {darkMode}
+                userName={creatorName}
+                showCreatorName={true}
+                showBirthday={true}
+                showNotes={false}
+                showDifficultyLevel={true}
+                showLoopGlyph={true}
+                {columnCount}
+              />
+            </div>
+
+            <!-- Column toggle -->
+            <div class="column-toggle">
+              <span class="toggle-section-label">Columns</span>
+              <div class="chip-group">
+                {#each columnOptions as option}
+                  <button
+                    type="button"
+                    class="column-chip"
+                    class:active={columnCount === option.value}
+                    onclick={() => (columnCount = option.value)}
+                    aria-pressed={columnCount === option.value}
+                  >{option.label}</button>
+                {/each}
+              </div>
+            </div>
           </div>
+        {:else}
+          <!-- Desktop: compact word display (workspace visible behind panel) -->
+          <div class="word-display">
+            <span class="word-text">{tkaName}</span>
+          </div>
+        {/if}
+
+        <!-- Prop type indicator -->
+        <div class="prop-type-indicator">
+          <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
+          <span>{propTypeLabel}</span>
         </div>
       {/if}
 
@@ -1096,5 +1190,90 @@
     .toggle-thumb {
       transition: none;
     }
+  }
+
+  /* Column toggle (mobile) */
+  .column-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+  }
+
+  .toggle-section-label {
+    min-width: 60px;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    color: var(--theme-text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+  }
+
+  .chip-group {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .column-chip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    min-width: 36px;
+    padding: 4px 12px;
+    background: color-mix(in srgb, var(--theme-card-bg) 70%, transparent);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 10px;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .column-chip.active {
+    background: color-mix(in srgb, var(--theme-accent) 35%, var(--theme-card-bg));
+    border-color: color-mix(in srgb, var(--theme-accent) 60%, transparent);
+    color: white;
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--theme-accent) 25%, transparent);
+  }
+
+  .column-chip:hover:not(.active) {
+    background: var(--theme-card-hover-bg);
+    border-color: var(--theme-stroke-strong);
+    color: var(--theme-text);
+  }
+
+  /* Desktop: compact word display */
+  .word-display {
+    text-align: center;
+    padding: 16px;
+  }
+
+  .word-text {
+    font-family: Georgia, serif;
+    font-size: var(--font-size-2xl, 1.5rem);
+    font-weight: 600;
+    color: var(--theme-text);
+    letter-spacing: 0.05em;
+  }
+
+  /* Prop type indicator */
+  .prop-type-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 16px;
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text-dim);
+  }
+
+  .prop-type-indicator i {
+    color: var(--theme-accent);
+    font-size: 12px;
   }
 </style>
