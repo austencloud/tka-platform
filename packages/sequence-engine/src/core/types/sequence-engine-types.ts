@@ -118,6 +118,8 @@ export interface MotionData {
   turns?: number | "fl";
   /** Spinning plane (future concept, not yet assigned to a level). Defaults to "wall" when omitted. */
   plane?: "wall" | "wheel" | "overhead";
+  /** Prop color ("blue" or "red"). Optional — not all contexts track color. */
+  color?: string;
 }
 
 /**
