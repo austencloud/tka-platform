@@ -1,0 +1,30 @@
+{
+  "name": "@9square/domain",
+  "version": "0.1.0",
+  "description": "Charlie Cushing's 9-Square Theory and QFT Notation — spatial grid quantization, position-based transitions, and written movement notation.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@flow-arts/core": "workspace:*"
+  },
+  "devDependencies": {
+    "rimraf": "^5.0.0",
+    "typescript": "^5.0.0"
+  },
+  "author": "Austen Cloud <austencloud@gmail.com>",
+  "license": "MIT"
+}
