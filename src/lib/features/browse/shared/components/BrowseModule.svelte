@@ -10,6 +10,11 @@
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import ErrorBanner from "../../../create/shared/components/ErrorBanner.svelte";
 
+  import { createOfflineCacheState } from "$lib/shared/offline/state/offline-cache-state.svelte";
+  import { setOfflineCacheContext } from "$lib/shared/offline/context/offline-cache-context";
+  import type { IOfflineCacheOrchestrator } from "$lib/shared/offline/services/contracts/IOfflineCacheOrchestrator";
+  import { networkStatusState } from "$lib/shared/offline/state/network-status-state.svelte";
+
   import type { IBrowseEventHandler } from "../services/contracts/IBrowseEventHandler";
   import CollectionsBrowsePanel from "../../collections/components/CollectionsBrowsePanel.svelte";
   import CreatorsPanel from "../../creators/components/CreatorsPanel.svelte";
@@ -52,6 +57,11 @@
 
   // Service resolved lazily in onMount to ensure feature module is loaded
   let eventHandlerService: IBrowseEventHandler | null = null;
+
+  // Offline cache: create reactive state, publish to context for descendants
+  const orchestrator = container.items.offlineCacheOrchestrator as IOfflineCacheOrchestrator;
+  const offlineCacheState = createOfflineCacheState(orchestrator);
+  setOfflineCacheContext(offlineCacheState);
 
   // ✅ PURE RUNES: Local state
   let _selectedSequence = $state<SequenceData | null>(null);
@@ -337,6 +347,21 @@
   // ============================================================================
 
   onMount(() => {
+    // Start background caching of gallery metadata + thumbnails so the browse
+    // module works offline on subsequent visits without any user action.
+    offlineCacheState.startBackgroundCache();
+
+    // On reconnect: clear PublicSequencesLoader's in-memory cache so the next
+    // gallery load re-fetches from Firestore and repopulates the Dexie offline cache
+    // with fresh data. This cast is intentional — adding clearCache() to IBrowseLoader
+    // is a larger interface change deferred to a later task.
+    const unsubscribeReconnect = networkStatusState.onOnline(() => {
+      const loader = container.items.browseLoader as unknown as { cachedSequences?: unknown };
+      if (loader) {
+        loader.cachedSequences = null;
+      }
+    });
+
     // Check whether the URL contains a creator profile path (/browse/creators/[userId]).
     // If it does, override the localStorage-restored state and open that profile directly
     // so a page refresh lands on the same profile the user was viewing.
@@ -445,6 +470,7 @@
     // Return cleanup function
     return () => {
       cleanup?.();
+      unsubscribeReconnect();
       sequenceControlsManager.clear();
       window.removeEventListener("popstate", handleCreatorPopState);
     };
