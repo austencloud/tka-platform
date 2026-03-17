@@ -5,8 +5,8 @@
     <stop offset="1" stop-color="#000" stop-opacity="0.35"/>
   </radialGradient>
   <radialGradient id="cb-spec" cx="202.5" cy="52.5" r="30" gradientUnits="userSpaceOnUse">
-    <stop offset="0" stop-color="#fff" stop-opacity="0.35"/>
-    <stop offset="0.4" stop-color="#fff" stop-opacity="0.08"/>
+    <stop offset="0" stop-color="#fff" stop-opacity="0.5"/>
+    <stop offset="0.4" stop-color="#fff" stop-opacity="0.115"/>
     <stop offset="1" stop-color="#fff" stop-opacity="0"/>
   </radialGradient>
 </defs>
