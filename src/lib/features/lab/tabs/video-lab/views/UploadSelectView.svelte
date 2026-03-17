@@ -93,79 +93,83 @@
 </script>
 
 <div class="upload-select-view">
-  <!-- Video Source -->
-  <section class="section">
-    <h3 class="section-title">
-      <i class="fas fa-video" aria-hidden="true"></i>
-      Video Source
-    </h3>
+  <div class="two-up">
+    <!-- Left: Video Source -->
+    <section class="section">
+      <h3 class="section-title">
+        <i class="fas fa-video" aria-hidden="true"></i>
+        Video Source
+      </h3>
 
-    {#if !videoUrl}
-      <label class="file-picker">
-        <input type="file" accept="video/*" onchange={handleFileSelect} hidden />
-        <i class="fas fa-cloud-upload-alt" aria-hidden="true"></i>
-        <span>Choose a video file</span>
-      </label>
+      {#if !videoUrl}
+        <label class="file-picker">
+          <input type="file" accept="video/*" onchange={handleFileSelect} hidden />
+          <i class="fas fa-cloud-upload-alt" aria-hidden="true"></i>
+          <span>Choose a video file</span>
+        </label>
 
-      <div class="or-divider">or</div>
+        <div class="or-divider">or</div>
 
-      <div class="paste-row">
-        <input
-          type="text"
-          placeholder="Paste a video URL..."
-          bind:value={pasteUrl}
-          class="paste-input"
-        />
-        <button type="button" class="paste-btn" onclick={handlePasteLoad} disabled={!pasteUrl.trim()}>
-          Load
-        </button>
-      </div>
-    {:else}
-      <div class="video-preview">
-        <!-- svelte-ignore a11y_media_has_caption -->
-        <video bind:this={videoEl} src={videoUrl} onloadedmetadata={handleVideoLoaded} controls preload="metadata"></video>
-        <div class="video-info">
-          <span class="video-name">{videoFileName}</span>
-          <span class="video-meta">
-            {#if videoFileSize > 0}{formatFileSize(videoFileSize)} · {/if}
-            {#if videoDuration > 0}{formatDuration(videoDuration)}{/if}
-          </span>
+        <div class="paste-row">
+          <input
+            type="text"
+            placeholder="Paste a video URL..."
+            bind:value={pasteUrl}
+            class="paste-input"
+          />
+          <button type="button" class="paste-btn" onclick={handlePasteLoad} disabled={!pasteUrl.trim()}>
+            Load
+          </button>
         </div>
-        <button type="button" class="clear-btn" onclick={clearVideo}>
-          <i class="fas fa-times" aria-hidden="true"></i> Change
-        </button>
-      </div>
-    {/if}
-  </section>
-
-  <!-- Sequence Selection -->
-  <section class="section">
-    <h3 class="section-title">
-      <i class="fas fa-list" aria-hidden="true"></i>
-      Sequence
-    </h3>
-
-    {#if selectedSequence}
-      <div class="selected-sequence">
-        <div class="selected-info">
-          <span class="selected-word">{selectedSequence.word ?? selectedSequence.name}</span>
-          <span class="selected-beats">{beatCount} beats</span>
+      {:else}
+        <div class="video-preview">
+          <!-- svelte-ignore a11y_media_has_caption -->
+          <video bind:this={videoEl} src={videoUrl} onloadedmetadata={handleVideoLoaded} controls preload="metadata"></video>
+          <div class="video-info">
+            <span class="video-name">{videoFileName}</span>
+            <span class="video-meta">
+              {#if videoFileSize > 0}{formatFileSize(videoFileSize)} · {/if}
+              {#if videoDuration > 0}{formatDuration(videoDuration)}{/if}
+            </span>
+          </div>
+          <button type="button" class="clear-btn" onclick={clearVideo}>
+            <i class="fas fa-times" aria-hidden="true"></i> Change
+          </button>
         </div>
-        <button type="button" class="change-btn" onclick={() => (pickerOpen = true)}>Change</button>
-      </div>
-    {:else}
-      <button type="button" class="pick-btn" onclick={() => (pickerOpen = true)}>
-        <i class="fas fa-th" aria-hidden="true"></i>
-        Choose a sequence
-      </button>
-    {/if}
-  </section>
+      {/if}
+    </section>
+
+    <!-- Right: Sequence Selection -->
+    <section class="section">
+      <h3 class="section-title">
+        <i class="fas fa-list" aria-hidden="true"></i>
+        Sequence
+      </h3>
+
+      {#if selectedSequence}
+        <div class="selected-sequence">
+          <div class="selected-info">
+            <span class="selected-word">{selectedSequence.word ?? selectedSequence.name}</span>
+            <span class="selected-beats">{beatCount} beats</span>
+          </div>
+          <button type="button" class="change-btn" onclick={() => (pickerOpen = true)}>Change</button>
+        </div>
+      {:else}
+        <button type="button" class="pick-btn" onclick={() => (pickerOpen = true)}>
+          <i class="fas fa-th" aria-hidden="true"></i>
+          Choose a sequence
+        </button>
+      {/if}
+    </section>
+  </div>
 
   <!-- Start -->
-  <button type="button" class="start-btn" onclick={handleStart} disabled={!canStart}>
-    <i class="fas fa-play" aria-hidden="true"></i>
-    Start Mapping
-  </button>
+  <div class="start-row">
+    <button type="button" class="start-btn" onclick={handleStart} disabled={!canStart}>
+      <i class="fas fa-play" aria-hidden="true"></i>
+      Start Mapping
+    </button>
+  </div>
 </div>
 
 <SequencePickerModal
@@ -179,15 +183,38 @@
   .upload-select-view {
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: 24px;
     padding: 20px;
     height: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .two-up {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    width: 100%;
+  }
+
+  @media (max-width: 640px) {
+    .two-up {
+      grid-template-columns: 1fr;
+    }
   }
 
   .section {
     display: flex;
     flex-direction: column;
     gap: 12px;
+  }
+
+  .start-row {
+    display: flex;
+    justify-content: center;
+    width: 100%;
   }
 
   .section-title {
@@ -350,11 +377,11 @@
   }
 
   .start-btn {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 14px;
+    padding: 12px 40px;
     border: none;
     border-radius: 10px;
     background: var(--theme-accent, #6366f1);
@@ -362,7 +389,6 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
     cursor: pointer;
-    margin-top: auto;
   }
 
   .start-btn:disabled { opacity: 0.4; cursor: not-allowed; }
