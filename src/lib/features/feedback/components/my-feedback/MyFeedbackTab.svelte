@@ -1,5 +1,6 @@
 <!-- MyFeedbackTab - Tester's personal feedback dashboard -->
 <script lang="ts">
+  import { replaceState } from "$app/navigation";
   import { onMount, onDestroy } from "svelte";
   import { createMyFeedbackState } from "../../state/my-feedback-state.svelte";
   import { myFeedbackDetailState } from "../../state/my-feedback-detail-state.svelte";
@@ -109,7 +110,7 @@
       const newUrl = urlParams.toString()
         ? `${window.location.pathname}?${urlParams.toString()}`
         : window.location.pathname;
-      window.history.replaceState({}, "", newUrl);
+      replaceState(newUrl, {});
     } else {
       // Fallback to notification target state or persisted ID
       targetFeedbackId =

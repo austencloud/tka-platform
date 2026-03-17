@@ -6,6 +6,7 @@
   Uses shared MobileInputToolbar for keyboard-aware Done button.
 -->
 <script lang="ts">
+  import { pushState as svelteKitPushState } from "$app/navigation";
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
   import MobileInputToolbar from "$lib/shared/components/MobileInputToolbar.svelte";
@@ -42,7 +43,7 @@
       onClose();
     }
     // Push a history entry so back button closes overlay instead of navigating
-    history.pushState({ wordInputOverlay: true }, "");
+    svelteKitPushState("", { wordInputOverlay: true });
     window.addEventListener("popstate", handlePopState);
 
     return () => {

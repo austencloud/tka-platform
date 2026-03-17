@@ -6,6 +6,7 @@
  * This allows the drawer to be rendered outside the tab's stacking context.
  */
 
+import { replaceState } from "$app/navigation";
 import type {
   FeedbackItem,
   FeedbackType,
@@ -34,7 +35,7 @@ function updateURLParam(feedbackId: string | null) {
   } else {
     url.searchParams.delete("feedback");
   }
-  window.history.replaceState({}, "", url.toString());
+  replaceState(url.toString(), {});
 }
 
 function getURLParam(): string | null {

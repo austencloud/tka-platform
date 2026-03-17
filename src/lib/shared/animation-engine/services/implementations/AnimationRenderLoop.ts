@@ -596,12 +596,14 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         if (needsWrapAround) {
           // SEAMLESS LOOP WRAP-AROUND:
           // Trail window spans the loop boundary, so read from two ranges:
-          //   1. Tail of previous loop: [totalSteps + desiredStart, totalSteps + 1]
+          //   1. Tail of previous loop: [totalSteps + desiredStart, totalSteps]
           //   2. Head of current loop:  [0, currentStep]
-          // We read to totalSteps + 1 (not totalSteps) because the cache covers
-          // the full last beat's motion arc. For seamless loops, position at
-          // totalSteps + 1 equals position at 0, so tail and head connect smoothly.
-          const cacheEndStep = cacheInfo.totalSteps + 1;
+          // We read the tail up to totalSteps (not totalSteps + 1) because
+          // position at totalSteps equals position at 0 for seamless loops.
+          // Using totalSteps + 1 would extend the tail 1 beat past the boundary,
+          // causing a spatial fold-back (trail doubles back) and a visible jump
+          // in the trail's oldest visible position.
+          const cacheEndStep = cacheInfo.totalSteps;
           const wrapStartStep = Math.max(0, cacheEndStep + desiredStart);
 
           // Blue prop: tail segment (both ends) then head segment (both ends)

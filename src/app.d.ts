@@ -15,6 +15,21 @@ declare global {
       moduleId?: string;
       sectionId?: string;
       sequenceOverlay?: boolean;
+      // SheetRouter route state
+      sheet?: string | null;
+      spotlight?: string;
+      animationPanel?: {
+        sequenceId?: string;
+        speed?: number;
+        isPlaying?: boolean;
+        currentStep?: number;
+        gridVisible?: boolean;
+      };
+      // Loop labeler navigation
+      sequenceId?: string | null;
+      filterMode?: string;
+      // WordInputOverlay back-button support
+      wordInputOverlay?: boolean;
     }
     // interface Platform {}
   }

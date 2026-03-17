@@ -9,6 +9,7 @@
     getNotificationTargetFeedback,
     setNotificationTargetFeedback,
   } from "../../state/notification-action-state.svelte";
+  import { replaceState } from "$app/navigation";
   import { onMount } from "svelte";
   import FeedbackKanbanBoard from "./FeedbackKanbanBoard.svelte";
   import FeedbackDetailPanel from "./FeedbackDetailPanel.svelte";
@@ -57,7 +58,7 @@
         const newUrl = params.toString()
           ? `${window.location.pathname}?${params.toString()}`
           : window.location.pathname;
-        window.history.replaceState({}, "", newUrl);
+        replaceState(newUrl, {});
       }
     };
   });
@@ -72,14 +73,14 @@
     if (selectedId && selectedId !== currentUrlId) {
       urlParams.set("openFeedback", selectedId);
       const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
-      window.history.replaceState({}, "", newUrl);
+      replaceState(newUrl, {});
     } else if (!selectedId && currentUrlId) {
       // Clear URL param when panel is closed
       urlParams.delete("openFeedback");
       const newUrl = urlParams.toString()
         ? `${window.location.pathname}?${urlParams.toString()}`
         : window.location.pathname;
-      window.history.replaceState({}, "", newUrl);
+      replaceState(newUrl, {});
     }
   });
 

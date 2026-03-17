@@ -10,6 +10,10 @@
  */
 
 import { browser } from "$app/environment";
+import {
+  pushState as svelteKitPushState,
+  replaceState as svelteKitReplaceState,
+} from "$app/navigation";
 
 // Tab types matching the Browse module structure
 export type BrowseTab = "gallery" | "collections" | "creators";
@@ -72,11 +76,10 @@ function pushCreatorProfileURL(userId: string): void {
   const url = new URL(window.location.href);
   url.pathname = `/browse/creators/${encodeURIComponent(userId)}`;
   url.hash = "";
-  window.history.pushState(
-    { moduleId: "browse", sectionId: "creators" },
-    "",
-    url.toString()
-  );
+  svelteKitPushState(url.toString(), {
+    moduleId: "browse",
+    sectionId: "creators",
+  });
 }
 
 /**
@@ -90,11 +93,10 @@ function replaceCreatorsListURL(): void {
   if (!url.pathname.startsWith("/browse/creators")) return;
   url.pathname = "/browse/creators";
   url.hash = "";
-  window.history.replaceState(
-    { moduleId: "browse", sectionId: "creators" },
-    "",
-    url.toString()
-  );
+  svelteKitReplaceState(url.toString(), {
+    moduleId: "browse",
+    sectionId: "creators",
+  });
 }
 
 /**
