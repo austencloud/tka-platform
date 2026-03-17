@@ -8,10 +8,8 @@
   import StepGrid from "./StepGrid.svelte";
   import WordLabel from "./WordLabel.svelte";
   import UndoButton from "../../shared/components/buttons/UndoButton.svelte";
-  import LOOPRingButton from "../../shared/components/buttons/LOOPRingButton.svelte";
-  import LOOPCompletionPopover from "../../shared/components/LOOPCompletionPopover.svelte";
+  import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
-  import type { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
   import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
   import { loopDetector as circularLoopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
@@ -58,15 +56,9 @@
   const ctx = getCreateModuleContext();
   const { CreateModuleState, panelState } = ctx;
 
-  // LOOP analysis state
-  // Use the circular LOOPDetector singleton directly (detectLOOPType + SequenceData)
-  // rather than container.items.loopDetector which is the loop-labeler version
-  // (detectLOOP + SequenceEntry — a different data model)
-  const extensionFlowCoordinator = container.items.extensionFlowCoordinator;
-
-  let showLoopPopover = $state(false);
-  let extensionAnalysis = $state<import("$lib/features/create/shared/services/contracts/ISequenceExtender").ExtensionAnalysis | null>(null);
-  let analysisRequestId = 0;
+  // LOOP detection — uses the circular LOOPDetector singleton directly
+  // (detectLOOPType + SequenceData) rather than container.items.loopDetector
+  // which is the loop-labeler version (detectLOOP + SequenceEntry)
 
   // Use $derived.by() to ensure Svelte tracks the getters properly
   // when sequenceState is passed as a prop (not a reactive state)
@@ -91,71 +83,12 @@
     return circularLoopDetector.detectLOOPType(currentSequence);
   });
 
-  const isCircular = $derived(loopDetectionResult?.isCircular ?? false);
-
   const activeComponents = $derived.by(() => {
     if (!loopDetectionResult?.loopType) return new Set<LOOPComponent>();
     return loopTypeResolver.parseComponents(loopDetectionResult.loopType);
   });
 
-  const currentLoopLabel = $derived.by(() => {
-    if (!loopDetectionResult?.loopType) return null;
-    return loopTypeResolver.formatForDisplay(loopDetectionResult.loopType);
-  });
-
-  const availableComponents = $derived.by(() => {
-    const set = new Set<LOOPComponent>();
-    if (!extensionAnalysis) return set;
-    for (const option of extensionAnalysis.availableLOOPOptions) {
-      const components = loopTypeResolver.parseComponents(option.loopType);
-      for (const c of components) set.add(c);
-    }
-    return set;
-  });
-
-  const hasSufficientBeats = $derived((currentSequence?.steps?.length ?? 0) >= 2);
-
-  // Run extension analysis when sequence changes (with stale-request guard).
-  // Only analyzes if the sequence isn't already a detected LOOP — if it is,
-  // there's nothing to extend and the ring just shows the active LOOP state.
-  $effect(() => {
-    if (!currentSequence || !extensionFlowCoordinator || !hasSufficientBeats) {
-      extensionAnalysis = null;
-      return;
-    }
-    if (loopDetectionResult?.loopType) {
-      extensionAnalysis = null;
-      return;
-    }
-    const requestId = ++analysisRequestId;
-    extensionFlowCoordinator.startFlow(currentSequence).then((result) => {
-      if (requestId !== analysisRequestId) return;
-      extensionAnalysis = result.canExtend ? (result.analysis ?? null) : null;
-    });
-  });
-
-  // LOOP popover handlers
-  function handleLoopRingClick() {
-    showLoopPopover = !showLoopPopover;
-  }
-
-  function handleComponentSelect(_component: LOOPComponent, loopType: LOOPType) {
-    showLoopPopover = false;
-    panelState.requestLoopCompletion(loopType);
-  }
-
-  // Close popover on click outside
-  $effect(() => {
-    if (!showLoopPopover) return;
-    function handleClickOutside(e: MouseEvent) {
-      const target = e.target as HTMLElement;
-      if (!target.closest(".loop-ring-wrapper")) {
-        showLoopPopover = false;
-      }
-    }
-    document.addEventListener("click", handleClickOutside, true);
-    return () => document.removeEventListener("click", handleClickOutside, true);
-  });
+  const hasDetectedLoop = $derived(activeComponents.size > 0);
 
   // Convert selectedStartPosition (PictographData) to StepData format for StepGrid
   const startPositionStep = $derived(() => {
@@ -215,26 +148,14 @@
           />
         </div>
         <div class="top-right-zone">
-          <div class="loop-ring-wrapper">
-            <LOOPRingButton
+          {#if hasDetectedLoop}
+            <LOOPIconStrip
               {activeComponents}
-              {availableComponents}
-              disabled={!hasSufficientBeats}
-              onclick={handleLoopRingClick}
+              size={18}
+              darkMode={true}
+              showFreeformWhenEmpty={false}
             />
-            {#if showLoopPopover}
-              <div class="loop-popover">
-                <LOOPCompletionPopover
-                  {activeComponents}
-                  availableLOOPOptions={extensionAnalysis?.availableLOOPOptions ?? []}
-                  {currentLoopLabel}
-                  {isCircular}
-                  {hasSufficientBeats}
-                  onComponentSelect={handleComponentSelect}
-                />
-              </div>
-            {/if}
-          </div>
+          {/if}
         </div>
       </div>
 
@@ -321,21 +242,6 @@
     align-items: center;
     justify-content: flex-end;
     min-width: 60px; /* Balance with left zone */
-  }
-
-  .loop-ring-wrapper {
-    position: relative;
-  }
-
-  .loop-popover {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    z-index: 100;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 14px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   }
 
   .word-label-area {
