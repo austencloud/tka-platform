@@ -257,6 +257,12 @@ with pre-prepared data for better performance.
   let prepareSequence = 0;
   let lastAppliedSequence = 0;
 
+  // Resolve prop types: use explicit overrides if provided, otherwise fall back to global settings.
+  // These are used both in the cache key and when preparing, so the start position
+  // (which has no overrides) correctly picks up the user's selected prop type.
+  const effectiveBluePropType = $derived(bluePropTypeOverride ?? getSettings().bluePropType);
+  const effectiveRedPropType = $derived(redPropTypeOverride ?? getSettings().redPropType);
+
   // Create a stable key for data preparation dependencies
   // Include effectiveDarkMode so that when it changes (via prop OR global toggle), we re-prepare with correct colors
   // CRITICAL: Include motion data so transforms trigger re-preparation with new positions
@@ -299,10 +305,6 @@ with pre-prepared data for better performance.
       manualAdjustY: redMotion.arrowPlacementData?.manualAdjustmentY ?? 0,
     } : null;
 
-    // Use explicit overrides if provided, otherwise use global settings
-    const effectiveBluePropType = bluePropTypeOverride ?? settings.bluePropType;
-    const effectiveRedPropType = redPropTypeOverride ?? settings.redPropType;
-
     return JSON.stringify({
       id: pictographData.id,
       letter: pictographData.letter,
@@ -311,9 +313,6 @@ with pre-prepared data for better performance.
       darkMode: effectiveDarkMode, // Include effective dark mode for color-correct preparation
       blueMotion: blueFingerprint,
       redMotion: redFingerprint,
-      // Include explicit override flags so we re-prepare if they change
-      hasExplicitBlueProp: bluePropTypeOverride !== undefined,
-      hasExplicitRedProp: redPropTypeOverride !== undefined,
       // Include global adjustment version so ALL pictographs re-prepare when adjustments are saved
       // This ensures steps 6, 10, 14, etc. (same letter rotated) update when beat 2 is adjusted globally
       globalAdjustmentVersion: globalAdjustmentVersion.version,
@@ -352,8 +351,8 @@ with pre-prepared data for better performance.
         const currentDarkMode = effectiveDarkMode;
         const prepareOptions = {
           themeMode: currentDarkMode ? "dark" as const : "light" as const,
-          bluePropType: bluePropTypeOverride,
-          redPropType: redPropTypeOverride,
+          bluePropType: effectiveBluePropType,
+          redPropType: effectiveRedPropType,
         };
         const result = await pictographPreparer.prepareSingle(data as PictographData, prepareOptions);
         // Only apply if no newer preparation has already been applied.

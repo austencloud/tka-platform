@@ -24,6 +24,8 @@
 	import { createAnimationPanelState, type AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
 	import { container } from "$lib/shared/di";
 	import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+	import { TrackingMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
+	import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 	import { tryGetAnimationExportContext } from "$lib/shared/share-hub/context/animation-export-context.svelte";
 	import type { ControlsLevel } from "../domain/types";
 
@@ -121,7 +123,9 @@
 		onStepChange?.(stepIndex, playing);
 	});
 
-	// Trail settings with fine-grained reactivity
+	// Trail settings with fine-grained reactivity and unilateral prop enforcement.
+	// Unilateral props (fan, club, etc.) always use RIGHT_END — they only have
+	// one meaningful endpoint, so BOTH_ENDS would show an imaginary second trail.
 	const trailSettings = $derived.by(() => {
 		const t = animationSettings.trail;
 		void t.enabled;
@@ -131,7 +135,19 @@
 		void t.maxOpacity;
 		void t.trackingMode;
 		void t.effect;
-		return { ...t };
+
+		const settings = { ...t };
+
+		if (settings.trackingMode === TrackingMode.BOTH_ENDS) {
+			const hasBilateral =
+				(bluePropType != null && isBilateralProp(String(bluePropType))) ||
+				(redPropType != null && isBilateralProp(String(redPropType)));
+			if (!hasBilateral) {
+				settings.trackingMode = TrackingMode.RIGHT_END;
+			}
+		}
+
+		return settings;
 	});
 
 	// Service initialization (standalone mode)
