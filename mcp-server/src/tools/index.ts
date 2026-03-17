@@ -12,3 +12,4 @@ export { registerSequenceTools } from "./sequence-tools.js";
 export { registerLoopTools } from "./loop-tools.js";
 export { registerPresetTools } from "./preset-tools.js";
 export { registerUtilityTools } from "./utility-tools.js";
+export { registerVTGTools } from "./vtg-tools.js";

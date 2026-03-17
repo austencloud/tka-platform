@@ -1,9 +1,9 @@
 /**
- * TKA Domain MCP Server
+ * Flow Arts Knowledge MCP Server
  *
- * Comprehensive MCP server for The Kinetic Alphabet domain.
- * Provides pictograph rendering, sequence generation, educational tools,
- * and domain knowledge queries.
+ * Comprehensive MCP server for flow arts domain knowledge.
+ * Provides TKA pictograph rendering, sequence generation, educational tools,
+ * VTG (Vulcan Tech Gospel) domain queries, and cross-system translation.
  *
  * Tools:
  * - Pictograph Generation: generate_pictograph, generate_pictograph_url, view_pictograph
@@ -28,14 +28,15 @@ import {
   registerLoopTools,
   registerPresetTools,
   registerUtilityTools,
+  registerVTGTools,
 } from "./src/tools/index.js";
 import { ensureTransitionGraphInitialized } from "./src/core/letter-transition-graph.js";
 import { loadKnowledgeBase } from "./src/shared/server-context.js";
 
 // Create MCP server instance
 const server = new McpServer({
-  name: "tka-domain",
-  version: "2.0.0",
+  name: "flow-arts-knowledge",
+  version: "3.0.0",
 });
 
 // Load knowledge base (glossary, letter types)
@@ -50,10 +51,11 @@ registerSequenceTools(server);
 registerLoopTools(server);
 registerPresetTools(server);
 registerUtilityTools(server);
+registerVTGTools(server);
 
 // Start the server
 async function main() {
-  console.error("[MCP] Starting TKA Domain MCP Server v2.0.0...");
+  console.error("[MCP] Starting Flow Arts Knowledge MCP Server v3.0.0...");
 
   // Ensure transition graph is initialized before accepting tool calls
   // This must complete before any sequence generation tools are used

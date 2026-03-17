@@ -1,7 +1,7 @@
 {
-  "name": "tka-pictograph-mcp",
-  "version": "1.0.0",
-  "description": "MCP server for generating TKA pictographs",
+  "name": "flow-arts-knowledge-mcp",
+  "version": "3.0.0",
+  "description": "MCP server for flow arts domain knowledge — TKA, VTG, and pictograph generation",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
@@ -13,10 +13,12 @@
     "@anthropic-ai/sdk": "^0.52.0",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "@resvg/resvg-js": "^2.6.0",
+    "@flow-arts/core": "file:../packages/flow-arts-core",
     "@tka/domain": "file:../packages/domain",
+    "@vtg/domain": "file:../packages/vtg-domain",
     "@tka/render-core": "file:../packages/render-core",
     "@tka/sequence-engine": "file:../packages/sequence-engine",
-    "canvas": "^2.11.2",
+    "canvas": "^3.2.1",
     "zod": "^3.25.0"
   },
   "devDependencies": {

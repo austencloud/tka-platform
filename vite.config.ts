@@ -836,6 +836,8 @@ export default defineConfig({
       "svelte",
       "@tka/domain",
       "@tka/render-core",
+      "@vtg/domain",
+      "@flow-arts/core",
       "@tka/sequence-engine",
       "reflect-metadata", // Often has CJS issues
       "gif.js", // May contain CJS code
