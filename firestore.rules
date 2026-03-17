@@ -913,6 +913,13 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Audit trail for arrow adjustment changes
+    // Document ID: auto-generated
+    match /global_arrow_adjustment_history/{entryId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
     // ============================================================================
     // APP METRICS (Public Counters)
     // ============================================================================
