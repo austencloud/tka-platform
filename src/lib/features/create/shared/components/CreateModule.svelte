@@ -595,6 +595,7 @@
       onClearSequence={handleClearSequence}
       onShareHub={handleOpenShareHubPanel}
       onSequenceActionsClick={handleOpenSequenceActions}
+      onSaveToLibrary={() => panelState.openSaveToLibraryPanel()}
       onOptionSelected={handleOptionSelected}
       onOpenFilters={handleOpenFilterPanel}
       onCloseFilters={() => {
