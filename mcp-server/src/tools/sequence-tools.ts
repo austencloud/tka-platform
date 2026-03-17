@@ -567,6 +567,12 @@ export function registerSequenceTools(server: McpServer): void {
 
       // Position targeting
       startPosition: z.string().optional().describe('Force a specific start position, e.g., "alpha1", "beta3", "gamma5"'),
+      endPosition: z.string().optional().describe('Force a specific end position for the last beat, e.g., "beta5"'),
+      blockedStartPositions: z.array(z.string()).optional().describe('Start positions to exclude from random selection, e.g., ["alpha1", "gamma5"]'),
+
+      // Letter constraints
+      mustContainLetters: z.array(z.string()).optional().describe('Letters that MUST appear at least once in the sequence, e.g., ["A", "B"]'),
+      mustNotContainLetters: z.array(z.string()).optional().describe('Letters that must NOT appear in the sequence, e.g., ["D", "J"]'),
 
       // Generation control
       gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode: diamond (default), box, or skewed"),
@@ -591,7 +597,7 @@ export function registerSequenceTools(server: McpServer): void {
       notes: z.string().optional().describe("Notes to show in footer (bottom-center)"),
       birthday: z.string().optional().describe("Birthday/creation date in ISO format (bottom-right), e.g., '2024-01-15'"),
     },
-    async ({ word, length, loopType, sliceSize = "halved", constraintPreset, constraints, handPathMode, motionTypeFilter, startPosition, gridMode = "diamond", level = 1, turnIntensity, maxAttempts = 500, bridgeSelections, layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, displayWord, darkMode = true, showDifficulty = true, showReversals = true, loopComponents, userName, notes, birthday }) => {
+    async ({ word, length, loopType, sliceSize = "halved", constraintPreset, constraints, handPathMode, motionTypeFilter, startPosition, endPosition, blockedStartPositions, mustContainLetters, mustNotContainLetters, gridMode = "diamond", level = 1, turnIntensity, maxAttempts = 500, bridgeSelections, layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, displayWord, darkMode = true, showDifficulty = true, showReversals = true, loopComponents, userName, notes, birthday }) => {
       // Validation: must have word or length
       if (!word && !length) {
         return {
@@ -652,6 +658,10 @@ export function registerSequenceTools(server: McpServer): void {
             handPathMode,
             motionTypeFilter,
             startPosition,
+            endPosition,
+            blockedStartPositions,
+            mustNotContainLetters,
+            mustContainLetters,
             loopType,
             sliceSize,
           }, allPictographs);

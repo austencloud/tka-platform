@@ -262,6 +262,11 @@ export class BeamSearch {
     beamWidth?: number,
     requiredEndPositions?: Set<string>,
     loopPositionMap?: Record<string, string[]>,
+    options?: {
+      blockedStartPositions?: Set<string>;
+      mustNotContainLetters?: Set<string>;
+      mustContainLetters?: Set<string>;
+    },
   ): BeamSearchResult {
     const config: BeamSearchConfig = {
       ...DEFAULT_BEAM_CONFIG,
@@ -274,7 +279,19 @@ export class BeamSearch {
 
     // Step 1: Find all non-Type6 variations to seed the first beat
     const allVariations = this.variationProvider.getAllVariations(this.gridMode);
-    const nonType6 = allVariations.filter((p) => !TYPE_6_LETTERS.includes(p.letter));
+    let nonType6 = allVariations.filter((p) => !TYPE_6_LETTERS.includes(p.letter));
+
+    // Apply letter exclusion filter (mustNotContainLetters)
+    if (options?.mustNotContainLetters && options.mustNotContainLetters.size > 0) {
+      const excluded = options.mustNotContainLetters;
+      nonType6 = nonType6.filter((p) => !excluded.has(p.letter));
+    }
+
+    // Apply blocked start positions filter
+    if (options?.blockedStartPositions && options.blockedStartPositions.size > 0) {
+      const blocked = options.blockedStartPositions;
+      nonType6 = nonType6.filter((p) => !blocked.has(p.startPosition));
+    }
 
     // If a start position is given, filter first beat candidates to that position.
     // When length is 1, also filter by required end position since the main loop
