@@ -6,7 +6,7 @@
   import type { Section } from "$lib/shared/navigation/domain/types";
   import NavButton from "$lib/shared/navigation/components/buttons/NavButton.svelte";
   import ModuleSwitcherButton from "$lib/shared/navigation/components/buttons/ModuleSwitcherButton.svelte";
-  import InboxNavButton from "$lib/shared/navigation/components/buttons/InboxNavButton.svelte";
+  import PropNavButton from "$lib/shared/navigation/components/buttons/PropNavButton.svelte";
   import TabOverflowSelector from "$lib/shared/navigation/components/TabOverflowSelector.svelte";
   import NetworkStatusIndicator from "../../../offline/components/NetworkStatusIndicator.svelte";
   import { shouldHideUIForPanels } from "../../../application/state/animation-visibility-state.svelte";
@@ -15,7 +15,6 @@
     MODULE_DEFINITIONS,
   } from "../../state/navigation-state.svelte";
   import { sequencePanelManager } from "$lib/features/browse/shared/state/sequence-panel-state.svelte";
-  import { quickFeedbackState } from "$lib/features/feedback/state/quick-feedback-state.svelte";
   import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
   import { adminToolbarState } from "$lib/shared/debug/state/admin-toolbar-state.svelte";
 
@@ -51,13 +50,13 @@
   let hapticService: IHapticFeedback | undefined;
 
   // Calculate required width for all tabs
-  // Layout: [ModuleSwitcher] [Tab1] [Tab2] [Tab3] [Tab4] [Inbox]
+  // Layout: [ModuleSwitcher] [Tab1] [Tab2] [Tab3] [Tab4] [Prop]
   // Each element: 48px minimum touch target
   // Gaps: 8px between each element
   //
   // Fixed buttons on sides:
   // - Left: Module switcher (48px)
-  // - Right: Inbox button (48px)
+  // - Right: Prop button (48px)
   // - Gaps: 8px on each side of center area (16px total)
   // Total fixed: 48 + 48 + 16 = 112px
   //
@@ -96,11 +95,6 @@
     if (!section.disabled) {
       onSectionChange(section.id);
     }
-  }
-
-  // Long press on inbox opens quick feedback
-  function handleInboxLongPress() {
-    quickFeedbackState.open();
   }
 
   // Admin toolbar - accessible via long-press on module switcher for admins
@@ -215,9 +209,9 @@
     </div>
   {/if}
 
-  <!-- Right side button - Inbox -->
+  <!-- Right side button - Prop Switcher -->
   <div class="right-buttons">
-    <InboxNavButton onLongPress={handleInboxLongPress} longPressMs={500} />
+    <PropNavButton />
   </div>
 </nav>
 
@@ -405,7 +399,7 @@
   }
 
   /* ============================================================================
-     RIGHT BUTTONS CONTAINER (Inbox)
+     RIGHT BUTTONS CONTAINER (Prop Switcher)
      ============================================================================ */
   .right-buttons {
     display: flex;

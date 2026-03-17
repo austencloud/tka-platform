@@ -3,8 +3,7 @@
   import type { Section } from "$lib/shared/navigation/domain/types";
   import NavButton from "$lib/shared/navigation/components/buttons/NavButton.svelte";
   import ModuleSwitcherButton from "$lib/shared/navigation/components/buttons/ModuleSwitcherButton.svelte";
-  import InboxNavButton from "$lib/shared/navigation/components/buttons/InboxNavButton.svelte";
-  import { quickFeedbackState } from "$lib/features/feedback/state/quick-feedback-state.svelte";
+  import PropNavButton from "$lib/shared/navigation/components/buttons/PropNavButton.svelte";
   import { shouldHideUIForPanels } from "../../../application/state/animation-visibility-state.svelte";
   import {
     navigationState,
@@ -45,10 +44,6 @@
     }
   }
 
-  // Long press on inbox opens quick feedback
-  function handleInboxLongPress() {
-    quickFeedbackState.open();
-  }
 </script>
 
 <nav
@@ -80,8 +75,8 @@
     {/each}
   </div>
 
-  <!-- Inbox Button (Bottom) -->
-  <InboxNavButton onLongPress={handleInboxLongPress} longPressMs={500} />
+  <!-- Prop Switcher (Bottom) -->
+  <PropNavButton />
 </nav>
 
 <style>
