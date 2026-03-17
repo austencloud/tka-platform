@@ -24,7 +24,6 @@ import {
   emptyConstraintSet,
   getPresetConstraintSet,
   buildConstrainedSequence,
-  type PresetName,
 } from "@tka/sequence-engine/generation";
 import {
   LOOPType,
@@ -345,7 +344,7 @@ export function registerPresetTools(server: McpServer): void {
           // Constraint-based building (no LOOP)
           let constraintSet = emptyConstraintSet();
           if (config.constraintPreset) {
-            const preset = getPresetConstraintSet(config.constraintPreset as PresetName);
+            const preset = getPresetConstraintSet(config.constraintPreset);
             if (preset) {
               constraintSet = preset;
             }
