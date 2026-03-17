@@ -266,10 +266,18 @@ export class BeamSearch {
     const allVariations = this.variationProvider.getAllVariations(this.gridMode);
     const nonType6 = allVariations.filter((p) => !TYPE_6_LETTERS.includes(p.letter));
 
-    // If a start position is given, filter first beat candidates to that position
-    const firstBeatCandidates = startPosition
+    // If a start position is given, filter first beat candidates to that position.
+    // When length is 1, also filter by required end position since the main loop
+    // won't run to enforce it.
+    let firstBeatCandidates = startPosition
       ? nonType6.filter((p) => p.startPosition === startPosition)
       : nonType6;
+
+    if (length === 1 && requiredEndPosition) {
+      firstBeatCandidates = firstBeatCandidates.filter(
+        (p) => p.endPosition === requiredEndPosition,
+      );
+    }
 
     if (firstBeatCandidates.length === 0) {
       return this.failResult("No variations available for first beat", 0, 0);
@@ -325,6 +333,24 @@ export class BeamSearch {
             (s) => s.steps[0]?.startPosition === actualStartPosition,
           );
         }
+      }
+    }
+
+    // When seed length is 1, the main loop below doesn't run (i starts at 1,
+    // length is 1). The end-position filter inside the loop never fires, so we
+    // must enforce it here. Without this, single-beat seeds for quartered LOOPs
+    // can end at any position, causing the executor to reject the sequence.
+    if (length === 1 && requiredEndPosition) {
+      beam = beam.filter(
+        (s) => s.currentEndPosition === requiredEndPosition,
+      );
+
+      if (beam.length === 0) {
+        return this.failResult(
+          `No first-beat variation ends at required position "${requiredEndPosition}" for single-beat seed`,
+          statesExplored,
+          beamPrunings,
+        );
       }
     }
 
