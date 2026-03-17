@@ -145,6 +145,23 @@
 		}
 	}
 
+	/* Height-constrained viewports (e.g. Z Fold unfolded portrait) */
+	@media (max-height: 1000px) {
+		.title {
+			font-size: 1.75rem;
+			margin-bottom: var(--spacing-sm, 0.5rem);
+		}
+
+		.description {
+			font-size: 1rem;
+		}
+
+		.description.secondary {
+			min-height: 1.4em;
+			font-size: 0.95rem;
+		}
+	}
+
 	/* Reduced motion */
 	@media (prefers-reduced-motion: reduce) {
 		.anim-item {
