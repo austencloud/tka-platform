@@ -20,8 +20,9 @@ export const DATABASE_NAME = "TKADatabase";
  * Version 3: Added weekly challenges and skill progressions
  * Version 4: Added train module tables (performances, calibration profiles)
  * Version 5: Added compositions table for Compose module
+ * Version 6: Added galleryCache and galleryCacheMeta tables for offline browse gallery
  */
-export const DATABASE_VERSION = 5;
+export const DATABASE_VERSION = 6;
 
 // ============================================================================
 // TABLE NAMES
@@ -51,6 +52,9 @@ export const TABLE_NAMES = {
   TRAIN_CALIBRATION_PROFILES: "trainCalibrationProfiles",
   // Compose module tables (v5)
   COMPOSITIONS: "compositions",
+  // Offline cache tables (v6)
+  GALLERY_CACHE: "galleryCache",
+  GALLERY_CACHE_META: "galleryCacheMeta",
 } as const;
 
 // ============================================================================
@@ -96,6 +100,9 @@ export const TABLE_INDEXES = {
   // Compose module tables (v5)
   [TABLE_NAMES.COMPOSITIONS]:
     "++id, name, createdAt, updatedAt, creator, isFavorite",
+  // Offline cache tables (v6)
+  [TABLE_NAMES.GALLERY_CACHE]: "id, data.word, data.ownerId, cachedAt",
+  [TABLE_NAMES.GALLERY_CACHE_META]: "id",
 } as const;
 
 // ============================================================================
