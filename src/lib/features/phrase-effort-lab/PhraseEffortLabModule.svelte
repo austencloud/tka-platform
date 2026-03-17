@@ -451,19 +451,24 @@
       );
       // Build the full creatorIntent object — Firestore dot-notation only works
       // if the parent map exists, so we write the full object to be safe.
-      const updatedIntent: CreatorIntent = {
-        propConfig: sequence.creatorIntent?.propConfig ?? {
-          bluePropType: (settingsService.settings.bluePropType as PropType) ?? PropType.STAFF,
-          redPropType: (settingsService.settings.redPropType as PropType) ?? PropType.STAFF,
-          catDogMode: settingsService.settings.catDogMode ?? false,
-        },
-        effortTimeline: timeline,
+      // structuredClone strips Svelte $state proxies — Firestore rejects proxy objects
+      const plainTimeline = structuredClone(timeline);
+      const propConfig = sequence.creatorIntent?.propConfig
+        ? structuredClone(sequence.creatorIntent.propConfig)
+        : {
+            bluePropType: (settingsService.settings.bluePropType || PropType.STAFF) as PropType,
+            redPropType: (settingsService.settings.redPropType || PropType.STAFF) as PropType,
+            catDogMode: settingsService.settings.catDogMode ?? false,
+          };
+      const updatedIntent = {
+        propConfig,
+        effortTimeline: plainTimeline,
       };
 
       await setDoc(
         sequenceRef,
         {
-          effortTimeline: timeline,
+          effortTimeline: plainTimeline,
           creatorIntent: updatedIntent,
           updatedAt: serverTimestamp(),
         },
