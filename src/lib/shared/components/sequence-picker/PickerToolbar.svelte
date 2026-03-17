@@ -1,21 +1,22 @@
 <!--
-  PickerToolbar.svelte - Search, Sort, and Zoom Controls
+  PickerToolbar.svelte - Sort, Search, and Zoom Controls
 
-  A compact toolbar for the sequence picker modal with:
-  - Search input (always visible)
+  Compact toolbar with:
   - Sort dropdown (A-Z, Recent, Level, Length)
+  - ExpandableSearchBar with Greek letter picker
   - Zoom controls (column count +/-)
+  - Result count indicator
 -->
 <script lang="ts">
   import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
+  import ExpandableSearchBar from "$lib/features/browse/shared/components/ExpandableSearchBar.svelte";
 
-  // ===== Props =====
   interface Props {
-    searchQuery: string;
     currentSort: BrowseSortMethod;
     columnCount: number;
     canZoomIn: boolean;
     canZoomOut: boolean;
+    resultCount: number;
     onSearchChange: (query: string) => void;
     onSortChange: (method: BrowseSortMethod) => void;
     onZoomIn: () => void;
@@ -23,18 +24,17 @@
   }
 
   let {
-    searchQuery,
     currentSort,
     columnCount,
     canZoomIn,
     canZoomOut,
+    resultCount,
     onSearchChange,
     onSortChange,
     onZoomIn,
     onZoomOut,
   }: Props = $props();
 
-  // Sort options
   const sortOptions = [
     { id: BrowseSortMethod.ALPHABETICAL, label: "A-Z", icon: "fa-font" },
     { id: BrowseSortMethod.DATE_ADDED, label: "Recent", icon: "fa-clock" },
@@ -53,16 +53,6 @@
     showSortDropdown = false;
   }
 
-  function handleSearchInput(e: Event) {
-    const target = e.target as HTMLInputElement;
-    onSearchChange(target.value);
-  }
-
-  function handleClearSearch() {
-    onSearchChange("");
-  }
-
-  // Close dropdown on click outside
   function handleClickOutside(e: MouseEvent) {
     const target = e.target as HTMLElement;
     if (!target.closest(".sort-dropdown-wrapper")) {
@@ -117,26 +107,16 @@
     {/if}
   </div>
 
-  <!-- Search Input -->
-  <div class="search-wrapper">
-    <i class="fas fa-search search-icon" aria-hidden="true"></i>
-    <input
-      type="text"
-      class="search-input"
-      placeholder="Search sequences..."
-      value={searchQuery}
-      oninput={handleSearchInput}
-    />
-    {#if searchQuery}
-      <button
-        class="clear-search"
-        onclick={handleClearSearch}
-        aria-label="Clear search"
-      >
-        <i class="fas fa-times" aria-hidden="true"></i>
-      </button>
-    {/if}
-  </div>
+  <!-- Search with Greek letter picker -->
+  <ExpandableSearchBar
+    onSearch={onSearchChange}
+    placeholder="Search sequences..."
+  />
+
+  <!-- Result Count -->
+  <span class="result-count">
+    {resultCount} sequence{resultCount === 1 ? "" : "s"}
+  </span>
 
   <!-- Zoom Controls -->
   <div class="zoom-controls">
@@ -189,7 +169,7 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     cursor: pointer;
     font-size: var(--font-size-compact, 12px);
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast, 150ms) ease;
   }
 
   .sort-trigger:hover {
@@ -205,7 +185,7 @@
   .dropdown-arrow {
     font-size: var(--font-size-compact, 12px);
     margin-left: 2px;
-    transition: transform 0.15s ease;
+    transition: transform var(--duration-fast, 150ms) ease;
   }
 
   .dropdown-arrow.open {
@@ -261,67 +241,15 @@
     color: var(--theme-accent, #8b5cf6);
   }
 
-  /* ===== Search ===== */
-  .search-wrapper {
-    position: relative;
+  /* ===== Result Count ===== */
+  .result-count {
     flex: 1;
-    min-width: 0;
-  }
-
-  .search-icon {
-    position: absolute;
-    left: var(--spacing-sm, 8px);
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    text-align: right;
     font-size: var(--font-size-compact, 12px);
-    pointer-events: none;
-  }
-
-  .search-input {
-    width: 100%;
-    padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
-    padding-left: calc(var(--spacing-sm, 8px) + 16px);
-    padding-right: 28px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--border-radius-sm, 4px);
-    color: var(--theme-text, white);
-    font-size: var(--font-size-compact, 12px);
-  }
-
-  .search-input::placeholder {
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-  }
-
-  .search-input:focus {
-    outline: none;
-    border-color: var(--theme-accent, #8b5cf6);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-  }
-
-  .clear-search {
-    position: absolute;
-    right: 4px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: none;
-    border-radius: 50%;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    cursor: pointer;
-    font-size: var(--font-size-compact, 12px);
-    transition: all 0.1s ease;
-  }
-
-  .clear-search:hover {
-    background: color-mix(in srgb, var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 70%, white);
-    color: var(--theme-text, white);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    min-width: 0;
   }
 
   /* ===== Zoom Controls ===== */
@@ -378,11 +306,24 @@
     }
 
     .sort-trigger span {
-      display: none; /* Hide label, show only icon */
+      display: none;
     }
 
     .zoom-indicator {
-      display: none; /* Hide count on mobile */
+      display: none;
+    }
+
+    .result-count {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sort-trigger,
+    .dropdown-arrow,
+    .sort-option,
+    .zoom-btn {
+      transition: none;
     }
   }
 </style>
