@@ -253,6 +253,7 @@
   let containerElement: HTMLDivElement | undefined = $state();
   let containedWidth = $state<number | null>(null);
   let containedHeight = $state<number | null>(null);
+  let heightGrowing = $state(false);
 
   // Scroll mode for long sequences (>16 beats)
   const SCROLL_THRESHOLD = 16;
@@ -1225,6 +1226,15 @@
     const widthChanged = newWidth !== containedWidth && (newWidth === null || containedWidth === null || Math.abs(newWidth - containedWidth) > 0.5);
     const heightChanged = newHeight !== containedHeight && (newHeight === null || containedHeight === null || Math.abs(newHeight - containedHeight) > 0.5);
 
+    // Track growth direction for CSS transition: smooth when growing, instant when shrinking.
+    // Growing = focus-in (card expands into larger container). The 250ms height transition
+    // creates a pleasing smooth growth. Shrinking = unfocus (card must shrink to fit smaller
+    // container). The transition would cause the card to lag behind, making it too tall for
+    // the container and displacing it upward via centering.
+    if (heightChanged && newHeight !== null && containedHeight !== null) {
+      heightGrowing = newHeight > containedHeight;
+    }
+
     if (widthChanged) containedWidth = newWidth;
     if (heightChanged) containedHeight = newHeight;
   }
@@ -1488,6 +1498,7 @@
       class="preview-stack"
       class:scroll-mode={needsScroll}
       class:smooth-resize={hasMounted}
+      class:height-growing={heightGrowing}
       style={needsScroll ? '' : `width: ${containedWidth ? `${containedWidth}px` : 'auto'}; height: ${containedHeight ? `${containedHeight}px` : 'auto'};`}
       bind:this={previewStackElement}
     >
@@ -1811,6 +1822,14 @@
      as the contain dimensions settle. */
   .preview-stack.smooth-resize {
     transition: width 250ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  /* Height transition only when growing (focus-in: card expands into larger container).
+     When shrinking (unfocus), height snaps instantly so the card doesn't lag behind
+     the container and get pushed upward by centering. */
+  .preview-stack.smooth-resize.height-growing {
+    transition: width 250ms cubic-bezier(0.2, 0, 0, 1),
+                height 250ms cubic-bezier(0.2, 0, 0, 1);
   }
 
   /* In scroll mode, fill the parent edge-to-edge instead of using
