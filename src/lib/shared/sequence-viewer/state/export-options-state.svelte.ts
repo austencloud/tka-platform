@@ -30,6 +30,8 @@ export interface VideoExportOptions {
   loopCount: number;
   resolution: VideoResolution;
   effectOverrides: EffectOverride | null; // null = use viewer state
+  includeStartPosition: boolean;
+  includeEndHold: boolean;
 }
 
 export interface SplitExportOptions extends VideoExportOptions {
@@ -64,6 +66,8 @@ const DEFAULT_VIDEO_OPTIONS: VideoExportOptions = {
   loopCount: 1,
   resolution: 1080,
   effectOverrides: null,
+  includeStartPosition: true,
+  includeEndHold: true, // Overridden to false for loopable sequences at runtime
 };
 
 const DEFAULT_SPLIT_OPTIONS: SplitExportOptions = {
@@ -71,10 +75,11 @@ const DEFAULT_SPLIT_OPTIONS: SplitExportOptions = {
   loopCount: 1,
   resolution: 1080,
   effectOverrides: null,
+  includeStartPosition: true,
+  includeEndHold: true,
   compositeOrientation: "horizontal",
   gridStepSize: 120,
   showStepNumbers: true,
-  includeStartPosition: true,
 };
 
 const DEFAULT_IMAGE_OPTIONS: ImageExportOptions = {
@@ -139,6 +144,8 @@ export function createExportOptionsState() {
   let videoLoopCount = $state(stored.video.loopCount);
   let videoResolution = $state<VideoResolution>(stored.video.resolution ?? 1080);
   let videoEffectOverrides = $state<EffectOverride | null>(stored.video.effectOverrides ?? null);
+  let videoIncludeStartPosition = $state(stored.video.includeStartPosition ?? true);
+  let videoIncludeEndHold = $state(stored.video.includeEndHold ?? true);
 
   // Split export options (animation + grid composite)
   let splitFps = $state<VideoFps>(stored.split.fps);
@@ -149,6 +156,7 @@ export function createExportOptionsState() {
   let splitGridStepSize = $state<GridStepSize>(stored.split.gridStepSize);
   let splitShowStepNumbers = $state(stored.split.showStepNumbers);
   let splitIncludeStartPosition = $state(stored.split.includeStartPosition);
+  let splitIncludeEndHold = $state(stored.split.includeEndHold ?? true);
 
   // Image export options
   let imageIncludeStartPosition = $state(stored.image.includeStartPosition);
@@ -168,6 +176,8 @@ export function createExportOptionsState() {
         loopCount: videoLoopCount,
         resolution: videoResolution,
         effectOverrides: videoEffectOverrides,
+        includeStartPosition: videoIncludeStartPosition,
+        includeEndHold: videoIncludeEndHold,
       },
       split: {
         fps: splitFps,
@@ -178,6 +188,7 @@ export function createExportOptionsState() {
         gridStepSize: splitGridStepSize,
         showStepNumbers: splitShowStepNumbers,
         includeStartPosition: splitIncludeStartPosition,
+        includeEndHold: splitIncludeEndHold,
       },
       image: {
         includeStartPosition: imageIncludeStartPosition,
@@ -198,6 +209,8 @@ export function createExportOptionsState() {
     get videoLoopCount() { return videoLoopCount; },
     get videoResolution() { return videoResolution; },
     get videoEffectOverrides() { return videoEffectOverrides; },
+    get videoIncludeStartPosition() { return videoIncludeStartPosition; },
+    get videoIncludeEndHold() { return videoIncludeEndHold; },
 
     // Split options (getters)
     get splitFps() { return splitFps; },
@@ -232,6 +245,14 @@ export function createExportOptionsState() {
     },
     setVideoEffectOverrides(overrides: EffectOverride | null) {
       videoEffectOverrides = overrides;
+      persist();
+    },
+    setVideoIncludeStartPosition(include: boolean) {
+      videoIncludeStartPosition = include;
+      persist();
+    },
+    setVideoIncludeEndHold(include: boolean) {
+      videoIncludeEndHold = include;
       persist();
     },
 
@@ -302,6 +323,8 @@ export function createExportOptionsState() {
         loopCount: videoLoopCount,
         resolution: videoResolution,
         effectOverrides: videoEffectOverrides,
+        includeStartPosition: videoIncludeStartPosition,
+        includeEndHold: videoIncludeEndHold,
       };
     },
 
@@ -311,10 +334,11 @@ export function createExportOptionsState() {
         loopCount: splitLoopCount,
         resolution: splitResolution,
         effectOverrides: splitEffectOverrides,
+        includeStartPosition: splitIncludeStartPosition,
+        includeEndHold: splitIncludeEndHold,
         compositeOrientation: splitOrientation,
         gridStepSize: splitGridStepSize,
         showStepNumbers: splitShowStepNumbers,
-        includeStartPosition: splitIncludeStartPosition,
       };
     },
 
@@ -337,6 +361,8 @@ export function createExportOptionsState() {
       videoLoopCount = DEFAULT_VIDEO_OPTIONS.loopCount;
       videoResolution = DEFAULT_VIDEO_OPTIONS.resolution;
       videoEffectOverrides = DEFAULT_VIDEO_OPTIONS.effectOverrides;
+      videoIncludeStartPosition = DEFAULT_VIDEO_OPTIONS.includeStartPosition;
+      videoIncludeEndHold = DEFAULT_VIDEO_OPTIONS.includeEndHold;
       splitFps = DEFAULT_SPLIT_OPTIONS.fps;
       splitLoopCount = DEFAULT_SPLIT_OPTIONS.loopCount;
       splitResolution = DEFAULT_SPLIT_OPTIONS.resolution;
@@ -345,6 +371,7 @@ export function createExportOptionsState() {
       splitGridStepSize = DEFAULT_SPLIT_OPTIONS.gridStepSize;
       splitShowStepNumbers = DEFAULT_SPLIT_OPTIONS.showStepNumbers;
       splitIncludeStartPosition = DEFAULT_SPLIT_OPTIONS.includeStartPosition;
+      splitIncludeEndHold = DEFAULT_SPLIT_OPTIONS.includeEndHold;
       imageIncludeStartPosition = DEFAULT_IMAGE_OPTIONS.includeStartPosition;
       imageShowStepNumbers = DEFAULT_IMAGE_OPTIONS.showStepNumbers;
       imageShowWord = DEFAULT_IMAGE_OPTIONS.showWord;

@@ -15,6 +15,8 @@ export interface VideoExportOptions {
   loopCount: number;
   resolution: 720 | 1080 | 2160 | 4320;
   effectOverrides?: VideoExportEffectOverrides;
+  includeStartPosition?: boolean;
+  includeEndHold?: boolean;
 }
 
 export interface ImageExportOptions {
