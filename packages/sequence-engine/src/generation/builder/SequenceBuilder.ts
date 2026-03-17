@@ -35,6 +35,8 @@ import { getPresetOptions } from "../constraints/presets/preset-constraints.js";
 import { buildConstraintSet } from "../constraints/composition/build-constraint-set.js";
 import { parseConstraintSet } from "../constraints/parsing/constraint-parser.js";
 import type { ConstraintOptions } from "../constraints/composition/constraint-options.js";
+import { LOOPType, SliceSize } from "../../loop/loop-types.js";
+import { loopExecutorSelector } from "../../loop/execution/LOOPExecutorSelector.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Public types
@@ -85,11 +87,11 @@ export interface BuildOptions {
  * LOOP extension configuration.
  */
 export interface LoopOptions {
-  /** LOOP transformation type (e.g. "strict_rotated", "rewound") */
-  type: string;
+  /** LOOP transformation type */
+  type: LOOPType;
 
-  /** How the sequence is sliced for rotation ("halved" | "quartered") */
-  sliceSize: string;
+  /** How the sequence is sliced for rotation */
+  sliceSize: SliceSize;
 
   /** Whether to use targeted end-position generation */
   useTargetedGeneration?: boolean;
@@ -359,27 +361,66 @@ export class SequenceBuilder {
   /**
    * Stage 6: Extend the seed sequence with a LOOP transformation.
    *
-   * LOOP extension is delegated to the loop layer's executors and extenders.
-   * This is a placeholder that marks the integration point — full wiring
-   * requires the LOOPExecutorSelector and SequenceExtender to accept
-   * SequenceStep[] instead of app-specific types (future task).
+   * The LOOP executors operate on SequenceStep[] directly (via ILOOPExecutor).
+   * We select the executor for the requested LOOPType, pass the seed sequence
+   * through, then build metadata about what was derived.
+   *
+   * The executors mutate the input array (shift/unshift the start position),
+   * so we pass a copy to keep the original result intact if needed.
    */
-  private extendWithLOOP(result: BuildResult, _loopOptions: LoopOptions): BuildResult {
-    // LOOP extension wiring is deferred to the consumer layer.
-    // The loop executors (LOOPExecutorSelector, SequenceExtender, etc.)
-    // currently operate on PictographData[] and need adapter glue that
-    // maps between SequenceStep[] and PictographData[].
-    //
-    // For now, return the seed sequence unchanged with a stub loop metadata
-    // block so callers know LOOP was requested but not applied at this layer.
+  private extendWithLOOP(result: BuildResult, loopOptions: LoopOptions): BuildResult {
+    const executor = loopExecutorSelector.getExecutor(loopOptions.type);
+
+    // Build the seed word from non-start-position, non-bridge letters
+    const seedWord = result.sequence
+      .slice(1)
+      .filter((s) => !s.isBridge)
+      .map((s) => s.letter)
+      .join("");
+
+    // Copy the sequence so the executor's mutations don't affect the original
+    const inputSteps = result.sequence.map((s) => ({ ...s }));
+
+    // Execute the LOOP transformation. The executor returns the complete
+    // circular sequence (start position + seed beats + derived beats).
+    const extendedSteps = executor.executeLOOP(inputSteps, loopOptions.sliceSize);
+
+    // Figure out which beats are derived (everything after the original seed).
+    // The original sequence had result.sequence.length steps (including start position).
+    // The seed beats occupy indices 1 through (result.sequence.length - 1).
+    // Derived beats start at index result.sequence.length.
+    const seedStepCount = result.sequence.length;
+    const derivedBeatIndices: number[] = [];
+    const derivedLetters: string[] = [];
+
+    for (let i = seedStepCount; i < extendedSteps.length; i++) {
+      derivedBeatIndices.push(i);
+      derivedLetters.push(extendedSteps[i]!.letter);
+    }
+
+    const derivedWord = derivedLetters.join("");
+
+    // The orientation cycle multiplier tells the renderer how many
+    // times the orientation pattern repeats. For halved it's 2, quartered is 4.
+    const orientationCycleMultiplier =
+      loopOptions.sliceSize === SliceSize.QUARTERED ? 4 : 2;
+
+    // Build the component labels (seed + derived segments)
+    const components = [seedWord];
+    if (derivedWord) {
+      components.push(derivedWord);
+    }
+
     return {
       ...result,
+      sequence: extendedSteps,
+      startPosition: extendedSteps[0]!,
       loop: {
-        derivedWord: "",
-        seedWord: result.sequence.map((s) => s.letter).join(""),
-        components: [],
-        derivedBeatIndices: [],
-        orientationCycleMultiplier: 1,
+        seedWord,
+        derivedWord,
+        components,
+        derivedBeatIndices,
+        orientationCycleMultiplier,
       },
     };
   }

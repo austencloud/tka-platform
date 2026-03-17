@@ -1,0 +1,301 @@
+/**
+ * Integration tests for LOOP extension in SequenceBuilder.
+ *
+ * Verifies that building with loop options produces extended sequences
+ * via the LOOP executor pipeline. Uses the same mock provider pattern
+ * as the other integration tests.
+ */
+
+import { describe, it, expect, beforeEach } from "vitest";
+import { SequenceBuilder } from "../../src/generation/builder/SequenceBuilder.js";
+import type { IVariationProvider } from "../../src/generation/data/IVariationProvider.js";
+import type { PictographData, MotionData } from "../../src/generation/constraints/types.js";
+import { setLetterTransitionGraph } from "../../src/core/transition-graph/LetterTransitionGraph.js";
+import type { ITransitionGraph } from "../../src/core/transition-graph/ITransitionGraph.js";
+import type { PositionGroup, LetterPositionInfo } from "../../src/core/types/sequence-engine-types.js";
+import { LOOPType, SliceSize } from "../../src/loop/loop-types.js";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Mock data factory (same pattern as full-build tests)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function makeMotion(overrides: Partial<MotionData> = {}): MotionData {
+  return {
+    color: "blue",
+    startLocation: "n",
+    endLocation: "s",
+    motionType: "pro",
+    rotationDirection: "cw",
+    startOrientation: "in",
+    endOrientation: "in",
+    ...overrides,
+  };
+}
+
+function makePictograph(overrides: Partial<PictographData> & { letter: string }): PictographData {
+  return {
+    startPosition: "alpha1",
+    endPosition: "alpha1",
+    timing: "together",
+    direction: "together",
+    blueMotion: makeMotion({ color: "blue" }),
+    redMotion: makeMotion({ color: "red" }),
+    ...overrides,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Mock pictograph dataset
+//
+// Same minimal graph as full-build:
+//   α at alpha1 (Type 6, start position)
+//   A: alpha1 → beta3
+//   B: beta3 → alpha1
+//   C: alpha1 → alpha1
+//   D: beta3 → beta3
+// ─────────────────────────────────────────────────────────────────────────────
+
+const MOCK_PICTOGRAPHS: PictographData[] = [
+  makePictograph({
+    letter: "α",
+    startPosition: "alpha1",
+    endPosition: "alpha1",
+    blueMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
+    redMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
+  }),
+  makePictograph({
+    letter: "α",
+    startPosition: "beta3",
+    endPosition: "beta3",
+    blueMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
+    redMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
+  }),
+  makePictograph({
+    letter: "A",
+    startPosition: "alpha1",
+    endPosition: "beta3",
+    blueMotion: makeMotion({ startLocation: "n", endLocation: "e" }),
+    redMotion: makeMotion({ startLocation: "s", endLocation: "w" }),
+  }),
+  makePictograph({
+    letter: "B",
+    startPosition: "beta3",
+    endPosition: "alpha1",
+    blueMotion: makeMotion({ startLocation: "e", endLocation: "n" }),
+    redMotion: makeMotion({ startLocation: "w", endLocation: "s" }),
+  }),
+  makePictograph({
+    letter: "C",
+    startPosition: "alpha1",
+    endPosition: "alpha1",
+    blueMotion: makeMotion({ startLocation: "n", endLocation: "n" }),
+    redMotion: makeMotion({ startLocation: "s", endLocation: "s" }),
+  }),
+  makePictograph({
+    letter: "D",
+    startPosition: "beta3",
+    endPosition: "beta3",
+    blueMotion: makeMotion({ startLocation: "e", endLocation: "e" }),
+    redMotion: makeMotion({ startLocation: "w", endLocation: "w" }),
+  }),
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Mock providers
+// ─────────────────────────────────────────────────────────────────────────────
+
+class MockVariationProvider implements IVariationProvider {
+  private readonly data: PictographData[];
+
+  constructor(data: PictographData[]) {
+    this.data = data;
+  }
+
+  getVariations(letter: string, position: string, _gridMode: string): PictographData[] {
+    return this.data.filter(
+      (p) => p.letter === letter && p.startPosition === position,
+    );
+  }
+
+  getAllVariations(_gridMode: string): PictographData[] {
+    return this.data;
+  }
+}
+
+const LETTER_POSITIONS: Record<string, { start: PositionGroup; end: PositionGroup }> = {
+  A: { start: "alpha", end: "beta" },
+  B: { start: "beta", end: "alpha" },
+  C: { start: "alpha", end: "alpha" },
+  D: { start: "beta", end: "beta" },
+  α: { start: "alpha", end: "alpha" },
+};
+
+class MockTransitionGraph implements ITransitionGraph {
+  async initialize(): Promise<void> {}
+
+  canFollow(letterA: string, letterB: string): boolean {
+    const a = LETTER_POSITIONS[letterA];
+    const b = LETTER_POSITIONS[letterB];
+    if (!a || !b) return false;
+    return a.end === b.start;
+  }
+
+  getValidSuccessors(letter: string): string[] {
+    const info = LETTER_POSITIONS[letter];
+    if (!info) return [];
+    return Object.entries(LETTER_POSITIONS)
+      .filter(([_, pos]) => pos.start === info.end)
+      .map(([l]) => l);
+  }
+
+  getLettersStartingAt(positionGroup: PositionGroup): string[] {
+    return Object.entries(LETTER_POSITIONS)
+      .filter(([_, pos]) => pos.start === positionGroup)
+      .map(([l]) => l);
+  }
+
+  getLettersEndingAt(positionGroup: PositionGroup): string[] {
+    return Object.entries(LETTER_POSITIONS)
+      .filter(([_, pos]) => pos.end === positionGroup)
+      .map(([l]) => l);
+  }
+
+  getLetterPositionInfo(letter: string): LetterPositionInfo | null {
+    const pos = LETTER_POSITIONS[letter];
+    if (!pos) return null;
+    return { letter, startPositionGroup: pos.start, endPositionGroup: pos.end };
+  }
+
+  getStartPositionGroup(letter: string): PositionGroup | null {
+    return LETTER_POSITIONS[letter]?.start ?? null;
+  }
+
+  getEndPositionGroup(letter: string): PositionGroup | null {
+    return LETTER_POSITIONS[letter]?.end ?? null;
+  }
+
+  findBridgeLetters(letterA: string, letterB: string): string[] {
+    if (this.canFollow(letterA, letterB)) return [];
+    const aEnd = LETTER_POSITIONS[letterA]?.end;
+    const bStart = LETTER_POSITIONS[letterB]?.start;
+    if (!aEnd || !bStart) return [];
+    for (const [l, pos] of Object.entries(LETTER_POSITIONS)) {
+      if (pos.start === aEnd && pos.end === bStart) return [l];
+    }
+    return [];
+  }
+
+  findAllBridgeOptions(letterA: string, letterB: string): string[] {
+    if (this.canFollow(letterA, letterB)) return [];
+    const aEnd = LETTER_POSITIONS[letterA]?.end;
+    const bStart = LETTER_POSITIONS[letterB]?.start;
+    if (!aEnd || !bStart) return [];
+    return Object.entries(LETTER_POSITIONS)
+      .filter(([_, pos]) => pos.start === aEnd && pos.end === bStart)
+      .map(([l]) => l);
+  }
+
+  getAllLetters(_excludeLetters?: Set<string>): string[] {
+    return Object.keys(LETTER_POSITIONS);
+  }
+
+  isInitialized(): boolean {
+    return true;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tests
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("SequenceBuilder LOOP extension", () => {
+  let builder: SequenceBuilder;
+
+  beforeEach(() => {
+    setLetterTransitionGraph(new MockTransitionGraph());
+    const provider = new MockVariationProvider(MOCK_PICTOGRAPHS);
+    builder = new SequenceBuilder(provider);
+  });
+
+  it("Rewound LOOP doubles the sequence length", () => {
+    // Build "AB" (3 steps: start + A + B), then rewound doubles the beats
+    const result = builder.build({
+      word: "AB",
+      gridMode: "diamond",
+      level: 1,
+      loop: {
+        type: LOOPType.REWOUND,
+        sliceSize: SliceSize.HALVED,
+      },
+    });
+
+    // Original: start + 2 beats = 3 steps
+    // Rewound appends 2 reversed beats = 5 total steps
+    expect(result.sequence.length).toBe(5);
+  });
+
+  it("LOOP metadata is populated in the result", () => {
+    const result = builder.build({
+      word: "AB",
+      gridMode: "diamond",
+      level: 1,
+      loop: {
+        type: LOOPType.REWOUND,
+        sliceSize: SliceSize.HALVED,
+      },
+    });
+
+    expect(result.loop).toBeDefined();
+    expect(result.loop!.seedWord).toBe("AB");
+    expect(result.loop!.derivedWord.length).toBeGreaterThan(0);
+    expect(result.loop!.derivedBeatIndices.length).toBe(2);
+    expect(result.loop!.components.length).toBe(2);
+    expect(result.loop!.orientationCycleMultiplier).toBe(2);
+  });
+
+  it("derived beat indices point to valid steps", () => {
+    const result = builder.build({
+      word: "AB",
+      gridMode: "diamond",
+      level: 1,
+      loop: {
+        type: LOOPType.REWOUND,
+        sliceSize: SliceSize.HALVED,
+      },
+    });
+
+    for (const idx of result.loop!.derivedBeatIndices) {
+      expect(idx).toBeLessThan(result.sequence.length);
+      expect(result.sequence[idx]).toBeDefined();
+    }
+  });
+
+  it("extended sequence maintains position continuity", () => {
+    const result = builder.build({
+      word: "AB",
+      gridMode: "diamond",
+      level: 1,
+      loop: {
+        type: LOOPType.REWOUND,
+        sliceSize: SliceSize.HALVED,
+      },
+    });
+
+    // Every step's startPosition should match the previous step's endPosition
+    for (let i = 1; i < result.sequence.length; i++) {
+      const prev = result.sequence[i - 1]!;
+      const curr = result.sequence[i]!;
+      expect(curr.startPosition).toBe(prev.endPosition);
+    }
+  });
+
+  it("result without loop options has no loop metadata", () => {
+    const result = builder.build({
+      word: "AB",
+      gridMode: "diamond",
+      level: 1,
+    });
+
+    expect(result.loop).toBeUndefined();
+  });
+});
