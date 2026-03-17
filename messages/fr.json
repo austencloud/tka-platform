@@ -1220,6 +1220,7 @@
   "settings_account_settings": "Paramètres du compte",
   "settings_animated": "Animé",
   "settings_ask_before_clearing": "Demander avant de nettoyer la séquence",
+  "settings_ask_before_loop": "Ask before applying LOOP",
   "settings_available_languages": "Langues disponibles",
   "settings_background_subtitle": "Choisissez votre environnement visuel",
   "settings_background_theme": "Thème de fond",

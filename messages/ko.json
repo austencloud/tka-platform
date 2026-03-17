@@ -1200,6 +1200,7 @@
   "settings_account_settings": "계정 설정",
   "settings_animated": "애니메이션",
   "settings_ask_before_clearing": "순서를 지우기 전에 먼저 문의하세요.",
+  "settings_ask_before_loop": "Ask before applying LOOP",
   "settings_available_languages": "지원 언어",
   "settings_background_subtitle": "원하는 시각적 환경을 선택하세요",
   "settings_background_theme": "배경 테마",

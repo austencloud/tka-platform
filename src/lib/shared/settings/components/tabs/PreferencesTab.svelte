@@ -45,6 +45,18 @@
     });
   }
 
+  const showLoopConfirmation = $derived(
+    !currentSettings?.skipLoopConfirmation
+  );
+
+  function handleToggleLoopConfirmation() {
+    hapticService?.trigger("selection");
+    onSettingUpdate?.({
+      key: "skipLoopConfirmation",
+      value: showLoopConfirmation,
+    });
+  }
+
   function handleReplayTutorial() {
     hapticService?.trigger("selection");
     appEntryState.replay();
@@ -87,7 +99,20 @@
         </div>
       </button>
 
-      <!-- Future preferences can be added here with the same pattern -->
+      <!-- LOOP Auto-Complete Confirmation -->
+      <button
+        type="button"
+        class="toggle-row"
+        onclick={handleToggleLoopConfirmation}
+        aria-pressed={showLoopConfirmation}
+      >
+        <div class="toggle-info">
+          <span class="toggle-label">{t("settings_ask_before_loop")}</span>
+        </div>
+        <div class="toggle-switch" class:active={showLoopConfirmation}>
+          <div class="toggle-knob"></div>
+        </div>
+      </button>
     </div>
   </section>
 
