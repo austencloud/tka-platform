@@ -224,13 +224,23 @@ export class SequenceExtender implements ISequenceExtender {
     // Build the updated word from all step letters
     const word = newSteps.map((step) => step.letter ?? "").join("");
 
-    const extendedSequence: SequenceData = {
+    let extendedSequence: SequenceData = {
       ...sequence,
       steps: newSteps,
       word,
       isCircular: true,
       loopType: options.loopType,
     };
+
+    // Recalculate all orientations through the combined sequence.
+    // The LOOP executor updates orientations on engine-format fields (blueMotion/redMotion),
+    // but the app reads from motions.blue/motions.red. Without this recalculation,
+    // the motions field carries stale orientations from the source step's spread,
+    // causing the choreo card to render wrong prop angles.
+    extendedSequence = recalculateAllOrientations(
+      extendedSequence,
+      this.orientationCalculator
+    );
 
     // Process reversals for the extended sequence
     // This detects rotation direction changes between consecutive steps
