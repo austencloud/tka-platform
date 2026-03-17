@@ -239,6 +239,33 @@ export function ensureDataLoaded(gridMode: GridMode = defaultGridMode): Pictogra
   return pictographsByGridMode[gridMode];
 }
 
+/**
+ * Async version of ensureDataLoaded that also awaits engine TransitionGraph init.
+ * Use this in async tool handlers to guarantee the engine graph is ready.
+ */
+export async function ensureDataLoadedAsync(gridMode: GridMode = defaultGridMode): Promise<PictographData[]> {
+  const data = ensureDataLoaded(gridMode);
+  await initEngineTransitionGraph();
+  return data;
+}
+
+let engineTransitionGraphReady = false;
+async function initEngineTransitionGraph(): Promise<void> {
+  if (engineTransitionGraphReady) return;
+  try {
+    const { ensureTransitionGraphInitialized } = await import("../core/letter-transition-graph.js");
+    const { setLetterTransitionGraph } = await import("@tka/sequence-engine");
+    const localGraph = await ensureTransitionGraphInitialized();
+    if (localGraph?.engineGraph) {
+      setLetterTransitionGraph(localGraph.engineGraph);
+      engineTransitionGraphReady = true;
+      console.error("[MCP] Engine TransitionGraph singleton initialized");
+    }
+  } catch (err) {
+    console.error("[MCP] Failed to init engine TransitionGraph:", err);
+  }
+}
+
 export function getAllPictographs(): PictographData[] {
   return ensureDataLoaded(defaultGridMode);
 }
