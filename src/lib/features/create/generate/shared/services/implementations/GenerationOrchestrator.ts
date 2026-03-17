@@ -1,395 +1,191 @@
-﻿import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import { createStartPositionFromStepEnd } from "../../../../shared/services/implementations/sequence-transforms/sequence-transforms";
-import type { ILOOPEndPositionSelector } from "../../../circular/services/contracts/ILOOPEndPositionSelector";
-import type { ILOOPExecutorSelector } from "../../../circular/services/contracts/ILOOPExecutorSelector";
-import type { IPartialSequenceGenerator } from "../../../circular/services/contracts/IPartialSequenceGenerator";
-import type { ILOOPParameterProvider } from "../contracts/ILOOPParameterProvider";
+/**
+ * Generation Orchestrator
+ *
+ * Delegates sequence generation to the shared SequenceBuilder from
+ * @tka/sequence-engine. Both freeform and circular generation go through
+ * the same beam-search pipeline with constraint composition.
+ *
+ * The orchestrator's job is thin:
+ * 1. Map app-level GenerationOptions to the engine's BuildOptions
+ * 2. Initialize the BrowserVariationProvider (CSV loading)
+ * 3. Call SequenceBuilder.build()
+ * 4. Convert the engine's BuildResult to the app's SequenceData via BuildResultTransformer
+ */
+
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { GenerationOptions } from "../../domain/models/generate-models";
 import {
   GenerationMode,
   PropContinuity,
 } from "../../domain/models/generate-models";
-import { getRandomAllowedPosition } from "../../domain/start-position-presets";
-import type { IStepGenerationOrchestrator } from "../contracts/IStepGenerationOrchestrator";
-import type { StepGenerationOptions } from "../contracts/IStepGenerationOrchestrator";
 import type { IGenerationOrchestrator } from "../contracts/IGenerationOrchestrator";
+import type { IBrowserVariationProvider } from "../contracts/IBrowserVariationProvider";
+import type { IBuildResultTransformer } from "../contracts/IBuildResultTransformer";
 import type { ISequenceMetadataManager } from "../contracts/ISequenceMetadataManager";
-import type { IStartPositionSelector } from "../contracts/IStartPositionSelector";
-import type { ITurnAllocator } from "../contracts/ITurnAllocator";
-import type { IReversalDetector } from "../../../../shared/services/contracts/IReversalDetector";
-import type { IOrientationCycleDetector } from "../../../circular/services/contracts/IOrientationCycleDetector";
-import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-/**
- * Service orchestrating the complete sequence generation pipeline
- *
- * Extracted from generate-actions.svelte.ts to separate orchestration logic
- * from state management. This service composes multiple focused services to
- * build complete sequences for both freeform and circular modes.
- */
+import { SequenceBuilder } from "@tka/sequence-engine/generation";
+import type { ConstraintOptions } from "@tka/sequence-engine/generation";
+import { LOOPType, SliceSize } from "@tka/sequence-engine/loop";
+
 export class GenerationOrchestrator implements IGenerationOrchestrator {
   constructor(
-    private readonly startPositionSelector: IStartPositionSelector,
-    private readonly loopParams: ILOOPParameterProvider,
-    private readonly turnAllocationCalculator: ITurnAllocator,
-    private readonly stepGenerationOrchestrator: IStepGenerationOrchestrator,
-    private readonly metadataService: ISequenceMetadataManager,
-    private readonly ReversalDetector: IReversalDetector,
-    private readonly partialSequenceGenerator: IPartialSequenceGenerator,
-    private readonly loopEndPositionSelector: ILOOPEndPositionSelector,
-    private readonly loopExecutorSelector: ILOOPExecutorSelector,
-    private readonly orientationCycleDetector: IOrientationCycleDetector
+    private readonly variationProvider: IBrowserVariationProvider,
+    private readonly transformer: IBuildResultTransformer,
+    private readonly metadataManager: ISequenceMetadataManager
   ) {}
 
   /**
-   * Generate complete sequence - routes to appropriate mode
+   * Generate complete sequence — routes to appropriate mode
    */
   async generateSequence(options: GenerationOptions): Promise<SequenceData> {
-    // Route to appropriate generation mode
     if (options.mode === GenerationMode.CIRCULAR) {
       return this.generateCircularSequence(options);
     }
-
     return this.generateFreeformSequence(options);
   }
 
   /**
-   * Generate freeform sequence using focused service composition
-   * EXACT ORIGINAL LOGIC from SequenceGenerationService.generateSequence
+   * Generate a freeform (non-looping) sequence via the shared engine.
    */
   private async generateFreeformSequence(
     options: GenerationOptions
   ): Promise<SequenceData> {
-    // Step 1: Get start position
-    // Priority: legacy startPosition > random from allowed positions
-    let startPosition: StartPositionData;
-    if (options.startPosition) {
-      // Use the legacy exact start position - convert PictographData to StartPositionData
-      startPosition = this.convertPictographToStartPosition(
-        options.startPosition
-      );
-    } else {
-      // Select random position respecting blocked positions
-      const blockedPositions = options.blockedStartPositions ?? [];
-      const randomGridPos = getRandomAllowedPosition(
-        blockedPositions,
-        options.gridMode
-      );
+    await this.variationProvider.initialize(String(options.gridMode));
+    const builder = new SequenceBuilder(this.variationProvider);
+    const level = this.metadataManager.mapDifficultyToLevel(options.difficulty);
 
-      // Use the selector to get full StartPositionData for this position
-      startPosition = await this.startPositionSelector.selectStartPosition(
-        options.gridMode,
-        randomGridPos
-      );
-    }
-    const sequence: (StepData | StartPositionData)[] = [startPosition];
-
-    // Step 2: Determine rotation directions
-    // constraintPreset maps to propContinuity via config-mapper for backwards compat
-    const rotationDirections = this.loopParams.determineRotationDirections(
-      options.propContinuity
-    );
-
-    // Step 3: Calculate turn allocation
-    const level = this.metadataService.mapDifficultyToLevel(options.difficulty);
-    const turnIntensity = options.turnIntensity || 1;
-    const turnAllocation = await this.turnAllocationCalculator.allocateTurns(
-      options.length,
+    const result = builder.build({
+      length: options.length,
+      gridMode: String(options.gridMode),
       level,
-      turnIntensity
-    );
-
-    // Step 4: Generate steps
-    const beatGenOptions: StepGenerationOptions = {
-      level,
-      turnAllocation,
-      propContinuity: options.propContinuity || PropContinuity.CONTINUOUS,
-      blueRotationDirection: rotationDirections.blueRotationDirection,
-      redRotationDirection: rotationDirections.redRotationDirection,
-      gridMode: options.gridMode,
-      propType: options.propType,
-    };
-
-    let generatedSteps: StepData[];
-
-    // If end position is specified, we need to handle the last beat specially
-    const hasEndPositionConstraint = options.endPosition?.startPosition;
-
-    if (hasEndPositionConstraint && options.length > 0) {
-      // Generate all steps except the last one
-      if (options.length > 1) {
-        const allButLastBeats =
-          await this.stepGenerationOrchestrator.generateBeats(
-            sequence,
-            options.length - 1,
-            beatGenOptions
-          );
-        generatedSteps = allButLastBeats;
-      } else {
-        generatedSteps = [];
-      }
-
-      // Generate the last beat with the end position constraint
-      const lastBeatOptions: StepGenerationOptions = {
-        ...beatGenOptions,
-        requiredEndPosition: options.endPosition!.startPosition!,
-        // Create a turn allocation for just this beat
-        turnAllocation: {
-          blue: [turnAllocation.blue[options.length - 1]!],
-          red: [turnAllocation.red[options.length - 1]!],
-        },
-      };
-
-      const lastStep = await this.stepGenerationOrchestrator.generateNextBeat(
-        sequence,
-        lastBeatOptions,
-        turnAllocation.blue[options.length - 1]!,
-        turnAllocation.red[options.length - 1]!
-      );
-
-      sequence.push(lastStep);
-      generatedSteps.push(lastStep);
-    } else {
-      // No end position constraint - generate all steps normally
-      generatedSteps = await this.stepGenerationOrchestrator.generateBeats(
-        sequence,
-        options.length,
-        beatGenOptions
-      );
-    }
-
-    // Step 5: Build sequence data structure
-    const word = this.metadataService.calculateWordFromBeats(generatedSteps);
-    const metadata = this.metadataService.createGenerationMetadata({
-      stepsGenerated: generatedSteps.length,
-      propContinuity: options.propContinuity || PropContinuity.CONTINUOUS,
-      blueRotationDirection: rotationDirections.blueRotationDirection,
-      redRotationDirection: rotationDirections.redRotationDirection,
-      turnIntensity,
-      level,
+      constraintOptions: this.mapPropContinuity(options.propContinuity),
+      startPosition: options.startPosition?.startPosition
+        ? String(options.startPosition.startPosition)
+        : undefined,
+      maxTurnIntensity: options.turnIntensity,
     });
 
-    // Import shared utilities dynamically to avoid circular dependencies
-    const { createSequenceData } =
-      await import("$lib/shared/foundation/domain/models/SequenceData");
-
-    const sequenceData = createSequenceData({
-      name: word || "",
-      word,
-      steps: generatedSteps,
-      startingPosition: startPosition,
-      startPosition,
-      gridMode: options.gridMode,
-      // propType removed - prop type is viewer preference, not sequence data
-      difficultyLevel: options.difficulty,
-      isFavorite: false,
-      isCircular: false,
-      tags: ["generated", "freeform"],
-      metadata,
-    });
-
-    // Step 6: Apply reversal detection
-    const finalSequence = this.ReversalDetector.processReversals(sequenceData);
-
-    return finalSequence;
+    return this.transformer.convertToSequenceData(result, options);
   }
 
   /**
-   * Generate circular sequence using LOOP executor
-   * EXACT ORIGINAL LOGIC from SequenceGenerationService.generatePatternSequence
+   * Generate a circular (LOOP) sequence via the shared engine.
+   *
+   * The engine's SequenceBuilder handles LOOP extension internally —
+   * it generates the seed sequence, then applies the LOOP executor to
+   * produce the full circular sequence.
    */
   private async generateCircularSequence(
     options: GenerationOptions
   ): Promise<SequenceData> {
-    // Import circular-specific models
-    const { LOOPType, SliceSize } =
-      await import("../../../circular/domain/models/circular-models");
+    await this.variationProvider.initialize(String(options.gridMode));
+    const builder = new SequenceBuilder(this.variationProvider);
+    const level = this.metadataManager.mapDifficultyToLevel(options.difficulty);
 
-    // Use constructor-injected services to avoid HMR issues
-    // Determine which LOOP executor to use based on loopType option
-    const loopType = options.loopType || LOOPType.STRICT_ROTATED;
-    const loopExecutor = this.loopExecutorSelector.getExecutor(loopType);
+    // Map app's LOOPType enum values to engine's. Both use the same string
+    // values for most types, but the app has "strict_rewound" while the
+    // engine uses "rewound".
+    const engineLoopType = this.mapLoopTypeToEngine(options.loopType);
+    const sliceSize = this.mapSliceSize(options.sliceSize);
 
-    // Get slice size
-    const sliceSize = options.sliceSize || SliceSize.HALVED;
-
-    // Determine start position
-    // Priority: legacy startPosition > random from allowed positions (respecting blocklist)
-    const { GridPosition } =
-      await import("$lib/shared/pictograph/grid/domain/enums/grid-enums");
-    type GridPositionType = (typeof GridPosition)[keyof typeof GridPosition];
-
-    let startPos: GridPositionType | undefined;
-
-    if (options.startPosition?.startPosition) {
-      // Use the legacy exact start position's grid position
-      startPos = options.startPosition.startPosition as GridPositionType;
-    } else {
-      // Select random position respecting blocked positions
-      const blockedPositions = options.blockedStartPositions ?? [];
-      startPos = getRandomAllowedPosition(blockedPositions, options.gridMode);
-    }
-
-    if (!startPos) {
-      throw new Error("Failed to determine a starting grid position");
-    }
-    // Use LOOP-specific end position selector (different end positions for rotated/mirrored/swapped/inverted)
-    const requiredEndPos = this.loopEndPositionSelector.determineEndPosition(
-      loopType,
-      startPos,
-      sliceSize
-    );
-
-    // Generate partial sequence ending at required position
-    const partialSequence =
-      await this.partialSequenceGenerator.generatePartialSequence(
-        startPos,
-        requiredEndPos,
+    const result = builder.build({
+      length: options.length,
+      gridMode: String(options.gridMode),
+      level,
+      constraintOptions: this.mapPropContinuity(options.propContinuity),
+      startPosition: options.startPosition?.startPosition
+        ? String(options.startPosition.startPosition)
+        : undefined,
+      maxTurnIntensity: options.turnIntensity,
+      loop: {
+        type: engineLoopType,
         sliceSize,
-        options
-      );
-
-    // Execute LOOP to complete the circle
-    const circularBeats = loopExecutor.executeLOOP(partialSequence, sliceSize);
-
-    // Re-derive letters from motion data to fix executors that copy
-    // source letters instead of deriving from transformed motions
-    await this.rederiveLettersFromMotions(
-      circularBeats.slice(1),
-      options.gridMode
-    );
-
-    // Build sequence data
-    const word = this.metadataService.calculateWordFromBeats(
-      circularBeats.slice(1)
-    ); // Exclude start position
-    const metadata = this.metadataService.createGenerationMetadata({
-      stepsGenerated: circularBeats.length - 1,
-      propContinuity: options.propContinuity || PropContinuity.CONTINUOUS,
-      blueRotationDirection: "",
-      redRotationDirection: "",
-      turnIntensity: options.turnIntensity || 1,
-      level: this.metadataService.mapDifficultyToLevel(options.difficulty),
+        useTargetedGeneration: true,
+      },
     });
 
-    const { createSequenceData } =
-      await import("$lib/shared/foundation/domain/models/SequenceData");
-
-    // Convert first beat (start position stored as StepData) to proper StartPositionData
-    const startPositionStep = circularBeats[0]
-      ? createStartPositionFromStepEnd(circularBeats[0])
-      : undefined;
-
-    const sequence = createSequenceData({
-      name: word,
-      word,
-      steps: circularBeats.slice(1), // Exclude start position beat
-      ...(startPositionStep && { startingPosition: startPositionStep }),
-      ...(startPositionStep && { startPosition: startPositionStep }),
-      gridMode: options.gridMode,
-      // propType removed - prop type is viewer preference, not sequence data
-      difficultyLevel: options.difficulty,
-      isFavorite: false,
-      isCircular: true,
-      loopType, // Store LOOP type so glyph can display without re-detection
-      tags: ["circular", "cap", loopType.replace("_", "-")],
-      metadata,
-    });
-
-    const withReversals = this.ReversalDetector.processReversals(sequence);
-
-    // Detect if orientation cycle needs multiple passes (but don't auto-extend —
-    // the user will be offered a "Complete Cycle" button instead)
-    const cycleResult =
-      this.orientationCycleDetector.detectOrientationCycle(withReversals);
-
-    if (cycleResult.cycleCount > 1) {
-      const { updateSequenceData } = await import(
-        "$lib/shared/foundation/domain/models/SequenceData"
-      );
-      return updateSequenceData(withReversals, {
-        orientationCycleCount: cycleResult.cycleCount as 1 | 2 | 4,
-      });
-    }
-
-    return withReversals;
+    return this.transformer.convertToSequenceData(result, options);
   }
 
   /**
-   * Re-derive letter for each step by looking up its motion configuration in the CSV data.
-   * Fixes LOOP executors that copy the source beat's letter instead of deriving
-   * the correct letter from the transformed motions.
+   * Map the app's PropContinuity preference to the engine's ConstraintOptions.
+   *
+   * CONTINUOUS = maximize prop spin continuity (no reversals)
+   * RANDOM = allow reversals freely
    */
-  private async rederiveLettersFromMotions(
-    steps: StepData[],
-    gridMode: GridMode
-  ): Promise<void> {
-    const { motionQueryHandler } = await import(
-      "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler"
-    );
-
-    for (const step of steps) {
-      const blueMotion = step.motions.blue;
-      const redMotion = step.motions.red;
-      if (!blueMotion || !redMotion) continue;
-
-      const derivedLetter =
-        await motionQueryHandler.findLetterByMotionConfiguration(
-          blueMotion,
-          redMotion,
-          gridMode
-        );
-
-      if (derivedLetter) {
-        (step as unknown as Record<string, unknown>).letter =
-          derivedLetter as Letter;
-      }
+  private mapPropContinuity(
+    propContinuity?: PropContinuity
+  ): ConstraintOptions {
+    switch (propContinuity) {
+      case PropContinuity.CONTINUOUS:
+        return {
+          propContinuity: "maximize",
+          handPathContinuity: "maximize",
+        };
+      case PropContinuity.RANDOM:
+        return { propContinuity: "allow-reversals" };
+      default:
+        return {
+          propContinuity: "maximize",
+          handPathContinuity: "maximize",
+        };
     }
   }
 
   /**
-   * Convert PictographData from customize options to StartPositionData
-   * The PictographData from the position picker already has all the needed data,
-   * we just add the isStartPosition flag to make it a valid StartPositionData.
+   * Map the app's LOOPType enum to the engine's LOOPType enum.
+   *
+   * The two enums share most string values. The main difference is the
+   * app uses "strict_rewound" while the engine uses "rewound".
    */
-  private convertPictographToStartPosition(
-    pictograph: PictographData
-  ): StartPositionData {
-    return {
-      ...pictograph,
-      isStartPosition: true as const,
-      id: pictograph.id || `start-${Date.now()}`,
-      gridPosition: pictograph.startPosition || null,
-    };
+  private mapLoopTypeToEngine(
+    appLoopType?: string
+  ): LOOPType {
+    if (!appLoopType) return LOOPType.STRICT_ROTATED;
+
+    // Handle the naming difference for rewound
+    if (appLoopType === "strict_rewound") {
+      return LOOPType.REWOUND;
+    }
+
+    // All other values match between app and engine enums
+    const engineType = Object.values(LOOPType).find(
+      (v) => v === appLoopType
+    );
+    return engineType ?? LOOPType.STRICT_ROTATED;
+  }
+
+  /**
+   * Map the app's SliceSize to the engine's SliceSize.
+   * Both use identical string values.
+   */
+  private mapSliceSize(appSliceSize?: string): SliceSize {
+    if (appSliceSize === "quartered") return SliceSize.QUARTERED;
+    return SliceSize.HALVED;
   }
 }
 
 // ============================================================================
 // DIRECT SINGLETON EXPORT
 // ============================================================================
-import { startPositionSelector } from "./StartPositionSelector";
-import { loopParameterProvider } from "./LOOPParameterProvider";
-import { turnAllocator } from "./TurnAllocator";
-import { stepGenerationOrchestrator } from "./StepGenerationOrchestrator";
+import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
+import { BrowserVariationProvider } from "./BrowserVariationProvider";
+import { BuildResultTransformer } from "./BuildResultTransformer";
 import { sequenceMetadataManager } from "./SequenceMetadataManager";
 import { reversalDetector } from "$lib/features/create/shared/services/implementations/ReversalDetector";
-import { partialSequenceGenerator } from "$lib/features/create/generate/circular/services/implementations/PartialSequenceGenerator";
-import { loopEndPositionSelector } from "$lib/features/create/generate/circular/services/implementations/LOOPEndPositionSelector";
-import { loopExecutorSelector } from "$lib/features/create/generate/circular/services/implementations/LOOPExecutorSelector";
 import { orientationCycleDetector } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleDetector";
 
-export const generationOrchestrator = new GenerationOrchestrator(
-  startPositionSelector,
-  loopParameterProvider,
-  turnAllocator,
-  stepGenerationOrchestrator,
+const browserVariationProvider = new BrowserVariationProvider(
+  letterQueryHandler
+);
+
+const buildResultTransformer = new BuildResultTransformer(
   sequenceMetadataManager,
   reversalDetector,
-  partialSequenceGenerator,
-  loopEndPositionSelector,
-  loopExecutorSelector,
   orientationCycleDetector
+);
+
+export const generationOrchestrator = new GenerationOrchestrator(
+  browserVariationProvider,
+  buildResultTransformer,
+  sequenceMetadataManager
 );
