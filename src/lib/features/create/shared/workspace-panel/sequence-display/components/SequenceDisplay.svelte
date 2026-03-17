@@ -120,11 +120,9 @@
   });
 
   const difficultyDescriptions: Record<number, string> = {
-    1: "Uses whole turns only. The foundation of TKA movement.",
-    2: "Introduces half turns and floating positions.",
-    3: "Adds mixed turn values and more complex transitions.",
-    4: "Uses skewed grid positions and advanced orientations.",
-    5: "Full interradial orientations across all 8 positions.",
+    1: "No turns. Props shift between grid positions without rotating.",
+    2: "Adds turns with radial orientations (in/out). Props rotate while moving.",
+    3: "Non-radial orientations (clock/counter). Props face sideways relative to the grid.",
   };
 
   // Convert selectedStartPosition (PictographData) to StepData format for StepGrid
@@ -250,13 +248,13 @@
     title="Level {difficultyLevel}"
     subtitle={difficultyDescriptions[difficultyLevel] ?? ""}
     icon="fa-layer-group"
-    iconColor={currentLevelStyle.border === "#000" ? (currentLevelStyle.text === "#fff" ? "#ff4500" : "#6366f1") : currentLevelStyle.border}
+    iconColor={difficultyLevel === 3 ? "#b8860b" : difficultyLevel === 2 ? "#a8a8a8" : "#6366f1"}
     onClose={() => (showDifficultyInfo = false)}
   />
   <div class="info-modal-body">
-    <p>TKA sequences are classified into levels based on the complexity of their turns, positions, and orientations.</p>
+    <p>TKA sequences are classified by the complexity of their turns and orientations.</p>
     <div class="level-list">
-      {#each [1, 2, 3, 4, 5] as level}
+      {#each [1, 2, 3] as level}
         {@const style = levelStyles[level] ?? defaultLevelStyle}
         <div class="level-row" class:current={level === difficultyLevel}>
           <div
