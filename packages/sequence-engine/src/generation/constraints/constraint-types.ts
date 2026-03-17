@@ -11,6 +11,7 @@ export enum ConstraintType {
   // Motion constraints
   MOTION_TYPE = "motionType",
   ROTATION_DIRECTION = "rotationDirection",
+  TURN = "turn",
 
   // Sequence-level constraints
   CONTINUITY = "continuity",
@@ -57,6 +58,7 @@ export const CONSTRAINT_CATEGORIES: Record<ConstraintType, ConstraintCategory> =
   {
     [ConstraintType.MOTION_TYPE]: ConstraintCategory.MOTION,
     [ConstraintType.ROTATION_DIRECTION]: ConstraintCategory.MOTION,
+    [ConstraintType.TURN]: ConstraintCategory.MOTION,
     [ConstraintType.CONTINUITY]: ConstraintCategory.SEQUENCE,
     [ConstraintType.REVERSAL]: ConstraintCategory.SEQUENCE,
     [ConstraintType.HAND_PATH]: ConstraintCategory.SEQUENCE,

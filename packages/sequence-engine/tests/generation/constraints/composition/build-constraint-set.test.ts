@@ -81,4 +81,11 @@ describe("buildConstraintSet", () => {
     const handPath = result.soft.find(c => c.type === ConstraintType.HAND_PATH);
     expect(handPath).toBeDefined();
   });
+
+  it("creates hard TurnConstraint for turns: 0", () => {
+    const result = buildConstraintSet({ turns: 0 });
+    const turnConstraint = result.hard.find(c => c.type === ConstraintType.TURN);
+    expect(turnConstraint).toBeDefined();
+    expect(turnConstraint!.mode).toBe("hard");
+  });
 });

@@ -15,6 +15,7 @@ import {
   HandPathReversalConstraint,
   maximizeHandPathContinuity,
 } from "../style/hand-path-constraint.js";
+import { TurnConstraint } from "../style/turn-constraint.js";
 
 export function buildConstraintSet(options: ConstraintOptions): ConstraintSet {
   const hard: IConstraint[] = [];
@@ -42,10 +43,10 @@ export function buildConstraintSet(options: ConstraintOptions): ConstraintSet {
     );
   }
 
-  // Turn value dimension — TurnConstraint added in Task 3, skip for now
-  // if (options.turns !== undefined && options.turns !== "any") {
-  //   hard.push(new TurnConstraint(options.turns));
-  // }
+  // Turn value dimension
+  if (options.turns !== undefined && options.turns !== "any") {
+    hard.push(new TurnConstraint(options.turns));
+  }
 
   // Motion family include/exclude
   if (options.motionFamily) {
