@@ -23,6 +23,11 @@ export type MotionType = "shift" | "dash" | "static" | "pro" | "anti" | "float";
 export type RotationDirection = "cw" | "ccw" | "noRotation";
 
 /**
+ * Hand path types derived from start/end grid locations.
+ */
+export type HandPath = "cw" | "ccw" | "dash" | "static" | "hashIn" | "hashOut";
+
+/**
  * Prop orientations.
  */
 export type Orientation =
