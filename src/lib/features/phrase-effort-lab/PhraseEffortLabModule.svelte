@@ -449,12 +449,11 @@
         firestore,
         `users/${user.uid}/sequences/${sequence.id}`,
       );
-      // Build the full creatorIntent object — Firestore dot-notation only works
-      // if the parent map exists, so we write the full object to be safe.
-      // structuredClone strips Svelte $state proxies — Firestore rejects proxy objects
-      const plainTimeline = structuredClone(timeline);
+      // JSON round-trip strips Svelte $state proxies — Firestore rejects them
+      // and structuredClone can't handle proxy Symbols either.
+      const plainTimeline = JSON.parse(JSON.stringify(timeline));
       const propConfig = sequence.creatorIntent?.propConfig
-        ? structuredClone(sequence.creatorIntent.propConfig)
+        ? JSON.parse(JSON.stringify(sequence.creatorIntent.propConfig))
         : {
             bluePropType: (settingsService.settings.bluePropType || PropType.STAFF) as PropType,
             redPropType: (settingsService.settings.redPropType || PropType.STAFF) as PropType,
