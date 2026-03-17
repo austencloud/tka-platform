@@ -39,9 +39,14 @@ import { getPresetOptions } from "../constraints/presets/preset-constraints.js";
 import { buildConstraintSet } from "../constraints/composition/build-constraint-set.js";
 import { parseConstraintSet } from "../constraints/parsing/constraint-parser.js";
 import type { ConstraintOptions } from "../constraints/composition/constraint-options.js";
-import { LOOPType, SliceSize } from "../../loop/loop-types.js";
+import { LOOPType, SliceSize, ROTATED_LOOP_TYPES } from "../../loop/loop-types.js";
 import { loopExecutorSelector } from "../../loop/execution/LOOPExecutorSelector.js";
 import { loopEndPositionSelector } from "../../loop/targeting/LOOPEndPositionSelector.js";
+import {
+  QUARTER_POSITION_MAP_CW,
+  QUARTER_POSITION_MAP_CCW,
+} from "../../loop/position-maps/circular-position-maps.js";
+import { VERTICAL_MIRROR_POSITION_MAP } from "../../loop/position-maps/strict-loop-position-maps.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -229,17 +234,77 @@ export class SequenceBuilder {
     );
 
     // Stage 4: Beam search
-    const beamSearch = new BeamSearch(this.variationProvider, options.gridMode);
-    const searchResult = beamSearch.search(
-      letters,
-      options.startPosition,
-      constraintSet,
-      options.beamWidth ?? 10,
-    );
+    // When LOOP is requested, the last letter must end at a position
+    // compatible with the LOOP type. Retry with different random
+    // variations if the first attempt doesn't land at a valid position.
+    const needsLoopTargeting = options.loop?.useTargetedGeneration;
 
-    if (!searchResult.success && searchResult.steps.length === 0) {
+    // Constrain start position for LOOP types that need vertical axis
+    let effectiveStartPosition = options.startPosition;
+    if (needsLoopTargeting && !effectiveStartPosition && options.loop) {
+      const constrainedStart = this.constrainStartForLoopType(options.loop.type);
+      if (constrainedStart) {
+        effectiveStartPosition = constrainedStart;
+      }
+    }
+
+    // Compute required end positions for LOOP targeting.
+    // When start position is known, we can compute them upfront.
+    // When start position is unknown (random), we validate after each attempt.
+    let requiredEndPositions: Set<string> | undefined;
+    if (needsLoopTargeting && effectiveStartPosition && options.loop) {
+      requiredEndPositions = this.getAllValidEndPositions(
+        options.loop.type,
+        effectiveStartPosition,
+        options.loop.sliceSize,
+      );
+    }
+
+    // Word-based LOOP needs more retries because the word constrains which
+    // positions are reachable. Each retry picks different random variations
+    // that may land on different end positions.
+    const maxRetries = needsLoopTargeting ? 30 : 1;
+    let searchResult: BeamSearchResult | undefined;
+    let lastError: string | undefined;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const beamSearch = new BeamSearch(this.variationProvider, options.gridMode);
+      const result = beamSearch.search(
+        letters,
+        effectiveStartPosition,
+        constraintSet,
+        options.beamWidth ?? 10,
+        requiredEndPositions,
+      );
+
+      if (result.success || result.steps.length > 0) {
+        // When LOOP is requested but start position was random (no
+        // requiredEndPositions computed upfront), validate the result's
+        // position pair after the fact. If invalid, retry.
+        if (needsLoopTargeting && !requiredEndPositions && options.loop && result.steps.length >= 2) {
+          const actualStart = result.steps[0]?.startPosition;
+          const actualEnd = result.steps[result.steps.length - 1]?.endPosition;
+          if (actualStart && actualEnd) {
+            const validEnds = this.getAllValidEndPositions(
+              options.loop.type,
+              actualStart,
+              options.loop.sliceSize,
+            );
+            if (validEnds.size > 0 && !validEnds.has(actualEnd)) {
+              lastError = `Position pair ${actualStart} -> ${actualEnd} not valid for ${options.loop.type} LOOP`;
+              continue; // retry
+            }
+          }
+        }
+        searchResult = result;
+        break;
+      }
+      lastError = result.error;
+    }
+
+    if (!searchResult || (!searchResult.success && searchResult.steps.length === 0)) {
       throw new Error(
-        searchResult.error ?? `No valid sequence found for "${options.word}"`,
+        lastError ?? `No valid sequence found for "${options.word}"`,
       );
     }
 
@@ -281,7 +346,19 @@ export class SequenceBuilder {
     // When no start position is specified, the beam search picks a random
     // one — we retry up to 10 times if the path fails.
     const needsLoopTargeting = options.loop?.useTargetedGeneration;
-    const maxRetries = needsLoopTargeting && !options.startPosition ? 10 : 1;
+
+    // Some LOOP types require the start position to be on the vertical axis
+    // (where vertical_mirror(pos) === pos). If no start position is specified,
+    // constrain to a random valid one so the executor doesn't reject it.
+    let effectiveStartPosition = options.startPosition;
+    if (needsLoopTargeting && !effectiveStartPosition && options.loop) {
+      const constrainedStart = this.constrainStartForLoopType(options.loop.type);
+      if (constrainedStart) {
+        effectiveStartPosition = constrainedStart;
+      }
+    }
+
+    const maxRetries = needsLoopTargeting && !effectiveStartPosition ? 10 : 1;
     let searchResult: BeamSearchResult | undefined;
     let lastError: string | undefined;
 
@@ -290,29 +367,28 @@ export class SequenceBuilder {
       // If startPosition is specified, compute upfront. If not,
       // the beam search picks a random start — we compute end position
       // from the actual start after the first beat is selected.
-      let requiredEndPosition: string | undefined;
-      let loopPositionMap: Record<string, string> | undefined;
+      let requiredEndPositions: Set<string> | undefined;
+      let loopPositionMap: Record<string, string[]> | undefined;
 
-      if (needsLoopTargeting && options.startPosition) {
-        requiredEndPosition = loopEndPositionSelector.determineEndPosition(
+      if (needsLoopTargeting && effectiveStartPosition) {
+        requiredEndPositions = this.getAllValidEndPositions(
           options.loop!.type,
-          options.startPosition,
+          effectiveStartPosition,
           options.loop!.sliceSize,
-        ) ?? undefined;
+        );
       } else if (needsLoopTargeting) {
         // No start position specified — build a position map so the beam
         // search can compute the end position from the actual random start.
-        // We build this from LOOPEndPositionSelector for all known positions.
         loopPositionMap = this.buildLoopPositionMap(options.loop!);
       }
 
       const beamSearch = new BeamSearch(this.variationProvider, options.gridMode);
       const result = beamSearch.searchByLength(
         length,
-        options.startPosition,
+        effectiveStartPosition,
         constraintSet,
         options.beamWidth ?? 10,
-        requiredEndPosition,
+        requiredEndPositions,
         loopPositionMap,
       );
 
@@ -423,27 +499,43 @@ export class SequenceBuilder {
       const prevBlueRot = prevStep?.blueMotion.rotationDirection;
       const prevRedRot = prevStep?.redMotion.rotationDirection;
 
+      // A pro or anti motion with 0 turns is physically impossible — you can't
+      // spin pro or anti without actually rotating. That's a float: the prop
+      // shifts to its new location without any rotation at all.
+      const blueMotionType = (blueTurns === 0 && (pd.blueMotion.motionType === "pro" || pd.blueMotion.motionType === "anti"))
+        ? "float" as const
+        : pd.blueMotion.motionType;
+      const redMotionType = (redTurns === 0 && (pd.redMotion.motionType === "pro" || pd.redMotion.motionType === "anti"))
+        ? "float" as const
+        : pd.redMotion.motionType;
+      const effectiveBlueTurns = blueMotionType === "float" && blueTurns === 0 ? "fl" as const : blueTurns;
+      const effectiveRedTurns = redMotionType === "float" && redTurns === 0 ? "fl" as const : redTurns;
+
       sequence.push({
         letter: pd.letter,
         startPosition: pd.startPosition,
         endPosition: pd.endPosition,
         blueMotion: {
-          motionType: pd.blueMotion.motionType,
+          motionType: blueMotionType,
           startLocation: pd.blueMotion.startLocation,
           endLocation: pd.blueMotion.endLocation,
-          rotationDirection: resolveRotationDirection(pd.blueMotion.rotationDirection, blueTurns, prevBlueRot, propContinuity),
+          rotationDirection: blueMotionType === "float"
+            ? "noRotation"
+            : resolveRotationDirection(pd.blueMotion.rotationDirection, effectiveBlueTurns, prevBlueRot, propContinuity),
           startOrientation: pd.blueMotion.startOrientation,
           endOrientation: pd.blueMotion.endOrientation,
-          turns: blueTurns,
+          turns: effectiveBlueTurns,
         },
         redMotion: {
-          motionType: pd.redMotion.motionType,
+          motionType: redMotionType,
           startLocation: pd.redMotion.startLocation,
           endLocation: pd.redMotion.endLocation,
-          rotationDirection: resolveRotationDirection(pd.redMotion.rotationDirection, redTurns, prevRedRot, propContinuity),
+          rotationDirection: redMotionType === "float"
+            ? "noRotation"
+            : resolveRotationDirection(pd.redMotion.rotationDirection, effectiveRedTurns, prevRedRot, propContinuity),
           startOrientation: pd.redMotion.startOrientation,
           endOrientation: pd.redMotion.endOrientation,
-          turns: redTurns,
+          turns: effectiveRedTurns,
         },
         beatIndex,
         stepNumber: i,
@@ -545,26 +637,82 @@ export class SequenceBuilder {
   }
 
   /**
-   * Build a position map for LOOP end-position targeting.
-   * Maps each possible start position to its required end position
-   * for the given LOOP type, using LOOPEndPositionSelector.
+   * LOOP types that combine MIRRORED + ROTATED require the start position to
+   * sit on the vertical axis (where vertical_mirror(pos) === pos). If no start
+   * is specified, randomly pick one of the valid axis positions.
    */
-  private buildLoopPositionMap(loopOptions: LoopOptions): Record<string, string> {
-    const map: Record<string, string> = {};
-    // All known position prefixes and counts
+  private constrainStartForLoopType(loopType: LOOPType): string | undefined {
+    const MIRRORED_ROTATED_TYPES = new Set([
+      LOOPType.MIRRORED_ROTATED,
+      LOOPType.MIRRORED_INVERTED_ROTATED,
+      LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED,
+    ]);
+
+    if (!MIRRORED_ROTATED_TYPES.has(loopType)) return undefined;
+
+    // Positions on the vertical axis: mirror(pos) === pos
+    const axisPositions = Object.entries(VERTICAL_MIRROR_POSITION_MAP)
+      .filter(([pos, mirrored]) => pos === mirrored)
+      .map(([pos]) => pos)
+      // Only include alpha/beta/gamma (not zeta/eta/tau which are higher levels)
+      .filter((pos) => pos.startsWith("alpha") || pos.startsWith("beta") || pos.startsWith("gamma"));
+
+    if (axisPositions.length === 0) return undefined;
+    return axisPositions[Math.floor(Math.random() * axisPositions.length)];
+  }
+
+  /**
+   * Get ALL valid end positions for a LOOP type + start position + slice size.
+   * For quartered rotated LOOPs, returns both CW and CCW targets.
+   * For other types, returns the single valid end position.
+   */
+  private getAllValidEndPositions(
+    loopType: LOOPType,
+    startPosition: string,
+    sliceSize: SliceSize,
+  ): Set<string> {
+    const positions = new Set<string>();
+
+    // For rotated LOOP types with quartered slice, both CW and CCW are valid
+    if (sliceSize === SliceSize.QUARTERED && ROTATED_LOOP_TYPES.has(loopType)) {
+      const cw = QUARTER_POSITION_MAP_CW[startPosition];
+      const ccw = QUARTER_POSITION_MAP_CCW[startPosition];
+      if (cw) positions.add(cw);
+      if (ccw) positions.add(ccw);
+    } else {
+      // For all other types, delegate to the standard selector
+      const endPos = loopEndPositionSelector.determineEndPosition(
+        loopType,
+        startPosition,
+        sliceSize,
+      );
+      if (endPos) positions.add(endPos);
+    }
+
+    return positions;
+  }
+
+  /**
+   * Build a position map for LOOP end-position targeting.
+   * Maps each possible start position to ALL its valid end positions
+   * for the given LOOP type. For quartered rotated LOOPs, each start
+   * maps to both CW and CCW targets.
+   */
+  private buildLoopPositionMap(loopOptions: LoopOptions): Record<string, string[]> {
+    const map: Record<string, string[]> = {};
     const positions = [
       ...Array.from({ length: 8 }, (_, i) => `alpha${i + 1}`),
       ...Array.from({ length: 8 }, (_, i) => `beta${i + 1}`),
       ...Array.from({ length: 16 }, (_, i) => `gamma${i + 1}`),
     ];
     for (const pos of positions) {
-      const endPos = loopEndPositionSelector.determineEndPosition(
+      const endPositions = this.getAllValidEndPositions(
         loopOptions.type,
         pos,
         loopOptions.sliceSize,
       );
-      if (endPos) {
-        map[pos] = endPos;
+      if (endPositions.size > 0) {
+        map[pos] = Array.from(endPositions);
       }
     }
     return map;

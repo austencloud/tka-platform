@@ -80,6 +80,10 @@ export class LOOPEndPositionSelector {
       case LOOPType.SWAPPED_INVERTED:
         return startPosition;
 
+      // Mirrored + Swapped + Inverted: inverted takes precedence — return to start
+      case LOOPType.MIRRORED_SWAPPED_INVERTED:
+        return startPosition;
+
       // Rewound has no position constraint — reversed steps return to start naturally
       case LOOPType.REWOUND:
         return null;
