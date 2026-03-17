@@ -414,6 +414,12 @@ service cloud.firestore {
         allow delete: if (isAuthenticated() && request.auth.uid == followerUserId) || isAdmin();
       }
 
+      // Private connection data - notes about other users
+      // Only the owner can read/write their own connection documents
+      match /connections/{connectionId} {
+        allow read, write: if isOwner(userId);
+      }
+
       // -------------------------------------------------------------------------
       // USER LIBRARY (Sequences)
       // -------------------------------------------------------------------------
@@ -794,6 +800,13 @@ service cloud.firestore {
       match /subtasks/{subtaskId} {
         allow read: if isTester();
         allow write: if isTester();
+      }
+
+      // Journal subcollection (append-only activity log from CLI)
+      match /journal/{entryId} {
+        allow read: if isTester() || isApprovedDeveloper();
+        allow create: if isTester() || isApprovedDeveloper();
+        allow update, delete: if isAdmin();
       }
     }
 
