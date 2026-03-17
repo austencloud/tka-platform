@@ -1,14 +1,13 @@
 /**
- * Orientation Propagator - Adapter over canonical orientation logic
+ * Orientation Propagator
  *
- * Delegates orientation calculation to render/core/calculations/orientation.ts
- * (the single source of truth). Retains propagation logic that chains
- * orientations through a sequence.
+ * Delegates orientation calculation to the engine's own inlined calculator.
+ * Retains propagation logic that chains orientations through a sequence.
  */
 
 import {
   calculateEndOrientation as calculateEndOrientationCore,
-} from "@tka/render-core";
+} from "../../orientation-calculator.js";
 import type {
   IOrientationPropagator,
   IOrientationCalculator,
