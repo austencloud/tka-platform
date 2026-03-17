@@ -224,6 +224,7 @@
     flex-direction: column;
     gap: 12px;
     min-height: 0;
+    justify-content: center;
   }
 
   .panel-title {
