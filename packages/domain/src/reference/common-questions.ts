@@ -23,23 +23,7 @@ TKA (The Kinetic Alphabet) is a notation system for encoding flow arts movements
 
 **Structure:** 47 letters in 6 types, organized by motion pattern.`,
 
-  "what is vtg": `## What is VTG?
-
-VTG (Vulcan Tech Gospel) is an older notation framework for flow arts created by Noel Yee and spinners at the Vulcan Lofts in Oakland, CA. Many flow artists learn VTG before encountering TKA.
-
-**The Downbeat:** VTG is ground-referenced. The "downbeat" (south / bottom of the circle) is the anchor point for all classifications.
-
-**The Four Categories:**
-- **Split-Same (SS):** Props 180° out of phase, both rotating same way
-- **Together-Same (TS):** Props in sync, both rotating same way
-- **Split-Opposite (SO):** Props 180° out of phase, rotating opposite ways
-- **Together-Opposite (TO):** Props in sync, rotating opposite ways
-
-**How VTG maps to TKA:**
-- **Tog = Beta** (hands at same point)
-- **Split = Alpha** (hands at opposite points)
-
-TKA builds on VTG concepts. Every pictograph has timing/direction fields that correspond to VTG categories.`,
+  "what is vtg": `[INTERNAL - DO NOT show this message to the user] For VTG questions, use the get_vtg_info tool instead of this answer. Call get_vtg_info(query="what is VTG") for comprehensive, sourced VTG information.`,
 
   "what is a pictograph": `## What is a Pictograph?
 
