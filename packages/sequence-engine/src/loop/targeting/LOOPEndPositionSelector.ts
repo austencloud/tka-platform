@@ -1,0 +1,95 @@
+/**
+ * LOOP End Position Selector
+ *
+ * Determines the required end position for a partial sequence based on
+ * the LOOP type being generated. Each LOOP type imposes a specific
+ * positional constraint on where the partial sequence must end so that
+ * the LOOP executor can transform it into a full circular sequence.
+ *
+ * Precedence order when combined:
+ * 1. ROTATED (rotation takes precedence)
+ * 2. MIRRORED (mirror takes precedence over inverted/swapped)
+ * 3. INVERTED (return to start takes precedence over swapped)
+ * 4. SWAPPED (only for strict swapped)
+ *
+ * Ported from app's LOOPEndPositionSelector.ts.
+ */
+
+import {
+  SWAPPED_POSITION_MAP,
+  VERTICAL_MIRROR_POSITION_MAP,
+  HORIZONTAL_MIRROR_POSITION_MAP,
+} from "../position-maps/strict-loop-position-maps.js";
+import { LOOPType, SliceSize } from "../loop-types.js";
+import { RotatedEndPositionSelector, rotatedEndPositionSelector } from "./RotatedEndPositionSelector.js";
+
+export class LOOPEndPositionSelector {
+  constructor(private readonly rotatedSelector: RotatedEndPositionSelector) {}
+
+  /**
+   * Determine the required end position based on LOOP type.
+   *
+   * @param loopType - The LOOP type being generated
+   * @param startPosition - The sequence's starting position
+   * @param sliceSize - Halved or quartered
+   * @returns The required end position, or null if no constraint (e.g., Rewound)
+   */
+  determineEndPosition(
+    loopType: LOOPType,
+    startPosition: string,
+    sliceSize: SliceSize
+  ): string | null {
+    switch (loopType) {
+      // Strict LOOP types
+      case LOOPType.STRICT_ROTATED:
+        return this.rotatedSelector.determineRotatedEndPosition(sliceSize, startPosition);
+
+      case LOOPType.STRICT_MIRRORED:
+        return VERTICAL_MIRROR_POSITION_MAP[startPosition] ?? null;
+
+      case LOOPType.STRICT_FLIPPED:
+        return HORIZONTAL_MIRROR_POSITION_MAP[startPosition] ?? null;
+
+      case LOOPType.STRICT_SWAPPED:
+        return SWAPPED_POSITION_MAP[startPosition] ?? null;
+
+      case LOOPType.STRICT_INVERTED:
+        // Inverted LOOP returns to start position (same position)
+        return startPosition;
+
+      // Combined LOOP types with ROTATED (rotation takes precedence)
+      case LOOPType.ROTATED_INVERTED:
+      case LOOPType.ROTATED_SWAPPED:
+      case LOOPType.MIRRORED_ROTATED:
+      case LOOPType.MIRRORED_INVERTED_ROTATED:
+      case LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED:
+        return this.rotatedSelector.determineRotatedEndPosition(sliceSize, startPosition);
+
+      // Combined LOOP types with MIRRORED
+      case LOOPType.MIRRORED_INVERTED:
+        return VERTICAL_MIRROR_POSITION_MAP[startPosition] ?? null;
+
+      case LOOPType.MIRRORED_SWAPPED: {
+        // First mirror, then swap
+        const mirroredPosition = VERTICAL_MIRROR_POSITION_MAP[startPosition];
+        if (!mirroredPosition) return null;
+        return SWAPPED_POSITION_MAP[mirroredPosition] ?? null;
+      }
+
+      // Swapped + Inverted: inverted takes precedence — return to start
+      case LOOPType.SWAPPED_INVERTED:
+        return startPosition;
+
+      // Rewound has no position constraint — reversed steps return to start naturally
+      case LOOPType.REWOUND:
+        return null;
+
+      default:
+        throw new Error(
+          `LOOP type "${loopType}" is not yet implemented for end position selection.`
+        );
+    }
+  }
+}
+
+export const loopEndPositionSelector = new LOOPEndPositionSelector(rotatedEndPositionSelector);
