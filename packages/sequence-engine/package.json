@@ -9,6 +9,26 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./core": {
+      "types": "./src/core/index.ts",
+      "default": "./src/core/index.ts"
+    },
+    "./generation": {
+      "types": "./src/generation/index.ts",
+      "default": "./src/generation/index.ts"
+    },
+    "./loop": {
+      "types": "./src/loop/index.ts",
+      "default": "./src/loop/index.ts"
+    },
+    "./analysis": {
+      "types": "./src/analysis/index.ts",
+      "default": "./src/analysis/index.ts"
+    },
+    "./harness": {
+      "types": "./src/harness/index.ts",
+      "default": "./src/harness/index.ts"
     }
   },
   "files": [
