@@ -75,6 +75,9 @@ export interface UIGenerationConfig {
 
   // Duration rhythm template (applied automatically after generation)
   durationTemplateId: string | null;
+
+  // Spell mode length override (null = use natural expanded length)
+  spellTargetLength: number | null;
 }
 
 /**
@@ -181,5 +184,6 @@ export function generationOptionsToUIConfig(
     handPathMode: options.handPathMode ?? "mixed",
     motionTypeFilter: options.motionTypeFilter ?? null,
     durationTemplateId: null,
+    spellTargetLength: null,
   };
 }

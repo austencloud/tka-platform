@@ -56,6 +56,17 @@ export interface CardHandlers {
   startEndOptions?: StartEndOptions;
   // Pre-computed total beat count for the current word (includes bridges + LOOP multiplier)
   computedWordLength?: number;
+  // Spell mode length change handler (adjusts spellTargetLength)
+  handleSpellLengthChange?: (length: number) => void;
+  // Bridge info for spell mode length card subtitle
+  bridgeInfo?: {
+    requiredBridges: number;
+    extraBridges: number;
+    totalBridges: number;
+    naturalLength: number;
+    /** LOOP-multiplied natural length (without extras) — the stepper floor */
+    naturalDisplayLength: number;
+  };
   // Trigger value that increments when positions are reset due to grid mode change
   positionsResetTrigger?: number;
   // Current grid mode for position picker filtering

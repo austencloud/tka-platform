@@ -51,22 +51,43 @@ export class CardConfigurator implements ICardConfigurator {
       gridColumnSpan: 4,
     });
 
-    // Length card — always present, locked when word is typed
+    // Length card — always interactive, with constrained bounds in spell mode
     const hasWord = !!(handlers.wordInputValue?.trim());
-    cardList.push({
-      id: "length",
-      props: {
-        currentLength: hasWord
-          ? (handlers.computedWordLength ?? handlers.wordInputValue!.trim().length)
-          : config.length,
-        currentMode: config.mode,
-        loopEnabled,
-        onLengthChange: handlers.handleLengthChange,
-        locked: hasWord,
-        cardIndex: cardIndex++,
-      },
-      gridColumnSpan: 2,
-    });
+    if (hasWord) {
+      const naturalDisplayLength = handlers.computedWordLength ?? handlers.wordInputValue!.trim().length;
+      const bridgeInfo = handlers.bridgeInfo;
+      const bridgeSubtitle = bridgeInfo && bridgeInfo.totalBridges > 0
+        ? `+${bridgeInfo.totalBridges} bridge${bridgeInfo.totalBridges !== 1 ? "s" : ""}`
+        : "";
+
+      cardList.push({
+        id: "length",
+        props: {
+          currentLength: naturalDisplayLength,
+          currentMode: config.mode,
+          loopEnabled,
+          onLengthChange: handlers.handleSpellLengthChange ?? handlers.handleLengthChange,
+          locked: false,
+          minOverride: bridgeInfo?.naturalDisplayLength || undefined,
+          subtitle: bridgeSubtitle,
+          cardIndex: cardIndex++,
+        },
+        gridColumnSpan: 2,
+      });
+    } else {
+      cardList.push({
+        id: "length",
+        props: {
+          currentLength: config.length,
+          currentMode: config.mode,
+          loopEnabled,
+          onLengthChange: handlers.handleLengthChange,
+          locked: false,
+          cardIndex: cardIndex++,
+        },
+        gridColumnSpan: 2,
+      });
+    }
 
     // ─── Row 2: Level + GridMode [+ TurnIntensity] ───
 

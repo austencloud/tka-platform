@@ -28,7 +28,7 @@ import { createConstraintSet } from "$lib/shared/sequence-engine/constraints";
 import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { sequenceExtender } from "$lib/features/create/shared/services/implementations/SequenceExtender";
-import { LOOPType, SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import { LOOPType, SliceSize, ROTATED_LOOP_TYPES } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
 import { turnAllocator } from "../shared/services/implementations/TurnAllocator";
@@ -37,6 +37,14 @@ import { PropContinuity } from "../shared/domain/models/generate-models";
 import { recalculateAllOrientations } from "$lib/features/create/shared/services/implementations/sequence-transforms/orientation-propagation";
 import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { reversalDetector } from "$lib/features/create/shared/services/implementations/ReversalDetector";
+
+// Letters with dash motions (Type 3, 4, and 5)
+const DASH_LETTERS: Set<string> = new Set([
+  "W-", "X-", "Y-", "Z-", "Σ-", "Δ-", "Θ-", "Ω-",
+  "Φ", "Ψ", "Λ",
+  "Φ-", "Ψ-", "Λ-",
+]);
+
 export function createGenerationActionsState(
   getSequenceState?: () => SequenceState | undefined,
   getIsSequential?: () => boolean,
@@ -180,11 +188,59 @@ export function createGenerationActionsState(
         return;
       }
 
-      const letters = parseResult.expandedLetters;
-      spellState.setExpandedWord(parseResult.expandedWord || spellState.inputWord);
+      let finalLetters = parseResult.expandedLetters;
+      let finalLetterSources = parseResult.letterSources ?? [];
 
-      if (parseResult.letterSources) {
-        spellState.setLetterSources(parseResult.letterSources);
+      // If user requested a longer sequence, append extra bridge letters at the end
+      const spellTarget = config?.spellTargetLength;
+      if (spellTarget !== null && spellTarget !== undefined && config) {
+        const extraBridgesNeeded = Math.max(0, spellTarget - finalLetters.length);
+
+        if (extraBridgesNeeded > 0) {
+          const graph = await (container.items.spellServiceLoader as ISpellServiceLoader).getTransitionGraph();
+          const preferDash = config.motionTypeFilter === "prefer-dash";
+          const avoidDash = config.motionTypeFilter === "no-dash";
+
+          const extendedLetters = [...finalLetters];
+          const extendedSources = [...finalLetterSources];
+
+          for (let i = 0; i < extraBridgesNeeded; i++) {
+            const lastLetter = extendedLetters[extendedLetters.length - 1];
+            if (!lastLetter) break;
+
+            const successors = graph.getValidSuccessors(lastLetter);
+            if (successors.length === 0) break;
+
+            let bridgeLetter: Letter;
+            if (preferDash) {
+              const dashOpts = successors.filter(b => DASH_LETTERS.has(b));
+              const pool = dashOpts.length > 0 ? dashOpts : successors;
+              bridgeLetter = pool[Math.floor(Math.random() * pool.length)]!;
+            } else if (avoidDash) {
+              const nonDashOpts = successors.filter(b => !DASH_LETTERS.has(b));
+              const pool = nonDashOpts.length > 0 ? nonDashOpts : successors;
+              bridgeLetter = pool[Math.floor(Math.random() * pool.length)]!;
+            } else {
+              bridgeLetter = successors[Math.floor(Math.random() * successors.length)]!;
+            }
+
+            extendedLetters.push(bridgeLetter);
+            extendedSources.push({
+              letter: bridgeLetter,
+              isOriginal: false,
+              stepIndex: extendedLetters.length,
+            });
+          }
+
+          finalLetters = extendedLetters;
+          finalLetterSources = extendedSources;
+        }
+      }
+
+      spellState.setExpandedWord(finalLetters.join("") || spellState.inputWord);
+
+      if (finalLetterSources.length > 0) {
+        spellState.setLetterSources(finalLetterSources);
       }
 
       // Build constraints
@@ -200,7 +256,7 @@ export function createGenerationActionsState(
           targetStepCount: null,
           maxReversals: null,
         },
-        letters
+        finalLetters
       );
 
       const constraintSet = createConstraintSet(config?.constraintPreset ?? "smooth", {
@@ -208,11 +264,11 @@ export function createGenerationActionsState(
       });
 
       // Generate sequence with level and turn intensity from config
-      const sequence = await spellGenerator.generateRandomSequence(letters, {
+      const sequence = await spellGenerator.generateRandomSequence(finalLetters, {
         gridMode: (config?.gridMode ?? "diamond") as GridMode,
         constraints,
         constraintSet,
-        letterSources: parseResult.letterSources,
+        letterSources: finalLetterSources,
         level: levelToDifficulty(config?.level ?? 2),
         turnIntensity: config?.turnIntensity ?? 1.0,
       });
@@ -280,7 +336,7 @@ export function createGenerationActionsState(
       }
 
       // Build final sequence with spell metadata
-      const finalExpandedWord = parseResult.expandedWord || spellState.inputWord;
+      const finalExpandedWord = finalLetters.join("") || spellState.inputWord;
       const finalSequence: SequenceData = {
         ...sequenceWithStart,
         name: spellState.inputWord,
@@ -289,7 +345,7 @@ export function createGenerationActionsState(
           ...sequenceWithStart.metadata,
           spellData: {
             expandedWord: finalExpandedWord,
-            letterSources: parseResult.letterSources,
+            letterSources: finalLetterSources,
           },
         },
       };
@@ -299,7 +355,7 @@ export function createGenerationActionsState(
       if (config?.loopEnabled) {
         const loopType = (config.loopType as LOOPType) || LOOPType.STRICT_REWOUND;
         const sliceSize = (config.sliceSize as SliceSize) || SliceSize.HALVED;
-        loopedSequence = await applySpellLoopExtension(finalSequence, loopType, sliceSize, parseResult.letterSources);
+        loopedSequence = await applySpellLoopExtension(finalSequence, loopType, sliceSize, finalLetterSources);
       }
 
       // Apply duration rhythm template if configured
