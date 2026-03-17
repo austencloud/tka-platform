@@ -8,6 +8,8 @@
   import StepGrid from "./StepGrid.svelte";
   import WordLabel from "./WordLabel.svelte";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
+  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
+  import ModalHeader from "$lib/shared/foundation/ui/modal/ModalHeader.svelte";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
   import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
   import { loopDetector as circularLoopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
@@ -108,6 +110,23 @@
   const currentLevelStyle = $derived(levelStyles[difficultyLevel] ?? defaultLevelStyle);
   const hasContent = $derived((currentSequence?.steps?.length ?? 0) > 0);
 
+  // Info modals
+  let showDifficultyInfo = $state(false);
+  let showLoopInfo = $state(false);
+
+  const loopDisplayName = $derived.by(() => {
+    if (!loopDetectionResult?.loopType) return "";
+    return loopTypeResolver.formatForDisplay(loopDetectionResult.loopType);
+  });
+
+  const difficultyDescriptions: Record<number, string> = {
+    1: "Uses whole turns only. The foundation of TKA movement.",
+    2: "Introduces half turns and floating positions.",
+    3: "Adds mixed turn values and more complex transitions.",
+    4: "Uses skewed grid positions and advanced orientations.",
+    5: "Full interradial orientations across all 8 positions.",
+  };
+
   // Convert selectedStartPosition (PictographData) to StepData format for StepGrid
   const startPositionStep = $derived(() => {
     if (!selectedStartPosition) return null;
@@ -156,7 +175,7 @@
       <div class="top-bar">
         <div class="top-left-zone">
           {#if hasContent}
-            <div
+            <button
               class="difficulty-badge"
               style="
                 background: {currentLevelStyle.bg};
@@ -164,9 +183,11 @@
                 color: {currentLevelStyle.text};
               "
               title="Level {difficultyLevel}"
+              aria-label="Level {difficultyLevel} — tap for details"
+              onclick={() => (showDifficultyInfo = true)}
             >
               {difficultyLevel}
-            </div>
+            </button>
           {/if}
         </div>
         <div class="word-label-area">
@@ -179,12 +200,18 @@
         </div>
         <div class="top-right-zone">
           {#if hasDetectedLoop}
-            <LOOPIconStrip
-              {activeComponents}
-              size={22}
-              darkMode={true}
-              showFreeformWhenEmpty={false}
-            />
+            <button
+              class="loop-badge-button"
+              aria-label="{loopDisplayName} LOOP — tap for details"
+              onclick={() => (showLoopInfo = true)}
+            >
+              <LOOPIconStrip
+                {activeComponents}
+                size={22}
+                darkMode={true}
+                showFreeformWhenEmpty={false}
+              />
+            </button>
           {/if}
         </div>
       </div>
@@ -212,6 +239,65 @@
     </div>
   </div>
 </div>
+
+<!-- Difficulty Level Info Modal -->
+<BaseModal
+  open={showDifficultyInfo}
+  onclose={() => (showDifficultyInfo = false)}
+  size="sm"
+>
+  <ModalHeader
+    title="Level {difficultyLevel}"
+    subtitle={difficultyDescriptions[difficultyLevel] ?? ""}
+    icon="fa-layer-group"
+    iconColor={currentLevelStyle.border === "#000" ? (currentLevelStyle.text === "#fff" ? "#ff4500" : "#6366f1") : currentLevelStyle.border}
+    onClose={() => (showDifficultyInfo = false)}
+  />
+  <div class="info-modal-body">
+    <p>TKA sequences are classified into levels based on the complexity of their turns, positions, and orientations.</p>
+    <div class="level-list">
+      {#each [1, 2, 3, 4, 5] as level}
+        {@const style = levelStyles[level] ?? defaultLevelStyle}
+        <div class="level-row" class:current={level === difficultyLevel}>
+          <div
+            class="level-dot"
+            style="background: {style.bg}; border-color: {style.border}; color: {style.text};"
+          >{level}</div>
+          <span class="level-desc">{difficultyDescriptions[level]}</span>
+        </div>
+      {/each}
+    </div>
+  </div>
+</BaseModal>
+
+<!-- LOOP Info Modal -->
+<BaseModal
+  open={showLoopInfo}
+  onclose={() => (showLoopInfo = false)}
+  size="sm"
+>
+  <ModalHeader
+    title="{loopDisplayName} LOOP"
+    subtitle="This sequence repeats with a transformation pattern"
+    icon="fa-infinity"
+    iconColor="#36c3ff"
+    onClose={() => (showLoopInfo = false)}
+  />
+  <div class="info-modal-body">
+    <p>A LOOP (Linked Orbital Offset Pattern) means the second half of this sequence is a transformation of the first half. When played on repeat, it creates a seamless cycle.</p>
+    <div class="loop-components-display">
+      <span class="components-label">Active components:</span>
+      <div class="components-strip">
+        <LOOPIconStrip
+          {activeComponents}
+          size={28}
+          darkMode={true}
+          showFreeformWhenEmpty={false}
+        />
+      </div>
+    </div>
+  </div>
+</BaseModal>
 
 <style>
   .sequence-container {
@@ -280,6 +366,18 @@
     font-weight: bold;
     font-size: 18px;
     flex-shrink: 0;
+    cursor: pointer;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.15s ease;
+  }
+
+  .difficulty-badge:hover {
+    transform: scale(1.1);
+  }
+
+  .difficulty-badge:active {
+    transform: scale(0.95);
   }
 
   .top-right-zone {
@@ -318,6 +416,108 @@
     box-shadow:
       0 0 0 2px rgba(6, 182, 212, 0.5),
       0 0 20px rgba(6, 182, 212, 0.2);
+  }
+
+  /* LOOP badge clickable wrapper */
+  .loop-badge-button {
+    display: flex;
+    align-items: center;
+    background: none;
+    border: none;
+    padding: 4px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .loop-badge-button:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .loop-badge-button:active {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  /* Info modal body */
+  .info-modal-body {
+    padding: 20px;
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text-dim);
+    line-height: 1.6;
+  }
+
+  .info-modal-body p {
+    margin: 0 0 16px;
+  }
+
+  /* Level list in difficulty modal */
+  .level-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .level-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    transition: background 0.15s ease;
+  }
+
+  .level-row.current {
+    background: color-mix(in srgb, var(--theme-accent) 12%, transparent);
+  }
+
+  .level-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: Georgia, serif;
+    font-weight: bold;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .level-desc {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim);
+  }
+
+  .level-row.current .level-desc {
+    color: var(--theme-text);
+    font-weight: 500;
+  }
+
+  /* LOOP components display */
+  .loop-components-display {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 10px;
+  }
+
+  .components-label {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+  }
+
+  .components-strip {
+    display: flex;
+    justify-content: center;
+    padding: 8px 0;
   }
 
   /* Accessibility: Respect user's motion preferences */
