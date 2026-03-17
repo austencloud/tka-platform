@@ -7,16 +7,16 @@
 
 import {
   calculateEndOrientation as calculateEndOrientationCore,
-} from "../../orientation-calculator.js";
+} from "./OrientationCalculator.js";
 import type {
   IOrientationPropagator,
   IOrientationCalculator,
-} from "../contracts/IOrientationPropagator.js";
+} from "./IOrientationPropagator.js";
 import type {
   SequenceStep,
   SequenceResult,
   Orientation,
-} from "../../core/types/sequence-engine-types.js";
+} from "../types/sequence-engine-types.js";
 
 /**
  * Standalone orientation calculator that delegates to the canonical implementation.

@@ -31,7 +31,8 @@ import {
 import { generateConstraintReport } from "../reporting/report-generator.js";
 import { scoreBridgeOptions } from "./bridge-scorer.js";
 import { getLetterTransitionGraph } from "../../letter-transition-graph.js";
-import { calculateEndOrientation, Orientation } from "../../orientation-calculator.js";
+import { calculateEndOrientation } from "../../core/orientation/OrientationCalculator.js";
+import type { Orientation } from "../../core/types/sequence-engine-types.js";
 
 /**
  * Type 6 static letters - valid for starting positions.

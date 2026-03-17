@@ -11,12 +11,18 @@
 // Domain types
 export * from "./core/types/sequence-engine-types.js";
 
-// Service contracts
-export type { ITransitionGraph } from "./services/contracts/ITransitionGraph.js";
+// Orientation
 export type {
   IOrientationCalculator,
   IOrientationPropagator,
-} from "./services/contracts/IOrientationPropagator.js";
+} from "./core/orientation/IOrientationPropagator.js";
+export {
+  OrientationCalculator,
+  OrientationPropagator,
+} from "./core/orientation/OrientationPropagator.js";
+
+// Service contracts (transition graph - will move to core/ in next task)
+export type { ITransitionGraph } from "./services/contracts/ITransitionGraph.js";
 
 // Data provider contracts
 export type {
@@ -24,9 +30,5 @@ export type {
   LetterVariationData,
 } from "./data/contracts/ISequenceDataProvider.js";
 
-// Service implementations
+// Service implementations (transition graph - will move to core/ in next task)
 export { TransitionGraph } from "./services/implementations/TransitionGraph.js";
-export {
-  OrientationCalculator,
-  OrientationPropagator,
-} from "./services/implementations/OrientationPropagator.js";
