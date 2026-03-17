@@ -1,12 +1,15 @@
 <!-- Sidebar Footer Component -->
-<!-- Footer with settings, network status, inbox, account, and voice mic -->
+<!-- Footer with settings, network status, prop switcher, account, and voice mic -->
 <script lang="ts">
   import { container } from "$lib/shared/di";
   import NetworkStatusIndicator from "../../../offline/components/NetworkStatusIndicator.svelte";
   import { voiceControlState } from "../../../voice-control/state/voice-control-state.svelte";
   import { getSettings } from "../../../application/state/app-state.svelte";
-  import { inboxState } from "../../../inbox/state/inbox-state.svelte";
+  import { propDrawerState } from "../../../settings/state/prop-drawer-state.svelte";
+  import { getPropTypeDisplayInfo } from "../../../pictograph/prop/domain/PropTypeDisplayRegistry";
+  import { PropType } from "../../../pictograph/prop/domain/enums/PropType";
   import AccountRow from "../account/AccountRow.svelte";
+  import { inboxState } from "../../../inbox/state/inbox-state.svelte";
 
   let { isCollapsed, onSettingsClick, isInSettings = false, onAccountClick, accountSectionElement = $bindable(null) } = $props<{
     isCollapsed: boolean;
@@ -16,8 +19,17 @@
     accountSectionElement?: HTMLElement | null;
   }>();
 
+  // Prop type display info for the prop button
+  const bluePropType = $derived(getSettings()?.bluePropType ?? PropType.STAFF);
+  const propDisplayInfo = $derived(getPropTypeDisplayInfo(bluePropType));
+
+  // Inbox unread state
   const hasUnread = $derived(inboxState.totalUnreadCount > 0);
-  const unreadCount = $derived(inboxState.totalUnreadCount);
+  const badgeCount = $derived(
+    inboxState.totalUnreadCount > 99
+      ? "99+"
+      : String(inboxState.totalUnreadCount)
+  );
 
   // Voice control is opt-in via Settings > Preferences
   const voiceControlOptIn = $derived(getSettings()?.voiceControlEnabled === true);
@@ -47,6 +59,16 @@
     } else {
       voiceControlState.enterCommandMode();
     }
+  }
+
+  function handlePropClick() {
+    try {
+      const hapticService = container.items.hapticFeedback;
+      hapticService?.trigger("selection");
+    } catch {
+      // Ignore if not available
+    }
+    propDrawerState.toggle();
   }
 
   function handleInboxClick() {
@@ -93,31 +115,51 @@
       {/if}
     </button>
 
-    <!-- Network Status Indicator -->
-    <NetworkStatusIndicator variant="desktop" />
-
     <!-- Inbox Button -->
     <button
       class="footer-button inbox-button"
       class:collapsed={isCollapsed}
+      class:has-unread={hasUnread}
       onclick={handleInboxClick}
-      aria-label="Open inbox{hasUnread ? `, ${unreadCount} unread` : ''}"
+      aria-label="Open inbox{hasUnread ? `, ${inboxState.totalUnreadCount} unread` : ''}"
     >
-      <div class="button-icon-wrapper">
-        <div class="button-icon">
-          <i class="fas fa-inbox" aria-hidden="true"></i>
-        </div>
+      <div class="button-icon inbox-icon-wrapper">
+        <i class="fas fa-inbox" aria-hidden="true"></i>
         {#if hasUnread}
           <span class="unread-badge" aria-hidden="true">
-            {unreadCount > 99 ? "99+" : unreadCount}
+            {badgeCount}
           </span>
         {/if}
       </div>
       {#if !isCollapsed}
         <span class="button-label">Inbox</span>
-        {#if hasUnread && unreadCount > 0}
-          <span class="inbox-count">{unreadCount > 99 ? "99+" : unreadCount}</span>
+        {#if hasUnread}
+          <span class="unread-label-badge">
+            {badgeCount}
+          </span>
         {/if}
+      {/if}
+    </button>
+
+    <!-- Network Status Indicator -->
+    <NetworkStatusIndicator variant="desktop" />
+
+    <!-- Prop Switcher Button -->
+    <button
+      class="footer-button prop-button"
+      class:collapsed={isCollapsed}
+      onclick={handlePropClick}
+      aria-label="Change prop type. Current: {propDisplayInfo.label}"
+    >
+      <div class="button-icon">
+        <img
+          src={propDisplayInfo.image}
+          alt={propDisplayInfo.label}
+          class="prop-icon-img"
+        />
+      </div>
+      {#if !isCollapsed}
+        <span class="button-label">{propDisplayInfo.label}</span>
       {/if}
     </button>
 
@@ -259,30 +301,46 @@
   }
 
   /* ============================================================================
-     INBOX BUTTON
+     PROP SWITCHER BUTTON
      ============================================================================ */
-  .inbox-button {
-    color: var(--semantic-info, #3b82f6);
-    border-color: color-mix(in srgb, var(--semantic-info, #3b82f6) 25%, transparent);
+  .prop-button {
+    border-color: color-mix(in srgb, var(--theme-accent, #818cf8) 25%, transparent);
   }
 
-  .inbox-button:hover {
-    background: color-mix(in srgb, var(--semantic-info, #3b82f6) 10%, transparent);
-    border-color: color-mix(in srgb, var(--semantic-info, #3b82f6) 40%, transparent);
-    color: var(--semantic-info, #3b82f6);
+  .prop-button:hover {
+    background: color-mix(in srgb, var(--theme-accent, #818cf8) 10%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #818cf8) 40%, transparent);
   }
 
-  .inbox-button .button-icon {
+  .prop-button .button-icon {
     background: transparent;
   }
 
-  .button-icon-wrapper {
+  .prop-icon-img {
+    width: 26px;
+    height: 26px;
+    object-fit: contain;
+    filter: brightness(1.3) saturate(1.3);
+  }
+
+  /* ============================================================================
+     INBOX BUTTON
+     ============================================================================ */
+  .inbox-icon-wrapper {
     position: relative;
+  }
+
+  .inbox-button.has-unread {
+    border-color: color-mix(in srgb, var(--semantic-info, #3b82f6) 30%, var(--theme-stroke));
+  }
+
+  .inbox-button.has-unread:hover {
+    border-color: color-mix(in srgb, var(--semantic-info, #3b82f6) 50%, var(--theme-stroke));
   }
 
   .unread-badge {
     position: absolute;
-    top: -4px;
+    top: -6px;
     right: -6px;
     min-width: 16px;
     height: 16px;
@@ -290,20 +348,32 @@
     background: var(--semantic-error, #ef4444);
     border-radius: 8px;
     color: white;
-    font-size: 10px;
+    font-size: 0.625rem;
     font-weight: 700;
     line-height: 16px;
     text-align: center;
     pointer-events: none;
-    z-index: 1;
+    animation: badgePop var(--duration-emphasis, 300ms) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
-  .inbox-count {
-    margin-left: auto;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    color: var(--semantic-info, #3b82f6);
-    opacity: 0.8;
+  .unread-label-badge {
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    background: var(--semantic-error, #ef4444);
+    border-radius: 10px;
+    color: white;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    line-height: 20px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  @keyframes badgePop {
+    0% { transform: scale(0); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
   }
 
   /* ============================================================================
@@ -314,6 +384,10 @@
     .footer-button,
     .button-icon {
       transition: none !important;
+    }
+
+    .unread-badge {
+      animation: none;
     }
   }
 

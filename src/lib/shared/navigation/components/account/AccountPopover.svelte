@@ -7,8 +7,13 @@
   import type { IPropPreferencePersister } from "../../../community/services/contracts/IPropPreferencePersister";
   import { createPropPreferenceState } from "../../../community/state/prop-preference-state.svelte";
   import RobustAvatar from "../../../components/avatar/RobustAvatar.svelte";
-  import MyPropsCard from "./MyPropsCard.svelte";
-  import { myPropsDrawerState } from "./my-props-drawer-state.svelte";
+  import {
+    navigationState,
+  } from "../../state/navigation-state.svelte";
+  import {
+    handleModuleChange,
+  } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
+  import type { ModuleId } from "../../domain/types";
 
   let { isOpen, onClose, anchorElement } = $props<{
     isOpen: boolean;
@@ -113,6 +118,7 @@
     onClose();
   }
 
+  // Prop preference state for nudge detection
   const userId = $derived(authState.user?.uid);
   const propState = $derived.by(() => {
     if (!userId) return null;
@@ -120,16 +126,17 @@
     return createPropPreferenceState(persister, userId);
   });
 
-  function handleOpenPropEditor() {
+  // Profile completeness nudges — each disappears once the user completes the action
+  const needsPhoto = $derived(isAuthenticated && !photoURL);
+  const needsProp = $derived(
+    isAuthenticated && propState && !propState.loading && !propState.favoriteProp
+  );
+  const hasNudges = $derived(needsPhoto || needsProp);
+
+  async function handleNudgeNavigate(tab: string) {
     triggerHaptic();
     onClose();
-    // Open drawer via shared state so it renders at the document root,
-    // outside the sidebar's backdrop-filter containing block
-    requestAnimationFrame(() => {
-      if (propState) {
-        myPropsDrawerState.open(propState);
-      }
-    });
+    await handleModuleChange("settings" as ModuleId, tab);
   }
 </script>
 
@@ -162,9 +169,40 @@
       </div>
     </div>
 
-    {#if isAuthenticated}
-      <div class="props-section">
-        <MyPropsCard {propState} onOpenPropEditor={handleOpenPropEditor} />
+    {#if isAuthenticated && hasNudges}
+      <div class="nudges-section">
+        {#if needsPhoto}
+          <button
+            class="nudge-card"
+            onclick={() => handleNudgeNavigate("profile")}
+            aria-label="Add a profile photo"
+          >
+            <div class="nudge-icon">
+              <i class="fas fa-camera" aria-hidden="true"></i>
+            </div>
+            <div class="nudge-info">
+              <span class="nudge-label">Add a profile photo</span>
+              <span class="nudge-hint">Let people recognize you</span>
+            </div>
+            <i class="fas fa-chevron-right nudge-arrow" aria-hidden="true"></i>
+          </button>
+        {/if}
+        {#if needsProp}
+          <button
+            class="nudge-card"
+            onclick={() => handleNudgeNavigate("props")}
+            aria-label="Pick your favorite prop"
+          >
+            <div class="nudge-icon">
+              <i class="fas fa-fire" aria-hidden="true"></i>
+            </div>
+            <div class="nudge-info">
+              <span class="nudge-label">Pick your favorite prop</span>
+              <span class="nudge-hint">What do you spin?</span>
+            </div>
+            <i class="fas fa-chevron-right nudge-arrow" aria-hidden="true"></i>
+          </button>
+        {/if}
       </div>
     {/if}
 
@@ -287,11 +325,75 @@
   }
 
   /* ==========================================================================
-     PROPS SECTION
+     NUDGES SECTION
      ========================================================================== */
-  .props-section {
+  .nudges-section {
     padding: 4px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .nudge-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 8px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background var(--duration-fast, 150ms) ease;
+  }
+
+  .nudge-card:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
+  }
+
+  .nudge-card:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--theme-accent) 70%, transparent);
+    outline-offset: -2px;
+  }
+
+  .nudge-icon {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--theme-accent) 12%, transparent);
+    color: var(--theme-accent, #6366f1);
+    font-size: 12px;
+  }
+
+  .nudge-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    text-align: left;
+  }
+
+  .nudge-label {
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 600;
+    color: var(--theme-text, white);
+  }
+
+  .nudge-hint {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  }
+
+  .nudge-arrow {
+    font-size: 10px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
+    flex-shrink: 0;
   }
 
   /* ==========================================================================
