@@ -1,0 +1,98 @@
+/**
+ * Rewound LOOP Executor
+ *
+ * Temporal transformation that plays the sequence backwards.
+ * Appends reversed steps to double the sequence length.
+ * Works on ANY sequence regardless of position relationships.
+ */
+
+import type { ILOOPExecutor } from "./ILOOPExecutor.js";
+import type { SequenceStep, MotionData } from "../../core/types/sequence-engine-types.js";
+import type { SliceSize } from "../loop-types.js";
+
+export class RewoundExecutor implements ILOOPExecutor {
+  executeLOOP(sequence: SequenceStep[], _sliceSize: SliceSize): SequenceStep[] {
+    if (sequence.length < 2) {
+      throw new Error("Sequence must have at least 2 steps (start position + 1 beat)");
+    }
+
+    const startPosition = sequence.shift();
+    if (!startPosition) {
+      throw new Error("Sequence must have a start position");
+    }
+
+    const originalSteps = [...sequence];
+    const originalLength = originalSteps.length;
+
+    const reversedSteps: SequenceStep[] = [];
+    const beatsToReverse = [...originalSteps].reverse();
+
+    for (let i = 0; i < beatsToReverse.length; i++) {
+      const sourceStep = beatsToReverse[i]!;
+      const newStepNumber = originalLength + i + 1;
+
+      const previousStep =
+        i === 0
+          ? originalSteps[originalSteps.length - 1]!
+          : reversedSteps[i - 1]!;
+
+      const rewoundBeat = this.createRewoundBeat(
+        sourceStep,
+        previousStep,
+        newStepNumber
+      );
+
+      reversedSteps.push(rewoundBeat);
+    }
+
+    const allSteps = [...originalSteps, ...reversedSteps];
+    allSteps.unshift(startPosition);
+
+    return allSteps;
+  }
+
+  private createRewoundBeat(
+    sourceStep: SequenceStep,
+    previousStep: SequenceStep,
+    newStepNumber: number
+  ): SequenceStep {
+    return {
+      ...sourceStep,
+      stepNumber: newStepNumber,
+      beatIndex: newStepNumber,
+      startPosition: previousStep.endPosition,
+      endPosition: sourceStep.startPosition,
+      blueMotion: this.createRewoundMotion(
+        sourceStep.blueMotion,
+        previousStep.blueMotion
+      ),
+      redMotion: this.createRewoundMotion(
+        sourceStep.redMotion,
+        previousStep.redMotion
+      ),
+    };
+  }
+
+  private createRewoundMotion(
+    sourceMotion: MotionData,
+    previousMotion: MotionData
+  ): MotionData {
+    let reversedRotation = sourceMotion.rotationDirection;
+    if (reversedRotation === "cw") {
+      reversedRotation = "ccw";
+    } else if (reversedRotation === "ccw") {
+      reversedRotation = "cw";
+    }
+
+    return {
+      ...sourceMotion,
+      startLocation: previousMotion.endLocation,
+      endLocation: sourceMotion.startLocation,
+      rotationDirection: reversedRotation,
+      startOrientation: sourceMotion.endOrientation,
+      endOrientation: sourceMotion.startOrientation,
+    };
+  }
+}
+
+export const rewoundExecutor = new RewoundExecutor();
