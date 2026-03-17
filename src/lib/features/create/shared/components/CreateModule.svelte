@@ -67,6 +67,7 @@
   import { SessionManager } from "../services/SessionManager.svelte";
   import { Autosaver } from "../services/Autosaver";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { networkStatusState } from "$lib/shared/offline/state/network-status-state.svelte";
   import { createPanelHeightTracker } from "../state/managers/PanelHeightTracker.svelte";
   import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
   import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
@@ -312,40 +313,31 @@
         // Start effect coordinator (manages all reactive effects)
         setupEffectCoordinator();
 
-        // Initialize session management
-        sessionManager = new SessionManager();
+        // Generate a local session ID — no Firestore dependency, no auth needed
+        const localSessionId = crypto.randomUUID();
+
+        // Start autosave immediately using the local ID; writes to Dexie regardless of auth
         autosaver = new Autosaver();
+        autosaver.startAutosave(
+          () => CreateModuleState?.sequenceState.currentSequence || null,
+          localSessionId,
+          30000
+        );
 
-        // Wait for auth to be initialized before creating session
-        // This prevents race condition where CreateModule initializes before Firebase auth
-        if (!authState.isInitialized) {
-          logger.info("Waiting for auth to initialize...");
-          // Poll for auth initialization (max 5 seconds)
-          let waited = 0;
-          while (!authState.isInitialized && waited < 5000) {
-            await new Promise((r) => setTimeout(r, 100));
-            waited += 100;
-          }
-        }
+        logger.success("Autosave started (local session)");
 
-        // Only create session if user is authenticated
-        if (authState.isAuthenticated) {
+        // Lazy session creation — only when authenticated and online.
+        // A real Firestore session is best-effort; autosave never depends on it.
+        if (authState.isAuthenticated && networkStatusState.isOnline) {
           try {
+            sessionManager = new SessionManager();
             await sessionManager.createSession();
-
-            // Start autosave interval (every 30 seconds)
-            autosaver.startAutosave(
-              () => CreateModuleState?.sequenceState.currentSequence || null,
-              sessionManager.getCurrentSession()?.sessionId || "",
-              30000
-            );
-
-            logger.success("Session management initialized");
+            logger.success("Firestore session created");
           } catch (sessionError) {
-            logger.warn("Session creation failed:", sessionError);
+            logger.warn("[CreateModule] Session creation deferred:", sessionError);
           }
         } else {
-          logger.info("Session management skipped (user not authenticated)");
+          logger.info("Session creation skipped (not authenticated or offline)");
         }
 
         logger.success("CreateModule initialized successfully");
@@ -438,7 +430,9 @@
 
       // Cleanup session management
       autosaver?.stopAutosave();
-      sessionManager?.abandonSession();
+      if (sessionManager?.getCurrentSession()) {
+        sessionManager.abandonSession();
+      }
     };
   });
 
