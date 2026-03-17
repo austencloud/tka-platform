@@ -22,7 +22,11 @@ import type {
   ConstraintReport,
   IConstraint,
 } from "../constraints/types.js";
-import type { SequenceStep } from "../../core/types/sequence-engine-types.js";
+import type { SequenceStep, Orientation } from "../../core/types/sequence-engine-types.js";
+import {
+  OrientationPropagator,
+  OrientationCalculator as OrientationCalculatorImpl,
+} from "../../core/orientation/OrientationPropagator.js";
 import { LetterParser } from "../../core/letters/LetterParser.js";
 import { LetterClassifier } from "../../core/letters/LetterClassifier.js";
 import { allocateTurns, type TurnAllocation } from "../turns/TurnAllocator.js";
@@ -392,10 +396,21 @@ export class SequenceBuilder {
       });
     }
 
-    const startPosition = sequence[0]!;
+    // Propagate orientations through the sequence. The CSV data has
+    // orientations for 0-turn variations. After applying non-zero turns,
+    // the end orientations must be recalculated: each beat's start
+    // orientation = previous beat's end orientation, and end orientation
+    // is derived from motion type + turns + rotation direction.
+    const propagator = new OrientationPropagator(new OrientationCalculatorImpl());
+    const blueStartOrientation = (sequence[0]?.blueMotion.endOrientation || "in") as Orientation;
+    let propagated = propagator.propagateForColor(sequence, "blue", blueStartOrientation);
+    const redStartOrientation = (sequence[0]?.redMotion.endOrientation || "in") as Orientation;
+    propagated = propagator.propagateForColor(propagated, "red", redStartOrientation);
+
+    const startPosition = propagated[0]!;
 
     return {
-      sequence,
+      sequence: propagated,
       startPosition,
       bridgeStepIndices: searchResult.bridgeStepIndices,
       constraintReport: searchResult.constraintReport,
