@@ -57,7 +57,7 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
       length: options.length,
       gridMode: String(options.gridMode),
       level,
-      constraintOptions: this.mapPropContinuity(options.propContinuity),
+      constraintOptions: this.mapConstraints(options),
       startPosition: options.startPosition?.startPosition
         ? String(options.startPosition.startPosition)
         : undefined,
@@ -92,12 +92,11 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
     // extends the seed back to the full length.
     const sliceMultiplier = sliceSize === SliceSize.QUARTERED ? 4 : 2;
     const seedLength = Math.max(1, Math.floor(options.length / sliceMultiplier));
-
     const result = builder.build({
       length: seedLength,
       gridMode: String(options.gridMode),
       level,
-      constraintOptions: this.mapPropContinuity(options.propContinuity),
+      constraintOptions: this.mapConstraints(options),
       startPosition: options.startPosition?.startPosition
         ? String(options.startPosition.startPosition)
         : undefined,
@@ -113,28 +112,51 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
   }
 
   /**
-   * Map the app's PropContinuity preference to the engine's ConstraintOptions.
+   * Map the app's 3-axis constraint system to the engine's ConstraintOptions.
    *
-   * CONTINUOUS = maximize prop spin continuity (no reversals)
-   * RANDOM = allow reversals freely
+   * constraintPreset: smooth/mixed/choppy → prop spin continuity
+   * handPathMode: smooth/mixed/choppy → hand path continuity
+   * motionTypeFilter: no-dash/prefer-dash/null → motion family exclusion
    */
-  private mapPropContinuity(
-    propContinuity?: PropContinuity
-  ): ConstraintOptions {
-    switch (propContinuity) {
-      case PropContinuity.CONTINUOUS:
-        return {
-          propContinuity: "maximize",
-          handPathContinuity: "maximize",
-        };
-      case PropContinuity.RANDOM:
-        return { propContinuity: "allow-reversals" };
-      default:
-        return {
-          propContinuity: "maximize",
-          handPathContinuity: "maximize",
-        };
+  private mapConstraints(options: GenerationOptions): ConstraintOptions {
+    const result: ConstraintOptions = {};
+
+    // Prop continuity (constraintPreset axis)
+    const propAxis = options.constraintPreset ?? "smooth";
+    switch (propAxis) {
+      case "smooth":
+        result.propContinuity = "maximize";
+        break;
+      case "choppy":
+        result.propContinuity = "force-reversals";
+        break;
+      case "mixed":
+        result.propContinuity = "allow-reversals";
+        break;
     }
+
+    // Hand path continuity (handPathMode axis)
+    const handAxis = options.handPathMode ?? "smooth";
+    switch (handAxis) {
+      case "smooth":
+        result.handPathContinuity = "maximize";
+        break;
+      case "choppy":
+        result.handPathContinuity = "force-reversals";
+        break;
+      case "mixed":
+        result.handPathContinuity = "allow-reversals";
+        break;
+    }
+
+    // Motion type filter (motionTypeFilter axis)
+    if (options.motionTypeFilter === "no-dash") {
+      result.motionFamily = { exclude: ["dash"] };
+    }
+    // "prefer-dash" is a soft preference — not a hard constraint.
+    // The compositional system doesn't have a soft motion family preference yet.
+
+    return result;
   }
 
   /**
