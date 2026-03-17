@@ -93,6 +93,7 @@ export class BeamSearch {
     startPosition: string | undefined,
     constraintSet: ConstraintSet,
     beamWidth?: number,
+    requiredEndPositions?: Set<string>,
   ): BeamSearchResult {
     const config: BeamSearchConfig = {
       ...DEFAULT_BEAM_CONFIG,
@@ -162,6 +163,15 @@ export class BeamSearch {
           state.currentEndPosition,
           this.gridMode,
         );
+
+        // On the final letter, if LOOP requires specific end positions,
+        // only keep variations that land there.
+        const isFinalLetter = i === letters.length - 1;
+        if (isFinalLetter && requiredEndPositions && requiredEndPositions.size > 0) {
+          validVariations = validVariations.filter(
+            (p) => requiredEndPositions.has(p.endPosition),
+          );
+        }
 
         if (validVariations.length === 0) {
           // No direct path — try bridge letters
@@ -250,8 +260,8 @@ export class BeamSearch {
     startPosition: string | undefined,
     constraintSet: ConstraintSet,
     beamWidth?: number,
-    requiredEndPosition?: string,
-    loopPositionMap?: Record<string, string>,
+    requiredEndPositions?: Set<string>,
+    loopPositionMap?: Record<string, string[]>,
   ): BeamSearchResult {
     const config: BeamSearchConfig = {
       ...DEFAULT_BEAM_CONFIG,
@@ -273,10 +283,18 @@ export class BeamSearch {
       ? nonType6.filter((p) => p.startPosition === startPosition)
       : nonType6;
 
-    if (length === 1 && requiredEndPosition) {
+    if (length === 1 && requiredEndPositions && requiredEndPositions.size > 0) {
+      const endSet = requiredEndPositions;
       firstBeatCandidates = firstBeatCandidates.filter(
-        (p) => p.endPosition === requiredEndPosition,
+        (p) => endSet.has(p.endPosition),
       );
+    } else if (length === 1 && loopPositionMap && Object.keys(loopPositionMap).length > 0) {
+      // No explicit requiredEndPositions but we have a position map.
+      // Pre-filter to candidates whose endPosition is valid for their startPosition.
+      firstBeatCandidates = firstBeatCandidates.filter((p) => {
+        const validEnds = loopPositionMap[p.startPosition];
+        return validEnds && validEnds.includes(p.endPosition);
+      });
     }
 
     if (firstBeatCandidates.length === 0) {
@@ -316,19 +334,19 @@ export class BeamSearch {
       return this.failResult("No valid starting configurations found for length-based generation", statesExplored, beamPrunings);
     }
 
-    // If a loopPositionMap is provided but no explicit requiredEndPosition,
-    // compute it from the actual start position of the first beam state.
+    // If a loopPositionMap is provided but no explicit requiredEndPositions,
+    // compute from the actual start position of the first beam state.
     // This handles the case where startPosition was random.
-    if (!requiredEndPosition && loopPositionMap && beam.length > 0) {
+    if ((!requiredEndPositions || requiredEndPositions.size === 0) && loopPositionMap && beam.length > 0) {
       const actualStartPosition = beam[0]!.steps[0]?.startPosition;
       if (actualStartPosition) {
-        requiredEndPosition = loopPositionMap[actualStartPosition];
+        const endPositions = loopPositionMap[actualStartPosition];
+        if (endPositions && endPositions.length > 0) {
+          requiredEndPositions = new Set(endPositions);
 
-        // If using a position map, also filter the beam to only keep
-        // states whose start position has a valid map entry. Different
-        // random starts may map to different end positions, so we pick
-        // the most common start and filter to that.
-        if (requiredEndPosition) {
+          // Filter beam to only keep states whose start position has a
+          // valid map entry. Different random starts may map to different
+          // end positions, so we pick the first start and filter to that.
           beam = beam.filter(
             (s) => s.steps[0]?.startPosition === actualStartPosition,
           );
@@ -340,14 +358,14 @@ export class BeamSearch {
     // length is 1). The end-position filter inside the loop never fires, so we
     // must enforce it here. Without this, single-beat seeds for quartered LOOPs
     // can end at any position, causing the executor to reject the sequence.
-    if (length === 1 && requiredEndPosition) {
+    if (length === 1 && requiredEndPositions && requiredEndPositions.size > 0) {
       beam = beam.filter(
-        (s) => s.currentEndPosition === requiredEndPosition,
+        (s) => requiredEndPositions.has(s.currentEndPosition),
       );
 
       if (beam.length === 0) {
         return this.failResult(
-          `No first-beat variation ends at required position "${requiredEndPosition}" for single-beat seed`,
+          `No first-beat variation ends at required positions [${Array.from(requiredEndPositions).join(", ")}] for single-beat seed`,
           statesExplored,
           beamPrunings,
         );
@@ -369,9 +387,9 @@ export class BeamSearch {
         // if no candidate can reach the required position, this beam state
         // is dead (the LOOP executor would reject it anyway).
         const isFinalBeat = i === length - 1;
-        if (isFinalBeat && requiredEndPosition) {
+        if (isFinalBeat && requiredEndPositions && requiredEndPositions.size > 0) {
           candidates = candidates.filter(
-            (p) => p.endPosition === requiredEndPosition,
+            (p) => requiredEndPositions.has(p.endPosition),
           );
         }
 
