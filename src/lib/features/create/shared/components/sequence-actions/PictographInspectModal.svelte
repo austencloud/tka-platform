@@ -227,7 +227,7 @@
   // Track copied section for visual feedback
   let copiedSection = $state<string | null>(null);
 
-  async function copyToClipboard(section: string, text: string): Promise<void> {
+  async function copyToClipboard(text: string, section: string): Promise<void> {
     try {
       await navigator.clipboard.writeText(text);
       copiedSection = section;
@@ -311,43 +311,42 @@
     position: fixed;
     inset: 0;
     z-index: 1000;
-    background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, 0.9);
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 24px;
-    animation: fadeIn var(--duration-fast) ease-out;
+    padding: 20px;
+    animation: fadeIn var(--duration-fast, 0.15s) ease-out;
   }
 
   .modal-content {
-    background: linear-gradient(
-      135deg,
-      rgba(25, 30, 40, 0.98),
-      rgba(15, 20, 30, 0.98)
-    );
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 16px;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 8px;
     width: 100%;
     max-width: 1200px;
     max-height: 90vh;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
-    animation: slideUp var(--duration-normal) ease-out;
+    box-shadow: 0 16px 64px rgba(0, 0, 0, 0.7);
+    animation: slideUp var(--duration-normal, 0.3s) ease-out;
+    font-family: "SF Mono", "Cascadia Code", "Fira Code", Monaco, Consolas,
+      monospace;
   }
 
   .modal-body {
     flex: 1;
     overflow-y: auto;
-    padding: 20px;
+    padding: 16px;
+    scrollbar-width: thin;
+    scrollbar-color: #30363d transparent;
   }
 
   .columns {
     display: grid;
     grid-template-columns: 1fr 1.5fr 1.5fr;
-    gap: 20px;
+    gap: 12px;
     min-height: 0;
   }
 
@@ -363,15 +362,14 @@
   @keyframes slideUp {
     from {
       opacity: 0;
-      transform: translateY(16px) scale(0.98);
+      transform: translateY(8px);
     }
     to {
       opacity: 1;
-      transform: translateY(0) scale(1);
+      transform: translateY(0);
     }
   }
 
-  /* Responsive: stack columns on narrower screens */
   @media (max-width: 900px) {
     .columns {
       grid-template-columns: 1fr 1fr;
@@ -385,11 +383,10 @@
 
     .modal-content {
       max-width: 100%;
-      border-radius: 12px;
+      border-radius: 6px;
     }
   }
 
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
   @media (prefers-reduced-motion: reduce) {
     .modal-backdrop {
       animation: none;
