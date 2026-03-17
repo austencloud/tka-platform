@@ -16,7 +16,7 @@ import {
   ALL_LOOP_TYPES,
   type LOOPOption,
   type LOOPValidationResult,
-} from "./loop-types.js";
+} from "../loop-types.js";
 
 // ============================================================================
 // POSITION VALIDATION SETS
