@@ -177,7 +177,7 @@ export function registerLoopTools(server: McpServer): void {
   // Tool: generate_loop_sequence
   server.tool(
     "generate_loop_sequence",
-    "Generate a complete LOOP sequence from a word + LOOP type. Returns the circular sequence with all transformed steps. Currently supports REWOUND and STRICT_ROTATED.",
+    "[DEPRECATED: Use generate_sequence with loopType parameter instead.] Generate a complete LOOP sequence from a word + LOOP type. Returns the circular sequence with all transformed steps. Currently supports REWOUND and STRICT_ROTATED.",
     {
       word: z.string().describe('The sequence word, e.g., "CAKE"'),
       loopType: z.enum(["rewound", "strict_rotated"]).describe('LOOP type to apply: "rewound" (reverses and appends) or "strict_rotated" (180°/90° rotation)'),
@@ -331,7 +331,7 @@ export function registerLoopTools(server: McpServer): void {
   // Tool: generate_loop_image
   server.tool(
     "generate_loop_image",
-    "Generate a choreo card image for a LOOP sequence. Displays the complete circular sequence as a composite image.",
+    "[DEPRECATED: Use generate_sequence with loopType parameter instead.] Generate a choreo card image for a LOOP sequence. Displays the complete circular sequence as a composite image.",
     {
       word: z.string().describe('The sequence word, e.g., "CAKE"'),
       loopType: z.enum(["rewound", "strict_rotated"]).describe('LOOP type to apply'),

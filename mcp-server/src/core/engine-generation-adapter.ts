@@ -1,0 +1,279 @@
+/**
+ * Engine Generation Adapter
+ *
+ * Bridges the MCP tool parameters to the shared sequence engine's SequenceBuilder.
+ * Used for length-based generation and LOOP sequences — capabilities that the
+ * legacy builder doesn't support.
+ *
+ * The legacy builder (sequence-builder-adapter.ts) remains for plain word-based
+ * generation where it's proven and reliable.
+ */
+
+import {
+  SequenceBuilder,
+  type BuildOptions,
+  type BuildResult,
+  allocateTurns,
+  buildConstraintSet,
+  getPresetOptions,
+  type ConstraintOptions,
+} from "@tka/sequence-engine/generation";
+import { LOOPType, SliceSize } from "@tka/sequence-engine/loop";
+import { MCPVariationProvider } from "./MCPVariationProvider.js";
+import type { PictographData } from "@tka/sequence-engine/generation";
+import type { SequenceStep, SequenceResult } from "./sequence-builder-adapter.js";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LOOP type string → enum mapping
+// ─────────────────────────────────────────────────────────────────────────────
+
+const LOOP_TYPE_MAP: Record<string, LOOPType> = {
+  strict_rotated: LOOPType.STRICT_ROTATED,
+  strict_mirrored: LOOPType.STRICT_MIRRORED,
+  strict_flipped: LOOPType.STRICT_FLIPPED,
+  strict_swapped: LOOPType.STRICT_SWAPPED,
+  strict_inverted: LOOPType.STRICT_INVERTED,
+  swapped_inverted: LOOPType.SWAPPED_INVERTED,
+  rotated_inverted: LOOPType.ROTATED_INVERTED,
+  mirrored_swapped: LOOPType.MIRRORED_SWAPPED,
+  mirrored_inverted: LOOPType.MIRRORED_INVERTED,
+  rotated_swapped: LOOPType.ROTATED_SWAPPED,
+  mirrored_rotated: LOOPType.MIRRORED_ROTATED,
+  mirrored_inverted_rotated: LOOPType.MIRRORED_INVERTED_ROTATED,
+  mirrored_swapped_inverted: LOOPType.MIRRORED_SWAPPED_INVERTED,
+  mirrored_rotated_inverted_swapped: LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED,
+  strict_rewound: LOOPType.REWOUND,
+  rewound: LOOPType.REWOUND,
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LOOP type → component names (for renderer metadata)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const LOOP_TYPE_COMPONENTS: Record<string, string[]> = {
+  strict_rotated: ["rotated"],
+  strict_mirrored: ["mirrored"],
+  strict_flipped: ["flipped"],
+  strict_swapped: ["swapped"],
+  strict_inverted: ["inverted"],
+  swapped_inverted: ["swapped", "inverted"],
+  rotated_inverted: ["rotated", "inverted"],
+  mirrored_swapped: ["mirrored", "swapped"],
+  mirrored_inverted: ["mirrored", "inverted"],
+  rotated_swapped: ["rotated", "swapped"],
+  mirrored_rotated: ["mirrored", "rotated"],
+  mirrored_inverted_rotated: ["mirrored", "inverted", "rotated"],
+  mirrored_swapped_inverted: ["mirrored", "swapped", "inverted"],
+  mirrored_rotated_inverted_swapped: ["mirrored", "rotated", "inverted", "swapped"],
+  strict_rewound: ["rewound"],
+  rewound: ["rewound"],
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Public interface
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface EngineGenerationParams {
+  /** Word to spell (mutually exclusive routing with length, but word wins if both present) */
+  word?: string;
+  /** Number of beats for freeform generation */
+  length?: number;
+  /** Grid mode */
+  gridMode: string;
+  /** Difficulty level 1-3 */
+  level: number;
+  /** Maximum turn intensity 0-3 */
+  turnIntensity?: number;
+  /** Named constraint preset (smooth, reversal, etc.) */
+  constraintPreset?: string;
+  /** Natural language constraints */
+  constraints?: string;
+  /** Hand path continuity axis */
+  handPathMode?: "smooth" | "mixed" | "choppy";
+  /** Motion family filter */
+  motionTypeFilter?: "no-dash" | "prefer-dash";
+  /** Force start position */
+  startPosition?: string;
+  /** LOOP type string (triggers LOOP extension) */
+  loopType?: string;
+  /** Slice size for LOOP rotation */
+  sliceSize?: "halved" | "quartered";
+  /** Beam search width */
+  beamWidth?: number;
+}
+
+export interface EngineGenerationResult {
+  result: SequenceResult;
+  loopComponents?: string[];
+  seedWord?: string;
+  derivedWord?: string;
+}
+
+/**
+ * Generate a sequence through the shared engine's SequenceBuilder.
+ *
+ * Handles length-based generation, LOOP extension, the 3-axis constraint
+ * system, and start position targeting — everything the legacy builder can't do.
+ */
+export function generateViaEngine(
+  params: EngineGenerationParams,
+  allPictographs: PictographData[],
+): EngineGenerationResult {
+  const provider = new MCPVariationProvider(allPictographs, params.gridMode);
+  const builder = new SequenceBuilder(provider);
+
+  const buildOptions = assembleBuildOptions(params);
+  const buildResult = builder.build(buildOptions);
+
+  const sequenceResult = convertToSequenceResult(buildResult, params);
+  const loopComponents = params.loopType
+    ? LOOP_TYPE_COMPONENTS[params.loopType]
+    : undefined;
+
+  return {
+    result: sequenceResult,
+    loopComponents,
+    seedWord: buildResult.loop?.seedWord,
+    derivedWord: buildResult.loop?.derivedWord,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Internal: map MCP params → engine BuildOptions
+// ─────────────────────────────────────────────────────────────────────────────
+
+function assembleBuildOptions(params: EngineGenerationParams): BuildOptions {
+  const options: BuildOptions = {
+    gridMode: params.gridMode,
+    level: params.level,
+    startPosition: params.startPosition,
+    maxTurnIntensity: params.turnIntensity,
+    beamWidth: params.beamWidth,
+  };
+
+  // Word or length (one is required, caller validates)
+  if (params.word) {
+    options.word = params.word;
+  }
+
+  // For LOOP generation, the user specifies total length. The seed is a fraction.
+  if (params.loopType) {
+    const totalLength = params.length ?? (params.word ? undefined : 8);
+    const sliceSize = params.sliceSize === "quartered"
+      ? SliceSize.QUARTERED
+      : SliceSize.HALVED;
+    const sliceMultiplier = sliceSize === SliceSize.QUARTERED ? 4 : 2;
+
+    if (totalLength && !params.word) {
+      options.length = Math.max(1, Math.floor(totalLength / sliceMultiplier));
+    }
+
+    const engineLoopType = LOOP_TYPE_MAP[params.loopType];
+    if (!engineLoopType) {
+      throw new Error(`Unknown LOOP type: "${params.loopType}"`);
+    }
+
+    options.loop = {
+      type: engineLoopType,
+      sliceSize,
+      useTargetedGeneration: true,
+    };
+  } else if (params.length && !params.word) {
+    // Freeform (no LOOP): length is the total beat count directly
+    options.length = params.length;
+  }
+
+  // Constraint assembly: layer preset + 3-axis params
+  options.constraintOptions = assembleConstraintOptions(params);
+
+  return options;
+}
+
+/**
+ * Build ConstraintOptions from the MCP's 3-axis system + preset.
+ *
+ * The preset provides a base, and the 3-axis params override specific dimensions.
+ * This mirrors how the app's GenerationOrchestrator.mapConstraints() works.
+ */
+function assembleConstraintOptions(params: EngineGenerationParams): ConstraintOptions {
+  // Start with preset options if provided
+  let options: ConstraintOptions = {};
+
+  if (params.constraintPreset) {
+    const presetOptions = getPresetOptions(params.constraintPreset);
+    if (presetOptions) {
+      options = { ...presetOptions };
+    }
+  }
+
+  // The 3-axis system maps directly to ConstraintOptions fields.
+  // These override whatever the preset set (user's explicit choices win).
+
+  // Axis 1: constraintPreset controls propContinuity (already handled by preset)
+  // But if the user specifies constraintPreset as one of the app's 3-axis values
+  // (smooth/mixed/choppy), map those to propContinuity directly.
+  if (params.constraintPreset === "smooth" && !options.propContinuity) {
+    options.propContinuity = "maximize";
+  } else if (params.constraintPreset === "mixed") {
+    options.propContinuity = "allow-reversals";
+  } else if (params.constraintPreset === "choppy") {
+    options.propContinuity = "force-reversals";
+  }
+
+  // Axis 2: handPathMode
+  if (params.handPathMode === "smooth") {
+    options.handPathContinuity = "maximize";
+  } else if (params.handPathMode === "choppy") {
+    options.handPathContinuity = "force-reversals";
+  } else if (params.handPathMode === "mixed") {
+    options.handPathContinuity = "allow-reversals";
+  }
+
+  // Axis 3: motionTypeFilter
+  if (params.motionTypeFilter === "no-dash") {
+    options.motionFamily = { exclude: ["dash"] };
+  } else if (params.motionTypeFilter === "prefer-dash") {
+    options.motionFamily = { include: ["dash"] };
+  }
+
+  return options;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Internal: convert engine BuildResult → MCP SequenceResult
+// ─────────────────────────────────────────────────────────────────────────────
+
+function convertToSequenceResult(
+  buildResult: BuildResult,
+  params: EngineGenerationParams,
+): SequenceResult {
+  const steps: SequenceStep[] = buildResult.sequence.map((step, i) => ({
+    letter: step.letter,
+    variation: 0,
+    startPosition: step.startPosition,
+    endPosition: step.endPosition,
+    blueMotion: step.blueMotion,
+    redMotion: step.redMotion,
+    stepNumber: i,
+    beatIndex: step.beatIndex ?? i,
+    isBridge: step.isBridge ?? false,
+  }));
+
+  // Derive word from non-bridge, non-start-position letters
+  const word = steps
+    .slice(1)
+    .filter((s) => !s.isBridge)
+    .map((s) => s.letter)
+    .join("");
+
+  const lastStep = steps[steps.length - 1];
+
+  return {
+    word: params.word?.toUpperCase() ?? word,
+    steps,
+    startPosition: steps[0]?.startPosition ?? "",
+    endPosition: lastStep?.endPosition ?? "",
+    isValid: true,
+    bridgeStepIndices: buildResult.bridgeStepIndices,
+  };
+}
