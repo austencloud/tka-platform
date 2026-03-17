@@ -47,6 +47,37 @@ import {
 } from "../../loop/position-maps/circular-position-maps.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Dash and static motions in the CSV have "noRotation" because at 0 turns
+ * they don't spin. When non-zero turns are allocated, the prop DOES spin
+ * and needs a rotation direction for the renderer and orientation calculator.
+ *
+ * If a previous step's rotation direction for this hand is available,
+ * inherit it (smooth continuity). Otherwise pick randomly.
+ */
+function resolveRotationDirection(
+  original: string,
+  turns?: number | "fl",
+  previousRotation?: string,
+): string {
+  const hasTurns = turns !== undefined && turns !== 0;
+  const isNoRotation = original === "noRotation" || original === "no_rot" || !original;
+
+  if (hasTurns && isNoRotation) {
+    // Prefer continuity: inherit the previous beat's rotation direction
+    if (previousRotation && previousRotation !== "noRotation" && previousRotation !== "no_rot") {
+      return previousRotation;
+    }
+    // No previous context — pick randomly
+    return Math.random() < 0.5 ? "cw" : "ccw";
+  }
+  return original;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Public types
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -368,6 +399,11 @@ export class SequenceBuilder {
         ? turnAllocation.red[beatTurnIndex]
         : undefined;
 
+      // Get the previous step's rotation directions for continuity
+      const prevStep = sequence.length > 0 ? sequence[sequence.length - 1] : undefined;
+      const prevBlueRot = prevStep?.blueMotion.rotationDirection;
+      const prevRedRot = prevStep?.redMotion.rotationDirection;
+
       sequence.push({
         letter: pd.letter,
         startPosition: pd.startPosition,
@@ -376,7 +412,7 @@ export class SequenceBuilder {
           motionType: pd.blueMotion.motionType,
           startLocation: pd.blueMotion.startLocation,
           endLocation: pd.blueMotion.endLocation,
-          rotationDirection: pd.blueMotion.rotationDirection,
+          rotationDirection: resolveRotationDirection(pd.blueMotion.rotationDirection, blueTurns, prevBlueRot),
           startOrientation: pd.blueMotion.startOrientation,
           endOrientation: pd.blueMotion.endOrientation,
           turns: blueTurns,
@@ -385,7 +421,7 @@ export class SequenceBuilder {
           motionType: pd.redMotion.motionType,
           startLocation: pd.redMotion.startLocation,
           endLocation: pd.redMotion.endLocation,
-          rotationDirection: pd.redMotion.rotationDirection,
+          rotationDirection: resolveRotationDirection(pd.redMotion.rotationDirection, redTurns, prevRedRot),
           startOrientation: pd.redMotion.startOrientation,
           endOrientation: pd.redMotion.endOrientation,
           turns: redTurns,
