@@ -491,9 +491,6 @@
                 isOwned={ctx.isOwned}
                 onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
                 onDeleteRequest={() => (deleteConfirmOpen = true)}
-                bluePropType={ctx.bluePropType}
-                redPropType={ctx.redPropType}
-                onSetAsIntended={ctx.handleSetAsIntended}
                 {videoCount}
               />
             </div>

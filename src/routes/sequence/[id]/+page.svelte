@@ -684,9 +684,6 @@
               onRampStop={ctx.handleRampStop}
               isOwned={ctx.isOwned}
               onDeleteRequest={() => (deleteConfirmOpen = true)}
-              bluePropType={ctx.bluePropType}
-              redPropType={ctx.redPropType}
-              onSetAsIntended={ctx.handleSetAsIntended}
             />
             {#if ctx.rampActive}
               <RampProgressIndicator
