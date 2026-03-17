@@ -52,23 +52,34 @@ import { loopEndPositionSelector } from "../../loop/targeting/LOOPEndPositionSel
  * they don't spin. When non-zero turns are allocated, the prop DOES spin
  * and needs a rotation direction for the renderer and orientation calculator.
  *
- * If a previous step's rotation direction for this hand is available,
- * inherit it (smooth continuity). Otherwise pick randomly.
+ * Behavior depends on the reversal preference:
+ * - "maximize" (smooth): inherit the previous beat's rotation direction
+ * - "force-reversals" (choppy): flip the previous beat's rotation direction
+ * - "allow-reversals" (mixed) or default: random choice
  */
 function resolveRotationDirection(
   original: string,
   turns?: number | "fl",
   previousRotation?: string,
+  propContinuity?: "maximize" | "allow-reversals" | "force-reversals",
 ): string {
   const hasTurns = turns !== undefined && turns !== 0;
   const isNoRotation = original === "noRotation" || original === "no_rot" || !original;
 
   if (hasTurns && isNoRotation) {
-    // Prefer continuity: inherit the previous beat's rotation direction
-    if (previousRotation && previousRotation !== "noRotation" && previousRotation !== "no_rot") {
-      return previousRotation;
+    const hasPrevious = previousRotation && previousRotation !== "noRotation" && previousRotation !== "no_rot";
+
+    if (hasPrevious) {
+      if (propContinuity === "force-reversals") {
+        // Choppy: flip the direction every beat
+        return previousRotation === "cw" ? "ccw" : "cw";
+      }
+      if (propContinuity === "maximize") {
+        // Smooth: inherit the direction
+        return previousRotation!;
+      }
     }
-    // No previous context — pick randomly
+    // Mixed / no previous / default: random
     return Math.random() < 0.5 ? "cw" : "ccw";
   }
   return original;
@@ -233,7 +244,7 @@ export class SequenceBuilder {
     }
 
     // Stage 5: Post-process (convert PictographData to SequenceStep)
-    const result = this.postProcess(searchResult, turnAllocation, letters);
+    const result = this.postProcess(searchResult, turnAllocation, letters, options.constraintOptions?.propContinuity);
 
     // Stage 6: LOOP extension (if requested)
     if (options.loop) {
@@ -320,7 +331,7 @@ export class SequenceBuilder {
 
     // Stage 5: Post-process
     const letters = searchResult.steps.slice(1).map((s) => s.letter);
-    const result = this.postProcess(searchResult, turnAllocation, letters);
+    const result = this.postProcess(searchResult, turnAllocation, letters, options.constraintOptions?.propContinuity);
 
     // Stage 6: LOOP extension (if requested)
     if (options.loop) {
@@ -384,6 +395,7 @@ export class SequenceBuilder {
     searchResult: BeamSearchResult,
     turnAllocation: TurnAllocation,
     letters: string[],
+    propContinuity?: "maximize" | "allow-reversals" | "force-reversals",
   ): BuildResult {
     const bridgeIndices = new Set(searchResult.bridgeStepIndices);
     const sequence: SequenceStep[] = [];
@@ -419,7 +431,7 @@ export class SequenceBuilder {
           motionType: pd.blueMotion.motionType,
           startLocation: pd.blueMotion.startLocation,
           endLocation: pd.blueMotion.endLocation,
-          rotationDirection: resolveRotationDirection(pd.blueMotion.rotationDirection, blueTurns, prevBlueRot),
+          rotationDirection: resolveRotationDirection(pd.blueMotion.rotationDirection, blueTurns, prevBlueRot, propContinuity),
           startOrientation: pd.blueMotion.startOrientation,
           endOrientation: pd.blueMotion.endOrientation,
           turns: blueTurns,
@@ -428,7 +440,7 @@ export class SequenceBuilder {
           motionType: pd.redMotion.motionType,
           startLocation: pd.redMotion.startLocation,
           endLocation: pd.redMotion.endLocation,
-          rotationDirection: resolveRotationDirection(pd.redMotion.rotationDirection, redTurns, prevRedRot),
+          rotationDirection: resolveRotationDirection(pd.redMotion.rotationDirection, redTurns, prevRedRot, propContinuity),
           startOrientation: pd.redMotion.startOrientation,
           endOrientation: pd.redMotion.endOrientation,
           turns: redTurns,
