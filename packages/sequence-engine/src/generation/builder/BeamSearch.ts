@@ -239,6 +239,141 @@ export class BeamSearch {
   }
 
   /**
+   * Run beam search for length-based generation.
+   *
+   * Instead of placing specific letters, discovers available letters at each
+   * position and picks the best one according to constraint scoring. No bridges
+   * are needed since every transition is a direct step from the current position.
+   */
+  searchByLength(
+    length: number,
+    startPosition: string | undefined,
+    constraintSet: ConstraintSet,
+    beamWidth?: number,
+  ): BeamSearchResult {
+    const config: BeamSearchConfig = {
+      ...DEFAULT_BEAM_CONFIG,
+      beamWidth: beamWidth ?? DEFAULT_BEAM_CONFIG.beamWidth,
+    };
+
+    if (length <= 0) {
+      return this.failResult("Length must be greater than 0", 0, 0);
+    }
+
+    // Step 1: Find all non-Type6 variations to seed the first beat
+    const allVariations = this.variationProvider.getAllVariations(this.gridMode);
+    const nonType6 = allVariations.filter((p) => !TYPE_6_LETTERS.includes(p.letter));
+
+    // If a start position is given, filter first beat candidates to that position
+    const firstBeatCandidates = startPosition
+      ? nonType6.filter((p) => p.startPosition === startPosition)
+      : nonType6;
+
+    if (firstBeatCandidates.length === 0) {
+      return this.failResult("No variations available for first beat", 0, 0);
+    }
+
+    // Step 2: Score first beat candidates
+    const firstScores = scoreAndRankVariations(
+      firstBeatCandidates,
+      {
+        stepIndex: 0,
+        totalSteps: length,
+        previousSteps: [],
+        letter: firstBeatCandidates[0]!.letter,
+      },
+      constraintSet,
+    );
+
+    // Initialize beam with top-scored first variations
+    let beam: SearchState[] = [];
+    let statesExplored = 0;
+    let beamPrunings = 0;
+
+    for (const scored of firstScores.slice(0, config.beamWidth)) {
+      if (!scored.hardConstraintsSatisfied) continue;
+
+      const startPictograph = this.findStartPosition(scored.variation.startPosition);
+      if (startPictograph) {
+        const initialState = createInitialState(startPictograph.variation, startPictograph.index);
+        const state = extendState(initialState, scored.variation, scored);
+        beam.push(state);
+        statesExplored++;
+      }
+    }
+
+    if (beam.length === 0) {
+      return this.failResult("No valid starting configurations found for length-based generation", statesExplored, beamPrunings);
+    }
+
+    // Step 3: Beam search for remaining beats
+    for (let i = 1; i < length; i++) {
+      const nextBeam: SearchState[] = [];
+
+      for (const state of beam) {
+        // Find all non-Type6 variations at the current end position
+        const candidates = nonType6.filter(
+          (p) => p.startPosition === state.currentEndPosition,
+        );
+
+        if (candidates.length === 0) continue;
+
+        // Score all candidates at this position
+        const scores = scoreAndRankVariations(
+          candidates,
+          {
+            stepIndex: i,
+            totalSteps: length,
+            previousSteps: state.steps,
+            letter: candidates[0]!.letter,
+          },
+          constraintSet,
+        );
+
+        for (const scored of scores.slice(0, config.beamWidth)) {
+          if (!scored.hardConstraintsSatisfied) continue;
+          nextBeam.push(extendState(state, scored.variation, scored));
+          statesExplored++;
+        }
+      }
+
+      // Prune beam
+      beam = pruneBeam(nextBeam, config.beamWidth);
+      if (nextBeam.length > config.beamWidth) {
+        beamPrunings++;
+      }
+
+      if (beam.length === 0) {
+        return this.failResult(
+          `No valid path found at beat ${i + 1} of ${length}`,
+          statesExplored,
+          beamPrunings,
+        );
+      }
+    }
+
+    // Step 4: Select best final state
+    const bestState = getBestState(beam, config.minAcceptableScore);
+
+    if (!bestState) {
+      if (config.allowPartial && beam.length > 0) {
+        const partial = beam.sort((a, b) => b.cumulativeScore - a.cumulativeScore)[0];
+        if (partial) {
+          return this.buildResult(partial, constraintSet, statesExplored, beamPrunings, true);
+        }
+      }
+
+      return this.failResult(
+        `No sequence met minimum score threshold (${config.minAcceptableScore})`,
+        statesExplored,
+        beamPrunings,
+      );
+    }
+
+    return this.buildResult(bestState, constraintSet, statesExplored, beamPrunings, false);
+  }
+
+  /**
    * Attempt single-letter and multi-letter bridges between two letters.
    */
   private tryBridges(
