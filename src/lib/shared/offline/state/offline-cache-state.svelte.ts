@@ -12,7 +12,18 @@ import type {
   OfflineCacheStats,
 } from "../domain/offline-cache-types";
 
-export function createOfflineCacheState(orchestrator: IOfflineCacheOrchestrator) {
+export interface OfflineCacheState {
+  readonly phase: OfflineCachePhase;
+  readonly progress: OfflineCacheProgress;
+  readonly isOfflineReady: boolean;
+  startBackgroundCache(): Promise<void>;
+  downloadForOffline(): Promise<void>;
+  cancel(): void;
+  getCacheStats(): Promise<OfflineCacheStats>;
+  clearOfflineCache(): Promise<void>;
+}
+
+export function createOfflineCacheState(orchestrator: IOfflineCacheOrchestrator): OfflineCacheState {
   let phase = $state<OfflineCachePhase>("idle");
   let progress = $state<OfflineCacheProgress>({ cached: 0, total: 0, currentTask: "" });
   let isOfflineReady = $state(false);
@@ -75,5 +86,3 @@ export function createOfflineCacheState(orchestrator: IOfflineCacheOrchestrator)
     clearOfflineCache,
   };
 }
-
-export type OfflineCacheState = ReturnType<typeof createOfflineCacheState>;
