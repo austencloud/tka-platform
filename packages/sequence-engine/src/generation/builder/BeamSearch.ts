@@ -250,6 +250,8 @@ export class BeamSearch {
     startPosition: string | undefined,
     constraintSet: ConstraintSet,
     beamWidth?: number,
+    requiredEndPosition?: string,
+    loopPositionMap?: Record<string, string>,
   ): BeamSearchResult {
     const config: BeamSearchConfig = {
       ...DEFAULT_BEAM_CONFIG,
@@ -306,15 +308,48 @@ export class BeamSearch {
       return this.failResult("No valid starting configurations found for length-based generation", statesExplored, beamPrunings);
     }
 
+    // If a loopPositionMap is provided but no explicit requiredEndPosition,
+    // compute it from the actual start position of the first beam state.
+    // This handles the case where startPosition was random.
+    if (!requiredEndPosition && loopPositionMap && beam.length > 0) {
+      const actualStartPosition = beam[0]!.steps[0]?.startPosition;
+      if (actualStartPosition) {
+        requiredEndPosition = loopPositionMap[actualStartPosition];
+
+        // If using a position map, also filter the beam to only keep
+        // states whose start position has a valid map entry. Different
+        // random starts may map to different end positions, so we pick
+        // the most common start and filter to that.
+        if (requiredEndPosition) {
+          beam = beam.filter(
+            (s) => s.steps[0]?.startPosition === actualStartPosition,
+          );
+        }
+      }
+    }
+
     // Step 3: Beam search for remaining beats
     for (let i = 1; i < length; i++) {
       const nextBeam: SearchState[] = [];
 
       for (const state of beam) {
         // Find all non-Type6 variations at the current end position
-        const candidates = nonType6.filter(
+        let candidates = nonType6.filter(
           (p) => p.startPosition === state.currentEndPosition,
         );
+
+        // On the final beat, if a LOOP requires a specific end position,
+        // only keep candidates that land there. This ensures the seed
+        // sequence forms a valid arc for rotation (e.g. 180° for halved).
+        const isFinalBeat = i === length - 1;
+        if (isFinalBeat && requiredEndPosition) {
+          const targeted = candidates.filter(
+            (p) => p.endPosition === requiredEndPosition,
+          );
+          if (targeted.length > 0) {
+            candidates = targeted;
+          }
+        }
 
         if (candidates.length === 0) continue;
 
