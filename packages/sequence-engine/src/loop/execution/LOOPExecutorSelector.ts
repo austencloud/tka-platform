@@ -40,6 +40,7 @@ export class LOOPExecutorSelector {
       [LOOPType.ROTATED_INVERTED, rotatedInvertedExecutor],
       [LOOPType.MIRRORED_ROTATED, mirroredRotatedExecutor],
       [LOOPType.MIRRORED_INVERTED_ROTATED, mirroredRotatedInvertedExecutor],
+      [LOOPType.MIRRORED_SWAPPED_INVERTED, mirroredSwappedInvertedExecutor],
       [LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED, mirroredRotatedInvertedSwappedExecutor],
       [LOOPType.REWOUND, rewoundExecutor],
     ]);

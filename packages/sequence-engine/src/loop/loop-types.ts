@@ -43,6 +43,9 @@ export enum LOOPType {
   /** Mirrored inverted rotated - combines all three transformations */
   MIRRORED_INVERTED_ROTATED = "mirrored_inverted_rotated",
 
+  /** Mirrored swapped inverted - combines mirroring, swapping, and inversion */
+  MIRRORED_SWAPPED_INVERTED = "mirrored_swapped_inverted",
+
   /** Mirrored rotated inverted swapped - combines all four transformations */
   MIRRORED_ROTATED_INVERTED_SWAPPED = "mirrored_rotated_inverted_swapped",
 
@@ -82,6 +85,7 @@ export const LOOP_TYPE_LABELS: Record<LOOPType, string> = {
   [LOOPType.ROTATED_SWAPPED]: "Rotated / Swapped",
   [LOOPType.MIRRORED_ROTATED]: "Mirrored / Rotated",
   [LOOPType.MIRRORED_INVERTED_ROTATED]: "Mir / Comp / Rot",
+  [LOOPType.MIRRORED_SWAPPED_INVERTED]: "Mir / Swap / Comp",
   [LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED]: "All Four",
   [LOOPType.REWOUND]: "Rewound",
 };
@@ -102,6 +106,7 @@ export const LOOP_TYPE_DESCRIPTIONS: Record<LOOPType, string> = {
   [LOOPType.ROTATED_SWAPPED]: "Rotates with color swap",
   [LOOPType.MIRRORED_ROTATED]: "Combines mirroring and rotation",
   [LOOPType.MIRRORED_INVERTED_ROTATED]: "Mirror, invert, and rotate",
+  [LOOPType.MIRRORED_SWAPPED_INVERTED]: "Mirror, swap, and invert motion",
   [LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED]: "All four transformations combined",
   [LOOPType.REWOUND]: "Appends reversed sequence to double length",
 };
@@ -139,6 +144,7 @@ export const ALL_LOOP_TYPES: LOOPType[] = [
   LOOPType.ROTATED_SWAPPED,
   LOOPType.MIRRORED_ROTATED,
   LOOPType.MIRRORED_INVERTED_ROTATED,
+  LOOPType.MIRRORED_SWAPPED_INVERTED,
   LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED,
   LOOPType.REWOUND,
 ];
