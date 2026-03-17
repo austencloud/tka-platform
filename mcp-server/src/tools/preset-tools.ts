@@ -16,21 +16,21 @@ import {
   generateChainableSequence,
   type SequenceStep,
   type LoopConstraint,
-} from "../core/sequence-builder.js";
+} from "../core/sequence-builder-adapter.js";
 import { renderSequenceToImage, LOOPComponent } from "../core/sequence-renderer.js";
-import { allocateTurns } from "../core/turn-allocator.js";
 import {
+  allocateTurns,
   parseConstraintSet,
   emptyConstraintSet,
   getPresetConstraintSet,
   buildConstrainedSequence,
   type PresetName,
-} from "../core/constraints/index.js";
+} from "@tka/sequence-engine/generation";
 import {
   LOOPType,
   SliceSize,
   executeLOOP,
-} from "../core/loop/index.js";
+} from "@tka/sequence-engine/loop";
 import {
   createPreset,
   updatePreset,
@@ -378,6 +378,7 @@ export function registerPresetTools(server: McpServer): void {
             blueMotion: picto.blueMotion,
             redMotion: picto.redMotion,
             stepNumber: index,
+            beatIndex: index,
           }));
           sequenceWord = constrained.word;
         } else {

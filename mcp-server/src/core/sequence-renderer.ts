@@ -11,7 +11,7 @@
 
 import { createCanvas, type Canvas, type CanvasRenderingContext2D } from "canvas";
 import { getStandaloneRenderer, type RenderVisibilityOptions } from "./standalone-renderer.js";
-import { detectReversals, type SequenceStep } from "./sequence-builder.js";
+import { detectReversals, type SequenceStep } from "./sequence-builder-adapter.js";
 import {
   renderWordHeader,
   renderUserInfo,
@@ -160,9 +160,10 @@ export async function renderSequenceToImage(
     // Convert step to pictograph input format
     // Step 0 is start position (always 0 turns)
     // Other steps get their turns from the allocation array (indexed by stepNumber - 1)
-    const allocationIndex = step.stepNumber - 1;
-    const blueTurns = step.stepNumber === 0 ? 0 : (turnAllocation?.blue[allocationIndex] ?? 0);
-    const redTurns = step.stepNumber === 0 ? 0 : (turnAllocation?.red[allocationIndex] ?? 0);
+    const stepNum = step.stepNumber ?? step.beatIndex;
+    const allocationIndex = stepNum - 1;
+    const blueTurns = stepNum === 0 ? 0 : (turnAllocation?.blue[allocationIndex] ?? 0);
+    const redTurns = stepNum === 0 ? 0 : (turnAllocation?.red[allocationIndex] ?? 0);
 
     const pictographInput = {
       letter: step.letter,
@@ -206,7 +207,7 @@ export async function renderSequenceToImage(
 
       // Draw step number overlaid on pictograph (top-left corner)
       if (opts.showStepNumbers) {
-        drawOverlaidStepNumber(ctx, step.stepNumber, x, y, opts.cellSize, opts.darkMode);
+        drawOverlaidStepNumber(ctx, stepNum, x, y, opts.cellSize, opts.darkMode);
       }
     } catch (error) {
       // Draw error placeholder
@@ -231,8 +232,8 @@ export async function renderSequenceToImage(
     // Build letter styles from seed word only (for LOOP sequences)
     // This shows ONLY the original letters, not the transformed portion
     const seedLetters = opts.seedWord
-      ? letterSteps.filter((s) => s.stepNumber > 0 && !opts.derivedBeatIndices?.includes(s.stepNumber))
-      : letterSteps.filter((s) => s.stepNumber > 0);
+      ? letterSteps.filter((s) => (s.stepNumber ?? s.beatIndex) > 0 && !opts.derivedBeatIndices?.includes(s.stepNumber ?? s.beatIndex))
+      : letterSteps.filter((s) => (s.stepNumber ?? s.beatIndex) > 0);
 
     const letterStyles: LetterStyle[] = opts.showWord
       ? seedLetters.map((s) => ({

@@ -6,7 +6,7 @@
  */
 
 import { calculateEndOrientation as mcpCalculateEndOrientation, Orientation as McpOrientation } from "./orientation-calculator.js";
-import type { SequenceStep, SequenceResult } from "./sequence-builder.js";
+import type { SequenceStep, SequenceResult } from "./sequence-builder-adapter.js";
 
 /**
  * Propagate orientations for a single color through all steps.
