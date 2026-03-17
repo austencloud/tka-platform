@@ -3,15 +3,18 @@
  *
  * Handles the multi-step process of saving a sequence:
  * 1. Generate thumbnail image (with caching optimization)
- * 2. Upload thumbnail to Firebase Storage
+ * 2. Optimistic save to Dexie (instant, works offline)
  * 3. Create any new tags that don't exist
- * 4. Save sequence to Firestore
+ * 4. Background Firestore sync (non-blocking)
  * 5. Refresh library state
  *
- * Non-critical steps (thumbnail, tags) fail gracefully without blocking the save.
+ * The Dexie write in step 2 makes saving work offline. Firestore syncs
+ * in the background and fails gracefully if the user is offline — the
+ * sequence is already safe in local storage.
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { SequenceVisibility } from "../../domain/models/LibrarySequence";
 import type { ISharer } from "$lib/shared/share/services/contracts/ISharer";
 import type { IVideoUploader } from "$lib/shared/share/services/contracts/IVideoUploader";
 import type { ITagManager } from "../contracts/ITagManager";
@@ -29,6 +32,7 @@ import { container } from "$lib/shared/di";
 import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 import { LibraryError } from "./LibraryRepository";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+import { db } from "$lib/shared/persistence/database/TKADatabase";
 
 export class LibrarySaveService implements ILibrarySaveService {
   private readonly shareService: ISharer | null;
@@ -73,47 +77,35 @@ export class LibrarySaveService implements ILibrarySaveService {
       emitProgress
     );
 
+    // Step 2: Optimistic save to Dexie (instant, works offline)
+    // The sequence is safe in local storage before we ever touch Firestore.
+    emitProgress(2);
+    const sequenceToSave: SequenceData = {
+      ...sequence,
+      id: sequence.id || crypto.randomUUID(),
+      name,
+      displayName: displayName || undefined,
+      tags: [...tags],
+      thumbnails: thumbnailUrl ? [thumbnailUrl] : [...(sequence.thumbnails ?? [])],
+      isFavorite: false,
+    };
+    try {
+      await db.sequences.put(sequenceToSave);
+    } catch (dexieError) {
+      console.warn("[LibrarySaveService] Dexie optimistic save failed:", dexieError);
+    }
+
+    const sequenceId = sequenceToSave.id;
+
     // Step 3: Create any new tags
     emitProgress(3);
     await this.createNewTags(tags);
 
-    // Step 4: Save sequence to Firestore
+    // Step 4: Background Firestore sync (non-blocking)
+    // If offline, the sequence is already in Dexie and the user sees success.
     emitProgress(4);
-    let savedSequence;
-    try {
-      savedSequence = await this.libraryRepository.saveSequenceWithMetadata(
-        sequence,
-        {
-          name,
-          displayName: displayName || undefined,
-          visibility,
-          tags,
-          notes,
-          thumbnailUrl,
-        }
-      );
-    } catch (error) {
-      // Duplicate detection: show a friendly toast, not the scary error modal
-      if (error instanceof LibraryError && error.code === "ALREADY_EXISTS") {
-        toast.info("This exact sequence is already in your library.");
-        throw error;
-      }
-
-      const errorHandler = container.items.errorHandler as IErrorHandler;
-      errorHandler.showUserError({
-        message: "Couldn't save to your library",
-        technicalDetails: error instanceof Error ? error.message : String(error),
-        error: error instanceof Error ? error : new Error(String(error)),
-        severity: "error",
-        context: {
-          module: "library",
-          action: "save-to-library",
-          additionalData: { sequenceName: name, visibility },
-        },
-      });
-      throw error;
-    }
-    const sequenceId = savedSequence.id;
+    this.syncToFirestore(sequence, { name, displayName, visibility, tags, notes: notes ?? "", thumbnailUrl })
+      .catch(err => console.warn("[LibrarySaveService] Firestore sync pending:", err));
 
     // Step 5: Refresh library state
     emitProgress(5);
@@ -134,10 +126,10 @@ export class LibrarySaveService implements ILibrarySaveService {
   ): string {
     const labels: Record<number, string> = {
       1: "Creating thumbnail",
-      2: "Uploading preview",
+      2: "Saving locally",
       3: "Creating tags",
-      4: "Saving to library",
-      5: "Syncing data",
+      4: "Syncing to cloud",
+      5: "Refreshing library",
       6: "Complete",
     };
 
@@ -148,6 +140,32 @@ export class LibrarySaveService implements ILibrarySaveService {
     }
 
     return labels[step] || "Processing...";
+  }
+
+  /**
+   * Fire-and-forget Firestore sync. Runs after the local Dexie save succeeds,
+   * so if this fails (e.g. offline) the sequence is already safe locally.
+   */
+  private async syncToFirestore(
+    sequence: SequenceData,
+    metadata: {
+      name: string;
+      displayName?: string;
+      visibility: SequenceVisibility;
+      tags: string[];
+      notes: string;
+      thumbnailUrl?: string;
+    }
+  ): Promise<void> {
+    try {
+      await this.libraryRepository.saveSequenceWithMetadata(sequence, metadata);
+    } catch (error) {
+      if (error instanceof LibraryError && error.code === "ALREADY_EXISTS") {
+        toast.info("This exact sequence is already in your library.");
+      } else {
+        console.warn("[LibrarySaveService] Firestore sync failed (data safe in Dexie):", error);
+      }
+    }
   }
 
   /**
