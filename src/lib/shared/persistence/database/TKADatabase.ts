@@ -30,6 +30,10 @@ import type {
   StoredCalibrationProfile,
 } from "$lib/features/train/domain/models/TrainDatabaseModels";
 import type { Composition } from "$lib/features/compose/compose/domain/types";
+import type {
+  GalleryCacheEntry,
+  GalleryCacheMeta,
+} from "$lib/shared/offline/domain/offline-cache-types";
 import {
   DATABASE_NAME,
   DATABASE_VERSION,
@@ -78,6 +82,10 @@ export class TKADatabase extends Dexie {
 
   // Compose module tables (v5)
   compositions!: EntityTable<Composition, "id">;
+
+  // Offline cache tables (v6)
+  galleryCache!: EntityTable<GalleryCacheEntry, "id">;
+  galleryCacheMeta!: EntityTable<GalleryCacheMeta, "id">;
 
   constructor() {
     super(DATABASE_NAME);
@@ -147,6 +155,8 @@ export async function clearAllData(): Promise<void> {
       db.trainPerformances,
       db.trainCalibrationProfiles,
       db.compositions,
+      db.galleryCache,
+      db.galleryCacheMeta,
     ],
     async () => {
       await db.sequences.clear();
@@ -168,6 +178,8 @@ export async function clearAllData(): Promise<void> {
       await db.trainPerformances.clear();
       await db.trainCalibrationProfiles.clear();
       await db.compositions.clear();
+      await db.galleryCache.clear();
+      await db.galleryCacheMeta.clear();
     }
   );
 }
@@ -200,6 +212,9 @@ export async function getDatabaseInfo() {
     trainCalibrationProfiles: await db.trainCalibrationProfiles.count(),
     // Compose module stats (v5)
     compositions: await db.compositions.count(),
+    // Offline cache stats (v6)
+    galleryCache: await db.galleryCache.count(),
+    galleryCacheMeta: await db.galleryCacheMeta.count(),
   };
   return info;
 }
