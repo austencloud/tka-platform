@@ -44,9 +44,12 @@ interface IGalleryPrefetcher {
 
 ```typescript
 warmFromCache(sequences: SequenceData[], sourceRefs: Map<string, string>): void
+setLoadPromise(promise: Promise<SequenceData[]>): void
 ```
 
-Populates the in-memory `cachedSequences` and `sourceRefCache` without triggering a Firestore fetch. Called by `GalleryPrefetcher` after reading IndexedDB.
+`warmFromCache()` populates the in-memory `cachedSequences` and `sourceRefCache` without triggering a Firestore fetch. Called by `GalleryPrefetcher` after reading IndexedDB.
+
+`setLoadPromise()` lets the prefetcher inject its Firestore fetch promise so the loader's existing dedup logic prevents duplicate queries. The `lastSyncedAt` value from `loadCached()` is consumed by the prefetcher internally (not passed to the loader) for potential future staleness heuristics — currently unused but reserved.
 
 **Modified `loadSequenceMetadata()`:**
 
@@ -60,11 +63,13 @@ fetch from Firestore → cache → return
 New flow:
 ```
 if cachedSequences → return cached
-if prefetcher has in-flight promise → await it → return cached
+if loadPromise → return promise (may be set by prefetcher — see below)
 fetch from Firestore → cache → return
 ```
 
-This prevents duplicate Firestore queries when the gallery opens while a prefetch is already running.
+**Prefetch coordination:** The `GalleryPrefetcher` sets `PublicSequencesLoader.loadPromise` to its own Firestore fetch promise via a new `setLoadPromise(promise)` method. This reuses the loader's existing dedup logic — if the gallery opens while a prefetch is in-flight, `loadSequenceMetadata()` sees a non-null `loadPromise` and awaits it instead of starting a duplicate query. When the promise resolves, `cachedSequences` is populated and returned.
+
+The `loadPromise` field becomes `package-private` (accessible to `GalleryPrefetcher` via the DI-injected reference). No circular dependency — the prefetcher depends on the loader, not vice versa.
 
 ### Modified: `browse-state-factory.svelte.ts`
 
@@ -78,38 +83,39 @@ The existing flow handles this naturally — `loadSequenceMetadata()` already re
 
 ### Event System Completion
 
-Fire events from `LibraryRepository` methods directly instead of relying on callers:
+Fire events from `LibraryRepository` methods directly instead of relying on callers.
 
-| Method | Event to fire |
-|--------|--------------|
-| `saveSequence()` | `LIBRARY_SEQUENCE_ADDED_EVENT` |
-| `saveSequenceWithMetadata()` | `LIBRARY_SEQUENCE_ADDED_EVENT` |
-| `deleteSequences()` (batch) | `LIBRARY_MUTATED_EVENT` per sequence |
-| `updateSequence()` | `LIBRARY_MUTATED_EVENT` (reuse for updates) |
-| `setVisibility()` | `LIBRARY_MUTATED_EVENT` |
-| `toggleFavorite()` | `LIBRARY_MUTATED_EVENT` |
+**Three event types** (adding one new event for updates):
+
+| Event | Payload | Fired by |
+|-------|---------|----------|
+| `LIBRARY_SEQUENCE_ADDED_EVENT` | `{ sequence: SequenceData }` | `saveSequence()`, `saveSequenceWithMetadata()` |
+| `LIBRARY_MUTATED_EVENT` | `{ sequenceId: string }` | `deleteSequence()`, `deleteSequences()` (per ID) |
+| `LIBRARY_SEQUENCE_UPDATED_EVENT` (new) | `{ sequenceId: string, updates: Partial<PublicSequenceIndex> }` | `updateSequence()`, `setVisibility()`, `toggleFavorite()` |
+
+The existing `LIBRARY_MUTATED_EVENT` stays delete-only. The new `LIBRARY_SEQUENCE_UPDATED_EVENT` carries the changed fields so IndexedDB can be patched without a round-trip.
 
 **Deduplication:** `LibrarySaveService.saveSequence()` currently fires the added event from its caller (`SaveToLibraryPanel`). Move the event firing into `LibraryRepository` and remove it from the caller to avoid double-firing.
 
 ### IndexedDB Patching on Events
 
-The `GalleryPrefetcher` subscribes to library events and patches IndexedDB:
+The `GalleryPrefetcher` subscribes to all three library events and patches IndexedDB:
 
 - **Added:** `db.galleryCache.put(newEntry)` — upsert the new sequence
 - **Deleted:** `db.galleryCache.delete(sequenceId)` — remove the entry
-- **Updated (metadata/visibility):** `db.galleryCache.put(updatedEntry)` — overwrite
+- **Updated:** Read existing row from `galleryCache`, merge `updates` into it, `put()` back — single read + write
+
+`galleryCacheMeta.sequenceCount` is advisory-only and refreshed on next full sync. Individual patches do not update it, avoiding unnecessary write overhead. This is explicitly acceptable because `sequenceCount` is only used for stats/diagnostics, not for correctness.
 
 These are single-row IndexedDB operations — sub-millisecond. Non-blocking, fire-and-forget with error logging.
 
-### Library Tab: Same Pattern
+### Library Tab: Phase 2 (Deferred)
 
-`loadLibrarySequences()` in `browse-state-factory` already has a `libraryCache` in-memory array. Extend with:
+The library tab uses the same pattern conceptually: persist metadata to IndexedDB, warm on boot, patch on events. However, it requires a new Dexie table (`libraryCacheEntries`), a schema version bump, and a separate cache service.
 
-- Persist library metadata to a separate IndexedDB table (`libraryCacheEntries`) on load
-- Warm from IndexedDB on prefetch (same as community)
-- Patch on library events (same listeners)
+This is deferred to a follow-up. The community gallery is the higher-traffic surface and benefits more from prefetching (larger dataset, longer Firestore query). The library tab already has an in-memory `libraryCache` that persists across tab switches within a session.
 
-The `LibraryRepository.getSequences()` result maps directly to `SequenceData[]` so the same cache/warm pattern applies.
+**When implementing Phase 2:** Add a `libraryCacheEntries` table to `TKADatabase.ts` with a version bump, create a `LibraryOfflineCache` service mirroring `GalleryOfflineCache`, and extend `GalleryPrefetcher` to warm both caches.
 
 ## Data Flow
 
@@ -186,7 +192,7 @@ If the user navigates to the gallery before `requestIdleCallback` fires (extreme
 | `PublicSequencesLoader.ts` | Add `warmFromCache()`, coordinate with prefetch promise |
 | `browse-state-factory.svelte.ts` | No structural changes — benefits automatically from warmed cache |
 | `LibraryRepository.ts` | Fire events from 6 mutation methods |
-| `library-events.ts` | No changes needed (existing events sufficient) |
+| `library-events.ts` | Add `LIBRARY_SEQUENCE_UPDATED_EVENT` + `notifyLibrarySequenceUpdated()` + `onLibrarySequenceUpdated()` |
 | `browse-container.ts` | Register `GalleryPrefetcher` |
 | `MainApplication.svelte` (or app shell) | Kick off prefetch on mount |
 | `SaveToLibraryPanel.svelte` | Remove event firing (moved to repository) |
