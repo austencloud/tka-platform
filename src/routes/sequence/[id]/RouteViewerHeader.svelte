@@ -39,14 +39,20 @@
 
   let copyLinkFeedback = $state(false);
 
-  function handleCopyLink() {
+  async function handleCopyLink() {
     if (!sequence) return;
-    const encoder = container.items.sequenceEncoder;
-    const { url } = encoder.generateViewerURL(sequence, { compress: true });
-    navigator.clipboard.writeText(url).then(() => {
-      copyLinkFeedback = true;
-      setTimeout(() => { copyLinkFeedback = false; }, 1500);
-    });
+    try {
+      const shortCodeManager = container.items.shortCodeManager;
+      const { url } = await shortCodeManager.createShortCode(sequence);
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // Fallback to encoded URL if short code creation fails
+      const encoder = container.items.sequenceEncoder;
+      const { url } = encoder.generateViewerURL(sequence, { compress: true });
+      await navigator.clipboard.writeText(url);
+    }
+    copyLinkFeedback = true;
+    setTimeout(() => { copyLinkFeedback = false; }, 1500);
   }
 </script>
 

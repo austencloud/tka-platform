@@ -271,6 +271,7 @@ const libraryContainer = typeof window !== 'undefined' ? createLibraryContainer(
 const qrContainer = typeof window !== 'undefined' ? createQRContainer({
   browseLoader: browseContainer.items.browseLoader,
   sequenceEncoder: navigationContainer.items.sequenceEncoder,
+  hashMatcher: navigationContainer.items.publicSequenceHashMatcher,
 }) : null as any;
 
 // Animation 3D container needs browseLoader
