@@ -193,6 +193,33 @@ export class PublicSequencesLoader implements IBrowseLoader {
     }
   }
 
+  warmFromCache(sequences: SequenceData[], sourceRefs: Map<string, string>): void {
+    if (this.cachedSequences) return; // Already warmed or loaded — don't overwrite
+    this.cachedSequences = sequences;
+    for (const [key, value] of sourceRefs) {
+      this.sourceRefCache.set(key, value);
+    }
+  }
+
+  /**
+   * Force a fresh Firestore fetch regardless of cache state.
+   * Used by the prefetcher to sync in the background after warming from IndexedDB.
+   * Updates the in-memory cache and persists to IndexedDB offline cache.
+   */
+  async refreshFromFirestore(): Promise<SequenceData[]> {
+    const sequences = await this.fetchPublicSequences();
+    this.cachedSequences = sequences;
+
+    // Persist to offline cache for next session
+    if (this.galleryOfflineCache) {
+      this.persistToOfflineCache().catch((err) =>
+        console.warn("[PublicSequencesLoader] Offline cache persist failed:", err)
+      );
+    }
+
+    return sequences;
+  }
+
   private async fetchPublicSequences(): Promise<SequenceData[]> {
     this.lastFetchedDocs = [];
 
