@@ -1,3 +1,12 @@
+<script lang="ts" module>
+  /** API surface exposed via onReady callback for parent components */
+  export interface VirtualGridApi {
+    scrollToSequenceIndex: (index: number) => void;
+    getFirstVisibleSequenceIndex: () => number;
+    subscribeToScroll: (callback: () => void) => () => void;
+  }
+</script>
+
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import {
@@ -34,12 +43,15 @@
     thumbnailService,
     onAction = () => {},
     pinchColumnOverride,
+    onReady,
   } = $props<{
     sequences: SequenceData[];
     thumbnailService: IBrowseThumbnailProvider | null;
     onAction?: (action: string, sequence: SequenceData, variations?: SequenceData[]) => void;
     /** Pinch-to-zoom column override. Mobile: 2-3, Desktop: 2-5. Overrides responsive columns. */
     pinchColumnOverride?: number;
+    /** Called once the virtualizer is ready, providing scroll control functions */
+    onReady?: (api: VirtualGridApi) => void;
   }>();
 
   // Layout calculator for proper aspect ratio estimation
@@ -224,6 +236,16 @@
           gridZoomManager.updateContainerWidth(width);
         }
       }
+    });
+
+    // Notify parent that the grid API is ready
+    onReady?.({
+      scrollToSequenceIndex,
+      getFirstVisibleSequenceIndex,
+      subscribeToScroll: (callback: () => void) => {
+        scrollElement?.addEventListener("scroll", callback, { passive: true });
+        return () => scrollElement?.removeEventListener("scroll", callback);
+      },
     });
 
     return () => {
