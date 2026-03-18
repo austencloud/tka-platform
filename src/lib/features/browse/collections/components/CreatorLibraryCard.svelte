@@ -13,6 +13,8 @@ Displays:
     CreatorContentTab,
   } from "../state/collections-browse-state.svelte";
 
+  import { isGoogleAvatarUrl } from "$lib/shared/foundation/utils/google-avatar";
+
   const {
     data,
     isExpanded = false,
@@ -84,7 +86,7 @@ Displays:
         <img
           src={profile.avatar}
           alt={profile.displayName}
-          crossorigin="anonymous"
+          crossorigin={isGoogleAvatarUrl(profile.avatar) ? undefined : "anonymous"}
           referrerpolicy="no-referrer"
           onerror={(e) => {
             const img = e.currentTarget as HTMLImageElement;

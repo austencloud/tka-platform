@@ -651,6 +651,11 @@ export class AnimationEngine {
     // Initialize canvas (async process)
     await this.initializeCanvas();
 
+    // Sync previousGridMode with the grid texture loaded during initialization,
+    // so the change-detection in update() doesn't redundantly reload the same texture.
+    const initGridMode = this.lastPropsRef?.gridMode?.toString() ?? "diamond";
+    this.previousGridMode = initGridMode;
+
     // Wire overlay renderers that may have been created during the async
     // initializeCanvas gap. Svelte $effects fire while the canvas is still
     // initializing, so syncOverlay's rAF can create the WebGL renderer before
@@ -1192,11 +1197,16 @@ export class AnimationEngine {
   private async initializeCanvas(): Promise<void> {
     if (!this.containerElement) return;
 
+    // Use gridMode from the most recent props update (set by the $effect that
+    // runs engine.update() before initialization completes). Falls back to
+    // DIAMOND if no props have arrived yet.
+    const initialGridMode = this.lastPropsRef?.gridMode ?? GridMode.DIAMOND;
+
     await this.canvasInitializer.initialize(
       {
         containerElement: this.containerElement,
         backgroundAlpha: 1,
-        gridMode: GridMode.DIAMOND,
+        gridMode: initialGridMode,
         loadAnimatorServices: () => this.loadAnimatorServices(),
         initializePrecomputationService: () => {
           this.initializePrecomputationService();

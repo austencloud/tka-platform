@@ -6,15 +6,19 @@
  * CellPreWarmer generate identical keys, guaranteeing cache hits when
  * the pre-warmer has already rendered a cell.
  *
- * Key format: "lsp2-{djb2hash}" where the hash encodes all rendering
- * parameters that affect the final pixel output.
+ * Key format: "lsp4-{pipe-delimited rendering parameters}"
+ * Uses the full key string as the IndexedDB key instead of a hash.
+ * IndexedDB handles string keys natively and this eliminates the
+ * collision risk that existed with the 32-bit djb2 hash (lsp3).
  *
  * Version history:
  * - lsp-: Original format. Contaminated by ImageComposer write-through
  *   that stored blobs WITH step numbers under "nonum" keys.
  * - lsp2-: Attempted fix. Still contaminated because Canvas2DDirectRenderer
  *   unconditionally baked step numbers from StepData into rendered blobs.
- * - lsp3-: Fixed. Canvas2DDirectRenderer no longer draws step numbers.
+ * - lsp3-: Fixed step number baking. Used djb2 hash, but 32-bit hash space
+ *   caused collisions after ~46K entries, returning wrong prop type blobs.
+ * - lsp4-: Full string key. No hash, no collisions.
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
@@ -65,13 +69,7 @@ export class CellCacheKeyDeriver implements ICellCacheKeyDeriver {
       options.widthMultiplier && options.widthMultiplier !== 1 ? `wm${options.widthMultiplier}` : "",
     ];
 
-    // djb2 hash
-    const str = keyParts.join("|");
-    let hash = 5381;
-    for (let i = 0; i < str.length; i++) {
-      hash = ((hash << 5) + hash + str.charCodeAt(i)) | 0;
-    }
-    return `lsp3-${Math.abs(hash).toString(36)}`;
+    return `lsp4-${keyParts.join("|")}`;
   }
 }
 

@@ -209,7 +209,7 @@ export class VisibilityStateManager {
     }
     this.persistDebounceTimer = setTimeout(() => {
       this.persistDebounceTimer = null;
-      this.debouncedPersistSettings();
+      this.persistSettings();
     }, VisibilityStateManager.PERSIST_DEBOUNCE_MS);
   }
 

@@ -29,7 +29,10 @@ const STORE_NAME = "blobs";
 // All pre-v4 entries may have step numbers in "nonum" blobs — clear everything.
 // v5: Dark mode cross-fade implementation may have cached images with wrong theme colors.
 // All pre-v5 entries may have light-mode colors in dark-mode keyed entries — clear everything.
-const DB_VERSION = 5;
+// v6: Switched from 32-bit djb2 hash keys (lsp3-) to full string keys (lsp4-).
+// The hash had collision risk after ~46K entries, causing wrong prop type blobs to be served.
+// All lsp3- entries must be cleared since they can't be looked up under lsp4- keys anyway.
+const DB_VERSION = 6;
 
 interface CachedBlobEntry {
   /** Hash key for the pictograph configuration (includes size) */
@@ -64,12 +67,13 @@ export class PictographBlobCache implements IPictographBlobCache {
         if (!db.objectStoreNames.contains(STORE_NAME)) {
           const store = db.createObjectStore(STORE_NAME, { keyPath: "key" });
           store.createIndex("timestamp", "timestamp", { unique: false });
-        } else if (oldVersion < 5) {
+        } else if (oldVersion < 6) {
           // v1→v2: keys added visibility settings.
           // v2→v3: keys added orientation data.
           // v3→v4: ImageComposer write-through contamination (step numbers baked in).
           // v4→v5: dark mode cross-fade may have cached wrong theme colors.
-          // All pre-v5 entries may be stale — clear them.
+          // v5→v6: switched from djb2 hash keys to full string keys (collision fix).
+          // All pre-v6 entries are stale — clear them.
           const tx = (event.target as IDBOpenDBRequest).transaction!;
           tx.objectStore(STORE_NAME).clear();
         }

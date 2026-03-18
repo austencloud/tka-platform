@@ -90,7 +90,9 @@ export class LibrarySaveService implements ILibrarySaveService {
       isFavorite: false,
     };
     try {
-      await db.sequences.put(sequenceToSave);
+      // JSON round-trip strips Firestore Timestamps and other non-cloneable objects
+      const cloneable = JSON.parse(JSON.stringify(sequenceToSave));
+      await db.sequences.put(cloneable);
     } catch (dexieError) {
       console.warn("[LibrarySaveService] Dexie optimistic save failed:", dexieError);
     }

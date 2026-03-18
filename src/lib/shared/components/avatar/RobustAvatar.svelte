@@ -137,7 +137,7 @@
       class:loaded={imageLoaded}
       width={dimension}
       height={dimension}
-      crossorigin="anonymous"
+      crossorigin={displayUrl && isGoogleAvatarUrl(displayUrl) ? undefined : "anonymous"}
       referrerpolicy="no-referrer"
       onload={handleLoad}
       onerror={handleError}

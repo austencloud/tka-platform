@@ -13,6 +13,7 @@
   } from "$lib/shared/foundation/utils/color-extractor";
   import { formatTimeAgo } from "$lib/shared/i18n/i18n-formatters";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
+  import { isGoogleAvatarUrl } from "$lib/shared/foundation/utils/google-avatar";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
 
   interface Props {
@@ -112,7 +113,7 @@
       <img
         src={user.avatar}
         alt={user.displayName}
-        crossorigin="anonymous"
+        crossorigin={isGoogleAvatarUrl(user.avatar) ? undefined : "anonymous"}
         referrerpolicy="no-referrer"
         onload={(e) => handleAvatarLoad(e.currentTarget as HTMLImageElement)}
         onerror={(e) => handleAvatarError(e.currentTarget as HTMLImageElement)}
