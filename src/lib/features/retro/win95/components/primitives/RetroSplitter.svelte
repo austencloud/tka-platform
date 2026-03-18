@@ -9,6 +9,7 @@
   Uses snippet slots for left/right (or top/bottom) content.
 -->
 <script lang="ts">
+  import { untrack } from "svelte";
   import type { Snippet } from "svelte";
 
   let {
@@ -23,7 +24,7 @@
     right?: Snippet;
   } = $props();
 
-  let splitPercent = $state(initialSplit);
+  let splitPercent = $state(untrack(() => initialSplit));
   let isDragging = $state(false);
   let containerEl: HTMLDivElement | undefined = $state(undefined);
 

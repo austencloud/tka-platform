@@ -14,10 +14,10 @@ Tappable: navigates to TIKA with the misconception pre-loaded.
 
   let { gap }: { gap: DetectedGap } = $props();
 
-  const correctLetter = gap.correctLabel;
-  const chosenLetter = gap.chosenLabel;
+  const correctLetter = $derived(gap.correctLabel);
+  const chosenLetter = $derived(gap.chosenLabel);
 
-  const hintText = `Not sure about ${correctLetter} vs ${chosenLetter}? Ask TIKA`;
+  const hintText = $derived(`Not sure about ${correctLetter} vs ${chosenLetter}? Ask TIKA`);
 
   function openInTika() {
     if (!browser) return;

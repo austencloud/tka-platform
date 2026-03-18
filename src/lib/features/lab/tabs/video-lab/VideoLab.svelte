@@ -9,9 +9,7 @@
 -->
 <script lang="ts">
   import type { BeatMap } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
-  import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
-  import { container } from "$lib/shared/di";
-  import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
   import UploadSelectView from "./views/UploadSelectView.svelte";
   import BeatMappingView from "./views/BeatMappingView.svelte";
@@ -27,14 +25,14 @@
   let videoFileSize = $state(0);
 
   // Selected sequence from library
-  let selectedSequence = $state<LibrarySequence | null>(null);
+  let selectedSequence = $state<SequenceData | null>(null);
 
   // Beat map produced by the mapping view
   let beatMap = $state<BeatMap | null>(null);
 
   // ---- View transitions ----
 
-  function handleStartMapping(url: string, duration: number, fileSize: number, sequence: LibrarySequence) {
+  function handleStartMapping(url: string, duration: number, fileSize: number, sequence: SequenceData) {
     videoUrl = url;
     videoDuration = duration;
     videoFileSize = fileSize;

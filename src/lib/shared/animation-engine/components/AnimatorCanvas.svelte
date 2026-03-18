@@ -728,7 +728,12 @@ Last audit: 2025-12-27
       width: min(calc(100cqw - 12px), calc(100cqh - 3.5rem - 12px));
       max-width: calc(100cqh - 3.5rem);
     }
+  }
 
+  /* Only crush the header on extremely wide containers (mobile landscape)
+     where vertical space is truly scarce. The 1.15 threshold was too aggressive
+     and smushed the word header on desktop export mode. */
+  @container (min-aspect-ratio: 2.5) {
     .animation-container[data-focused] .header-slot {
       max-height: 28px !important;
     }

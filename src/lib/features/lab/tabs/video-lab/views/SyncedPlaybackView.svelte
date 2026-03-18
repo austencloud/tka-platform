@@ -7,14 +7,14 @@
 -->
 <script lang="ts">
   import type { BeatMap } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
-  import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { getHighlightedBeatFromVideo } from "$lib/shared/video-collaboration/utils/beat-map-utils";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
 
   interface Props {
     videoUrl: string;
     videoDuration: number;
-    sequence: LibrarySequence;
+    sequence: SequenceData;
     beatMap: BeatMap;
     onBackToMapping: () => void;
   }
@@ -37,7 +37,7 @@
   const estimatedBpm = $derived.by(() => {
     const ts = beatMap.beatTimestamps;
     if (ts.length < 2) return 0;
-    const totalInterval = ts[ts.length - 1] - ts[0];
+    const totalInterval = ts[ts.length - 1]! - ts[0]!;
     const avgInterval = totalInterval / (ts.length - 1);
     return avgInterval > 0 ? Math.round(60 / avgInterval) : 0;
   });

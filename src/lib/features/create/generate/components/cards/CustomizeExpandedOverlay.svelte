@@ -14,7 +14,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   import { quintOut } from "svelte/easing";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import { getTemplateById } from "$lib/features/create/shared/domain/templates/duration-templates";
   import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
   import { GridMode, type GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -86,12 +86,12 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   }
 
   // ─── Local state for style (instant UI feedback) ───
-  let localConstraintPreset = $state<"smooth" | "mixed" | "choppy">(constraintPreset);
-  let localHandPathMode = $state<"smooth" | "mixed" | "choppy">(handPathMode);
-  let localMotionTypeFilter = $state<"no-dash" | "prefer-dash" | null>(motionTypeFilter);
+  let localConstraintPreset = $state<"smooth" | "mixed" | "choppy">(untrack(() => constraintPreset));
+  let localHandPathMode = $state<"smooth" | "mixed" | "choppy">(untrack(() => handPathMode));
+  let localMotionTypeFilter = $state<"no-dash" | "prefer-dash" | null>(untrack(() => motionTypeFilter));
 
   // ─── Local state for rhythm (instant UI feedback) ───
-  let localDurationTemplateId = $state<string | null>(durationTemplateId);
+  let localDurationTemplateId = $state<string | null>(untrack(() => durationTemplateId));
 
   // ─── Rhythm display ───
   const rhythmDisplay = $derived.by(() => {
@@ -102,7 +102,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
 
   // ─── Local state for start positions (instant UI feedback) ───
   let localBlockedPositions = $state<GridPosition[]>(
-    startEndOptions?.blockedStartPositions ?? []
+    untrack(() => startEndOptions)?.blockedStartPositions ?? []
   );
 
   // Determine current mode from blocked positions
@@ -114,7 +114,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
   }
 
   let startPosMode = $state<StartPosMode>(
-    detectMode(startEndOptions?.blockedStartPositions ?? [])
+    detectMode(untrack(() => startEndOptions)?.blockedStartPositions ?? [])
   );
 
   // Which positions are allowed (highlighted) in the current mode

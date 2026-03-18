@@ -221,10 +221,22 @@ export function createGenerationConfigState(
     const newLevel = event.detail.value;
     const updates: Partial<UIGenerationConfig> = { level: newLevel };
 
-    // When switching from level 1 (BEGINNER) to level 2+ (INTERMEDIATE/ADVANCED),
-    // ensure turnIntensity is at least 1.0 (never 0)
-    if (newLevel >= 2 && config.turnIntensity < 1.0) {
-      updates.turnIntensity = 1.0;
+    // Clamp turn intensity to valid values for the new level.
+    // Level 2 only allows whole turns [1, 2, 3], so 0.5 from level 3 must snap to 1.
+    // Level 1 has no turns, so intensity doesn't matter (card is hidden).
+    const allowedByLevel: Record<number, number[]> = {
+      1: [],
+      2: [1.0, 2.0, 3.0],
+      3: [0.5, 1.0, 1.5, 2.0, 2.5, 3.0],
+    };
+    const allowed = allowedByLevel[newLevel] ?? [1.0, 2.0, 3.0];
+
+    if (allowed.length > 0 && !allowed.includes(config.turnIntensity)) {
+      // Snap to the nearest valid value (or the minimum if current is below range)
+      const nearest = allowed.reduce((best, v) =>
+        Math.abs(v - config.turnIntensity) < Math.abs(best - config.turnIntensity) ? v : best
+      );
+      updates.turnIntensity = nearest;
     }
 
     updateConfig(updates);

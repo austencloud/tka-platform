@@ -17,7 +17,7 @@ export function getHighlightedBeatFromVideo(
   // Walk backwards from the last beat to find the most recent one
   // that has already started at the current playback time
   for (let i = beatTimestamps.length - 1; i >= 0; i--) {
-    if (currentTime >= beatTimestamps[i]) return i;
+    if (currentTime >= beatTimestamps[i]!) return i;
   }
   return -1;
 }

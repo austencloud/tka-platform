@@ -6,14 +6,14 @@
 -->
 <script lang="ts">
   import type { BeatMap } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
-  import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import BeatMapEditor from "$lib/shared/sequence-viewer/components/beat-mapping/BeatMapEditor.svelte";
 
   interface Props {
     videoUrl: string;
     videoDuration: number;
     beatCount: number;
-    sequence: LibrarySequence;
+    sequence: SequenceData;
     existingBeatMap: BeatMap | null;
     onSave: (beatMap: BeatMap) => void;
     onBack: () => void;

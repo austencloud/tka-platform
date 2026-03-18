@@ -6,6 +6,7 @@
   tap-to-place mode for quick sequential marking, and save/cancel actions.
 -->
 <script lang="ts">
+  import { untrack } from "svelte";
   import { fade } from "svelte/transition";
   import type { BeatMap } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import { generateEvenBeatTimestamps } from "$lib/shared/video-collaboration/utils/beat-map-utils";
@@ -43,9 +44,9 @@
   // We track "placed" count separately from the array length so that
   // tap-to-place can fill slots incrementally.
   let beatTimestamps = $state<number[]>(
-    initialBeatMap
-      ? [...initialBeatMap.beatTimestamps]
-      : generateEvenBeatTimestamps(videoDuration, beatCount, bpm)
+    untrack(() => initialBeatMap)
+      ? [...untrack(() => initialBeatMap)!.beatTimestamps]
+      : generateEvenBeatTimestamps(untrack(() => videoDuration), untrack(() => beatCount), untrack(() => bpm))
   );
 
   // ---- Tap-to-place mode ----
@@ -79,7 +80,7 @@
   let activeBeatIndex = $derived.by(() => {
     const ts = isTapMode ? tapTimestamps : beatTimestamps;
     for (let i = ts.length - 1; i >= 0; i--) {
-      if (currentTime >= ts[i]) return i;
+      if (currentTime >= ts[i]!) return i;
     }
     return -1;
   });
@@ -131,8 +132,8 @@
     } else {
       // Find the previous beat before current position
       for (let i = ts.length - 1; i >= 0; i--) {
-        if (ts[i] < currentTime - 0.15) {
-          seekTo(ts[i]);
+        if (ts[i]! < currentTime - 0.15) {
+          seekTo(ts[i]!);
           return;
         }
       }
