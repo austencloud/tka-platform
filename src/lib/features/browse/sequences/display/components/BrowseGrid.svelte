@@ -8,7 +8,7 @@
   import type { IVariationGrouper } from "../services/contracts/IVariationGrouper";
   import ChoreoCardThumbnail from "./ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
   import SectionHeader from "./SectionHeader.svelte";
-  import VirtualizedSequenceGrid from "./VirtualizedSequenceGrid.svelte";
+  import VirtualizedSequenceGrid, { type VirtualGridApi } from "./VirtualizedSequenceGrid.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { isCatDogMode } from "../utils/prop-mode-helpers";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
@@ -35,6 +35,7 @@
     isTransitioning = false,
     disableVirtualization = false,
     eager = false,
+    onGridReady,
   } = $props<{
     sequences?: SequenceData[];
     sections?: SequenceData[];
@@ -50,6 +51,8 @@
     disableVirtualization?: boolean;
     /** Skip lazy loading - load thumbnails immediately (use in modals/pickers) */
     eager?: boolean;
+    /** Called when the virtualized grid is ready, providing scroll control API */
+    onGridReady?: (api: VirtualGridApi) => void;
   }>();
 
   // Determine if we should use virtualization
@@ -202,7 +205,7 @@
 
 {#if useVirtualization}
   <!-- 🚀 VIRTUALIZED: Large flat list with 50+ items -->
-  <VirtualizedSequenceGrid {sequences} {thumbnailService} {onAction} {pinchColumnOverride} />
+  <VirtualizedSequenceGrid {sequences} {thumbnailService} {onAction} {pinchColumnOverride} onReady={onGridReady} />
 {:else if showSections && sections.length > 0}
   <!-- Section-based organization (desktop app style) -->
   <div class="sections-container">

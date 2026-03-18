@@ -5,6 +5,7 @@
   import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
   import type { SequenceFilterType } from "../../../shared/state/sequence-controls-state.svelte";
   import type { ActiveFilter } from "../../../shared/domain/models/multi-filter-models";
+  import type { VirtualGridApi } from "./VirtualizedSequenceGrid.svelte";
   import { container } from "$lib/shared/di";
   import { onMount, onDestroy } from "svelte";
   import { getSequenceOverlayState } from "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte";
@@ -12,6 +13,7 @@
   import type { IBrowseThumbnailProvider } from "../services/contracts/IBrowseThumbnailProvider";
   import { PinchZoomGridController } from "../services/implementations/PinchZoomGridController";
   import BrowseGrid from "./BrowseGrid.svelte";
+  import SectionIndexSidebar from "../../navigation/components/SectionIndexSidebar.svelte";
   import BrowseThumbnailSkeleton from "./BrowseThumbnailSkeleton.svelte";
   import SequenceTopBarControls from "../../../shared/components/SequenceTopBarControls.svelte";
   import InlineFilterPanel from "../../filtering/components/inline-filter/InlineFilterPanel.svelte";
@@ -46,6 +48,8 @@
     onOpenLetterSheet,
     onOpenOptionsSheet,
     getFilteredCount,
+    sequenceSections = [],
+    sortMethod,
   } = $props<{
     sequences?: SequenceData[];
     sections?: SequenceSection[];
@@ -72,9 +76,49 @@
     onOpenLetterSheet?: () => void;
     onOpenOptionsSheet?: () => void;
     getFilteredCount?: (candidateType: BrowseFilterType, candidateValue: BrowseFilterValue) => number;
+    /** Section data for the sidebar index (from gallery state) */
+    sequenceSections?: SequenceSection[];
+    /** Current sort method — sidebar only shows when sections exist */
+    sortMethod?: string;
   }>();
 
   const isInlineFiltersOpen = $derived(sequencePanelManager.isInlineFiltersOpen);
+
+  // Grid API for sidebar scroll control
+  let gridApi = $state<VirtualGridApi | null>(null);
+  let activeSection = $state<string | undefined>(undefined);
+
+  // Whether to show the sidebar (2+ sections, desktop only via CSS)
+  const showSidebar = $derived(
+    sequenceSections.length > 1 && gridApi !== null
+  );
+
+  // Track active section by subscribing to the virtualizer's scroll events
+  $effect(() => {
+    if (!gridApi || sequenceSections.length === 0) return;
+
+    let rafId = 0;
+    const unsubscribe = gridApi.subscribeToScroll(() => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        if (!gridApi || !sequenceSections.length) return;
+        const firstVisibleIndex = gridApi.getFirstVisibleSequenceIndex();
+        let runningIndex = 0;
+        for (const section of sequenceSections) {
+          if (runningIndex + section.sequences.length > firstVisibleIndex) {
+            activeSection = section.title;
+            break;
+          }
+          runningIndex += section.sequences.length;
+        }
+      });
+    });
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      unsubscribe();
+    };
+  });
 
   // ✅ RESOLVE SERVICES: Get services from DI container (lazy resolution)
   let thumbnailService: IBrowseThumbnailProvider | null = $state(null);
@@ -251,21 +295,34 @@
         <p>{emptyMessage}</p>
       </div>
     {:else}
-      <!-- Real grid renders underneath as soon as data arrives -->
-      {#if hasSequences}
-        <BrowseGrid
-          {sequences}
-          {sections}
-          viewMode="grid"
-          {showSections}
-          {thumbnailService}
-          onAction={handleSequenceAction}
-          pinchColumnOverride={pinchColumns}
-          {isTransitioning}
-        />
-      {/if}
+      <div class="grid-with-sidebar">
+        <!-- Real grid renders underneath as soon as data arrives -->
+        {#if hasSequences}
+          <div class="grid-area">
+            <BrowseGrid
+              {sequences}
+              {sections}
+              viewMode="grid"
+              {showSections}
+              {thumbnailService}
+              onAction={handleSequenceAction}
+              pinchColumnOverride={pinchColumns}
+              {isTransitioning}
+              onGridReady={(api) => { gridApi = api; }}
+            />
+          </div>
+        {/if}
 
-      <!-- Skeleton overlays the grid, fades out once data arrives -->
+        {#if showSidebar}
+          <SectionIndexSidebar
+            sections={sequenceSections}
+            onScrollToSection={(index) => gridApi?.scrollToSequenceIndex(index)}
+            {activeSection}
+          />
+        {/if}
+      </div>
+
+      <!-- Skeleton overlays the grid+sidebar area, fades out once data arrives -->
       {#if showSkeleton}
         <div class="skeleton-overlay" class:fading={skeletonFading}>
           <BrowseThumbnailSkeleton count={12} />
@@ -306,6 +363,20 @@
     container-type: inline-size; /* Enable container queries for responsive grid */
     /* Allow vertical scroll + pinch zoom, let JS handle custom pinch */
     touch-action: pan-y;
+  }
+
+  /* Grid + sidebar layout: sidebar sits beside the scrollable grid */
+  .grid-with-sidebar {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .grid-area {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
   }
 
   /* Skeleton covers the content area and fades out when data arrives */
