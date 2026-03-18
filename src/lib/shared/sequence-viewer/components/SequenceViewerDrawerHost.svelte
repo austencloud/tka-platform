@@ -114,15 +114,21 @@
     }
   });
 
-  function handleCopyLink() {
+  async function handleCopyLink() {
     const seq = overlay.sequence;
     if (!seq) return;
-    const encoder = container.items.sequenceEncoder;
-    const { url } = encoder.generateViewerURL(seq, { compress: true });
-    navigator.clipboard.writeText(url).then(() => {
-      copyLinkFeedback = true;
-      setTimeout(() => { copyLinkFeedback = false; }, 1500);
-    });
+    try {
+      const shortCodeManager = container.items.shortCodeManager;
+      const { url } = await shortCodeManager.createShortCode(seq);
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // Fallback to encoded URL if short code creation fails
+      const encoder = container.items.sequenceEncoder;
+      const { url } = encoder.generateViewerURL(seq, { compress: true });
+      await navigator.clipboard.writeText(url);
+    }
+    copyLinkFeedback = true;
+    setTimeout(() => { copyLinkFeedback = false; }, 1500);
   }
 
   // Delete confirmation state
