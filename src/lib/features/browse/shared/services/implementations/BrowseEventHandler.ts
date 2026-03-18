@@ -18,6 +18,7 @@ import type { ISheetRouter } from "../../../../../shared/navigation/services/con
 import { handleModuleChange } from "../../../../../shared/navigation-coordinator/navigation-coordinator.svelte";
 import { openSequenceViewer } from "../../../../../shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
 import { openVariationPicker } from "../../state/variation-picker-state.svelte";
+import { container } from "$lib/shared/di";
 
 export class BrowseEventHandler implements IBrowseEventHandler {
   private params: BrowseEventHandlerParams | null = null;
@@ -74,6 +75,12 @@ export class BrowseEventHandler implements IBrowseEventHandler {
           break;
         case "animate":
           this.params!.galleryState.openAnimationModal(sequence);
+          break;
+        case "publish":
+          await this.handlePublish(sequence);
+          break;
+        case "unpublish":
+          await this.handleUnpublish(sequence);
           break;
         default:
           console.warn("Unknown action:", action);
@@ -165,6 +172,12 @@ export class BrowseEventHandler implements IBrowseEventHandler {
       case "delete":
         // Deletion is handled by the sequence viewer, not the detail panel.
         break;
+      case "publish":
+        await this.handlePublish(sequence);
+        break;
+      case "unpublish":
+        await this.handleUnpublish(sequence);
+        break;
       default:
         console.warn("Unknown detail panel action:", action);
     }
@@ -187,5 +200,33 @@ export class BrowseEventHandler implements IBrowseEventHandler {
     this.ensureInitialized();
     this.params!.setError(null);
     void this.params!.galleryState.loadAllSequences();
+  }
+
+  private async handlePublish(sequence: SequenceData): Promise<void> {
+    this.ensureInitialized();
+    try {
+      const libraryRepo = container.items.libraryRepository;
+      await libraryRepo.publishSequence(sequence.id);
+    } catch (err) {
+      console.error("Failed to publish:", err);
+      this.params!.setError(
+        err instanceof Error ? err.message : "Failed to publish sequence"
+      );
+    }
+  }
+
+  private async handleUnpublish(sequence: SequenceData): Promise<void> {
+    this.ensureInitialized();
+    try {
+      const libraryRepo = container.items.libraryRepository;
+      await libraryRepo.unpublishSequence(sequence.id);
+      // Remove from browse gallery cache immediately
+      this.loaderService?.removeFromCache?.(sequence.id);
+    } catch (err) {
+      console.error("Failed to unpublish:", err);
+      this.params!.setError(
+        err instanceof Error ? err.message : "Failed to unpublish sequence"
+      );
+    }
   }
 }
