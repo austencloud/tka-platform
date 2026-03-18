@@ -28,7 +28,7 @@
 
 <nav class="section-index-sidebar" aria-label="Section navigation">
 	<div class="sidebar-items">
-		{#each sectionOffsets as { title, startIndex } (title)}
+		{#each sectionOffsets as { title, startIndex } (startIndex)}
 			<button
 				class="sidebar-item"
 				class:active={activeSection === title}
