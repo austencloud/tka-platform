@@ -42,9 +42,11 @@ export function initPostHog(): void {
     capture_pageview: true,
     capture_pageleave: true,
 
-    // Session replay - enabled by default
-    // Records user sessions for debugging and UX analysis
-    disable_session_recording: false,
+    // Session replay - DISABLED
+    // rrweb's MutationObserver adds ~6x overhead to DOM-heavy operations
+    // (gallery tab switches: 105ms without → 684ms with recording).
+    // Re-enable when needed for specific UX investigations.
+    disable_session_recording: true,
 
     // Autocapture clicks, form submissions, etc.
     autocapture: true,
