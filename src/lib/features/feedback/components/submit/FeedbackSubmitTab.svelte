@@ -99,14 +99,12 @@
   }
 
   .submit-container {
-    /* Take up available space intelligently */
-    width: min(100%, clamp(400px, 85cqi, 600px));
+    width: min(100%, 740px);
     max-height: 100%;
 
     display: flex;
     flex-direction: column;
-    /* Tighter gap for mobile */
-    gap: clamp(6px, 1.5cqh, 16px);
+    gap: clamp(8px, 2cqh, 20px);
   }
 
   /* ═══════════════════════════════════════════════════════════════════════════
@@ -127,29 +125,27 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    /* Fluid icon size */
-    width: clamp(36px, 6cqi, 48px);
-    height: clamp(36px, 6cqi, 48px);
-    background: rgba(16, 185, 129, 0.12);
-    border: 1px solid rgba(16, 185, 129, 0.25);
-    border-radius: clamp(8px, 1.5cqi, 14px);
-    color: var(--semantic-success, var(--semantic-success));
-    font-size: clamp(14px, 2.5cqi, 24px);
+    width: clamp(32px, 5cqi, 40px);
+    height: clamp(32px, 5cqi, 40px);
+    background: rgba(16, 185, 129, 0.10);
+    border: 1px solid rgba(16, 185, 129, 0.20);
+    border-radius: clamp(8px, 1.5cqi, 12px);
+    color: var(--semantic-success);
+    font-size: clamp(13px, 2cqi, 18px);
   }
 
   .header-title {
     margin: 0;
-    /* Fluid typography */
-    font-size: clamp(1rem, 3cqi, 1.5rem);
-    font-weight: 700;
+    font-size: clamp(1rem, 2.5cqi, 1.25rem);
+    font-weight: 600;
     color: var(--theme-text);
-    letter-spacing: -0.02em;
+    letter-spacing: -0.01em;
   }
 
   .header-subtitle {
     margin: 0;
-    font-size: clamp(0.75rem, 1.8cqi, 0.9375rem);
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    font-size: clamp(0.8125rem, 1.8cqi, 0.875rem);
+    color: var(--theme-text-dim);
     line-height: 1.4;
   }
 
@@ -187,17 +183,24 @@
     }
   }
 
-  /* When container is narrow - tighten horizontal */
-  @container submit-tab (max-width: 400px) {
+  /* Phone — full bleed */
+  @container submit-tab (max-width: 500px) {
     .submit-container {
       width: 100%;
     }
   }
 
-  /* When container is wide - add intentional space */
-  @container submit-tab (min-width: 800px) {
+  /* Desktop — generous center column */
+  @container submit-tab (min-width: 900px) {
     .submit-container {
-      width: min(85%, 580px);
+      width: min(90%, 740px);
+    }
+  }
+
+  /* Ultrawide / 4K — slightly wider */
+  @container submit-tab (min-width: 1400px) {
+    .submit-container {
+      width: min(85%, 800px);
     }
   }
 

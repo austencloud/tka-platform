@@ -184,21 +184,18 @@ export function createFeedbackSubmitState() {
       });
 
       if (hasPending) {
-        uploadProgress = { phase: "uploading", fraction: 0 };
+        // Wait silently — thumbnail progress already shows per-image state
         try {
           await Promise.all(pendingHandles.map((h) => h.promise));
         } catch {
-          // Check if any actually failed
           const hasFailed = images.some(
             (f) => stagedImages.get(f)?.status === "failed"
           );
           if (hasFailed) {
-            uploadProgress = null;
             submitStatus = "error";
             return false;
           }
         }
-        uploadProgress = null;
       }
     }
 
