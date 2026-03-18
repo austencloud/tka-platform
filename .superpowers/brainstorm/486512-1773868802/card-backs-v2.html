@@ -1,0 +1,441 @@
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<h2>Choreo Card Back — Revised</h2>
+<p class="subtitle">Now using your actual LOOP icons, print-mode colors, and realistic card sizing. Click the direction that feels right.</p>
+
+<style>
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    margin-top: 24px;
+  }
+
+  /* Shared card back base — matches print mode front */
+  .card-back {
+    aspect-ratio: 2.5 / 3.5;
+    background: #ffffff;
+    border: 1px solid #000000;
+    color: #333333;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 14px;
+    position: relative;
+    box-sizing: border-box;
+  }
+
+  .card-back .section-label {
+    font-size: 7px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #999999;
+    margin-bottom: 5px;
+    font-weight: 600;
+  }
+
+  .card-back .level-row {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+
+  .card-back .level-card {
+    flex: 1;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 5px 4px;
+    text-align: center;
+    transition: none;
+  }
+
+  .card-back .level-card.active {
+    border-color: #333;
+    background: #333;
+    color: #fff;
+  }
+
+  .card-back .level-card.inactive {
+    opacity: 0.35;
+    background: #f8f8f8;
+  }
+
+  .card-back .level-num {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .card-back .level-desc {
+    font-size: 6.5px;
+    margin-top: 2px;
+    line-height: 1.3;
+    color: inherit;
+  }
+
+  .card-back .level-card.active .level-desc {
+    color: rgba(255,255,255,0.8);
+  }
+
+  .card-back .level-card.inactive .level-desc {
+    color: #999;
+  }
+
+  /* LOOP section */
+  .card-back .loop-section {
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 8px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .card-back .loop-icons {
+    display: flex;
+    gap: 3px;
+    flex-shrink: 0;
+    padding-top: 1px;
+  }
+
+  .card-back .loop-icon {
+    font-size: 13px;
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.15));
+  }
+
+  .card-back .loop-title {
+    font-size: 9px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 2px;
+  }
+
+  .card-back .loop-desc {
+    font-size: 7px;
+    color: #666;
+    line-height: 1.4;
+  }
+
+  .card-back .loop-type-badge {
+    display: inline-block;
+    font-size: 6.5px;
+    font-weight: 600;
+    padding: 1px 5px;
+    border-radius: 3px;
+    margin-top: 3px;
+    letter-spacing: 0.3px;
+  }
+
+  .card-back .instructions {
+    font-size: 7.5px;
+    color: #666;
+    line-height: 1.7;
+  }
+
+  .card-back .instructions .step {
+    margin-bottom: 2px;
+  }
+
+  .card-back .instructions .step-num {
+    font-weight: 700;
+    color: #333;
+  }
+
+  .card-back .footer {
+    margin-top: auto;
+    padding-top: 8px;
+    border-top: 1px solid #e8e8e8;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .card-back .footer-text {
+    font-size: 7px;
+    color: #999;
+  }
+
+  .card-back .branding {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  .card-back .branding-title {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: #222;
+  }
+
+  .card-back .branding-sub {
+    font-size: 7px;
+    color: #999;
+    letter-spacing: 1.5px;
+    margin-top: 1px;
+  }
+
+  .option-label {
+    text-align: center;
+    margin-top: 12px;
+  }
+
+  .option-label h3 {
+    margin: 0 0 4px;
+    font-size: 15px;
+  }
+
+  .option-label p {
+    margin: 0;
+    font-size: 12px;
+    color: #888;
+  }
+
+  /* Divider line */
+  .card-back .divider {
+    height: 1px;
+    background: #e8e8e8;
+    margin: 10px 0;
+  }
+</style>
+
+<div class="cards" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px;">
+
+  <!-- OPTION A: Clean & Structured -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)" style="padding: 0; background: transparent;">
+    <div class="card-body" style="padding: 0;">
+      <div class="card-back">
+
+        <div class="branding">
+          <div class="branding-title">Choreo Card</div>
+          <div class="branding-sub">The Kinetic Alphabet</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="section-label">Difficulty</div>
+        <div class="level-row">
+          <div class="level-card active">
+            <div class="level-num">1</div>
+            <div class="level-desc">No rotation</div>
+          </div>
+          <div class="level-card inactive">
+            <div class="level-num">2</div>
+            <div class="level-desc">Whole turns</div>
+          </div>
+          <div class="level-card inactive">
+            <div class="level-num">3</div>
+            <div class="level-desc">Half turns</div>
+          </div>
+        </div>
+
+        <div class="section-label">Loop</div>
+        <div class="loop-section">
+          <div class="loop-icons">
+            <i class="fa-solid fa-rotate loop-icon" style="color: #36c3ff;"></i>
+          </div>
+          <div>
+            <div class="loop-title">Rotated</div>
+            <div class="loop-desc">
+              Each repetition rotates the entire pattern. The sequence resets after completing a full cycle.
+            </div>
+            <div class="loop-type-badge" style="background: rgba(54,195,255,0.12); color: #1a8ab8;">
+              Quartered &middot; 4 reps &middot; 90&deg; each
+            </div>
+          </div>
+        </div>
+
+        <div class="section-label">How to use this card</div>
+        <div class="instructions">
+          <div class="step"><span class="step-num">1.</span> Learn each beat step by step</div>
+          <div class="step"><span class="step-num">2.</span> Teach it to a friend</div>
+          <div class="step"><span class="step-num">3.</span> Scan the front QR to save it in the app</div>
+        </div>
+
+        <div style="flex: 1;"></div>
+
+        <div class="footer">
+          <div class="footer-text">tkascribe.com</div>
+          <div class="footer-text">Create your own. Your name on every card.</div>
+        </div>
+      </div>
+
+      <div class="option-label">
+        <h3>A: Clean & Structured</h3>
+        <p>White to match the front. Black type. Sections clearly separated.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTION B: Bordered -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)" style="padding: 0; background: transparent;">
+    <div class="card-body" style="padding: 0;">
+      <div class="card-back" style="padding: 20px 18px;">
+
+        <!-- Inner decorative border -->
+        <div style="
+          position: absolute;
+          inset: 6px;
+          border: 1.5px solid #ddd;
+          pointer-events: none;
+        "></div>
+
+        <div class="branding" style="position: relative; z-index: 1;">
+          <div class="branding-title">Choreo Card</div>
+          <div class="branding-sub">The Kinetic Alphabet</div>
+        </div>
+
+        <div class="divider" style="position: relative; z-index: 1;"></div>
+
+        <div style="position: relative; z-index: 1;">
+          <div class="section-label">Difficulty</div>
+          <div class="level-row">
+            <div class="level-card active">
+              <div class="level-num">1</div>
+              <div class="level-desc">No rotation</div>
+            </div>
+            <div class="level-card inactive">
+              <div class="level-num">2</div>
+              <div class="level-desc">Whole turns</div>
+            </div>
+            <div class="level-card inactive">
+              <div class="level-num">3</div>
+              <div class="level-desc">Half turns</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="position: relative; z-index: 1;">
+          <div class="section-label">Loop</div>
+          <div class="loop-section">
+            <div class="loop-icons">
+              <i class="fa-solid fa-rotate loop-icon" style="color: #36c3ff;"></i>
+            </div>
+            <div>
+              <div class="loop-title">Rotated</div>
+              <div class="loop-desc">
+                Each repetition rotates the entire pattern. The sequence resets after completing a full cycle.
+              </div>
+              <div class="loop-type-badge" style="background: rgba(54,195,255,0.12); color: #1a8ab8;">
+                Quartered &middot; 4 reps &middot; 90&deg; each
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="position: relative; z-index: 1;">
+          <div class="section-label">How to use this card</div>
+          <div class="instructions">
+            <div class="step"><span class="step-num">1.</span> Learn each beat step by step</div>
+            <div class="step"><span class="step-num">2.</span> Teach it to a friend</div>
+            <div class="step"><span class="step-num">3.</span> Scan the front QR to save it in the app</div>
+          </div>
+        </div>
+
+        <div style="flex: 1;"></div>
+
+        <div class="footer" style="position: relative; z-index: 1;">
+          <div class="footer-text">tkascribe.com</div>
+          <div class="footer-text">Create your own. Your name on every card.</div>
+        </div>
+      </div>
+
+      <div class="option-label">
+        <h3>B: Bordered</h3>
+        <p>Same content, inner border frame. Nods to your old Illustrator backs.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTION C: Compact with visual LOOP diagram -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)" style="padding: 0; background: transparent;">
+    <div class="card-body" style="padding: 0;">
+      <div class="card-back">
+
+        <div class="branding">
+          <div class="branding-title">Choreo Card</div>
+          <div class="branding-sub">The Kinetic Alphabet</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="section-label">Difficulty</div>
+        <div class="level-row">
+          <div class="level-card active">
+            <div class="level-num">1</div>
+            <div class="level-desc">No rotation</div>
+          </div>
+          <div class="level-card inactive">
+            <div class="level-num">2</div>
+            <div class="level-desc">Whole turns</div>
+          </div>
+          <div class="level-card inactive">
+            <div class="level-num">3</div>
+            <div class="level-desc">Half turns</div>
+          </div>
+        </div>
+
+        <div class="section-label">Loop</div>
+        <div class="loop-section" style="flex-direction: column; align-items: stretch;">
+          <!-- Visual: 4 boxes showing rotation cycle -->
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+            <div class="loop-icons">
+              <i class="fa-solid fa-rotate loop-icon" style="color: #36c3ff;"></i>
+            </div>
+            <div class="loop-title" style="margin: 0;">Quartered Rotation</div>
+          </div>
+
+          <!-- Visual rotation diagram -->
+          <div style="display: flex; gap: 3px; margin-bottom: 6px;">
+            <div style="flex:1; background: #36c3ff; color: white; text-align: center; padding: 4px 0; border-radius: 2px; font-size: 7px; font-weight: 700;">
+              0&deg;
+            </div>
+            <div style="flex:1; background: rgba(54,195,255,0.6); color: white; text-align: center; padding: 4px 0; border-radius: 2px; font-size: 7px; font-weight: 700;">
+              90&deg;
+            </div>
+            <div style="flex:1; background: rgba(54,195,255,0.4); color: white; text-align: center; padding: 4px 0; border-radius: 2px; font-size: 7px; font-weight: 700;">
+              180&deg;
+            </div>
+            <div style="flex:1; background: rgba(54,195,255,0.25); color: #1a8ab8; text-align: center; padding: 4px 0; border-radius: 2px; font-size: 7px; font-weight: 700;">
+              270&deg;
+            </div>
+          </div>
+
+          <div class="loop-desc">
+            Play this sequence 4 times. Each rep rotates the whole pattern 90&deg;, then it resets.
+          </div>
+
+          <div style="margin-top: 4px; display: flex; gap: 8px; font-size: 6.5px; color: #999;">
+            <span><strong style="color: #666;">Quartered:</strong> 4 reps, 90&deg;</span>
+            <span><strong style="color: #ccc;">Halved:</strong> 2 reps, 180&deg;</span>
+          </div>
+        </div>
+
+        <div class="section-label">Get Started</div>
+        <div class="instructions">
+          <div class="step"><span class="step-num">1.</span> Learn each beat step by step</div>
+          <div class="step"><span class="step-num">2.</span> Teach it to a friend</div>
+          <div class="step"><span class="step-num">3.</span> Scan the front QR to save it in the app</div>
+        </div>
+
+        <div style="flex: 1;"></div>
+
+        <div class="footer">
+          <div class="footer-text">tkascribe.com</div>
+          <div class="footer-text">Create your own. Your name on every card.</div>
+        </div>
+      </div>
+
+      <div class="option-label">
+        <h3>C: Visual LOOP Diagram</h3>
+        <p>Shows the rotation cycle visually. Includes quartered vs halved comparison.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p style="margin-top: 20px; color: #888; font-size: 13px;">
+  All three use your print-mode palette (white bg, #333 text, 1px black border), your actual <i class="fa-solid fa-rotate" style="color: #36c3ff;"></i> LOOP icon with its cyan color, and realistic trading-card proportions (2.5:3.5). The level cards use your dark-on-white active state pattern from the existing filters.
+</p>

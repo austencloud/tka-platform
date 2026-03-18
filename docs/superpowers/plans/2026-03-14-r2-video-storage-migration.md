@@ -1840,7 +1840,7 @@ Update the full container to chain from `withSharer`:
 
 ```typescript
 const fullContainer = withSharer.add((ctx) => ({
-  shareHubExportOrchestrator: () => new ShareHubExportOrchestrator(ctx.sharer),
+  exportPanelExportOrchestrator: () => new ExportPanelExportOrchestrator(ctx.sharer),
   mediaBundler: () => new MediaBundler(ctx.sharer),
 }));
 ```
@@ -1852,7 +1852,7 @@ The complete file after changes should be:
  * Share Container - ITI Dependency Injection
  *
  * Contains all share-related services:
- * - Sharer, ShareHubExportOrchestrator
+ * - Sharer, ExportPanelExportOrchestrator
  * - InstagramLinker, MediaBundler
  * - R2Presigner, R2VideoUploader, RecordingPersister
  * - CollaborativeVideoManager, CloudThumbnailCache
@@ -1861,7 +1861,7 @@ The complete file after changes should be:
 import { createContainer } from "iti";
 import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
 import { Sharer } from "$lib/shared/share/services/implementations/Sharer";
-import { ShareHubExportOrchestrator } from "$lib/shared/share-hub/services/implementations/ShareHubExportOrchestrator";
+import { ExportPanelExportOrchestrator } from "$lib/shared/export-panel/services/implementations/ExportPanelExportOrchestrator";
 import { InstagramLinker } from "$lib/shared/share/services/implementations/InstagramLinker";
 import { MediaBundler } from "$lib/shared/share/services/implementations/MediaBundler";
 import { R2Presigner } from "$lib/shared/share/services/implementations/R2Presigner";
@@ -1900,7 +1900,7 @@ export function createShareContainer(sequenceRenderer: ISequenceRenderer) {
 
   // Layer 3: Services that depend on sharer
   const fullContainer = withSharer.add((ctx) => ({
-    shareHubExportOrchestrator: () => new ShareHubExportOrchestrator(ctx.sharer),
+    exportPanelExportOrchestrator: () => new ExportPanelExportOrchestrator(ctx.sharer),
     mediaBundler: () => new MediaBundler(ctx.sharer),
   }));
 
