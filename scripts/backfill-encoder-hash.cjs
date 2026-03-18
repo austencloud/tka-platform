@@ -116,6 +116,8 @@ async function main() {
       continue;
     }
 
+    processed++;
+
     // Fetch source library doc (has full steps)
     const sourceRef = pubData.sourceRef;
     if (!sourceRef) {
@@ -153,8 +155,6 @@ async function main() {
       console.error(`[ERR] ${pubDoc.id}: ${err.message}`);
       failed++;
     }
-
-    processed++;
   }
 
   console.log(`\nDone. Processed: ${processed}, Updated: ${updated}, Skipped: ${skipped}, Failed: ${failed}`);
