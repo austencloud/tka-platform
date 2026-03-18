@@ -350,34 +350,27 @@ export function createBrowseState() {
   }
 
   async function toggleFavorite(sequenceId: string): Promise<void> {
-    if (!FavoritesManager) {
-      return;
-    }
+    const collectionManager = container.items.collectionManager;
+    if (!collectionManager) return;
 
     try {
-      // Toggle in the service (persists to storage)
-      await FavoritesManager.toggleFavorite(sequenceId);
+      const newStatus = await collectionManager.toggleFavorite(sequenceId);
 
-      // Get the new favorite status
-      const isFavorite = await FavoritesManager.isFavorite(sequenceId);
-
-      // Update local state - find and update the sequence in all relevant arrays
+      // Update local state for all arrays
       const updateSequence = (seq: SequenceData) =>
-        seq.id === sequenceId ? { ...seq, isFavorite } : seq;
+        seq.id === sequenceId ? { ...seq, isFavorite: newStatus } : seq;
 
       allSequences = allSequences.map(updateSequence);
       displayedSequences = displayedSequences.map(updateSequence);
       filteredSequences = filteredSequences.map(updateSequence);
 
-      // Also update sections if they contain the sequence
       sequenceSections = sequenceSections.map((section) => ({
         ...section,
         sequences: section.sequences.map(updateSequence),
       }));
 
-      // Update selected sequence if it's the one being toggled
       if (selectedSequence?.id === sequenceId) {
-        selectedSequence = { ...selectedSequence, isFavorite };
+        selectedSequence = { ...selectedSequence, isFavorite: newStatus };
       }
 
       // Update the active sequence in the panel manager (for detail panel)
@@ -385,9 +378,8 @@ export function createBrowseState() {
       if (updatedSequence) {
         sequencePanelManager.updateActiveSequence(updatedSequence);
       }
-    } catch (err) {
-      console.error("Failed to toggle favorite:", err);
-      throw err;
+    } catch (error) {
+      console.error("Failed to toggle favorite:", error);
     }
   }
 
