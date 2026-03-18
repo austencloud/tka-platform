@@ -15,17 +15,57 @@
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
+  import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
+  import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
+  import type { SequenceFilterType } from "../state/sequence-controls-state.svelte";
   import { BrowseSortMethod } from "../domain/enums/browse-enums";
   import ExpandableSearchBar from "./ExpandableSearchBar.svelte";
   import SortPopover from "./SortPopover.svelte";
   import SegmentedControl from "$lib/shared/3d-animation/components/controls/SegmentedControl.svelte";
+  import LevelFilterChip from "../../sequences/filtering/components/inline-filter/chips/LevelFilterChip.svelte";
+  import FavoritesFilterChip from "../../sequences/filtering/components/inline-filter/chips/FavoritesFilterChip.svelte";
+  import LetterFilterChip from "../../sequences/filtering/components/inline-filter/chips/LetterFilterChip.svelte";
+  import LengthFilterChip from "../../sequences/filtering/components/inline-filter/chips/LengthFilterChip.svelte";
+  import PatternFilterChip from "../../sequences/filtering/components/inline-filter/chips/PatternFilterChip.svelte";
+  import GridModeFilterChip from "../../sequences/filtering/components/inline-filter/chips/GridModeFilterChip.svelte";
+  import PositionFilterChip from "../../sequences/filtering/components/inline-filter/chips/PositionFilterChip.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
   interface Props {
     onSourceChange?: (source: SequenceSource) => void;
+    activeLevel?: number | null;
+    activeLetter?: string | null;
+    activeLength?: number | null;
+    activeLoopType?: string | null;
+    activeGridMode?: string | null;
+    isFavoritesActive?: boolean;
+    hasActivePositions?: boolean;
+    availableLengths?: number[];
+    loopTypeCounts?: Record<string, number>;
+    onFilterChange?: (type: SequenceFilterType, value?: BrowseFilterValue) => void;
+    onRemoveFilter?: (type: string) => void;
+    onOpenLetterSheet?: () => void;
+    onOpenOptionsSheet?: () => void;
+    getFilteredCount?: (candidateType: BrowseFilterType, candidateValue: BrowseFilterValue) => number;
   }
 
-  let { onSourceChange }: Props = $props();
+  let {
+    onSourceChange,
+    activeLevel = null,
+    activeLetter = null,
+    activeLength = null,
+    activeLoopType = null,
+    activeGridMode = null,
+    isFavoritesActive = false,
+    hasActivePositions = false,
+    availableLengths = [],
+    loopTypeCounts = {},
+    onFilterChange,
+    onRemoveFilter,
+    onOpenLetterSheet,
+    onOpenOptionsSheet,
+    getFilteredCount,
+  }: Props = $props();
 
   // Source state
   const currentSource = $derived(sequenceSourceManager.current);
@@ -111,6 +151,32 @@
     }
   }
 
+  // Inline filter handlers (wide screens — chips render directly in top bar)
+  function handleInlineLevelSelect(level: number | null) {
+    if (level === null) onRemoveFilter?.("difficulty");
+    else onFilterChange?.("difficulty", level);
+  }
+
+  function handleInlineFavoritesToggle(active: boolean) {
+    if (active) onFilterChange?.("favorites");
+    else onRemoveFilter?.("favorites");
+  }
+
+  function handleInlineLengthSelect(length: number | null) {
+    if (length === null) onRemoveFilter?.("length");
+    else onFilterChange?.("length", length);
+  }
+
+  function handleInlinePatternSelect(value: string | null) {
+    if (value === null) onRemoveFilter?.("cap_type");
+    else onFilterChange?.("cap_type", value);
+  }
+
+  function handleInlineGridModeSelect(gridMode: string | null) {
+    if (gridMode === null) onRemoveFilter?.("gridMode");
+    else onFilterChange?.("gridMode", gridMode);
+  }
+
   function handleToggleFilters() {
     hapticService?.trigger("selection");
     sequencePanelManager.toggleInlineFilters();
@@ -177,6 +243,47 @@
         currentMethod={sequenceControls.currentSortMethod}
         onSortChange={handleSortChange}
       />
+
+      <!-- Inline filter chips (wide screens only, hidden on narrow via container query) -->
+      {#if onFilterChange}
+        <div class="inline-divider" aria-hidden="true"></div>
+        <div class="inline-filters">
+          <LevelFilterChip
+            activeLevel={activeLevel ?? null}
+            onSelect={handleInlineLevelSelect}
+            {getFilteredCount}
+          />
+          <FavoritesFilterChip
+            active={isFavoritesActive ?? false}
+            onToggle={handleInlineFavoritesToggle}
+          />
+          <LetterFilterChip
+            activeLetter={activeLetter ?? null}
+            onOpenSheet={onOpenLetterSheet ?? (() => {})}
+          />
+          <LengthFilterChip
+            activeLength={activeLength ?? null}
+            availableLengths={availableLengths ?? []}
+            onSelect={handleInlineLengthSelect}
+            {getFilteredCount}
+          />
+          <PatternFilterChip
+            activeValue={activeLoopType ?? null}
+            loopTypeCounts={loopTypeCounts ?? {}}
+            onSelect={handleInlinePatternSelect}
+          />
+          <GridModeFilterChip
+            activeGridMode={activeGridMode ?? null}
+            onSelect={handleInlineGridModeSelect}
+            {getFilteredCount}
+          />
+          <PositionFilterChip
+            hasActivePositions={hasActivePositions ?? false}
+            onOpenSheet={onOpenOptionsSheet ?? (() => {})}
+          />
+        </div>
+        <div class="inline-divider" aria-hidden="true"></div>
+      {/if}
 
       <!-- Right actions: Search + Zoom + Active Filter + Filter Button -->
       <div class="actions-section">
@@ -282,6 +389,49 @@
     gap: 8px;
     flex: 1;
     min-width: 0;
+  }
+
+  /* Inline filter chips — visible on wide screens only */
+  .inline-filters {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .inline-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Vertical divider between logical groups */
+  .inline-divider {
+    display: none;
+    width: 1px;
+    height: 24px;
+    background: var(--theme-stroke);
+    flex-shrink: 0;
+  }
+
+  /* Wide screen: show inline filters, hide filter toggle, shrink actions */
+  @container gallery (min-width: 900px) {
+    .inline-filters {
+      display: flex;
+    }
+
+    .inline-divider {
+      display: block;
+    }
+
+    .filter-button {
+      display: none;
+    }
+
+    .actions-section {
+      flex: 0 0 auto;
+    }
   }
 
   /* Zoom Controls */

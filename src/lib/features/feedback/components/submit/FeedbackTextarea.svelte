@@ -19,6 +19,8 @@
     draftStatus = "idle",
     images = $bindable([]),
     stagedImages = new Map(),
+    onImagesAdded,
+    onImageRemoved,
     disabled = false,
     isInputMode = false,
     isVoiceRecording = false,
@@ -42,6 +44,8 @@
     draftStatus?: DraftSaveStatus;
     images?: File[];
     stagedImages?: Map<File, StagedImageState>;
+    onImagesAdded?: (files: File[]) => void;
+    onImageRemoved?: (index: number) => void;
     disabled?: boolean;
     isInputMode?: boolean;
     /** Whether voice recording is active (shows waveform) */
@@ -172,7 +176,7 @@
           <i class="fas fa-times" aria-hidden="true"></i>
         </button>
       {/if}
-      <ImageUpload bind:images {disabled} {stagedImages} hidePreviews={isInputMode} />
+      <ImageUpload bind:images {disabled} {stagedImages} {onImagesAdded} {onImageRemoved} hidePreviews={isInputMode} />
     </div>
   </div>
 </div>

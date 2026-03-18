@@ -62,28 +62,6 @@ export function createFeedbackSubmitState() {
   // Derived state
   const isSubmitting = $derived(submitStatus === "submitting");
 
-  // Auto-stage images as soon as they're attached.
-  // Compares current images to what we're already tracking and starts
-  // uploads for any new files.
-  $effect(() => {
-    const currentFiles = new Set(images);
-    const trackedFiles = new Set(stagedImages.keys());
-
-    // Start uploads for newly added files
-    for (const file of currentFiles) {
-      if (!trackedFiles.has(file)) {
-        startStagingUpload(file);
-      }
-    }
-
-    // Cancel and clean up removed files
-    for (const file of trackedFiles) {
-      if (!currentFiles.has(file)) {
-        cancelAndCleanup(file);
-      }
-    }
-  });
-
   function startStagingUpload(file: File) {
     const userId = authState.user?.uid;
     if (!userId) return;
@@ -128,6 +106,27 @@ export function createFeedbackSubmitState() {
     const next = new Map(stagedImages);
     next.delete(file);
     stagedImages = next;
+  }
+
+  // Image staging — imperative triggers, not reactive effects.
+  // Effects would die when the component that created the singleton unmounts.
+  function addImage(file: File) {
+    images.push(file);
+    startStagingUpload(file);
+  }
+
+  function addImages(files: File[]) {
+    for (const file of files) {
+      addImage(file);
+    }
+  }
+
+  function removeImage(index: number) {
+    const file = images[index];
+    if (file) {
+      cancelAndCleanup(file);
+    }
+    images.splice(index, 1);
   }
 
   // Actions
@@ -299,6 +298,9 @@ export function createFeedbackSubmitState() {
     // Actions
     updateField,
     setType,
+    addImage,
+    addImages,
+    removeImage,
     validate,
     submit,
     reset,

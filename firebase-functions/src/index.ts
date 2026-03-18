@@ -64,6 +64,9 @@ export {
   r2DeleteByPrefix,
 } from "./r2/index";
 
+// Export staged upload cleanup (orphan prevention)
+export { cleanupStagedUploads } from "./cleanupStagedUploads";
+
 const db = admin.firestore();
 
 // Role hierarchy: user < premium < tester < admin

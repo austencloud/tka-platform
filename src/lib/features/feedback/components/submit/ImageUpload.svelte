@@ -11,6 +11,8 @@
     disabled = false,
     hidePreviews = false,
     stagedImages = new Map(),
+    onImagesAdded,
+    onImageRemoved,
   } = $props<{
     images?: File[];
     maxImages?: number;
@@ -19,6 +21,10 @@
     hidePreviews?: boolean;
     /** Per-image upload state from the staging system */
     stagedImages?: Map<File, StagedImageState>;
+    /** Called when images are added — triggers pre-upload */
+    onImagesAdded?: (files: File[]) => void;
+    /** Called when an image is removed — cancels/cleans up staged upload */
+    onImageRemoved?: (index: number) => void;
   }>();
 
   let fileInput: HTMLInputElement | undefined = $state(undefined);
@@ -116,14 +122,26 @@
     const remainingSlots = maxImages - images.length;
     const filesToAdd = imageFiles.slice(0, remainingSlots);
 
-    // Mutate in place to work with $bindable
-    images.push(...filesToAdd);
+    if (filesToAdd.length === 0) return;
+
+    if (onImagesAdded) {
+      // Let the state handle array mutation + staging upload
+      onImagesAdded(filesToAdd);
+    } else {
+      // Fallback: direct mutation (no pre-upload)
+      images.push(...filesToAdd);
+    }
   }
 
   // Remove a file
-  function removeImage(index: number) {
-    // Mutate in place to work with $bindable
-    images.splice(index, 1);
+  function handleRemoveImage(index: number) {
+    if (onImageRemoved) {
+      // Let the state handle splice + staging cleanup
+      onImageRemoved(index);
+    } else {
+      // Fallback: direct mutation
+      images.splice(index, 1);
+    }
   }
 
   // Set up paste listener
@@ -204,7 +222,7 @@
           <button
             type="button"
             class="remove-btn"
-            onclick={() => removeImage(index)}
+            onclick={() => handleRemoveImage(index)}
             {disabled}
             aria-label={t("feedback_remove_image")}
           >
