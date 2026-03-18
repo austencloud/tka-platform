@@ -31,7 +31,6 @@
   import type { ContentModerationResult } from "$lib/features/moderation/domain/models/content-moderation-models";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { libraryState } from "$lib/features/library/state/library-state.svelte";
-  import { notifyLibrarySequenceAdded } from "$lib/shared/library/library-events";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import type { ISequenceContentHasher } from "$lib/features/library/services/contracts/ISequenceContentHasher";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -368,16 +367,6 @@
       );
 
       logger.success("Sequence saved to library with ID:", result.sequenceId);
-
-      // Notify the browse gallery so it can update its cache immediately
-      notifyLibrarySequenceAdded({
-        ...sequence,
-        id: result.sequenceId,
-        thumbnails: result.thumbnailUrl
-          ? [result.thumbnailUrl]
-          : sequence.thumbnails,
-        name: tkaName,
-      });
 
       if (ctx.sessionManager) {
         await ctx.sessionManager.markAsSaved(result.sequenceId);
