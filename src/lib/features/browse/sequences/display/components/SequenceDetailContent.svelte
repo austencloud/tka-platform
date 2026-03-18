@@ -20,6 +20,8 @@ Used by both desktop side panel and mobile slide-up overlay.
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import PropContextChip from "$lib/shared/sequence-viewer/components/PropContextChip.svelte";
   import type { IPresentationResolver, ViewingContext } from "$lib/shared/sequence-viewer/services/contracts/IPresentationResolver";
+  import type { ICollectionManager } from "$lib/features/library/services/contracts/ICollectionManager";
+  import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
 
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
@@ -54,6 +56,15 @@ Used by both desktop side panel and mobile slide-up overlay.
   let videoCountManager = $state<IVideoCountManager | null>(null);
   let imageSharer = $state<ISequenceImageSharer | null>(null);
   let claudeCopier = $state<IClaudeCodeCopier | null>(null);
+
+  // Save state detection
+  let isSaved = $state(true); // Default: assume saved (hide Save button while checking)
+  let isFavorite = $state(false);
+  let libraryRepo = $state<ILibraryRepository | null>(null);
+  let collectionManager = $state<ICollectionManager | null>(null);
+
+  // Content hash cache (avoids re-querying Firestore for same hash)
+  const savedHashCache = new Map<string, boolean>();
 
   // Video state
   let videoCount = $state(0);
@@ -147,6 +158,8 @@ Used by both desktop side panel and mobile slide-up overlay.
     videoCountManager = container.items.videoCountManager;
     imageSharer = container.items.sequenceImageSharer;
     claudeCopier = container.items.claudeCodeCopier;
+    libraryRepo = container.items.libraryRepository;
+    collectionManager = container.items.collectionManager;
   });
 
   // Load full sequence data when sequence changes
@@ -207,6 +220,57 @@ Used by both desktop side panel and mobile slide-up overlay.
     });
   });
 
+  // Check if sequence is already saved in user's library (by content hash)
+  $effect(() => {
+    const currentSequence = sequence;
+    const repo = libraryRepo;
+
+    isSaved = true; // Optimistic: hide Save while loading
+
+    if (!repo || !currentSequence?.contentHash || !currentUserId) return;
+
+    const hash = currentSequence.contentHash;
+
+    // Check cache first
+    if (savedHashCache.has(hash)) {
+      isSaved = savedHashCache.get(hash)!;
+      return;
+    }
+
+    untrack(() => {
+      repo.hasMatchingContent(hash)
+        .then((found) => {
+          savedHashCache.set(hash, found);
+          if (sequence.id === currentSequence.id) {
+            isSaved = found;
+          }
+        })
+        .catch(() => {
+          // On error, keep Save hidden (safe default)
+        });
+    });
+  });
+
+  // Check if sequence is favorited
+  $effect(() => {
+    const currentSequence = sequence;
+    const cm = collectionManager;
+
+    isFavorite = false;
+
+    if (!cm || !currentSequence) return;
+
+    untrack(() => {
+      cm.isFavorite(currentSequence.id)
+        .then((fav) => {
+          if (sequence.id === currentSequence.id) {
+            isFavorite = fav;
+          }
+        })
+        .catch(() => {});
+    });
+  });
+
   // Event handlers
   function handleVariationSelect(index: number, selectedSequence: SequenceData) {
     hapticService?.trigger("selection");
@@ -220,6 +284,35 @@ Used by both desktop side panel and mobile slide-up overlay.
       return;
     }
     onAction(action, sequence);
+  }
+
+  async function handleFavoriteToggle() {
+    hapticService?.trigger("selection");
+    // Optimistic update
+    isFavorite = !isFavorite;
+    try {
+      await collectionManager?.toggleFavorite(sequence.id);
+    } catch {
+      // Revert on error
+      isFavorite = !isFavorite;
+    }
+  }
+
+  function handlePublish() {
+    hapticService?.trigger("selection");
+    onAction("publish", sequence);
+  }
+
+  let unpublishConfirmOpen = $state(false);
+
+  function handleUnpublishRequest() {
+    hapticService?.trigger("selection");
+    unpublishConfirmOpen = true;
+  }
+
+  function handleUnpublishConfirm() {
+    unpublishConfirmOpen = false;
+    onAction("unpublish", sequence);
   }
 
   function handleVideosClick() {
@@ -405,17 +498,22 @@ Used by both desktop side panel and mobile slide-up overlay.
 
   <!-- Action Buttons -->
   <SequenceActionButtons
-    isFavorite={sequence.isFavorite}
+    isLoggedIn={!!currentUserId}
     {isOwned}
+    {isSaved}
+    isPublished={sequence.visibility === "public"}
+    {isFavorite}
     {videoCount}
-    onFavorite={() => handleAction("favorite")}
+    onFavorite={handleFavoriteToggle}
+    onSave={() => handleAction("save")}
     onEdit={() => handleAction("edit")}
-    onFork={() => handleAction("fork")}
     onShare={() => handleAction("share")}
     onSendTo={handleSendTo}
     onVideos={handleVideosClick}
     onDelete={() => handleAction("delete")}
     onMaximize={handleMaximize}
+    onPublish={handlePublish}
+    onUnpublish={handleUnpublishRequest}
   />
 
   <!-- Share Options Row -->
@@ -430,6 +528,24 @@ Used by both desktop side panel and mobile slide-up overlay.
     />
   {/if}
 </div>
+
+{#if unpublishConfirmOpen}
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div
+    class="confirm-backdrop"
+    onclick={() => (unpublishConfirmOpen = false)}
+    onkeydown={(e) => { if (e.key === "Escape") unpublishConfirmOpen = false; }}
+  >
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <div class="confirm-dialog" role="alertdialog" aria-label="Confirm unpublish" tabindex="-1" onclick={(e) => e.stopPropagation()}>
+      <p>Remove from community gallery? This sequence will still be in your library but won't appear in Browse.</p>
+      <div class="confirm-actions">
+        <button type="button" class="confirm-btn" onclick={() => (unpublishConfirmOpen = false)}>Cancel</button>
+        <button type="button" class="confirm-btn confirm-danger" onclick={handleUnpublishConfirm}>Make Private</button>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <!-- Videos Panel -->
 {#if showVideosPanel}
@@ -566,5 +682,64 @@ Used by both desktop side panel and mobile slide-up overlay.
     .creator-link:active {
       transform: none;
     }
+  }
+
+  /* Unpublish confirmation dialog */
+  .confirm-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+
+  .confirm-dialog {
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 16px;
+    padding: 24px;
+    max-width: 360px;
+    width: calc(100% - 48px);
+  }
+
+  .confirm-dialog p {
+    color: var(--theme-text, white);
+    font-size: var(--font-size-min, 14px);
+    line-height: 1.5;
+    margin: 0 0 20px;
+  }
+
+  .confirm-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+  }
+
+  .confirm-btn {
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text, white);
+    transition: all var(--duration-fast, 150ms) ease;
+  }
+
+  .confirm-btn:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+  }
+
+  .confirm-danger {
+    background: color-mix(in srgb, var(--semantic-error) 15%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error) 30%, transparent);
+    color: var(--semantic-error);
+  }
+
+  .confirm-danger:hover {
+    background: color-mix(in srgb, var(--semantic-error) 25%, transparent);
   }
 </style>
