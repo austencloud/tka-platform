@@ -34,6 +34,7 @@ import { BrowseEventHandler } from "$lib/features/browse/shared/services/impleme
 import { OptimizedBrowser } from "$lib/features/browse/shared/services/implementations/OptimizedBrowser";
 import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
 import { GalleryOfflineCache } from "$lib/shared/offline/services/implementations/GalleryOfflineCache";
+import { GalleryPrefetcher } from "$lib/features/browse/shared/services/implementations/GalleryPrefetcher";
 
 // Sequence detail services
 import { SequenceDetailLoader } from "$lib/features/browse/sequences/display/services/implementations/SequenceDetailLoader";
@@ -137,9 +138,14 @@ export function createBrowseContainer(deps: BrowseContainerDeps) {
   // Now loads from Firestore publicSequences collection instead of static manifest.
   // Receives galleryOfflineCache so it can persist after a successful fetch and
   // serve cached data when the network is unavailable.
-  const tier2 = tier1.add((ctx) => ({
-    browseLoader: () => new PublicSequencesLoader(ctx.galleryOfflineCache),
-  }));
+  const tier2 = tier1
+    .add((ctx) => ({
+      browseLoader: () => new PublicSequencesLoader(ctx.galleryOfflineCache),
+    }))
+    .add((ctx) => ({
+      galleryPrefetcher: () =>
+        new GalleryPrefetcher(ctx.browseLoader, ctx.galleryOfflineCache),
+    }));
 
   // Tier 3: Services depending on external dependencies
   const tier3 = tier2
