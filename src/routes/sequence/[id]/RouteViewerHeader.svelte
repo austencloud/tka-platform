@@ -5,6 +5,9 @@
   Similar to ViewerHeader but with route-aware back navigation instead of modal close.
 -->
 <script lang="ts">
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import { container } from "$lib/shared/di";
+
   interface Props {
     editingPane: 'animation' | 'image' | 'video-upload' | null;
     isFullscreen: boolean;
@@ -17,10 +20,8 @@
     onDarkModeToggle: () => void;
     /** Callback to open the settings modal */
     onSettingsOpen?: () => void;
-    /** Sequence ID for copy-link */
-    sequenceId?: string;
-    /** Sequence word for copy-link */
-    sequenceWord?: string;
+    /** Full sequence data for generating encoded share URL */
+    sequence?: SequenceData | null;
   }
 
   let {
@@ -33,18 +34,16 @@
     onExitEditMode,
     onDarkModeToggle,
     onSettingsOpen,
-    sequenceId,
-    sequenceWord,
+    sequence,
   }: Props = $props();
 
   let copyLinkFeedback = $state(false);
 
   function handleCopyLink() {
-    if (!sequenceId) return;
-    const base = `${window.location.origin}/sequence/${sequenceId}`;
-    const params = new URLSearchParams();
-    if (sequenceWord) params.set("word", sequenceWord);
-    navigator.clipboard.writeText(params.size > 0 ? `${base}?${params}` : base).then(() => {
+    if (!sequence) return;
+    const encoder = container.items.sequenceEncoder;
+    const { url } = encoder.generateViewerURL(sequence, { compress: true });
+    navigator.clipboard.writeText(url).then(() => {
       copyLinkFeedback = true;
       setTimeout(() => { copyLinkFeedback = false; }, 1500);
     });
