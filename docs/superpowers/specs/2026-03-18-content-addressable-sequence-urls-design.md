@@ -1,7 +1,7 @@
 # Content-Addressable Sequence URLs
 
 **Date:** 2026-03-18
-**Status:** Draft
+**Status:** Approved (v2 — revised after spec review)
 **Problem:** Shared sequence URLs use ambiguous word-based identifiers (`/sequence/LF?word=LF`). Multiple users can create different sequences with the same word, making these URLs non-deterministic. Additionally, when opening a shared URL, the viewer lacks the full library record needed for the "Creator's choice vs My settings" prop toggle.
 
 ---
@@ -12,7 +12,7 @@ Two changes that work together:
 
 1. **Self-contained encoded URLs only.** The copy-link button always produces a `z:` encoded URL containing the full motion data. No query params needed — the word is rederived from motion data via the existing `letterDeriver`, and creator metadata comes from the hash match.
 
-2. **Content hash for library matching.** Compute a SHA-256 fingerprint of each sequence's canonical motion data. Store it on `publicSequences` documents. When someone opens an encoded URL, compute the same hash and query for a match. If found, hydrate the viewer with the full library record (owner, intended props, effort timeline, etc.), enabling the prop switcher.
+2. **Encoder hash for library matching.** Compute a SHA-256 fingerprint of the URL encoder's deterministic pipe-delimited output. Store it on `publicSequences` documents as `encoderHash`. When someone opens an encoded URL, compute the same hash from the decompressed string and query for a match. If found, hydrate the viewer with the full library record (owner, intended props, effort timeline, etc.), enabling the prop switcher.
 
 ---
 
@@ -40,128 +40,106 @@ Old word-based URLs (`/sequence/LF`) still resolve via the existing `loadSequenc
 
 ---
 
-## Content Hash Architecture
+## Why a New Hash Field (Not the Existing `contentHash`)
 
-### Hash Computation
+The codebase already has `SequenceContentHasher` (`features/library/services/implementations/SequenceContentHasher.ts`) which computes `contentHash` for deduplication during publish. It hashes a rich JSON structure including `handPath`, `letter`, `blueReversal`, `redReversal`, `duration`, `skewSteps`, `skewDir`, and `gridMode`.
+
+**Problem:** The URL encoder (`SequenceEncoder.encode()`) doesn't preserve several of these fields — `handPath`, `letter`, reversals, skew data. A sequence decoded from a URL would produce a different `contentHash` than the saved version because the decoded data lacks these fields. Running the full derivation pipeline (letter deriver, reversal detector, hand path computation) on the decoded sequence is fragile and couples the read path to the entire creation pipeline.
+
+**Solution:** A second hash field, `encoderHash`, computed from the URL encoder's pipe-delimited output. This format:
+- Is already deterministic (fixed field order, fixed character mappings)
+- Roundtrips perfectly: `encode(decode(str)) === str`
+- Is available on both sides without additional derivation
+- Captures all motion-defining fields the encoder preserves: locations, orientations, rotation direction, turns, motion type, prop type
+
+The existing `contentHash` remains for deduplication (richer semantics, includes handPath/reversals). The new `encoderHash` is for URL-to-library matching (uses only URL-encodable fields).
+
+### What About Prop Type?
+
+The URL encoder includes prop type in its output. Two sequences with identical movements but different prop types produce different encoder hashes and different encoded URLs. This is correct — the prop type is part of the encoded data that the URL represents.
+
+Note: `contentHash` intentionally excludes prop type (it's a viewer preference for dedup purposes). `encoderHash` includes it because it's part of the URL encoding. These serve different purposes.
+
+---
+
+## Encoder Hash Computation
 
 ```
 SequenceData → SequenceEncoder.encode() → pipe-delimited string → SHA-256 → hex string
 ```
 
-- `SequenceEncoder.encode()` already produces a deterministic canonical form: `startPos|step1|step2|...` where each motion is encoded as `startLoc+endLoc+startOrient+endOrient+rotDir+turns+type+propType`.
-- Prop type is intentionally included in the encoding. Two sequences with identical movements but different prop types are distinct sequences.
-- SHA-256 via Web Crypto API. Zero dependencies. Native in all browsers.
-- Output: 64-character hex string.
-
-### Hash Versioning
-
-Each `publicSequences` document stores:
-- `contentHash: string` — the SHA-256 hex
-- `hashVersion: number` — currently `1`
-
-If the encoding format changes (new fields, different serialization), bump the version. Queries filter on both fields.
-
-### Why Not Strip Prop Type From Hash?
-
-The same motion data with staves vs fans represents different creative intent. If a user saves an LF sequence with fans and another saves LF with staves, those are distinct sequences that should each be findable via their own hash.
-
----
-
-## Write Path
-
-When a user publishes a sequence to the public index (via `PublicIndexSyncer` or equivalent):
-
-1. Compute `contentHash` using the new `ContentHasher` service
-2. Write `contentHash` and `hashVersion` to the `publicSequences` document
-3. No change to the user's private library document
-
-### Backfill
-
-A migration script iterates existing `publicSequences` documents, computes their hash, and writes it back. Runs incrementally — skip documents that already have a `contentHash`.
-
----
-
-## Read Path
-
-When someone opens a `/sequence/z:...` URL:
-
-1. **Decode and render immediately** — existing flow, no change. The viewer shows the sequence from URL data alone.
-2. **Background hash match** — after render, compute `contentHash` from the decoded sequence. Query `publicSequences` where `contentHash == hash && hashVersion == 1`, limit 1.
-3. **If match found** — load the full public record. Enrich the viewer's sequence with `ownerId`, `ownerDisplayName`, `intendedProp`, `effortTimeline`, `createdAt`, etc.
-4. **Viewer reacts** — PropSwitcher detects `intendedProp` and shows the "Creator's choice" toggle. Attribution displays creator name.
-5. **If no match** — viewer works exactly as today. Pure encoded sequence, no toggle, no attribution.
-
-This is progressive enhancement. The URL always works standalone. The library match adds richness.
-
----
-
-## New Service: `IContentHasher`
-
-### Interface
-
-```typescript
-// services/contracts/IContentHasher.ts
-export interface IContentHasher {
-  computeHash(sequence: SequenceData): Promise<string>;
-}
+The pipe-delimited string looks like:
+```
+noeasioocx0paS:noeasioocx0paS|wesoiikc1pAS:eanoookc1pAS|...
 ```
 
-### Implementation
+SHA-256 via Web Crypto API. Zero dependencies. Native in all browsers. Output: 64-character hex string.
 
-```typescript
-// services/implementations/ContentHasher.ts
-export class ContentHasher implements IContentHasher {
-  constructor(private encoder: ISequenceEncoder) {}
+### On the Read Path (URL → Hash)
 
-  async computeHash(sequence: SequenceData): Promise<string> {
-    const canonical = this.encoder.encode(sequence);
-    const encoded = new TextEncoder().encode(canonical);
-    const buffer = await crypto.subtle.digest("SHA-256", encoded);
-    const bytes = new Uint8Array(buffer);
-    return Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
-  }
-}
+Even simpler — no need to decode and re-encode:
+
+```
+z:CoCkBEjA2oBh... → LZString decompress → pipe-delimited string → SHA-256 → hex string
 ```
 
-Single responsibility. Depends only on `ISequenceEncoder` (already in DI). Uses native Web Crypto. No npm dependencies.
+The decompressed string IS the canonical form. Skip the decode/encode roundtrip entirely.
+
+---
+
+## Existing Infrastructure (Already Built)
+
+The following already exists and this spec builds on top of it:
+
+| Component | Location | Status |
+|-----------|----------|--------|
+| `SequenceContentHasher` | `features/library/services/implementations/` | Existing — computes `contentHash` for dedup |
+| `contentHash` field on `publicSequences` | Firestore | Existing — written during publish |
+| `PublicIndexSyncer` dedup query | `PublicIndexSyncer.ts:85-93` | Existing — queries by `contentHash` |
+| `LibraryRepository` hash on save | `LibraryRepository.ts:264-266` | Existing — computes hash on every save |
+| `SequenceEncoder.encode()` | `shared/navigation/services/implementations/` | Existing — deterministic pipe encoding |
+| `SequenceEncoder.generateViewerURL()` | Same file | Existing — generates `/sequence/z:...` URLs |
+
+**This spec adds only the read-path matching and the link generation fix.** The write path and hashing infrastructure are already in place.
 
 ---
 
 ## New Service: `ISequenceMatcher`
 
-Handles the background lookup and enrichment logic, keeping it out of the route component.
+Handles background lookup and enrichment. Single new service for this feature.
 
 ### Interface
 
 ```typescript
-// services/contracts/ISequenceMatcher.ts
+// shared/sequence-viewer/services/contracts/ISequenceMatcher.ts
 export interface SequenceMatchResult {
   matched: boolean;
-  publicRecord: PublicSequenceRecord | null;
+  publicRecord: PublicSequenceIndex | null;
 }
 
 export interface ISequenceMatcher {
-  findMatch(sequence: SequenceData): Promise<SequenceMatchResult>;
+  findPublicMatch(sequence: SequenceData): Promise<SequenceMatchResult>;
 }
 ```
 
 ### Implementation
 
 ```typescript
-// services/implementations/SequenceMatcher.ts
+// shared/sequence-viewer/services/implementations/SequenceMatcher.ts
 export class SequenceMatcher implements ISequenceMatcher {
   constructor(
-    private contentHasher: IContentHasher,
+    private encoder: ISequenceEncoder,
     private firestore: Firestore
   ) {}
 
-  async findMatch(sequence: SequenceData): Promise<SequenceMatchResult> {
-    const hash = await this.contentHasher.computeHash(sequence);
+  async findPublicMatch(sequence: SequenceData): Promise<SequenceMatchResult> {
+    const pipeString = this.encoder.encode(sequence);
+    const hash = await this.sha256(pipeString);
+
     const snap = await getDocs(
       query(
         collection(this.firestore, "publicSequences"),
-        where("contentHash", "==", hash),
-        where("hashVersion", "==", CURRENT_HASH_VERSION),
+        where("encoderHash", "==", hash),
         limit(1)
       )
     );
@@ -175,8 +153,52 @@ export class SequenceMatcher implements ISequenceMatcher {
       publicRecord: snap.docs[0].data() as PublicSequenceRecord,
     };
   }
+
+  private async sha256(input: string): Promise<string> {
+    const buffer = new TextEncoder().encode(input);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
+    return Array.from(new Uint8Array(hashBuffer), b =>
+      b.toString(16).padStart(2, "0")
+    ).join("");
+  }
 }
 ```
+
+### Error Handling
+
+The background match is fire-and-forget. Wrapped in try/catch that silently fails. If Firestore is unreachable, offline, or the query errors, the viewer continues working from the decoded URL data alone. No degraded UX.
+
+---
+
+## Write Path Change
+
+The write path already computes and stores `contentHash`. The only addition:
+
+**When publishing to `publicSequences`, also compute and store `encoderHash`.**
+
+In `PublicIndexSyncer.ts`, add alongside the existing `contentHash` write:
+
+```typescript
+const encoderHash = await this.computeEncoderHash(sequence);
+// ... in the document write:
+encoderHash: encoderHash,
+```
+
+The `computeEncoderHash` method uses `SequenceEncoder.encode()` → SHA-256, same as the read path.
+
+---
+
+## Read Path (Opening Shared URLs)
+
+When someone opens a `/sequence/z:...` URL:
+
+1. **Decode and render immediately** — existing flow, no change. The viewer shows the sequence from URL data alone.
+2. **Background hash match** — fire-and-forget async. Compute `encoderHash` from the decoded sequence (or decompress the URL string directly). Query `publicSequences` where `encoderHash == hash`, limit 1.
+3. **If match found** — enrich the viewer's sequence with `ownerId`, `ownerDisplayName`, `intendedProp`, `effortTimeline`, `createdAt`, etc.
+4. **Viewer reacts** — PropSwitcher detects `intendedProp` and shows the "Creator's choice" toggle. Attribution displays creator name.
+5. **If no match or error** — viewer works exactly as today. Pure encoded sequence, no toggle, no attribution. Silent failure.
+
+This is progressive enhancement. The URL always works standalone. The library match adds richness when available.
 
 ---
 
@@ -185,6 +207,7 @@ export class SequenceMatcher implements ISequenceMatcher {
 ### Current (`RouteViewerHeader.svelte`)
 
 ```typescript
+// Takes sequenceId and sequenceWord as string props
 function handleCopyLink() {
   const base = `${window.location.origin}/sequence/${sequenceId}`;
   // Copies whatever sequenceId is in the URL (often just the word)
@@ -194,6 +217,7 @@ function handleCopyLink() {
 ### After
 
 ```typescript
+// Takes full sequence: SequenceData prop (replacing sequenceId/sequenceWord)
 function handleCopyLink() {
   if (!sequence) return;
   const encoder = container.items.sequenceEncoder;
@@ -202,7 +226,7 @@ function handleCopyLink() {
 }
 ```
 
-The button now always produces a self-contained `z:` URL regardless of how the user arrived at the viewer. No metadata params — word is rederived, creator comes from hash match.
+**Props change:** `RouteViewerHeader` needs a `sequence: SequenceData` prop instead of `sequenceId: string` and `sequenceWord: string`. The parent `+page.svelte` already has the full sequence in scope.
 
 ---
 
@@ -210,17 +234,14 @@ The button now always produces a self-contained `z:` URL regardless of how the u
 
 | File | Change |
 |------|--------|
-| **New:** `shared/content-hash/services/contracts/IContentHasher.ts` | Interface |
-| **New:** `shared/content-hash/services/implementations/ContentHasher.ts` | SHA-256 hash |
-| **New:** `shared/content-hash/services/contracts/ISequenceMatcher.ts` | Interface |
-| **New:** `shared/content-hash/services/implementations/SequenceMatcher.ts` | Firestore query |
-| **New:** `di/containers/content-hash-container.ts` | DI registration |
-| `di/container-types.ts` | Add container type |
-| `di/index.ts` | Wire container |
-| `routes/sequence/[id]/RouteViewerHeader.svelte` | Encode URL on copy |
-| `routes/sequence/[id]/+page.svelte` | Background hash match after decode |
-| `PublicIndexSyncer.ts` (or publish path) | Compute hash on publish |
-| **New:** `scripts/backfill-content-hash.cjs` | Migration script |
+| **New:** `shared/sequence-viewer/services/contracts/ISequenceMatcher.ts` | Interface |
+| **New:** `shared/sequence-viewer/services/implementations/SequenceMatcher.ts` | Firestore query + SHA-256 |
+| `routes/sequence/[id]/RouteViewerHeader.svelte` | Props: `sequence` replaces `sequenceId`/`sequenceWord`. Copy-link generates encoded URL. |
+| `routes/sequence/[id]/+page.svelte` | Pass `sequence` prop to header. Background hash match after decode. Enrich sequence on match. |
+| `features/library/services/implementations/PublicIndexSyncer.ts` | Compute and store `encoderHash` alongside existing `contentHash` |
+| `features/library/domain/models/PublicSequenceIndex.ts` | Add `encoderHash` field to type |
+| DI container wiring | Register `SequenceMatcher` |
+| **New:** `scripts/backfill-encoder-hash.cjs` | Migration: compute `encoderHash` for existing `publicSequences` docs |
 
 ---
 
@@ -229,40 +250,59 @@ The button now always produces a self-contained `z:` URL regardless of how the u
 - Drawer overlay flow (browse → viewer) — still uses handoff with full data
 - QR codes — still work via short codes or `s~` inline encoding
 - `/p/[code]` route — unchanged
-- Private library storage — no hash needed
-- `SequenceEncoder` — no changes, used as-is for canonical form
+- Private library storage — no new fields
+- Existing `contentHash` — unchanged, still used for dedup
+- `SequenceEncoder` — no changes, used as-is
 
 ---
 
 ## Edge Cases
 
-### Same motions, different sequence length
-Not possible — different number of steps means different pipe-delimited encoding means different hash.
+### Same motions, different prop type
+Different pipe-delimited encoding → different `encoderHash`. Correct — the URL distinguishes them.
+
+### Same motions & prop type, different handPath/reversals
+Same `encoderHash` (encoder doesn't capture those). Match found. The full public record is loaded which has the correct handPath/reversals. Correct — the URL matches the physical motion pattern.
 
 ### Sequence edited after sharing
-The shared URL preserves the original motions. If the creator edits and re-saves, the public record gets a new `contentHash`. Old URLs still decode and render correctly but won't match the updated public record. This is correct behavior — the shared link represents the version that was shared.
+The shared URL preserves the original motions. If the creator edits and re-saves, the public record gets a new `encoderHash`. Old URLs still decode and render correctly but won't match the updated public record. Correct — the shared link represents the version that was shared.
 
-### Multiple public records with same hash
-Shouldn't happen if sequences are truly identical. If it does (e.g., two users independently created the exact same sequence), `limit(1)` returns one. The viewer shows whichever matched. Both are valid — the motions are identical.
+### Multiple public records with same encoderHash
+Possible if two users independently created the exact same motion sequence with the same prop type. `limit(1)` returns one. Both are valid — the motions are identical. The viewer shows whichever matched first.
 
 ### Hash collision
-SHA-256 collision probability is 2^-256. Not a real concern. The heat death of the universe comes first.
+SHA-256 collision probability: 2^-128 for birthday attack. Not a real concern.
 
 ### Offline / no network
-Hash match silently fails. Viewer still works from encoded data alone. No degraded experience.
+Hash match silently fails. Viewer works from encoded data alone. No degraded experience.
+
+### Sequences published before this change
+No `encoderHash` field. The backfill migration script handles these. Until backfilled, old sequences won't be found via URL matching but everything else works.
 
 ---
 
 ## Migration Strategy
 
-### Phase 1: Add hash on new publishes
-Deploy the write path. All newly published sequences get `contentHash`.
+### Phase 1: Add `encoderHash` on new publishes
+Update `PublicIndexSyncer` to compute and store `encoderHash`. All newly published sequences get both `contentHash` and `encoderHash`.
 
 ### Phase 2: Backfill existing records
-Run `scripts/backfill-content-hash.cjs`. Reads each `publicSequences` doc, computes hash, writes back. Skip docs already hashed. Idempotent.
+Run `scripts/backfill-encoder-hash.cjs`. For each `publicSequences` doc without `encoderHash`:
+1. Read the `sourceRef` field (points to the user's library doc, e.g., `users/{uid}/sequences/{id}`)
+2. Fetch the source library document (which has full `steps` with motion data)
+3. Run `SequenceEncoder.encode()` on the full sequence
+4. SHA-256 the result
+5. Write `encoderHash` back to the `publicSequences` document
 
-### Phase 3: Deploy read path
-Update the sequence route to do background matching. Works for any sequence with a hash — new or backfilled.
+Important: `publicSequences` docs do NOT store the `steps` array — they store thumbnails, metrics, and metadata. The encoder needs full motion data per step, so the backfill must resolve via `sourceRef` to the user's library doc.
 
-### Phase 4: Update link generation
-Deploy the RouteViewerHeader change. New share links are all `z:` encoded.
+Skip docs that already have `encoderHash`. Idempotent.
+
+### Phase 3: Deploy read path + link generation
+Update the sequence route with background matching and the new link generation. Works for any sequence with an `encoderHash` — new or backfilled.
+
+---
+
+## Firestore Index
+
+The query `where("encoderHash", "==", hash)` uses a single-field equality filter. Firestore automatically indexes all top-level fields, so no composite index creation is needed.
