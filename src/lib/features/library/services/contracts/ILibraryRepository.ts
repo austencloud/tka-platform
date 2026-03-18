@@ -126,6 +126,14 @@ export interface ILibraryRepository {
   getSequences(options?: LibraryQueryOptions): Promise<LibrarySequence[]>;
 
   /**
+   * Check if a sequence with this content hash already exists in the user's library.
+   * Used by the action bar to determine whether to show Save or Edit.
+   * @param contentHash SHA-256 hash of motion content
+   * @returns true if a matching sequence exists
+   */
+  hasMatchingContent(contentHash: string): Promise<boolean>;
+
+  /**
    * Get sequences for a specific user (useful for viewing other users' profiles)
    * @param userId The user ID to get sequences for
    * @param options Query options for filtering, sorting, pagination
