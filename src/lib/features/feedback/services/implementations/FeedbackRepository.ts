@@ -17,6 +17,7 @@ import type {
   FeedbackItem,
   FeedbackFormData,
   FeedbackFilterOptions,
+  FeedbackProgressCallback,
   FeedbackStatus,
   TesterConfirmationStatus,
 } from "../../domain/models/feedback-models";
@@ -60,13 +61,17 @@ export class FeedbackService implements IFeedbackService {
     formData: FeedbackFormData,
     capturedModule: string,
     capturedTab: string,
-    images?: File[]
+    images?: File[],
+    onProgress?: FeedbackProgressCallback,
+    preUploadedImageUrls?: string[]
   ): Promise<string> {
     return this.submissionService.submitFeedback(
       formData,
       capturedModule,
       capturedTab,
-      images
+      images,
+      onProgress,
+      preUploadedImageUrls
     );
   }
 

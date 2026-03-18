@@ -8,6 +8,7 @@ import type {
   FeedbackItem,
   FeedbackFormData,
   FeedbackFilterOptions,
+  FeedbackProgressCallback,
   FeedbackStatus,
   TesterConfirmationStatus,
 } from "../../domain/models/feedback-models";
@@ -20,7 +21,9 @@ export interface IFeedbackService {
     formData: FeedbackFormData,
     capturedModule: string,
     capturedTab: string,
-    images?: File[]
+    images?: File[],
+    onProgress?: FeedbackProgressCallback,
+    preUploadedImageUrls?: string[]
   ): Promise<string>;
 
   /**

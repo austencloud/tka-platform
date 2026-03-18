@@ -21,6 +21,7 @@ import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import type { IFeedbackSubmissionService } from "../contracts/IFeedbackSubmissionService";
 import type {
   FeedbackFormData,
+  FeedbackProgressCallback,
   FeedbackStatus,
 } from "../../domain/models/feedback-models";
 import type { MessageAttachment } from "$lib/shared/messaging/domain/models/message-models";
@@ -62,7 +63,9 @@ export class FeedbackSubmissionService implements IFeedbackSubmissionService {
     formData: FeedbackFormData,
     capturedModule: string,
     capturedTab: string,
-    images?: File[]
+    images?: File[],
+    onProgress?: FeedbackProgressCallback,
+    preUploadedImageUrls?: string[]
   ): Promise<string> {
     const firestore = await getFirestoreInstance();
     const user = authState.user;
@@ -102,6 +105,9 @@ export class FeedbackSubmissionService implements IFeedbackSubmissionService {
       updatedAt: null,
     };
 
+    // Report saving phase
+    onProgress?.({ phase: "saving", fraction: 0 });
+
     let docRef;
     try {
       // Create document first to get ID
@@ -115,17 +121,29 @@ export class FeedbackSubmissionService implements IFeedbackSubmissionService {
       throw error;
     }
 
-    // Upload images if provided
-    if (images && images.length > 0) {
+    // Attach images — use pre-uploaded URLs if available (instant), otherwise upload now
+    if (preUploadedImageUrls && preUploadedImageUrls.length > 0) {
       try {
-        const imageUrls = await Promise.all(
-          images.map((file) => this.uploadImage(file, docRef.id, effectiveUser.uid))
+        await updateDoc(docRef, { imageUrls: preUploadedImageUrls });
+      } catch (error) {
+        console.error("[FeedbackSubmitter] Failed to attach pre-uploaded image URLs:", error);
+        toast.warning("Feedback submitted but images may not be attached.");
+      }
+    } else if (images && images.length > 0) {
+      // Fallback: upload during submit (used when pre-upload didn't complete)
+      onProgress?.({ phase: "uploading", fraction: 0 });
+
+      try {
+        const imageUrls = await this.uploadImagesWithProgress(
+          images,
+          docRef.id,
+          effectiveUser.uid,
+          onProgress
         );
         await updateDoc(docRef, { imageUrls });
       } catch (error) {
         console.error("[FeedbackSubmitter] Failed to upload images:", error);
         toast.warning("Feedback submitted but some images failed to upload.");
-        // Don't throw - feedback was still submitted
       }
     }
 
@@ -174,29 +192,66 @@ export class FeedbackSubmissionService implements IFeedbackSubmissionService {
     };
   }
 
-  private async uploadImage(
-    file: File,
+  /**
+   * Upload all images concurrently using resumable uploads.
+   * Aggregates bytesTransferred across all images into a single 0–1 fraction
+   * so the UI can render a smooth progress bar.
+   */
+  private async uploadImagesWithProgress(
+    files: File[],
     feedbackId: string,
-    userId: string
-  ): Promise<string> {
-    const { ref, uploadBytes, getDownloadURL } =
+    userId: string,
+    onProgress?: FeedbackProgressCallback
+  ): Promise<string[]> {
+    const { ref, uploadBytesResumable, getDownloadURL } =
       await import("firebase/storage");
     const storage = await getStorageInstance();
 
-    const timestamp = Date.now();
-    const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-    // Include userId in path for security - only owner/admin can read
-    const storagePath = `feedback/${userId}/${feedbackId}/${timestamp}_${sanitizedFilename}`;
+    // Per-image byte tracking for aggregate progress
+    const transferred = new Array<number>(files.length).fill(0);
+    const totals = files.map((f) => f.size);
+    const grandTotal = totals.reduce((a, b) => a + b, 0);
 
-    const storageRef = ref(storage, storagePath);
-
-    try {
-      await uploadBytes(storageRef, file);
-      return await getDownloadURL(storageRef);
-    } catch (error) {
-      console.error("[FeedbackSubmitter] Failed to upload image:", error);
-      throw new Error(`Failed to upload image: ${file.name}`);
+    function reportAggregate() {
+      if (!onProgress || grandTotal === 0) return;
+      const sumTransferred = transferred.reduce((a, b) => a + b, 0);
+      onProgress({ phase: "uploading", fraction: sumTransferred / grandTotal });
     }
+
+    const uploadPromises = files.map((file, index) => {
+      return new Promise<string>((resolve, reject) => {
+        const timestamp = Date.now();
+        const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+        const storagePath = `feedback/${userId}/${feedbackId}/${timestamp}_${sanitizedFilename}`;
+        const storageRef = ref(storage, storagePath);
+
+        const task = uploadBytesResumable(storageRef, file);
+
+        task.on(
+          "state_changed",
+          (snapshot) => {
+            transferred[index] = snapshot.bytesTransferred;
+            reportAggregate();
+          },
+          (error) => {
+            console.error(`[FeedbackSubmitter] Failed to upload image: ${file.name}`, error);
+            reject(new Error(`Failed to upload image: ${file.name}`));
+          },
+          async () => {
+            try {
+              transferred[index] = totals[index]!;
+              reportAggregate();
+              const url = await getDownloadURL(storageRef);
+              resolve(url);
+            } catch (error) {
+              reject(error);
+            }
+          }
+        );
+      });
+    });
+
+    return Promise.all(uploadPromises);
   }
 
   private async sendFeedbackMessage(

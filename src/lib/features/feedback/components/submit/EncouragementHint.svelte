@@ -5,10 +5,12 @@
   }>();
 </script>
 
-<div class="encouragement-hint" class:collapsed={isInputMode}>
-  <i class="fas fa-robot" aria-hidden="true"></i>
-  <span>{message}</span>
-</div>
+{#if message}
+  <div class="encouragement-hint" class:collapsed={isInputMode}>
+    <i class="fas fa-robot" aria-hidden="true"></i>
+    <span>{message}</span>
+  </div>
+{/if}
 
 <style>
   .encouragement-hint {

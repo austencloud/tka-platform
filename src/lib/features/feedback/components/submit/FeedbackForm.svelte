@@ -167,6 +167,27 @@
       : ""
   );
 
+  // Mobile toolbar submit button — upload state derivations
+  const isToolbarUploading = $derived(
+    formState.isSubmitting && formState.uploadProgress?.phase === "uploading"
+  );
+
+  const toolbarSubmitLabel = $derived.by(() => {
+    if (!formState.isSubmitting) return t("feedback_submit");
+    const progress = formState.uploadProgress;
+    if (progress?.phase === "uploading") {
+      const pct = Math.round(progress.fraction * 100);
+      return t("feedback_uploading_images_pct", { pct: `${pct}%` });
+    }
+    return t("feedback_submit");
+  });
+
+  const toolbarProgressPercent = $derived(
+    isToolbarUploading && formState.uploadProgress
+      ? formState.uploadProgress.fraction * 100
+      : 0
+  );
+
   async function handleSubmit(event: SubmitEvent) {
     event.preventDefault();
     hapticService?.trigger("selection");
@@ -235,6 +256,7 @@
       {isTouchDevice}
       draftStatus={draftPersister?.saveStatus}
       bind:images={formState.images}
+      stagedImages={formState.stagedImages}
       disabled={formState.isSubmitting}
       {isInputMode}
       {isVoiceRecording}
@@ -253,6 +275,7 @@
       <SubmitButton
         isSubmitting={formState.isSubmitting}
         disabled={formState.isSubmitting || !formState.isFormValid}
+        uploadProgress={formState.uploadProgress}
       />
     {/if}
 
@@ -302,6 +325,7 @@
         <button
           type="button"
           class="toolbar-submit-button"
+          class:uploading={isToolbarUploading}
           onmousedown={(e) => {
             // Prevent blur from textarea so submit completes before keyboard dismisses
             e.preventDefault();
@@ -314,13 +338,19 @@
           }}
           disabled={formState.isSubmitting || !formState.isFormValid}
           aria-label={t("feedback_submit")}
+          style:--progress="{toolbarProgressPercent}%"
         >
-          {#if formState.isSubmitting}
-            <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
-          {:else}
-            <i class="fas fa-paper-plane" aria-hidden="true"></i>
+          {#if isToolbarUploading}
+            <div class="toolbar-progress-fill" aria-hidden="true"></div>
           {/if}
-          <span>{t("feedback_submit")}</span>
+          <span class="toolbar-btn-content">
+            {#if formState.isSubmitting}
+              <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+            {:else}
+              <i class="fas fa-paper-plane" aria-hidden="true"></i>
+            {/if}
+            <span>{toolbarSubmitLabel}</span>
+          </span>
         </button>
       {/snippet}
     </MobileInputToolbar>
@@ -374,6 +404,7 @@
 
   /* Submit button inside the mobile toolbar's leftContent snippet */
   .toolbar-submit-button {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -391,11 +422,41 @@
     cursor: pointer;
     transition: all 150ms ease;
     touch-action: manipulation;
+    overflow: hidden;
+  }
+
+  /* During upload, dim the base so the progress fill is visible */
+  .toolbar-submit-button.uploading {
+    background: color-mix(in srgb, var(--theme-accent, #4a9eff) 40%, black);
+  }
+
+  /* Progress fill for mobile toolbar button */
+  .toolbar-progress-fill {
+    position: absolute;
+    inset: 0;
+    background: var(--theme-accent, #4a9eff);
+    transform-origin: left center;
+    transform: scaleX(calc(var(--progress) / 100));
+    transition: transform 200ms ease-out;
+    border-radius: inherit;
+  }
+
+  /* Content sits above the progress fill */
+  .toolbar-btn-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
 
   .toolbar-submit-button:hover:not(:disabled) {
     background: var(--theme-accent-strong, #5aafff);
     transform: translateY(-1px);
+  }
+
+  .toolbar-submit-button.uploading:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--theme-accent, #4a9eff) 40%, black);
   }
 
   .toolbar-submit-button:active:not(:disabled) {
@@ -422,6 +483,10 @@
     }
 
     .toolbar-submit-button {
+      transition: none;
+    }
+
+    .toolbar-progress-fill {
       transition: none;
     }
   }

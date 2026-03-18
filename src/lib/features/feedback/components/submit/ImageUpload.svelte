@@ -2,16 +2,23 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
+  import type { StagedImageState } from "../../domain/models/feedback-models";
 
   // Props
   const {
     images = $bindable([]),
     maxImages = 5,
     disabled = false,
+    hidePreviews = false,
+    stagedImages = new Map(),
   } = $props<{
     images?: File[];
     maxImages?: number;
     disabled?: boolean;
+    /** Hide preview thumbnails (e.g. during input mode to save space) */
+    hidePreviews?: boolean;
+    /** Per-image upload state from the staging system */
+    stagedImages?: Map<File, StagedImageState>;
   }>();
 
   let fileInput: HTMLInputElement | undefined = $state(undefined);
@@ -135,7 +142,16 @@
       type="button"
       class="upload-button"
       class:dragging={isDragging}
-      onclick={() => !disabled && fileInput?.click()}
+      onmousedown={(e: MouseEvent) => {
+        // Prevent textarea blur so keyboard doesn't dismiss before file picker opens
+        e.preventDefault();
+        if (!disabled) fileInput?.click();
+      }}
+      ontouchstart={(e: TouchEvent) => {
+        // Same for touch - prevent blur, then open file picker
+        e.preventDefault();
+        if (!disabled) fileInput?.click();
+      }}
       ondrop={handleDrop}
       ondragover={handleDragOver}
       ondragleave={handleDragLeave}
@@ -157,12 +173,34 @@
     />
   {/if}
 
-  <!-- Previews -->
-  {#if previews.length > 0}
+  <!-- Previews with per-image upload progress -->
+  {#if previews.length > 0 && !hidePreviews}
     <div class="previews">
       {#each previews as { file, url }, index}
+        {@const staged = stagedImages.get(file)}
         <div class="preview-item">
           <img src={url} alt={file.name} />
+
+          <!-- Upload progress overlay -->
+          {#if staged?.status === "uploading"}
+            <div class="upload-overlay" aria-label="Uploading {Math.round((staged.fraction ?? 0) * 100)}%">
+              <div
+                class="upload-progress-bar"
+                style:--progress="{(staged.fraction ?? 0) * 100}%"
+              ></div>
+              <span class="upload-pct">{Math.round((staged.fraction ?? 0) * 100)}%</span>
+            </div>
+          {:else if staged?.status === "failed"}
+            <div class="upload-overlay failed" aria-label="Upload failed">
+              <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+              <span class="upload-failed-text">Failed</span>
+            </div>
+          {:else if staged?.status === "uploaded"}
+            <div class="upload-complete" aria-label="Upload complete">
+              <i class="fas fa-check-circle" aria-hidden="true"></i>
+            </div>
+          {/if}
+
           <button
             type="button"
             class="remove-btn"
@@ -297,6 +335,7 @@
     font-size: 0.875rem;
     cursor: pointer;
     transition: all var(--duration-fast) ease;
+    z-index: 2;
   }
 
   .remove-btn:hover:not(:disabled) {
@@ -321,5 +360,88 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    z-index: 1;
+  }
+
+  /* Upload progress overlay */
+  .upload-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.55);
+    border-radius: inherit;
+    gap: 4px;
+    z-index: 1;
+  }
+
+  .upload-overlay.failed {
+    background: rgba(239, 68, 68, 0.4);
+  }
+
+  .upload-overlay .fa-exclamation-triangle {
+    font-size: 1.25rem;
+    color: var(--semantic-error);
+  }
+
+  .upload-failed-text {
+    font-size: var(--font-size-compact, 12px);
+    color: white;
+    font-weight: 600;
+  }
+
+  /* Horizontal progress bar at bottom of thumbnail */
+  .upload-progress-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 0 0 8px 8px;
+    overflow: hidden;
+  }
+
+  .upload-progress-bar::after {
+    content: "";
+    display: block;
+    height: 100%;
+    width: var(--progress);
+    background: var(--semantic-success, #22c55e);
+    transition: width 200ms ease-out;
+  }
+
+  .upload-pct {
+    font-size: var(--font-size-compact, 12px);
+    color: white;
+    font-weight: 700;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  }
+
+  /* Green checkmark badge for completed uploads */
+  .upload-complete {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    color: var(--semantic-success, #22c55e);
+    font-size: 1rem;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+    z-index: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .upload-progress-bar::after {
+      transition: none;
+    }
+
+    .upload-button {
+      transition: none;
+    }
+
+    .remove-btn {
+      transition: none;
+    }
   }
 </style>

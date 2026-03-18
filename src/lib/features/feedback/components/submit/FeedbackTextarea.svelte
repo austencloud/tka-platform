@@ -6,6 +6,7 @@
   import type { IAudioAnalyzer } from "../../services/contracts/IAudioAnalyzer";
   import type { IVoiceRecorder, VoiceRecordingResult } from "../../services/contracts/IVoiceRecorder";
   import type { DraftSaveStatus } from "../../services/contracts/IFormDraftPersister";
+  import type { StagedImageState } from "../../domain/models/feedback-models";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   let {
@@ -17,6 +18,7 @@
     isTouchDevice = false,
     draftStatus = "idle",
     images = $bindable([]),
+    stagedImages = new Map(),
     disabled = false,
     isInputMode = false,
     isVoiceRecording = false,
@@ -38,7 +40,8 @@
     /** Touch device - hides keyboard shortcuts like "(Shift+Enter to submit)" */
     isTouchDevice?: boolean;
     draftStatus?: DraftSaveStatus;
-    images?: string[];
+    images?: File[];
+    stagedImages?: Map<File, StagedImageState>;
     disabled?: boolean;
     isInputMode?: boolean;
     /** Whether voice recording is active (shows waveform) */
@@ -169,7 +172,7 @@
           <i class="fas fa-times" aria-hidden="true"></i>
         </button>
       {/if}
-      <ImageUpload bind:images {disabled} />
+      <ImageUpload bind:images {disabled} {stagedImages} hidePreviews={isInputMode} />
     </div>
   </div>
 </div>
@@ -452,12 +455,12 @@
     display: none;
   }
 
-  /* Keep footer visible in input mode but compact - image upload is important */
+  /* Keep footer visible in input mode but compact */
   .field.input-mode .field-footer {
     margin-top: 8px;
   }
 
-  /* Hide the char count hint in input mode - it's less relevant */
+  /* Hide char count in input mode - less relevant while typing */
   .field.input-mode .field-hint .char-count {
     display: none;
   }
