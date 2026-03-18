@@ -38,7 +38,7 @@ export interface ViewerLayoutState {
   fullscreenStackVertical: boolean;
   isMobile: boolean;
   isLandscapeMobile?: boolean;
-  focusedPane: "animation" | "image" | null;
+  focusedPane: "animation" | "image" | "video-upload" | null;
   /** When true, suppress pane close buttons (during export mode) */
   suppressCloseButton?: boolean;
 }
