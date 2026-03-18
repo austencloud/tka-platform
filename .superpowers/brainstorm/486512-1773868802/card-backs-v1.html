@@ -1,0 +1,373 @@
+<h2>Choreo Card Back Design</h2>
+<p class="subtitle">Three directions for the back of every printed card. Click the one that feels closest.</p>
+
+<div class="cards" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 24px;">
+
+  <!-- OPTION A: Dark & Bordered -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)" style="padding: 0; overflow: hidden; background: transparent;">
+    <div class="card-body" style="padding: 0;">
+      <div style="
+        aspect-ratio: 2.5/3.5;
+        background: #1a1a2e;
+        border: 3px solid #2a2a4a;
+        border-radius: 12px;
+        padding: 20px;
+        color: #e0e0e0;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        overflow: hidden;
+      ">
+        <!-- Decorative border pattern -->
+        <div style="
+          position: absolute;
+          inset: 6px;
+          border: 1.5px solid rgba(100, 140, 255, 0.15);
+          border-radius: 8px;
+          pointer-events: none;
+        "></div>
+        <div style="
+          position: absolute;
+          inset: 10px;
+          border: 0.5px solid rgba(100, 140, 255, 0.08);
+          border-radius: 6px;
+          pointer-events: none;
+        "></div>
+
+        <!-- Header -->
+        <div style="text-align: center; margin-bottom: 12px; position: relative; z-index: 1;">
+          <div style="font-size: 15px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #7b9fff;">Choreo Card</div>
+          <div style="font-size: 9px; color: #666; margin-top: 2px; letter-spacing: 1px;">THE KINETIC ALPHABET</div>
+        </div>
+
+        <!-- Level Section -->
+        <div style="margin-bottom: 14px; position: relative; z-index: 1;">
+          <div style="font-size: 8px; text-transform: uppercase; letter-spacing: 1.5px; color: #888; margin-bottom: 6px;">Difficulty</div>
+          <div style="display: flex; gap: 6px;">
+            <!-- Level 1 - highlighted -->
+            <div style="
+              flex: 1;
+              background: rgba(100, 140, 255, 0.15);
+              border: 1.5px solid #7b9fff;
+              border-radius: 6px;
+              padding: 6px;
+              text-align: center;
+            ">
+              <div style="font-size: 16px; font-weight: 700; color: #7b9fff;">1</div>
+              <div style="font-size: 7px; color: #aaa; margin-top: 2px; line-height: 1.3;">No rotation<br>Pure positions</div>
+            </div>
+            <!-- Level 2 - dimmed -->
+            <div style="
+              flex: 1;
+              background: rgba(255,255,255,0.02);
+              border: 1px solid rgba(255,255,255,0.08);
+              border-radius: 6px;
+              padding: 6px;
+              text-align: center;
+              opacity: 0.4;
+            ">
+              <div style="font-size: 16px; font-weight: 700; color: #999;">2</div>
+              <div style="font-size: 7px; color: #666; margin-top: 2px; line-height: 1.3;">Whole turns<br>Props rotate</div>
+            </div>
+            <!-- Level 3 - dimmed -->
+            <div style="
+              flex: 1;
+              background: rgba(255,255,255,0.02);
+              border: 1px solid rgba(255,255,255,0.08);
+              border-radius: 6px;
+              padding: 6px;
+              text-align: center;
+              opacity: 0.4;
+            ">
+              <div style="font-size: 16px; font-weight: 700; color: #999;">3</div>
+              <div style="font-size: 7px; color: #666; margin-top: 2px; line-height: 1.3;">Half turns<br>+ float</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LOOP Section -->
+        <div style="margin-bottom: 14px; position: relative; z-index: 1;">
+          <div style="font-size: 8px; text-transform: uppercase; letter-spacing: 1.5px; color: #888; margin-bottom: 6px;">Loop Type</div>
+          <div style="
+            background: rgba(80, 200, 180, 0.1);
+            border: 1px solid rgba(80, 200, 180, 0.25);
+            border-radius: 6px;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          ">
+            <div style="font-size: 22px; color: #50c8b4;">&#x1f501;</div>
+            <div>
+              <div style="font-size: 10px; font-weight: 600; color: #50c8b4;">Quartered Rotation</div>
+              <div style="font-size: 7.5px; color: #888; line-height: 1.4; margin-top: 2px;">
+                This sequence repeats 4 times to complete a full cycle. Each repetition rotates the pattern 90 degrees.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Spacer -->
+        <div style="flex: 1;"></div>
+
+        <!-- Instructions -->
+        <div style="position: relative; z-index: 1;">
+          <div style="font-size: 8px; text-transform: uppercase; letter-spacing: 1.5px; color: #888; margin-bottom: 6px;">How to Use</div>
+          <div style="font-size: 8px; color: #999; line-height: 1.6;">
+            <div style="margin-bottom: 3px;"><span style="color: #7b9fff; font-weight: 600;">1.</span> Learn each beat step by step</div>
+            <div style="margin-bottom: 3px;"><span style="color: #7b9fff; font-weight: 600;">2.</span> Teach it to a friend</div>
+            <div style="margin-bottom: 3px;"><span style="color: #7b9fff; font-weight: 600;">3.</span> Scan the QR to save it digitally</div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 1;">
+          <div style="font-size: 7px; color: #555;">tkascribe.com</div>
+          <div style="font-size: 7px; color: #555;">Create your own sequences free</div>
+        </div>
+      </div>
+      <h3 style="margin-top: 12px; text-align: center;">A: Dark & Bordered</h3>
+      <p style="text-align: center; font-size: 13px;">Dark card stock feel. Double border frame. Color-coded sections.</p>
+    </div>
+  </div>
+
+  <!-- OPTION B: Clean White -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)" style="padding: 0; overflow: hidden; background: transparent;">
+    <div class="card-body" style="padding: 0;">
+      <div style="
+        aspect-ratio: 2.5/3.5;
+        background: #fafafa;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 20px;
+        color: #333;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        display: flex;
+        flex-direction: column;
+      ">
+        <!-- Header -->
+        <div style="text-align: center; margin-bottom: 14px;">
+          <div style="font-size: 15px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #2a2a4a;">Choreo Card</div>
+          <div style="font-size: 9px; color: #999; margin-top: 2px; letter-spacing: 1px;">THE KINETIC ALPHABET</div>
+        </div>
+
+        <!-- Level Section -->
+        <div style="margin-bottom: 14px;">
+          <div style="font-size: 8px; text-transform: uppercase; letter-spacing: 1.5px; color: #999; margin-bottom: 6px;">Difficulty</div>
+          <div style="display: flex; gap: 6px;">
+            <div style="
+              flex: 1;
+              background: #2a2a4a;
+              border-radius: 6px;
+              padding: 6px;
+              text-align: center;
+              color: white;
+            ">
+              <div style="font-size: 16px; font-weight: 700;">1</div>
+              <div style="font-size: 7px; opacity: 0.8; margin-top: 2px; line-height: 1.3;">No rotation<br>Pure positions</div>
+            </div>
+            <div style="
+              flex: 1;
+              background: #f0f0f0;
+              border-radius: 6px;
+              padding: 6px;
+              text-align: center;
+              opacity: 0.45;
+            ">
+              <div style="font-size: 16px; font-weight: 700; color: #999;">2</div>
+              <div style="font-size: 7px; color: #999; margin-top: 2px; line-height: 1.3;">Whole turns<br>Props rotate</div>
+            </div>
+            <div style="
+              flex: 1;
+              background: #f0f0f0;
+              border-radius: 6px;
+              padding: 6px;
+              text-align: center;
+              opacity: 0.45;
+            ">
+              <div style="font-size: 16px; font-weight: 700; color: #999;">3</div>
+              <div style="font-size: 7px; color: #999; margin-top: 2px; line-height: 1.3;">Half turns<br>+ float</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LOOP Section -->
+        <div style="margin-bottom: 14px;">
+          <div style="font-size: 8px; text-transform: uppercase; letter-spacing: 1.5px; color: #999; margin-bottom: 6px;">Loop Type</div>
+          <div style="
+            background: white;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          ">
+            <div style="font-size: 22px;">&#x1f501;</div>
+            <div>
+              <div style="font-size: 10px; font-weight: 600; color: #2a2a4a;">Quartered Rotation</div>
+              <div style="font-size: 7.5px; color: #777; line-height: 1.4; margin-top: 2px;">
+                This sequence repeats 4 times to complete a full cycle. Each repetition rotates the pattern 90 degrees.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="flex: 1;"></div>
+
+        <!-- Instructions -->
+        <div>
+          <div style="font-size: 8px; text-transform: uppercase; letter-spacing: 1.5px; color: #999; margin-bottom: 6px;">How to Use</div>
+          <div style="font-size: 8px; color: #666; line-height: 1.6;">
+            <div style="margin-bottom: 3px;"><span style="color: #2a2a4a; font-weight: 600;">1.</span> Learn each beat step by step</div>
+            <div style="margin-bottom: 3px;"><span style="color: #2a2a4a; font-weight: 600;">2.</span> Teach it to a friend</div>
+            <div style="margin-bottom: 3px;"><span style="color: #2a2a4a; font-weight: 600;">3.</span> Scan the QR to save it digitally</div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #e8e8e8; display: flex; justify-content: space-between; align-items: center;">
+          <div style="font-size: 7px; color: #bbb;">tkascribe.com</div>
+          <div style="font-size: 7px; color: #bbb;">Create your own sequences free</div>
+        </div>
+      </div>
+      <h3 style="margin-top: 12px; text-align: center;">B: Clean White</h3>
+      <p style="text-align: center; font-size: 13px;">Minimal. Ink-friendly for home printing. Professional and quiet.</p>
+    </div>
+  </div>
+
+  <!-- OPTION C: Dark with accent gradient -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)" style="padding: 0; overflow: hidden; background: transparent;">
+    <div class="card-body" style="padding: 0;">
+      <div style="
+        aspect-ratio: 2.5/3.5;
+        background: linear-gradient(170deg, #0f0f1e 0%, #1a1a35 50%, #12122a 100%);
+        border: 2px solid #333;
+        border-radius: 12px;
+        padding: 20px;
+        color: #e0e0e0;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        overflow: hidden;
+      ">
+        <!-- Subtle corner accents -->
+        <div style="position: absolute; top: 0; left: 0; width: 40px; height: 40px; border-top: 2px solid rgba(100,140,255,0.3); border-left: 2px solid rgba(100,140,255,0.3); border-radius: 12px 0 0 0;"></div>
+        <div style="position: absolute; top: 0; right: 0; width: 40px; height: 40px; border-top: 2px solid rgba(100,140,255,0.3); border-right: 2px solid rgba(100,140,255,0.3); border-radius: 0 12px 0 0;"></div>
+        <div style="position: absolute; bottom: 0; left: 0; width: 40px; height: 40px; border-bottom: 2px solid rgba(100,140,255,0.3); border-left: 2px solid rgba(100,140,255,0.3); border-radius: 0 0 0 12px;"></div>
+        <div style="position: absolute; bottom: 0; right: 0; width: 40px; height: 40px; border-bottom: 2px solid rgba(100,140,255,0.3); border-right: 2px solid rgba(100,140,255,0.3); border-radius: 0 0 12px 0;"></div>
+
+        <!-- Header -->
+        <div style="text-align: center; margin-bottom: 14px; position: relative; z-index: 1;">
+          <div style="font-size: 16px; font-weight: 800; letter-spacing: 4px; text-transform: uppercase; background: linear-gradient(90deg, #7b9fff, #50c8b4); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Choreo Card</div>
+          <div style="font-size: 9px; color: #555; margin-top: 3px; letter-spacing: 2px;">THE KINETIC ALPHABET</div>
+        </div>
+
+        <!-- Divider -->
+        <div style="height: 1px; background: linear-gradient(90deg, transparent, rgba(100,140,255,0.3), transparent); margin-bottom: 14px;"></div>
+
+        <!-- Level Section -->
+        <div style="margin-bottom: 14px; position: relative; z-index: 1;">
+          <div style="font-size: 8px; text-transform: uppercase; letter-spacing: 1.5px; color: #666; margin-bottom: 6px;">Difficulty</div>
+          <div style="display: flex; gap: 6px;">
+            <div style="
+              flex: 1;
+              background: linear-gradient(135deg, rgba(100,140,255,0.2), rgba(80,200,180,0.1));
+              border: 1.5px solid rgba(100,140,255,0.4);
+              border-radius: 6px;
+              padding: 6px;
+              text-align: center;
+              box-shadow: 0 0 12px rgba(100,140,255,0.1);
+            ">
+              <div style="font-size: 16px; font-weight: 700; color: #7b9fff;">1</div>
+              <div style="font-size: 7px; color: #aaa; margin-top: 2px; line-height: 1.3;">No rotation<br>Pure positions</div>
+            </div>
+            <div style="
+              flex: 1;
+              background: rgba(255,255,255,0.02);
+              border: 1px solid rgba(255,255,255,0.06);
+              border-radius: 6px;
+              padding: 6px;
+              text-align: center;
+              opacity: 0.35;
+            ">
+              <div style="font-size: 16px; font-weight: 700; color: #666;">2</div>
+              <div style="font-size: 7px; color: #555; margin-top: 2px; line-height: 1.3;">Whole turns<br>Props rotate</div>
+            </div>
+            <div style="
+              flex: 1;
+              background: rgba(255,255,255,0.02);
+              border: 1px solid rgba(255,255,255,0.06);
+              border-radius: 6px;
+              padding: 6px;
+              text-align: center;
+              opacity: 0.35;
+            ">
+              <div style="font-size: 16px; font-weight: 700; color: #666;">3</div>
+              <div style="font-size: 7px; color: #555; margin-top: 2px; line-height: 1.3;">Half turns<br>+ float</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LOOP Section -->
+        <div style="margin-bottom: 14px; position: relative; z-index: 1;">
+          <div style="font-size: 8px; text-transform: uppercase; letter-spacing: 1.5px; color: #666; margin-bottom: 6px;">Loop Type</div>
+          <div style="
+            background: rgba(80,200,180,0.08);
+            border: 1px solid rgba(80,200,180,0.2);
+            border-radius: 6px;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          ">
+            <div style="
+              width: 32px; height: 32px;
+              border: 2px solid #50c8b4;
+              border-radius: 50%;
+              display: flex; align-items: center; justify-content: center;
+              font-size: 14px; color: #50c8b4;
+              flex-shrink: 0;
+            ">&#x21bb;</div>
+            <div>
+              <div style="font-size: 10px; font-weight: 600; color: #50c8b4;">Quartered Rotation</div>
+              <div style="font-size: 7.5px; color: #777; line-height: 1.4; margin-top: 2px;">
+                Play this 4 times in a row. Each repetition rotates the whole pattern 90&deg;, then it resets.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="flex: 1;"></div>
+
+        <!-- Instructions -->
+        <div style="position: relative; z-index: 1;">
+          <div style="font-size: 8px; text-transform: uppercase; letter-spacing: 1.5px; color: #666; margin-bottom: 6px;">Get Started</div>
+          <div style="font-size: 8px; color: #888; line-height: 1.7;">
+            <div style="margin-bottom: 2px;">&#x25B8; Learn each beat with the app or a friend</div>
+            <div style="margin-bottom: 2px;">&#x25B8; Scan the front QR to save this sequence</div>
+            <div>&#x25B8; Sign up to build and share your own</div>
+          </div>
+        </div>
+
+        <!-- Divider -->
+        <div style="height: 1px; background: linear-gradient(90deg, transparent, rgba(100,140,255,0.2), transparent); margin: 10px 0 8px;"></div>
+
+        <!-- Footer -->
+        <div style="display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 1;">
+          <div style="font-size: 7.5px; color: #555; font-weight: 500;">tkascribe.com</div>
+          <div style="font-size: 7px; color: #444;">Your sequences. Your name. Your deck.</div>
+        </div>
+      </div>
+      <h3 style="margin-top: 12px; text-align: center;">C: Dark Premium</h3>
+      <p style="text-align: center; font-size: 13px;">Gradient background. Corner accents. Subtle glow on active level. Collectible feel.</p>
+    </div>
+  </div>
+
+</div>
+
+<p style="margin-top: 20px; color: #888; font-size: 13px;">
+  All three show: level system (with current level highlighted), LOOP type with description, usage instructions, and CTA footer. The content is the same &mdash; this is about which <em>tone</em> feels right for a physical card people hold in their hands.
+</p>

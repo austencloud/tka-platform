@@ -196,9 +196,9 @@
     "auditDate": "2026-02-02",
     "reason": "Container wrapping WorldSceneContent. Holds ~50 state vars via bind: pattern (physics, managers, debug). HMR persistence + MCP bridge + UI overlays are page-specific. State is structural, not logic."
   },
-  "lib/features/create/shared/components/coordinators/ShareHubCoordinator.svelte": {
+  "lib/features/create/shared/components/coordinators/SequenceDrawerHost.svelte": {
     "auditDate": "2026-02-02",
-    "reason": "Orchestrator pattern - coordinates animation, export, visibility services. All business logic in services (IAnimationPlaybackController, IVideoExportOrchestrator, ShareHubUrlManager). 12 handlers are thin wrappers. Zero extractable UI."
+    "reason": "Orchestrator pattern - coordinates animation, export, visibility services. All business logic in services (IAnimationPlaybackController, IVideoExportOrchestrator, ExportUrlManager). 12 handlers are thin wrappers. Zero extractable UI."
   },
   "lib/features/compose/tabs/setup/state/arrange-grid-state.svelte.ts": {
     "auditDate": "2026-02-02",

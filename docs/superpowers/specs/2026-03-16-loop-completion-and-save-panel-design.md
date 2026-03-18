@@ -117,7 +117,7 @@ The save-to-library button moves from the workspace header to the **bottom actio
 
 Current layout:
 - Left zone: `SequenceActionsButton` (tools menu) + `PropIndicatorButton`
-- Center zone: `ShareHubButton`
+- Center zone: `ExportPanelButton`
 - Right zone: `GeneratorHelpButton` (mobile only) + `ClearSequencePanelButton`
 
 The save button is added to the right zone, before the clear button. It uses the existing `SaveToLibraryButton` component (moved from `SequenceDisplay.svelte` header). Appears on both mobile and desktop.
