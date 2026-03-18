@@ -99,6 +99,11 @@ export function renderWordHeader(
 ): void {
   ensureFontsRegistered();
 
+  // Truncate absurdly long words so the header stays readable
+  const truncated = truncateForHeader(word, letterStyles);
+  word = truncated.word;
+  letterStyles = truncated.letterStyles;
+
   // Draw header background
   ctx.fillStyle = darkMode
     ? "rgba(10, 10, 15, 0.98)"
@@ -115,13 +120,23 @@ export function renderWordHeader(
   ctx.lineTo(canvasWidth, headerHeight - 0.5);
   ctx.stroke();
 
-  // Calculate font size based on header height (90% of header height)
-  const finalFontSize = headerHeight * 0.9;
+  // Calculate base font size from header height (90%)
+  const baseFontSize = headerHeight * 0.9;
 
   // Calculate badge size (90% of header height)
   const badgeSize = headerHeight * 0.9;
   const badgePadding = headerHeight * 0.05;
   const centerY = headerHeight / 2;
+
+  // Calculate available width for the word text (between badges)
+  const leftReserved = showDifficultyBadge ? badgeSize + badgePadding * 2 : 0;
+  const rightReserved = loopComponents && loopComponents.length > 0
+    ? loopComponents.length * badgeSize + (loopComponents.length - 1) * Math.floor(badgeSize * 0.15) + badgePadding * 2
+    : 0;
+  const availableWidth = canvasWidth - leftReserved - rightReserved - badgePadding * 2;
+
+  // Scale font size down if the word is too wide for the available space
+  const finalFontSize = fitFontToWidth(ctx, word, letterStyles, baseFontSize, availableWidth);
 
   // Render level badge on the left side
   if (showDifficultyBadge) {
@@ -156,6 +171,99 @@ export function renderWordHeader(
     const glyphY = (headerHeight - singleBadgeSize) / 2;
     renderLOOPGlyph(ctx, loopComponents, glyphX, glyphY, singleBadgeSize, darkMode);
   }
+}
+
+/** Maximum letter units before truncation with ellipsis */
+const MAX_HEADER_LETTERS = 16;
+
+/**
+ * Split a TKA word into letter units, where letter+dash (e.g. "W-", "Σ-")
+ * counts as a single unit. Returns the individual units.
+ */
+function splitIntoLetterUnits(word: string): string[] {
+  const units: string[] = [];
+  let i = 0;
+  while (i < word.length) {
+    const char = word[i];
+    if (!char) break;
+    if (/[a-zA-Z\u0370-\u03FF\u1F00-\u1FFF]/.test(char)) {
+      if (i + 1 < word.length && word[i + 1] === "-") {
+        units.push(char + "-");
+        i += 2;
+      } else {
+        units.push(char);
+        i += 1;
+      }
+    } else {
+      i += 1;
+    }
+  }
+  return units;
+}
+
+/**
+ * Truncate a word to MAX_HEADER_LETTERS letter units, adding "..." if cut.
+ * Also truncates the letterStyles array to match.
+ */
+function truncateForHeader(
+  word: string,
+  letterStyles?: LetterStyle[]
+): { word: string; letterStyles?: LetterStyle[] } {
+  const units = splitIntoLetterUnits(word);
+  if (units.length <= MAX_HEADER_LETTERS) {
+    return { word, letterStyles };
+  }
+
+  const truncatedWord = units.slice(0, MAX_HEADER_LETTERS).join("") + "...";
+  const truncatedStyles = letterStyles && letterStyles.length > 0
+    ? [...letterStyles.slice(0, MAX_HEADER_LETTERS), { letter: "...", isBridge: false, isDerived: false }]
+    : undefined;
+
+  return { word: truncatedWord, letterStyles: truncatedStyles };
+}
+
+/**
+ * Measure how wide the word would be at a given font size, then scale down
+ * if it exceeds the available width. Returns the font size to use.
+ *
+ * For styled words (with bridge/derived letters at 60% size), we measure
+ * each letter at its actual rendered size. For plain words, we measure
+ * the full string. The font shrinks proportionally so the entire word
+ * fits comfortably in the header without overflow.
+ */
+function fitFontToWidth(
+  ctx: CanvasRenderingContext2D,
+  word: string,
+  letterStyles: LetterStyle[] | undefined,
+  baseFontSize: number,
+  availableWidth: number
+): number {
+  if (availableWidth <= 0) return baseFontSize;
+
+  let textWidth: number;
+
+  if (letterStyles && letterStyles.length > 0) {
+    // Styled word: measure each letter at its rendered size
+    textWidth = 0;
+    for (const ls of letterStyles) {
+      const isDimmed = ls.isBridge || ls.isDerived;
+      const size = isDimmed ? baseFontSize * 0.6 : baseFontSize;
+      ctx.font = `bold ${size}px ${TITLE_FONT_FAMILY}`;
+      textWidth += ctx.measureText(ls.letter).width;
+    }
+  } else if (word && word.trim() !== "") {
+    // Plain word: measure the whole string
+    ctx.font = `bold ${baseFontSize}px ${TITLE_FONT_FAMILY}`;
+    textWidth = ctx.measureText(word).width;
+  } else {
+    return baseFontSize;
+  }
+
+  if (textWidth <= availableWidth) return baseFontSize;
+
+  // Scale down proportionally, with a floor of 20% base size
+  const scale = availableWidth / textWidth;
+  return Math.max(baseFontSize * scale, baseFontSize * 0.2);
 }
 
 /**
