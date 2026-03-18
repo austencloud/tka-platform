@@ -152,10 +152,10 @@ export function createBrowseState() {
   const availableSequenceLengths = $derived.by(() => {
     const lengths = new Set<number>();
     allSequences.forEach((seq) => {
-      if (!seq.steps) return;
-      // Calculate correct sequence length: steps.length - 2
-      // Subtract 2 for metadata beat and start position beat
-      const length = seq.steps.length - 2;
+      // sequenceLength is set by BrowseMetadataExtractor.parseBeats which already
+      // strips the start position element. Use it directly to stay in sync with
+      // the filter (BrowseFilter.filterByLength matches on sequenceLength).
+      const length = seq.sequenceLength ?? seq.steps?.length ?? 0;
       if (length > 0) {
         lengths.add(length);
       }
@@ -571,11 +571,17 @@ export function createBrowseState() {
     if (type === "favorites") return "Favorites";
     if (type === "difficulty") return `Level ${value}`;
     if (type === "startingLetter" || type === "starting_letter") return `Letter ${value}`;
-    if (type === "length") return `${value} beats`;
+    if (type === "length") return `${value} steps`;
     if (type === "startPosition" || type === "startingPosition") return `Start: ${value}`;
     if (type === "endPosition") return `End: ${value}`;
     if (type === "contains_letters") return `"${value}"`;
-    if (type === "cap_type") return `Pattern: ${value}`;
+    if (type === "cap_type") {
+      const formatted = String(value)
+        .split("_")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
+      return `Pattern: ${formatted}`;
+    }
     if (type === "gridMode") {
       const mode = String(value);
       return mode.charAt(0).toUpperCase() + mode.slice(1);

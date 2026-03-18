@@ -99,6 +99,11 @@
           creatorsDataState.loadCreators(userRepository, currentUserId),
           creatorsDataState.loadFeaturedCreators(userRepository),
         ]);
+      } else if (currentUserId && !creatorsDataState.hasFollowState) {
+        // The prefetch at app boot loaded creators before auth was ready,
+        // so all isFollowing flags are false. Reload with the real userId
+        // to get accurate follow state.
+        await creatorsDataState.refreshCreators(userRepository, currentUserId);
       }
 
       // Patch the current user's sequenceCount from the latest Firestore cache.
