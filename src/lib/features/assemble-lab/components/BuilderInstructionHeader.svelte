@@ -160,7 +160,7 @@
     gap: 10px;
     font-size: 20px;
     font-weight: 700;
-    color: #fff;
+    color: var(--theme-text, #fff);
   }
 
   .hand-dot-glow {
@@ -196,7 +196,7 @@
     border: 1.5px solid transparent;
     border-radius: 8px;
     background: transparent;
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
     font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     cursor: pointer;
@@ -204,12 +204,12 @@
   }
 
   .hand-switch-btn:hover {
-    color: rgba(255, 255, 255, 0.7);
-    background: rgba(255, 255, 255, 0.04);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
   }
 
   .hand-switch-btn.active {
-    color: #fff;
+    color: var(--theme-text, #fff);
     background: color-mix(in srgb, var(--btn-color) 15%, transparent);
     border-color: color-mix(in srgb, var(--btn-color) 40%, transparent);
   }
@@ -237,19 +237,19 @@
     align-items: center;
     justify-content: center;
     border-radius: 9px;
-    background: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.4);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
   }
 
   .hand-switch-btn.active .step-count {
     background: color-mix(in srgb, var(--btn-color) 25%, transparent);
-    color: #fff;
+    color: var(--theme-text, #fff);
   }
 
   /* Inactive hand with no steps yet — pulse to invite the user to start it */
   .hand-switch-btn.needs-attention {
     border-color: color-mix(in srgb, var(--btn-color) 50%, transparent);
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
     animation: hand-nudge 2s ease-in-out infinite;
   }
 
@@ -269,7 +269,7 @@
   }
 
   .hand-switch-btn:focus-visible {
-    outline: 2px solid #ffffff;
+    outline: 2px solid var(--theme-text, #ffffff);
     outline-offset: 2px;
   }
 
