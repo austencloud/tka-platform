@@ -5,7 +5,7 @@ import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/Mot
 import type {
   ISequenceJsonExporter,
   MinimalSequence,
-  MinimalBeat,
+  MinimalStep,
   MinimalMotion,
 } from "../contracts/ISequenceJsonExporter";
 
@@ -21,15 +21,25 @@ type BeatLike = StepData | StartPositionData | null | undefined;
 export class SequenceJsonExporter implements ISequenceJsonExporter {
   toMinimalJson(sequence: SequenceData): MinimalSequence {
     return {
+      key: {
+        startPos: "position = combination of both hand locations (e.g. gamma1, alpha3)",
+        endPos: "position at end of step",
+        startLoc: "single hand grid location (n/e/s/w)",
+        endLoc: "hand grid location at end of motion",
+        startOri: "prop orientation at start (in/out/cw/ccw)",
+        endOri: "prop orientation at end",
+        type: "motion type (pro/anti/static/dash/float)",
+        dir: "rotation direction (cw/ccw/noRotation)",
+        turns: "additional rotation (0, 1, 2, fl)",
+      },
       name: sequence.name || "",
       word: sequence.word || "",
       isCircular: sequence.isCircular || false,
       gridMode: sequence.gridMode || "",
-      // propType removed - prop type is a viewer preference, not sequence data
-      startPosition: this.minimalBeat(
+      startPosition: this.minimalStep(
         sequence.startPosition || sequence.startingPosition
       ),
-      steps: (sequence.steps || []).map((beat) => this.minimalBeat(beat)),
+      steps: (sequence.steps || []).map((step) => this.minimalStep(step)),
     };
   }
 
@@ -54,23 +64,23 @@ export class SequenceJsonExporter implements ISequenceJsonExporter {
     return {
       type: motion.motionType || "",
       dir: motion.rotationDirection || "",
-      start: motion.startLocation || "",
-      end: motion.endLocation || "",
+      startLoc: motion.startLocation || "",
+      endLoc: motion.endLocation || "",
       turns: typeof motion.turns === "number" ? motion.turns : 0,
       startOri: motion.startOrientation || "",
       endOri: motion.endOrientation || "",
     };
   }
 
-  private minimalBeat(beat: BeatLike): MinimalBeat | null {
+  private minimalStep(beat: BeatLike): MinimalStep | null {
     if (!beat) return null;
     // Handle both StepData (has stepNumber) and StartPositionData (no stepNumber)
     const stepNumber = "stepNumber" in beat ? beat.stepNumber : 0;
     return {
-      beat: stepNumber ?? 0,
+      step: stepNumber ?? 0,
       letter: beat.letter || "",
-      start: beat.startPosition || "",
-      end: beat.endPosition || "",
+      startPos: beat.startPosition || "",
+      endPos: beat.endPosition || "",
       blue: this.minimalMotion(beat.motions?.blue),
       red: this.minimalMotion(beat.motions?.red),
     };

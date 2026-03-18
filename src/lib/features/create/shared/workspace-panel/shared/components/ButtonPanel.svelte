@@ -6,7 +6,7 @@
 
   Layout:
   - LEFT ZONE: Undo + Clear (corrective actions)
-  - CENTER ZONE: Share Hub
+  - CENTER ZONE: Export Panel
   - RIGHT ZONE: Tools + Save (constructive actions)
 
   Architecture:
@@ -24,7 +24,7 @@
   import ClearSequencePanelButton from "./buttons/ClearSequenceButton.svelte";
   import UndoButton from "./buttons/UndoButton.svelte";
   import SequenceActionsButton from "./buttons/SequenceActionsButton.svelte";
-  import ShareHubButton from "./buttons/ShareHubButton.svelte";
+  import ViewSequenceButton from "./buttons/ViewSequenceButton.svelte";
   import GeneratorHelpButton from "./buttons/GeneratorHelpButton.svelte";
   import SaveToLibraryButton from "./buttons/SaveToLibraryButton.svelte";
 
@@ -34,33 +34,33 @@
   // Show help button only on generate tab (mobile only - CSS handles desktop hide)
   const showGeneratorHelp = $derived(navigationState.activeTab === "generate");
 
-  // Hide help button when beat editor or share hub is open (not relevant in those contexts)
+  // Hide help button when beat editor or export panel is open (not relevant in those contexts)
   const shouldHideHelpButton = $derived(
-    panelState.isStepEditorPanelOpen || panelState.isShareHubPanelOpen
+    panelState.isStepEditorPanelOpen || panelState.isExportPanelOpen
   );
 
   // Props interface - only event handler callbacks
   const {
     onClearSequence,
     onSequenceActionsClick,
-    onShareHub,
+    onViewSequence,
     onSaveToLibrary,
     visible = true,
   }: {
     onClearSequence?: () => void;
     onSequenceActionsClick?: () => void;
-    onShareHub?: () => void;
+    onViewSequence?: () => void;
     onSaveToLibrary?: () => void;
     visible?: boolean;
   } = $props();
 
   // Derive computed values from context
-  const showShareHubButton = $derived(CreateModuleState.canShowActionButtons());
+  const showViewSequenceButton = $derived(CreateModuleState.canShowActionButtons());
   const showSequenceActions = $derived(
     CreateModuleState.canShowSequenceActionsButton()
   );
   const canClearSequence = $derived(CreateModuleState.canClearSequence());
-  const isShareHubOpen = $derived(panelState.isShareHubPanelOpen);
+  const isExportPanelOpen = $derived(panelState.isExportPanelOpen);
   const canSaveToLibrary = $derived(CreateModuleState.canShowActionButtons());
   const currentSequence = $derived.by(() => {
     const tabState = CreateModuleState.getActiveTabSequenceState();
@@ -71,7 +71,7 @@
   // Note: SequenceActions is now in left zone, not center
   const centerZoneButtonCount = $derived(() => {
     let count = 0;
-    if (showShareHubButton) count++;
+    if (showViewSequenceButton) count++;
     return count;
   });
 
@@ -117,7 +117,7 @@
       {/if}
     </div>
 
-    <!-- CENTER ZONE: Main action button (Share Hub) -->
+    <!-- CENTER ZONE: Main action button (Export Panel) -->
     <div class="center-zone-wrapper">
       {#key centerZoneButtonCount()}
         <div
@@ -125,9 +125,9 @@
           out:fade={{ duration: 150 }}
           in:fade={{ duration: 150, delay: 150 }}
         >
-          {#if showShareHubButton && onShareHub}
+          {#if showViewSequenceButton && onViewSequence}
             <div>
-              <ShareHubButton onclick={onShareHub} isActive={isShareHubOpen} />
+              <ViewSequenceButton onclick={onViewSequence} isActive={isExportPanelOpen} />
             </div>
           {/if}
         </div>

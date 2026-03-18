@@ -26,7 +26,7 @@
 	import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 	import { TrackingMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 	import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
-	import { tryGetAnimationExportContext } from "$lib/shared/share-hub/context/animation-export-context.svelte";
+	import { tryGetAnimationExportContext } from "$lib/shared/export-panel/context/animation-export-context.svelte";
 	import type { ControlsLevel } from "../domain/types";
 
 	// Extracted components

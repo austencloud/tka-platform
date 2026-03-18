@@ -82,8 +82,8 @@
     if (!sequenceState) return;
 
     // Close any open viewer/animation panels - editing takes priority
-    // ShareHub panel handles stopping its own animation when closed
-    panelState?.closeShareHubPanel();
+    // Export panel handles stopping its own animation when closed
+    panelState?.closeExportPanel();
     panelState?.closeAnimationPanel();
     animationStateRef?.stop();
 
@@ -110,8 +110,8 @@
     }
 
     // Close any open viewer/animation panels - editing takes priority
-    // ShareHub panel handles stopping its own animation when closed
-    panelState?.closeShareHubPanel();
+    // Export panel handles stopping its own animation when closed
+    panelState?.closeExportPanel();
     panelState?.closeAnimationPanel();
     animationStateRef?.stop();
 

@@ -260,7 +260,7 @@
     container-name: word-label;
     /* Constrain to parent width - prevents overflow into sibling buttons */
     max-width: 100%;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .word-label {

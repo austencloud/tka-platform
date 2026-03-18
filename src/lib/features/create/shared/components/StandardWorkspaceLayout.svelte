@@ -38,7 +38,7 @@
     toolPanelElement = $bindable(),
     // Event handlers
     onClearSequence,
-    onShareHub = undefined,
+    onViewSequence = undefined,
     onSequenceActionsClick,
     onSaveToLibrary = undefined,
     onOptionSelected,
@@ -58,7 +58,7 @@
     buttonPanelElement?: HTMLElement | null;
     toolPanelElement?: HTMLElement | null;
     onClearSequence: () => void;
-    onShareHub?: () => void;
+    onViewSequence?: () => void;
     onSequenceActionsClick: () => void;
     onSaveToLibrary?: () => void;
     onOptionSelected: (option: PictographData) => Promise<void>;
@@ -187,7 +187,7 @@
       <div class="button-panel-wrapper" bind:this={buttonPanelElement}>
         <ButtonPanel
           {onClearSequence}
-          {onShareHub}
+          {onViewSequence}
           {onSequenceActionsClick}
           {onSaveToLibrary}
         />

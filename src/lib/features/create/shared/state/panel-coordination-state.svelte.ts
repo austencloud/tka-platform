@@ -12,7 +12,7 @@
  * **PERSISTED PANEL STATES:**
  * - Sequence Actions Panel: open/closed state and mode (turns/transforms)
  * - Video Record Panel: open/closed state
- * - Share Hub Panel: open/closed state
+ * - Export Panel Panel: open/closed state
  * Other panels reset on page refresh for predictable UX.
  *
  * Domain: Create module - Panel State Management for Sequence Construction
@@ -61,8 +61,8 @@ const videoRecordPanelPersistence = createPersistenceHelper({
   defaultValue: false,
 });
 
-const shareHubPanelPersistence = createPersistenceHelper({
-  key: "tka_share_hub_panel_open",
+const exportPanelPersistence = createPersistenceHelper({
+  key: "tka_export_panel_open",
   defaultValue: false,
 });
 
@@ -143,17 +143,17 @@ export interface PanelCoordinationState {
 
   triggerOrbitAnimation(): void;
 
-  // Share Hub Panel State (Multi-format sharing)
-  get isShareHubPanelOpen(): boolean;
-  get requestedShareHubFormat(): "animation" | "static" | null;
+  // Export Panel State (Multi-format sharing)
+  get isExportPanelOpen(): boolean;
+  get requestedExportFormat(): "animation" | "static" | null;
   /** View ID that increments on each open - use with {#key} to force component remount */
-  get shareHubViewId(): number;
+  get exportPanelViewId(): number;
   /** Guard flag to prevent transient close effects when reopening */
-  get isShareHubReopening(): boolean;
+  get isExportPanelReopening(): boolean;
 
-  openShareHubPanel(format?: "animation" | "static"): void;
-  closeShareHubPanel(): void;
-  clearRequestedShareHubFormat(): void;
+  openExportPanel(format?: "animation" | "static"): void;
+  closeExportPanel(): void;
+  clearRequestedExportFormat(): void;
 
   // Save to Library Panel State
   get isSaveToLibraryPanelOpen(): boolean;
@@ -330,13 +330,13 @@ export function createPanelCoordinationState(): PanelCoordinationState {
   let shouldOrbitAroundCenter = $state(false);
   let orbitAnimationTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  // Share Hub panel state (Multi-format sharing - persisted)
-  let isShareHubPanelOpen = $state(shareHubPanelPersistence.load());
-  let requestedShareHubFormat = $state<"animation" | "static" | null>(null);
+  // Export panel state (Multi-format sharing - persisted)
+  let isExportPanelOpen = $state(exportPanelPersistence.load());
+  let requestedExportFormat = $state<"animation" | "static" | null>(null);
   // View ID increments on each open - forces component remount to reinitialize animation
-  let shareHubViewId = $state(0);
-  // Guard flag to prevent effects from seeing transient close during openShareHubPanel()
-  let isShareHubReopening = $state(false);
+  let exportPanelViewId = $state(0);
+  // Guard flag to prevent effects from seeing transient close during openExportPanel()
+  let isExportPanelReopening = $state(false);
 
   // Save to Library panel state
   let isSaveToLibraryPanelOpen = $state(false);
@@ -371,8 +371,8 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     });
 
     $effect(() => {
-      void isShareHubPanelOpen;
-      shareHubPanelPersistence.setupAutoSave(isShareHubPanelOpen);
+      void isExportPanelOpen;
+      exportPanelPersistence.setupAutoSave(isExportPanelOpen);
     });
   });
 
@@ -446,8 +446,8 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     isAnimationPanelOpen = false;
     isAnimating = false;
 
-    isShareHubPanelOpen = false;
-    requestedShareHubFormat = null;
+    isExportPanelOpen = false;
+    requestedExportFormat = null;
     isSaveToLibraryPanelOpen = false;
     isVideoRecordPanelOpen = false;
     isFilterPanelOpen = false;
@@ -580,43 +580,43 @@ export function createPanelCoordinationState(): PanelCoordinationState {
       }, 200);
     },
 
-    // Share Hub Panel Getters
-    get isShareHubPanelOpen() {
-      return isShareHubPanelOpen;
+    // Export Panel Panel Getters
+    get isExportPanelOpen() {
+      return isExportPanelOpen;
     },
-    get requestedShareHubFormat() {
-      return requestedShareHubFormat;
+    get requestedExportFormat() {
+      return requestedExportFormat;
     },
-    get shareHubViewId() {
-      return shareHubViewId;
+    get exportPanelViewId() {
+      return exportPanelViewId;
     },
-    get isShareHubReopening() {
-      return isShareHubReopening;
+    get isExportPanelReopening() {
+      return isExportPanelReopening;
     },
 
-    openShareHubPanel(format?: "animation" | "static") {
-      const wasOpen = isShareHubPanelOpen;
+    openExportPanel(format?: "animation" | "static") {
+      const wasOpen = isExportPanelOpen;
       // Set guard flag BEFORE closeAllPanels to prevent effects from seeing transient close
-      isShareHubReopening = true;
+      isExportPanelReopening = true;
       closeAllPanels();
       // Increment viewId when transitioning from closed to open
       // This forces remount after close, ensuring clean state
       if (!wasOpen) {
-        shareHubViewId++;
+        exportPanelViewId++;
       }
-      requestedShareHubFormat = format ?? null;
-      isShareHubPanelOpen = true;
+      requestedExportFormat = format ?? null;
+      isExportPanelOpen = true;
       // Clear guard flag after open completes
-      isShareHubReopening = false;
+      isExportPanelReopening = false;
     },
 
-    closeShareHubPanel() {
-      isShareHubPanelOpen = false;
-      requestedShareHubFormat = null;
+    closeExportPanel() {
+      isExportPanelOpen = false;
+      requestedExportFormat = null;
     },
 
-    clearRequestedShareHubFormat() {
-      requestedShareHubFormat = null;
+    clearRequestedExportFormat() {
+      requestedExportFormat = null;
     },
 
     // Save to Library Panel Getters
@@ -935,7 +935,7 @@ export function createPanelCoordinationState(): PanelCoordinationState {
       return (
         isEditPanelOpen ||
         isAnimationPanelOpen ||
-        isShareHubPanelOpen ||
+        isExportPanelOpen ||
         isSaveToLibraryPanelOpen ||
         isVideoRecordPanelOpen ||
         isFilterPanelOpen ||

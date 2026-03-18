@@ -149,9 +149,11 @@ class SettingsState implements ISettingsState {
       if (this.firebasePersistence.onSettingsChange) {
         this.unsubscribeFirebaseSync =
           this.firebasePersistence.onSettingsChange((remoteSettings) => {
-            // Only apply remote settings if we're not in the middle of saving
-            // This prevents our own saves from being re-applied
-            if (!this.isSavingToFirebase) {
+            // Only apply remote settings if we're not saving or about to save.
+            // The debounce timer guard prevents a race where the listener fires
+            // between a local change (written to localStorage) and the debounced
+            // Firebase save, overwriting the local change with stale remote data.
+            if (!this.isSavingToFirebase && !this.firebaseSaveDebounceTimer) {
               this.applyRemoteSettings(remoteSettings);
             }
           });
@@ -706,12 +708,14 @@ class SettingsState implements ISettingsState {
     if (!browser) return;
 
     try {
-      // Filter out _localTimestamp - it's only for in-memory conflict resolution
-       
-      const { _localTimestamp, ...settingsToSave } = settings;
+      // Preserve _localTimestamp in localStorage so that unsaved local changes
+      // survive browser close. syncFromFirebase checks this timestamp to decide
+      // whether to push local → Firebase or pull Firebase → local.
+      // After a successful Firebase save, _localTimestamp is set to undefined,
+      // which JSON.stringify omits — so next load pulls from Firebase as expected.
       localStorage.setItem(
         SETTINGS_STORAGE_KEY,
-        JSON.stringify(settingsToSave)
+        JSON.stringify(settings)
       );
     } catch (error) {
       console.error("Failed to save settings to localStorage:", error);

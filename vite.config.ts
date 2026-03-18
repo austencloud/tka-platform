@@ -979,7 +979,11 @@ export default defineConfig({
         "**/firebase-functions/**",
         "**/functions/**",
         "**/mcp-server/**",
-        "**/packages/**",
+        // Watch packages/sequence-engine/src/ for HMR (shared generation logic).
+        // Ignore everything else under packages/ to avoid handle bloat.
+        "**/packages/*/node_modules/**",
+        "**/packages/*/tests/**",
+        "**/packages/*/dist/**",
         "**/android-twa/**",
         "**/_GUIDE/**",
         "**/Assets/**",

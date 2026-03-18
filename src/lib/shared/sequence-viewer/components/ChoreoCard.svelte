@@ -325,9 +325,9 @@
   const hasPathShapeMetadata = $derived(sequence?.metadata?.pathShape === "linear");
   const showFooter = $derived(showCreatorName || showNotes || showBirthday || hasPathShapeMetadata);
 
-  // Format birthday date
+  // Format birthday date — use the sequence's saved birthday when available
   const birthdayDate = $derived.by(() => {
-    const date = new Date();
+    const date = sequence.birthday ?? new Date();
     const month = date.getMonth() + 1;
     const day = date.getDate();
     const year = date.getFullYear();
@@ -454,6 +454,27 @@
   const badgeSize = $derived(scaledHeaderHeight * 0.9);
   const badgePadding = $derived(scaledHeaderHeight * 0.05);
   const badgeNumberFontSize = $derived(Math.floor(badgeSize / 1.75));
+
+  // Word title font size: shrinks for longer words so the full title fits
+  // between the difficulty badge and LOOP icon without clipping.
+  // Count letter units (dashes don't count as separate letters).
+  const wordTitleFontSize = $derived.by(() => {
+    const baseFontSize = Math.floor(scaledHeaderHeight * 0.66);
+    if (!sequence.word) return baseFontSize;
+
+    const displayWord = simplifyAndTruncate(sequence.word, 16);
+    // Count letter units: each letter char counts as 1, dashes are part of the preceding letter
+    let letterCount = 0;
+    for (let i = 0; i < displayWord.length; i++) {
+      const ch = displayWord[i];
+      if (ch !== "-" && ch !== "." && ch !== " ") letterCount++;
+    }
+
+    // Up to 10 letters: full size. Beyond that, scale down proportionally.
+    if (letterCount <= 10) return baseFontSize;
+    return Math.max(Math.floor(baseFontSize * (10 / letterCount)), Math.floor(scaledHeaderHeight * 0.35));
+  });
+
   // Footer font size scales proportionally - no minimum constraint for WYSIWYG preview
   const footerFontSize = $derived(Math.floor(scaledFooterHeight * 0.55));
   const footerMargin = $derived(Math.floor(scaledFooterHeight * 0.3));
@@ -1543,10 +1564,10 @@
           {#if showWord && sequence.word}
             <span
               class="word-title"
-              style="font-size: {Math.floor(scaledHeaderHeight * 0.66)}px;"
+              style="font-size: {wordTitleFontSize}px;"
               transition:fade|local={{ duration: 200 }}
             >
-              {simplifyAndTruncate(sequence.word, 12)}
+              {simplifyAndTruncate(sequence.word, 16)}
             </span>
           {/if}
 
@@ -1897,8 +1918,8 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 60%;
-    transition: color 350ms ease;
+    max-width: 75%;
+    transition: color 350ms ease, font-size 200ms ease;
   }
 
   .dark-mode .word-title {
@@ -2022,11 +2043,11 @@
     min-height: 0;
     min-width: 0;
     width: 100%;
-    /* Fill remaining space after header/footer so the grid stays within the
-       card bounds. The old flex: 1 + grid-auto-rows: 1fr stretched rows
-       beyond square; auto rows let aspect-ratio: 1 on cells govern height. */
+    /* Fill remaining space after header/footer. 1fr rows divide the available
+       height evenly so the last row isn't clipped behind the footer. Cells
+       keep aspect-ratio: 1 but shrink slightly from perfect squares to fit. */
     flex: 1;
-    grid-auto-rows: min-content;
+    grid-auto-rows: 1fr;
     max-width: 100%;
     overflow: hidden;
     /* Light mode background for empty cells */

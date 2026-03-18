@@ -27,7 +27,7 @@ export type ShortcutContext =
   | "edit-panel" // Active when Edit panel is open
   | "animation-panel" // Active when Animation panel is open
   | "share-panel" // Active when Share panel is open
-  | "share-hub" // Active when Share Hub panel is open
+  | "export-panel" // Active when Export panel is open
   | "modal" // Active when any modal is open
   | "command-palette"; // Active when command palette is open
 

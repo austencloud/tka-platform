@@ -34,6 +34,7 @@
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import type { ISequenceContentHasher } from "$lib/features/library/services/contracts/ISequenceContentHasher";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
   interface Props {
     show: boolean;
@@ -57,6 +58,10 @@
   // Context
   const ctx = getCreateModuleContext();
   const { CreateModuleState } = ctx;
+
+  // Only show drag handle on mobile (bottom sheet) — on desktop the panel
+  // slides from the right, so a horizontal handle implies wrong swipe direction
+  const isBottomSheet = $derived(!ctx.layout.shouldUseSideBySideLayout);
 
   // Get current sequence
   // Use $derived.by() to ensure reactive property tracking through function calls
@@ -467,7 +472,9 @@
   ariaLabel="Add to Gallery"
 >
   <div class="panel-inner" bind:this={panelInnerEl}>
-    <SheetDragHandle />
+    {#if isBottomSheet}
+      <SheetDragHandle />
+    {/if}
 
     {#if isSaving}
       <SaveProgressOverlay
@@ -593,19 +600,20 @@
         </div>
       {/if}
 
-      <!-- Exact duplicate — already saved -->
-      {#if isExactDuplicate && !isFlagged}
-        <div class="already-saved-banner">
-          <i class="fas fa-check-circle" aria-hidden="true"></i>
-          <span>This exact sequence is already in your library</span>
-        </div>
-      {:else if hasDuplicate && !isFlagged}
-        <!-- Same word but different motion content — genuine variation -->
-        <p class="duplicate-info">
-          <i class="fas fa-layer-group" aria-hidden="true"></i>
-          Saving as variation {duplicateCount + 1} of "{tkaName}"
-        </p>
-      {/if}
+      <!-- Duplicate status — fixed-height slot prevents layout shift -->
+      <div class="duplicate-status-slot">
+        {#if isExactDuplicate && !isFlagged}
+          <div class="already-saved-banner">
+            <i class="fas fa-check-circle" aria-hidden="true"></i>
+            <span>This exact sequence is already in your library</span>
+          </div>
+        {:else if hasDuplicate && !isFlagged}
+          <p class="duplicate-info">
+            <i class="fas fa-layer-group" aria-hidden="true"></i>
+            Saving as variation {duplicateCount + 1} of "{simplifyAndTruncate(tkaName, 16)}"
+          </p>
+        {/if}
+      </div>
 
       <!-- Community visibility section -->
       {#if !isFlagged}
@@ -905,6 +913,14 @@
 
   .shame-error i {
     color: var(--semantic-error, #ef4444);
+  }
+
+  /* Fixed-height slot so duplicate/saved status doesn't cause layout shift */
+  .duplicate-status-slot {
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   /* Already saved banner — clear, prominent confirmation */

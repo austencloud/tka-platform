@@ -271,6 +271,10 @@ export class AnimationEngine {
   // Sequence content hash for detecting beat duration changes
   private lastSequenceContentHash: string | null = null;
 
+  // Cached loopability result (recomputed only when sequence changes)
+  private cachedIsSeamlesslyLoopable: boolean = false;
+  private loopabilityCacheHash: string | null = null;
+
   // Cached flags for single-hand sequences (computed once per sequence change)
   private sequenceHasBlueMotion: boolean = true;
   private sequenceHasRedMotion: boolean = true;
@@ -1990,11 +1994,20 @@ export class AnimationEngine {
 
     // Seamless loop flag for trail wrap-around.
     // Auto-detect from sequence data when not explicitly provided by parent.
-    fp.isSeamlesslyLoopable =
-      props.isSeamlesslyLoopable ??
-      (props.sequenceData
-        ? sequenceLoopabilityChecker.isSeamlesslyLoopable(props.sequenceData)
-        : false);
+    // Cached per sequence to avoid recomputing on every frame.
+    if (props.isSeamlesslyLoopable != null) {
+      fp.isSeamlesslyLoopable = props.isSeamlesslyLoopable;
+    } else if (props.sequenceData) {
+      const hash = this.lastSequenceContentHash;
+      if (hash !== this.loopabilityCacheHash) {
+        this.cachedIsSeamlesslyLoopable =
+          sequenceLoopabilityChecker.isSeamlesslyLoopable(props.sequenceData);
+        this.loopabilityCacheHash = hash;
+      }
+      fp.isSeamlesslyLoopable = this.cachedIsSeamlesslyLoopable;
+    } else {
+      fp.isSeamlesslyLoopable = false;
+    }
 
     return fp;
   }

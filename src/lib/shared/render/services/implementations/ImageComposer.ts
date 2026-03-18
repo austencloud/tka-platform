@@ -256,11 +256,14 @@ export class ImageComposer implements IImageComposer {
     // Does NOT truncate - allows full word length when needed for uniqueness
     const derivedWord = simplifyRepeatedWord(rawWord);
 
-    // Calculate header height if word OR difficulty should be included
+    // Calculate header height if word, difficulty, or LOOP glyph should be included
     // Header is at the TOP of the image - proportional to beat size for balanced layout
-    // Show header when either word or difficulty level is enabled
-    // (Will be recalculated with custom name logic later)
-    const showHeaderForLayout = (options.addWord && (derivedWord || options.customName)) || options.addDifficultyLevel;
+    // Must account for loopType here (not just later) so headerHeight is allocated
+    const earlyLoopType = options.loopType ?? sequence.loopType;
+    const showHeaderForLayout =
+      (options.addWord && (derivedWord || options.customName)) ||
+      options.addDifficultyLevel ||
+      !!earlyLoopType;
     const headerHeight = showHeaderForLayout
         ? this.calculateHeaderHeight(stepCount, stepSize)
         : 0;
