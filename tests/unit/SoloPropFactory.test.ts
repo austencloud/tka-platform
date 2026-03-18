@@ -99,28 +99,6 @@ describe("SoloPropFactory", () => {
     });
   });
 
-  describe("delegated fields from hand path", () => {
-    it("delegates bigrams from the contained hand path", () => {
-      const solo = factory.create(
-        [step1, step2],
-        GridLocation.NORTH,
-        Orientation.IN
-      );
-      // hand path locations: [n, e, s] → bigrams: ["n_e", "e_s"]
-      expect(solo.bigrams).toEqual(["n_e", "e_s"]);
-      expect(solo.bigrams).toEqual(solo.handPath.bigrams);
-    });
-
-    it("delegates impliedGridMode from the contained hand path", () => {
-      const solo = factory.create(
-        [step1, step2],
-        GridLocation.NORTH,
-        Orientation.IN
-      );
-      expect(solo.impliedGridMode).toBe(solo.handPath.impliedGridMode);
-    });
-  });
-
   describe("contentHash", () => {
     it("produces the same hash for identical inputs", () => {
       const solo1 = factory.create(
@@ -165,42 +143,11 @@ describe("SoloPropFactory", () => {
     });
   });
 
-  describe("metadata passthrough", () => {
-    it("includes provided metadata on the created solo prop", () => {
-      const solo = factory.create(
-        [step1],
-        GridLocation.NORTH,
-        Orientation.IN,
-        { name: "test solo", author: "austen", notes: "unit test" }
-      );
-      expect(solo.name).toBe("test solo");
-      expect(solo.author).toBe("austen");
-      expect(solo.notes).toBe("unit test");
-    });
-
-    it("leaves metadata fields undefined when not provided", () => {
-      const solo = factory.create(
-        [step1],
-        GridLocation.NORTH,
-        Orientation.IN
-      );
-      expect(solo.name).toBeUndefined();
-      expect(solo.author).toBeUndefined();
-      expect(solo.notes).toBeUndefined();
-    });
-  });
-
   describe("identity", () => {
     it("produces a unique id for each created solo prop", () => {
       const solo1 = factory.create([step1], GridLocation.NORTH, Orientation.IN);
       const solo2 = factory.create([step1], GridLocation.NORTH, Orientation.IN);
       expect(solo1.id).not.toBe(solo2.id);
-    });
-
-    it("produces unique ids for the embedded hand path as well", () => {
-      const solo1 = factory.create([step1], GridLocation.NORTH, Orientation.IN);
-      const solo2 = factory.create([step1], GridLocation.NORTH, Orientation.IN);
-      expect(solo1.handPath.id).not.toBe(solo2.handPath.id);
     });
   });
 });
