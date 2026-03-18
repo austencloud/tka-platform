@@ -28,7 +28,7 @@ Shows available lengths with contextual counts.
     hapticService = container.items.hapticFeedback ?? null;
   });
 
-  const label = $derived(activeLength ? t('browse_n_beats', { count: String(activeLength) }) : t('browse_chip_length'));
+  const label = $derived(activeLength ? t('browse_n_steps', { count: String(activeLength) }) : t('browse_chip_length'));
   const isActive = $derived(activeLength !== null);
 
   // Compute counts lazily when dropdown is open
@@ -91,24 +91,26 @@ Shows available lengths with contextual counts.
         {/if}
       </button>
       {#each availableLengths as length}
-        <button
-          class="popover-option"
-          class:selected={activeLength === length}
-          type="button"
-          role="option"
-          aria-selected={activeLength === length}
-          onclick={() => handleSelect(length)}
-        >
-          <span>
-            {t('browse_n_beats', { count: String(length) })}
-            {#if lengthCounts}
-              <span class="option-count">({lengthCounts[length]})</span>
+        {#if !lengthCounts || (lengthCounts[length] ?? 0) > 0}
+          <button
+            class="popover-option"
+            class:selected={activeLength === length}
+            type="button"
+            role="option"
+            aria-selected={activeLength === length}
+            onclick={() => handleSelect(length)}
+          >
+            <span>
+              {t('browse_n_steps', { count: String(length) })}
+              {#if lengthCounts}
+                <span class="option-count">({lengthCounts[length]})</span>
+              {/if}
+            </span>
+            {#if activeLength === length}
+              <i class="fas fa-check" aria-hidden="true"></i>
             {/if}
-          </span>
-          {#if activeLength === length}
-            <i class="fas fa-check" aria-hidden="true"></i>
-          {/if}
-        </button>
+          </button>
+        {/if}
       {/each}
     {/snippet}
   </FilterChipBase>

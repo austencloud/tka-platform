@@ -94,8 +94,9 @@ export interface ICloudThumbnailCache {
 
   /**
    * Clear the in-memory URL cache
+   * @param includeKnownExists - Also clear the persistent "known exists" list
    */
-  clearMemoryCache(): void;
+  clearMemoryCache(includeKnownExists?: boolean): void;
 
   /**
    * Invalidate a specific cache entry

@@ -106,6 +106,13 @@ export interface IThumbnailRenderOrchestrator {
   cancelAll(): void;
 
   /**
+   * Nuke every cache layer and force all subsequent requests to render fresh.
+   * Call after deleting cloud files and local IndexedDB.
+   * Handles: in-memory URL cache, knownExists, static manifest.
+   */
+  invalidateAllCaches(): void;
+
+  /**
    * Get current queue statistics.
    * Useful for debugging and progress display.
    */

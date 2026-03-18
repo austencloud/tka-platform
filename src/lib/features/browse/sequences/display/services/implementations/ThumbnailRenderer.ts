@@ -94,9 +94,10 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
       undefined;
 
     // Render via ISequenceRenderer (pass through progress callback)
+    // Explicitly pass loopType in options so it doesn't rely on sequence fallback
     const blob = await this.sequenceRenderer.renderSequenceToBlob(
       sequenceWithStartPos,
-      { ...renderOptions, birthday },
+      { ...renderOptions, birthday, loopType: resolvedLoopType ?? undefined },
       onProgress
     );
 
@@ -113,14 +114,16 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
       return sequence;
     }
 
-    // No beat data - try loading from Browse index
+    // No beat data - try loading from Browse index.
+    // Pass sequence.id so the loader can disambiguate when multiple
+    // sequences share the same word (e.g. two "FJ" variations).
     if (!this.browseLoader) {
       throw new Error(
         `Cannot render thumbnail for "${sequenceName}": sequence has no beat data and IBrowseLoader is not available.`
       );
     }
 
-    const loadedSequence = await this.browseLoader.loadFullSequenceData(sequenceName);
+    const loadedSequence = await this.browseLoader.loadFullSequenceData(sequenceName, sequence.id);
     if (!loadedSequence) {
       throw new Error(`Sequence not found: ${sequenceName}`);
     }

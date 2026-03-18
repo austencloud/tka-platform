@@ -10,11 +10,21 @@
  */
 
 import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-import { BREAKPOINTS } from "$lib/shared/device/domain/constants/device-constants";
 
 const MIN_COLUMNS = 2;
-const MAX_COLUMNS_MOBILE = 3;
-const MAX_COLUMNS_DESKTOP = 5;
+
+/**
+ * Per-breakpoint maximum columns. Prevents cards from becoming
+ * unreadably small on narrow screens while allowing more density
+ * on wider ones. Breakpoints use container width, not viewport,
+ * so the grid adapts to its actual available space.
+ */
+function getMaxColumnsForWidth(width: number): number {
+	if (width < 480) return 2;
+	if (width < 800) return 3;
+	if (width < 1200) return 4;
+	return 5;
+}
 
 // Preserve state across HMR
 function getInitialColumns(): number {
@@ -33,18 +43,35 @@ class GridZoomManager {
 	// True for ~200ms after column change (for CSS transition)
 	isTransitioning = $state(false);
 
+	// Container width reported by BrowseGrid's ResizeObserver
+	private _containerWidth = 0;
+
 	private transitionTimeout: ReturnType<typeof setTimeout> | null = null;
 
 	/**
-	 * Max columns allowed for the current viewport.
-	 * Mobile (< BREAKPOINTS.MOBILE): 3 columns max
-	 * Desktop (>= BREAKPOINTS.MOBILE): 5 columns max
+	 * Max columns allowed for the current container width.
+	 * Uses per-breakpoint limits so small phones can never exceed 2,
+	 * mid-size devices cap at 3, etc.
 	 */
 	get maxColumns(): number {
-		if (typeof window === "undefined") return MAX_COLUMNS_DESKTOP;
-		return window.innerWidth < BREAKPOINTS.MOBILE
-			? MAX_COLUMNS_MOBILE
-			: MAX_COLUMNS_DESKTOP;
+		return getMaxColumnsForWidth(this._containerWidth);
+	}
+
+	/**
+	 * Called by BrowseGrid when it measures its container.
+	 * Re-clamps the current column count if the new max is lower.
+	 */
+	updateContainerWidth(width: number) {
+		if (width <= 0 || width === this._containerWidth) return;
+		this._containerWidth = width;
+
+		// Re-clamp: if the user had 4 columns on desktop and resized
+		// down to a phone, snap to the new max immediately.
+		const max = this.maxColumns;
+		if (this.columns > max) {
+			this.columns = max;
+			this.persistToSettings();
+		}
 	}
 
 	/**

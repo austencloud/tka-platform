@@ -15,8 +15,13 @@ export interface IBrowseLoader {
    * Lazy-load full sequence data including steps
    * Called only when user opens a specific sequence
    * This prevents the N+1 query problem during initial gallery load
+   *
+   * @param sequenceName - The word/name to look up
+   * @param sequenceId - Optional unique ID for disambiguation when multiple
+   *   sequences share the same word (e.g. two different "FJ" variations).
+   *   When provided, the ID-based lookup is preferred over word-based.
    */
-  loadFullSequenceData(sequenceName: string): Promise<SequenceData | null>;
+  loadFullSequenceData(sequenceName: string, sequenceId?: string): Promise<SequenceData | null>;
 
   /**
    * Remove a single sequence from the in-memory cache.
