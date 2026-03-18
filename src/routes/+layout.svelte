@@ -151,6 +151,37 @@
     // Mark container ready so children can render
     containerReady = true;
 
+    // Prefetch gallery data so it's ready before the user navigates there.
+    // Uses requestIdleCallback to avoid competing with the active module's load.
+    if (typeof requestIdleCallback !== "undefined") {
+      requestIdleCallback(() => {
+        try {
+          const prefetcher = container.items.galleryPrefetcher;
+          if (prefetcher && typeof prefetcher.prefetch === "function") {
+            prefetcher.prefetch().catch((err: unknown) =>
+              console.warn("[Layout] Gallery prefetch failed:", err)
+            );
+          }
+        } catch (err) {
+          console.warn("[Layout] Gallery prefetcher not available:", err);
+        }
+      });
+    } else {
+      // Fallback for browsers without requestIdleCallback
+      setTimeout(() => {
+        try {
+          const prefetcher = container.items.galleryPrefetcher;
+          if (prefetcher && typeof prefetcher.prefetch === "function") {
+            prefetcher.prefetch().catch((err: unknown) =>
+              console.warn("[Layout] Gallery prefetch failed:", err)
+            );
+          }
+        } catch (err) {
+          console.warn("[Layout] Gallery prefetcher not available:", err);
+        }
+      }, 0);
+    }
+
     // Analytics: PostHog
     const { initPostHog } = await import("$lib/shared/analytics/services/posthog");
     initPostHog();
