@@ -56,7 +56,6 @@
   // Only virtualize flat grids (not sections) with many items
   const useVirtualization = $derived(
     !disableVirtualization &&
-      !showSections &&
       sequences.length > VIRTUALIZATION_THRESHOLD &&
       viewMode === "grid"
   );
