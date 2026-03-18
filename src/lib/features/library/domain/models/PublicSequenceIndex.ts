@@ -107,6 +107,9 @@ export interface PublicSequenceIndex {
   /** Full motion content hash (SHA-256) for deduplication */
   readonly contentHash?: string;
 
+  /** SHA-256 of SequenceEncoder.encode() output — used for URL-to-library matching */
+  readonly encoderHash?: string;
+
   /** Blue performer's solo prop decomposition (steps + hand path) */
   readonly blueSoloProp?: SoloPropData;
 
