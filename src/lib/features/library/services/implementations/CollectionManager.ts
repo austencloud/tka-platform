@@ -166,6 +166,49 @@ export class CollectionManager implements ICollectionManager {
     return sequences;
   }
 
+  /**
+   * Fetch sequences from the public index by ID.
+   * Used as the fallback pass when a sequence ID doesn't resolve in the
+   * user's own library — e.g. when they've favorited someone else's sequence.
+   */
+  private async batchFetchPublicSequences(
+    firestore: Firestore,
+    sequenceIds: string[]
+  ): Promise<LibrarySequence[]> {
+    const results: LibrarySequence[] = [];
+    const BATCH_SIZE = 30; // Firestore 'in' query limit
+
+    for (let i = 0; i < sequenceIds.length; i += BATCH_SIZE) {
+      const chunk = sequenceIds.slice(i, i + BATCH_SIZE);
+      const publicRef = collection(firestore, "publicSequences");
+      const q = query(publicRef, where(documentId(), "in", chunk));
+      const snapshot = await getDocs(q);
+
+      for (const docSnap of snapshot.docs) {
+        const data = docSnap.data();
+        // Map public index doc to LibrarySequence shape for display.
+        // Public sequences don't carry library-specific fields, so we
+        // supply safe defaults so the rest of the UI can treat them uniformly.
+        results.push({
+          id: docSnap.id,
+          ...data,
+          source: "imported" as const,
+          visibility: "public" as const,
+          collectionIds: [],
+          sequenceTags: [],
+          tagIds: [],
+          forkCount: data["forkCount"] ?? 0,
+          viewCount: data["viewCount"] ?? 0,
+          starCount: data["starCount"] ?? 0,
+          createdAt: data["createdAt"]?.toDate?.() ?? new Date(),
+          updatedAt: data["updatedAt"]?.toDate?.() ?? new Date(),
+        } as unknown as LibrarySequence);
+      }
+    }
+
+    return results;
+  }
+
   // ============================================================
   // SYSTEM COLLECTIONS
   // ============================================================
@@ -451,12 +494,34 @@ export class CollectionManager implements ICollectionManager {
       return [];
     }
 
-    // Batch fetch sequences to avoid N+1 query pattern
-    return this.batchFetchSequences(
+    // Pass 1: fetch from user's own library
+    const ownSequences = await this.batchFetchSequences(
       firestore,
       userId,
       collectionData.sequenceIds
     );
+
+    // If all IDs resolved, we're done
+    if (ownSequences.length === collectionData.sequenceIds.length) {
+      return ownSequences;
+    }
+
+    // Pass 2: find which IDs didn't resolve and try the public index.
+    // This handles the case where a user favorited someone else's public
+    // sequence — that ID lives in publicSequences/, not the user's own library.
+    const foundIds = new Set(ownSequences.map((s) => s.id));
+    const missingIds = collectionData.sequenceIds.filter(
+      (id) => !foundIds.has(id)
+    );
+
+    if (missingIds.length === 0) return ownSequences;
+
+    const publicSequences = await this.batchFetchPublicSequences(
+      firestore,
+      missingIds
+    );
+
+    return [...ownSequences, ...publicSequences];
   }
 
   async reorderSequences(
