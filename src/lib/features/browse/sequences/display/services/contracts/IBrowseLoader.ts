@@ -30,4 +30,10 @@ export interface IBrowseLoader {
    * without requiring a Firestore round-trip.
    */
   addToCache(sequence: SequenceData): void;
+
+  /** Populate in-memory cache from IndexedDB without triggering Firestore. */
+  warmFromCache(sequences: SequenceData[], sourceRefs: Map<string, string>): void;
+
+  /** Force a Firestore fetch regardless of cache state. Updates cache + persists to IndexedDB. */
+  refreshFromFirestore(): Promise<SequenceData[]>;
 }
