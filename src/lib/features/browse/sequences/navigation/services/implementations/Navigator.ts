@@ -99,7 +99,7 @@ export class Navigator implements INavigator {
       case "date":
         // Implementation depends on date format
         return allSequences.filter((seq) => {
-          const rawDate = seq.dateAdded ?? seq.createdAt ?? seq.birthday;
+          const rawDate = seq.birthday ?? seq.createdAt ?? seq.dateAdded;
           if (!rawDate) return false;
           const itemDate = new Date(item.value as string);
           const seqDate = rawDate instanceof Date ? rawDate : new Date(rawDate);
@@ -164,8 +164,8 @@ export class Navigator implements INavigator {
     const dateGroups = new Map<string, SequenceData[]>();
 
     sequences.forEach((seq) => {
-      // Use dateAdded, falling back to createdAt or birthday for library sequences
-      const rawDate = seq.dateAdded ?? seq.createdAt ?? seq.birthday;
+      // Canonical fallback: birthday (original creation) → createdAt → dateAdded
+      const rawDate = seq.birthday ?? seq.createdAt ?? seq.dateAdded;
       if (rawDate) {
         const date = rawDate instanceof Date ? rawDate : new Date(rawDate);
         // Skip invalid dates

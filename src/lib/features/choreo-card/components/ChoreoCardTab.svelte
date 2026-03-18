@@ -19,6 +19,7 @@
   import type { Deck } from "../domain/models/Deck";
   import type { IDeckLoader } from "../services/contracts/IDeckLoader";
   import DeckBrowser from "./DeckBrowser.svelte";
+  import CardDesigner from "./CardDesigner.svelte";
 
   // Difficulty calculator for dynamic level calculation
   const difficultyCalculator = new SequenceDifficultyCalculator();
@@ -126,7 +127,7 @@
   let includeStartPosition = $state<boolean>(getPersistedBoolean(STORAGE_KEY_INCLUDE_START_POS, true));
 
   // Mode state
-  type ChoreoCardMode = "library" | "decks";
+  type ChoreoCardMode = "library" | "decks" | "designer";
   let mode = $state<ChoreoCardMode>(
     (getPersistedString("choreoCard.mode") as ChoreoCardMode) ?? "library"
   );
@@ -394,6 +395,17 @@
             <i class="fas fa-layer-group" aria-hidden="true"></i>
             Decks
           </button>
+          <button
+            role="tab"
+            type="button"
+            aria-selected={mode === "designer"}
+            class="mode-btn"
+            class:active={mode === "designer"}
+            onclick={() => handleModeChange("designer")}
+          >
+            <i class="fas fa-pen-ruler" aria-hidden="true"></i>
+            Card Designer
+          </button>
         </div>
       </div>
       <p class="status" role="status" aria-live="polite" aria-atomic="true">
@@ -470,7 +482,7 @@
           onSelectSequence={handleSelectSequence}
         />
       </main>
-    {:else}
+    {:else if mode === "decks"}
       <!-- Decks mode: simplified sidebar + DeckBrowser -->
       <aside class="sidebar">
         <div class="sidebar-content">
@@ -503,6 +515,36 @@
           onSelectDeck={handleSelectDeck}
           onBackToList={handleBackToDeckList}
           onSelectSequence={handleSelectSequence}
+        />
+      </main>
+    {:else if mode === "designer"}
+      <!-- Card Designer: side-by-side front/back preview -->
+      <aside class="sidebar">
+        <div class="sidebar-content">
+          <ChoreoCardVisibility
+            {handPointsVisible}
+            {showGrid}
+            {showTKA}
+            {showWord}
+            {includeStartPosition}
+            onHandPointsChange={handleHandPointsChange}
+            onShowGridChange={handleShowGridChange}
+            onShowTKAChange={handleShowTKAChange}
+            onShowWordChange={handleShowWordChange}
+            onIncludeStartPositionChange={handleIncludeStartPositionChange}
+          />
+        </div>
+      </aside>
+
+      <main class="content-area">
+        <CardDesigner
+          {sequences}
+          {isLoading}
+          {handPointsVisible}
+          {showGrid}
+          {showTKA}
+          {showWord}
+          {includeStartPosition}
         />
       </main>
     {/if}
