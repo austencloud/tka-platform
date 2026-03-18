@@ -255,7 +255,7 @@
       isMobile={isMobileDevice}
       {isTouchDevice}
       draftStatus={draftPersister?.saveStatus}
-      bind:images={formState.images}
+      images={formState.images}
       stagedImages={formState.stagedImages}
       onImagesAdded={(files) => formState.addImages(files)}
       onImageRemoved={(index) => formState.removeImage(index)}
@@ -369,12 +369,12 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: clamp(8px, 2.5cqi, 16px);
+    gap: clamp(12px, 3cqi, 20px);
     width: 100%;
-    padding: clamp(12px, 3cqi, 24px);
+    padding: clamp(16px, 4cqi, 28px);
     background: var(--theme-card-bg);
-    border: 1.5px solid var(--theme-stroke, var(--theme-stroke));
-    border-radius: clamp(10px, 2cqi, 14px);
+    border: 1.5px solid var(--theme-stroke);
+    border-radius: clamp(12px, 2.5cqi, 16px);
     transition: border-color var(--duration-normal) ease;
   }
 

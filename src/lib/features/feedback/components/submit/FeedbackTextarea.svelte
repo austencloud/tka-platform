@@ -17,7 +17,7 @@
     isMobile = false,
     isTouchDevice = false,
     draftStatus = "idle",
-    images = $bindable([]),
+    images = [],
     stagedImages = new Map(),
     onImagesAdded,
     onImageRemoved,
@@ -127,6 +127,20 @@
       aria-invalid={!!error}
       aria-describedby={error ? "fb-description-error" : undefined}
     ></textarea>
+
+    <!-- Clear text — inside the textarea, top-right corner -->
+    {#if value.trim().length > 0}
+      <button
+        type="button"
+        class="clear-text-btn"
+        onclick={onClearText}
+        aria-label={t("feedback_clear_text")}
+        title={t("feedback_clear_text")}
+      >
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+    {/if}
+
     {#if voiceRecorder}
       <div class="voice-input-wrapper">
         <VoiceInputButton
@@ -138,46 +152,44 @@
       </div>
     {/if}
   </div>
+
+  <!-- Footer: hint row with inline attach, then image strip below when images exist -->
   <div class="field-footer">
-    <div class="field-hint">
-      <span
-        class="char-count"
-        class:met={charsMet}
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        {#if !charsMet}
-          {t("feedback_chars_needed", { count: charsNeeded })}
-        {:else}
-          <i class="fas fa-check" aria-hidden="true"></i>
-        {/if}
-      </span>
-      {#if draftStatus === "saved"}
-        <span class="draft-saved" aria-live="polite">
-          <i class="fas fa-cloud-upload-alt" aria-hidden="true"></i>
-          {t("feedback_draft_saved")}
+    <div class="field-hint-row">
+      <div class="field-hint">
+        <span
+          class="char-count"
+          class:met={charsMet}
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {#if !charsMet}
+            {t("feedback_chars_needed", { count: charsNeeded })}
+          {:else}
+            <i class="fas fa-check" aria-hidden="true"></i>
+          {/if}
         </span>
-      {/if}
-      {#if error}
-        <span class="field-error" id="fb-description-error" role="alert"
-          >{error}</span
-        >
+        {#if draftStatus === "saved"}
+          <span class="draft-saved" aria-live="polite">
+            <i class="fas fa-cloud-upload-alt" aria-hidden="true"></i>
+            {t("feedback_draft_saved")}
+          </span>
+        {/if}
+        {#if error}
+          <span class="field-error" id="fb-description-error" role="alert"
+            >{error}</span
+          >
+        {/if}
+      </div>
+      <!-- Attach button sits inline when no images yet -->
+      {#if images.length === 0}
+        <ImageUpload images={images} {disabled} {stagedImages} {onImagesAdded} {onImageRemoved} hidePreviews={isInputMode} />
       {/if}
     </div>
-    <div class="field-actions">
-      {#if value.trim().length > 0}
-        <button
-          type="button"
-          class="clear-text-btn"
-          onclick={onClearText}
-          aria-label={t("feedback_clear_text")}
-          title={t("feedback_clear_text")}
-        >
-          <i class="fas fa-times" aria-hidden="true"></i>
-        </button>
-      {/if}
-      <ImageUpload bind:images {disabled} {stagedImages} {onImagesAdded} {onImageRemoved} hidePreviews={isInputMode} />
-    </div>
+    <!-- Image strip appears on its own row when images exist -->
+    {#if images.length > 0}
+      <ImageUpload images={images} {disabled} {stagedImages} {onImagesAdded} {onImageRemoved} hidePreviews={isInputMode} />
+    {/if}
   </div>
 </div>
 
@@ -190,16 +202,15 @@
 
   .field-footer {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 10px;
     margin-top: clamp(8px, 2cqi, 12px);
   }
 
-  .field-actions {
+  .field-hint-row {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 8px;
   }
 
@@ -251,16 +262,17 @@
 
   .field-textarea {
     width: 100%;
-    padding: clamp(8px, 2cqi, 12px) clamp(10px, 2.5cqi, 16px);
+    padding: clamp(12px, 2.5cqi, 16px) clamp(14px, 3cqi, 20px);
     padding-right: clamp(48px, 10cqi, 60px); /* Room for voice button */
+    padding-top: clamp(12px, 2.5cqi, 16px);
     background: transparent;
     border: none;
     color: var(--theme-text);
     font-size: 1rem;
     font-family: inherit;
-    min-height: clamp(72px, 15cqi, 100px);
+    min-height: clamp(120px, 20cqi, 200px);
     resize: none;
-    line-height: 1.5;
+    line-height: 1.6;
   }
 
   .field-textarea:focus {
@@ -272,42 +284,38 @@
   }
 
   .clear-text-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: var(--min-touch-target, 44px);
-    min-height: var(--min-touch-target, 44px);
-    width: clamp(36px, 8cqi, 44px);
-    height: clamp(36px, 8cqi, 44px);
+    width: 24px;
+    height: 24px;
+    /* Expand touch target with padding */
+    padding: 10px;
+    box-sizing: content-box;
+    margin-top: -10px;
+    margin-right: -10px;
     background: transparent;
-    border: 1px solid
-      color-mix(
-        in srgb,
-        var(--semantic-error) 40%,
-        var(--theme-stroke, var(--theme-stroke-strong))
-      );
-    border-radius: clamp(6px, 1.5cqi, 8px);
-    color: color-mix(
-      in srgb,
-      var(--semantic-error) 70%,
-      var(--theme-text-dim, var(--theme-text-dim))
-    );
+    border: none;
+    border-radius: 50%;
+    color: var(--theme-text-dim);
+    font-size: 11px;
     cursor: pointer;
-    transition:
-      all 150ms ease,
-      border-color 150ms ease;
-    padding: 0;
-    flex-shrink: 0;
+    opacity: 0.5;
+    transition: all 150ms ease;
+    z-index: 3;
   }
 
   .clear-text-btn:hover {
-    background: color-mix(in srgb, var(--semantic-error) 15%, transparent);
-    border-color: var(--semantic-error);
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.08);
     color: var(--semantic-error);
   }
 
   .clear-text-btn:active {
-    transform: scale(0.95);
+    transform: scale(0.9);
   }
 
   .clear-text-btn i {

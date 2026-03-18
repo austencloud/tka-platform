@@ -56,34 +56,9 @@
 
 <style>
   .form-footer {
-    position: sticky;
-    bottom: calc(-1 * clamp(12px, 3cqi, 24px));
-    z-index: 10;
-    margin-inline: calc(-1 * clamp(12px, 3cqi, 24px));
-    padding-inline: clamp(12px, 3cqi, 24px);
-    margin-bottom: calc(-1 * clamp(12px, 3cqi, 24px));
-    padding-bottom: calc(
-      clamp(12px, 3cqi, 24px) + env(safe-area-inset-bottom, 0px)
-    );
-    padding-top: clamp(10px, 2.5cqi, 14px);
-    background: linear-gradient(
-      to top,
-      color-mix(
-          in srgb,
-          var(--active-type-color, var(--theme-accent, var(--semantic-info))) 4%,
-          rgba(18, 18, 28, 1)
-        )
-        0%,
-      color-mix(
-          in srgb,
-          var(--active-type-color, var(--theme-accent, var(--semantic-info))) 4%,
-          rgba(18, 18, 28, 1)
-        )
-        70%,
-      transparent 100%
-    );
     display: flex;
     justify-content: flex-end;
+    padding-top: clamp(4px, 1cqi, 8px);
   }
 
   .submit-btn {

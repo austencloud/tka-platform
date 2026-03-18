@@ -1,12 +1,11 @@
-<!-- ImageUpload - Upload and preview images for feedback -->
+<!-- ImageUpload - Attach and preview images for feedback -->
 <script lang="ts">
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import type { StagedImageState } from "../../domain/models/feedback-models";
 
-  // Props
   const {
-    images = $bindable([]),
+    images = [],
     maxImages = 5,
     disabled = false,
     hidePreviews = false,
@@ -17,159 +16,194 @@
     images?: File[];
     maxImages?: number;
     disabled?: boolean;
-    /** Hide preview thumbnails (e.g. during input mode to save space) */
     hidePreviews?: boolean;
-    /** Per-image upload state from the staging system */
     stagedImages?: Map<File, StagedImageState>;
-    /** Called when images are added — triggers pre-upload */
     onImagesAdded?: (files: File[]) => void;
-    /** Called when an image is removed — cancels/cleans up staged upload */
     onImageRemoved?: (index: number) => void;
   }>();
 
   let fileInput: HTMLInputElement | undefined = $state(undefined);
   let isDragging = $state(false);
   let previews = $state<{ file: File; url: string }[]>([]);
-
-  // Track previous URLs for cleanup
   let previousUrls: string[] = [];
 
-  // Generate previews when images change
   $effect(() => {
-    // Clean up old previews
     previousUrls.forEach((url) => URL.revokeObjectURL(url));
-
-    // Generate new previews
     const newPreviews = images.map((file: File) => ({
       file,
       url: URL.createObjectURL(file),
     }));
-
-    // Store URLs for next cleanup
     previousUrls = newPreviews.map((p: { file: File; url: string }) => p.url);
-
-    // Update previews
     previews = newPreviews;
-
-    // Clean up on unmount
     return () => {
       previousUrls.forEach((url) => URL.revokeObjectURL(url));
     };
   });
 
-  // Handle file selection
   function handleFileSelect(event: Event) {
     const target = event.target as HTMLInputElement;
     if (target.files) {
       addFiles(Array.from(target.files));
-      target.value = ""; // Reset input
+      target.value = "";
     }
   }
 
-  // Handle drag and drop
   function handleDrop(event: DragEvent) {
     event.preventDefault();
     isDragging = false;
-
     if (disabled) return;
-
     const files = event.dataTransfer?.files;
-    if (files) {
-      addFiles(Array.from(files));
-    }
+    if (files) addFiles(Array.from(files));
   }
 
   function handleDragOver(event: DragEvent) {
     event.preventDefault();
-    if (!disabled) {
-      isDragging = true;
-    }
+    if (!disabled) isDragging = true;
   }
 
   function handleDragLeave() {
     isDragging = false;
   }
 
-  // Handle clipboard paste
   function handlePaste(event: ClipboardEvent) {
     if (disabled) return;
-
     const items = event.clipboardData?.items;
     if (!items) return;
-
     const imageFiles: File[] = [];
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       if (item && item.type.startsWith("image/")) {
         const file = item.getAsFile();
-        if (file) {
-          imageFiles.push(file);
-        }
+        if (file) imageFiles.push(file);
       }
     }
-
     if (imageFiles.length > 0) {
       event.preventDefault();
       addFiles(imageFiles);
     }
   }
 
-  // Add files to the list
   function addFiles(newFiles: File[]) {
-    const imageFiles = newFiles.filter((file) =>
-      file.type.startsWith("image/")
-    );
+    const imageFiles = newFiles.filter((file) => file.type.startsWith("image/"));
     const remainingSlots = maxImages - images.length;
     const filesToAdd = imageFiles.slice(0, remainingSlots);
-
     if (filesToAdd.length === 0) return;
-
     if (onImagesAdded) {
-      // Let the state handle array mutation + staging upload
       onImagesAdded(filesToAdd);
     } else {
-      // Fallback: direct mutation (no pre-upload)
       images.push(...filesToAdd);
     }
   }
 
-  // Remove a file
   function handleRemoveImage(index: number) {
     if (onImageRemoved) {
-      // Let the state handle splice + staging cleanup
       onImageRemoved(index);
     } else {
-      // Fallback: direct mutation
       images.splice(index, 1);
     }
   }
 
-  // Set up paste listener
+  function openFilePicker(e: Event) {
+    e.preventDefault();
+    if (!disabled) fileInput?.click();
+  }
+
   onMount(() => {
     window.addEventListener("paste", handlePaste);
-    return () => {
-      window.removeEventListener("paste", handlePaste);
-    };
+    return () => window.removeEventListener("paste", handlePaste);
   });
 </script>
 
-<div class="image-upload">
-  <!-- Minimal upload button -->
-  {#if images.length < maxImages}
+<div class="image-upload" class:has-images={previews.length > 0}>
+  <!-- Hidden file input -->
+  <input
+    type="file"
+    bind:this={fileInput}
+    onchange={handleFileSelect}
+    accept="image/*"
+    multiple
+    {disabled}
+    aria-label={t("feedback_upload_images")}
+    class="sr-only"
+  />
+
+  <!-- Image strip: previews + add button in one horizontal row -->
+  {#if !hidePreviews && previews.length > 0}
+    <div class="image-strip">
+      {#each previews as { file, url }, index}
+        {@const staged = stagedImages.get(file)}
+        {@const isUploading = staged?.status === "uploading"}
+        {@const isFailed = staged?.status === "failed"}
+        {@const isUploaded = staged?.status === "uploaded"}
+        <div
+          class="image-chip"
+          class:uploading={isUploading}
+          class:failed={isFailed}
+          class:uploaded={isUploaded}
+        >
+          <img src={url} alt={file.name} />
+
+          <!-- Progress bar at bottom edge -->
+          {#if isUploading}
+            <div
+              class="chip-progress"
+              style:--progress="{(staged?.fraction ?? 0) * 100}%"
+            ></div>
+          {/if}
+
+          <!-- Uploaded badge -->
+          {#if isUploaded}
+            <div class="chip-badge" aria-label="Uploaded">
+              <i class="fas fa-check" aria-hidden="true"></i>
+            </div>
+          {/if}
+
+          <!-- Failed indicator -->
+          {#if isFailed}
+            <div class="chip-failed" aria-label="Upload failed">
+              <i class="fas fa-exclamation" aria-hidden="true"></i>
+            </div>
+          {/if}
+
+          <!-- Remove button -->
+          <button
+            type="button"
+            class="chip-remove"
+            onclick={() => handleRemoveImage(index)}
+            {disabled}
+            aria-label="Remove {file.name}"
+          >
+            <i class="fas fa-times" aria-hidden="true"></i>
+          </button>
+        </div>
+      {/each}
+
+      <!-- Inline add button (when room for more) -->
+      {#if images.length < maxImages}
+        <button
+          type="button"
+          class="add-chip"
+          class:dragging={isDragging}
+          onmousedown={openFilePicker}
+          ontouchstart={openFilePicker}
+          ondrop={handleDrop}
+          ondragover={handleDragOver}
+          ondragleave={handleDragLeave}
+          {disabled}
+          aria-label={t("feedback_attach_image")}
+        >
+          <i class="fas fa-plus" aria-hidden="true"></i>
+        </button>
+      {/if}
+    </div>
+  {:else if images.length < maxImages}
+    <!-- No images yet — compact attach button -->
     <button
       type="button"
-      class="upload-button"
+      class="attach-button"
       class:dragging={isDragging}
-      onmousedown={(e: MouseEvent) => {
-        // Prevent textarea blur so keyboard doesn't dismiss before file picker opens
-        e.preventDefault();
-        if (!disabled) fileInput?.click();
-      }}
-      ontouchstart={(e: TouchEvent) => {
-        // Same for touch - prevent blur, then open file picker
-        e.preventDefault();
-        if (!disabled) fileInput?.click();
-      }}
+      onmousedown={openFilePicker}
+      ontouchstart={openFilePicker}
       ondrop={handleDrop}
       ondragover={handleDragOver}
       ondragleave={handleDragLeave}
@@ -179,119 +213,15 @@
       <i class="fas fa-paperclip" aria-hidden="true"></i>
       <span>{t("feedback_attach_image")}</span>
     </button>
-    <input
-      type="file"
-      bind:this={fileInput}
-      onchange={handleFileSelect}
-      accept="image/*"
-      multiple
-      {disabled}
-      aria-label={t("feedback_upload_images")}
-      class="sr-only"
-    />
-  {/if}
-
-  <!-- Previews with per-image upload progress -->
-  {#if previews.length > 0 && !hidePreviews}
-    <div class="previews">
-      {#each previews as { file, url }, index}
-        {@const staged = stagedImages.get(file)}
-        <div class="preview-item">
-          <img src={url} alt={file.name} />
-
-          <!-- Upload progress overlay -->
-          {#if staged?.status === "uploading"}
-            <div class="upload-overlay" aria-label="Uploading {Math.round((staged.fraction ?? 0) * 100)}%">
-              <div
-                class="upload-progress-bar"
-                style:--progress="{(staged.fraction ?? 0) * 100}%"
-              ></div>
-              <span class="upload-pct">{Math.round((staged.fraction ?? 0) * 100)}%</span>
-            </div>
-          {:else if staged?.status === "failed"}
-            <div class="upload-overlay failed" aria-label="Upload failed">
-              <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-              <span class="upload-failed-text">Failed</span>
-            </div>
-          {:else if staged?.status === "uploaded"}
-            <div class="upload-complete" aria-label="Upload complete">
-              <i class="fas fa-check-circle" aria-hidden="true"></i>
-            </div>
-          {/if}
-
-          <button
-            type="button"
-            class="remove-btn"
-            onclick={() => handleRemoveImage(index)}
-            {disabled}
-            aria-label={t("feedback_remove_image")}
-          >
-            <i class="fas fa-times" aria-hidden="true"></i>
-          </button>
-          <div class="preview-name">{file.name}</div>
-        </div>
-      {/each}
-    </div>
   {/if}
 </div>
 
 <style>
   .image-upload {
+    container-type: inline-size;
+    container-name: image-upload;
     display: flex;
     align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .upload-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    height: 32px;
-    min-height: var(--min-touch-target, 44px); /* WCAG AAA touch target */
-    padding: 0 12px;
-    background: var(--theme-card-bg, var(--theme-card-bg));
-    border: 1px solid var(--theme-stroke-strong, var(--theme-stroke-strong));
-    border-radius: 6px;
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    font-size: 0.8125rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-    flex-shrink: 0;
-    white-space: nowrap;
-  }
-
-  .upload-button:hover:not(:disabled) {
-    background: var(--theme-card-hover-bg);
-    border-color: color-mix(
-      in srgb,
-      var(--theme-stroke-strong) 150%,
-      transparent
-    );
-    color: var(--theme-text);
-  }
-
-  .upload-button.dragging {
-    border-color: var(--theme-accent-strong, var(--theme-accent));
-    background: color-mix(
-      in srgb,
-      var(--theme-accent-strong, var(--theme-accent)) 15%,
-      transparent
-    );
-    color: var(--theme-accent-strong, var(--theme-accent));
-    box-shadow: 0 0 0 3px
-      color-mix(
-        in srgb,
-        var(--theme-accent-strong, var(--theme-accent)) 20%,
-        transparent
-      );
-  }
-
-  .upload-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
   }
 
   .sr-only {
@@ -306,159 +236,253 @@
     border: 0;
   }
 
-  .upload-button i {
-    font-size: 0.75rem;
-  }
-
-  .previews {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 12px;
-  }
-
-  .preview-item {
-    position: relative;
-    aspect-ratio: 1;
-    border-radius: 8px;
-    overflow: hidden;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--theme-stroke, var(--theme-stroke));
-  }
-
-  .preview-item img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .remove-btn {
-    position: absolute;
-    top: 4px;
-    right: 4px;
+  /* ── Attach button (no images yet) ── */
+  .attach-button {
     display: flex;
     align-items: center;
-    justify-content: center;
-    /* Visual size 32px with padding for 48px touch target */
-    width: 32px;
-    height: 32px;
-    padding: 8px;
-    box-sizing: content-box;
-    /* Offset the padding so visual position stays correct */
-    margin-top: -8px;
-    margin-right: -8px;
-    background: rgba(0, 0, 0, 0.7);
-    border: none;
-    border-radius: 50%;
-    color: white;
-    font-size: 0.875rem;
+    gap: 6px;
+    height: 36px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0 14px;
+    background: transparent;
+    border: 1.5px dashed var(--theme-stroke-strong);
+    border-radius: 10px;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
     cursor: pointer;
-    transition: all var(--duration-fast) ease;
-    z-index: 2;
+    transition: all 150ms ease;
+    flex-shrink: 0;
   }
 
-  .remove-btn:hover:not(:disabled) {
-    background: var(--semantic-error, var(--semantic-error));
-    transform: scale(1.1);
+  .attach-button:hover:not(:disabled) {
+    border-color: var(--theme-accent);
+    color: var(--theme-accent);
+    background: color-mix(in srgb, var(--theme-accent) 8%, transparent);
   }
 
-  .remove-btn:disabled {
-    opacity: 0.5;
+  .attach-button.dragging {
+    border-color: var(--theme-accent);
+    background: color-mix(in srgb, var(--theme-accent) 12%, transparent);
+    color: var(--theme-accent);
+  }
+
+  .attach-button:disabled {
+    opacity: 0.4;
     cursor: not-allowed;
   }
 
-  .preview-name {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 4px 8px;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
-    color: var(--theme-text, var(--theme-text));
-    font-size: 0.6875rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    z-index: 1;
+  .attach-button i {
+    font-size: 0.8rem;
   }
 
-  /* Upload progress overlay */
-  .upload-overlay {
-    position: absolute;
-    inset: 0;
+  /* ── Image strip ── */
+  .image-strip {
+    --chip-size: 72px;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.55);
-    border-radius: inherit;
-    gap: 4px;
-    z-index: 1;
+    gap: 10px;
+    align-items: stretch;
+    flex-wrap: wrap;
+    padding: 4px 0;
   }
 
-  .upload-overlay.failed {
-    background: rgba(239, 68, 68, 0.4);
+  /* Scale chips up on wider containers */
+  @container image-upload (min-width: 400px) {
+    .image-strip {
+      --chip-size: 100px;
+      gap: 12px;
+    }
   }
 
-  .upload-overlay .fa-exclamation-triangle {
-    font-size: 1.25rem;
-    color: var(--semantic-error);
+  @container image-upload (min-width: 600px) {
+    .image-strip {
+      --chip-size: 130px;
+      gap: 14px;
+    }
   }
 
-  .upload-failed-text {
-    font-size: var(--font-size-compact, 12px);
-    color: white;
-    font-weight: 600;
+  /* ── Image chip ── */
+  .image-chip {
+    position: relative;
+    flex-shrink: 0;
+    width: var(--chip-size);
+    height: var(--chip-size);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1.5px solid var(--theme-stroke);
+    transition: border-color 200ms ease;
   }
 
-  /* Horizontal progress bar at bottom of thumbnail */
-  .upload-progress-bar {
+  .image-chip:hover {
+    border-color: var(--theme-stroke-strong);
+  }
+
+  .image-chip.uploaded {
+    border-color: color-mix(in srgb, var(--semantic-success) 50%, transparent);
+  }
+
+  .image-chip.failed {
+    border-color: var(--semantic-error);
+  }
+
+  .image-chip img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* Dim image during upload */
+  .image-chip.uploading img {
+    opacity: 0.5;
+  }
+
+  /* ── Progress bar ── */
+  .chip-progress {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    height: 4px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 0 0 8px 8px;
-    overflow: hidden;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.15);
   }
 
-  .upload-progress-bar::after {
+  .chip-progress::after {
     content: "";
     display: block;
     height: 100%;
     width: var(--progress);
     background: var(--semantic-success, #22c55e);
     transition: width 200ms ease-out;
+    border-radius: 0 2px 2px 0;
   }
 
-  .upload-pct {
-    font-size: var(--font-size-compact, 12px);
-    color: white;
-    font-weight: 700;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
-  }
-
-  /* Green checkmark badge for completed uploads */
-  .upload-complete {
+  /* ── Badges ── */
+  .chip-badge {
     position: absolute;
-    top: 6px;
-    left: 6px;
-    color: var(--semantic-success, #22c55e);
-    font-size: 1rem;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
-    z-index: 1;
+    bottom: 5px;
+    right: 5px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--semantic-success, #22c55e);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
   }
 
+  .chip-badge i {
+    font-size: 9px;
+    color: white;
+  }
+
+  .chip-failed {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(239, 68, 68, 0.3);
+  }
+
+  .chip-failed i {
+    font-size: 1.1rem;
+    color: var(--semantic-error);
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+  }
+
+  /* ── Remove button ── */
+  .chip-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    /* Expand touch target with padding */
+    padding: 6px;
+    box-sizing: content-box;
+    margin-top: -6px;
+    margin-right: -6px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    border: none;
+    color: white;
+    font-size: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 150ms ease, background 150ms ease;
+    z-index: 2;
+  }
+
+  .image-chip:hover .chip-remove {
+    opacity: 1;
+  }
+
+  /* Always visible on touch devices */
+  @media (hover: none) {
+    .chip-remove {
+      opacity: 1;
+    }
+  }
+
+  .chip-remove:hover {
+    background: var(--semantic-error);
+  }
+
+  .chip-remove:disabled {
+    opacity: 0;
+    cursor: not-allowed;
+  }
+
+  /* ── Add button (inline with chips) ── */
+  .add-chip {
+    flex-shrink: 0;
+    width: var(--chip-size, 72px);
+    height: var(--chip-size, 72px);
+    border-radius: 12px;
+    border: 1.5px dashed var(--theme-stroke-strong);
+    background: transparent;
+    color: var(--theme-text-dim);
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 150ms ease;
+    min-height: var(--min-touch-target, 44px);
+  }
+
+  .add-chip:hover:not(:disabled) {
+    border-color: var(--theme-accent);
+    color: var(--theme-accent);
+    background: color-mix(in srgb, var(--theme-accent) 8%, transparent);
+  }
+
+  .add-chip.dragging {
+    border-color: var(--theme-accent);
+    background: color-mix(in srgb, var(--theme-accent) 12%, transparent);
+    color: var(--theme-accent);
+  }
+
+  .add-chip:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* ── Reduced motion ── */
   @media (prefers-reduced-motion: reduce) {
-    .upload-progress-bar::after {
+    .chip-progress::after {
       transition: none;
     }
 
-    .upload-button {
-      transition: none;
-    }
-
-    .remove-btn {
+    .image-chip,
+    .chip-remove,
+    .attach-button,
+    .add-chip {
       transition: none;
     }
   }
