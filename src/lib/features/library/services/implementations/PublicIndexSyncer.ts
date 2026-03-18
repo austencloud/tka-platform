@@ -109,6 +109,16 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
         ? this.difficultyCalculator.calculateDifficultyLevel([...sequence.steps])
         : undefined;
 
+      // Compute encoder hash for URL-to-library matching.
+      // LibrarySequence has full steps, so encoding works directly.
+      let encoderHash: string | undefined;
+      try {
+        const matcher = container.items.publicSequenceHashMatcher;
+        encoderHash = await matcher.computeEncoderHash(sequence);
+      } catch {
+        // Non-critical — sequence will still publish, just won't be URL-matchable
+      }
+
       const publicData = {
         id: sequence.id,
         sourceRef: `users/${userId}/sequences/${sequence.id}`,
@@ -135,6 +145,7 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
         updatedAt: serverTimestamp(),
         // Full motion content hash for deduplication
         contentHash: sequence.contentHash,
+        encoderHash,
         // Compositional fields — everything needed to render without sourceRef
         blueSoloProp: sequence.blueSoloProp,
         redSoloProp: sequence.redSoloProp,
