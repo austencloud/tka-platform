@@ -23,7 +23,7 @@
 	import PropAwareThumbnail from "$lib/features/browse/sequences/display/components/PropAwareThumbnail.svelte";
 	import ChoreoCard from "./ChoreoCard.svelte";
 	import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-	import { tryGetAnimationExportContext } from "$lib/shared/share-hub/context/animation-export-context.svelte";
+	import { tryGetAnimationExportContext } from "$lib/shared/export-panel/context/animation-export-context.svelte";
 	import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 	import { authState } from "$lib/shared/auth/state/authState.svelte";
 	import { browser } from "$app/environment";
@@ -49,7 +49,7 @@
 
 	let hapticService: IHapticFeedback | null = null;
 
-	// Check if we're in ShareHub context (external control mode)
+	// Check if we're in Export panel context (external control mode)
 	const animationExportContext = tryGetAnimationExportContext();
 	const useExternalControl = !!animationExportContext;
 
@@ -88,7 +88,7 @@
 	// Image export settings from ImageCompositionManager
 	const imageSettings = getImageCompositionManager();
 
-	// Local export settings (for Share Hub mode)
+	// Local export settings (for export panel mode)
 	let localAddWord = $state(imageSettings.addWord);
 	let localAddBeatNumbers = $state(imageSettings.addStepNumbers);
 	let localIncludeStartPosition = $state(imageSettings.includeStartPosition);
@@ -305,7 +305,7 @@
 			</button>
 		{/if}
 
-		<!-- Dark Mode Lamp Button - only shown when visibility settings are enabled (Share Hub) -->
+		<!-- Dark Mode Lamp Button - only shown when visibility settings are enabled (export panel) -->
 		{#if showVisibilitySettings}
 			<button
 				type="button"
@@ -388,7 +388,7 @@
 					{/if}
 				</div>
 
-				<!-- Image Export Settings Chips - only shown when visibility settings are enabled (Share Hub) -->
+				<!-- Image Export Settings Chips - only shown when visibility settings are enabled (export panel) -->
 				{#if showVisibilitySettings}
 					<div class="settings-chips">
 						<button

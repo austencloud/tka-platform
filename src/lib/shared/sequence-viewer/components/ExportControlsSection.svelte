@@ -7,16 +7,16 @@
   Features:
   - Settings button per format
   - Export button with progress
-  - Integrates with existing ShareHub settings panels
+  - Integrates with existing export settings panels
 -->
 <script lang="ts">
-  import type { MediaFormat } from "$lib/shared/share-hub/domain/models/MediaFormat";
+  import type { MediaFormat } from "$lib/shared/export-panel/domain/models/MediaFormat";
   import type { ExportProgress, ExportSettings } from "../domain/types";
-  import ExportButton from "$lib/shared/share-hub/components/shared/ExportButton.svelte";
-  import SettingsPanel from "$lib/shared/share-hub/components/settings/SettingsPanel.svelte";
-  import AnimationSettings from "$lib/shared/share-hub/components/settings/AnimationSettings.svelte";
-  import StaticSettingsPanel from "$lib/shared/share-hub/components/settings/StaticSettings.svelte";
-  import PerformanceSettingsPanel from "$lib/shared/share-hub/components/settings/PerformanceSettings.svelte";
+  import ExportButton from "$lib/shared/export-panel/components/shared/ExportButton.svelte";
+  import SettingsPanel from "$lib/shared/export-panel/components/settings/SettingsPanel.svelte";
+  import AnimationSettings from "$lib/shared/export-panel/components/settings/AnimationSettings.svelte";
+  import StaticSettingsPanel from "$lib/shared/export-panel/components/settings/StaticSettings.svelte";
+  import PerformanceSettingsPanel from "$lib/shared/export-panel/components/settings/PerformanceSettings.svelte";
 
   let {
     selectedFormat = "animation" as MediaFormat,

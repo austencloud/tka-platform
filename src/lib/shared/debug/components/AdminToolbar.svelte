@@ -222,7 +222,14 @@
       // Also clear local IndexedDB thumbnail cache so stale local copies don't persist
       const localCache = container.items.thumbnailLocalCache;
       await localCache.clear();
-      console.log(`✅ Total deleted: ${totalDeleted} cloud thumbnails + local cache cleared`);
+
+      // Nuke ALL remaining in-memory caches (URL cache, knownExists, static manifest)
+      // This forces every subsequent thumbnail request to render fresh — including
+      // thumbnails that scroll into view later, not just currently visible ones
+      const orchestrator = container.items.thumbnailRenderOrchestrator;
+      orchestrator.invalidateAllCaches();
+
+      console.log(`✅ Total deleted: ${totalDeleted} cloud thumbnails + all caches nuked`);
 
       // Notify visible thumbnail components to re-render immediately
       window.dispatchEvent(new CustomEvent("thumbnailCacheCleared"));

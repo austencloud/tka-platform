@@ -444,7 +444,7 @@
     flex: 1;
     /* Constrain width to prevent overflow into sibling button zones */
     min-width: 0;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .step-grid-wrapper {

@@ -26,17 +26,27 @@ export class WordDeriver implements IWordDeriver {
 
   /**
    * Derive the word from a SequenceData object
-   * Prefers derived word from steps, falls back to stored word/name
+   * Prefers derived word from steps, falls back to stepPairings (for documents
+   * where steps haven't been hydrated yet), then stored word/name.
    */
   derive(sequence: SequenceData): string {
-    // First try to derive from steps (single source of truth)
+    // First try to derive from steps (single source of truth when hydrated)
     if (sequence.steps && sequence.steps.length > 0) {
       const derived = this.deriveFromBeats(sequence.steps);
       if (derived) return derived;
     }
 
+    // Steps aren't persisted to Firestore — they're derived at load time by the
+    // hydrator. If hydration hasn't run yet, stepPairings still has the letters.
+    if (sequence.stepPairings && sequence.stepPairings.length > 0) {
+      const derived = sequence.stepPairings
+        .map((p) => p.letter ?? "")
+        .filter((l) => l !== "")
+        .join("");
+      if (derived) return derived;
+    }
+
     // Fallback to stored word or name (for sequences without loaded steps)
-    // This handles the case where we only have metadata without full beat data
     return sequence.word || sequence.name || "";
   }
 

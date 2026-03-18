@@ -308,6 +308,7 @@ export function createExportOptionsState() {
       persist();
     },
     setImageDarkMode(dark: boolean) {
+      console.log("[ExportOptions] setImageDarkMode called:", dark);
       imageDarkMode = dark;
       persist();
     },

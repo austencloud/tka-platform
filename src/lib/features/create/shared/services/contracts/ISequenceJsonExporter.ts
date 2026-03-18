@@ -10,30 +10,42 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 export interface MinimalMotion {
   type: string;
   dir: string;
-  start: string;
-  end: string;
+  startLoc: string;
+  endLoc: string;
   turns: number;
   startOri: string;
   endOri: string;
 }
 
-export interface MinimalBeat {
-  beat: number;
+export interface MinimalStep {
+  step: number;
   letter: string;
-  start: string;
-  end: string;
+  startPos: string;
+  endPos: string;
   blue: MinimalMotion | null;
   red: MinimalMotion | null;
 }
 
+export interface SequenceKey {
+  startPos: string;
+  endPos: string;
+  startLoc: string;
+  endLoc: string;
+  startOri: string;
+  endOri: string;
+  type: string;
+  dir: string;
+  turns: string;
+}
+
 export interface MinimalSequence {
+  key: SequenceKey;
   name: string;
   word: string;
   isCircular: boolean;
   gridMode: string;
-  // propType removed - prop type is viewer preference, not sequence data
-  startPosition: MinimalBeat | null;
-  steps: (MinimalBeat | null)[];
+  startPosition: MinimalStep | null;
+  steps: (MinimalStep | null)[];
 }
 
 export interface ISequenceJsonExporter {

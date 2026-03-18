@@ -455,9 +455,9 @@
     error = null;
   }
 
-  function handleOpenShareHubPanel() {
+  function handleOpenExportPanel() {
     if (!handlers) return;
-    handlers.handleOpenShareHubPanel(panelState);
+    handlers.handleOpenExportPanel(panelState);
   }
 
   function handleClearSequence() {
@@ -686,7 +686,7 @@
       bind:buttonPanelElement
       bind:toolPanelElement
       onClearSequence={handleClearSequence}
-      onShareHub={handleOpenShareHubPanel}
+      onViewSequence={handleOpenExportPanel}
       onSequenceActionsClick={handleOpenSequenceActions}
       onSaveToLibrary={() => panelState.openSaveToLibraryPanel()}
       onOptionSelected={handleOptionSelected}

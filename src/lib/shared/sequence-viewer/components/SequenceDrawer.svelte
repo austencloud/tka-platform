@@ -26,7 +26,7 @@
 
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import SequencePanel, { type PanelMode, type CreatorInfo } from "./SequencePanel.svelte";
-  import { setAnimationExportContext } from "$lib/shared/share-hub/context/animation-export-context.svelte";
+  import { setAnimationExportContext } from "$lib/shared/export-panel/context/animation-export-context.svelte";
 
   let {
     // Drawer props

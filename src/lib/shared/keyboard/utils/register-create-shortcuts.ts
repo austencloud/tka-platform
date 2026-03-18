@@ -63,7 +63,7 @@ export function registerCreateShortcuts(
     description: "Toggle animation playback or open animation panel",
     key: "Space", // Normalized key name (not " ")
     modifiers: [],
-    context: ["create", "share-hub"], // Works in both contexts
+    context: ["create", "export-panel"], // Works in both contexts
     scope: "animation",
     priority: "high",
     // Note: forceExecute removed - let shouldIgnore() handle text inputs naturally
@@ -78,8 +78,8 @@ export function registerCreateShortcuts(
 
       const { panelState } = ref;
 
-      // Check if any animation panel is open (Animation Panel, Share Hub, or Sequence Viewer)
-      if (panelState.isAnimationPanelOpen || panelState.isShareHubPanelOpen || panelState.isSequenceViewerOpen) {
+      // Check if any animation panel is open (Animation Panel, Export Panel, or Sequence Viewer)
+      if (panelState.isAnimationPanelOpen || panelState.isExportPanelOpen || panelState.isSequenceViewerOpen) {
         // Animation is visible - toggle play/pause
         const playbackController = getAnimationPlaybackRef();
         if (playbackController) {
@@ -96,20 +96,20 @@ export function registerCreateShortcuts(
     },
   });
 
-  // Escape - Close Share Hub panel or Sequence Details Modal
+  // Escape - Close Export panel or Sequence Details Modal
   service.register({
-    id: "create.close-share-hub",
+    id: "create.close-export-panel",
     label: "Close Panel",
-    description: "Close the Share Hub panel or Sequence Viewer",
+    description: "Close the Export panel or Sequence Viewer",
     key: "Escape",
     modifiers: [],
-    context: ["create", "share-hub"], // Works in both contexts
+    context: ["create", "export-panel"], // Works in both contexts
     scope: "animation",
     priority: "high",
     condition: () => {
-      // Only when Share Hub panel or Sequence Viewer is open
+      // Only when Export panel or Sequence Viewer is open
       const ref = getCreateModuleRef();
-      return (ref?.panelState.isShareHubPanelOpen || ref?.panelState.isSequenceViewerOpen) ?? false;
+      return (ref?.panelState.isExportPanelOpen || ref?.panelState.isSequenceViewerOpen) ?? false;
     },
     action: () => {
       const ref = getCreateModuleRef();
@@ -117,8 +117,8 @@ export function registerCreateShortcuts(
 
       if (ref.panelState.isSequenceViewerOpen) {
         ref.panelState.closeSequenceViewer();
-      } else if (ref.panelState.isShareHubPanelOpen) {
-        ref.panelState.closeShareHubPanel();
+      } else if (ref.panelState.isExportPanelOpen) {
+        ref.panelState.closeExportPanel();
       }
     },
   });

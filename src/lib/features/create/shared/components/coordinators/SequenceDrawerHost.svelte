@@ -21,11 +21,11 @@
 
   import { onMount, onDestroy } from "svelte";
   import SequenceDrawer from "$lib/shared/sequence-viewer/components/SequenceDrawer.svelte";
-  import type { ExportSettings } from "$lib/shared/share-hub/domain/models/ExportSettings";
+  import type { ExportSettings } from "$lib/shared/export-panel/domain/models/ExportSettings";
   import type { ExportSettings as SequenceViewerExportSettings } from "$lib/shared/sequence-viewer/domain/types";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IPlatformDetector } from "$lib/shared/mobile/services/contracts/IPlatformDetector";
-  import type { IShareHubExportOrchestrator } from "$lib/shared/share-hub/services/contracts/IShareHubExportOrchestrator";
+  import type { IExportOrchestrator } from "$lib/shared/export-panel/services/contracts/IExportOrchestrator";
 
   import { container } from "$lib/shared/di";
   import { responsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
@@ -45,7 +45,7 @@
   import type { ISequenceLoopabilityChecker } from "$lib/features/compose/services/contracts/ISequenceLoopabilityChecker";
   import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
   import type { ISheetRouter } from "$lib/shared/navigation/services/contracts/ISheetRouter";
-  import { ShareHubUrlManager } from "$lib/shared/share-hub/services/implementations/ShareHubUrlManager";
+  import { ExportUrlManager } from "$lib/shared/export-panel/services/implementations/ExportUrlManager";
   import type { IResponsiveLayoutManager } from "$lib/features/create/shared/services/contracts/IResponsiveLayoutManager";
   import {
     createAnimationPanelState,
@@ -66,7 +66,7 @@
 
   // Core services (resolved immediately)
   let hapticService: IHapticFeedback | null = null;
-  let exportOrchestrator: IShareHubExportOrchestrator | null = null;
+  let exportOrchestrator: IExportOrchestrator | null = null;
   let platformService: IPlatformDetector | null = null;
   let sheetRouterService: ISheetRouter | null = null;
   let sequenceService: ISequenceRepository | null = null;
@@ -112,7 +112,7 @@
   }
 
   try {
-    exportOrchestrator = container.items.shareHubExportOrchestrator;
+    exportOrchestrator = container.items.exportOrchestrator;
   } catch (error) {
     console.warn("⚠️ Failed to resolve export orchestrator:", error);
   }
@@ -140,7 +140,7 @@
   const isMobile = platform === "ios" || platform === "android";
 
   // URL state manager for deep linking and history
-  const urlManager = new ShareHubUrlManager(sheetRouterService);
+  const urlManager = new ExportUrlManager(sheetRouterService);
   let cleanupUrlManager: (() => void) | undefined;
 
   // State
@@ -154,9 +154,9 @@
 
   // Handle requested format from keyboard shortcut or external trigger
   $effect(() => {
-    if (panelState.isShareHubPanelOpen && panelState.requestedShareHubFormat) {
-      selectedFormat = panelState.requestedShareHubFormat;
-      panelState.clearRequestedShareHubFormat();
+    if (panelState.isExportPanelOpen && panelState.requestedExportFormat) {
+      selectedFormat = panelState.requestedExportFormat;
+      panelState.clearRequestedExportFormat();
     }
   });
 
@@ -252,10 +252,10 @@
     return () => visibilityManager.unregisterObserver(updateVisibility);
   });
 
-  // Save visibility state when Share Hub opens, restore when it closes
+  // Save visibility state when export panel opens, restore when it closes
   $effect(() => {
     if (
-      panelState.isShareHubPanelOpen &&
+      panelState.isExportPanelOpen &&
       selectedFormat === "animation" &&
       savedMotionVisibility === null
     ) {
@@ -271,13 +271,13 @@
   });
 
   // Lazy load animation services when Animation format selected
-  // Check requestedShareHubFormat to avoid loading when user explicitly requested static format
+  // Check requestedExportFormat to avoid loading when user explicitly requested static format
   $effect(() => {
-    const pendingFormat = panelState.requestedShareHubFormat;
+    const pendingFormat = panelState.requestedExportFormat;
     const effectiveFormat = pendingFormat ?? selectedFormat;
     if (
       effectiveFormat === "animation" &&
-      panelState.isShareHubPanelOpen &&
+      panelState.isExportPanelOpen &&
       !animationServicesReady
     ) {
       loadAnimationServices();
@@ -322,17 +322,17 @@
   });
 
   // Initialize animation when services ready and sequence available
-  // Check requestedShareHubFormat to avoid initializing when user explicitly requested static format
+  // Check requestedExportFormat to avoid initializing when user explicitly requested static format
   $effect(() => {
     // Only initialize if we're actually in the Create module
     const isInCreateModule = navigationState.currentModule === "create";
-    const pendingFormat = panelState.requestedShareHubFormat;
+    const pendingFormat = panelState.requestedExportFormat;
     const effectiveFormat = pendingFormat ?? selectedFormat;
 
     if (
       isInCreateModule &&
       effectiveFormat === "animation" &&
-      panelState.isShareHubPanelOpen &&
+      panelState.isExportPanelOpen &&
       animationServicesReady &&
       currentSequence &&
       playbackController &&
@@ -360,7 +360,7 @@
   $effect(() => {
     if (
       selectedFormat === "animation" &&
-      panelState.isShareHubPanelOpen &&
+      panelState.isExportPanelOpen &&
       animationServicesReady &&
       currentSequence &&
       playbackController &&
@@ -467,9 +467,9 @@
   onMount(() => {
     cleanupUrlManager = urlManager.initialize({
       onAnimationPanelOpen: () => {
-        if (!panelState.isShareHubPanelOpen) {
+        if (!panelState.isExportPanelOpen) {
           selectedFormat = "animation";
-          panelState.openShareHubPanel("animation");
+          panelState.openExportPanel("animation");
         }
       },
       onStateRestore: (urlState) => {
@@ -491,9 +491,9 @@
   // Sync panel open/close with URL
   // Use a mounted flag to prevent reset during initial mount when state is settling
   let hasMounted = false;
-  let previousIsOpen = panelState.isShareHubPanelOpen;
+  let previousIsOpen = panelState.isExportPanelOpen;
   $effect(() => {
-    const isOpen = panelState.isShareHubPanelOpen;
+    const isOpen = panelState.isExportPanelOpen;
 
     // Handle animation URL state (only when animation format selected)
     if (selectedFormat === "animation") {
@@ -510,9 +510,9 @@
     // ALWAYS reset animation state on close, regardless of format
     // This ensures reopening after adding beats shows the updated sequence
     // CRITICAL: Skip reset if we're in the middle of a reopen operation (guard flag set)
-    // This prevents the transient close from closeAllPanels() within openShareHubPanel() from
+    // This prevents the transient close from closeAllPanels() within openExportPanel() from
     // corrupting state before the panel actually opens
-    if (!isOpen && previousIsOpen && hasMounted && !panelState.isShareHubReopening) {
+    if (!isOpen && previousIsOpen && hasMounted && !panelState.isExportPanelReopening) {
       urlManager.clearUrlState();
       // Reset loaded sequence tracking so reopening triggers full reinitialization
       lastLoadedSequenceId = null;
@@ -532,7 +532,7 @@
   let previousSpeed = animationPanelState.speed;
   let previousPlaying = animationPanelState.isPlaying;
   $effect(() => {
-    if (panelState.isShareHubPanelOpen && selectedFormat === "animation") {
+    if (panelState.isExportPanelOpen && selectedFormat === "animation") {
       const currentSpeed = animationPanelState.speed;
       const currentPlaying = animationPanelState.isPlaying;
 
@@ -628,7 +628,7 @@
   function handleClose() {
     hapticService?.trigger("selection");
 
-    // Pause animation when closing Share Hub
+    // Pause animation when closing export panel
     if (isPlayingLocal && playbackController) {
       playbackController.togglePlayback();
     }
@@ -645,7 +645,7 @@
       exportProgress = null;
     }
 
-    panelState.closeShareHubPanel();
+    panelState.closeExportPanel();
   }
 
   // Adapter function to convert between ExportSettings types
@@ -724,7 +724,7 @@
       if (result.success) {
         hapticService?.trigger("success");
         showToast("Export complete!", "success");
-        panelState.closeShareHubPanel();
+        panelState.closeExportPanel();
       } else {
         throw new Error(result.error || "Export failed");
       }
@@ -756,9 +756,9 @@
 
 {#if currentSequence}
   <!-- Key forces remount when viewId changes, ensuring fresh animation state on reopen -->
-  {#key panelState.shareHubViewId}
+  {#key panelState.exportPanelViewId}
     <SequenceDrawer
-    isOpen={panelState.isShareHubPanelOpen}
+    isOpen={panelState.isExportPanelOpen}
     sequence={currentSequence}
     mode="edit"
     {isMobile}
