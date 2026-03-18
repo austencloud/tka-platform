@@ -504,7 +504,7 @@ export class R2VideoUploader implements IVideoUploader {
         jpeg: "image/jpeg",
         webp: "image/webp",
       };
-      const contentType = contentTypeMap[format];
+      const contentType = contentTypeMap[format] ?? "image/png";
 
       return await this.uploadSingle(
         fileName, contentType, thumbnailBlob, userId, "thumbnails", sequenceId, options

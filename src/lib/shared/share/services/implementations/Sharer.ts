@@ -199,7 +199,9 @@ export class Sharer implements ISharer {
   private convertToRenderOptions(shareOptions: ShareOptions, sequenceBirthDate?: Date) {
     // Convert our simple ShareOptions to the render service's SequenceExportOptions
     // Use sequence birth date for the footer, falling back to current date
-    const dateToUse = sequenceBirthDate ?? new Date();
+    const rawDate = sequenceBirthDate ?? new Date();
+    // Firestore Timestamps and IndexedDB serialized dates aren't real Date objects
+    const dateToUse = rawDate instanceof Date ? rawDate : new Date(rawDate as any);
 
     return {
       // Core export settings

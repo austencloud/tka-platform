@@ -134,6 +134,15 @@ export class CellPreWarmer implements ICellPreWarmer {
     this.activeWarms.clear();
   }
 
+  /**
+   * Invalidate the "completed" tracking for all sequences.
+   * Call this when render-affecting settings change (prop type, visibility, dark mode)
+   * so that previously pre-warmed sequences get re-warmed with the new settings.
+   */
+  invalidateCompleted(): void {
+    this.completedSequences.clear();
+  }
+
   // =========================================================================
   // Render options — mirrors what ChoreoCard uses
   // =========================================================================
