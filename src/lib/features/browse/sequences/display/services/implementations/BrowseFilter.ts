@@ -23,7 +23,7 @@ const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 const STARTING_LETTER_RANGES = ["A-D", "E-H", "I-L", "M-P", "Q-T", "U-Z"];
 const LENGTH_OPTIONS = ["3", "4", "5", "6", "7", "8+"];
 const DIFFICULTY_OPTIONS = ["beginner", "intermediate", "advanced"];
-const GRID_MODE_OPTIONS = [GridMode.DIAMOND, GridMode.BOX];
+const GRID_MODE_OPTIONS = [GridMode.DIAMOND, GridMode.BOX, GridMode.SKEWED];
 
 export class BrowseFilter implements IBrowseFilter {
   private difficultyCalculator = new SequenceDifficultyCalculator();
@@ -353,7 +353,7 @@ export class BrowseFilter implements IBrowseFilter {
       return sequences;
     }
 
-    return sequences.filter((seq) => seq.gridMode === filterValue);
+    return sequences.filter((seq) => (seq.gridMode ?? "diamond") === filterValue);
   }
 
   private filterByFavorites(sequences: SequenceData[]): SequenceData[] {

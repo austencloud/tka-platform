@@ -12,12 +12,12 @@ export interface ISectionManager {
   organizeIntoSections(
     sequences: SequenceData[],
     config: SectionConfig
-  ): Promise<SequenceSection[]>;
-  getSectionConfig(sortMethod: BrowseSortMethod): Promise<SectionConfig>;
+  ): SequenceSection[];
+  getSectionConfig(sortMethod: BrowseSortMethod): SectionConfig;
   organizeSections(
     sequences: SequenceData[],
     config: SectionConfig
-  ): Promise<SequenceSection[]>;
+  ): SequenceSection[];
   toggleSectionExpansion(
     sectionId: string,
     sections: SequenceSection[]

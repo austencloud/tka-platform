@@ -15,6 +15,7 @@
   import BrowseThumbnailSkeleton from "./BrowseThumbnailSkeleton.svelte";
   import SequenceTopBarControls from "../../../shared/components/SequenceTopBarControls.svelte";
   import InlineFilterPanel from "../../filtering/components/inline-filter/InlineFilterPanel.svelte";
+  import ActiveFilterBar from "../../filtering/components/inline-filter/ActiveFilterBar.svelte";
   import { gridZoomManager } from "../../../shared/state/grid-zoom-state.svelte";
   import { sequencePanelManager } from "../../../shared/state/sequence-panel-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
@@ -32,6 +33,7 @@
     activeLetter = null,
     activeLength = null,
     activeLoopType = null,
+    activeGridMode = null,
     isFavoritesActive = false,
     hasActivePositions = false,
     availableLengths = [],
@@ -57,6 +59,7 @@
     activeLetter?: string | null;
     activeLength?: number | null;
     activeLoopType?: string | null;
+    activeGridMode?: string | null;
     isFavoritesActive?: boolean;
     hasActivePositions?: boolean;
     availableLengths?: number[];
@@ -96,7 +99,7 @@
   let showSkeleton = $state(true);
   let skeletonFading = $state(false);
 
-  $effect(() => {
+  $effect((): void | (() => void) => {
     if (isInitializing) {
       showSkeleton = true;
       skeletonFading = false;
@@ -186,29 +189,54 @@
 <div class="sequence-display-panel">
   <!-- Gallery controls -->
   <div class="gallery-controls-container">
-    <SequenceTopBarControls />
-  </div>
-
-  <!-- Inline filter panel (collapsible) -->
-  {#if onFilterChange && onRemoveFilter && onClearAllFilters && onOpenLetterSheet && onOpenOptionsSheet}
-    <InlineFilterPanel
-      isOpen={isInlineFiltersOpen}
-      {activeFilterList}
+    <SequenceTopBarControls
       {activeLevel}
       {activeLetter}
       {activeLength}
-      {activeLoopType}
+      activeLoopType={activeLoopType}
+      {activeGridMode}
       {isFavoritesActive}
       {hasActivePositions}
       {availableLengths}
       {loopTypeCounts}
       {onFilterChange}
       {onRemoveFilter}
-      onClearAllFilters={onClearAllFilters}
       {onOpenLetterSheet}
       {onOpenOptionsSheet}
       {getFilteredCount}
     />
+  </div>
+
+  <!-- Inline filter panel (collapsible, narrow screens only) -->
+  {#if onFilterChange && onRemoveFilter && onOpenLetterSheet && onOpenOptionsSheet}
+    <InlineFilterPanel
+      isOpen={isInlineFiltersOpen}
+      {activeLevel}
+      {activeLetter}
+      {activeLength}
+      {activeLoopType}
+      {activeGridMode}
+      {isFavoritesActive}
+      {hasActivePositions}
+      {availableLengths}
+      {loopTypeCounts}
+      {onFilterChange}
+      {onRemoveFilter}
+      {onOpenLetterSheet}
+      {onOpenOptionsSheet}
+      {getFilteredCount}
+    />
+  {/if}
+
+  <!-- Active filter bar — always visible when filters are applied -->
+  {#if activeFilterList.length > 0 && onRemoveFilter && onClearAllFilters}
+    <div class="active-filter-container">
+      <ActiveFilterBar
+        filters={activeFilterList}
+        onRemoveFilter={onRemoveFilter}
+        onClearAll={onClearAllFilters}
+      />
+    </div>
   {/if}
 
   <!-- Content area — skeleton overlays real content for seamless crossfade -->
@@ -253,11 +281,20 @@
     flex-direction: column;
     height: 100%;
     overflow: hidden;
+    container-type: inline-size;
+    container-name: gallery;
   }
 
   /* Gallery controls container - wraps the top bar controls */
   .gallery-controls-container {
     flex-shrink: 0;
+    border-bottom: 1px solid var(--theme-stroke);
+  }
+
+  /* Active filter bar — visible whenever filters are applied, any screen size */
+  .active-filter-container {
+    flex-shrink: 0;
+    padding: 4px 16px;
     border-bottom: 1px solid var(--theme-stroke);
   }
 
