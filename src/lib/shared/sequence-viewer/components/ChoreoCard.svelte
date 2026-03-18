@@ -158,6 +158,7 @@
   // Long-press for touch context menu (matches animation canvas pattern)
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
   let longPressOrigin: { x: number; y: number } | null = null;
+  let longPressFired = false;
 
   function cancelLongPress(): void {
     if (longPressTimer !== null) {
@@ -245,7 +246,7 @@
   // Initialize to the prop value so the first render has the correct dark mode class.
   // Do NOT initialize to false — that causes a one-frame flash where backgrounds
   // render in light mode even though the images are rendered for dark mode.
-  let activeDarkMode = $state(darkMode);
+  let activeDarkMode = $state(untrack(() => darkMode));
   let lastContentKey = "";
   let lastImageKey = "";
 
@@ -337,13 +338,13 @@
   const effectiveUserName = $derived(userName || authState.user?.displayName || "");
 
   // Level badge colors
-  const defaultLevelStyle = { bg: "linear-gradient(135deg, #fff, #f5f5f5)", border: "#000", text: "#000" };
+  const defaultLevelStyle = { bg: "radial-gradient(ellipse at top left, rgb(186,230,253) 0%, rgb(125,211,252) 30%, rgb(56,189,248) 70%, rgb(14,165,233) 100%)", border: "#000", text: "#000" };
   const levelStyles: Record<number, { bg: string; border: string; text: string }> = {
     1: defaultLevelStyle,
-    2: { bg: "linear-gradient(135deg, #d4d4d4, #a8a8a8)", border: "#000", text: "#000" },
-    3: { bg: "linear-gradient(135deg, #ffd700, #b8860b)", border: "#000", text: "#000" },
-    4: { bg: "linear-gradient(135deg, #c8a2c8, #9400d3)", border: "#000", text: "#000" },
-    5: { bg: "linear-gradient(135deg, #ff4500, #8b0000)", border: "#000", text: "#fff" },
+    2: { bg: "linear-gradient(135deg, rgb(170,170,170) 0%, rgb(210,210,210) 15%, rgb(120,120,120) 30%, rgb(180,180,180) 40%, rgb(190,190,190) 55%, rgb(130,130,130) 75%, rgb(110,110,110) 100%)", border: "#000", text: "#000" },
+    3: { bg: "radial-gradient(ellipse at top left, rgb(254,240,138) 0%, rgb(253,224,71) 20%, rgb(250,204,21) 40%, rgb(234,179,8) 60%, rgb(202,138,4) 80%, rgb(161,98,7) 100%)", border: "#000", text: "#000" },
+    4: { bg: "linear-gradient(135deg, rgb(200,162,200) 0%, rgb(170,132,170) 30%, rgb(148,0,211) 60%, rgb(100,0,150) 100%)", border: "#000", text: "#000" },
+    5: { bg: "linear-gradient(135deg, rgb(255,90,40) 0%, rgb(255,50,30) 30%, rgb(230,25,15) 60%, rgb(180,10,5) 100%)", border: "#000", text: "#000" },
   };
 
   const currentLevelStyle = $derived(levelStyles[difficultyLevel] ?? defaultLevelStyle);
@@ -1257,7 +1258,7 @@
   }
 
   // Track if initial render is complete
-  let hasMounted = false;
+  let hasMounted = $state(false);
   let lastEffectRenderKey = "";
 
   // Re-render when relevant props or visibility settings change.
@@ -1461,21 +1462,33 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="choreo-card-root" class:dark-mode={activeDarkMode} class:scroll-mode={needsScroll} class:force-contain={forceContain} data-ctx-container bind:this={containerElement}
   oncontextmenu={(e: MouseEvent) => {
-    if (onContextMenu) {
-      e.preventDefault();
-      onContextMenu(e.clientX, e.clientY);
+    e.preventDefault();
+    // If the long-press timer already opened the menu, don't open it again
+    if (longPressFired) {
+      longPressFired = false;
+      return;
     }
-    handleContextMenu(e);
-    if (!featureFlagService.isAdmin) handleCellContextMenu(e);
+    // Parent menu takes priority — don't also open inline menus
+    if (onContextMenu) {
+      onContextMenu(e.clientX, e.clientY);
+      return;
+    }
+    if (featureFlagService.isAdmin) {
+      handleContextMenu(e);
+    } else {
+      handleCellContextMenu(e);
+    }
   }}
   onpointerdown={(e: PointerEvent) => {
     if (e.button !== 0 || e.pointerType === "mouse" || !onContextMenu) return;
+    longPressFired = false;
     const x = e.clientX;
     const y = e.clientY;
     longPressOrigin = { x, y };
     longPressTimer = setTimeout(() => {
       longPressTimer = null;
       longPressOrigin = null;
+      longPressFired = true;
       onContextMenu(x, y);
     }, 500);
   }}
@@ -1869,8 +1882,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: Georgia, serif;
+    font-family: Cambria, serif;
     font-weight: bold;
+    padding-bottom: 1px;
     flex-shrink: 0;
   }
 
@@ -2008,10 +2022,11 @@
     min-height: 0;
     min-width: 0;
     width: 100%;
-    /* Cells are square (aspect-ratio: 1), so don't stretch the grid beyond
-       its content height. flex: 1 + grid-auto-rows: 1fr was distributing
-       extra space into rows, making cells taller than wide. */
-    flex: 0 0 auto;
+    /* Fill remaining space after header/footer so the grid stays within the
+       card bounds. The old flex: 1 + grid-auto-rows: 1fr stretched rows
+       beyond square; auto rows let aspect-ratio: 1 on cells govern height. */
+    flex: 1;
+    grid-auto-rows: min-content;
     max-width: 100%;
     overflow: hidden;
     /* Light mode background for empty cells */
@@ -2032,8 +2047,7 @@
 
   .cell-flip-wrapper > .pictograph-cell {
     width: 100%;
-    /* No height: 100% — that overrides aspect-ratio: 1, making cells
-       stretch to fill non-square grid rows instead of staying square. */
+    height: 100%;
   }
 
   /* Individual pictograph cell */

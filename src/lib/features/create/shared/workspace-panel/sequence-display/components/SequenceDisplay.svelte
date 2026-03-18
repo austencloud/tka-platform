@@ -120,13 +120,13 @@
     return difficultyCalculator.calculateDifficultyLevel([...currentSequence.steps]);
   });
 
-  const defaultLevelStyle = { bg: "linear-gradient(135deg, #fff, #f5f5f5)", border: "#000", text: "#000" };
+  const defaultLevelStyle = { bg: "radial-gradient(ellipse at top left, rgb(186,230,253) 0%, rgb(125,211,252) 30%, rgb(56,189,248) 70%, rgb(14,165,233) 100%)", border: "#000", text: "#000" };
   const levelStyles: Record<number, { bg: string; border: string; text: string }> = {
     1: defaultLevelStyle,
-    2: { bg: "linear-gradient(135deg, #d4d4d4, #a8a8a8)", border: "#000", text: "#000" },
-    3: { bg: "linear-gradient(135deg, #ffd700, #b8860b)", border: "#000", text: "#000" },
-    4: { bg: "linear-gradient(135deg, #c8a2c8, #9400d3)", border: "#000", text: "#000" },
-    5: { bg: "linear-gradient(135deg, #ff4500, #8b0000)", border: "#000", text: "#fff" },
+    2: { bg: "linear-gradient(135deg, rgb(170,170,170) 0%, rgb(210,210,210) 15%, rgb(120,120,120) 30%, rgb(180,180,180) 40%, rgb(190,190,190) 55%, rgb(130,130,130) 75%, rgb(110,110,110) 100%)", border: "#000", text: "#000" },
+    3: { bg: "radial-gradient(ellipse at top left, rgb(254,240,138) 0%, rgb(253,224,71) 20%, rgb(250,204,21) 40%, rgb(234,179,8) 60%, rgb(202,138,4) 80%, rgb(161,98,7) 100%)", border: "#000", text: "#000" },
+    4: { bg: "linear-gradient(135deg, rgb(200,162,200) 0%, rgb(170,132,170) 30%, rgb(148,0,211) 60%, rgb(100,0,150) 100%)", border: "#000", text: "#000" },
+    5: { bg: "linear-gradient(135deg, rgb(255,90,40) 0%, rgb(255,50,30) 30%, rgb(230,25,15) 60%, rgb(180,10,5) 100%)", border: "#000", text: "#000" },
   };
   const currentLevelStyle = $derived(levelStyles[difficultyLevel] ?? defaultLevelStyle);
   const hasContent = $derived((currentSequence?.steps?.length ?? 0) > 0);
@@ -194,19 +194,21 @@
       <div class="top-bar">
         <div class="top-left-zone">
           {#if hasContent}
-            <button
-              class="difficulty-badge"
-              style="
-                background: {currentLevelStyle.bg};
-                border-color: {currentLevelStyle.border};
-                color: {currentLevelStyle.text};
-              "
-              title="Level {difficultyLevel}"
-              aria-label="Level {difficultyLevel} — tap for details"
-              onclick={() => (showDifficultyInfo = true)}
-            >
-              {difficultyLevel}
-            </button>
+            {#key difficultyLevel}
+              <button
+                class="difficulty-badge pop-in"
+                style="
+                  background: {currentLevelStyle.bg};
+                  border-color: {currentLevelStyle.border};
+                  color: {currentLevelStyle.text};
+                "
+                title="Level {difficultyLevel}"
+                aria-label="Level {difficultyLevel} — tap for details"
+                onclick={() => (showDifficultyInfo = true)}
+              >
+                {difficultyLevel}
+              </button>
+            {/key}
           {/if}
         </div>
         <div class="word-label-area">
@@ -219,18 +221,20 @@
         </div>
         <div class="top-right-zone">
           {#if hasDetectedLoop}
-            <button
-              class="loop-badge-button"
-              aria-label="{loopDisplayName} LOOP — tap for details"
-              onclick={() => (showLoopInfo = true)}
-            >
-              <LOOPIconStrip
-                {activeComponents}
-                size={22}
-                darkMode={true}
-                showFreeformWhenEmpty={false}
-              />
-            </button>
+            {#key loopDisplayName}
+              <button
+                class="loop-badge-button pop-in"
+                aria-label="{loopDisplayName} LOOP — tap for details"
+                onclick={() => (showLoopInfo = true)}
+              >
+                <LOOPIconStrip
+                  {activeComponents}
+                  size={22}
+                  darkMode={true}
+                  showFreeformWhenEmpty={false}
+                />
+              </button>
+            {/key}
           {/if}
         </div>
       </div>
@@ -382,12 +386,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: Georgia, serif;
+    font-family: Cambria, serif;
     font-weight: bold;
     font-size: 18px;
     flex-shrink: 0;
     cursor: pointer;
-    padding: 0;
+    padding: 0 0 1px 0;
     -webkit-tap-highlight-color: transparent;
     transition: transform 0.15s ease;
   }
@@ -398,6 +402,32 @@
 
   .difficulty-badge:active {
     transform: scale(0.95);
+  }
+
+  .difficulty-badge.pop-in {
+    animation: badge-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @keyframes badge-pop {
+    0% {
+      opacity: 0;
+      transform: scale(0.7);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .loop-badge-button.pop-in {
+    animation: badge-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .difficulty-badge.pop-in,
+    .loop-badge-button.pop-in {
+      animation: none;
+    }
   }
 
   .top-right-zone {
@@ -499,9 +529,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: Georgia, serif;
+    font-family: Cambria, serif;
     font-weight: bold;
     font-size: 14px;
+    padding-bottom: 1px;
     flex-shrink: 0;
   }
 
