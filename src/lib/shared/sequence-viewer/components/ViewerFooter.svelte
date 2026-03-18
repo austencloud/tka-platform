@@ -47,6 +47,12 @@
     onDeleteRequest?: () => void;
     onVideoUpload?: () => void;
     videoCount?: number;
+    isSaved?: boolean;
+    isPublished?: boolean;
+    isFavorite?: boolean;
+    onFavorite?: () => void;
+    onPublish?: () => void;
+    onUnpublish?: () => void;
   }
 
   let {
@@ -74,6 +80,12 @@
     onDeleteRequest,
     onVideoUpload,
     videoCount,
+    isSaved = true,
+    isPublished = true,
+    isFavorite = false,
+    onFavorite,
+    onPublish,
+    onUnpublish,
   }: Props = $props();
 
   // Landscape BPM popover state
@@ -177,22 +189,37 @@
 
     <!-- Action buttons -->
     {#if isLoggedIn}
-      <button
-        type="button"
-        class="landscape-btn save"
-        onclick={onSave}
-        aria-label="Save"
-      >
-        <i class="fas fa-bookmark" aria-hidden="true"></i>
-      </button>
-      <button
-        type="button"
-        class="landscape-btn edit"
-        onclick={onEdit}
-        aria-label="Edit"
-      >
-        <i class="fas fa-pen-to-square" aria-hidden="true"></i>
-      </button>
+      {#if onFavorite}
+        <button
+          type="button"
+          class="landscape-btn"
+          class:favorited={isFavorite}
+          onclick={onFavorite}
+          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+        >
+          <i class="fas fa-heart" aria-hidden="true"></i>
+        </button>
+      {/if}
+      {#if isOwned && !isSaved}
+        <button
+          type="button"
+          class="landscape-btn save"
+          onclick={onSave}
+          aria-label="Save"
+        >
+          <i class="fas fa-floppy-disk" aria-hidden="true"></i>
+        </button>
+      {/if}
+      {#if isOwned && isSaved}
+        <button
+          type="button"
+          class="landscape-btn edit"
+          onclick={onEdit}
+          aria-label="Edit"
+        >
+          <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+        </button>
+      {/if}
     {/if}
     {#if isLoggedIn && onVideoUpload}
       <button
@@ -207,15 +234,25 @@
         {/if}
       </button>
     {/if}
-    {#if isOwned && onDeleteRequest}
+    {#if isOwned && isSaved}
       <button
         type="button"
-        class="landscape-btn delete"
-        onclick={onDeleteRequest}
-        aria-label="Delete sequence"
+        class="landscape-btn"
+        onclick={isPublished ? onUnpublish : onPublish}
+        aria-label={isPublished ? "Make Private" : "Make Public"}
       >
-        <i class="fas fa-trash" aria-hidden="true"></i>
+        <i class="fas {isPublished ? 'fa-eye-slash' : 'fa-eye'}" aria-hidden="true"></i>
       </button>
+      {#if onDeleteRequest}
+        <button
+          type="button"
+          class="landscape-btn delete"
+          onclick={onDeleteRequest}
+          aria-label="Delete sequence"
+        >
+          <i class="fas fa-trash" aria-hidden="true"></i>
+        </button>
+      {/if}
     {/if}
   </aside>
 {:else}
@@ -247,6 +284,12 @@
       {onDeleteRequest}
       {onVideoUpload}
       {videoCount}
+      {isSaved}
+      {isPublished}
+      {isFavorite}
+      {onFavorite}
+      {onPublish}
+      {onUnpublish}
     />
   {:else}
     <!-- Desktop: tempo (shrink) | transport (fixed center) | actions (shrink) -->
@@ -299,24 +342,45 @@
       <div class="footer-side footer-right">
         <div class="actions-section">
           {#if isLoggedIn}
-            <button
-              type="button"
-              class="action-btn save"
-              onclick={onSave}
-              aria-label="Save to Library"
-            >
-              <i class="fas fa-bookmark" aria-hidden="true"></i>
-              <span>Save</span>
-            </button>
-            <button
-              type="button"
-              class="action-btn edit"
-              onclick={onEdit}
-              aria-label="Edit"
-            >
-              <i class="fas fa-pen-to-square" aria-hidden="true"></i>
-              <span>Edit</span>
-            </button>
+            <!-- Favorite heart -->
+            {#if onFavorite}
+              <button
+                type="button"
+                class="action-btn"
+                class:favorited={isFavorite}
+                onclick={onFavorite}
+                aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+              >
+                <i class="fas fa-heart" aria-hidden="true"></i>
+                <span>{isFavorite ? "Favorited" : "Favorite"}</span>
+              </button>
+            {/if}
+
+            <!-- Save (only when unsaved) -->
+            {#if isOwned && !isSaved}
+              <button
+                type="button"
+                class="action-btn save"
+                onclick={onSave}
+                aria-label="Save sequence"
+              >
+                <i class="fas fa-floppy-disk" aria-hidden="true"></i>
+                <span>Save</span>
+              </button>
+            {/if}
+
+            <!-- Edit (owner only, when saved) -->
+            {#if isOwned && isSaved}
+              <button
+                type="button"
+                class="action-btn edit"
+                onclick={onEdit}
+                aria-label="Edit"
+              >
+                <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+                <span>Edit</span>
+              </button>
+            {/if}
           {:else}
             <button
               type="button"
@@ -342,16 +406,27 @@
               {/if}
             </button>
           {/if}
-          {#if isOwned && onDeleteRequest}
+          {#if isOwned && isSaved}
             <button
               type="button"
-              class="action-btn delete"
-              onclick={onDeleteRequest}
-              aria-label="Delete sequence"
+              class="action-btn"
+              onclick={isPublished ? onUnpublish : onPublish}
+              aria-label={isPublished ? "Make Private" : "Make Public"}
             >
-              <i class="fas fa-trash" aria-hidden="true"></i>
-              <span>Delete</span>
+              <i class="fas {isPublished ? 'fa-eye-slash' : 'fa-eye'}" aria-hidden="true"></i>
+              <span>{isPublished ? "Make Private" : "Make Public"}</span>
             </button>
+            {#if onDeleteRequest}
+              <button
+                type="button"
+                class="action-btn delete"
+                onclick={onDeleteRequest}
+                aria-label="Delete sequence"
+              >
+                <i class="fas fa-trash" aria-hidden="true"></i>
+                <span>Delete</span>
+              </button>
+            {/if}
           {/if}
         </div>
       </div>
@@ -434,6 +509,7 @@
   .landscape-btn.save { color: #22c55e; border-color: rgba(34, 197, 94, 0.25); }
   .landscape-btn.edit { color: #f59e0b; border-color: rgba(245, 158, 11, 0.25); }
   .landscape-btn.delete { color: var(--semantic-error); border-color: color-mix(in srgb, var(--semantic-error) 25%, transparent); }
+  .landscape-btn.favorited { color: var(--semantic-error); border-color: color-mix(in srgb, var(--semantic-error) 25%, transparent); }
 
   .landscape-divider {
     width: 28px;
@@ -699,6 +775,15 @@
   .action-btn.delete:hover {
     background: color-mix(in srgb, var(--semantic-error) 20%, transparent);
     border-color: color-mix(in srgb, var(--semantic-error) 40%, transparent);
+  }
+
+  .action-btn.favorited {
+    color: var(--semantic-error);
+    border-color: color-mix(in srgb, var(--semantic-error) 30%, transparent);
+  }
+
+  .action-btn.favorited:hover {
+    background: color-mix(in srgb, var(--semantic-error) 15%, transparent);
   }
 
   /* ===========================
