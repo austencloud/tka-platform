@@ -491,6 +491,12 @@
                 onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
                 onDeleteRequest={() => (deleteConfirmOpen = true)}
                 {videoCount}
+                isSaved={ctx.isSaved}
+                isPublished={ctx.isPublished}
+                isFavorite={ctx.isFavorite}
+                onFavorite={ctx.handleFavoriteToggle}
+                onPublish={ctx.handlePublishAction}
+                onUnpublish={ctx.handleUnpublishAction}
               />
             </div>
           </div>

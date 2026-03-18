@@ -195,14 +195,15 @@
       updates.metadata = { ...seq.metadata, notes: urlNotes };
     }
 
-    if (urlBirthday && !seq.createdAt) {
-      // Parse YYYYMMDD back into a Date
+    if (urlBirthday && !seq.birthday) {
+      // Parse YYYYMMDD back into a Date — restore to birthday (original creation date),
+      // not createdAt (when added to library), so the field round-trips correctly
       const y = urlBirthday.slice(0, 4);
       const m = urlBirthday.slice(4, 6);
       const d = urlBirthday.slice(6, 8);
       const date = new Date(`${y}-${m}-${d}`);
       if (!isNaN(date.getTime())) {
-        updates.createdAt = date;
+        updates.birthday = date;
       }
     }
 
@@ -712,6 +713,12 @@
               onRampStop={ctx.handleRampStop}
               isOwned={ctx.isOwned}
               onDeleteRequest={() => (deleteConfirmOpen = true)}
+              isSaved={ctx.isSaved}
+              isPublished={ctx.isPublished}
+              isFavorite={ctx.isFavorite}
+              onFavorite={ctx.handleFavoriteToggle}
+              onPublish={ctx.handlePublishAction}
+              onUnpublish={ctx.handleUnpublishAction}
             />
             {#if ctx.rampActive}
               <RampProgressIndicator

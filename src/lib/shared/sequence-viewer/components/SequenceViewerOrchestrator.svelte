@@ -130,6 +130,12 @@
     isLoggedIn: boolean;
     userName: string;
     isOwned: boolean;
+    isSaved: boolean;
+    isPublished: boolean;
+    isFavorite: boolean;
+    handleFavoriteToggle: () => void;
+    handlePublishAction: () => Promise<void>;
+    handleUnpublishAction: () => Promise<void>;
 
     // Handlers
     handlePlaybackToggle: () => void;
@@ -204,6 +210,9 @@
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getHighlightedBeatFromVideo } from "$lib/shared/video-collaboration/utils/beat-map-utils";
   import PropContextChip from "./PropContextChip.svelte";
+  import type { ICollectionManager } from "$lib/features/library/services/contracts/ICollectionManager";
+  import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
+  import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
 
   // ============================================================================
   // PROPS
@@ -412,6 +421,68 @@
     !!authState.user?.uid &&
     sequence.ownerId === authState.user.uid
   );
+
+  let isSaved = $state(true);
+  let isFavorite = $state(false);
+  // Runtime sequences loaded from Firestore are LibrarySequence (extends SequenceData),
+  // so visibility and contentHash are present even though SequenceData doesn't declare them.
+  const isPublished = $derived((sequence as LibrarySequence | null)?.visibility === "public");
+
+  // Content hash cache — avoids redundant Firestore reads for the same hash
+  const savedHashCache = new Map<string, boolean>();
+
+  // Check if this sequence is already saved to the user's library
+  $effect(() => {
+    const seq = sequence as LibrarySequence | null;
+    if (!seq?.contentHash || !authState.user?.uid) {
+      isSaved = true;
+      return;
+    }
+
+    const hash = seq.contentHash;
+    if (savedHashCache.has(hash)) {
+      isSaved = savedHashCache.get(hash)!;
+      return;
+    }
+
+    const repo = container.items.libraryRepository as ILibraryRepository;
+    repo.hasMatchingContent(hash)
+      .then((found) => {
+        savedHashCache.set(hash, found);
+        if (sequence?.id === seq.id) isSaved = found;
+      })
+      .catch(() => {});
+  });
+
+  // Check favorite status for the current sequence
+  $effect(() => {
+    const seq = sequence;
+    if (!seq) { isFavorite = false; return; }
+
+    const cm = container.items.collectionManager as ICollectionManager;
+    cm.isFavorite(seq.id)
+      .then((fav) => { if (sequence?.id === seq.id) isFavorite = fav; })
+      .catch(() => {});
+  });
+
+  function handleFavoriteToggle() {
+    if (!sequence) return;
+    isFavorite = !isFavorite; // optimistic
+    const cm = container.items.collectionManager as ICollectionManager;
+    cm.toggleFavorite(sequence.id).catch(() => { isFavorite = !isFavorite; });
+  }
+
+  async function handlePublishAction() {
+    if (!sequence) return;
+    const repo = container.items.libraryRepository as ILibraryRepository;
+    await repo.publishSequence(sequence.id);
+  }
+
+  async function handleUnpublishAction() {
+    if (!sequence) return;
+    const repo = container.items.libraryRepository as ILibraryRepository;
+    await repo.unpublishSequence(sequence.id);
+  }
 
   // After stepping (via step buttons), props land at the START of the next beat,
   // meaning the PREVIOUS beat's motion just completed. Offset the glyph and highlight
@@ -1191,8 +1262,9 @@
         if (sequence.ownerDisplayName) metadata.creator = sequence.ownerDisplayName;
         if (typeof sequence.metadata?.notes === "string") metadata.notes = sequence.metadata.notes;
         if (typeof sequence.metadata?.difficulty === "string") metadata.difficulty = sequence.metadata.difficulty;
-        if (sequence.createdAt) {
-          const d = sequence.createdAt instanceof Date ? sequence.createdAt : new Date(sequence.createdAt);
+        const birthdaySource = sequence.birthday ?? sequence.createdAt;
+        if (birthdaySource) {
+          const d = birthdaySource instanceof Date ? birthdaySource : new Date(birthdaySource);
           if (!isNaN(d.getTime())) {
             metadata.birthday = d.toISOString().slice(0, 10).replace(/-/g, "");
           }
@@ -1435,6 +1507,12 @@
     isLoggedIn: authState.isAuthenticated,
     userName: authState.user?.displayName || "",
     isOwned,
+    isSaved,
+    isPublished,
+    isFavorite,
+    handleFavoriteToggle,
+    handlePublishAction,
+    handleUnpublishAction,
 
     // Handlers
     handlePlaybackToggle,
