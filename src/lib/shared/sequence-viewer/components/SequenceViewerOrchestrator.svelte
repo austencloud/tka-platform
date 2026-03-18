@@ -175,7 +175,6 @@
   import { goto } from "$app/navigation";
   import { browser } from "$app/environment";
   import { container } from "$lib/shared/di";
-  import { notifyLibraryMutated } from "$lib/shared/library/library-events";
   import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import type { ISequenceAnimationOrchestrator } from "$lib/features/compose/services/contracts/ISequenceAnimationOrchestrator";
@@ -337,10 +336,19 @@
   let contextOverride = $state<ViewingContext | null>(null);
   const activeContext = $derived(contextOverride ?? viewingContext);
 
-  const presentation = $derived.by(() => {
+  const presentation = $derived.by((): ResolvedPresentation => {
+    if (!sequence) {
+      return {
+        bluePropType: bluePropType ?? PropType.STAFF,
+        redPropType: redPropType ?? PropType.STAFF,
+        catDogMode: catDogModeEnabled ?? false,
+        effortTimeline: null,
+        source: "viewer-settings",
+      };
+    }
     const resolver = container.items.presentationResolver as IPresentationResolver;
     return resolver.resolve(
-      sequence!,
+      sequence,
       activeContext,
       bluePropType ?? PropType.STAFF,
       redPropType ?? PropType.STAFF,
@@ -1160,9 +1168,6 @@
     try {
       const libraryRepo = container.items.libraryRepository;
       await libraryRepo.deleteSequence(sequence.id);
-      // Notify any listening modules (e.g. browse gallery) that the library changed
-      // so they can remove the entry from their cache without a Firestore round-trip.
-      notifyLibraryMutated(sequence.id);
       showToast("Sequence deleted", "success");
       handleBackInternal();
     } catch (error) {

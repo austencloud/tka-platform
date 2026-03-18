@@ -56,6 +56,11 @@ import {
   getUserSequencePath,
   getPublicSequencePath,
 } from "../../data/firestore-paths";
+import {
+  notifyLibraryMutated,
+  notifyLibrarySequenceAdded,
+  notifyLibrarySequenceUpdated,
+} from "$lib/shared/library/library-events";
 
 /**
  * Error class for library operations
@@ -176,13 +181,15 @@ export class LibraryRepository implements ILibraryRepository {
     const sequenceTags = data["sequenceTags"] || [];
 
     // Derive word from steps (single source of truth)
-    // Fall back to stored word/name only if steps aren't available
-    // Check both top-level steps and nested sequenceData.steps
+    // Some older documents only have stepPairings (no steps array), so check both.
+    // Fall back to stored word/name only if neither is available.
     const steps = (data["steps"] || seqData["steps"]) as Array<{ letter?: string }> | undefined;
+    const stepPairings = (data["stepPairings"] || seqData["stepPairings"]) as Array<{ letter?: string }> | undefined;
     let word: string | null = null;
-    if (steps && steps.length > 0) {
-      // Derive word by concatenating beat letters
-      word = steps
+
+    const letterSource = (steps && steps.length > 0) ? steps : stepPairings;
+    if (letterSource && letterSource.length > 0) {
+      word = letterSource
         .map((beat) => beat.letter ?? "")
         .filter((letter) => letter !== "")
         .join("");
@@ -483,6 +490,9 @@ export class LibraryRepository implements ILibraryRepository {
         .catch((_e) => console.warn("Failed to track achievement:", _e));
     }
 
+    // Notify listeners (browse gallery, etc.) so they can insert immediately
+    notifyLibrarySequenceAdded(finalSequence);
+
     // Post-write: Sync to public index (async, non-blocking)
     if (finalSequence.visibility === "public" && this.publicIndexSyncer) {
       this.publicIndexSyncer
@@ -599,6 +609,9 @@ export class LibraryRepository implements ILibraryRepository {
       );
     });
 
+    // Notify listeners so caches can patch without a Firestore round-trip
+    notifyLibrarySequenceUpdated(sequenceId, updates as Record<string, unknown>);
+
     // Handle visibility changes (async, non-blocking)
     if (updates.visibility && updates.visibility !== existing.visibility) {
       if (!this.publicIndexSyncer) {
@@ -677,6 +690,9 @@ export class LibraryRepository implements ILibraryRepository {
         { sequenceId }
       );
     });
+
+    // Notify listeners so caches can remove the entry immediately
+    notifyLibraryMutated(sequenceId);
 
     // Decrement user's sequenceCount (async, non-blocking, clamped to 0)
     const userDocRef = doc(firestore, `users/${userId}`);
@@ -1125,6 +1141,14 @@ export class LibraryRepository implements ILibraryRepository {
 
     try {
       await trackWrite(() => batch.commit(), "library");
+
+      // Notify listeners so caches can remove all deleted entries immediately
+      for (const sequenceId of sequenceIds) {
+        if (existingSequences.has(sequenceId)) {
+          notifyLibraryMutated(sequenceId);
+        }
+      }
+
       // Clamp sequenceCount to 0 if it went negative
       if (userDocRef) {
         const userSnap = await getDoc(userDocRef);
