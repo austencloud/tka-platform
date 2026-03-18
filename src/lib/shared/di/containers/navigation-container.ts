@@ -21,6 +21,7 @@ import { DeepLinker } from "../../navigation/services/implementations/DeepLinker
 import { LetterDeriver } from "../../navigation/services/implementations/LetterDeriver";
 import { PositionDeriver } from "../../navigation/services/implementations/PositionDeriver";
 import { SequenceViewer } from "../../sequence-viewer/services/implementations/SequenceViewer";
+import { PublicSequenceHashMatcher } from "../../sequence-viewer/services/implementations/PublicSequenceHashMatcher";
 import { NavigationValidator } from "../../navigation/services/implementations/NavigationValidator";
 import { SidebarTabToggler } from "../../navigation/services/implementations/SidebarTabToggler";
 
@@ -58,6 +59,8 @@ export function createNavigationContainer(externalDeps: NavigationExternalDeps) 
     .add((ctx) => ({
       urlSyncer: () => new URLSyncer(ctx.sequenceEncoder),
       deepLinker: () => new DeepLinker(ctx.sequenceEncoder),
+      publicSequenceHashMatcher: () =>
+        new PublicSequenceHashMatcher(ctx.sequenceEncoder),
     }))
     // === Services that depend on external services ===
     .add((ctx) => ({
