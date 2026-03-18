@@ -24,9 +24,11 @@ export class GalleryOfflineCache implements IGalleryOfflineCache {
 
   async persist(docs: PublicSequenceIndex[]): Promise<void> {
     const now = Date.now();
+    // JSON round-trip strips non-cloneable Firestore objects (Timestamps, etc.)
+    // that IndexedDB's structured clone algorithm rejects.
     const entries: GalleryCacheEntry[] = docs.map((doc) => ({
       id: doc.id,
-      data: doc,
+      data: JSON.parse(JSON.stringify(doc)),
       cachedAt: now,
     }));
 
