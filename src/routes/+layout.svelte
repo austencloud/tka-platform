@@ -151,35 +151,45 @@
     // Mark container ready so children can render
     containerReady = true;
 
-    // Prefetch gallery data so it's ready before the user navigates there.
+    // Prefetch browse data so it's ready before the user navigates there.
     // Uses requestIdleCallback to avoid competing with the active module's load.
+    const prefetchBrowseData = () => {
+      // Gallery: warm from IndexedDB cache, sync from Firestore in background
+      try {
+        const prefetcher = container.items.galleryPrefetcher;
+        if (prefetcher && typeof prefetcher.prefetch === "function") {
+          prefetcher.prefetch().catch((err: unknown) =>
+            console.warn("[Layout] Gallery prefetch failed:", err)
+          );
+        }
+      } catch (err) {
+        console.warn("[Layout] Gallery prefetcher not available:", err);
+      }
+
+      // Creators: load creator profiles so the Creators tab is instant
+      import("$lib/features/browse/creators/state/creators-data-state.svelte")
+        .then(({ creatorsDataState }) => {
+          if (!creatorsDataState.isInitialized) {
+            const userRepo = container.items.userRepository;
+            if (userRepo) {
+              Promise.all([
+                creatorsDataState.loadCreators(userRepo),
+                creatorsDataState.loadFeaturedCreators(userRepo),
+              ]).catch((err: unknown) =>
+                console.warn("[Layout] Creators prefetch failed:", err)
+              );
+            }
+          }
+        })
+        .catch((err: unknown) =>
+          console.warn("[Layout] Creators module import failed:", err)
+        );
+    };
+
     if (typeof requestIdleCallback !== "undefined") {
-      requestIdleCallback(() => {
-        try {
-          const prefetcher = container.items.galleryPrefetcher;
-          if (prefetcher && typeof prefetcher.prefetch === "function") {
-            prefetcher.prefetch().catch((err: unknown) =>
-              console.warn("[Layout] Gallery prefetch failed:", err)
-            );
-          }
-        } catch (err) {
-          console.warn("[Layout] Gallery prefetcher not available:", err);
-        }
-      });
+      requestIdleCallback(prefetchBrowseData);
     } else {
-      // Fallback for browsers without requestIdleCallback
-      setTimeout(() => {
-        try {
-          const prefetcher = container.items.galleryPrefetcher;
-          if (prefetcher && typeof prefetcher.prefetch === "function") {
-            prefetcher.prefetch().catch((err: unknown) =>
-              console.warn("[Layout] Gallery prefetch failed:", err)
-            );
-          }
-        } catch (err) {
-          console.warn("[Layout] Gallery prefetcher not available:", err);
-        }
-      }, 0);
+      setTimeout(prefetchBrowseData, 0);
     }
 
     // Analytics: PostHog
