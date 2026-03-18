@@ -99,6 +99,31 @@
   let virtualRows = $state<VirtualItem[]>([]);
   let totalHeight = $state(0);
 
+  // Persistent reference to the latest virtualizer instance, used by exported functions
+  let virtualizerRef: { scrollToIndex: (index: number, opts?: { align?: string }) => void; getVirtualItems: () => VirtualItem[] } | null = null;
+
+  /**
+   * Scroll to bring the sequence at the given flat array index into view.
+   * Called by SectionIndexSidebar when a section marker is clicked.
+   */
+  export function scrollToSequenceIndex(sequenceIndex: number): void {
+    const rowIndex = Math.floor(sequenceIndex / columnCount);
+    if (virtualizerRef) {
+      virtualizerRef.scrollToIndex(rowIndex, { align: "start" });
+    }
+  }
+
+  /**
+   * Get the flat array index of the first visible sequence.
+   * Used for tracking which section is currently in view.
+   */
+  export function getFirstVisibleSequenceIndex(): number {
+    if (!virtualizerRef) return 0;
+    const items = virtualizerRef.getVirtualItems();
+    if (items.length === 0) return 0;
+    return items[0].index * columnCount;
+  }
+
   // Dynamic column count based on container width.
   // Clamps pinchColumnOverride to per-breakpoint max so you can't
   // get 5 tiny columns on a phone screen.
@@ -169,6 +194,7 @@
 
     // Subscribe to virtualizer updates
     const unsubscribe = virtualizerStore.subscribe((v) => {
+      virtualizerRef = v;
       virtualRows = v.getVirtualItems();
       totalHeight = v.getTotalSize();
     });
@@ -252,6 +278,7 @@
 
       // Subscribe to updates
       const unsubscribe = virtualizerStore.subscribe((v) => {
+        virtualizerRef = v;
         virtualRows = v.getVirtualItems();
         totalHeight = v.getTotalSize();
       });
