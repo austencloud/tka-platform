@@ -18,29 +18,32 @@ const crypto = require("crypto");
 // src/lib/shared/navigation/services/implementations/SequenceEncoder.ts
 // so the script can run without bundling the full app.
 
+// Keys must match the actual enum STRING VALUES stored in Firestore,
+// not the enum member names. E.g., GridLocation.NORTH = "n", not "north".
 const LOCATION_ENCODE = {
-  north: "no", east: "ea", south: "so", west: "we",
-  northeast: "ne", southeast: "se", southwest: "sw", northwest: "nw",
-  center: "c",
+  n: "no", e: "ea", s: "so", w: "we",
+  ne: "ne", se: "se", sw: "sw", nw: "nw",
+  c: "c",
 };
 
 const ORIENTATION_ENCODE = {
   in: "i", out: "o", clock: "k", counter: "t",
-  "clock-in": "I", "clock-out": "O", "counter-in": "N", "counter-out": "U",
-  center_n: "1", center_ne: "2", center_e: "3", center_se: "4",
-  center_s: "5", center_sw: "6", center_w: "7", center_nw: "8",
+  clockIn: "I", clockOut: "O", counterIn: "N", counterOut: "U",
+  centerN: "1", centerNE: "2", centerE: "3", centerSE: "4",
+  centerS: "5", centerSW: "6", centerW: "7", centerNW: "8",
 };
 
 const ROTATION_ENCODE = {
-  clockwise: "c", counter_clockwise: "u", no_rotation: "x",
+  cw: "c", ccw: "u", noRotation: "x",
 };
 
 const MOTION_TYPE_ENCODE = {
   pro: "p", anti: "a", float: "l", dash: "d", static: "s",
 };
 
+// Keys match PropType enum string values (e.g., PropType.SIMPLESTAFF = "simple_staff")
 const PROP_TYPE_ENCODE = {
-  staff: "S", simplestaff: "s", bigstaff: "1", staff2: "2",
+  staff: "S", simple_staff: "s", bigstaff: "1", staff_v2: "2",
   club: "C", bigclub: "c", fan: "F", bigfan: "f",
   triad: "T", bigtriad: "t", minihoop: "M", bighoop: "H",
   buugeng: "B", bigbuugeng: "b", fractalgeng: "R", trigeng: "J",
@@ -74,8 +77,9 @@ function encodeSequence(seq) {
   const sp = seq.startPosition || seq.startingPosition;
   const startEnc = sp ? encodeBeat(sp) : ":";
   const steps = seq.steps || [];
+  // Source docs may use beatNumber or stepNumber — filter out beat 0 (start position)
   const stepEncs = steps
-    .filter((s) => s.stepNumber !== 0)
+    .filter((s) => (s.stepNumber ?? s.beatNumber) !== 0)
     .map((s) => encodeBeat(s));
   return `${startEnc}|${stepEncs.join("|")}`;
 }
