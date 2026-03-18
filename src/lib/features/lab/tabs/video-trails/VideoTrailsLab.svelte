@@ -46,7 +46,7 @@
 </script>
 
 <div class="video-trails-root">
-  <nav class="sub-nav" role="tablist">
+  <div class="sub-nav" role="tablist">
     {#each views as view}
       <button
         class="sub-nav-tab"
@@ -59,7 +59,7 @@
         <span>{view.label}</span>
       </button>
     {/each}
-  </nav>
+  </div>
 
   <div class="view-container">
     {#if trailsState.activeView === "workspace" && WorkspaceView}

@@ -7,7 +7,7 @@
   so the canvas and playback survive inner-tab switches.
 -->
 <script lang="ts">
-  import { onDestroy } from "svelte";
+  import { onDestroy, untrack } from "svelte";
   import EffectsLabPlaybackHost from "./components/EffectsLabPlaybackHost.svelte";
   import {
     getEffectDescriptor,
@@ -68,7 +68,7 @@
     if (current !== "led") visibilityManager.setLedEffect(false);
     activateMode(current);
   }
-  initializeMode(activeMode);
+  initializeMode(untrack(() => activeMode));
 
   function setMode(mode: EffectMode) {
     if (mode !== activeMode) {

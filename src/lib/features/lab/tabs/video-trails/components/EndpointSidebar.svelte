@@ -183,17 +183,20 @@
   </div>
 
   <!-- Endpoint list -->
-  <div class="endpoint-list">
+  <div class="endpoint-list" role="listbox" aria-label="Endpoints">
     <div class="list-header">Endpoints</div>
     {#if endpointDisplays.length === 0}
       <p class="empty-msg">No endpoints on this frame</p>
     {:else}
       {#each endpointDisplays as display, i (i)}
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
         <div
           class="endpoint-row"
           class:selected={i === selectedEndpointIdx}
           onclick={() => onSelectEndpoint(i)}
+          role="option"
+          aria-selected={i === selectedEndpointIdx}
+          tabindex="0"
         >
           <span class="ep-dot" style="background: {display.color}"></span>
           <span class="ep-label">{display.label}</span>

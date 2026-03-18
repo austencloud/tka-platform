@@ -43,10 +43,10 @@
   function clampTimestamp(index: number, time: number): number {
     // Markers can't cross their neighbors. Leave a 0.05s minimum gap.
     const gap = 0.05;
-    const min = index > 0 ? beatTimestamps[index - 1] + gap : 0;
+    const min = index > 0 ? beatTimestamps[index - 1]! + gap : 0;
     const max =
       index < beatTimestamps.length - 1
-        ? beatTimestamps[index + 1] - gap
+        ? beatTimestamps[index + 1]! - gap
         : duration;
     return Math.max(min, Math.min(max, time));
   }

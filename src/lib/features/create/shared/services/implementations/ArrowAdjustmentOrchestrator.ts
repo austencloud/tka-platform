@@ -27,6 +27,7 @@ import { getGlobalAdjustmentRepository } from "$lib/shared/pictograph/arrow/posi
 import { globalAdjustmentVersion } from "$lib/shared/pictograph/arrow/positioning/global/state/global-adjustment-version.svelte";
 import type { GlobalArrowAdjustmentInput } from "$lib/shared/pictograph/arrow/positioning/global/domain/GlobalArrowAdjustment";
 import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { arrowAdjustmentUndoStack } from "$lib/shared/pictograph/arrow/positioning/global/state/ArrowAdjustmentUndoStack";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
@@ -257,7 +258,7 @@ export class ArrowAdjustmentOrchestrator implements IArrowAdjustmentOrchestrator
     try {
       const motionWithPropOverride = {
         ...motionData,
-        propType: thisPropType,
+        propType: thisPropType as MotionData["propType"],
       };
 
       // Also override the other motion's propType in pictographData so the

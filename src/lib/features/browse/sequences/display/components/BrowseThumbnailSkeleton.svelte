@@ -49,7 +49,7 @@ State-of-the-art skeleton that matches the real browse gallery:
   // Deterministic aspect ratio for each skeleton card index.
   // Wraps around the pool so any count works.
   function getAspectRatio(index: number): number {
-    return ASPECT_RATIO_POOL[index % ASPECT_RATIO_POOL.length];
+    return ASPECT_RATIO_POOL[index % ASPECT_RATIO_POOL.length]!;
   }
 
   let resizeObserver: ResizeObserver | null = null;

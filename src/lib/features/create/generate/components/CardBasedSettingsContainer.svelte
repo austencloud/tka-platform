@@ -249,7 +249,19 @@ Delegates ALL logic to services (SRP compliant)
   // Event handlers - safe because we check loopParamProvider exists
   function handleLevelChange(level: DifficultyLevel) {
     if (!loopParamProvider) return;
-    updateConfig({ level: loopParamProvider.difficultyToNumber(level) });
+    const newLevelNum = loopParamProvider.difficultyToNumber(level);
+    const allowed = loopParamProvider.getAllowedTurnsForLevel(level);
+    const updates: Partial<UIGenerationConfig> = { level: newLevelNum };
+
+    // Clamp turn intensity if the current value isn't valid at the new level
+    // (e.g. 0.5 is valid at level 3 but not level 2)
+    if (allowed.length > 0 && !allowed.includes(config.turnIntensity)) {
+      updates.turnIntensity = allowed.reduce((best, v) =>
+        Math.abs(v - config.turnIntensity) < Math.abs(best - config.turnIntensity) ? v : best
+      );
+    }
+
+    updateConfig(updates);
   }
 
   function handleLengthChange(length: number) {

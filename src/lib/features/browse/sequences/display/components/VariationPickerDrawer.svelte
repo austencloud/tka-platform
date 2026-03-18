@@ -86,12 +86,14 @@
 <style>
   .picker-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 300px));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     justify-content: center;
-    gap: var(--spacing-md, 12px);
-    padding: 16px;
+    gap: var(--spacing-lg, 16px);
+    padding: 24px;
     overflow-y: auto;
-    max-height: 60vh;
+    max-height: 75vh;
+    max-width: 1200px;
+    margin: 0 auto;
   }
 
   .picker-item {

@@ -494,9 +494,6 @@
     padding: 5px 8px;
   }
 
-  .tool-btn.compact .tool-label {
-    display: none;
-  }
 
   .tool-label {
     font-weight: 500;

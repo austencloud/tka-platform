@@ -8,7 +8,7 @@
   import { onMount } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
-  import type { ISequenceHydrator } from "$lib/shared/composition/services/contracts/ISequenceHydrator";
+  import type { ISequenceHydrator } from "$lib/shared/foundation/services/contracts/ISequenceHydrator";
   import { container } from "$lib/shared/di";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import PropAwareThumbnail from "$lib/features/browse/sequences/display/components/PropAwareThumbnail.svelte";
@@ -176,7 +176,7 @@
         <div class="card">
           {#if selectedSequence.steps && selectedSequence.steps.length > 0}
             <div class="choreo-preview">
-              <PropAwareThumbnail sequence={selectedSequence} variant="browse" eager suppressContextMenu />
+              <PropAwareThumbnail sequence={selectedSequence} variant="gallery" eager suppressContextMenu />
             </div>
           {/if}
           <div class="card-footer">

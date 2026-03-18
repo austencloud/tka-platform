@@ -341,14 +341,17 @@
   );
 </script>
 
-<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-<div
-  class="endpoint-editor"
-  onkeydown={handleKeydown}
-  tabindex="0"
-  role="application"
-  aria-label="Endpoint editor canvas. Tab to cycle endpoints, arrows to nudge, O to mark occluded, Enter to accept."
->
+<!-- svelte-ignore a11y_no_noninteractive_tabindex a11y_no_noninteractive_element_interactions -->
+<div class="endpoint-editor-wrapper">
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+  <div
+    class="endpoint-editor"
+    onkeydown={handleKeydown}
+    tabindex="0"
+    role="application"
+    aria-label="Endpoint editor canvas. Tab to cycle endpoints, arrows to nudge, O to mark occluded, Enter to accept."
+  >
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <canvas
     bind:this={canvasEl}
     {width}
@@ -402,9 +405,13 @@
       </button>
     </div>
   {/if}
+  </div>
 </div>
 
 <style>
+  .endpoint-editor-wrapper {
+    display: contents;
+  }
   .endpoint-editor {
     position: relative;
     display: flex;

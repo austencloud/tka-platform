@@ -24,7 +24,7 @@
   // Load persisted overrides from settings
   const settings = $derived(getSettings());
   let overrides = $state<Record<string, CompositionRecipe>>(
-    $state.snapshot(settings.compositionRecipeOverrides ?? {})
+    structuredClone(getSettings().compositionRecipeOverrides ?? {})
   );
 
   // --- Undo / Redo ---
