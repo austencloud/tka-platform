@@ -225,8 +225,13 @@ export function createBrowseState() {
       const sections = Navigator.generateNavigationSections(sequences, []);
       navigationSections = sections;
       applyFilterAndSort();
-      await generateSequenceSections();
+
+      // Data is filtered and sorted — let the grid render immediately
       sectionsReady = true;
+
+      // Section organization is sync and fast — runs in same tick,
+      // updates sequenceSections reactively for section headers
+      generateSequenceSections();
     } catch (err) {
       console.error("Failed to load sequences:", err);
       error = err instanceof Error ? err.message : "Failed to load sequences";
@@ -246,8 +251,8 @@ export function createBrowseState() {
       allSequences = libraryCache;
       displayedSequences = libraryCache;
       applyFilterAndSort();
-      await generateSequenceSections();
       sectionsReady = true;
+      generateSequenceSections();
       return;
     }
 
@@ -277,8 +282,8 @@ export function createBrowseState() {
       );
       navigationSections = sections;
       applyFilterAndSort();
-      await generateSequenceSections();
       sectionsReady = true;
+      generateSequenceSections();
       libraryCache = dedupedLibrary; // Cache for instant restore on tab switch
     } catch (err) {
       console.error("Failed to load library sequences:", err);
@@ -421,7 +426,7 @@ export function createBrowseState() {
   }
 
   // Generate sequence sections based on current sort method
-  async function generateSequenceSections(): Promise<void> {
+  function generateSequenceSections(): void {
     try {
       // Map sort method to groupBy strategy
       let groupBy: SectionConfig["groupBy"];
@@ -449,7 +454,7 @@ export function createBrowseState() {
         expandedSections: new Set<string>(), // All sections always visible now
       };
 
-      const sections = await SectionManager.organizeSections(
+      const sections = SectionManager.organizeSections(
         filteredSequences,
         config
       );
@@ -484,8 +489,8 @@ export function createBrowseState() {
     sectionsReady = false;
     sequenceSections = [];
     persistControls();
-    await applyFilterAndSort();
-    await generateSequenceSections();
+    applyFilterAndSort();
+    generateSequenceSections();
     sectionsReady = true;
   }
 
@@ -511,8 +516,8 @@ export function createBrowseState() {
     sectionsReady = false;
     sequenceSections = [];
     persistControls();
-    await applyFilterAndSort();
-    await generateSequenceSections();
+    applyFilterAndSort();
+    generateSequenceSections();
     sectionsReady = true;
   }
 
@@ -527,8 +532,8 @@ export function createBrowseState() {
     sectionsReady = false;
     sequenceSections = [];
     persistControls();
-    await applyFilterAndSort();
-    await generateSequenceSections();
+    applyFilterAndSort();
+    generateSequenceSections();
     sectionsReady = true;
   }
 
@@ -540,8 +545,8 @@ export function createBrowseState() {
     sectionsReady = false;
     sequenceSections = [];
     persistControls();
-    await applyFilterAndSort();
-    await generateSequenceSections();
+    applyFilterAndSort();
+    generateSequenceSections();
     sectionsReady = true;
   }
 
@@ -571,6 +576,10 @@ export function createBrowseState() {
     if (type === "endPosition") return `End: ${value}`;
     if (type === "contains_letters") return `"${value}"`;
     if (type === "cap_type") return `Pattern: ${value}`;
+    if (type === "gridMode") {
+      const mode = String(value);
+      return mode.charAt(0).toUpperCase() + mode.slice(1);
+    }
     if (type === "recent") return "Recent";
     return String(type);
   }
@@ -587,6 +596,7 @@ export function createBrowseState() {
       case "startPosition":
       case "startingPosition":
       case "endPosition": return "#06b6d4";
+      case "gridMode": return "#14b8a6";
       case "contains_letters": return "var(--semantic-info)";
       case "recent": return "#f97316";
       default: return "var(--theme-accent)";
@@ -603,8 +613,8 @@ export function createBrowseState() {
     sectionsReady = false;
     sequenceSections = []; // Clear immediately to prevent showing stale sections
     persistControls();
-    await applyFilterAndSort();
-    await generateSequenceSections();
+    applyFilterAndSort();
+    generateSequenceSections();
     sectionsReady = true;
   }
 

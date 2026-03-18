@@ -7,31 +7,28 @@ Orchestrates the chip row and active filter bar.
   import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
   import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
   import type { SequenceFilterType } from "../../../../shared/state/sequence-controls-state.svelte";
-  import type { ActiveFilter } from "../../../../shared/domain/models/multi-filter-models";
-
   import FilterChipRow from "./FilterChipRow.svelte";
-  import ActiveFilterBar from "./ActiveFilterBar.svelte";
   import LevelFilterChip from "./chips/LevelFilterChip.svelte";
   import FavoritesFilterChip from "./chips/FavoritesFilterChip.svelte";
   import LetterFilterChip from "./chips/LetterFilterChip.svelte";
   import LengthFilterChip from "./chips/LengthFilterChip.svelte";
   import PatternFilterChip from "./chips/PatternFilterChip.svelte";
   import PositionFilterChip from "./chips/PositionFilterChip.svelte";
+  import GridModeFilterChip from "./chips/GridModeFilterChip.svelte";
 
   interface Props {
     isOpen: boolean;
-    activeFilterList: ActiveFilter[];
     activeLevel: number | null;
     activeLetter: string | null;
     activeLength: number | null;
     activeLoopType: string | null;
+    activeGridMode: string | null;
     isFavoritesActive: boolean;
     hasActivePositions: boolean;
     availableLengths: number[];
     loopTypeCounts: Record<string, number>;
     onFilterChange: (type: SequenceFilterType, value?: BrowseFilterValue) => void;
     onRemoveFilter: (type: string) => void;
-    onClearAllFilters: () => void;
     onOpenLetterSheet: () => void;
     onOpenOptionsSheet: () => void;
     getFilteredCount?: (candidateType: BrowseFilterType, candidateValue: BrowseFilterValue) => number;
@@ -39,18 +36,17 @@ Orchestrates the chip row and active filter bar.
 
   let {
     isOpen,
-    activeFilterList,
     activeLevel,
     activeLetter,
     activeLength,
     activeLoopType,
+    activeGridMode,
     isFavoritesActive,
     hasActivePositions,
     availableLengths,
     loopTypeCounts,
     onFilterChange,
     onRemoveFilter,
-    onClearAllFilters,
     onOpenLetterSheet,
     onOpenOptionsSheet,
     getFilteredCount,
@@ -87,6 +83,14 @@ Orchestrates the chip row and active filter bar.
       onFilterChange("cap_type", value);
     }
   }
+
+  function handleGridModeSelect(gridMode: string | null) {
+    if (gridMode === null) {
+      onRemoveFilter("gridMode");
+    } else {
+      onFilterChange("gridMode", gridMode);
+    }
+  }
 </script>
 
 <div
@@ -120,17 +124,16 @@ Orchestrates the chip row and active filter bar.
         {loopTypeCounts}
         onSelect={handlePatternSelect}
       />
+      <GridModeFilterChip
+        {activeGridMode}
+        onSelect={handleGridModeSelect}
+        {getFilteredCount}
+      />
       <PositionFilterChip
         {hasActivePositions}
         onOpenSheet={onOpenOptionsSheet}
       />
     </FilterChipRow>
-
-    <ActiveFilterBar
-      filters={activeFilterList}
-      {onRemoveFilter}
-      onClearAll={onClearAllFilters}
-    />
   </div>
 </div>
 
@@ -158,6 +161,13 @@ Orchestrates the chip row and active filter bar.
     flex-direction: column;
     gap: 4px;
     padding: 8px 16px;
+  }
+
+  /* Wide screen: filters are inline in top bar, hide this panel */
+  @container gallery (min-width: 900px) {
+    .inline-filter-panel {
+      display: none !important;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

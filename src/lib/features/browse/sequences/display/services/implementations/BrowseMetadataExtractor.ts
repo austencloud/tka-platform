@@ -309,6 +309,9 @@ export class BrowseMetadataExtractor implements IBrowseMetadataExtractor {
     if (gridModeValue === "box") {
       return GridMode.BOX;
     }
+    if (gridModeValue === "skewed") {
+      return GridMode.SKEWED;
+    }
     return GridMode.DIAMOND;
   }
 

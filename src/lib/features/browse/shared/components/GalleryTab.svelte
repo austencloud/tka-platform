@@ -82,6 +82,12 @@
       : null
   );
 
+  const currentGridMode = $derived(
+    galleryState.currentFilter.type === "gridMode"
+      ? (galleryState.currentFilter.value as string)
+      : null
+  );
+
   const isFavoritesActive = $derived(
     galleryState.currentFilter.type === "favorites"
   );
@@ -180,6 +186,7 @@
         activeLetter={currentLetter}
         activeLength={currentLength}
         activeLoopType={currentLoopType}
+        activeGridMode={currentGridMode}
         {isFavoritesActive}
         {hasActivePositions}
         availableLengths={galleryState.availableSequenceLengths}
