@@ -569,6 +569,26 @@ export class LibraryRepository implements ILibraryRepository {
     }
   }
 
+  async hasMatchingContent(contentHash: string): Promise<boolean> {
+    if (!contentHash) return false;
+
+    const firestore = await getFirestoreInstance();
+    const userId = this.getUserId();
+    const sequencesRef = collection(
+      firestore,
+      getUserSequencesPath(userId)
+    );
+
+    const duplicateQuery = query(
+      sequencesRef,
+      where("contentHash", "==", contentHash),
+      firestoreLimit(1)
+    );
+
+    const snapshot = await getDocs(duplicateQuery);
+    return !snapshot.empty;
+  }
+
   async updateSequence(
     sequenceId: string,
     updates: Partial<LibrarySequence>
