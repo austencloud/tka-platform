@@ -42,11 +42,7 @@ export function initPostHog(): void {
     capture_pageview: true,
     capture_pageleave: true,
 
-    // Session replay - DISABLED
-    // rrweb's MutationObserver adds ~6x overhead to DOM-heavy operations
-    // (gallery tab switches: 105ms without → 684ms with recording).
-    // Re-enable when needed for specific UX investigations.
-    disable_session_recording: true,
+    disable_session_recording: false,
 
     // Autocapture clicks, form submissions, etc.
     autocapture: true,
@@ -64,11 +60,13 @@ export function initPostHog(): void {
       maskAllInputs: false, // We want to see what users type (except sensitive)
       maskInputOptions: {
         password: true,
-        // Add other sensitive field types as needed
       },
-      // Capture fonts for accurate text rendering in replay
+      // Tell rrweb to skip elements with this class — their subtree won't be
+      // observed by MutationObserver, eliminating the 6x overhead on DOM-heavy
+      // areas like the virtualized gallery grid. Blocked elements appear as
+      // same-size placeholder rectangles in replay.
+      blockClass: "ph-no-capture",
       collectFonts: true,
-      // Inline stylesheets to ensure CSS is captured (default is true, being explicit)
       inlineStylesheet: true,
     },
 

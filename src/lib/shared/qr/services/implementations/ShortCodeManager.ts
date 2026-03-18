@@ -26,6 +26,7 @@ import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
 import type { ISequenceEncoder } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
+import type { IPublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/services/contracts/IPublicSequenceHashMatcher";
 import type {
   IShortCodeManager,
   ShortCodeRecord,
@@ -45,7 +46,8 @@ export class ShortCodeManager implements IShortCodeManager {
 
   constructor(
     private readonly browseLoader: IBrowseLoader,
-    private readonly sequenceEncoder: ISequenceEncoder
+    private readonly sequenceEncoder: ISequenceEncoder,
+    private readonly hashMatcher?: IPublicSequenceHashMatcher
   ) {}
 
   /**
@@ -107,16 +109,27 @@ export class ShortCodeManager implements IShortCodeManager {
   async createShortCode(sequence: SequenceData, options?: ShortCodeURLOptions): Promise<CreateShortCodeResult> {
     const firestore = await this.ensureFirestore();
 
-    // Use sequence word/name as the unique identifier
-    // This is more reliable than encoding steps (which may be empty for performance)
-    const sequenceId = sequence.word || sequence.name || sequence.id;
-
-    if (!sequenceId) {
-      throw new Error("Sequence must have a word, name, or id for QR code generation");
+    // Compute encoderHash for content-based dedup. Two sequences with the
+    // same motions always produce the same hash, regardless of word or owner.
+    // Falls back to word-based lookup for sequences without steps (legacy).
+    let encoderHash: string | undefined;
+    if (this.hashMatcher && sequence.steps && sequence.steps.length > 0) {
+      try {
+        encoderHash = await this.hashMatcher.computeEncoderHash(sequence);
+      } catch {
+        // Fall through to word-based
+      }
     }
 
-    // Check if this sequence already has a short code
-    const existingCode = await this.findExistingCode(sequenceId);
+    const fallbackId = sequence.word || sequence.name || sequence.id;
+    if (!encoderHash && !fallbackId) {
+      throw new Error("Sequence must have steps, word, name, or id for short code generation");
+    }
+
+    // Check if this sequence already has a short code (by hash or word)
+    const existingCode = encoderHash
+      ? await this.findExistingCodeByHash(encoderHash)
+      : await this.findExistingCode(fallbackId!);
     if (existingCode) {
       return {
         code: existingCode,
@@ -135,16 +148,18 @@ export class ShortCodeManager implements IShortCodeManager {
       const docSnap = await getDoc(docRef);
 
       if (!docSnap.exists()) {
-        // Code is unique, save it
-        const record: Omit<ShortCodeRecord, "createdAt"> & {
-          createdAt: string;
-        } = {
-          sequence: sequenceId, // Store the sequence identifier (word/name)
+        const record: Record<string, unknown> = {
+          sequence: fallbackId || "", // Keep word for backwards compat and debugging
+          sequenceId: sequence.id, // Unique ID for disambiguation on resolve
           createdAt: new Date().toISOString(),
-          createdBy: "system", // TODO: Use actual user ID when auth context available
+          createdBy: "system",
           scanCount: 0,
           sequenceName: sequence.word || sequence.name,
         };
+        // Store encoderHash for content-based dedup
+        if (encoderHash) {
+          record.encoderHash = encoderHash;
+        }
 
         await setDoc(docRef, record);
 
@@ -177,13 +192,31 @@ export class ShortCodeManager implements IShortCodeManager {
   }
 
   /**
-   * Find an existing short code for an encoded sequence
+   * Find an existing short code by word/name (legacy fallback)
    */
   private async findExistingCode(encoded: string): Promise<string | null> {
     const firestore = await this.ensureFirestore();
     const q = query(
       collection(firestore, SHORTCODES_COLLECTION),
       where("sequence", "==", encoded)
+    );
+
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) {
+      return snapshot.docs[0]!.id;
+    }
+
+    return null;
+  }
+
+  /**
+   * Find an existing short code by encoderHash (content-addressed)
+   */
+  private async findExistingCodeByHash(hash: string): Promise<string | null> {
+    const firestore = await this.ensureFirestore();
+    const q = query(
+      collection(firestore, SHORTCODES_COLLECTION),
+      where("encoderHash", "==", hash)
     );
 
     const snapshot = await getDocs(q);
@@ -216,15 +249,21 @@ export class ShortCodeManager implements IShortCodeManager {
     }
 
     const data = docSnap.data() as {
-      sequence: string; // This is now the sequence identifier (word/name)
+      sequence: string;
+      sequenceId?: string;
+      encoderHash?: string;
       createdAt: string;
       createdBy: string;
       scanCount: number;
     };
 
     try {
-      // Load the full sequence data using the stored identifier
-      const fullSequence = await this.browseLoader.loadFullSequenceData(data.sequence);
+      // Use sequenceId for disambiguation when available (new records).
+      // Falls back to word-only lookup for legacy records without sequenceId.
+      const fullSequence = await this.browseLoader.loadFullSequenceData(
+        data.sequence,
+        data.sequenceId
+      );
       return fullSequence;
     } catch (error) {
       console.error("Failed to load sequence from short code:", error);

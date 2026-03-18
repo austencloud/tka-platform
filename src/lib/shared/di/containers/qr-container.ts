@@ -9,6 +9,7 @@
 import { createContainer } from "iti";
 import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
 import type { ISequenceEncoder } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
+import type { IPublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/services/contracts/IPublicSequenceHashMatcher";
 import { ShortCodeManager } from "$lib/shared/qr/services/implementations/ShortCodeManager";
 import { QRCodeGenerator } from "$lib/shared/qr/services/implementations/QRCodeGenerator";
 
@@ -20,6 +21,8 @@ export interface QRContainerDeps {
   browseLoader: IBrowseLoader;
   /** For encoding/decoding sequences (offline mode) */
   sequenceEncoder: ISequenceEncoder;
+  /** For content-based dedup when creating short codes */
+  hashMatcher?: IPublicSequenceHashMatcher;
 }
 
 /**
@@ -31,7 +34,7 @@ export function createQRContainer(deps: QRContainerDeps) {
   // Layer 1: ShortCodeManager (depends on external browseLoader + sequenceEncoder)
   const baseContainer = createContainer().add({
     shortCodeManager: () =>
-      new ShortCodeManager(deps.browseLoader, deps.sequenceEncoder),
+      new ShortCodeManager(deps.browseLoader, deps.sequenceEncoder, deps.hashMatcher),
   });
 
   // Layer 2: QRCodeGenerator (depends on shortCodeManager)

@@ -327,7 +327,7 @@
 
   // Format birthday date — use the sequence's saved birthday when available
   const birthdayDate = $derived.by(() => {
-    const date = sequence.birthday ?? new Date();
+    const date = sequence.birthday ?? sequence.createdAt ?? sequence.dateAdded ?? new Date();
     const month = date.getMonth() + 1;
     const day = date.getDate();
     const year = date.getFullYear();

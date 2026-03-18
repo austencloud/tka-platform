@@ -141,6 +141,8 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
         isForked: sequence.source === "forked",
         originalCreatorId: sequence.forkAttribution?.originalCreatorId,
         originalCreatorName: sequence.forkAttribution?.originalCreatorName,
+        // Preserve the original creation date so the browse gallery shows the real birthday
+        birthday: sequence.birthday ?? sequence.createdAt,
         publishedAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         // Full motion content hash for deduplication
@@ -196,6 +198,7 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
           ownerId: userId,
           ownerDisplayName: (userData["displayName"] as string | undefined) ?? "Unknown",
           ownerAvatarUrl: userData["photoURL"] as string | undefined,
+          birthday: sequence.birthday ?? sequence.createdAt ?? new Date(),
           dateAdded: new Date(),
           ...(sequence.source === "forked" && sequence.forkAttribution && {
             source: "forked" as const,

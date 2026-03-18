@@ -156,8 +156,8 @@ export class BrowseSectionManager implements IBrowseSectionManager {
         return sequence.author ?? "Unknown Author";
 
       case "date": {
-        // Use dateAdded, falling back to createdAt or birthday for library sequences
-        const rawDate = sequence.dateAdded ?? sequence.createdAt ?? sequence.birthday;
+        // Canonical fallback: birthday (original creation) → createdAt → dateAdded
+        const rawDate = sequence.birthday ?? sequence.createdAt ?? sequence.dateAdded;
         if (!rawDate) return "Unknown Date";
         const date = rawDate instanceof Date ? rawDate : new Date(rawDate);
         // Handle invalid dates

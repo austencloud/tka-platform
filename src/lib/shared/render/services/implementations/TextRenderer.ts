@@ -573,7 +573,7 @@ export class TextRenderer implements ITextRenderer {
     // Use the sequence birthday (from userInfo.birthday or exportDate) instead of current date
     // Birthday emoji indicates this is when the sequence was originally created
     if (showBirthday) {
-      // Prefer birthday field, fall back to exportDate, then current date
+      // Canonical fallback: birthday (original creation) → exportDate → current date
       const dateToUse = userInfo.birthday
         ? userInfo.birthday
         : userInfo.exportDate
