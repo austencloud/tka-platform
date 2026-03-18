@@ -287,8 +287,8 @@ export class LibraryRepository implements ILibraryRepository {
           { ...sequence, id: actualSequenceId },
           userId,
           {
-            // Forks default to private — don't auto-publish variations
-            visibility: overrides?.visibility ?? "private",
+            // Forks default to public — TKA notation is meant to be shared
+            visibility: overrides?.visibility ?? "public",
             notes: overrides?.notes,
             source: "forked",
             forkAttribution: {
