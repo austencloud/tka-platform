@@ -193,6 +193,10 @@
     if (thumbnailUrl?.startsWith("blob:")) {
       URL.revokeObjectURL(thumbnailUrl);
     }
+    // Skip all cache tiers on re-render — the whole point of clearing is to
+    // get a fresh render. Without this, stale static/local thumbnails (e.g.
+    // ones rendered before LOOP detection existed) would be served again.
+    skipCacheOnNextRequest = true;
     // Reset state to force the $effect to re-fetch
     thumbnailUrl = null;
     currentKeyHash = null;

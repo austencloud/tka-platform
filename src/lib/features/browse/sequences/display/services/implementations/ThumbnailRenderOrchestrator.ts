@@ -60,6 +60,12 @@ async function getStaticManifest(): Promise<Set<string>> {
 export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator {
   private completedCount = 0;
 
+  // Generation counter: bumped when all caches are nuked.
+  // Any thumbnail rendered before this generation is stale.
+  private cacheGeneration = 0;
+  // Track which generation each key was last rendered at
+  private renderedGenerations = new Map<string, number>();
+
   constructor(
     private keyDeriver: IThumbnailKeyDeriver,
     private queue: IThumbnailRenderQueue,
@@ -69,9 +75,29 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
     private metrics?: IThumbnailMetricsCollector
   ) {}
 
+  /**
+   * Nuke every cache layer and force all subsequent requests to render fresh.
+   * Call this from the admin "Clear Cloud Thumbnails" flow AFTER deleting
+   * cloud files and local IndexedDB — this handles the remaining in-memory
+   * layers (URL cache, knownExists, static manifest).
+   */
+  invalidateAllCaches(): void {
+    this.cacheGeneration++;
+    this.renderedGenerations.clear();
+    // Nuke in-memory URL cache + persistent "known exists" list
+    this.cloudCache.clearMemoryCache(true);
+    // Reset static manifest so stale bundled thumbnails aren't served
+    staticManifest = new Set();
+  }
+
   async getThumbnail(request: ThumbnailRequest): Promise<ThumbnailResult> {
     const key = this.keyDeriver.deriveKey(request.input);
     const cloudKey = this.buildCloudKey(key);
+
+    // If all caches were nuked (admin clear), force skip for this key
+    // until it's been freshly rendered in the current generation
+    const lastRenderedGen = this.renderedGenerations.get(key.hash) ?? -1;
+    const mustSkipCache = request.skipCache || lastRenderedGen < this.cacheGeneration;
 
     // Start metrics tracking
     const requestId = this.metrics?.startRequest(true) ?? "";
@@ -79,7 +105,7 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
     // Step 1: Check STATIC bundled thumbnails (instant, no network latency)
     // These are synced from cloud during releases for instant loading
     // Only for default settings (static thumbnails use standard rendering)
-    if (key.usesDefaults && !request.skipCache) {
+    if (key.usesDefaults && !mustSkipCache) {
       const staticKey = this.buildStaticKey(key);
       const manifest = await getStaticManifest();
 
@@ -97,7 +123,7 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
 
     // Step 2: Check LOCAL IndexedDB cache (instant, personalized)
     // Works for ALL thumbnails - cat-dog, custom settings, everything
-    if (!request.skipCache) {
+    if (!mustSkipCache) {
       const localBlob = await this.localCache.get(key.hash);
       if (localBlob) {
         const url = URL.createObjectURL(localBlob);
@@ -109,7 +135,7 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
     }
 
     // Step 3: Check in-memory URL cache (instant, session-only)
-    if (key.usesDefaults && !request.skipCache) {
+    if (key.usesDefaults && !mustSkipCache) {
       const memoryCached = this.cloudCache.getCachedUrl(cloudKey);
       if (memoryCached) {
         this.completedCount++;
@@ -179,6 +205,8 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
           this.uploadToCloud(key, blob);
         }
 
+        // Mark this key as freshly rendered in the current generation
+        this.renderedGenerations.set(key.hash, this.cacheGeneration);
         this.completedCount++;
         this.metrics?.endRequest(requestId, "render", { queueWaitTime, renderTime });
         request.onStatusChange?.({ state: "complete", url });

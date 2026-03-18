@@ -13,6 +13,7 @@
   import { isCatDogMode } from "../utils/prop-mode-helpers";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { container } from "$lib/shared/di";
+  import { gridZoomManager } from "../../../shared/state/grid-zoom-state.svelte";
 
   /**
    * 🚀 PERFORMANCE: Virtualization threshold
@@ -117,14 +118,16 @@
   let containerWidth = $state(0);
 
   const columnCount = $derived.by(() => {
-    // When zoom override is active (pinch on touch OR Shift+scroll on desktop), use it
+    // Default to 2 until we've measured the container
+    if (containerWidth === 0) return 2;
+
+    // When zoom override is active (pinch or stepper), use it but
+    // clamp to the per-breakpoint max so you can't get 5 cols on a phone.
     if (pinchColumnOverride !== undefined) {
-      return pinchColumnOverride;
+      return Math.max(2, Math.min(gridZoomManager.maxColumns, pinchColumnOverride));
     }
 
-    // Responsive column counts based on container width
-    // Mobile (< 768px): max 3 columns; Desktop: up to 5
-    if (containerWidth === 0) return 2;
+    // Responsive defaults when no override is set
     if (containerWidth >= 1600) return 5;
     if (containerWidth >= 1200) return 4;
     if (containerWidth >= 800) return 3;
@@ -141,6 +144,9 @@
             const newWidth = entry.contentRect.width;
             if (newWidth > 0) {
               containerWidth = newWidth;
+              // Feed container width to zoom manager so it clamps
+              // the column count to what fits this screen size
+              gridZoomManager.updateContainerWidth(newWidth);
             }
           }
         })
@@ -154,6 +160,7 @@
         const width = targetElement.getBoundingClientRect().width;
         if (width > 0) {
           containerWidth = width;
+          gridZoomManager.updateContainerWidth(width);
         }
       });
     }
@@ -164,6 +171,7 @@
         const width = targetElement.getBoundingClientRect().width;
         if (width > 0) {
           containerWidth = width;
+          gridZoomManager.updateContainerWidth(width);
         }
       }
     };

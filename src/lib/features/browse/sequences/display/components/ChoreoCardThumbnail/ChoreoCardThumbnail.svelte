@@ -29,6 +29,7 @@ Variation support:
     buildSequenceSharePayload,
     buildThumbnailUrl,
   } from "$lib/shared/inbox/state/send-sequence-state.svelte";
+  import { untrack } from "svelte";
   import PropAwareThumbnail from "../PropAwareThumbnail.svelte";
   import VariationPill from "./VariationPill.svelte";
 
@@ -108,15 +109,20 @@ Variation support:
     }
   }
 
-  // Reset to this card's own position when base sequence or variations change
+  // Reset to this card's own position ONLY when the base sequence identity changes
+  // (e.g. the grid reuses this component for a different sequence).
+  // variations access is untracked so that array reference changes (from parent
+  // re-renders, virtualizer updates, etc.) don't reset the user's cycling.
   $effect(() => {
-    const _ = sequence.id;
-    if (variations.length > 1) {
-      const ownIndex = variations.findIndex((v) => v.id === sequence.id);
-      currentVariationIndex = ownIndex >= 0 ? ownIndex : 0;
-    } else {
-      currentVariationIndex = 0;
-    }
+    const id = sequence.id;
+    untrack(() => {
+      if (variations.length > 1) {
+        const ownIndex = variations.findIndex((v) => v.id === id);
+        currentVariationIndex = ownIndex >= 0 ? ownIndex : 0;
+      } else {
+        currentVariationIndex = 0;
+      }
+    });
   });
 
   // ── Context menu (admin-only) ──────────────────────────────────────

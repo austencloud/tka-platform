@@ -211,7 +211,7 @@
 
 <div
   bind:this={scrollElement}
-  class="virtual-scroll-container"
+  class="virtual-scroll-container ph-no-capture"
   role="grid"
   aria-rowcount={rowCount}
 >

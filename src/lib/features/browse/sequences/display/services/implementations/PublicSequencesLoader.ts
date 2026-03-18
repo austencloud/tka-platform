@@ -32,7 +32,9 @@ import { networkStatusState } from "$lib/shared/offline/state/network-status-sta
 export class PublicSequencesLoader implements IBrowseLoader {
   private cachedSequences: SequenceData[] | null = null;
   private loadPromise: Promise<SequenceData[]> | null = null;
-  // Map from word/name to sourceRef for efficient full data lookup
+  // Map from word/name OR sequence ID to sourceRef for efficient full data lookup.
+  // Both keys point to the same sourceRef so we can look up by either.
+  // ID-based lookup is preferred when available (disambiguates same-word variations).
   private sourceRefCache: Map<string, string> = new Map();
   private galleryOfflineCache: IGalleryOfflineCache | null;
   private lastFetchedDocs: PublicSequenceIndex[] = [];
@@ -119,29 +121,40 @@ export class PublicSequencesLoader implements IBrowseLoader {
    * Load full sequence data for a specific sequence
    * Fetches from the source user's library via sourceRef
    * Uses cached sourceRef mapping for efficiency
+   *
+   * When sequenceId is provided, it's used for disambiguation so that
+   * two sequences sharing the same word (e.g. two "FJ" variations by
+   * different authors) resolve to the correct source document.
    */
-  async loadFullSequenceData(sequenceName: string): Promise<SequenceData | null> {
+  async loadFullSequenceData(sequenceName: string, sequenceId?: string): Promise<SequenceData | null> {
     // Ensure metadata is loaded first (populates sourceRef cache)
     if (!this.cachedSequences) {
       await this.loadSequenceMetadata();
     }
 
-    // We normally find a sequence by its word (e.g. "ABBD"). But if the user
-    // edited and re-saved it with a different word (e.g. "ABBDJ"), our lookup
-    // table still has the old word and won't find the new one. In that case,
-    // we fall back to locating it by its unique ID instead, which never changes
-    // no matter how many times the sequence is edited.
-    let sourceRef = this.sourceRefCache.get(sequenceName);
+    // Prefer ID-based lookup when available — this is the only way to
+    // disambiguate multiple sequences that share the same word.
+    let sourceRef = sequenceId ? this.sourceRefCache.get(`id:${sequenceId}`) : undefined;
+
+    // Fall back to word-based lookup (works when words are unique)
     if (!sourceRef) {
-      const cached = this.cachedSequences?.find(
+      sourceRef = this.sourceRefCache.get(sequenceName);
+    }
+
+    // Last resort: scan cached sequences for a match by name/word,
+    // preferring the one matching sequenceId if provided.
+    if (!sourceRef) {
+      const candidates = this.cachedSequences?.filter(
         (s) => s.name === sequenceName || s.word === sequenceName
-      );
-      if (cached?.ownerId && cached.id) {
-        sourceRef = `users/${cached.ownerId}/sequences/${cached.id}`;
+      ) ?? [];
+      const match = (sequenceId && candidates.find((s) => s.id === sequenceId))
+        || candidates[0];
+      if (match?.ownerId && match.id) {
+        sourceRef = `users/${match.ownerId}/sequences/${match.id}`;
       }
     }
     if (!sourceRef) {
-      console.warn(`[PublicSequencesLoader] No sequence found for "${sequenceName}"`);
+      console.warn(`[PublicSequencesLoader] No sequence found for "${sequenceName}"${sequenceId ? ` (id: ${sequenceId})` : ""}`);
       return null;
     }
 
@@ -239,12 +252,16 @@ export class PublicSequencesLoader implements IBrowseLoader {
       // Capture raw doc for offline cache persistence after this fetch
       this.lastFetchedDocs.push({ ...data, id: docSnap.id } as PublicSequenceIndex);
 
-      // Cache sourceRef for efficient full data lookup later
+      // Cache sourceRef for efficient full data lookup later.
+      // Store under both word AND ID so we can look up by either.
+      // The ID key is prefixed with "id:" to avoid collisions with words.
       if (data.sourceRef) {
         this.sourceRefCache.set(data.word, data.sourceRef);
         if (data.name && data.name !== data.word) {
           this.sourceRefCache.set(data.name, data.sourceRef);
         }
+        // ID-based key enables disambiguation for same-word variations
+        this.sourceRefCache.set(`id:${docSnap.id}`, data.sourceRef);
       }
     });
 
@@ -307,7 +324,13 @@ export class PublicSequencesLoader implements IBrowseLoader {
     if (data.blueSoloProp && data.redSoloProp && data.stepPairings) {
       try {
         const hydrator = container.items.sequenceHydrator as ISequenceHydrator;
-        return hydrator.hydrate(seq);
+        const hydrated = hydrator.hydrate(seq);
+        // Trust the actual step count over the stored sequenceLength,
+        // which may be stale (e.g. base word length before LOOP expansion)
+        if (hydrated.steps && hydrated.steps.length > 0) {
+          hydrated.sequenceLength = hydrated.steps.length;
+        }
+        return hydrated;
       } catch {
         // Hydration services not available — return with empty steps
         // (will fall back to sourceRef fetch on demand)

@@ -29,30 +29,42 @@ Shows circular/non-circular/specific LOOP types with counts.
 
   function formatLabel(value: string): string {
     if (value === "circular") return t('browse_pattern_circular');
-    if (value === "non_circular") return t('browse_pattern_non_circular');
-    // Capitalize first letter
-    return value.charAt(0).toUpperCase() + value.slice(1);
+    if (value === "non_circular") return "Freeform";
+    // "strict_rotated" → "Strict Rotated", "inverted_rotated_swapped" → "Inverted Rotated Swapped"
+    return value
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  }
+
+  interface FilterOption {
+    value: string | null;
+    label: string;
+    count?: number;
+    separator?: boolean;
   }
 
   const options = $derived.by(() => {
-    const items: { value: string | null; label: string; count?: number }[] = [
+    const items: FilterOption[] = [
       { value: null, label: t('browse_all_patterns') },
     ];
 
-    const circularCount = loopTypeCounts["_circular"] ?? 0;
     const nonCircularCount = loopTypeCounts["_non_circular"] ?? 0;
-
-    if (circularCount > 0) {
-      items.push({ value: "circular", label: t('browse_pattern_circular'), count: circularCount });
-    }
     if (nonCircularCount > 0) {
       items.push({ value: "non_circular", label: t('browse_pattern_non_circular'), count: nonCircularCount });
     }
 
-    // Add specific LOOP types (skip meta keys)
+    // Collect specific LOOP types (skip meta keys starting with "_")
+    const loopTypes: FilterOption[] = [];
     for (const [key, count] of Object.entries(loopTypeCounts)) {
       if (key.startsWith("_")) continue;
-      items.push({ value: key, label: formatLabel(key), count });
+      loopTypes.push({ value: key, label: formatLabel(key), count });
+    }
+
+    // Add separator + LOOP types if any exist
+    if (loopTypes.length > 0) {
+      items.push({ value: "__sep__", label: "", separator: true });
+      items.push(...loopTypes);
     }
 
     return items;
@@ -94,24 +106,28 @@ Shows circular/non-circular/specific LOOP types with counts.
   >
     {#snippet children()}
       {#each options as option}
-        <button
-          class="popover-option"
-          class:selected={activeValue === option.value}
-          type="button"
-          role="option"
-          aria-selected={activeValue === option.value}
-          onclick={() => handleSelect(option.value)}
-        >
-          <span>
-            {option.label}
-            {#if option.count != null}
-              <span class="option-count">({option.count})</span>
+        {#if option.separator}
+          <div class="popover-separator" role="separator"></div>
+        {:else}
+          <button
+            class="popover-option"
+            class:selected={activeValue === option.value}
+            type="button"
+            role="option"
+            aria-selected={activeValue === option.value}
+            onclick={() => handleSelect(option.value)}
+          >
+            <span>
+              {option.label}
+              {#if option.count != null}
+                <span class="option-count">({option.count})</span>
+              {/if}
+            </span>
+            {#if activeValue === option.value}
+              <i class="fas fa-check" aria-hidden="true"></i>
             {/if}
-          </span>
-          {#if activeValue === option.value}
-            <i class="fas fa-check" aria-hidden="true"></i>
-          {/if}
-        </button>
+          </button>
+        {/if}
       {/each}
     {/snippet}
   </FilterChipBase>
@@ -157,6 +173,12 @@ Shows circular/non-circular/specific LOOP types with counts.
     opacity: 0.6;
     font-weight: 400;
     margin-left: 4px;
+  }
+
+  .popover-separator {
+    height: 1px;
+    margin: 4px 8px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   @media (prefers-reduced-motion: reduce) {

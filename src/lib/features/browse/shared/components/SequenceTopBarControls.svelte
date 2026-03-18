@@ -434,9 +434,11 @@
     }
   }
 
-  /* Zoom Controls */
+  /* Zoom Controls — hidden on mobile where pinch-to-zoom is the
+     natural interaction. Stepper buttons on small screens let users
+     create unreadably small cards (the problem we're fixing). */
   .zoom-controls {
-    display: flex;
+    display: none;
     align-items: center;
     gap: 2px;
     background: var(--theme-card-bg);
@@ -444,6 +446,12 @@
     border-radius: 8px;
     padding: 2px;
     flex-shrink: 0;
+  }
+
+  @media (min-width: 800px) {
+    .zoom-controls {
+      display: flex;
+    }
   }
 
   .zoom-button {

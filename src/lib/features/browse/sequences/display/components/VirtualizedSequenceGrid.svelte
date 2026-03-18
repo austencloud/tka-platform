@@ -14,6 +14,7 @@
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { container } from "$lib/shared/di";
   import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/implementations/CellPreWarmer";
+  import { gridZoomManager } from "../../../shared/state/grid-zoom-state.svelte";
 
   /**
    * VirtualizedSequenceGrid - High-performance grid for large sequence lists
@@ -98,11 +99,16 @@
   let virtualRows = $state<VirtualItem[]>([]);
   let totalHeight = $state(0);
 
-  // Dynamic column count based on container width
-  // Respects pinchColumnOverride when set (e.g., from SequencePickerModal zoom controls)
+  // Dynamic column count based on container width.
+  // Clamps pinchColumnOverride to per-breakpoint max so you can't
+  // get 5 tiny columns on a phone screen.
   const columnCount = $derived.by(() => {
-    if (pinchColumnOverride !== undefined) return pinchColumnOverride;
     if (containerWidth === 0) return 2;
+
+    if (pinchColumnOverride !== undefined) {
+      return Math.max(2, Math.min(gridZoomManager.maxColumns, pinchColumnOverride));
+    }
+
     if (containerWidth >= 1600) return 5;
     if (containerWidth >= 1200) return 4;
     if (containerWidth >= 800) return 3;
@@ -173,6 +179,7 @@
         const width = entry.contentRect.width;
         if (width > 0) {
           containerWidth = width;
+          gridZoomManager.updateContainerWidth(width);
           // Force virtualizer to recalculate
           const v = get(virtualizerStore);
           v.measure();
@@ -186,7 +193,10 @@
     requestAnimationFrame(() => {
       if (scrollElement) {
         const width = scrollElement.getBoundingClientRect().width;
-        if (width > 0) containerWidth = width;
+        if (width > 0) {
+          containerWidth = width;
+          gridZoomManager.updateContainerWidth(width);
+        }
       }
     });
 
@@ -254,7 +264,7 @@
 
 <div
   bind:this={scrollElement}
-  class="virtual-scroll-container"
+  class="virtual-scroll-container ph-no-capture"
   role="grid"
   aria-rowcount={rowCount}
 >

@@ -53,6 +53,11 @@ function createCreatorsDataState() {
   // Track if initial load has happened
   let isInitialized = $state(false);
 
+  // Track whether the cached data includes follow state (loaded with a userId).
+  // When the prefetch runs before auth is ready, this stays false and the
+  // CreatorsPanel knows to reload with the real userId once auth is available.
+  let hasFollowState = $state(false);
+
   /**
    * Group creators by their favoriteProp field.
    *
@@ -139,6 +144,7 @@ function createCreatorsDataState() {
       }
 
       isInitialized = true;
+      hasFollowState = !!currentUserId;
     } catch (err) {
       console.error("[CreatorsDataState] Failed to load creators:", err);
       error =
@@ -397,6 +403,9 @@ function createCreatorsDataState() {
     get isInitialized() {
       return isInitialized;
     },
+    get hasFollowState() {
+      return hasFollowState;
+    },
 
     // Pagination
     get hasMore() {
@@ -484,6 +493,9 @@ export const creatorsDataState = {
   },
   get isInitialized() {
     return getCreatorsDataState().isInitialized;
+  },
+  get hasFollowState() {
+    return getCreatorsDataState().hasFollowState;
   },
 
   // Pagination
