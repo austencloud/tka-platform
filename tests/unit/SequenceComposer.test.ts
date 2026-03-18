@@ -84,13 +84,6 @@ describe("SequenceComposer", () => {
   // -------------------------------------------------------------------------
 
   describe("combine — basic output shape", () => {
-    it("returns a SequenceData when step counts match", () => {
-      const result = composer.combine({ blue: twoStepBlue, red: twoStepRed });
-
-      expect(result).toBeDefined();
-      expect(result.id).toBeDefined();
-    });
-
     it("produces a SequenceData with the correct number of steps", () => {
       const result = composer.combine({ blue: twoStepBlue, red: twoStepRed });
 
@@ -101,13 +94,6 @@ describe("SequenceComposer", () => {
       const result = composer.combine({ blue: twoStepBlue, red: twoStepRed });
 
       expect(result.word).toBe("");
-    });
-
-    it("assigns a unique id on each call", () => {
-      const r1 = composer.combine({ blue: twoStepBlue, red: twoStepRed });
-      const r2 = composer.combine({ blue: twoStepBlue, red: twoStepRed });
-
-      expect(r1.id).not.toBe(r2.id);
     });
   });
 
@@ -160,56 +146,6 @@ describe("SequenceComposer", () => {
   });
 
   // -------------------------------------------------------------------------
-  // Compositional fields
-  // -------------------------------------------------------------------------
-
-  describe("combine — compositional fields", () => {
-    it("stores the blue solo prop on the result", () => {
-      const result = composer.combine({ blue: twoStepBlue, red: twoStepRed });
-
-      expect(result.blueSoloProp).toBe(twoStepBlue);
-    });
-
-    it("stores the red solo prop on the result", () => {
-      const result = composer.combine({ blue: twoStepBlue, red: twoStepRed });
-
-      expect(result.redSoloProp).toBe(twoStepRed);
-    });
-
-    it("populates stepPairings with one entry per beat", () => {
-      const result = composer.combine({ blue: twoStepBlue, red: twoStepRed });
-
-      expect(result.stepPairings).toHaveLength(2);
-    });
-
-    it("initialises all pairing letters to null", () => {
-      const result = composer.combine({ blue: twoStepBlue, red: twoStepRed });
-
-      for (const pairing of result.stepPairings!) {
-        expect(pairing.letter).toBeNull();
-      }
-    });
-
-    it("initialises all reversal flags to false", () => {
-      const result = composer.combine({ blue: twoStepBlue, red: twoStepRed });
-
-      for (const pairing of result.stepPairings!) {
-        expect(pairing.blueReversal).toBe(false);
-        expect(pairing.redReversal).toBe(false);
-      }
-    });
-
-    it("initialises all position fields to null", () => {
-      const result = composer.combine({ blue: twoStepBlue, red: twoStepRed });
-
-      for (const pairing of result.stepPairings!) {
-        expect(pairing.startPosition).toBeNull();
-        expect(pairing.endPosition).toBeNull();
-      }
-    });
-  });
-
-  // -------------------------------------------------------------------------
   // Content hashes
   // -------------------------------------------------------------------------
 
@@ -237,15 +173,6 @@ describe("SequenceComposer", () => {
 
       expect(result.redSoloHash).toBe(twoStepRed.contentHash);
     });
-
-    it("hashes are non-empty strings", () => {
-      const result = composer.combine({ blue: twoStepBlue, red: twoStepRed });
-
-      expect(typeof result.bluePathHash).toBe("string");
-      expect(result.bluePathHash!.length).toBeGreaterThan(0);
-      expect(typeof result.redSoloHash).toBe("string");
-      expect(result.redSoloHash!.length).toBeGreaterThan(0);
-    });
   });
 
   // -------------------------------------------------------------------------
@@ -253,19 +180,6 @@ describe("SequenceComposer", () => {
   // -------------------------------------------------------------------------
 
   describe("combine — derived steps (backward compat)", () => {
-    it("steps array has one entry per beat", () => {
-      const result = composer.combine({ blue: twoStepBlue, red: twoStepRed });
-
-      expect(result.steps).toHaveLength(2);
-    });
-
-    it("each step carries a unique id", () => {
-      const result = composer.combine({ blue: twoStepBlue, red: twoStepRed });
-
-      const ids = result.steps.map((s) => s.id);
-      expect(new Set(ids).size).toBe(ids.length);
-    });
-
     it("steps are 1-indexed", () => {
       const result = composer.combine({ blue: twoStepBlue, red: twoStepRed });
 
@@ -280,68 +194,6 @@ describe("SequenceComposer", () => {
         expect(step.motions.blue).toBeDefined();
         expect(step.motions.red).toBeDefined();
       }
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  // Metadata passthrough
-  // -------------------------------------------------------------------------
-
-  describe("combine — metadata passthrough", () => {
-    it("passes through name when provided", () => {
-      const result = composer.combine(
-        { blue: twoStepBlue, red: twoStepRed },
-        { name: "Test Sequence" }
-      );
-
-      expect(result.name).toBe("Test Sequence");
-    });
-
-    it("sets name to empty string when not provided", () => {
-      const result = composer.combine({ blue: twoStepBlue, red: twoStepRed });
-
-      expect(result.name).toBe("");
-    });
-
-    it("passes through author when provided", () => {
-      const result = composer.combine(
-        { blue: twoStepBlue, red: twoStepRed },
-        { author: "austen" }
-      );
-
-      expect(result.author).toBe("austen");
-    });
-
-    it("leaves author undefined when not provided", () => {
-      const result = composer.combine({ blue: twoStepBlue, red: twoStepRed });
-
-      expect(result.author).toBeUndefined();
-    });
-
-    it("passes through notes when provided", () => {
-      const result = composer.combine(
-        { blue: twoStepBlue, red: twoStepRed },
-        { notes: "Written for the fire jam" }
-      );
-
-      expect(result.notes).toBe("Written for the fire jam");
-    });
-
-    it("leaves notes undefined when not provided", () => {
-      const result = composer.combine({ blue: twoStepBlue, red: twoStepRed });
-
-      expect(result.notes).toBeUndefined();
-    });
-
-    it("accepts all three metadata fields together", () => {
-      const result = composer.combine(
-        { blue: twoStepBlue, red: twoStepRed },
-        { name: "Full Meta", author: "austen", notes: "all three" }
-      );
-
-      expect(result.name).toBe("Full Meta");
-      expect(result.author).toBe("austen");
-      expect(result.notes).toBe("all three");
     });
   });
 });

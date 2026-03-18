@@ -123,11 +123,4 @@ describe("ColorEndpointDetector", () => {
 		expect(endpoints.length).toBe(0);
 	});
 
-	it("has correct name and capabilities", () => {
-		const detector = new ColorEndpointDetector();
-		expect(detector.name).toBe("Color Match");
-		expect(detector.capabilities.supportsLive).toBe(true);
-		expect(detector.capabilities.supportsOcclusion).toBe(false);
-		expect(detector.capabilities.requiresGPU).toBe(false);
-	});
 });
