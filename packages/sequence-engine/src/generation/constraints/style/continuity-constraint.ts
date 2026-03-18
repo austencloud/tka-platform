@@ -132,10 +132,11 @@ export class ContinuityConstraint implements IVariationConstraint {
     // Average of both hands
     const avgScore = (blueScore + redScore) / 2;
 
-    // For "enforce" mode, require perfect continuity (both hands score 1)
+    // For "enforce" mode, block actual reversals (score 0) but allow
+    // static transitions (score 0.5) — static isn't a reversal, it's neutral.
     const satisfied =
       this.continuityMode !== "enforce" ||
-      (blueScore === 1 && redScore === 1);
+      (blueScore > 0 && redScore > 0);
 
     // Build reason string
     let reason: string;

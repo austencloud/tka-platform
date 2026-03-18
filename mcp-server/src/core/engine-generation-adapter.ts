@@ -115,6 +115,7 @@ export interface EngineGenerationResult {
   loopComponents?: string[];
   seedWord?: string;
   derivedWord?: string;
+  derivedBeatIndices?: number[];
 }
 
 /**
@@ -143,6 +144,7 @@ export function generateViaEngine(
     loopComponents,
     seedWord: buildResult.loop?.seedWord,
     derivedWord: buildResult.loop?.derivedWord,
+    derivedBeatIndices: buildResult.loop?.derivedBeatIndices,
   };
 }
 

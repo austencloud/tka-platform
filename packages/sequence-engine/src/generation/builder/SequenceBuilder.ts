@@ -33,6 +33,8 @@ import { allocateTurns, type TurnAllocation } from "../turns/TurnAllocator.js";
 import { BeamSearch, type BeamSearchResult } from "./BeamSearch.js";
 import { Type6Constraint } from "../constraints/domain/Type6Constraint.js";
 import { PositionContinuityConstraint } from "../constraints/domain/PositionContinuityConstraint.js";
+import { ContinuityConstraint } from "../constraints/style/continuity-constraint.js";
+import { ConstraintType } from "../constraints/constraint-types.js";
 import { FloatConstraint } from "../constraints/domain/FloatConstraint.js";
 import { PropTypeConstraint } from "../constraints/domain/PropTypeConstraint.js";
 import { getPresetOptions } from "../constraints/presets/preset-constraints.js";
@@ -253,8 +255,11 @@ export class SequenceBuilder {
 
     // Constrain start position for LOOP types that need vertical axis
     let effectiveStartPosition = options.startPosition;
-    if (needsLoopTargeting && !effectiveStartPosition && options.loop) {
-      const constrainedStart = this.constrainStartForLoopType(options.loop.type);
+    if (needsLoopTargeting && options.loop) {
+      const constrainedStart = this.constrainStartForLoopType(
+        options.loop.type,
+        effectiveStartPosition
+      );
       if (constrainedStart) {
         effectiveStartPosition = constrainedStart;
       }
@@ -281,12 +286,15 @@ export class SequenceBuilder {
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       const beamSearch = new BeamSearch(this.variationProvider, options.gridMode);
+      const propContinuity = this.resolveEffectivePropContinuity(options);
       const result = beamSearch.search(
         letters,
         effectiveStartPosition,
         constraintSet,
         options.beamWidth ?? 10,
         requiredEndPositions,
+        turnAllocation,
+        propContinuity,
       );
 
       if (result.success || result.steps.length > 0) {
@@ -321,7 +329,8 @@ export class SequenceBuilder {
     }
 
     // Stage 5: Post-process (convert PictographData to SequenceStep)
-    const result = this.postProcess(searchResult, turnAllocation, letters, options.constraintOptions?.propContinuity);
+    const propContinuity = this.resolveEffectivePropContinuity(options);
+    const result = this.postProcess(searchResult, turnAllocation, letters, propContinuity);
 
     // Stage 6: LOOP extension (if requested)
     if (options.loop) {
@@ -340,6 +349,17 @@ export class SequenceBuilder {
 
     // Stage 2: Assemble constraints
     const constraintSet = this.assembleConstraints(options);
+
+    // Length-based generation has unlimited letter choice, so there's always
+    // a non-reversing variation available. Promote the soft ContinuityConstraint
+    // to a hard "enforce" constraint so the beam search never accepts reversals.
+    const effectivePropContinuity = this.resolveEffectivePropContinuity(options);
+    if (effectivePropContinuity === "maximize") {
+      constraintSet.soft = constraintSet.soft.filter(
+        (c) => c.type !== ConstraintType.CONTINUITY,
+      );
+      constraintSet.hard.push(new ContinuityConstraint("enforce"));
+    }
 
     // Stage 3: Allocate turns
     const turnAllocation = allocateTurns(
@@ -361,10 +381,14 @@ export class SequenceBuilder {
 
     // Some LOOP types require the start position to be on the vertical axis
     // (where vertical_mirror(pos) === pos). If no start position is specified,
-    // constrain to a random valid one so the executor doesn't reject it.
+    // pick a random valid one. If the user specified an incompatible position,
+    // override it to a compatible one so the executor doesn't reject it.
     let effectiveStartPosition = options.startPosition;
-    if (needsLoopTargeting && !effectiveStartPosition && options.loop) {
-      const constrainedStart = this.constrainStartForLoopType(options.loop.type);
+    if (needsLoopTargeting && options.loop) {
+      const constrainedStart = this.constrainStartForLoopType(
+        options.loop.type,
+        effectiveStartPosition
+      );
       if (constrainedStart) {
         effectiveStartPosition = constrainedStart;
       }
@@ -413,6 +437,7 @@ export class SequenceBuilder {
       }
 
       const beamSearch = new BeamSearch(this.variationProvider, options.gridMode);
+      const propContinuity = this.resolveEffectivePropContinuity(options);
       const result = beamSearch.searchByLength(
         length,
         effectiveStartPosition,
@@ -421,6 +446,8 @@ export class SequenceBuilder {
         requiredEndPositions,
         loopPositionMap,
         searchOptions,
+        turnAllocation,
+        propContinuity,
       );
 
       if (result.success || result.steps.length > 0) {
@@ -448,7 +475,8 @@ export class SequenceBuilder {
 
     // Stage 5: Post-process
     const letters = searchResult.steps.slice(1).map((s) => s.letter);
-    const result = this.postProcess(searchResult, turnAllocation, letters, options.constraintOptions?.propContinuity);
+    const propContinuity = this.resolveEffectivePropContinuity(options);
+    const result = this.postProcess(searchResult, turnAllocation, letters, propContinuity);
 
     // Stage 6: LOOP extension (if requested)
     if (options.loop) {
@@ -505,6 +533,32 @@ export class SequenceBuilder {
   }
 
   /**
+   * Resolve the effective propContinuity setting from whichever input source
+   * was used (constraintOptions, preset, or NL constraints). Without this,
+   * preset-derived propContinuity was lost and postProcess defaulted to
+   * random rotation direction assignment — producing prop reversals even
+   * when the user selected "smooth".
+   */
+  private resolveEffectivePropContinuity(
+    options: BuildOptions,
+  ): "maximize" | "allow-reversals" | "force-reversals" | undefined {
+    // Direct constraintOptions take highest priority
+    if (options.constraintOptions?.propContinuity) {
+      return options.constraintOptions.propContinuity;
+    }
+
+    // Named preset — look up the preset's propContinuity
+    if (options.constraintPreset) {
+      const presetOptions = getPresetOptions(options.constraintPreset);
+      if (presetOptions?.propContinuity) {
+        return presetOptions.propContinuity;
+      }
+    }
+
+    return undefined;
+  }
+
+  /**
    * Stage 5: Convert beam search PictographData into SequenceStep format
    * with beat indices, turn allocation, and bridge flags.
    */
@@ -540,15 +594,27 @@ export class SequenceBuilder {
       const prevBlueRot = prevStep?.blueMotion.rotationDirection;
       const prevRedRot = prevStep?.redMotion.rotationDirection;
 
-      // Float is a distinct motion state assigned by the TurnAllocator ("fl"),
-      // not an auto-conversion from 0 turns. When the allocator assigns "fl",
-      // the motion type becomes "float" and rotation is "noRotation".
-      // Zero turns on pro/anti is a valid state — the prop is at its location
-      // with no additional rotation applied.
-      const blueIsFloat = blueTurns === "fl";
-      const redIsFloat = redTurns === "fl";
+      // Float is a shift variant — the prop shifts to an adjacent point with
+      // minimal rotation. The TurnAllocator may assign "fl" to any hand, but
+      // float only applies when the underlying motion is a shift (pro or
+      // anti). A dash or static that gets "fl" from the allocator keeps its
+      // original motion type.
+      const blueIsShift =
+        pd.blueMotion.motionType === "pro" ||
+        pd.blueMotion.motionType === "anti";
+      const redIsShift =
+        pd.redMotion.motionType === "pro" ||
+        pd.redMotion.motionType === "anti";
+      const blueIsFloat = blueTurns === "fl" && blueIsShift;
+      const redIsFloat = redTurns === "fl" && redIsShift;
       const blueMotionType = blueIsFloat ? "float" as const : pd.blueMotion.motionType;
       const redMotionType = redIsFloat ? "float" as const : pd.redMotion.motionType;
+
+      // Compute effective turns: float keeps "fl", non-shift "fl" becomes 0,
+      // everything else passes through. We need this BEFORE resolving direction
+      // because 0-turn motions must always be "noRotation".
+      const effectiveBlueTurns = blueIsFloat ? blueTurns : (blueTurns === "fl" ? 0 : blueTurns);
+      const effectiveRedTurns = redIsFloat ? redTurns : (redTurns === "fl" ? 0 : redTurns);
 
       sequence.push({
         letter: pd.letter,
@@ -560,10 +626,10 @@ export class SequenceBuilder {
           endLocation: pd.blueMotion.endLocation,
           rotationDirection: blueIsFloat
             ? "noRotation"
-            : resolveRotationDirection(pd.blueMotion.rotationDirection, blueTurns, prevBlueRot, propContinuity),
+            : resolveRotationDirection(pd.blueMotion.rotationDirection, effectiveBlueTurns, prevBlueRot, propContinuity),
           startOrientation: pd.blueMotion.startOrientation,
           endOrientation: pd.blueMotion.endOrientation,
-          turns: blueTurns,
+          turns: effectiveBlueTurns,
         },
         redMotion: {
           motionType: redMotionType,
@@ -571,10 +637,10 @@ export class SequenceBuilder {
           endLocation: pd.redMotion.endLocation,
           rotationDirection: redIsFloat
             ? "noRotation"
-            : resolveRotationDirection(pd.redMotion.rotationDirection, redTurns, prevRedRot, propContinuity),
+            : resolveRotationDirection(pd.redMotion.rotationDirection, effectiveRedTurns, prevRedRot, propContinuity),
           startOrientation: pd.redMotion.startOrientation,
           endOrientation: pd.redMotion.endOrientation,
-          turns: redTurns,
+          turns: effectiveRedTurns,
         },
         beatIndex,
         stepNumber: i,
@@ -677,10 +743,15 @@ export class SequenceBuilder {
 
   /**
    * LOOP types that combine MIRRORED + ROTATED require the start position to
-   * sit on the vertical axis (where vertical_mirror(pos) === pos). If no start
-   * is specified, randomly pick one of the valid axis positions.
+   * sit on the vertical axis (where vertical_mirror(pos) === pos).
+   *
+   * If the current position is already on the axis, returns undefined (no change needed).
+   * If incompatible or unspecified, randomly picks a valid axis position.
    */
-  private constrainStartForLoopType(loopType: LOOPType): string | undefined {
+  private constrainStartForLoopType(
+    loopType: LOOPType,
+    currentStartPosition?: string
+  ): string | undefined {
     const MIRRORED_ROTATED_TYPES = new Set([
       LOOPType.MIRRORED_ROTATED,
       LOOPType.MIRRORED_INVERTED_ROTATED,
@@ -689,7 +760,13 @@ export class SequenceBuilder {
 
     if (!MIRRORED_ROTATED_TYPES.has(loopType)) return undefined;
 
-    // Positions on the vertical axis: mirror(pos) === pos
+    // If the user's position is already on the vertical axis, no override needed
+    if (currentStartPosition) {
+      const mirrored = VERTICAL_MIRROR_POSITION_MAP[currentStartPosition];
+      if (mirrored === currentStartPosition) return undefined;
+    }
+
+    // Position is incompatible or unspecified — pick a random axis position
     const axisPositions = Object.entries(VERTICAL_MIRROR_POSITION_MAP)
       .filter(([pos, mirrored]) => pos === mirrored)
       .map(([pos]) => pos)

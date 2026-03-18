@@ -17,6 +17,7 @@ import type {
   VariationScore,
   ConstraintReport,
 } from "../constraints/types.js";
+import type { TurnAllocation } from "../turns/TurnAllocator.js";
 import { scoreAndRankVariations } from "./variation-scorer.js";
 import {
   createInitialState,
@@ -32,6 +33,95 @@ import { getLetterTransitionGraph } from "../../core/transition-graph/LetterTran
 import { calculateEndOrientation } from "../../core/orientation/OrientationCalculator.js";
 import type { Orientation } from "../../core/types/sequence-engine-types.js";
 import { LetterClassifier } from "../../core/letters/LetterClassifier.js";
+
+/**
+ * PropContinuity mode for rotation direction resolution.
+ */
+export type PropContinuityMode = "maximize" | "allow-reversals" | "force-reversals";
+
+/**
+ * Enrich a selected variation with its allocated turns and resolved rotation
+ * directions. This makes static/dash motions that will get non-zero turns
+ * visible to the constraint system on subsequent beats.
+ *
+ * Without this, the beam search sees statics as "noRotation" and can't
+ * detect reversals that will appear after postProcess applies turns.
+ */
+function enrichWithTurns(
+  variation: PictographData,
+  beatIndex: number,
+  turnAllocation: TurnAllocation | undefined,
+  previousSteps: PictographData[],
+  propContinuity: PropContinuityMode | undefined,
+): PictographData {
+  if (!turnAllocation) return variation;
+
+  const blueTurns = turnAllocation.blue[beatIndex];
+  const redTurns = turnAllocation.red[beatIndex];
+
+  const enrichedBlue = enrichMotionDirection(
+    variation.blueMotion, blueTurns, previousSteps, "blue", propContinuity,
+  );
+  const enrichedRed = enrichMotionDirection(
+    variation.redMotion, redTurns, previousSteps, "red", propContinuity,
+  );
+
+  if (enrichedBlue === variation.blueMotion && enrichedRed === variation.redMotion) {
+    return variation; // No changes needed
+  }
+
+  return {
+    ...variation,
+    blueMotion: enrichedBlue,
+    redMotion: enrichedRed,
+  };
+}
+
+/**
+ * For a single hand's motion: if it's noRotation and will get non-zero turns,
+ * resolve the rotation direction now (same logic as resolveRotationDirection
+ * in SequenceBuilder.postProcess).
+ */
+function enrichMotionDirection(
+  motion: PictographData["blueMotion"],
+  turns: number | "fl" | undefined,
+  previousSteps: PictographData[],
+  color: "blue" | "red",
+  propContinuity: PropContinuityMode | undefined,
+): PictographData["blueMotion"] {
+  const hasTurns = turns !== undefined && turns !== 0 && turns !== "fl";
+  const isNoRot = !motion.rotationDirection ||
+    motion.rotationDirection === "noRotation" ||
+    motion.rotationDirection === "no_rot";
+
+  if (!hasTurns || !isNoRot) return motion;
+
+  // Find the last real direction from previous steps
+  let prevDir: string | null = null;
+  for (let i = previousSteps.length - 1; i >= 0; i--) {
+    const m = color === "blue" ? previousSteps[i]!.blueMotion : previousSteps[i]!.redMotion;
+    const d = m.rotationDirection;
+    if (d && d !== "noRotation" && d !== "no_rot") {
+      prevDir = d;
+      break;
+    }
+  }
+
+  let resolvedDir: string;
+  if (prevDir) {
+    if (propContinuity === "force-reversals") {
+      resolvedDir = prevDir === "cw" ? "ccw" : "cw";
+    } else if (propContinuity === "maximize") {
+      resolvedDir = prevDir;
+    } else {
+      resolvedDir = Math.random() < 0.5 ? "cw" : "ccw";
+    }
+  } else {
+    resolvedDir = Math.random() < 0.5 ? "cw" : "ccw";
+  }
+
+  return { ...motion, rotationDirection: resolvedDir };
+}
 
 /**
  * Type 6 static letters — valid for starting positions.
@@ -94,6 +184,8 @@ export class BeamSearch {
     constraintSet: ConstraintSet,
     beamWidth?: number,
     requiredEndPositions?: Set<string>,
+    turnAllocation?: TurnAllocation,
+    propContinuity?: PropContinuityMode,
   ): BeamSearchResult {
     const config: BeamSearchConfig = {
       ...DEFAULT_BEAM_CONFIG,
@@ -138,7 +230,12 @@ export class BeamSearch {
       const startPictograph = this.findStartPosition(scored.variation.startPosition);
       if (startPictograph) {
         const initialState = createInitialState(startPictograph.variation, startPictograph.index);
-        const state = extendState(initialState, scored.variation, scored);
+        // Enrich the first beat's static/dash motions with their allocated
+        // turns so the constraint system sees real rotation directions.
+        const enriched = enrichWithTurns(
+          scored.variation, 0, turnAllocation, initialState.steps, propContinuity,
+        );
+        const state = extendState(initialState, enriched, scored);
         beam.push(state);
         statesExplored++;
       }
@@ -206,7 +303,12 @@ export class BeamSearch {
 
           for (const scored of scores.slice(0, config.beamWidth)) {
             if (!scored.hardConstraintsSatisfied) continue;
-            nextBeam.push(extendState(state, scored.variation, scored));
+            // Enrich static/dash motions with their allocated turns so
+            // subsequent beats see real rotation directions, not noRotation.
+            const enriched = enrichWithTurns(
+              scored.variation, i, turnAllocation, state.steps, propContinuity,
+            );
+            nextBeam.push(extendState(state, enriched, scored));
             statesExplored++;
           }
         }
@@ -267,6 +369,8 @@ export class BeamSearch {
       mustNotContainLetters?: Set<string>;
       mustContainLetters?: Set<string>;
     },
+    turnAllocation?: TurnAllocation,
+    propContinuity?: PropContinuityMode,
   ): BeamSearchResult {
     const config: BeamSearchConfig = {
       ...DEFAULT_BEAM_CONFIG,
@@ -341,7 +445,10 @@ export class BeamSearch {
       const startPictograph = this.findStartPosition(scored.variation.startPosition);
       if (startPictograph) {
         const initialState = createInitialState(startPictograph.variation, startPictograph.index);
-        const state = extendState(initialState, scored.variation, scored);
+        const enriched = enrichWithTurns(
+          scored.variation, 0, turnAllocation, initialState.steps, propContinuity,
+        );
+        const state = extendState(initialState, enriched, scored);
         beam.push(state);
         statesExplored++;
       }
@@ -426,7 +533,10 @@ export class BeamSearch {
 
         for (const scored of scores.slice(0, config.beamWidth)) {
           if (!scored.hardConstraintsSatisfied) continue;
-          nextBeam.push(extendState(state, scored.variation, scored));
+          const enriched = enrichWithTurns(
+            scored.variation, i, turnAllocation, state.steps, propContinuity,
+          );
+          nextBeam.push(extendState(state, enriched, scored));
           statesExplored++;
         }
       }

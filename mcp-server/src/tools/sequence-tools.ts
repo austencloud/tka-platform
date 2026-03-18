@@ -39,78 +39,6 @@ import {
 import { detectLOOPFromSteps, type LOOPComponentId } from "@tka/sequence-engine/loop";
 
 /**
- * Build sequence from constraints or legacy mode.
- * Shared by generate_sequence_image and view_sequence.
- */
-function buildSequenceWithConstraints(
-  letters: string[],
-  allPictographs: PictographData[],
-  constraintSet: ConstraintSet,
-  maxAttempts: number,
-  parsedBridgeSelections?: BridgeSelections
-): { result: SequenceResult | null; error?: string } {
-  const useConstrainedBuilder = constraintSet.hard.length > 0 || constraintSet.soft.length > 0;
-
-  if (useConstrainedBuilder) {
-    const constrainedResult = buildConstrainedSequence({
-      letters,
-      allPictographs,
-      constraintSet,
-      beamConfig: { maxBacktracks: maxAttempts },
-    });
-
-    if (!constrainedResult.success && !constrainedResult.steps.length) {
-      return { result: null, error: constrainedResult.error };
-    }
-
-    // Create a Set from bridgeStepIndices for O(1) lookup
-    const bridgeIndicesSet = new Set(constrainedResult.bridgeStepIndices ?? []);
-
-    return {
-      result: {
-        word: constrainedResult.word,
-        steps: constrainedResult.steps.map((step, i) => ({
-          letter: step.letter,
-          variation: constrainedResult.variationIndices[i] ?? 0,
-          startPosition: step.startPosition,
-          endPosition: step.endPosition,
-          blueMotion: step.blueMotion,
-          redMotion: step.redMotion,
-          stepNumber: i,
-          beatIndex: i,
-          isBridge: bridgeIndicesSet.has(i),
-        })),
-        startPosition: constrainedResult.startPosition,
-        endPosition: constrainedResult.endPosition,
-        isValid: true,
-        bridgeStepIndices: constrainedResult.bridgeStepIndices,
-      },
-    };
-  }
-
-  // Legacy builder for unconstrained generation
-  const result = buildSequenceFromLetters(letters, allPictographs, maxAttempts, parsedBridgeSelections);
-  return { result };
-}
-
-/**
- * Parse constraints from preset or natural language string.
- */
-function resolveConstraintSet(
-  constraintPreset?: string,
-  constraints?: string
-): ConstraintSet {
-  if (constraintPreset) {
-    const presetConstraints = getPresetConstraintSet(constraintPreset);
-    if (presetConstraints) return presetConstraints;
-  } else if (constraints) {
-    const parsed = parseConstraintSet(constraints);
-    return parsed.constraintSet;
-  }
-  return emptyConstraintSet();
-}
-
-/**
  * Convert detected LOOP component IDs to renderer enum values.
  */
 function convertLOOPComponentsToEnum(components: LOOPComponentId[]): LOOPComponent[] {
@@ -637,81 +565,45 @@ export function registerSequenceTools(server: McpServer): void {
 
       const allPictographs = await ensureDataLoadedAsync(gridMode);
 
-      // Routing: engine path for LOOP or length-only generation.
-      // Legacy path for plain word-based generation (proven, no regressions).
-      const useEnginePath = !!loopType || (!word && !!length);
-
+      // All generation goes through the unified SequenceBuilder (7-stage pipeline
+      // with beam search, turn allocation, and orientation-aware prop continuity).
       let result: SequenceResult;
       let engineLoopComponents: string[] | undefined;
+      let engineSeedWord: string | undefined;
+      let engineDerivedBeatIndices: number[] | undefined;
 
-      if (useEnginePath) {
-        // Engine path: SequenceBuilder with beam search, LOOP extension, 3-axis constraints
-        try {
-          const engineResult = generateViaEngine({
-            word: word?.toUpperCase(),
-            length,
-            gridMode,
-            level,
-            turnIntensity,
-            constraintPreset,
-            constraints,
-            handPathMode,
-            motionTypeFilter,
-            startPosition,
-            endPosition,
-            blockedStartPositions,
-            mustNotContainLetters,
-            mustContainLetters,
-            loopType,
-            sliceSize,
-          }, allPictographs);
+      try {
+        const engineResult = generateViaEngine({
+          word: word?.toUpperCase(),
+          length,
+          gridMode,
+          level,
+          turnIntensity,
+          constraintPreset,
+          constraints,
+          handPathMode,
+          motionTypeFilter,
+          startPosition,
+          endPosition,
+          blockedStartPositions,
+          mustNotContainLetters,
+          mustContainLetters,
+          loopType,
+          sliceSize,
+        }, allPictographs);
 
-          result = engineResult.result;
-          engineLoopComponents = engineResult.loopComponents;
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          return {
-            content: [
-              { type: "text" as const, text: `Failed to generate sequence: ${msg}` },
-            ],
-            isError: true,
-          };
-        }
-      } else {
-        // Legacy path: word-based generation with existing builder
-        const letters = parseWordToLetters(word!.toUpperCase());
-
-        if (letters.length === 0) {
-          return {
-            content: [
-              { type: "text" as const, text: `Cannot generate sequence: no valid letters in "${word}"` },
-            ],
-            isError: true,
-          };
-        }
-
-        const parsedBridgeSelections: BridgeSelections | undefined = bridgeSelections
-          ? Object.fromEntries(
-              Object.entries(bridgeSelections).map(([k, v]) => [parseInt(k, 10), v])
-            )
-          : undefined;
-
-        const constraintSet = resolveConstraintSet(constraintPreset, constraints);
-
-        const { result: legacyResult, error } = buildSequenceWithConstraints(
-          letters, allPictographs, constraintSet, maxAttempts, parsedBridgeSelections
-        );
-
-        if (!legacyResult || !legacyResult.isValid) {
-          return {
-            content: [
-              { type: "text" as const, text: `Failed to generate sequence for "${word}": ${error || legacyResult?.error || "unknown error"}` },
-            ],
-            isError: true,
-          };
-        }
-
-        result = legacyResult;
+        result = engineResult.result;
+        engineLoopComponents = engineResult.loopComponents;
+        engineSeedWord = engineResult.seedWord;
+        engineDerivedBeatIndices = engineResult.derivedBeatIndices;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return {
+          content: [
+            { type: "text" as const, text: `Failed to generate sequence: ${msg}` },
+          ],
+          isError: true,
+        };
       }
 
       // Render the sequence image
@@ -766,7 +658,8 @@ export function registerSequenceTools(server: McpServer): void {
           turnAllocation,
           loopComponents: finalLoopComponents,
           showReversals,
-          seedWord: displayWord?.toUpperCase(),
+          seedWord: displayWord?.toUpperCase() ?? engineSeedWord,
+          derivedBeatIndices: engineDerivedBeatIndices,
         });
 
         const headerWord = displayWord ?? result.word ?? word ?? "sequence";
@@ -774,11 +667,31 @@ export function registerSequenceTools(server: McpServer): void {
 
         const loopLine = loopDetectionInfo ? `\n${loopDetectionInfo}` : "";
 
+        // Include compact step data so Claude can inspect the sequence
+        // without needing a separate tool call or image reading.
+        const stepSummary = result.steps.map((s, i) => {
+          const b = s.blueMotion;
+          const r = s.redMotion;
+          return {
+            beat: i,
+            letter: s.letter,
+            pos: `${s.startPosition}→${s.endPosition}`,
+            blue: { type: b.motionType, dir: b.rotationDirection, turns: b.turns, ori: `${b.startOrientation}→${b.endOrientation}` },
+            red: { type: r.motionType, dir: r.rotationDirection, turns: r.turns, ori: `${r.startOrientation}→${r.endOrientation}` },
+            ...(s.blueReversal ? { blueRev: true } : {}),
+            ...(s.redReversal ? { redRev: true } : {}),
+          };
+        });
+
         return {
           content: [
             {
               type: "text" as const,
               text: `Opened sequence "${headerWord}" in system viewer.\n${stepCount} beats, ${layout} layout, ${cellSize}px cells${loopLine}\nFile: ${tempPath}`,
+            },
+            {
+              type: "text" as const,
+              text: JSON.stringify(stepSummary, null, 2),
             },
           ],
         };
