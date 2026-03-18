@@ -257,6 +257,8 @@
       draftStatus={draftPersister?.saveStatus}
       bind:images={formState.images}
       stagedImages={formState.stagedImages}
+      onImagesAdded={(files) => formState.addImages(files)}
+      onImageRemoved={(index) => formState.removeImage(index)}
       disabled={formState.isSubmitting}
       {isInputMode}
       {isVoiceRecording}
