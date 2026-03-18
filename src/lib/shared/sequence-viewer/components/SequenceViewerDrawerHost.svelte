@@ -117,10 +117,9 @@
   function handleCopyLink() {
     const seq = overlay.sequence;
     if (!seq) return;
-    const base = `${window.location.origin}/sequence/${seq.id}`;
-    const params = new URLSearchParams();
-    if (seq.word) params.set("word", seq.word);
-    navigator.clipboard.writeText(params.size > 0 ? `${base}?${params}` : base).then(() => {
+    const encoder = container.items.sequenceEncoder;
+    const { url } = encoder.generateViewerURL(seq, { compress: true });
+    navigator.clipboard.writeText(url).then(() => {
       copyLinkFeedback = true;
       setTimeout(() => { copyLinkFeedback = false; }, 1500);
     });
