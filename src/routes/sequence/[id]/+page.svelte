@@ -235,6 +235,32 @@
     }
   }
 
+  /**
+   * Fire-and-forget: compute encoderHash, query publicSequences, enrich viewer.
+   * If it fails (offline, no match, error), the viewer works fine from URL data alone.
+   */
+  async function matchPublicRecord(seq: SequenceData) {
+    try {
+      const matcher = container.items.publicSequenceHashMatcher;
+      const result = await matcher.findPublicMatch(seq);
+
+      if (result.matched && result.publicRecord) {
+        const pub = result.publicRecord;
+        sequence = {
+          ...seq,
+          ownerId: pub.ownerId,
+          ownerDisplayName: pub.ownerDisplayName,
+          intendedProp: seq.intendedProp,
+          creatorIntent: pub.creatorIntent ?? undefined,
+          word: seq.word || pub.word,
+          name: seq.name === "Shared Sequence" ? pub.name : seq.name,
+        } as SequenceData;
+      }
+    } catch {
+      // Silent failure — progressive enhancement only
+    }
+  }
+
   // ============================================================================
   // SEQUENCE LOADING
   // ============================================================================
@@ -278,6 +304,9 @@
           applyUrlPropPreferences();
 
           isLoading = false;
+
+          // Background: try to match against public library for attribution
+          void matchPublicRecord(sequence!);
         } catch (err) {
           console.error("[SequenceRoute] Failed to decode sequence from URL:", err);
           loadError = "Invalid sequence URL";
@@ -533,8 +562,7 @@
           onExitEditMode={ctx.exitEditMode}
           onDarkModeToggle={ctx.handleUnifiedDarkModeToggle}
           onSettingsOpen={() => (settingsModalOpen = true)}
-          sequenceId={sequence?.id}
-          sequenceWord={sequence?.word}
+          sequence={sequence}
         />
 
         <!-- Main content -->
