@@ -340,9 +340,10 @@ function calculateLayout(
   // We need to figure out how many columns based on letter count
   const letterCount = stepCount - 1; // Exclude start position
 
-  // Target roughly square, but minimum 2 columns (1 for start + 1 for beats)
   // Calculate beat columns (columns after the start position)
-  const beatColumns = Math.max(1, Math.ceil(Math.sqrt(letterCount)));
+  // 32+ beats use 8 columns for wider, more readable layouts
+  const beatColumns =
+    letterCount >= 31 ? 8 : Math.max(1, Math.ceil(Math.sqrt(letterCount)));
   const totalColumns = beatColumns + 1; // +1 for start position column
 
   // Calculate rows needed
