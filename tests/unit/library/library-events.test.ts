@@ -24,6 +24,9 @@ import {
   notifyLibrarySequenceAdded,
   onLibrarySequenceAdded,
   LIBRARY_SEQUENCE_ADDED_EVENT,
+  notifyLibrarySequenceUpdated,
+  onLibrarySequenceUpdated,
+  LIBRARY_SEQUENCE_UPDATED_EVENT,
 } from "$lib/shared/library/library-events";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
@@ -217,6 +220,98 @@ describe("onLibrarySequenceAdded cleanup", () => {
     expect(() => cleanup()).not.toThrow();
 
     notifyLibrarySequenceAdded(fakeSequence);
+    expect(handler).toHaveBeenCalledTimes(0);
+  });
+});
+
+// --- Sequence Updated Events ---
+
+describe("notifyLibrarySequenceUpdated", () => {
+  it("dispatches an event named 'tka:library-sequence-updated'", () => {
+    const dispatchSpy = vi.spyOn(window, "dispatchEvent");
+    notifyLibrarySequenceUpdated("seq-1", { tags: ["new"] });
+    expect(dispatchSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ type: LIBRARY_SEQUENCE_UPDATED_EVENT })
+    );
+  });
+
+  it("delivers sequenceId and updates to the handler", () => {
+    const handler = vi.fn();
+    const cleanup = onLibrarySequenceUpdated(handler);
+    const updates = { visibility: "public" };
+
+    notifyLibrarySequenceUpdated("seq-abc", updates);
+
+    expect(handler).toHaveBeenCalledWith("seq-abc", updates);
+    cleanup();
+  });
+
+  it("calls multiple registered handlers", () => {
+    const handlerA = vi.fn();
+    const handlerB = vi.fn();
+    const cleanupA = onLibrarySequenceUpdated(handlerA);
+    const cleanupB = onLibrarySequenceUpdated(handlerB);
+
+    notifyLibrarySequenceUpdated("seq-1", { favorite: true });
+
+    expect(handlerA).toHaveBeenCalledTimes(1);
+    expect(handlerB).toHaveBeenCalledTimes(1);
+    cleanupA();
+    cleanupB();
+  });
+
+  it("calls handlers each time it is dispatched", () => {
+    const handler = vi.fn();
+    const cleanup = onLibrarySequenceUpdated(handler);
+
+    const updates1 = { tags: ["fire"] };
+    const updates2 = { notes: "updated" };
+    notifyLibrarySequenceUpdated("seq-1", updates1);
+    notifyLibrarySequenceUpdated("seq-2", updates2);
+
+    expect(handler).toHaveBeenCalledTimes(2);
+    expect(handler).toHaveBeenNthCalledWith(1, "seq-1", updates1);
+    expect(handler).toHaveBeenNthCalledWith(2, "seq-2", updates2);
+    cleanup();
+  });
+});
+
+describe("onLibrarySequenceUpdated cleanup", () => {
+  it("stops calling the handler after cleanup is invoked", () => {
+    const handler = vi.fn();
+    const cleanup = onLibrarySequenceUpdated(handler);
+
+    notifyLibrarySequenceUpdated("seq-1", { tags: [] });
+    expect(handler).toHaveBeenCalledTimes(1);
+
+    cleanup();
+    notifyLibrarySequenceUpdated("seq-2", { tags: [] });
+
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it("only removes the specific handler, not others", () => {
+    const handlerA = vi.fn();
+    const handlerB = vi.fn();
+    const cleanupA = onLibrarySequenceUpdated(handlerA);
+    const cleanupB = onLibrarySequenceUpdated(handlerB);
+
+    cleanupA();
+    notifyLibrarySequenceUpdated("seq-1", { favorite: true });
+
+    expect(handlerA).toHaveBeenCalledTimes(0);
+    expect(handlerB).toHaveBeenCalledTimes(1);
+    cleanupB();
+  });
+
+  it("is safe to call cleanup more than once", () => {
+    const handler = vi.fn();
+    const cleanup = onLibrarySequenceUpdated(handler);
+
+    cleanup();
+    expect(() => cleanup()).not.toThrow();
+
+    notifyLibrarySequenceUpdated("seq-1", { tags: [] });
     expect(handler).toHaveBeenCalledTimes(0);
   });
 });

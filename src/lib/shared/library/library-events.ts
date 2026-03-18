@@ -20,15 +20,17 @@
  * Any screen that cares listens to that channel and updates its own list.
  *
  * EVENTS:
- * - tka:library-mutated      — fired after a sequence is deleted
- * - tka:library-sequence-added — fired after a new sequence is saved
+ * - tka:library-mutated        — fired after a sequence is deleted
+ * - tka:library-sequence-added  — fired after a new sequence is saved
+ * - tka:library-sequence-updated — fired after a sequence's metadata changes
  *
  * SCREENS THAT CURRENTLY LISTEN:
  * - browse-state-factory.svelte.ts  — the Browse gallery
  * - SequenceBrowser.svelte (Train)  — the sequence picker in Train mode
  *
  * TO ADD A NEW LISTENER:
- * 1. Call `onLibraryMutated(fn)` or `onLibrarySequenceAdded(fn)` inside a
+ * 1. Call `onLibraryMutated(fn)`, `onLibrarySequenceAdded(fn)`, or
+ *    `onLibrarySequenceUpdated(fn)` inside a
  *    `$effect` in your component or state file. The $effect ensures the
  *    listener is cleaned up when the screen is closed.
  *
@@ -42,6 +44,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 
 export const LIBRARY_MUTATED_EVENT = "tka:library-mutated";
 export const LIBRARY_SEQUENCE_ADDED_EVENT = "tka:library-sequence-added";
+export const LIBRARY_SEQUENCE_UPDATED_EVENT = "tka:library-sequence-updated";
 
 /**
  * Call this after deleting a sequence. Any screen that's showing that sequence
@@ -102,4 +105,40 @@ export function onLibrarySequenceAdded(
   window.addEventListener(LIBRARY_SEQUENCE_ADDED_EVENT, listener);
   return () =>
     window.removeEventListener(LIBRARY_SEQUENCE_ADDED_EVENT, listener);
+}
+
+/**
+ * Call this after updating a sequence's metadata (tags, notes, visibility, favorite).
+ * Listeners can patch their caches with the changed fields without a Firestore round-trip.
+ */
+export function notifyLibrarySequenceUpdated(
+  sequenceId: string,
+  updates: Record<string, unknown>
+): void {
+  window.dispatchEvent(
+    new CustomEvent(LIBRARY_SEQUENCE_UPDATED_EVENT, {
+      detail: { sequenceId, updates },
+    })
+  );
+}
+
+/**
+ * Listen for sequence metadata updates. Returns a cleanup function —
+ * inside a $effect this runs automatically when the screen is closed.
+ *
+ * @example
+ * $effect(() => onLibrarySequenceUpdated((id, updates) => patchInCache(id, updates)));
+ */
+export function onLibrarySequenceUpdated(
+  handler: (sequenceId: string, updates: Record<string, unknown>) => void
+): () => void {
+  const listener = (e: Event) => {
+    const { sequenceId, updates } = (
+      e as CustomEvent<{ sequenceId: string; updates: Record<string, unknown> }>
+    ).detail;
+    handler(sequenceId, updates);
+  };
+  window.addEventListener(LIBRARY_SEQUENCE_UPDATED_EVENT, listener);
+  return () =>
+    window.removeEventListener(LIBRARY_SEQUENCE_UPDATED_EVENT, listener);
 }
