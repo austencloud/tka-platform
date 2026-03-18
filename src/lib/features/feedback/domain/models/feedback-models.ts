@@ -280,6 +280,35 @@ export interface FeedbackFormErrors {
 export type FeedbackSubmitStatus = "idle" | "submitting" | "success" | "error";
 
 /**
+ * Upload progress during feedback submission.
+ * Uses a single 0–1 fraction representing aggregate bytes across all images.
+ */
+export interface FeedbackUploadProgress {
+  phase: "saving" | "uploading";
+  /** 0–1 representing aggregate bytesTransferred / totalBytes across all images */
+  fraction: number;
+}
+
+/**
+ * Callback for reporting upload progress during feedback submission.
+ */
+export type FeedbackProgressCallback = (progress: FeedbackUploadProgress) => void;
+
+/**
+ * Per-image staging state. Tracks an individual image's upload to the
+ * staging area, from the moment it's attached until submit or removal.
+ */
+export interface StagedImageState {
+  status: "uploading" | "uploaded" | "failed";
+  /** 0–1 upload progress fraction */
+  fraction: number;
+  /** Firebase Storage download URL, available once status is "uploaded" */
+  downloadUrl?: string;
+  /** Storage path for cancellation or deletion */
+  storagePath: string;
+}
+
+/**
  * Filter options for manage tab
  */
 export interface FeedbackFilterOptions {
@@ -347,19 +376,19 @@ export const TYPE_CONFIG: Record<
     label: "Bug Report",
     color: "#ef4444",
     icon: "fa-bug",
-    placeholder: "What went wrong? Describe the issue in detail...",
+    placeholder: "What happened? What did you expect instead?",
   },
   feature: {
     label: "Feature Request",
     color: "#8b5cf6",
     icon: "fa-lightbulb",
-    placeholder: "Describe the feature and how it would help you...",
+    placeholder: "What would you like to see in the app?",
   },
   general: {
     label: "General Feedback",
     color: "#3b82f6",
     icon: "fa-comment",
-    placeholder: "Share your thoughts, suggestions, or observations...",
+    placeholder: "What's on your mind?",
   },
 };
 

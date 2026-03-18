@@ -159,7 +159,9 @@
   dismissible={true}
   class={`quick-feedback-drawer ${isBottomSheet ? "bottom-sheet" : ""}`}
 >
-  <div class="quick-feedback-panel" class:bottom-sheet={isBottomSheet} class:input-mode={isInputMode}>
+  <div class="quick-feedback-panel" class:bottom-sheet={isBottomSheet} class:input-mode={isInputMode}
+    style={isInputMode && keyboardHeight > 0 ? `height: calc(100% - ${keyboardHeight}px)` : ''}
+  >
     <!-- Left edge drag handle for swipe-to-dismiss -->
     <div class="swipe-edge" class:hidden={isBottomSheet} aria-hidden="true">
       <div class="swipe-indicator"></div>
@@ -213,14 +215,24 @@
         </div>
       {/if}
 
-      <main class="panel-body" style={isInputMode && keyboardHeight > 0 ? `padding-bottom: ${keyboardHeight}px` : ''}>
+      <main class="panel-body">
         <FeedbackForm
           {formState}
           hideSuccessState={true}
           {isInputMode}
           {isTouchDevice}
           onInputFocusChange={(focused) => { isInputFocused = focused; }}
-          onKeyboardHeightChange={(height) => { keyboardHeight = height; }}
+          onKeyboardHeightChange={(height) => {
+            keyboardHeight = height;
+            console.log('[QFP] keyboardHeight set to:', height, 'isInputMode:', isInputMode);
+            const panel = document.querySelector('.quick-feedback-panel');
+            if (panel) {
+              const rect = panel.getBoundingClientRect();
+              console.log('[QFP] panel rect:', { height: rect.height, bottom: rect.bottom, top: rect.top });
+              console.log('[QFP] window.innerHeight:', window.innerHeight);
+              console.log('[QFP] visualViewport height:', window.visualViewport?.height, 'offsetTop:', window.visualViewport?.offsetTop);
+            }
+          }}
         />
       </main>
     </div>

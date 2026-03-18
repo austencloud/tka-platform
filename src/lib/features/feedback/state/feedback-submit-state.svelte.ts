@@ -5,6 +5,9 @@
  * Provides both a factory function and a shared singleton for use across
  * the submit tab and quick feedback panel.
  *
+ * Images are pre-uploaded to a staging area as soon as they're attached,
+ * so submit is instant. The stagedImages map tracks per-file upload state.
+ *
  * Note: Draft persistence is handled by FormDraftPersister service in FeedbackForm,
  * not here. This keeps state management separate from persistence concerns.
  */
@@ -14,8 +17,13 @@ import type {
   FeedbackFormErrors,
   FeedbackSubmitStatus,
   FeedbackType,
+  FeedbackUploadProgress,
+  StagedImageState,
 } from "../domain/models/feedback-models";
 import { feedbackService } from "../services/implementations/FeedbackRepository";
+import { imageStager } from "../services/implementations/ImageStager";
+import type { StagedUploadHandle } from "../services/contracts/IImageStager";
+import { authState } from "$lib/shared/auth/state/authState.svelte";
 import {
   getCapturedModule,
   getCapturedTab,
@@ -42,8 +50,85 @@ export function createFeedbackSubmitState() {
   // Submission status
   let submitStatus = $state<FeedbackSubmitStatus>("idle");
 
+  // Upload progress — non-null while submitting with images (fallback path)
+  let uploadProgress = $state<FeedbackUploadProgress | null>(null);
+
+  // Per-image staging state — tracks upload progress for each attached image
+  let stagedImages = $state<Map<File, StagedImageState>>(new Map());
+
+  // Active upload handles for cancellation on removal (not reactive — internal bookkeeping)
+  const uploadHandles = new Map<File, StagedUploadHandle>();
+
   // Derived state
   const isSubmitting = $derived(submitStatus === "submitting");
+
+  // Auto-stage images as soon as they're attached.
+  // Compares current images to what we're already tracking and starts
+  // uploads for any new files.
+  $effect(() => {
+    const currentFiles = new Set(images);
+    const trackedFiles = new Set(stagedImages.keys());
+
+    // Start uploads for newly added files
+    for (const file of currentFiles) {
+      if (!trackedFiles.has(file)) {
+        startStagingUpload(file);
+      }
+    }
+
+    // Cancel and clean up removed files
+    for (const file of trackedFiles) {
+      if (!currentFiles.has(file)) {
+        cancelAndCleanup(file);
+      }
+    }
+  });
+
+  function startStagingUpload(file: File) {
+    const userId = authState.user?.uid;
+    if (!userId) return;
+
+    const handle = imageStager.stageImage(file, userId, (state) => {
+      // Create a new Map to trigger Svelte reactivity
+      const next = new Map(stagedImages);
+      next.set(file, state);
+      stagedImages = next;
+    });
+
+    uploadHandles.set(file, handle);
+
+    // Initialize state immediately
+    const next = new Map(stagedImages);
+    next.set(file, {
+      status: "uploading",
+      fraction: 0,
+      storagePath: handle.storagePath,
+    });
+    stagedImages = next;
+
+    // Handle completion/failure (fire and forget — state is updated via callback)
+    handle.promise.catch(() => {
+      // Error state already set via the onProgress callback
+    });
+  }
+
+  function cancelAndCleanup(file: File) {
+    const handle = uploadHandles.get(file);
+    if (handle) {
+      handle.cancel();
+      uploadHandles.delete(file);
+    }
+
+    const state = stagedImages.get(file);
+    if (state?.status === "uploaded" && state.storagePath) {
+      // Already uploaded — delete from staging
+      imageStager.deleteStaged(state.storagePath);
+    }
+
+    const next = new Map(stagedImages);
+    next.delete(file);
+    stagedImages = next;
+  }
 
   // Actions
   function updateField<K extends keyof FeedbackFormData>(
@@ -84,29 +169,82 @@ export function createFeedbackSubmitState() {
     }
 
     submitStatus = "submitting";
+    uploadProgress = null;
+
+    // If images are still uploading, wait for them to finish
+    if (images.length > 0) {
+      const pendingHandles = images
+        .map((f) => uploadHandles.get(f))
+        .filter((h): h is StagedUploadHandle => h != null);
+
+      const hasPending = pendingHandles.some((h) => {
+        const state = stagedImages.get(
+          [...uploadHandles.entries()].find(([, v]) => v === h)?.[0] as File
+        );
+        return state?.status === "uploading";
+      });
+
+      if (hasPending) {
+        uploadProgress = { phase: "uploading", fraction: 0 };
+        try {
+          await Promise.all(pendingHandles.map((h) => h.promise));
+        } catch {
+          // Check if any actually failed
+          const hasFailed = images.some(
+            (f) => stagedImages.get(f)?.status === "failed"
+          );
+          if (hasFailed) {
+            uploadProgress = null;
+            submitStatus = "error";
+            return false;
+          }
+        }
+        uploadProgress = null;
+      }
+    }
 
     try {
-      // Get captured context
       const capturedModule = getCapturedModule();
       const capturedTab = getCapturedTab();
+
+      // Collect pre-uploaded URLs from staged images
+      const preUploadedUrls = images
+        .map((f) => stagedImages.get(f)?.downloadUrl)
+        .filter((url): url is string => url != null);
+
+      // If all images are pre-uploaded, pass URLs directly (no upload needed)
+      const hasAllUrls =
+        images.length > 0 && preUploadedUrls.length === images.length;
 
       await feedbackService.submitFeedback(
         formData,
         capturedModule,
         capturedTab,
-        images.length > 0 ? images : undefined
+        hasAllUrls ? undefined : images.length > 0 ? images : undefined,
+        (progress) => {
+          uploadProgress = progress;
+        },
+        hasAllUrls ? preUploadedUrls : undefined
       );
+
+      uploadProgress = null;
       submitStatus = "success";
       // Draft clearing is handled by FeedbackForm via FormDraftPersister
       return true;
     } catch (error) {
       console.error("Failed to submit feedback:", error);
+      uploadProgress = null;
       submitStatus = "error";
       return false;
     }
   }
 
   function reset() {
+    // Cancel any in-flight uploads and delete staged files
+    for (const file of [...uploadHandles.keys()]) {
+      cancelAndCleanup(file);
+    }
+
     formData = {
       type: "general",
       title: "",
@@ -115,6 +253,8 @@ export function createFeedbackSubmitState() {
     images = [];
     formErrors = {};
     submitStatus = "idle";
+    uploadProgress = null;
+    stagedImages = new Map();
     // Draft clearing is handled by FeedbackForm via FormDraftPersister
   }
 
@@ -137,6 +277,12 @@ export function createFeedbackSubmitState() {
     },
     get isSubmitting() {
       return isSubmitting;
+    },
+    get uploadProgress() {
+      return uploadProgress;
+    },
+    get stagedImages() {
+      return stagedImages;
     },
     get isFormValid() {
       // Compute directly to survive HMR - don't use $derived

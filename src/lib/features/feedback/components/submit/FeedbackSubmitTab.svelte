@@ -12,6 +12,7 @@
 
   // Track focus state for input mode
   let isInputFocused = $state(false);
+  let keyboardHeight = $state(0);
 
   // BULLETPROOF: Only enter input mode when a real virtual keyboard appears
   // - Default: false (don't expand)
@@ -38,10 +39,19 @@
   function handleKeyboardHeightChange(height: number) {
     // When keyboard appears (height > 0), enable input mode
     hasVirtualKeyboard = height > 0;
+    keyboardHeight = height;
+    console.log('[FST] keyboardHeight:', height, 'isInputMode:', isInputMode);
+    const tab = document.querySelector('.submit-tab');
+    if (tab) {
+      const rect = tab.getBoundingClientRect();
+      console.log('[FST] tab rect:', { height: rect.height, bottom: rect.bottom });
+    }
   }
 </script>
 
-<div class="submit-tab" class:input-mode={isInputMode}>
+<div class="submit-tab" class:input-mode={isInputMode}
+  style={isInputMode && keyboardHeight > 0 ? `height: calc(100% - ${keyboardHeight}px)` : ''}
+>
   <div class="submit-container">
     <!-- Centered header - collapses in input mode -->
     <header class="submit-header" class:collapsed={isInputMode}>
@@ -271,6 +281,7 @@
   .submit-tab.input-mode {
     justify-content: flex-start;
     padding-top: 8px;
+    overflow: hidden; /* Force flex children to fill space, not scroll */
   }
 
   .submit-tab.input-mode .submit-container {

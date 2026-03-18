@@ -4,7 +4,7 @@
  * Handles feedback submission, image uploads, and messaging integration.
  */
 
-import type { FeedbackFormData } from "../../domain/models/feedback-models";
+import type { FeedbackFormData, FeedbackProgressCallback } from "../../domain/models/feedback-models";
 
 export interface IFeedbackSubmissionService {
   /**
@@ -15,7 +15,9 @@ export interface IFeedbackSubmissionService {
     formData: FeedbackFormData,
     capturedModule: string,
     capturedTab: string,
-    images?: File[]
+    images?: File[],
+    onProgress?: FeedbackProgressCallback,
+    preUploadedImageUrls?: string[]
   ): Promise<string>;
 
   /**

@@ -10,11 +10,10 @@ import { TYPE_CONFIG } from "../../domain/models/feedback-models";
  */
 export class FeedbackTypeResolver implements IFeedbackTypeResolver {
   private readonly encouragementMessages: Record<FeedbackType, string> = {
-    bug: "Include steps to reproduce, error messages, and screenshots for faster fixes.",
+    bug: "Steps to reproduce, error messages, and screenshots help a lot.",
     feature:
-      "Dream big! Describe exactly what you'd love to see in the app and how it would help you.",
-    general:
-      "Share your thoughts on the app experience - what's working, what's confusing, what could be smoother.",
+      "What would you like to see, and how would it help your workflow?",
+    general: "",
   };
 
   getTypeConfig(type: FeedbackType): FeedbackTypeConfig {
