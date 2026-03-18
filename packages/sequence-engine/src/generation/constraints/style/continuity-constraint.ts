@@ -42,34 +42,47 @@ function isReversal(prev: string, current: string): boolean {
 }
 
 /**
- * Calculate continuity score between two consecutive steps.
- * Returns 1 if continuous, 0 if reversal, 0.5 if one is static.
+ * Find the last non-noRotation direction for a hand by walking backwards
+ * through previous steps. Returns null if none found.
  */
-function calculateContinuityScore(
-  prev: PictographData,
-  current: PictographData
-): { blueScore: number; redScore: number } {
-  const blueReversal = isReversal(
-    prev.blueMotion.rotationDirection,
-    current.blueMotion.rotationDirection
-  );
-  const redReversal = isReversal(
-    prev.redMotion.rotationDirection,
-    current.redMotion.rotationDirection
-  );
+function findLastDirection(
+  steps: PictographData[],
+  color: "blue" | "red",
+): string | null {
+  for (let i = steps.length - 1; i >= 0; i--) {
+    const step = steps[i];
+    if (!step) continue;
+    const dir = color === "blue"
+      ? step.blueMotion.rotationDirection
+      : step.redMotion.rotationDirection;
+    if (dir && dir !== "noRotation" && dir !== "no_rot") {
+      return dir;
+    }
+  }
+  return null;
+}
 
-  // Check for static motions (neutral - not continuous, not reversal)
-  const blueStatic =
-    prev.blueMotion.motionType === "static" ||
-    current.blueMotion.motionType === "static";
-  const redStatic =
-    prev.redMotion.motionType === "static" ||
-    current.redMotion.motionType === "static";
+/**
+ * Score one hand's continuity by comparing the candidate's direction against
+ * the last real direction in previousSteps.
+ *
+ * Instead of only comparing adjacent beats (which gives 0-turn statics a
+ * free pass), we look back through ALL previous steps to find the last
+ * direction that was actually set. This way a reversal hidden behind one
+ * or more noRotation beats is still penalized.
+ */
+function scoreHandContinuity(
+  previousSteps: PictographData[],
+  candidateDir: string,
+  color: "blue" | "red",
+): number {
+  const hasNoDir = !candidateDir || candidateDir === "noRotation" || candidateDir === "no_rot";
+  if (hasNoDir) return 0.5; // Candidate has no direction — neutral
 
-  return {
-    blueScore: blueStatic ? 0.5 : blueReversal ? 0 : 1,
-    redScore: redStatic ? 0.5 : redReversal ? 0 : 1,
-  };
+  const lastDir = findLastDirection(previousSteps, color);
+  if (!lastDir) return 0.5; // No previous direction — neutral
+
+  return isReversal(lastDir, candidateDir) ? 0 : 1;
 }
 
 export class ContinuityConstraint implements IVariationConstraint {
@@ -124,9 +137,18 @@ export class ContinuityConstraint implements IVariationConstraint {
       };
     }
 
-    const { blueScore, redScore } = calculateContinuityScore(
-      previousStep,
-      context.candidate
+    // Look back through ALL previous steps to find the last real direction,
+    // not just the immediately preceding step. This prevents 0-turn statics
+    // (noRotation) from hiding reversals.
+    const blueScore = scoreHandContinuity(
+      context.previousSteps,
+      context.candidate.blueMotion.rotationDirection,
+      "blue",
+    );
+    const redScore = scoreHandContinuity(
+      context.previousSteps,
+      context.candidate.redMotion.rotationDirection,
+      "red",
     );
 
     // Average of both hands
