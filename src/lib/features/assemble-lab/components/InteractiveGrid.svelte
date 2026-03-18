@@ -251,15 +251,42 @@
 
   // Detect when a first-click placement happens (for scale-in animation)
   let previousPhase = $state("idle");
+
+  // After SvgPropAnimator finishes, suppress CSS transitions for two frames
+  // so Svelte can settle the reactive transform without triggering a visible
+  // transition from the animator's final value (which may differ slightly due
+  // to different angle calculations).
+  let suppressTransition = $state(false);
+
   $effect(() => {
     const currentPhase = builderState.phase;
     let timeout: ReturnType<typeof setTimeout> | null = null;
+    let rafId: number | null = null;
+    let rafId2: number | null = null;
+
     if (previousPhase === "idle" && currentPhase === "placing") {
       justPlaced = true;
       timeout = setTimeout(() => { justPlaced = false; }, 300);
     }
+
+    // When leaving animating phase, suppress transitions briefly
+    if (previousPhase === "animating" && currentPhase !== "animating") {
+      suppressTransition = true;
+      rafId = requestAnimationFrame(() => {
+        rafId2 = requestAnimationFrame(() => {
+          suppressTransition = false;
+          rafId2 = null;
+        });
+        rafId = null;
+      });
+    }
+
     previousPhase = currentPhase;
-    return () => { if (timeout) clearTimeout(timeout); };
+    return () => {
+      if (timeout) clearTimeout(timeout);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      if (rafId2 !== null) cancelAnimationFrame(rafId2);
+    };
   });
 
   // Click handler for hit targets
@@ -434,6 +461,7 @@
       <g
         bind:this={activePropGroupRef}
         class="active-prop-group"
+        class:no-transition={builderState.phase === 'animating' || suppressTransition}
         style="transform: {propTransform(
           activeTarget.x,
           activeTarget.y,
@@ -558,8 +586,8 @@
     aspect-ratio: 1;
     border-radius: 20px;
     overflow: hidden;
-    border: 1.5px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    box-shadow: 0 8px 32px var(--theme-shadow, rgba(0, 0, 0, 0.3)), inset 0 1px 0 var(--theme-card-bg, rgba(255, 255, 255, 0.04));
   }
 
   /* Semi-transparent background on all viewports */
@@ -571,8 +599,8 @@
   @media (max-width: 768px) {
     .interactive-grid {
       border-radius: 16px;
-      border-color: rgba(255, 255, 255, 0.06);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      border-color: var(--theme-stroke, rgba(255, 255, 255, 0.06));
+      box-shadow: 0 4px 20px var(--theme-shadow, rgba(0, 0, 0, 0.3));
     }
 
     .interactive-grid :global(.grid-bg) {
@@ -620,6 +648,14 @@
   /* Active prop group: no pointer events (hits pass through to targets) */
   .active-prop-group {
     pointer-events: none;
+    /* Smooth transition for orientation changes (setOrientation) */
+    transition: transform var(--duration-normal, 200ms) ease;
+  }
+
+  /* Disable CSS transition during SvgPropAnimator-driven motion animation
+     (RAF-based animation conflicts with CSS transitions on the same property) */
+  .active-prop-group.no-transition {
+    transition: none;
   }
 
   /* Active prop inner: the actual SVG content wrapper */
@@ -646,8 +682,8 @@
 
   /* Hit targets — default (idle phase, no hand color yet) */
   .hit-target {
-    fill: rgba(255, 255, 255, 0.06);
-    stroke: rgba(255, 255, 255, 0.3);
+    fill: var(--theme-stroke, rgba(255, 255, 255, 0.06));
+    stroke: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
     stroke-width: 2.5;
     cursor: pointer;
     transition: fill 0.15s ease, stroke 0.15s ease, stroke-width 0.15s ease;
@@ -760,6 +796,10 @@
 
     .scale-in {
       animation: none;
+    }
+
+    .active-prop-group {
+      transition: none;
     }
   }
 </style>

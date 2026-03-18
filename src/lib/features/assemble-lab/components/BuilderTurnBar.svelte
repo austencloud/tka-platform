@@ -168,7 +168,7 @@
     border-radius: 16px;
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     padding: 8px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 16px var(--theme-shadow, rgba(0, 0, 0, 0.3));
     flex-shrink: 0;
     min-height: 60px;
     transition: opacity 0.2s ease;
@@ -201,7 +201,7 @@
     font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     letter-spacing: 0.04em;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     text-transform: uppercase;
     flex-shrink: 0;
   }
@@ -239,7 +239,7 @@
   }
 
   .bar-pill:hover {
-    background: var(--theme-accent-bg, rgba(99, 102, 241, 0.08));
+    background: var(--theme-accent-subtle, rgba(99, 102, 241, 0.08));
     color: var(--theme-text, #fff);
   }
 
@@ -312,7 +312,7 @@
   /* Focus indicators */
   .bar-pill:focus-visible,
   .rotation-toggle:focus-visible {
-    outline: 2px solid #ffffff;
+    outline: 2px solid var(--theme-text, #ffffff);
     outline-offset: 2px;
   }
 

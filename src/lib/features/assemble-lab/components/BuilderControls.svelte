@@ -362,7 +362,7 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 700;
     color: var(--theme-text, #fff);
-    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7);
+    text-shadow: 0 1px 6px var(--theme-shadow, rgba(0, 0, 0, 0.3));
   }
 
   /* ── Inline turn/orientation trigger ── */
@@ -377,9 +377,7 @@
     padding: 4px 10px;
     border: 1.5px solid var(--theme-accent-border, rgba(99, 102, 241, 0.3));
     border-radius: 8px;
-    background: rgba(10, 12, 22, 0.8);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     color: var(--theme-accent, #6366f1);
     font-size: var(--font-size-compact, 12px);
     font-weight: 600;
@@ -389,7 +387,7 @@
   }
 
   .inline-trigger:hover {
-    background: rgba(99, 102, 241, 0.12);
+    background: var(--theme-accent-subtle, rgba(99, 102, 241, 0.12));
   }
 
   .inline-trigger i {
@@ -414,13 +412,11 @@
     display: flex;
     align-items: center;
     gap: 0;
-    background: rgba(10, 12, 22, 0.92);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 14px;
     padding: 6px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 8px 32px var(--theme-shadow, rgba(0, 0, 0, 0.3));
     animation: popover-in 0.15s ease-out;
 
     /* Center horizontally on viewport; top set inline via style:top */
@@ -472,7 +468,7 @@
   .popover-divider {
     width: 1px;
     height: 28px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     margin: 0 4px;
     flex-shrink: 0;
   }
@@ -501,7 +497,7 @@
   }
 
   .popover-pill:hover {
-    background: rgba(99, 102, 241, 0.08);
+    background: var(--theme-accent-subtle, rgba(99, 102, 241, 0.08));
     color: var(--theme-text, #fff);
   }
 
@@ -511,7 +507,7 @@
   }
 
   .popover-pill.active {
-    background: rgba(99, 102, 241, 0.12);
+    background: var(--theme-accent-subtle, rgba(99, 102, 241, 0.12));
     color: var(--theme-accent, #6366f1);
     border: 1.5px solid var(--theme-accent-border, rgba(99, 102, 241, 0.3));
   }
@@ -537,9 +533,7 @@
     padding: 0;
     border-radius: 12px;
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: rgba(10, 12, 22, 0.8);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     cursor: pointer;
     pointer-events: auto;
     min-height: var(--min-touch-target, 44px);
@@ -557,7 +551,7 @@
     align-items: center;
     gap: 6px;
     padding: 8px 12px;
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
     font-weight: 600;
     transition: background 0.15s ease, color 0.15s ease;
   }
@@ -577,7 +571,7 @@
   .toggle-divider {
     width: 1px;
     height: 20px;
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
     flex-shrink: 0;
   }
 
@@ -731,10 +725,8 @@
 
   @media (max-width: 768px) {
     .action-slot .action-btn {
-      background: rgba(10, 12, 22, 0.85);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+      box-shadow: 0 4px 16px var(--theme-shadow, rgba(0, 0, 0, 0.3));
     }
   }
 
@@ -743,12 +735,12 @@
   .popover-rotation:focus-visible,
   .inline-trigger:focus-visible,
   .hand-toggle:focus-visible {
-    outline: 2px solid #ffffff;
+    outline: 2px solid var(--theme-text, #ffffff);
     outline-offset: 2px;
   }
 
   .action-btn:focus-visible {
-    outline: 2px solid #ffffff;
+    outline: 2px solid var(--theme-text, #ffffff);
     outline-offset: 3px;
   }
 
