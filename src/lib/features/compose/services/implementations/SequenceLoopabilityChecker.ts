@@ -2,16 +2,24 @@
  * Sequence Loopability Checker Implementation
  *
  * Determines if a sequence can loop seamlessly by checking BOTH:
- * 1. Grid position: last step ends where start position begins
+ * 1. Position: last step ends where the sequence begins
  * 2. Orientations: both props end with the same orientation they started with
  *
  * A sequence that returns to its starting position but with different
  * orientations would cause a visible jump at the loop boundary.
+ *
+ * Supports three data shapes:
+ * - Full data (startPosition object with gridPosition + motions)
+ * - Step-level grid positions (startPosition/endPosition on steps)
+ * - Motion-level locations only (startLocation/endLocation on motions)
+ *   Common for URL-decoded/hydrated sequences where grid positions
+ *   haven't been derived.
  */
 
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ISequenceLoopabilityChecker } from "../contracts/ISequenceLoopabilityChecker";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export class SequenceLoopabilityChecker implements ISequenceLoopabilityChecker {
@@ -32,60 +40,128 @@ export class SequenceLoopabilityChecker implements ISequenceLoopabilityChecker {
   }
 
   /**
-   * Check if grid positions match: last step ends where start position begins.
+   * Check if the sequence ends where it begins, positionally.
+   *
+   * Tries three strategies in order:
+   * 1. Grid position on the dedicated startPosition object
+   * 2. Grid position on the first/last steps (startPosition/endPosition fields)
+   * 3. Per-hand motion locations (startLocation/endLocation on motions)
    */
   private analyzePositionCircularity(sequence: SequenceData): boolean {
     const steps = sequence.steps;
     if (!steps || steps.length < 1) return false;
 
     const startPosData = sequence.startPosition ?? sequence.startingPosition;
-    const startGridPos: GridPosition | null | undefined =
-      startPosData?.startPosition ?? startPosData?.gridPosition ?? steps[0]?.startPosition;
-    if (!startGridPos) return false;
-
     const lastStep = steps[steps.length - 1];
-    if (!lastStep?.endPosition) return false;
 
-    return startGridPos === lastStep.endPosition;
+    // Strategy 1 & 2: Compare grid positions (e.g. "alpha1" === "alpha1")
+    const startGridPos: GridPosition | null | undefined =
+      startPosData?.startPosition ??
+      startPosData?.gridPosition ??
+      steps[0]?.startPosition;
+    const endGridPos = lastStep?.endPosition;
+
+    if (startGridPos && endGridPos) {
+      return startGridPos === endGridPos;
+    }
+
+    // Strategy 3: Compare per-hand motion locations.
+    // If both hands end where they started, the position is circular.
+    return this.analyzeLocationCircularity(sequence);
   }
 
   /**
-   * Check if the last step's end orientations match the start position's orientations.
+   * Compare per-hand start/end locations when grid positions are unavailable.
+   * Checks that each prop's endLocation on the last step matches its
+   * startLocation on the first step.
+   */
+  private analyzeLocationCircularity(sequence: SequenceData): boolean {
+    const steps = sequence.steps;
+    if (!steps || steps.length < 1) return false;
+
+    const firstStep = steps[0];
+    const lastStep = steps[steps.length - 1];
+    if (!firstStep?.motions || !lastStep?.motions) return false;
+
+    const firstBlue = firstStep.motions[MotionColor.BLUE];
+    const firstRed = firstStep.motions[MotionColor.RED];
+    const lastBlue = lastStep.motions[MotionColor.BLUE];
+    const lastRed = lastStep.motions[MotionColor.RED];
+
+    // Need at least one prop with location data to make a determination
+    const hasBlueData = firstBlue?.startLocation && lastBlue?.endLocation;
+    const hasRedData = firstRed?.startLocation && lastRed?.endLocation;
+    if (!hasBlueData && !hasRedData) return false;
+
+    // Every prop that has data must match
+    if (hasBlueData && firstBlue!.startLocation !== lastBlue!.endLocation) {
+      return false;
+    }
+    if (hasRedData && firstRed!.startLocation !== lastRed!.endLocation) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Check if the last step's end orientations match the starting orientations.
    *
-   * Compares each prop's endOrientation on the last step against the
-   * endOrientation on the start position (which equals the first step's
-   * startOrientation). If either prop doesn't match, the animation would
-   * show a visible jump at the loop boundary.
+   * Compares each prop's endOrientation on the last step against the starting
+   * orientation. Uses the dedicated startPosition's motions when available,
+   * otherwise falls back to the first step's startOrientation (which carries
+   * the same information — where the props were when the sequence began).
    */
   private analyzeOrientationCircularity(sequence: SequenceData): boolean {
     const steps = sequence.steps;
     if (!steps || steps.length < 1) return false;
 
-    const startPosData = sequence.startPosition ?? sequence.startingPosition;
-    if (!startPosData?.motions) return false;
-
     const lastStep = steps[steps.length - 1];
     if (!lastStep?.motions) return false;
 
-    // Compare blue prop orientation
-    const startBlue = startPosData.motions[MotionColor.BLUE];
+    const firstStep = steps[0];
+    if (!firstStep?.motions) return false;
+
+    const startPosData = sequence.startPosition ?? sequence.startingPosition;
+
+    // Get the starting orientation for each prop. The start position's
+    // endOrientation equals the first step's startOrientation (props are
+    // stationary in the start position). Fall back to first step when
+    // start position data is missing.
+    const startBlueOri = this.getStartOrientation(
+      startPosData?.motions?.[MotionColor.BLUE],
+      firstStep.motions[MotionColor.BLUE]
+    );
+    const startRedOri = this.getStartOrientation(
+      startPosData?.motions?.[MotionColor.RED],
+      firstStep.motions[MotionColor.RED]
+    );
+
     const endBlue = lastStep.motions[MotionColor.BLUE];
-    if (startBlue && endBlue) {
-      if (startBlue.endOrientation !== endBlue.endOrientation) {
-        return false;
-      }
+    const endRed = lastStep.motions[MotionColor.RED];
+
+    // Compare blue prop orientation
+    if (startBlueOri != null && endBlue) {
+      if (startBlueOri !== endBlue.endOrientation) return false;
     }
 
     // Compare red prop orientation
-    const startRed = startPosData.motions[MotionColor.RED];
-    const endRed = lastStep.motions[MotionColor.RED];
-    if (startRed && endRed) {
-      if (startRed.endOrientation !== endRed.endOrientation) {
-        return false;
-      }
+    if (startRedOri != null && endRed) {
+      if (startRedOri !== endRed.endOrientation) return false;
     }
 
     return true;
+  }
+
+  /**
+   * Resolve the starting orientation for a prop. Prefers the start position's
+   * endOrientation (canonical), falls back to the first step's startOrientation.
+   */
+  private getStartOrientation(
+    startPosMotion: MotionData | undefined,
+    firstStepMotion: MotionData | undefined
+  ): string | undefined {
+    return startPosMotion?.endOrientation ?? firstStepMotion?.startOrientation;
   }
 }
 
