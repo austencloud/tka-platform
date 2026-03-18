@@ -1012,6 +1012,24 @@
       "overallGrade": "A+",
       "notes": null,
       "issues": []
+    },
+    "features/assemble-lab/components": {
+      "lastAuditedAt": "2026-03-18T08:03:47.935Z",
+      "name": "Assemble Lab Components",
+      "type": "components",
+      "grades": {
+        "architecture": "A+",
+        "codeQuality": "A+",
+        "svelte5": "A+",
+        "accessibility": "A+",
+        "uxStates": "A+",
+        "uiConsistency": "A+",
+        "performance": "A+",
+        "security": "A"
+      },
+      "overallGrade": "A+",
+      "notes": null,
+      "issues": []
     }
   },
   "targets": [],
