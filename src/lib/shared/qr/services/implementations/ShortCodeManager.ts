@@ -131,6 +131,21 @@ export class ShortCodeManager implements IShortCodeManager {
       ? await this.findExistingCodeByHash(encoderHash)
       : await this.findExistingCode(fallbackId!);
     if (existingCode) {
+      // Backfill ownerId and sequenceId on legacy records that lack them.
+      // Without these, the resolver can't load unpublished sequences directly.
+      if (sequence.ownerId || sequence.id) {
+        const existingRef = doc(firestore, SHORTCODES_COLLECTION, existingCode);
+        const existingSnap = await getDoc(existingRef);
+        if (existingSnap.exists()) {
+          const existingData = existingSnap.data();
+          const updates: Record<string, unknown> = {};
+          if (!existingData.ownerId && sequence.ownerId) updates.ownerId = sequence.ownerId;
+          if (!existingData.sequenceId && sequence.id) updates.sequenceId = sequence.id;
+          if (Object.keys(updates).length > 0) {
+            await updateDoc(existingRef, updates).catch(() => {});
+          }
+        }
+      }
       return {
         code: existingCode,
         url: this.buildUrlWithOptions(this.getBaseUrl(), existingCode, options),
@@ -151,6 +166,7 @@ export class ShortCodeManager implements IShortCodeManager {
         const record: Record<string, unknown> = {
           sequence: fallbackId || "", // Keep word for backwards compat and debugging
           sequenceId: sequence.id, // Unique ID for disambiguation on resolve
+          ownerId: sequence.ownerId, // Enables direct Firestore load for unpublished sequences
           createdAt: new Date().toISOString(),
           createdBy: "system",
           scanCount: 0,
@@ -251,6 +267,7 @@ export class ShortCodeManager implements IShortCodeManager {
     const data = docSnap.data() as {
       sequence: string;
       sequenceId?: string;
+      ownerId?: string;
       encoderHash?: string;
       createdAt: string;
       createdBy: string;
@@ -264,11 +281,31 @@ export class ShortCodeManager implements IShortCodeManager {
         data.sequence,
         data.sequenceId
       );
-      return fullSequence;
-    } catch (error) {
-      console.error("Failed to load sequence from short code:", error);
-      return null;
+      if (fullSequence) return fullSequence;
+    } catch {
+      // Public index lookup failed — fall through to direct load
     }
+
+    // Direct Firestore load for unpublished sequences (requires ownerId + sequenceId)
+    if (data.ownerId && data.sequenceId) {
+      try {
+        const firestore = await this.ensureFirestore();
+        const directRef = doc(firestore, `users/${data.ownerId}/sequences/${data.sequenceId}`);
+        const directSnap = await getDoc(directRef);
+        if (directSnap.exists()) {
+          const seqData = directSnap.data();
+          return {
+            ...seqData,
+            id: directSnap.id,
+            ownerId: data.ownerId,
+          } as SequenceData;
+        }
+      } catch (error) {
+        console.error("Failed to load sequence directly from short code:", error);
+      }
+    }
+
+    return null;
   }
 
   async incrementScanCount(code: string): Promise<void> {
