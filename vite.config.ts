@@ -943,7 +943,6 @@ export default defineConfig({
       // Prevent mid-session optimization reloads (lightweight deps browseed late)
       "animate-css-grid",
       "@tanstack/svelte-virtual",
-      "realtime-bpm-analyzer",
       "threlte-postprocessing",
       "threlte-postprocessing/effects",
       "three/examples/jsm/controls/PointerLockControls.js",
