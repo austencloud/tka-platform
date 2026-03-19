@@ -19,7 +19,7 @@
   import { createScrollState } from "$lib/features/create/shared/workspace-panel/sequence-display/state/scroll-state.svelte";
   import {
     calculateGridLayout,
-    calculateTimelineRows,
+    calculateTimelineRowsByBeatCount,
     calculateTimelineUnitSize,
     calculateTimelinePadding,
   } from "../utils/grid-calculations";
@@ -119,40 +119,42 @@
     return layout;
   });
 
-  // Timeline mode calculations - use 8 columns only in stacked layout on wide displays
-  // Side-by-side layout always uses 4 columns (workspace is narrower)
-  // Manual column count (from LOOP alignment) overrides the automatic calculation
-  const WIDE_THRESHOLD = 650;
-  const timelineRowCapacity = $derived(
-    manualColumnCount ??
-      (!isSideBySideLayout && containerWidth >= WIDE_THRESHOLD ? 8 : 4)
+  // Timeline mode: beats per row matches the grid layout's column count so
+  // swing/duration sequences show the same number of beats per row as uniform
+  // sequences. Manual column count (from LOOP alignment) overrides.
+  const timelineBeatsPerRow = $derived(
+    manualColumnCount ?? gridLayout.columns
   );
   const timelineRows = $derived.by(() => {
     if (!isTimelineMode) return [];
-    return calculateTimelineRows(steps, timelineRowCapacity, false);
+    return calculateTimelineRowsByBeatCount(steps, timelineBeatsPerRow);
   });
 
   const timelineUnitSize = $derived.by(() => {
     if (!isTimelineMode) return 0;
     const hasStart = startPosition && !startPosition.isBlank;
     const actualCellCount = steps.length + (hasStart ? 1 : 0);
-    const fullRowUnits = hasStart ? timelineRowCapacity + 1 : timelineRowCapacity;
 
-    // Mobile-adaptive: on narrow screens, size based on actual cell count (min 2)
-    // so fewer pictographs appear larger. Ramps smoothly from ~224px (1 cell) down
-    // to ~89px (5+ cells) as beats are added, instead of always pre-allocating for
-    // a full row of 5 units.
+    // Find the widest row's duration to use as the sizing denominator.
+    // Add 1 for start position if present.
+    let maxRowDuration = 0;
+    for (const row of timelineRows) {
+      maxRowDuration = Math.max(maxRowDuration, row.totalDuration);
+    }
+    const fullRowUnits = maxRowDuration + (hasStart ? 1 : 0);
+
+    // Mobile-adaptive: on narrow screens, size based on actual cell count
     const isNarrow = containerWidth > 0 && containerWidth < 650;
     const totalUnits = isNarrow
       ? Math.max(Math.min(actualCellCount, fullRowUnits), 2)
-      : fullRowUnits;
+      : Math.max(fullRowUnits, 2);
 
     const widthBased = calculateTimelineUnitSize(containerWidth, totalUnits);
 
     // Constrain by available height so all rows fit without scrolling
     if (containerHeight > 0 && timelineRows.length > 0) {
-      const gaps = (timelineRows.length - 1) * 1; // 1px gap between rows
-      const padding = 8; // vertical padding (4px top + 4px bottom from scroll container)
+      const gaps = (timelineRows.length - 1) * 1;
+      const padding = 8;
       const availableHeight = containerHeight - gaps - padding;
       const heightBased = Math.floor(availableHeight / timelineRows.length);
       return Math.max(48, Math.min(widthBased, heightBased));
