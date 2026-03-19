@@ -579,16 +579,27 @@ export default defineConfig({
     __PWA_ENABLED__: process.env.DISABLE_PWA !== "true",
   },
   plugins: [
-    // realtime-bpm-analyzer has a broken dist layout (files at dist/dist/ instead
-    // of dist/), so Rollup's commonjs resolver can't find the entry. This plugin
-    // runs before commonjs and marks it external during SSR. The browser build
-    // resolves it fine via optimizeDeps pre-bundling.
+    // realtime-bpm-analyzer@5.0.1 has a broken dist layout: files live at
+    // dist/dist/ but package.json points to dist/. This plugin runs before
+    // Rollup's commonjs resolver to fix resolution in both SSR and client builds.
     {
-      name: "fix-realtime-bpm-analyzer-ssr",
+      name: "fix-realtime-bpm-analyzer",
       enforce: "pre",
       resolveId(id: string, _importer: string | undefined, options?: { ssr?: boolean }) {
-        if (id === "realtime-bpm-analyzer" && options?.ssr) {
-          return { id: "realtime-bpm-analyzer", external: true };
+        if (id === "realtime-bpm-analyzer") {
+          if (options?.ssr) {
+            // SSR: browser-only lib (AudioContext), just skip it
+            return { id: "realtime-bpm-analyzer", external: true };
+          }
+          // Client: resolve to the actual file location
+          return path.resolve(
+            dirname,
+            "node_modules",
+            "realtime-bpm-analyzer",
+            "dist",
+            "dist",
+            "index.esm.js",
+          );
         }
       },
     },
