@@ -301,12 +301,11 @@
   const qrCacheMap = new Map<string, string>();
   let lastQrKey = "";
 
-  // Find the grid position for the QR code: bottom of column 1 (under start position)
+  // Find the grid position for the QR code: bottom of column 1 (under start position).
+  // Only show when there are naturally 2+ rows — don't force an extra row for short sequences.
   const qrGridPosition = $derived.by(() => {
-    if (!showQRCode || !includeStartPosition || !effectiveRows) return null;
-    // Place QR in column 1, last row (or row 2 if only 1 row)
-    const targetRow = Math.max(2, effectiveRows);
-    return { gridColumn: 1, gridRow: targetRow };
+    if (!showQRCode || !includeStartPosition || effectiveRows < 2) return null;
+    return { gridColumn: 1, gridRow: effectiveRows };
   });
 
   // Derive a stable cache key from the values that actually matter for QR content.
