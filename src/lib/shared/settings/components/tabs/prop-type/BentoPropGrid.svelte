@@ -73,15 +73,8 @@
     expandedFamily ? getAllVariations(expandedFamily) : [],
   );
 
-  // Auto-expand the selected prop's family on mount / when selection changes
-  $effect(() => {
-    const base = getBasePropType(selectedPropType);
-    if (getAllVariations(base).length > 1) {
-      expandedFamily = base;
-    } else {
-      expandedFamily = null;
-    }
-  });
+  // No auto-expand on mount. Grid starts fully visible.
+  // expandedFamily is driven entirely by user clicks.
 
   function handleFamilyClick(base: PropType) {
     const variants = getAllVariations(base);
@@ -90,9 +83,14 @@
       onSelect(base);
       expandedFamily = null;
     } else {
-      // Multi-variant family: expand strip
+      // Multi-variant family: expand strip without selecting yet.
+      // Visual highlight comes from expandedFamily check on the button.
       expandedFamily = base;
     }
+  }
+
+  function collapseVariants() {
+    expandedFamily = null;
   }
 
   function variantCount(base: PropType): number | undefined {
@@ -113,8 +111,17 @@
     </header>
   {/if}
 
-  <!-- Scrollable family grid -->
-  <div class="grid-scroll themed-scrollbar">
+  <!-- Scrollable family grid — clicking the dimmed backdrop collapses variants -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div
+    class="grid-scroll themed-scrollbar"
+    class:dimmed={expandedFamily !== null}
+    onclick={(e) => {
+      if (expandedFamily !== null && e.target === e.currentTarget) {
+        collapseVariants();
+      }
+    }}
+  >
     <div class="grid-content">
       {#each PROP_FAMILIES as section, i}
         <div class="section-label" class:first={i === 0}>{section.label}</div>
@@ -122,7 +129,7 @@
           {#each section.bases as base}
             <PropTypeButton
               propType={base}
-              selected={selectedBase === base}
+              selected={expandedFamily !== null ? expandedFamily === base : selectedBase === base}
               badge={variantCount(base)}
               {color}
               onSelect={() => handleFamilyClick(base)}
@@ -206,6 +213,12 @@
     overflow-x: hidden;
     padding: 8px;
     scrollbar-width: thin;
+    transition: opacity var(--duration-normal, 200ms) ease;
+  }
+
+  /* Dim the grid when variant strip is open to focus attention below */
+  .grid-scroll.dimmed {
+    opacity: 0.45;
   }
 
   /* Vertical stack of sections */
@@ -258,6 +271,20 @@
     flex-direction: column;
     gap: 8px;
     align-items: center;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    animation: variant-strip-enter var(--duration-emphasis, 300ms)
+      cubic-bezier(0.36, 0.66, 0.04, 1);
+  }
+
+  @keyframes variant-strip-enter {
+    0% {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .variant-label {
@@ -321,6 +348,11 @@
   @media (prefers-reduced-motion: reduce) {
     .grid-scroll {
       scroll-behavior: auto;
+      transition: none;
+    }
+
+    .variant-strip {
+      animation: none;
     }
   }
 </style>
