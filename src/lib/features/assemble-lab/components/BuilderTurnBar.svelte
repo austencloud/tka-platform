@@ -46,10 +46,10 @@
 
   // ── Orientation ──
   const ORIENTATIONS = [
-    { value: Orientation.IN, label: "In", ariaLabel: "In orientation" },
-    { value: Orientation.OUT, label: "Out", ariaLabel: "Out orientation" },
-    { value: Orientation.CLOCK, label: "CW", ariaLabel: "Clockwise orientation" },
-    { value: Orientation.COUNTER, label: "CCW", ariaLabel: "Counter-clockwise orientation" },
+    { value: Orientation.IN, label: "in", ariaLabel: "in orientation" },
+    { value: Orientation.OUT, label: "out", ariaLabel: "out orientation" },
+    { value: Orientation.CLOCK, label: "clock", ariaLabel: "clock orientation" },
+    { value: Orientation.COUNTER, label: "counter", ariaLabel: "counter orientation" },
   ] as const;
 
   // ── Turns ──

@@ -44,25 +44,28 @@
 
   // ── Orientation ──
   const ORIENTATIONS = [
-    { value: Orientation.IN, label: "In", ariaLabel: "In orientation" },
-    { value: Orientation.OUT, label: "Out", ariaLabel: "Out orientation" },
-    { value: Orientation.CLOCK, label: "CW", ariaLabel: "Clockwise orientation" },
-    { value: Orientation.COUNTER, label: "CCW", ariaLabel: "Counter-clockwise orientation" },
+    { value: Orientation.IN, label: "in", ariaLabel: "in orientation" },
+    { value: Orientation.OUT, label: "out", ariaLabel: "out orientation" },
+    { value: Orientation.CLOCK, label: "clock", ariaLabel: "clock orientation" },
+    { value: Orientation.COUNTER, label: "counter", ariaLabel: "counter orientation" },
   ] as const;
 
   let oriPopoverOpen = $state(false);
   let oriTriggerRef: HTMLElement | null = $state(null);
   let turnsTriggerRef: HTMLElement | null = $state(null);
 
-  // Compute popover top position from trigger's bottom edge
-  function getPopoverTop(triggerRef: HTMLElement | null): string {
-    if (!triggerRef) return "40%";
+  // Compute popover position anchored below the trigger button
+  function getPopoverPosition(triggerRef: HTMLElement | null): { top: string; left: string } {
+    if (!triggerRef) return { top: "40%", left: "8px" };
     const rect = triggerRef.getBoundingClientRect();
-    return `${rect.bottom + 8}px`;
+    return {
+      top: `${rect.bottom + 8}px`,
+      left: `${rect.left}px`,
+    };
   }
 
   const currentOriLabel = $derived(
-    ORIENTATIONS.find(o => o.value === builderState.currentOrientation)?.label ?? "In"
+    ORIENTATIONS.find(o => o.value === builderState.currentOrientation)?.label ?? "in"
   );
 
   function selectOrientation(ori: Orientation): void {
@@ -137,118 +140,123 @@
 
 <!-- Grid overlay -->
 <div class="controls-overlay">
-  <!-- Top-center: instruction + inline turn/orientation control (mobile only) -->
+  <!-- Top-center: instruction text only (mobile only) -->
   <div class="top-status-area">
-    <div class="status-line">
-      <span class="instruction-text">{phaseInstruction}</span>
+    <span class="instruction-text">{phaseInstruction}</span>
+  </div>
 
-      <!-- Orientation control: during placing phase -->
-      {#if isPlacing}
-        <div class="inline-control-wrapper">
-          <button
-            bind:this={oriTriggerRef}
-            class="inline-trigger"
-            onclick={() => { oriPopoverOpen = !oriPopoverOpen; }}
-            aria-label="Orientation: {currentOriLabel}"
-            aria-expanded={oriPopoverOpen}
-          >
-            <i class="fas fa-compass" aria-hidden="true"></i>
-            <span>{currentOriLabel}</span>
-          </button>
+  <!-- Top-left: turn/orientation trigger (mobile only) -->
+  <div class="top-left-control">
+    <!-- Orientation control: during placing phase -->
+    {#if isPlacing}
+      <div class="inline-control-wrapper">
+        <button
+          bind:this={oriTriggerRef}
+          class="inline-trigger"
+          onclick={() => { oriPopoverOpen = !oriPopoverOpen; }}
+          aria-label="Orientation: {currentOriLabel}"
+          aria-expanded={oriPopoverOpen}
+        >
+          <i class="fas fa-compass" aria-hidden="true"></i>
+          <span>{currentOriLabel}</span>
+        </button>
 
-          {#if oriPopoverOpen}
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <div
-              class="popover-backdrop"
-              onclick={() => { oriPopoverOpen = false; }}
-              onkeydown={handlePopoverKeydown}
-              role="presentation"
-            ></div>
+        {#if oriPopoverOpen}
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div
+            class="popover-backdrop"
+            onclick={() => { oriPopoverOpen = false; }}
+            onkeydown={handlePopoverKeydown}
+            role="presentation"
+          ></div>
 
-            <div class="popover-panel" style:top={getPopoverTop(oriTriggerRef)} role="dialog" aria-label="Starting orientation">
-              <div class="popover-pills" role="radiogroup" aria-label="Orientation">
-                {#each ORIENTATIONS as ori}
-                  <button
-                    class="popover-pill"
-                    class:active={builderState.currentOrientation === ori.value}
-                    role="radio"
-                    aria-checked={builderState.currentOrientation === ori.value}
-                    aria-label={ori.ariaLabel}
-                    onclick={() => selectOrientation(ori.value)}
-                  >
-                    {ori.label}
-                  </button>
-                {/each}
-              </div>
-            </div>
-          {/if}
-        </div>
-      {/if}
-
-      <!-- Turns control: during building/animating phase -->
-      {#if isBuilding || isAnimating}
-        <div class="inline-control-wrapper">
-          <button
-            bind:this={turnsTriggerRef}
-            class="inline-trigger"
-            onclick={() => { turnsPopoverOpen = !turnsPopoverOpen; }}
-            aria-label="Turn settings: {isFloat ? 'Float' : `${rotLabel} ${builderState.turnCount}`}"
-            aria-expanded={turnsPopoverOpen}
-          >
-            <i class="fas fa-rotate-right" class:flipped={isFlipped} aria-hidden="true"></i>
-            <span>{isFloat ? "fl" : builderState.turnCount}</span>
-          </button>
-
-          {#if turnsPopoverOpen}
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <div
-              class="popover-backdrop"
-              onclick={() => { turnsPopoverOpen = false; }}
-              onkeydown={handlePopoverKeydown}
-              role="presentation"
-            ></div>
-
-            <div class="popover-panel" style:top={getPopoverTop(turnsTriggerRef)} role="dialog" aria-label="Turn count and rotation direction">
-              <button
-                class="popover-rotation"
-                onclick={toggleRotation}
-                aria-label="Toggle rotation direction"
-              >
-                <i class="fas fa-rotate-right" class:flipped={isFlipped} aria-hidden="true"></i>
-                <span>{rotLabel}</span>
-              </button>
-
-              <div class="popover-divider" aria-hidden="true"></div>
-
-              <div class="popover-pills" role="radiogroup" aria-label="Turn count">
+          {@const oriPos = getPopoverPosition(oriTriggerRef)}
+          <div class="popover-panel" style:top={oriPos.top} style:left={oriPos.left} role="dialog" aria-label="Starting orientation">
+            <div class="popover-pills" role="radiogroup" aria-label="Orientation">
+              {#each ORIENTATIONS as ori}
                 <button
-                  class="popover-pill float-pill"
-                  class:active={isFloat}
+                  class="popover-pill"
+                  class:active={builderState.currentOrientation === ori.value}
                   role="radio"
-                  aria-checked={isFloat}
-                  aria-label="Float (negative half turn, shifts only)"
-                  onclick={() => selectTurn(FLOAT_TURN)}
+                  aria-checked={builderState.currentOrientation === ori.value}
+                  aria-label={ori.ariaLabel}
+                  onclick={() => selectOrientation(ori.value)}
                 >
-                  fl
+                  {ori.label}
                 </button>
-                {#each TURN_OPTIONS as t}
-                  <button
-                    class="popover-pill"
-                    class:active={builderState.turnCount === t}
-                    role="radio"
-                    aria-checked={builderState.turnCount === t}
-                    aria-label={turnAriaLabel(t)}
-                    onclick={() => selectTurn(t)}
-                  >
-                    {t}
-                  </button>
-                {/each}
-              </div>
+              {/each}
             </div>
+          </div>
+        {/if}
+      </div>
+    {/if}
+
+    <!-- Turns control: during building/animating phase -->
+    {#if isBuilding || isAnimating}
+      <div class="inline-control-wrapper">
+        <button
+          bind:this={turnsTriggerRef}
+          class="inline-trigger"
+          onclick={() => { turnsPopoverOpen = !turnsPopoverOpen; }}
+          aria-label="Turn settings: {isFloat ? 'Float' : `${rotLabel} ${builderState.turnCount}`}"
+          aria-expanded={turnsPopoverOpen}
+        >
+          {#if !isFloat}
+            <i class="fas fa-rotate-right" class:flipped={isFlipped} aria-hidden="true"></i>
           {/if}
-        </div>
-      {/if}
-    </div>
+          <span>{isFloat ? "fl" : builderState.turnCount}</span>
+        </button>
+
+        {#if turnsPopoverOpen}
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div
+            class="popover-backdrop"
+            onclick={() => { turnsPopoverOpen = false; }}
+            onkeydown={handlePopoverKeydown}
+            role="presentation"
+          ></div>
+
+          {@const turnsPos = getPopoverPosition(turnsTriggerRef)}
+          <div class="popover-panel turns-popover" style:top={turnsPos.top} style:left={turnsPos.left} role="dialog" aria-label="Turn count and rotation direction">
+            <button
+              class="popover-rotation"
+              class:dimmed={isFloat}
+              onclick={toggleRotation}
+              disabled={isFloat}
+              aria-label="Toggle rotation direction"
+            >
+              <i class="fas fa-rotate-right" class:flipped={isFlipped} aria-hidden="true"></i>
+              <span>{isFloat ? "N/A" : rotLabel}</span>
+            </button>
+
+            <div class="turns-grid" role="radiogroup" aria-label="Turn count">
+              <button
+                class="popover-pill float-pill"
+                class:active={isFloat}
+                role="radio"
+                aria-checked={isFloat}
+                aria-label="Float (negative half turn, shifts only)"
+                onclick={() => selectTurn(FLOAT_TURN)}
+              >
+                fl
+              </button>
+              {#each TURN_OPTIONS as t}
+                <button
+                  class="popover-pill"
+                  class:active={builderState.turnCount === t}
+                  role="radio"
+                  aria-checked={builderState.turnCount === t}
+                  aria-label={turnAriaLabel(t)}
+                  onclick={() => selectTurn(t)}
+                >
+                  {t}
+                </button>
+              {/each}
+            </div>
+          </div>
+        {/if}
+      </div>
+    {/if}
   </div>
 
   <!-- Bottom bar: hand toggle (left) + Complete/New (right) — mobile only -->
@@ -343,6 +351,10 @@
   .top-status-area {
     display: none;
     justify-content: center;
+    align-items: flex-start;
+    /* Position at ~30% from top — midpoint between top dot and grid edge */
+    padding-top: 2%;
+    pointer-events: none;
   }
 
   @media (max-width: 768px) {
@@ -351,18 +363,28 @@
     }
   }
 
-  .status-line {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    pointer-events: auto;
-  }
-
   .instruction-text {
     font-size: var(--font-size-min, 14px);
     font-weight: 700;
     color: var(--theme-text, #fff);
     text-shadow: 0 1px 6px var(--theme-shadow, rgba(0, 0, 0, 0.3));
+    pointer-events: none;
+  }
+
+  /* ── Top-left control area (turn/orientation trigger on mobile) ── */
+  .top-left-control {
+    display: none;
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    pointer-events: auto;
+    z-index: 10;
+  }
+
+  @media (max-width: 768px) {
+    .top-left-control {
+      display: flex;
+    }
   }
 
   /* ── Inline turn/orientation trigger ── */
@@ -419,25 +441,33 @@
     box-shadow: 0 8px 32px var(--theme-shadow, rgba(0, 0, 0, 0.3));
     animation: popover-in 0.15s ease-out;
 
-    /* Center horizontally on viewport; top set inline via style:top */
-    left: 50%;
-    transform: translateX(-50%);
+    width: fit-content;
+    max-width: calc(100vw - 16px);
+  }
+
+  /* Turns popover: vertical layout with rotation toggle on top, grid below */
+  .popover-panel.turns-popover {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding: 10px;
   }
 
   @keyframes popover-in {
     from {
       opacity: 0;
-      transform: translateX(-50%) translateY(-6px) scale(0.95);
+      transform: translateY(-6px) scale(0.95);
     }
     to {
       opacity: 1;
-      transform: translateX(-50%) translateY(0) scale(1);
+      transform: translateY(0) scale(1);
     }
   }
 
   .popover-rotation {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     padding: 8px 10px;
     border: none;
@@ -452,8 +482,13 @@
     transition: background 0.15s ease;
   }
 
-  .popover-rotation:hover {
+  .popover-rotation:hover:not(:disabled) {
     background: var(--theme-accent-hover, rgba(99, 102, 241, 0.15));
+  }
+
+  .popover-rotation.dimmed {
+    opacity: 0.35;
+    cursor: default;
   }
 
   .popover-rotation i {
@@ -465,21 +500,20 @@
     transform: scaleX(-1);
   }
 
-  .popover-divider {
-    width: 1px;
-    height: 28px;
-    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    margin: 0 4px;
-    flex-shrink: 0;
-  }
-
   .popover-pills {
     display: flex;
     gap: 2px;
   }
 
+  /* 4-column grid for turn values — fits any screen width */
+  .turns-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+  }
+
   .popover-pill {
-    padding: 8px 8px;
+    padding: 8px 10px;
     border: none;
     border-radius: 10px;
     background: transparent;
@@ -488,11 +522,9 @@
     font-weight: 600;
     cursor: pointer;
     min-height: var(--min-touch-target, 44px);
-    min-width: var(--min-touch-target, 44px);
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
     transition: background 0.15s ease, color 0.15s ease;
   }
 
