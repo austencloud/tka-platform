@@ -248,22 +248,93 @@
       "issues": []
     },
     "features/choreo-card": {
-      "lastAuditedAt": "2026-01-21T10:37:56.713Z",
+      "lastAuditedAt": "2026-03-19T09:27:46.723Z",
       "name": "Choreo Card",
       "type": "module",
       "grades": {
         "architecture": "A+",
         "codeQuality": "A+",
         "svelte5": "A+",
-        "accessibility": "A+",
-        "uxStates": "A+",
-        "uiConsistency": "A+",
+        "accessibility": "B",
+        "uxStates": "A",
+        "uiConsistency": "C",
         "performance": "A+",
-        "security": "A"
+        "security": "A+"
       },
-      "overallGrade": "A+",
-      "notes": "Excellent module. Clean orchestrator pattern, proper domain separation, all modern Svelte 5 runes, 48px touch targets, comprehensive UX states. One @html usage for internal QR SVG (acceptable).",
-      "issues": []
+      "overallGrade": "A",
+      "notes": null,
+      "issues": [
+        {
+          "severity": "critical",
+          "dimension": "uiConsistency",
+          "file": "features/choreo-card/components/CardBack.svelte",
+          "line": 173,
+          "description": "21 hardcoded color instances - entire file uses raw hex instead of CSS custom properties"
+        },
+        {
+          "severity": "critical",
+          "dimension": "uiConsistency",
+          "file": "features/choreo-card/components/ChoreoCardFilters.svelte",
+          "line": 246,
+          "description": "color: #ffffff hardcoded instead of var(--theme-text)"
+        },
+        {
+          "severity": "critical",
+          "dimension": "uiConsistency",
+          "file": "features/choreo-card/components/Navigation.svelte",
+          "line": 177,
+          "description": "color: #ffffff hardcoded instead of var(--theme-text)"
+        },
+        {
+          "severity": "critical",
+          "dimension": "uiConsistency",
+          "file": "features/choreo-card/components/ChoreoCardTab.svelte",
+          "line": 605,
+          "description": "color: #ffffff hardcoded instead of var(--theme-text)"
+        },
+        {
+          "severity": "critical",
+          "dimension": "uiConsistency",
+          "file": "features/choreo-card/components/PageDisplay.svelte",
+          "line": 200,
+          "description": "color: #ef4444 should use var(--semantic-error)"
+        },
+        {
+          "severity": "serious",
+          "dimension": "accessibility",
+          "file": "features/choreo-card/components/CardDesigner.svelte",
+          "line": 209,
+          "description": "font-size: 11px on .label below 12px minimum"
+        },
+        {
+          "severity": "serious",
+          "dimension": "accessibility",
+          "file": "features/choreo-card/components/ChoreoCardFilters.svelte",
+          "line": 206,
+          "description": "font-size: 0.7rem (11.2px) below 12px minimum"
+        },
+        {
+          "severity": "serious",
+          "dimension": "uxStates",
+          "file": "features/choreo-card/components/ChoreoCardTab.svelte",
+          "line": 335,
+          "description": "Deck load failure swallowed - console.error only, no user feedback"
+        },
+        {
+          "severity": "serious",
+          "dimension": "uxStates",
+          "file": "features/choreo-card/components/ChoreoCardExport.svelte",
+          "line": 131,
+          "description": "Export failure logged only, no user feedback"
+        },
+        {
+          "severity": "moderate",
+          "dimension": "uiConsistency",
+          "file": "features/choreo-card/components/CardDesigner.svelte",
+          "line": 219,
+          "description": "Hardcoded box-shadow instead of design token"
+        }
+      ]
     },
     "features/community": {
       "lastAuditedAt": "2026-01-21T10:44:19.083Z",
