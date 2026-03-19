@@ -695,9 +695,11 @@ export class ImageComposer implements IImageComposer {
   }
 
   /**
-   * Draw a duration badge in the bottom-right corner of a pictograph cell.
-   * Matches the ChoreoCard .duration-badge overlay styling.
-   * Only called for beats with non-default duration (not 1.0).
+   * Draw a duration glyph at the bottom-center of a pictograph cell.
+   * Matches DurationGlyph.svelte positioning exactly:
+   * - SVG viewBox 950×950, text at y=890, centered at x=475
+   * - Font: Inter/system-ui, weight 600, size 52 (in viewBox units)
+   * - Color: #ffffff (dark) or #231f20 (light)
    */
   private drawDurationBadge(
     ctx: CanvasRenderingContext2D,
@@ -710,21 +712,23 @@ export class ImageComposer implements IImageComposer {
     const VIEW_BOX_SIZE = 950;
     const scale = cellSize / VIEW_BOX_SIZE;
 
-    // Format: "1.67×" or "2×"
-    const text = Number.isInteger(duration) ? `${duration}×` : `${duration}×`;
+    // Format to match DurationGlyph: remove trailing zeros, add × suffix
+    const formatted = Number.isInteger(duration)
+      ? duration.toString()
+      : duration.toFixed(2).replace(/\.?0+$/, "");
+    const text = `${formatted}×`;
 
-    const fontSize = 70 * scale;
-    const paddingX = 40 * scale;
-    const paddingY = 40 * scale;
+    // Match DurationGlyph.svelte: font-size 52, y=890, x=475 (center)
+    const fontSize = 52 * scale;
+    const textX = x + 475 * scale;
+    const textY = y + 890 * scale;
 
     ctx.save();
-    ctx.font = `600 ${fontSize}px system-ui, sans-serif`;
-    ctx.textAlign = "end";
-    ctx.textBaseline = "bottom";
-    ctx.fillStyle = isDarkMode
-      ? "rgba(255, 255, 255, 0.55)"
-      : "rgba(0, 0, 0, 0.55)";
-    ctx.fillText(text, x + cellSize - paddingX, y + cellSize - paddingY);
+    ctx.font = `600 ${fontSize}px Inter, "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = isDarkMode ? "#ffffff" : "#231f20";
+    ctx.fillText(text, textX, textY);
     ctx.restore();
   }
 
