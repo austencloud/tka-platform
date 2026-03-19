@@ -518,34 +518,9 @@
         />
       </main>
     {:else if mode === "designer"}
-      <!-- Card Designer: side-by-side front/back preview -->
-      <aside class="sidebar">
-        <div class="sidebar-content">
-          <ChoreoCardVisibility
-            {handPointsVisible}
-            {showGrid}
-            {showTKA}
-            {showWord}
-            {includeStartPosition}
-            onHandPointsChange={handleHandPointsChange}
-            onShowGridChange={handleShowGridChange}
-            onShowTKAChange={handleShowTKAChange}
-            onShowWordChange={handleShowWordChange}
-            onIncludeStartPositionChange={handleIncludeStartPositionChange}
-          />
-        </div>
-      </aside>
-
+      <!-- Card Designer: full-width, no sidebar -->
       <main class="content-area">
-        <CardDesigner
-          {sequences}
-          {isLoading}
-          {handPointsVisible}
-          {showGrid}
-          {showTKA}
-          {showWord}
-          {includeStartPosition}
-        />
+        <CardDesigner {sequences} {isLoading} />
       </main>
     {/if}
   </div>
