@@ -193,7 +193,7 @@
   import { lanSyncState } from "$lib/shared/lan-sync/state/lan-sync-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+  import { getSettings, updateSettings } from "$lib/shared/application/state/app-state.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
   import { sequenceModalPersistence } from "$lib/shared/sequence-viewer/services/implementations/SequenceModalPersistence";
@@ -438,7 +438,11 @@
   $effect(() => {
     const seq = sequence as LibrarySequence | null;
     if (!seq?.contentHash || !authState.user?.uid) {
-      isSaved = true;
+      // No contentHash means we can't verify against the library.
+      // If the sequence is owned by the current user (e.g. from create module),
+      // treat it as unsaved so the Save button appears. Otherwise default to true
+      // (viewing someone else's sequence or not logged in — Save is irrelevant).
+      isSaved = !(isOwned && seq && !seq.contentHash);
       return;
     }
 
@@ -1324,6 +1328,11 @@
   function handleUnifiedDarkModeToggle() {
     hapticService?.trigger("selection");
     const newValue = !imgDarkMode;
+    // Sync to all three dark mode stores so they stay consistent.
+    // Without the AppSettings update, the Firebase real-time listener would
+    // read the stale darkMode value after the imageExport write triggers a
+    // document change, resetting the animation canvas back to the old state.
+    void updateSettings({ darkMode: newValue });
     imageComposition.setDarkMode(newValue);
     animationVisibility.setDarkMode(newValue);
   }

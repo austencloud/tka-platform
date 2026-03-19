@@ -5,7 +5,12 @@
  * Uses section-based analysis to handle songs with intros/outros that lack steps.
  */
 
-import { analyzeFullBuffer } from "realtime-bpm-analyzer";
+// Dynamic import: this browser-only package has a broken dist layout (nested dist/dist/)
+// that prevents Vite's SSR resolver from finding the entry point at build time.
+async function getAnalyzeFullBuffer() {
+  const mod = await import("realtime-bpm-analyzer");
+  return mod.analyzeFullBuffer;
+}
 
 export interface BpmResult {
   bpm: number;
@@ -206,6 +211,7 @@ async function analyzeSection(
   _audioContext: AudioContext,
   _sampleRate: number
 ): Promise<BpmResult> {
+  const analyzeFullBuffer = await getAnalyzeFullBuffer();
   const result = await analyzeFullBuffer(audioBuffer, {
     frequencyValue: 150,
     qualityValue: 1,
