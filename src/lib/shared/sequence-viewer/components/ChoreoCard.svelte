@@ -39,7 +39,7 @@
   import { previewCellRenderer } from "../services/implementations/PreviewCellRenderer";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
-  import { calculateTimelineRows } from "$lib/features/create/shared/workspace-panel/sequence-display/utils/grid-calculations";
+  import { calculateTimelineRowsByBeatCount } from "$lib/features/create/shared/workspace-panel/sequence-display/utils/grid-calculations";
   import type { TimelineRow } from "$lib/features/create/shared/workspace-panel/sequence-display/utils/grid-calculations";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
@@ -753,8 +753,10 @@
       // Start position is handled as a separate column barrier, NOT inline in the first row.
       let computedDurationRows: TimelineRow[] = [];
       if (mixed) {
-        const rowCapacity = includeStartPosition ? cols - 1 : cols;
-        computedDurationRows = calculateTimelineRows(sequence.steps, rowCapacity, false);
+        // Use the layout table's column count as beats-per-row.
+        // cols already includes start position (+1), so subtract it to get beat columns.
+        const beatsPerRow = includeStartPosition ? cols - 1 : cols;
+        computedDurationRows = calculateTimelineRowsByBeatCount(sequence.steps, beatsPerRow);
         rws = computedDurationRows.length;
         durationRows = computedDurationRows;
         // Compute max step duration units in any row, then add 1 for start column
@@ -2083,6 +2085,7 @@
   .duration-start-col {
     flex: 0 0 calc(1 / var(--max-units, 5) * 100%);
     display: flex;
+    flex-direction: column;
     align-items: flex-start;
     background: #f5f5f5;
     transition: background-color 350ms ease;
