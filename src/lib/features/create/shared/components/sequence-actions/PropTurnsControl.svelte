@@ -161,8 +161,8 @@
   }
 
   .ctrl-btn.compact {
-    width: 38px;
-    height: 38px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     border-radius: 8px;
     font-size: 0.95rem;
   }
@@ -219,8 +219,8 @@
   /* Compact: icon-only square button, positioned before turns row */
   .invert-btn.compact {
     order: -1;
-    width: 38px;
-    height: 38px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     padding: 0;
     border-radius: 8px;
     font-size: 0.95rem;

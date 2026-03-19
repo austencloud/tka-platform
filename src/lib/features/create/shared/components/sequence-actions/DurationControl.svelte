@@ -293,8 +293,8 @@
 
   /* Fine buttons (±0.1) - subtle */
   .ctrl-btn.fine {
-    width: 36px;
-    height: 36px;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
     font-size: 0.9rem;
   }
 
@@ -303,15 +303,15 @@
      ============================================================================ */
 
   .duration-control.compact .ctrl-btn {
-    width: 34px;
-    height: 34px;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
     font-size: 0.85rem;
     border-radius: 8px;
   }
 
   .duration-control.compact .ctrl-btn.fine {
-    width: 28px;
-    height: 28px;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
     font-size: 0.75rem;
   }
 
@@ -325,13 +325,13 @@
     }
 
     .ctrl-btn {
-      width: 40px;
-      height: 40px;
+      width: var(--min-touch-target, 44px);
+      height: var(--min-touch-target, 44px);
     }
 
     .ctrl-btn.fine {
-      width: 32px;
-      height: 32px;
+      width: var(--min-touch-target, 44px);
+      height: var(--min-touch-target, 44px);
     }
 
     .duration-value {
