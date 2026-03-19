@@ -199,8 +199,6 @@
         onOpenLetterSheet={handleOpenLetterSheet}
         onOpenOptionsSheet={handleOpenOptionsSheet}
         getFilteredCount={galleryState.getFilteredCount}
-        sequenceSections={galleryState.sequenceSections}
-        sortMethod={galleryState.currentSortMethod}
       />
     </div>
   {/snippet}
