@@ -15,7 +15,7 @@
 -->
 <script lang="ts">
   import { page } from "$app/stores";
-  import { goto, pushState, replaceState } from "$app/navigation";
+  import { goto, replaceState } from "$app/navigation";
   import { browser } from "$app/environment";
   import { onMount, onDestroy } from "svelte";
   import { fade } from "svelte/transition";
@@ -50,7 +50,7 @@
   import RouteViewerHeader from "./RouteViewerHeader.svelte";
   import ViewerSettingsModal from "$lib/shared/sequence-viewer/components/ViewerSettingsModal.svelte";
   import DeleteConfirmDialog from "$lib/shared/sequence-viewer/components/DeleteConfirmDialog.svelte";
-  import { openSequenceOverlay } from "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte";
+
   import { getIabBannerVisible, IAB_BANNER_HEIGHT } from "$lib/shared/auth/state/iab-banner-state.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import LoadingGate from "$lib/shared/components/loading/LoadingGate.svelte";
@@ -85,6 +85,9 @@
   // URL prop params (from QR codes with prop info)
   const urlBlueProp = $derived($page.url.searchParams.get("bp"));
   const urlRedProp = $derived($page.url.searchParams.get("rp"));
+
+  // Guest preview mode — forces unauthenticated view for debugging shared link UX
+  const forceGuest = $derived($page.url.searchParams.get("guest") === "1");
 
   // Sequence loading state
   let sequence = $state<SequenceData | null>(null);
@@ -324,33 +327,6 @@
       isLoading = false;
     }
 
-    // Mobile: redirect to app shell with drawer overlay
-    // This handles QR code / shared link scenarios where the user lands on
-    // the route but would get a better experience with the drawer overlay.
-    // Works for both authenticated and unauthenticated users since
-    // SequenceViewerDrawerHost renders outside the auth gate.
-    if (isMobile && sequence) {
-      const returnPath = handoffData?.returnPath || "/browse/gallery";
-      const returnLabel = handoffData?.returnLabel || "Browse";
-      // Set overlay state without history push (goto will handle navigation)
-      // dismissPath ensures swipe-down navigates to the app instead of history.back()
-      openSequenceOverlay(sequence, {
-        returnLabel,
-        initialBpm: urlBpm ?? undefined,
-        initialStep: urlTime ?? undefined,
-        skipHistoryPush: true,
-        dismissPath: returnPath,
-      });
-      // Skip view transition so it doesn't compete with drawer animation
-      setSkipNextViewTransition();
-      // Navigate to app shell - replaces the /sequence/[id] entry
-      // Once MainApplication mounts, SequenceViewerDrawerHost picks up overlay state
-      await goto(returnPath, { replaceState: true });
-      // Push overlay history entry after navigation completes
-      pushState('', { sequenceOverlay: true });
-      return;
-    }
-
     // Store pending time restore from URL (orchestrator will handle after animation init)
     if (urlTime) {
       pendingTimeRestore = urlTime;
@@ -534,6 +510,7 @@
   <SequenceViewerOrchestrator
     {sequence}
     {isMobile}
+    {forceGuest}
     initialBpm={urlBpm || handoffData?.playbackState?.bpm || 60}
     initialStep={handoffData?.playbackState?.currentStep || 0}
     initialViewMode={urlViewMode || undefined}
@@ -615,6 +592,7 @@
                       showStartPos: ctx.exportOptions.imageIncludeStartPosition,
                       showCreatorName: ctx.exportOptions.imageShowCreatorName,
                       showNotes: ctx.exportOptions.imageShowNotes,
+                      showQRCode: true,
                       darkMode: ctx.exportOptions.imageDarkMode,
                       columnCount: ctx.exportOptions.imageColumnCount != null
                         ? ctx.exportOptions.imageColumnCount + (ctx.exportOptions.imageIncludeStartPosition ? 1 : 0)
