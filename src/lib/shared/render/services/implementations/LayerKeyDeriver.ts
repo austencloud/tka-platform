@@ -231,12 +231,14 @@ export class LayerKeyDeriver {
 
     if (blueMotion) {
       parts.push(`b:${blueMotion.motionType ?? ""}:${blueMotion.startLocation ?? ""}:${blueMotion.endLocation ?? ""}`);
-      parts.push(`bt:${blueMotion.turns ?? 0}`);
+      parts.push(`bt:${blueMotion.turns ?? 0}:${blueMotion.rotationDirection ?? ""}`);
+      parts.push(`bo:${blueMotion.startOrientation ?? ""}:${blueMotion.endOrientation ?? ""}`);
     }
 
     if (redMotion) {
       parts.push(`r:${redMotion.motionType ?? ""}:${redMotion.startLocation ?? ""}:${redMotion.endLocation ?? ""}`);
-      parts.push(`rt:${redMotion.turns ?? 0}`);
+      parts.push(`rt:${redMotion.turns ?? 0}:${redMotion.rotationDirection ?? ""}`);
+      parts.push(`ro:${redMotion.startOrientation ?? ""}:${redMotion.endOrientation ?? ""}`);
     }
 
     // Include grid mode if available
