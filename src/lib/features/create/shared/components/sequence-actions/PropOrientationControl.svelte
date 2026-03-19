@@ -268,7 +268,7 @@
   }
 
   .option-btn span {
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;

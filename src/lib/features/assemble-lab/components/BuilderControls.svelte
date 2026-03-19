@@ -382,7 +382,7 @@
     font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     cursor: pointer;
-    min-height: 32px;
+    min-height: var(--min-touch-target, 44px);
     transition: background 0.15s ease;
   }
 
@@ -447,7 +447,7 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
     cursor: pointer;
-    min-height: 38px;
+    min-height: var(--min-touch-target, 44px);
     flex-shrink: 0;
     transition: background 0.15s ease;
   }
@@ -487,8 +487,8 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
     cursor: pointer;
-    min-height: 38px;
-    min-width: 38px;
+    min-height: var(--min-touch-target, 44px);
+    min-width: var(--min-touch-target, 44px);
     display: flex;
     align-items: center;
     justify-content: center;

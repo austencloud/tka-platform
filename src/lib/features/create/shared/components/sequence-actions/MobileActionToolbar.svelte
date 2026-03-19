@@ -215,7 +215,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 36px;
+    height: var(--min-touch-target, 44px);
     padding: 0 8px;
     border: none;
     border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
