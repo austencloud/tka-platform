@@ -444,12 +444,33 @@ export class CollectionManager implements ICollectionManager {
       updatedAt: serverTimestamp(),
     });
 
-    // Update sequence
-    const sequenceRef = doc(firestore, getUserSequencePath(userId, sequenceId));
-    await updateDoc(sequenceRef, {
-      collectionIds: arrayUnion(collectionId),
-      updatedAt: serverTimestamp(),
-    });
+    // Update sequence's collectionIds if the sequence exists in the user's library.
+    // The sequence might not exist locally when favoriting someone else's public
+    // sequence or a sequence from the generate module that hasn't been saved yet.
+    // In those cases the collection document (above) is the source of truth, and
+    // the sequence-side cross-reference is a nice-to-have we skip gracefully.
+    try {
+      const sequenceRef = doc(
+        firestore,
+        getUserSequencePath(userId, sequenceId)
+      );
+      await updateDoc(sequenceRef, {
+        collectionIds: arrayUnion(collectionId),
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err: unknown) {
+      // Firestore throws "not-found" (code) or "No document to update" (message)
+      // when updateDoc targets a non-existent document.
+      const isNotFound =
+        (err instanceof Error && err.message.includes("No document to update")) ||
+        (typeof err === "object" && err !== null && "code" in err &&
+          (err as { code: string }).code === "not-found");
+      if (!isNotFound) {
+        throw err;
+      }
+      // Sequence not in user's library — collection doc already updated, so
+      // the favorite is persisted. The sequence-side backlink is just skipped.
+    }
   }
 
   async removeSequenceFromCollection(
@@ -475,12 +496,27 @@ export class CollectionManager implements ICollectionManager {
       updatedAt: serverTimestamp(),
     });
 
-    // Update sequence
-    const sequenceRef = doc(firestore, getUserSequencePath(userId, sequenceId));
-    await updateDoc(sequenceRef, {
-      collectionIds: arrayRemove(collectionId),
-      updatedAt: serverTimestamp(),
-    });
+    // Remove collection reference from the sequence if it exists in the user's
+    // library. Same as addSequenceToCollection: the sequence may not exist
+    // locally (public sequence from another user, unsaved generate output).
+    try {
+      const sequenceRef = doc(
+        firestore,
+        getUserSequencePath(userId, sequenceId)
+      );
+      await updateDoc(sequenceRef, {
+        collectionIds: arrayRemove(collectionId),
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err: unknown) {
+      const isNotFound =
+        (err instanceof Error && err.message.includes("No document to update")) ||
+        (typeof err === "object" && err !== null && "code" in err &&
+          (err as { code: string }).code === "not-found");
+      if (!isNotFound) {
+        throw err;
+      }
+    }
   }
 
   async getCollectionSequences(
