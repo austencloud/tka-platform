@@ -1,14 +1,15 @@
 <!--
   CardBack.svelte - Back face of a printed choreo card
 
-  Renders the reverse side, sized to fill its container (which is forced
-  to match the front card's exact pixel dimensions by CardDesigner).
-  All font sizes use em/% so content scales with the container.
+  Fills its parent container (same dimensions as the front card).
+  Uses --print-* tokens for all colors. Font sizes scale via clamp()
+  relative to container inline size so content adapts to any card
+  proportion (wide 4-beat cards vs. tall 16-beat cards).
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { ISequenceToEntryConverter } from "../services/contracts/ISequenceToEntryConverter";
-  import { container } from "$lib/shared/di";
+  import { container as di } from "$lib/shared/di";
   import { loopDetector } from "$lib/features/loop-labeler/services/implementations/LOOPDetector";
   import { onMount } from "svelte";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
@@ -25,14 +26,14 @@
 
   let { sequence }: Props = $props();
 
-  let sequenceToEntryConverter: ISequenceToEntryConverter | null = $state(null);
+  let converter: ISequenceToEntryConverter | null = $state(null);
 
   onMount(() => {
-    sequenceToEntryConverter = container.items.sequenceToEntryConverter;
+    converter = di.items.sequenceToEntryConverter;
   });
 
-  function componentIdToLOOPComponent(id: ComponentId): LOOPComponent | null {
-    const mapping: Record<string, LOOPComponent> = {
+  function toLoopComponent(id: ComponentId): LOOPComponent | null {
+    const map: Record<string, LOOPComponent> = {
       rotated: LOOPComponent.ROTATED,
       mirrored: LOOPComponent.MIRRORED,
       flipped: LOOPComponent.FLIPPED,
@@ -40,22 +41,20 @@
       inverted: LOOPComponent.INVERTED,
       rewound: LOOPComponent.REWOUND,
     };
-    return mapping[id] ?? null;
+    return map[id] ?? null;
   }
 
   const loopComponents = $derived.by(() => {
-    if (!sequenceToEntryConverter || !sequence.steps?.length) {
-      return new Set<LOOPComponent>();
-    }
+    if (!converter || !sequence.steps?.length) return new Set<LOOPComponent>();
     try {
-      const entry = sequenceToEntryConverter.convert(sequence);
+      const entry = converter.convert(sequence);
       const result = loopDetector.detectLOOP(entry);
-      const components = new Set<LOOPComponent>();
-      for (const componentId of result.components) {
-        const mapped = componentIdToLOOPComponent(componentId);
-        if (mapped) components.add(mapped);
+      const out = new Set<LOOPComponent>();
+      for (const c of result.components) {
+        const mapped = toLoopComponent(c);
+        if (mapped) out.add(mapped);
       }
-      return components;
+      return out;
     } catch {
       return new Set<LOOPComponent>();
     }
@@ -63,129 +62,138 @@
 
   const hasLoop = $derived(loopComponents.size > 0);
   const level = $derived(sequence.level ?? 1);
+  const word = $derived(sequence.word ?? sequence.name ?? "");
+  const beats = $derived(sequence.sequenceLength ?? sequence.steps?.length ?? 0);
 
-  const loopTypeLabel = $derived(
-    sequence.loopType ? LOOP_TYPE_LABELS[sequence.loopType] ?? "LOOP" : null
+  const loopLabel = $derived(
+    sequence.loopType ? LOOP_TYPE_LABELS[sequence.loopType] ?? null : null
   );
 
-  const isRotatedLoop = $derived(
+  const isRotated = $derived(
     sequence.loopType ? ROTATED_LOOP_TYPES.has(sequence.loopType) : false
   );
 
-  const sliceLabel = $derived.by(() => {
-    const cycle = sequence.orientationCycleCount;
+  const cycle = $derived(sequence.orientationCycleCount);
+
+  const sliceName = $derived.by(() => {
     if (cycle === 4) return "Quartered";
     if (cycle === 2) return "Halved";
     return null;
   });
 
-  const sliceDescription = $derived.by(() => {
-    const cycle = sequence.orientationCycleCount;
-    if (cycle === 4)
-      return "Play 4 times. Each rep rotates 90\u00B0.";
-    if (cycle === 2)
-      return "Play 2 times. Each rep rotates 180\u00B0.";
-    return null;
-  });
-
-  const levelDescriptions: Record<number, string> = {
-    1: "No rotation",
-    2: "Whole turns",
-    3: "Half turns",
+  const levelMeta: Record<number, { name: string; detail: string }> = {
+    1: { name: "Foundation", detail: "No rotation" },
+    2: { name: "Turning", detail: "Whole turns" },
+    3: { name: "Precision", detail: "Half turns" },
   };
-
-  const beatCount = $derived(sequence.sequenceLength ?? sequence.steps?.length ?? 0);
-  const word = $derived(sequence.word ?? sequence.name ?? "");
 </script>
 
-<div class="card-back">
-  <!-- Inner border for that printed-card feel -->
-  <div class="inner-border"></div>
+<div class="back" style="container-type: inline-size;">
+  <!-- Outer border -->
+  <div class="frame">
+    <!-- Inner decorative border -->
+    <div class="inner-rule"></div>
 
-  <div class="content">
-    <!-- Header -->
-    <header class="header">
-      <h2 class="title">Choreo Card</h2>
-      <p class="subtitle">The Kinetic Alphabet</p>
-    </header>
+    <div class="content">
+      <!-- ── Top: Branding ── -->
+      <header class="brand">
+        <span class="brand-mark">Choreo Card</span>
+        <span class="brand-system">The Kinetic Alphabet</span>
+      </header>
 
-    <!-- Sequence identity -->
-    <div class="sequence-identity">
-      <span class="word">{word}</span>
-      <span class="meta">{beatCount} beats</span>
-    </div>
+      <!-- ── Sequence identity ── -->
+      <div class="identity">
+        <span class="word">{word}</span>
+        <span class="beats">{beats} beats</span>
+      </div>
 
-    <hr class="rule" />
+      <hr class="sep" />
 
-    <!-- Level system -->
-    <div class="section">
-      <div class="level-strip">
-        {#each [1, 2, 3] as lvl}
-          <div class="level" class:active={level === lvl} class:dimmed={level !== lvl}>
-            <span class="level-number">{lvl}</span>
-            <span class="level-name">{levelDescriptions[lvl]}</span>
+      <!-- ── Level indicator ── -->
+      <div class="levels">
+        {#each [1, 2, 3] as n}
+          {@const meta = levelMeta[n] ?? { name: "", detail: "" }}
+          <div class="lvl" class:current={level === n} class:other={level !== n}>
+            <span class="lvl-n">{n}</span>
+            <span class="lvl-name">{meta.name}</span>
+            {#if level === n}
+              <span class="lvl-detail">{meta.detail}</span>
+            {/if}
           </div>
         {/each}
       </div>
-    </div>
 
-    <!-- LOOP info (only if detected) -->
-    {#if hasLoop}
-      <div class="loop-card">
-        <div class="loop-row">
-          <LOOPIconStrip activeComponents={loopComponents} size={18} darkMode={false} />
-          <span class="loop-name">
-            {#if sliceLabel}{sliceLabel}{/if}
-            {#if isRotatedLoop} Rotation{/if}
-            {#if loopTypeLabel && !sliceLabel}{loopTypeLabel}{/if}
-          </span>
+      <!-- ── LOOP info ── -->
+      {#if hasLoop}
+        <div class="loop">
+          <div class="loop-head">
+            <LOOPIconStrip activeComponents={loopComponents} size={16} darkMode={false} />
+            <span class="loop-label">
+              {#if sliceName}{sliceName}{/if}
+              {#if isRotated} Rotation{/if}
+              {#if loopLabel && !sliceName}{loopLabel}{/if}
+            </span>
+          </div>
+          <p class="loop-detail">
+            {#if cycle === 4}
+              4 reps, 90° each. Full cycle resets.
+            {:else if cycle === 2}
+              2 reps, 180° each. Full cycle resets.
+            {:else}
+              Loops to start each cycle.
+            {/if}
+          </p>
         </div>
-        {#if sliceDescription}
-          <p class="loop-explanation">{sliceDescription}</p>
-        {:else}
-          <p class="loop-explanation">Loops back to the start each cycle.</p>
-        {/if}
-      </div>
-    {/if}
+      {/if}
 
-    <!-- Flexible spacer pushes instructions to bottom -->
-    <div class="grow"></div>
+      <!-- ── Spacer ── -->
+      <div class="grow"></div>
 
-    <!-- Instructions -->
-    <ol class="steps">
-      <li>Learn each beat step by step</li>
-      <li>Teach it to a friend</li>
-      <li>Scan the QR on the front to open in the app</li>
-    </ol>
+      <!-- ── Usage ── -->
+      <ol class="usage">
+        <li>Learn each beat step by step</li>
+        <li>Teach it to a friend</li>
+        <li>Scan the QR on the front to open in the app</li>
+      </ol>
 
-    <!-- Footer -->
-    <footer class="footer">
-      <span>tkascribe.com</span>
-      <span>Build your own deck</span>
-    </footer>
+      <!-- ── Footer ── -->
+      <footer class="foot">
+        <span>tkascribe.com</span>
+        <span>Build your own deck</span>
+      </footer>
+    </div>
   </div>
 </div>
 
 <style>
-  .card-back {
+  /* Print-mode tokens inherited from parent canvas or defined here as fallbacks */
+  .back {
+    --cb-bg: var(--print-bg, #ffffff);
+    --cb-fg: var(--print-text, #333333);
+    --cb-dim: var(--print-text-dim, #666666);
+    --cb-muted: var(--print-text-muted, #999999);
+    --cb-rule: var(--print-border, #000000);
+    --cb-rule-light: color-mix(in srgb, var(--cb-rule) 15%, var(--cb-bg));
+
     width: 100%;
     height: 100%;
-    background: #ffffff;
-    border: 1px solid #000;
-    position: relative;
-    overflow: hidden;
-    box-sizing: border-box;
-    /* Base font size scales with container width via container queries
-       won't work here since container is inline-sized. Instead we
-       use a reasonable base and let flex handle vertical distribution. */
+    background: var(--cb-bg);
+    color: var(--cb-fg);
     font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-    color: #333;
+    overflow: hidden;
   }
 
-  .inner-border {
+  .frame {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+  }
+
+  .inner-rule {
     position: absolute;
-    inset: 4px;
-    border: 1px solid #ddd;
+    inset: 3%;
+    border: 1px solid var(--cb-rule-light);
     pointer-events: none;
   }
 
@@ -195,34 +203,35 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    padding: 5% 6%;
+    padding: 6% 7%;
     box-sizing: border-box;
   }
 
-  /* Header */
-  .header {
+  /* ── Brand ── */
+  .brand {
     text-align: center;
-    margin-bottom: 3%;
+    margin-bottom: 2%;
   }
 
-  .title {
-    margin: 0;
-    font-size: clamp(12px, 3.5cqw, 22px);
+  .brand-mark {
+    display: block;
+    font-size: clamp(13px, 4cqi, 24px);
     font-weight: 800;
-    letter-spacing: 0.2em;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: #1a1a1a;
+    color: var(--cb-fg);
   }
 
-  .subtitle {
-    margin: 2px 0 0;
-    font-size: clamp(7px, 1.8cqw, 11px);
-    color: #aaa;
-    letter-spacing: 0.12em;
+  .brand-system {
+    display: block;
+    font-size: clamp(7px, 2cqi, 12px);
+    letter-spacing: 0.1em;
+    color: var(--cb-muted);
+    margin-top: 1px;
   }
 
-  /* Sequence identity band */
-  .sequence-identity {
+  /* ── Identity ── */
+  .identity {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
@@ -230,121 +239,125 @@
   }
 
   .word {
-    font-size: clamp(11px, 3cqw, 18px);
+    font-size: clamp(12px, 3.5cqi, 20px);
     font-weight: 700;
-    letter-spacing: 0.08em;
-    color: #222;
+    letter-spacing: 0.06em;
+    color: var(--cb-fg);
   }
 
-  .meta {
-    font-size: clamp(8px, 1.8cqw, 12px);
-    color: #999;
+  .beats {
+    font-size: clamp(8px, 2cqi, 13px);
+    color: var(--cb-muted);
   }
 
-  .rule {
+  .sep {
     border: none;
-    border-top: 1px solid #e0e0e0;
-    margin: 0 0 3% 0;
+    border-top: 1px solid var(--cb-rule-light);
+    margin: 0 0 3%;
   }
 
-  /* Level strip */
-  .section {
+  /* ── Level strip ── */
+  .levels {
+    display: flex;
+    gap: 3%;
     margin-bottom: 3%;
   }
 
-  .level-strip {
-    display: flex;
-    gap: 3%;
-  }
-
-  .level {
+  .lvl {
     flex: 1;
     text-align: center;
     padding: 3% 2%;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    border: 1px solid var(--cb-rule-light);
+    border-radius: 3px;
   }
 
-  .level.active {
-    background: #222;
-    border-color: #222;
-    color: #fff;
+  .lvl.current {
+    background: var(--cb-fg);
+    border-color: var(--cb-fg);
+    color: var(--cb-bg);
   }
 
-  .level.dimmed {
-    opacity: 0.3;
+  .lvl.other {
+    opacity: 0.25;
   }
 
-  .level-number {
+  .lvl-n {
     display: block;
-    font-size: clamp(14px, 3.5cqw, 24px);
+    font-size: clamp(14px, 4cqi, 26px);
     font-weight: 700;
     line-height: 1.1;
   }
 
-  .level-name {
+  .lvl-name {
     display: block;
-    font-size: clamp(6px, 1.5cqw, 10px);
+    font-size: clamp(6px, 1.6cqi, 10px);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
     margin-top: 2px;
-    opacity: 0.8;
   }
 
-  /* LOOP card */
-  .loop-card {
-    background: #f8f8f8;
-    border: 1px solid #e8e8e8;
-    border-radius: 4px;
+  .lvl-detail {
+    display: block;
+    font-size: clamp(6px, 1.4cqi, 9px);
+    opacity: 0.7;
+    margin-top: 1px;
+  }
+
+  /* ── LOOP ── */
+  .loop {
     padding: 3% 4%;
+    border-radius: 3px;
+    border: 1px solid var(--cb-rule-light);
     margin-bottom: 3%;
   }
 
-  .loop-row {
+  .loop-head {
     display: flex;
     align-items: center;
     gap: 6px;
-    margin-bottom: 4px;
   }
 
-  .loop-name {
-    font-size: clamp(9px, 2.2cqw, 14px);
+  .loop-label {
+    font-size: clamp(9px, 2.4cqi, 15px);
     font-weight: 700;
-    color: #333;
+    color: var(--cb-fg);
   }
 
-  .loop-explanation {
-    margin: 0;
-    font-size: clamp(7px, 1.6cqw, 11px);
-    color: #666;
+  .loop-detail {
+    margin: 3px 0 0;
+    font-size: clamp(7px, 1.6cqi, 11px);
+    color: var(--cb-dim);
     line-height: 1.4;
   }
 
-  /* Spacer */
+  /* ── Spacer ── */
   .grow {
     flex: 1;
-    min-height: 4%;
+    min-height: 3%;
   }
 
-  /* Steps */
-  .steps {
+  /* ── Usage ── */
+  .usage {
     margin: 0 0 3%;
     padding-left: 5%;
-    font-size: clamp(7px, 1.6cqw, 11px);
-    color: #555;
-    line-height: 1.8;
+    font-size: clamp(7px, 1.7cqi, 12px);
+    color: var(--cb-dim);
+    line-height: 1.7;
   }
 
-  .steps li::marker {
-    color: #333;
+  .usage li::marker {
+    color: var(--cb-fg);
     font-weight: 700;
   }
 
-  /* Footer */
-  .footer {
+  /* ── Footer ── */
+  .foot {
     display: flex;
     justify-content: space-between;
     padding-top: 2%;
-    border-top: 1px solid #e8e8e8;
-    font-size: clamp(6px, 1.4cqw, 9px);
-    color: #bbb;
+    border-top: 1px solid var(--cb-rule-light);
+    font-size: clamp(6px, 1.4cqi, 10px);
+    color: var(--cb-muted);
   }
 </style>
