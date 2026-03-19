@@ -237,6 +237,8 @@
     blockClicks?: boolean;
     /** Controls how props are resolved: "notation" uses viewer settings, "creator-expression" uses creator's intent. */
     viewingContext?: ViewingContext;
+    /** When true, forces unauthenticated view (shows "Get App" footer instead of save/edit). Debug tool via ?guest=1. */
+    forceGuest?: boolean;
     /** Children snippet receiving the full orchestrator context. */
     children: Snippet<[OrchestratorContext]>;
   }
@@ -251,6 +253,7 @@
     onUrlParamChange,
     blockClicks = false,
     viewingContext = "notation",
+    forceGuest = false,
     children,
   }: Props = $props();
 
@@ -473,9 +476,15 @@
   }
 
   async function handlePublishAction() {
+    console.log("[Orchestrator] handlePublishAction called, sequence:", sequence?.id);
     if (!sequence) return;
-    const repo = container.items.libraryRepository as ILibraryRepository;
-    await repo.publishSequence(sequence.id);
+    try {
+      const repo = container.items.libraryRepository as ILibraryRepository;
+      await repo.publishSequence(sequence.id);
+      console.log("[Orchestrator] publishSequence completed");
+    } catch (e) {
+      console.error("[Orchestrator] publishSequence FAILED:", e);
+    }
   }
 
   async function handleUnpublishAction() {
@@ -1503,8 +1512,8 @@
     // Render progress
     onRenderProgress: handleRenderProgress,
 
-    // Auth
-    isLoggedIn: authState.isAuthenticated,
+    // Auth (?guest=1 overrides to unauthenticated view for debugging shared link UX)
+    isLoggedIn: forceGuest ? false : authState.isAuthenticated,
     userName: authState.user?.displayName || "",
     isOwned,
     isSaved,
@@ -1563,6 +1572,7 @@
       showStartPos: imgShowStartPos,
       showCreatorName: imgShowCreatorName,
       showNotes: imgShowNotes,
+      showQRCode: true,
       darkMode: imgDarkMode,
       columnCount: imgColumnCount,
       forceContain: false,

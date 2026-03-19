@@ -18,11 +18,10 @@
    */
 
   import { page } from "$app/stores";
-  import { goto, pushState } from "$app/navigation";
+  import { goto } from "$app/navigation";
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
   import { saveSequenceRouteHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
-  import { openSequenceOverlay } from "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte";
   import LoadingGate from "$lib/shared/components/loading/LoadingGate.svelte";
 
   // Get short code from URL param
@@ -62,20 +61,7 @@
         });
       }
 
-      // Mobile: go directly to app shell with drawer overlay (skip /sequence/[id] redirect)
-      const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
-      if (isMobile) {
-        openSequenceOverlay(sequence, {
-          returnLabel: "Browse",
-          dismissPath: "/browse/gallery",
-          skipHistoryPush: true,
-        });
-        await goto("/browse/gallery", { replaceState: true });
-        pushState('', { sequenceOverlay: true });
-        return;
-      }
-
-      // Desktop: redirect to /sequence/{encoded} route for full-page viewer
+      // Redirect to /sequence/{encoded} route for full-page viewer
       saveSequenceRouteHandoff({
         sequence,
         returnPath: "/browse/gallery",
