@@ -9,6 +9,8 @@
     stepEditorTourState,
     type StepEditorTourStop,
   } from "../../state/step-editor-tour-state.svelte";
+  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import { container } from "$lib/shared/di";
 
   interface StopInfo {
     id: StepEditorTourStop;
@@ -58,11 +60,20 @@
     STOP_INFO[stepEditorTourState.currentStopIndex] ?? STOP_INFO[0]!,
   );
 
+  let hapticService: IHapticFeedback | null = null;
+  try {
+    hapticService = container.items.hapticFeedback;
+  } catch {
+    // Optional service
+  }
+
   function handleNext() {
+    hapticService?.trigger("selection");
     stepEditorTourState.advance();
   }
 
   function handleSkip() {
+    hapticService?.trigger("selection");
     stepEditorTourState.skip();
   }
 </script>

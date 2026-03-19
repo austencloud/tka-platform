@@ -3,6 +3,9 @@ ModalActions.svelte - Premium modal action buttons
 Provides consistent, beautiful button layouts for modal actions
 -->
 <script lang="ts">
+  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import { container } from "$lib/shared/di";
+
   let {
     onCancel,
     onConfirm,
@@ -18,15 +21,32 @@ Provides consistent, beautiful button layouts for modal actions
     confirmDisabled?: boolean;
     confirmVariant?: "primary" | "success" | "danger";
   }>();
+
+  let hapticService: IHapticFeedback | null = null;
+  try {
+    hapticService = container.items.hapticFeedback;
+  } catch {
+    // Optional service
+  }
+
+  function handleCancel() {
+    hapticService?.trigger("selection");
+    onCancel();
+  }
+
+  function handleConfirm() {
+    hapticService?.trigger("selection");
+    onConfirm();
+  }
 </script>
 
 <div class="modal-actions">
-  <button class="action-button cancel-button" onclick={onCancel} type="button">
+  <button class="action-button cancel-button" onclick={handleCancel} type="button">
     {cancelLabel}
   </button>
   <button
     class="action-button confirm-button {confirmVariant}"
-    onclick={onConfirm}
+    onclick={handleConfirm}
     disabled={confirmDisabled}
     type="button"
   >

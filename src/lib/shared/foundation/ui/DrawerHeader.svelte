@@ -9,6 +9,9 @@
     <DrawerHeader title="What's New" icon="fa-gift" onClose={handleClose} />
 -->
 <script lang="ts">
+  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import { container } from "$lib/shared/di";
+
   interface Props {
     /** The title displayed in the header */
     title: string;
@@ -23,6 +26,18 @@
   }
 
   let { title, onClose, subtitle, icon, iconColor }: Props = $props();
+
+  let hapticService: IHapticFeedback | null = null;
+  try {
+    hapticService = container.items.hapticFeedback;
+  } catch {
+    // Optional service
+  }
+
+  function handleClose() {
+    hapticService?.trigger("selection");
+    onClose();
+  }
 </script>
 
 <header class="drawer-header">
@@ -43,7 +58,7 @@
   </div>
   <button
     class="drawer-close-btn"
-    onclick={onClose}
+    onclick={handleClose}
     aria-label="Close"
     type="button"
   >

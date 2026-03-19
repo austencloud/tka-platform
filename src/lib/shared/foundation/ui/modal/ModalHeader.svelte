@@ -9,6 +9,9 @@
   - Staggered entrance animations via data-animate attributes
 -->
 <script lang="ts">
+  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import { container } from "$lib/shared/di";
+
   interface Props {
     title: string;
     subtitle?: string;
@@ -28,6 +31,18 @@
     onClose,
     id,
   }: Props = $props();
+
+  let hapticService: IHapticFeedback | null = null;
+  try {
+    hapticService = container.items.hapticFeedback;
+  } catch {
+    // Optional service
+  }
+
+  function handleClose() {
+    hapticService?.trigger("selection");
+    onClose?.();
+  }
 </script>
 
 <header class="modal-header" style:--header-accent={iconColor}>
@@ -47,7 +62,7 @@
   {#if showClose && onClose}
     <button
       class="close-btn"
-      onclick={onClose}
+      onclick={handleClose}
       aria-label="Close modal"
       data-animate="2"
     >
