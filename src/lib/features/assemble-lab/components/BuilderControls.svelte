@@ -13,6 +13,7 @@
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { AssembleState } from "../state/assemble-state.svelte";
+  import OrientationExplainer from "./OrientationExplainer.svelte";
 
   let { builderState }: { builderState: AssembleState } = $props();
 
@@ -51,6 +52,7 @@
   ] as const;
 
   let oriPopoverOpen = $state(false);
+  let explainerOpen = $state(false);
   let oriTriggerRef: HTMLElement | null = $state(null);
   let turnsTriggerRef: HTMLElement | null = $state(null);
 
@@ -185,6 +187,13 @@
                   {ori.label}
                 </button>
               {/each}
+              <button
+                class="help-btn"
+                onclick={() => { oriPopoverOpen = false; explainerOpen = true; }}
+                aria-label="Learn about orientation"
+              >
+                ?
+              </button>
             </div>
           </div>
         {/if}
@@ -333,6 +342,8 @@
     </button>
   {/if}
 </div>
+
+<OrientationExplainer bind:isOpen={explainerOpen} />
 
 <style>
   /* === Grid overlay === */
@@ -503,6 +514,34 @@
   .popover-pills {
     display: flex;
     gap: 2px;
+  }
+
+  .help-btn {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    border-radius: 50%;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: transparent;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 4px;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .help-btn:hover {
+    background: var(--theme-accent-subtle, rgba(99, 102, 241, 0.08));
+    color: var(--theme-text, #fff);
+  }
+
+  .help-btn:focus-visible {
+    outline: 2px solid var(--theme-text, #fff);
+    outline-offset: 2px;
   }
 
   /* 4-column grid for turn values — fits any screen width */

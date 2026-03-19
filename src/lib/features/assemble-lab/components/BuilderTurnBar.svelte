@@ -12,8 +12,11 @@
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { AssembleState } from "../state/assemble-state.svelte";
+  import OrientationExplainer from "./OrientationExplainer.svelte";
 
   let { builderState }: { builderState: AssembleState } = $props();
+
+  let explainerOpen = $state(false);
 
   const isPlacing = $derived(builderState.phase === "placing");
   const isBuilding = $derived(builderState.phase === "building");
@@ -108,6 +111,13 @@
           {ori.label}
         </button>
       {/each}
+      <button
+        class="help-btn"
+        onclick={() => { explainerOpen = true; }}
+        aria-label="Learn about orientation"
+      >
+        ?
+      </button>
     </div>
   {/if}
 
@@ -159,6 +169,8 @@
     </div>
   {/if}
 </div>
+
+<OrientationExplainer bind:isOpen={explainerOpen} />
 
 <style>
   .control-bar {
@@ -300,6 +312,34 @@
 
   .turns-strip::-webkit-scrollbar {
     display: none;
+  }
+
+  .help-btn {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    border-radius: 50%;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: transparent;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 4px;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .help-btn:hover {
+    background: var(--theme-accent-subtle, rgba(99, 102, 241, 0.08));
+    color: var(--theme-text, #fff);
+  }
+
+  .help-btn:focus-visible {
+    outline: 2px solid var(--theme-text, #fff);
+    outline-offset: 2px;
   }
 
   /* Hidden on mobile — BuilderControls popover handles it */
