@@ -1,88 +1,112 @@
 # Lightweight Shared Link Viewer
 
 **Date:** 2026-03-18
-**Status:** Approved
-**Problem:** When someone opens a shared sequence link (`/p/aBc123`), the root layout bootstraps the full DI container, Firebase, auth, and app infrastructure before the viewer renders. This adds unnecessary load time for someone who just wants to see a sequence.
+**Status:** Approved (v3 — simplified after review)
+**Problem:** When someone opens a shared sequence link (`/p/aBc123`), the root layout's auth gate blocks rendering until Firebase auth resolves. The viewer should render immediately.
 
 ---
 
 ## Solution
 
-Give the `/sequence/[id]` route a separate SvelteKit layout group that bypasses the heavy app bootstrap. The viewer loads only what's needed for rendering: sequence decoder, pictograph renderer, animation engine, and minimal settings. Firebase and auth lazy-load in the background for enrichment (creator attribution) and the "Get App" CTA.
+Use SvelteKit's `@` layout reset to escape the root layout for sequence viewer routes. This skips the auth gate, loading spinners, and app shell UI. The viewer page still uses the full DI container (container creation is fast JS — the slow part is the auth gate blocking render). Auth state resolves lazily — the viewer starts as "guest" and upgrades if the user is signed in.
+
+Same pattern already used by `(public)/+layout@.svelte` in this codebase.
 
 ---
 
 ## Architecture
 
-### Layout Group
-
-SvelteKit layout groups allow routes to use different layouts without affecting URL structure. The sequence route moves into a `(viewer)` layout group with its own minimal `+layout.svelte` that skips the app bootstrap:
+### Layout Reset
 
 ```
 src/routes/
-  (app)/          ← existing routes, full app bootstrap
-    +layout.svelte  ← Firebase, DI, auth, MainApplication
-    browse/
-    create/
-    ...
-  (viewer)/       ← lightweight viewer routes
-    +layout.svelte  ← minimal: background, basic styles, no DI/Firebase/auth
-    sequence/[id]/
-      +page.svelte
-    p/[code]/
-      +page.svelte
+  +layout.svelte          ← root layout (Firebase, auth gate, app shell) — UNCHANGED
+  +layout.ts              ← ssr = false — UNCHANGED
+  sequence/
+    +layout@.svelte       ← NEW: resets to bare layout, skips auth gate
+    +layout.ts            ← NEW: ssr = false (root's setting no longer inherited)
+    [id]/
+      +page.svelte        ← MODIFIED: remove mobile redirect, add ?guest=1, start as guest
+  p/
+    +layout@.svelte       ← NEW: same reset
+    +layout.ts            ← NEW: ssr = false
+    [code]/
+      +page.svelte        ← MODIFIED: remove mobile redirect, start as guest
+  browse/                 ← UNCHANGED
+  ...all other routes     ← UNCHANGED
 ```
 
-The `(viewer)` layout loads:
-- BackgroundHost (for the starfield/theme background)
-- Basic CSS variables and theme
-- NO DI container, NO Firebase, NO auth gate
+**No existing routes move. No relative imports break. No DI changes.**
 
-The route pages (`+page.svelte`) handle their own lightweight initialization.
+### The Viewer Layout Reset
 
-### What Loads Immediately (First Paint)
+```svelte
+<!-- src/routes/sequence/+layout@.svelte -->
+<script lang="ts">
+  import type { Snippet } from "svelte";
+  import "../../app.css";
 
-1. **Sequence decoder** — `SequenceEncoder` class imported directly (not from DI container). Decodes the `z:` URL or resolves the short code.
-2. **Pictograph renderer** — The choreo card SVG rendering pipeline.
-3. **Animation engine** — For BPM playback.
-4. **Minimal settings** — Default prop types, dark mode from URL or localStorage.
+  let { children } = $props<{ children: Snippet }>();
+</script>
 
-### What Loads Lazily (After First Paint)
+<svelte:head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width" />
+</svelte:head>
 
-1. **Firebase + Firestore** — For short code resolution (if `/p/` route), hash matching, analytics.
-2. **Auth state** — To determine signed-in vs. guest footer.
-3. **Creator attribution** — Background `encoderHash` match against `publicSequences`.
-4. **Letter/position derivers** — For enriching the decoded sequence with derived data.
+{@render children()}
+```
 
-### Short Code Resolution Path
+Identical to `(public)/+layout@.svelte`. Imports `app.css` for theme variables. No auth gate, no loading spinner, no app shell.
 
-For `/p/[code]` URLs, the short code needs Firebase to resolve. The flow:
+### What This Skips
 
-1. Show a loading skeleton immediately (sub-100ms).
-2. Lazy-import Firebase and query the short code.
-3. Once resolved, render the sequence.
+The root `+layout.svelte` does (among other things):
+- Firebase initialization and auth state resolution
+- Auth gate UI (loading spinner while checking if signed in)
+- PostHog analytics initialization
+- i18n initialization
+- MainApplication component (module nav, sidebar, keyboard shortcuts)
+- Warning banners, email verification prompts
 
-For `/sequence/z:...` URLs (self-contained), no Firebase needed at all — decode and render immediately.
+The `@` reset skips ALL of this. The viewer page initializes only what it needs.
+
+### What the Viewer Page Does
+
+1. **Import DI container** — `import { container } from "$lib/shared/di"`. This is module-level JS that creates service instances. Fast.
+2. **Decode sequence from URL** — using `sequenceEncoder` from the container. Immediate.
+3. **Render SequenceViewerOrchestrator** — with the decoded sequence. Immediate.
+4. **Auth state resolves in background** — `authState` listener fires when Firebase auth completes. Footer updates from "Get App" to full controls if signed in.
+5. **Background hash match** — `encoderHash` lookup for creator attribution. Progressive enhancement.
+
+### Why Not a Mini-Container?
+
+The `SequenceViewerOrchestrator` has 15+ hard dependencies on `container.items.*` via `import { container } from "$lib/shared/di"`. Importing that module triggers full container creation. A separate mini-container would require either:
+- Changing the orchestrator's import (touches 15+ call sites)
+- A mutable container reference system (fragile, global state)
+- Passing container via Svelte context (major refactor)
+
+None of these are worth the complexity. Container creation is fast (just JS object instantiation). The actual bottleneck is the root layout's auth gate blocking render — which the `@` reset already solves.
 
 ---
 
-## Viewer UI
+## Viewer UI Changes
 
-### Unauthenticated Footer
+### Guest-First Footer
 
-The existing `ViewerFooter.svelte` already shows a "Get App" button when `!isLoggedIn`. This stays as-is. The footer shows:
-- Play/pause button
-- BPM control
+The viewer starts in guest mode (auth not yet resolved). The footer shows:
+- Play/pause + BPM control
 - "Get App" button (green CTA)
 
-### Guest Preview Mode
+Once auth resolves (if signed in), the footer upgrades to full controls (save, favorite, delete, etc.).
 
-A `?guest=1` query parameter forces the unauthenticated view even when signed in. For debugging and previewing the shared link experience.
+### `?guest=1` Debug Mode
+
+Forces the guest view even when signed in:
 
 ```typescript
-// In the viewer: check for guest override
 const forceGuest = $page.url.searchParams.get("guest") === "1";
-const isLoggedIn = forceGuest ? false : actualAuthState;
+const effectiveLoggedIn = forceGuest ? false : actualAuthState;
 ```
 
 ### "Get App" Destination
@@ -95,88 +119,57 @@ const isLoggedIn = forceGuest ? false : actualAuthState;
 const GET_APP_URL = "/";
 ```
 
-Tapping "Get App" navigates to `/` (the web app root), which shows the sign-up/login screen. After auth → onboarding → create module. Standard new user funnel.
+Tap "Get App" → `/` → sign-up → onboarding → create module.
 
 ---
 
-## Background Enrichment
+## Mobile Behavior Change
 
-After the sequence renders (first paint complete), fire-and-forget:
+**Before:** `/sequence/[id]` on mobile redirects to app shell drawer overlay (`goto("/browse/gallery")` + `openSequenceOverlay()`).
 
-1. Lazy-import Firebase + the `PublicSequenceHashMatcher`.
-2. Compute `encoderHash` from the decoded sequence.
-3. Query `publicSequences` for a match.
-4. If found, update the viewer with creator name, intended props, etc.
-5. If offline or error, viewer works fine without it.
+**After:** The mobile redirect is removed. The viewer renders full-screen on all viewports. The existing swipe-to-dismiss, mobile header, and responsive layout all work without the drawer.
 
-This is the same progressive enhancement pattern from the content-addressable URLs spec, just deferred until after first paint.
+The drawer overlay flow remains for in-app navigation (browse → viewer uses `openSequenceViewer()`, not the route).
 
 ---
 
-## Migration: Moving Routes to Layout Groups
-
-### Files Changed
+## Files Changed
 
 | File | Change |
 |------|--------|
-| **Move:** `src/routes/sequence/` → `src/routes/(viewer)/sequence/` | Route moves to viewer group |
-| **Move:** `src/routes/p/` → `src/routes/(viewer)/p/` | Short code resolver moves too |
-| **New:** `src/routes/(viewer)/+layout.svelte` | Minimal viewer layout |
-| **Move:** existing routes → `src/routes/(app)/` | All app routes move to app group |
-| **Move:** `src/routes/+layout.svelte` → `src/routes/(app)/+layout.svelte` | App bootstrap moves |
-| **New:** `src/routes/+layout.svelte` | Bare root layout (just the `<slot>`) |
-| `src/routes/(viewer)/sequence/[id]/+page.svelte` | Remove DI dependency, use direct imports |
-| `src/routes/(viewer)/p/[code]/+page.svelte` | Lazy Firebase for short code resolution |
+| **New:** `src/routes/sequence/+layout@.svelte` | Layout reset — bare layout with app.css |
+| **New:** `src/routes/sequence/+layout.ts` | `export const ssr = false; export const prerender = false;` |
+| **New:** `src/routes/p/+layout@.svelte` | Same layout reset |
+| **New:** `src/routes/p/+layout.ts` | Same ssr/prerender settings |
+| `src/routes/sequence/[id]/+page.svelte` | Remove mobile redirect, add `?guest=1`, start as guest |
+| `src/routes/p/[code]/+page.svelte` | Remove mobile redirect, start as guest |
 
-### The Root Layout
-
-The new root `+layout.svelte` is bare — just renders children:
-
-```svelte
-<slot />
-```
-
-Each layout group handles its own initialization:
-- `(app)/+layout.svelte` — full app bootstrap (existing code)
-- `(viewer)/+layout.svelte` — minimal background + theme
-
-### What the Viewer Layout Provides
-
-```svelte
-<!-- (viewer)/+layout.svelte -->
-<script>
-  // Minimal: just background and theme variables
-  import BackgroundHost from "$lib/shared/background/BackgroundHost.svelte";
-</script>
-
-<BackgroundHost />
-<slot />
-```
-
-No DI container. No Firebase. No auth. No MainApplication. No module system.
-
----
-
-## What Doesn't Change
-
-- The `SequenceViewerOrchestrator` component stays the same — it already handles both auth and guest states.
-- The animation engine and pictograph renderer are standalone (no DI dependency for core rendering).
-- The "Get App" button behavior in `ViewerFooter.svelte` stays as-is.
-- QR code generation and short code creation are unaffected.
-- The drawer overlay flow (browse → viewer) is unaffected — that's in the `(app)` group.
+### Existing files UNCHANGED:
+- `src/routes/+layout.svelte` — root layout stays as-is
+- `src/routes/+layout.ts` — ssr/prerender settings stay
+- All other routes — untouched
+- `SequenceViewerOrchestrator.svelte` — unchanged
+- `ViewerFooter.svelte` — already handles guest/auth states
+- DI container — unchanged
 
 ---
 
 ## Edge Cases
 
-### Signed-in user opens a shared link
-They land in the `(viewer)` layout — lightweight, no app shell. The viewer detects auth state lazily and shows the full footer (save, favorite, etc.) instead of "Get App". If they tap back, they go to the previous page (not the app). If they want the full app, they navigate there explicitly.
+### First-time visitor opens shared link
+Lands in lightweight viewer. No auth gate, no loading spinner. Sees sequence immediately with guest footer. "Get App" navigates to sign-up.
 
-### Offline
-`z:` encoded URLs work fully offline (all data in URL). Short code URLs (`/p/`) need Firebase and will show an error state if offline.
+### Signed-in user opens shared link
+Lands in lightweight viewer (no auth gate). Footer initially shows "Get App". Auth resolves in background (1-2 seconds). Footer upgrades to full controls.
 
-### Mobile redirect
-The current `/sequence/[id]` route redirects mobile users to the drawer overlay. In the `(viewer)` group, this redirect should NOT happen — there's no app shell to host the drawer. The viewer renders full-screen on all viewports.
+### `?guest=1` while signed in
+Forces guest footer. For debugging the shared link experience without signing out.
 
-### `?guest=1` parameter
-Only affects footer state (shows "Get App" instead of save/favorite). Does not affect sequence loading or rendering.
+### Offline with `z:` URL
+Works fully — sequence decoded from URL, rendered locally. No Firebase needed.
+
+### Offline with `/p/` short code
+Firebase unreachable. Shows error state — short codes require network.
+
+### Background from root layout
+The root layout renders a BackgroundHost. With `@` reset, this doesn't load. The viewer page needs its own background or a solid color fallback. The `+layout@.svelte` should include a minimal background.
