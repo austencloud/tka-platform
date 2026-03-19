@@ -10,9 +10,12 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import ChoreoCard from "./ChoreoCard.svelte";
   import CardBack from "./CardBack.svelte";
+  import CardDesignerContextMenuHost from "./context-menu/CardDesignerContextMenuHost.svelte";
+  import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
+  import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
 
   interface Props {
     sequences: SequenceData[];
@@ -26,10 +29,42 @@
   const STORAGE_KEY = "choreoCard.designerLength";
   let selectedLength = $state(loadPersistedLength());
   let hapticService: IHapticFeedback | undefined;
+  let contextMenuHost: CardDesignerContextMenuHost;
+
+  // Visibility state from global managers
+  const imageComposition = getImageCompositionManager();
+  const visibilityManager = getVisibilityStateManager();
+
+  // Observer-driven reactivity for non-rune state managers
+  let visibilityVersion = $state(0);
+  let compositionVersion = $state(0);
+
+  function onVisibilityChanged(): void { visibilityVersion++; }
+  function onCompositionChanged(): void { compositionVersion++; }
+
+  visibilityManager.registerObserver(onVisibilityChanged, ["all"]);
+  imageComposition.registerObserver(onCompositionChanged);
+
+  onDestroy(() => {
+    visibilityManager.unregisterObserver(onVisibilityChanged);
+    imageComposition.unregisterObserver(onCompositionChanged);
+  });
+
+  // Derived visibility props that react to observer changes
+  const handPointsVisible = $derived.by(() => { void visibilityVersion; return visibilityManager.getHandPointVisibility() === "all"; });
+  const showGrid = $derived.by(() => { void visibilityVersion; return visibilityManager.getGridVisibility(); });
+  const showTKA = $derived.by(() => { void visibilityVersion; return visibilityManager.getGlyphVisibility("tkaGlyph"); });
+  const showWord = $derived.by(() => { void compositionVersion; return imageComposition.addWord; });
+  const includeStartPosition = $derived.by(() => { void compositionVersion; return imageComposition.includeStartPosition; });
 
   onMount(() => {
     hapticService = container.items.hapticFeedback;
   });
+
+  function handleContextMenu(e: MouseEvent) {
+    e.preventDefault();
+    contextMenuHost.openContextMenu(e.clientX, e.clientY);
+  }
 
   function loadPersistedLength(): number {
     try {
@@ -232,20 +267,20 @@
         <button class="nav-btn" onclick={next} disabled={currentIndex >= filteredSequences.length - 1} type="button" aria-label="Next card">
           <i class="fas fa-chevron-right" aria-hidden="true"></i>
         </button>
+        <button
+          class="nav-btn export-btn"
+          onclick={handleExport}
+          disabled={isExporting}
+          type="button"
+          aria-label="Export current card as PNG"
+        >
+          {#if isExporting}
+            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+          {:else}
+            <i class="fas fa-download" aria-hidden="true"></i>
+          {/if}
+        </button>
       </div>
-      <button
-        class="nav-btn export-btn"
-        onclick={handleExport}
-        disabled={isExporting}
-        type="button"
-        aria-label="Export current card as PNG"
-      >
-        {#if isExporting}
-          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-        {:else}
-          <i class="fas fa-download" aria-hidden="true"></i>
-        {/if}
-      </button>
     </nav>
 
     <!-- Length filter chips -->
@@ -272,12 +307,23 @@
       <div class="pair" style="flex-direction: {layout.direction};">
         <div class="card-slot">
           <span class="side-label">Front</span>
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div
             class="card-frame"
             style="width: {layout.w}px; height: {layout.h}px;"
             use:watchForImage
+            oncontextmenu={handleContextMenu}
           >
-            <ChoreoCard sequence={seq} printMode={true} showQRCodes={true} />
+            <ChoreoCard
+              sequence={seq}
+              printMode={true}
+              showQRCodes={true}
+              {handPointsVisible}
+              {showGrid}
+              {showTKA}
+              {showWord}
+              {includeStartPosition}
+            />
           </div>
         </div>
 
@@ -290,6 +336,8 @@
       </div>
     </div>
   {/if}
+
+  <CardDesignerContextMenuHost bind:this={contextMenuHost} />
 </div>
 
 <style>
@@ -359,6 +407,11 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     min-width: 60px;
     text-align: center;
+  }
+
+  .export-btn {
+    margin-left: var(--spacing-xs, 4px);
+    color: var(--theme-accent, #6366f1);
   }
 
   /* Filter chips: single centered row */
