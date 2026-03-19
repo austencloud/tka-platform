@@ -870,6 +870,8 @@ export default defineConfig({
       "postprocessing",
       "three-perf",
       "@dimforge/rapier3d-compat",
+      // Browser-only audio analysis — no valid entry point for Node/SSR
+      "realtime-bpm-analyzer",
     ],
     // Include svelte condition for threlte packages, but node/module first for SSR
     resolve: {
