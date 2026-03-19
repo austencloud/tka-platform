@@ -579,6 +579,19 @@ export default defineConfig({
     __PWA_ENABLED__: process.env.DISABLE_PWA !== "true",
   },
   plugins: [
+    // realtime-bpm-analyzer has a broken dist layout (files at dist/dist/ instead
+    // of dist/), so Rollup's commonjs resolver can't find the entry. This plugin
+    // runs before commonjs and marks it external during SSR. The browser build
+    // resolves it fine via optimizeDeps pre-bundling.
+    {
+      name: "fix-realtime-bpm-analyzer-ssr",
+      enforce: "pre",
+      resolveId(id: string, _importer: string | undefined, options?: { ssr?: boolean }) {
+        if (id === "realtime-bpm-analyzer" && options?.ssr) {
+          return { id: "realtime-bpm-analyzer", external: true };
+        }
+      },
+    },
     sveltekit({
       // Explicitly enable HMR and hot module replacement
       hot: {
