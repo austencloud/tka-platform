@@ -215,7 +215,7 @@
           type="button"
           class="landscape-btn edit"
           onclick={onEdit}
-          aria-label="Edit"
+          aria-label="Remix"
         >
           <i class="fas fa-pen-to-square" aria-hidden="true"></i>
         </button>
@@ -369,16 +369,16 @@
               </button>
             {/if}
 
-            <!-- Edit (owner only, when saved) -->
+            <!-- Remix (owner only, when saved) -->
             {#if isOwned && isSaved}
               <button
                 type="button"
                 class="action-btn edit"
                 onclick={onEdit}
-                aria-label="Edit"
+                aria-label="Remix"
               >
                 <i class="fas fa-pen-to-square" aria-hidden="true"></i>
-                <span>Edit</span>
+                <span>Remix</span>
               </button>
             {/if}
           {:else}

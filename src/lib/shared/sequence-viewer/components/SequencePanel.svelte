@@ -449,15 +449,15 @@
         </button>
       {/if}
 
-      <!-- Edit - opens sequence in the Constructor for editing -->
+      <!-- Remix - opens sequence in the Constructor as a starting point -->
       <button
         type="button"
         class="action-btn primary"
         onclick={() => handleAction("edit")}
-        aria-label="Edit"
+        aria-label="Remix"
       >
         <i class="fas fa-pen-to-square" aria-hidden="true"></i>
-        <span>Edit</span>
+        <span>Remix</span>
       </button>
 
       {#if videoCount > 0 || isOwned}
