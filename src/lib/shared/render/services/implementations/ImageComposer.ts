@@ -391,6 +391,15 @@ export class ImageComposer implements IImageComposer {
         effectiveBluePropType, // Pass snapshotted blue prop type
         effectiveRedPropType // Pass snapshotted red prop type
       );
+
+      // Draw duration badge when beat has a non-default duration (not 1.0)
+      const beatDuration = beat.duration ?? 1;
+      if (Math.abs(beatDuration - 1.0) > 0.001) {
+        const x = col * stepSize;
+        const y = row * stepSize + headerHeight;
+        this.drawDurationBadge(ctx, beatDuration, x, y, stepSize, isDarkMode);
+      }
+
       renderedCount++;
       onProgress?.({
         current: renderedCount,
@@ -683,6 +692,40 @@ export class ImageComposer implements IImageComposer {
       ctx.textAlign = "center";
       ctx.fillText("Error", x + stepSize / 2, y + stepSize / 2);
     }
+  }
+
+  /**
+   * Draw a duration badge in the bottom-right corner of a pictograph cell.
+   * Matches the ChoreoCard .duration-badge overlay styling.
+   * Only called for beats with non-default duration (not 1.0).
+   */
+  private drawDurationBadge(
+    ctx: CanvasRenderingContext2D,
+    duration: number,
+    x: number,
+    y: number,
+    cellSize: number,
+    isDarkMode: boolean
+  ): void {
+    const VIEW_BOX_SIZE = 950;
+    const scale = cellSize / VIEW_BOX_SIZE;
+
+    // Format: "1.67×" or "2×"
+    const text = Number.isInteger(duration) ? `${duration}×` : `${duration}×`;
+
+    const fontSize = 70 * scale;
+    const paddingX = 40 * scale;
+    const paddingY = 40 * scale;
+
+    ctx.save();
+    ctx.font = `600 ${fontSize}px system-ui, sans-serif`;
+    ctx.textAlign = "end";
+    ctx.textBaseline = "bottom";
+    ctx.fillStyle = isDarkMode
+      ? "rgba(255, 255, 255, 0.55)"
+      : "rgba(0, 0, 0, 0.55)";
+    ctx.fillText(text, x + cellSize - paddingX, y + cellSize - paddingY);
+    ctx.restore();
   }
 
   /**

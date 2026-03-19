@@ -1708,7 +1708,7 @@
                               type="button"
                               aria-label="Go to step {cell.label}"
                             >
-                              {@render cellContent(cell, false)}
+                              {@render cellContent(cell, true)}
                             </button>
                           {:else}
                             <div
@@ -1716,7 +1716,7 @@
                               class:current={showHighlight && highlightedStepIndex === cell.index}
                               class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
                             >
-                              {@render cellContent(cell, false)}
+                              {@render cellContent(cell, true)}
                             </div>
                           {/if}
                         </div>
@@ -1760,7 +1760,7 @@
                             type="button"
                             aria-label="Go to step {cell.label}"
                           >
-                            {@render cellContent(cell, false)}
+                            {@render cellContent(cell, true)}
                           </button>
                         {:else}
                           <div
@@ -1768,7 +1768,7 @@
                             class:current={showHighlight && highlightedStepIndex === cell.index}
                             class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
                           >
-                            {@render cellContent(cell, false)}
+                            {@render cellContent(cell, true)}
                         </div>
                       {/if}
                     </div>
