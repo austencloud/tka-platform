@@ -365,18 +365,21 @@
     touch-action: pan-y;
   }
 
-  /* Grid + sidebar layout: sidebar sits beside the scrollable grid */
+  /* Grid + sidebar layout: sidebar sits beside the scrollable grid.
+     The virtualizer inside BrowseGrid handles its own scrolling,
+     so this wrapper must provide a definite height for the virtualizer
+     to measure against. */
   .grid-with-sidebar {
     display: flex;
-    flex: 1;
+    height: 100%;
     min-height: 0;
-    overflow: hidden;
   }
 
   .grid-area {
     flex: 1;
     min-width: 0;
-    overflow: hidden;
+    min-height: 0;
+    height: 100%;
   }
 
   /* Skeleton covers the content area and fades out when data arrives */
