@@ -16,6 +16,7 @@
   import { fade, fly, scale } from "svelte/transition";
   import { flip } from "svelte/animate";
   import { cubicOut } from "svelte/easing";
+  import { DIFFICULTY_LEVELS, DEFAULT_DIFFICULTY_STYLE } from "$lib/shared/config/difficulty-styles";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
   import type { PreviewCellRenderOptions } from "../services/contracts/IPreviewCellRenderer";
@@ -106,6 +107,7 @@
     showNotes?: boolean;
     showBirthday?: boolean;
     showLoopGlyph?: boolean;
+    showQRCode?: boolean;
     // Settings
     darkMode?: boolean;
     userName?: string;
@@ -139,6 +141,7 @@
     showNotes = true,
     showBirthday = true,
     showLoopGlyph = true,
+    showQRCode = false,
     darkMode = false,
     userName = "",
     customNotesText = "Created using TKA Scribe",
@@ -291,6 +294,78 @@
   const showTKA = $derived(visibilitySettings?.tkaGlyph ?? true);
   const showReversals = $derived(visibilitySettings?.reversalIndicators ?? true);
 
+  // QR code state — generated async, cached by sequence ID + dark mode.
+  // The grid cell is always reserved (via qrGridPosition) so layout doesn't
+  // shift when the QR image loads in.
+  let qrDataUrl = $state<string | null>(null);
+  const qrCacheMap = new Map<string, string>();
+  let lastQrKey = "";
+
+  // Find the grid position for the QR code: bottom of column 1 (under start position)
+  const qrGridPosition = $derived.by(() => {
+    if (!showQRCode || !includeStartPosition || !effectiveRows) return null;
+    // Place QR in column 1, last row (or row 2 if only 1 row)
+    const targetRow = Math.max(2, effectiveRows);
+    return { gridColumn: 1, gridRow: targetRow };
+  });
+
+  // Derive a stable cache key from the values that actually matter for QR content.
+  // This prevents re-generation when unrelated reactive values change.
+  const qrCacheKey = $derived.by(() => {
+    if (!showQRCode || !sequence) return "";
+    const seqId = sequence.id ?? sequence.word ?? "unknown";
+    return `${seqId}:${darkMode}`;
+  });
+
+  $effect(() => {
+    const key = qrCacheKey;
+    if (!key) {
+      qrDataUrl = null;
+      lastQrKey = "";
+      return;
+    }
+
+    // Skip if we already generated for this exact key
+    if (key === lastQrKey) return;
+    lastQrKey = key;
+
+    // Check cache first
+    const cached = qrCacheMap.get(key);
+    if (cached) {
+      qrDataUrl = cached;
+      return;
+    }
+
+    // Generate async — read prop values outside the async callback
+    // to avoid tracking additional reactive dependencies
+    const seq = sequence;
+    const isDark = darkMode;
+    const bProp = bluePropType ? String(bluePropType) : undefined;
+    const rProp = redPropType ? String(redPropType) : undefined;
+    const qrGenerator = container.items.qrCodeGenerator;
+    if (!qrGenerator || !seq) return;
+
+    qrGenerator
+      .generateForSequence(seq, {
+        size: 200,
+        margin: 1,
+        style: "modern",
+        darkMode: isDark,
+        bluePropType: bProp,
+        redPropType: rProp,
+      })
+      .then((result) => {
+        qrCacheMap.set(key, result.dataUrl);
+        // Only update if this is still the current key (sequence didn't change mid-flight)
+        if (lastQrKey === key) {
+          qrDataUrl = result.dataUrl;
+        }
+      })
+      .catch(() => {
+        // QR is optional — don't block the card
+      });
+  });
+
   // Layout calculations
   const difficultyCalculator = new SequenceDifficultyCalculator();
 
@@ -337,17 +412,11 @@
   // Effective username
   const effectiveUserName = $derived(userName || authState.user?.displayName || "");
 
-  // Level badge colors
-  const defaultLevelStyle = { bg: "radial-gradient(ellipse at top left, rgb(186,230,253) 0%, rgb(125,211,252) 30%, rgb(56,189,248) 70%, rgb(14,165,233) 100%)", border: "#000", text: "#000" };
-  const levelStyles: Record<number, { bg: string; border: string; text: string }> = {
-    1: defaultLevelStyle,
-    2: { bg: "linear-gradient(135deg, rgb(170,170,170) 0%, rgb(210,210,210) 15%, rgb(120,120,120) 30%, rgb(180,180,180) 40%, rgb(190,190,190) 55%, rgb(130,130,130) 75%, rgb(110,110,110) 100%)", border: "#000", text: "#000" },
-    3: { bg: "radial-gradient(ellipse at top left, rgb(254,240,138) 0%, rgb(253,224,71) 20%, rgb(250,204,21) 40%, rgb(234,179,8) 60%, rgb(202,138,4) 80%, rgb(161,98,7) 100%)", border: "#000", text: "#000" },
-    4: { bg: "linear-gradient(135deg, rgb(200,162,200) 0%, rgb(170,132,170) 30%, rgb(148,0,211) 60%, rgb(100,0,150) 100%)", border: "#000", text: "#000" },
-    5: { bg: "linear-gradient(135deg, rgb(255,90,40) 0%, rgb(255,50,30) 30%, rgb(230,25,15) 60%, rgb(180,10,5) 100%)", border: "#000", text: "#000" },
-  };
-
-  const currentLevelStyle = $derived(levelStyles[difficultyLevel] ?? defaultLevelStyle);
+  // Level badge colors — single source of truth shared with the image compositor
+  const currentLevelStyle = $derived.by(() => {
+    const style = DIFFICULTY_LEVELS[difficultyLevel] ?? DEFAULT_DIFFICULTY_STYLE;
+    return { bg: style.cssBg, border: style.border, text: style.text };
+  });
 
   // Filtered cells based on includeStartPosition.
   // When start position is hidden, recalculate grid positions so steps
@@ -453,7 +522,7 @@
 
   const badgeSize = $derived(scaledHeaderHeight * 0.9);
   const badgePadding = $derived(scaledHeaderHeight * 0.05);
-  const badgeNumberFontSize = $derived(Math.floor(badgeSize / 1.75));
+  const badgeNumberFontSize = $derived(Math.round(badgeSize * 0.5625));
 
   // Word title font size: shrinks for longer words so the full title fits
   // between the difficulty badge and LOOP icon without clipping.
@@ -1117,6 +1186,15 @@
           }
         },
       },
+      { type: "separator" as const },
+      {
+        id: "rerender",
+        label: "Re-render",
+        icon: "fa-sync-alt",
+        action() {
+          forceRerenderAllCells();
+        },
+      },
     ];
   });
 
@@ -1604,6 +1682,13 @@
                   >
                     {@render cellContent(startCell, false)}
                   </div>
+                  {#if showQRCode}
+                    <div class="pictograph-cell qr-cell">
+                      {#if qrDataUrl}
+                        <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" />
+                      {/if}
+                    </div>
+                  {/if}
                 </div>
               {/if}
               <div class="duration-steps-area">
@@ -1651,6 +1736,11 @@
                 >
                   {@render cellContent(startCell, false)}
                 </div>
+                {#if showQRCode && qrDataUrl}
+                  <div class="pictograph-cell qr-cell">
+                    <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" />
+                  </div>
+                {/if}
               </div>
             {/if}
             <div class="duration-steps-area">
@@ -1723,6 +1813,16 @@
               {/if}
               </div>
             {/each}
+            {#if qrGridPosition && qrDataUrl}
+              <div
+                class="cell-flip-wrapper qr-cell-wrapper"
+                style="grid-column: {qrGridPosition.gridColumn}; grid-row: {qrGridPosition.gridRow};"
+              >
+                <div class="pictograph-cell qr-cell">
+                  <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" />
+                </div>
+              </div>
+            {/if}
           </div>
         </div>
       {:else}
@@ -1759,6 +1859,18 @@
             {/if}
             </div>
           {/each}
+          {#if qrGridPosition}
+            <div
+              class="cell-flip-wrapper qr-cell-wrapper"
+              style="grid-column: {qrGridPosition.gridColumn}; grid-row: {qrGridPosition.gridRow};"
+            >
+              <div class="pictograph-cell qr-cell">
+                {#if qrDataUrl}
+                  <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" />
+                {/if}
+              </div>
+            </div>
+          {/if}
         </div>
       {/if}
 
@@ -2185,6 +2297,26 @@
     aspect-ratio: 1;
   }
 
+  /* QR code cell — occupies an empty grid cell under the start position */
+  .qr-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f5f5f5;
+    transition: background-color 350ms ease;
+  }
+
+  .dark-mode .qr-cell {
+    background: #000;
+  }
+
+  .qr-code-image {
+    width: 80%;
+    height: 80%;
+    object-fit: contain;
+    -webkit-user-drag: none;
+    user-select: none;
+  }
 
   /* Clickable cells */
   .pictograph-cell.clickable {

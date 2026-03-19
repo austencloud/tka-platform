@@ -224,6 +224,7 @@
           includeStartPosition={imageComposition.showStartPos}
           showCreatorName={imageComposition.showCreatorName}
           showNotes={imageComposition.showNotes}
+          showQRCode={imageComposition.showQRCode}
           showBirthday={true}
           showLoopGlyph={true}
           darkMode={imageComposition.darkMode}

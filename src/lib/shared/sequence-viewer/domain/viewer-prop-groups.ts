@@ -21,6 +21,7 @@ export interface ImageCompositionProps {
   showStartPos: boolean;
   showCreatorName: boolean;
   showNotes: boolean;
+  showQRCode: boolean;
   darkMode: boolean;
   columnCount: number | null;
   forceContain: boolean;

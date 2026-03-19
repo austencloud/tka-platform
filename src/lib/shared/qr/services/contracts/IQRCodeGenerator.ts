@@ -77,6 +77,11 @@ export interface QRCodeOptions {
    */
   offline?: boolean;
   /**
+   * When true, generates white modules on transparent background
+   * for use on dark backgrounds. Default: false (dark modules on white).
+   */
+  darkMode?: boolean;
+  /**
    * Blue prop type to include in the URL.
    * When set, the scanned viewer will use this prop type instead of user's default.
    */

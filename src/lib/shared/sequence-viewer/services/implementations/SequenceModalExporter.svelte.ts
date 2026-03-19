@@ -151,6 +151,7 @@ export class SequenceModalExporter implements ISequenceModalExporter {
           : undefined,
         visibilityOverrides: {
           darkMode: options.darkMode,
+          showQRCode: true,
         },
       });
 
