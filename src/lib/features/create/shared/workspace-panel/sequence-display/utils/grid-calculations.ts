@@ -275,6 +275,47 @@ export function calculateTimelineRows(
 }
 
 /**
+ * Calculate timeline row assignments based on a fixed beat count per row.
+ * Unlike calculateTimelineRows (which packs by duration capacity), this
+ * always places exactly `beatsPerRow` steps in each row. The last row
+ * may have fewer if steps don't divide evenly.
+ *
+ * Use this when the layout table prescribes a column count and the
+ * sequence has mixed durations (e.g., swing). The CSS flexbox handles
+ * proportional sizing within each row.
+ *
+ * @param steps - Array of step data with optional duration
+ * @param beatsPerRow - Exact number of beats to place in each row
+ * @returns Array of row assignments with actual duration totals
+ */
+export function calculateTimelineRowsByBeatCount(
+  steps: readonly { duration?: number }[],
+  beatsPerRow: number
+): TimelineRow[] {
+  if (beatsPerRow <= 0) beatsPerRow = 1;
+  const rows: TimelineRow[] = [];
+
+  for (let i = 0; i < steps.length; i += beatsPerRow) {
+    const rowSteps: Array<{ stepIndex: number; duration: number }> = [];
+    let totalDuration = 0;
+
+    for (let j = i; j < Math.min(i + beatsPerRow, steps.length); j++) {
+      const duration = steps[j]?.duration ?? 1;
+      rowSteps.push({ stepIndex: j, duration });
+      totalDuration += duration;
+    }
+
+    rows.push({
+      rowIndex: rows.length,
+      steps: rowSteps,
+      totalDuration,
+    });
+  }
+
+  return rows;
+}
+
+/**
  * Calculate the width multiplier for a timeline cell.
  * Duration=1 gets 1x base width, duration=2 gets 2x, etc.
  * This ensures consistent sizing - all duration=1 steps are the same width
