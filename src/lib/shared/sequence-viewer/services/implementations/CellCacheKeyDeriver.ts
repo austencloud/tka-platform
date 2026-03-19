@@ -19,6 +19,8 @@
  * - lsp3-: Fixed step number baking. Used djb2 hash, but 32-bit hash space
  *   caused collisions after ~46K entries, returning wrong prop type blobs.
  * - lsp4-: Full string key. No hash, no collisions.
+ * - lsp5-: Invalidate after LayerKeyDeriver fix (was missing rotationDirection
+ *   and orientations from base layer cache key, causing CW/CCW collisions).
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
@@ -69,7 +71,7 @@ export class CellCacheKeyDeriver implements ICellCacheKeyDeriver {
       options.widthMultiplier && options.widthMultiplier !== 1 ? `wm${options.widthMultiplier}` : "",
     ];
 
-    return `lsp4-${keyParts.join("|")}`;
+    return `lsp5-${keyParts.join("|")}`;
   }
 }
 
