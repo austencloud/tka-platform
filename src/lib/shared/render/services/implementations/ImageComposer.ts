@@ -894,6 +894,7 @@ export class ImageComposer implements IImageComposer {
         {
           style: "modern",
           margin: 1,
+          darkMode: isDarkMode,
           bluePropType: bluePropType,
           redPropType: redPropType,
         }
@@ -903,9 +904,8 @@ export class ImageComposer implements IImageComposer {
       const x = cell.col * stepSize + padding;
       const y = cell.row * stepSize + headerHeight + padding;
 
-      // Draw white background for contrast (QR codes need high contrast)
-      // The QR generator already uses white background, but this ensures the cell is clean
-      ctx.fillStyle = "#ffffff";
+      // Fill cell background — dark for dark mode, white for light mode
+      ctx.fillStyle = isDarkMode ? "#000000" : "#ffffff";
       ctx.fillRect(
         cell.col * stepSize,
         cell.row * stepSize + headerHeight,

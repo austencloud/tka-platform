@@ -120,7 +120,16 @@ export class QRCodeGenerator implements IQRCodeGenerator {
   ): Promise<{ svg: string; dataUrl: string }> {
     const size = options?.size || 200;
     const margin = options?.margin || 1;
-    const style = this.resolveStyle(options?.style);
+    let style = this.resolveStyle(options?.style);
+
+    // Dark mode: white modules on transparent background
+    if (options?.darkMode) {
+      style = {
+        ...style,
+        color: "#ffffff",
+        backgroundColor: "#00000000",
+      };
+    }
 
     const qrCode = new QRCodeStyling(
       this.createQROptions(url, size, margin, style)

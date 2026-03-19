@@ -217,6 +217,7 @@
 				addReversalSymbols: true,
 				visibilityOverrides: {
 					darkMode,
+					showQRCode: true,
 				},
 			});
 

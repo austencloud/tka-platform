@@ -387,6 +387,7 @@
                           showStartPos: ctx.exportOptions.imageIncludeStartPosition,
                           showCreatorName: ctx.exportOptions.imageShowCreatorName,
                           showNotes: ctx.exportOptions.imageShowNotes,
+                          showQRCode: true,
                           darkMode: ctx.exportOptions.imageDarkMode,
                           columnCount: ctx.exportOptions.imageColumnCount,
                           forceContain: true,
@@ -811,6 +812,7 @@
   .viewer-and-export.desktop {
     display: grid;
     grid-template-columns: 1fr 0px;
+    grid-template-rows: minmax(0, 1fr);
     transition: grid-template-columns 250ms cubic-bezier(0.2, 0, 0, 1);
   }
 
