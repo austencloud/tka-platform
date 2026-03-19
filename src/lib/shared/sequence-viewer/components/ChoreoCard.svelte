@@ -2271,22 +2271,24 @@
     color: #ffffff;
   }
 
-  /* Duration badge — bottom-right corner, compact */
+  /* Duration badge — bottom-center, matches DurationGlyph.svelte positioning
+     (y=890 in 950-unit viewBox = ~93.7% from top, centered horizontally) */
   .duration-badge {
     position: absolute;
-    bottom: 4%;
-    right: 4%;
-    font-family: system-ui, sans-serif;
+    bottom: 2%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: Inter, "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
     font-weight: 600;
-    font-size: min(7.5cqw, 16px);
+    font-size: min(5.5cqw, 14px);
     line-height: 1;
-    color: rgba(0, 0, 0, 0.55);
+    color: #231f20;
     pointer-events: none;
     user-select: none;
   }
 
   .duration-badge.dark-mode {
-    color: rgba(255, 255, 255, 0.55);
+    color: #ffffff;
   }
 
   /* Per-cell loading spinner */
