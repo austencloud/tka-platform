@@ -120,24 +120,6 @@
   let panelWidth = $state(0);
   const isMobileLayout = $derived(panelWidth < 640);
 
-  // Column toggle (mobile only)
-  let columnCount = $state<number | null>(null);
-  const allColumnOptions = [
-    { label: "Auto", value: null },
-    { label: "2", value: 2 },
-    { label: "3", value: 3 },
-    { label: "4", value: 4 },
-    { label: "5", value: 5 },
-    { label: "6", value: 6 },
-    { label: "7", value: 7 },
-    { label: "8", value: 8 },
-  ] as const;
-
-  const beatCount = $derived(sequence?.steps?.length ?? 0);
-  const columnOptions = $derived(
-    allColumnOptions.filter((opt) => opt.value === null || opt.value <= beatCount)
-  );
-
   // Prop type indicator
   const currentSettings = $derived(getSettings());
   const bluePropType = $derived(currentSettings.bluePropType ?? PropType.STAFF);
@@ -257,13 +239,7 @@
   // Whether the sequence is currently published to the community library
   const isAlreadyPublished = $derived(savedSequence?.visibility === "public");
 
-  // Dynamic header content based on context
   const headerTitle = "Save to Library";
-  const headerSubtitle = $derived(
-    isFlagged
-      ? "This sequence can't be published due to content moderation."
-      : "Save this sequence to your private library. You can also choose to make it public for the community to see and use."
-  );
 
   // Sync isOpen with show prop
   $effect(() => {
@@ -496,14 +472,12 @@
 
     <div class="panel-header">
       <h2>{headerTitle}</h2>
-      <p class="subtitle">{headerSubtitle}</p>
     </div>
 
     <div class="panel-body">
       <!-- Sequence Preview -->
       {#if sequence}
         {#if isMobileLayout}
-          <!-- Mobile: show preview since workspace is hidden -->
           <div class="choreo-group">
             <div class="choreo-preview">
               <ChoreoCard
@@ -512,27 +486,10 @@
                 userName={creatorName}
                 showCreatorName={true}
                 showBirthday={true}
-                showNotes={false}
+                showNotes={true}
                 showDifficultyLevel={true}
                 showLoopGlyph={true}
-                {columnCount}
               />
-            </div>
-
-            <!-- Column toggle -->
-            <div class="column-toggle">
-              <span class="toggle-section-label">Columns</span>
-              <div class="chip-group">
-                {#each columnOptions as option}
-                  <button
-                    type="button"
-                    class="column-chip"
-                    class:active={columnCount === option.value}
-                    onclick={() => (columnCount = option.value)}
-                    aria-pressed={columnCount === option.value}
-                  >{option.label}</button>
-                {/each}
-              </div>
             </div>
           </div>
         {:else}
@@ -542,10 +499,23 @@
           </div>
         {/if}
 
-        <!-- Prop type indicator -->
-        <div class="prop-type-indicator">
-          <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
-          <span>{propTypeLabel}</span>
+        <!-- Compact info row: prop type + variation status side by side -->
+        <div class="info-row">
+          <span class="info-tag">
+            <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
+            {propTypeLabel}
+          </span>
+          {#if isExactDuplicate && !isFlagged}
+            <span class="info-tag info-tag-saved">
+              <i class="fas fa-check-circle" aria-hidden="true"></i>
+              Already saved
+            </span>
+          {:else if hasDuplicate && !isFlagged}
+            <span class="info-tag info-tag-variation">
+              <i class="fas fa-layer-group" aria-hidden="true"></i>
+              Variation {duplicateCount + 1}
+            </span>
+          {/if}
         </div>
       {/if}
 
@@ -600,21 +570,6 @@
         </div>
       {/if}
 
-      <!-- Duplicate status — fixed-height slot prevents layout shift -->
-      <div class="duplicate-status-slot">
-        {#if isExactDuplicate && !isFlagged}
-          <div class="already-saved-banner">
-            <i class="fas fa-check-circle" aria-hidden="true"></i>
-            <span>This exact sequence is already in your library</span>
-          </div>
-        {:else if hasDuplicate && !isFlagged}
-          <p class="duplicate-info">
-            <i class="fas fa-layer-group" aria-hidden="true"></i>
-            Saving as variation {duplicateCount + 1} of "{simplifyAndTruncate(tkaName, 16)}"
-          </p>
-        {/if}
-      </div>
-
       <!-- Community visibility section -->
       {#if !isFlagged}
         <div class="community-section">
@@ -642,7 +597,6 @@
               </span>
             </button>
           </label>
-
         </div>
       {/if}
 
@@ -763,9 +717,9 @@
     pointer-events: none;
   }
 
-  /* Header - compact, informational */
+  /* Header - compact title only */
   .panel-header {
-    padding: 32px 32px 24px;
+    padding: 24px 32px 12px;
     flex-shrink: 0;
     text-align: center;
   }
@@ -777,13 +731,6 @@
     color: var(--theme-text);
   }
 
-  .subtitle {
-    margin: 8px 0 0;
-    font-size: var(--font-size-base, 16px);
-    color: var(--theme-text-dim);
-    line-height: 1.5;
-  }
-
   /* Body - content flows from top */
   .panel-body {
     flex: 1;
@@ -793,7 +740,7 @@
     padding: 24px 32px;
     overflow-y: auto;
     overscroll-behavior: contain;
-    gap: 32px;
+    gap: 20px;
   }
 
   .choreo-group {
@@ -916,46 +863,52 @@
   }
 
   /* Fixed-height slot so duplicate/saved status doesn't cause layout shift */
-  .duplicate-status-slot {
-    min-height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  /* Already saved banner — clear, prominent confirmation */
-  .already-saved-banner {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 14px 20px;
-    background: color-mix(in srgb, var(--semantic-success, #22c55e) 12%, transparent);
-    border: 1.5px solid color-mix(in srgb, var(--semantic-success, #22c55e) 35%, transparent);
-    border-radius: 12px;
-    font-size: var(--font-size-sm, 14px);
-    font-weight: 600;
-    color: var(--semantic-success, #22c55e);
-  }
-
-  .already-saved-banner i {
-    font-size: 1.1em;
-  }
-
-  /* Duplicate info — same word, different content (genuine variation) */
-  .duplicate-info {
+  /* Compact info row — prop type + variation/saved status as inline tags */
+  .info-row {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    margin: 0;
-    font-size: var(--font-size-sm, 14px);
-    color: var(--theme-text-dim);
+    flex-wrap: wrap;
+    min-height: 28px;
   }
 
-  .duplicate-info i {
-    font-size: 0.9em;
+  .info-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    color: var(--theme-text-dim);
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+  }
+
+  .info-tag i {
+    font-size: 10px;
     opacity: 0.7;
+  }
+
+  .info-tag-saved {
+    color: var(--semantic-success, #22c55e);
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 10%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent);
+  }
+
+  .info-tag-saved i {
+    opacity: 1;
+  }
+
+  .info-tag-variation {
+    color: var(--theme-accent);
+    background: color-mix(in srgb, var(--theme-accent) 10%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 25%, transparent);
+  }
+
+  .info-tag-variation i {
+    opacity: 1;
   }
 
   /* Saved state button — green checkmark instead of purple gradient */
@@ -1077,8 +1030,8 @@
     }
 
     .panel-body {
-      padding: 20px 24px;
-      gap: 24px;
+      padding: 16px 24px;
+      gap: 16px;
     }
 
     .panel-footer {
@@ -1197,61 +1150,6 @@
     }
   }
 
-  /* Column toggle (mobile) */
-  .column-toggle {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 0;
-  }
-
-  .toggle-section-label {
-    min-width: 60px;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
-    color: var(--theme-text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    flex-shrink: 0;
-  }
-
-  .chip-group {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-
-  .column-chip {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 36px;
-    min-width: 36px;
-    padding: 4px 12px;
-    background: color-mix(in srgb, var(--theme-card-bg) 70%, transparent);
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 10px;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .column-chip.active {
-    background: color-mix(in srgb, var(--theme-accent) 35%, var(--theme-card-bg));
-    border-color: color-mix(in srgb, var(--theme-accent) 60%, transparent);
-    color: white;
-    box-shadow: 0 2px 8px color-mix(in srgb, var(--theme-accent) 25%, transparent);
-  }
-
-  .column-chip:hover:not(.active) {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
-    color: var(--theme-text);
-  }
-
   /* Desktop: compact word display */
   .word-display {
     text-align: center;
@@ -1266,19 +1164,4 @@
     letter-spacing: 0.05em;
   }
 
-  /* Prop type indicator */
-  .prop-type-indicator {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 8px 16px;
-    font-size: var(--font-size-sm, 14px);
-    color: var(--theme-text-dim);
-  }
-
-  .prop-type-indicator i {
-    color: var(--theme-accent);
-    font-size: 12px;
-  }
 </style>
