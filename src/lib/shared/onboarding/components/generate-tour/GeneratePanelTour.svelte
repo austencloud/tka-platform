@@ -17,6 +17,8 @@
     type GeneratorHelpItem,
   } from "$lib/features/create/generate/domain/generator-help-content";
   import type { GeneratorHelpId } from "$lib/features/create/generate/domain/generator-help-content";
+  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import { container } from "$lib/shared/di";
 
   // Mini card definition — matches real card grid visuals
   interface MiniCard {
@@ -130,6 +132,13 @@
     },
   };
 
+  let hapticService: IHapticFeedback | null = null;
+  try {
+    hapticService = container.items.hapticFeedback;
+  } catch {
+    // Optional service
+  }
+
   const currentContent = $derived.by((): GeneratorHelpItem | undefined => {
     const stop = generateTourState.currentStop;
     const helpId = stopToHelpId[stop];
@@ -145,15 +154,23 @@
   let isOpen = $derived(generateTourState.isActive);
 
   function handleNext() {
+    hapticService?.trigger("selection");
     generateTourState.advance();
   }
 
   function handleSkip() {
+    hapticService?.trigger("selection");
     generateTourState.skip();
   }
 
   function handleClose() {
+    hapticService?.trigger("selection");
     generateTourState.skip();
+  }
+
+  function handleCardTap(stop: GenerateTourStop) {
+    hapticService?.trigger("selection");
+    generateTourState.goToStop(stop);
   }
 </script>
 
@@ -177,11 +194,11 @@
           class:generate-btn={card.id === "generate-button"}
           style:grid-column="span {card.span}"
           style:background={card.gradient}
-          onclick={() => generateTourState.goToStop(card.id)}
+          onclick={() => handleCardTap(card.id)}
           role="button"
           tabindex="0"
           aria-label="View {card.header || card.value} help"
-          onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); generateTourState.goToStop(card.id); } }}
+          onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCardTap(card.id); } }}
         >
           {#if card.header}
             <span class="card-header">{card.header}</span>

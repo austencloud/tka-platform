@@ -10,6 +10,8 @@
   import { pictographDataToStepData } from "$lib/shared/pictograph/shared/domain/utils/step-pictograph-conversion";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import { container } from "$lib/shared/di";
 
   interface Props {
     onAdvance: () => void;
@@ -17,10 +19,19 @@
 
   const { onAdvance }: Props = $props();
 
+  // Haptic
+  let hapticService: IHapticFeedback | null = null;
+  try {
+    hapticService = container.items.hapticFeedback;
+  } catch {
+    // Optional service
+  }
+
   // Accordion state for mobile
   let expandedIndex = $state<number | null>(null);
 
   function toggleAccordion(index: number) {
+    hapticService?.trigger("selection");
     expandedIndex = expandedIndex === index ? null : index;
   }
 

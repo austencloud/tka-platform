@@ -23,6 +23,7 @@
     createAnimationPanelState,
     type AnimationStateKey,
   } from "$lib/features/compose/state/animation-panel-state.svelte";
+  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 
   interface Props {
     onAdvance: () => void;
@@ -31,6 +32,14 @@
   const { onAdvance }: Props = $props();
 
   const isDarkMode = $derived(getSettings().darkMode ?? false);
+
+  // Haptic
+  let hapticService: IHapticFeedback | null = null;
+  try {
+    hapticService = container.items.hapticFeedback;
+  } catch {
+    // Optional service
+  }
 
   // Playback state
   let showAnimation = $state(false);
@@ -87,6 +96,7 @@
   const currentLetter = $derived(currentStepData?.letter || null);
 
   function handlePlay() {
+    hapticService?.trigger("selection");
     if (!tutorialSequence || !playbackController) return;
     showAnimation = true;
     hasPlayed = true;
@@ -104,6 +114,7 @@
   }
 
   function handleStop() {
+    hapticService?.trigger("selection");
     if (playbackController && isPlaying) {
       playbackController.stop();
     }

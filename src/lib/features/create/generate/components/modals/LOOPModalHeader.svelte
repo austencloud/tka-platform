@@ -3,10 +3,25 @@ LOOPModalHeader.svelte - Modal header for LOOP Selection
 Simple header with title and close button
 -->
 <script lang="ts">
+  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import { container } from "$lib/shared/di";
+
   let { title, onClose } = $props<{
     title: string;
     onClose: () => void;
   }>();
+
+  let hapticService: IHapticFeedback | null = null;
+  try {
+    hapticService = container.items.hapticFeedback;
+  } catch {
+    // Optional service
+  }
+
+  function handleClose() {
+    hapticService?.trigger("selection");
+    onClose();
+  }
 </script>
 
 <div class="loop-modal-header">
@@ -14,7 +29,7 @@ Simple header with title and close button
 
   <button
     class="close-button"
-    onclick={onClose}
+    onclick={handleClose}
     aria-label="Close LOOP selection"
   >
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

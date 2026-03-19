@@ -7,6 +7,8 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
+  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import { container } from "$lib/shared/di";
 
   interface Props {
     onAccept: () => void;
@@ -16,12 +18,28 @@
   const { onAccept, onSkip }: Props = $props();
 
   let animateIn = $state(false);
+  let hapticService: IHapticFeedback | null = null;
 
   onMount(() => {
+    try {
+      hapticService = container.items.hapticFeedback;
+    } catch {
+      // Optional service
+    }
     requestAnimationFrame(() => {
       animateIn = true;
     });
   });
+
+  function handleAccept() {
+    hapticService?.trigger("selection");
+    onAccept();
+  }
+
+  function handleSkip() {
+    hapticService?.trigger("selection");
+    onSkip();
+  }
 </script>
 
 <div class="tutorial-prompt-backdrop" class:animate-in={animateIn}>
@@ -36,11 +54,11 @@
     </p>
 
     <div class="prompt-actions">
-      <button class="accept-button" onclick={onAccept}>
+      <button class="accept-button" onclick={handleAccept}>
         Show me
         <i class="fas fa-arrow-right" aria-hidden="true"></i>
       </button>
-      <button class="skip-button" onclick={onSkip}>
+      <button class="skip-button" onclick={handleSkip}>
         Skip, I'll explore
       </button>
     </div>
