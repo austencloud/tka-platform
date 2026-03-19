@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
+  import { DIFFICULTY_LEVELS, DEFAULT_DIFFICULTY_STYLE } from "$lib/shared/config/difficulty-styles";
   import { container } from "$lib/shared/di";
   import type { SequenceState } from "../../../state/SequenceStateOrchestrator.svelte";
   import { getCreateModuleContext } from "../../../context/create-module-context";
@@ -120,15 +121,11 @@
     return difficultyCalculator.calculateDifficultyLevel([...currentSequence.steps]);
   });
 
-  const defaultLevelStyle = { bg: "radial-gradient(ellipse at top left, rgb(186,230,253) 0%, rgb(125,211,252) 30%, rgb(56,189,248) 70%, rgb(14,165,233) 100%)", border: "#000", text: "#000" };
-  const levelStyles: Record<number, { bg: string; border: string; text: string }> = {
-    1: defaultLevelStyle,
-    2: { bg: "linear-gradient(135deg, rgb(170,170,170) 0%, rgb(210,210,210) 15%, rgb(120,120,120) 30%, rgb(180,180,180) 40%, rgb(190,190,190) 55%, rgb(130,130,130) 75%, rgb(110,110,110) 100%)", border: "#000", text: "#000" },
-    3: { bg: "radial-gradient(ellipse at top left, rgb(254,240,138) 0%, rgb(253,224,71) 20%, rgb(250,204,21) 40%, rgb(234,179,8) 60%, rgb(202,138,4) 80%, rgb(161,98,7) 100%)", border: "#000", text: "#000" },
-    4: { bg: "linear-gradient(135deg, rgb(200,162,200) 0%, rgb(170,132,170) 30%, rgb(148,0,211) 60%, rgb(100,0,150) 100%)", border: "#000", text: "#000" },
-    5: { bg: "linear-gradient(135deg, rgb(255,90,40) 0%, rgb(255,50,30) 30%, rgb(230,25,15) 60%, rgb(180,10,5) 100%)", border: "#000", text: "#000" },
-  };
-  const currentLevelStyle = $derived(levelStyles[difficultyLevel] ?? defaultLevelStyle);
+  // Level badge colors — single source of truth shared with the image compositor
+  const currentLevelStyle = $derived.by(() => {
+    const style = DIFFICULTY_LEVELS[difficultyLevel] ?? DEFAULT_DIFFICULTY_STYLE;
+    return { bg: style.cssBg, border: style.border, text: style.text };
+  });
   const hasContent = $derived((currentSequence?.steps?.length ?? 0) > 0);
 
   // Info modals
@@ -141,9 +138,9 @@
   });
 
   const difficultyDescriptions: Record<number, string> = {
-    1: "No turns. Props shift between grid positions without rotating.",
-    2: "Adds turns with radial orientations (in/out). Props rotate while moving.",
-    3: "Non-radial orientations (clock/counter). Props face sideways relative to the grid.",
+    1: "Hands move between positions. Props don't spin.",
+    2: "Props spin in whole turns. Orientations point in or out.",
+    3: "Props spin in half turns. Orientations can face any direction.",
   };
 
   // Convert selectedStartPosition (PictographData) to StepData format for StepGrid
@@ -281,11 +278,11 @@
     <p>TKA sequences are classified by the complexity of their turns and orientations.</p>
     <div class="level-list">
       {#each [1, 2, 3] as level}
-        {@const style = levelStyles[level] ?? defaultLevelStyle}
+        {@const style = DIFFICULTY_LEVELS[level] ?? DEFAULT_DIFFICULTY_STYLE}
         <div class="level-row" class:current={level === difficultyLevel}>
           <div
             class="level-dot"
-            style="background: {style.bg}; border-color: {style.border}; color: {style.text};"
+            style="background: {style.cssBg}; border-color: {style.border}; color: {style.text};"
           >{level}</div>
           <span class="level-desc">{difficultyDescriptions[level]}</span>
         </div>

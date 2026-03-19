@@ -14,6 +14,12 @@ import type {
   UserExportInfo,
 } from "../../domain/models/SequenceExportOptions";
 import type { ITextRenderer } from "../contracts/ITextRenderer";
+import {
+  DIFFICULTY_LEVELS,
+  DEFAULT_DIFFICULTY_STYLE,
+  DIFFICULTY_FONT_FAMILY,
+  applyGradientStops,
+} from "$lib/shared/config/difficulty-styles";
 
 export class TextRenderer implements ITextRenderer {
   // Font configuration matching WordLabel component exactly
@@ -259,9 +265,9 @@ export class TextRenderer implements ITextRenderer {
   }
 
   /**
-   * Render a colored level badge with gradient
-   * Matches legacy desktop: Georgia Bold font, linear gradient (top-left to bottom-right)
-   * Colors: 1=light gray, 2=silver, 3=gold, 4=purple, 5=red
+   * Render a colored level badge with gradient.
+   * Colors and font come from the shared difficulty-styles config,
+   * the same source the Svelte UI badges use.
    */
   private renderLevelBadge(
     ctx: CanvasRenderingContext2D,
@@ -289,77 +295,30 @@ export class TextRenderer implements ITextRenderer {
     ctx.lineWidth = borderWidth;
     ctx.stroke();
 
-    // Draw level number - Georgia Bold, size = height / 1.75 (matching legacy)
-    // Legacy uses black text for all levels
+    // Draw level number — font matches the Svelte UI badge via shared config
+    const levelStyle = DIFFICULTY_LEVELS[level] ?? DEFAULT_DIFFICULTY_STYLE;
     const fontSize = Math.floor(size / 1.75);
-    ctx.fillStyle = "black";
-    ctx.font = `bold ${fontSize}px Georgia, serif`;
+    ctx.fillStyle = levelStyle.text;
+    ctx.font = `bold ${fontSize}px ${DIFFICULTY_FONT_FAMILY}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(level.toString(), centerX, centerY);
   }
 
   /**
-   * Create LINEAR gradient for level badge (top-left to bottom-right)
-   * Matches legacy desktop DifficultyLevelGradients exactly:
-   * 1=light gray (solid), 2=silver, 3=gold, 4=purple, 5=red/orange
+   * Create gradient for level badge using the shared difficulty style config.
+   * Uses a linear gradient from top-left to bottom-right on canvas.
    */
   private createLevelBadgeGradient(
     ctx: CanvasRenderingContext2D,
     x: number,
     y: number,
     size: number,
-    level: number
+    level: number,
   ): CanvasGradient {
-    // Linear gradient from top-left to bottom-right (matching legacy QLinearGradient)
     const gradient = ctx.createLinearGradient(x, y, x + size, y + size);
-
-    switch (level) {
-      case 1:
-        // Pure white - solid color to contrast with gray header background
-        gradient.addColorStop(0, "rgb(255, 255, 255)");
-        gradient.addColorStop(1, "rgb(255, 255, 255)");
-        break;
-      case 2:
-        // Silver metallic gradient (matching legacy exactly)
-        gradient.addColorStop(0, "rgb(170, 170, 170)");
-        gradient.addColorStop(0.15, "rgb(210, 210, 210)");
-        gradient.addColorStop(0.3, "rgb(120, 120, 120)");
-        gradient.addColorStop(0.4, "rgb(180, 180, 180)");
-        gradient.addColorStop(0.55, "rgb(190, 190, 190)");
-        gradient.addColorStop(0.75, "rgb(130, 130, 130)");
-        gradient.addColorStop(1, "rgb(110, 110, 110)");
-        break;
-      case 3:
-        // Gold gradient (matching legacy exactly)
-        gradient.addColorStop(0, "rgb(255, 215, 0)"); // Gold
-        gradient.addColorStop(0.2, "rgb(238, 201, 0)"); // Goldenrod
-        gradient.addColorStop(0.4, "rgb(218, 165, 32)"); // Goldenrod darker
-        gradient.addColorStop(0.6, "rgb(184, 134, 11)"); // Dark goldenrod
-        gradient.addColorStop(0.8, "rgb(139, 69, 19)"); // Saddle brown
-        gradient.addColorStop(1, "rgb(85, 107, 47)"); // Dark olive green
-        break;
-      case 4:
-        // Purple gradient (matching legacy exactly)
-        gradient.addColorStop(0, "rgb(200, 162, 200)"); // Lavender
-        gradient.addColorStop(0.3, "rgb(170, 132, 170)");
-        gradient.addColorStop(0.6, "rgb(148, 0, 211)"); // Dark violet
-        gradient.addColorStop(1, "rgb(100, 0, 150)"); // Deep purple
-        break;
-      case 5:
-        // Red/Orange gradient (matching legacy exactly)
-        gradient.addColorStop(0, "rgb(255, 69, 0)"); // Orange red
-        gradient.addColorStop(0.4, "rgb(255, 0, 0)"); // Red
-        gradient.addColorStop(0.8, "rgb(139, 0, 0)"); // Dark red
-        gradient.addColorStop(1, "rgb(100, 0, 0)"); // Very dark red
-        break;
-      default:
-        // Fallback to light gray
-        gradient.addColorStop(0, "rgb(245, 245, 245)");
-        gradient.addColorStop(1, "rgb(245, 245, 245)");
-    }
-
-    return gradient;
+    const style = DIFFICULTY_LEVELS[level] ?? DEFAULT_DIFFICULTY_STYLE;
+    return applyGradientStops(gradient, style.stops);
   }
 
   /**
