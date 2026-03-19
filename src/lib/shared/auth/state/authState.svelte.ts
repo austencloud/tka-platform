@@ -54,18 +54,41 @@ interface AuthState {
   role: UserRole;
 }
 
-// Reactive state using Svelte 5 $state rune
-let _state = $state<AuthState>({
-  user: null,
-  loading: true,
-  initialized: false,
-  isAdmin: false,
-  role: "user",
-});
+// ============================================================================
+// HMR STATE PRESERVATION
+// ============================================================================
+// Without this, every HMR update resets auth state to uninitialized, which
+// triggers the full auth → Firestore → settings → theme cascade.
+const hmrAuthData = import.meta.hot?.data as
+  | {
+      authState?: AuthState;
+      cleanupAuthListener?: (() => void) | null;
+      cleanupSubscriptionListener?: (() => void) | null;
+    }
+  | undefined;
 
-// Auth listener cleanup
-let cleanupAuthListener: (() => void) | null = null;
-let cleanupSubscriptionListener: (() => void) | null = null;
+// Reactive state using Svelte 5 $state rune
+let _state = $state<AuthState>(
+  hmrAuthData?.authState ?? {
+    user: null,
+    loading: true,
+    initialized: false,
+    isAdmin: false,
+    role: "user",
+  }
+);
+
+// Auth listener cleanup — preserve across HMR so we don't lose the active listener
+let cleanupAuthListener: (() => void) | null = hmrAuthData?.cleanupAuthListener ?? null;
+let cleanupSubscriptionListener: (() => void) | null = hmrAuthData?.cleanupSubscriptionListener ?? null;
+
+if (import.meta.hot) {
+  import.meta.hot.dispose((data) => {
+    data.authState = { ..._state };
+    data.cleanupAuthListener = cleanupAuthListener;
+    data.cleanupSubscriptionListener = cleanupSubscriptionListener;
+  });
+}
 
 /**
  * Get the effective user ID (previewed user or actual)

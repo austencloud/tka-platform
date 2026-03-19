@@ -3,10 +3,27 @@ import { container } from "../../di";
 import type { ISettingsState } from "../../settings/services/contracts/ISettingsState";
 import { getAnimationVisibilityManager } from "../../animation-engine/state/animation-visibility-state.svelte";
 
+// ============================================================================
+// HMR STATE PRESERVATION
+// ============================================================================
+// Without this, every HMR update resets isInitialized to false, which triggers
+// the full initialization cascade (auth → Firestore → settings → theme).
+const hmrData = import.meta.hot?.data as
+  | { isInitialized?: boolean; settingsService?: ISettingsState | null; persistenceService?: IPersistenceService | null }
+  | undefined;
+
 // Make isInitialized reactive so components using getSettings() will re-evaluate
-let isInitialized = $state(false);
-let settingsService: ISettingsState | null = null;
-let persistenceService: IPersistenceService | null = null;
+let isInitialized = $state(hmrData?.isInitialized ?? false);
+let settingsService: ISettingsState | null = hmrData?.settingsService ?? null;
+let persistenceService: IPersistenceService | null = hmrData?.persistenceService ?? null;
+
+if (import.meta.hot) {
+  import.meta.hot.dispose((data) => {
+    data.isInitialized = isInitialized;
+    data.settingsService = settingsService;
+    data.persistenceService = persistenceService;
+  });
+}
 
 export async function initializeAppServices(): Promise<void> {
   if (isInitialized) return;

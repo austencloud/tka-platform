@@ -173,6 +173,27 @@
     // Run async initialization without blocking cleanup function return
     (async () => {
       try {
+        // Skip full re-initialization on HMR — if app is already initialized,
+        // the preserved state from import.meta.hot.data means we don't need to
+        // redo auth, Firestore, settings, theme, or gamification.
+        if (getIsInitialized()) {
+          // Re-attach sheet router listener (old one was cleaned up on unmount)
+          if (sheetRouterService) {
+            currentSheetType = sheetRouterService.getCurrentSheet();
+            cleanupSheetListener = sheetRouterService.onRouteChange(
+              async (state) => {
+                if (state.sheet === "settings") {
+                  sheetRouterService?.closeSheet();
+                  await handleModuleChange("settings" as ModuleId);
+                  return;
+                }
+                currentSheetType = state.sheet ?? null;
+              }
+            );
+          }
+          return;
+        }
+
         setInitializationState(false, true, null, 0);
         // ITI container is created synchronously - no ensureContainerInitialized needed
         await initializeAppState();

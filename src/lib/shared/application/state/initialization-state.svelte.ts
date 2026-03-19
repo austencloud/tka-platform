@@ -3,12 +3,29 @@ import {
   initializeAppServices,
 } from "./services.svelte";
 
-const initializationState = $state({
-  isInitialized: areServicesInitialized(),
-  isInitializing: false,
-  initializationError: null as string | null,
-  initializationProgress: areServicesInitialized() ? 100 : 0,
-});
+// ============================================================================
+// HMR STATE PRESERVATION
+// ============================================================================
+// Preserve initialization flags across HMR so the app doesn't re-run the
+// full init cascade (auth → Firestore → settings → theme) on every edit.
+const hmrInitData = import.meta.hot?.data as
+  | { initializationState?: { isInitialized: boolean; isInitializing: boolean; initializationError: string | null; initializationProgress: number } }
+  | undefined;
+
+const initializationState = $state(
+  hmrInitData?.initializationState ?? {
+    isInitialized: areServicesInitialized(),
+    isInitializing: false,
+    initializationError: null as string | null,
+    initializationProgress: areServicesInitialized() ? 100 : 0,
+  }
+);
+
+if (import.meta.hot) {
+  import.meta.hot.dispose((data) => {
+    data.initializationState = { ...initializationState };
+  });
+}
 
 export async function initializeAppState(): Promise<void> {
   if (initializationState.isInitialized) return;
