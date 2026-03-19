@@ -26,26 +26,33 @@
     } catch {
       // Ignore if not available
     }
-    onclick();
+    onclick?.();
   }
 </script>
 
 {#if variant === "drawer"}
-  <!-- Drawer: static identity display, not interactive -->
-  <div class="account-row drawer">
-    {#if isAuthenticated}
-      <RobustAvatar
-        src={photoURL}
-        name={displayName}
-        customSize={32}
-      />
-    {:else}
-      <div class="avatar-guest">
-        <i class="fas fa-user" aria-hidden="true"></i>
-      </div>
-    {/if}
-    <span class="account-label">{displayName}</span>
-  </div>
+  {#if onclick && isAuthenticated}
+    <button
+      class="account-row drawer interactive"
+      onclick={handleClick}
+      aria-label="Edit profile"
+    >
+      <RobustAvatar src={photoURL} name={displayName} customSize={32} />
+      <span class="account-label">{displayName}</span>
+      <i class="fas fa-chevron-right drawer-chevron" aria-hidden="true"></i>
+    </button>
+  {:else}
+    <div class="account-row drawer">
+      {#if isAuthenticated}
+        <RobustAvatar src={photoURL} name={displayName} customSize={32} />
+      {:else}
+        <div class="avatar-guest">
+          <i class="fas fa-user" aria-hidden="true"></i>
+        </div>
+      {/if}
+      <span class="account-label">{displayName}</span>
+    </div>
+  {/if}
 {:else}
   <button
     class="account-row"
@@ -125,6 +132,38 @@
     border-color: transparent;
     background: transparent;
     justify-content: center;
+  }
+
+  .account-row.drawer.interactive {
+    cursor: pointer;
+    border-color: var(--theme-stroke);
+    background: var(--theme-card-bg);
+  }
+
+  .account-row.drawer.interactive:hover {
+    background: var(--theme-card-hover-bg);
+    border-color: var(--theme-stroke-strong);
+  }
+
+  .account-row.drawer.interactive:active {
+    transform: scale(0.98);
+  }
+
+  .account-row.drawer.interactive:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--theme-accent) 70%, transparent);
+    outline-offset: 2px;
+  }
+
+  .drawer-chevron {
+    font-size: var(--font-size-compact, 12px);
+    opacity: 0.4;
+    margin-left: auto;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .account-row.drawer.interactive:active {
+      transform: none;
+    }
   }
 
   /* ==========================================================================
