@@ -112,7 +112,8 @@
   let totalHeight = $state(0);
 
   // Persistent reference to the latest virtualizer instance, used by exported functions
-  let virtualizerRef: { scrollToIndex: (index: number, opts?: { align?: string }) => void; getVirtualItems: () => VirtualItem[] } | null = null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let virtualizerRef: any = null;
 
   /**
    * Scroll to bring the sequence at the given flat array index into view.
@@ -270,6 +271,22 @@
     });
   });
 
+  /**
+   * Svelte action for dynamic row measurement.
+   * TanStack Virtual's measureElement uses a ResizeObserver internally,
+   * so if card content changes height (e.g. different beat counts per row),
+   * the virtualizer automatically picks up the new size instead of relying
+   * on the estimate which causes overlapping.
+   */
+  function measureRow(node: HTMLElement) {
+    virtualizerRef?.measureElement?.(node);
+    return {
+      destroy() {
+        virtualizerRef?.measureElement?.(node);
+      },
+    };
+  }
+
   // Sequence data provider for hover prefetch
   const sequenceDataProvider = container.items.sequenceDataProvider;
 
@@ -321,6 +338,8 @@
     {#each virtualRows as virtualRow (virtualRow.key)}
       <div
         class="virtual-row"
+        data-index={virtualRow.index}
+        use:measureRow
         style:position="absolute"
         style:top="{virtualRow.start}px"
         style:width="100%"
