@@ -247,8 +247,24 @@ export function createAssembleState() {
     turnCount = turns;
   }
 
+  // Transient arrow overlay state
+  let showOrientationArrow = $state(false);
+  let arrowOrientation = $state<Orientation>(Orientation.IN);
+  let arrowTimeout: ReturnType<typeof setTimeout> | null = null;
+
   function setOrientation(ori: Orientation): void {
     currentOrientation = ori;
+
+    // Show directional arrow only when prop is placed
+    if (currentPosition !== null) {
+      arrowOrientation = ori;
+      showOrientationArrow = true;
+      if (arrowTimeout) clearTimeout(arrowTimeout);
+      arrowTimeout = setTimeout(() => {
+        showOrientationArrow = false;
+        arrowTimeout = null;
+      }, 1000);
+    }
   }
 
   /** Switch to a specific hand, restoring that hand's last position */
@@ -285,6 +301,8 @@ export function createAssembleState() {
     get currentOrientation() { return currentOrientation; },
     get rotationDirection() { return rotationDirection; },
     get turnCount() { return turnCount; },
+    get showOrientationArrow() { return showOrientationArrow; },
+    get arrowOrientation() { return arrowOrientation; },
     get activeSteps() { return activeSteps; },
     get stepCount() { return stepCount; },
     get isBlueComplete() { return isBlueComplete; },

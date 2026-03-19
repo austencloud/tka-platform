@@ -28,6 +28,7 @@
   import { propSvgLoader } from "$lib/shared/pictograph/prop/services/implementations/PropSvgLoader";
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
   import { PropRotAngleManager } from "$lib/shared/pictograph/prop/services/implementations/PropRotAngleManager";
+  import { LOCATION_ANGLES } from "$lib/features/compose/shared/domain/math-constants";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { PropRenderData } from "$lib/shared/pictograph/prop/domain/models/PropRenderData";
@@ -382,6 +383,20 @@
       ? "var(--prop-blue, #2e8bf0)"
       : "var(--prop-red, #ed1c24)"
   );
+
+  // Arrow direction in degrees, computed from grid position + orientation
+  const arrowRotationDeg = $derived.by(() => {
+    if (!builderState.currentPosition) return 0;
+    const theta = LOCATION_ANGLES[builderState.currentPosition];
+    const thetaDeg = theta * (180 / Math.PI);
+    switch (builderState.arrowOrientation) {
+      case Orientation.IN: return thetaDeg + 180; // toward center
+      case Orientation.OUT: return thetaDeg;       // away from center
+      case Orientation.CLOCK: return thetaDeg + 90;  // CW tangent
+      case Orientation.COUNTER: return thetaDeg - 90; // CCW tangent
+      default: return thetaDeg;
+    }
+  });
 </script>
 
 <div class="interactive-grid" role="application" aria-label="Visual sequence builder grid">
@@ -488,6 +503,17 @@
             class:red-fallback={builderState.activeHand === MotionColor.RED}
             class:scale-in={justPlaced}
           />
+        {/if}
+
+        <!-- Orientation direction arrow overlay -->
+        {#if builderState.showOrientationArrow}
+          <g
+            class="orientation-arrow"
+            style="transform: rotate({arrowRotationDeg}deg)"
+          >
+            <line x1="0" y1="0" x2="60" y2="0" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+            <polygon points="60,-8 76,0 60,8" fill="currentColor" />
+          </g>
         {/if}
       </g>
     {/if}
@@ -787,6 +813,21 @@
     }
   }
 
+  /* Orientation direction arrow */
+  .orientation-arrow {
+    color: var(--theme-accent, #6366f1);
+    pointer-events: none;
+    animation: arrow-fade 1s ease forwards;
+    filter: drop-shadow(0 0 8px currentColor) drop-shadow(0 0 16px currentColor);
+  }
+
+  @keyframes arrow-fade {
+    0% { opacity: 0; }
+    10% { opacity: 0.9; }
+    70% { opacity: 0.9; }
+    100% { opacity: 0; }
+  }
+
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .hit-target.active-hand-blue:not(.disabled):not(.current-position),
@@ -800,6 +841,11 @@
 
     .active-prop-group {
       transition: none;
+    }
+
+    .orientation-arrow {
+      animation: none;
+      opacity: 0.7;
     }
   }
 </style>
