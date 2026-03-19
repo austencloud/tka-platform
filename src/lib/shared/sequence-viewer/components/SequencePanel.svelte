@@ -14,7 +14,7 @@
   import type { ISequenceImageSharer } from "$lib/shared/share/services/contracts/ISequenceImageSharer";
   import type { ISequenceDetailLoader } from "$lib/features/browse/sequences/display/services/contracts/ISequenceDetailLoader";
   import type { IVideoCountManager } from "$lib/features/browse/sequences/display/services/contracts/IVideoCountManager";
-  import type { MediaType, ExportProgress, MediaFormat, ExportSettings } from "../domain/types";
+  import type { MediaType, MediaFormat, ExportSettings } from "../domain/types";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
   import type { PlaybackMode, StepPlaybackStepSize } from "$lib/features/compose/state/animation-panel-state.svelte";
@@ -24,7 +24,7 @@
 
   import SequenceViewer from "./SequenceViewer.svelte";
   import QuickShareRow from "./QuickShareRow.svelte";
-  import ExportControlsSection from "./ExportControlsSection.svelte";
+  // ExportControlsSection removed — edit mode now uses inline action buttons
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { browseNavigationState } from "$lib/features/browse/shared/state/browse-navigation-state.svelte";
@@ -486,14 +486,48 @@
     </div>
   {/if}
 
-  <!-- Edit Mode: Export Controls -->
+  <!-- Edit Mode: Action Buttons -->
   {#if mode === "edit"}
-    <ExportControlsSection
-      {selectedFormat}
-      {isExporting}
-      {exportProgress}
-      onExport={(format, settings) => onExport?.(format, settings)}
-    />
+    <div class="action-buttons">
+      {#if onSaveToLibrary}
+        <button
+          type="button"
+          class="action-btn primary"
+          onclick={() => { hapticService?.trigger("selection"); onSaveToLibrary?.(); }}
+          aria-label="Save to library"
+        >
+          <i class="fas fa-bookmark" aria-hidden="true"></i>
+          <span>Save</span>
+        </button>
+      {/if}
+
+      {#if onFavorite}
+        <button
+          type="button"
+          class="action-btn"
+          class:active={isFavorite}
+          onclick={() => { hapticService?.trigger("selection"); onFavorite?.(); }}
+          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+          aria-pressed={isFavorite}
+        >
+          <i class="fas fa-heart" aria-hidden="true"></i>
+          <span>{isFavorite ? "Favorited" : "Favorite"}</span>
+        </button>
+      {/if}
+
+      {#if onExport}
+        <button
+          type="button"
+          class="action-btn"
+          onclick={handleExportClick}
+          disabled={isExporting}
+          aria-label="Export sequence"
+        >
+          <i class="fas fa-file-export" aria-hidden="true"></i>
+          <span>{isExporting ? "Exporting..." : "Export"}</span>
+        </button>
+      {/if}
+    </div>
   {/if}
 </div>
 
