@@ -1,12 +1,3 @@
-<script lang="ts" module>
-  /** API surface exposed via onReady callback for parent components */
-  export interface VirtualGridApi {
-    scrollToSequenceIndex: (index: number) => void;
-    getFirstVisibleSequenceIndex: () => number;
-    subscribeToScroll: (callback: () => void) => () => void;
-  }
-</script>
-
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import {
@@ -43,15 +34,12 @@
     thumbnailService,
     onAction = () => {},
     pinchColumnOverride,
-    onReady,
   } = $props<{
     sequences: SequenceData[];
     thumbnailService: IBrowseThumbnailProvider | null;
     onAction?: (action: string, sequence: SequenceData, variations?: SequenceData[]) => void;
     /** Pinch-to-zoom column override. Mobile: 2-3, Desktop: 2-5. Overrides responsive columns. */
     pinchColumnOverride?: number;
-    /** Called once the virtualizer is ready, providing scroll control functions */
-    onReady?: (api: VirtualGridApi) => void;
   }>();
 
   // Layout calculator for proper aspect ratio estimation
@@ -110,32 +98,6 @@
   // Reactive state for virtualizer data
   let virtualRows = $state<VirtualItem[]>([]);
   let totalHeight = $state(0);
-
-  // Persistent reference to the latest virtualizer instance, used by exported functions
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let virtualizerRef: any = null;
-
-  /**
-   * Scroll to bring the sequence at the given flat array index into view.
-   * Called by SectionIndexSidebar when a section marker is clicked.
-   */
-  export function scrollToSequenceIndex(sequenceIndex: number): void {
-    const rowIndex = Math.floor(sequenceIndex / columnCount);
-    if (virtualizerRef) {
-      virtualizerRef.scrollToIndex(rowIndex, { align: "start" });
-    }
-  }
-
-  /**
-   * Get the flat array index of the first visible sequence.
-   * Used for tracking which section is currently in view.
-   */
-  export function getFirstVisibleSequenceIndex(): number {
-    if (!virtualizerRef) return 0;
-    const items = virtualizerRef.getVirtualItems();
-    if (items.length === 0) return 0;
-    return items[0].index * columnCount;
-  }
 
   // Dynamic column count based on container width.
   // Clamps pinchColumnOverride to per-breakpoint max so you can't
@@ -207,7 +169,6 @@
 
     // Subscribe to virtualizer updates
     const unsubscribe = virtualizerStore.subscribe((v) => {
-      virtualizerRef = v;
       virtualRows = v.getVirtualItems();
       totalHeight = v.getTotalSize();
     });
@@ -239,16 +200,6 @@
       }
     });
 
-    // Notify parent that the grid API is ready
-    onReady?.({
-      scrollToSequenceIndex,
-      getFirstVisibleSequenceIndex,
-      subscribeToScroll: (callback: () => void) => {
-        scrollElement?.addEventListener("scroll", callback, { passive: true });
-        return () => scrollElement?.removeEventListener("scroll", callback);
-      },
-    });
-
     return () => {
       unsubscribe();
       resizeObserver.disconnect();
@@ -270,22 +221,6 @@
       }
     });
   });
-
-  /**
-   * Svelte action for dynamic row measurement.
-   * TanStack Virtual's measureElement uses a ResizeObserver internally,
-   * so if card content changes height (e.g. different beat counts per row),
-   * the virtualizer automatically picks up the new size instead of relying
-   * on the estimate which causes overlapping.
-   */
-  function measureRow(node: HTMLElement) {
-    virtualizerRef?.measureElement?.(node);
-    return {
-      destroy() {
-        virtualizerRef?.measureElement?.(node);
-      },
-    };
-  }
 
   // Sequence data provider for hover prefetch
   const sequenceDataProvider = container.items.sequenceDataProvider;
@@ -317,7 +252,6 @@
 
       // Subscribe to updates
       const unsubscribe = virtualizerStore.subscribe((v) => {
-        virtualizerRef = v;
         virtualRows = v.getVirtualItems();
         totalHeight = v.getTotalSize();
       });
@@ -338,8 +272,6 @@
     {#each virtualRows as virtualRow (virtualRow.key)}
       <div
         class="virtual-row"
-        data-index={virtualRow.index}
-        use:measureRow
         style:position="absolute"
         style:top="{virtualRow.start}px"
         style:width="100%"

@@ -328,7 +328,7 @@ export class PublicSequencesLoader implements IBrowseLoader {
         // Trust the actual step count over the stored sequenceLength,
         // which may be stale (e.g. base word length before LOOP expansion)
         if (hydrated.steps && hydrated.steps.length > 0) {
-          return { ...hydrated, sequenceLength: hydrated.steps.length };
+          hydrated.sequenceLength = hydrated.steps.length;
         }
         return hydrated;
       } catch {
