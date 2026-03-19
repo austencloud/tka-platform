@@ -1,12 +1,9 @@
 <!--
   CardBack.svelte - Back face of a printed choreo card
 
-  Renders the reverse side with:
-  - Choreo Card branding
-  - Level system (1-3) with active level highlighted
-  - LOOP type info with real icons and quartered/halved distinction
-  - Quick usage instructions
-  - CTA footer
+  Renders the reverse side, sized to fill its container (which is forced
+  to match the front card's exact pixel dimensions by CardDesigner).
+  All font sizes use em/% so content scales with the container.
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -65,7 +62,6 @@
   });
 
   const hasLoop = $derived(loopComponents.size > 0);
-
   const level = $derived(sequence.level ?? 1);
 
   const loopTypeLabel = $derived(
@@ -85,8 +81,10 @@
 
   const sliceDescription = $derived.by(() => {
     const cycle = sequence.orientationCycleCount;
-    if (cycle === 4) return "Play 4 times. Each rep rotates the pattern 90\u00B0, then it resets.";
-    if (cycle === 2) return "Play 2 times. Each rep rotates the pattern 180\u00B0, then it resets.";
+    if (cycle === 4)
+      return "Play 4 times. Each rep rotates 90\u00B0.";
+    if (cycle === 2)
+      return "Play 2 times. Each rep rotates 180\u00B0.";
     return null;
   });
 
@@ -95,68 +93,76 @@
     2: "Whole turns",
     3: "Half turns",
   };
+
+  const beatCount = $derived(sequence.sequenceLength ?? sequence.steps?.length ?? 0);
+  const word = $derived(sequence.word ?? sequence.name ?? "");
 </script>
 
 <div class="card-back">
-  <!-- Branding -->
-  <div class="branding">
-    <div class="branding-title">Choreo Card</div>
-    <div class="branding-sub">The Kinetic Alphabet</div>
-  </div>
+  <!-- Inner border for that printed-card feel -->
+  <div class="inner-border"></div>
 
-  <div class="divider"></div>
+  <div class="content">
+    <!-- Header -->
+    <header class="header">
+      <h2 class="title">Choreo Card</h2>
+      <p class="subtitle">The Kinetic Alphabet</p>
+    </header>
 
-  <!-- Level system -->
-  <div class="section-label">Difficulty</div>
-  <div class="level-row">
-    {#each [1, 2, 3] as lvl}
-      <div class="level-card" class:active={level === lvl} class:inactive={level !== lvl}>
-        <div class="level-num">{lvl}</div>
-        <div class="level-desc">{levelDescriptions[lvl]}</div>
+    <!-- Sequence identity -->
+    <div class="sequence-identity">
+      <span class="word">{word}</span>
+      <span class="meta">{beatCount} beats</span>
+    </div>
+
+    <hr class="rule" />
+
+    <!-- Level system -->
+    <div class="section">
+      <div class="level-strip">
+        {#each [1, 2, 3] as lvl}
+          <div class="level" class:active={level === lvl} class:dimmed={level !== lvl}>
+            <span class="level-number">{lvl}</span>
+            <span class="level-name">{levelDescriptions[lvl]}</span>
+          </div>
+        {/each}
       </div>
-    {/each}
-  </div>
+    </div>
 
-  <!-- LOOP section -->
-  {#if hasLoop}
-    <div class="section-label">Loop</div>
-    <div class="loop-section">
-      <div class="loop-header">
-        <LOOPIconStrip activeComponents={loopComponents} size={16} darkMode={false} />
-        {#if loopTypeLabel}
-          <span class="loop-type-name">{loopTypeLabel}</span>
+    <!-- LOOP info (only if detected) -->
+    {#if hasLoop}
+      <div class="loop-card">
+        <div class="loop-row">
+          <LOOPIconStrip activeComponents={loopComponents} size={18} darkMode={false} />
+          <span class="loop-name">
+            {#if sliceLabel}{sliceLabel}{/if}
+            {#if isRotatedLoop} Rotation{/if}
+            {#if loopTypeLabel && !sliceLabel}{loopTypeLabel}{/if}
+          </span>
+        </div>
+        {#if sliceDescription}
+          <p class="loop-explanation">{sliceDescription}</p>
+        {:else}
+          <p class="loop-explanation">Loops back to the start each cycle.</p>
         {/if}
       </div>
+    {/if}
 
-      {#if sliceLabel && sliceDescription}
-        <div class="loop-badge">
-          {sliceLabel}{#if isRotatedLoop} Rotation{/if}
-        </div>
-        <div class="loop-desc">{sliceDescription}</div>
-      {/if}
+    <!-- Flexible spacer pushes instructions to bottom -->
+    <div class="grow"></div>
 
-      {#if !sliceLabel}
-        <div class="loop-desc">
-          This sequence can be looped continuously, returning to its starting position each cycle.
-        </div>
-      {/if}
-    </div>
-  {/if}
+    <!-- Instructions -->
+    <ol class="steps">
+      <li>Learn each beat step by step</li>
+      <li>Teach it to a friend</li>
+      <li>Scan the QR on the front to open in the app</li>
+    </ol>
 
-  <div class="spacer"></div>
-
-  <!-- Instructions -->
-  <div class="section-label">Get Started</div>
-  <div class="instructions">
-    <div class="step"><span class="step-num">1.</span> Learn each beat step by step</div>
-    <div class="step"><span class="step-num">2.</span> Teach it to a friend</div>
-    <div class="step"><span class="step-num">3.</span> Scan the front QR to save it in the app</div>
-  </div>
-
-  <!-- Footer -->
-  <div class="footer">
-    <span class="footer-text">tkascribe.com</span>
-    <span class="footer-text">Create your own. Your name on every card.</span>
+    <!-- Footer -->
+    <footer class="footer">
+      <span>tkascribe.com</span>
+      <span>Build your own deck</span>
+    </footer>
   </div>
 </div>
 
@@ -165,168 +171,180 @@
     width: 100%;
     height: 100%;
     background: #ffffff;
-    border: 1px solid #000000;
-    color: #333333;
+    border: 1px solid #000;
+    position: relative;
+    overflow: hidden;
+    box-sizing: border-box;
+    /* Base font size scales with container width via container queries
+       won't work here since container is inline-sized. Instead we
+       use a reasonable base and let flex handle vertical distribution. */
     font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    color: #333;
+  }
+
+  .inner-border {
+    position: absolute;
+    inset: 4px;
+    border: 1px solid #ddd;
+    pointer-events: none;
+  }
+
+  .content {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: column;
-    padding: 16px 14px;
+    height: 100%;
+    padding: 5% 6%;
     box-sizing: border-box;
-    overflow: hidden;
   }
 
-  .branding {
+  /* Header */
+  .header {
     text-align: center;
-    margin-bottom: 8px;
+    margin-bottom: 3%;
   }
 
-  .branding-title {
-    font-size: 14px;
+  .title {
+    margin: 0;
+    font-size: clamp(12px, 3.5cqw, 22px);
     font-weight: 800;
-    letter-spacing: 2.5px;
+    letter-spacing: 0.2em;
     text-transform: uppercase;
+    color: #1a1a1a;
+  }
+
+  .subtitle {
+    margin: 2px 0 0;
+    font-size: clamp(7px, 1.8cqw, 11px);
+    color: #aaa;
+    letter-spacing: 0.12em;
+  }
+
+  /* Sequence identity band */
+  .sequence-identity {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 2% 0;
+  }
+
+  .word {
+    font-size: clamp(11px, 3cqw, 18px);
+    font-weight: 700;
+    letter-spacing: 0.08em;
     color: #222;
   }
 
-  .branding-sub {
-    font-size: 8px;
+  .meta {
+    font-size: clamp(8px, 1.8cqw, 12px);
     color: #999;
-    letter-spacing: 1.5px;
-    margin-top: 1px;
   }
 
-  .divider {
-    height: 1px;
-    background: #e0e0e0;
-    margin-bottom: 10px;
+  .rule {
+    border: none;
+    border-top: 1px solid #e0e0e0;
+    margin: 0 0 3% 0;
   }
 
-  .section-label {
-    font-size: 7px;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: #999;
-    margin-bottom: 5px;
-    font-weight: 600;
+  /* Level strip */
+  .section {
+    margin-bottom: 3%;
   }
 
-  /* Level cards */
-  .level-row {
+  .level-strip {
     display: flex;
-    gap: 4px;
-    margin-bottom: 12px;
+    gap: 3%;
   }
 
-  .level-card {
+  .level {
     flex: 1;
+    text-align: center;
+    padding: 3% 2%;
     border: 1px solid #ddd;
     border-radius: 4px;
-    padding: 5px 4px;
-    text-align: center;
   }
 
-  .level-card.active {
-    border-color: #333;
-    background: #333;
+  .level.active {
+    background: #222;
+    border-color: #222;
     color: #fff;
   }
 
-  .level-card.inactive {
-    opacity: 0.35;
-    background: #f8f8f8;
+  .level.dimmed {
+    opacity: 0.3;
   }
 
-  .level-num {
-    font-size: 16px;
+  .level-number {
+    display: block;
+    font-size: clamp(14px, 3.5cqw, 24px);
     font-weight: 700;
-    line-height: 1;
+    line-height: 1.1;
   }
 
-  .level-desc {
-    font-size: 6.5px;
+  .level-name {
+    display: block;
+    font-size: clamp(6px, 1.5cqw, 10px);
     margin-top: 2px;
-    line-height: 1.3;
+    opacity: 0.8;
   }
 
-  .level-card.active .level-desc {
-    color: rgba(255, 255, 255, 0.8);
-  }
-
-  .level-card.inactive .level-desc {
-    color: #999;
-  }
-
-  /* LOOP section */
-  .loop-section {
-    border: 1px solid #e0e0e0;
+  /* LOOP card */
+  .loop-card {
+    background: #f8f8f8;
+    border: 1px solid #e8e8e8;
     border-radius: 4px;
-    padding: 8px;
-    margin-bottom: 12px;
+    padding: 3% 4%;
+    margin-bottom: 3%;
   }
 
-  .loop-header {
+  .loop-row {
     display: flex;
     align-items: center;
     gap: 6px;
     margin-bottom: 4px;
   }
 
-  .loop-type-name {
-    font-size: 10px;
+  .loop-name {
+    font-size: clamp(9px, 2.2cqw, 14px);
     font-weight: 700;
     color: #333;
   }
 
-  .loop-badge {
-    display: inline-block;
-    font-size: 7px;
-    font-weight: 600;
-    padding: 1px 6px;
-    border-radius: 3px;
-    background: rgba(54, 195, 255, 0.12);
-    color: #1a8ab8;
-    margin-bottom: 4px;
-    letter-spacing: 0.3px;
-  }
-
-  .loop-desc {
-    font-size: 7.5px;
+  .loop-explanation {
+    margin: 0;
+    font-size: clamp(7px, 1.6cqw, 11px);
     color: #666;
     line-height: 1.4;
   }
 
-  .spacer {
+  /* Spacer */
+  .grow {
     flex: 1;
+    min-height: 4%;
   }
 
-  /* Instructions */
-  .instructions {
-    font-size: 8px;
-    color: #666;
-    line-height: 1.7;
-    margin-bottom: 10px;
+  /* Steps */
+  .steps {
+    margin: 0 0 3%;
+    padding-left: 5%;
+    font-size: clamp(7px, 1.6cqw, 11px);
+    color: #555;
+    line-height: 1.8;
   }
 
-  .step {
-    margin-bottom: 2px;
-  }
-
-  .step-num {
-    font-weight: 700;
+  .steps li::marker {
     color: #333;
+    font-weight: 700;
   }
 
   /* Footer */
   .footer {
-    padding-top: 8px;
-    border-top: 1px solid #e8e8e8;
     display: flex;
     justify-content: space-between;
-    align-items: center;
-  }
-
-  .footer-text {
-    font-size: 7px;
-    color: #999;
+    padding-top: 2%;
+    border-top: 1px solid #e8e8e8;
+    font-size: clamp(6px, 1.4cqw, 9px);
+    color: #bbb;
   }
 </style>

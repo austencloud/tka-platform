@@ -1,8 +1,10 @@
 <!--
-  CardDesigner.svelte - Side-by-side front/back card preview
+  CardDesigner.svelte - Front/back card preview at matched dimensions
 
-  Shows a choreo card's front and back at matched dimensions.
-  Includes prev/next navigation and a sequence picker dropdown.
+  Both cards are the SAME physical object — they share ONE size.
+  The front card renders its thumbnail, we measure it, and force
+  the back card to match. Both are capped at 48% of the available
+  height so they always fit together without scrolling.
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -12,312 +14,258 @@
   interface Props {
     sequences: SequenceData[];
     isLoading: boolean;
-    handPointsVisible?: boolean;
-    showGrid?: boolean;
-    showTKA?: boolean;
-    showWord?: boolean;
-    includeStartPosition?: boolean;
   }
 
-  let {
-    sequences,
-    isLoading,
-    handPointsVisible = true,
-    showGrid = true,
-    showTKA = true,
-    showWord = true,
-    includeStartPosition = true,
-  }: Props = $props();
+  let { sequences, isLoading }: Props = $props();
 
   let currentIndex = $state(0);
+  let frontEl: HTMLDivElement | undefined = $state();
+  let measuredW = $state(0);
+  let measuredH = $state(0);
 
-  const currentSequence = $derived(
-    sequences.length > 0 ? sequences[currentIndex] : null
+  const seq = $derived(sequences.length > 0 ? sequences[currentIndex] : null);
+  const name = $derived(seq?.name || seq?.word || "");
+  const counter = $derived(
+    sequences.length > 0 ? `${currentIndex + 1} / ${sequences.length}` : ""
   );
+  const hasPrev = $derived(currentIndex > 0);
+  const hasNext = $derived(currentIndex < sequences.length - 1);
 
-  const displayLabel = $derived(
-    currentSequence
-      ? `${currentIndex + 1} / ${sequences.length}`
-      : "No sequences"
-  );
-
-  function handlePrev() {
-    if (currentIndex > 0) currentIndex--;
+  function prev() {
+    if (hasPrev) currentIndex--;
+  }
+  function next() {
+    if (hasNext) currentIndex++;
   }
 
-  function handleNext() {
-    if (currentIndex < sequences.length - 1) currentIndex++;
-  }
-
-  function handlePickerChange(event: Event) {
-    const target = event.target as HTMLSelectElement;
-    currentIndex = parseInt(target.value, 10);
-  }
-
-  function handleKeyDown(event: KeyboardEvent) {
-    if (event.key === "ArrowLeft") {
-      event.preventDefault();
-      handlePrev();
-    } else if (event.key === "ArrowRight") {
-      event.preventDefault();
-      handleNext();
+  function onKey(e: KeyboardEvent) {
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      prev();
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      next();
     }
   }
 
-  // Reset index when sequences change
+  // Clamp index when list shrinks
   $effect(() => {
-    if (currentIndex >= sequences.length) {
+    if (currentIndex >= sequences.length)
       currentIndex = Math.max(0, sequences.length - 1);
-    }
+  });
+
+  // Measure the front card so the back card matches its pixel size
+  $effect(() => {
+    if (!frontEl) return;
+    const ro = new ResizeObserver((es) => {
+      const r = es[0]?.contentRect;
+      if (r && r.width > 0 && r.height > 0) {
+        measuredW = r.width;
+        measuredH = r.height;
+      }
+    });
+    ro.observe(frontEl);
+    return () => ro.disconnect();
   });
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="card-designer" onkeydown={handleKeyDown} tabindex="0" role="application" aria-label="Card designer - use arrow keys to navigate">
+<div class="designer" onkeydown={onKey} tabindex="0" role="application" aria-label="Card designer">
   {#if isLoading}
-    <div class="loading-state">
+    <div class="placeholder">
       <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-      <span>Loading sequences...</span>
+      <span>Loading...</span>
     </div>
-  {:else if !currentSequence}
-    <div class="empty-state">
+  {:else if !seq}
+    <div class="placeholder">
       <i class="fas fa-id-card" aria-hidden="true"></i>
-      <p>No sequences to display</p>
+      <span>No sequences</span>
     </div>
   {:else}
-    <!-- Navigation bar -->
-    <div class="nav-bar">
-      <button
-        class="nav-btn"
-        onclick={handlePrev}
-        disabled={currentIndex === 0}
-        aria-label="Previous card"
-        type="button"
-      >
+    <!-- Compact nav: ‹ prev | Name  3/431 | next › -->
+    <nav class="nav" aria-label="Card navigation">
+      <button class="nav-btn" onclick={prev} disabled={!hasPrev} aria-label="Previous" type="button">
         <i class="fas fa-chevron-left" aria-hidden="true"></i>
       </button>
-
-      <div class="nav-center">
-        <select
-          class="sequence-picker"
-          value={currentIndex}
-          onchange={handlePickerChange}
-          aria-label="Select a sequence"
-        >
-          {#each sequences as seq, i}
-            <option value={i}>
-              {seq.name || seq.word || `Sequence ${i + 1}`}
-            </option>
-          {/each}
-        </select>
-        <span class="nav-count">{displayLabel}</span>
-      </div>
-
-      <button
-        class="nav-btn"
-        onclick={handleNext}
-        disabled={currentIndex === sequences.length - 1}
-        aria-label="Next card"
-        type="button"
-      >
+      <span class="nav-name" title={name}>{name}</span>
+      <span class="nav-counter">{counter}</span>
+      <button class="nav-btn" onclick={next} disabled={!hasNext} aria-label="Next" type="button">
         <i class="fas fa-chevron-right" aria-hidden="true"></i>
       </button>
-    </div>
+    </nav>
 
-    <!-- Side-by-side card preview -->
-    <div class="card-preview">
-      <div class="card-column">
-        <div class="card-label">Front</div>
-        <div class="card-frame">
-          <ChoreoCard
-            sequence={currentSequence}
-            printMode={true}
-            showQRCodes={true}
-            {handPointsVisible}
-            {showGrid}
-            {showTKA}
-            {showWord}
-            {includeStartPosition}
-          />
+    <!-- Card pair: front on top, back below, both fit without scroll -->
+    <div class="pair">
+      <div class="slot">
+        <span class="label">Front</span>
+        <div class="surface front" bind:this={frontEl}>
+          <ChoreoCard sequence={seq} printMode={true} showQRCodes={true} />
         </div>
       </div>
 
-      <div class="card-column">
-        <div class="card-label">Back</div>
-        <div class="card-frame">
-          <CardBack sequence={currentSequence} />
-        </div>
+      <div class="slot">
+        <span class="label">Back</span>
+        {#if measuredW > 0 && measuredH > 0}
+          <div class="surface back" style="width:{measuredW}px; height:{measuredH}px;">
+            <CardBack sequence={seq} />
+          </div>
+        {/if}
       </div>
     </div>
   {/if}
 </div>
 
 <style>
-  .card-designer {
+  .designer {
     display: flex;
     flex-direction: column;
     height: 100%;
-    padding: var(--spacing-md, 12px);
+    padding: var(--spacing-sm, 8px);
+    overflow: hidden;
     outline: none;
   }
 
-  .card-designer:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: -2px;
-    border-radius: var(--border-radius-lg, 12px);
-  }
-
-  /* Navigation bar */
-  .nav-bar {
+  /* ── Nav ── */
+  .nav {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm, 8px);
-    padding-bottom: var(--spacing-md, 12px);
+    gap: var(--spacing-xs, 4px);
     flex-shrink: 0;
+    padding-bottom: var(--spacing-sm, 8px);
   }
 
   .nav-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--border-radius-sm, 6px);
     background: transparent;
-    color: var(--theme-text, #ffffff);
+    color: var(--theme-text, #fff);
     cursor: pointer;
     flex-shrink: 0;
+    font-size: 12px;
   }
 
   .nav-btn:hover:not(:disabled) {
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
   }
 
   .nav-btn:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
+    opacity: 0.25;
+    cursor: default;
   }
 
-  .nav-center {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm, 8px);
-    min-width: 0;
-  }
-
-  .sequence-picker {
+  .nav-name {
     flex: 1;
     min-width: 0;
-    padding: 6px var(--spacing-sm, 8px);
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--border-radius-sm, 6px);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text, #ffffff);
-    font-size: var(--font-size-sm, 14px);
-    cursor: pointer;
-  }
-
-  .sequence-picker:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 1px;
-  }
-
-  .nav-count {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 600;
+    color: var(--theme-text, #fff);
+    text-align: center;
+  }
+
+  .nav-counter {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     flex-shrink: 0;
+    white-space: nowrap;
   }
 
-  /* Card preview area */
-  .card-preview {
+  /* ── Card pair ──
+     Both slots share the available height equally via flex: 1 1 0.
+     min-height: 0 at every level lets flex actually shrink content.
+     The front card's image scales down to fit. The back card is
+     pixel-sized to match the front's measured dimensions.
+  */
+  .pair {
     flex: 1;
-    display: flex;
-    gap: var(--spacing-xl, 24px);
-    min-height: 0;
-    align-items: flex-start;
-    justify-content: center;
-    overflow: auto;
-    padding: var(--spacing-md, 12px) 0;
-  }
-
-  .card-column {
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: var(--spacing-xs, 4px);
-    flex-shrink: 0;
+    min-height: 0;
+    overflow: hidden;
   }
 
-  .card-label {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+  .slot {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .label {
+    font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 1px;
-    text-align: center;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
     flex-shrink: 0;
   }
 
-  .card-frame {
+  .surface {
     border-radius: 4px;
     overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    flex: 1;
+    min-height: 0;
   }
 
-  /* Front card: let it size naturally from the thumbnail */
-  .card-frame.front {
-    max-height: 65vh;
+  /* Front: every layer in the chain must allow shrinking */
+  .surface.front :global(.choreo-card) {
+    height: 100%;
+    width: auto;
   }
 
-  /* Back card: match the front card's exact dimensions */
-  .card-frame.back {
-    width: var(--front-card-width);
-    height: var(--front-card-height);
+  .surface.front :global(.card-content) {
+    height: 100%;
   }
 
-  /* States */
-  .loading-state,
-  .empty-state {
+  .surface.front :global(.prop-thumbnail) {
+    height: 100%;
+    width: auto;
+  }
+
+  .surface.front :global(.prop-thumbnail img) {
+    height: 100%;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+  }
+
+  /* Back: explicit pixel dimensions from JS, never shrinks */
+  .surface.back {
+    flex: 0 0 auto;
+  }
+
+  /* ── States ── */
+  .placeholder {
     flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: var(--spacing-sm, 8px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-  }
-
-  .loading-state i,
-  .empty-state i {
-    font-size: 2rem;
-    opacity: 0.5;
-  }
-
-  .empty-state p {
-    margin: 0;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: var(--font-size-sm, 14px);
   }
 
-  /* Responsive */
-  @media (max-width: 768px) {
-    .card-preview {
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .card-frame {
-      max-height: 45vh;
-      width: 100%;
-      max-width: 300px;
-    }
+  .placeholder i {
+    font-size: 1.5rem;
+    opacity: 0.4;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .loading-state i {
-      animation: none;
-    }
+    .placeholder i { animation: none; }
   }
 </style>
