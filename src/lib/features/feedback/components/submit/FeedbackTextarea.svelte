@@ -141,6 +141,13 @@
       </button>
     {/if}
 
+    <!-- Attach button inside textarea, bottom-left (mirrors voice button on right) -->
+    {#if images.length === 0}
+      <div class="attach-wrapper">
+        <ImageUpload images={images} {disabled} {stagedImages} {onImagesAdded} {onImageRemoved} hidePreviews={isInputMode} />
+      </div>
+    {/if}
+
     {#if voiceRecorder}
       <div class="voice-input-wrapper">
         <VoiceInputButton
@@ -153,7 +160,7 @@
     {/if}
   </div>
 
-  <!-- Footer: hint row with inline attach, then image strip below when images exist -->
+  <!-- Footer: hint row + image strip when images exist -->
   <div class="field-footer">
     <div class="field-hint-row">
       <div class="field-hint">
@@ -181,10 +188,6 @@
           >
         {/if}
       </div>
-      <!-- Attach button sits inline when no images yet -->
-      {#if images.length === 0}
-        <ImageUpload images={images} {disabled} {stagedImages} {onImagesAdded} {onImageRemoved} hidePreviews={isInputMode} />
-      {/if}
     </div>
     <!-- Image strip appears on its own row when images exist -->
     {#if images.length > 0}
@@ -357,6 +360,15 @@
     font-size: 0.9em;
   }
 
+  .attach-wrapper {
+    position: absolute;
+    bottom: clamp(10px, 2.5cqi, 16px);
+    left: clamp(10px, 2.5cqi, 16px);
+    display: flex;
+    align-items: center;
+    z-index: 1;
+  }
+
   .voice-input-wrapper {
     position: absolute;
     bottom: clamp(10px, 2.5cqi, 16px);
@@ -462,8 +474,9 @@
     overflow-y: auto;
   }
 
-  /* Hide voice button in textarea during input mode - it's in the toolbar */
-  .field.input-mode .voice-input-wrapper {
+  /* Hide action buttons in textarea during input mode - they're in the toolbar */
+  .field.input-mode .voice-input-wrapper,
+  .field.input-mode .attach-wrapper {
     display: none;
   }
 
