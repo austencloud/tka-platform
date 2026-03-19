@@ -316,8 +316,19 @@
       // Clear the flag immediately
       panelState.closeSequenceViewer();
 
+      // Stamp ownership on the sequence so the viewer shows Save/Edit/Delete actions.
+      // Sequences built in the create module don't have ownerId since they haven't
+      // been persisted to Firestore yet.
+      const sequenceWithOwner = currentSequence.ownerId
+        ? currentSequence
+        : {
+            ...currentSequence,
+            ownerId: authState.user?.uid ?? undefined,
+            ownerDisplayName: authState.user?.displayName ?? undefined,
+          };
+
       const { returnPath, returnLabel } = getReturnContext();
-      openSequenceViewer(currentSequence, { returnPath, returnLabel });
+      openSequenceViewer(sequenceWithOwner, { returnPath, returnLabel });
     }
   });
 
@@ -769,6 +780,7 @@
     showVisibilitySettings={true}
     onClose={handleClose}
     onExport={(format, settings) => handleExport("single", settings)}
+    onSaveToLibrary={() => panelState.openSaveToLibraryPanel()}
     onFormatChange={handleFormatChange}
     onCancelExport={handleCancelExport}
     animationSequenceData={animationPanelState.sequenceData}

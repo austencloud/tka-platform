@@ -438,7 +438,11 @@
   $effect(() => {
     const seq = sequence as LibrarySequence | null;
     if (!seq?.contentHash || !authState.user?.uid) {
-      isSaved = true;
+      // No contentHash means we can't verify against the library.
+      // If the sequence is owned by the current user (e.g. from create module),
+      // treat it as unsaved so the Save button appears. Otherwise default to true
+      // (viewing someone else's sequence or not logged in — Save is irrelevant).
+      isSaved = !(isOwned && seq && !seq.contentHash);
       return;
     }
 
