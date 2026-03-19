@@ -30,7 +30,7 @@
   aria-label="Clear sequence"
   title="Clear sequence"
 >
-  <i class="fa-solid fa-broom" aria-hidden="true"></i>
+  <i class="fa-solid fa-eraser" aria-hidden="true"></i>
 </button>
 
 <style>
