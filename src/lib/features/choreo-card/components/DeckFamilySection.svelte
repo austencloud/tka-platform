@@ -19,6 +19,8 @@
     showTKA?: boolean;
     showWord?: boolean;
     includeStartPosition?: boolean;
+    /** Start expanded (used for the first family in a deck) */
+    initiallyExpanded?: boolean;
     onSelectSequence?: (sequence: SequenceData) => void;
   }
 
@@ -30,10 +32,11 @@
     showTKA = true,
     showWord = true,
     includeStartPosition = true,
+    initiallyExpanded = false,
     onSelectSequence,
   }: Props = $props();
 
-  let expanded = $state(false);
+  let expanded = $state(initiallyExpanded);
 
   // Group sequences by handPathId and pick one representative per unique hand path.
   // Each representative renders as a hand path card showing the spatial pattern.
@@ -219,8 +222,8 @@
   /* Playing card grid — cards at 5:7 portrait ratio */
   .card-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: var(--spacing-md, 12px);
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--spacing-lg, 16px);
     padding: 0 var(--spacing-xs, 4px);
   }
 
