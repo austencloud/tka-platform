@@ -13,6 +13,11 @@
 
 <svg class="decorations" viewBox="0 0 500 700" preserveAspectRatio="none">
   {#if theme === "nightSky"}
+    <defs>
+      <filter id="aurora-blur" x="-20%" y="-10%" width="140%" height="120%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="2"/>
+      </filter>
+    </defs>
     <!-- Stars: scattered white/blue dots -->
     {#each Array(80) as _, i}
       {@const s = ((i * 16807 + 42) % 2147483647) / 2147483647}
@@ -28,9 +33,72 @@
     <!-- Moon glow upper right -->
     <circle cx="415" cy="85" r="60" fill="#f5f5dc" opacity="0.04"/>
     <circle cx="415" cy="85" r="20" fill="#f5f5dc" opacity="0.12"/>
-    <!-- Aurora bands -->
-    <path d="M0,100 Q125,50 250,110 Q375,170 500,70 L500,180 Q375,250 250,190 Q125,130 0,210Z" fill="#22c55e" opacity="0.04"/>
-    <path d="M0,130 Q150,190 300,120 Q400,80 500,140 L500,200 Q400,140 300,180 Q150,250 0,180Z" fill="#818cf8" opacity="0.035"/>
+
+    <!-- AURORA: vertical rays in curtain formations, matching the real background -->
+    <!-- Colors by atmospheric height: red/purple at top → green middle → teal bottom -->
+    <!-- Curtain 1: left third of card -->
+    <g filter="url(#aurora-blur)" opacity="0.7">
+      {#each Array(14) as _, i}
+        {@const progress = i / 14}
+        {@const x = 30 + progress * 140}
+        {@const edge = Math.min(progress, 1 - progress) * 2}
+        {@const fade = Math.pow(Math.min(1, edge * 2), 0.7)}
+        {@const wave = 0.5 + 0.5 * Math.sin(progress * Math.PI * 4 + 1.2)}
+        {@const alpha = 0.08 * wave * fade}
+        {@const topY = 15 + Math.sin(i * 3.7 + 42) * 15}
+        {@const bottomY = 420 + Math.sin(i * 7.3 + 21) * 30}
+        {@const w = 8 + wave * 4}
+        <rect x={x - w/2} y={topY} width={w} height={bottomY - topY} rx="2" opacity={alpha}>
+          <title>ray</title>
+        </rect>
+      {/each}
+      <!-- Color the curtain rays with the actual aurora gradient -->
+      {#each Array(14) as _, i}
+        {@const progress = i / 14}
+        {@const x = 30 + progress * 140}
+        {@const edge = Math.min(progress, 1 - progress) * 2}
+        {@const fade = Math.pow(Math.min(1, edge * 2), 0.7)}
+        {@const wave = 0.5 + 0.5 * Math.sin(progress * Math.PI * 4 + 1.2)}
+        {@const alpha = 0.08 * wave * fade}
+        {@const topY = 15 + Math.sin(i * 3.7 + 42) * 15}
+        {@const bottomY = 420 + Math.sin(i * 7.3 + 21) * 30}
+        {@const w = 8 + wave * 4}
+        {@const h = bottomY - topY}
+        <!-- Red/purple top -->
+        <rect x={x - w/2} y={topY} width={w} height={h * 0.2} fill="#ff6490" opacity={alpha * 0.4}/>
+        <rect x={x - w/2} y={topY + h * 0.12} width={w} height={h * 0.18} fill="#c878ff" opacity={alpha * 0.5}/>
+        <!-- Green core -->
+        <rect x={x - w/2} y={topY + h * 0.25} width={w} height={h * 0.35} fill="#78ffa0" opacity={alpha * 0.9}/>
+        <!-- Teal lower -->
+        <rect x={x - w/2} y={topY + h * 0.55} width={w} height={h * 0.25} fill="#50dcb4" opacity={alpha * 0.6}/>
+        <!-- Fade out -->
+        <rect x={x - w/2} y={topY + h * 0.75} width={w} height={h * 0.25} fill="#50dcb4" opacity={alpha * 0.2}/>
+      {/each}
+    </g>
+
+    <!-- Curtain 2: right area, slightly different phase -->
+    <g filter="url(#aurora-blur)" opacity="0.5">
+      {#each Array(10) as _, i}
+        {@const progress = i / 10}
+        {@const x = 300 + progress * 130}
+        {@const edge = Math.min(progress, 1 - progress) * 2}
+        {@const fade = Math.pow(Math.min(1, edge * 2), 0.7)}
+        {@const wave = 0.5 + 0.5 * Math.sin(progress * Math.PI * 3 + 2.8)}
+        {@const alpha = 0.06 * wave * fade}
+        {@const topY = 30 + Math.sin(i * 4.1 + 17) * 20}
+        {@const bottomY = 350 + Math.sin(i * 6.9 + 33) * 25}
+        {@const w = 7 + wave * 3}
+        {@const h = bottomY - topY}
+        <rect x={x - w/2} y={topY + h * 0.1} width={w} height={h * 0.15} fill="#c878ff" opacity={alpha * 0.4}/>
+        <rect x={x - w/2} y={topY + h * 0.2} width={w} height={h * 0.35} fill="#78ffa0" opacity={alpha * 0.8}/>
+        <rect x={x - w/2} y={topY + h * 0.5} width={w} height={h * 0.25} fill="#50dcb4" opacity={alpha * 0.5}/>
+        <rect x={x - w/2} y={topY + h * 0.7} width={w} height={h * 0.3} fill="#50dcb4" opacity={alpha * 0.15}/>
+      {/each}
+    </g>
+
+    <!-- Horizon glow beneath auroras -->
+    <rect x="20" y="400" width="160" height="40" rx="10" fill="#50dcb4" opacity="0.02" filter="url(#aurora-blur)"/>
+    <rect x="290" y="340" width="140" height="30" rx="10" fill="#50dcb4" opacity="0.015" filter="url(#aurora-blur)"/>
 
   {:else if theme === "deepOcean"}
     <defs>
