@@ -48,11 +48,18 @@ export class SequenceRenderer implements ISequenceRenderer {
       }
 
       // Render the sequence using composition service (with progress callback)
-      const canvas = await this.compositionService.composeSequenceImage(
-        sequence,
-        fullOptions,
-        onProgress
-      );
+      // cardMode uses the 5:7 playing card layout; standard mode uses the default grid layout
+      const canvas = fullOptions.cardMode
+        ? await this.compositionService.composeCardImage(
+            sequence,
+            fullOptions,
+            onProgress
+          )
+        : await this.compositionService.composeSequenceImage(
+            sequence,
+            fullOptions,
+            onProgress
+          );
 
       return canvas;
     } catch (error) {

@@ -63,6 +63,9 @@ export interface ThumbnailRenderInput {
 
   // Visibility overrides (undefined = use defaults: showTKA=true, showReversals=true, etc.)
   visibility?: ThumbnailVisibilitySettings;
+
+  /** Use 5:7 playing card layout for physical card export (different from lightMode/printMode) */
+  cardMode?: boolean;
 }
 
 /**

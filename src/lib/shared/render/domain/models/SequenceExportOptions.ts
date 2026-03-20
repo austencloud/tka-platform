@@ -15,6 +15,8 @@ import type { PropType } from "../../../pictograph/prop/domain/enums/PropType";
 export interface SequenceExportOptions {
   // Core export settings (match desktop defaults)
   includeStartPosition: boolean;
+  /** "row" = start position as top row, "column" = start position as left column */
+  startPositionLayout?: "row" | "column";
   addStepNumbers: boolean;
   addReversalSymbols: boolean;
   /** @deprecated Footer visibility is now derived from individual flags (showCreatorName, showNotes, showBirthday) */
@@ -99,6 +101,10 @@ export interface SequenceExportOptions {
   width?: number;
   height?: number;
   backgroundColor?: string;
+
+  /** Use 5:7 playing card layout (composeCardImage) for physical card export.
+   *  Different from printMode (white background). cardMode = card aspect ratio. */
+  cardMode?: boolean;
 }
 
 export interface BeatRenderOptions {
