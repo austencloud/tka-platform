@@ -116,7 +116,7 @@ export const APP_CAPABILITIES: AppCapability[] = [
     action: "Export a sequence as a video",
     module: "Compose",
     tab: "Arrange",
-    keywords: ["export animation", "animation", "mp4", "record", "render animation"],
+    keywords: ["Download Animation", "animation", "mp4", "record", "render animation"],
     instructions:
       "Go to Compose > Arrange. Load your sequence, tap the export button and choose 'Video'. The app renders each beat as an animated frame and combines them into a video.",
   },

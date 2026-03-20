@@ -570,7 +570,7 @@
         {bpm}
         onBpmChange={handleBpmChange}
         showPresets={false}
-        showRamp={false}
+        showPractice={false}
       />
       <button
         class="restart-btn"

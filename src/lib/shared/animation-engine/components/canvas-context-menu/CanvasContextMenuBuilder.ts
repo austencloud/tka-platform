@@ -104,6 +104,70 @@ function buildEffortChildren(
   }));
 }
 
+function buildDisplayChildren(
+  vm: AnimationVisibilityStateManager
+): ContextMenuItem[] {
+  const gridVisible = vm.isGridVisible();
+  return [
+    {
+      id: "display-grid",
+      label: "Grid",
+      icon: "fa-border-all",
+      checked: gridVisible,
+      keepOpen: true,
+      action: () => vm.setGridMode(gridVisible ? "none" : "diamond"),
+    },
+    {
+      id: "display-tkaGlyph",
+      label: "TKA Glyph",
+      icon: "fa-language",
+      checked: vm.getVisibility("tkaGlyph"),
+      keepOpen: true,
+      action: () => vm.toggleVisibility("tkaGlyph"),
+    },
+    {
+      id: "display-stepNumbers",
+      label: "Step Numbers",
+      icon: "fa-list-ol",
+      checked: vm.getVisibility("stepNumbers"),
+      keepOpen: true,
+      action: () => vm.toggleVisibility("stepNumbers"),
+    },
+    {
+      id: "display-beatPosition",
+      label: "Beat Position",
+      icon: "fa-crosshairs",
+      checked: vm.getVisibility("beatPosition"),
+      keepOpen: true,
+      action: () => vm.toggleVisibility("beatPosition"),
+    },
+    {
+      id: "display-props",
+      label: "Props",
+      icon: "fa-wand-sparkles",
+      checked: vm.getVisibility("props"),
+      keepOpen: true,
+      action: () => vm.toggleVisibility("props"),
+    },
+    {
+      id: "display-wordHeader",
+      label: "Word Header",
+      icon: "fa-heading",
+      checked: vm.getVisibility("wordHeader"),
+      keepOpen: true,
+      action: () => vm.toggleVisibility("wordHeader"),
+    },
+    {
+      id: "display-progressBar",
+      label: "Progress Bar",
+      icon: "fa-bars-progress",
+      checked: vm.getVisibility("progressBar"),
+      keepOpen: true,
+      action: () => vm.toggleVisibility("progressBar"),
+    },
+  ];
+}
+
 function buildPathShapeChildren(
   vm: AnimationVisibilityStateManager
 ): ContextMenuItem[] {
@@ -152,6 +216,12 @@ export function buildCanvasContextMenuItems(
       icon: "fa-draw-polygon",
       children: buildPathShapeChildren(vm),
     },
+    {
+      id: "display-submenu",
+      label: "Display",
+      icon: "fa-eye",
+      children: buildDisplayChildren(vm),
+    },
     { type: "separator" as const },
     ...(deps.onToggleDisassemble
       ? [
@@ -167,7 +237,7 @@ export function buildCanvasContextMenuItems(
       : []),
     {
       id: "open-canvas-settings",
-      label: "Canvas Settings\u2026",
+      label: "Effect Settings\u2026",
       icon: "fa-sliders",
       action: () => deps.onOpenPanel("display"),
     },

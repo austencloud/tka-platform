@@ -2,7 +2,10 @@
  * Assemble Tab State
  *
  * Manages the Assemble tab's integration into the Create module.
- * Owns an isolated SequenceState, UndoController, and builder state (from assemble-lab).
+ * Owns an isolated SequenceState and builder state (from assemble-lab).
+ *
+ * Undo is handled by builderState.undoStep() directly (per-step granularity),
+ * wired through CreateModuleState.undo() when activeTab === "assemble".
  *
  * The reactive bridge converts BuilderStep[] (visual builder's per-hand model)
  * into StepData[] (what SequenceState/StepGrid needs), keeping both in sync.
@@ -15,12 +18,6 @@ import type { ISequenceTransformer } from "../services/contracts/ISequenceTransf
 import type { ISequenceValidator } from "../services/contracts/ISequenceValidator";
 import { createSequenceState } from "./SequenceStateOrchestrator.svelte";
 import type { SequenceState } from "./SequenceStateOrchestrator.svelte";
-import type {
-  UndoOperationType,
-  UndoMetadata,
-} from "../services/contracts/IUndoManager";
-import { createUndoController } from "./create-module/undo-controller.svelte";
-import { undoManager } from "../services/implementations/UndoManager";
 import { createAssembleState } from "$lib/features/assemble-lab/state/assemble-state.svelte";
 import type { AssembleState } from "$lib/features/assemble-lab/state/assemble-state.svelte";
 import { BuilderStepConverter } from "$lib/features/assemble-lab/services/implementations/BuilderStepConverter";
@@ -61,17 +58,9 @@ export function createAssembleTabState(
       })
     : null;
 
-  // Undo controller
-  const undoController = sequenceState
-    ? createUndoController({
-        UndoManager: undoManager,
-        sequenceState,
-        getActiveSection: () => "assemble",
-        setActiveSectionInternal: async () => {
-          // Assemble tab doesn't need section switching
-        },
-      })
-    : null;
+  // Undo for assemble tab is handled directly by builderState.undoStep()
+  // (wired through CreateModuleState.undo() which delegates to builderState
+  // when activeTab === "assemble"). No snapshot-based undo controller needed.
 
   // ============================================================================
   // REACTIVE BRIDGE: BuilderStep[] -> SequenceState
@@ -232,16 +221,13 @@ export function createAssembleTabState(
     // Sequence state (consumed by StepGrid via SequenceState)
     get sequenceState() { return sequenceState; },
 
-    // Undo controller
-    get undoController() { return undoController; },
-    get canUndo() { return undoController?.canUndo || false; },
-    get canRedo() { return undoController?.canRedo || false; },
-    pushUndoSnapshot: (type: UndoOperationType, metadata?: UndoMetadata) => {
-      undoController?.pushUndoSnapshot(type, metadata);
+    // Undo is handled by builderState.undoStep() via CreateModuleState.undo()
+    get canUndo() { return builderState.canUndo; },
+    undo: () => {
+      if (!builderState.canUndo) return false;
+      void builderState.undoStep();
+      return true;
     },
-    undo: () => undoController?.undo() || false,
-    redo: () => undoController?.redo() || false,
-    clearUndoHistory: () => undoController?.clearUndoHistory(),
 
     // Initialization
     initializeAssembleTab,

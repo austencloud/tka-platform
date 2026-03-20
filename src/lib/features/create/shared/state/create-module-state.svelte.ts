@@ -239,7 +239,9 @@ export function createCreateModuleState(
         return _generatorTabState?.undoController || null;
       }
       case "assemble": {
-        return _assembleTabState?.undoController || null;
+        // Assemble tab uses builderState.undoStep() directly, not a snapshot-based controller.
+        // canUndo/undo() are handled above with special-case logic.
+        return null;
       }
       default:
         return null;
@@ -286,6 +288,18 @@ export function createCreateModuleState(
       controller?.pushUndoSnapshot(type, metadata);
     },
     undo: () => {
+      // Assemble tab uses per-step undo (builderState.undoStep), not snapshot-based undo.
+      // undoStep() is async (plays reverse animation) but callers don't need to await it —
+      // the animation phase blocks further input until it completes.
+      const activeTab = navigationState.activeTab as BuildModeId;
+      if (activeTab === "assemble") {
+        const builder = _assembleTabState?.assembleBuilderState;
+        if (builder?.canUndo) {
+          void builder.undoStep();
+          return true;
+        }
+        return false;
+      }
       const controller = getActiveTabUndoController();
       return controller?.undo() || false;
     },
@@ -310,6 +324,11 @@ export function createCreateModuleState(
       controller?.setOnUndoingOptionCallback(callback);
     },
     get canUndo() {
+      // Assemble tab uses builderState.canUndo (per-step), not snapshot-based undo
+      const activeTab = navigationState.activeTab as BuildModeId;
+      if (activeTab === "assemble") {
+        return _assembleTabState?.assembleBuilderState.canUndo || false;
+      }
       const controller = getActiveTabUndoController();
       return controller?.canUndo || false;
     },

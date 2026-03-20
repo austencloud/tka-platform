@@ -560,7 +560,7 @@ uid=2_0 RootWebArea "TKA Scribe - A flow arts choreography Toolbox" url="http://
     uid=2_559 banner
       uid=2_560 button "Back to Browse" focusable focused
       uid=2_561 StaticText "Sequence Viewer"
-      uid=2_562 StaticText "Tap either view to export it"
+      uid=2_562 StaticText "Tap to download"
       uid=2_563 button "Settings" description="Viewer settings"
     uid=2_564 button "Focus on animation" expandable
       uid=2_565 slider "Sequence progress: beat 0 of 16, 0% complete" orientation="horizontal" value="0" valuemax="100" valuemin="0" valuetext=""
