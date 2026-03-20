@@ -240,7 +240,7 @@
                     {bpm}
                     {onBpmChange}
                     showPresets={false}
-                    showRamp={false}
+                    showPractice={false}
                   />
                 </div>
               </div>
@@ -350,7 +350,7 @@
         </div>
       {/if}
 
-      <!-- Bottom bar: [Play] [Export Animation] [Settings] -->
+      <!-- Bottom bar: [Play] [Download Animation] [Settings] -->
       <div class="mobile-bar">
         {#if onPlaybackToggle}
           <button
@@ -369,14 +369,14 @@
           class="bar-export-btn"
           onclick={onExport}
           disabled={exportDisabled}
-          aria-label="Export animation"
+          aria-label="Download Animation"
         >
           {#if !canvasReady}
             <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
             Loading...
           {:else}
             <i class="fas fa-download" aria-hidden="true"></i>
-            Export Animation
+            Download Animation
           {/if}
         </button>
 
@@ -421,7 +421,7 @@
             {bpm}
             {onBpmChange}
             showPresets={false}
-            showRamp={false}
+            showPractice={false}
           />
         </div>
       {/if}
@@ -556,14 +556,14 @@
             class="export-btn"
             onclick={onExport}
             disabled={exportDisabled}
-            aria-label="Export animation"
+            aria-label="Download Animation"
           >
             {#if !canvasReady}
               <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
               Loading...
             {:else}
               <i class="fas fa-download" aria-hidden="true"></i>
-              Export Animation
+              Download Animation
             {/if}
           </button>
           {#if timeEstimateLabel && !exportDisabled}

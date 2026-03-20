@@ -46,7 +46,7 @@ import { ExportGlyphPrerenderer } from "$lib/features/compose/services/implement
 import { VideoExportOrchestrator } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
 import { TunnelModeSequenceManager } from "$lib/features/compose/services/implementations/TunnelModeSequenceManager";
 import { SequenceMotionLoader } from "$lib/shared/sequence-viewer/services/implementations/SequenceMotionLoader";
-import { TempoRampOrchestrator } from "$lib/shared/sequence-viewer/services/implementations/TempoRampOrchestrator";
+import { TempoPracticeOrchestrator } from "$lib/shared/sequence-viewer/services/implementations/TempoPracticeOrchestrator";
 
 // Type imports for external dependencies
 import type { IImageComposer } from "$lib/shared/render/services/contracts/IImageComposer";
@@ -170,7 +170,7 @@ export function createAnimatorContainer(externalDeps: AnimatorContainerDependenc
         new SequenceMotionLoader(externalDeps.browseLoader),
     }))
     .add(() => ({
-      tempoRampOrchestrator: () => new TempoRampOrchestrator(),
+      tempoPracticeOrchestrator: () => new TempoPracticeOrchestrator(),
     }));
 }
 

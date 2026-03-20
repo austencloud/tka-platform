@@ -8,7 +8,7 @@
 
   Controls expanded (replaces row):
   Row 1: [< « ▶ » >] transport controls
-  Row 2: [- 60 BPM +] [Ramp] [✕ close]
+  Row 2: [- 60 BPM +] [Practice] [✕ close]
 -->
 <script lang="ts">
   import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
@@ -18,7 +18,7 @@
     bpm: number;
     isPlaying: boolean;
     isLoggedIn: boolean;
-    rampActive?: boolean;
+    practiceActive?: boolean;
 
     onBpmChange: (bpm: number) => void;
     onPlayPause: () => void;
@@ -30,8 +30,8 @@
     onSave: () => void;
     onEdit: () => void;
     onGetApp?: () => void;
-    onRampStart?: () => void;
-    onRampStop?: () => void;
+    onPracticeStart?: () => void;
+    onPracticeStop?: () => void;
     isOwned?: boolean;
     onDeleteRequest?: () => void;
     onVideoUpload?: () => void;
@@ -42,13 +42,16 @@
     onFavorite?: () => void;
     onPublish?: () => void;
     onUnpublish?: () => void;
+    onCopyLink?: () => void;
+    onPropsOpen?: () => void;
+    linkCopied?: boolean;
   }
 
   let {
     bpm,
     isPlaying,
     isLoggedIn,
-    rampActive = false,
+    practiceActive = false,
     onBpmChange,
     onPlayPause,
     onStepBack,
@@ -59,8 +62,8 @@
     onSave,
     onEdit,
     onGetApp,
-    onRampStart,
-    onRampStop,
+    onPracticeStart,
+    onPracticeStop,
     isOwned = false,
     onDeleteRequest,
     onVideoUpload,
@@ -71,6 +74,9 @@
     onFavorite,
     onPublish,
     onUnpublish,
+    onCopyLink,
+    onPropsOpen,
+    linkCopied = false,
   }: Props = $props();
 
   let controlsExpanded = $state(false);
@@ -92,116 +98,147 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="morph-toolbar" onkeydown={handleKeydown}>
-  <!-- Single row: play + actions + BPM chip (hidden when controls expanded) -->
-  <div class="playback-row" class:hidden={controlsExpanded}>
-    <button
-      type="button"
-      class="play-btn"
-      class:playing={isPlaying}
-      onclick={onPlayPause}
-      aria-label={isPlaying ? "Pause animation" : "Play animation"}
-    >
-      <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
-    </button>
+  <!-- Two rows: actions + BPM chip (hidden when controls expanded) -->
+  <div class="toolbar-collapsed" class:hidden={controlsExpanded}>
+    <div class="actions-row">
+      <button
+        type="button"
+        class="play-btn"
+        class:playing={isPlaying}
+        onclick={onPlayPause}
+        aria-label={isPlaying ? "Pause animation" : "Play animation"}
+      >
+        <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
+      </button>
 
-    {#if isLoggedIn}
-      <!-- Favorite heart -->
-      {#if onFavorite}
+      {#if isLoggedIn}
+        <!-- Favorite heart -->
+        {#if onFavorite}
+          <button
+            type="button"
+            class="action-btn"
+            class:favorited={isFavorite}
+            onclick={onFavorite}
+            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+          >
+            <i class="fas fa-heart" aria-hidden="true"></i>
+            <span>{isFavorite ? "Favorited" : "Favorite"}</span>
+          </button>
+        {/if}
+
+        {#if onCopyLink}
+          <button
+            type="button"
+            class="action-btn"
+            class:copied={linkCopied}
+            onclick={onCopyLink}
+            aria-label={linkCopied ? "Link copied" : "Copy shareable link"}
+          >
+            <i class="fas {linkCopied ? 'fa-check' : 'fa-link'}" aria-hidden="true"></i>
+            <span>{linkCopied ? "Copied" : "Copy Link"}</span>
+          </button>
+        {/if}
+
+        <!-- Save (only when unsaved) -->
+        {#if isOwned && !isSaved}
+          <button
+            type="button"
+            class="action-btn save"
+            onclick={onSave}
+            aria-label="Save sequence"
+          >
+            <i class="fas fa-floppy-disk" aria-hidden="true"></i>
+            <span>Save</span>
+          </button>
+        {/if}
+
+        <!-- Remix (owner only, when saved) -->
+        {#if isOwned && isSaved}
+          <button
+            type="button"
+            class="action-btn edit"
+            onclick={onEdit}
+            aria-label="Remix"
+          >
+            <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+            <span>Remix</span>
+          </button>
+        {/if}
+
+        {#if onPropsOpen}
+          <button
+            type="button"
+            class="action-btn"
+            onclick={onPropsOpen}
+            aria-label="Change props"
+          >
+            <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
+            <span>Props</span>
+          </button>
+        {/if}
+      {:else}
+        <button
+          type="button"
+          class="action-btn get-app"
+          onclick={onGetApp}
+          aria-label="Get TKA Scribe"
+        >
+          <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
+          <span>Get App</span>
+        </button>
+      {/if}
+
+      {#if isLoggedIn && onVideoUpload}
+        <button
+          type="button"
+          class="action-btn video"
+          onclick={onVideoUpload}
+          aria-label="Upload video"
+        >
+          <i class="fas fa-video" aria-hidden="true"></i>
+          <span>Video</span>
+          {#if videoCount && videoCount > 0}
+            <span class="video-badge">{videoCount}</span>
+          {/if}
+        </button>
+      {/if}
+      {#if isLoggedIn && isOwned && isSaved}
         <button
           type="button"
           class="action-btn"
-          class:favorited={isFavorite}
-          onclick={onFavorite}
-          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+          onclick={isPublished ? onUnpublish : onPublish}
+          aria-label={isPublished ? "Make Private" : "Make Public"}
         >
-          <i class="fas fa-heart" aria-hidden="true"></i>
-          <span>{isFavorite ? "Favorited" : "Favorite"}</span>
+          <i class="fas {isPublished ? 'fa-eye-slash' : 'fa-eye'}" aria-hidden="true"></i>
+          <span>{isPublished ? "Make Private" : "Make Public"}</span>
         </button>
-      {/if}
-
-      <!-- Save (only when unsaved) -->
-      {#if isOwned && !isSaved}
-        <button
-          type="button"
-          class="action-btn save"
-          onclick={onSave}
-          aria-label="Save sequence"
-        >
-          <i class="fas fa-floppy-disk" aria-hidden="true"></i>
-          <span>Save</span>
-        </button>
-      {/if}
-
-      <!-- Remix (owner only, when saved) -->
-      {#if isOwned && isSaved}
-        <button
-          type="button"
-          class="action-btn edit"
-          onclick={onEdit}
-          aria-label="Remix"
-        >
-          <i class="fas fa-pen-to-square" aria-hidden="true"></i>
-          <span>Remix</span>
-        </button>
-      {/if}
-    {:else}
-      <button
-        type="button"
-        class="action-btn get-app"
-        onclick={onGetApp}
-        aria-label="Get TKA Scribe"
-      >
-        <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
-        <span>Get App</span>
-      </button>
-    {/if}
-
-    {#if isLoggedIn && onVideoUpload}
-      <button
-        type="button"
-        class="action-btn video"
-        onclick={onVideoUpload}
-        aria-label="Upload video"
-      >
-        <i class="fas fa-video" aria-hidden="true"></i>
-        <span>Video</span>
-        {#if videoCount && videoCount > 0}
-          <span class="video-badge">{videoCount}</span>
+        {#if onDeleteRequest}
+          <button
+            type="button"
+            class="action-btn delete"
+            onclick={onDeleteRequest}
+            aria-label="Delete sequence"
+          >
+            <i class="fas fa-trash" aria-hidden="true"></i>
+            <span>Delete</span>
+          </button>
         {/if}
-      </button>
-    {/if}
-    {#if isLoggedIn && isOwned && isSaved}
+      {/if}
+    </div>
+
+    <div class="bpm-row">
       <button
         type="button"
-        class="action-btn"
-        onclick={isPublished ? onUnpublish : onPublish}
-        aria-label={isPublished ? "Make Private" : "Make Public"}
+        class="chip-trigger"
+        class:active={controlsExpanded}
+        onclick={openControls}
+        aria-label="Playback controls: {bpm} BPM"
       >
-        <i class="fas {isPublished ? 'fa-eye-slash' : 'fa-eye'}" aria-hidden="true"></i>
-        <span>{isPublished ? "Make Private" : "Make Public"}</span>
+        <i class="fas fa-sliders" aria-hidden="true"></i>
+        <span class="chip-value">{bpm} BPM</span>
+        <i class="fas fa-chevron-up chip-chevron" aria-hidden="true"></i>
       </button>
-      {#if onDeleteRequest}
-        <button
-          type="button"
-          class="action-btn delete"
-          onclick={onDeleteRequest}
-          aria-label="Delete sequence"
-        >
-          <i class="fas fa-trash" aria-hidden="true"></i>
-          <span>Delete</span>
-        </button>
-      {/if}
-    {/if}
-
-    <button
-      type="button"
-      class="chip-trigger"
-      class:active={controlsExpanded}
-      onclick={openControls}
-      aria-label="Playback controls: {bpm} BPM"
-    >
-      <span class="chip-value">{bpm} BPM</span>
-    </button>
+    </div>
   </div>
 
   <!-- Expanded controls: slides up from below the main row -->
@@ -219,14 +256,24 @@
         />
       </div>
       <div class="tempo-close-row">
+        <button
+          type="button"
+          class="practice-btn"
+          class:active={practiceActive}
+          onclick={() => practiceActive ? onPracticeStop?.() : onPracticeStart?.()}
+          aria-label={practiceActive ? "Stop practice training" : "Start practice training"}
+        >
+          {practiceActive ? "Stop" : "Practice"}
+        </button>
         <div class="tempo-wrapper">
           <TempoControl
             {bpm}
             {onBpmChange}
             showPresets={false}
-            rampActive={rampActive}
-            onRampStart={onRampStart}
-            onRampStop={onRampStop}
+            showPractice={false}
+            practiceActive={practiceActive}
+            onPracticeStart={onPracticeStart}
+            onPracticeStop={onPracticeStop}
           />
         </div>
         <button
@@ -256,10 +303,21 @@
   }
 
   /* ===========================
-     SINGLE ROW: PLAY + CHIP + ACTIONS
+     COLLAPSED STATE: TWO ROWS
      =========================== */
 
-  .playback-row {
+  .toolbar-collapsed {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .toolbar-collapsed.hidden {
+    display: none;
+  }
+
+  .actions-row {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -267,8 +325,9 @@
     flex-wrap: wrap;
   }
 
-  .playback-row.hidden {
-    display: none;
+  .bpm-row {
+    display: flex;
+    width: 100%;
   }
 
   /* ===========================
@@ -331,7 +390,7 @@
     min-width: 80px;
     padding: 0 16px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border: 1.5px solid var(--theme-accent, rgba(139, 92, 246, 0.35));
     border-radius: 24px;
     color: var(--theme-text, #fff);
     font-size: var(--font-size-sm, 14px);
@@ -339,6 +398,16 @@
     cursor: pointer;
     transition: all var(--duration-fast, 150ms) ease;
     -webkit-tap-highlight-color: transparent;
+  }
+
+  .chip-trigger i {
+    font-size: 12px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+  }
+
+  .chip-chevron {
+    font-size: 10px !important;
+    opacity: 0.6;
   }
 
   .chip-trigger.active {
@@ -461,6 +530,11 @@
     background: color-mix(in srgb, var(--semantic-error) 15%, transparent);
   }
 
+  .action-btn.copied {
+    color: var(--semantic-success, #22c55e);
+    border-color: rgba(34, 197, 94, 0.25);
+  }
+
   /* ===========================
      INLINE CONTROLS (replaces action + playback rows)
      =========================== */
@@ -493,12 +567,72 @@
   .tempo-close-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: space-between;
+    width: 100%;
   }
 
   .tempo-wrapper {
-    flex: 1;
     min-width: 0;
+  }
+
+  /* ===========================
+     PRACTICE BUTTON (in tempo row)
+     =========================== */
+
+  .practice-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 14px;
+    min-height: var(--min-touch-target);
+    min-width: var(--min-touch-target);
+    flex-shrink: 0;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--duration-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
+    -webkit-tap-highlight-color: transparent;
+    white-space: nowrap;
+  }
+
+  .practice-btn.active {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #f87171;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
+    animation: practice-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes practice-pulse {
+    0%, 100% { box-shadow: 0 0 12px rgba(239, 68, 68, 0.2); }
+    50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.35); }
+  }
+
+  .practice-btn i {
+    font-size: 14px;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .practice-btn:hover:not(.active) {
+      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+      border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+      color: var(--theme-text, white);
+    }
+  }
+
+  .practice-btn:active {
+    transform: scale(0.95);
+    transition-duration: 0ms;
+  }
+
+  .practice-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
   }
 
   .close-controls-btn {
@@ -569,6 +703,7 @@
     .play-btn,
     .action-btn,
     .chip-trigger,
+    .practice-btn,
     .close-controls-btn,
     .controls-inline {
       transition: none;
@@ -578,6 +713,7 @@
     .play-btn:active,
     .action-btn:active,
     .chip-trigger:active,
+    .practice-btn:active,
     .close-controls-btn:active {
       transform: none;
     }

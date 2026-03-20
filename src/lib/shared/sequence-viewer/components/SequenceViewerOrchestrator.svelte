@@ -9,7 +9,7 @@
   - Animation playback (play/pause, BPM, stepping)
   - Export mode (image/video/combined)
   - Fullscreen mode
-  - Tempo ramp training
+  - Tempo practice training
   - LAN sync
   - Keyboard shortcuts
   - Image composition settings
@@ -90,9 +90,9 @@
     /** Duration in seconds of a single sequence playthrough at current BPM */
     singlePlayDuration: number;
 
-    // Ramp training
-    rampActive: boolean;
-    rampState: ReturnType<typeof import("$lib/shared/sequence-viewer/state/tempo-ramp-state.svelte").createTempoRampState>;
+    // Practice training
+    practiceActive: boolean;
+    practiceState: ReturnType<typeof import("$lib/shared/sequence-viewer/state/tempo-practice-state.svelte").createTempoPracticeState>;
 
     // Settings
     bluePropType: PropType | undefined;
@@ -111,7 +111,9 @@
     imgShowStartPos: boolean;
     imgShowDifficulty: boolean;
     imgShowCreatorName: boolean;
+    imgShowStepNumbers: boolean;
     imgShowNotes: boolean;
+    imgShowBirthday: boolean;
     imgDarkMode: boolean;
     imgColumnCount: number | null;
 
@@ -157,8 +159,8 @@
     handleDelete: () => Promise<void>;
     handleGetApp: () => void;
     handleUnifiedDarkModeToggle: () => void;
-    handleRampStart: () => void;
-    handleRampStop: () => void;
+    handlePracticeStart: () => void;
+    handlePracticeStop: () => void;
     onBack: () => void;
     stepHalfBeatBackward: () => void;
     stepHalfBeatForward: () => void;
@@ -202,8 +204,8 @@
   import { createModalAccessibilityHelper } from "$lib/shared/sequence-viewer/services/implementations/ModalAccessibilityHelper.svelte";
   import { saveSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
   import { getExportOptionsState } from "$lib/shared/sequence-viewer/state/export-options-state.svelte";
-  import { TempoRampOrchestrator } from "$lib/shared/sequence-viewer/services/implementations/TempoRampOrchestrator";
-  import { createTempoRampState } from "$lib/shared/sequence-viewer/state/tempo-ramp-state.svelte";
+  import { TempoPracticeOrchestrator } from "$lib/shared/sequence-viewer/services/implementations/TempoPracticeOrchestrator";
+  import { createTempoPracticeState } from "$lib/shared/sequence-viewer/state/tempo-practice-state.svelte";
   import { page } from "$app/stores";
   import type { ShareURLMetadata } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
   import type { IPresentationResolver } from "../services/contracts/IPresentationResolver";
@@ -399,19 +401,22 @@
   const imageComposition = getImageCompositionManager();
   let imgShowWord = $state(imageComposition.addWord);
   let imgShowStartPos = $state(imageComposition.includeStartPosition);
+  let imgShowStepNumbers = $state(imageComposition.addStepNumbers);
   let imgShowDifficulty = $state(imageComposition.addDifficultyLevel);
   let imgShowCreatorName = $state(imageComposition.showCreatorName);
   let imgShowNotes = $state(imageComposition.showNotes);
+  let imgShowBirthday = $state(imageComposition.showBirthday);
+  let imgShowQRCode = $state(imageComposition.showQRCode);
   let imgDarkMode = $state(imageComposition.darkMode);
   let imgColumnCount = $state<number | null>(sequenceModalPersistence.loadColumnCount());
 
   // Accessibility
   const accessibilityHelper = createModalAccessibilityHelper();
 
-  // Tempo ramp
-  const rampOrchestrator = new TempoRampOrchestrator();
-  const rampState = createTempoRampState();
-  let rampActive = $derived(rampState.progress.active);
+  // Tempo practice
+  const practiceOrchestrator = new TempoPracticeOrchestrator();
+  const practiceState = createTempoPracticeState();
+  let practiceActive = $derived(practiceState.progress.active);
 
   // ============================================================================
   // DERIVED
@@ -612,10 +617,13 @@
     // Sync image composition from manager
     const observer = () => {
       imgShowWord = imageComposition.addWord;
+      imgShowStepNumbers = imageComposition.addStepNumbers;
       imgShowStartPos = imageComposition.includeStartPosition;
       imgShowDifficulty = imageComposition.addDifficultyLevel;
       imgShowCreatorName = imageComposition.showCreatorName;
       imgShowNotes = imageComposition.showNotes;
+      imgShowBirthday = imageComposition.showBirthday;
+      imgShowQRCode = imageComposition.showQRCode;
       imgDarkMode = imageComposition.darkMode;
     };
     imageComposition.registerObserver(observer);
@@ -643,9 +651,9 @@
   });
 
   onDestroy(() => {
-    // Stop ramp if active
-    if (rampOrchestrator.isActive()) {
-      rampOrchestrator.stop();
+    // Stop practice if active
+    if (practiceOrchestrator.isActive()) {
+      practiceOrchestrator.stop();
       playbackController?.offLoopComplete();
     }
 
@@ -774,9 +782,9 @@
     const speedMultiplier = newBpm / 60;
     playbackController?.setSpeed(speedMultiplier);
     onUrlParamChange?.("bpm", String(newBpm));
-    if (rampOrchestrator.isActive()) {
-      rampOrchestrator.adjustBpm(newBpm);
-      rampState.updateProgress(rampOrchestrator.getProgress());
+    if (practiceOrchestrator.isActive()) {
+      practiceOrchestrator.adjustBpm(newBpm);
+      practiceState.updateProgress(practiceOrchestrator.getProgress());
     }
   }
 
@@ -795,34 +803,34 @@
   }
 
   // ============================================================================
-  // RAMP TRAINING
+  // PRACTICE TRAINING
   // ============================================================================
 
-  function handleRampStart() {
+  function handlePracticeStart() {
     if (!playbackController) {
       showToast("Animation not ready yet. Wait for it to load.", "info");
       return;
     }
 
     hapticService?.trigger("selection");
-    rampState.clearCompletion();
+    practiceState.clearCompletion();
 
-    const startBpm = rampOrchestrator.start(rampState.userConfig);
-    rampState.updateProgress(rampOrchestrator.getProgress());
+    const startBpm = practiceOrchestrator.start(practiceState.userConfig);
+    practiceState.updateProgress(practiceOrchestrator.getProgress());
 
     handleBpmChange(startBpm);
 
     playbackController.onLoopComplete(() => {
-      const newBpm = rampOrchestrator.onLoopComplete();
-      rampState.updateProgress(rampOrchestrator.getProgress());
+      const newBpm = practiceOrchestrator.onLoopComplete();
+      practiceState.updateProgress(practiceOrchestrator.getProgress());
 
       if (newBpm !== null) {
         handleBpmChange(newBpm);
         hapticService?.trigger("selection");
       }
 
-      if (!rampOrchestrator.isActive()) {
-        handleRampStop();
+      if (!practiceOrchestrator.isActive()) {
+        handlePracticeStop();
       }
     });
 
@@ -832,25 +840,25 @@
     }
   }
 
-  function handleRampStop() {
+  function handlePracticeStop() {
     if (!playbackController) return;
 
-    const finalBpm = rampOrchestrator.stop();
-    rampState.updateProgress(rampOrchestrator.getProgress());
+    const finalBpm = practiceOrchestrator.stop();
+    practiceState.updateProgress(practiceOrchestrator.getProgress());
 
     playbackController.offLoopComplete();
 
     const seqId = sequence?.id || sequence?.word || "unknown";
-    rampState.recordPersonalBest(seqId, finalBpm);
+    practiceState.recordPersonalBest(seqId, finalBpm);
 
-    rampState.showCompletion(finalBpm);
+    practiceState.showCompletion(finalBpm);
     hapticService?.trigger("success");
 
-    const personalBest = rampState.getPersonalBest(seqId);
+    const personalBest = practiceState.getPersonalBest(seqId);
     const isNewBest = personalBest !== null && finalBpm >= personalBest;
     const message = isNewBest
-      ? `Ramp complete: ${finalBpm} BPM (new best!)`
-      : `Ramp complete: ${finalBpm} BPM`;
+      ? `Practice complete: ${finalBpm} BPM (new best!)`
+      : `Practice complete: ${finalBpm} BPM`;
     showToast(message, "success");
   }
 
@@ -1374,11 +1382,11 @@
   // ============================================================================
 
   function handleBackInternal() {
-    // Stop ramp if active
-    if (rampOrchestrator.isActive()) {
-      rampOrchestrator.stop();
+    // Stop practice if active
+    if (practiceOrchestrator.isActive()) {
+      practiceOrchestrator.stop();
       playbackController?.offLoopComplete();
-      rampState.updateProgress(rampOrchestrator.getProgress());
+      practiceState.updateProgress(practiceOrchestrator.getProgress());
     }
 
     if (isPlayingLocal && playbackController) {
@@ -1485,9 +1493,9 @@
     previewBlobUrl,
     singlePlayDuration,
 
-    // Ramp
-    rampActive,
-    rampState,
+    // Practice
+    practiceActive,
+    practiceState,
 
     // Settings (active prop values, resolved from source)
     bluePropType: activeBlueProp,
@@ -1503,10 +1511,12 @@
     handleSetAsIntended,
 
     imgShowWord,
+    imgShowStepNumbers,
     imgShowStartPos,
     imgShowDifficulty,
     imgShowCreatorName,
     imgShowNotes,
+    imgShowBirthday,
     imgDarkMode,
     imgColumnCount,
 
@@ -1552,8 +1562,8 @@
     handleDelete,
     handleGetApp,
     handleUnifiedDarkModeToggle,
-    handleRampStart,
-    handleRampStop,
+    handlePracticeStart,
+    handlePracticeStop,
     onBack: handleBackInternal,
     stepHalfBeatBackward,
     stepHalfBeatForward,
@@ -1576,12 +1586,13 @@
     },
     splitPaneImageComposition: {
       showWord: imgShowWord,
-      showStepNumbers: true,
+      showStepNumbers: imgShowStepNumbers,
       showDifficulty: imgShowDifficulty,
       showStartPos: imgShowStartPos,
       showCreatorName: imgShowCreatorName,
       showNotes: imgShowNotes,
-      showQRCode: true,
+      showBirthday: imgShowBirthday,
+      showQRCode: imgShowQRCode,
       darkMode: imgDarkMode,
       columnCount: imgColumnCount,
       forceContain: false,

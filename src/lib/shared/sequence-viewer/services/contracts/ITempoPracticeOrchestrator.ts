@@ -1,5 +1,5 @@
 /**
- * Tempo Ramp Orchestrator Interface
+ * Tempo Practice Orchestrator Interface
  *
  * Manages progressive tempo training: tracks loop completions,
  * bumps BPM when enough rounds at the current level are completed.
@@ -8,7 +8,7 @@
  * Fires callbacks to let the consumer handle BPM changes and playback.
  */
 
-export interface TempoRampConfig {
+export interface TempoPracticeConfig {
   /** Starting BPM (default: 15) */
   startBpm: number;
   /** BPM increase per level (default: 5) */
@@ -19,8 +19,8 @@ export interface TempoRampConfig {
   maxBpm: number;
 }
 
-export interface TempoRampProgress {
-  /** Whether ramp is currently running */
+export interface TempoPracticeProgress {
+  /** Whether practice is currently running */
   active: boolean;
   /** Current BPM */
   currentBpm: number;
@@ -34,15 +34,15 @@ export interface TempoRampProgress {
   totalRoundsCompleted: number;
 }
 
-export interface ITempoRampOrchestrator {
+export interface ITempoPracticeOrchestrator {
   /**
-   * Start a ramp session with the given config.
+   * Start a practice session with the given config.
    * Returns the starting BPM.
    */
-  start(config?: Partial<TempoRampConfig>): number;
+  start(config?: Partial<TempoPracticeConfig>): number;
 
   /**
-   * Stop the current ramp session.
+   * Stop the current practice session.
    * Returns the final BPM reached.
    */
   stop(): number;
@@ -54,14 +54,14 @@ export interface ITempoRampOrchestrator {
   onLoopComplete(): number | null;
 
   /**
-   * Called when the user manually adjusts BPM during an active ramp.
+   * Called when the user manually adjusts BPM during an active practice session.
    * Updates the baseline BPM and resets the round counter for the current level.
    */
   adjustBpm(newBpm: number): void;
 
-  /** Whether a ramp session is currently active. */
+  /** Whether a practice session is currently active. */
   isActive(): boolean;
 
   /** Get current progress snapshot. */
-  getProgress(): TempoRampProgress;
+  getProgress(): TempoPracticeProgress;
 }

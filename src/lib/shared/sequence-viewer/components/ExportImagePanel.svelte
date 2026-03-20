@@ -3,7 +3,7 @@
 
   Image export settings panel.
   Desktop: side panel next to choreo card preview (all settings visible).
-  Mobile: compact bottom bar with [Export Card] [Settings gear].
+  Mobile: compact bottom bar with [Download Card] [Settings gear].
     Settings open in a slide-up overlay. Choreo card gets full screen space.
 -->
 <script lang="ts">
@@ -74,7 +74,6 @@
        ============================================================ -->
   <div
     class="mobile-export"
-    transition:fade={{ duration: 200 }}
     role="region"
     aria-label="Card export"
   >
@@ -170,14 +169,14 @@
         class="bar-export-btn"
         onclick={onExport}
         disabled={isExporting}
-        aria-label="Export card"
+        aria-label="Download Card"
       >
         {#if isExporting}
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
           Exporting...
         {:else}
           <i class="fas fa-download" aria-hidden="true"></i>
-          Export Card
+          Download Card
         {/if}
       </button>
 
@@ -285,14 +284,14 @@
         class="export-btn"
         onclick={onExport}
         disabled={isExporting}
-        aria-label="Export card"
+        aria-label="Download Card"
       >
         {#if isExporting}
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
           Exporting...
         {:else}
           <i class="fas fa-download" aria-hidden="true"></i>
-          Export Card
+          Download Card
         {/if}
       </button>
     </div>

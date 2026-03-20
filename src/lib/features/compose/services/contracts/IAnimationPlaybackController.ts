@@ -107,7 +107,7 @@ export interface IAnimationPlaybackController {
 
   /**
    * Register a callback that fires each time a full loop of the sequence completes.
-   * Used by tempo ramp training to track rounds.
+   * Used by tempo practice training to track rounds.
    * @param callback Function to call on each loop completion
    */
   onLoopComplete(callback: () => void): void;

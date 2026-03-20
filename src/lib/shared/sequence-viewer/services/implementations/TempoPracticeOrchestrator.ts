@@ -1,5 +1,5 @@
 /**
- * Tempo Ramp Orchestrator
+ * Tempo Practice Orchestrator
  *
  * Pure state machine for progressive tempo training.
  * Tracks loop completions and determines when to bump BPM.
@@ -7,27 +7,27 @@
  */
 
 import type {
-  ITempoRampOrchestrator,
-  TempoRampConfig,
-  TempoRampProgress,
-} from "../contracts/ITempoRampOrchestrator";
+  ITempoPracticeOrchestrator,
+  TempoPracticeConfig,
+  TempoPracticeProgress,
+} from "../contracts/ITempoPracticeOrchestrator";
 
-const DEFAULT_CONFIG: TempoRampConfig = {
+const DEFAULT_CONFIG: TempoPracticeConfig = {
   startBpm: 15,
   increment: 5,
   roundsPerLevel: 5,
   maxBpm: 300,
 };
 
-export class TempoRampOrchestrator implements ITempoRampOrchestrator {
-  private config: TempoRampConfig = { ...DEFAULT_CONFIG };
+export class TempoPracticeOrchestrator implements ITempoPracticeOrchestrator {
+  private config: TempoPracticeConfig = { ...DEFAULT_CONFIG };
   private active = false;
   private currentBpm = 0;
   private currentRound = 0; // 0-based within level
   private currentLevel = 0;
   private totalRoundsCompleted = 0;
 
-  start(partialConfig?: Partial<TempoRampConfig>): number {
+  start(partialConfig?: Partial<TempoPracticeConfig>): number {
     this.config = { ...DEFAULT_CONFIG, ...partialConfig };
     this.active = true;
     this.currentBpm = this.config.startBpm;
@@ -62,7 +62,7 @@ export class TempoRampOrchestrator implements ITempoRampOrchestrator {
       );
 
       if (newBpm === this.currentBpm) {
-        // Already at max - stop the ramp
+        // Already at max - stop the practice
         this.active = false;
         return null;
       }
@@ -85,7 +85,7 @@ export class TempoRampOrchestrator implements ITempoRampOrchestrator {
     return this.active;
   }
 
-  getProgress(): TempoRampProgress {
+  getProgress(): TempoPracticeProgress {
     return {
       active: this.active,
       currentBpm: this.currentBpm,
