@@ -99,12 +99,13 @@
 </div>
 
 <style>
-  /* Outer frame provides the themed gradient border via padding */
+  /* Outer frame provides the themed gradient border via padding.
+     4px padding ensures even borders at all scale factors. */
   .border-frame {
     width: 100%;
     height: 100%;
     border-radius: 12px;
-    padding: 3px;
+    padding: 4px;
     box-sizing: border-box;
     overflow: hidden;
   }
@@ -116,7 +117,7 @@
     color: #ffffff;
     font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
     overflow: hidden;
-    border-radius: 9px;
+    border-radius: 8px;
     box-sizing: border-box;
   }
 
