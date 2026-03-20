@@ -8,6 +8,7 @@ Uses stepper pattern for space-efficient level selection
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { isBrightBackground } from "../../shared/domain/card-colors";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
+  import { DIFFICULTY_LEVELS } from "$lib/shared/config/difficulty-styles";
   import StepperCard from "./StepperCard/StepperCard.svelte";
 
   let {
@@ -27,7 +28,14 @@ Uses stepper pattern for space-efficient level selection
   // Check if we're on a bright background (Aurora, Snowfall, etc.)
   const useDarkColors = $derived(isBrightBackground(settingsService.settings.backgroundType ?? BackgroundType.SNOWFALL));
 
-  // 🎨 Level display data - default colors for normal backgrounds
+  // 🎨 Level display data - default colors from canonical difficulty-styles.ts
+  const LEVEL_MAP: Record<DifficultyLevel, number> = {
+    [DifficultyLevel.BEGINNER]: 1,
+    [DifficultyLevel.INTERMEDIATE]: 2,
+    [DifficultyLevel.ADVANCED]: 3,
+    [DifficultyLevel.SKEWED]: 4,
+  };
+
   const defaultLevelData: Record<
     DifficultyLevel,
     { name: string; number: number; color: string; textColor: string }
@@ -35,46 +43,26 @@ Uses stepper pattern for space-efficient level selection
     [DifficultyLevel.BEGINNER]: {
       name: t("generator_level_no_turns"),
       number: 1,
-      color: `radial-gradient(ellipse at top left,
-        rgb(186, 230, 253) 0%,
-        rgb(125, 211, 252) 30%,
-        rgb(56, 189, 248) 70%,
-        rgb(14, 165, 233) 100%)`,
-      textColor: "black",
+      color: DIFFICULTY_LEVELS[1]!.cssBg,
+      textColor: DIFFICULTY_LEVELS[1]!.text,
     },
     [DifficultyLevel.INTERMEDIATE]: {
       name: t("generator_level_whole_turns"),
       number: 2,
-      color: `radial-gradient(ellipse at top left,
-        rgb(226, 232, 240) 0%,
-        rgb(148, 163, 184) 30%,
-        rgb(100, 116, 139) 70%,
-        rgb(71, 85, 105) 100%)`,
-      textColor: "white",
+      color: DIFFICULTY_LEVELS[2]!.cssBg,
+      textColor: DIFFICULTY_LEVELS[2]!.text,
     },
     [DifficultyLevel.ADVANCED]: {
       name: t("generator_level_half_turns"),
       number: 3,
-      color: `radial-gradient(ellipse at top left,
-        rgb(254, 240, 138) 0%,
-        rgb(253, 224, 71) 20%,
-        rgb(250, 204, 21) 40%,
-        rgb(234, 179, 8) 60%,
-        rgb(202, 138, 4) 80%,
-        rgb(161, 98, 7) 100%)`,
-      textColor: "black",
+      color: DIFFICULTY_LEVELS[3]!.cssBg,
+      textColor: DIFFICULTY_LEVELS[3]!.text,
     },
     [DifficultyLevel.SKEWED]: {
       name: t("generator_level_skewed"),
       number: 4,
-      color: `radial-gradient(ellipse at top left,
-        rgb(255, 180, 180) 0%,
-        rgb(255, 140, 140) 20%,
-        rgb(255, 100, 100) 40%,
-        rgb(239, 68, 68) 60%,
-        rgb(220, 38, 38) 80%,
-        rgb(185, 28, 28) 100%)`,
-      textColor: "white",
+      color: DIFFICULTY_LEVELS[4]!.cssBg,
+      textColor: DIFFICULTY_LEVELS[4]!.text,
     },
   };
 
@@ -103,7 +91,7 @@ Uses stepper pattern for space-efficient level selection
         rgb(100, 116, 139) 30%,
         rgb(71, 85, 105) 70%,
         rgb(51, 65, 85) 100%)`,
-      textColor: "white",
+      textColor: "black",
     },
     [DifficultyLevel.ADVANCED]: {
       name: t("generator_level_half_turns"),
@@ -129,7 +117,7 @@ Uses stepper pattern for space-efficient level selection
         rgb(220, 38, 38) 60%,
         rgb(185, 28, 28) 80%,
         rgb(153, 27, 27) 100%)`,
-      textColor: "white",
+      textColor: "black",
     },
   };
 
@@ -137,12 +125,7 @@ Uses stepper pattern for space-efficient level selection
   const levelData = $derived(useDarkColors ? brightBgLevelData : defaultLevelData);
 
   // Convert DifficultyLevel to numeric value for stepper
-  const levelToNumber: Record<DifficultyLevel, number> = {
-    [DifficultyLevel.BEGINNER]: 1,
-    [DifficultyLevel.INTERMEDIATE]: 2,
-    [DifficultyLevel.ADVANCED]: 3,
-    [DifficultyLevel.SKEWED]: 4,
-  };
+  const levelToNumber = LEVEL_MAP;
 
   const numberToLevel: Record<number, DifficultyLevel> = {
     1: DifficultyLevel.BEGINNER,
