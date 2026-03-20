@@ -231,6 +231,8 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
         showNonRadialPoints: input.visibility?.showNonRadialPoints ?? false,
         // QR code in empty cell (if enabled)
         showQRCode: input.visibility?.showQRCode ?? false,
+        // Hand path visualization mode
+        handPathMode: input.visibility?.handPathMode ?? false,
       },
     };
   }

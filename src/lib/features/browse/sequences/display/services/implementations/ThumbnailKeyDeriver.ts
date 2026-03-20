@@ -163,6 +163,8 @@ export class ThumbnailKeyDeriver implements IThumbnailKeyDeriver {
         return false;
       if (input.visibility.showQRCode !== undefined && input.visibility.showQRCode !== defaultVisibility.showQRCode)
         return false;
+      if (input.visibility.handPathMode !== undefined && input.visibility.handPathMode !== false)
+        return false;
     }
 
     return true;
@@ -201,6 +203,8 @@ export class ThumbnailKeyDeriver implements IThumbnailKeyDeriver {
       showNonRadialPoints: input.visibility?.showNonRadialPoints,
       // QR code in empty cell
       showQRCode: input.visibility?.showQRCode,
+      // Hand path visualization mode
+      handPathMode: input.visibility?.handPathMode,
       // LOOP badge
       loop: input.loopType ?? null,
       // EXCLUDED: showTKA, showReversals - these are canonical (always ON)

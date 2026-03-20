@@ -143,6 +143,7 @@ export class ImageComposer implements IImageComposer {
         // Include prop types for cache key derivation
         bluePropType: overrides.bluePropType ?? appSettings.bluePropType,
         redPropType: overrides.redPropType ?? appSettings.redPropType,
+        handPathMode: overrides.handPathMode,
       };
     }
 
@@ -186,6 +187,7 @@ export class ImageComposer implements IImageComposer {
         // Include prop types for cache key derivation
         bluePropType: overrides.bluePropType ?? globalSettings.bluePropType,
         redPropType: overrides.redPropType ?? globalSettings.redPropType,
+        handPathMode: overrides.handPathMode,
       };
     }
 
@@ -541,6 +543,7 @@ export class ImageComposer implements IImageComposer {
         : visibilitySettings.handPointVisibility ?? "all") as "all" | "active",
       showTKA: visibilitySettings.showTKA ?? true,
       showReversals: visibilitySettings.showReversals ?? true,
+      handPathMode: visibilitySettings.handPathMode ?? false,
     };
 
     const previewKey = cellCacheKeyDeriver.deriveCacheKey(

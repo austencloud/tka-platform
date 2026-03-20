@@ -76,7 +76,7 @@
       const r = s.motions?.red;
       return `${b?.startOrientation ?? ""}${b?.endOrientation ?? ""}${b?.rotationDirection ?? ""}${r?.startOrientation ?? ""}${r?.endOrientation ?? ""}${r?.rotationDirection ?? ""}`;
     }).join("") ?? "";
-    return `${seq.id ?? seq.word ?? "?"}-${stepLetters}-${seq.steps?.length ?? 0}-${opts.size}-${opts.showStepNumbers}-${opts.showNonRadialPoints}-${opts.showTKA}-${opts.showReversals}-${opts.bluePropType ?? ""}-${opts.redPropType ?? ""}-${colCount ?? "auto"}-${isDark ? "dark" : "light"}-d:${durationFingerprint}-m:${motionFingerprint}`;
+    return `${seq.id ?? seq.word ?? "?"}-${stepLetters}-${seq.steps?.length ?? 0}-${opts.size}-${opts.showStepNumbers}-${opts.showNonRadialPoints}-${opts.showTKA}-${opts.showReversals}-${opts.handPathMode ?? false}-${opts.bluePropType ?? ""}-${opts.redPropType ?? ""}-${colCount ?? "auto"}-${isDark ? "dark" : "light"}-d:${durationFingerprint}-m:${motionFingerprint}`;
   }
 
   function storePreviewInCache(key: string, data: CachedPreview): void {
@@ -108,6 +108,8 @@
     showBirthday?: boolean;
     showLoopGlyph?: boolean;
     showQRCode?: boolean;
+    /** Render as hand path visualization (HAND props, float arrows, no TKA) */
+    handPathMode?: boolean;
     // Settings
     darkMode?: boolean;
     userName?: string;
@@ -142,6 +144,7 @@
     showBirthday = true,
     showLoopGlyph = true,
     showQRCode = false,
+    handPathMode = false,
     darkMode = false,
     userName = "",
     customNotesText = "Created using TKA Scribe",
@@ -350,6 +353,7 @@
         margin: 1,
         style: "modern",
         darkMode: isDark,
+        offline: true,
         bluePropType: bProp,
         redPropType: rProp,
       })
@@ -565,6 +569,7 @@
       handPointVisibility: handPointVis,
       showTKA,
       showReversals,
+      handPathMode,
     };
   }
 
@@ -2301,11 +2306,13 @@
     aspect-ratio: 1;
   }
 
-  /* QR code cell — occupies an empty grid cell under the start position */
+  /* QR code cell — occupies the last row of column 1, under the start position.
+     In duration layouts (flex column), margin-top: auto pushes it to the bottom. */
   .qr-cell {
     display: flex;
     align-items: center;
     justify-content: center;
+    margin-top: auto;
     background: #f5f5f5;
     transition: background-color 350ms ease;
   }

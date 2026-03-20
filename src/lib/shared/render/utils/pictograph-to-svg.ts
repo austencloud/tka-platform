@@ -59,6 +59,8 @@ export interface PictographVisibilityOptions {
    * Used by LayerCompositor for compositional caching.
    */
   baseGridOnly?: boolean;
+  /** Render as hand path visualization (HAND props, float arrows, no TKA) */
+  handPathMode?: boolean;
 }
 
 /**
