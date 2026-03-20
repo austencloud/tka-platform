@@ -54,6 +54,7 @@
   import DeleteConfirmDialog from "$lib/shared/sequence-viewer/components/DeleteConfirmDialog.svelte";
   import LoadingGate from "$lib/shared/components/loading/LoadingGate.svelte";
   import ChoreoCardContextMenuHost from "$lib/shared/sequence-viewer/components/choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
+  import CardSettingsModal from "$lib/features/choreo-card/components/CardSettingsModal.svelte";
 
   // ============================================================================
   // ROUTE-SPECIFIC STATE
@@ -96,8 +97,9 @@
   let deleteConfirmOpen = $state(false);
   let isDeleting = $state(false);
 
-  // ChoreoCard context menu
+  // ChoreoCard context menu + settings modal
   let choreoCardMenuHost: ChoreoCardContextMenuHost | undefined = $state();
+  let cardSettingsOpen = $state(false);
 
   // DrawerStack registration - blocks pull-to-refresh on mobile
   const drawerId = generateDrawerId();
@@ -559,10 +561,12 @@
               />
               <ChoreoCardContextMenuHost
                 bind:this={choreoCardMenuHost}
+                onOpenSettings={() => { cardSettingsOpen = true; }}
                 isExportMode={isImageExportActive}
                 exportOptions={ctx.exportOptions}
                 onSendTo={sequence ? handleSendTo : undefined}
               />
+              <CardSettingsModal bind:open={cardSettingsOpen} />
               {#if isAnyExportActive}
                 <div class="export-panel-container" class:sidebar={!isMobile && isVideoExportActive} transition:fade={{ duration: 200 }}>
                   {#if isVideoExportActive}

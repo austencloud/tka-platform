@@ -24,6 +24,7 @@
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuState, ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
   import { buildChoreoCardContextMenuItems } from "./context-menu/CardDesignerContextMenuBuilder";
+  import CardSettingsModal from "./CardSettingsModal.svelte";
 
   // Level calculator for dynamic level badge calculation
   const levelCalculator = new SequenceDifficultyCalculator();
@@ -135,6 +136,7 @@
   // Stores the rerender callback from the specific card that was right-clicked.
   let contextMenuState: ContextMenuState = $state({ open: false });
   let activeCardRerender: (() => void) | undefined = $state(undefined);
+  let cardSettingsOpen = $state(false);
 
   function openCardContextMenu(x: number, y: number, rerender: () => void) {
     activeCardRerender = rerender;
@@ -147,48 +149,10 @@
 
   const contextMenuItems: ContextMenuEntry[] = $derived(
     buildChoreoCardContextMenuItems({
-      handPointsVisible,
-      showGrid,
-      showTKA,
-      showWord,
-      includeStartPosition,
-      showDifficulty: false,
-      showStepNumbers: false,
-      showCreatorName: false,
-      showNotes: false,
-      showBirthday: false,
-      showQRCode: showQRCodes,
-
-      setHandPointsVisible: (v) => {
-        handPointsVisible = v;
-        persist(STORAGE_KEY_HAND_POINTS, String(v));
+      onOpenSettings: () => {
+        closeCardContextMenu();
+        cardSettingsOpen = true;
       },
-      setShowGrid: (v) => {
-        showGrid = v;
-        persist(STORAGE_KEY_SHOW_GRID, String(v));
-      },
-      setShowTKA: (v) => {
-        showTKA = v;
-        persist(STORAGE_KEY_SHOW_TKA, String(v));
-      },
-      setShowWord: (v) => {
-        showWord = v;
-        persist(STORAGE_KEY_SHOW_WORD, String(v));
-      },
-      setIncludeStartPosition: (v) => {
-        includeStartPosition = v;
-        persist(STORAGE_KEY_INCLUDE_START_POS, String(v));
-      },
-      setShowDifficulty: () => {},
-      setShowStepNumbers: () => {},
-      setShowCreatorName: () => {},
-      setShowNotes: () => {},
-      setShowBirthday: () => {},
-      setShowQRCode: (v) => {
-        showQRCodes = v;
-        persist(STORAGE_KEY_SHOW_QR, String(v));
-      },
-
       onRerender: activeCardRerender,
     })
   );
@@ -531,6 +495,7 @@
 
 <!-- Context menu for right-click on any choreo card thumbnail -->
 <ContextMenu menuState={contextMenuState} items={contextMenuItems} onClose={closeCardContextMenu} />
+<CardSettingsModal bind:open={cardSettingsOpen} />
 
 <style>
   .choreo-card-tab {
