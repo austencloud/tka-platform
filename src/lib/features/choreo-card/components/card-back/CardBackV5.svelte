@@ -315,7 +315,9 @@
     align-items: center;
     text-align: center;
     height: 100%;
-    padding: 56px 50px 50px;
+    /* Top padding pushes the word to roughly the same vertical
+       position as the front card's header row (~25% from top) */
+    padding: 100px 50px 50px;
     box-sizing: border-box;
   }
 
