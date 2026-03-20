@@ -27,6 +27,7 @@ import type { PropPosition } from "../../../prop/domain/models/PropPosition";
 import type { PropAssets } from "../../../prop/domain/models/PropAssets";
 import { GridMode } from "../../../grid/domain/enums/grid-enums";
 import { PropType } from "../../../prop/domain/enums/PropType";
+import { MotionType, HandPath } from "../../domain/enums/pictograph-enums";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
 export class PictographPreparer implements IPictographPreparer {
@@ -102,6 +103,12 @@ export class PictographPreparer implements IPictographPreparer {
   ): Promise<PreparedRenderData> {
     const gridMode = this.deriveGridMode(pictograph);
 
+    // Hand path mode: transform motions before any position calculations.
+    // Must happen FIRST so arrow lifecycle and prop placement see float motions.
+    const effectivePictograph = options?.handPathMode
+      ? this.transformForHandPath(pictograph)
+      : pictograph;
+
     // Apply propType overrides BEFORE arrow lifecycle so the arrow adjustment
     // cascading lookup (SpecialPlacer) uses the correct prop-specific layer.
     // Without this, arrows always look up adjustments for the raw sequence propType
@@ -111,9 +118,9 @@ export class PictographPreparer implements IPictographPreparer {
       bluePropType: globalSettings.bluePropType,
       redPropType: globalSettings.redPropType,
     };
-    const overriddenMotions = this.getMotionsWithOverrides(pictograph, settings, options);
+    const overriddenMotions = this.getMotionsWithOverrides(effectivePictograph, settings, options);
     const pictographWithPropOverrides: PictographData = {
-      ...pictograph,
+      ...effectivePictograph,
       motions: Object.fromEntries(overriddenMotions) as PictographData["motions"],
     };
 
@@ -123,7 +130,7 @@ export class PictographPreparer implements IPictographPreparer {
       { themeMode: options?.themeMode, gridMode }
     );
     const { propPositions, propAssets } = await this.calculateProps(
-      pictograph,
+      effectivePictograph,
       options
     );
 
@@ -185,6 +192,8 @@ export class PictographPreparer implements IPictographPreparer {
       options?.themeMode ?? "dark",
       // Grid version uses ghost-half centered SVGs
       (options?.useGridVersion ?? false) ? "grid" : "thumbnail",
+      // Hand path mode produces completely different motion transforms
+      options?.handPathMode ? "hp" : "",
     ];
 
     return parts.join("|");
@@ -308,6 +317,80 @@ export class PictographPreparer implements IPictographPreparer {
         }
         return [color, motion] as [string, MotionData];
       });
+  }
+
+  /**
+   * Transform motions for hand path visualization.
+   * Pro/anti become float (shows spatial trajectory without prop rotation).
+   * Dash stays dash. Static stays static. Orientation is nulled out
+   * because hands don't have orientation — PropPlacer already returns
+   * 0° rotation for HAND propType.
+   */
+  private transformForHandPath(pictograph: PictographData): PictographData {
+    const motions = pictograph.motions;
+    if (!motions) return pictograph;
+
+    const transform = (motion: MotionData): MotionData => {
+      const isShift =
+        motion.motionType === MotionType.PRO ||
+        motion.motionType === MotionType.ANTI;
+
+      const handPath = this.deriveHandPath(
+        motion.startLocation,
+        motion.endLocation
+      );
+
+      return {
+        ...motion,
+        motionType: isShift ? MotionType.FLOAT : motion.motionType,
+        turns: isShift ? ("fl" as const) : motion.turns,
+        handPath: isShift ? handPath : (motion.handPath ?? null),
+        startOrientation: undefined as any,
+        endOrientation: undefined as any,
+        propType: PropType.HAND,
+      };
+    };
+
+    return {
+      ...pictograph,
+      motions: {
+        blue: motions.blue ? transform(motions.blue) : undefined,
+        red: motions.red ? transform(motions.red) : undefined,
+      } as PictographData["motions"],
+    };
+  }
+
+  /**
+   * Derive handpath direction from start/end locations.
+   * Maps location pairs to CW, CCW, DASH, or STATIC.
+   */
+  private deriveHandPath(
+    startLocation: string,
+    endLocation: string
+  ): HandPath | null {
+    const CW_PAIRS: [string, string][] = [
+      ["s", "w"], ["w", "n"], ["n", "e"], ["e", "s"],
+      ["ne", "se"], ["se", "sw"], ["sw", "nw"], ["nw", "ne"],
+    ];
+    const CCW_PAIRS: [string, string][] = [
+      ["w", "s"], ["n", "w"], ["e", "n"], ["s", "e"],
+      ["ne", "nw"], ["nw", "sw"], ["sw", "se"], ["se", "ne"],
+    ];
+    const DASH_PAIRS: [string, string][] = [
+      ["s", "n"], ["w", "e"], ["n", "s"], ["e", "w"],
+      ["ne", "sw"], ["se", "nw"], ["sw", "ne"], ["nw", "se"],
+    ];
+
+    const s = startLocation.toLowerCase();
+    const e = endLocation.toLowerCase();
+
+    if (s === e) return HandPath.STATIC;
+    if (CW_PAIRS.some(([a, b]) => a === s && b === e)) return HandPath.CLOCKWISE;
+    if (CCW_PAIRS.some(([a, b]) => a === s && b === e))
+      return HandPath.COUNTER_CLOCKWISE;
+    if (DASH_PAIRS.some(([a, b]) => a === s && b === e)) return HandPath.DASH;
+
+    return null;
   }
 
   /**
