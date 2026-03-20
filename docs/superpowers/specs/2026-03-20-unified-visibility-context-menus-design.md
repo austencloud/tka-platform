@@ -63,8 +63,8 @@ Desktop: side-by-side (preview left, toggles right)
 - `controls: Snippet` — the toggle sections
 
 **Responsibilities:**
-- Responsive breakpoint detection (drawer vs modal)
-- On mobile: renders as full-height bottom drawer via `Drawer.svelte`
+- Responsive breakpoint detection via `$derived` reading `window.innerWidth` (768px threshold). Conditionally renders `{#if isMobile}<Drawer>{:else}<BaseModal>{/if}`. A `matchMedia` listener updates a reactive `$state` on resize.
+- On mobile: renders as full-height bottom drawer via `Drawer.svelte` (`src/lib/shared/foundation/ui/Drawer.svelte`)
 - On desktop: renders as centered modal via `BaseModal.svelte` (size `"lg"`)
 - Backdrop, close-on-escape, focus management (delegated to BaseModal/Drawer)
 - Two-pane layout with preview and controls slots
@@ -93,7 +93,7 @@ Desktop: side-by-side (preview left, toggles right)
 | Blue Motion | `blueMotion` | true |
 | Red Motion | `redMotion` | true |
 
-**Dependent glyph behavior:** TKA, VTG, Elemental, and Position glyphs require both motions visible. When either motion is hidden, dependent glyph toggles show as disabled with a tooltip explaining why. This mirrors the existing `VisibilityStateManager.areDependentGlyphsAvailable()` logic.
+**Dependent glyph behavior:** TKA, VTG, Elemental, and Position glyphs require both motions visible. When either motion is hidden, dependent glyph toggles show as disabled with a tooltip explaining why. The existing `getGlyphVisibility()` already factors in motion dependency automatically — it checks `areAllMotionsVisible()` for glyphs in the `DEPENDENT_GLYPHS` array. The modal can also use `isGlyphDependent(glyphType)` to determine which toggles need the disabled treatment.
 
 **State flow:** All toggles call `VisibilityStateManager` methods directly. The preview updates reactively via observer registration. Changes are persisted immediately (localStorage + Firebase for authenticated users).
 
@@ -104,7 +104,8 @@ Desktop: side-by-side (preview left, toggles right)
 **Changes from current `CanvasSettingsModal`:**
 - Rename "Canvas Settings" → "Animation Settings" in the title (line 166)
 - Rename directory from `canvas-settings-modal/` to `animation-settings-modal/`
-- Wrap content in `SettingsModalLayout` for responsive drawer/modal behavior
+- The existing modal already has its own two-pane layout (preview left, controls right) that works well. Rather than stripping it to use `SettingsModalLayout`, just add the mobile drawer path: detect mobile breakpoint and render the existing content inside a `Drawer` on mobile, keeping the current `BaseModal` on desktop. This avoids a risky refactor of a complex component (8 category components + effect picker) while still delivering the mobile drawer experience.
+- Rename the context menu entry from "Effect Settings..." → "Animation Settings..."
 - Keep all existing category components (FireCategory, CharcoalCategory, LedCategory, TrailsCategory, PlaybackCategory, EffortCategory, PathShapeCategory, DisplayCategory)
 - Keep the EffectPicker
 
@@ -227,6 +228,10 @@ Same pattern for animation canvas and choreo card, substituting their respective
 
 - **Pictograph Exporter:** Right-click → "Export Pictograph..." → Modal with temporary per-pictograph visibility overrides, PNG/SVG export. Would be added as a second entry in the pictograph context menu.
 - **Per-pictograph visibility overrides:** Only relevant in the context of export. Global settings remain the default.
+
+## Internationalization
+
+All context menu labels and toggle labels should use i18n keys from `messages/en.json`. New keys should follow the existing naming pattern (e.g., `settings.pictograph.title`, `settings.card.toggleGrid`). The project has a translation system in place — all user-facing strings go through it.
 
 ## Testing
 
