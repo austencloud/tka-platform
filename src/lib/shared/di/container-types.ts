@@ -160,6 +160,11 @@ type BuildItemsClean = Omit<ItemsOf<BuildContainer>, "loopDetector">;
 interface StandaloneItems {
 	deepLinkResolver: DeepLinkResolver;
 	sequenceDataProvider: SequenceDataProvider;
+	// Print Prep services (MPC card export)
+	printCardRenderer: import("$lib/features/choreo-card/services/contracts/IPrintCardRenderer").IPrintCardRenderer;
+	cardBackCanvasRenderer: import("$lib/features/choreo-card/services/contracts/ICardBackCanvasRenderer").ICardBackCanvasRenderer;
+	infoCardCanvasRenderer: import("$lib/features/choreo-card/services/contracts/IInfoCardCanvasRenderer").IInfoCardCanvasRenderer;
+	printPDFExporter: import("$lib/features/choreo-card/services/contracts/IPrintPDFExporter").IPrintPDFExporter;
 }
 
 // ============================================================================

@@ -19,7 +19,11 @@
   import type { IDeckLoader } from "../services/contracts/IDeckLoader";
   import DeckBrowser from "./DeckBrowser.svelte";
   import CardDesigner from "./CardDesigner.svelte";
+  import PrintPrepView from "./PrintPrepView.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
+  import type { ContextMenuState, ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
+  import { buildChoreoCardContextMenuItems } from "./context-menu/CardDesignerContextMenuBuilder";
 
   // Level calculator for dynamic level badge calculation
   const levelCalculator = new SequenceDifficultyCalculator();
@@ -40,6 +44,7 @@
   const STORAGE_KEY_SHOW_TKA = "choreoCard.showTKA";
   const STORAGE_KEY_SHOW_WORD = "choreoCard.showWord";
   const STORAGE_KEY_INCLUDE_START_POS = "choreoCard.includeStartPosition";
+  const STORAGE_KEY_SELECTED_DECK = "choreoCard.selectedDeckId";
 
   // Legacy keys for migration
   const LEGACY_KEYS: Record<string, string> = {
@@ -126,18 +131,80 @@
   let showWord = $state<boolean>(getPersistedBoolean(STORAGE_KEY_SHOW_WORD, true));
   let includeStartPosition = $state<boolean>(getPersistedBoolean(STORAGE_KEY_INCLUDE_START_POS, true));
 
+  // Context menu for right-click on any choreo card thumbnail.
+  // Stores the rerender callback from the specific card that was right-clicked.
+  let contextMenuState: ContextMenuState = $state({ open: false });
+  let activeCardRerender: (() => void) | undefined = $state(undefined);
+
+  function openCardContextMenu(x: number, y: number, rerender: () => void) {
+    activeCardRerender = rerender;
+    contextMenuState = { open: true, x, y };
+  }
+
+  function closeCardContextMenu() {
+    contextMenuState = { open: false };
+  }
+
+  const contextMenuItems: ContextMenuEntry[] = $derived(
+    buildChoreoCardContextMenuItems({
+      handPointsVisible,
+      showGrid,
+      showTKA,
+      showWord,
+      includeStartPosition,
+      showDifficulty: false,
+      showStepNumbers: false,
+      showCreatorName: false,
+      showNotes: false,
+      showBirthday: false,
+      showQRCode: showQRCodes,
+
+      setHandPointsVisible: (v) => {
+        handPointsVisible = v;
+        persist(STORAGE_KEY_HAND_POINTS, String(v));
+      },
+      setShowGrid: (v) => {
+        showGrid = v;
+        persist(STORAGE_KEY_SHOW_GRID, String(v));
+      },
+      setShowTKA: (v) => {
+        showTKA = v;
+        persist(STORAGE_KEY_SHOW_TKA, String(v));
+      },
+      setShowWord: (v) => {
+        showWord = v;
+        persist(STORAGE_KEY_SHOW_WORD, String(v));
+      },
+      setIncludeStartPosition: (v) => {
+        includeStartPosition = v;
+        persist(STORAGE_KEY_INCLUDE_START_POS, String(v));
+      },
+      setShowDifficulty: () => {},
+      setShowStepNumbers: () => {},
+      setShowCreatorName: () => {},
+      setShowNotes: () => {},
+      setShowBirthday: () => {},
+      setShowQRCode: (v) => {
+        showQRCodes = v;
+        persist(STORAGE_KEY_SHOW_QR, String(v));
+      },
+
+      onRerender: activeCardRerender,
+    })
+  );
+
   // Mode state - synced with global navigation
-  type ChoreoCardMode = "library" | "decks" | "designer";
+  type ChoreoCardMode = "library" | "decks" | "designer" | "print-prep";
   let mode = $state<ChoreoCardMode>("library");
 
   // Sync with navigation state (sidebar tab selection)
   $effect(() => {
     const navTab = navigationState.activeTab;
-    if (navTab === "library" || navTab === "decks" || navTab === "designer") {
+    if (navTab === "library" || navTab === "decks" || navTab === "designer" || navTab === "print-prep") {
       const newMode = navTab as ChoreoCardMode;
       if (newMode !== mode) {
         mode = newMode;
-        if (newMode === "decks" && decks.length === 0) {
+        if ((newMode === "decks" || newMode === "print-prep") && decks.length === 0) {
           loadDecks();
         }
       }
@@ -146,7 +213,7 @@
 
   // Deck state
   let decks = $state<Deck[]>([]);
-  let selectedDeckId = $state<string | null>(null);
+  let selectedDeckId = $state<string | null>(getPersistedString(STORAGE_KEY_SELECTED_DECK));
   let deckSequences = $state<SequenceData[]>([]);
   let isDeckLoading = $state(false);
 
@@ -249,6 +316,14 @@
   onMount(async () => {
     loaderService = container.items.browseLoader;
     await loadSequences();
+
+    // Restore deck state if a deck was selected before HMR/remount
+    if (selectedDeckId) {
+      if (decks.length === 0) {
+        await loadDecks();
+      }
+      await handleSelectDeck(selectedDeckId);
+    }
   });
 
   async function loadSequences() {
@@ -324,6 +399,7 @@
 
   async function handleSelectDeck(deckId: string) {
     selectedDeckId = deckId;
+    persist(STORAGE_KEY_SELECTED_DECK, deckId);
     const deckLoader = container.items.deckLoader as IDeckLoader;
     try {
       isDeckLoading = true;
@@ -338,6 +414,16 @@
   function handleBackToDeckList() {
     selectedDeckId = null;
     deckSequences = [];
+    persist(STORAGE_KEY_SELECTED_DECK, null);
+  }
+
+  // Derive the selected deck object for Print Prep tab
+  const selectedDeck = $derived(
+    selectedDeckId ? decks.find((d) => d.id === selectedDeckId) ?? null : null
+  );
+
+  function switchToDecksTab() {
+    navigationState.setActiveTab("decks");
   }
 
 </script>
@@ -405,6 +491,7 @@
           onRetry={loadSequences}
           onColumnCountChanged={handleColumnCountChanged}
           onSelectSequence={handleSelectSequence}
+          onContextMenu={openCardContextMenu}
         />
       </main>
     {:else if mode === "decks"}
@@ -422,6 +509,7 @@
           onSelectDeck={handleSelectDeck}
           onBackToList={handleBackToDeckList}
           onSelectSequence={handleSelectSequence}
+          onContextMenu={openCardContextMenu}
         />
       </main>
     {:else if mode === "designer"}
@@ -429,9 +517,20 @@
       <main class="content-area">
         <CardDesigner {sequences} {isLoading} />
       </main>
+    {:else if mode === "print-prep"}
+      <main class="content-area">
+        <PrintPrepView
+          deck={selectedDeck}
+          {deckSequences}
+          onSwitchToDecks={switchToDecksTab}
+        />
+      </main>
     {/if}
   </div>
 </div>
+
+<!-- Context menu for right-click on any choreo card thumbnail -->
+<ContextMenu menuState={contextMenuState} items={contextMenuItems} onClose={closeCardContextMenu} />
 
 <style>
   .choreo-card-tab {

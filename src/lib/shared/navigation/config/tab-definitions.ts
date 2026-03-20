@@ -561,6 +561,14 @@ export const CHOREO_CARD_TABS: Section[] = [
     color: "#ec4899",
     gradient: "linear-gradient(135deg, #f472b6 0%, #ec4899 100%)",
   },
+  {
+    id: "print-prep",
+    label: "Print Prep",
+    icon: '<i class="fas fa-print" aria-hidden="true"></i>',
+    description: "Prepare cards for professional printing",
+    color: "#059669",
+    gradient: "linear-gradient(135deg, #34d399 0%, #059669 100%)",
+  },
 ];
 
 // Lab tabs configuration (admin-only, temporary experiments)
