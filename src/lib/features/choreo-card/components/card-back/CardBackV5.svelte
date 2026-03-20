@@ -134,7 +134,7 @@
     <!-- Top-right: LOOP icons -->
     {#if d.hasLoop}
       <div class="corner top-right">
-        <LOOPIconStrip activeComponents={d.loopComponents} size={18} darkMode={false} />
+        <LOOPIconStrip activeComponents={d.loopComponents} size={26} darkMode={false} />
       </div>
     {/if}
 
@@ -155,12 +155,15 @@
       </div>
     {/if}
 
+    <!-- Branding: pinned to top center, between corner badges -->
+    <div class="top-brand">
+      <span class="brand">Choreo Card</span>
+      <span class="brand-dot">·</span>
+      <span class="brand-sub">TKA</span>
+    </div>
+
     <!-- CENTER CONTENT -->
     <div class="content">
-
-      <!-- Branding -->
-      <div class="brand">Choreo Card</div>
-      <div class="brand-sub">The Kinetic Alphabet</div>
 
       <!-- Word -->
       <div class="word">{d.word}</div>
@@ -177,10 +180,10 @@
 
       <div class="spacer"></div>
 
-      <!-- Footer -->
-      <div class="footer">TKAflowarts.com</div>
-
     </div>
+
+    <!-- URL: pinned to bottom center -->
+    <div class="bottom-url">TKAflowarts.com</div>
   </div>
 </div>
 
@@ -224,36 +227,82 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     border: 1.5px solid rgba(0, 0, 0, 0.3);
     font-family: Cambria, serif;
-    font-size: 22px;
+    font-size: 24px;
     font-weight: bold;
     padding-bottom: 1px;
   }
 
   .corner-label {
-    font-size: 22px;
+    font-size: 30px;
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(255, 255, 255, 0.65);
     line-height: 1;
   }
 
   .corner-sublabel {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.35);
+    color: rgba(255, 255, 255, 0.4);
     text-transform: uppercase;
     letter-spacing: 0.08em;
   }
 
   .corner-position-img {
-    width: 32px;
+    width: 40px;
     height: auto;
     filter: invert(0.9);
     opacity: 0.7;
+  }
+
+  /* ═══════ BRANDING (top center) ═══════ */
+
+  .top-brand {
+    position: absolute;
+    z-index: 2;
+    top: 18px;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .brand {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .brand-dot {
+    color: rgba(255, 255, 255, 0.3);
+  }
+
+  .brand-sub {
+    font-size: 16px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.4);
+    letter-spacing: 0.08em;
+  }
+
+  /* ═══════ URL (bottom center) ═══════ */
+
+  .bottom-url {
+    position: absolute;
+    z-index: 2;
+    bottom: 18px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.3);
+    letter-spacing: 0.06em;
   }
 
   /* ═══════ CENTER CONTENT ═══════ */
@@ -266,21 +315,8 @@
     align-items: center;
     text-align: center;
     height: 100%;
-    padding: 60px 40px 50px;
+    padding: 56px 50px 50px;
     box-sizing: border-box;
-  }
-
-  .brand {
-    font-size: 22px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-  }
-
-  .brand-sub {
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.45);
-    letter-spacing: 0.08em;
-    margin-bottom: 24px;
   }
 
   .word {
@@ -309,9 +345,4 @@
     max-width: 380px;
   }
 
-  .footer {
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.35);
-    letter-spacing: 0.06em;
-  }
 </style>
