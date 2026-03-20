@@ -2,7 +2,8 @@
   DeckFamilySection.svelte - Collapsible section for one hand-path family within a deck
 
   Renders a header with family name, type combo, and sequence count.
-  Below the header, a responsive CSS grid of ChoreoCard components.
+  When expanded, shows hand path summary cards (one per unique spatial pattern)
+  followed by the full sequence grid.
   Clicking the header toggles collapse/expand state.
 -->
 <script lang="ts">
@@ -34,6 +35,19 @@
 
   let expanded = $state(false);
 
+  // Group sequences by handPathId and pick one representative per unique hand path.
+  // Each representative renders as a hand path card showing the spatial pattern.
+  const handPathRepresentatives = $derived.by(() => {
+    const seen = new Map<string, SequenceData>();
+    for (const seq of sequences) {
+      const hpId = (seq.metadata?.handPathId as string) ?? "";
+      if (hpId && !seen.has(hpId)) {
+        seen.set(hpId, seq);
+      }
+    }
+    return Array.from(seen.values());
+  });
+
   function toggle() {
     expanded = !expanded;
   }
@@ -59,6 +73,30 @@
   </button>
 
   {#if expanded}
+    <!-- Hand path summary: one card per unique spatial pattern in this family -->
+    {#if handPathRepresentatives.length > 0}
+      <div class="hand-path-row">
+        <span class="hand-path-label">
+          {handPathRepresentatives.length} hand {handPathRepresentatives.length === 1 ? "path" : "paths"}
+        </span>
+        <div class="hand-path-cards">
+          {#each handPathRepresentatives as rep (rep.metadata?.handPathId)}
+            <ChoreoCard
+              sequence={rep}
+              printMode={true}
+              handPathMode={true}
+              {handPointsVisible}
+              {showGrid}
+              showTKA={false}
+              showWord={false}
+              {includeStartPosition}
+            />
+          {/each}
+        </div>
+      </div>
+    {/if}
+
+    <!-- Full sequence grid -->
     <div class="family-grid">
       {#each sequences as sequence (sequence.id)}
         <ChoreoCard
@@ -130,6 +168,34 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     margin-left: auto;
     white-space: nowrap;
+  }
+
+  /* Hand path summary row — shows spatial patterns before the full sequence grid */
+  .hand-path-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs, 4px);
+    padding: var(--spacing-xs, 4px) var(--spacing-xs, 4px);
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    margin-bottom: var(--spacing-xs, 4px);
+  }
+
+  .hand-path-label {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .hand-path-cards {
+    display: flex;
+    gap: var(--spacing-sm, 8px);
+    overflow-x: auto;
+  }
+
+  .hand-path-cards :global(> *) {
+    flex: 0 0 120px;
   }
 
   .family-grid {
