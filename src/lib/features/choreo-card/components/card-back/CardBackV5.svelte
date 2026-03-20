@@ -1,12 +1,16 @@
 <!--
-  V5 "Deck" — Theme-aware printed card back
+  V5 "Deck" — Theme-aware printed card back with corner badges
 
   Designed for physical 2.5" × 3.5" playing cards. Renders at a fixed
   500×700px and gets scaled via CSS transform in CardDesigner.
 
-  The card back matches the user's selected background theme with
-  actual visual elements: stars for Night Sky, fish for Deep Ocean,
-  petals for Sakura, embers for Ember Glow, etc.
+  Four corners for quick sorting when fanning cards:
+    Top-left:     Level badge
+    Top-right:    LOOP icons
+    Bottom-left:  Step count
+    Bottom-right: Starting position (α, β, γ)
+
+  Center: word, LOOP explanation, branding, URL.
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -36,8 +40,17 @@
     d.loopExplanation?.summary ?? (d.hasLoop ? "Loops back each cycle." : "")
   );
 
-  // Full theme visuals: background with decorative elements, border, accent
   const theme = $derived(getCardBackThemeVisuals(settingsService.settings.backgroundType));
+
+  // Greek letter for starting position group
+  const POSITION_GLYPHS: Record<string, string> = {
+    alpha: "α", beta: "β", gamma: "γ",
+    zeta: "ζ", eta: "η", tau: "τ", terra: "⊕",
+  };
+
+  const startGlyph = $derived(
+    d.startPositionGroup ? POSITION_GLYPHS[d.startPositionGroup] ?? null : null
+  );
 </script>
 
 <!-- Outer: themed gradient border -->
@@ -45,6 +58,40 @@
   <!-- Inner: themed background with decorative elements -->
   <div class="back" style="background: {theme.background};">
     <CardBackDecorations theme={settingsService.settings.backgroundType} />
+
+    <!-- CORNER BADGES — visible when fanning cards -->
+
+    <!-- Top-left: Level -->
+    <div class="corner top-left">
+      <span
+        class="corner-badge level-badge"
+        style="background: {d.level.gradient}; color: {d.level.textColor};"
+      >
+        {d.level.number}
+      </span>
+    </div>
+
+    <!-- Top-right: LOOP icons -->
+    {#if d.hasLoop}
+      <div class="corner top-right">
+        <LOOPIconStrip activeComponents={d.loopComponents} size={18} darkMode={false} />
+      </div>
+    {/if}
+
+    <!-- Bottom-left: Step count -->
+    <div class="corner bottom-left">
+      <span class="corner-label">{d.stepCount}</span>
+      <span class="corner-sublabel">steps</span>
+    </div>
+
+    <!-- Bottom-right: Starting position -->
+    {#if startGlyph}
+      <div class="corner bottom-right">
+        <span class="corner-glyph">{startGlyph}</span>
+      </div>
+    {/if}
+
+    <!-- CENTER CONTENT -->
     <div class="content">
 
       <!-- Branding -->
@@ -53,45 +100,15 @@
 
       <!-- Word -->
       <div class="word">{d.word}</div>
-      <div class="beats">{d.beats} beats</div>
-
-      <div class="divider"></div>
-
-      <!-- Level -->
-      <div class="level-section">
-        <span
-          class="level-circle"
-          style="background: {d.level.gradient}; color: {d.level.textColor};"
-        >
-          {d.level.number}
-        </span>
-        <span class="level-name">Level {d.level.number}: {d.level.name}</span>
-        <p class="level-explanation">{d.level.detail}. {d.level.reason}.</p>
-      </div>
-
-      <!-- LOOP (if applicable) -->
-      {#if d.hasLoop}
-        <div class="divider"></div>
-        <div class="loop-section">
-          <div class="loop-header">
-            <span class="loop-title" style="color: {theme.accentColor};">LOOP</span>
-            <LOOPIconStrip activeComponents={d.loopComponents} size={22} darkMode={false} />
-          </div>
-          <p class="loop-explanation">{loopExplanationText}</p>
-        </div>
-      {/if}
 
       <div class="spacer"></div>
 
-      <!-- Instructions -->
-      <div class="instructions">
-        <p class="instruction-title">How to use this card</p>
-        <p class="instruction-text">
-          Learn each beat from the front. Practice until smooth. Scan the QR code to open it in the app.
-        </p>
-      </div>
+      <!-- LOOP explanation (if applicable) -->
+      {#if d.hasLoop}
+        <p class="loop-explanation">{loopExplanationText}</p>
+      {/if}
 
-      <div class="divider"></div>
+      <div class="spacer"></div>
 
       <!-- Footer -->
       <div class="footer">TKAflowarts.com</div>
@@ -101,8 +118,6 @@
 </div>
 
 <style>
-  /* Outer frame provides the themed gradient border via padding.
-     4px padding ensures even borders at all scale factors. */
   .border-frame {
     width: 100%;
     height: 100%;
@@ -112,7 +127,6 @@
     overflow: hidden;
   }
 
-  /* Inner card: themed gradient background, decorations overlay behind content */
   .back {
     position: relative;
     width: 100%;
@@ -124,146 +138,104 @@
     box-sizing: border-box;
   }
 
+  /* ═══════ CORNER BADGES ═══════ */
+
+  .corner {
+    position: absolute;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .top-left { top: 16px; left: 16px; }
+  .top-right { top: 16px; right: 16px; }
+  .bottom-left { bottom: 16px; left: 16px; flex-direction: column; }
+  .bottom-right { bottom: 16px; right: 16px; }
+
+  .corner-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(0, 0, 0, 0.3);
+    font-family: Cambria, serif;
+    font-size: 22px;
+    font-weight: bold;
+    padding-bottom: 1px;
+  }
+
+  .corner-label {
+    font-size: 22px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1;
+  }
+
+  .corner-sublabel {
+    font-size: 10px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.35);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .corner-glyph {
+    font-size: 28px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.6);
+    font-family: Cambria, serif;
+  }
+
+  /* ═══════ CENTER CONTENT ═══════ */
+
   .content {
     position: relative;
     z-index: 1;
     display: flex;
     flex-direction: column;
+    align-items: center;
+    text-align: center;
     height: 100%;
-    padding: 36px 32px;
+    padding: 60px 40px 50px;
     box-sizing: border-box;
   }
 
-  /* Branding */
   .brand {
-    text-align: center;
     font-size: 22px;
     font-weight: 700;
     letter-spacing: 0.06em;
   }
 
   .brand-sub {
-    text-align: center;
     font-size: 13px;
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(255, 255, 255, 0.45);
     letter-spacing: 0.08em;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
   }
 
-  /* Word */
   .word {
-    text-align: center;
-    font-size: 48px;
+    font-size: 52px;
     font-weight: 800;
     letter-spacing: 0.05em;
     line-height: 1;
   }
 
-  .beats {
-    text-align: center;
-    font-size: 16px;
-    color: rgba(255, 255, 255, 0.5);
-    margin-top: 4px;
-    margin-bottom: 16px;
-  }
-
-  .divider {
-    height: 1px;
-    background: rgba(255, 255, 255, 0.12);
-    margin: 8px 0;
-  }
-
-  /* Level — centered vertical stack: badge, name, explanation */
-  .level-section {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    padding: 12px 0;
-    gap: 6px;
-  }
-
-  .level-circle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    border: 2px solid black;
-    font-family: Cambria, serif;
-    font-size: 26px;
-    font-weight: bold;
-    flex-shrink: 0;
-    padding-bottom: 1px;
-  }
-
-  .level-name {
-    font-size: 20px;
-    font-weight: 700;
-  }
-
-  .level-explanation {
-    margin: 0;
-    font-size: 15px;
-    color: rgba(255, 255, 255, 0.55);
-    line-height: 1.5;
-  }
-
-  /* Loop */
-  .loop-section {
-    padding: 12px 0;
-  }
-
-  .loop-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 8px;
-  }
-
-  .loop-title {
-    font-size: 18px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    /* color set via inline style from theme.accentColor */
-  }
+  .spacer { flex: 1; }
 
   .loop-explanation {
     margin: 0;
     font-size: 15px;
-    color: rgba(255, 255, 255, 0.55);
-    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 1.6;
+    max-width: 380px;
   }
 
-  .spacer { flex: 1; }
-
-  /* Instructions */
-  .instructions {
-    padding: 12px 0;
-  }
-
-  .instruction-title {
-    margin: 0 0 6px;
-    font-size: 16px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-
-  .instruction-text {
-    margin: 0;
-    font-size: 15px;
-    color: rgba(255, 255, 255, 0.55);
-    line-height: 1.5;
-  }
-
-  /* Footer */
   .footer {
-    text-align: center;
-    padding-top: 8px;
-    font-size: 14px;
-    color: rgba(255, 255, 255, 0.4);
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.35);
     letter-spacing: 0.06em;
   }
 </style>
