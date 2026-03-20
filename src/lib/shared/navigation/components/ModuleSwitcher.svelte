@@ -17,6 +17,8 @@
   import AccountRow from "./account/AccountRow.svelte";
   import { authState } from "../../auth/state/authState.svelte";
   import { inboxState } from "../../inbox/state/inbox-state.svelte";
+  import { profileScreenState } from "$lib/features/profile/profile-screen-state.svelte";
+  import { userPreviewState } from "../../debug/state/user-preview-state.svelte";
 
   let {
     // Current state
@@ -113,6 +115,15 @@
     closeDrawer();
   }
 
+  function handleProfileOpen() {
+    hapticService?.trigger("selection");
+    // Close switcher first, open profile after close animation completes
+    isOpen = false;
+    setTimeout(() => {
+      profileScreenState.open();
+    }, 250);
+  }
+
   async function handleSignOut() {
     hapticService?.trigger("selection");
     closeDrawer();
@@ -180,7 +191,10 @@
 
     <!-- Account Footer -->
     <div class="account-footer">
-      <AccountRow variant="drawer" />
+      <AccountRow
+        variant="drawer"
+        onclick={userPreviewState.isActive ? undefined : handleProfileOpen}
+      />
       <div class="account-footer-actions">
         <button class="drawer-action inbox" onclick={handleInboxClick}>
           <div class="drawer-action-icon-wrapper">

@@ -63,6 +63,10 @@
   import MyPropsDrawer from "./navigation/components/account/MyPropsDrawer.svelte";
   import { myPropsDrawerState } from "./navigation/components/account/my-props-drawer-state.svelte";
 
+  // Profile Screen drawer — same pattern, rendered at document root
+  import ProfileScreen from "$lib/features/profile/ProfileScreen.svelte";
+  import { profileScreenState } from "$lib/features/profile/profile-screen-state.svelte";
+
   // 🚀 Performance: Module prefetching
   import {
     preloadCriticalModules,
@@ -362,6 +366,12 @@
     onclose={() => { myPropsDrawerState.close(); }}
   />
 {/if}
+
+<!-- Profile Screen drawer — same pattern, rendered at document root -->
+<ProfileScreen
+  bind:isOpen={profileScreenState.isOpen}
+  onClose={() => profileScreenState.close()}
+/>
 
 <style>
   /* Skip link - visually hidden until focused (sr-only pattern) */
