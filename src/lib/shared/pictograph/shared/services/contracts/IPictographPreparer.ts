@@ -38,6 +38,10 @@ export interface PrepareOptions {
    * Set to true only for animation canvas rendering.
    */
   useGridVersion?: boolean;
+
+  /** When true, transforms motions for hand path visualization:
+   *  pro/anti → float, propType → HAND, orientation → null. */
+  handPathMode?: boolean;
 }
 
 export interface IPictographPreparer {
