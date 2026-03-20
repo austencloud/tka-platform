@@ -127,6 +127,16 @@ export function createCreateModuleState(
     getConstructTabState: () => null, // Will be set later if needed
   });
 
+  // Bootstrap activeSection from URL-driven navigation tab so it matches
+  // what the user requested. Without this, activeSection defaults to
+  // "construct" and the CreateModule→Navigation sync effect overwrites the
+  // URL tab (e.g. "fuse") the moment persistence finishes initializing.
+  const VALID_CREATE_TABS: BuildModeId[] = ["construct", "assemble", "generate", "fuse"];
+  const urlTab = navigationState.activeTab as BuildModeId;
+  if (urlTab && VALID_CREATE_TABS.includes(urlTab)) {
+    navigationController.bootstrap(urlTab);
+  }
+
   /**
    * Initialize with persisted state
    */
