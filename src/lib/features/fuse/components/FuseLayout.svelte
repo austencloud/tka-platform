@@ -2,14 +2,9 @@
 	/**
 	 * Fuse Layout
 	 *
-	 * Responsive split layout with two sequence browser panels, a shared
-	 * tempo control, length-matching toggle, and the fuse button. CSS grid:
-	 * 1fr 1fr on desktop, stacked 1fr / 1fr on mobile (<900px).
-	 * Uses container queries.
-	 *
-	 * When the state enters the "fusing" phase, triggers the assembly
-	 * animation (both panels slide toward center and fade out), then
-	 * transitions to the "result" phase.
+	 * Shuffle-to-discover approach: pick mode (props/hands) and length,
+	 * then shuffle through random choreo cards on each side until you
+	 * find two you like. Fuse them together.
 	 */
 
 	import { getFuseContext } from "../context/fuse-context";
@@ -20,10 +15,16 @@
 	import { container } from "$lib/shared/di";
 	import type { IFuseAssemblyAnimator } from "../services/contracts/IFuseAssemblyAnimator";
 
-	const { state } = getFuseContext();
+	const { state: fuseState } = getFuseContext();
 
-	const showTempo = $derived(state.leftSequence !== null || state.rightSequence !== null);
-const showHint = $derived(state.leftSequence === null || state.rightSequence === null);
+	type FuseMode = "soloProps" | "handPaths";
+
+	let fuseMode: FuseMode = $state("soloProps");
+	let fuseLength: number = $state(8);
+
+	const LENGTHS = [2, 4, 8, 12, 16, 24, 32];
+
+	const showTempo = $derived(fuseState.leftSequence !== null || fuseState.rightSequence !== null);
 
 	// DOM refs for assembly animation
 	let leftPanelEl: HTMLDivElement;
@@ -34,42 +35,31 @@ const showHint = $derived(state.leftSequence === null || state.rightSequence ===
 	try {
 		fuseAssemblyAnimator = container.items.fuseAssemblyAnimator;
 	} catch {
-		// Fallback: if DI fails, create a no-op animator so the flow still works
-		fuseAssemblyAnimator = {
-			async animate() {
-				// no-op
-			},
-		};
+		fuseAssemblyAnimator = { async animate() {} };
 	}
 
 	// When state enters "fusing", trigger the assembly animation
 	$effect(() => {
-		if (state.phase !== "fusing") return;
-
-		// Run animation after next frame so DOM refs are stable
+		if (fuseState.phase !== "fusing") return;
 		const frameId = requestAnimationFrame(async () => {
 			if (!leftPanelEl || !rightPanelEl || !fuseTargetEl) {
-				// Missing elements — skip animation, go straight to result
-				state.completeFuse();
+				fuseState.completeFuse();
 				return;
 			}
-
 			await fuseAssemblyAnimator.animate(leftPanelEl, rightPanelEl, fuseTargetEl);
-			state.completeFuse();
+			fuseState.completeFuse();
 		});
-
 		return () => cancelAnimationFrame(frameId);
 	});
 
 	function handleKeydown(event: KeyboardEvent) {
 		if (event.key === "Escape") {
-			// Deselect the most recently selected panel
-			if (state.rightSequence) {
+			if (fuseState.rightSequence) {
 				event.preventDefault();
-				state.deselectRight();
-			} else if (state.leftSequence) {
+				fuseState.deselectRight();
+			} else if (fuseState.leftSequence) {
 				event.preventDefault();
-				state.deselectLeft();
+				fuseState.deselectLeft();
 			}
 		}
 	}
@@ -78,40 +68,74 @@ const showHint = $derived(state.leftSequence === null || state.rightSequence ===
 <svelte:window onkeydown={handleKeydown} />
 
 <div class="fuse-layout">
-	{#if showHint}
-		<p class="workspace-hint">Select two sequences to fuse</p>
-	{/if}
+	<!-- Mode and length selector -->
+	<div class="fuse-config">
+		<div class="mode-toggle" role="radiogroup" aria-label="Fuse mode">
+			<button
+				class="config-chip"
+				class:active={fuseMode === "soloProps"}
+				role="radio"
+				aria-checked={fuseMode === "soloProps"}
+				onclick={() => fuseMode = "soloProps"}
+			>Prop Paths</button>
+			<button
+				class="config-chip"
+				class:active={fuseMode === "handPaths"}
+				role="radio"
+				aria-checked={fuseMode === "handPaths"}
+				onclick={() => fuseMode = "handPaths"}
+			>Hand Paths</button>
+		</div>
+
+		<div class="length-selector" role="radiogroup" aria-label="Beat length">
+			{#each LENGTHS as len}
+				<button
+					class="length-chip"
+					class:active={fuseLength === len}
+					role="radio"
+					aria-checked={fuseLength === len}
+					onclick={() => fuseLength = len}
+				>{len}</button>
+			{/each}
+		</div>
+	</div>
+
+	<!-- Two shuffle cards side by side -->
 	<div class="fuse-panels">
 		<div class="panel-wrap" bind:this={leftPanelEl}>
 			<FusePanel
 				side="left"
-				selectedSequence={state.leftSequence}
-				onSelect={state.selectLeft}
-				onDeselect={state.deselectLeft}
-				bpm={state.bpm}
-				onControllerReady={(ctrl) => state.registerController("left", ctrl)}
+				selectedSequence={fuseState.leftSequence}
+				onSelect={fuseState.selectLeft}
+				onDeselect={fuseState.deselectLeft}
+				bpm={fuseState.bpm}
+				onControllerReady={(ctrl) => fuseState.registerController("left", ctrl)}
+				mode={fuseMode}
+				length={fuseLength}
 			/>
 		</div>
 		<div class="panel-wrap" bind:this={rightPanelEl}>
 			<FusePanel
 				side="right"
-				selectedSequence={state.rightSequence}
-				onSelect={state.selectRight}
-				onDeselect={state.deselectRight}
-				bpm={state.bpm}
-				onControllerReady={(ctrl) => state.registerController("right", ctrl)}
+				selectedSequence={fuseState.rightSequence}
+				onSelect={fuseState.selectRight}
+				onDeselect={fuseState.deselectRight}
+				bpm={fuseState.bpm}
+				onControllerReady={(ctrl) => fuseState.registerController("right", ctrl)}
+				mode={fuseMode}
+				length={fuseLength}
 			/>
 		</div>
 	</div>
 
-	<!-- Invisible target element at center — the assembly animation converges here -->
+	<!-- Invisible target for assembly animation -->
 	<div class="fuse-target" bind:this={fuseTargetEl} aria-hidden="true"></div>
 
 	{#if showTempo}
 		<div class="fuse-tempo">
 			<TempoControl
-				bpm={state.bpm}
-				onBpmChange={state.setBpm}
+				bpm={fuseState.bpm}
+				onBpmChange={fuseState.setBpm}
 				showPresets={true}
 				showPractice={false}
 			/>
@@ -120,8 +144,8 @@ const showHint = $derived(state.leftSequence === null || state.rightSequence ===
 
 	<div class="fuse-controls">
 		<FuseLengthToggle
-			matchLengths={state.matchLengths}
-			onChange={state.setMatchLengths}
+			matchLengths={fuseState.matchLengths}
+			onChange={fuseState.setMatchLengths}
 		/>
 	</div>
 
@@ -142,14 +166,79 @@ const showHint = $derived(state.leftSequence === null || state.rightSequence ===
 		position: relative;
 	}
 
+	.fuse-config {
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--spacing-md, 16px);
+		padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+		border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+		flex-wrap: wrap;
+	}
+
+	.mode-toggle,
+	.length-selector {
+		display: flex;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		border-radius: var(--radius-md, 8px);
+		padding: 2px;
+		gap: 2px;
+	}
+
+	.config-chip,
+	.length-chip {
+		padding: 6px 14px;
+		border: none;
+		border-radius: var(--radius-sm, 6px);
+		background: transparent;
+		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+		font-size: var(--font-size-compact, 12px);
+		font-weight: 500;
+		cursor: pointer;
+		min-height: 36px;
+		min-width: 36px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: background 150ms ease, color 150ms ease;
+	}
+
+	.config-chip.active {
+		background: var(--theme-accent, #6366f1);
+		color: #ffffff;
+	}
+
+	.length-chip {
+		padding: 6px 10px;
+		min-width: 32px;
+	}
+
+	.length-chip.active {
+		background: var(--theme-accent, #6366f1);
+		color: #ffffff;
+	}
+
 	.fuse-panels {
 		flex: 1;
 		min-height: 0;
 		display: grid;
-		grid-template-columns: 1fr;
-		grid-template-rows: 1fr 1fr;
+		grid-template-columns: 1fr 1fr;
+		grid-template-rows: 1fr;
 		gap: var(--spacing-sm, 8px);
 		padding: var(--spacing-sm, 8px);
+	}
+
+	@container fuse-layout (max-width: 700px) {
+		.fuse-panels {
+			grid-template-columns: 1fr;
+			grid-template-rows: 1fr 1fr;
+		}
+
+		.fuse-config {
+			flex-direction: column;
+			gap: var(--spacing-xs, 4px);
+		}
 	}
 
 	.panel-wrap {
@@ -162,14 +251,6 @@ const showHint = $derived(state.leftSequence === null || state.rightSequence ===
 		min-height: 0;
 	}
 
-	@container fuse-layout (min-width: 900px) {
-		.fuse-panels {
-			grid-template-columns: 1fr 1fr;
-			grid-template-rows: 1fr;
-		}
-	}
-
-	/* The animation target — sits at center of the layout, invisible */
 	.fuse-target {
 		position: absolute;
 		top: 50%;
@@ -178,17 +259,6 @@ const showHint = $derived(state.leftSequence === null || state.rightSequence ===
 		height: 200px;
 		transform: translate(-50%, -50%);
 		pointer-events: none;
-	}
-
-	.workspace-hint {
-		flex-shrink: 0;
-		text-align: center;
-		font-size: clamp(1rem, 2.5vmin, 1.25rem);
-		font-weight: 500;
-		color: var(--theme-text, #fff);
-		padding: clamp(8px, 1.5vmin, 12px) 1rem;
-		margin: 0;
-		letter-spacing: 0.02em;
 	}
 
 	.fuse-tempo {
@@ -208,5 +278,12 @@ const showHint = $derived(state.leftSequence === null || state.rightSequence ===
 		display: flex;
 		justify-content: center;
 		padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.config-chip,
+		.length-chip {
+			transition: none;
+		}
 	}
 </style>

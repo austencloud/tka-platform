@@ -183,7 +183,6 @@
 				hideTkaGlyph={false}
 				hideStepNumbers={false}
 				progressBarVariant="gradient"
-				disableContextMenu={true}
 				fillContainer={true}
 			/>
 		{:else}

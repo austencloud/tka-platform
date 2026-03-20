@@ -23,11 +23,13 @@
 		bpm = DEFAULT_BPM,
 		onBack,
 		onControllerReady,
+		propColor,
 	}: {
 		sequence: SequenceData;
 		bpm?: number;
 		onBack: () => void;
 		onControllerReady?: (controller: IAnimationPlaybackController) => void;
+		propColor?: "blue" | "red";
 	} = $props();
 
 	let controller = $state<IAnimationPlaybackController | null>(null);
@@ -130,8 +132,8 @@
 	{:else}
 		<div class="canvas-wrap">
 			<AnimatorCanvas
-				blueProp={bluePropState}
-				redProp={redPropState}
+				blueProp={propColor === "red" ? null : bluePropState}
+				redProp={propColor === "blue" ? null : redPropState}
 				gridVisible={true}
 				{gridMode}
 				{letter}
@@ -144,7 +146,6 @@
 				hideTkaGlyph={true}
 				hideStepNumbers={true}
 				progressBarVariant="minimal"
-				disableContextMenu={true}
 				fillContainer={true}
 			/>
 
