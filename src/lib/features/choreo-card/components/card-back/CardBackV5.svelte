@@ -17,6 +17,7 @@
   import { onMount } from "svelte";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import { deriveCardBackData } from "./card-back-data";
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 
   interface Props { sequence: SequenceData; }
   let { sequence }: Props = $props();
@@ -33,9 +34,33 @@
   const loopExplanationText = $derived(
     d.loopExplanation?.summary ?? (d.hasLoop ? "Loops back each cycle." : "")
   );
+
+  // Border gradient per background theme. Each theme gets a distinct
+  // card border that matches its palette instead of always rainbow.
+  const BORDER_GRADIENTS: Record<string, string> = {
+    nightSky: "linear-gradient(135deg, #1e1b4b, #4338ca, #818cf8, #4338ca, #1e1b4b)",
+    deepOcean: "linear-gradient(135deg, #0c4a6e, #0891b2, #22d3ee, #0891b2, #0c4a6e)",
+    snowfall: "linear-gradient(135deg, #1e3a5f, #3b82f6, #93c5fd, #3b82f6, #1e3a5f)",
+    emberGlow: "linear-gradient(135deg, #7c2d12, #ea580c, #fb923c, #ea580c, #7c2d12)",
+    sakuraDrift: "linear-gradient(135deg, #831843, #db2777, #f9a8d4, #db2777, #831843)",
+    fireflyForest: "linear-gradient(135deg, #0d3320, #166534, #22c55e, #166534, #0d3320)",
+    autumnDrift: "linear-gradient(135deg, #78350f, #d97706, #dc2626, #d97706, #78350f)",
+    pride: "linear-gradient(135deg, #ff0000, #ff8000, #ffff00, #00ff00, #0080ff, #8000ff, #ff0080, #ff0000)",
+    solidColor: "linear-gradient(135deg, var(--theme-accent, #6366f1), var(--theme-stroke-strong, #444), var(--theme-accent, #6366f1))",
+    linearGradient: "linear-gradient(135deg, var(--theme-accent, #6366f1), var(--theme-stroke-strong, #444), var(--theme-accent, #6366f1))",
+  };
+
+  const borderGradient = $derived(
+    BORDER_GRADIENTS[settingsService.settings.backgroundType] ?? BORDER_GRADIENTS.pride
+  );
 </script>
 
-<div class="back">
+<div
+  class="back"
+  style="background:
+    linear-gradient(var(--theme-panel-bg, #18181b), var(--theme-panel-bg, #18181b)) padding-box,
+    {borderGradient} border-box;"
+>
   <div class="content">
 
     <!-- Branding -->
@@ -50,15 +75,13 @@
 
     <!-- Level -->
     <div class="level-section">
-      <div class="level-badge-row">
-        <span
-          class="level-circle"
-          style="background: {d.level.gradient}; color: {d.level.textColor};"
-        >
-          {d.level.number}
-        </span>
-        <span class="level-name">Level {d.level.number}: {d.level.name}</span>
-      </div>
+      <span
+        class="level-circle"
+        style="background: {d.level.gradient}; color: {d.level.textColor};"
+      >
+        {d.level.number}
+      </span>
+      <span class="level-name">Level {d.level.number}: {d.level.name}</span>
       <p class="level-explanation">{d.level.detail}. {d.level.reason}.</p>
     </div>
 
@@ -96,17 +119,13 @@
   .back {
     width: 100%;
     height: 100%;
-    background: var(--theme-panel-bg, #fff);
     color: var(--theme-text, #1a1a1a);
     font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
     overflow: hidden;
-    /* Rainbow gradient border */
     border: 3px solid transparent;
     border-radius: 12px;
-    background:
-      linear-gradient(var(--theme-panel-bg, #18181b), var(--theme-panel-bg, #18181b)) padding-box,
-      linear-gradient(135deg, #ff0000, #ff8000, #ffff00, #00ff00, #0080ff, #8000ff, #ff0080, #ff0000) border-box;
     box-sizing: border-box;
+    /* background set via inline style for per-theme border gradient */
   }
 
   .content {
@@ -156,28 +175,26 @@
     margin: 8px 0;
   }
 
-  /* Level */
+  /* Level — centered vertical stack: badge, name, explanation */
   .level-section {
-    padding: 12px 0;
-  }
-
-  .level-badge-row {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 8px;
+    text-align: center;
+    padding: 12px 0;
+    gap: 6px;
   }
 
   .level-circle {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     border: 2px solid black;
     font-family: Cambria, serif;
-    font-size: 24px;
+    font-size: 26px;
     font-weight: bold;
     flex-shrink: 0;
     padding-bottom: 1px;
