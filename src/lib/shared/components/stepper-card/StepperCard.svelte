@@ -74,27 +74,38 @@ Landscape: Left half decrements, right half increments (horizontal layout)
     return undefined;
   });
 
-  // Gradient crossfade when color changes.
-  // On each click: commit the current color as "previous" (so ::before
-  // shows what was just visible), remove the transitioning class to
-  // reset ::before to full opacity, then on the next frame re-add it
-  // to start a fresh fade. This works for both slow and rapid clicks.
-  function startCrossfade() {
-    if (!cardElement) return;
 
-    // Cancel any pending commit
+  function handleIncrement() {
+    if (currentValue < maxValue) {
+      hapticService?.trigger("selection");
+      snapshotAndFade();
+      onIncrement();
+    }
+  }
+
+  function handleDecrement() {
+    if (currentValue > minValue) {
+      hapticService?.trigger("selection");
+      snapshotAndFade();
+      onDecrement();
+    }
+  }
+
+  /** Capture the current color as "previous" BEFORE the parent changes the color prop */
+  function snapshotAndFade() {
+    if (!cardElement) return;
     if (fadeTimer) clearTimeout(fadeTimer);
 
-    // Step 1: snapshot current color as the "from" state
+    // Snapshot what's visible right now as the "from" state
     previousColor = color;
     isTransitioning = false;
 
-    // Step 2: next frame — re-enable the fade (::before is now
-    // fully opaque showing previousColor, background shows new color)
+    // Next frame: the parent will have updated the color prop,
+    // so background shows the new color. ::before shows previousColor
+    // at full opacity. Now fade it out.
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         isTransitioning = true;
-        // Step 3: after fade completes, commit
         fadeTimer = setTimeout(() => {
           previousColor = color;
           isTransitioning = false;
@@ -102,23 +113,6 @@ Landscape: Left half decrements, right half increments (horizontal layout)
         }, 400);
       });
     });
-  }
-
-  function handleIncrement() {
-    if (currentValue < maxValue) {
-      hapticService?.trigger("selection");
-      onIncrement();
-      // Start crossfade after the parent updates the color prop
-      requestAnimationFrame(() => startCrossfade());
-    }
-  }
-
-  function handleDecrement() {
-    if (currentValue > minValue) {
-      hapticService?.trigger("selection");
-      onDecrement();
-      requestAnimationFrame(() => startCrossfade());
-    }
   }
 
   function handleKeydown(
