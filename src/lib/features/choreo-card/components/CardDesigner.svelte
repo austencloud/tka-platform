@@ -13,6 +13,8 @@
   import { onMount, onDestroy } from "svelte";
   import ChoreoCard from "./ChoreoCard.svelte";
   import CardBackV5 from "./card-back/CardBackV5.svelte";
+  import InfoCardFront from "./card-back/InfoCardFront.svelte";
+  import InfoCardBack from "./card-back/InfoCardBack.svelte";
   import CardDesignerContextMenuHost from "./context-menu/CardDesignerContextMenuHost.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
@@ -37,8 +39,12 @@
 
   // Display scale: 1.0 = fill container, smaller = preview at physical size
   let displayScale = $state(1.0);
+
+  // Show the info/rules card instead of the current sequence
+  let showInfoCard = $state(false);
   let hapticService: IHapticFeedback | undefined;
   let contextMenuHost: CardDesignerContextMenuHost;
+  let choreoCardRef: ChoreoCard;
 
   // Visibility state from global managers
   const imageComposition = getImageCompositionManager();
@@ -369,6 +375,20 @@
       {/each}
     </div>
 
+    <!-- Info card toggle -->
+    <div class="filter-chips">
+      <button
+        class="chip"
+        class:selected={showInfoCard}
+        onclick={() => { showInfoCard = !showInfoCard; hapticService?.trigger("selection"); }}
+        aria-pressed={showInfoCard}
+        type="button"
+      >
+        <i class="fas fa-info-circle" aria-hidden="true"></i>
+        <span>Rules Card</span>
+      </button>
+    </div>
+
     <!-- Size slider -->
     <div class="size-control">
       <i class="fas fa-search-minus" aria-hidden="true"></i>
@@ -388,53 +408,82 @@
       <!-- Card pair container: measured, no overflow -->
       <div class="pair-container" bind:this={containerEl}>
         <div class="pair">
-          <!-- Front: playing card frame with sequence image inside -->
-          <div class="card-slot">
-            <span class="side-label">Front</span>
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <div
-              class="playing-card"
-              style="width: {layout.frontW}px; height: {layout.frontH}px;"
-              use:watchForImage
-              oncontextmenu={handleContextMenu}
-            >
-              <div class="card-image-container">
-                <ChoreoCard
-                  sequence={seq}
-                  printMode={true}
-                  showQRCodes={showQRCode}
-                  {showBirthday}
-                  {handPointsVisible}
-                  {showGrid}
-                  {showTKA}
-                  {showWord}
-                  {includeStartPosition}
-                  onContextMenu={(x, y) => contextMenuHost.openContextMenu(x, y)}
-                />
-              </div>
-            </div>
-          </div>
-
-          <!-- Back: rendered at fixed print resolution, scaled to fit -->
-          <div class="card-slot">
-            <span class="side-label">Back</span>
-            <div
-              class="playing-card back-card-frame"
-              style="width: {layout.backW}px; height: {layout.backH}px;"
-            >
+          {#if showInfoCard}
+            <!-- Info/rules card: front -->
+            <div class="card-slot">
+              <span class="side-label">Front</span>
               <div
-                class="back-card-render"
-                style="
-                  width: {BACK_RENDER_W}px;
-                  height: {BACK_RENDER_H}px;
-                  transform: scale({backScale});
-                  transform-origin: top left;
-                "
+                class="playing-card back-card-frame"
+                style="width: {layout.backW}px; height: {layout.backH}px;"
               >
-                <CardBackV5 sequence={seq} />
+                <div
+                  class="back-card-render"
+                  style="width: {BACK_RENDER_W}px; height: {BACK_RENDER_H}px; transform: scale({backScale}); transform-origin: top left;"
+                >
+                  <InfoCardFront />
+                </div>
               </div>
             </div>
-          </div>
+
+            <!-- Info/rules card: back -->
+            <div class="card-slot">
+              <span class="side-label">Back</span>
+              <div
+                class="playing-card back-card-frame"
+                style="width: {layout.backW}px; height: {layout.backH}px;"
+              >
+                <div
+                  class="back-card-render"
+                  style="width: {BACK_RENDER_W}px; height: {BACK_RENDER_H}px; transform: scale({backScale}); transform-origin: top left;"
+                >
+                  <InfoCardBack />
+                </div>
+              </div>
+            </div>
+          {:else}
+            <!-- Front: playing card frame with sequence image inside -->
+            <div class="card-slot">
+              <span class="side-label">Front</span>
+              <!-- svelte-ignore a11y_no_static_element_interactions -->
+              <div
+                class="playing-card"
+                style="width: {layout.frontW}px; height: {layout.frontH}px;"
+                use:watchForImage
+                oncontextmenu={handleContextMenu}
+              >
+                <div class="card-image-container">
+                  <ChoreoCard
+                    bind:this={choreoCardRef}
+                    sequence={seq}
+                    printMode={true}
+                    showQRCodes={showQRCode}
+                    {showBirthday}
+                    {handPointsVisible}
+                    {showGrid}
+                    {showTKA}
+                    {showWord}
+                    {includeStartPosition}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Back: rendered at fixed print resolution, scaled to fit -->
+            <div class="card-slot">
+              <span class="side-label">Back</span>
+              <div
+                class="playing-card back-card-frame"
+                style="width: {layout.backW}px; height: {layout.backH}px;"
+              >
+                <div
+                  class="back-card-render"
+                  style="width: {BACK_RENDER_W}px; height: {BACK_RENDER_H}px; transform: scale({backScale}); transform-origin: top left;"
+                >
+                  <CardBackV5 sequence={seq} />
+                </div>
+              </div>
+            </div>
+          {/if}
         </div>
       </div>
     {:else}
@@ -445,7 +494,7 @@
     {/if}
   {/if}
 
-  <CardDesignerContextMenuHost bind:this={contextMenuHost} />
+  <CardDesignerContextMenuHost bind:this={contextMenuHost} onRerender={() => choreoCardRef?.rerender()} />
 </div>
 
 <style>
