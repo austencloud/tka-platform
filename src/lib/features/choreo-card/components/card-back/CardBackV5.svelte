@@ -144,10 +144,14 @@
       <span class="corner-sublabel">steps</span>
     </div>
 
-    <!-- Bottom-right: Starting position -->
-    {#if startGlyph}
+    <!-- Bottom-right: Starting position SVG glyph -->
+    {#if d.startPositionGroup}
       <div class="corner bottom-right">
-        <span class="corner-glyph">{startGlyph}</span>
+        <img
+          class="corner-position-img"
+          src="/images/letters_trimmed/Type6/{POSITION_GLYPHS[d.startPositionGroup] ?? 'α'}.svg"
+          alt={d.startPositionGroup}
+        />
       </div>
     {/if}
 
@@ -245,11 +249,11 @@
     letter-spacing: 0.08em;
   }
 
-  .corner-glyph {
-    font-size: 28px;
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.6);
-    font-family: Cambria, serif;
+  .corner-position-img {
+    width: 32px;
+    height: auto;
+    filter: invert(0.9);
+    opacity: 0.7;
   }
 
   /* ═══════ CENTER CONTENT ═══════ */
@@ -280,8 +284,9 @@
   }
 
   .word {
+    font-family: Georgia, serif;
     font-size: 52px;
-    font-weight: 800;
+    font-weight: 600;
     letter-spacing: 0.05em;
     line-height: 1;
   }
