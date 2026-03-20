@@ -343,22 +343,6 @@
   {/if}
 </div>
 
-<!-- TEMP: Arrow style picker for tuning (remove after choosing) -->
-{#if isPlacing}
-  <div class="arrow-style-picker">
-    <span class="picker-label">arrow style:</span>
-    {#each ["arrow", "beam", "behind", "ring"] as style}
-      <button
-        class="picker-btn"
-        class:picker-active={builderState.arrowStyle === style}
-        onclick={() => builderState.setArrowStyle(style as "arrow" | "beam" | "behind" | "ring")}
-      >
-        {style}
-      </button>
-    {/each}
-  </div>
-{/if}
-
 <OrientationExplainer bind:isOpen={explainerOpen} />
 
 <style>
@@ -855,45 +839,4 @@
     }
   }
 
-  /* TEMP: Arrow style picker */
-  .arrow-style-picker {
-    position: fixed;
-    bottom: 80px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 6px 10px;
-    background: rgba(0, 0, 0, 0.85);
-    border: 1px solid rgba(255, 215, 0, 0.3);
-    border-radius: 10px;
-    z-index: 200;
-    pointer-events: auto;
-  }
-
-  .picker-label {
-    font-size: 11px;
-    color: #FFD700;
-    font-weight: 600;
-    margin-right: 4px;
-  }
-
-  .picker-btn {
-    padding: 6px 10px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 6px;
-    background: transparent;
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    min-height: 32px;
-  }
-
-  .picker-btn.picker-active {
-    background: rgba(255, 215, 0, 0.2);
-    color: #FFD700;
-    border-color: #FFD700;
-  }
 </style>

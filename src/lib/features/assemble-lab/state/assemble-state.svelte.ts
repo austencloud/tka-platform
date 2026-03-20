@@ -273,9 +273,7 @@ export function createAssembleState() {
     turnCount = turns;
   }
 
-  // Transient arrow overlay state
-  type ArrowStyle = "arrow" | "beam" | "behind" | "ring";
-  let arrowStyle = $state<ArrowStyle>("arrow");
+  // Transient orientation indicator state
   let showOrientationArrow = $state(false);
   let arrowOrientation = $state<Orientation>(Orientation.IN);
   let arrowTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -335,8 +333,6 @@ export function createAssembleState() {
     get turnCount() { return turnCount; },
     get showOrientationArrow() { return showOrientationArrow; },
     get arrowOrientation() { return arrowOrientation; },
-    get arrowStyle() { return arrowStyle; },
-    setArrowStyle(style: ArrowStyle) { arrowStyle = style; },
     get activeSteps() { return activeSteps; },
     get stepCount() { return stepCount; },
     get isBlueComplete() { return isBlueComplete; },

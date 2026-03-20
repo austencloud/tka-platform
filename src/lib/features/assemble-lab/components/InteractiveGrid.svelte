@@ -547,73 +547,33 @@
       </g>
     {/if}
 
-    <!-- Layer 4.5: Orientation indicator (sibling of prop group to avoid
+    <!-- Layer 4.5: Orientation ring indicator (sibling of prop group to avoid
          compounding parent rotation and interfering with CSS transition) -->
     {#if activeTarget && builderState.showOrientationArrow && builderState.phase !== "complete"}
-
-      {#if builderState.arrowStyle === "arrow"}
-        <!-- Style: Arrow — offset gold arrow pointing in facing direction -->
-        <g
-          class="ori-indicator ori-arrow"
-          style="transform: translate({activeTarget.x}px, {activeTarget.y}px) rotate({arrowRotationDeg}deg)"
-        >
-          <line x1="30" y1="0" x2="110" y2="0" stroke="#FFD700" stroke-width="5" stroke-linecap="round" />
-          <polygon points="110,-10 130,0 110,10" fill="#FFD700" />
-        </g>
-      {/if}
-
-      {#if builderState.arrowStyle === "beam"}
-        <!-- Style: Beam — bright gold line shooting from prop to grid edge -->
-        <g
-          class="ori-indicator ori-beam"
-          style="transform: translate({activeTarget.x}px, {activeTarget.y}px) rotate({arrowRotationDeg}deg)"
-        >
-          <line x1="20" y1="0" x2="400" y2="0" stroke="#FFD700" stroke-width="3" stroke-linecap="round" />
-          <line x1="20" y1="0" x2="160" y2="0" stroke="#FFD700" stroke-width="6" stroke-linecap="round" opacity="0.7" />
-          <polygon points="130,-8 148,0 130,8" fill="#FFD700" />
-        </g>
-      {/if}
-
-      {#if builderState.arrowStyle === "behind"}
-        <!-- Style: Behind — oversized arrow rendered below the prop (but above grid) -->
-        <g
-          class="ori-indicator ori-behind"
-          style="transform: translate({activeTarget.x}px, {activeTarget.y}px) rotate({arrowRotationDeg}deg)"
-        >
-          <line x1="-80" y1="0" x2="140" y2="0" stroke="#FFD700" stroke-width="8" stroke-linecap="round" opacity="0.5" />
-          <polygon points="140,-14 170,0 140,14" fill="#FFD700" opacity="0.6" />
-          <circle cx="0" cy="0" r="12" fill="none" stroke="#FFD700" stroke-width="3" opacity="0.4" />
-        </g>
-      {/if}
-
-      {#if builderState.arrowStyle === "ring"}
-        <!-- Style: Ring — arc sweeping in the facing direction -->
-        <g
-          class="ori-indicator ori-ring"
-          style="transform: translate({activeTarget.x}px, {activeTarget.y}px) rotate({arrowRotationDeg}deg)"
-        >
-          <!-- Directional arc (120° sweep in facing direction) -->
-          <path
-            d="M 60,0 A 60,60 0 0,1 30,52"
-            fill="none"
-            stroke="#FFD700"
-            stroke-width="5"
-            stroke-linecap="round"
-          />
-          <path
-            d="M 60,0 A 60,60 0 0,0 30,-52"
-            fill="none"
-            stroke="#FFD700"
-            stroke-width="5"
-            stroke-linecap="round"
-          />
-          <!-- Arrowhead at the tip -->
-          <polygon points="55,-8 72,0 55,8" fill="#FFD700" />
-          <!-- Outer glow ring -->
-          <circle cx="0" cy="0" r="80" fill="none" stroke="#FFD700" stroke-width="2" opacity="0.2" />
-        </g>
-      {/if}
-
+      <g
+        class="ori-indicator"
+        style="transform: translate({activeTarget.x}px, {activeTarget.y}px) rotate({arrowRotationDeg}deg)"
+      >
+        <!-- Directional arcs sweeping in facing direction -->
+        <path
+          d="M 60,0 A 60,60 0 0,1 30,52"
+          fill="none"
+          stroke="#FFD700"
+          stroke-width="5"
+          stroke-linecap="round"
+        />
+        <path
+          d="M 60,0 A 60,60 0 0,0 30,-52"
+          fill="none"
+          stroke="#FFD700"
+          stroke-width="5"
+          stroke-linecap="round"
+        />
+        <!-- Arrowhead at the tip -->
+        <polygon points="55,-8 72,0 55,8" fill="#FFD700" />
+        <!-- Outer glow ring -->
+        <circle cx="0" cy="0" r="80" fill="none" stroke="#FFD700" stroke-width="2" opacity="0.2" />
+      </g>
     {/if}
 
     <!-- When complete, show both hands at their final positions -->
@@ -911,10 +871,13 @@
     }
   }
 
-  /* Orientation indicator — shared base */
+  /* Orientation ring indicator */
   .ori-indicator {
     pointer-events: none;
     animation: ori-fade 1.2s ease forwards;
+    filter:
+      drop-shadow(0 0 8px #FFD700)
+      drop-shadow(0 0 18px rgba(255, 215, 0, 0.5));
   }
 
   @keyframes ori-fade {
@@ -922,35 +885,6 @@
     8% { opacity: 1; }
     65% { opacity: 1; }
     100% { opacity: 0; }
-  }
-
-  /* Style: Arrow */
-  .ori-arrow {
-    filter:
-      drop-shadow(0 0 6px #FFD700)
-      drop-shadow(0 0 14px #FFD700)
-      drop-shadow(0 0 28px rgba(255, 215, 0, 0.5));
-  }
-
-  /* Style: Beam */
-  .ori-beam {
-    filter:
-      drop-shadow(0 0 8px #FFD700)
-      drop-shadow(0 0 20px rgba(255, 215, 0, 0.6));
-  }
-
-  /* Style: Behind (oversized arrow under prop) */
-  .ori-behind {
-    filter:
-      drop-shadow(0 0 10px #FFD700)
-      drop-shadow(0 0 24px rgba(255, 215, 0, 0.4));
-  }
-
-  /* Style: Ring */
-  .ori-ring {
-    filter:
-      drop-shadow(0 0 8px #FFD700)
-      drop-shadow(0 0 18px rgba(255, 215, 0, 0.5));
   }
 
   /* Reduced motion */
