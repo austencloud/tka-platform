@@ -136,7 +136,7 @@
 							sequence={currentItem}
 							browseViewMode={viewMode}
 							handPathMode={mode === "handPaths"}
-							showWord={true}
+							showWord={false}
 							showStepNumbers={true}
 							showDifficultyLevel={false}
 							showCreatorName={false}
@@ -155,7 +155,11 @@
 			{/key}
 
 			<div class="card-info-row">
-				<span class="card-word">{currentItem.word || currentItem.name || "—"}</span>
+				<span class="card-word">
+					{mode === "soloProps"
+						? `${propColor === "blue" ? "Blue" : "Red"} Prop`
+						: `${propColor === "blue" ? "Blue" : "Red"} Hand`}
+				</span>
 				<span class="card-counter">{poolIndex + 1} / {pool.length}</span>
 			</div>
 		</div>
