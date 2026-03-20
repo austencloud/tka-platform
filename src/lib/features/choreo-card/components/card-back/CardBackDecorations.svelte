@@ -33,57 +33,114 @@
     <path d="M0,130 Q150,190 300,120 Q400,80 500,140 L500,200 Q400,140 300,180 Q150,250 0,180Z" fill="#818cf8" opacity="0.035"/>
 
   {:else if theme === "deepOcean"}
+    <defs>
+      <!-- Gradient for tropical fish body: rainbow bands like the generative version -->
+      <linearGradient id="fish1-body" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.9"/>
+        <stop offset="20%" stop-color="#f97316" stop-opacity="0.7"/>
+        <stop offset="40%" stop-color="#22c55e" stop-opacity="0.6"/>
+        <stop offset="60%" stop-color="#f472b6" stop-opacity="0.5"/>
+        <stop offset="80%" stop-color="#22d3ee" stop-opacity="0.7"/>
+        <stop offset="100%" stop-color="#0891b2" stop-opacity="0.8"/>
+      </linearGradient>
+      <linearGradient id="fish2-body" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#0891b2" stop-opacity="0.8"/>
+        <stop offset="25%" stop-color="#f59e0b" stop-opacity="0.5"/>
+        <stop offset="50%" stop-color="#22d3ee" stop-opacity="0.6"/>
+        <stop offset="75%" stop-color="#10b981" stop-opacity="0.5"/>
+        <stop offset="100%" stop-color="#0891b2" stop-opacity="0.7"/>
+      </linearGradient>
+      <!-- Jellyfish bell glow -->
+      <radialGradient id="jelly-glow" cx="0.5" cy="0.4" r="0.6">
+        <stop offset="0%" stop-color="#e0f2fe" stop-opacity="0.5"/>
+        <stop offset="40%" stop-color="#bae6fd" stop-opacity="0.3"/>
+        <stop offset="70%" stop-color="#7dd3fc" stop-opacity="0.15"/>
+        <stop offset="100%" stop-color="#0c4a6e" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+
     <!-- Light beams from surface -->
-    <path d="M140,0 L100,400 L180,400Z" fill="#22d3ee" opacity="0.035"/>
-    <path d="M310,0 L270,320 L350,320Z" fill="#22d3ee" opacity="0.025"/>
-    <path d="M440,0 L415,250 L465,250Z" fill="#0891b2" opacity="0.02"/>
-    <!-- Fish: proper bezier body shapes -->
-    <!-- Large tropical fish, mid-left — body with dorsal hump, forked tail -->
-    <g transform="translate(80,400) scale(1.8)" opacity="0.12">
-      <path d="M-20,0 C-14,-14 -2,-18 8,-15 C15,-12 19,-6 20,-2 L22,0 L20,3 C19,7 15,14 8,15 C-2,17 -14,12 -20,0Z" fill="#22d3ee"/>
-      <path d="M18,0 L30,-10 Q25,0 30,10Z" fill="#0891b2"/>
-      <path d="M-4,-14 Q1,-22 6,-14" stroke="#0891b2" stroke-width="1" fill="none"/>
-      <circle cx="-12" cy="-4" r="1.8" fill="#001122"/>
+    <path d="M130,0 L90,450 L170,450Z" fill="#22d3ee" opacity="0.03"/>
+    <path d="M300,0 L260,350 L340,350Z" fill="#22d3ee" opacity="0.02"/>
+    <path d="M430,0 L410,280 L460,280Z" fill="#0891b2" opacity="0.015"/>
+
+    <!-- TROPICAL FISH 1 — large, lower right, swimming left -->
+    <!-- Rainbow gradient body with translucent color bands, dorsal fin, forked tail -->
+    <g transform="translate(370,560) scale(-1,1)" opacity="0.18">
+      <!-- Body: plump tropical shape with dorsal hump -->
+      <path d="M-28,0 C-24,-20 -10,-28 4,-26 C16,-22 26,-14 30,-4 L32,0 L30,5 C26,16 16,24 4,26 C-10,27 -24,18 -28,0Z" fill="url(#fish1-body)"/>
+      <!-- Translucent overlay bands for that rainbow shimmer -->
+      <path d="M-20,-8 C-14,-20 0,-26 12,-22 C20,-18 26,-10 28,-4 L28,0 C26,4 22,8 16,10 C6,12 -8,8 -16,2Z" fill="#22d3ee" opacity="0.15"/>
+      <path d="M-10,8 C-4,16 6,20 14,18 C20,16 26,10 28,4 L28,0 C26,-2 24,-4 20,-4 C12,-2 0,4 -10,8Z" fill="#f97316" opacity="0.1"/>
+      <!-- Dorsal fin with rays -->
+      <path d="M-6,-24 Q0,-38 10,-30 Q14,-26 8,-22Z" fill="#22d3ee" opacity="0.4"/>
+      <line x1="-2" y1="-24" x2="4" y2="-32" stroke="#0891b2" stroke-width="0.4" opacity="0.5"/>
+      <line x1="2" y1="-24" x2="7" y2="-31" stroke="#0891b2" stroke-width="0.4" opacity="0.4"/>
+      <line x1="6" y1="-23" x2="9" y2="-29" stroke="#0891b2" stroke-width="0.4" opacity="0.3"/>
+      <!-- Pectoral fin -->
+      <path d="M-8,4 Q-16,14 -10,18 Q-4,16 -4,8Z" fill="#22d3ee" opacity="0.3"/>
+      <line x1="-7" y1="6" x2="-12" y2="14" stroke="#0891b2" stroke-width="0.3" opacity="0.4"/>
+      <line x1="-5" y1="7" x2="-9" y2="15" stroke="#0891b2" stroke-width="0.3" opacity="0.3"/>
+      <!-- Anal fin -->
+      <path d="M12,22 Q16,30 22,26 Q20,22 16,20Z" fill="#10b981" opacity="0.3"/>
+      <!-- Forked tail -->
+      <path d="M28,-2 Q34,-14 40,-18 Q36,-6 34,0 Q36,8 40,20 Q34,16 28,4Z" fill="#0891b2" opacity="0.5"/>
+      <line x1="30" y1="0" x2="37" y2="-14" stroke="#065f82" stroke-width="0.3" opacity="0.5"/>
+      <line x1="30" y1="0" x2="38" y2="-10" stroke="#065f82" stroke-width="0.3" opacity="0.4"/>
+      <line x1="30" y1="1" x2="37" y2="14" stroke="#065f82" stroke-width="0.3" opacity="0.5"/>
+      <line x1="30" y1="1" x2="38" y2="10" stroke="#065f82" stroke-width="0.3" opacity="0.4"/>
+      <!-- Eye: dark pupil with light iris ring -->
+      <circle cx="-18" cy="-6" r="4" fill="#001122" opacity="0.7"/>
+      <circle cx="-18" cy="-6" r="3" fill="#0c4a6e" opacity="0.5"/>
+      <circle cx="-19" cy="-7" r="1" fill="#e0f2fe" opacity="0.6"/>
     </g>
-    <!-- School of small fish, upper right -->
-    <g opacity="0.1">
-      <g transform="translate(360,170) scale(0.9)">
-        <path d="M-12,0 C-8,-8 0,-10 6,-8 C10,-6 12,-2 13,0 C12,2 10,6 6,8 C0,10 -8,8 -12,0Z" fill="#22d3ee"/>
-        <path d="M11,0 L18,-5 Q15,0 18,5Z" fill="#0891b2"/>
-      </g>
-      <g transform="translate(340,195) scale(0.8)">
-        <path d="M-12,0 C-8,-8 0,-10 6,-8 C10,-6 12,-2 13,0 C12,2 10,6 6,8 C0,10 -8,8 -12,0Z" fill="#22d3ee"/>
-        <path d="M11,0 L18,-5 Q15,0 18,5Z" fill="#0891b2"/>
-      </g>
-      <g transform="translate(380,185) scale(0.7)">
-        <path d="M-12,0 C-8,-8 0,-10 6,-8 C10,-6 12,-2 13,0 C12,2 10,6 6,8 C0,10 -8,8 -12,0Z" fill="#22d3ee"/>
-        <path d="M11,0 L18,-5 Q15,0 18,5Z" fill="#0891b2"/>
-      </g>
-      <g transform="translate(355,210) scale(0.75)">
-        <path d="M-12,0 C-8,-8 0,-10 6,-8 C10,-6 12,-2 13,0 C12,2 10,6 6,8 C0,10 -8,8 -12,0Z" fill="#22d3ee"/>
-        <path d="M11,0 L18,-5 Q15,0 18,5Z" fill="#0891b2"/>
-      </g>
+
+    <!-- TROPICAL FISH 2 — smaller, upper area near the word -->
+    <g transform="translate(410,190) scale(0.7)" opacity="0.14">
+      <path d="M-24,0 C-20,-16 -8,-22 4,-20 C14,-17 22,-10 26,-2 L28,0 L26,3 C22,12 14,18 4,20 C-8,21 -20,14 -24,0Z" fill="url(#fish2-body)"/>
+      <path d="M-16,-6 C-10,-16 2,-20 10,-17 C16,-14 22,-8 24,-2 L24,0 C22,2 18,5 12,6 C4,7 -6,4 -12,0Z" fill="#f59e0b" opacity="0.1"/>
+      <!-- Dorsal fin -->
+      <path d="M-4,-18 Q2,-30 10,-24 Q12,-20 6,-17Z" fill="#0891b2" opacity="0.35"/>
+      <line x1="-1" y1="-18" x2="4" y2="-26" stroke="#065f82" stroke-width="0.3" opacity="0.4"/>
+      <line x1="3" y1="-18" x2="7" y2="-25" stroke="#065f82" stroke-width="0.3" opacity="0.3"/>
+      <!-- Pectoral fin -->
+      <path d="M-6,3 Q-12,10 -8,14 Q-2,12 -2,6Z" fill="#22d3ee" opacity="0.25"/>
+      <!-- Forked tail -->
+      <path d="M24,-1 Q30,-12 36,-14 Q32,-4 30,0 Q32,6 36,16 Q30,14 24,3Z" fill="#0891b2" opacity="0.4"/>
+      <!-- Eye -->
+      <circle cx="-14" cy="-4" r="3" fill="#001122" opacity="0.6"/>
+      <circle cx="-14" cy="-4" r="2.2" fill="#0c4a6e" opacity="0.4"/>
+      <circle cx="-15" cy="-5" r="0.8" fill="#e0f2fe" opacity="0.5"/>
     </g>
-    <!-- Large fish swimming left, lower area -->
-    <g transform="translate(400,530) scale(-2.2, 2.2)" opacity="0.09">
-      <path d="M-20,0 C-14,-12 -4,-16 6,-14 C14,-11 18,-5 20,-1 L22,0 L20,2 C18,6 14,13 6,14 C-4,15 -14,10 -20,0Z" fill="#0891b2"/>
-      <path d="M18,0 L28,-9 Q24,0 28,9Z" fill="#065f82"/>
-      <path d="M-2,-13 Q2,-20 7,-13" stroke="#065f82" stroke-width="0.8" fill="none"/>
-      <circle cx="-12" cy="-3" r="1.5" fill="#001122"/>
+
+    <!-- JELLYFISH — translucent bell with glowing interior and flowing tentacles -->
+    <g transform="translate(100,340)" opacity="0.16">
+      <!-- Outer glow -->
+      <ellipse cx="0" cy="0" rx="32" ry="22" fill="url(#jelly-glow)"/>
+      <!-- Bell dome -->
+      <path d="M-22,4 C-22,-12 -12,-20 0,-20 C12,-20 22,-12 22,4 Q16,8 0,8 Q-16,8 -22,4Z" fill="#bae6fd" opacity="0.25"/>
+      <!-- Inner bell highlight -->
+      <path d="M-14,0 C-14,-8 -6,-14 0,-14 C6,-14 14,-8 14,0 Q8,3 0,3 Q-8,3 -14,0Z" fill="#e0f2fe" opacity="0.2"/>
+      <!-- Bell rim -->
+      <path d="M-22,4 Q-16,10 0,10 Q16,10 22,4" stroke="#7dd3fc" stroke-width="0.8" fill="none" opacity="0.3"/>
+      <!-- Tentacles: flowing, varying lengths, slight curves -->
+      <path d="M-16,8 Q-18,30 -14,55 Q-12,65 -16,75" stroke="#bae6fd" stroke-width="0.7" fill="none" opacity="0.2"/>
+      <path d="M-10,9 Q-8,35 -12,60 Q-14,72 -10,82" stroke="#bae6fd" stroke-width="0.6" fill="none" opacity="0.18"/>
+      <path d="M-4,10 Q-2,40 -6,65 Q-8,78 -4,88" stroke="#e0f2fe" stroke-width="0.6" fill="none" opacity="0.15"/>
+      <path d="M2,10 Q4,38 0,62 Q-2,75 2,85" stroke="#e0f2fe" stroke-width="0.6" fill="none" opacity="0.15"/>
+      <path d="M8,9 Q10,35 6,58 Q4,70 8,80" stroke="#bae6fd" stroke-width="0.6" fill="none" opacity="0.18"/>
+      <path d="M14,8 Q16,30 12,52 Q10,62 14,72" stroke="#bae6fd" stroke-width="0.7" fill="none" opacity="0.2"/>
+      <!-- Oral arms: thicker, shorter central tentacles -->
+      <path d="M-6,10 Q-8,28 -4,40" stroke="#7dd3fc" stroke-width="1.2" fill="none" opacity="0.12"/>
+      <path d="M0,10 Q2,30 -2,42" stroke="#7dd3fc" stroke-width="1.2" fill="none" opacity="0.1"/>
+      <path d="M6,10 Q8,26 4,38" stroke="#7dd3fc" stroke-width="1.2" fill="none" opacity="0.12"/>
     </g>
-    <!-- Jellyfish -->
-    <g transform="translate(120,300)" opacity="0.07">
-      <ellipse cx="0" cy="0" rx="18" ry="12" fill="#818cf8"/>
-      <ellipse cx="0" cy="4" rx="14" ry="5" fill="#a5b4fc" opacity="0.5"/>
-      <path d="M-12,10 Q-15,35 -10,50" stroke="#818cf8" stroke-width="0.8" fill="none"/>
-      <path d="M-4,11 Q-2,40 -6,55" stroke="#818cf8" stroke-width="0.8" fill="none"/>
-      <path d="M4,11 Q6,38 2,52" stroke="#818cf8" stroke-width="0.8" fill="none"/>
-      <path d="M12,10 Q14,32 10,48" stroke="#818cf8" stroke-width="0.8" fill="none"/>
-    </g>
+
     <!-- Bubbles -->
-    <circle cx="200" cy="350" r="6" fill="none" stroke="#22d3ee" stroke-width="0.6" opacity="0.08"/>
-    <circle cx="215" cy="325" r="3.5" fill="none" stroke="#22d3ee" stroke-width="0.5" opacity="0.06"/>
-    <circle cx="190" cy="380" r="4.5" fill="none" stroke="#22d3ee" stroke-width="0.5" opacity="0.05"/>
+    <circle cx="150" cy="430" r="5" fill="none" stroke="#22d3ee" stroke-width="0.5" opacity="0.08"/>
+    <circle cx="165" cy="410" r="3" fill="none" stroke="#22d3ee" stroke-width="0.4" opacity="0.06"/>
+    <circle cx="140" cy="455" r="4" fill="none" stroke="#22d3ee" stroke-width="0.4" opacity="0.05"/>
+    <circle cx="380" cy="480" r="3.5" fill="none" stroke="#22d3ee" stroke-width="0.4" opacity="0.05"/>
 
   {:else if theme === "snowfall"}
     <!-- Crystalline 6-pointed snowflakes with side branches -->
