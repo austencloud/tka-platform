@@ -83,13 +83,19 @@ The old `startColumn` logic and `LAYOUT_WITH_START_POSITION` table remain in cod
 
 **This is experimental.** The user will evaluate the visual result and decide whether to keep it.
 
-### Change 2: Print Layout Mode
+### Change 2: Card Layout Mode (physical card printing)
 
-**Affects:** Card designer preview and print/export-for-print pipeline only. Does NOT affect browse gallery, sequence viewer, or standard image export.
+**IMPORTANT: `printMode` vs. `cardMode` distinction.**
+- `printMode` (existing) = light/white background for paper printing. Used by sequence viewer export. The image stays tight — no stretching, no aspect ratio change.
+- `cardMode` (new) = render to 5:7 playing card aspect ratio with spaced header/footer. Used exclusively by the card designer when preparing physical choreo card decks.
+
+These are separate flags. `printMode` does NOT trigger `composeCardImage`. Only `cardMode` does.
+
+**Affects:** Card designer preview and physical card print/export pipeline only. Does NOT affect browse gallery, sequence viewer, standard image export, or printMode exports.
 
 **Current behavior:** The card designer renders the tight image as-is onto the card preview. The image's aspect ratio doesn't match a playing card, leaving a large empty area at the bottom.
 
-**New behavior:** When rendering for physical card printing, the layout is adjusted:
+**New behavior:** When `cardMode` is true, the layout is adjusted:
 - The word/header area pins to the top edge of the playing card
 - The creator/footer area pins to the bottom edge
 - The step grid is centered vertically in the remaining space
