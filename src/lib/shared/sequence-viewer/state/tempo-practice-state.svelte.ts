@@ -1,15 +1,15 @@
 /**
- * Tempo Ramp State (Svelte 5 Runes)
+ * Tempo Practice State (Svelte 5 Runes)
  *
- * Reactive state for tempo ramp training sessions.
- * Wraps the TempoRampOrchestrator with Svelte reactivity
+ * Reactive state for tempo practice training sessions.
+ * Wraps the TempoPracticeOrchestrator with Svelte reactivity
  * and persists config + personal bests to localStorage.
  */
 
-import type { TempoRampConfig, TempoRampProgress } from "../services/contracts/ITempoRampOrchestrator";
+import type { TempoPracticeConfig, TempoPracticeProgress } from "../services/contracts/ITempoPracticeOrchestrator";
 
-const STORAGE_KEY_CONFIG = "tka-ramp-config";
-const STORAGE_KEY_BESTS = "tka-ramp-bests";
+const STORAGE_KEY_CONFIG = "tka-practice-config";
+const STORAGE_KEY_BESTS = "tka-practice-bests";
 
 interface PersonalBest {
   sequenceId: string;
@@ -17,7 +17,7 @@ interface PersonalBest {
   timestamp: number;
 }
 
-function loadConfig(): Partial<TempoRampConfig> {
+function loadConfig(): Partial<TempoPracticeConfig> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_CONFIG);
     if (raw) return JSON.parse(raw);
@@ -27,7 +27,7 @@ function loadConfig(): Partial<TempoRampConfig> {
   return {};
 }
 
-function saveConfig(config: Partial<TempoRampConfig>): void {
+function saveConfig(config: Partial<TempoPracticeConfig>): void {
   try {
     localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(config));
   } catch {
@@ -57,15 +57,15 @@ function saveBests(bests: Map<string, PersonalBest>): void {
 }
 
 /**
- * Create a reactive tempo ramp state instance.
+ * Create a reactive tempo practice state instance.
  * One instance per modal/viewer context.
  */
-export function createTempoRampState() {
+export function createTempoPracticeState() {
   // Persisted user config preferences
-  let userConfig = $state<Partial<TempoRampConfig>>(loadConfig());
+  let userConfig = $state<Partial<TempoPracticeConfig>>(loadConfig());
 
   // Reactive progress (mirrors orchestrator state)
-  let progress = $state<TempoRampProgress>({
+  let progress = $state<TempoPracticeProgress>({
     active: false,
     currentBpm: 0,
     currentRound: 0,
@@ -81,11 +81,11 @@ export function createTempoRampState() {
   // Personal bests
   const bests = loadBests();
 
-  function updateProgress(p: TempoRampProgress) {
+  function updateProgress(p: TempoPracticeProgress) {
     progress = { ...p };
   }
 
-  function updateConfig(config: Partial<TempoRampConfig>) {
+  function updateConfig(config: Partial<TempoPracticeConfig>) {
     userConfig = { ...userConfig, ...config };
     saveConfig(userConfig);
   }
@@ -135,4 +135,4 @@ export function createTempoRampState() {
   };
 }
 
-export type TempoRampState = ReturnType<typeof createTempoRampState>;
+export type TempoPracticeState = ReturnType<typeof createTempoPracticeState>;

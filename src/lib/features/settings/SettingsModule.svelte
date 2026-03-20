@@ -4,7 +4,7 @@
   Uses standard bottom navigation (tabs provided via SETTINGS_TABS)
   Content renders based on navigationState.activeTab
 
-  Tabs: Profile, Props, Background, Visibility, Misc
+  Tabs: Profile, Props, Background, Misc
   Accessed via gear icon in sidebar footer (not in main module list)
 
   Mobile: Swipe left from left edge to exit (matches portal animation direction)
@@ -38,7 +38,6 @@
   import ReleaseNotesTab from "$lib/shared/settings/components/tabs/ReleaseNotesTab.svelte";
   import PropTypeTab from "$lib/shared/settings/components/tabs/PropTypeTab.svelte";
   import BackgroundTab from "$lib/shared/settings/components/tabs/background/BackgroundTab.svelte";
-  import VisibilityTab from "$lib/shared/settings/components/tabs/VisibilityTab.svelte";
   import KeyboardShortcutsTab from "$lib/shared/keyboard/components/settings/KeyboardShortcutsTab.svelte";
   import PreferencesTab from "$lib/shared/settings/components/tabs/PreferencesTab.svelte";
   import LanguageTab from "$lib/shared/settings/components/tabs/LanguageTab.svelte";
@@ -256,8 +255,6 @@
           <PropTypeTab {settings} onUpdate={handleSettingUpdate} />
         {:else if activeTab === "theme"}
           <BackgroundTab {settings} onUpdate={handleSettingUpdate} />
-        {:else if activeTab === "visibility"}
-          <VisibilityTab />
         {:else if activeTab === "keyboard"}
           <KeyboardShortcutsTab />
         {:else if activeTab === "notifications"}

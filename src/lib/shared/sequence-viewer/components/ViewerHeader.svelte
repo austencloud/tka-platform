@@ -19,8 +19,6 @@
     onExitExportMode: () => void;
     onBackToExportTypeSelection: () => void;
     onDarkModeToggle: () => void;
-    /** Callback to open the settings modal */
-    onSettingsOpen?: () => void;
   }
 
   let {
@@ -34,7 +32,6 @@
     onExitExportMode,
     onBackToExportTypeSelection,
     onDarkModeToggle,
-    onSettingsOpen,
   }: Props = $props();
 </script>
 
@@ -57,9 +54,9 @@
         {#if !exportType}
           Export
         {:else if exportType === "animation"}
-          Export Animation
+          Download Animation
         {:else}
-          Export Card
+          Download Card
         {/if}
       </h2>
     </div>
@@ -102,15 +99,7 @@
     {/if}
 
     <div class="header-right">
-      <button
-        type="button"
-        class="header-action-btn"
-        onclick={() => onSettingsOpen?.()}
-        aria-label="Settings"
-        title="Viewer settings"
-      >
-        <i class="fas fa-cog" aria-hidden="true"></i>
-      </button>
+      <!-- Spacer to balance layout -->
     </div>
   </header>
 {/if}
@@ -206,30 +195,6 @@
     color: var(--theme-text, white);
   }
 
-  .header-action-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-width: var(--min-touch-target);
-    min-height: var(--min-touch-target);
-    background: none;
-    border: none;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    cursor: pointer;
-    border-radius: 8px;
-    transition: background 150ms ease, color 150ms ease;
-  }
-
-  .header-action-btn:hover {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text, #ffffff);
-  }
-
-  .header-action-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 2px;
-  }
-
   /* Sequence title in header */
   .sequence-title,
   .mode-title {
@@ -268,8 +233,7 @@
     pointer-events: auto;
   }
 
-  .details-header.landscape .close-button,
-  .details-header.landscape .header-action-btn {
+  .details-header.landscape .close-button {
     min-width: 40px;
     min-height: 40px;
     height: 40px;

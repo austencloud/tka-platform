@@ -1689,7 +1689,7 @@
                     {@render cellContent(startCell, false)}
                   </div>
                   {#if showQRCode}
-                    <div class="pictograph-cell qr-cell">
+                    <div class="pictograph-cell qr-cell" transition:fade|local={{ duration: 200 }}>
                       {#if qrDataUrl}
                         <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" />
                       {/if}
@@ -1743,7 +1743,7 @@
                   {@render cellContent(startCell, false)}
                 </div>
                 {#if showQRCode && qrDataUrl}
-                  <div class="pictograph-cell qr-cell">
+                  <div class="pictograph-cell qr-cell" transition:fade|local={{ duration: 200 }}>
                     <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" />
                   </div>
                 {/if}
@@ -2193,7 +2193,7 @@
   /* Individual pictograph cell */
   .pictograph-cell {
     position: relative;
-    /* Container context for step-number-overlay cqw units */
+    /* Container context for step-number-overlay cqw/cqh units */
     container-type: inline-size;
     aspect-ratio: 1;
     overflow: hidden;

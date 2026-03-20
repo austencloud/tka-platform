@@ -46,9 +46,8 @@
   import ExportImagePanel from "$lib/shared/sequence-viewer/components/ExportImagePanel.svelte";
   import VideoPreviewPanel from "$lib/shared/sequence-viewer/components/VideoPreviewPanel.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import RampProgressIndicator from "$lib/shared/sequence-viewer/components/RampProgressIndicator.svelte";
+  import PracticeProgressIndicator from "$lib/shared/sequence-viewer/components/PracticeProgressIndicator.svelte";
   import RouteViewerHeader from "./RouteViewerHeader.svelte";
-  import ViewerSettingsModal from "$lib/shared/sequence-viewer/components/ViewerSettingsModal.svelte";
   import DeleteConfirmDialog from "$lib/shared/sequence-viewer/components/DeleteConfirmDialog.svelte";
 
   import { getIabBannerVisible, IAB_BANNER_HEIGHT } from "$lib/shared/auth/state/iab-banner-state.svelte";
@@ -109,9 +108,6 @@
   // Page container ref for swipe visual feedback
   let pageContainer: HTMLElement | null = $state(null);
 
-  // Settings modal state
-  let settingsModalOpen = $state(false);
-
   // Delete confirmation state
   let deleteConfirmOpen = $state(false);
   let isDeleting = $state(false);
@@ -141,9 +137,9 @@
   // ============================================================================
 
   onMount(async () => {
-    // Ensure services are initialized (standalone route needs this;
-    // inside the app shell, MainApplication handles it)
-    await initializeAppServices();
+    // Non-blocking: settings sync happens in background.
+    // Don't block the viewer on service initialization.
+    initializeAppServices().catch(() => {});
 
     // Mobile detection
     const checkMobile = () => { isMobile = window.innerWidth < 768; };
@@ -156,7 +152,7 @@
       registerDrawer(drawerId, handleBack);
     }
 
-    // Start sequence loading
+    // Start sequence loading immediately — don't wait for services
     void initializeRoute();
   });
 
@@ -534,12 +530,9 @@
           editingPane={ctx.editingPane}
           isFullscreen={ctx.isFullscreen}
           {isMobile}
-          darkMode={ctx.imgDarkMode}
           returnLabel={handoffData?.returnLabel || "Back"}
           onBack={ctx.onBack}
           onExitEditMode={ctx.exitEditMode}
-          onDarkModeToggle={ctx.handleUnifiedDarkModeToggle}
-          onSettingsOpen={() => (settingsModalOpen = true)}
           sequence={sequence}
         />
 
@@ -592,7 +585,8 @@
                       showStartPos: ctx.exportOptions.imageIncludeStartPosition,
                       showCreatorName: ctx.exportOptions.imageShowCreatorName,
                       showNotes: ctx.exportOptions.imageShowNotes,
-                      showQRCode: true,
+                      showBirthday: ctx.splitPaneImageComposition.showBirthday,
+                      showQRCode: ctx.exportOptions.imageShowQRCode,
                       darkMode: ctx.exportOptions.imageDarkMode,
                       columnCount: ctx.exportOptions.imageColumnCount != null
                         ? ctx.exportOptions.imageColumnCount + (ctx.exportOptions.imageIncludeStartPosition ? 1 : 0)
@@ -676,7 +670,7 @@
               bpm={ctx.bpmLocal}
               isPlaying={ctx.isPlayingLocal}
               isLoggedIn={ctx.isLoggedIn}
-              rampActive={ctx.rampActive}
+              practiceActive={ctx.practiceActive}
               onBpmChange={ctx.handleBpmChange}
               onPlayPause={ctx.handlePlaybackToggle}
               onStepBack={ctx.stepFullBeatBackward}
@@ -687,8 +681,8 @@
               onSave={ctx.handleSave}
               onEdit={ctx.handleEdit}
               onGetApp={ctx.handleGetApp}
-              onRampStart={ctx.handleRampStart}
-              onRampStop={ctx.handleRampStop}
+              onPracticeStart={ctx.handlePracticeStart}
+              onPracticeStop={ctx.handlePracticeStop}
               isOwned={ctx.isOwned}
               onDeleteRequest={() => (deleteConfirmOpen = true)}
               isSaved={ctx.isSaved}
@@ -698,10 +692,10 @@
               onPublish={ctx.handlePublishAction}
               onUnpublish={ctx.handleUnpublishAction}
             />
-            {#if ctx.rampActive}
-              <RampProgressIndicator
-                progress={ctx.rampState.progress}
-                onStop={ctx.handleRampStop}
+            {#if ctx.practiceActive}
+              <PracticeProgressIndicator
+                progress={ctx.practiceState.progress}
+                onStop={ctx.handlePracticeStop}
                 variant="floating"
               />
             {/if}
@@ -729,12 +723,6 @@
     {/snippet}
   </SequenceViewerOrchestrator>
 {/if}
-
-<!-- Settings modal - rendered outside constrained containers so position:fixed works -->
-<ViewerSettingsModal
-  bind:open={settingsModalOpen}
-  onClose={() => (settingsModalOpen = false)}
-/>
 
 <style>
   .sequence-route-page {

@@ -28,7 +28,7 @@
     isLoggedIn: boolean;
     controlsVisible?: boolean;
     landscape?: boolean;
-    rampActive?: boolean;
+    practiceActive?: boolean;
     onBpmChange: (bpm: number) => void;
     onPlayPause: () => void;
     onStepBack: () => void;
@@ -41,8 +41,8 @@
     onGetApp?: () => void;
     onExportVideo?: () => void;
     onExportImage?: () => void;
-    onRampStart?: () => void;
-    onRampStop?: () => void;
+    onPracticeStart?: () => void;
+    onPracticeStop?: () => void;
     isOwned?: boolean;
     onDeleteRequest?: () => void;
     onVideoUpload?: () => void;
@@ -53,6 +53,9 @@
     onFavorite?: () => void;
     onPublish?: () => void;
     onUnpublish?: () => void;
+    onCopyLink?: () => void;
+    onPropsOpen?: () => void;
+    linkCopied?: boolean;
   }
 
   let {
@@ -61,7 +64,7 @@
     isLoggedIn,
     controlsVisible = true,
     landscape = false,
-    rampActive = false,
+    practiceActive = false,
     onBpmChange,
     onPlayPause,
     onStepBack,
@@ -74,8 +77,8 @@
     onGetApp,
     onExportVideo,
     onExportImage,
-    onRampStart,
-    onRampStop,
+    onPracticeStart,
+    onPracticeStop,
     isOwned = false,
     onDeleteRequest,
     onVideoUpload,
@@ -86,6 +89,9 @@
     onFavorite,
     onPublish,
     onUnpublish,
+    onCopyLink,
+    onPropsOpen,
+    linkCopied = false,
   }: Props = $props();
 
   // Landscape BPM popover state
@@ -97,7 +103,7 @@
   //   - Desktop: Full single-row layout with all controls visible
   // Desktop minimum width is calculated from known component sizes:
   //   Transport: 5 buttons (48px) + 4 gaps (8px) = 272px
-  //   Tempo: BPM display + hold buttons + presets + ramp ≈ 400px
+  //   Tempo: BPM display + hold buttons + presets + practice ≈ 400px
   //   Actions: N buttons × ~100px (68px min-width + 32px padding) + gaps
   //   Structural: playback gap (16) + section gap (16) + footer padding (32)
   type FooterLayout = "mid" | "desktop";
@@ -177,9 +183,9 @@
           <TempoControl
             {bpm}
             {onBpmChange}
-            rampActive={rampActive}
-            onRampStart={onRampStart}
-            onRampStop={onRampStop}
+            practiceActive={practiceActive}
+            onPracticeStart={onPracticeStart}
+            onPracticeStop={onPracticeStop}
           />
         </div>
       {/if}
@@ -267,7 +273,7 @@
       {bpm}
       {isPlaying}
       {isLoggedIn}
-      {rampActive}
+      {practiceActive}
       {onBpmChange}
       {onPlayPause}
       {onStepBack}
@@ -278,8 +284,8 @@
       {onSave}
       {onEdit}
       {onGetApp}
-      {onRampStart}
-      {onRampStop}
+      {onPracticeStart}
+      {onPracticeStop}
       {isOwned}
       {onDeleteRequest}
       {onVideoUpload}
@@ -290,6 +296,9 @@
       {onFavorite}
       {onPublish}
       {onUnpublish}
+      {onCopyLink}
+      {onPropsOpen}
+      {linkCopied}
     />
   {:else}
     <!-- Desktop: tempo (shrink) | transport (fixed center) | actions (shrink) -->
@@ -300,9 +309,9 @@
           <TempoControl
             {bpm}
             {onBpmChange}
-            rampActive={rampActive}
-            onRampStart={onRampStart}
-            onRampStop={onRampStop}
+            practiceActive={practiceActive}
+            onPracticeStart={onPracticeStart}
+            onPracticeStop={onPracticeStop}
           />
         </div>
       </div>
@@ -353,6 +362,19 @@
               >
                 <i class="fas fa-heart" aria-hidden="true"></i>
                 <span>{isFavorite ? "Favorited" : "Favorite"}</span>
+              </button>
+            {/if}
+
+            {#if onCopyLink}
+              <button
+                type="button"
+                class="action-btn"
+                class:copied={linkCopied}
+                onclick={onCopyLink}
+                aria-label={linkCopied ? "Link copied" : "Copy shareable link"}
+              >
+                <i class="fas {linkCopied ? 'fa-check' : 'fa-link'}" aria-hidden="true"></i>
+                <span>{linkCopied ? "Copied" : "Copy Link"}</span>
               </button>
             {/if}
 
@@ -784,6 +806,11 @@
 
   .action-btn.favorited:hover {
     background: color-mix(in srgb, var(--semantic-error) 15%, transparent);
+  }
+
+  .action-btn.copied {
+    color: var(--semantic-success, #22c55e);
+    border-color: rgba(34, 197, 94, 0.25);
   }
 
   /* ===========================

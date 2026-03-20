@@ -48,6 +48,7 @@ export interface ImageExportOptions {
   showDifficulty: boolean;
   showCreatorName: boolean;
   showNotes: boolean;
+  showQRCode: boolean;
   darkMode: boolean;
   columnCount: number | null;  // null = auto
 }
@@ -89,6 +90,7 @@ const DEFAULT_IMAGE_OPTIONS: ImageExportOptions = {
   showDifficulty: true,
   showCreatorName: true,
   showNotes: true,
+  showQRCode: true,
   darkMode: true,
   columnCount: null,
 };
@@ -165,6 +167,7 @@ export function createExportOptionsState() {
   let imageShowDifficulty = $state(stored.image.showDifficulty);
   let imageShowCreatorName = $state(stored.image.showCreatorName);
   let imageShowNotes = $state(stored.image.showNotes);
+  let imageShowQRCode = $state(stored.image.showQRCode ?? true);
   let imageDarkMode = $state(stored.image.darkMode);
   let imageColumnCount = $state<number | null>(stored.image.columnCount ?? null);
 
@@ -197,6 +200,7 @@ export function createExportOptionsState() {
         showDifficulty: imageShowDifficulty,
         showCreatorName: imageShowCreatorName,
         showNotes: imageShowNotes,
+        showQRCode: imageShowQRCode,
         darkMode: imageDarkMode,
         columnCount: imageColumnCount,
       },
@@ -227,6 +231,7 @@ export function createExportOptionsState() {
     get imageShowDifficulty() { return imageShowDifficulty; },
     get imageShowCreatorName() { return imageShowCreatorName; },
     get imageShowNotes() { return imageShowNotes; },
+    get imageShowQRCode() { return imageShowQRCode; },
     get imageDarkMode() { return imageDarkMode; },
     get imageColumnCount() { return imageColumnCount; },
 
@@ -307,6 +312,10 @@ export function createExportOptionsState() {
       imageShowNotes = show;
       persist();
     },
+    setImageShowQRCode(show: boolean) {
+      imageShowQRCode = show;
+      persist();
+    },
     setImageDarkMode(dark: boolean) {
       console.log("[ExportOptions] setImageDarkMode called:", dark);
       imageDarkMode = dark;
@@ -351,6 +360,7 @@ export function createExportOptionsState() {
         showDifficulty: imageShowDifficulty,
         showCreatorName: imageShowCreatorName,
         showNotes: imageShowNotes,
+        showQRCode: imageShowQRCode,
         darkMode: imageDarkMode,
         columnCount: imageColumnCount,
       };
@@ -379,6 +389,7 @@ export function createExportOptionsState() {
       imageShowDifficulty = DEFAULT_IMAGE_OPTIONS.showDifficulty;
       imageShowCreatorName = DEFAULT_IMAGE_OPTIONS.showCreatorName;
       imageShowNotes = DEFAULT_IMAGE_OPTIONS.showNotes;
+      imageShowQRCode = DEFAULT_IMAGE_OPTIONS.showQRCode;
       imageDarkMode = DEFAULT_IMAGE_OPTIONS.darkMode;
       imageColumnCount = DEFAULT_IMAGE_OPTIONS.columnCount;
       persist();

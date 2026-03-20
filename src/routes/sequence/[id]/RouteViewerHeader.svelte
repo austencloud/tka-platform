@@ -7,19 +7,16 @@
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { container } from "$lib/shared/di";
+  import { authState } from "$lib/shared/auth/state/authState.svelte";
 
   interface Props {
     editingPane: 'animation' | 'image' | 'video-upload' | null;
     isFullscreen: boolean;
     isMobile: boolean;
-    darkMode: boolean;
     returnLabel: string;
     // Callbacks
     onBack: () => void;
     onExitEditMode: () => void;
-    onDarkModeToggle: () => void;
-    /** Callback to open the settings modal */
-    onSettingsOpen?: () => void;
     /** Full sequence data for generating encoded share URL */
     sequence?: SequenceData | null;
   }
@@ -28,32 +25,27 @@
     editingPane,
     isFullscreen,
     isMobile,
-    darkMode,
     returnLabel,
     onBack,
     onExitEditMode,
-    onDarkModeToggle,
-    onSettingsOpen,
     sequence,
   }: Props = $props();
 
-  let copyLinkFeedback = $state(false);
+  let copyClaudeFeedback = $state(false);
 
-  async function handleCopyLink() {
+  async function handleCopyForClaude() {
     if (!sequence) return;
     try {
-      const shortCodeManager = container.items.shortCodeManager;
-      const { url } = await shortCodeManager.createShortCode(sequence);
-      await navigator.clipboard.writeText(url);
-    } catch {
-      // Fallback to encoded URL if short code creation fails
-      const encoder = container.items.sequenceEncoder;
-      const { url } = encoder.generateViewerURL(sequence, { compress: true });
-      await navigator.clipboard.writeText(url);
+      const copier = container.items.claudeCodeCopier;
+      await copier.copyForClaude(sequence);
+      copyClaudeFeedback = true;
+      setTimeout(() => { copyClaudeFeedback = false; }, 1500);
+    } catch (error) {
+      console.error("[RouteViewerHeader] Copy for Claude failed:", error);
     }
-    copyLinkFeedback = true;
-    setTimeout(() => { copyLinkFeedback = false; }, 1500);
   }
+
+
 </script>
 
 {#if editingPane}
@@ -73,9 +65,9 @@
     <div class="header-center">
       <h2 class="mode-title">
         {#if editingPane === "animation"}
-          Export Animation
+          Download Animation
         {:else if editingPane === "image"}
-          Export Card
+          Download Card
         {:else}
           Upload Video
         {/if}
@@ -116,40 +108,23 @@
       <div class="title-group">
         <h2 class="sequence-title">Sequence Viewer</h2>
         {#if isMobile}
-          <p class="export-hint">Tap either view to export it</p>
+          <p class="export-hint">Tap to download</p>
         {/if}
       </div>
     </div>
 
     <div class="header-right">
-      <button
-        type="button"
-        class="header-action-btn lamp-btn"
-        class:lit={!darkMode}
-        onclick={onDarkModeToggle}
-        aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-        title={darkMode ? "Light mode" : "Dark mode"}
-      >
-        <i class="fas fa-lightbulb" aria-hidden="true"></i>
-      </button>
-      <button
-        type="button"
-        class="header-action-btn"
-        onclick={handleCopyLink}
-        aria-label="Copy link to sequence"
-        title="Copy link"
-      >
-        <i class="fas {copyLinkFeedback ? 'fa-check' : 'fa-link'}" aria-hidden="true"></i>
-      </button>
-      <button
-        type="button"
-        class="header-action-btn"
-        onclick={() => onSettingsOpen?.()}
-        aria-label="Settings"
-        title="Viewer settings"
-      >
-        <i class="fas fa-cog" aria-hidden="true"></i>
-      </button>
+      {#if authState.isAdmin}
+        <button
+          type="button"
+          class="header-action-btn"
+          onclick={handleCopyForClaude}
+          aria-label="Copy sequence data for Claude"
+          title="Copy for Claude"
+        >
+          <i class="fas {copyClaudeFeedback ? 'fa-check' : 'fa-terminal'}" aria-hidden="true"></i>
+        </button>
+      {/if}
     </div>
   </header>
 {/if}
@@ -274,27 +249,6 @@
     outline-offset: 2px;
   }
 
-  /* Lightbulb toggle — unlit (dark mode active) */
-  .lamp-btn {
-    transition: background 150ms ease, color 150ms ease, box-shadow 150ms ease;
-  }
-
-  /* Lit state — light mode active, bulb glows */
-  .lamp-btn.lit {
-    color: #ffd966;
-    background: linear-gradient(145deg, rgba(255, 220, 100, 0.2), rgba(255, 180, 50, 0.1));
-    box-shadow: 0 0 12px rgba(255, 200, 80, 0.25);
-  }
-
-  .lamp-btn.lit i {
-    filter: drop-shadow(0 0 4px rgba(255, 200, 80, 0.7));
-  }
-
-  .lamp-btn.lit:hover {
-    background: linear-gradient(145deg, rgba(255, 220, 100, 0.3), rgba(255, 180, 50, 0.2));
-    box-shadow: 0 0 16px rgba(255, 200, 80, 0.35);
-  }
-
   .title-group {
     display: flex;
     flex-direction: column;
@@ -327,10 +281,6 @@
     .route-header,
     .back-button {
       transition: none !important;
-    }
-
-    .lamp-btn {
-      transition: none;
     }
   }
 </style>

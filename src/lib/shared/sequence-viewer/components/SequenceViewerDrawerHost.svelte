@@ -17,6 +17,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
+  import { fly } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import SequenceViewerOrchestrator from "./SequenceViewerOrchestrator.svelte";
   import {
@@ -29,12 +31,12 @@
   import ExportVideoDrawer from "./ExportVideoDrawer.svelte";
   import ExportImagePanel from "./ExportImagePanel.svelte";
   import VideoPreviewPanel from "./VideoPreviewPanel.svelte";
-  import RampProgressIndicator from "./RampProgressIndicator.svelte";
-  import ViewerSettingsModal from "./ViewerSettingsModal.svelte";
+  import PracticeProgressIndicator from "./PracticeProgressIndicator.svelte";
   import type { ActiveEffect } from "./ExportVideoDrawer.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   // Services
   import { container } from "$lib/shared/di";
+  import { authState } from "$lib/shared/auth/state/authState.svelte";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
@@ -96,10 +98,6 @@
   // Track drawer open state for binding
   let drawerOpen = $state(false);
 
-  // Settings modal state
-  let settingsModalOpen = $state(false);
-  let copyLinkFeedback = $state(false);
-
   // Export sidebar collapse state (desktop only)
   let exportSidebarCollapsed = $state(false);
 
@@ -114,21 +112,19 @@
     }
   });
 
-  async function handleCopyLink() {
+  let copyClaudeFeedback = $state(false);
+
+  async function handleCopyForClaude() {
     const seq = overlay.sequence;
     if (!seq) return;
     try {
-      const shortCodeManager = container.items.shortCodeManager;
-      const { url } = await shortCodeManager.createShortCode(seq);
-      await navigator.clipboard.writeText(url);
-    } catch {
-      // Fallback to encoded URL if short code creation fails
-      const encoder = container.items.sequenceEncoder;
-      const { url } = encoder.generateViewerURL(seq, { compress: true });
-      await navigator.clipboard.writeText(url);
+      const copier = container.items.claudeCodeCopier;
+      await copier.copyForClaude(seq);
+      copyClaudeFeedback = true;
+      setTimeout(() => { copyClaudeFeedback = false; }, 1500);
+    } catch (error) {
+      console.error("[SequenceViewerDrawerHost] Copy for Claude failed:", error);
     }
-    copyLinkFeedback = true;
-    setTimeout(() => { copyLinkFeedback = false; }, 1500);
   }
 
   // Delete confirmation state
@@ -272,7 +268,7 @@
                 </button>
 
                 <div class="drawer-header-title">
-                  {isVideoExportActive ? "Export Animation" : isImageExportActive ? "Export Card" : "Upload Video"}
+                  {isVideoExportActive ? "Download Animation" : isImageExportActive ? "Download Card" : "Upload Video"}
                 </div>
 
                 <div class="drawer-header-actions">
@@ -328,39 +324,22 @@
                       </span>
                     </button>
                   {:else}
-                    <div class="export-hint">Tap either view to export it</div>
+                    <div class="export-hint">Tap to download</div>
                   {/if}
                 </div>
 
                 <div class="drawer-header-actions">
-                  <button
-                    type="button"
-                    class="header-action-btn lamp-btn"
-                    class:lit={!ctx.imgDarkMode}
-                    onclick={ctx.handleUnifiedDarkModeToggle}
-                    aria-label={ctx.imgDarkMode ? "Switch to light mode" : "Switch to dark mode"}
-                    title={ctx.imgDarkMode ? "Light mode" : "Dark mode"}
-                  >
-                    <i class="fas fa-lightbulb" aria-hidden="true"></i>
-                  </button>
-                  <button
-                    type="button"
-                    class="header-action-btn"
-                    onclick={handleCopyLink}
-                    aria-label="Copy link to sequence"
-                    title="Copy link"
-                  >
-                    <i class="fas {copyLinkFeedback ? 'fa-check' : 'fa-link'}" aria-hidden="true"></i>
-                  </button>
-                  <button
-                    type="button"
-                    class="header-action-btn"
-                    onclick={() => (settingsModalOpen = true)}
-                    aria-label="Settings"
-                    title="Viewer settings"
-                  >
-                    <i class="fas fa-cog" aria-hidden="true"></i>
-                  </button>
+                  {#if authState.isAdmin}
+                    <button
+                      type="button"
+                      class="header-action-btn"
+                      onclick={handleCopyForClaude}
+                      aria-label="Copy sequence data for Claude"
+                      title="Copy for Claude"
+                    >
+                      <i class="fas {copyClaudeFeedback ? 'fa-check' : 'fa-terminal'}" aria-hidden="true"></i>
+                    </button>
+                  {/if}
                 </div>
               {/if}
             </header>
@@ -387,7 +366,8 @@
                           showStartPos: ctx.exportOptions.imageIncludeStartPosition,
                           showCreatorName: ctx.exportOptions.imageShowCreatorName,
                           showNotes: ctx.exportOptions.imageShowNotes,
-                          showQRCode: true,
+                          showBirthday: ctx.splitPaneImageComposition.showBirthday,
+                          showQRCode: ctx.exportOptions.imageShowQRCode,
                           darkMode: ctx.exportOptions.imageDarkMode,
                           columnCount: ctx.exportOptions.imageColumnCount,
                           forceContain: true,
@@ -448,12 +428,12 @@
                             onEffectToggle={handleExportEffectToggle}
                           />
                         {/if}
-                      {:else if isImageExportActive}
+                      {:else if isImageExportActive && !isMobileWidth}
                         <ExportImagePanel
                           exportOptions={ctx.exportOptions}
                           isExporting={ctx.isExporting}
                           beatCount={ctx.effectiveSequence?.steps?.length ?? 0}
-                          layout={isMobileWidth ? "bottom" : "sidebar"}
+                          layout="sidebar"
                           onExport={ctx.handleExport}
                           onClose={ctx.exitEditMode}
                         />
@@ -491,9 +471,9 @@
                 onGetApp={ctx.handleGetApp}
                 onExportVideo={() => ctx.enterEditMode('animation')}
                 onExportImage={() => ctx.enterEditMode('image')}
-                rampActive={ctx.rampActive}
-                onRampStart={ctx.handleRampStart}
-                onRampStop={ctx.handleRampStop}
+                practiceActive={ctx.practiceActive}
+                onPracticeStart={ctx.handlePracticeStart}
+                onPracticeStop={ctx.handlePracticeStop}
                 isOwned={ctx.isOwned}
                 onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
                 onDeleteRequest={() => (deleteConfirmOpen = true)}
@@ -506,11 +486,29 @@
                 onUnpublish={ctx.handleUnpublishAction}
               />
             </div>
+
+            <!-- Export bottom bar: absolutely positioned at bottom, slides up from below -->
+            {#if isMobileWidth && isImageExportActive && ctx.effectiveSequence}
+              <div
+                class="export-footer-overlay"
+                in:fly={{ y: 80, duration: 250, easing: cubicOut }}
+                out:fly={{ y: 80, duration: 200, easing: cubicOut }}
+              >
+                <ExportImagePanel
+                  exportOptions={ctx.exportOptions}
+                  isExporting={ctx.isExporting}
+                  beatCount={ctx.effectiveSequence.steps?.length ?? 0}
+                  layout="bottom"
+                  onExport={ctx.handleExport}
+                  onClose={ctx.exitEditMode}
+                />
+              </div>
+            {/if}
           </div>
-          {#if ctx.rampActive}
-            <RampProgressIndicator
-              progress={ctx.rampState.progress}
-              onStop={ctx.handleRampStop}
+          {#if ctx.practiceActive}
+            <PracticeProgressIndicator
+              progress={ctx.practiceState.progress}
+              onStop={ctx.handlePracticeStop}
               variant="floating"
             />
           {/if}
@@ -538,12 +536,6 @@
     </SequenceViewerOrchestrator>
   {/if}
 </Drawer>
-
-<!-- Settings modal - rendered outside the viewer drawer so position:fixed works -->
-<ViewerSettingsModal
-  bind:open={settingsModalOpen}
-  onClose={() => (settingsModalOpen = false)}
-/>
 
 <style>
   .drawer-viewer-container {
@@ -713,27 +705,6 @@
     outline-offset: 2px;
   }
 
-  /* Lightbulb toggle — unlit (dark mode active) */
-  .lamp-btn {
-    transition: background 150ms ease, color 150ms ease, box-shadow 150ms ease;
-  }
-
-  /* Lit state — light mode active, bulb glows */
-  .lamp-btn.lit {
-    color: #ffd966;
-    background: linear-gradient(145deg, rgba(255, 220, 100, 0.2), rgba(255, 180, 50, 0.1));
-    box-shadow: 0 0 12px rgba(255, 200, 80, 0.25);
-  }
-
-  .lamp-btn.lit i {
-    filter: drop-shadow(0 0 4px rgba(255, 200, 80, 0.7));
-  }
-
-  .lamp-btn.lit:hover {
-    background: linear-gradient(145deg, rgba(255, 220, 100, 0.3), rgba(255, 180, 50, 0.2));
-    box-shadow: 0 0 16px rgba(255, 200, 80, 0.35);
-  }
-
   /* Main area wraps body + footer in a flex column.
      Body fills remaining space; footer is a normal flex child at the bottom. */
   .drawer-main {
@@ -742,6 +713,7 @@
     flex: 1;
     min-height: 0;
     overflow: hidden;
+    position: relative;
   }
 
   /* Landscape: footer is a side column, collapses horizontally */
@@ -867,6 +839,16 @@
     }
   }
 
+  /* Export footer overlay — absolutely positioned at bottom of drawer-main,
+     overlays the footer area so the export bar rises up from below */
+  .export-footer-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 3;
+  }
+
   /* Footer — uses CSS grid row collapse for smooth height animation.
      grid-template-rows: 1fr → 0fr smoothly collapses the footer to zero height
      while the flex body above grows to fill the freed space. */
@@ -874,7 +856,8 @@
     display: grid;
     grid-template-rows: 1fr;
     transition: grid-template-rows 250ms cubic-bezier(0.2, 0, 0, 1),
-                opacity 250ms cubic-bezier(0.2, 0, 0, 1);
+                opacity 200ms cubic-bezier(0.2, 0, 0, 1),
+                transform 250ms cubic-bezier(0.2, 0, 0, 1);
   }
 
   .footer-collapse > :global(*) {
@@ -884,11 +867,11 @@
   .footer-collapse.collapsed {
     grid-template-rows: 0fr;
     opacity: 0;
+    transform: translateY(30px);
     pointer-events: none;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .lamp-btn,
     .viewer-and-export {
       transition: none;
     }

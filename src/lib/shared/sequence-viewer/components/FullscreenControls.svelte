@@ -65,7 +65,7 @@
         {bpm}
         onBpmChange={onBpmChange}
         showPresets={false}
-        showRamp={false}
+        showPractice={false}
       />
     </div>
   {/if}

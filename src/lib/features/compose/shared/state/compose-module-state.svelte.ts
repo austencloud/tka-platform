@@ -25,7 +25,7 @@ export type ComposeTab = "arrange" | "browse" | "timeline";
 /** @deprecated Use ComposeTab instead */
 export type AnimateTab = ComposeTab;
 
-// Re-export AnimationMode for backwards compatibility
+// Re-Download AnimationMode for backwards compatibility
 export type ComposeMode = AnimationMode;
 /** @deprecated Use ComposeMode instead */
 export type AnimateMode = ComposeMode;

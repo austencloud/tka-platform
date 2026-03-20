@@ -29,6 +29,9 @@ export interface ImageCompositionSettings {
   showBirthday: boolean; // Bottom-right: birthday date
   customNotesText: string; // Custom text for notes (default: "Created using TKA Scribe")
 
+  // QR code in empty cell under start position
+  showQRCode: boolean;
+
   // Backwards compatibility - computed from granular controls (always defined in getSettings())
   addUserInfo: boolean; // True if any footer element is shown
 }
@@ -48,6 +51,9 @@ const DEFAULT_SETTINGS: ImageCompositionSettings = {
   showNotes: true,
   showBirthday: true,
   customNotesText: "Created using TKA Scribe",
+
+  // QR code - shown by default in the empty cell under start position
+  showQRCode: true,
 
   // Computed: true when any footer element is shown
   addUserInfo: true,
@@ -206,6 +212,10 @@ class ImageCompositionStateManager {
     return this.settings.customNotesText;
   }
 
+  get showQRCode(): boolean {
+    return this.settings.showQRCode;
+  }
+
   // Get all settings (for passing to share service)
   getSettings(): ImageCompositionSettings {
     return {
@@ -267,6 +277,12 @@ class ImageCompositionStateManager {
 
   setShowBirthday(value: boolean): void {
     this.settings.showBirthday = value;
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  setShowQRCode(value: boolean): void {
+    this.settings.showQRCode = value;
     this.saveToStorage();
     this.notifyObservers();
   }

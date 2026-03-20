@@ -225,7 +225,7 @@
           showCreatorName={imageComposition.showCreatorName}
           showNotes={imageComposition.showNotes}
           showQRCode={imageComposition.showQRCode}
-          showBirthday={true}
+          showBirthday={imageComposition.showBirthday}
           showLoopGlyph={true}
           darkMode={imageComposition.darkMode}
           columnCount={imageComposition.columnCount}

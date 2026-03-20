@@ -3,14 +3,14 @@
 
   Compact BPM control replacing BpmChips.
 
-  Desktop: [ - ]  60 BPM  [ + ]   [ Slow ] [ Med ] [ Fast ]   [ Ramp ]
-  Mobile:  [ - ]  60 BPM  [ + ]   [ Ramp ]
+  Desktop: [ - ]  60 BPM  [ + ]   [ Slow ] [ Med ] [ Fast ]   [ Practice ]
+  Mobile:  [ - ]  60 BPM  [ + ]   [ Practice ]
 
   Features:
   - +/- buttons with hold-to-repeat (accelerating)
   - Tappable BPM display for tap-tempo
   - Semantic presets (Slow/Med/Fast) hidden on mobile
-  - Ramp button to start progressive tempo training
+  - Practice button to start progressive tempo training
   - BPM intensity color coding
 -->
 <script lang="ts">
@@ -36,20 +36,20 @@
     bpm: number;
     onBpmChange: (bpm: number) => void;
     showPresets?: boolean;
-    showRamp?: boolean;
-    rampActive?: boolean;
-    onRampStart?: () => void;
-    onRampStop?: () => void;
+    showPractice?: boolean;
+    practiceActive?: boolean;
+    onPracticeStart?: () => void;
+    onPracticeStop?: () => void;
   }
 
   let {
     bpm,
     onBpmChange,
     showPresets = true,
-    showRamp = true,
-    rampActive = false,
-    onRampStart,
-    onRampStop,
+    showPractice = true,
+    practiceActive = false,
+    onPracticeStart,
+    onPracticeStop,
   }: Props = $props();
 
   // Tap tempo state
@@ -160,11 +160,11 @@
     onBpmChange(presetBpm);
   }
 
-  function handleRampClick() {
-    if (rampActive) {
-      onRampStop?.();
+  function handlePracticeClick() {
+    if (practiceActive) {
+      onPracticeStop?.();
     } else {
-      onRampStart?.();
+      onPracticeStart?.();
     }
   }
 
@@ -236,17 +236,17 @@
     </div>
   {/if}
 
-  <!-- Ramp button -->
-  {#if showRamp}
+  <!-- Practice button -->
+  {#if showPractice}
     <button
-      class="ramp-btn"
-      class:active={rampActive}
-      onclick={handleRampClick}
+      class="practice-btn"
+      class:active={practiceActive}
+      onclick={handlePracticeClick}
       type="button"
-      aria-label={rampActive ? "Stop ramp training" : "Start ramp training"}
+      aria-label={practiceActive ? "Stop practice training" : "Start practice training"}
     >
-      <i class="fas {rampActive ? 'fa-stop' : 'fa-signal'}" aria-hidden="true"></i>
-      <span>{rampActive ? "Stop" : "Ramp"}</span>
+      <i class="fas {practiceActive ? 'fa-stop' : 'fa-signal'}" aria-hidden="true"></i>
+      <span>{practiceActive ? "Stop" : "Practice"}</span>
     </button>
   {/if}
 </div>
@@ -427,10 +427,10 @@
   }
 
   /* ===========================
-     RAMP BUTTON
+     PRACTICE BUTTON
      =========================== */
 
-  .ramp-btn {
+  .practice-btn {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -451,43 +451,43 @@
     white-space: nowrap;
   }
 
-  .ramp-btn.active {
+  .practice-btn.active {
     background: rgba(239, 68, 68, 0.15);
     border-color: rgba(239, 68, 68, 0.4);
     color: #f87171;
     box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
-    animation: ramp-pulse 2s ease-in-out infinite;
+    animation: practice-pulse 2s ease-in-out infinite;
   }
 
-  @keyframes ramp-pulse {
+  @keyframes practice-pulse {
     0%, 100% { box-shadow: 0 0 12px rgba(239, 68, 68, 0.2); }
     50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.35); }
   }
 
   @media (hover: hover) and (pointer: fine) {
-    .ramp-btn:hover:not(.active) {
+    .practice-btn:hover:not(.active) {
       background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
       border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
       color: var(--theme-text, white);
       transform: translateY(-1px);
     }
 
-    .ramp-btn.active:hover {
+    .practice-btn.active:hover {
       background: rgba(239, 68, 68, 0.2);
       border-color: rgba(239, 68, 68, 0.5);
     }
   }
 
-  .ramp-btn:active:not(:disabled) {
+  .practice-btn:active:not(:disabled) {
     transform: scale(0.97);
   }
 
-  .ramp-btn:focus-visible {
+  .practice-btn:focus-visible {
     outline: 2px solid var(--theme-accent, #6366f1);
     outline-offset: 2px;
   }
 
-  .ramp-btn i {
+  .practice-btn i {
     font-size: 14px;
   }
 
@@ -514,7 +514,7 @@
     .adjust-btn,
     .bpm-display,
     .preset-btn,
-    .ramp-btn {
+    .practice-btn {
       transition: none;
       animation: none;
     }
@@ -525,8 +525,8 @@
     .bpm-display:active,
     .preset-btn:hover,
     .preset-btn:active,
-    .ramp-btn:hover,
-    .ramp-btn:active {
+    .practice-btn:hover,
+    .practice-btn:active {
       transform: none;
     }
   }

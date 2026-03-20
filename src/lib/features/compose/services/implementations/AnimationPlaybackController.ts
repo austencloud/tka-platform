@@ -47,7 +47,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
   // Adds a 1-beat pause at the end position so the user can see the final state
   private endPositionHoldDuration: number = 0;
 
-  // Loop completion callback (used by tempo ramp training)
+  // Loop completion callback (used by tempo practice training)
   private loopCompleteCallback: (() => void) | null = null;
 
   constructor(
@@ -520,7 +520,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     const animationEndStep = this.state.totalSteps + 1;
     if (nextStep > animationEndStep) {
       if (this.state.shouldLoop) {
-        // Notify loop completion listener (used by tempo ramp training)
+        // Notify loop completion listener (used by tempo practice training)
         this.loopCompleteCallback?.();
 
         // Loop back to start without leaving "playing" state
@@ -603,7 +603,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
         // Mark that we've completed the first loop
         this.isFirstLoop = false;
 
-        // Notify loop completion listener (used by tempo ramp training)
+        // Notify loop completion listener (used by tempo practice training)
         this.loopCompleteCallback?.();
 
         // For seamlessly loopable sequences: skip start position on subsequent loops

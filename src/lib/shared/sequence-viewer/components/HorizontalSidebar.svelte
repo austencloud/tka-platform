@@ -91,7 +91,7 @@
 	{:else}
 		<!-- Standalone mode: simplified BPM + visual controls -->
 		<div class="sidebar-section standalone-controls">
-			<TempoControl {bpm} {onBpmChange} showRamp={false} />
+			<TempoControl {bpm} {onBpmChange} showPractice={false} />
 		</div>
 		<div class="sidebar-section">
 			<VisualPane propType={null} bluePropType={null} redPropType={null} />

@@ -1,16 +1,16 @@
 <!--
-  RampProgressIndicator.svelte
+  PracticeProgressIndicator.svelte
 
-  Shows ramp training progress inline (desktop) or as a floating pill (mobile).
+  Shows practice training progress inline (desktop) or as a floating pill (mobile).
 
   Desktop: 60 BPM  |  Round 3/5  |  [====-----]  |  [Stop]
   Mobile:  60 BPM  Round 3/5  [Stop]  + progress bar below
 -->
 <script lang="ts">
-  import type { TempoRampProgress } from "../services/contracts/ITempoRampOrchestrator";
+  import type { TempoPracticeProgress } from "../services/contracts/ITempoPracticeOrchestrator";
 
   interface Props {
-    progress: TempoRampProgress;
+    progress: TempoPracticeProgress;
     onStop: () => void;
     variant?: "inline" | "floating";
   }
@@ -37,46 +37,46 @@
 </script>
 
 <div
-  class="ramp-progress"
+  class="practice-progress"
   class:floating={variant === "floating"}
   role="status"
   aria-live="polite"
-  aria-label="Ramp training progress: {progress.currentBpm} BPM, round {progress.currentRound} of {progress.roundsPerLevel}"
+  aria-label="Practice training progress: {progress.currentBpm} BPM, round {progress.currentRound} of {progress.roundsPerLevel}"
 >
-  <div class="ramp-info">
-    <span class="ramp-bpm" style="color: {bpmColor}">
+  <div class="practice-info">
+    <span class="practice-bpm" style="color: {bpmColor}">
       {progress.currentBpm}
-      <span class="ramp-bpm-label">BPM</span>
+      <span class="practice-bpm-label">BPM</span>
     </span>
 
-    <span class="ramp-divider" aria-hidden="true"></span>
+    <span class="practice-divider" aria-hidden="true"></span>
 
-    <span class="ramp-round">
+    <span class="practice-round">
       Round {progress.currentRound}/{progress.roundsPerLevel}
     </span>
 
     {#if variant === "inline"}
-      <span class="ramp-divider" aria-hidden="true"></span>
+      <span class="practice-divider" aria-hidden="true"></span>
 
       <div
-        class="ramp-bar"
+        class="practice-bar"
         role="progressbar"
         aria-valuenow={levelProgress}
         aria-valuemin={0}
         aria-valuemax={100}
       >
         <div
-          class="ramp-bar-fill"
+          class="practice-bar-fill"
           style="width: {levelProgress}%; background: {bpmColor}"
         ></div>
       </div>
     {/if}
 
     <button
-      class="ramp-stop-btn"
+      class="practice-stop-btn"
       onclick={onStop}
       type="button"
-      aria-label="Stop ramp training"
+      aria-label="Stop practice training"
     >
       <i class="fas fa-stop" aria-hidden="true"></i>
       {#if variant === "inline"}
@@ -87,14 +87,14 @@
 
   {#if variant === "floating"}
     <div
-      class="ramp-bar floating-bar"
+      class="practice-bar floating-bar"
       role="progressbar"
       aria-valuenow={levelProgress}
       aria-valuemin={0}
       aria-valuemax={100}
     >
       <div
-        class="ramp-bar-fill"
+        class="practice-bar-fill"
         style="width: {levelProgress}%; background: {bpmColor}"
       ></div>
     </div>
@@ -102,13 +102,13 @@
 </div>
 
 <style>
-  .ramp-progress {
+  .practice-progress {
     display: flex;
     flex-direction: column;
     gap: 6px;
   }
 
-  .ramp-progress.floating {
+  .practice-progress.floating {
     position: absolute;
     bottom: 100%;
     left: 50%;
@@ -121,10 +121,10 @@
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
     min-width: 240px;
     z-index: 10;
-    animation: ramp-slide-in 200ms cubic-bezier(0.32, 0.72, 0, 1);
+    animation: practice-slide-in 200ms cubic-bezier(0.32, 0.72, 0, 1);
   }
 
-  @keyframes ramp-slide-in {
+  @keyframes practice-slide-in {
     from {
       opacity: 0;
       transform: translateX(-50%) translateY(8px);
@@ -135,13 +135,13 @@
     }
   }
 
-  .ramp-info {
+  .practice-info {
     display: flex;
     align-items: center;
     gap: 10px;
   }
 
-  .ramp-bpm {
+  .practice-bpm {
     font-size: 1.1rem;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
@@ -149,7 +149,7 @@
     white-space: nowrap;
   }
 
-  .ramp-bpm-label {
+  .practice-bpm-label {
     font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     opacity: 0.6;
@@ -157,14 +157,14 @@
     margin-left: 2px;
   }
 
-  .ramp-divider {
+  .practice-divider {
     width: 1px;
     height: 20px;
     background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
     flex-shrink: 0;
   }
 
-  .ramp-round {
+  .practice-round {
     font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
@@ -176,7 +176,7 @@
      PROGRESS BAR
      =========================== */
 
-  .ramp-bar {
+  .practice-bar {
     flex: 1;
     min-width: 60px;
     height: 6px;
@@ -185,12 +185,12 @@
     overflow: hidden;
   }
 
-  .ramp-bar.floating-bar {
+  .practice-bar.floating-bar {
     height: 4px;
     border-radius: 2px;
   }
 
-  .ramp-bar-fill {
+  .practice-bar-fill {
     height: 100%;
     border-radius: inherit;
     transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -200,7 +200,7 @@
      STOP BUTTON
      =========================== */
 
-  .ramp-stop-btn {
+  .practice-stop-btn {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -220,23 +220,23 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  .ramp-stop-btn i {
+  .practice-stop-btn i {
     font-size: 12px;
   }
 
   @media (hover: hover) and (pointer: fine) {
-    .ramp-stop-btn:hover {
+    .practice-stop-btn:hover {
       background: rgba(239, 68, 68, 0.2);
       border-color: rgba(239, 68, 68, 0.5);
       color: #fca5a5;
     }
   }
 
-  .ramp-stop-btn:active {
+  .practice-stop-btn:active {
     transform: scale(0.95);
   }
 
-  .ramp-stop-btn:focus-visible {
+  .practice-stop-btn:focus-visible {
     outline: 2px solid var(--semantic-error, #ef4444);
     outline-offset: 2px;
   }
@@ -246,19 +246,19 @@
      =========================== */
 
   @media (prefers-reduced-motion: reduce) {
-    .ramp-progress.floating {
+    .practice-progress.floating {
       animation: none;
     }
 
-    .ramp-bar-fill {
+    .practice-bar-fill {
       transition: none;
     }
 
-    .ramp-stop-btn {
+    .practice-stop-btn {
       transition: none;
     }
 
-    .ramp-stop-btn:active {
+    .practice-stop-btn:active {
       transform: none;
     }
   }
