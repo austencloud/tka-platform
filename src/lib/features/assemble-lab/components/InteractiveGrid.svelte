@@ -17,6 +17,7 @@
   import {
     MotionColor,
     Orientation,
+    RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import GridSvg from "$lib/shared/pictograph/grid/components/GridSvg.svelte";
   import type { GridHitTarget } from "../services/contracts/IGridHitTargetCalculator";
@@ -247,6 +248,44 @@
       }
 
       await Promise.all(animations);
+    });
+  });
+
+  // Register undo animation callback — plays reverse animation before state changes
+  $effect(() => {
+    builderState.setUndoAnimationCallback(async (step: BuilderStep, wasPlacement: boolean) => {
+      if (!activePropGroupRef) return;
+
+      if (wasPlacement) {
+        // Scale-out: reverse of the scale-in animation
+        const anim = activePropGroupRef.animate(
+          [
+            { transform: activePropGroupRef.style.transform, opacity: 1 },
+            { transform: activePropGroupRef.style.transform.replace(/scale\([^)]*\)/, '') + ' scale(0)', opacity: 0 },
+          ],
+          { duration: 200, easing: "cubic-bezier(0.4, 0, 1, 1)", fill: "forwards" },
+        );
+        await new Promise<void>((resolve) => { anim.onfinish = () => resolve(); });
+        return;
+      }
+
+      // Reverse animation: animate prop from end back to start
+      // Flip the rotation direction so the prop rewinds along the same arc
+      const reverseDirection =
+        step.rotationDirection === RotationDirection.CLOCKWISE
+          ? RotationDirection.COUNTER_CLOCKWISE
+          : RotationDirection.CLOCKWISE;
+
+      await animator.animate({
+        element: activePropGroupRef,
+        startPosition: step.endPosition,
+        endPosition: step.startPosition,
+        rotationDirection: reverseDirection,
+        turnCount: step.turnCount,
+        startOrientation: step.endOrientation,
+        durationMs: ANIMATION_DURATION_MS,
+        propCenter: activePropCenter,
+      });
     });
   });
 
@@ -508,17 +547,73 @@
       </g>
     {/if}
 
-    <!-- Layer 4.5: Orientation direction arrow (sibling of prop group to avoid
+    <!-- Layer 4.5: Orientation indicator (sibling of prop group to avoid
          compounding parent rotation and interfering with CSS transition) -->
     {#if activeTarget && builderState.showOrientationArrow && builderState.phase !== "complete"}
-      <g
-        class="orientation-arrow"
-        style="transform: translate({activeTarget.x}px, {activeTarget.y}px) rotate({arrowRotationDeg}deg)"
-      >
-        <!-- Start offset from center so arrow clears the prop body -->
-        <line x1="30" y1="0" x2="110" y2="0" stroke="currentColor" stroke-width="5" stroke-linecap="round" />
-        <polygon points="110,-10 130,0 110,10" fill="currentColor" />
-      </g>
+
+      {#if builderState.arrowStyle === "arrow"}
+        <!-- Style: Arrow — offset gold arrow pointing in facing direction -->
+        <g
+          class="ori-indicator ori-arrow"
+          style="transform: translate({activeTarget.x}px, {activeTarget.y}px) rotate({arrowRotationDeg}deg)"
+        >
+          <line x1="30" y1="0" x2="110" y2="0" stroke="#FFD700" stroke-width="5" stroke-linecap="round" />
+          <polygon points="110,-10 130,0 110,10" fill="#FFD700" />
+        </g>
+      {/if}
+
+      {#if builderState.arrowStyle === "beam"}
+        <!-- Style: Beam — bright gold line shooting from prop to grid edge -->
+        <g
+          class="ori-indicator ori-beam"
+          style="transform: translate({activeTarget.x}px, {activeTarget.y}px) rotate({arrowRotationDeg}deg)"
+        >
+          <line x1="20" y1="0" x2="400" y2="0" stroke="#FFD700" stroke-width="3" stroke-linecap="round" />
+          <line x1="20" y1="0" x2="160" y2="0" stroke="#FFD700" stroke-width="6" stroke-linecap="round" opacity="0.7" />
+          <polygon points="130,-8 148,0 130,8" fill="#FFD700" />
+        </g>
+      {/if}
+
+      {#if builderState.arrowStyle === "behind"}
+        <!-- Style: Behind — oversized arrow rendered below the prop (but above grid) -->
+        <g
+          class="ori-indicator ori-behind"
+          style="transform: translate({activeTarget.x}px, {activeTarget.y}px) rotate({arrowRotationDeg}deg)"
+        >
+          <line x1="-80" y1="0" x2="140" y2="0" stroke="#FFD700" stroke-width="8" stroke-linecap="round" opacity="0.5" />
+          <polygon points="140,-14 170,0 140,14" fill="#FFD700" opacity="0.6" />
+          <circle cx="0" cy="0" r="12" fill="none" stroke="#FFD700" stroke-width="3" opacity="0.4" />
+        </g>
+      {/if}
+
+      {#if builderState.arrowStyle === "ring"}
+        <!-- Style: Ring — arc sweeping in the facing direction -->
+        <g
+          class="ori-indicator ori-ring"
+          style="transform: translate({activeTarget.x}px, {activeTarget.y}px) rotate({arrowRotationDeg}deg)"
+        >
+          <!-- Directional arc (120° sweep in facing direction) -->
+          <path
+            d="M 60,0 A 60,60 0 0,1 30,52"
+            fill="none"
+            stroke="#FFD700"
+            stroke-width="5"
+            stroke-linecap="round"
+          />
+          <path
+            d="M 60,0 A 60,60 0 0,0 30,-52"
+            fill="none"
+            stroke="#FFD700"
+            stroke-width="5"
+            stroke-linecap="round"
+          />
+          <!-- Arrowhead at the tip -->
+          <polygon points="55,-8 72,0 55,8" fill="#FFD700" />
+          <!-- Outer glow ring -->
+          <circle cx="0" cy="0" r="80" fill="none" stroke="#FFD700" stroke-width="2" opacity="0.2" />
+        </g>
+      {/if}
+
     {/if}
 
     <!-- When complete, show both hands at their final positions -->
@@ -816,22 +911,46 @@
     }
   }
 
-  /* Orientation direction arrow */
-  .orientation-arrow {
-    color: var(--theme-accent, #6366f1);
+  /* Orientation indicator — shared base */
+  .ori-indicator {
     pointer-events: none;
-    animation: arrow-fade 1s ease forwards;
-    filter:
-      drop-shadow(0 0 6px currentColor)
-      drop-shadow(0 0 14px currentColor)
-      drop-shadow(0 0 28px currentColor);
+    animation: ori-fade 1.2s ease forwards;
   }
 
-  @keyframes arrow-fade {
+  @keyframes ori-fade {
     0% { opacity: 0; }
-    10% { opacity: 0.9; }
-    70% { opacity: 0.9; }
+    8% { opacity: 1; }
+    65% { opacity: 1; }
     100% { opacity: 0; }
+  }
+
+  /* Style: Arrow */
+  .ori-arrow {
+    filter:
+      drop-shadow(0 0 6px #FFD700)
+      drop-shadow(0 0 14px #FFD700)
+      drop-shadow(0 0 28px rgba(255, 215, 0, 0.5));
+  }
+
+  /* Style: Beam */
+  .ori-beam {
+    filter:
+      drop-shadow(0 0 8px #FFD700)
+      drop-shadow(0 0 20px rgba(255, 215, 0, 0.6));
+  }
+
+  /* Style: Behind (oversized arrow under prop) */
+  .ori-behind {
+    filter:
+      drop-shadow(0 0 10px #FFD700)
+      drop-shadow(0 0 24px rgba(255, 215, 0, 0.4));
+  }
+
+  /* Style: Ring */
+  .ori-ring {
+    filter:
+      drop-shadow(0 0 8px #FFD700)
+      drop-shadow(0 0 18px rgba(255, 215, 0, 0.5));
   }
 
   /* Reduced motion */
@@ -849,7 +968,7 @@
       transition: none;
     }
 
-    .orientation-arrow {
+    .ori-indicator {
       animation: none;
       opacity: 0.7;
     }
