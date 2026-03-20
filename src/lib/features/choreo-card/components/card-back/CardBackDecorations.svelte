@@ -84,14 +84,39 @@
     <ellipse cx="130" cy="460" rx="120" ry="30" fill="#50dcb4" opacity="0.04" filter="url(#aurora-blur)"/>
     <ellipse cx="360" cy="390" rx="100" ry="25" fill="#50dcb4" opacity="0.03" filter="url(#aurora-blur)"/>
 
-    <!-- COMET: bright head with glowing trail, like the actual background -->
-    <g filter="url(#comet-glow)" opacity="0.35">
-      <!-- Trail: tapered line fading behind the head -->
-      <line x1="280" y1="110" x2="380" y2="70" stroke="#e0f2fe" stroke-width="1.5" opacity="0.4"/>
-      <line x1="300" y1="105" x2="380" y2="70" stroke="#bfdbfe" stroke-width="1" opacity="0.3"/>
-      <!-- Head: bright point with glow -->
-      <circle cx="380" cy="70" r="3" fill="#ffffff" opacity="0.9"/>
-      <circle cx="380" cy="70" r="6" fill="#bfdbfe" opacity="0.3"/>
+    <!-- COMET: modeled on the actual CometSystem — nucleus, coma, dual tails, debris -->
+    <!-- Positioned in upper-right empty area, arcing across -->
+    <g transform="translate(410, 105)" opacity="0.45">
+      <defs>
+        <!-- Coma: multi-layer radial glow around nucleus -->
+        <radialGradient id="coma-glow" cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.8"/>
+          <stop offset="25%" stop-color="#e0f2fe" stop-opacity="0.4"/>
+          <stop offset="50%" stop-color="#bfdbfe" stop-opacity="0.15"/>
+          <stop offset="100%" stop-color="#7dd3fc" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <!-- Dust tail: curved, white/yellow, wider, trails behind (toward upper-left) -->
+      <!-- Teardrop shape tapering from nucleus -->
+      <path d="M0,0 Q-30,-8 -70,-5 Q-100,0 -120,8" stroke="#fef3c7" stroke-width="3" fill="none" opacity="0.15" filter="url(#comet-glow)"/>
+      <path d="M0,0 Q-25,-12 -60,-15 Q-90,-10 -115,2" stroke="#fffbeb" stroke-width="5" fill="none" opacity="0.08" filter="url(#comet-glow)"/>
+      <path d="M0,0 Q-20,-4 -50,-2 Q-80,2 -110,10" stroke="#fde68a" stroke-width="2" fill="none" opacity="0.12"/>
+      <!-- Ion tail: straighter, blue, narrower -->
+      <path d="M0,0 Q-35,-15 -80,-22 Q-110,-25 -140,-20" stroke="#7dd3fc" stroke-width="1.5" fill="none" opacity="0.2" filter="url(#comet-glow)"/>
+      <path d="M0,0 Q-30,-18 -70,-28 Q-100,-30 -130,-25" stroke="#bae6fd" stroke-width="0.8" fill="none" opacity="0.12"/>
+      <!-- Debris particles trailing behind -->
+      <circle cx="-25" cy="-6" r="0.8" fill="#ffffff" opacity="0.3"/>
+      <circle cx="-40" cy="-10" r="0.6" fill="#e0f2fe" opacity="0.25"/>
+      <circle cx="-55" cy="-8" r="0.5" fill="#ffffff" opacity="0.2"/>
+      <circle cx="-35" cy="-2" r="0.7" fill="#fef3c7" opacity="0.2"/>
+      <circle cx="-65" cy="-14" r="0.5" fill="#bfdbfe" opacity="0.15"/>
+      <circle cx="-50" cy="0" r="0.6" fill="#ffffff" opacity="0.15"/>
+      <circle cx="-80" cy="-5" r="0.4" fill="#e0f2fe" opacity="0.12"/>
+      <!-- Coma: fuzzy multi-layer glow around nucleus -->
+      <circle cx="0" cy="0" r="12" fill="url(#coma-glow)"/>
+      <!-- Nucleus: bright intense center -->
+      <circle cx="0" cy="0" r="2.5" fill="#ffffff" opacity="0.95"/>
+      <circle cx="0" cy="0" r="1.2" fill="#ffffff"/>
     </g>
 
     <!-- STARS: rich field with color variation matching the actual background -->
@@ -123,6 +148,18 @@
       {@const r = 1.5 + s * 1}
       <circle cx={x} cy={y} r={r * 3} fill={s > 0.5 ? "#c4b5fd" : "#bfdbfe"} opacity="0.06" filter="url(#star-glow)"/>
       <circle cx={x} cy={y} r={r} fill="#ffffff" opacity={0.6 + s * 0.3}/>
+    {/each}
+
+    <!-- Depth-of-field stars: larger, blurred, creating bokeh-like depth -->
+    {#each [
+      { x: 160, y: 130, r: 4, o: 0.06 },
+      { x: 420, y: 420, r: 5, o: 0.05 },
+      { x: 70, y: 520, r: 3.5, o: 0.07 },
+      { x: 340, y: 280, r: 3, o: 0.05 },
+      { x: 460, y: 600, r: 4, o: 0.04 },
+    ] as dof}
+      <circle cx={dof.x} cy={dof.y} r={dof.r * 3} fill="#bfdbfe" opacity={dof.o * 0.4} filter="url(#star-glow)"/>
+      <circle cx={dof.x} cy={dof.y} r={dof.r} fill="#e0f2fe" opacity={dof.o * 2}/>
     {/each}
 
     <!-- Nebula-like soft color patches (very subtle) -->
