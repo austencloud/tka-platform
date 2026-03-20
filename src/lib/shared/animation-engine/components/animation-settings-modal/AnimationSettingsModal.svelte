@@ -1,5 +1,5 @@
 <!--
-  CanvasSettingsModal.svelte - Full-screen canvas settings experience
+  AnimationSettingsModal.svelte - Full-screen animation settings experience
 
   Layout: Canvas preview on left, controls on right.
   Controls: Effect picker (mutually exclusive: None/Fire/LED/Trails) with detail
@@ -163,7 +163,7 @@
     <div class="settings-header" data-animate="1">
       <h2>
         <i class="fas fa-sliders" aria-hidden="true"></i>
-        Canvas Settings
+        Animation Settings
       </h2>
       <button
         class="close-btn"
