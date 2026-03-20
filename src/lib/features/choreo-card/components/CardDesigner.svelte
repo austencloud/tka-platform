@@ -9,6 +9,7 @@
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { BackgroundType } from "@austencloud/backgrounds";
   import { container } from "$lib/shared/di";
   import { onMount, onDestroy } from "svelte";
   import ChoreoCard from "./ChoreoCard.svelte";
@@ -16,6 +17,7 @@
   import InfoCardFront from "./card-back/InfoCardFront.svelte";
   import InfoCardBack from "./card-back/InfoCardBack.svelte";
   import CardDesignerContextMenuHost from "./context-menu/CardDesignerContextMenuHost.svelte";
+  import CardSettingsModal from "./CardSettingsModal.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
@@ -41,10 +43,14 @@
   let displayScale = $state(1.0);
 
   // Show the info/rules card instead of the current sequence
-  let showInfoCard = $state(false);
+  const STORAGE_KEY_INFO_CARD = "choreoCard.designerShowInfoCard";
+  let showInfoCard = $state(
+    typeof window !== "undefined" && localStorage.getItem(STORAGE_KEY_INFO_CARD) === "true"
+  );
   let hapticService: IHapticFeedback | undefined;
   let contextMenuHost: CardDesignerContextMenuHost;
-  let choreoCardRef: ChoreoCard;
+  let choreoCardRef: ChoreoCard | undefined = $state();
+  let cardSettingsOpen = $state(false);
 
   // Visibility state from global managers
   const imageComposition = getImageCompositionManager();
@@ -71,6 +77,7 @@
   const showTKA = $derived.by(() => { void visibilityVersion; return visibilityManager.getGlyphVisibility("tkaGlyph"); });
   const showWord = $derived.by(() => { void compositionVersion; return imageComposition.addWord; });
   const includeStartPosition = $derived.by(() => { void compositionVersion; return imageComposition.includeStartPosition; });
+  const startPositionLayout = $derived.by(() => { void compositionVersion; return imageComposition.startPositionLayout; });
   const showBirthday = $derived.by(() => { void compositionVersion; return imageComposition.showBirthday; });
   const showQRCode = $derived.by(() => { void compositionVersion; return imageComposition.showQRCode; });
 
@@ -115,7 +122,7 @@
   // Theme switcher: updates global background setting
   const currentTheme = $derived(settingsService.settings.backgroundType);
 
-  function handleThemeClick(type: string) {
+  function handleThemeClick(type: BackgroundType) {
     hapticService?.trigger("selection");
     settingsService.updateSetting("backgroundType", type);
   }
@@ -380,7 +387,7 @@
       <button
         class="chip"
         class:selected={showInfoCard}
-        onclick={() => { showInfoCard = !showInfoCard; hapticService?.trigger("selection"); }}
+        onclick={() => { showInfoCard = !showInfoCard; try { localStorage.setItem(STORAGE_KEY_INFO_CARD, String(showInfoCard)); } catch {} hapticService?.trigger("selection"); }}
         aria-pressed={showInfoCard}
         type="button"
       >
@@ -494,7 +501,12 @@
     {/if}
   {/if}
 
-  <CardDesignerContextMenuHost bind:this={contextMenuHost} onRerender={() => choreoCardRef?.rerender()} />
+  <CardDesignerContextMenuHost
+    bind:this={contextMenuHost}
+    onOpenSettings={() => { cardSettingsOpen = true; }}
+    onRerender={() => choreoCardRef?.rerender()}
+  />
+  <CardSettingsModal bind:open={cardSettingsOpen} />
 </div>
 
 <style>
@@ -743,7 +755,7 @@
   }
 
   .back-card-render {
-    /* Fixed size set via inline style; scaled via transform */
+    transform-origin: top left;
   }
 
   /* Empty state */

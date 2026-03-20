@@ -43,6 +43,7 @@
   import VideoPanel from "./video-panel/VideoPanel.svelte";
   import type { ICollaborativeVideoManager } from "$lib/shared/video-collaboration/services/contracts/ICollaborativeVideoManager";
   import ChoreoCardContextMenuHost from "./choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
+  import CardSettingsModal from "$lib/features/choreo-card/components/CardSettingsModal.svelte";
   import {
     openSendSequenceSheet,
     buildSequenceSharePayload,
@@ -131,8 +132,9 @@
   let deleteConfirmOpen = $state(false);
   let isDeleting = $state(false);
 
-  // ChoreoCard context menu
+  // ChoreoCard context menu + settings modal
   let choreoCardMenuHost: ChoreoCardContextMenuHost | undefined = $state();
+  let cardSettingsOpen = $state(false);
 
   // Animation visibility for video export effects
   const animationVisibility = getAnimationVisibilityManager();
@@ -368,6 +370,7 @@
                           showNotes: ctx.exportOptions.imageShowNotes,
                           showBirthday: ctx.splitPaneImageComposition.showBirthday,
                           showQRCode: ctx.exportOptions.imageShowQRCode,
+                          showLoopGlyph: ctx.splitPaneImageComposition.showLoopGlyph,
                           darkMode: ctx.exportOptions.imageDarkMode,
                           columnCount: ctx.exportOptions.imageColumnCount,
                           forceContain: true,
@@ -392,10 +395,12 @@
                   />
                   <ChoreoCardContextMenuHost
                     bind:this={choreoCardMenuHost}
+                    onOpenSettings={() => { cardSettingsOpen = true; }}
                     isExportMode={isImageExportActive}
                     exportOptions={ctx.exportOptions}
                     onSendTo={overlay.sequence ? handleSendTo : undefined}
                   />
+                  <CardSettingsModal bind:open={cardSettingsOpen} />
                   {#if isAnyExportActive}
                     <div class="export-panel-container" class:sidebar={!isMobileWidth && (isVideoExportActive || isVideoUploadActive)}>
                       {#if isVideoExportActive}
