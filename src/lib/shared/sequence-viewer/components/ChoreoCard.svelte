@@ -28,7 +28,6 @@
   import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
   import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
-  import ThumbnailContextMenu from "$lib/shared/components/thumbnail/ThumbnailContextMenu.svelte";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuEntry, ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
   import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
@@ -76,7 +75,9 @@
       const r = s.motions?.red;
       return `${b?.startOrientation ?? ""}${b?.endOrientation ?? ""}${b?.rotationDirection ?? ""}${r?.startOrientation ?? ""}${r?.endOrientation ?? ""}${r?.rotationDirection ?? ""}`;
     }).join("") ?? "";
-    return `${seq.id ?? seq.word ?? "?"}-${stepLetters}-${seq.steps?.length ?? 0}-${opts.size}-${opts.showStepNumbers}-${opts.showNonRadialPoints}-${opts.showTKA}-${opts.showReversals}-${opts.handPathMode ?? false}-${opts.bluePropType ?? ""}-${opts.redPropType ?? ""}-${colCount ?? "auto"}-${isDark ? "dark" : "light"}-d:${durationFingerprint}-m:${motionFingerprint}`;
+    const vm = opts.browseViewMode;
+    const vmKey = vm ? `${vm.subject}-${vm.granularity}-${vm.color}` : "default";
+    return `${seq.id ?? seq.word ?? "?"}-${stepLetters}-${seq.steps?.length ?? 0}-${opts.size}-${opts.showStepNumbers}-${opts.showNonRadialPoints}-${opts.showTKA}-${opts.showReversals}-${opts.handPathMode ?? false}-${opts.bluePropType ?? ""}-${opts.redPropType ?? ""}-${colCount ?? "auto"}-${isDark ? "dark" : "light"}-d:${durationFingerprint}-m:${motionFingerprint}-vm:${vmKey}`;
   }
 
   function storePreviewInCache(key: string, data: CachedPreview): void {
@@ -110,6 +111,8 @@
     showQRCode?: boolean;
     /** Render as hand path visualization (HAND props, float arrows, no TKA) */
     handPathMode?: boolean;
+    /** Browse view mode for solo prop/hand filtering */
+    browseViewMode?: import("$lib/features/browse/shared/domain/BrowseViewMode").BrowseViewMode;
     // Settings
     darkMode?: boolean;
     userName?: string;
@@ -145,6 +148,7 @@
     showLoopGlyph = true,
     showQRCode = false,
     handPathMode = false,
+    browseViewMode,
     darkMode = false,
     userName = "",
     customNotesText = "Created using TKA Scribe",
@@ -241,6 +245,10 @@
   // Explicit calls from renderAllCells() still work; only observer callbacks are blocked.
   let suppressObserverUpdates = false;
   let cellWidth = $state(0);
+  // Tracks previous column count so we can skip flip animation during
+  // start-position toggles (container resize handles the visual transition).
+  let prevEffectiveColumns = $state(0);
+  let suppressFlip = $state(false);
   let hasMixedDurations = $state(false);
   let durationRows = $state<TimelineRow[]>([]);
   /** Max duration units in any single row (including start position), for CSS --col-count */
@@ -422,11 +430,13 @@
   });
 
   // Filtered cells based on includeStartPosition.
+  // Start cell (index -1) is always excluded here and rendered separately
+  // so it can have its own enter/exit transition without breaking animate:flip.
   // When start position is hidden, recalculate grid positions so steps
   // fill the grid from column 1 (instead of leaving a gap at column 1).
   const visibleCells = $derived.by(() => {
     if (includeStartPosition) {
-      return cells;
+      return cells.filter(cell => cell.index !== -1);
     }
     const cols = effectiveColumns || 4;
     return cells
@@ -458,6 +468,19 @@
     // Use the layout service directly for an instant column count
     const [cols] = layoutCalculator.calculateLayout(stepCount, includeStartPosition);
     return cols;
+  });
+
+  // When the column count changes (start position toggle, column picker),
+  // skip flip animation so cells snap to new positions while the container
+  // resize transition handles the visual smoothness.
+  $effect(() => {
+    const cols = effectiveColumns;
+    if (prevEffectiveColumns > 0 && cols !== prevEffectiveColumns) {
+      suppressFlip = true;
+      // Re-enable flip after the container resize transition completes
+      setTimeout(() => { suppressFlip = false; }, 300);
+    }
+    prevEffectiveColumns = cols;
   });
 
   // Effective rows — must match effective columns to keep aspect ratio correct.
@@ -498,9 +521,13 @@
       : 1;
     const gridHeight = effectiveRows * rowHeightInCellUnits;
 
-    // Header adds ~1/3 cell height, footer adds ~1/7 cell height
-    const headerFraction = showHeader ? 1/3 : 0;
-    const footerFraction = showFooter ? 1/7 : 0;
+    // Header adds ~1/3 cell height, footer adds ~1/7 cell height.
+    // For narrow grids (<=2 columns), scale fractions down so header/footer
+    // don't dominate the card. This matches the headerFooterRefWidth cap.
+    const cols = effectiveColumns;
+    const hfScale = cols >= 3 ? 1 : cols / 3;
+    const headerFraction = showHeader ? (1/3) * hfScale : 0;
+    const footerFraction = showFooter ? (1/7) * hfScale : 0;
 
     // Total height in cell-height units
     const totalHeight = gridHeight + headerFraction + footerFraction;
@@ -509,18 +536,29 @@
     return gridWidth / totalHeight;
   });
 
-  // Scaled sizes based on grid element width
-  const scaledHeaderHeight = $derived.by(() => {
+  // Scaled sizes based on grid element width.
+  // When only 2 columns are visible, cells are very wide and the header/footer
+  // become disproportionately large. Cap the reference width as if there were
+  // at least 3 columns so header/footer stay compact.
+  const headerFooterRefWidth = $derived.by(() => {
     if (!cellWidth || !Number.isFinite(cellWidth)) return 0;
-    const proportional = Math.floor(cellWidth / 3);
+    const cols = effectiveColumns || 1;
+    if (cols >= 3) return cellWidth;
+    // Scale down: use (containerWidth / 3) instead of (containerWidth / 2)
+    return cellWidth * cols / 3;
+  });
+
+  const scaledHeaderHeight = $derived.by(() => {
+    if (!headerFooterRefWidth) return 0;
+    const proportional = Math.floor(headerFooterRefWidth / 3);
     // On-screen viewing needs a minimum readable height (24px).
     // Export/forceContain mode uses exact proportional sizing for WYSIWYG fidelity.
     return forceContain ? proportional : Math.max(proportional, 24);
   });
 
   const scaledFooterHeight = $derived.by(() => {
-    if (!cellWidth || !Number.isFinite(cellWidth)) return 0;
-    return Math.floor(cellWidth / 7);
+    if (!headerFooterRefWidth) return 0;
+    return Math.floor(headerFooterRefWidth / 7);
   });
 
   // Step number font size: 10.526% of cell width (which equals row height
@@ -577,6 +615,7 @@
       showTKA,
       showReversals,
       handPathMode,
+      browseViewMode,
     };
   }
 
@@ -692,20 +731,6 @@
 
     columns = cols;
     rows = rws;
-
-    // Recalculate duration layout when start position toggles
-    const mixed = detectMixedDurations(sequence.steps);
-    hasMixedDurations = mixed;
-    if (mixed) {
-      const beatsPerRow = includeStartPosition ? cols - 1 : cols;
-      const computedRows = calculateTimelineRowsByBeatCount(sequence.steps, beatsPerRow);
-      durationRows = computedRows;
-      let maxStepUnits = 0;
-      for (const row of computedRows) {
-        maxStepUnits = Math.max(maxStepUnits, row.totalDuration);
-      }
-      durationColCount = maxStepUnits + (includeStartPosition ? 1 : 0);
-    }
 
     // Recalculate grid positions for all existing cells
     cells = cells.map(cell => {
@@ -1144,89 +1169,89 @@
     cells = [];
   }
 
-  // Context menu for cache management
-  let cellContextMenu = $state<ReturnType<typeof ThumbnailContextMenu> | null>(null);
-
-  function handleCellContextMenu(event: MouseEvent): void {
-    cellContextMenu?.open(event);
-  }
-
-  // Admin context menu (save/copy/claude)
+  // Admin context menu (save/copy/claude + re-render)
   let contextMenuState: ContextMenuState = $state({ open: false });
 
   const contextMenuItems: ContextMenuEntry[] = $derived.by(() => {
     const seq = sequence;
-    return [
-      {
-        id: "save-image",
-        label: "Save image",
-        icon: "fa-download",
-        async action() {
-          try {
-            const { sharer } = await import(
-              "$lib/shared/share/services/implementations/Sharer"
-            );
-            await sharer.downloadImage(seq, { ...DEFAULT_SHARE_OPTIONS, format: "PNG" });
-            toast.success("Image saved");
-          } catch (err) {
-            console.error("Save image failed:", err);
-            toast.error("Failed to save image");
-          }
+    const isAdmin = featureFlagService.isAdmin;
+    const items: ContextMenuEntry[] = [];
+
+    if (isAdmin) {
+      items.push(
+        {
+          id: "save-image",
+          label: "Save image",
+          icon: "fa-download",
+          async action() {
+            try {
+              const { sharer } = await import(
+                "$lib/shared/share/services/implementations/Sharer"
+              );
+              await sharer.downloadImage(seq, { ...DEFAULT_SHARE_OPTIONS, format: "PNG" });
+              toast.success("Image saved");
+            } catch (err) {
+              console.error("Save image failed:", err);
+              toast.error("Failed to save image");
+            }
+          },
         },
-      },
-      {
-        id: "copy-image",
-        label: "Copy image",
-        icon: "fa-copy",
-        async action() {
-          try {
-            const { sharer } = await import(
-              "$lib/shared/share/services/implementations/Sharer"
-            );
-            const blob = await sharer.getImageBlob(seq, { ...DEFAULT_SHARE_OPTIONS, format: "PNG" });
-            await navigator.clipboard.write([
-              new ClipboardItem({ "image/png": blob }),
-            ]);
-            toast.success("Image copied to clipboard");
-          } catch (err) {
-            console.error("Copy image failed:", err);
-            toast.error("Failed to copy image");
-          }
+        {
+          id: "copy-image",
+          label: "Copy image",
+          icon: "fa-copy",
+          async action() {
+            try {
+              const { sharer } = await import(
+                "$lib/shared/share/services/implementations/Sharer"
+              );
+              const blob = await sharer.getImageBlob(seq, { ...DEFAULT_SHARE_OPTIONS, format: "PNG" });
+              await navigator.clipboard.write([
+                new ClipboardItem({ "image/png": blob }),
+              ]);
+              toast.success("Image copied to clipboard");
+            } catch (err) {
+              console.error("Copy image failed:", err);
+              toast.error("Failed to copy image");
+            }
+          },
         },
-      },
-      {
-        id: "copy-for-claude",
-        label: "Copy for Claude",
-        icon: "fa-robot",
-        async action() {
-          try {
-            const copier = container.items.claudeCodeCopier;
-            const result = await copier.copyForClaude(seq);
-            if (result.success) {
-              toast.success("Copied for Claude");
-            } else {
+        {
+          id: "copy-for-claude",
+          label: "Copy for Claude",
+          icon: "fa-robot",
+          async action() {
+            try {
+              const copier = container.items.claudeCodeCopier;
+              const result = await copier.copyForClaude(seq);
+              if (result.success) {
+                toast.success("Copied for Claude");
+              } else {
+                toast.error("Failed to copy for Claude");
+              }
+            } catch (err) {
+              console.error("Copy for Claude failed:", err);
               toast.error("Failed to copy for Claude");
             }
-          } catch (err) {
-            console.error("Copy for Claude failed:", err);
-            toast.error("Failed to copy for Claude");
-          }
+          },
         },
+        { type: "separator" as const },
+      );
+    }
+
+    items.push({
+      id: "rerender",
+      label: "Re-render",
+      icon: "fa-sync-alt",
+      action() {
+        forceRerenderAllCells();
       },
-      { type: "separator" as const },
-      {
-        id: "rerender",
-        label: "Re-render",
-        icon: "fa-sync-alt",
-        action() {
-          forceRerenderAllCells();
-        },
-      },
-    ];
+    });
+
+    return items;
   });
 
   function handleContextMenu(e: MouseEvent) {
-    if (!featureFlagService.isAdmin) return;
     e.preventDefault();
     contextMenuState = { open: true, x: e.clientX, y: e.clientY };
   }
@@ -1385,6 +1410,9 @@
 
   // Track if initial render is complete
   let hasMounted = $state(false);
+  // Flip animation duration: 0 during initial mount or column count changes
+  // (container resize transition handles the visual smoothness instead)
+  const flipDuration = $derived(hasMounted && !suppressFlip ? 250 : 0);
   let lastEffectRenderKey = "";
 
   // Re-render when relevant props or visibility settings change.
@@ -1425,8 +1453,11 @@
     const imageChanged = imageKey !== lastImageKey;
     const cellsLoaded = untrack(() => cells.length > 0 && cells.some(c => c.isLoaded));
     const isDarkModeOnly = !contentChanged && cellsLoaded;
-    // Layout-only: images are identical but columns/start position changed
-    const isLayoutOnly = !imageChanged && contentChanged && cellsLoaded;
+    // Layout-only: images are identical but columns/start position changed.
+    // Duration sequences need a full re-render because durationRows/durationColCount
+    // must be recalculated (relayoutCells only repositions uniform grid cells).
+    const hasDurations = untrack(() => hasMixedDurations);
+    const isLayoutOnly = !imageChanged && contentChanged && cellsLoaded && !hasDurations;
 
     lastEffectRenderKey = renderKey;
     lastContentKey = contentKey;
@@ -1586,7 +1617,7 @@
 {/snippet}
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="choreo-card-root" class:dark-mode={activeDarkMode} class:scroll-mode={needsScroll} class:force-contain={forceContain} data-ctx-container bind:this={containerElement}
+<div class="choreo-card-root" class:dark-mode={activeDarkMode} class:scroll-mode={needsScroll} class:force-contain={forceContain} bind:this={containerElement}
   oncontextmenu={(e: MouseEvent) => {
     e.preventDefault();
     // If the long-press timer already opened the menu, don't open it again
@@ -1599,11 +1630,7 @@
       onContextMenu(e.clientX, e.clientY);
       return;
     }
-    if (featureFlagService.isAdmin) {
-      handleContextMenu(e);
-    } else {
-      handleCellContextMenu(e);
-    }
+    handleContextMenu(e);
   }}
   onpointerdown={(e: PointerEvent) => {
     if (e.button !== 0 || e.pointerType === "mouse" || !onContextMenu) return;
@@ -1807,16 +1834,28 @@
         {/if}
       {:else if needsScroll}
         <!-- Uniform grid: scroll mode -->
+        {@const startCellScroll = cells.find(c => c.index === -1)}
         <div class="grid-scroll-container themed-scrollbar" bind:this={gridScrollRef}>
           <div
             class="grid-section"
             style="grid-template-columns: repeat({effectiveColumns}, 1fr);"
           >
+            {#if startCellScroll && includeStartPosition}
+              <div
+                class="cell-flip-wrapper"
+                style="grid-column: 1; grid-row: 1;"
+                transition:scale|local={{ duration: 200, easing: cubicOut }}
+              >
+                <div class="pictograph-cell">
+                  {@render cellContent(startCellScroll, false)}
+                </div>
+              </div>
+            {/if}
             {#each visibleCells as cell (cell.index)}
               <div
                 class="cell-flip-wrapper"
                 style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
-                animate:flip={{ duration: hasMounted ? 250 : 0, easing: cubicOut }}
+                animate:flip={{ duration: flipDuration, easing: cubicOut }}
               >
               {#if onStepClick && cell.index >= 0}
                 <button
@@ -1854,15 +1893,27 @@
         </div>
       {:else}
         <!-- Uniform grid: standard mode -->
+        {@const startCell = cells.find(c => c.index === -1)}
         <div
           class="grid-section"
           style="grid-template-columns: repeat({effectiveColumns}, 1fr);"
         >
+          {#if startCell && includeStartPosition}
+            <div
+              class="cell-flip-wrapper"
+              style="grid-column: 1; grid-row: 1;"
+              transition:scale|local={{ duration: 200, easing: cubicOut }}
+            >
+              <div class="pictograph-cell">
+                {@render cellContent(startCell, false)}
+              </div>
+            </div>
+          {/if}
           {#each visibleCells as cell (cell.index)}
             <div
               class="cell-flip-wrapper"
               style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
-              animate:flip={{ duration: hasMounted ? 250 : 0, easing: cubicOut }}
+              animate:flip={{ duration: flipDuration, easing: cubicOut }}
             >
             {#if onStepClick && cell.index >= 0}
               <button
@@ -1933,7 +1984,6 @@
       {/if}
     </div>
   {/if}
-  <ThumbnailContextMenu bind:this={cellContextMenu} onRerender={forceRerenderAllCells} />
 </div>
 
 <ContextMenu menuState={contextMenuState} items={contextMenuItems} onClose={closeContextMenu} />

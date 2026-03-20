@@ -2,8 +2,8 @@
 	/**
 	 * Fuse Panel
 	 *
-	 * One side of the fuse split view. Shows a sequence browser when no
-	 * sequence is selected, or a live animation preview when one is.
+	 * One side of the fuse split view. Shows a shuffle card when no
+	 * item is selected, or a live animation preview when one is picked.
 	 */
 
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -18,6 +18,8 @@
 		onDeselect,
 		bpm,
 		onControllerReady,
+		mode = "soloProps",
+		length = 8,
 	}: {
 		side: "left" | "right";
 		selectedSequence: SequenceData | null;
@@ -25,18 +27,20 @@
 		onDeselect: () => void;
 		bpm: number;
 		onControllerReady?: (controller: IAnimationPlaybackController) => void;
+		mode?: "soloProps" | "handPaths";
+		length?: number;
 	} = $props();
 
-	const label = $derived(side === "left" ? "Blue prop path" : "Red prop path");
+	const label = $derived(side === "left" ? "Blue" : "Red");
 </script>
 
-<div class="fuse-panel" role="region" aria-label={label}>
+<div class="fuse-panel" role="region" aria-label="{label} {mode === 'soloProps' ? 'prop path' : 'hand path'}">
 	<div class="panel-header">
 		<span class="panel-label">{label}</span>
 		{#if selectedSequence}
-			<span class="panel-seq-name">
-				{selectedSequence.displayName || selectedSequence.name || (selectedSequence as any).word || "Selected"}
-			</span>
+			<button class="deselect-btn" onclick={onDeselect} aria-label="Clear selection">
+				<i class="fas fa-times" aria-hidden="true"></i>
+			</button>
 		{/if}
 	</div>
 
@@ -47,9 +51,10 @@
 				{bpm}
 				onBack={onDeselect}
 				{onControllerReady}
+				propColor={side === "left" ? "blue" : "red"}
 			/>
 		{:else}
-			<FuseSequenceBrowser {side} onSelect={(item) => onSelect(item as any)} />
+			<FuseSequenceBrowser {side} {mode} {length} onSelect={(item) => onSelect(item as any)} />
 		{/if}
 	</div>
 </div>
@@ -81,12 +86,22 @@
 		letter-spacing: 0.05em;
 	}
 
-	.panel-seq-name {
-		font-size: var(--font-size-compact, 12px);
+	.deselect-btn {
+		background: none;
+		border: none;
 		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+		cursor: pointer;
+		padding: 4px 8px;
+		min-height: 36px;
+		min-width: 36px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: var(--radius-sm, 6px);
+	}
+
+	.deselect-btn:hover {
+		color: var(--theme-text, #ffffff);
 	}
 
 	.panel-content {
