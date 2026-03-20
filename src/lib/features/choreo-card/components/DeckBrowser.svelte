@@ -44,6 +44,13 @@
 
   let sequenceMap = $derived(new Map(deckSequences.map((s) => [s.id, s])));
 
+  // When there's only one deck, skip the list view and go straight to it
+  $effect(() => {
+    if (decks.length === 1 && !selectedDeckId && !isLoading) {
+      onSelectDeck(decks[0].id);
+    }
+  });
+
   function getFamilySequences(sequenceIds: readonly string[]): SequenceData[] {
     const uniqueIds = [...new Set(sequenceIds)];
     return uniqueIds
@@ -81,10 +88,11 @@
         </div>
       {:else}
         <div class="families-list">
-          {#each selectedDeck.families as family (family.id)}
+          {#each selectedDeck.families as family, i (family.id)}
             <DeckFamilySection
               {family}
               sequences={getFamilySequences(family.sequenceIds)}
+              initiallyExpanded={i === 0}
               {handPointsVisible}
               {showGrid}
               {showTKA}
