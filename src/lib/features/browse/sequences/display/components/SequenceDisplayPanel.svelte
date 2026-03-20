@@ -5,6 +5,7 @@
   import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
   import type { SequenceFilterType } from "../../../shared/state/sequence-controls-state.svelte";
   import type { ActiveFilter } from "../../../shared/domain/models/multi-filter-models";
+  import type { BrowseViewMode } from "../../../shared/domain/BrowseViewMode";
   import { container } from "$lib/shared/di";
   import { onMount, onDestroy } from "svelte";
   import { getSequenceOverlayState } from "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte";
@@ -46,6 +47,7 @@
     onOpenLetterSheet,
     onOpenOptionsSheet,
     getFilteredCount,
+    viewMode,
   } = $props<{
     sequences?: SequenceData[];
     sections?: SequenceSection[];
@@ -72,6 +74,7 @@
     onOpenLetterSheet?: () => void;
     onOpenOptionsSheet?: () => void;
     getFilteredCount?: (candidateType: BrowseFilterType, candidateValue: BrowseFilterValue) => number;
+    viewMode?: BrowseViewMode;
   }>();
 
   const isInlineFiltersOpen = $derived(sequencePanelManager.isInlineFiltersOpen);
@@ -225,6 +228,7 @@
       {onOpenLetterSheet}
       {onOpenOptionsSheet}
       {getFilteredCount}
+      {viewMode}
     />
   {/if}
 

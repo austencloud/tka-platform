@@ -36,6 +36,7 @@ Used by both desktop side panel and mobile slide-up overlay.
   import DetailHeader from "./DetailHeader.svelte";
   import ShareOptionsRow from "./ShareOptionsRow.svelte";
   import SequenceActionButtons from "./SequenceActionButtons.svelte";
+  import CompositionBreakdown from "../../../shared/components/CompositionBreakdown.svelte";
   import {
     openSendSequenceSheet,
     buildSequenceSharePayload,
@@ -93,6 +94,7 @@ Used by both desktop side panel and mobile slide-up overlay.
     onAction = () => {},
     onInviteCollaborators,
     onVariationSelect = () => {},
+    onNavigateToView,
     viewingContext = "notation",
   } = $props<{
     sequence: SequenceData;
@@ -102,6 +104,8 @@ Used by both desktop side panel and mobile slide-up overlay.
     onAction?: (action: string, sequence: SequenceData) => void;
     onInviteCollaborators?: (video: CollaborativeVideo) => void;
     onVariationSelect?: (index: number, sequence: SequenceData) => void;
+    /** Navigate to a specific composition view (e.g. solo blue hand path) */
+    onNavigateToView?: (subject: "props" | "hands", granularity: "combined" | "solo", color: "blue" | "red") => void;
     viewingContext?: ViewingContext;
   }>();
 
@@ -495,6 +499,14 @@ Used by both desktop side panel and mobile slide-up overlay.
       </div>
     {/if}
   </div>
+
+  <!-- Composition Breakdown: navigate to solo/hand views -->
+  {#if onNavigateToView}
+    <CompositionBreakdown
+      {sequence}
+      {onNavigateToView}
+    />
+  {/if}
 
   <!-- Action Buttons -->
   <SequenceActionButtons

@@ -92,6 +92,22 @@
       ]
     },
     {
+      "collectionGroup": "publicHandPaths",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "impliedGridMode", "order": "ASCENDING" },
+        { "fieldPath": "length", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "publicSoloProps",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "impliedGridMode", "order": "ASCENDING" },
+        { "fieldPath": "length", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "feedback",
       "queryScope": "COLLECTION",
       "fields": [

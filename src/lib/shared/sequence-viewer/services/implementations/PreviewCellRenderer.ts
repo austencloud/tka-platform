@@ -27,6 +27,7 @@ import { pictographPreparer } from "$lib/shared/pictograph/shared/services/imple
 import { pictographBlobCache } from "$lib/shared/render/services/implementations/PictographBlobCache";
 import { getWorkerRenderPool } from "$lib/shared/render/services/implementations/WorkerRenderPool";
 import { cellCacheKeyDeriver } from "./CellCacheKeyDeriver";
+import type { BrowseViewMode } from "$lib/features/browse/shared/domain/BrowseViewMode";
 
 export class PreviewCellRenderer implements IPreviewCellRenderer {
 
@@ -57,16 +58,29 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
       // Cache miss or error, proceed to render
     }
 
-    // In hand path mode, override props to HAND for both hands.
+    // Determine if a browse view mode changes rendering behavior.
+    // "props + solo" strips the non-selected hand's motion data.
+    // "hands + *" delegates to hand path rendering mode.
+    const viewMode = options.browseViewMode;
+    const isHandsView = viewMode?.subject === "hands";
+    const isSoloView = viewMode?.granularity === "solo";
+
+    // In hand path mode OR hands view mode, override props to HAND.
     // PictographPreparer will handle the motion transform (pro/anti → float).
-    const isHandPath = options.handPathMode ?? false;
+    const isHandPath = (options.handPathMode ?? false) || isHandsView;
     const effectiveBlueProp = isHandPath ? PropType.HAND : options.bluePropType;
     const effectiveRedProp = isHandPath
       ? PropType.HAND
       : (options.catDogModeEnabled ? options.redPropType : options.bluePropType);
 
+    // For solo views (props+solo or hands+solo), strip the non-selected hand's
+    // motion data so the renderer only draws one performer.
+    const dataForRender = isSoloView
+      ? this.filterSoloMotions(pictographData, viewMode!)
+      : pictographData;
+
     // Prepare the pictograph data (DOM-free, runs on main thread)
-    const prepared = await pictographPreparer.prepareSingle(pictographData, {
+    const prepared = await pictographPreparer.prepareSingle(dataForRender, {
       themeMode: isDark ? "dark" : "light",
       bluePropType: effectiveBlueProp,
       redPropType: effectiveRedProp,
@@ -107,6 +121,25 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
 
     // Return blob URL — caller must revoke when done
     return URL.createObjectURL(blob);
+  }
+
+  /**
+   * For solo view modes, remove the non-selected hand's motion data so the
+   * renderer only draws one performer. The selected hand is determined by
+   * the BrowseViewMode.color field ("blue" or "red").
+   */
+  private filterSoloMotions(
+    data: PictographData,
+    viewMode: BrowseViewMode
+  ): PictographData {
+    const keepColor = viewMode.color;
+    const motions = { ...data.motions };
+    if (keepColor === "blue") {
+      delete motions.red;
+    } else {
+      delete motions.blue;
+    }
+    return { ...data, motions };
   }
 
   /**

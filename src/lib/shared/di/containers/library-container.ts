@@ -24,6 +24,7 @@ import type { IBrowseLoader } from "$lib/features/browse/sequences/display/servi
 import { SequenceContentHasher } from "$lib/features/library/services/implementations/SequenceContentHasher";
 import { ArtifactExtractor } from "$lib/features/library/services/implementations/ArtifactExtractor";
 import { SoloPropSaveOrchestrator } from "$lib/features/library/services/implementations/SoloPropSaveOrchestrator";
+import { HandPathSaveOrchestrator } from "$lib/features/library/services/implementations/HandPathSaveOrchestrator";
 import { handPathRepository } from "$lib/shared/foundation/services/implementations/HandPathRepository";
 import { soloPropRepository } from "$lib/shared/foundation/services/implementations/SoloPropRepository";
 
@@ -107,6 +108,8 @@ export function createLibraryContainer(deps: {
     artifactExtractor: () => artifactExtractor,
     soloPropSaveOrchestrator: () =>
       new SoloPropSaveOrchestrator(soloPropRepository, handPathRepository),
+    handPathSaveOrchestrator: () =>
+      new HandPathSaveOrchestrator(handPathRepository),
     libraryRepository: () => libraryRepository,
     librarySaveService: () =>
       new LibrarySaveService(

@@ -202,6 +202,7 @@
         onOpenLetterSheet={handleOpenLetterSheet}
         onOpenOptionsSheet={handleOpenOptionsSheet}
         getFilteredCount={galleryState.getFilteredCount}
+        viewMode={galleryState.viewMode}
       />
     </div>
   {/snippet}
