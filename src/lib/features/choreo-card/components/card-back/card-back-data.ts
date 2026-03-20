@@ -8,6 +8,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { ISequenceToEntryConverter } from "../../services/contracts/ISequenceToEntryConverter";
 import type { ILOOPExplainer, LOOPExplanation } from "../../services/contracts/ILOOPExplainer";
 import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
+import { DIFFICULTY_LEVELS, DIFFICULTY_FONT_FAMILY } from "$lib/shared/config/difficulty-styles";
 import {
   LOOP_TYPE_LABELS,
   ROTATED_LOOP_TYPES,
@@ -50,44 +51,26 @@ export interface CardBackData {
   startPositionGroup: string | null;
 }
 
-// Level badge definitions with the actual gradients from the app's LevelCard
-const LEVEL_BADGES: Record<number, Omit<LevelBadgeData, "reason">> = {
-  1: {
-    number: 1,
-    name: "Foundation",
-    detail: "No turns",
-    gradient: `radial-gradient(ellipse at top left,
-      rgb(186, 230, 253) 0%,
-      rgb(125, 211, 252) 30%,
-      rgb(56, 189, 248) 70%,
-      rgb(14, 165, 233) 100%)`,
-    textColor: "black",
-  },
-  2: {
-    number: 2,
-    name: "Turning",
-    detail: "Whole turns",
-    gradient: `radial-gradient(ellipse at top left,
-      rgb(226, 232, 240) 0%,
-      rgb(148, 163, 184) 30%,
-      rgb(100, 116, 139) 70%,
-      rgb(71, 85, 105) 100%)`,
-    textColor: "white",
-  },
-  3: {
-    number: 3,
-    name: "Precision",
-    detail: "Half turns and float",
-    gradient: `radial-gradient(ellipse at top left,
-      rgb(254, 240, 138) 0%,
-      rgb(253, 224, 71) 20%,
-      rgb(250, 204, 21) 40%,
-      rgb(234, 179, 8) 60%,
-      rgb(202, 138, 4) 80%,
-      rgb(161, 98, 7) 100%)`,
-    textColor: "black",
-  },
+// Level badge definitions sourced from the canonical difficulty-styles.ts
+const LEVEL_NAMES: Record<number, { name: string; detail: string }> = {
+  1: { name: "Foundation", detail: "No turns" },
+  2: { name: "Turning", detail: "Whole turns" },
+  3: { name: "Precision", detail: "Half turns and float" },
 };
+
+const LEVEL_BADGES: Record<number, Omit<LevelBadgeData, "reason">> = Object.fromEntries(
+  [1, 2, 3].map((num) => {
+    const style = DIFFICULTY_LEVELS[num]!;
+    const meta = LEVEL_NAMES[num]!;
+    return [num, {
+      number: num,
+      name: meta.name,
+      detail: meta.detail,
+      gradient: style.cssBg,
+      textColor: style.text,
+    }];
+  })
+);
 
 // Use the same resolver as the front card so LOOP icons always match
 const loopTypeResolver = new LOOPTypeResolver();
