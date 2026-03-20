@@ -1,9 +1,9 @@
 <!--
-  InfoCardFront — "How to Read" reference card
+  InfoCardFront — "How to Read a Choreo Card"
 
-  Front side of the rules card included with every printed deck.
-  Explains how to read a choreo card's pictograph grid.
-  Same 500×700 print resolution as choreo cards.
+  Front side of the rules card. Vertically centered, consistent
+  visual language, personality over help-doc sterility.
+  500×700 print resolution.
 -->
 <script lang="ts">
   import { getCardBackThemeVisuals } from "./card-back-theme-visuals";
@@ -16,52 +16,78 @@
   <div class="card" style="background: {theme.background};">
     <div class="content">
 
+      <div class="spacer-sm"></div>
+
       <h1 class="title">How to Read</h1>
       <h2 class="subtitle">a Choreo Card</h2>
 
+      <div class="spacer-md"></div>
+
+      <!-- Each item: number badge + explanation. Consistent, scannable. -->
+      <div class="steps">
+
+        <div class="step">
+          <span class="step-num">1</span>
+          <p class="step-text">Each cell is one beat. Read left to right, top to bottom. The grid is your choreography.</p>
+        </div>
+
+        <div class="step">
+          <span class="step-num">2</span>
+          <div class="step-text">
+            <span class="color-swatch blue"></span> and
+            <span class="color-swatch red"></span> are your two props.
+            Arrows show the path each one travels through the beat.
+          </div>
+        </div>
+
+        <div class="step">
+          <span class="step-num">3</span>
+          <p class="step-text">The letter below each beat is its name in The Kinetic Alphabet. If two beats share a letter, they share a movement.</p>
+        </div>
+
+        <div class="step">
+          <span class="step-num">4</span>
+          <p class="step-text">The first cell marked <em>Start</em> shows where to hold your props before beat 1.</p>
+        </div>
+
+        <div class="step">
+          <span class="step-num">5</span>
+          <p class="step-text">The sequence loops. After the last beat, you're back at beat 1. Keep going.</p>
+        </div>
+
+      </div>
+
+      <div class="spacer-md"></div>
+
       <div class="divider"></div>
 
-      <div class="section">
-        <div class="row">
-          <span class="icon"><i class="fas fa-th"></i></span>
-          <p class="text">Each cell is <strong>one beat</strong>. Read left to right, top to bottom.</p>
-        </div>
+      <div class="spacer-sm"></div>
+
+      <!-- Greek letter pronunciation table -->
+      <h3 class="section-label">Pronunciation</h3>
+      <div class="pronunciation-grid">
+        <span class="pron-item"><strong>Α</strong> Alpha</span>
+        <span class="pron-item"><strong>Β</strong> Beta</span>
+        <span class="pron-item"><strong>Γ</strong> Gamma</span>
+        <span class="pron-item"><strong>Σ</strong> Sigma</span>
+        <span class="pron-item"><strong>Δ</strong> Delta</span>
+        <span class="pron-item"><strong>Θ</strong> Theta</span>
+        <span class="pron-item"><strong>Ω</strong> Omega</span>
+        <span class="pron-item"><strong>Φ</strong> Phi</span>
+        <span class="pron-item"><strong>Ψ</strong> Psi</span>
+        <span class="pron-item"><strong>Λ</strong> Lambda</span>
+        <span class="pron-item"><strong>τ</strong> Tau</span>
+        <span class="pron-item"><strong>—</strong> Dash</span>
       </div>
 
-      <div class="section">
-        <div class="row">
-          <span class="icon blue-dot"></span>
-          <span class="icon red-dot"></span>
-          <p class="text"><strong class="blue">Blue</strong> = one prop. <strong class="red">Red</strong> = the other. Arrows show the path each prop travels.</p>
-        </div>
+      <div class="spacer-lg"></div>
+
+      <div class="qr-hint">
+        <i class="fas fa-qrcode"></i>
+        <span>Scan a card's QR code to see it animated in the app</span>
       </div>
 
-      <div class="section">
-        <div class="row">
-          <span class="icon letter">A</span>
-          <p class="text">The <strong>letter</strong> below each beat is its TKA name. Same letter = same movement.</p>
-        </div>
-      </div>
-
-      <div class="section">
-        <div class="row">
-          <span class="icon letter">α</span>
-          <p class="text">The <strong>start position</strong> shows where to hold your props before beat 1.</p>
-        </div>
-      </div>
-
-      <div class="section">
-        <div class="row">
-          <span class="icon"><i class="fas fa-qrcode"></i></span>
-          <p class="text"><strong>Scan the QR code</strong> to open this sequence in the app with animation.</p>
-        </div>
-      </div>
-
-      <div class="divider"></div>
-
-      <p class="tip">Practice each beat slowly. Once smooth, speed up. The sequence loops — beat 1 follows the last beat.</p>
-
-      <div class="spacer"></div>
+      <div class="spacer-sm"></div>
 
       <div class="footer">tkaflowarts.com</div>
 
@@ -93,106 +119,136 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    padding: 36px 32px;
+    padding: 28px 30px;
     box-sizing: border-box;
   }
+
+  .spacer-sm { height: 8px; flex-shrink: 0; }
+  .spacer-md { height: 16px; flex-shrink: 0; }
+  .spacer-lg { flex: 1; }
 
   .title {
     margin: 0;
     text-align: center;
-    font-size: 28px;
+    font-size: 30px;
     font-weight: 800;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.03em;
   }
 
   .subtitle {
     margin: 2px 0 0;
     text-align: center;
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 400;
-    color: rgba(255, 255, 255, 0.5);
-    letter-spacing: 0.04em;
+    color: rgba(255, 255, 255, 0.45);
   }
 
   .divider {
     height: 1px;
-    background: rgba(255, 255, 255, 0.12);
-    margin: 16px 0;
+    background: rgba(255, 255, 255, 0.1);
   }
 
-  .section {
-    margin-bottom: 14px;
+  /* Numbered steps */
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
 
-  .row {
+  .step {
     display: flex;
     align-items: flex-start;
     gap: 12px;
   }
 
-  .icon {
+  .step-num {
     flex-shrink: 0;
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 1px;
+  }
+
+  .step-text {
+    margin: 0;
+    font-size: 13.5px;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.45;
+  }
+
+  .step-text em {
+    color: rgba(255, 255, 255, 0.8);
+    font-style: italic;
+  }
+
+  /* Color swatches inline */
+  .color-swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    vertical-align: middle;
+    margin: 0 1px;
+  }
+  .color-swatch.blue { background: #3b82f6; }
+  .color-swatch.red { background: #ef4444; }
+
+  /* Pronunciation grid */
+  .section-label {
+    margin: 0 0 8px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.5);
+    text-align: center;
+  }
+
+  .pronunciation-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px 8px;
+    text-align: center;
+  }
+
+  .pron-item {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  .pron-item strong {
+    color: rgba(255, 255, 255, 0.75);
+    font-family: Georgia, serif;
+    font-size: 14px;
+    margin-right: 3px;
+  }
+
+  /* QR hint */
+  .qr-hint {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
-    color: rgba(255, 255, 255, 0.6);
+    gap: 8px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.35);
   }
 
-  .blue-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: #3b82f6;
-    margin-right: -8px;
-  }
-
-  .red-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: #ef4444;
-  }
-
-  .letter {
-    font-family: Georgia, serif;
-    font-size: 20px;
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.7);
-  }
-
-  .text {
-    margin: 0;
+  .qr-hint i {
     font-size: 14px;
-    color: rgba(255, 255, 255, 0.65);
-    line-height: 1.5;
+    opacity: 0.6;
   }
-
-  .text strong {
-    color: #ffffff;
-    font-weight: 600;
-  }
-
-  .blue { color: #60a5fa; }
-  .red { color: #f87171; }
-
-  .tip {
-    margin: 0;
-    font-size: 14px;
-    font-style: italic;
-    color: rgba(255, 255, 255, 0.45);
-    line-height: 1.5;
-    text-align: center;
-  }
-
-  .spacer { flex: 1; }
 
   .footer {
     text-align: center;
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.3);
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.25);
     letter-spacing: 0.06em;
   }
 </style>
