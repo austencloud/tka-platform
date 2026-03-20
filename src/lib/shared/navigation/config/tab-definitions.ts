@@ -18,15 +18,6 @@ export const DEFAULT_CREATE_TAB = "construct";
 
 export const CREATE_TABS: Section[] = [
   {
-    id: "construct",
-    label: "Construct",
-    icon: '<i class="fas fa-hammer" aria-hidden="true"></i>',
-    description: "Create sequences step by step (all options)",
-    color: "#3b82f6",
-    gradient: "linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)",
-    metadata: { isCreationMethod: true },
-  },
-  {
     id: "assemble",
     label: "Assemble",
     icon: '<i class="fas fa-puzzle-piece" aria-hidden="true"></i>',
@@ -36,12 +27,30 @@ export const CREATE_TABS: Section[] = [
     metadata: { isCreationMethod: true },
   },
   {
+    id: "construct",
+    label: "Construct",
+    icon: '<i class="fas fa-hammer" aria-hidden="true"></i>',
+    description: "Create sequences step by step (all options)",
+    color: "#3b82f6",
+    gradient: "linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)",
+    metadata: { isCreationMethod: true },
+  },
+  {
     id: "generate",
     label: "Generate",
     icon: '<i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>',
     description: "Auto-create sequences",
     color: "#f59e0b",
     gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #f97316 100%)",
+    metadata: { isCreationMethod: true },
+  },
+  {
+    id: "fuse",
+    label: "Fuse",
+    icon: '<i class="fas fa-fire" aria-hidden="true"></i>',
+    description: "Combine two sequences into one",
+    color: "#f97316",
+    gradient: "linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%)",
     metadata: { isCreationMethod: true },
   },
   // REMOVED: Spell tab unified into Generate tab as "Spell" mode (Feb 2026)
@@ -397,14 +406,6 @@ export const SETTINGS_TABS: Section[] = [
     description: "Theme and visual settings",
     color: "#06b6d4",
     gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
-  },
-  {
-    id: "visibility",
-    label: "Visibility",
-    icon: '<i class="fas fa-eye" aria-hidden="true"></i>',
-    description: "Element visibility controls",
-    color: "#22c55e",
-    gradient: "linear-gradient(135deg, #4ade80 0%, #22c55e 100%)",
   },
   {
     id: "keyboard",

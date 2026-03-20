@@ -17,6 +17,7 @@
   import GeneratePanel from "../../generate/components/GeneratePanel.svelte";
   import ConstructTabContent from "./ConstructTabContent.svelte";
   import AssembleToolPanel from "../../assemble/components/AssembleToolPanel.svelte";
+  import FuseTab from "$lib/features/fuse/FuseTab.svelte";
   import { desktopSidebarState } from "$lib/shared/layout/desktop-sidebar-state.svelte";
 
   // Get context
@@ -166,6 +167,9 @@
                 <p>Assemble loading...</p>
               </div>
             {/if}
+          {:else if activeToolPanel === "fuse"}
+            <!-- Fuse Mode - Combine two sequences into one -->
+            <FuseTab />
           {/if}
         </div>
       {/key}
