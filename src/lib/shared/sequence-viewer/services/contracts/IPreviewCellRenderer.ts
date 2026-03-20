@@ -44,6 +44,10 @@ export interface PreviewCellRenderOptions {
 
   /** Show reversal indicators */
   showReversals?: boolean;
+
+  /** When true, renders hand path visualization: HAND props, float arrows for shifts,
+   *  no TKA overlay, no reversals. Shows pure spatial trajectory. */
+  handPathMode?: boolean;
 }
 
 export interface IPreviewCellRenderer {

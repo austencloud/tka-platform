@@ -21,6 +21,7 @@ import type {
   IPreviewCellRenderer,
   PreviewCellRenderOptions,
 } from "../contracts/IPreviewCellRenderer";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { LayerRenderOptions, LayerVisibility } from "$lib/shared/render/services/contracts/ILayerCompositor";
 import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
 import { pictographBlobCache } from "$lib/shared/render/services/implementations/PictographBlobCache";
@@ -56,13 +57,20 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
       // Cache miss or error, proceed to render
     }
 
+    // In hand path mode, override props to HAND for both hands.
+    // PictographPreparer will handle the motion transform (pro/anti → float).
+    const isHandPath = options.handPathMode ?? false;
+    const effectiveBlueProp = isHandPath ? PropType.HAND : options.bluePropType;
+    const effectiveRedProp = isHandPath
+      ? PropType.HAND
+      : (options.catDogModeEnabled ? options.redPropType : options.bluePropType);
+
     // Prepare the pictograph data (DOM-free, runs on main thread)
     const prepared = await pictographPreparer.prepareSingle(pictographData, {
       themeMode: isDark ? "dark" : "light",
-      bluePropType: options.bluePropType,
-      redPropType: options.catDogModeEnabled
-        ? options.redPropType
-        : options.bluePropType,
+      bluePropType: effectiveBlueProp,
+      redPropType: effectiveRedProp,
+      handPathMode: isHandPath,
     });
 
     // Render options for layer compositor
@@ -72,16 +80,14 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
       darkMode: isDark,
       showNonRadialPoints: options.showNonRadialPoints ?? true,
       handPointVisibility: options.handPointVisibility ?? "all",
-      bluePropType: options.bluePropType,
-      redPropType: options.catDogModeEnabled
-        ? options.redPropType
-        : options.bluePropType,
+      bluePropType: effectiveBlueProp,
+      redPropType: effectiveRedProp,
     };
 
     // Visibility settings
     const visibility: LayerVisibility = {
-      showTKA: options.showTKA ?? true,
-      showReversals: options.showReversals ?? true,
+      showTKA: isHandPath ? false : (options.showTKA ?? true),
+      showReversals: isHandPath ? false : (options.showReversals ?? true),
     };
 
     // Render via WorkerRenderPool (off-thread when available, main-thread fallback)

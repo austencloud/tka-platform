@@ -67,6 +67,8 @@ export class CellCacheKeyDeriver implements ICellCacheKeyDeriver {
       options.handPointVisibility ?? "all",
       options.showTKA ? "tka1" : "tka0",
       options.showReversals ? "rev1" : "rev0",
+      // Hand path mode renders completely different pictographs (float arrows, HAND props)
+      options.handPathMode ? "hp1" : "",
       // Width multiplier for duration-expanded cells
       options.widthMultiplier && options.widthMultiplier !== 1 ? `wm${options.widthMultiplier}` : "",
     ];
