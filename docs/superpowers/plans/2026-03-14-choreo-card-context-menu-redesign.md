@@ -131,7 +131,7 @@ export function buildChoreoCardContextMenuItems(
     if (deps.onExportImage) {
       items.push({
         id: "export-image",
-        label: "Export Image",
+        label: "Download Image",
         icon: "fa-download",
         action: deps.onExportImage,
       });
@@ -375,7 +375,7 @@ git commit -m "feat(viewer): add lightbulb dark/light toggle to route header"
 
 After all tasks are complete, the user should verify:
 
-1. **Right-click the choreo card** — menu should show: Display (submenu), Columns (submenu), separator, Edit Notes, Export Image, Send to. No theme toggle.
+1. **Right-click the choreo card** — menu should show: Display (submenu), Columns (submenu), separator, Edit Notes, Download Image, Send to. No theme toggle.
 2. **Hover "Display"** — submenu should show 7 toggles: Word, Start Position, Difficulty, Step Numbers, Creator Name, Notes, Birthday. All with checkmarks.
 3. **Lightbulb button** should appear in the header (both drawer and route views), before the copy-link and gear buttons.
 4. **Click lightbulb** — card and animation should toggle between light and dark mode. Button should glow warm yellow when lit (light mode).

@@ -34,7 +34,7 @@ Add a context menu to the ChoreoCard that exposes all export visibility toggles 
 │ ☀ Light  /  ☾ Dark          │  theme toggle, keepOpen
 │─────────────────────────────│
 │ ✎ Edit Notes Text...        │  action, closes menu
-│ ⬇ Export Image              │  action, closes menu
+│ ⬇ Download Image              │  action, closes menu
 └─────────────────────────────┘
 ```
 
@@ -47,7 +47,7 @@ Add a context menu to the ChoreoCard that exposes all export visibility toggles 
 | Columns | Submenu parent | — | Opens flyout with checked items (Auto, 2, 3, 4, 5, 6). Mutual exclusion enforced in action callbacks. |
 | Light / Dark | Toggle (`checked`) | yes | Theme switch |
 | Edit Notes Text... | Action | no | Opens export sidebar with notes text input focused |
-| Export Image | Action | no | Triggers image export, closes menu |
+| Download Image | Action | no | Triggers image export, closes menu |
 
 ### Columns submenu
 

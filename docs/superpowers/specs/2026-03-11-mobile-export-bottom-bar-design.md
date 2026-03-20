@@ -11,7 +11,7 @@ On mobile (375px), the export panels (video and image) consume most of the scree
 
 Replace the current "all settings visible" mobile layout with a compact bottom bar pattern:
 
-- **Export button always visible** — one tap to export
+- **Export button always visible** — one Tap to download
 - **Settings behind a gear icon** — opens a half-sheet overlay when tapped
 - **Content gets full screen** — animation/choreo card never compressed
 
@@ -28,7 +28,7 @@ Replace the current "all settings visible" mobile layout with a compact bottom b
 
 ### Image Export (mobile bottom layout)
 
-**Bottom bar:** `[Export Image ▼] [⚙ Settings]`
+**Bottom bar:** `[Download Image ▼] [⚙ Settings]`
 
 - No play/pause needed for image
 - Export button is the primary CTA
