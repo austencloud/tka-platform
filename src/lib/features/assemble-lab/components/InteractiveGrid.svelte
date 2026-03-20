@@ -515,8 +515,9 @@
         class="orientation-arrow"
         style="transform: translate({activeTarget.x}px, {activeTarget.y}px) rotate({arrowRotationDeg}deg)"
       >
-        <line x1="0" y1="0" x2="60" y2="0" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
-        <polygon points="60,-8 76,0 60,8" fill="currentColor" />
+        <!-- Start offset from center so arrow clears the prop body -->
+        <line x1="30" y1="0" x2="110" y2="0" stroke="currentColor" stroke-width="5" stroke-linecap="round" />
+        <polygon points="110,-10 130,0 110,10" fill="currentColor" />
       </g>
     {/if}
 
@@ -820,7 +821,10 @@
     color: var(--theme-accent, #6366f1);
     pointer-events: none;
     animation: arrow-fade 1s ease forwards;
-    filter: drop-shadow(0 0 8px currentColor) drop-shadow(0 0 16px currentColor);
+    filter:
+      drop-shadow(0 0 6px currentColor)
+      drop-shadow(0 0 14px currentColor)
+      drop-shadow(0 0 28px currentColor);
   }
 
   @keyframes arrow-fade {
