@@ -118,10 +118,10 @@
     hapticService?.trigger("selection");
     onModuleChange?.("settings" as ModuleId);
     closeDrawer();
-    // Navigate to account tab after settings module loads
+    // Navigate to profile tab after settings module loads
     setTimeout(() => {
       import("../state/navigation-state.svelte").then(({ navigationState }) => {
-        navigationState.setActiveTab("account");
+        navigationState.setActiveTab("profile");
       });
     }, 50);
   }

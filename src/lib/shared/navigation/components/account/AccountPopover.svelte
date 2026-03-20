@@ -133,10 +133,10 @@
   );
   const hasNudges = $derived(needsPhoto || needsProp);
 
-  function handleNavigateToAccount() {
+  function handleNavigateToProfile() {
     triggerHaptic();
     onClose();
-    handleModuleChange("settings" as ModuleId, "account");
+    handleModuleChange("settings" as ModuleId, "profile");
   }
 </script>
 
@@ -151,7 +151,7 @@
     {#if isAuthenticated}
       <button
         class="identity-header interactive"
-        onclick={handleNavigateToAccount}
+        onclick={handleNavigateToProfile}
         aria-label="Edit profile"
       >
         <RobustAvatar
@@ -196,7 +196,7 @@
         {#if needsPhoto}
           <button
             class="nudge-card"
-            onclick={handleNavigateToAccount}
+            onclick={handleNavigateToProfile}
             aria-label="Add a profile photo"
           >
             <div class="nudge-icon">
@@ -212,7 +212,7 @@
         {#if needsProp}
           <button
             class="nudge-card"
-            onclick={handleNavigateToAccount}
+            onclick={handleNavigateToProfile}
             aria-label="Pick your favorite prop"
           >
             <div class="nudge-icon">

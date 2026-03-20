@@ -4,7 +4,7 @@
   Uses standard bottom navigation (tabs provided via SETTINGS_TABS)
   Content renders based on navigationState.activeTab
 
-  Tabs: Account, Props, Background, Visibility, Misc
+  Tabs: Profile, Props, Background, Visibility, Misc
   Accessed via gear icon in sidebar footer (not in main module list)
 
   Mobile: Swipe left from left edge to exit (matches portal animation direction)
@@ -34,7 +34,7 @@
   } from "$lib/shared/navigation/state/navigation-state.svelte";
 
   // Import all tab components directly
-  import AccountTab from "$lib/shared/settings/components/tabs/AccountTab.svelte";
+  import ProfileTab from "$lib/shared/settings/components/tabs/ProfileTab.svelte";
   import ReleaseNotesTab from "$lib/shared/settings/components/tabs/ReleaseNotesTab.svelte";
   import PropTypeTab from "$lib/shared/settings/components/tabs/PropTypeTab.svelte";
   import BackgroundTab from "$lib/shared/settings/components/tabs/background/BackgroundTab.svelte";
@@ -245,8 +245,8 @@
   {:else}
     <div class="settings-module-body">
       <section class="panel">
-        {#if activeTab === "account"}
-          <AccountTab
+        {#if activeTab === "profile"}
+          <ProfileTab
             currentSettings={settings}
             onSettingUpdate={handleSettingUpdate}
           />
@@ -271,7 +271,7 @@
           <LanguageTab />
         {:else}
           <!-- Fallback to account if unknown tab -->
-          <AccountTab
+          <ProfileTab
             currentSettings={settings}
             onSettingUpdate={handleSettingUpdate}
           />
