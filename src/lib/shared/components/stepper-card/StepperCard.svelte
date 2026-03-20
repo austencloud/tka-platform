@@ -50,6 +50,7 @@ Landscape: Left half decrements, right half increments (horizontal layout)
   let rippleService: IRippleEffect;
   let cardElement: HTMLDivElement | null = $state(null);
   let previousColor = $state("");
+  let transitionTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Sync previousColor on mount
   $effect(() => {
@@ -72,19 +73,37 @@ Landscape: Left half decrements, right half increments (horizontal layout)
     return undefined;
   });
 
-  // Gradient crossfade animation when color changes
+  // Gradient crossfade animation when color changes.
+  // If clicked rapidly, cancel the pending timeout and restart the
+  // transition from wherever the crossfade currently is — no snap.
   $effect(() => {
     if (color !== previousColor && cardElement) {
-      // Trigger crossfade animation
-      cardElement.classList.add("transitioning");
-
-      // After transition completes, update previousColor and reset
-      setTimeout(() => {
-        if (cardElement) {
-          cardElement.classList.remove("transitioning");
-        }
+      // Cancel any in-flight transition so we don't snap back
+      if (transitionTimer !== null) {
+        clearTimeout(transitionTimer);
+        // The ::before pseudo is mid-fade. Commit the current color
+        // as "previous" so the next fade starts from the right place.
+        cardElement.classList.remove("transitioning");
         previousColor = color;
-      }, 800); // Match CSS transition duration
+      }
+
+      // Use requestAnimationFrame to ensure the DOM reflects the
+      // updated previousColor before we start the new fade
+      requestAnimationFrame(() => {
+        if (!cardElement) return;
+        // Now previousColor matches the current background, so
+        // ::before shows the current state. Set the new color and fade.
+        // (color prop already has the new value from the parent)
+        cardElement.classList.add("transitioning");
+
+        transitionTimer = setTimeout(() => {
+          if (cardElement) {
+            cardElement.classList.remove("transitioning");
+          }
+          previousColor = color;
+          transitionTimer = null;
+        }, 800);
+      });
     }
   });
 
