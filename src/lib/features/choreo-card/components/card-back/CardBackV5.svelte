@@ -23,6 +23,7 @@
   import { deriveCardBackData } from "./card-back-data";
   import { getCardBackThemeVisuals } from "./card-back-theme-visuals";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import StartPositionMiniGrid from "./StartPositionMiniGrid.svelte";
 
   interface Props { sequence: SequenceData; }
   let { sequence }: Props = $props();
@@ -41,16 +42,6 @@
   );
 
   const theme = $derived(getCardBackThemeVisuals(settingsService.settings.backgroundType));
-
-  // Greek letter for starting position group
-  const POSITION_GLYPHS: Record<string, string> = {
-    alpha: "α", beta: "β", gamma: "γ",
-    zeta: "ζ", eta: "η", tau: "τ", terra: "⊕",
-  };
-
-  const startGlyph = $derived(
-    d.startPositionGroup ? POSITION_GLYPHS[d.startPositionGroup] ?? null : null
-  );
 
   // Pronunciation guide: spell out Greek letters and dash suffixes
   const LETTER_NAMES: Record<string, string> = {
@@ -117,7 +108,7 @@
 <div class="border-frame" style="background: {theme.borderGradient};">
   <!-- Inner: themed background with decorative elements -->
   <div class="back" style="background: {theme.background};">
-    <CardBackDecorations theme={settingsService.settings.backgroundType} />
+    <CardBackDecorations theme={settingsService.settings.backgroundType ?? "nightSky"} />
 
     <!-- CORNER BADGES — visible when fanning cards -->
 
@@ -144,16 +135,13 @@
       <span class="corner-sublabel">steps</span>
     </div>
 
-    <!-- Bottom-right: Starting position SVG glyph -->
-    {#if d.startPositionGroup}
-      <div class="corner bottom-right">
-        <img
-          class="corner-position-img"
-          src="/images/letters_trimmed/Type6/{POSITION_GLYPHS[d.startPositionGroup] ?? 'α'}.svg"
-          alt={d.startPositionGroup}
-        />
-      </div>
-    {/if}
+    <!-- Bottom-right: Starting position mini-grid -->
+    <div class="corner bottom-right">
+      <StartPositionMiniGrid
+        info={d.startPosition ?? { group: null, blueLocation: null, redLocation: null, gridMode: "box" }}
+        size={40}
+      />
+    </div>
 
     <!-- Branding: pinned to top center, between corner badges -->
     <div class="top-brand">
@@ -250,13 +238,6 @@
     color: rgba(255, 255, 255, 0.4);
     text-transform: uppercase;
     letter-spacing: 0.08em;
-  }
-
-  .corner-position-img {
-    width: 30px;
-    height: auto;
-    filter: invert(0.9);
-    opacity: 0.7;
   }
 
   /* ═══════ BRANDING (top center) ═══════ */
