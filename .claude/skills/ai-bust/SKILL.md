@@ -1,3 +1,5 @@
+<!-- managed by @austencloud/claude-skills — do not edit manually, run: npx @austencloud/claude-skills sync -->
+
 ---
 description: Use when writing or reviewing user-facing text to check for AI writing patterns, banned words, or robotic tone
 ---
@@ -11,8 +13,8 @@ Scans user-facing text for AI writing patterns and flags violations.
 ## Usage
 
 ```
-/ai-bust src/routes/landing/+page.svelte
-/ai-bust src/routes/(public)/**/*.svelte
+/ai-bust src/routes/+page.svelte
+/ai-bust src/lib/components/**/*.svelte
 /ai-bust "Your text to check here"
 ```
 
@@ -22,7 +24,7 @@ Scans user-facing text for AI writing patterns and flags violations.
 
 | Pattern | Example | Fix |
 |---------|---------|-----|
-| Em dashes | "for teachers — whether" | Use comma or period |
+| Em dashes | "for users — whether" | Use comma or period |
 | Negative-to-positive flip | "Not to constrain, but to free" | State directly what it does |
 | Redundant emphasis | "Share globally — communicates across distances" | Delete the repetition |
 | Perfect threes | "efficient, reliable, and scalable" | Break rhythm or reduce to two |

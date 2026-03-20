@@ -1,3 +1,5 @@
+<!-- managed by @austencloud/claude-skills — do not edit manually, run: npx @austencloud/claude-skills sync -->
+
 ---
 description: Use when preparing release notes or reviewing what changed since last version
 ---
@@ -20,12 +22,8 @@ git log $(git tag -l "v*" --sort=-version:refname | head -1)..HEAD --oneline --n
 
 Transform technical messages to plain language:
 
-- Before: `fix(nav): settings tab not persisting`
-- After: `Fixed settings not saving when switching modules`
-
-## Scope
-
-This generates raw changelog text. For full release packaging (version bump, GitHub release, feedback archival), use `/release` instead.
+- Before: `fix(shop): filter not persisting selection`
+- After: `Fixed filters not saving when switching categories`
 
 ## Output Format
 
