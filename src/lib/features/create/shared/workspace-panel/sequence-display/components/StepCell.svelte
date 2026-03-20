@@ -5,6 +5,8 @@
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import PictographContextMenuHost from "$lib/shared/pictograph/shared/components/context-menu/PictographContextMenuHost.svelte";
+  import PictographSettingsModal from "$lib/shared/pictograph/shared/components/PictographSettingsModal.svelte";
   import { practiceAnimationStyle } from "../../../state/practice-animation-style.svelte";
   import { createStepCellAnimationManager } from "../services/implementations/StepCellAnimationManager";
 
@@ -101,6 +103,10 @@
 
   // Element ref for focus management
   let cellElement: HTMLDivElement;
+
+  // Context menu and settings state
+  let contextMenuHost: PictographContextMenuHost;
+  let settingsOpen = $state(false);
 
   // Sync animation manager with prop changes via effects
   $effect(() => {
@@ -265,10 +271,8 @@
   }
 
   function handleContextMenu(event: MouseEvent) {
-    // Prevent default context menu when long-press handler is active
-    if (onLongPress) {
-      event.preventDefault();
-    }
+    event.preventDefault();
+    contextMenuHost?.openContextMenu(event.clientX, event.clientY);
   }
 </script>
 
@@ -330,6 +334,16 @@
     {redPropTypeOverride}
   />
 </div>
+
+<PictographContextMenuHost
+  bind:this={contextMenuHost}
+  onOpenSettings={() => { settingsOpen = true; }}
+/>
+
+<PictographSettingsModal
+  bind:open={settingsOpen}
+  stepData={step}
+/>
 
 <style>
   .step-cell {
