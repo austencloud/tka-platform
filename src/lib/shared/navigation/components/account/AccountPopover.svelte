@@ -10,13 +10,15 @@
   import {
     navigationState,
   } from "../../state/navigation-state.svelte";
+  import {
+    handleModuleChange,
+  } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
+  import type { ModuleId } from "../../domain/types";
 
-
-  let { isOpen, onClose, anchorElement, onOpenProfile } = $props<{
+  let { isOpen, onClose, anchorElement } = $props<{
     isOpen: boolean;
     onClose: () => void;
     anchorElement: HTMLElement | null;
-    onOpenProfile?: () => void;
   }>();
 
   const user = $derived(authState.user);
@@ -131,10 +133,10 @@
   );
   const hasNudges = $derived(needsPhoto || needsProp);
 
-  function handleOpenProfileScreen() {
+  function handleNavigateToAccount() {
     triggerHaptic();
     onClose();
-    onOpenProfile?.();
+    handleModuleChange("settings" as ModuleId, "account");
   }
 </script>
 
@@ -145,11 +147,11 @@
     bind:this={popoverEl}
     style={popoverStyle}
   >
-    <!-- Identity header — clickable when authenticated to open profile screen -->
-    {#if isAuthenticated && onOpenProfile}
+    <!-- Identity header — clickable when authenticated, navigates to Settings > Account -->
+    {#if isAuthenticated}
       <button
         class="identity-header interactive"
-        onclick={handleOpenProfileScreen}
+        onclick={handleNavigateToAccount}
         aria-label="Edit profile"
       >
         <RobustAvatar
@@ -194,7 +196,7 @@
         {#if needsPhoto}
           <button
             class="nudge-card"
-            onclick={handleOpenProfileScreen}
+            onclick={handleNavigateToAccount}
             aria-label="Add a profile photo"
           >
             <div class="nudge-icon">
@@ -210,7 +212,7 @@
         {#if needsProp}
           <button
             class="nudge-card"
-            onclick={handleOpenProfileScreen}
+            onclick={handleNavigateToAccount}
             aria-label="Pick your favorite prop"
           >
             <div class="nudge-icon">
