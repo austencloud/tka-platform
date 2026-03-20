@@ -10,15 +10,13 @@
   import {
     navigationState,
   } from "../../state/navigation-state.svelte";
-  import {
-    handleModuleChange,
-  } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
-  import type { ModuleId } from "../../domain/types";
 
-  let { isOpen, onClose, anchorElement } = $props<{
+
+  let { isOpen, onClose, anchorElement, onOpenProfile } = $props<{
     isOpen: boolean;
     onClose: () => void;
     anchorElement: HTMLElement | null;
+    onOpenProfile?: () => void;
   }>();
 
   const user = $derived(authState.user);
@@ -133,10 +131,10 @@
   );
   const hasNudges = $derived(needsPhoto || needsProp);
 
-  async function handleNudgeNavigate(tab: string) {
+  function handleOpenProfileScreen() {
     triggerHaptic();
     onClose();
-    await handleModuleChange("settings" as ModuleId, tab);
+    onOpenProfile?.();
   }
 </script>
 
@@ -147,34 +145,56 @@
     bind:this={popoverEl}
     style={popoverStyle}
   >
-    <!-- Identity header -->
-    <div class="identity-header">
-      {#if isAuthenticated}
+    <!-- Identity header — clickable when authenticated to open profile screen -->
+    {#if isAuthenticated && onOpenProfile}
+      <button
+        class="identity-header interactive"
+        onclick={handleOpenProfileScreen}
+        aria-label="Edit profile"
+      >
         <RobustAvatar
           src={photoURL}
           name={displayName}
           size="md"
           customSize={40}
         />
-      {:else}
-        <div class="identity-avatar-guest">
-          <i class="fas fa-user" aria-hidden="true"></i>
+        <div class="identity-info">
+          <span class="identity-name">{displayName}</span>
+          {#if email}
+            <span class="identity-email">{email}</span>
+          {/if}
         </div>
-      {/if}
-      <div class="identity-info">
-        <span class="identity-name">{displayName}</span>
-        {#if email}
-          <span class="identity-email">{email}</span>
+        <i class="fas fa-chevron-right identity-chevron" aria-hidden="true"></i>
+      </button>
+    {:else}
+      <div class="identity-header">
+        {#if isAuthenticated}
+          <RobustAvatar
+            src={photoURL}
+            name={displayName}
+            size="md"
+            customSize={40}
+          />
+        {:else}
+          <div class="identity-avatar-guest">
+            <i class="fas fa-user" aria-hidden="true"></i>
+          </div>
         {/if}
+        <div class="identity-info">
+          <span class="identity-name">{displayName}</span>
+          {#if email}
+            <span class="identity-email">{email}</span>
+          {/if}
+        </div>
       </div>
-    </div>
+    {/if}
 
     {#if isAuthenticated && hasNudges}
       <div class="nudges-section">
         {#if needsPhoto}
           <button
             class="nudge-card"
-            onclick={() => handleNudgeNavigate("profile")}
+            onclick={handleOpenProfileScreen}
             aria-label="Add a profile photo"
           >
             <div class="nudge-icon">
@@ -190,7 +210,7 @@
         {#if needsProp}
           <button
             class="nudge-card"
-            onclick={() => handleNudgeNavigate("props")}
+            onclick={handleOpenProfileScreen}
             aria-label="Pick your favorite prop"
           >
             <div class="nudge-icon">
@@ -284,6 +304,33 @@
     align-items: center;
     gap: 12px;
     padding: 16px;
+  }
+
+  .identity-header.interactive {
+    width: 100%;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+    transition: background var(--duration-fast, 150ms) ease;
+    border-radius: 0;
+  }
+
+  .identity-header.interactive:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
+  }
+
+  .identity-header.interactive:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--theme-accent) 70%, transparent);
+    outline-offset: -2px;
+  }
+
+  .identity-chevron {
+    font-size: var(--font-size-compact, 12px);
+    opacity: 0.3;
+    flex-shrink: 0;
   }
 
   .identity-avatar-guest {
@@ -498,7 +545,8 @@
     }
 
     .action-button,
-    .version-link {
+    .version-link,
+    .identity-header.interactive {
       transition: none !important;
     }
   }

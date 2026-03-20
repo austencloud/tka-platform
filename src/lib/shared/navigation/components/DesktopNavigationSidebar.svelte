@@ -21,6 +21,7 @@
   import SidebarContextMenu from "./desktop-sidebar/SidebarContextMenu.svelte";
   import type { ContextMenuState } from "./desktop-sidebar/SidebarContextMenu.svelte";
   import AccountPopover from "./account/AccountPopover.svelte";
+  import { profileScreenState } from "$lib/features/profile/profile-screen-state.svelte";
   import {
     navigationState,
     SETTINGS_TABS,
@@ -524,6 +525,7 @@
   isOpen={accountPopoverOpen}
   onClose={closeAccountPopover}
   anchorElement={accountSectionEl}
+  onOpenProfile={() => profileScreenState.open()}
 />
 
 <style>
