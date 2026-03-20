@@ -16,6 +16,8 @@
   import CardDesignerContextMenuHost from "./context-menu/CardDesignerContextMenuHost.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { ANIMATED_BACKGROUNDS } from "$lib/shared/settings/utils/public-page-backgrounds";
 
   interface Props {
     sequences: SequenceData[];
@@ -102,6 +104,14 @@
     try {
       localStorage.setItem(STORAGE_KEY, String(length));
     } catch { /* storage full or unavailable */ }
+  }
+
+  // Theme switcher: updates global background setting
+  const currentTheme = $derived(settingsService.settings.backgroundType);
+
+  function handleThemeClick(type: string) {
+    hapticService?.trigger("selection");
+    settingsService.updateSetting("backgroundType", type);
   }
 
   // Filtered sequences based on selected length (0 = all)
@@ -342,6 +352,23 @@
       {/each}
     </div>
 
+    <!-- Theme switcher: icon chips for each background theme -->
+    <div class="filter-chips" role="toolbar" aria-label="Card back theme">
+      {#each ANIMATED_BACKGROUNDS as bg (bg.type)}
+        <button
+          class="chip theme-chip"
+          class:selected={currentTheme === bg.type}
+          onclick={() => handleThemeClick(bg.type)}
+          aria-pressed={currentTheme === bg.type}
+          aria-label={bg.label}
+          title={bg.label}
+          type="button"
+        >
+          <i class="fas {bg.icon}" aria-hidden="true"></i>
+        </button>
+      {/each}
+    </div>
+
     <!-- Size slider -->
     <div class="size-control">
       <i class="fas fa-search-minus" aria-hidden="true"></i>
@@ -382,6 +409,7 @@
                   {showTKA}
                   {showWord}
                   {includeStartPosition}
+                  onContextMenu={(x, y) => contextMenuHost.openContextMenu(x, y)}
                 />
               </div>
             </div>
@@ -556,12 +584,22 @@
     justify-content: center;
   }
 
-  /* Size slider */
+  /* Theme chips: icon-only, square touch targets */
+  .theme-chip {
+    min-width: var(--min-touch-target, 48px);
+    padding: 0;
+  }
+
+  .theme-chip i {
+    font-size: 0.85rem;
+  }
+
+  /* Size slider with proper touch targets */
   .size-control {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--spacing-xs, 4px);
+    gap: var(--spacing-sm, 8px);
     flex-shrink: 0;
     margin-bottom: var(--spacing-xs, 4px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
@@ -569,19 +607,26 @@
   }
 
   .size-control input[type="range"] {
-    width: 120px;
+    width: 160px;
+    height: var(--min-touch-target, 48px);
     accent-color: var(--theme-accent, #6366f1);
     cursor: pointer;
   }
 
   .size-control i {
-    font-size: 10px;
+    font-size: 14px;
+    min-width: var(--min-touch-target, 48px);
+    min-height: var(--min-touch-target, 48px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .size-label {
-    min-width: 36px;
+    min-width: 40px;
     text-align: right;
     font-variant-numeric: tabular-nums;
+    font-size: var(--font-size-sm, 14px);
   }
 
   .pair {
