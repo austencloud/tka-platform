@@ -195,7 +195,7 @@
   }
 
   .hand-path-cards :global(> *) {
-    flex: 0 0 120px;
+    flex: 0 0 200px;
   }
 
   .family-grid {
