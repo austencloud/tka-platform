@@ -63,16 +63,26 @@
 		loadItems();
 	}
 
+	const LOCATION_LABELS: Record<string, string> = {
+		n: "North", s: "South", e: "East", w: "West",
+		ne: "NE", se: "SE", sw: "SW", nw: "NW", c: "Center",
+	};
+
+	function locationLabel(loc: string): string {
+		return LOCATION_LABELS[loc] ?? loc;
+	}
+
 	function getItemLabel(item: any): string {
 		if (item.name) return item.name;
-		if (item.startLocation && item.length) {
-			return `${item.startLocation} → ${item.length} beats`;
-		}
-		return item.contentHash?.slice(0, 8) ?? "Untitled";
+		const start = item.startLocation ? locationLabel(item.startLocation) : null;
+		const end = item.endLocation ? locationLabel(item.endLocation) : null;
+		if (start && end && start !== end) return `${start} → ${end}`;
+		if (start) return `From ${start}`;
+		return item.contentHash?.slice(0, 8) ?? "Path";
 	}
 
 	function getItemMeta(item: any): string {
-		const len = item.length ?? item.steps?.length ?? 0;
+		const len = item.length ?? item.steps?.length ?? item.locations?.length ?? 0;
 		return `${len} beats`;
 	}
 </script>
@@ -132,20 +142,14 @@
 					onclick={() => onSelect(item)}
 					aria-label="Select {getItemLabel(item)}"
 				>
-					{#if "thumbnails" in item && (item as any).thumbnails?.length > 0}
-						<img
-							class="card-thumb"
-							src={(item as any).thumbnails[0]}
-							alt=""
-							loading="lazy"
-						/>
-					{:else}
-						<div class="card-thumb-placeholder">
-							<i class="fas {browseMode === 'soloProps' ? 'fa-hand-paper' : 'fa-route'}" aria-hidden="true"></i>
-						</div>
-					{/if}
-					<span class="card-name">{getItemLabel(item)}</span>
-					<span class="card-meta">{getItemMeta(item)}</span>
+					<div class="card-info">
+						<i class="fas {browseMode === 'soloProps' ? 'fa-hand-paper' : 'fa-route'} card-icon" aria-hidden="true"></i>
+						<span class="card-name">{getItemLabel(item)}</span>
+						<span class="card-meta">{getItemMeta(item)}</span>
+						{#if item.impliedGridMode}
+							<span class="card-grid-mode">{item.impliedGridMode}</span>
+						{/if}
+					</div>
 				</button>
 			{/each}
 		{/if}
@@ -231,8 +235,8 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 2px;
-		padding: var(--spacing-xs, 4px);
+		justify-content: center;
+		padding: var(--spacing-sm, 8px);
 		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
 		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
 		border-radius: var(--radius-sm, 8px);
@@ -240,31 +244,25 @@
 		color: var(--theme-text, #ffffff);
 		text-align: center;
 		transition: border-color 0.15s ease;
-		min-height: 44px;
+		min-height: 64px;
 	}
 
 	.item-card:hover {
 		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+		background: rgba(255, 255, 255, 0.06);
 	}
 
-	.card-thumb {
-		width: 100%;
-		aspect-ratio: 1 / 1;
-		object-fit: contain;
-		border-radius: var(--radius-xs, 4px);
-		background: rgba(0, 0, 0, 0.2);
-	}
-
-	.card-thumb-placeholder {
-		width: 100%;
-		aspect-ratio: 1 / 1;
+	.card-info {
 		display: flex;
+		flex-direction: column;
 		align-items: center;
-		justify-content: center;
-		background: rgba(0, 0, 0, 0.2);
-		border-radius: var(--radius-xs, 4px);
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
+		gap: 4px;
+	}
+
+	.card-icon {
 		font-size: 1.2rem;
+		color: var(--theme-accent, #6366f1);
+		margin-bottom: 2px;
 	}
 
 	.card-name {
@@ -277,8 +275,15 @@
 	}
 
 	.card-meta {
+		font-size: 11px;
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+	}
+
+	.card-grid-mode {
 		font-size: 10px;
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.35));
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
 	}
 
 	.state-msg {

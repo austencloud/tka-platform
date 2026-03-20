@@ -353,7 +353,7 @@
         margin: 1,
         style: "modern",
         darkMode: isDark,
-        offline: true,
+        offline: false,
         bluePropType: bProp,
         redPropType: rProp,
       })
@@ -523,6 +523,13 @@
     return Math.floor(cellWidth / 7);
   });
 
+  // Step number font size: 10.526% of cell width (which equals row height
+  // for square cells). Using cellWidth directly instead of cqw ensures
+  // consistent sizing even for wider duration cells.
+  const stepNumFontSize = $derived(
+    cellWidth ? Math.min(Math.round(cellWidth * 0.10526), 28) : 0
+  );
+
   const badgeSize = $derived(scaledHeaderHeight * 0.9);
   const badgePadding = $derived(scaledHeaderHeight * 0.05);
   const badgeNumberFontSize = $derived(Math.round(badgeSize * 0.5625));
@@ -685,6 +692,20 @@
 
     columns = cols;
     rows = rws;
+
+    // Recalculate duration layout when start position toggles
+    const mixed = detectMixedDurations(sequence.steps);
+    hasMixedDurations = mixed;
+    if (mixed) {
+      const beatsPerRow = includeStartPosition ? cols - 1 : cols;
+      const computedRows = calculateTimelineRowsByBeatCount(sequence.steps, beatsPerRow);
+      durationRows = computedRows;
+      let maxStepUnits = 0;
+      for (const row of computedRows) {
+        maxStepUnits = Math.max(maxStepUnits, row.totalDuration);
+      }
+      durationColCount = maxStepUnits + (includeStartPosition ? 1 : 0);
+    }
 
     // Recalculate grid positions for all existing cells
     cells = cells.map(cell => {
@@ -1555,7 +1576,7 @@
       alt={cell.label}
       draggable="false"
     />
-    {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={activeDarkMode} transition:fade|local={{ duration: 150 }}>{cell.label}</span>{/if}
+    {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={activeDarkMode} style="font-size: {stepNumFontSize}px;" transition:fade|local={{ duration: 150 }}>{cell.label}</span>{/if}
     {#if showDurBadge && hasMixedDurations && cell.duration !== 1}<span class="duration-badge" class:dark-mode={activeDarkMode}>{formatDuration(cell.duration)}</span>{/if}
   {:else}
     <div class="cell-spinner-container">
@@ -1973,13 +1994,6 @@
      During initial cell loading, width transitions cause visible jumps
      as the contain dimensions settle. */
   .preview-stack.smooth-resize {
-    transition: width 250ms cubic-bezier(0.2, 0, 0, 1);
-  }
-
-  /* Height transition only when growing (focus-in: card expands into larger container).
-     When shrinking (unfocus), height snaps instantly so the card doesn't lag behind
-     the container and get pushed upward by centering. */
-  .preview-stack.smooth-resize.height-growing {
     transition: width 250ms cubic-bezier(0.2, 0, 0, 1),
                 height 250ms cubic-bezier(0.2, 0, 0, 1);
   }
@@ -2265,7 +2279,8 @@
     left: 5.3%;
     font-family: Georgia, serif;
     font-weight: bold;
-    font-size: min(10.526cqw, 28px);
+    /* font-size set via inline style from stepNumFontSize (cellWidth-based)
+       so wider duration cells get the same number size as square cells */
     line-height: 1;
     color: #231f20;
     pointer-events: none;

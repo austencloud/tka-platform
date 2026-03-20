@@ -370,6 +370,95 @@ function soloPropToDoc(sp, ownerId) {
 // Main processing
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Collect artifacts from a sequence document into the maps
+// ---------------------------------------------------------------------------
+
+function collectArtifacts(data, docId, ownerId, handPathDocs, soloPropDocs, stats) {
+  // If the sequence already has compositional fields, use those directly
+  if (data.blueSoloProp && data.redSoloProp) {
+    const blueHP = data.blueSoloProp.handPath;
+    if (blueHP?.contentHash && !handPathDocs.has(blueHP.contentHash)) {
+      handPathDocs.set(blueHP.contentHash, { doc: handPathToDoc(blueHP, ownerId), ownerId });
+    }
+    const redHP = data.redSoloProp.handPath;
+    if (redHP?.contentHash && !handPathDocs.has(redHP.contentHash)) {
+      handPathDocs.set(redHP.contentHash, { doc: handPathToDoc(redHP, ownerId), ownerId });
+    }
+    const blueSP = data.blueSoloProp;
+    if (blueSP?.contentHash && !soloPropDocs.has(blueSP.contentHash)) {
+      soloPropDocs.set(blueSP.contentHash, { doc: soloPropToDoc(blueSP, ownerId), ownerId });
+    }
+    const redSP = data.redSoloProp;
+    if (redSP?.contentHash && !soloPropDocs.has(redSP.contentHash)) {
+      soloPropDocs.set(redSP.contentHash, { doc: soloPropToDoc(redSP, ownerId), ownerId });
+    }
+    stats.sequencesProcessed++;
+    return;
+  }
+
+  // Fallback: decompose from steps
+  if (!data.steps || !Array.isArray(data.steps) || data.steps.length === 0) {
+    stats.sequencesSkipped++;
+    return;
+  }
+
+  try {
+    const blueSoloProp = extractSoloPropFromSequence(data, "blue");
+    const redSoloProp = extractSoloPropFromSequence(data, "red");
+
+    if (!handPathDocs.has(blueSoloProp.handPath.contentHash)) {
+      handPathDocs.set(blueSoloProp.handPath.contentHash, { doc: handPathToDoc(blueSoloProp.handPath, ownerId), ownerId });
+    }
+    if (!handPathDocs.has(redSoloProp.handPath.contentHash)) {
+      handPathDocs.set(redSoloProp.handPath.contentHash, { doc: handPathToDoc(redSoloProp.handPath, ownerId), ownerId });
+    }
+    if (!soloPropDocs.has(blueSoloProp.contentHash)) {
+      soloPropDocs.set(blueSoloProp.contentHash, { doc: soloPropToDoc(blueSoloProp, ownerId), ownerId });
+    }
+    if (!soloPropDocs.has(redSoloProp.contentHash)) {
+      soloPropDocs.set(redSoloProp.contentHash, { doc: soloPropToDoc(redSoloProp, ownerId), ownerId });
+    }
+    stats.sequencesProcessed++;
+  } catch (err) {
+    stats.errors++;
+    console.error(`  ERROR on ${docId} (${data.word || data.name || "unnamed"}): ${err.message}`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Batch writer
+// ---------------------------------------------------------------------------
+
+async function writeBatched(db, collectionPath, docsMap, stats, field, label) {
+  console.log(`Writing ${label}...`);
+  let batch = db.batch();
+  let batchCount = 0;
+  let total = 0;
+
+  for (const [hash, { doc }] of docsMap) {
+    const ref = db.collection(collectionPath).doc(hash);
+    batch.set(ref, doc, { merge: true });
+    batchCount++;
+    total++;
+
+    if (batchCount >= BATCH_SIZE) {
+      await batch.commit();
+      console.log(`  Committed batch (${total} ${label} so far)`);
+      batch = db.batch();
+      batchCount = 0;
+    }
+  }
+  if (batchCount > 0) {
+    await batch.commit();
+  }
+  stats[field] += total;
+}
+
+// ---------------------------------------------------------------------------
+// Main processing
+// ---------------------------------------------------------------------------
+
 async function main() {
   console.log(
     `\nBackfill Artifacts${DRY_RUN ? " (DRY RUN)" : ""}${LIMIT < Infinity ? ` (limit: ${LIMIT})` : ""}\n`
@@ -383,188 +472,118 @@ async function main() {
     sequencesSkipped: 0,
     handPathsWritten: 0,
     soloPropsWritten: 0,
+    usersProcessed: 0,
     errors: 0,
   };
 
-  // Collect unique artifacts by content hash to deduplicate
-  // across sequences that share the same hand path or solo prop.
-  const handPathDocs = new Map(); // contentHash -> { doc, ownerId }
-  const soloPropDocs = new Map(); // contentHash -> { doc, ownerId }
+  // =========================================================================
+  // PHASE 1: Public sequences → publicHandPaths + publicSoloProps
+  // =========================================================================
 
-  // Read all public sequences
+  const publicHP = new Map();
+  const publicSP = new Map();
+
+  console.log("=== Phase 1: Public Sequences ===");
   console.log("Reading publicSequences...");
-  let query = db.collection("publicSequences");
+  let pubQuery = db.collection("publicSequences");
   if (LIMIT < Infinity) {
-    query = query.limit(LIMIT);
+    pubQuery = pubQuery.limit(LIMIT);
   }
-  const snapshot = await query.get();
-  console.log(`  Found ${snapshot.docs.length} public sequences`);
+  const pubSnapshot = await pubQuery.get();
+  console.log(`  Found ${pubSnapshot.docs.length} public sequences`);
 
-  for (const doc of snapshot.docs) {
+  for (const doc of pubSnapshot.docs) {
     const data = doc.data();
+    const ownerId = data.ownerId || "unknown";
+    collectArtifacts(data, doc.id, ownerId, publicHP, publicSP, stats);
+  }
 
-    // If the sequence already has compositional fields, use those directly
-    if (data.blueSoloProp && data.redSoloProp) {
-      const ownerId = data.ownerId || "unknown";
+  console.log(`  Unique public hand paths: ${publicHP.size}`);
+  console.log(`  Unique public solo props: ${publicSP.size}`);
 
-      // Blue hand path
-      const blueHP = data.blueSoloProp.handPath;
-      if (blueHP?.contentHash && !handPathDocs.has(blueHP.contentHash)) {
-        handPathDocs.set(blueHP.contentHash, {
-          doc: handPathToDoc(blueHP, ownerId),
-          ownerId,
-        });
-      }
+  if (!DRY_RUN) {
+    await writeBatched(db, "publicHandPaths", publicHP, stats, "handPathsWritten", "public hand paths");
+    await writeBatched(db, "publicSoloProps", publicSP, stats, "soloPropsWritten", "public solo props");
+  }
 
-      // Red hand path
-      const redHP = data.redSoloProp.handPath;
-      if (redHP?.contentHash && !handPathDocs.has(redHP.contentHash)) {
-        handPathDocs.set(redHP.contentHash, {
-          doc: handPathToDoc(redHP, ownerId),
-          ownerId,
-        });
-      }
+  // =========================================================================
+  // PHASE 2: User sequences → users/{uid}/handPaths + users/{uid}/soloProps
+  // =========================================================================
 
-      // Blue solo prop
-      const blueSP = data.blueSoloProp;
-      if (blueSP?.contentHash && !soloPropDocs.has(blueSP.contentHash)) {
-        soloPropDocs.set(blueSP.contentHash, {
-          doc: soloPropToDoc(blueSP, ownerId),
-          ownerId,
-        });
-      }
+  console.log("\n=== Phase 2: User Collections ===");
+  console.log("Listing all users...");
+  const usersSnapshot = await db.collection("users").get();
+  const userIds = usersSnapshot.docs.map((d) => d.id);
+  console.log(`  Found ${userIds.length} users`);
 
-      // Red solo prop
-      const redSP = data.redSoloProp;
-      if (redSP?.contentHash && !soloPropDocs.has(redSP.contentHash)) {
-        soloPropDocs.set(redSP.contentHash, {
-          doc: soloPropToDoc(redSP, ownerId),
-          ownerId,
-        });
-      }
+  for (const uid of userIds) {
+    const seqCollection = db.collection(`users/${uid}/sequences`);
+    let userQuery = seqCollection;
+    if (LIMIT < Infinity) {
+      userQuery = userQuery.limit(LIMIT);
+    }
+    const userSeqSnapshot = await userQuery.get();
 
-      stats.sequencesProcessed++;
-      continue;
+    if (userSeqSnapshot.docs.length === 0) continue;
+
+    const userHP = new Map();
+    const userSP = new Map();
+
+    for (const doc of userSeqSnapshot.docs) {
+      const data = doc.data();
+      collectArtifacts(data, doc.id, uid, userHP, userSP, stats);
     }
 
-    // Fallback: decompose from steps if compositional fields are missing
-    if (!data.steps || !Array.isArray(data.steps) || data.steps.length === 0) {
-      stats.sequencesSkipped++;
-      continue;
-    }
+    if (userHP.size === 0 && userSP.size === 0) continue;
 
-    try {
-      const ownerId = data.ownerId || "unknown";
-      const blueSoloProp = extractSoloPropFromSequence(data, "blue");
-      const redSoloProp = extractSoloPropFromSequence(data, "red");
+    stats.usersProcessed++;
+    console.log(`  User ${uid}: ${userSeqSnapshot.docs.length} sequences → ${userHP.size} hand paths, ${userSP.size} solo props`);
 
-      // Blue hand path
-      if (!handPathDocs.has(blueSoloProp.handPath.contentHash)) {
-        handPathDocs.set(blueSoloProp.handPath.contentHash, {
-          doc: handPathToDoc(blueSoloProp.handPath, ownerId),
-          ownerId,
-        });
+    if (!DRY_RUN) {
+      // Write to user's personal collections
+      let batch = db.batch();
+      let batchCount = 0;
+
+      for (const [hash, { doc }] of userHP) {
+        const ref = db.collection(`users/${uid}/handPaths`).doc(hash);
+        batch.set(ref, doc, { merge: true });
+        batchCount++;
+        stats.handPathsWritten++;
+        if (batchCount >= BATCH_SIZE) {
+          await batch.commit();
+          batch = db.batch();
+          batchCount = 0;
+        }
       }
 
-      // Red hand path
-      if (!handPathDocs.has(redSoloProp.handPath.contentHash)) {
-        handPathDocs.set(redSoloProp.handPath.contentHash, {
-          doc: handPathToDoc(redSoloProp.handPath, ownerId),
-          ownerId,
-        });
+      for (const [hash, { doc }] of userSP) {
+        const ref = db.collection(`users/${uid}/soloProps`).doc(hash);
+        batch.set(ref, doc, { merge: true });
+        batchCount++;
+        stats.soloPropsWritten++;
+        if (batchCount >= BATCH_SIZE) {
+          await batch.commit();
+          batch = db.batch();
+          batchCount = 0;
+        }
       }
 
-      // Blue solo prop
-      if (!soloPropDocs.has(blueSoloProp.contentHash)) {
-        soloPropDocs.set(blueSoloProp.contentHash, {
-          doc: soloPropToDoc(blueSoloProp, ownerId),
-          ownerId,
-        });
+      if (batchCount > 0) {
+        await batch.commit();
       }
-
-      // Red solo prop
-      if (!soloPropDocs.has(redSoloProp.contentHash)) {
-        soloPropDocs.set(redSoloProp.contentHash, {
-          doc: soloPropToDoc(redSoloProp, ownerId),
-          ownerId,
-        });
-      }
-
-      stats.sequencesProcessed++;
-    } catch (err) {
-      stats.errors++;
-      console.error(
-        `  ERROR on ${doc.id} (${data.word || data.name || "unnamed"}): ${err.message}`
-      );
     }
   }
 
-  console.log(`\nArtifacts collected:`);
-  console.log(`  Unique hand paths: ${handPathDocs.size}`);
-  console.log(`  Unique solo props: ${soloPropDocs.size}`);
-
-  if (DRY_RUN) {
-    console.log("\n  [DRY RUN] Would write:");
-    console.log(`    ${handPathDocs.size} documents to publicHandPaths`);
-    console.log(`    ${soloPropDocs.size} documents to publicSoloProps`);
-    for (const [hash] of [...handPathDocs.entries()].slice(0, 5)) {
-      console.log(`    publicHandPaths/${hash}`);
-    }
-    if (handPathDocs.size > 5) {
-      console.log(`    ... and ${handPathDocs.size - 5} more`);
-    }
-  } else {
-    // Write hand paths in batches
-    console.log("\nWriting publicHandPaths...");
-    let batch = db.batch();
-    let batchCount = 0;
-
-    for (const [hash, { doc }] of handPathDocs) {
-      const ref = db.collection("publicHandPaths").doc(hash);
-      batch.set(ref, doc, { merge: true });
-      batchCount++;
-      stats.handPathsWritten++;
-
-      if (batchCount >= BATCH_SIZE) {
-        await batch.commit();
-        console.log(`  Committed batch (${stats.handPathsWritten} hand paths so far)`);
-        batch = db.batch();
-        batchCount = 0;
-      }
-    }
-    if (batchCount > 0) {
-      await batch.commit();
-    }
-
-    // Write solo props in batches
-    console.log("Writing publicSoloProps...");
-    batch = db.batch();
-    batchCount = 0;
-
-    for (const [hash, { doc }] of soloPropDocs) {
-      const ref = db.collection("publicSoloProps").doc(hash);
-      batch.set(ref, doc, { merge: true });
-      batchCount++;
-      stats.soloPropsWritten++;
-
-      if (batchCount >= BATCH_SIZE) {
-        await batch.commit();
-        console.log(`  Committed batch (${stats.soloPropsWritten} solo props so far)`);
-        batch = db.batch();
-        batchCount = 0;
-      }
-    }
-    if (batchCount > 0) {
-      await batch.commit();
-    }
-  }
-
+  // =========================================================================
   // Report
+  // =========================================================================
+
   console.log("\n--- Backfill Summary ---");
   console.log(`  Sequences processed:  ${stats.sequencesProcessed}`);
   console.log(`  Sequences skipped:    ${stats.sequencesSkipped}`);
-  console.log(`  Hand paths written:   ${DRY_RUN ? `${handPathDocs.size} (dry run)` : stats.handPathsWritten}`);
-  console.log(`  Solo props written:   ${DRY_RUN ? `${soloPropDocs.size} (dry run)` : stats.soloPropsWritten}`);
+  console.log(`  Users processed:      ${stats.usersProcessed}`);
+  console.log(`  Hand paths written:   ${DRY_RUN ? `${publicHP.size} public (dry run)` : stats.handPathsWritten}`);
+  console.log(`  Solo props written:   ${DRY_RUN ? `${publicSP.size} public (dry run)` : stats.soloPropsWritten}`);
   console.log(`  Errors:               ${stats.errors}`);
 
   if (DRY_RUN) {

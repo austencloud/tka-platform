@@ -535,6 +535,34 @@ export const ARENA_TABS: Section[] = [
   },
 ];
 
+// Choreo Card tabs configuration
+export const CHOREO_CARD_TABS: Section[] = [
+  {
+    id: "library",
+    label: "My Library",
+    icon: '<i class="fas fa-book" aria-hidden="true"></i>',
+    description: "Browse your sequences as printable cards",
+    color: "#6366f1",
+    gradient: "linear-gradient(135deg, #818cf8 0%, #6366f1 100%)",
+  },
+  {
+    id: "decks",
+    label: "Decks",
+    icon: '<i class="fas fa-layer-group" aria-hidden="true"></i>',
+    description: "Pre-built card decks",
+    color: "#8b5cf6",
+    gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
+  },
+  {
+    id: "designer",
+    label: "Card Designer",
+    icon: '<i class="fas fa-pen-ruler" aria-hidden="true"></i>',
+    description: "Design custom choreo cards",
+    color: "#ec4899",
+    gradient: "linear-gradient(135deg, #f472b6 0%, #ec4899 100%)",
+  },
+];
+
 // Lab tabs configuration (admin-only, temporary experiments)
 // All experimental modules consolidated here instead of cluttering the sidebar
 export const LAB_TABS: Section[] = [
