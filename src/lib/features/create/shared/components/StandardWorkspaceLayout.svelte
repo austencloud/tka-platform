@@ -104,11 +104,15 @@
     CreateModuleState.assembleTabState?.assembleBuilderState?.phase === "complete"
   );
 
+  // Fuse tab: hides workspace entirely (Fuse owns its own full-width layout)
+  const isFuseTab = $derived(navigationState.activeTab === "fuse");
+
   // Workspace should be visible if:
   // - NOT in input mode (keyboard up on mobile)
+  // - NOT the Fuse tab (Fuse uses full tool panel space)
   // - Generator tab (always visible with empty prompt)
   // - Other tabs only when there's content
-  const shouldShowWorkspace = $derived(!isInputMode && (isGeneratorTab || hasWorkspaceContent));
+  const shouldShowWorkspace = $derived(!isInputMode && !isFuseTab && (isGeneratorTab || hasWorkspaceContent));
 
   // Color border based on active CREATE tab (for visual workspace distinction)
   const workspaceBorderColor = $derived.by(() => {
@@ -166,6 +170,9 @@
     style:--workspace-border-color={workspaceBorderColor}
   >
     <!-- Workspace Content Area -->
+    {#if !hasWorkspaceContent && isGeneratorTab}
+      <p class="workspace-hint">Tap Generate to create your sequence</p>
+    {/if}
     <div class="workspace-content">
       {#if hasWorkspaceContent}
         <CreationWorkspaceArea
@@ -177,8 +184,6 @@
             ? { animationStateRef: toolPanelRef.getAnimationStateRef() }
             : {}}
         />
-      {:else if isGeneratorTab}
-        <p class="empty-prompt">Tap Generate to create your sequence</p>
       {/if}
     </div>
 
@@ -381,17 +386,14 @@
     }
   }
 
-  /* Simple prompt when workspace is empty */
-  .empty-prompt {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0;
-    padding: 1rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-sm, 14px);
+  .workspace-hint {
+    flex-shrink: 0;
     text-align: center;
+    font-size: clamp(1rem, 2.5vmin, 1.25rem);
+    font-weight: 500;
+    color: var(--theme-text, #fff);
+    padding: clamp(8px, 1.5vmin, 12px) 1rem;
+    margin: 0;
+    letter-spacing: 0.02em;
   }
 </style>
