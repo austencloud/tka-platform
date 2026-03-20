@@ -51,6 +51,39 @@
   function toggle() {
     expanded = !expanded;
   }
+
+  /**
+   * Svelte action: detect the rendered image's natural aspect ratio and
+   * toggle the card between portrait (5:7) and landscape (7:5).
+   * Sequences wider than 1.3:1 get landscape orientation — same logic
+   * as the Card Designer.
+   */
+  function detectOrientation(node: HTMLElement) {
+    let attempts = 0;
+    const check = () => {
+      const img = node.querySelector("img") as HTMLImageElement | null;
+      if (img && img.naturalWidth > 0 && img.naturalHeight > 0) {
+        const aspect = img.naturalWidth / img.naturalHeight;
+        if (aspect > 1.3) {
+          node.classList.add("landscape");
+        } else {
+          node.classList.remove("landscape");
+        }
+        return;
+      }
+      if (attempts++ < 50) requestAnimationFrame(check);
+    };
+    check();
+
+    // Re-check when the thumbnail image swaps (e.g. prop type change)
+    const mo = new MutationObserver(() => {
+      attempts = 0;
+      check();
+    });
+    mo.observe(node, { childList: true, subtree: true });
+
+    return { destroy() { mo.disconnect(); } };
+  }
 </script>
 
 <section class="family-section">
@@ -80,7 +113,7 @@
       </span>
       <div class="card-grid">
         {#each handPathRepresentatives as rep (`hp-${rep.metadata?.handPathId}`)}
-          <div class="playing-card">
+          <div class="playing-card" use:detectOrientation>
             <ChoreoCard
               sequence={rep}
               printMode={true}
@@ -101,7 +134,7 @@
     <span class="section-label">Sequences</span>
     <div class="card-grid">
       {#each sequences as sequence (sequence.id)}
-        <div class="playing-card">
+        <div class="playing-card" use:detectOrientation>
           <ChoreoCard
             {sequence}
             printMode={true}
@@ -200,6 +233,11 @@
       0 1px 4px rgba(0, 0, 0, 0.15);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background: #ffffff;
+  }
+
+  /* Landscape orientation for wide sequences (aspect > 1.3) */
+  .playing-card:global(.landscape) {
+    aspect-ratio: 7 / 5;
   }
 
   /* ChoreoCard inside the playing card frame fills the entire space */
