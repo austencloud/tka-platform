@@ -10,6 +10,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ISequenceFuser } from "../services/contracts/ISequenceFuser";
+import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
 
 export type FusePhase =
 	| "browse"
@@ -22,15 +23,53 @@ export interface FuseStateDeps {
 	sequenceFuser: ISequenceFuser;
 }
 
+const STORAGE_KEY = "fuse-tab-state";
+
+interface PersistedFuseState {
+	bpm?: number;
+	matchLengths?: boolean;
+}
+
+function readPersistedState(): PersistedFuseState {
+	try {
+		const raw = localStorage.getItem(STORAGE_KEY);
+		if (!raw) return {};
+		return JSON.parse(raw) as PersistedFuseState;
+	} catch {
+		return {};
+	}
+}
+
+function writePersistedState(data: PersistedFuseState): void {
+	try {
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+	} catch {
+		// localStorage may be full or unavailable — silently ignore
+	}
+}
+
 export function createFuseState(deps: FuseStateDeps) {
 	const { sequenceFuser } = deps;
+
+	const persisted = readPersistedState();
 
 	let phase = $state<FusePhase>("browse");
 	let leftSequence = $state<SequenceData | null>(null);
 	let rightSequence = $state<SequenceData | null>(null);
 	let fusedSequence = $state<SequenceData | null>(null);
-	let matchLengths = $state(true);
-	let bpm = $state(60);
+	let matchLengths = $state(persisted.matchLengths ?? true);
+	let bpm = $state(persisted.bpm ?? 60);
+
+	const DEFAULT_BPM = 60;
+
+	// Persist bpm and matchLengths whenever they change
+	$effect(() => {
+		writePersistedState({ bpm, matchLengths });
+	});
+
+	// Animation controller references for sync
+	let leftController: IAnimationPlaybackController | null = null;
+	let rightController: IAnimationPlaybackController | null = null;
 
 	const canFuse = $derived(
 		phase === "both-selected" &&
@@ -58,23 +97,25 @@ export function createFuseState(deps: FuseStateDeps) {
 	function deselectLeft() {
 		leftSequence = null;
 		fusedSequence = null;
+		leftController?.dispose();
+		leftController = null;
 		phase = rightSequence ? "browse" : "browse";
 	}
 
 	function deselectRight() {
 		rightSequence = null;
 		fusedSequence = null;
+		rightController?.dispose();
+		rightController = null;
 		phase = leftSequence ? "left-selected" : "browse";
 	}
 
 	function startFuse() {
 		if (!leftSequence || !rightSequence) return;
 
-		phase = "fusing";
-
-		// The fuser expects HandPathData or SoloPropData. For now, we use the
-		// solo prop data when available, falling back to a minimal hand path
-		// derived from the sequence steps. Full wiring happens in a later task.
+		// Compute the fused result first, then enter the "fusing" phase so the
+		// layout can play the assembly animation. The layout calls completeFuse()
+		// when the animation finishes, which transitions to "result".
 		try {
 			const blue = leftSequence.blueSoloProp;
 			const red = rightSequence.redSoloProp;
@@ -82,7 +123,6 @@ export function createFuseState(deps: FuseStateDeps) {
 			if (!blue || !red) {
 				// Cannot fuse sequences without compositional data yet.
 				// Later tasks will add sequence-to-solo-prop extraction.
-				phase = "both-selected";
 				return;
 			}
 
@@ -96,7 +136,7 @@ export function createFuseState(deps: FuseStateDeps) {
 			});
 
 			fusedSequence = result;
-			phase = "result";
+			phase = "fusing";
 		} catch {
 			// Revert to both-selected so user can retry or change selections
 			phase = "both-selected";
@@ -104,8 +144,9 @@ export function createFuseState(deps: FuseStateDeps) {
 	}
 
 	function completeFuse() {
-		// Called after the user accepts the result (save, export, etc.)
-		// For now just stays in result phase. Later tasks add persistence.
+		// Called by FuseLayout after the assembly animation finishes.
+		// Transitions from "fusing" to "result" so FuseTab renders FuseResultView.
+		phase = "result";
 	}
 
 	function reset() {
@@ -115,10 +156,46 @@ export function createFuseState(deps: FuseStateDeps) {
 		fusedSequence = null;
 		matchLengths = true;
 		bpm = 60;
+		leftController?.dispose();
+		rightController?.dispose();
+		leftController = null;
+		rightController = null;
+	}
+
+	function registerController(side: "left" | "right", controller: IAnimationPlaybackController) {
+		if (side === "left") leftController = controller;
+		else rightController = controller;
+
+		// Sync BPM to the newly registered controller
+		const speed = bpm / DEFAULT_BPM;
+		controller.setSpeed(speed);
+
+		// When both controllers are present, seek the second to match the first
+		if (leftController && rightController) {
+			const reference = side === "right" ? leftController : rightController;
+			const newOne = controller;
+			try {
+				const states = reference.getCurrentPropStates();
+				if (states) {
+					newOne.seekToStep(0);
+				}
+			} catch {
+				// Controller may not be fully initialized yet
+			}
+		}
+	}
+
+	function unregisterController(side: "left" | "right") {
+		if (side === "left") leftController = null;
+		else rightController = null;
 	}
 
 	function setBpm(value: number) {
 		bpm = value;
+		// Sync speed to both controllers
+		const speed = value / DEFAULT_BPM;
+		leftController?.setSpeed(speed);
+		rightController?.setSpeed(speed);
 	}
 
 	function setMatchLengths(value: boolean) {
@@ -156,6 +233,8 @@ export function createFuseState(deps: FuseStateDeps) {
 		reset,
 		setBpm,
 		setMatchLengths,
+		registerController,
+		unregisterController,
 	};
 }
 

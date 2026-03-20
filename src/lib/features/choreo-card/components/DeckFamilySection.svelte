@@ -73,30 +73,30 @@
   </button>
 
   {#if expanded}
-    <!-- Hand path summary: one card per unique spatial pattern in this family -->
+    <!-- Hand path cards: same grid, same size, clickable -->
     {#if handPathRepresentatives.length > 0}
-      <div class="hand-path-row">
-        <span class="hand-path-label">
-          {handPathRepresentatives.length} hand {handPathRepresentatives.length === 1 ? "path" : "paths"}
-        </span>
-        <div class="hand-path-cards">
-          {#each handPathRepresentatives as rep (rep.metadata?.handPathId)}
-            <ChoreoCard
-              sequence={rep}
-              printMode={true}
-              handPathMode={true}
-              {handPointsVisible}
-              {showGrid}
-              showTKA={false}
-              showWord={false}
-              {includeStartPosition}
-            />
-          {/each}
-        </div>
+      <span class="hand-path-label">
+        {handPathRepresentatives.length} hand {handPathRepresentatives.length === 1 ? "path" : "paths"}
+      </span>
+      <div class="family-grid">
+        {#each handPathRepresentatives as rep (`hp-${rep.metadata?.handPathId}`)}
+          <ChoreoCard
+            sequence={rep}
+            printMode={true}
+            handPathMode={true}
+            {handPointsVisible}
+            {showGrid}
+            showTKA={false}
+            showWord={false}
+            {includeStartPosition}
+            onSelect={onSelectSequence}
+          />
+        {/each}
       </div>
     {/if}
 
     <!-- Full sequence grid -->
+    <span class="section-label">Sequences</span>
     <div class="family-grid">
       {#each sequences as sequence (sequence.id)}
         <ChoreoCard
@@ -170,32 +170,14 @@
     white-space: nowrap;
   }
 
-  /* Hand path summary row — shows spatial patterns before the full sequence grid */
-  .hand-path-row {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-xs, 4px);
-    padding: var(--spacing-xs, 4px) var(--spacing-xs, 4px);
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    margin-bottom: var(--spacing-xs, 4px);
-  }
-
-  .hand-path-label {
+  .hand-path-label,
+  .section-label {
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-  }
-
-  .hand-path-cards {
-    display: flex;
-    gap: var(--spacing-sm, 8px);
-    overflow-x: auto;
-  }
-
-  .hand-path-cards :global(> *) {
-    flex: 0 0 200px;
+    padding: 0 var(--spacing-xs, 4px);
   }
 
   .family-grid {
