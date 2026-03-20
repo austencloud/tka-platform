@@ -73,42 +73,46 @@
   </button>
 
   {#if expanded}
-    <!-- Hand path cards: same grid, same size, clickable -->
+    <!-- Hand path cards -->
     {#if handPathRepresentatives.length > 0}
-      <span class="hand-path-label">
+      <span class="section-label">
         {handPathRepresentatives.length} hand {handPathRepresentatives.length === 1 ? "path" : "paths"}
       </span>
-      <div class="family-grid">
+      <div class="card-grid">
         {#each handPathRepresentatives as rep (`hp-${rep.metadata?.handPathId}`)}
-          <ChoreoCard
-            sequence={rep}
-            printMode={true}
-            handPathMode={true}
-            {handPointsVisible}
-            {showGrid}
-            showTKA={false}
-            showWord={false}
-            {includeStartPosition}
-            onSelect={onSelectSequence}
-          />
+          <div class="playing-card">
+            <ChoreoCard
+              sequence={rep}
+              printMode={true}
+              handPathMode={true}
+              {handPointsVisible}
+              {showGrid}
+              showTKA={false}
+              showWord={false}
+              {includeStartPosition}
+              onSelect={onSelectSequence}
+            />
+          </div>
         {/each}
       </div>
     {/if}
 
-    <!-- Full sequence grid -->
+    <!-- Sequence cards -->
     <span class="section-label">Sequences</span>
-    <div class="family-grid">
+    <div class="card-grid">
       {#each sequences as sequence (sequence.id)}
-        <ChoreoCard
-          {sequence}
-          printMode={true}
-          {handPointsVisible}
-          {showGrid}
-          {showTKA}
-          {showWord}
-          {includeStartPosition}
-          onSelect={onSelectSequence}
-        />
+        <div class="playing-card">
+          <ChoreoCard
+            {sequence}
+            printMode={true}
+            {handPointsVisible}
+            {showGrid}
+            {showTKA}
+            {showWord}
+            {includeStartPosition}
+            onSelect={onSelectSequence}
+          />
+        </div>
       {/each}
     </div>
   {/if}
@@ -170,7 +174,6 @@
     white-space: nowrap;
   }
 
-  .hand-path-label,
   .section-label {
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
@@ -180,17 +183,30 @@
     padding: 0 var(--spacing-xs, 4px);
   }
 
-  .family-grid {
+  /* Playing card grid — cards at 5:7 portrait ratio */
+  .card-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--spacing-sm, 8px);
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: var(--spacing-md, 12px);
     padding: 0 var(--spacing-xs, 4px);
   }
 
-  @media (min-width: 640px) {
-    .family-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
+  .playing-card {
+    aspect-ratio: 5 / 7;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow:
+      0 4px 20px rgba(0, 0, 0, 0.3),
+      0 1px 4px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: #ffffff;
+  }
+
+  /* ChoreoCard inside the playing card frame fills the entire space */
+  .playing-card :global(> button) {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
   }
 
   @media (prefers-reduced-motion: reduce) {
