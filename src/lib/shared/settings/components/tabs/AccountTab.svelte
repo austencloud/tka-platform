@@ -1,4 +1,4 @@
-<!-- ProfileTab.svelte - User Profile & Account Settings (Refactored) -->
+<!-- AccountTab.svelte - Account Security & Management Settings -->
 <script lang="ts">
   import { authState } from "../../../auth/state/authState.svelte";
   import {
@@ -25,18 +25,8 @@
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
   import PasskeyStepUpModal from "../../../auth/components/PasskeyStepUpModal.svelte";
   import GlassCard from "./profile/GlassCard.svelte";
-  import ProfileHeroSection from "./profile/ProfileHeroSection.svelte";
   import StorageSection from "./profile/StorageSection.svelte";
   import AuthPrompt from "./profile/AuthPrompt.svelte";
-  import ProfilePhotoPicker from "../ProfilePhotoPicker.svelte";
-  import type { PhotoSelection } from "../../domain/photo-picker-types";
-  import { updateProfile } from "firebase/auth";
-  import { doc, getDoc } from "firebase/firestore";
-  import { getFirestoreInstance } from "../../../auth/firebase";
-  import { refreshUser } from "../../../auth/state/authState.svelte";
-
-  import type { PreviewUserProfile } from "../../../debug/state/user-preview-state.svelte";
-  import type { User } from "firebase/auth";
 
   // Create and provide profile settings context for child components
   const profileState = createProfileSettingsState();
@@ -46,30 +36,6 @@
   const isPreviewMode = $derived(
     userPreviewState.isActive && userPreviewState.data.profile !== null
   );
-
-  // Create a User-like object from preview profile for ProfileHeroSection
-  function createPreviewUser(profile: PreviewUserProfile): User {
-    return {
-      uid: profile.uid,
-      email: profile.email,
-      displayName: profile.displayName,
-      photoURL: profile.photoURL,
-      // Minimal User interface requirements (unused but required)
-      emailVerified: false,
-      isAnonymous: false,
-      metadata: {},
-      providerData: [],
-      refreshToken: "",
-      tenantId: null,
-      phoneNumber: null,
-      providerId: "firebase",
-      delete: async () => {},
-      getIdToken: async () => "",
-      getIdTokenResult: async () => ({}) as any,
-      reload: async () => {},
-      toJSON: () => ({}),
-    } as User;
-  }
 
   interface Props {
     currentSettings?: unknown;
@@ -90,12 +56,6 @@
   // Cache clearing state
   let clearingCache = $state(false);
 
-  // Pronouns loaded from Firestore
-  let userPronouns = $state("");
-
-  // Photo picker state
-  let showPhotoPicker = $state(false);
-
   // Entry animation
   let isVisible = $state(false);
 
@@ -106,7 +66,7 @@
   );
   const authDataLoaded = $derived(isSectionLoaded("authData"));
 
-  // Load auth data when entering preview mode and viewing profile tab
+  // Load auth data when entering preview mode and viewing account tab
   $effect(() => {
     if (isPreviewMode && !authDataLoaded && !isLoadingAuthData) {
       loadPreviewSection("authData");
@@ -120,21 +80,6 @@
     stepUpCoordinator = container.items.stepUpAuthCoordinator;
 
     setTimeout(() => (isVisible = true), 30);
-
-    // Load pronouns from Firestore
-    const user = authState.user;
-    if (user) {
-      try {
-        const firestore = await getFirestoreInstance();
-        const userDocRef = doc(firestore, "users", user.uid);
-        const userDoc = await getDoc(userDocRef);
-        if (userDoc.exists()) {
-          userPronouns = userDoc.data()?.pronouns || "";
-        }
-      } catch (err) {
-        console.error("Failed to load pronouns:", err);
-      }
-    }
   });
 
   async function handleSignOut() {
@@ -208,97 +153,12 @@
       clearingCache = false;
     }
   }
-
-  function handleOpenPhotoPicker() {
-    hapticService?.trigger("selection");
-    showPhotoPicker = true;
-  }
-
-  /**
-   * Upload a profile photo file to Firebase Storage
-   */
-  async function uploadProfilePhoto(user: User, file: File): Promise<string> {
-    const { getStorageInstance } = await import("$lib/shared/auth/firebase");
-    const { ref, uploadBytes, getDownloadURL } = await import(
-      "firebase/storage"
-    );
-    const storage = await getStorageInstance();
-
-    // Generate unique filename with timestamp
-    const ext = file.name.split(".").pop() || "jpg";
-    const filename = `${Date.now()}.${ext}`;
-    const storagePath = `avatars/${user.uid}/${filename}`;
-    const storageRef = ref(storage, storagePath);
-
-    await uploadBytes(storageRef, file, {
-      contentType: file.type || "image/jpeg",
-      customMetadata: {
-        userId: user.uid,
-        originalName: file.name,
-        uploadedAt: new Date().toISOString(),
-      },
-    });
-
-    return await getDownloadURL(storageRef);
-  }
-
-  async function handlePhotoSelected(selection: PhotoSelection) {
-    const user = authState.user;
-    if (!user) return;
-
-    hapticService?.trigger("selection");
-
-    const profilePictureManager = container.items.profilePictureManager;
-    const userDocumentManager = container.items.userDocumentManager;
-
-    try {
-      let newPhotoURL: string | null = null;
-
-      switch (selection.type) {
-        case "upload":
-          if (selection.file) {
-            // Upload file to Firebase Storage
-            newPhotoURL = await uploadProfilePhoto(user, selection.file);
-            await updateProfile(user, { photoURL: newPhotoURL });
-          }
-          break;
-
-        case "google":
-        case "facebook":
-          if (selection.url) {
-            newPhotoURL = selection.url;
-            await updateProfile(user, { photoURL: newPhotoURL });
-          }
-          break;
-
-        case "generated":
-          if (selection.generatedData) {
-            newPhotoURL = await profilePictureManager.generateAndUploadAvatar(
-              user,
-              selection.generatedData
-            );
-          }
-          break;
-      }
-
-      // If we got a new photo URL, sync to Firestore and refresh UI
-      if (newPhotoURL) {
-        // Update Firestore user document so admin views reflect change instantly
-        await userDocumentManager.updatePhotoURL(user.uid, newPhotoURL);
-        await refreshUser(); // Triggers Svelte reactivity
-        hapticService?.trigger("success");
-      }
-    } catch (error) {
-      console.error("Failed to update profile photo:", error);
-      hapticService?.trigger("error");
-    }
-  }
 </script>
 
-<div class="profile-tab themed-scrollbar" class:visible={isVisible}>
+<div class="account-tab themed-scrollbar" class:visible={isVisible}>
   {#if isPreviewMode && userPreviewState.data.profile}
     <!-- Preview Mode: Show exact same layout with preview user's data -->
-    <div class="profile-content">
+    <div class="account-content">
       <!-- Preview banner -->
       <div class="preview-banner">
         <i class="fas fa-eye"></i>
@@ -310,13 +170,6 @@
           ></span
         >
       </div>
-
-      <!-- Profile Hero - same layout, preview user data, no sign out -->
-      <ProfileHeroSection
-        user={createPreviewUser(userPreviewState.data.profile)}
-        onSignOut={() => {}}
-        disabled={true}
-      />
 
       <!-- Settings Grid - same layout as normal view -->
       <div class="settings-grid">
@@ -397,14 +250,14 @@
     </div>
   {:else if authState.isAuthenticated && authState.user}
     <!-- Signed In State -->
-    <div class="profile-content">
-      <!-- Profile Hero -->
-      <ProfileHeroSection
-        user={authState.user}
-        onSignOut={handleSignOut}
-        onAvatarClick={handleOpenPhotoPicker}
-        pronouns={userPronouns}
-      />
+    <div class="account-content">
+      <!-- Sign out (moved from ProfileHeroSection) -->
+      <div class="sign-out-row">
+        <button class="sign-out-btn" onclick={handleSignOut}>
+          <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+          <span>Sign Out</span>
+        </button>
+      </div>
 
       <!-- Settings Grid - Flexbox for natural fill behavior -->
       <div class="settings-grid">
@@ -435,7 +288,7 @@
               hasPasswordProvider={profileState.hasPasswordProvider(authState.user)}
               onChangePassword={handleChangePassword}
               {hapticService}
-              onPronounsChanged={(p) => (userPronouns = p)}
+              onPronounsChanged={() => {}}
             />
           {/snippet}
         </GlassCard>
@@ -506,21 +359,14 @@
   />
 {/if}
 
-<!-- Profile Photo Picker Drawer -->
-<ProfilePhotoPicker
-  bind:isOpen={showPhotoPicker}
-  onClose={() => (showPhotoPicker = false)}
-  onPhotoSelected={handlePhotoSelected}
-/>
-
 <style>
   /* ═══════════════════════════════════════════════════════════════════════════
-     PROFILE TAB - Lightweight layout container
+     ACCOUNT TAB - Lightweight layout container
      All component-specific styles live in child components
      ═══════════════════════════════════════════════════════════════════════════ */
-  .profile-tab {
+  .account-tab {
     container-type: inline-size;
-    container-name: profile-tab;
+    container-name: account-tab;
 
     display: flex;
     flex-direction: column;
@@ -536,15 +382,52 @@
     transition: opacity var(--duration-normal) ease;
   }
 
-  .profile-tab.visible {
+  .account-tab.visible {
     opacity: 1;
   }
 
-  .profile-content {
+  .account-content {
     display: flex;
     flex-direction: column;
     gap: clamp(12px, 2cqi, 20px);
     max-width: 100%;
+  }
+
+  /* ========================================
+     SIGN OUT ROW
+     ======================================== */
+  .sign-out-row {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .sign-out-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-sm, 14px);
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      background var(--duration-fast) ease,
+      border-color var(--duration-fast) ease,
+      color var(--duration-fast) ease;
+  }
+
+  .sign-out-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    color: var(--theme-text, #ffffff);
+  }
+
+  .sign-out-btn:active {
+    transform: scale(0.97);
   }
 
   /* ========================================
@@ -555,7 +438,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: clamp(10px, 2cqi, 16px);
-    align-items: stretch; /* Cards match row height */
+    align-items: stretch;
   }
 
   /* Each card: min 320px, grows to fill width */
@@ -565,14 +448,14 @@
   }
 
   /* Single column on narrow screens */
-  @container profile-tab (max-width: 500px) {
+  @container account-tab (max-width: 500px) {
     .settings-grid > :global(*) {
       flex-basis: 100%;
     }
   }
 
   /* Tighter spacing on very small screens */
-  @container profile-tab (max-width: 360px) {
+  @container account-tab (max-width: 360px) {
     .settings-grid {
       gap: 8px;
     }
@@ -697,12 +580,11 @@
     font-size: var(--font-size-sm);
   }
 
-
   /* ========================================
      ACCESSIBILITY
      ======================================== */
   @media (prefers-reduced-motion: reduce) {
-    .profile-tab {
+    .account-tab {
       transition: none;
     }
   }
