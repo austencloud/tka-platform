@@ -21,16 +21,27 @@ import * as path from "path";
 import { randomUUID } from "crypto";
 import { fileURLToPath } from "url";
 
-// MCP server imports — all self-contained, no external deps
+// Sequence engine imports (moved from old mcp-server/src/core/)
 import {
   executeLOOP,
   type PictographData,
   type MotionData as McpMotionData,
-} from "../mcp-server/src/core/loop/loop-executor.js";
-import { LOOPType, SliceSize } from "../mcp-server/src/core/loop/loop-types.js";
-import { QUARTERED_LOOPS } from "../mcp-server/src/core/loop/loop-validator.js";
-import { calculateOrientations } from "../mcp-server/src/core/orientation-calculator.js";
-import type { SequenceStep } from "../mcp-server/src/core/sequence-builder.js";
+} from "../packages/sequence-engine/src/loop/execution/LOOPExecutor.js";
+import { LOOPType, SliceSize } from "../packages/sequence-engine/src/loop/loop-types.js";
+import { QUARTERED_LOOPS } from "../packages/sequence-engine/src/loop/validation/LOOPValidator.js";
+
+/**
+ * CW-only 90° rotation map. The enumerate script uses CW exclusively.
+ * Including both CW and CCW would double the deck with mirrored variants.
+ */
+const ROTATE_POS_90_CW: Record<string, string> = {
+  alpha1: "alpha3", alpha3: "alpha5", alpha5: "alpha7", alpha7: "alpha1",
+  beta1: "beta3", beta3: "beta5", beta5: "beta7", beta7: "beta1",
+  gamma1: "gamma3", gamma3: "gamma5", gamma5: "gamma7", gamma7: "gamma9",
+  gamma9: "gamma11", gamma11: "gamma13", gamma13: "gamma15", gamma15: "gamma1",
+};
+import { calculateOrientations, calculateEndOrientation, getHandpathDirection } from "../packages/sequence-engine/src/core/orientation/OrientationCalculator.js";
+import type { SequenceStep } from "../packages/sequence-engine/src/core/types/sequence-engine-types.js";
 
 // ============================================================================
 // CONFIGURATION
@@ -171,6 +182,7 @@ function edgeToStep(edge: PictographData, stepNumber: number): SequenceStep {
     endPosition: edge.endPosition,
     blueMotion: { ...edge.blueMotion },
     redMotion: { ...edge.redMotion },
+    beatIndex: stepNumber,
     stepNumber,
     isBridge: false,
   };
@@ -201,6 +213,7 @@ function buildStartPositionStep(edge: PictographData): SequenceStep {
       startOrientation: "in",
       endOrientation: "in",
     },
+    beatIndex: 0,
     stepNumber: 0,
     isBridge: false,
   };
@@ -263,6 +276,100 @@ function fixPositionNames(
   });
 }
 
+/**
+ * Trace the full 8-beat hand path — the actual locations each hand visits.
+ *
+ * Returns a location chain like "s→w→w→n→n→e→e→s" for each hand.
+ * The chain shows where the hand physically IS at each beat boundary.
+ */
+function traceHandPath(steps: SequenceStep[]): { blue: string; red: string } {
+  // Start location from beat 1, then each beat's end location
+  const blueLocations = [steps[0].blueMotion.startLocation];
+  const redLocations = [steps[0].redMotion.startLocation];
+
+  for (const step of steps) {
+    blueLocations.push(step.blueMotion.endLocation);
+    redLocations.push(step.redMotion.endLocation);
+  }
+
+  return {
+    blue: blueLocations.join("→"),
+    red: redLocations.join("→"),
+  };
+}
+
+/**
+ * Compute a color-canonical hand path key from the full 8-beat location trace.
+ *
+ * Traces exactly where each hand goes (e.g., s→w→w→n→n→e→e→s→s),
+ * then sorts the two hands for color invariance (blue↔red swap = same pattern).
+ */
+function computeHandPathKey(steps: SequenceStep[]): string {
+  const trace = traceHandPath(steps);
+  return [trace.blue, trace.red].sort().join("|");
+}
+
+/**
+ * Chain orientations across beats so each beat's start orientation
+ * matches the previous beat's end orientation.
+ *
+ * The CSV stores each edge independently with startOrientation="in",
+ * but in a real sequence orientations must chain: beat N's end orientation
+ * becomes beat N+1's start orientation. Without this, a sequence like
+ * anti(in→out) followed by pro would incorrectly start the pro at "in"
+ * instead of "out", producing wrong prop facing.
+ */
+function chainOrientations(steps: SequenceStep[]): SequenceStep[] {
+  if (steps.length === 0) return steps;
+
+  // Beat 1 starts at "in" (the universal starting orientation)
+  let blueOri = "in";
+  let redOri = "in";
+
+  return steps.map((step) => {
+    // This beat starts where the previous beat ended
+    const blueStart = blueOri;
+    const redStart = redOri;
+
+    // Calculate end orientations from the motion data
+    const blueEnd = calculateEndOrientation({
+      motionType: step.blueMotion.motionType,
+      turns: 0,
+      rotationDirection: step.blueMotion.rotationDirection || "cw",
+      startLocation: step.blueMotion.startLocation,
+      endLocation: step.blueMotion.endLocation,
+      startOrientation: blueStart,
+    });
+
+    const redEnd = calculateEndOrientation({
+      motionType: step.redMotion.motionType,
+      turns: 0,
+      rotationDirection: step.redMotion.rotationDirection || "cw",
+      startLocation: step.redMotion.startLocation,
+      endLocation: step.redMotion.endLocation,
+      startOrientation: redStart,
+    });
+
+    // Advance the chain for the next beat
+    blueOri = blueEnd;
+    redOri = redEnd;
+
+    return {
+      ...step,
+      blueMotion: {
+        ...step.blueMotion,
+        startOrientation: blueStart,
+        endOrientation: blueEnd,
+      },
+      redMotion: {
+        ...step.redMotion,
+        startOrientation: redStart,
+        endOrientation: redEnd,
+      },
+    };
+  });
+}
+
 interface DeckSequence {
   seqId: string;
   word: string;
@@ -272,6 +379,7 @@ interface DeckSequence {
   t1: number;
   t2: number;
   handPath: string;
+  handPathId: string;
   familyId: string;
   startPos: string;
   steps: SequenceStep[];
@@ -289,9 +397,22 @@ function enumerateAndExecute(
   for (const b1 of edges) {
     const edges2 = adj.get(b1.endPosition) ?? [];
     for (const b2 of edges2) {
-      // Check if seed end position forms a valid quartered LOOP with start
-      const positionPair = `${startPos},${b2.endPosition}`;
-      if (!QUARTERED_LOOPS.has(positionPair)) continue;
+      // Check if seed end position is the CW 90° rotation of start.
+      // Only CW — including CCW would double the deck with mirrored variants.
+      if (b2.endPosition !== ROTATE_POS_90_CW[startPos]) continue;
+
+      // Rotation continuity: rotation directions must be compatible between
+      // beats AND across the quarter boundary (b2 → b1 of the next quarter).
+      // "noRotation" is always compatible; otherwise directions must match.
+      const rotOk = (a: string, b: string) =>
+        a === "noRotation" || b === "noRotation" || a === b;
+
+      // Beat 1 → Beat 2 continuity
+      if (!rotOk(b1.blueMotion.rotationDirection, b2.blueMotion.rotationDirection)) continue;
+      if (!rotOk(b1.redMotion.rotationDirection, b2.redMotion.rotationDirection)) continue;
+      // Quarter boundary: Beat 2 → Beat 1 (of next quarter) continuity
+      if (!rotOk(b2.blueMotion.rotationDirection, b1.blueMotion.rotationDirection)) continue;
+      if (!rotOk(b2.redMotion.rotationDirection, b1.redMotion.rotationDirection)) continue;
 
       // Build the 3-step input: [startPosition, beat1, beat2]
       const startStep = buildStartPositionStep(b1);
@@ -314,12 +435,17 @@ function enumerateAndExecute(
       if (rawSteps.length !== 8) continue;
 
       // Fix position names on generated beats (executor's derivation is simplified)
-      const actualSteps = fixPositionNames(rawSteps, allPictographs);
+      const positionFixedSteps = fixPositionNames(rawSteps, allPictographs);
+
+      // Chain orientations: each beat's start orientation = previous beat's end orientation.
+      // Without this, every beat incorrectly starts at "in" regardless of what came before.
+      const actualSteps = chainOrientations(positionFixedSteps);
 
       const t1 = LETTER_TYPES[b1.letter] ?? 0;
       const t2 = LETTER_TYPES[b2.letter] ?? 0;
       const handPath = `${TYPE_NAMES[t1]}+${TYPE_NAMES[t2]}`;
       const familyId = handPath.toLowerCase().replace(/\s+/g, "-");
+      const handPathId = computeHandPathKey(actualSteps);
 
       // Build a motion-type + direction suffix for unique IDs.
       // Motion type alone isn't enough — two sequences can share the same
@@ -343,6 +469,7 @@ function enumerateAndExecute(
         t1,
         t2,
         handPath,
+        handPathId,
         familyId,
         startPos,
         steps: actualSteps,
@@ -359,77 +486,38 @@ function enumerateAndExecute(
 // ============================================================================
 
 /**
- * Normalize motion type for dedup: at L1 (0 turns), pro and anti
- * are visually identical shifts.
- */
-function normalizeMotionType(type: string): string {
-  if (type === "pro" || type === "anti") return "shift";
-  return type;
-}
-
-/**
- * Build a beat key from a step. Each hand becomes "type_start_end", then
- * we sort the two hands so blue/red order doesn't matter.
+ * Deduplicate circular sequences.
  *
- * At L1 (0 turns), swapping which hand does the dash vs static on a Φ beat
- * produces the same spatial pattern (just with different prop colors).
- * The user confirmed these look identical in the rendered pictographs.
- */
-function beatKey(step: SequenceStep): string {
-  const bm = step.blueMotion;
-  const rm = step.redMotion;
-  const handA = `${normalizeMotionType(bm.motionType)}_${bm.startLocation}_${bm.endLocation}`;
-  const handB = `${normalizeMotionType(rm.motionType)}_${rm.startLocation}_${rm.endLocation}`;
-  return [handA, handB].sort().join("|");
-}
-
-/**
- * Build the "reversed" beat key — swap start/end locations for both hands.
- * This represents the same beat viewed from the opposite rotational direction.
- */
-function reversedBeatKey(step: SequenceStep): string {
-  const bm = step.blueMotion;
-  const rm = step.redMotion;
-  const handA = `${normalizeMotionType(bm.motionType)}_${bm.endLocation}_${bm.startLocation}`;
-  const handB = `${normalizeMotionType(rm.motionType)}_${rm.endLocation}_${rm.startLocation}`;
-  return [handA, handB].sort().join("|");
-}
-
-/**
- * Build a canonical key for an 8-beat sequence that is invariant to:
+ * Three layers of dedup:
  *
- * 1. Pro/anti equivalence (both → "shift" at 0 turns)
- * 2. Blue/red swap (per-beat color invariance — sort hand descriptions)
- * 3. Rotational equivalence (sort quarter-pairs)
- * 4. CW/CCW equivalence (min of forward vs reversed key)
+ * 1. One per word per starting position (color/rotation variants are same concept)
+ * 2. Circular equivalence: word XY from position A is the same LOOP as word YX
+ *    from position B, just entered one beat later. A LOOP has no beginning.
+ *    Use canonical key = sorted letter pair so XY and YX collapse.
  *
- * CW/CCW: A quartered LOOP going clockwise is the visual mirror of the same
- * pattern going counter-clockwise. At L1, these produce identical pictograph
- * shapes. We handle this by computing both the "forward" key and the
- * "reversed" key (beats in reverse order, start/end locations swapped),
- * then taking the lexicographic minimum.
+ * This reduces 192 raw → 64 unique circular sequences.
  */
-function canonicalKey(steps: SequenceStep[]): string {
-  const beats = steps.map(beatKey);
-  const quarters: string[] = [];
-  for (let i = 0; i < 8; i += 2) {
-    quarters.push(`${beats[i]}::${beats[i + 1]}`);
-  }
-  quarters.sort();
-  return quarters.join("///");
-}
-
 function deduplicateSequences(sequences: DeckSequence[]): DeckSequence[] {
-  const seen = new Map<string, DeckSequence>();
-
+  // Phase 1: one per word per starting position
+  const perWord = new Map<string, DeckSequence>();
   for (const seq of sequences) {
-    const key = canonicalKey(seq.steps);
-    if (!seen.has(key)) {
-      seen.set(key, seq);
+    const key = `${seq.startPos}|${seq.word}`;
+    if (!perWord.has(key)) {
+      perWord.set(key, seq);
     }
   }
 
-  return Array.from(seen.values());
+  // Phase 2: circular equivalence — XY and YX are the same loop
+  const unique = new Map<string, DeckSequence>();
+  for (const seq of perWord.values()) {
+    // Sort the two letters to create a canonical circular key
+    const pair = [seq.letter1, seq.letter2].sort().join("+");
+    if (!unique.has(pair)) {
+      unique.set(pair, seq);
+    }
+  }
+
+  return Array.from(unique.values());
 }
 
 // ============================================================================
@@ -507,24 +595,35 @@ function groupIntoFamilies(sequences: DeckSequence[]): Family[] {
   const familyMap = new Map<string, Family>();
 
   for (const seq of sequences) {
-    let family = familyMap.get(seq.familyId);
+    // Circular equivalence: sort type pair so Dual-Shift+Dash and Dash+Dual-Shift
+    // merge into one family. A LOOP has no start, so beat order is arbitrary.
+    const sortedTypes = [seq.t1, seq.t2].sort((a, b) => a - b);
+    const canonicalId = `${TYPE_NAMES[sortedTypes[0]]}+${TYPE_NAMES[sortedTypes[1]]}`.toLowerCase().replace(/\s+/g, "-");
+    const canonicalLabel = `${TYPE_NAMES[sortedTypes[0]]}+${TYPE_NAMES[sortedTypes[1]]}`;
+    const canonicalCombo = `Type ${sortedTypes[0]} + Type ${sortedTypes[1]}`;
+
+    let family = familyMap.get(canonicalId);
     if (!family) {
       family = {
-        id: seq.familyId,
-        label: seq.handPath,
-        typeCombo: `Type ${seq.t1} + Type ${seq.t2}`,
+        id: canonicalId,
+        label: canonicalLabel,
+        typeCombo: canonicalCombo,
         sequences: [],
       };
-      familyMap.set(seq.familyId, family);
+      familyMap.set(canonicalId, family);
     }
     family.sequences.push(seq);
   }
 
   // Sort by type combo
   return Array.from(familyMap.values()).sort((a, b) => {
-    const aKey = a.sequences[0].t1 * 10 + a.sequences[0].t2;
-    const bKey = b.sequences[0].t1 * 10 + b.sequences[0].t2;
-    return aKey - bKey;
+    const [aT1, aT2] = a.sequences[0].t1 <= a.sequences[0].t2
+      ? [a.sequences[0].t1, a.sequences[0].t2]
+      : [a.sequences[0].t2, a.sequences[0].t1];
+    const [bT1, bT2] = b.sequences[0].t1 <= b.sequences[0].t2
+      ? [b.sequences[0].t1, b.sequences[0].t2]
+      : [b.sequences[0].t2, b.sequences[0].t1];
+    return (aT1 * 10 + aT2) - (bT1 * 10 + bT2);
   });
 }
 
@@ -595,6 +694,7 @@ async function writeToFirestore(
           deckId: DECK_ID,
           familyId: family.id,
           familyLabel: family.label,
+          handPathId: seq.handPathId,
           startPosition: seq.startPos,
           seed: seq.word,
           letter1: seq.letter1,
@@ -660,15 +760,16 @@ async function main(): Promise<void> {
   const adj = buildAdjacencyMap(allPictographs);
   console.log(`  ${adj.size} positions with outgoing edges`);
 
-  // Phase 3: Enumerate seeds + execute LOOPs from ALL starting positions
+  // Phase 3: Enumerate seeds + execute LOOPs from canonical starting positions
   console.log("Phase 3: Enumerating seeds and executing LOOPs...");
 
-  // Use ALL positions that appear in the adjacency map, not just a fixed list.
-  // The dedup step (Phase 4) handles rotational equivalence.
-  const allStartPositions = Array.from(adj.keys()).sort();
+  // Use exactly one canonical position per group (alpha, beta, gamma).
+  // All rotational variants within a group produce identical sequences,
+  // so enumerating from one position per group gives the complete deck.
+  const CANONICAL_STARTS = ["alpha1", "beta5", "gamma11"];
   let allSequences: DeckSequence[] = [];
 
-  for (const startPos of allStartPositions) {
+  for (const startPos of CANONICAL_STARTS) {
     const results = enumerateAndExecute(adj, allPictographs, startPos);
     if (results.length > 0) {
       console.log(`  ${startPos}: ${results.length} raw sequences`);
@@ -691,23 +792,67 @@ async function main(): Promise<void> {
     console.log(`  ${f.label} (${f.typeCombo}): ${f.sequences.length} sequences`);
   }
 
+  // Phase 5b: Compute hand path statistics
+  console.log("\nPhase 5b: Computing hand paths...");
+  const handPathGroups = new Map<string, DeckSequence[]>();
+  for (const seq of unique) {
+    const group = handPathGroups.get(seq.handPathId) ?? [];
+    group.push(seq);
+    handPathGroups.set(seq.handPathId, group);
+  }
+  console.log(`  ${handPathGroups.size} unique hand paths across ${unique.length} sequences`);
+
   // Phase 6: Write to Firestore
   if (DRY_RUN) {
     console.log("\n--- DRY RUN — Skipping Firestore write ---");
     console.log(`Would write ${unique.length} sequences in ${families.length} families`);
 
-    // Print a sample sequence for inspection
-    const sample = unique[0];
-    if (sample) {
-      console.log(`\nSample sequence: ${sample.seqId}`);
-      console.log(`  Word: ${sample.loopWord}`);
-      console.log(`  Start: ${sample.startPos}`);
-      console.log(`  Steps:`);
+    // Hand path breakdown by family
+    console.log(`\n  ┌────────────────────────────┬───────────┬──────────────┐`);
+    console.log(`  │ Family                     │ Sequences │ Hand Paths   │`);
+    console.log(`  ├────────────────────────────┼───────────┼──────────────┤`);
+    for (const f of families) {
+      const familyHPs = new Set(f.sequences.map(s => s.handPathId));
+      console.log(
+        `  │ ${f.label.padEnd(27)}│ ${String(f.sequences.length).padStart(9)} │ ${String(familyHPs.size).padStart(12)} │`
+      );
+    }
+    console.log(`  ├────────────────────────────┼───────────┼──────────────┤`);
+    console.log(
+      `  │ TOTAL                      │ ${String(unique.length).padStart(9)} │ ${String(handPathGroups.size).padStart(12)} │`
+    );
+    console.log(`  └────────────────────────────┴───────────┴──────────────┘`);
+
+    // Detailed hand path listing with actual traces
+    console.log(`\n  Hand path traces:`);
+    let hpNum = 1;
+    for (const [hpId, seqs] of [...handPathGroups.entries()].sort()) {
+      const familyTypes = [seqs[0].t1, seqs[0].t2].sort((a, b) => a - b);
+      const family = TYPE_NAMES[familyTypes[0]] + "+" + TYPE_NAMES[familyTypes[1]];
+      const trace = traceHandPath(seqs[0].steps);
+      const words = seqs.map(s => s.word).join(", ");
+      console.log(`\n    Hand Path #${hpNum} [${family}] — ${seqs.length} sequences`);
+      console.log(`      Hand A: ${trace.blue}`);
+      console.log(`      Hand B: ${trace.red}`);
+      console.log(`      Words: ${words}`);
+      hpNum++;
+    }
+
+    // Print sample sequences — pick one with anti motions to verify orientation chaining
+    const antiSample = unique.find(s =>
+      s.steps.some(st => st.blueMotion.motionType === "anti" || st.redMotion.motionType === "anti")
+    ) ?? unique[0];
+
+    for (const sample of [unique[0], antiSample].filter((s, i, a) => a.indexOf(s) === i)) {
+      console.log(`\nSample: ${sample.seqId}`);
+      console.log(`  Word: ${sample.loopWord} | Start: ${sample.startPos}`);
       for (const step of sample.steps) {
         console.log(
-          `    Beat ${step.stepNumber}: ${step.letter} (${step.startPosition} → ${step.endPosition}) ` +
+          `    Beat ${step.stepNumber}: ${step.letter} ` +
             `blue=${step.blueMotion.motionType}[${step.blueMotion.startLocation}→${step.blueMotion.endLocation}] ` +
-            `red=${step.redMotion.motionType}[${step.redMotion.startLocation}→${step.redMotion.endLocation}]`
+            `ori=${step.blueMotion.startOrientation}→${step.blueMotion.endOrientation} | ` +
+            `red=${step.redMotion.motionType}[${step.redMotion.startLocation}→${step.redMotion.endLocation}] ` +
+            `ori=${step.redMotion.startOrientation}→${step.redMotion.endOrientation}`
         );
       }
     }
@@ -720,6 +865,7 @@ async function main(): Promise<void> {
   console.log(`\n--- Summary ---`);
   console.log(`Deck: ${DECK_ID}`);
   console.log(`Total unique sequences: ${unique.length}`);
+  console.log(`Unique hand paths: ${handPathGroups.size}`);
   console.log(`Families: ${families.length}`);
   console.log(`Steps per sequence: 8`);
   console.log(`Firestore path: decks/${DECK_ID}`);
