@@ -1,71 +1,97 @@
 <!--
   InfoCardBack — "Your Deck" reference card
 
-  Back side of the rules card. Explains the corner badges,
-  levels, LOOPs, and how to sort/chain sequences.
-  Same 500×700 print resolution as choreo cards.
+  Back side of the rules card. Explains corner badges, levels,
+  LOOPs, and chaining. Better spacing, real badge visuals,
+  chaining section given visual weight.
+  500×700 print resolution.
 -->
 <script lang="ts">
   import { getCardBackThemeVisuals } from "./card-back-theme-visuals";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 
   const theme = $derived(getCardBackThemeVisuals(settingsService.settings.backgroundType));
+
+  // Same level gradients as the real cards
+  const LEVEL_GRADIENTS = [
+    { num: 1, label: "No turns", gradient: "radial-gradient(circle, rgb(186,230,253), rgb(14,165,233))", textColor: "black" },
+    { num: 2, label: "Whole turns", gradient: "radial-gradient(circle, rgb(226,232,240), rgb(71,85,105))", textColor: "white" },
+    { num: 3, label: "Half turns, float", gradient: "radial-gradient(circle, rgb(254,240,138), rgb(161,98,7))", textColor: "black" },
+  ];
 </script>
 
 <div class="border-frame" style="background: {theme.borderGradient};">
   <div class="card" style="background: {theme.background};">
     <div class="content">
 
+      <div class="spacer-sm"></div>
+
       <h1 class="title">Your Deck</h1>
 
-      <div class="divider"></div>
+      <div class="spacer-md"></div>
 
-      <!-- Corner badges explanation -->
-      <h3 class="section-title">Card Corners</h3>
-      <div class="corner-grid">
-        <div class="corner-item">
-          <span class="corner-badge-example" style="background: radial-gradient(circle, #93c5fd, #3b82f6); color: black;">1</span>
-          <span class="corner-desc"><strong>Top left</strong> Level</span>
+      <!-- Corner badges: visual diagram -->
+      <h3 class="section-label">Every Card Has Four Corners</h3>
+      <div class="corner-diagram">
+        <div class="diagram-card">
+          <div class="diagram-tl">
+            <span class="mini-badge" style="background: {LEVEL_GRADIENTS[0]?.gradient}; color: black;">1</span>
+          </div>
+          <div class="diagram-tr"><i class="fas fa-sync-alt"></i></div>
+          <div class="diagram-center">WORD</div>
+          <div class="diagram-bl">8</div>
+          <div class="diagram-br">α</div>
         </div>
-        <div class="corner-item">
-          <span class="corner-icon"><i class="fas fa-sync-alt"></i></span>
-          <span class="corner-desc"><strong>Top right</strong> LOOP type</span>
-        </div>
-        <div class="corner-item">
-          <span class="corner-number">8</span>
-          <span class="corner-desc"><strong>Bottom left</strong> Steps</span>
-        </div>
-        <div class="corner-item">
-          <span class="corner-glyph">α</span>
-          <span class="corner-desc"><strong>Bottom right</strong> Start position</span>
+        <div class="corner-labels">
+          <div class="label-row">
+            <span class="label-item"><strong>Level</strong> difficulty</span>
+            <span class="label-item right"><strong>LOOP</strong> pattern type</span>
+          </div>
+          <div class="label-row">
+            <span class="label-item"><strong>Steps</strong> length</span>
+            <span class="label-item right"><strong>Start</strong> α β or γ</span>
+          </div>
         </div>
       </div>
 
       <div class="divider"></div>
 
-      <!-- Levels -->
-      <h3 class="section-title">Levels</h3>
+      <!-- Levels with real gradients -->
+      <h3 class="section-label">Levels</h3>
       <div class="level-list">
-        <div class="level-row"><span class="level-num">1</span> No turns (foundation)</div>
-        <div class="level-row"><span class="level-num">2</span> Whole turns</div>
-        <div class="level-row"><span class="level-num">3</span> Half turns and float</div>
+        {#each LEVEL_GRADIENTS as lv}
+          <div class="level-row">
+            <span class="level-badge" style="background: {lv.gradient}; color: {lv.textColor};">{lv.num}</span>
+            <span class="level-desc">{lv.label}</span>
+          </div>
+        {/each}
       </div>
 
       <div class="divider"></div>
 
       <!-- LOOPs -->
-      <h3 class="section-title">LOOPs</h3>
-      <p class="body-text">Most sequences are LOOPs — the last beat connects back to the first. Play on repeat.</p>
+      <h3 class="section-label">LOOPs</h3>
+      <p class="body-text">The last beat connects to the first. Play on repeat. The card back tells you what changes each cycle.</p>
 
       <div class="divider"></div>
 
-      <!-- Sorting tip -->
-      <h3 class="section-title">Chaining Sequences</h3>
-      <p class="body-text">Group cards by start position (α, β, γ). Any two cards with the same start position can be played back to back.</p>
+      <!-- Chaining: the payoff section, given more room -->
+      <h3 class="section-label">Chaining</h3>
+      <div class="chain-highlight">
+        <p class="chain-text">Group cards by start position. Any two α cards play back to back. Same for β and γ.</p>
+        <div class="chain-visual">
+          <span class="chain-badge">α</span>
+          <span class="chain-arrow">→</span>
+          <span class="chain-badge">α</span>
+          <span class="chain-arrow">→</span>
+          <span class="chain-badge">α</span>
+          <span class="chain-dots">...</span>
+        </div>
+      </div>
 
-      <div class="spacer"></div>
+      <div class="spacer-lg"></div>
 
-      <div class="footer">Choreo Card · TKA</div>
+      <div class="footer">Choreo Card · The Kinetic Alphabet</div>
 
     </div>
   </div>
@@ -95,143 +121,194 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    padding: 32px 28px;
+    padding: 28px 28px;
     box-sizing: border-box;
   }
+
+  .spacer-sm { height: 8px; flex-shrink: 0; }
+  .spacer-md { height: 14px; flex-shrink: 0; }
+  .spacer-lg { flex: 1; }
 
   .title {
     margin: 0;
     text-align: center;
-    font-size: 26px;
+    font-size: 28px;
     font-weight: 800;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.03em;
   }
 
   .divider {
     height: 1px;
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.1);
     margin: 12px 0;
   }
 
-  .section-title {
+  .section-label {
     margin: 0 0 8px;
-    font-size: 14px;
+    font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: rgba(255, 255, 255, 0.7);
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.5);
   }
 
-  /* Corner badges grid: 2x2 */
-  .corner-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
+  /* Corner diagram: mini card representation */
+  .corner-diagram {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 4px;
   }
 
-  .corner-item {
+  .diagram-card {
+    position: relative;
+    width: 100%;
+    height: 70px;
+    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
   }
 
-  .corner-badge-example {
+  .diagram-center {
+    font-family: Georgia, serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.3);
+    letter-spacing: 0.1em;
+  }
+
+  .diagram-tl { position: absolute; top: 6px; left: 8px; }
+  .diagram-tr { position: absolute; top: 8px; right: 10px; font-size: 14px; color: rgba(255, 255, 255, 0.5); }
+  .diagram-bl { position: absolute; bottom: 6px; left: 10px; font-size: 16px; font-weight: 700; color: rgba(255, 255, 255, 0.5); }
+  .diagram-br { position: absolute; bottom: 6px; right: 10px; font-family: Georgia, serif; font-size: 18px; font-weight: 700; color: rgba(255, 255, 255, 0.5); }
+
+  .mini-badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     font-family: Cambria, serif;
-    font-size: 16px;
-    font-weight: bold;
-    flex-shrink: 0;
-  }
-
-  .corner-icon {
-    width: 26px;
-    text-align: center;
     font-size: 14px;
-    color: rgba(255, 255, 255, 0.6);
-    flex-shrink: 0;
+    font-weight: bold;
   }
 
-  .corner-number {
-    width: 26px;
-    text-align: center;
-    font-size: 18px;
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.6);
-    flex-shrink: 0;
+  .corner-labels {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
   }
 
-  .corner-glyph {
-    width: 26px;
-    text-align: center;
-    font-family: Georgia, serif;
-    font-size: 20px;
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.6);
-    flex-shrink: 0;
+  .label-row {
+    display: flex;
+    justify-content: space-between;
   }
 
-  .corner-desc {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.55);
-    line-height: 1.3;
-  }
-
-  .corner-desc strong {
-    color: rgba(255, 255, 255, 0.8);
-    display: block;
+  .label-item {
     font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    color: rgba(255, 255, 255, 0.4);
   }
 
-  /* Level list */
+  .label-item.right {
+    text-align: right;
+  }
+
+  .label-item strong {
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 600;
+  }
+
+  /* Level list with real gradient badges */
   .level-list {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
   }
 
   .level-row {
     display: flex;
     align-items: center;
     gap: 10px;
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.55);
   }
 
-  .level-num {
-    width: 22px;
-    height: 22px;
+  .level-badge {
+    width: 26px;
+    height: 26px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    border: 1.5px solid rgba(255, 255, 255, 0.3);
     font-family: Cambria, serif;
-    font-size: 13px;
+    font-size: 15px;
     font-weight: bold;
-    color: rgba(255, 255, 255, 0.7);
     flex-shrink: 0;
+  }
+
+  .level-desc {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.55);
   }
 
   .body-text {
     margin: 0;
     font-size: 13px;
-    color: rgba(255, 255, 255, 0.55);
+    color: rgba(255, 255, 255, 0.5);
     line-height: 1.5;
   }
 
-  .spacer { flex: 1; }
+  /* Chaining highlight section */
+  .chain-highlight {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .chain-text {
+    margin: 0;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 1.5;
+  }
+
+  .chain-visual {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .chain-badge {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    font-family: Georgia, serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .chain-arrow {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.3);
+  }
+
+  .chain-dots {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.2);
+    letter-spacing: 2px;
+  }
 
   .footer {
     text-align: center;
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.3);
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.25);
     letter-spacing: 0.06em;
   }
 </style>
