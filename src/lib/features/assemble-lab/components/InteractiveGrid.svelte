@@ -505,16 +505,18 @@
           />
         {/if}
 
-        <!-- Orientation direction arrow overlay -->
-        {#if builderState.showOrientationArrow}
-          <g
-            class="orientation-arrow"
-            style="transform: rotate({arrowRotationDeg}deg)"
-          >
-            <line x1="0" y1="0" x2="60" y2="0" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
-            <polygon points="60,-8 76,0 60,8" fill="currentColor" />
-          </g>
-        {/if}
+      </g>
+    {/if}
+
+    <!-- Layer 4.5: Orientation direction arrow (sibling of prop group to avoid
+         compounding parent rotation and interfering with CSS transition) -->
+    {#if activeTarget && builderState.showOrientationArrow && builderState.phase !== "complete"}
+      <g
+        class="orientation-arrow"
+        style="transform: translate({activeTarget.x}px, {activeTarget.y}px) rotate({arrowRotationDeg}deg)"
+      >
+        <line x1="0" y1="0" x2="60" y2="0" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+        <polygon points="60,-8 76,0 60,8" fill="currentColor" />
       </g>
     {/if}
 
