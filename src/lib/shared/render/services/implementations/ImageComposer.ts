@@ -359,17 +359,16 @@ export class ImageComposer implements IImageComposer {
     }
 
     // Step 5: Render all steps in the grid
-    // Calculate how many steps per row based on the layout
-    const startColumn = options.includeStartPosition ? 1 : 0;
-    const stepsPerRow = columns - startColumn; // Available columns for steps
+    // Steps use full width; when start position exists, steps begin at row 1
+    const startRow = options.includeStartPosition ? 1 : 0;
+    const stepsPerRow = columns; // Full width — no column reserved for start
 
     for (let i = 0; i < sequence.steps.length; i++) {
       const beat = sequence.steps[i];
       if (!beat) continue; // Skip if beat is undefined
-      // Calculate position: steps fill remaining columns, then wrap to next row
-      // All rows start at startColumn (column 1 if start position exists, column 0 otherwise)
-      const col = startColumn + (i % stepsPerRow);
-      const row = Math.floor(i / stepsPerRow);
+      // Steps fill the full row width, offset down by one row when start position is present
+      const col = i % stepsPerRow;
+      const row = startRow + Math.floor(i / stepsPerRow);
       // Only pass beat number if addStepNumbers is true
       const stepNumber = options.addStepNumbers ? i + 1 : undefined;
       // Apply prop type override if provided (supports single or per-color overrides)
@@ -851,6 +850,50 @@ export class ImageComposer implements IImageComposer {
         }
       }
     }
+
+    // Draw outer borders for occupied edge cells so every cell gets a
+    // complete border rectangle (the internal lines above only cover
+    // shared edges between two occupied neighbors).
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < columns; col++) {
+        if (!isOccupied(col, row)) continue;
+
+        const x = col * stepSize;
+        const y = row * stepSize + titleOffset;
+
+        // Top edge: draw if no occupied cell above
+        if (row === 0 || !isOccupied(col, row - 1)) {
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x + stepSize, y);
+          ctx.stroke();
+        }
+
+        // Bottom edge: draw if no occupied cell below
+        if (row === rows - 1 || !isOccupied(col, row + 1)) {
+          ctx.beginPath();
+          ctx.moveTo(x, y + stepSize);
+          ctx.lineTo(x + stepSize, y + stepSize);
+          ctx.stroke();
+        }
+
+        // Left edge: draw if no occupied cell to the left
+        if (col === 0 || !isOccupied(col - 1, row)) {
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x, y + stepSize);
+          ctx.stroke();
+        }
+
+        // Right edge: draw if no occupied cell to the right
+        if (col === columns - 1 || !isOccupied(col + 1, row)) {
+          ctx.beginPath();
+          ctx.moveTo(x + stepSize, y);
+          ctx.lineTo(x + stepSize, y + stepSize);
+          ctx.stroke();
+        }
+      }
+    }
   }
 
   /**
@@ -871,14 +914,13 @@ export class ImageComposer implements IImageComposer {
       occupied.add("0,0");
     }
 
-    // Add all steps using the same positioning logic as rendering:
-    // All rows start at startColumn (column 1 if start position exists, column 0 otherwise)
-    const startColumn = options.includeStartPosition ? 1 : 0;
-    const stepsPerRow = columns - startColumn;
+    // Steps use full width, offset by start row (same logic as rendering)
+    const startRow = options.includeStartPosition ? 1 : 0;
+    const stepsPerRow = columns;
 
     for (let i = 0; i < (sequence.steps.length || 0); i++) {
-      const col = startColumn + (i % stepsPerRow);
-      const row = Math.floor(i / stepsPerRow);
+      const col = i % stepsPerRow;
+      const row = startRow + Math.floor(i / stepsPerRow);
       occupied.add(`${col},${row}`);
     }
 
@@ -887,7 +929,8 @@ export class ImageComposer implements IImageComposer {
 
   /**
    * Find the best empty cell for placing a QR code.
-   * Prefers bottom-left empty cells (under the start position column).
+   * When start position occupies row 0, QR goes in the rightmost cell of that row.
+   * Otherwise scans from bottom-left for the first empty cell.
    *
    * @returns Cell coordinates {col, row} or null if no empty cells
    */
@@ -897,10 +940,13 @@ export class ImageComposer implements IImageComposer {
     sequence: SequenceData,
     options: Partial<SequenceExportOptions>
   ): { col: number; row: number } | null {
-    const occupiedCells = this.getOccupiedCells(sequence, options, columns);
+    // When start position is a top row, QR code goes in the rightmost cell of row 0
+    if (options.includeStartPosition) {
+      return { col: columns - 1, row: 0 };
+    }
 
-    // Scan from bottom-left, preferring column 0 (under start position if present)
-    // This places QR in the most natural empty spot
+    // Without start position, scan from bottom-left for an empty cell
+    const occupiedCells = this.getOccupiedCells(sequence, options, columns);
     for (let row = rows - 1; row >= 0; row--) {
       for (let col = 0; col < columns; col++) {
         if (!occupiedCells.has(`${col},${row}`)) {
