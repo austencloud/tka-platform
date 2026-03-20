@@ -78,6 +78,8 @@ export interface SequenceExportOptions {
     redPropType?: PropType;
     /** Render QR code in empty cell (if available) */
     showQRCode?: boolean;
+    /** Render as hand path visualization (HAND props, float arrows, no TKA) */
+    handPathMode?: boolean;
   };
 
   // User information
