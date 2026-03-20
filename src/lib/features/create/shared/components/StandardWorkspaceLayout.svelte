@@ -95,7 +95,6 @@
     return result;
   });
 
-  // Generator tab always shows workspace (for help button accessibility)
   const isGeneratorTab = $derived(navigationState.activeTab === "generate");
 
   // Assemble tab: collapse tool panel when sequence is complete
@@ -107,12 +106,8 @@
   // Fuse tab: hides workspace entirely (Fuse owns its own full-width layout)
   const isFuseTab = $derived(navigationState.activeTab === "fuse");
 
-  // Workspace should be visible if:
-  // - NOT in input mode (keyboard up on mobile)
-  // - NOT the Fuse tab (Fuse uses full tool panel space)
-  // - Generator tab (always visible with empty prompt)
-  // - Other tabs only when there's content
-  const shouldShowWorkspace = $derived(!isInputMode && !isFuseTab && (isGeneratorTab || hasWorkspaceContent));
+  // Workspace visible only when there's actual content to show
+  const shouldShowWorkspace = $derived(!isInputMode && !isFuseTab && hasWorkspaceContent);
 
   // Color border based on active CREATE tab (for visual workspace distinction)
   const workspaceBorderColor = $derived.by(() => {
@@ -170,9 +165,6 @@
     style:--workspace-border-color={workspaceBorderColor}
   >
     <!-- Workspace Content Area -->
-    {#if !hasWorkspaceContent && isGeneratorTab}
-      <p class="workspace-hint">Tap Generate to create your sequence</p>
-    {/if}
     <div class="workspace-content">
       {#if hasWorkspaceContent}
         <CreationWorkspaceArea
@@ -213,6 +205,9 @@
 
   <!-- Tool Panel -->
   <div class="tool-panel-container" bind:this={toolPanelElement}>
+    {#if !hasWorkspaceContent && isGeneratorTab}
+      <p class="workspace-hint">Tap Generate to create your sequence</p>
+    {/if}
     <CreationToolPanelSlot
       bind:toolPanelRef
       {onOptionSelected}
