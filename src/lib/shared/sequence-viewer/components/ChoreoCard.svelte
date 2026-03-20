@@ -402,8 +402,15 @@
     return null;
   });
 
+  // Solo mode: hide dual-prop metadata (word, letters, difficulty, LOOP)
+  // When browseViewMode has granularity "solo", we're showing one prop/hand only.
+  // The header shows a color label instead of the sequence word.
+  const isSoloMode = $derived(browseViewMode?.granularity === "solo");
+  const soloColor = $derived(browseViewMode?.color);
+
   // Show header when difficulty, LOOP glyph, or word is enabled
   const showHeader = $derived(
+    isSoloMode ||
     showDifficultyLevel || (showLoopGlyph && loopComponents) || (showWord && sequence.word)
   );
 
@@ -1675,47 +1682,56 @@
           style="height: {scaledHeaderHeight}px;"
           transition:fly|local={{ y: -20, duration: 250, easing: cubicOut }}
         >
-          {#if showDifficultyLevel}
-            <div
-              class="difficulty-badge"
-              style="
-                background: {currentLevelStyle.bg};
-                border-color: {currentLevelStyle.border};
-                color: {currentLevelStyle.text};
-                width: {badgeSize}px;
-                height: {badgeSize}px;
-                left: {badgePadding}px;
-                font-size: {badgeNumberFontSize}px;
-              "
-              transition:scale|local={{ duration: 200, easing: cubicOut }}
-            >
-              {difficultyLevel}
-            </div>
-          {/if}
-
-          {#if showWord && sequence.word}
+          {#if isSoloMode}
             <span
               class="word-title"
-              style="font-size: {wordTitleFontSize}px;"
-              transition:fade|local={{ duration: 200 }}
+              style="font-size: {wordTitleFontSize}px; color: {soloColor === 'blue' ? 'var(--prop-blue, #2196f3)' : 'var(--prop-red, #f44336)'};"
             >
-              {simplifyAndTruncate(sequence.word, 16)}
+              {soloColor === "blue" ? "Blue" : "Red"} {browseViewMode?.subject === "hands" ? "Hand Path" : "Prop Path"}
             </span>
-          {/if}
+          {:else}
+            {#if showDifficultyLevel}
+              <div
+                class="difficulty-badge"
+                style="
+                  background: {currentLevelStyle.bg};
+                  border-color: {currentLevelStyle.border};
+                  color: {currentLevelStyle.text};
+                  width: {badgeSize}px;
+                  height: {badgeSize}px;
+                  left: {badgePadding}px;
+                  font-size: {badgeNumberFontSize}px;
+                "
+                transition:scale|local={{ duration: 200, easing: cubicOut }}
+              >
+                {difficultyLevel}
+              </div>
+            {/if}
 
-          {#if showLoopGlyph && loopComponents}
-            <div
-              class="loop-icon-badge"
-              style="height: {badgeSize}px; right: {badgePadding}px;"
-              transition:fade|local={{ duration: 200 }}
-            >
-              <LOOPIconStrip
-                activeComponents={loopComponents}
-                size={Math.floor(badgeSize * 0.6)}
-                darkMode={activeDarkMode}
-                showFreeformWhenEmpty={false}
-              />
-            </div>
+            {#if showWord && sequence.word}
+              <span
+                class="word-title"
+                style="font-size: {wordTitleFontSize}px;"
+                transition:fade|local={{ duration: 200 }}
+              >
+                {simplifyAndTruncate(sequence.word, 16)}
+              </span>
+            {/if}
+
+            {#if showLoopGlyph && loopComponents}
+              <div
+                class="loop-icon-badge"
+                style="height: {badgeSize}px; right: {badgePadding}px;"
+                transition:fade|local={{ duration: 200 }}
+              >
+                <LOOPIconStrip
+                  activeComponents={loopComponents}
+                  size={Math.floor(badgeSize * 0.6)}
+                  darkMode={activeDarkMode}
+                  showFreeformWhenEmpty={false}
+                />
+              </div>
+            {/if}
           {/if}
         </div>
       {/if}
