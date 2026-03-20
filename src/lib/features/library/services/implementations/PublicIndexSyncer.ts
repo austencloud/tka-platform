@@ -170,6 +170,12 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
         filteredPublicData
       );
 
+      // Fire-and-forget: write decomposed artifacts to public collections so
+      // hand paths and solo props are independently discoverable in the gallery.
+      this.syncArtifactsToPublic(firestore, sequence, userId).catch((err) =>
+        console.warn("[PublicIndexSyncer] Public artifact sync failed (non-blocking):", err)
+      );
+
       // Inject the newly published sequence into the browse gallery cache so it
       // shows up immediately without a Firestore round-trip.
       if (this.browseLoader) {
@@ -261,6 +267,77 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
       });
       throw error; // Re-throw so callers know the removal failed
     }
+  }
+
+  /**
+   * Write decomposed hand paths and solo props to public collections.
+   * Each artifact is stored by its content hash so identical shapes across
+   * different sequences converge to a single document.
+   */
+  private async syncArtifactsToPublic(
+    firestore: Firestore,
+    sequence: LibrarySequence,
+    userId: string
+  ): Promise<void> {
+    const { blueSoloProp, redSoloProp } = sequence;
+    if (!blueSoloProp || !redSoloProp) return;
+
+    const timestamp = serverTimestamp();
+
+    const artifacts: Array<{ collectionPath: string; docId: string; data: Record<string, unknown> }> = [];
+
+    // Hand paths
+    for (const soloProp of [blueSoloProp, redSoloProp]) {
+      const hp = soloProp.handPath;
+      if (hp?.contentHash) {
+        artifacts.push({
+          collectionPath: "publicHandPaths",
+          docId: hp.contentHash,
+          data: {
+            contentHash: hp.contentHash,
+            locations: hp.locations,
+            startLocation: hp.startLocation,
+            endLocation: hp.endLocation,
+            length: hp.length,
+            bigrams: hp.bigrams,
+            uniqueLocations: hp.uniqueLocations,
+            impliedGridMode: hp.impliedGridMode,
+            isClosed: hp.isClosed,
+            ownerId: userId,
+            publishedAt: timestamp,
+          },
+        });
+      }
+    }
+
+    // Solo props
+    for (const soloProp of [blueSoloProp, redSoloProp]) {
+      if (soloProp?.contentHash) {
+        artifacts.push({
+          collectionPath: "publicSoloProps",
+          docId: soloProp.contentHash,
+          data: {
+            contentHash: soloProp.contentHash,
+            steps: soloProp.steps,
+            startLocation: soloProp.startLocation,
+            startOrientation: soloProp.startOrientation,
+            handPath: soloProp.handPath,
+            length: soloProp.length,
+            bigrams: soloProp.bigrams,
+            impliedGridMode: soloProp.impliedGridMode,
+            ownerId: userId,
+            publishedAt: timestamp,
+          },
+        });
+      }
+    }
+
+    // Write all artifacts in parallel — merge so we don't overwrite existing documents
+    await Promise.allSettled(
+      artifacts.map((a) =>
+        setDoc(doc(firestore, a.collectionPath, a.docId), a.data, { merge: true })
+      )
+    );
   }
 
   /**

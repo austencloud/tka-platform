@@ -1,4 +1,5 @@
 import type { SoloPropData } from "../../domain/models/SoloPropData";
+import type { ArtifactProvenance } from "../../domain/models/ArtifactProvenance";
 import type {
   GridLocation,
   GridMode,
@@ -20,6 +21,6 @@ export interface ISoloPropRepository {
   get(id: string): Promise<SoloPropData | null>;
   getByHash(contentHash: string): Promise<SoloPropData | null>;
   list(filters?: SoloPropFilters): Promise<SoloPropData[]>;
-  save(soloProp: SoloPropData): Promise<void>;
+  save(soloProp: SoloPropData, provenance?: ArtifactProvenance): Promise<void>;
   delete(id: string): Promise<void>;
 }
