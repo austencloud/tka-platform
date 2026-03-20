@@ -29,6 +29,8 @@
     showTKA?: boolean;
     showWord?: boolean;
     includeStartPosition?: boolean;
+    /** Render as hand path card: HAND props, float arrows, no TKA/reversals */
+    handPathMode?: boolean;
     onSelect?: (sequence: SequenceData) => void;
   }
 
@@ -41,6 +43,7 @@
     showTKA = true,
     showWord = true,
     includeStartPosition = true,
+    handPathMode = false,
     onSelect,
   }: Props = $props();
 
@@ -103,12 +106,13 @@
 
   // Build visibility settings for thumbnail render
   const visibilitySettings = $derived({
-    showTKA,
-    showReversals: true, // Always show reversals in choreo cards
+    showTKA: handPathMode ? false : showTKA,
+    showReversals: handPathMode ? false : true,
     showGrid,
     showNonRadialPoints: false, // Off by default for cleaner choreo cards
     handPointVisibility: handPointsVisible ? "all" as const : "active" as const,
     showQRCode: showQRCodes, // QR rendered in empty cell by ImageComposer
+    handPathMode,
   });
 
   function handleClick() {
