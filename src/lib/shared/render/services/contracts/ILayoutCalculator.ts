@@ -5,7 +5,8 @@ export interface ILayoutCalculator {
    */
   calculateLayout(
     stepCount: number,
-    includeStartPosition: boolean
+    includeStartPosition: boolean,
+    startPositionLayout?: "row" | "column"
   ): [number, number];
 
   /**

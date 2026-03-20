@@ -53,6 +53,7 @@ export interface ThumbnailRenderInput {
   addWord?: boolean;
   addStepNumbers?: boolean;
   includeStartPosition?: boolean;
+  startPositionLayout?: "row" | "column";
   addDifficultyLevel?: boolean;
   addUserInfo?: boolean;
   showCreatorName?: boolean;

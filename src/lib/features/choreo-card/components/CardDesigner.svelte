@@ -470,6 +470,7 @@
                     {showTKA}
                     {showWord}
                     {includeStartPosition}
+                    {startPositionLayout}
                   />
                 </div>
               </div>

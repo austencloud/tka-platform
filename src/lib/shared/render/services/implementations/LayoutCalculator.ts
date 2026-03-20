@@ -181,12 +181,49 @@ export class LayoutCalculator implements ILayoutCalculator {
     ) as Record<number, [number, number]>;
 
   /**
-   * Calculate optimal layout for given beat count
-   * Matches desktop calculate_layout() method exactly
+   * Portrait-optimized layout table for start position as a LEFT COLUMN.
+   * Designed for playing card aspect ratio (5:7) — fewer columns, more rows
+   * than the desktop-oriented LAYOUT_WITH_START_POSITION table.
+   *
+   * Format: stepCount -> [columns, rows]
+   * Column 0 = start position, remaining columns = steps.
+   */
+  private readonly LAYOUT_WITH_START_COLUMN: Record<number, [number, number]> = {
+    // Format: [cols, rows] where col 0 = start, cols 1..N = steps
+    // Step capacity = (cols - 1) * rows
+    0: [1, 1],
+    1: [2, 1],      // 1 step col × 1 row = 1
+    2: [2, 2],      // 1 × 2 = 2
+    3: [2, 3],      // 1 × 3 = 3
+    4: [3, 2],      // 2 × 2 = 4
+    5: [3, 3],      // 2 × 3 = 6 (fits 5)
+    6: [3, 3],      // 2 × 3 = 6
+    7: [3, 4],      // 2 × 4 = 8 (fits 7)
+    8: [3, 4],      // 2 × 4 = 8 ← portrait-friendly for playing cards
+    9: [4, 3],      // 3 × 3 = 9
+    10: [3, 5],     // 2 × 5 = 10
+    11: [4, 4],     // 3 × 4 = 12 (fits 11)
+    12: [4, 4],     // 3 × 4 = 12
+    13: [4, 5],     // 3 × 5 = 15 (fits 13)
+    14: [4, 5],     // 3 × 5 = 15 (fits 14)
+    15: [4, 5],     // 3 × 5 = 15
+    16: [5, 4],     // 4 × 4 = 16
+    17: [5, 5],     // 4 × 5 = 20 (fits 17-20)
+    18: [5, 5],
+    19: [5, 5],
+    20: [5, 5],
+  };
+
+  /**
+   * Calculate optimal layout for given beat count.
+   *
+   * @param startPositionLayout - "row" puts start in a top row, "column" puts it in a left column.
+   *   Defaults to "row". When "column", uses portrait-optimized column layouts.
    */
   calculateLayout(
     stepCount: number,
-    includeStartPosition: boolean
+    includeStartPosition: boolean,
+    startPositionLayout: "row" | "column" = "row"
   ): [number, number] {
     if (!this.validateLayout(stepCount, includeStartPosition)) {
       throw new Error(
@@ -194,9 +231,14 @@ export class LayoutCalculator implements ILayoutCalculator {
       );
     }
 
-    const layoutTable = includeStartPosition
-      ? this.LAYOUT_WITH_START_ROW
-      : this.LAYOUT_WITHOUT_START_POSITION;
+    let layoutTable: Record<number, [number, number]>;
+    if (!includeStartPosition) {
+      layoutTable = this.LAYOUT_WITHOUT_START_POSITION;
+    } else if (startPositionLayout === "column") {
+      layoutTable = this.LAYOUT_WITH_START_COLUMN;
+    } else {
+      layoutTable = this.LAYOUT_WITH_START_ROW;
+    }
 
     // Check if we have a predefined layout for this beat count
     if (stepCount in layoutTable) {

@@ -44,6 +44,7 @@
     addWord?: boolean;
     addStepNumbers?: boolean;
     includeStartPosition?: boolean;
+    startPositionLayout?: "row" | "column";
     addDifficultyLevel?: boolean;
     addUserInfo?: boolean;
     userName?: string;
@@ -69,6 +70,7 @@
     addWord,
     addStepNumbers,
     includeStartPosition,
+    startPositionLayout,
     addDifficultyLevel,
     addUserInfo,
     userName,
@@ -139,6 +141,7 @@
     addWord,
     addStepNumbers,
     includeStartPosition,
+    startPositionLayout,
     addDifficultyLevel,
     addUserInfo,
     userName,
