@@ -50,7 +50,8 @@ Landscape: Left half decrements, right half increments (horizontal layout)
   let rippleService: IRippleEffect;
   let cardElement: HTMLDivElement | null = $state(null);
   let previousColor = $state("");
-  let transitionTimer: ReturnType<typeof setTimeout> | null = null;
+  let isTransitioning = $state(false);
+  let fadeTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Sync previousColor on mount
   $effect(() => {
@@ -73,44 +74,42 @@ Landscape: Left half decrements, right half increments (horizontal layout)
     return undefined;
   });
 
-  // Gradient crossfade animation when color changes.
-  // If clicked rapidly, cancel the pending timeout and restart the
-  // transition from wherever the crossfade currently is — no snap.
-  $effect(() => {
-    if (color !== previousColor && cardElement) {
-      // Cancel any in-flight transition so we don't snap back
-      if (transitionTimer !== null) {
-        clearTimeout(transitionTimer);
-        // The ::before pseudo is mid-fade. Commit the current color
-        // as "previous" so the next fade starts from the right place.
-        cardElement.classList.remove("transitioning");
-        previousColor = color;
-      }
+  // Gradient crossfade when color changes.
+  // On each click: commit the current color as "previous" (so ::before
+  // shows what was just visible), remove the transitioning class to
+  // reset ::before to full opacity, then on the next frame re-add it
+  // to start a fresh fade. This works for both slow and rapid clicks.
+  function startCrossfade() {
+    if (!cardElement) return;
 
-      // Use requestAnimationFrame to ensure the DOM reflects the
-      // updated previousColor before we start the new fade
+    // Cancel any pending commit
+    if (fadeTimer) clearTimeout(fadeTimer);
+
+    // Step 1: snapshot current color as the "from" state
+    previousColor = color;
+    isTransitioning = false;
+
+    // Step 2: next frame — re-enable the fade (::before is now
+    // fully opaque showing previousColor, background shows new color)
+    requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        if (!cardElement) return;
-        // Now previousColor matches the current background, so
-        // ::before shows the current state. Set the new color and fade.
-        // (color prop already has the new value from the parent)
-        cardElement.classList.add("transitioning");
-
-        transitionTimer = setTimeout(() => {
-          if (cardElement) {
-            cardElement.classList.remove("transitioning");
-          }
+        isTransitioning = true;
+        // Step 3: after fade completes, commit
+        fadeTimer = setTimeout(() => {
           previousColor = color;
-          transitionTimer = null;
-        }, 800);
+          isTransitioning = false;
+          fadeTimer = null;
+        }, 400);
       });
-    }
-  });
+    });
+  }
 
   function handleIncrement() {
     if (currentValue < maxValue) {
       hapticService?.trigger("selection");
       onIncrement();
+      // Start crossfade after the parent updates the color prop
+      requestAnimationFrame(() => startCrossfade());
     }
   }
 
@@ -118,6 +117,7 @@ Landscape: Left half decrements, right half increments (horizontal layout)
     if (currentValue > minValue) {
       hapticService?.trigger("selection");
       onDecrement();
+      requestAnimationFrame(() => startCrossfade());
     }
   }
 
@@ -139,6 +139,7 @@ Landscape: Left half decrements, right half increments (horizontal layout)
 <div
   bind:this={cardElement}
   class="stepper-card"
+  class:transitioning={isTransitioning}
   style="--card-color: {color}; --prev-color: {previousColor}; --shadow-color: {shadowColor}; --text-color: {textColor}; --card-index: {cardIndex}; grid-column: span {gridColumnSpan};"
   role="group"
   aria-label={title}
@@ -232,11 +233,11 @@ Landscape: Left half decrements, right half increments (horizontal layout)
     opacity: 1; /* Start visible */
     z-index: -1;
     pointer-events: none;
-    transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Trigger crossfade: fade out old gradient to reveal new */
-  :global(.stepper-card.transitioning)::before {
+  .stepper-card.transitioning::before {
     opacity: 0;
   }
 
