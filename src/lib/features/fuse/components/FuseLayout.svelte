@@ -23,6 +23,7 @@
 	const { state } = getFuseContext();
 
 	const showTempo = $derived(state.leftSequence !== null || state.rightSequence !== null);
+const showHint = $derived(state.leftSequence === null || state.rightSequence === null);
 
 	// DOM refs for assembly animation
 	let leftPanelEl: HTMLDivElement;
@@ -77,6 +78,9 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <div class="fuse-layout">
+	{#if showHint}
+		<p class="workspace-hint">Select two sequences to fuse</p>
+	{/if}
 	<div class="fuse-panels">
 		<div class="panel-wrap" bind:this={leftPanelEl}>
 			<FusePanel
@@ -174,6 +178,17 @@
 		height: 200px;
 		transform: translate(-50%, -50%);
 		pointer-events: none;
+	}
+
+	.workspace-hint {
+		flex-shrink: 0;
+		text-align: center;
+		font-size: clamp(1rem, 2.5vmin, 1.25rem);
+		font-weight: 500;
+		color: var(--theme-text, #fff);
+		padding: clamp(8px, 1.5vmin, 12px) 1rem;
+		margin: 0;
+		letter-spacing: 0.02em;
 	}
 
 	.fuse-tempo {
