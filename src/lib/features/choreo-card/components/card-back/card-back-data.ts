@@ -188,6 +188,41 @@ function addOrientation(o: string | null | undefined, set: Set<string>) {
   else if (o === "counter" || o.startsWith("counter")) set.add("counter");
 }
 
+/**
+ * Derive the starting position group from any available source:
+ * explicit field, start position grid position, or first step.
+ */
+const POSITION_GROUPS = ["alpha", "beta", "gamma", "zeta", "eta", "tau", "terra"];
+
+function extractGroup(positionString: string | null | undefined): string | null {
+  if (!positionString) return null;
+  const pos = String(positionString);
+  for (const group of POSITION_GROUPS) {
+    if (pos.startsWith(group)) return group;
+  }
+  return null;
+}
+
+/**
+ * Derive the starting position group from any available source:
+ * explicit field, start position data, or first step.
+ */
+function deriveStartPositionGroup(sequence: SequenceData): string | null {
+  // Explicit field
+  if (sequence.startingPositionGroup) return sequence.startingPositionGroup;
+
+  // From StartPositionData.gridPosition (e.g. "alpha1" → "alpha")
+  const fromStartPos = extractGroup(sequence.startPosition?.gridPosition as string | undefined)
+    ?? extractGroup(sequence.startingPosition?.gridPosition as string | undefined);
+  if (fromStartPos) return fromStartPos;
+
+  // From first step's startPosition
+  const fromStep = extractGroup(sequence.steps?.[0]?.startPosition as string | undefined);
+  if (fromStep) return fromStep;
+
+  return null;
+}
+
 export function deriveCardBackData(
   sequence: SequenceData,
   converter: ISequenceToEntryConverter | null,
@@ -233,6 +268,6 @@ export function deriveCardBackData(
     isRotated: sequence.loopType
       ? ROTATED_LOOP_TYPES.has(sequence.loopType)
       : false,
-    startPositionGroup: sequence.startingPositionGroup ?? null,
+    startPositionGroup: deriveStartPositionGroup(sequence),
   };
 }

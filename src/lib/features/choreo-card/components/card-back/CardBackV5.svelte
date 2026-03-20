@@ -51,6 +51,52 @@
   const startGlyph = $derived(
     d.startPositionGroup ? POSITION_GLYPHS[d.startPositionGroup] ?? null : null
   );
+
+  // Pronunciation guide: spell out Greek letters for readers unfamiliar with them
+  const LETTER_NAMES: Record<string, string> = {
+    "Σ": "Sigma", "Δ": "Delta", "Θ": "Theta", "Ω": "Omega",
+    "Φ": "Phi", "Ψ": "Psi", "Λ": "Lambda",
+    "Σ-": "Sigma-", "Δ-": "Delta-", "Θ-": "Theta-", "Ω-": "Omega-",
+    "Φ-": "Phi-", "Ψ-": "Psi-", "Λ-": "Lambda-",
+    "α": "alpha", "β": "beta", "γ": "gamma",
+    "ζ": "zeta", "η": "eta", "τ": "tau", "τ-": "tau-",
+    "μ": "mu", "ν": "nu", "⊕": "terra",
+  };
+
+  /** True if the word contains any non-Latin letter that needs a pronunciation hint */
+  const hasGreekLetters = $derived(
+    d.word.split("").some((ch) => ch in LETTER_NAMES || (ch + "-") in LETTER_NAMES)
+  );
+
+  /**
+   * Build a pronunciation string: "B · Delta- · W · Phi"
+   * Only shown when the word contains Greek letters.
+   */
+  const pronunciation = $derived.by(() => {
+    if (!hasGreekLetters) return "";
+    const parts: string[] = [];
+    const word = d.word;
+    let i = 0;
+    while (i < word.length) {
+      // Check for dash-suffix variants first (e.g. "Σ-")
+      if (i + 1 < word.length && word[i + 1] === "-") {
+        const twoChar = word[i] + "-";
+        if (LETTER_NAMES[twoChar]) {
+          parts.push(LETTER_NAMES[twoChar]!);
+          i += 2;
+          continue;
+        }
+      }
+      const ch = word[i]!;
+      if (LETTER_NAMES[ch]) {
+        parts.push(LETTER_NAMES[ch]!);
+      } else {
+        parts.push(ch);
+      }
+      i++;
+    }
+    return parts.join(" · ");
+  });
 </script>
 
 <!-- Outer: themed gradient border -->
@@ -100,6 +146,9 @@
 
       <!-- Word -->
       <div class="word">{d.word}</div>
+      {#if hasGreekLetters}
+        <div class="pronunciation">{pronunciation}</div>
+      {/if}
 
       <div class="spacer"></div>
 
@@ -221,6 +270,14 @@
     font-weight: 800;
     letter-spacing: 0.05em;
     line-height: 1;
+  }
+
+  .pronunciation {
+    font-size: 13px;
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.4);
+    margin-top: 6px;
+    letter-spacing: 0.02em;
   }
 
   .spacer { flex: 1; }
