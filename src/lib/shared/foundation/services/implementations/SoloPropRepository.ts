@@ -17,6 +17,7 @@ import {
   query,
   where,
   limit as firestoreLimit,
+  arrayUnion,
   type DocumentData,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
@@ -26,6 +27,7 @@ import type {
   ISoloPropRepository,
   SoloPropFilters,
 } from "../contracts/ISoloPropRepository";
+import type { ArtifactProvenance } from "../../domain/models/ArtifactProvenance";
 
 // ============================================================================
 // Firestore ↔ domain conversion
@@ -159,11 +161,39 @@ export class SoloPropRepository implements ISoloPropRepository {
     return snap.docs.map((d) => docToSoloProp(d.data(), d.id));
   }
 
-  async save(soloProp: SoloPropData): Promise<void> {
+  async save(soloProp: SoloPropData, provenance?: ArtifactProvenance): Promise<void> {
     const firestore = await getFirestoreInstance();
     const uid = this.getUserId();
     const docRef = doc(firestore, `users/${uid}/soloProps/${soloProp.id}`);
-    await setDoc(docRef, soloPropToDoc(soloProp));
+
+    if (provenance) {
+      // Check if the document already exists so we can merge provenance
+      const existing = await getDoc(docRef);
+
+      if (existing.exists()) {
+        // Document exists — append to sourceSequenceIds without duplicating
+        await setDoc(docRef, {
+          ...soloPropToDoc(soloProp),
+          provenance: {
+            sourceSequenceIds: arrayUnion(...provenance.sourceSequenceIds),
+            isOriginal: provenance.isOriginal,
+            firstSeenAt: existing.data()["provenance"]?.["firstSeenAt"] ?? provenance.firstSeenAt,
+          },
+        }, { merge: true });
+      } else {
+        // New document — write the full provenance as-is
+        await setDoc(docRef, {
+          ...soloPropToDoc(soloProp),
+          provenance: {
+            sourceSequenceIds: provenance.sourceSequenceIds,
+            isOriginal: provenance.isOriginal,
+            firstSeenAt: provenance.firstSeenAt,
+          },
+        });
+      }
+    } else {
+      await setDoc(docRef, soloPropToDoc(soloProp));
+    }
   }
 
   async delete(id: string): Promise<void> {

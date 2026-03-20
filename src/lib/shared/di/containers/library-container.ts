@@ -22,6 +22,9 @@ import type { IContentAppealManager } from "$lib/features/moderation/services/co
 import type { IConflictResolver } from "$lib/shared/offline/services/contracts/IConflictResolver";
 import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
 import { SequenceContentHasher } from "$lib/features/library/services/implementations/SequenceContentHasher";
+import { ArtifactExtractor } from "$lib/features/library/services/implementations/ArtifactExtractor";
+import { handPathRepository } from "$lib/shared/foundation/services/implementations/HandPathRepository";
+import { soloPropRepository } from "$lib/shared/foundation/services/implementations/SoloPropRepository";
 
 /**
  * Library Repository dependencies
@@ -94,17 +97,21 @@ export function createLibraryContainer(deps: {
     contentHasher
   );
 
+  const artifactExtractor = new ArtifactExtractor(handPathRepository, soloPropRepository);
+
   return createContainer().add({
     publicIndexSyncer: () => publicIndexSyncer,
     collectionManager: () => new CollectionManager(),
     contentHasher: () => contentHasher,
+    artifactExtractor: () => artifactExtractor,
     libraryRepository: () => libraryRepository,
     librarySaveService: () =>
       new LibrarySaveService(
         deps.librarySaveService.sharer ?? null,
         deps.librarySaveService.videoUploader ?? null,
         deps.librarySaveService.tagManager ?? null,
-        libraryRepository
+        libraryRepository,
+        artifactExtractor
       ),
   });
 }

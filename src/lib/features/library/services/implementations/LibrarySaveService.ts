@@ -19,6 +19,7 @@ import type { ISharer } from "$lib/shared/share/services/contracts/ISharer";
 import type { IVideoUploader } from "$lib/shared/share/services/contracts/IVideoUploader";
 import type { ITagManager } from "../contracts/ITagManager";
 import type { ILibraryRepository } from "../contracts/ILibraryRepository";
+import type { IArtifactExtractor } from "../contracts/IArtifactExtractor";
 import { TAG_COLORS } from "../../domain/models/Tag";
 import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/ShareOptions";
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
@@ -33,23 +34,27 @@ import type { IErrorHandler } from "$lib/shared/application/services/contracts/I
 import { LibraryError } from "./LibraryRepository";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { db } from "$lib/shared/persistence/database/TKADatabase";
+import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
 
 export class LibrarySaveService implements ILibrarySaveService {
   private readonly shareService: ISharer | null;
   private readonly uploadService: IVideoUploader | null;
   private readonly tagService: ITagManager | null;
   private readonly libraryRepository: ILibraryRepository;
+  private readonly artifactExtractor: IArtifactExtractor | null;
 
   constructor(
     shareService: ISharer | null,
     uploadService: IVideoUploader | null,
     tagService: ITagManager | null,
-    libraryRepository: ILibraryRepository
+    libraryRepository: ILibraryRepository,
+    artifactExtractor?: IArtifactExtractor | null
   ) {
     this.shareService = shareService ?? null;
     this.uploadService = uploadService ?? null;
     this.tagService = tagService ?? null;
     this.libraryRepository = libraryRepository;
+    this.artifactExtractor = artifactExtractor ?? null;
   }
 
   async saveSequence(
@@ -108,6 +113,15 @@ export class LibrarySaveService implements ILibrarySaveService {
     emitProgress(4);
     this.syncToFirestore(sequence, { name, displayName, visibility, tags, notes: notes ?? "", thumbnailUrl })
       .catch(err => console.warn("[LibrarySaveService] Firestore sync pending:", err));
+
+    // Fire-and-forget: decompose the sequence into hand paths and solo props
+    // so they're independently queryable in the user's artifact repositories.
+    const currentUserId = authState.effectiveUserId;
+    if (this.artifactExtractor && currentUserId && sequenceToSave.blueSoloProp && sequenceToSave.redSoloProp) {
+      this.artifactExtractor.extract(sequenceToSave, currentUserId).catch((err) =>
+        console.error("Artifact extraction failed (non-blocking):", err)
+      );
+    }
 
     // Step 5: Refresh library state
     emitProgress(5);

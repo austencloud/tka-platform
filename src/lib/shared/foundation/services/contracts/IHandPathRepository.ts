@@ -1,4 +1,5 @@
 import type { HandPathData } from "../../domain/models/HandPathData";
+import type { ArtifactProvenance } from "../../domain/models/ArtifactProvenance";
 import type {
   GridLocation,
   GridMode,
@@ -19,6 +20,6 @@ export interface IHandPathRepository {
   get(id: string): Promise<HandPathData | null>;
   getByHash(contentHash: string): Promise<HandPathData | null>;
   list(filters?: HandPathFilters): Promise<HandPathData[]>;
-  save(path: HandPathData): Promise<void>;
+  save(path: HandPathData, provenance?: ArtifactProvenance): Promise<void>;
   delete(id: string): Promise<void>;
 }
