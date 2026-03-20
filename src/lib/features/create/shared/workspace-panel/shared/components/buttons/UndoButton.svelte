@@ -2,6 +2,7 @@
   import { UndoOperationType } from "$lib/features/create/shared/services/contracts/IUndoManager";
   import type { createCreateModuleState } from "$lib/features/create/shared/state/create-module-state.svelte";
   import { container } from "$lib/shared/di";
+  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 
   type CreateModuleState = ReturnType<typeof createCreateModuleState>;
 
@@ -16,6 +17,8 @@
 
   // Resolve haptic feedback service
   const hapticService = container.items.hapticFeedback;
+
+  const isAssembleTab = $derived(navigationState.activeTab === "assemble");
 
   // Type descriptions for all operation types
   const typeDescriptions: Record<UndoOperationType, string> = {
@@ -47,6 +50,13 @@
   const undoButtonText = $derived(() => {
     if (!CreateModuleState.canUndo) return "Nothing to Undo";
 
+    // Assemble tab uses per-step undo — no history entries to inspect
+    if (isAssembleTab) {
+      const builder = CreateModuleState.assembleTabState?.assembleBuilderState;
+      if (builder?.phase === "placing") return "Undo Placement";
+      return "Undo Step";
+    }
+
     const lastEntry =
       CreateModuleState.undoHistory[CreateModuleState.undoHistory.length - 1];
     if (lastEntry?.metadata?.description) {
@@ -59,6 +69,13 @@
 
   const undoTooltip = $derived(() => {
     if (!CreateModuleState.canUndo) return "No actions to undo";
+
+    // Assemble tab: simple tooltip
+    if (isAssembleTab) {
+      const builder = CreateModuleState.assembleTabState?.assembleBuilderState;
+      if (builder?.phase === "placing") return "Undo: Remove placement";
+      return "Undo: Remove last step from active hand";
+    }
 
     const lastEntry =
       CreateModuleState.undoHistory[CreateModuleState.undoHistory.length - 1];

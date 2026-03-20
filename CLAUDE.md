@@ -321,6 +321,18 @@ Every file in `memory/` and `.claude/rules/` is loaded into EVERY conversation. 
 
 ---
 
+## Shared Skills System
+
+TKA uses 7 shared skills from `@austencloud/claude-skills`: **commit**, **changelog**, **check**, **ai-bust**, **monolith**, **deadcode**, **audit**.
+
+- **Config:** `.claude/skills.config.json` declares which skills this project uses and project-specific template variables.
+- **Sync:** `npx @austencloud/claude-skills sync` renders templates into `.claude/skills/` and `.claude/agents/`.
+- **Do not edit synced files directly.** They have a managed-by comment at the top. Edits go to the template in `F:/_CODE/shared-packages/packages/claude-skills/templates/` and then re-sync.
+- **Audit tooling:** `ac-audit` and `ac-evidence` CLI commands come from `@austencloud/code-quality`, replacing the old `scripts/audit-tracker.cjs` and `scripts/collect-evidence.cjs`.
+- **Project-specific skills** (museum, lab, concepts, fb, release, etc.) are NOT managed by the shared package. Those live in `.claude/skills/` and `.claude/commands/` and are edited directly.
+
+---
+
 ## Dev Server Ports - CRITICAL
 
 **Port 5173 belongs to the user. NEVER touch it.**

@@ -119,7 +119,7 @@
   {#if trailsState.exportState.phase === "idle" || trailsState.exportState.phase === "complete" || trailsState.exportState.phase === "error"}
     <button class="export-btn" onclick={handleExport} disabled={!trailsState.source}>
       <i class="fas fa-download" aria-hidden="true"></i>
-      Export Animation
+      Download Animation
     </button>
   {:else}
     <div class="progress-section">

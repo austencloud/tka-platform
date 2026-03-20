@@ -213,13 +213,21 @@
     }
   });
 
+  function handleWindowBlur() {
+    if (menuState.open) {
+      onClose();
+    }
+  }
+
   onMount(() => {
     document.addEventListener("pointerdown", handleClickOutside, true);
     document.addEventListener("keydown", handleKeydown);
+    window.addEventListener("blur", handleWindowBlur);
 
     return () => {
       document.removeEventListener("pointerdown", handleClickOutside, true);
       document.removeEventListener("keydown", handleKeydown);
+      window.removeEventListener("blur", handleWindowBlur);
       if (submenuTimer) clearTimeout(submenuTimer);
     };
   });

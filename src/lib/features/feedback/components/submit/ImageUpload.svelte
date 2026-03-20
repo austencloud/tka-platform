@@ -9,6 +9,7 @@
     maxImages = 5,
     disabled = false,
     hidePreviews = false,
+    hideAttachButton = false,
     stagedImages = new Map(),
     onImagesAdded,
     onImageRemoved,
@@ -17,6 +18,8 @@
     maxImages?: number;
     disabled?: boolean;
     hidePreviews?: boolean;
+    /** Hide the standalone attach button (parent provides its own trigger) */
+    hideAttachButton?: boolean;
     stagedImages?: Map<File, StagedImageState>;
     onImagesAdded?: (files: File[]) => void;
     onImageRemoved?: (index: number) => void;
@@ -103,8 +106,13 @@
     }
   }
 
-  function openFilePicker(e: Event) {
+  function handleOpenFilePicker(e: Event) {
     e.preventDefault();
+    if (!disabled) fileInput?.click();
+  }
+
+  /** Exposed so parent can trigger file picker without owning the file input */
+  export function openFilePicker() {
     if (!disabled) fileInput?.click();
   }
 
@@ -196,14 +204,14 @@
         </button>
       {/if}
     </div>
-  {:else if images.length < maxImages}
+  {:else if !hideAttachButton && images.length < maxImages}
     <!-- No images yet — compact attach button -->
     <button
       type="button"
       class="attach-button"
       class:dragging={isDragging}
-      onmousedown={openFilePicker}
-      ontouchstart={openFilePicker}
+      onmousedown={handleOpenFilePicker}
+      ontouchstart={handleOpenFilePicker}
       ondrop={handleDrop}
       ondragover={handleDragOver}
       ondragleave={handleDragLeave}

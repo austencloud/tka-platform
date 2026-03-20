@@ -2,7 +2,7 @@
 LOOPGlyph.svelte - 4-quadrant pie chart glyph for LOOP component visualization
 
 Used in:
-1. Export cards (badge in header) - static display
+1. Download Cards (badge in header) - static display
 2. Generator panel (interactive picker) - clickable quadrants
 3. Sequence cards (badge overlay) - static display
 

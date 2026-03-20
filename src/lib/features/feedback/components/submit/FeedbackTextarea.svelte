@@ -63,6 +63,8 @@
   }>();
 
   let textareaElement = $state<HTMLTextAreaElement | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Svelte 5 component ref
+  let stableUploadRef: any = $state(undefined);
   let isFocused = $state(false);
 
   function handleFocus() {
@@ -141,10 +143,20 @@
       </button>
     {/if}
 
-    <!-- Attach button inside textarea, bottom-left (mirrors voice button on right) -->
+    <!-- Attach button inside textarea when no images yet -->
     {#if images.length === 0}
       <div class="attach-wrapper">
-        <ImageUpload images={images} {disabled} {stagedImages} {onImagesAdded} {onImageRemoved} hidePreviews={isInputMode} />
+        <!-- Dummy button that triggers the stable ImageUpload's file picker below -->
+        <button
+          type="button"
+          class="attach-proxy"
+          onclick={() => stableUploadRef?.openFilePicker()}
+          {disabled}
+          title={t("feedback_upload_image_title")}
+        >
+          <i class="fas fa-paperclip" aria-hidden="true"></i>
+          <span>{t("feedback_attach_image")}</span>
+        </button>
       </div>
     {/if}
 
@@ -189,10 +201,19 @@
         {/if}
       </div>
     </div>
-    <!-- Image strip appears on its own row when images exist -->
-    {#if images.length > 0}
-      <ImageUpload images={images} {disabled} {stagedImages} {onImagesAdded} {onImageRemoved} hidePreviews={isInputMode} />
-    {/if}
+    <!-- Single stable ImageUpload instance — never destroyed/recreated.
+         The attach button is handled by the proxy inside the textarea,
+         so we hide the component's own button when no images exist. -->
+    <ImageUpload
+      bind:this={stableUploadRef}
+      images={images}
+      {disabled}
+      {stagedImages}
+      {onImagesAdded}
+      {onImageRemoved}
+      hidePreviews={isInputMode}
+      hideAttachButton={true}
+    />
   </div>
 </div>
 
@@ -367,6 +388,39 @@
     display: flex;
     align-items: center;
     z-index: 1;
+  }
+
+  .attach-proxy {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0 14px;
+    background: transparent;
+    border: 1.5px dashed var(--theme-stroke-strong);
+    border-radius: 10px;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 150ms ease;
+    flex-shrink: 0;
+  }
+
+  .attach-proxy:hover:not(:disabled) {
+    border-color: var(--theme-accent);
+    color: var(--theme-accent);
+    background: color-mix(in srgb, var(--theme-accent) 8%, transparent);
+  }
+
+  .attach-proxy:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .attach-proxy i {
+    font-size: 0.8rem;
   }
 
   .voice-input-wrapper {

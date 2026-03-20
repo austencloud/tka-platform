@@ -64,6 +64,7 @@ const hmrAuthData = import.meta.hot?.data as
       authState?: AuthState;
       cleanupAuthListener?: (() => void) | null;
       cleanupSubscriptionListener?: (() => void) | null;
+      childServicesInitialized?: boolean;
     }
   | undefined;
 
@@ -82,11 +83,18 @@ let _state = $state<AuthState>(
 let cleanupAuthListener: (() => void) | null = hmrAuthData?.cleanupAuthListener ?? null;
 let cleanupSubscriptionListener: (() => void) | null = hmrAuthData?.cleanupSubscriptionListener ?? null;
 
+// Track whether child services (settings, arrows, onboarding, etc.) have been initialized.
+// On HMR, the auth listener fires again because the Firebase app instance rotates, but
+// the child services don't need to re-initialize — they're already listening/loaded.
+// Without this guard, every file save in dev triggers ~12 Firestore reads.
+let childServicesInitialized = hmrAuthData?.childServicesInitialized ?? false;
+
 if (import.meta.hot) {
   import.meta.hot.dispose((data) => {
     data.authState = { ..._state };
     data.cleanupAuthListener = cleanupAuthListener;
     data.cleanupSubscriptionListener = cleanupSubscriptionListener;
+    data.childServicesInitialized = childServicesInitialized;
   });
 }
 
@@ -386,8 +394,11 @@ export async function initializeAuthListener() {
         resetUser();
       }
 
-      // Log session start for analytics (non-blocking)
-      if (user) {
+      // Log session start for analytics and initialize child services (non-blocking).
+      // The childServicesInitialized guard prevents re-running all Firestore reads on
+      // every Vite HMR reload. Without this, each file save costs ~12 Firestore operations.
+      if (user && !childServicesInitialized) {
+        childServicesInitialized = true;
         try {
           const activityService = container.items.activityLogger;
           if (activityService) {
@@ -558,6 +569,9 @@ export async function signOut() {
 
     // Note: Profile settings state is now context-based (profile-settings-context.svelte.ts)
     // State is automatically cleaned up when the component unmounts, no manual reset needed
+
+    // Reset child services flag so next sign-in triggers the full init cascade
+    childServicesInitialized = false;
 
     // Reset first-run cloud sync so next signin will sync fresh
     try {

@@ -702,7 +702,7 @@
       {#if sequence && !loading && !error}
         <div class="control-section">
           <h3>Playback</h3>
-          <TempoControl {bpm} onBpmChange={handleBpmChange} showPresets={false} showRamp={false} />
+          <TempoControl {bpm} onBpmChange={handleBpmChange} showPresets={false} showPractice={false} />
           <TransportControls
             {isPlaying}
             onPlaybackToggle={togglePlayback}
