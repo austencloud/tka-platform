@@ -1,0 +1,180 @@
+import type { HandPathData } from "$lib/shared/foundation/domain/models/HandPathData";
+import type { SoloPropData } from "$lib/shared/foundation/domain/models/SoloPropData";
+import type { SoloPropStepData } from "$lib/shared/foundation/domain/models/SoloPropStepData";
+import type { StepPairingData } from "$lib/shared/foundation/domain/models/StepPairingData";
+import { createSequenceData, type SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import { MotionType, RotationDirection, Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { ISequenceFuser, FuseOptions } from "../contracts/ISequenceFuser";
+
+const DEFAULT_MAX_BEATS = 64;
+
+function gcd(a: number, b: number): number {
+	return b === 0 ? a : gcd(b, a % b);
+}
+
+function lcm(a: number, b: number): number {
+	return (a * b) / gcd(a, b);
+}
+
+function isHandPathData(input: HandPathData | SoloPropData): input is HandPathData {
+	return "locations" in input && !("handPath" in input);
+}
+
+function extractHandPath(input: HandPathData | SoloPropData): HandPathData {
+	if (isHandPathData(input)) {
+		return input;
+	}
+	return input.handPath;
+}
+
+function extractSoloPropSteps(input: HandPathData | SoloPropData): readonly SoloPropStepData[] | null {
+	if (isHandPathData(input)) {
+		return null;
+	}
+	return input.steps;
+}
+
+/**
+ * Tiles an array to fill exactly `targetLength` entries by repeating cyclically.
+ */
+function tile<T>(items: readonly T[], targetLength: number): T[] {
+	const result: T[] = [];
+	for (let i = 0; i < targetLength; i++) {
+		result.push(items[i % items.length]!);
+	}
+	return result;
+}
+
+export class SequenceFuser implements ISequenceFuser {
+	fuse(
+		blue: HandPathData | SoloPropData,
+		red: HandPathData | SoloPropData,
+		options?: FuseOptions
+	): SequenceData {
+		const maxBeats = options?.maxBeats ?? DEFAULT_MAX_BEATS;
+		const alignmentOffset = options?.alignmentOffset ?? 0;
+
+		const blueHandPath = extractHandPath(blue);
+		const redHandPath = extractHandPath(red);
+
+		const blueLength = blueHandPath.length;
+		const redLength = redHandPath.length;
+
+		// Compute target length: LCM of both, truncated if it exceeds maxBeats
+		const naturalLength = lcm(blueLength, redLength);
+		const targetLength = naturalLength > maxBeats
+			? Math.min(blueLength, redLength)
+			: naturalLength;
+
+		// Tile hand path locations to fill the target length.
+		// Each location pair (i, i+1) defines one step's start and end.
+		const blueLocations = tile(blueHandPath.locations, targetLength + 1);
+		const redLocations = tile(
+			redHandPath.locations,
+			targetLength + 1 + alignmentOffset
+		).slice(alignmentOffset);
+
+		// Build solo prop steps by tiling the source steps if available,
+		// otherwise synthesize minimal steps from hand path locations.
+		const blueSoloSteps = extractSoloPropSteps(blue);
+		const redSoloSteps = extractSoloPropSteps(red);
+
+		const tiledBlueSteps = blueSoloSteps
+			? tile(blueSoloSteps, targetLength)
+			: buildMinimalSteps(blueLocations, targetLength);
+
+		const tiledRedSteps = redSoloSteps
+			? tile(redSoloSteps, targetLength)
+			: buildMinimalSteps(redLocations, targetLength);
+
+		// Build per-beat step pairings. Without full motion analysis we mark
+		// letter and positions as null/false — downstream hydration fills them.
+		const stepPairings: StepPairingData[] = [];
+		for (let i = 0; i < targetLength; i++) {
+			stepPairings.push({
+				letter: null,
+				blueReversal: false,
+				redReversal: false,
+				startPosition: null,
+				endPosition: null,
+			});
+		}
+
+		// Build SoloPropData wrappers. For inputs that were already SoloPropData,
+		// preserve the metadata and override just the steps and length.
+		const blueSoloProp: SoloPropData = isHandPathData(blue)
+			? buildSoloPropFromHandPath(blueHandPath, tiledBlueSteps, targetLength)
+			: {
+				...blue,
+				steps: tiledBlueSteps,
+				length: targetLength,
+				handPath: blueHandPath,
+			};
+
+		const redSoloProp: SoloPropData = isHandPathData(red)
+			? buildSoloPropFromHandPath(redHandPath, tiledRedSteps, targetLength)
+			: {
+				...red,
+				steps: tiledRedSteps,
+				length: targetLength,
+				handPath: redHandPath,
+			};
+
+		return createSequenceData({
+			name: `${blueHandPath.name ?? "blue"} + ${redHandPath.name ?? "red"}`,
+			word: "",
+			steps: [],
+			blueSoloProp,
+			redSoloProp,
+			stepPairings,
+			sequenceLength: targetLength,
+			isCircular: false,
+			isFavorite: false,
+			tags: [],
+			metadata: { fusedFrom: [blueHandPath.id, redHandPath.id] },
+		});
+	}
+}
+
+/**
+ * Builds minimal SoloPropStepData entries from a location sequence.
+ * Used when the input was a bare HandPathData without full step info.
+ */
+function buildMinimalSteps(
+	locations: readonly GridLocation[],
+	count: number
+): SoloPropStepData[] {
+	const steps: SoloPropStepData[] = [];
+	for (let i = 0; i < count; i++) {
+		steps.push({
+			startLocation: locations[i]!,
+			endLocation: locations[i + 1]!,
+			startOrientation: Orientation.IN,
+			endOrientation: Orientation.IN,
+			motionType: MotionType.STATIC,
+			rotationDirection: RotationDirection.NO_ROTATION,
+			turns: 0,
+			duration: 1,
+		});
+	}
+	return steps;
+}
+
+function buildSoloPropFromHandPath(
+	handPath: HandPathData,
+	steps: SoloPropStepData[],
+	length: number
+): SoloPropData {
+	return {
+		id: crypto.randomUUID(),
+		steps,
+		startLocation: handPath.startLocation,
+		startOrientation: Orientation.IN,
+		contentHash: "",
+		handPath,
+		length,
+		bigrams: handPath.bigrams,
+		impliedGridMode: handPath.impliedGridMode,
+	};
+}

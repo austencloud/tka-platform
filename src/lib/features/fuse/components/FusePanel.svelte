@@ -3,11 +3,13 @@
 	 * Fuse Panel
 	 *
 	 * One side of the fuse split view. Shows a sequence browser when no
-	 * sequence is selected, or an animation preview placeholder when one is.
+	 * sequence is selected, or a live animation preview when one is.
 	 */
 
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+	import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
 	import FuseSequenceBrowser from "./FuseSequenceBrowser.svelte";
+	import FuseAnimationPreview from "./FuseAnimationPreview.svelte";
 
 	let {
 		side,
@@ -15,36 +17,39 @@
 		onSelect,
 		onDeselect,
 		bpm,
+		onControllerReady,
 	}: {
 		side: "left" | "right";
 		selectedSequence: SequenceData | null;
 		onSelect: (seq: SequenceData) => void;
 		onDeselect: () => void;
 		bpm: number;
+		onControllerReady?: (controller: IAnimationPlaybackController) => void;
 	} = $props();
 
-	const label = $derived(side === "left" ? "Left sequence" : "Right sequence");
+	const label = $derived(side === "left" ? "Blue prop path" : "Red prop path");
 </script>
 
 <div class="fuse-panel" role="region" aria-label={label}>
 	<div class="panel-header">
 		<span class="panel-label">{label}</span>
 		{#if selectedSequence}
-			<button class="deselect-btn" onclick={onDeselect} aria-label="Remove selection">
-				<i class="fas fa-times" aria-hidden="true"></i>
-			</button>
+			<span class="panel-seq-name">
+				{selectedSequence.displayName || selectedSequence.name || (selectedSequence as any).word || "Selected"}
+			</span>
 		{/if}
 	</div>
 
 	<div class="panel-content">
 		{#if selectedSequence}
-			<div class="preview-placeholder">
-				<i class="fas fa-film preview-icon" aria-hidden="true"></i>
-				<span class="preview-name">{selectedSequence.displayName || selectedSequence.name || selectedSequence.word || "Sequence"}</span>
-				<span class="preview-meta">{selectedSequence.steps.length} beats</span>
-			</div>
+			<FuseAnimationPreview
+				sequence={selectedSequence}
+				{bpm}
+				onBack={onDeselect}
+				{onControllerReady}
+			/>
 		{:else}
-			<FuseSequenceBrowser {onSelect} />
+			<FuseSequenceBrowser {side} onSelect={(item) => onSelect(item as any)} />
 		{/if}
 	</div>
 </div>
@@ -76,52 +81,17 @@
 		letter-spacing: 0.05em;
 	}
 
-	.deselect-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 44px;
-		height: 44px;
-		background: none;
-		border: none;
+	.panel-seq-name {
+		font-size: var(--font-size-compact, 12px);
 		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-		cursor: pointer;
-		border-radius: var(--radius-sm, 8px);
-		transition: color 0.15s ease;
-	}
-
-	.deselect-btn:hover {
-		color: var(--semantic-error, #ef4444);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	.panel-content {
 		flex: 1;
 		min-height: 0;
 		overflow: hidden;
-	}
-
-	.preview-placeholder {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		height: 100%;
-		gap: var(--spacing-sm, 8px);
-		color: var(--theme-text, #ffffff);
-	}
-
-	.preview-icon {
-		font-size: 2rem;
-		opacity: 0.4;
-	}
-
-	.preview-name {
-		font-size: var(--font-size-min, 14px);
-		font-weight: 600;
-	}
-
-	.preview-meta {
-		font-size: var(--font-size-compact, 12px);
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
 	}
 </style>
