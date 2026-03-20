@@ -442,7 +442,7 @@ Create `src/lib/shared/pictograph/shared/components/PictographSettingsModal.svel
       elementalGlyph: visibility.getRawGlyphVisibility("elementalGlyph"),
       positionsGlyph: visibility.getRawGlyphVisibility("positionsGlyph"),
       reversalIndicators: visibility.getGlyphVisibility("reversalIndicators"),
-      stepNumbers: visibility.getStepNumberVisibility(),
+      stepNumbers: visibility.getBeatNumbersVisibility(),
       blueMotion: visibility.getMotionVisibility(MotionColor.BLUE),
       redMotion: visibility.getMotionVisibility(MotionColor.RED),
       dependentAvailable: visibility.areAllMotionsVisible(),
@@ -461,7 +461,7 @@ Create `src/lib/shared/pictograph/shared/components/PictographSettingsModal.svel
   function toggleMotion(color: MotionColor) {
     visibility.setMotionVisibility(color, !visibility.getMotionVisibility(color));
   }
-  function toggleStepNumbers() { visibility.setStepNumberVisibility(!toggles.stepNumbers); }
+  function toggleStepNumbers() { visibility.setBeatNumbersVisibility(!toggles.stepNumbers); }
   function toggleReversalIndicators() {
     visibility.setGlyphVisibility("reversalIndicators", !toggles.reversalIndicators);
   }
@@ -630,7 +630,7 @@ Create `src/lib/shared/pictograph/shared/components/PictographSettingsModal.svel
 </style>
 ```
 
-**Note:** The `getStepNumberVisibility()` and `setStepNumberVisibility()` methods may not exist on VisibilityStateManager yet. Check during implementation — if they don't exist, use the pattern from other getters/setters (read/write `this.settings.stepNumbers` and notify observers). The step numbers setting IS in the `VisibilitySettings` interface.
+**Note:** Step number methods on VisibilityStateManager are named `getBeatNumbersVisibility()` and `setBeatNumbersVisibility()` (lines 544-556 of visibility-state.svelte.ts).
 
 - [ ] **Step 2: Verify build compiles**
 
@@ -1232,24 +1232,30 @@ The host no longer needs observer-based reactivity for inline toggles. Simplify 
 
 - [ ] **Step 4: Update ChoreoCardContextMenuHost.svelte (sequence viewer)**
 
-Similarly simplify — this host no longer needs observer-based reactivity. It needs `onOpenSettings` and optionally `onSendTo`:
+This host has dual-mode logic (normal vs export mode). The export mode reads from `ExportOptionsStateManager` for per-export-session overrides. **Keep the `isExportMode` and `exportOptions` props** — they're used by `SequenceViewerDrawerHost.svelte`. The simplification only applies to the MENU ITEMS (replacing inline toggles with "Card Settings..."), not to the modal behavior. When in export mode, "Card Settings..." should still open the modal, but the modal would need to know about export mode to show the right state.
+
+For now, simplify the menu entries but keep the export mode props flowing through. The `CardSettingsModal` will initially only support global settings. Export-mode overrides in the modal is a follow-up enhancement. The export flow still works because exports read from `ExportOptionsStateManager` directly when rendering — the context menu inline toggles were a convenience, not the only way to set export options.
 
 ```svelte
 <!--
   ChoreoCardContextMenuHost — Orchestrates the ChoreoCard right-click context menu.
   Single entry: "Card Settings..." plus optional Send to action.
+  Preserves export mode props for parent compatibility.
 -->
 <script lang="ts">
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuState, ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
   import { buildChoreoCardContextMenuItems } from "$lib/features/choreo-card/components/context-menu/CardDesignerContextMenuBuilder";
+  import type { ExportOptionsStateManager } from "$lib/shared/sequence-viewer/state/export-options-state.svelte";
 
   interface Props {
     onOpenSettings: () => void;
+    isExportMode?: boolean;
+    exportOptions?: ExportOptionsStateManager;
     onSendTo?: () => void;
   }
 
-  const { onOpenSettings, onSendTo }: Props = $props();
+  const { onOpenSettings, isExportMode = false, exportOptions, onSendTo }: Props = $props();
 
   let menuState: ContextMenuState = $state({ open: false });
 
@@ -1307,29 +1313,13 @@ git commit -m "feat: create CardSettingsModal, simplify choreo card context menu
 
 ---
 
-### Task 8: Delete Stale Visibility Orphan
+### Task 8: ~~Delete Stale Visibility Orphan~~ SKIPPED
 
-**Files:**
-- Delete: `src/lib/shared/settings/components/tabs/visibility/example-data.ts`
+**Reason:** `example-data.ts` is NOT an orphan — it's actively imported by:
+- `src/lib/shared/onboarding/components/first-run/DesktopConfigPanel.svelte`
+- `src/lib/shared/onboarding/components/first-run/steps/PictographModeStep.svelte`
 
-- [ ] **Step 1: Delete the orphan file**
-
-```bash
-rm src/lib/shared/settings/components/tabs/visibility/example-data.ts
-rmdir src/lib/shared/settings/components/tabs/visibility
-```
-
-- [ ] **Step 2: Verify nothing imports it**
-
-Run: `grep -r "example-data" src/lib/shared/settings/`
-Expected: No matches.
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add -A src/lib/shared/settings/components/tabs/visibility/
-git commit -m "chore: delete stale visibility example-data orphan"
-```
+Leave it in place. Remove the DELETE line from the spec's file changes summary as well.
 
 ---
 
