@@ -18,6 +18,7 @@ import {
   WATCH_TABS,
   LAB_TABS,
   ARENA_TABS,
+  CHOREO_CARD_TABS,
 } from "./tab-definitions";
 
 /**
@@ -158,12 +159,12 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   // Removed: about module (content moved to Dashboard > Support widget)
   {
     id: "choreo_card",
-    label: "Choreo Card",
+    label: "Choreo Cards",
     icon: '<i class="fas fa-id-card" style="color: #6366f1;" aria-hidden="true"></i>',
     color: "#6366f1", // Indigo - flashcards/learning
     description: "Browse choreography as printable reference cards",
     isMain: true,
-    sections: [], // Single-tab module
+    sections: CHOREO_CARD_TABS,
   },
   {
     id: "write",

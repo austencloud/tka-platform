@@ -13,13 +13,13 @@
   import { SequenceDifficultyCalculator } from "../../browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
   import ChoreoCardNavigation from "./Navigation.svelte";
   import ChoreoCardFilters from "./ChoreoCardFilters.svelte";
-  import ChoreoCardVisibility from "./ChoreoCardVisibility.svelte";
   import ChoreoCardExport from "./ChoreoCardExport.svelte";
   import PageDisplay from "./PageDisplay.svelte";
   import type { Deck } from "../domain/models/Deck";
   import type { IDeckLoader } from "../services/contracts/IDeckLoader";
   import DeckBrowser from "./DeckBrowser.svelte";
   import CardDesigner from "./CardDesigner.svelte";
+  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 
   // Level calculator for dynamic level badge calculation
   const levelCalculator = new SequenceDifficultyCalculator();
@@ -126,11 +126,23 @@
   let showWord = $state<boolean>(getPersistedBoolean(STORAGE_KEY_SHOW_WORD, true));
   let includeStartPosition = $state<boolean>(getPersistedBoolean(STORAGE_KEY_INCLUDE_START_POS, true));
 
-  // Mode state
+  // Mode state - synced with global navigation
   type ChoreoCardMode = "library" | "decks" | "designer";
-  let mode = $state<ChoreoCardMode>(
-    (getPersistedString("choreoCard.mode") as ChoreoCardMode) ?? "library"
-  );
+  let mode = $state<ChoreoCardMode>("library");
+
+  // Sync with navigation state (sidebar tab selection)
+  $effect(() => {
+    const navTab = navigationState.activeTab;
+    if (navTab === "library" || navTab === "decks" || navTab === "designer") {
+      const newMode = navTab as ChoreoCardMode;
+      if (newMode !== mode) {
+        mode = newMode;
+        if (newMode === "decks" && decks.length === 0) {
+          loadDecks();
+        }
+      }
+    }
+  });
 
   // Deck state
   let decks = $state<Deck[]>([]);
@@ -237,9 +249,6 @@
   onMount(async () => {
     loaderService = container.items.browseLoader;
     await loadSequences();
-    if (mode === "decks") {
-      loadDecks();
-    }
   });
 
   async function loadSequences() {
@@ -293,31 +302,6 @@
     persist(STORAGE_KEY_SHOW_QR, String(value));
   }
 
-  // Visibility handlers
-  function handleHandPointsChange(value: boolean) {
-    handPointsVisible = value;
-    persist(STORAGE_KEY_HAND_POINTS, String(value));
-  }
-
-  function handleShowGridChange(value: boolean) {
-    showGrid = value;
-    persist(STORAGE_KEY_SHOW_GRID, String(value));
-  }
-
-  function handleShowTKAChange(value: boolean) {
-    showTKA = value;
-    persist(STORAGE_KEY_SHOW_TKA, String(value));
-  }
-
-  function handleShowWordChange(value: boolean) {
-    showWord = value;
-    persist(STORAGE_KEY_SHOW_WORD, String(value));
-  }
-
-  function handleIncludeStartPositionChange(value: boolean) {
-    includeStartPosition = value;
-    persist(STORAGE_KEY_INCLUDE_START_POS, String(value));
-  }
 
   function handleSelectSequence(sequence: SequenceData) {
     openSequenceViewer(sequence, {
@@ -356,63 +340,17 @@
     deckSequences = [];
   }
 
-  function handleModeChange(newMode: ChoreoCardMode) {
-    mode = newMode;
-    persist("choreoCard.mode", newMode);
-    if (newMode === "decks" && decks.length === 0) {
-      loadDecks();
-    }
-  }
 </script>
 
 <div class="choreo-card-tab">
-  <!-- Header -->
-  <header class="tab-header">
-    <div class="header-content">
-      <div class="title-row">
-        <i class="fas fa-id-card" aria-hidden="true"></i>
-        <h1 class="title">Choreo Cards</h1>
-        <div class="mode-toggle" role="tablist" aria-label="View mode">
-          <button
-            role="tab"
-            type="button"
-            aria-selected={mode === "library"}
-            class="mode-btn"
-            class:active={mode === "library"}
-            onclick={() => handleModeChange("library")}
-          >
-            <i class="fas fa-book" aria-hidden="true"></i>
-            My Library
-          </button>
-          <button
-            role="tab"
-            type="button"
-            aria-selected={mode === "decks"}
-            class="mode-btn"
-            class:active={mode === "decks"}
-            onclick={() => handleModeChange("decks")}
-          >
-            <i class="fas fa-layer-group" aria-hidden="true"></i>
-            Decks
-          </button>
-          <button
-            role="tab"
-            type="button"
-            aria-selected={mode === "designer"}
-            class="mode-btn"
-            class:active={mode === "designer"}
-            onclick={() => handleModeChange("designer")}
-          >
-            <i class="fas fa-pen-ruler" aria-hidden="true"></i>
-            Card Designer
-          </button>
-        </div>
-      </div>
+  <!-- Status bar (library mode only) -->
+  {#if mode === "library"}
+    <div class="status-bar">
       <p class="status" role="status" aria-live="polite" aria-atomic="true">
         {statusMessage}
       </p>
     </div>
-  </header>
+  {/if}
 
   <!-- Main content -->
   <div class="main-content">
@@ -439,19 +377,6 @@
             onGridModeChange={handleGridModeChange}
             onAuthorChange={handleAuthorChange}
             onShowQRCodesChange={handleShowQRCodesChange}
-          />
-          <div class="filter-divider"></div>
-          <ChoreoCardVisibility
-            {handPointsVisible}
-            {showGrid}
-            {showTKA}
-            {showWord}
-            {includeStartPosition}
-            onHandPointsChange={handleHandPointsChange}
-            onShowGridChange={handleShowGridChange}
-            onShowTKAChange={handleShowTKAChange}
-            onShowWordChange={handleShowWordChange}
-            onIncludeStartPositionChange={handleIncludeStartPositionChange}
           />
           <div class="filter-divider"></div>
           <ChoreoCardExport
@@ -483,24 +408,6 @@
         />
       </main>
     {:else if mode === "decks"}
-      <!-- Decks mode: simplified sidebar + DeckBrowser -->
-      <aside class="sidebar">
-        <div class="sidebar-content">
-          <ChoreoCardVisibility
-            {handPointsVisible}
-            {showGrid}
-            {showTKA}
-            {showWord}
-            {includeStartPosition}
-            onHandPointsChange={handleHandPointsChange}
-            onShowGridChange={handleShowGridChange}
-            onShowTKAChange={handleShowTKAChange}
-            onShowWordChange={handleShowWordChange}
-            onIncludeStartPositionChange={handleIncludeStartPositionChange}
-          />
-        </div>
-      </aside>
-
       <main class="content-area">
         <DeckBrowser
           {decks}
@@ -534,79 +441,16 @@
     background: transparent;
   }
 
-  /* Header */
-  .tab-header {
+  /* Status bar */
+  .status-bar {
     flex-shrink: 0;
-    padding: var(--spacing-md);
-    padding-bottom: 0;
-  }
-
-  .header-content {
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--border-radius-lg, 12px);
-    padding: var(--spacing-lg) var(--spacing-xl);
-  }
-
-  .title-row {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-xs);
-  }
-
-  .title-row > i {
-    color: var(--theme-accent, #f43f5e);
-    font-size: 1.25rem;
-  }
-
-  .title {
-    margin: 0;
-    font-size: var(--font-size-xl, 20px);
-    font-weight: 600;
-    color: var(--theme-text, #ffffff);
+    padding: var(--spacing-sm) var(--spacing-md);
   }
 
   .status {
     margin: 0;
     font-size: var(--font-size-sm, 14px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-  }
-
-  .mode-toggle {
-    display: flex;
-    gap: var(--spacing-xs);
-    margin-left: auto;
-  }
-
-  .mode-btn {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-    padding: 4px var(--spacing-sm);
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--border-radius-sm, 6px);
-    background: transparent;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-sm, 14px);
-    cursor: pointer;
-    transition: all 0.15s ease;
-    white-space: nowrap;
-  }
-
-  .mode-btn:hover {
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-    color: var(--theme-text, #ffffff);
-  }
-
-  .mode-btn.active {
-    background: var(--theme-accent, #f43f5e);
-    border-color: var(--theme-accent, #f43f5e);
-    color: #ffffff;
-  }
-
-  .mode-btn > i {
-    font-size: 0.85em;
   }
 
   /* Main Content */
@@ -666,23 +510,6 @@
 
   /* Responsive */
   @media (max-width: 768px) {
-    .tab-header {
-      padding: var(--spacing-sm);
-      padding-bottom: 0;
-    }
-
-    .header-content {
-      padding: var(--spacing-md) var(--spacing-lg);
-    }
-
-    .title-row i {
-      font-size: 1rem;
-    }
-
-    .title {
-      font-size: var(--font-size-lg, 18px);
-    }
-
     .status {
       font-size: var(--font-size-compact, 12px);
     }
