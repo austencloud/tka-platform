@@ -57,7 +57,8 @@ const THEMES: Record<string, CardBackThemeVisuals> = {
     // Metallic rainbow: bright white highlights between each color
     borderGradient: "linear-gradient(135deg, #ff0000 0%, #ff6666 8%, #ff8000 14%, #ffcc66 22%, #ffff00 28%, #ffffaa 36%, #00ff00 42%, #66ff99 50%, #0080ff 56%, #66b3ff 64%, #8000ff 70%, #cc99ff 78%, #ff0080 85%, #ff66b3 92%, #ff0000 100%)",
     accentColor: "#f43f5e",
-    background: "linear-gradient(180deg, #0a0a15 0%, #12121f 50%, #0d0d18 100%)",
+    // Full diagonal rainbow shimmer across the card, not just the border
+    background: "linear-gradient(135deg, rgba(255,0,0,0.12) 0%, rgba(255,128,0,0.1) 14%, rgba(255,255,0,0.08) 28%, rgba(0,255,0,0.1) 42%, rgba(0,128,255,0.12) 56%, rgba(128,0,255,0.1) 70%, rgba(255,0,128,0.08) 85%, rgba(255,0,0,0.1) 100%), linear-gradient(180deg, #0a0a15 0%, #12121f 50%, #0d0d18 100%)",
   },
   solidColor: {
     borderGradient: "linear-gradient(135deg, var(--theme-accent, #6366f1), var(--theme-stroke-strong, #444), var(--theme-accent, #6366f1))",
