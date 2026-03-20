@@ -1322,6 +1322,125 @@ export class ImageComposer implements IImageComposer {
     // in and also render an HTML overlay, causing doubled/ghost numbers.
     // The Canvas2D path's write-through is clean (base image only, no step number).
   }
+
+  /**
+   * Compose a sequence image sized to a playing-card aspect ratio (5:7).
+   * Header pins to top, footer pins to bottom, grid centers vertically
+   * in the space between them. Used for physical card export only.
+   */
+  async composeCardImage(
+    sequence: SequenceData,
+    options: Partial<SequenceExportOptions>,
+    onProgress?: CompositionProgressCallback
+  ): Promise<HTMLCanvasElement> {
+    // First, compose the tight image as normal
+    const tightCanvas = await this.composeSequenceImage(
+      sequence,
+      options,
+      onProgress
+    );
+
+    // Card dimensions: 5:7 ratio, width matches tight image
+    const cardWidth = tightCanvas.width;
+    const cardHeight = Math.round(cardWidth * (7 / 5));
+
+    // If tight image is already taller than card, return as-is
+    if (tightCanvas.height >= cardHeight) {
+      return tightCanvas;
+    }
+
+    // Create card canvas
+    const cardCanvas = document.createElement("canvas");
+    cardCanvas.width = cardWidth;
+    cardCanvas.height = cardHeight;
+    const ctx = cardCanvas.getContext("2d");
+    if (!ctx) throw new Error("Failed to get 2D context for card canvas");
+
+    // Fill background
+    const isDarkMode = options.visibilityOverrides?.darkMode ?? false;
+    ctx.fillStyle = isDarkMode ? "#0a0a0f" : "white";
+    ctx.fillRect(0, 0, cardWidth, cardHeight);
+
+    // Calculate layout dimensions to determine header/grid/footer sizes
+    const stepCount = sequence.steps?.length ?? 0;
+    const layout = this.layoutService.calculateLayout(
+      stepCount,
+      options.includeStartPosition ?? false
+    );
+    const [columns, rows] = layout;
+    const baseBeatSize = options.stepSize || 120;
+    const stepSize = Math.floor(baseBeatSize * (options.stepScale || 1));
+
+    // Determine header height
+    const earlyLoopType = options.loopType ?? sequence.loopType;
+    const rawWord = (sequence.steps ?? [])
+      .map((s: StepData) => s.letter ?? "")
+      .join("");
+    const showHeader =
+      (options.addWord && (rawWord || options.customName)) ||
+      options.addDifficultyLevel ||
+      !!earlyLoopType;
+    const headerHeight = showHeader
+      ? this.calculateHeaderHeight(stepCount, stepSize)
+      : 0;
+
+    // Determine footer height
+    const showCreatorName = options.showCreatorName ?? options.addUserInfo;
+    const showNotes = options.showNotes ?? options.addUserInfo;
+    const showBirthday = options.showBirthday ?? options.addUserInfo;
+    const hasFooter = showCreatorName || showNotes || showBirthday;
+    const footerHeight = hasFooter ? this.calculateFooterHeight(stepSize) : 0;
+
+    const gridHeight = rows * stepSize;
+
+    // Available space between header and footer on the card
+    const availableHeight = cardHeight - headerHeight - footerHeight;
+
+    // Center the grid vertically in the available space
+    const topPadding = Math.max(0, (availableHeight - gridHeight) / 2);
+
+    // Source coordinates with bounds checking
+    const tightGridEnd = Math.min(
+      headerHeight + gridHeight,
+      tightCanvas.height
+    );
+    const tightFooterStart = tightGridEnd;
+    const tightFooterEnd = Math.min(
+      tightFooterStart + footerHeight,
+      tightCanvas.height
+    );
+
+    // Draw header at top of card
+    if (headerHeight > 0) {
+      ctx.drawImage(
+        tightCanvas,
+        0, 0, cardWidth, headerHeight,
+        0, 0, cardWidth, headerHeight
+      );
+    }
+
+    // Draw grid centered vertically
+    const sourceGridHeight = tightGridEnd - headerHeight;
+    if (sourceGridHeight > 0) {
+      ctx.drawImage(
+        tightCanvas,
+        0, headerHeight, cardWidth, sourceGridHeight,
+        0, headerHeight + topPadding, cardWidth, sourceGridHeight
+      );
+    }
+
+    // Draw footer pinned to bottom
+    const sourceFooterHeight = tightFooterEnd - tightFooterStart;
+    if (footerHeight > 0 && sourceFooterHeight > 0) {
+      ctx.drawImage(
+        tightCanvas,
+        0, tightFooterStart, cardWidth, sourceFooterHeight,
+        0, cardHeight - footerHeight, cardWidth, footerHeight
+      );
+    }
+
+    return cardCanvas;
+  }
 }
 
 // ============================================================================
