@@ -32,7 +32,10 @@
     includeStartPosition?: boolean;
     /** Render as hand path card: HAND props, float arrows, no TKA/reversals */
     handPathMode?: boolean;
+    /** Use 5:7 playing card layout for physical card export (different from printMode) */
+    cardMode?: boolean;
     onSelect?: (sequence: SequenceData) => void;
+    onContextMenu?: (x: number, y: number, rerender: () => void) => void;
   }
 
   let {
@@ -46,11 +49,18 @@
     showWord = true,
     includeStartPosition = true,
     handPathMode = false,
+    cardMode = false,
     onSelect,
+    onContextMenu,
   }: Props = $props();
 
   let hapticService: IHapticFeedback;
   let sequenceToEntryConverter: ISequenceToEntryConverter;
+  let thumbnailRef: PropAwareThumbnail;
+
+  export function rerender(): void {
+    thumbnailRef?.forceRerender();
+  }
 
   onMount(() => {
     hapticService = container.items.hapticFeedback;
@@ -128,6 +138,12 @@
       handleClick();
     }
   }
+
+  function handleContextMenu(event: MouseEvent) {
+    if (!onContextMenu) return;
+    event.preventDefault();
+    onContextMenu(event.clientX, event.clientY, rerender);
+  }
 </script>
 
 <button
@@ -135,11 +151,13 @@
   class:print-mode={printMode}
   onclick={handleClick}
   onkeydown={handleKeyDown}
+  oncontextmenu={handleContextMenu}
   aria-label="View sequence {sequence.name}"
   type="button"
 >
   <div class="card-content">
     <PropAwareThumbnail
+      bind:this={thumbnailRef}
       {sequence}
       bluePropType={propSettings.bluePropType}
       redPropType={propSettings.redPropType}
@@ -147,11 +165,13 @@
       lightMode={printMode}
       variant="wordcard"
       addWord={showWord}
+      addDifficultyLevel={handPathMode ? false : undefined}
       {includeStartPosition}
       {showBirthday}
       visibility={visibilitySettings}
+      {cardMode}
     />
-    {#if hasLoopPattern}
+    {#if hasLoopPattern && !handPathMode}
       <div class="loop-overlay">
         <LOOPIconStrip
           activeComponents={loopComponents}

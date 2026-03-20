@@ -97,7 +97,15 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
     // Explicitly pass loopType in options so it doesn't rely on sequence fallback
     const blob = await this.sequenceRenderer.renderSequenceToBlob(
       sequenceWithStartPos,
-      { ...renderOptions, birthday, loopType: resolvedLoopType ?? undefined },
+      {
+        ...renderOptions,
+        birthday,
+        loopType: resolvedLoopType ?? undefined,
+        // Hand path mode: suppress LOOP glyph (hand paths don't have LOOP patterns)
+        showLoopGlyph: renderOptions.visibilityOverrides?.handPathMode ? false : undefined,
+        // Card mode: use 5:7 playing card layout for physical card export
+        cardMode: input.cardMode ?? false,
+      },
       onProgress
     );
 
@@ -179,6 +187,9 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
     const defaults =
       input.variant === "wordcard" ? WORDCARD_DEFAULTS : GALLERY_DEFAULTS;
 
+    // Hand path sequences have HAND props baked into their data — don't override
+    const isHandPath = input.visibility?.handPathMode ?? false;
+
     // Determine prop mode
     const isCatDog =
       input.catDogModeEnabled &&
@@ -211,10 +222,11 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
       // Background based on light mode
       backgroundColor: input.lightMode ? "#ffffff" : "#1a1a2e",
 
-      // Prop overrides
-      propTypeOverride: isCatDog ? undefined : (input.bluePropType || input.redPropType || undefined),
-      bluePropTypeOverride: isCatDog ? input.bluePropType : undefined,
-      redPropTypeOverride: isCatDog ? input.redPropType : undefined,
+      // Prop overrides — hand path mode uses HAND props baked into the data,
+      // so skip user prop overrides that would clobber PropType.HAND
+      propTypeOverride: isHandPath ? undefined : (isCatDog ? undefined : (input.bluePropType || input.redPropType || undefined)),
+      bluePropTypeOverride: isHandPath ? undefined : (isCatDog ? input.bluePropType : undefined),
+      redPropTypeOverride: isHandPath ? undefined : (isCatDog ? input.redPropType : undefined),
 
       // Visibility settings - respect user preferences from input
       visibilityOverrides: {

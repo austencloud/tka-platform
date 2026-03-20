@@ -16,7 +16,6 @@
   import { onMount, onDestroy } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
-  import ThumbnailContextMenu from "$lib/shared/components/thumbnail/ThumbnailContextMenu.svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { ThumbnailVariant } from "../services/contracts/ICloudThumbnailCache";
   import { container } from "$lib/shared/di";
@@ -56,8 +55,8 @@
     visibility?: ThumbnailVisibilitySettings;
     // Skip IntersectionObserver and load immediately (use in modals/pickers)
     eager?: boolean;
-    /** When true, don't intercept right-click — let the parent handle it */
-    suppressContextMenu?: boolean;
+    /** Use 5:7 playing card layout for physical card export (different from lightMode/printMode) */
+    cardMode?: boolean;
   }
 
   const {
@@ -79,7 +78,7 @@
     customNotesText,
     visibility,
     eager = false,
-    suppressContextMenu = false,
+    cardMode = false,
   }: Props = $props();
 
   // State
@@ -101,8 +100,6 @@
   let localCache: IThumbnailLocalCache | null = null;
   let servicesReady = $state(false);
 
-  // Context menu for cache management
-  let contextMenu = $state<ReturnType<typeof ThumbnailContextMenu> | null>(null);
 
   // Layout calculator resolved synchronously (direct import for instant HMR)
 
@@ -150,6 +147,7 @@
     showBirthday,
     customNotesText,
     visibility,
+    cardMode: cardMode || undefined, // Only include when true to avoid polluting cache keys
   });
 
 
@@ -411,13 +409,6 @@
   });
 
   /**
-   * Handle context menu (right-click) — open the thumbnail context menu
-   */
-  function handleContextMenu(event: MouseEvent): void {
-    contextMenu?.open(event);
-  }
-
-  /**
    * Force re-render: delete from all cache tiers, then re-fetch from scratch.
    */
   export function forceRerender(): void {
@@ -458,10 +449,8 @@
 <div
   class="prop-thumbnail"
   data-variant={variant}
-  data-ctx-container
   bind:this={containerRef}
   style:aspect-ratio={aspectRatio}
-  oncontextmenu={suppressContextMenu ? undefined : handleContextMenu}
 >
   {#if thumbnailUrl && !hasError}
     <img
@@ -518,7 +507,6 @@
       {/if}
     </div>
   {/if}
-  <ThumbnailContextMenu bind:this={contextMenu} onRerender={forceRerender} />
 </div>
 
 <style>
