@@ -627,6 +627,20 @@
   }
 
   /**
+   * For solo mode, extract the end location of the kept color's motion
+   * for a given step. Falls back to step number if no motion data.
+   */
+  function getSoloLocationLabel(stepIndex: number): string {
+    if (!isSoloMode || !sequence.steps) return String(stepIndex + 1);
+    const step = sequence.steps[stepIndex];
+    if (!step?.motions) return String(stepIndex + 1);
+    const motion = soloColor === "blue" ? step.motions.blue : step.motions.red;
+    if (!motion?.endLocation) return String(stepIndex + 1);
+    // Capitalize location abbreviation: "n" → "N", "ne" → "NE"
+    return motion.endLocation.toUpperCase();
+  }
+
+  /**
    * Calculate grid position for a step index.
    * With start position: first row has all columns, subsequent rows offset by 1.
    * Layout example for 16 steps (5 cols × 4 rows):
@@ -894,7 +908,7 @@
       for (let i = 0; i < sequence.steps.length; i++) {
         const { gridColumn, gridRow } = calculateGridPosition(i, cols);
         placeholderCells.push({
-          index: i, label: String(i + 1),
+          index: i, label: isSoloMode ? getSoloLocationLabel(i) : String(i + 1),
           imageUrl: "", isLoaded: false,
           gridColumn, gridRow,
           duration: sequence.steps[i]?.duration ?? 1,
