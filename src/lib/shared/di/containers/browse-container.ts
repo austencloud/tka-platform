@@ -41,6 +41,11 @@ import { SequenceDetailLoader } from "$lib/features/browse/sequences/display/ser
 import { VideoCountManager } from "$lib/features/browse/sequences/display/services/implementations/VideoCountManager";
 import { ClaudeCodeCopier } from "$lib/features/browse/sequences/display/services/implementations/ClaudeCodeCopier";
 
+// Browse data source (routes queries by view mode)
+import { BrowseDataSource } from "$lib/features/browse/shared/services/implementations/BrowseDataSource";
+import { handPathRepository } from "$lib/shared/foundation/services/implementations/HandPathRepository";
+import { soloPropRepository } from "$lib/shared/foundation/services/implementations/SoloPropRepository";
+
 // External dependency types
 import type { IWordDeriver } from "$lib/shared/foundation/services/contracts/IWordDeriver";
 import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
@@ -200,8 +205,14 @@ export function createBrowseContainer(deps: BrowseContainerDeps) {
   }));
 
   // Tier 8: Services depending on tier 7
-  const container = tier7.add((ctx) => ({
+  const tier8 = tier7.add((ctx) => ({
     claudeCodeCopier: () => new ClaudeCodeCopier(ctx.sequenceDetailLoader),
+  }));
+
+  // Tier 9: Browse data source (routes queries to repos by view mode)
+  const container = tier8.add((ctx) => ({
+    browseDataSource: () =>
+      new BrowseDataSource(ctx.browseLoader, soloPropRepository, handPathRepository),
   }));
 
   return container;

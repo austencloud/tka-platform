@@ -8,6 +8,10 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { container } from "$lib/shared/di";
 import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
+import {
+  DEFAULT_BROWSE_VIEW_MODE,
+  type BrowseViewMode,
+} from "../domain/BrowseViewMode";
 import type { IBrowseFilter } from "../../sequences/display/services/contracts/IBrowseFilter";
 import type { IBrowseLoader } from "../../sequences/display/services/contracts/IBrowseLoader";
 import type { IBrowseSorter } from "../../sequences/display/services/contracts/IBrowseSorter";
@@ -106,6 +110,9 @@ export function createBrowseState() {
   // Per-source sequence cache — restores data instantly when switching back
   // without a Firestore round-trip. Invalidated on library mutation.
   let libraryCache: SequenceData[] | null = null;
+
+  // View mode (props/hands x combined/solo x blue/red)
+  let viewMode = $state<BrowseViewMode>({ ...DEFAULT_BROWSE_VIEW_MODE });
 
   // State
   let isLoading = $state(false);
@@ -702,8 +709,15 @@ export function createBrowseState() {
     });
   });
 
+  function setViewMode(mode: BrowseViewMode): void {
+    viewMode = mode;
+  }
+
   return {
     // State
+    get viewMode() {
+      return viewMode;
+    },
     get isLoading() {
       return isLoading;
     },
@@ -803,6 +817,9 @@ export function createBrowseState() {
     removeFilter,
     clearAllFilters,
     getFilteredCount,
+
+    // View mode
+    setViewMode,
 
     // Compatibility stubs
     backToFilters,

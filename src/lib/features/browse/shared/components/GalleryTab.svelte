@@ -170,7 +170,10 @@
   }
 </script>
 
-<BrowseLayout>
+<BrowseLayout
+  viewMode={galleryState.viewMode}
+  onViewModeChange={(mode) => galleryState.setViewMode(mode)}
+>
   {#snippet centerPanel()}
     <div class="sequences-main">
       <SequenceDisplayPanel

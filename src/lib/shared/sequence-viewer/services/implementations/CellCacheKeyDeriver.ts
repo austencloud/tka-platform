@@ -21,11 +21,14 @@
  * - lsp4-: Full string key. No hash, no collisions.
  * - lsp5-: Invalidate after LayerKeyDeriver fix (was missing rotationDirection
  *   and orientations from base layer cache key, causing CW/CCW collisions).
+ * - lsp6-: Added browseViewMode (subject/granularity/color) so the same
+ *   sequence caches separate blobs for props vs hands vs solo views.
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { PreviewCellRenderOptions } from "../contracts/IPreviewCellRenderer";
 import type { ICellCacheKeyDeriver } from "../contracts/ICellCacheKeyDeriver";
+// BrowseViewMode type is referenced via PreviewCellRenderOptions.browseViewMode
 
 export class CellCacheKeyDeriver implements ICellCacheKeyDeriver {
   deriveCacheKey(
@@ -71,9 +74,11 @@ export class CellCacheKeyDeriver implements ICellCacheKeyDeriver {
       options.handPathMode ? "hp1" : "",
       // Width multiplier for duration-expanded cells
       options.widthMultiplier && options.widthMultiplier !== 1 ? `wm${options.widthMultiplier}` : "",
+      // Browse view mode: different subject/granularity/color renders different pictographs
+      options.browseViewMode ? `vm-${options.browseViewMode.subject}-${options.browseViewMode.granularity}-${options.browseViewMode.color}` : "",
     ];
 
-    return `lsp5-${keyParts.join("|")}`;
+    return `lsp6-${keyParts.join("|")}`;
   }
 }
 
