@@ -28,7 +28,7 @@ export class LayoutCalculator implements ILayoutCalculator {
     1: [2, 1],
     2: [3, 1],
     3: [4, 1],
-    4: [5, 1],
+    4: [3, 2],
     5: [3, 2],
     6: [4, 2],
     7: [5, 2],
@@ -104,7 +104,7 @@ export class LayoutCalculator implements ILayoutCalculator {
     1: [1, 1],
     2: [2, 1],
     3: [3, 1],
-    4: [4, 1],
+    4: [2, 2],
     5: [2, 2],
     6: [3, 2],
     7: [4, 2],
@@ -168,6 +168,19 @@ export class LayoutCalculator implements ILayoutCalculator {
   };
 
   /**
+   * Layout table for sequences with start position as a TOP ROW.
+   * Derived from WITHOUT_START by adding 1 row.
+   * The start pictograph and QR code occupy cells in row 0.
+   * Steps begin at row 1 using the same column count as WITHOUT_START.
+   */
+  private readonly LAYOUT_WITH_START_ROW: Record<number, [number, number]> =
+    Object.fromEntries(
+      Object.entries(this.LAYOUT_WITHOUT_START_POSITION).map(
+        ([stepCount, [cols, rows]]) => [stepCount, [cols, rows + 1]]
+      )
+    ) as Record<number, [number, number]>;
+
+  /**
    * Calculate optimal layout for given beat count
    * Matches desktop calculate_layout() method exactly
    */
@@ -182,7 +195,7 @@ export class LayoutCalculator implements ILayoutCalculator {
     }
 
     const layoutTable = includeStartPosition
-      ? this.LAYOUT_WITH_START_POSITION
+      ? this.LAYOUT_WITH_START_ROW
       : this.LAYOUT_WITHOUT_START_POSITION;
 
     // Check if we have a predefined layout for this beat count
@@ -260,14 +273,16 @@ export class LayoutCalculator implements ILayoutCalculator {
     }
 
     // For large beat counts, prefer roughly square layouts
-    const totalCells = includeStartPosition ? stepCount + 1 : stepCount;
     const aspectRatio = 1.2; // Slightly wider than square
 
-    // Calculate ideal dimensions
-    const idealHeight = Math.sqrt(totalCells / aspectRatio);
+    // Calculate ideal dimensions from step count alone
+    const idealHeight = Math.sqrt(stepCount / aspectRatio);
     const rows = Math.max(1, Math.round(idealHeight));
-    const columns = Math.max(1, Math.ceil(totalCells / rows));
+    const columns = Math.max(1, Math.ceil(stepCount / rows));
 
+    if (includeStartPosition) {
+      return [columns, rows + 1];
+    }
     return [columns, rows];
   }
 
