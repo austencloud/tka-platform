@@ -58,6 +58,11 @@ export function createAssembleState() {
     ((step: BuilderStep) => Promise<void>) | null
   >(null);
 
+  // Undo animation callback — plays the reverse animation before state is modified
+  let onUndoAnimationRequest = $state<
+    ((step: BuilderStep, wasPlacement: boolean) => Promise<void>) | null
+  >(null);
+
   // Derived
   const activeSteps = $derived(activeHand === MotionColor.BLUE ? blueSteps : redSteps);
   const stepCount = $derived(blueSteps.length + redSteps.length);
@@ -171,10 +176,25 @@ export function createAssembleState() {
   }
 
 
-  /** Undo last step from active hand */
-  function undoStep(): void {
+  /** Undo last step from active hand, with optional reverse animation */
+  async function undoStep(): Promise<void> {
+    if (phase === "animating") return; // block during animation
+
     if (phase === "placing" && currentPosition !== null) {
-      // Undo the initial placement
+      // Undo the initial placement — animate scale-out then remove
+      phase = "animating";
+      if (onUndoAnimationRequest) {
+        // Create a dummy step representing the placement (start = end = current)
+        const placementStep: BuilderStep = {
+          startPosition: currentPosition,
+          endPosition: currentPosition,
+          rotationDirection: RotationDirection.CLOCKWISE,
+          turnCount: 0,
+          startOrientation: currentOrientation,
+          endOrientation: currentOrientation,
+        };
+        await onUndoAnimationRequest(placementStep, true);
+      }
       currentPosition = null;
       phase = "idle";
       return;
@@ -184,6 +204,12 @@ export function createAssembleState() {
     if (steps.length === 0) return;
 
     const lastStep = steps[steps.length - 1]!;
+
+    // Play reverse animation before modifying state
+    phase = "animating";
+    if (onUndoAnimationRequest) {
+      await onUndoAnimationRequest(lastStep, false);
+    }
 
     if (activeHand === MotionColor.BLUE) {
       blueSteps = blueSteps.slice(0, -1);
@@ -248,6 +274,8 @@ export function createAssembleState() {
   }
 
   // Transient arrow overlay state
+  type ArrowStyle = "arrow" | "beam" | "behind" | "ring";
+  let arrowStyle = $state<ArrowStyle>("arrow");
   let showOrientationArrow = $state(false);
   let arrowOrientation = $state<Orientation>(Orientation.IN);
   let arrowTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -290,6 +318,10 @@ export function createAssembleState() {
     onAnimationRequest = cb;
   }
 
+  function setUndoAnimationCallback(cb: (step: BuilderStep, wasPlacement: boolean) => Promise<void>): void {
+    onUndoAnimationRequest = cb;
+  }
+
   return {
     // Readable state
     get phase() { return phase; },
@@ -303,6 +335,8 @@ export function createAssembleState() {
     get turnCount() { return turnCount; },
     get showOrientationArrow() { return showOrientationArrow; },
     get arrowOrientation() { return arrowOrientation; },
+    get arrowStyle() { return arrowStyle; },
+    setArrowStyle(style: ArrowStyle) { arrowStyle = style; },
     get activeSteps() { return activeSteps; },
     get stepCount() { return stepCount; },
     get isBlueComplete() { return isBlueComplete; },
@@ -320,6 +354,7 @@ export function createAssembleState() {
     setOrientation,
     switchToHand,
     setAnimationCallback,
+    setUndoAnimationCallback,
   };
 }
 
