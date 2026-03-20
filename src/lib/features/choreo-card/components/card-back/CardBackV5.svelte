@@ -4,10 +4,9 @@
   Designed for physical 2.5" × 3.5" playing cards. Renders at a fixed
   500×700px and gets scaled via CSS transform in CardDesigner.
 
-  Three sections:
-  1. Level — what level, what it means
-  2. LOOP — what's happening (when applicable)
-  3. Instructions — what to do with this card
+  The card back matches the user's selected background theme with
+  actual visual elements: stars for Night Sky, fish for Deep Ocean,
+  petals for Sakura, embers for Ember Glow, etc.
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -17,6 +16,7 @@
   import { onMount } from "svelte";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import { deriveCardBackData } from "./card-back-data";
+  import { getCardBackThemeVisuals } from "./card-back-theme-visuals";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 
   interface Props { sequence: SequenceData; }
@@ -35,97 +35,89 @@
     d.loopExplanation?.summary ?? (d.hasLoop ? "Loops back each cycle." : "")
   );
 
-  // Border gradient per background theme. Each theme gets a distinct
-  // card border that matches its palette instead of always rainbow.
-  const BORDER_GRADIENTS: Record<string, string> = {
-    nightSky: "linear-gradient(135deg, #1e1b4b, #4338ca, #818cf8, #4338ca, #1e1b4b)",
-    deepOcean: "linear-gradient(135deg, #0c4a6e, #0891b2, #22d3ee, #0891b2, #0c4a6e)",
-    snowfall: "linear-gradient(135deg, #1e3a5f, #3b82f6, #93c5fd, #3b82f6, #1e3a5f)",
-    emberGlow: "linear-gradient(135deg, #7c2d12, #ea580c, #fb923c, #ea580c, #7c2d12)",
-    sakuraDrift: "linear-gradient(135deg, #831843, #db2777, #f9a8d4, #db2777, #831843)",
-    fireflyForest: "linear-gradient(135deg, #0d3320, #166534, #22c55e, #166534, #0d3320)",
-    autumnDrift: "linear-gradient(135deg, #78350f, #d97706, #dc2626, #d97706, #78350f)",
-    pride: "linear-gradient(135deg, #ff0000, #ff8000, #ffff00, #00ff00, #0080ff, #8000ff, #ff0080, #ff0000)",
-    solidColor: "linear-gradient(135deg, var(--theme-accent, #6366f1), var(--theme-stroke-strong, #444), var(--theme-accent, #6366f1))",
-    linearGradient: "linear-gradient(135deg, var(--theme-accent, #6366f1), var(--theme-stroke-strong, #444), var(--theme-accent, #6366f1))",
-  };
-
-  const borderGradient = $derived(
-    BORDER_GRADIENTS[settingsService.settings.backgroundType] ?? BORDER_GRADIENTS.pride
-  );
+  // Full theme visuals: background with decorative elements, border, accent
+  const theme = $derived(getCardBackThemeVisuals(settingsService.settings.backgroundType));
 </script>
 
-<div
-  class="back"
-  style="background:
-    linear-gradient(var(--theme-panel-bg, #18181b), var(--theme-panel-bg, #18181b)) padding-box,
-    {borderGradient} border-box;"
->
-  <div class="content">
+<!-- Outer: themed gradient border -->
+<div class="border-frame" style="background: {theme.borderGradient};">
+  <!-- Inner: themed background with decorative elements -->
+  <div class="back" style="background: {theme.background};">
+    <div class="content">
 
-    <!-- Branding -->
-    <div class="brand">Choreo Card</div>
-    <div class="brand-sub">The Kinetic Alphabet</div>
+      <!-- Branding -->
+      <div class="brand">Choreo Card</div>
+      <div class="brand-sub">The Kinetic Alphabet</div>
 
-    <!-- Word -->
-    <div class="word">{d.word}</div>
-    <div class="beats">{d.beats} beats</div>
+      <!-- Word -->
+      <div class="word">{d.word}</div>
+      <div class="beats">{d.beats} beats</div>
 
-    <div class="divider"></div>
-
-    <!-- Level -->
-    <div class="level-section">
-      <span
-        class="level-circle"
-        style="background: {d.level.gradient}; color: {d.level.textColor};"
-      >
-        {d.level.number}
-      </span>
-      <span class="level-name">Level {d.level.number}: {d.level.name}</span>
-      <p class="level-explanation">{d.level.detail}. {d.level.reason}.</p>
-    </div>
-
-    <!-- LOOP (if applicable) -->
-    {#if d.hasLoop}
       <div class="divider"></div>
-      <div class="loop-section">
-        <div class="loop-header">
-          <span class="loop-title">LOOP</span>
-          <LOOPIconStrip activeComponents={d.loopComponents} size={22} darkMode={false} />
-        </div>
-        <p class="loop-explanation">{loopExplanationText}</p>
+
+      <!-- Level -->
+      <div class="level-section">
+        <span
+          class="level-circle"
+          style="background: {d.level.gradient}; color: {d.level.textColor};"
+        >
+          {d.level.number}
+        </span>
+        <span class="level-name">Level {d.level.number}: {d.level.name}</span>
+        <p class="level-explanation">{d.level.detail}. {d.level.reason}.</p>
       </div>
-    {/if}
 
-    <div class="spacer"></div>
+      <!-- LOOP (if applicable) -->
+      {#if d.hasLoop}
+        <div class="divider"></div>
+        <div class="loop-section">
+          <div class="loop-header">
+            <span class="loop-title" style="color: {theme.accentColor};">LOOP</span>
+            <LOOPIconStrip activeComponents={d.loopComponents} size={22} darkMode={false} />
+          </div>
+          <p class="loop-explanation">{loopExplanationText}</p>
+        </div>
+      {/if}
 
-    <!-- Instructions -->
-    <div class="instructions">
-      <p class="instruction-title">How to use this card</p>
-      <p class="instruction-text">
-        Learn each beat from the front. Practice until smooth. Scan the QR code to open it in the app.
-      </p>
+      <div class="spacer"></div>
+
+      <!-- Instructions -->
+      <div class="instructions">
+        <p class="instruction-title">How to use this card</p>
+        <p class="instruction-text">
+          Learn each beat from the front. Practice until smooth. Scan the QR code to open it in the app.
+        </p>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Footer -->
+      <div class="footer">TKAflowarts.com</div>
+
     </div>
-
-    <div class="divider"></div>
-
-    <!-- Footer -->
-    <div class="footer">TKAflowarts.com</div>
-
   </div>
 </div>
 
 <style>
+  /* Outer frame provides the themed gradient border via padding */
+  .border-frame {
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    padding: 3px;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  /* Inner card: themed background with decorative SVG layers */
   .back {
     width: 100%;
     height: 100%;
-    color: var(--theme-text, #1a1a1a);
+    color: #ffffff;
     font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
     overflow: hidden;
-    border: 3px solid transparent;
-    border-radius: 12px;
+    border-radius: 9px;
     box-sizing: border-box;
-    /* background set via inline style for per-theme border gradient */
   }
 
   .content {
@@ -147,7 +139,7 @@
   .brand-sub {
     text-align: center;
     font-size: 13px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    color: rgba(255, 255, 255, 0.5);
     letter-spacing: 0.08em;
     margin-bottom: 20px;
   }
@@ -164,14 +156,14 @@
   .beats {
     text-align: center;
     font-size: 16px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    color: rgba(255, 255, 255, 0.5);
     margin-top: 4px;
     margin-bottom: 16px;
   }
 
   .divider {
     height: 1px;
-    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: rgba(255, 255, 255, 0.12);
     margin: 8px 0;
   }
 
@@ -208,7 +200,7 @@
   .level-explanation {
     margin: 0;
     font-size: 15px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    color: rgba(255, 255, 255, 0.55);
     line-height: 1.5;
   }
 
@@ -228,13 +220,13 @@
     font-size: 18px;
     font-weight: 700;
     letter-spacing: 0.08em;
-    color: var(--theme-accent, #6366f1);
+    /* color set via inline style from theme.accentColor */
   }
 
   .loop-explanation {
     margin: 0;
     font-size: 15px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    color: rgba(255, 255, 255, 0.55);
     line-height: 1.5;
   }
 
@@ -256,7 +248,7 @@
   .instruction-text {
     margin: 0;
     font-size: 15px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    color: rgba(255, 255, 255, 0.55);
     line-height: 1.5;
   }
 
@@ -265,7 +257,7 @@
     text-align: center;
     padding-top: 8px;
     font-size: 14px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.35));
+    color: rgba(255, 255, 255, 0.4);
     letter-spacing: 0.06em;
   }
 </style>
