@@ -7,6 +7,8 @@ Orchestrates the chip row and active filter bar.
   import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
   import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
   import type { SequenceFilterType } from "../../../../shared/state/sequence-controls-state.svelte";
+  import type { BrowseViewMode } from "../../../../shared/domain/BrowseViewMode";
+  import { DEFAULT_BROWSE_VIEW_MODE } from "../../../../shared/domain/BrowseViewMode";
   import FilterChipRow from "./FilterChipRow.svelte";
   import LevelFilterChip from "./chips/LevelFilterChip.svelte";
   import FavoritesFilterChip from "./chips/FavoritesFilterChip.svelte";
@@ -32,6 +34,8 @@ Orchestrates the chip row and active filter bar.
     onOpenLetterSheet: () => void;
     onOpenOptionsSheet: () => void;
     getFilteredCount?: (candidateType: BrowseFilterType, candidateValue: BrowseFilterValue) => number;
+    /** Active browse view mode — controls which filter chips are visible */
+    viewMode?: BrowseViewMode;
   }
 
   let {
@@ -50,7 +54,21 @@ Orchestrates the chip row and active filter bar.
     onOpenLetterSheet,
     onOpenOptionsSheet,
     getFilteredCount,
+    viewMode = DEFAULT_BROWSE_VIEW_MODE,
   }: Props = $props();
+
+  // Certain filters don't apply in all view modes. Hide (not disable) them.
+  //
+  // | Filter   | props+combined | props+solo | hands+combined | hands+solo |
+  // |----------|---------------|------------|---------------|------------|
+  // | Level    | Show          | Show       | Show          | Hide       |
+  // | Letter   | Show          | Hide       | Show          | Hide       |
+  // | Position | Show          | Show       | Show          | Show       |
+  // | Length   | Show          | Show       | Show          | Show       |
+  const isSolo = viewMode.granularity === "solo";
+  const isHands = viewMode.subject === "hands";
+  const showLevel = !(isHands && isSolo);
+  const showLetter = !isSolo;
 
   function handleLevelSelect(level: number | null) {
     if (level === null) {
@@ -100,19 +118,23 @@ Orchestrates the chip row and active filter bar.
 >
   <div class="panel-content">
     <FilterChipRow>
-      <LevelFilterChip
-        {activeLevel}
-        onSelect={handleLevelSelect}
-        {getFilteredCount}
-      />
+      {#if showLevel}
+        <LevelFilterChip
+          {activeLevel}
+          onSelect={handleLevelSelect}
+          {getFilteredCount}
+        />
+      {/if}
       <FavoritesFilterChip
         active={isFavoritesActive}
         onToggle={handleFavoritesToggle}
       />
-      <LetterFilterChip
-        {activeLetter}
-        onOpenSheet={onOpenLetterSheet}
-      />
+      {#if showLetter}
+        <LetterFilterChip
+          {activeLetter}
+          onOpenSheet={onOpenLetterSheet}
+        />
+      {/if}
       <LengthFilterChip
         {activeLength}
         {availableLengths}

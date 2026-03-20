@@ -11,7 +11,7 @@
 <script lang="ts">
   import { getBuilderContext } from "../context/builder-context";
   import { container } from "$lib/shared/di";
-  import { handPathRepository } from "$lib/shared/foundation/services/implementations/HandPathRepository";
+  import type { IHandPathSaveOrchestrator } from "$lib/features/library/services/contracts/IHandPathSaveOrchestrator";
   import type { HandPathData } from "$lib/shared/foundation/domain/models/HandPathData";
 
   const builder = getBuilderContext();
@@ -46,6 +46,8 @@
 
     try {
       const factory = container.items.handPathFactory;
+      const orchestrator = container.items
+        .handPathSaveOrchestrator as IHandPathSaveOrchestrator;
 
       const blue = factory.create(builder.blueLocations, {
         name: builder.bluePathName,
@@ -55,8 +57,8 @@
       });
 
       await Promise.all([
-        handPathRepository.save(blue),
-        handPathRepository.save(red),
+        orchestrator.save(blue, builder.bluePathName),
+        orchestrator.save(red, builder.redPathName),
       ]);
 
       savedBlue = blue;
