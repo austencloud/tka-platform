@@ -30,6 +30,17 @@ export interface IImageComposer {
   ): Promise<HTMLCanvasElement>;
 
   /**
+   * Compose a sequence image sized to a playing-card aspect ratio (5:7).
+   * Header pins to top, footer pins to bottom, grid centers vertically.
+   * Used for physical card export only (cardMode), NOT for printMode.
+   */
+  composeCardImage(
+    sequence: SequenceData,
+    options: Partial<SequenceExportOptions>,
+    onProgress?: CompositionProgressCallback
+  ): Promise<HTMLCanvasElement>;
+
+  /**
    * Compose image from pre-rendered canvases
    */
   composeFromCanvases(
