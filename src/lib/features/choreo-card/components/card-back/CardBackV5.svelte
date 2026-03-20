@@ -52,21 +52,35 @@
     d.startPositionGroup ? POSITION_GLYPHS[d.startPositionGroup] ?? null : null
   );
 
-  // Pronunciation guide: spell out Greek letters for readers unfamiliar with them
+  // Pronunciation guide: spell out Greek letters and dash suffixes
   const LETTER_NAMES: Record<string, string> = {
     "Σ": "Sigma", "Δ": "Delta", "Θ": "Theta", "Ω": "Omega",
     "Φ": "Phi", "Ψ": "Psi", "Λ": "Lambda",
-    "Σ-": "Sigma-", "Δ-": "Delta-", "Θ-": "Theta-", "Ω-": "Omega-",
-    "Φ-": "Phi-", "Ψ-": "Psi-", "Λ-": "Lambda-",
+    "Σ-": "Sigma Dash", "Δ-": "Delta Dash", "Θ-": "Theta Dash", "Ω-": "Omega Dash",
+    "Φ-": "Phi Dash", "Ψ-": "Psi Dash", "Λ-": "Lambda Dash",
     "α": "alpha", "β": "beta", "γ": "gamma",
-    "ζ": "zeta", "η": "eta", "τ": "tau", "τ-": "tau-",
+    "ζ": "zeta", "η": "eta", "τ": "tau", "τ-": "Tau Dash",
     "μ": "mu", "ν": "nu", "⊕": "terra",
+    // Latin dash variants
+    "W-": "W Dash", "X-": "X Dash", "Y-": "Y Dash", "Z-": "Z Dash",
   };
 
-  /** True if the word contains any non-Latin letter that needs a pronunciation hint */
-  const hasGreekLetters = $derived(
-    d.word.split("").some((ch) => ch in LETTER_NAMES || (ch + "-") in LETTER_NAMES)
-  );
+  // Letters that trigger the pronunciation hint (Greek + dash suffixes)
+  const NEEDS_HINT = new Set([
+    ...Object.keys(LETTER_NAMES),
+    "-", // dash suffix on any letter signals TKA-specific naming
+  ]);
+
+  /** True if the word contains any character that needs a pronunciation hint */
+  const hasGreekLetters = $derived.by(() => {
+    const word = d.word;
+    for (let i = 0; i < word.length; i++) {
+      const ch = word[i]!;
+      if (ch in LETTER_NAMES) return true;
+      if (i + 1 < word.length && word[i + 1] === "-" && (ch + "-") in LETTER_NAMES) return true;
+    }
+    return false;
+  });
 
   /**
    * Build a pronunciation string: "B · Delta- · W · Phi"
