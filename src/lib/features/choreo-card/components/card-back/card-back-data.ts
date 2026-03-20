@@ -36,7 +36,7 @@ export interface LevelBadgeData {
 
 export interface CardBackData {
   word: string;
-  beats: number;
+  stepCount: number;
   level: LevelBadgeData;
   anatomy: SequenceAnatomy;
   hasLoop: boolean;
@@ -46,6 +46,8 @@ export interface CardBackData {
   sliceName: string | null;
   sliceDetail: string | null;
   isRotated: boolean;
+  /** Starting position group: "alpha", "beta", "gamma", etc. */
+  startPositionGroup: string | null;
 }
 
 // Level badge definitions with the actual gradients from the app's LevelCard
@@ -212,7 +214,7 @@ export function deriveCardBackData(
 
   return {
     word: sequence.word ?? sequence.name ?? "",
-    beats: sequence.sequenceLength ?? sequence.steps?.length ?? 0,
+    stepCount: sequence.sequenceLength ?? sequence.steps?.length ?? 0,
     level: { ...badge, reason },
     anatomy,
     hasLoop: loopComponents.size > 0,
@@ -231,5 +233,6 @@ export function deriveCardBackData(
     isRotated: sequence.loopType
       ? ROTATED_LOOP_TYPES.has(sequence.loopType)
       : false,
+    startPositionGroup: sequence.startingPositionGroup ?? null,
   };
 }
