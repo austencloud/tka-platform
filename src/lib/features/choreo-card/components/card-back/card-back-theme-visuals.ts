@@ -21,7 +21,8 @@ const THEMES: Record<string, CardBackThemeVisuals> = {
   nightSky: {
     borderGradient: "linear-gradient(135deg, #1e1b4b 0%, #4338ca 20%, #c4b5fd 35%, #818cf8 50%, #c4b5fd 65%, #4338ca 80%, #1e1b4b 100%)",
     accentColor: "#818cf8",
-    background: "linear-gradient(180deg, #0a0e2c 0%, #1a2040 40%, #0a0e2c 100%)",
+    // Rich gradient: deep indigo at top, hint of teal at the horizon, back to deep at bottom
+    background: "linear-gradient(180deg, #080c24 0%, #0e1535 25%, #152050 45%, #1a2858 60%, #152545 75%, #0d1a38 90%, #0a1230 100%)",
   },
   deepOcean: {
     borderGradient: "linear-gradient(135deg, #0c4a6e 0%, #0891b2 20%, #a5f3fc 38%, #22d3ee 50%, #a5f3fc 62%, #0891b2 80%, #0c4a6e 100%)",
