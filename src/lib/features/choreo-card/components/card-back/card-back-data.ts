@@ -208,19 +208,59 @@ function extractGroup(positionString: string | null | undefined): string | null 
  * explicit field, start position data, or first step.
  */
 function deriveStartPositionGroup(sequence: SequenceData): string | null {
-  // Explicit field
+
+  // Explicit field (most reliable when present)
   if (sequence.startingPositionGroup) return sequence.startingPositionGroup;
 
-  // From StartPositionData.gridPosition (e.g. "alpha1" → "alpha")
-  const fromStartPos = extractGroup(sequence.startPosition?.gridPosition as string | undefined)
-    ?? extractGroup(sequence.startingPosition?.gridPosition as string | undefined);
-  if (fromStartPos) return fromStartPos;
+  // From StartPositionData — try gridPosition, endPosition, startPosition
+  const sp = sequence.startPosition ?? sequence.startingPosition;
+  if (sp) {
+    const fromGrid = extractGroup(sp.gridPosition as string | undefined);
+    if (fromGrid) return fromGrid;
+    const fromEnd = extractGroup(sp.endPosition as string | undefined);
+    if (fromEnd) return fromEnd;
+    const fromStart = extractGroup(sp.startPosition as string | undefined);
+    if (fromStart) return fromStart;
+  }
 
-  // From first step's startPosition
-  const fromStep = extractGroup(sequence.steps?.[0]?.startPosition as string | undefined);
-  if (fromStep) return fromStep;
+  // From first step's startPosition or endPosition
+  const first = sequence.steps?.[0];
+  if (first) {
+    const fromStepStart = extractGroup(first.startPosition as string | undefined);
+    if (fromStepStart) return fromStepStart;
+    const fromStepEnd = extractGroup(first.endPosition as string | undefined);
+    if (fromStepEnd) return fromStepEnd;
+  }
+
+  // Derive from first step's motion start locations.
+  // The start locations of step 1's motions = the end locations of the start position.
+  // From two hand locations we can determine the position group:
+  //   Alpha: hands opposite (S-N, E-W, NE-SW, etc.)
+  //   Beta:  hands same location (S-S, N-N, etc.)
+  //   Gamma: hands at right angles (S-E, S-W, N-E, N-W, etc.)
+  const step1 = sequence.steps?.[0];
+  const blueLoc = step1?.motions?.blue?.startLocation;
+  const redLoc = step1?.motions?.red?.startLocation;
+  if (blueLoc && redLoc) {
+    return deriveGroupFromLocations(blueLoc, redLoc);
+  }
 
   return null;
+}
+
+/** Determine position group from two hand compass locations */
+function deriveGroupFromLocations(blue: string, red: string): string {
+  if (blue === red) return "beta";
+
+  // Opposite pairs → alpha
+  const OPPOSITES: Record<string, string> = {
+    n: "s", s: "n", e: "w", w: "e",
+    ne: "sw", sw: "ne", nw: "se", se: "nw",
+  };
+  if (OPPOSITES[blue] === red) return "alpha";
+
+  // Everything else is gamma (hands at non-opposite, non-same positions)
+  return "gamma";
 }
 
 export function deriveCardBackData(
