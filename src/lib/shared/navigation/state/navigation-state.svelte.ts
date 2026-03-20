@@ -469,6 +469,11 @@ export function createNavigationState() {
   }
 
   function setActiveTab(tabId: string) {
+    // Redirect legacy "profile" tab to "account"
+    if (currentModule === "settings" && tabId === "profile") {
+      tabId = "account";
+    }
+
     // Debug logging - enable via: window.__DEBUG_NAV__ = true
     const debug = typeof window !== "undefined" && (window as any).__DEBUG_NAV__;
 
