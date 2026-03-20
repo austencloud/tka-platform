@@ -23,6 +23,7 @@ import type { IConflictResolver } from "$lib/shared/offline/services/contracts/I
 import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
 import { SequenceContentHasher } from "$lib/features/library/services/implementations/SequenceContentHasher";
 import { ArtifactExtractor } from "$lib/features/library/services/implementations/ArtifactExtractor";
+import { SoloPropSaveOrchestrator } from "$lib/features/library/services/implementations/SoloPropSaveOrchestrator";
 import { handPathRepository } from "$lib/shared/foundation/services/implementations/HandPathRepository";
 import { soloPropRepository } from "$lib/shared/foundation/services/implementations/SoloPropRepository";
 
@@ -104,6 +105,8 @@ export function createLibraryContainer(deps: {
     collectionManager: () => new CollectionManager(),
     contentHasher: () => contentHasher,
     artifactExtractor: () => artifactExtractor,
+    soloPropSaveOrchestrator: () =>
+      new SoloPropSaveOrchestrator(soloPropRepository, handPathRepository),
     libraryRepository: () => libraryRepository,
     librarySaveService: () =>
       new LibrarySaveService(

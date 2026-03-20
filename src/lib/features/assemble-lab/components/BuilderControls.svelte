@@ -9,10 +9,15 @@
 <script lang="ts">
   import {
     MotionColor,
+    MotionType,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import type { AssembleState } from "../state/assemble-state.svelte";
+  import type { AssembleState, BuilderStep } from "../state/assemble-state.svelte";
+  import type { SoloPropStepData } from "$lib/shared/foundation/domain/models/SoloPropStepData";
+  import type { ISoloPropFactory } from "$lib/shared/foundation/services/contracts/ISoloPropFactory";
+  import type { ISoloPropSaveOrchestrator } from "$lib/features/library/services/contracts/ISoloPropSaveOrchestrator";
+  import { container } from "$lib/shared/di";
   import OrientationExplainer from "./OrientationExplainer.svelte";
 
   let { builderState }: { builderState: AssembleState } = $props();
@@ -42,6 +47,89 @@
   // Pulse the inactive hand's side when it has 0 steps
   const redNeedsAttention = $derived(isBlueHand && builderState.redSteps.length === 0 && builderState.blueSteps.length > 0);
   const blueNeedsAttention = $derived(!isBlueHand && builderState.blueSteps.length === 0 && builderState.redSteps.length > 0);
+
+  // Solo prop save: show when exactly one hand has steps and the other is empty
+  const canSaveSoloProp = $derived(
+    (builderState.blueSteps.length > 0 && builderState.redSteps.length === 0) ||
+    (builderState.redSteps.length > 0 && builderState.blueSteps.length === 0)
+  );
+  let isSavingSoloProp = $state(false);
+  let soloPropSaveError = $state<string | null>(null);
+
+  /**
+   * Derive MotionType from a builder step's start/end positions.
+   * Same heuristic as the assemble-state arc math: same point = static,
+   * diametrically opposite = dash, different = shift (pro or anti).
+   */
+  function deriveMotionType(step: BuilderStep): MotionType {
+    if (step.turnCount < 0) return MotionType.FLOAT;
+    if (step.startPosition === step.endPosition) return MotionType.STATIC;
+
+    // Check for dash (opposite positions) by comparing location angles
+    // We use a simple set-based check for cardinal opposites
+    const OPPOSITES: Record<string, string> = {
+      north: "south", south: "north",
+      east: "west", west: "east",
+      northeast: "southwest", southwest: "northeast",
+      northwest: "southeast", southeast: "northwest",
+    };
+    if (OPPOSITES[step.startPosition] === step.endPosition) {
+      return MotionType.DASH;
+    }
+
+    // Shift: pro if rotation matches arc direction, anti otherwise.
+    // Simplified: default to PRO since the exact determination requires
+    // angle math that the renderer will recalculate anyway.
+    return MotionType.PRO;
+  }
+
+  function builderStepToSoloPropStep(step: BuilderStep): SoloPropStepData {
+    return {
+      startLocation: step.startPosition,
+      endLocation: step.endPosition,
+      startOrientation: step.startOrientation,
+      endOrientation: step.endOrientation,
+      motionType: deriveMotionType(step),
+      rotationDirection: step.rotationDirection,
+      turns: step.turnCount < 0 ? "fl" : step.turnCount,
+      duration: 1,
+    };
+  }
+
+  async function handleSaveSoloProp(): Promise<void> {
+    if (!canSaveSoloProp || isSavingSoloProp) return;
+
+    const steps = builderState.blueSteps.length > 0
+      ? builderState.blueSteps
+      : builderState.redSteps;
+
+    if (steps.length === 0) return;
+
+    isSavingSoloProp = true;
+    soloPropSaveError = null;
+
+    try {
+      const soloPropFactory = container.items.soloPropFactory as ISoloPropFactory;
+      const orchestrator = container.items.soloPropSaveOrchestrator as ISoloPropSaveOrchestrator;
+
+      const soloPropSteps = steps.map(builderStepToSoloPropStep);
+      const startLocation = steps[0]!.startPosition;
+      const startOrientation = steps[0]!.startOrientation;
+
+      const soloPropData = soloPropFactory.create(
+        soloPropSteps,
+        startLocation,
+        startOrientation
+      );
+
+      await orchestrator.save(soloPropData);
+    } catch (err) {
+      console.error("[BuilderControls] Solo prop save failed:", err);
+      soloPropSaveError = err instanceof Error ? err.message : "Save failed";
+    } finally {
+      isSavingSoloProp = false;
+    }
+  }
 
   // ── Orientation ──
   const ORIENTATIONS = [
@@ -291,8 +379,20 @@
       </span>
     </button>
 
-    <!-- Action button: Complete or New -->
-    <div class="action-slot" class:visible={showActions} class:dimmed={actionsDimmed}>
+    <!-- Action button: Complete or New or Save Solo Prop -->
+    <div class="action-slot" class:visible={showActions || canSaveSoloProp} class:dimmed={actionsDimmed}>
+      {#if canSaveSoloProp}
+        <button
+          class="action-btn solo-save-btn"
+          onclick={handleSaveSoloProp}
+          disabled={isSavingSoloProp}
+          aria-label="Save solo prop"
+        >
+          <i class="fas fa-download" aria-hidden="true"></i>
+          <span>{isSavingSoloProp ? "Saving..." : "Save Solo"}</span>
+        </button>
+      {/if}
+
       {#if builderState.canFinishHand}
         <button
           class="action-btn complete-btn"
@@ -319,7 +419,19 @@
 </div>
 
 <!-- Action row: below the grid on desktop only -->
-<div class="action-row" class:visible={showActions} class:dimmed={actionsDimmed} style="--hand-color: {handColor}">
+<div class="action-row" class:visible={showActions || canSaveSoloProp} class:dimmed={actionsDimmed} style="--hand-color: {handColor}">
+  {#if canSaveSoloProp}
+    <button
+      class="action-btn solo-save-btn"
+      onclick={handleSaveSoloProp}
+      disabled={isSavingSoloProp}
+      aria-label="Save solo prop"
+    >
+      <i class="fas fa-download" aria-hidden="true"></i>
+      <span>{isSavingSoloProp ? "Saving..." : "Save Solo"}</span>
+    </button>
+  {/if}
+
   {#if builderState.canFinishHand}
     <button
       class="action-btn complete-btn"
@@ -792,6 +904,21 @@
 
   .new-btn:hover {
     background: color-mix(in srgb, var(--theme-accent, #6366f1) 30%, var(--theme-card-bg, rgba(0, 0, 0, 0.6)));
+  }
+
+  .solo-save-btn {
+    border: 1.5px solid var(--semantic-success, #10b981);
+    background: color-mix(in srgb, var(--semantic-success, #10b981) 15%, var(--theme-card-bg, rgba(0, 0, 0, 0.6)));
+    color: var(--theme-text, #fff);
+  }
+
+  .solo-save-btn:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--semantic-success, #10b981) 30%, var(--theme-card-bg, rgba(0, 0, 0, 0.6)));
+  }
+
+  .solo-save-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
   }
 
   @media (max-width: 768px) {

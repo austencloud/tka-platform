@@ -7,6 +7,7 @@
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { BrowseViewMode } from "$lib/features/browse/shared/domain/BrowseViewMode";
 
 /**
  * Options for rendering a preview cell.
@@ -48,6 +49,10 @@ export interface PreviewCellRenderOptions {
   /** When true, renders hand path visualization: HAND props, float arrows for shifts,
    *  no TKA overlay, no reversals. Shows pure spatial trajectory. */
   handPathMode?: boolean;
+
+  /** Browse view mode (props/hands x combined/solo x blue/red).
+   *  Affects cache keys so the same sequence renders differently per mode. */
+  browseViewMode?: BrowseViewMode;
 }
 
 export interface IPreviewCellRenderer {

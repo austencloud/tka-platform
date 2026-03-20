@@ -7,17 +7,26 @@ Provides responsive layout with clean 3-button interface:
 - Advanced Filters
 - Auto-hides on scroll
 - Center panel for content (full width)
+- ViewModeToggle for props/hands x combined/solo filtering
 -->
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import type { BrowseViewMode } from "../domain/BrowseViewMode";
+  import ViewModeToggle from "./ViewModeToggle.svelte";
 
-  // ✅ PURE RUNES: Props using modern Svelte 5 runes
-  const { centerPanel } = $props<{
+  interface Props {
     centerPanel: Snippet;
-  }>();
+    viewMode: BrowseViewMode;
+    onViewModeChange: (mode: BrowseViewMode) => void;
+  }
+
+  const { centerPanel, viewMode, onViewModeChange }: Props = $props();
 </script>
 
 <div class="gallery-layout">
+  <!-- View mode controls above the gallery -->
+  <ViewModeToggle {viewMode} {onViewModeChange} />
+
   <!-- Main Content Area (Full Width) -->
   <div class="browse-content">
     <!-- Center Panel: Content -->
