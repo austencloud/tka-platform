@@ -1,0 +1,8 @@
+{
+  "projectName": "TKA Scribe",
+  "projectDescription": "Choreography platform for flow artists",
+  "srcRoot": "src/lib",
+  "srcFeatures": "src/lib/features",
+  "srcShared": "src/lib/shared",
+  "skills": ["commit", "changelog", "check", "ai-bust", "monolith", "deadcode", "audit"]
+}

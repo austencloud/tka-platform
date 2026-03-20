@@ -1,3 +1,5 @@
+<!-- managed by @austencloud/claude-skills — do not edit manually, run: npx @austencloud/claude-skills sync -->
+
 ---
 description: Use when TypeScript errors need analysis and fixing, or after large refactors
 ---
@@ -9,10 +11,6 @@ description: Use when TypeScript errors need analysis and fixing, or after large
 ```bash
 npx tsc --noEmit
 ```
-
-## Scope
-
-For build-time compilation only. For runtime bugs, use `/fb`. For code quality audits, use `/audit`.
 
 ## Strategy
 

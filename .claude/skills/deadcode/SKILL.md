@@ -1,3 +1,5 @@
+<!-- managed by @austencloud/claude-skills — do not edit manually, run: npx @austencloud/claude-skills sync -->
+
 ---
 description: Use when cleaning up unused code, after major refactors, or during codebase hygiene passes
 argument-hint: "[scope | --list | --claims | --stats]"
@@ -15,12 +17,7 @@ This atomically finds and claims the next available scope. Parse `CLAIMED_SCOPE:
 
 ## Scope System
 
-Scopes are feature-level:
-
-| Type | Examples |
-|------|----------|
-| Features | `features/create`, `features/feedback`, `features/compose` |
-| Shared | `shared/pictograph`, `shared/animation-engine`, `shared/di` |
+Scopes are feature-level directories under `src/lib/features` and `src/lib/shared`.
 
 Each scope can only be claimed by one agent at a time. Claims expire after 2 hours.
 
@@ -61,7 +58,7 @@ Each scope can only be claimed by one agent at a time. Claims expire after 2 hou
 rm "src/lib/path/to/file.ts"
 
 # FALSE POSITIVE - won't appear again
-npx -p @austencloud/code-quality ac-deadcode --false-positive "lib/path/to/file.ts"
+npx -p @austencloud/code-quality ac-deadcode --false-positive "src/lib/path/to/file.ts"
 
 # DEFER - note it, move on. Will appear again on future scans.
 ```
@@ -69,7 +66,7 @@ npx -p @austencloud/code-quality ac-deadcode --false-positive "lib/path/to/file.
 ## Completing a Scope
 
 ```bash
-npx -p @austencloud/code-quality ac-deadcode --release features/compose
+npx -p @austencloud/code-quality ac-deadcode --release <scope>
 ```
 
 Report summary: how many reviewed, deleted, false positive, deferred.
@@ -77,10 +74,10 @@ Report summary: how many reviewed, deleted, false positive, deferred.
 ## What NOT to Delete
 
 Even if flagged as dead, never delete without checking:
-- Files in `src/lib/shared/di/` - DI container registrations
-- Files matching `*Container.ts` - Container configs
+- Files in DI container directories
+- Files matching `*Container.ts`
 - Files in `src/routes/` - SvelteKit routing
-- Files with `// @ts-nocheck` at top - might be intentional
+- Files with `// @ts-nocheck` at top
 - Anything the user says "wait, we need that"
 
 ## Detection Limitations

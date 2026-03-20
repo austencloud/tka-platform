@@ -1,3 +1,5 @@
+<!-- managed by @austencloud/claude-skills — do not edit manually, run: npx @austencloud/claude-skills sync -->
+
 ---
 description: Use when a file feels too large or has multiple responsibilities that should be separated
 ---
@@ -17,7 +19,7 @@ npx -p @austencloud/code-quality ac-monolith --auto-claim
 3. **Evaluate with Four Perspectives** (see below)
 4. **Propose decomposition OR mark as audited**
 5. **Get confirmation** before proceeding
-6. **Extract services** following the mandatory pattern, or mark audited
+6. **Extract** following project conventions, or mark audited
 7. **Release claim** when done
 
 ---
@@ -75,31 +77,16 @@ If yes to all three, it's fine regardless of line count.
 
 ---
 
-## Service Extraction Pattern (MANDATORY)
-
-Every service extraction MUST follow this structure:
-
-```
-1. Interface:      services/contracts/I{Name}.ts
-2. Implementation: services/implementations/{Name}.ts
-3. Registration:   Add to appropriate DI container
-4. Usage:          container.items.serviceName
-```
-
-Service naming: see `.claude/rules/service-naming.md`. No "Service" suffix. No hooks, utils, or loose function files — everything goes in ITI containers. UI extraction: markup AND styles travel together.
-
----
-
 ## Two Valid Outcomes
 
 ### Option A: Decompose
 
-Extract following mandatory service pattern (interface + implementation + DI registration). Get user confirmation first.
+Extract following project conventions. Get user confirmation first.
 
 ### Option B: Mark as Audited
 
 ```bash
-npx -p @austencloud/code-quality ac-monolith --mark-audited "lib/path/to/File.svelte" "Reason: [what it does]. [Why size is inherent]."
+npx -p @austencloud/code-quality ac-monolith --mark-audited "src/lib/path/to/File.svelte" "Reason: [what it does]. [Why size is inherent]."
 ```
 
 **Always offer this when concluding "leave it alone."**

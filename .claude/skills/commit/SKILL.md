@@ -1,5 +1,7 @@
+<!-- managed by @austencloud/claude-skills — do not edit manually, run: npx @austencloud/claude-skills sync -->
+
 ---
-description: Use when committing changes that span multiple concerns or modules
+description: Use when committing changes that span multiple concerns or scopes
 ---
 
 # Smart Commit
@@ -14,7 +16,7 @@ description: Use when committing changes that span multiple concerns or modules
 
 Group changes by these dimensions:
 - **Feature work** vs **refactoring** vs **bug fixes**
-- **Module/scope** (which feature area?)
+- **Scope** (which feature area?)
 - **Tests** vs **production code**
 - **Deps/config** vs **behavior changes**
 - **Docs** vs **code**
@@ -28,8 +30,8 @@ Show a **brief table** - one row per commit group:
 
 | # | Message | Files |
 |---|---------|-------|
-| 1 | `refactor(di): migrate arrow services` | 8 files |
-| 2 | `fix(spell): panel layout` | 2 files |
+| 1 | `refactor(auth): extract validation` | 8 files |
+| 2 | `fix(shop): filter layout` | 2 files |
 
 **Do NOT:**
 - List every file individually
@@ -54,6 +56,6 @@ After all commits, show `git log --oneline -n <count>` to confirm.
 ## Rules
 
 - Never commit unrelated changes together
-- If a commit can't be described in one line, it's too broad-split it
+- If a commit can't be described in one line, it's too broad — split it
 - Each commit should be independently meaningful
 - Think: "Will this make sense when generating the changelog?"
