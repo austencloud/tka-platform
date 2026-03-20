@@ -15,6 +15,7 @@
   import { container as di } from "$lib/shared/di";
   import { onMount } from "svelte";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
+  import CardBackDecorations from "./CardBackDecorations.svelte";
   import { deriveCardBackData } from "./card-back-data";
   import { getCardBackThemeVisuals } from "./card-back-theme-visuals";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
@@ -43,6 +44,7 @@
 <div class="border-frame" style="background: {theme.borderGradient};">
   <!-- Inner: themed background with decorative elements -->
   <div class="back" style="background: {theme.background};">
+    <CardBackDecorations theme={settingsService.settings.backgroundType} />
     <div class="content">
 
       <!-- Branding -->
@@ -110,8 +112,9 @@
     overflow: hidden;
   }
 
-  /* Inner card: themed background with decorative SVG layers */
+  /* Inner card: themed gradient background, decorations overlay behind content */
   .back {
+    position: relative;
     width: 100%;
     height: 100%;
     color: #ffffff;
@@ -122,6 +125,8 @@
   }
 
   .content {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     height: 100%;
