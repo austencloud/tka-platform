@@ -91,6 +91,7 @@ import { createVoiceSessionContainer } from "./containers/voice-session-containe
 import { createSkel2TKAContainer } from "./containers/skel2tka-container";
 import { labContainer } from "./containers/lab-container";
 import { assembleContainer } from "./containers/assemble-container";
+import { fuseContainer } from "./containers/fuse-container";
 import { arenaContainer } from "./containers/arena-container";
 import { effectsLabContainer } from "./containers/effects-lab-container";
 import { videoTrailsContainer } from "./containers/video-trails-container";
@@ -451,6 +452,8 @@ function buildAppContainer(): any {
   c = c.add(labContainer.items);
   // Assemble lab services (grid hit targets, beat motion derivation)
   c = c.add(assembleContainer.items);
+  // Fuse services (merge two hand paths into a combined sequence)
+  c = c.add(fuseContainer.items);
   // Arena module services (pairwise ranking)
   c = c.add(arenaContainer.items);
   // Effects Lab services (fire + LED point override providers, fuel sources)

@@ -30,6 +30,7 @@ import type { MultiGridContainer } from "./containers/multi-grid-container";
 import type { EffectsLabContainer } from "./containers/effects-lab-container";
 import type { ArenaContainer } from "./containers/arena-container";
 import type { AssembleContainer } from "./containers/assemble-container";
+import type { FuseContainer } from "./containers/fuse-container";
 import type { LabContainer } from "./containers/lab-container";
 import type { CompositionContainer } from "./containers/composition-container";
 import type { VideoTrailsContainer } from "./containers/video-trails-container";
@@ -107,6 +108,7 @@ type MultiGridItems = ItemsOf<MultiGridContainer>;
 type EffectsLabItems = ItemsOf<EffectsLabContainer>;
 type ArenaItems = ItemsOf<ArenaContainer>;
 type AssembleItems = ItemsOf<AssembleContainer>;
+type FuseItems = ItemsOf<FuseContainer>;
 type LabItems = ItemsOf<LabContainer>;
 type VideoTrailsItems = ItemsOf<VideoTrailsContainer>;
 type VideoInfraItems = ItemsOf<VideoInfraContainer>;
@@ -218,6 +220,7 @@ export type IAppContainerItems =
 	Skel2TKAItems &
 	LabItems &
 	AssembleItems &
+	FuseItems &
 	ArenaItems &
 	EffectsLabItems &
 	MuseumItems &
