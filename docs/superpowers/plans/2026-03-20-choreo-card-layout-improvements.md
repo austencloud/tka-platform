@@ -656,7 +656,9 @@ git commit -m "feat: replace α/β/γ glyph with mini-grid on card back"
 
 ---
 
-## Task 6: Add composeCardImage for Print Layout
+## Task 6: Add composeCardImage for Card Layout Mode
+
+**IMPORTANT:** `printMode` (existing, white background) is NOT the same as `cardMode` (new, 5:7 aspect ratio). `composeCardImage` is only called when `cardMode` is true — not when `printMode` is true. The card designer uses `cardMode` for physical card printing. The sequence viewer export uses `printMode` alone.
 
 **Files:**
 - Modify: `src/lib/shared/render/services/implementations/ImageComposer.ts`
@@ -784,32 +786,35 @@ git commit -m "feat: add composeCardImage for print layout (5:7 ratio)"
 
 ---
 
-## Task 7: Wire Print Layout into Render Pipeline
+## Task 7: Wire Card Layout Mode into Render Pipeline
+
+**IMPORTANT:** This uses a NEW `cardMode` flag, NOT the existing `printMode`. `printMode` = white background (sequence viewer export). `cardMode` = 5:7 playing card aspect ratio (card designer only).
 
 **Files:**
 - Modify: `src/lib/features/browse/sequences/display/services/implementations/ThumbnailRenderer.ts`
 - Modify: `src/lib/features/browse/sequences/display/components/PropAwareThumbnail.svelte`
+- Modify: `src/lib/features/choreo-card/components/ChoreoCard.svelte`
 
-**Context:** `ChoreoCard.svelte` doesn't call `composeSequenceImage` directly. The render chain is: `ChoreoCard` → `PropAwareThumbnail` → `ThumbnailRenderer` → `ImageComposer.composeSequenceImage()`. The print-mode swap needs to happen in `ThumbnailRenderer`.
+**Context:** `ChoreoCard.svelte` doesn't call `composeSequenceImage` directly. The render chain is: `ChoreoCard` → `PropAwareThumbnail` → `ThumbnailRenderer` → `ImageComposer.composeSequenceImage()`. The card-mode swap needs to happen in `ThumbnailRenderer`.
 
 - [ ] **Step 1: Read ThumbnailRenderer to find the composeSequenceImage call site**
 
 Read `src/lib/features/browse/sequences/display/services/implementations/ThumbnailRenderer.ts` to find where `composeSequenceImage` is called. Identify the method and line number.
 
-- [ ] **Step 2: Add print mode flag to the render path**
+- [ ] **Step 2: Add cardMode flag to the render path**
 
-In `ThumbnailRenderer.ts`, find the method that calls `imageComposer.composeSequenceImage()`. Add a `printMode` parameter that, when true, calls `imageComposer.composeCardImage()` instead:
+In `ThumbnailRenderer.ts`, find the method that calls `imageComposer.composeSequenceImage()`. Add a `cardMode` parameter that, when true, calls `imageComposer.composeCardImage()` instead:
 
 ```typescript
-// When printMode is true, use card layout for 5:7 aspect ratio
-const canvas = printMode
+// When cardMode is true, use card layout for 5:7 aspect ratio (physical cards only)
+const canvas = cardMode
   ? await this.imageComposer.composeCardImage(sequence, exportOptions, onProgress)
   : await this.imageComposer.composeSequenceImage(sequence, exportOptions, onProgress);
 ```
 
-- [ ] **Step 3: Thread the printMode flag from PropAwareThumbnail**
+- [ ] **Step 3: Thread the cardMode flag from PropAwareThumbnail and ChoreoCard**
 
-In `PropAwareThumbnail.svelte`, accept a `printMode` prop and pass it through to `ThumbnailRenderer`. In `ChoreoCard.svelte`, the `printMode` prop is already defined (line 24) and `PropAwareThumbnail` already has `lightMode={printMode}` (line 162). Add `{printMode}` to the `PropAwareThumbnail` usage.
+In `PropAwareThumbnail.svelte`, accept a new `cardMode` prop and pass it through to `ThumbnailRenderer`. In `ChoreoCard.svelte`, add a `cardMode` prop (separate from existing `printMode`) and pass it to `PropAwareThumbnail`. The card designer will set `cardMode={true}` when preparing physical card output.
 
 - [ ] **Step 4: Run typecheck**
 
