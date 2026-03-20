@@ -34,7 +34,7 @@
  *   - Footer: Creator Name, Notes, Birthday
  *   - Columns: Auto, 2, 3, 4, 5, 6 (submenu, radio-style)
  *   - Theme: Light / Dark toggle
- * Plus: Edit Notes Text..., Export Image actions.
+ * Plus: Edit Notes Text..., Download Image actions.
  */
 
 import type {
@@ -195,7 +195,7 @@ export function buildChoreoCardContextMenuItems(
     if (deps.onExportImage) {
       items.push({
         id: "export-image",
-        label: "Export Image",
+        label: "Download Image",
         icon: "fa-download",
         action: deps.onExportImage,
       });
@@ -603,7 +603,7 @@ git commit -m "feat(sequence-viewer): wire ChoreoCard context menu in drawer hos
 5. Toggle Difficulty on → badge appears
 6. Toggle Dark mode → card switches to dark
 7. Open Columns submenu → select 3 → grid reflows to 3 columns
-8. Click "Export Image" → export triggers, menu closes
+8. Click "Download Image" → export triggers, menu closes
 9. Open export sidebar → right-click card again → toggles now affect export preview (not global defaults)
 
 - [ ] **Step 2: Test mobile drawer**

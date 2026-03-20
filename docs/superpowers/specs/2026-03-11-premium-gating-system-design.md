@@ -89,7 +89,7 @@ Each capability in the nudge registry must have a corresponding `FeatureFlagConf
 {
   id: "capability:export:effects",
   name: "Export with Effects",
-  description: "Export animations with effects and efforts applied",
+  description: "Download Animations with effects and efforts applied",
   minimumRole: "user",     // Role check passes for everyone
   enabled: false,          // Off by default — PremiumGateChecker handles premium role
   category: "capability",
@@ -214,7 +214,7 @@ export const PREMIUM_CAPABILITY_CONFIGS: FeatureFlagConfig[] = [
   {
     id: "capability:export:effects",
     name: "Export with Effects",
-    description: "Export animations with effects and efforts applied",
+    description: "Download Animations with effects and efforts applied",
     minimumRole: "user",
     enabled: false,
     category: "capability",

@@ -38,7 +38,7 @@ export const PREMIUM_CAPABILITY_CONFIGS: FeatureFlagConfig[] = [
 	{
 		id: "capability:export:effects",
 		name: "Export with Effects",
-		description: "Export animations with effects and efforts applied",
+		description: "Download Animations with effects and efforts applied",
 		minimumRole: "user",
 		enabled: false,
 		category: "capability",
