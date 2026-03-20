@@ -367,10 +367,10 @@ export const ADMIN_TABS: Section[] = [
 // Settings tabs configuration - shown in sidebar like other modules
 export const SETTINGS_TABS: Section[] = [
   {
-    id: "account",
-    label: "Account",
-    icon: '<i class="fas fa-user-cog" aria-hidden="true"></i>',
-    description: "Security, connected accounts, and account management",
+    id: "profile",
+    label: "Profile",
+    icon: '<i class="fas fa-user" aria-hidden="true"></i>',
+    description: "Account and profile settings",
     color: "#6366f1",
     gradient: "linear-gradient(135deg, #818cf8 0%, #6366f1 100%)",
   },
