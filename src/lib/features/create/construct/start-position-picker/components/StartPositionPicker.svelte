@@ -209,12 +209,7 @@ Controls moved below the grid for better UX
 </script>
 
 <div class="start-pos-picker" data-testid="start-position-picker">
-  <!-- Shared header - outside animated content for consistent positioning -->
-  <header class="picker-header">
-    <div class="header-left"></div>
-    <h2 class="start-position-title">Choose your start position</h2>
-    <div class="header-right"></div>
-  </header>
+  <p class="workspace-hint">Choose your start position</p>
 
   <!-- Animated transition container - keyed on view mode only (grid mode animates in-place) -->
   <div class="picker-view">
@@ -336,29 +331,13 @@ Controls moved below the grid for better UX
     container-type: inline-size;
   }
 
-  /* ============================================
-     Header - Title with space for undo button
-     ============================================ */
-  .picker-header {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: clamp(12px, 2.5vmin, 20px) clamp(16px, 3vmin, 24px);
+  .workspace-hint {
     flex-shrink: 0;
-  }
-
-  .header-left,
-  .header-right {
-    width: 56px;
-    flex-shrink: 0;
-  }
-
-  .start-position-title {
-    flex: 1;
-    font-size: clamp(1.25rem, 3vmin, 1.75rem);
-    font-weight: 500;
-    color: var(--theme-text, var(--theme-text));
     text-align: center;
+    font-size: clamp(1rem, 2.5vmin, 1.25rem);
+    font-weight: 500;
+    color: var(--theme-text, #fff);
+    padding: clamp(8px, 1.5vmin, 12px) 1rem;
     margin: 0;
     letter-spacing: 0.02em;
   }
