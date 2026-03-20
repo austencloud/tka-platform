@@ -68,7 +68,7 @@ export interface IShortCodeManager {
    * @param options - Optional URL options (e.g., prop types to embed)
    * @returns The offline code (s~...) and full URL
    */
-  createOfflineCode(sequence: SequenceData, options?: ShortCodeURLOptions): CreateShortCodeResult;
+  createOfflineCode(sequence: SequenceData, options?: ShortCodeURLOptions): Promise<CreateShortCodeResult>;
 
   /**
    * Resolve a short code to its sequence data.

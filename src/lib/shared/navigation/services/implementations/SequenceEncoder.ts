@@ -524,10 +524,40 @@ export class SequenceEncoder implements ISequenceEncoder {
   /**
    * Encode a sequence for QR code offline use.
    * Returns a string prefixed with "s~" containing compressed sequence data.
+   * Tries compositional encoding first for LOOP sequences (smaller QR codes),
+   * falls back to flat encoding if the sequence doesn't qualify.
    */
-  encodeForQR(sequence: SequenceData): string {
-    const { encoded } = this.encodeWithCompression(sequence);
-    return `${SequenceEncoder.INLINE_PREFIX}${encoded}`;
+  async encodeForQR(sequence: SequenceData): Promise<string> {
+    const flatEncoded = this.encode(sequence);
+    const { encoded: compressedFlat } = this.encodeWithCompression(sequence);
+
+    // Try compositional encoding for LOOP sequences (smaller QR codes)
+    try {
+      const { CompositionalEncoder } = await import(
+        "$lib/shared/qr/services/implementations/CompositionalEncoder"
+      );
+      const encoder = new CompositionalEncoder(
+        { encode: (s) => this.encode(s) },
+        { decode: (s) => this.decode(s) },
+        { compressString: (s) => this.compressString(s) }
+      );
+      const recipe = await encoder.tryEncode(flatEncoded, sequence);
+      if (recipe) {
+        const recipeResult = `${SequenceEncoder.INLINE_PREFIX}${recipe}`;
+        // TEMP: Verify compositional encoding is working. Remove after confirming.
+        console.log(
+          `[QR] ✓ Recipe encoding for "${sequence.word}": ` +
+          `${compressedFlat.length + 2} → ${recipeResult.length} chars ` +
+          `(${Math.round((1 - recipeResult.length / (compressedFlat.length + 2)) * 100)}% smaller)`
+        );
+        return recipeResult;
+      }
+    } catch (err) {
+      // TEMP: Surface errors during development. Remove after confirming.
+      console.warn("[QR] Compositional encoding error:", err);
+    }
+
+    return `${SequenceEncoder.INLINE_PREFIX}${compressedFlat}`;
   }
 
   /**
@@ -540,14 +570,29 @@ export class SequenceEncoder implements ISequenceEncoder {
   /**
    * Decode an inline-encoded QR code string back to SequenceData.
    * Strips the "s~" prefix, decompresses, and parses.
+   * Handles both recipe-encoded (r:...) and flat-encoded (z:...) formats.
    */
-  decodeFromQR(encoded: string): SequenceData {
+  async decodeFromQR(encoded: string): Promise<SequenceData> {
     // Strip prefix if present
     const data = encoded.startsWith(SequenceEncoder.INLINE_PREFIX)
       ? encoded.slice(SequenceEncoder.INLINE_PREFIX.length)
       : encoded;
 
-    // Use existing decompression logic
+    // Check for recipe encoding (compositional)
+    if (data.startsWith("r:")) {
+      const { CompositionalDecoder } = await import(
+        "$lib/shared/qr/services/implementations/CompositionalDecoder"
+      );
+      const decoder = new CompositionalDecoder(
+        { encode: (s) => this.encode(s) },
+        { decode: (s) => this.decode(s) },
+        { decompressString: (s) => this.decompressString(s) }
+      );
+      const flatEncoded = await decoder.decode(data);
+      return this.decode(flatEncoded);
+    }
+
+    // Flat encoding — use existing decompression logic
     return this.decodeWithCompression(data);
   }
 
@@ -559,8 +604,8 @@ export class SequenceEncoder implements ISequenceEncoder {
    * - Version 15 (77×77): 589 chars - needs good camera
    * - Version 20+ : dense, may have scanning issues
    */
-  estimateOfflineQRSize(sequence: SequenceData): QRSizeEstimate {
-    const encoded = this.encodeForQR(sequence);
+  async estimateOfflineQRSize(sequence: SequenceData): Promise<QRSizeEstimate> {
+    const encoded = await this.encodeForQR(sequence);
     const length = encoded.length;
 
     // QR alphanumeric capacity at error correction M

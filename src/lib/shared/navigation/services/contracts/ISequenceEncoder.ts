@@ -173,7 +173,7 @@ export interface ISequenceEncoder {
    * const qr = await qrCodeGenerator.generateForSequence(sequence, { offline: true });
    * ```
    */
-  encodeForQR(sequence: SequenceData): string;
+  encodeForQR(sequence: SequenceData): Promise<string>;
 
   /**
    * Check if a code is an inline-encoded offline QR code (starts with "s~")
@@ -191,7 +191,7 @@ export interface ISequenceEncoder {
    * @returns Decoded sequence data
    * @throws Error if decoding fails
    */
-  decodeFromQR(encoded: string): SequenceData;
+  decodeFromQR(encoded: string): Promise<SequenceData>;
 
   /**
    * Estimate the QR code size needed for offline encoding of a sequence.
@@ -200,7 +200,7 @@ export interface ISequenceEncoder {
    * @param sequence - The sequence to estimate
    * @returns Estimation with encoded length and recommended QR version
    */
-  estimateOfflineQRSize(sequence: SequenceData): QRSizeEstimate;
+  estimateOfflineQRSize(sequence: SequenceData): Promise<QRSizeEstimate>;
 
   /**
    * Parse prop type params from URL search params.

@@ -198,8 +198,8 @@ export class ShortCodeManager implements IShortCodeManager {
    * Create an offline-capable code for a sequence.
    * Embeds all sequence data in the URL, no Firebase lookup needed.
    */
-  createOfflineCode(sequence: SequenceData, options?: ShortCodeURLOptions): CreateShortCodeResult {
-    const code = this.sequenceEncoder.encodeForQR(sequence);
+  async createOfflineCode(sequence: SequenceData, options?: ShortCodeURLOptions): Promise<CreateShortCodeResult> {
+    const code = await this.sequenceEncoder.encodeForQR(sequence);
     return {
       code,
       url: this.buildUrlWithOptions(this.getBaseUrl(), code, options),
@@ -248,7 +248,7 @@ export class ShortCodeManager implements IShortCodeManager {
     if (this.sequenceEncoder.isInlineEncoded(code)) {
       try {
         // Decode directly - no Firebase needed, works offline!
-        return this.sequenceEncoder.decodeFromQR(code);
+        return await this.sequenceEncoder.decodeFromQR(code);
       } catch (error) {
         console.error("Failed to decode inline sequence:", error);
         return null;
@@ -274,25 +274,53 @@ export class ShortCodeManager implements IShortCodeManager {
       scanCount: number;
     };
 
+    console.log(`[ShortCode] Record for "${code}":`, {
+      sequence: data.sequence,
+      sequenceId: data.sequenceId ?? "MISSING",
+      ownerId: data.ownerId ?? "MISSING",
+    });
+
+    // Strategy 1: Public index lookup by stored word + sequenceId
     try {
-      // Use sequenceId for disambiguation when available (new records).
-      // Falls back to word-only lookup for legacy records without sequenceId.
       const fullSequence = await this.browseLoader.loadFullSequenceData(
         data.sequence,
         data.sequenceId
       );
-      if (fullSequence) return fullSequence;
-    } catch {
-      // Public index lookup failed — fall through to direct load
+      if (fullSequence) {
+        console.log(`[ShortCode] ✓ Resolved "${code}" via public index (word="${data.sequence}")`);
+        return fullSequence;
+      }
+      console.log(`[ShortCode] ✗ Public index returned null for word="${data.sequence}", id="${data.sequenceId}"`);
+    } catch (err) {
+      console.log(`[ShortCode] ✗ Public index threw for word="${data.sequence}":`, err);
     }
 
-    // Direct Firestore load for unpublished sequences (requires ownerId + sequenceId)
+    // Strategy 2: The stored word may be expanded (e.g., "AAKEAAKEAAKEAAKE").
+    // Try using sequenceId as the word — it often matches the simplified form.
+    if (data.sequenceId && data.sequenceId !== data.sequence) {
+      try {
+        const byId = await this.browseLoader.loadFullSequenceData(
+          data.sequenceId,
+          data.sequenceId
+        );
+        if (byId) {
+          console.log(`[ShortCode] ✓ Resolved "${code}" via sequenceId-as-word="${data.sequenceId}"`);
+          return byId;
+        }
+        console.log(`[ShortCode] ✗ sequenceId-as-word lookup returned null for "${data.sequenceId}"`);
+      } catch (err) {
+        console.log(`[ShortCode] ✗ sequenceId-as-word threw for "${data.sequenceId}":`, err);
+      }
+    }
+
+    // Strategy 3: Direct Firestore load (requires ownerId + sequenceId)
     if (data.ownerId && data.sequenceId) {
       try {
         const firestore = await this.ensureFirestore();
         const directRef = doc(firestore, `users/${data.ownerId}/sequences/${data.sequenceId}`);
         const directSnap = await getDoc(directRef);
         if (directSnap.exists()) {
+          console.log(`[ShortCode] ✓ Resolved "${code}" via direct Firestore load (owner=${data.ownerId})`);
           const seqData = directSnap.data();
           return {
             ...seqData,
@@ -300,10 +328,15 @@ export class ShortCodeManager implements IShortCodeManager {
             ownerId: data.ownerId,
           } as SequenceData;
         }
+        console.log(`[ShortCode] ✗ Direct Firestore doc not found: users/${data.ownerId}/sequences/${data.sequenceId}`);
       } catch (error) {
-        console.error("Failed to load sequence directly from short code:", error);
+        console.error(`[ShortCode] ✗ Direct Firestore load failed:`, error);
       }
+    } else {
+      console.log(`[ShortCode] ✗ Skipping direct load — ownerId=${data.ownerId ?? "MISSING"}, sequenceId=${data.sequenceId ?? "MISSING"}`);
     }
+
+    console.error(`[ShortCode] ✗ ALL strategies failed for code "${code}". Record:`, JSON.stringify(data));
 
     return null;
   }

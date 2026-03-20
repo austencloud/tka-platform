@@ -170,7 +170,7 @@ export class QRCodeGenerator implements IQRCodeGenerator {
     if (options?.offline) {
       // Create offline code with embedded sequence data
       const { code, url: offlineUrl } =
-        this.shortCodeManager.createOfflineCode(sequence, propOptions);
+        await this.shortCodeManager.createOfflineCode(sequence, propOptions);
 
       // Generate QR code
       const { svg, dataUrl } = await this.generateQR(offlineUrl, options);
