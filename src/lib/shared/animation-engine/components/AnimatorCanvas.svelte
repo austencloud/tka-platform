@@ -41,8 +41,7 @@ Last audit: 2025-12-27
   import type { FireOverlayConfig } from "../domain/types/FireTypes";
   import type { LedOverlayConfig } from "../domain/types/LedTypes";
   import CanvasContextMenuHost from "./canvas-context-menu/CanvasContextMenuHost.svelte";
-  import CanvasSettingsModal from "./canvas-settings-modal/CanvasSettingsModal.svelte";
-  import type { SettingsPanelCategory } from "./canvas-context-menu/CanvasContextMenuBuilder";
+  import AnimationSettingsModal from "./animation-settings-modal/AnimationSettingsModal.svelte";
   import { onDestroy, untrack } from "svelte";
   import { fireCacheInvalidation } from "../state/fire-invalidation-signal.svelte";
   import AnimatorCanvasSelf from "./AnimatorCanvas.svelte";
@@ -208,10 +207,8 @@ Last audit: 2025-12-27
 
   // Settings modal state
   let settingsModalOpen = $state(false);
-  let settingsModalCategory = $state<SettingsPanelCategory | undefined>(undefined);
 
-  function handleOpenPanel(category: SettingsPanelCategory) {
-    settingsModalCategory = category;
+  function handleOpenSettings() {
     settingsModalOpen = true;
   }
 
@@ -516,14 +513,13 @@ Last audit: 2025-12-27
   {#if !disableContextMenu}
     <CanvasContextMenuHost
       bind:this={contextMenuHost}
-      onOpenPanel={handleOpenPanel}
+      onOpenSettings={handleOpenSettings}
       disassembled={isDisassembledView}
       onToggleDisassemble={toggleDisassemble}
     />
 
-    <CanvasSettingsModal
+    <AnimationSettingsModal
       bind:open={settingsModalOpen}
-      initialCategory={settingsModalCategory}
       {sequenceData}
       {blueProp}
       {redProp}

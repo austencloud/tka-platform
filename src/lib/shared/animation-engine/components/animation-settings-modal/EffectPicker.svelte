@@ -2,7 +2,7 @@
   EffectPicker.svelte
 
   Shared 5-button mutually exclusive effect selector.
-  Used by both CanvasSettingsModal and Visibility tab's Animation section.
+  Used by both AnimationSettingsModal and Visibility tab's Animation section.
   Effects: None | Fire | Charcoal | LED | Trails
 -->
 <script lang="ts">
