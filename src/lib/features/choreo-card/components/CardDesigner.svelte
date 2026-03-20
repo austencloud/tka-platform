@@ -12,7 +12,7 @@
   import { container } from "$lib/shared/di";
   import { onMount, onDestroy } from "svelte";
   import ChoreoCard from "./ChoreoCard.svelte";
-  import CardBack from "./CardBack.svelte";
+  import CardBackV5 from "./card-back/CardBackV5.svelte";
   import CardDesignerContextMenuHost from "./context-menu/CardDesignerContextMenuHost.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
@@ -28,6 +28,13 @@
   // Length filter
   const STORAGE_KEY = "choreoCard.designerLength";
   let selectedLength = $state(loadPersistedLength());
+
+  // Card back variant (only Deck for now)
+  type BackVariant = "deck";
+  let backVariant = $state<BackVariant>("deck");
+
+  // Display scale: 1.0 = fill container, smaller = preview at physical size
+  let displayScale = $state(1.0);
   let hapticService: IHapticFeedback | undefined;
   let contextMenuHost: CardDesignerContextMenuHost;
 
@@ -56,6 +63,8 @@
   const showTKA = $derived.by(() => { void visibilityVersion; return visibilityManager.getGlyphVisibility("tkaGlyph"); });
   const showWord = $derived.by(() => { void compositionVersion; return imageComposition.addWord; });
   const includeStartPosition = $derived.by(() => { void compositionVersion; return imageComposition.includeStartPosition; });
+  const showBirthday = $derived.by(() => { void compositionVersion; return imageComposition.showBirthday; });
+  const showQRCode = $derived.by(() => { void compositionVersion; return imageComposition.showQRCode; });
 
   onMount(() => {
     hapticService = container.items.hapticFeedback;
@@ -110,36 +119,65 @@
   // Card image natural aspect ratio (width / height)
   let cardAspect = $state(0);
 
-  // Calculated layout: picks vertical or horizontal based on which
-  // gives bigger cards. Falls back to a reasonable default when we
-  // don't yet know the image aspect ratio (so cards always render).
+  // Playing card proportions: 2.5" × 3.5" = 5:7
+  const CARD_PORTRAIT = 5 / 7;  // width / height (tall)
+  const CARD_LANDSCAPE = 7 / 5; // width / height (wide)
+
+  // The front card is landscape when the sequence image is meaningfully wider
+  // than tall (aspect > 1.3). Near-square images (like 16-beat grids) fit
+  // better in portrait. Default to landscape for the initial render.
+  const frontIsLandscape = $derived(cardAspect > 0 ? cardAspect > 1.3 : true);
+  const frontAR = $derived(frontIsLandscape ? CARD_LANDSCAPE : CARD_PORTRAIT);
+  // The back card is always portrait
+  const backAR = CARD_PORTRAIT;
+
+  // Calculate card sizes to fit both cards side by side in the container.
+  // Front and back may have different aspect ratios (landscape front, portrait back).
   const layout = $derived.by(() => {
-    if (cW === 0 || cH === 0) return { direction: "column" as const, w: 0, h: 0, ready: false };
+    if (cW === 0 || cH === 0) return { frontW: 0, frontH: 0, backW: 0, backH: 0 };
 
-    // Use a default 3:1 landscape ratio until the real image loads
-    const ar = cardAspect > 0 ? cardAspect : 3;
+    const gap = 24;
+    const labelH = 20;
+    const availH = cH - labelH;
 
-    const gap = 28;
-    const labelH = 18;
+    // Side by side: we need frontW + gap + backW <= cW
+    // Both cards share the same available height.
+    // Scale so the taller card fills availH, then check if both fit in cW.
+    // If not, scale down proportionally.
 
-    // Option A: vertical stack (top/bottom)
-    const vAvailH = (cH - gap - labelH * 2) / 2;
-    const vAvailW = cW;
-    const vCardH = Math.min(vAvailH, vAvailW / ar);
-    const vCardW = vCardH * ar;
+    // Start with both cards at max height
+    let fH = availH;
+    let fW = fH * frontAR;
+    let bH = availH;
+    let bW = bH * backAR;
 
-    // Option B: horizontal (side by side)
-    const hAvailW = (cW - gap) / 2;
-    const hAvailH = cH - labelH;
-    const hCardW = Math.min(hAvailW, hAvailH * ar);
-    const hCardH = hCardW / ar;
-
-    // Pick whichever gives a bigger card (by area)
-    if (hCardW * hCardH > vCardW * vCardH) {
-      return { direction: "row" as const, w: Math.floor(hCardW), h: Math.floor(hCardH), ready: cardAspect > 0 };
+    const totalW = fW + gap + bW;
+    if (totalW > cW) {
+      // Scale both down proportionally to fit width
+      const scale = cW / totalW;
+      fW *= scale;
+      fH *= scale;
+      bW *= scale;
+      bH *= scale;
     }
-    return { direction: "column" as const, w: Math.floor(vCardW), h: Math.floor(vCardH), ready: cardAspect > 0 };
+
+    return {
+      frontW: Math.floor(fW * displayScale),
+      frontH: Math.floor(fH * displayScale),
+      backW: Math.floor(bW * displayScale),
+      backH: Math.floor(bH * displayScale),
+    };
   });
+
+  // The card back renders at a fixed "print" resolution so it behaves
+  // like an image: zooming the page scales it uniformly instead of
+  // reflowing text. We render at 500×700 (5:7) and transform: scale()
+  // to fit the display frame.
+  const BACK_RENDER_W = 500;
+  const BACK_RENDER_H = 700;
+  const backScale = $derived(
+    layout.backW > 0 ? layout.backW / BACK_RENDER_W : 1
+  );
 
   const seq = $derived(filteredSequences.length > 0 ? filteredSequences[currentIndex] : null);
   const label = $derived(seq?.name || seq?.word || "");
@@ -185,17 +223,17 @@
         stepSize: 300,
         format: "PNG" as const,
         quality: 1.0,
-        includeStartPosition: true,
+        includeStartPosition,
         addStepNumbers: true,
-        addWord: true,
+        addWord: showWord,
         addDifficultyLevel: false,
         addUserInfo: false,
         addReversalSymbols: true,
         visibilityOverrides: {
           darkMode: false,
           printMode: true,
-          showGrid: true,
-          showTKA: true,
+          showGrid,
+          showTKA,
         },
       });
 
@@ -250,38 +288,40 @@
       <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
       <span>Loading...</span>
     </div>
-  {:else if !seq}
+  {:else if sequences.length === 0}
     <div class="empty">
       <i class="fas fa-id-card" aria-hidden="true"></i>
       <span>No sequences</span>
     </div>
   {:else}
-    <!-- Nav: compact cluster, centered -->
-    <nav class="nav">
-      <span class="nav-name" title={label}>{label}</span>
-      <div class="nav-controls">
-        <button class="nav-btn" onclick={prev} disabled={currentIndex === 0} type="button" aria-label="Previous card">
-          <i class="fas fa-chevron-left" aria-hidden="true"></i>
-        </button>
-        <span class="nav-counter">{counter}</span>
-        <button class="nav-btn" onclick={next} disabled={currentIndex >= filteredSequences.length - 1} type="button" aria-label="Next card">
-          <i class="fas fa-chevron-right" aria-hidden="true"></i>
-        </button>
-        <button
-          class="nav-btn export-btn"
-          onclick={handleExport}
-          disabled={isExporting}
-          type="button"
-          aria-label="Export current card as PNG"
-        >
-          {#if isExporting}
-            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-          {:else}
-            <i class="fas fa-download" aria-hidden="true"></i>
-          {/if}
-        </button>
-      </div>
-    </nav>
+    <!-- Nav: only shown when there's a card to display -->
+    {#if seq}
+      <nav class="nav">
+        <span class="nav-name" title={label}>{label}</span>
+        <div class="nav-controls">
+          <button class="nav-btn" onclick={prev} disabled={currentIndex === 0} type="button" aria-label="Previous card">
+            <i class="fas fa-chevron-left" aria-hidden="true"></i>
+          </button>
+          <span class="nav-counter">{counter}</span>
+          <button class="nav-btn" onclick={next} disabled={currentIndex >= filteredSequences.length - 1} type="button" aria-label="Next card">
+            <i class="fas fa-chevron-right" aria-hidden="true"></i>
+          </button>
+          <button
+            class="nav-btn export-btn"
+            onclick={handleExport}
+            disabled={isExporting}
+            type="button"
+            aria-label="Export current card as PNG"
+          >
+            {#if isExporting}
+              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+            {:else}
+              <i class="fas fa-download" aria-hidden="true"></i>
+            {/if}
+          </button>
+        </div>
+      </nav>
+    {/if}
 
     <!-- Length filter chips -->
     <div class="filter-chips" role="toolbar" aria-label="Filter by step length">
@@ -302,39 +342,79 @@
       {/each}
     </div>
 
-    <!-- Card pair container: measured, no overflow -->
-    <div class="pair-container" bind:this={containerEl}>
-      <div class="pair" style="flex-direction: {layout.direction};">
-        <div class="card-slot">
-          <span class="side-label">Front</span>
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <div
-            class="card-frame"
-            style="width: {layout.w}px; height: {layout.h}px;"
-            use:watchForImage
-            oncontextmenu={handleContextMenu}
-          >
-            <ChoreoCard
-              sequence={seq}
-              printMode={true}
-              showQRCodes={true}
-              {handPointsVisible}
-              {showGrid}
-              {showTKA}
-              {showWord}
-              {includeStartPosition}
-            />
-          </div>
-        </div>
+    <!-- Size slider -->
+    <div class="size-control">
+      <i class="fas fa-search-minus" aria-hidden="true"></i>
+      <input
+        type="range"
+        min="0.2"
+        max="1"
+        step="0.05"
+        bind:value={displayScale}
+        aria-label="Card display size"
+      />
+      <i class="fas fa-search-plus" aria-hidden="true"></i>
+      <span class="size-label">{Math.round(displayScale * 100)}%</span>
+    </div>
 
-        <div class="card-slot">
-          <span class="side-label">Back</span>
-          <div class="card-frame" style="width: {layout.w}px; height: {layout.h}px;">
-            <CardBack sequence={seq} />
+    {#if seq}
+      <!-- Card pair container: measured, no overflow -->
+      <div class="pair-container" bind:this={containerEl}>
+        <div class="pair">
+          <!-- Front: playing card frame with sequence image inside -->
+          <div class="card-slot">
+            <span class="side-label">Front</span>
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div
+              class="playing-card"
+              style="width: {layout.frontW}px; height: {layout.frontH}px;"
+              use:watchForImage
+              oncontextmenu={handleContextMenu}
+            >
+              <div class="card-image-container">
+                <ChoreoCard
+                  sequence={seq}
+                  printMode={true}
+                  showQRCodes={showQRCode}
+                  {showBirthday}
+                  {handPointsVisible}
+                  {showGrid}
+                  {showTKA}
+                  {showWord}
+                  {includeStartPosition}
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Back: rendered at fixed print resolution, scaled to fit -->
+          <div class="card-slot">
+            <span class="side-label">Back</span>
+            <div
+              class="playing-card back-card-frame"
+              style="width: {layout.backW}px; height: {layout.backH}px;"
+            >
+              <div
+                class="back-card-render"
+                style="
+                  width: {BACK_RENDER_W}px;
+                  height: {BACK_RENDER_H}px;
+                  transform: scale({backScale});
+                  transform-origin: top left;
+                "
+              >
+                <CardBackV5 sequence={seq} />
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    {:else}
+      <div class="empty">
+        <i class="fas fa-filter" aria-hidden="true"></i>
+        <span>No {selectedLength}-beat sequences</span>
+      </div>
+    {/if}
   {/if}
 
   <CardDesignerContextMenuHost bind:this={contextMenuHost} />
@@ -476,18 +556,46 @@
     justify-content: center;
   }
 
+  /* Size slider */
+  .size-control {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs, 4px);
+    flex-shrink: 0;
+    margin-bottom: var(--spacing-xs, 4px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    font-size: var(--font-size-compact, 12px);
+  }
+
+  .size-control input[type="range"] {
+    width: 120px;
+    accent-color: var(--theme-accent, #6366f1);
+    cursor: pointer;
+  }
+
+  .size-control i {
+    font-size: 10px;
+  }
+
+  .size-label {
+    min-width: 36px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
   .pair {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: 24px;
   }
 
   .card-slot {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: 4px;
   }
 
   .side-label {
@@ -497,26 +605,51 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
   }
 
-  /* Both cards: explicit pixel dimensions from JS, identical */
-  .card-frame {
+  /* Playing card frame: rounded corners, shadow, like a real card */
+  .playing-card {
     overflow: hidden;
-    border-radius: 2px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-panel-bg, #18181b);
   }
 
-  /* The ChoreoCard inside fills the frame exactly */
-  .card-frame :global(.choreo-card) {
+  /* The sequence image fills the front card frame, contained */
+  .card-image-container {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ChoreoCard fills the frame; inner img uses object-fit: contain */
+  .card-image-container :global(.choreo-card) {
     width: 100%;
     height: 100%;
     border: none;
     border-radius: 0;
   }
 
-  .card-frame :global(.prop-thumbnail),
-  .card-frame :global(.prop-thumbnail img) {
+  .card-image-container :global(.prop-thumbnail) {
+    width: 100%;
+    height: 100%;
+  }
+
+  .card-image-container :global(.prop-thumbnail img) {
     width: 100%;
     height: 100%;
     object-fit: contain;
+  }
+
+  /* Back card: rendered at fixed print resolution, scaled to display size */
+  .back-card-frame {
+    overflow: hidden;
+  }
+
+  .back-card-render {
+    /* Fixed size set via inline style; scaled via transform */
   }
 
   /* Empty state */

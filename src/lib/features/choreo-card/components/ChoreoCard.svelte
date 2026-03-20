@@ -23,6 +23,7 @@
     sequence: SequenceData;
     printMode?: boolean;
     showQRCodes?: boolean;
+    showBirthday?: boolean;
     // Visibility settings
     handPointsVisible?: boolean;
     showGrid?: boolean;
@@ -38,6 +39,7 @@
     sequence,
     printMode = false,
     showQRCodes = true,
+    showBirthday = true,
     handPointsVisible = true,
     showGrid = true,
     showTKA = true,
@@ -146,6 +148,7 @@
       variant="wordcard"
       addWord={showWord}
       {includeStartPosition}
+      {showBirthday}
       visibility={visibilitySettings}
     />
     {#if hasLoopPattern}

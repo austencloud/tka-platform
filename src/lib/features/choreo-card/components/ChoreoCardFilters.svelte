@@ -1,7 +1,7 @@
 <!--
   ChoreoCardFilters.svelte - Additional filters for choreo cards
 
-  Difficulty, favorites, grid mode, and author filters.
+  Level, favorites, grid mode, and author filters.
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -9,13 +9,13 @@
   import { onMount } from "svelte";
 
   interface Props {
-    difficulty: number | null;
+    level: number | null;
     favorites: boolean;
     gridMode: string | null;
     author: string | null;
     authors: string[];
     showQRCodes: boolean;
-    onDifficultyChange: (value: number | null) => void;
+    onLevelChange: (value: number | null) => void;
     onFavoritesChange: (value: boolean) => void;
     onGridModeChange: (value: string | null) => void;
     onAuthorChange: (value: string | null) => void;
@@ -23,13 +23,13 @@
   }
 
   let {
-    difficulty,
+    level,
     favorites,
     gridMode,
     author,
     authors,
     showQRCodes,
-    onDifficultyChange,
+    onLevelChange,
     onFavoritesChange,
     onGridModeChange,
     onAuthorChange,
@@ -42,7 +42,7 @@
     hapticService = container.items.hapticFeedback;
   });
 
-  const difficultyOptions = [
+  const levelOptions = [
     { value: null, label: "All" },
     { value: 1, label: "1" },
     { value: 2, label: "2" },
@@ -57,9 +57,9 @@
     { value: "box", label: "Box" },
   ];
 
-  function handleDifficultyClick(value: number | null) {
+  function handleLevelClick(value: number | null) {
     hapticService?.trigger("selection");
-    onDifficultyChange(value);
+    onLevelChange(value);
   }
 
   function handleFavoritesClick() {
@@ -85,19 +85,19 @@
 </script>
 
 <div class="filters">
-  <!-- Difficulty -->
+  <!-- Level -->
   <section class="section">
     <h3 class="section-title">
       <i class="fas fa-signal" aria-hidden="true"></i>
-      <span>Difficulty</span>
+      <span>Level</span>
     </h3>
     <div class="filter-grid">
-      {#each difficultyOptions as option (option.value)}
+      {#each levelOptions as option (option.value)}
         <button
           class="filter-btn"
-          class:selected={difficulty === option.value}
-          onclick={() => handleDifficultyClick(option.value)}
-          aria-pressed={difficulty === option.value}
+          class:selected={level === option.value}
+          onclick={() => handleLevelClick(option.value)}
+          aria-pressed={level === option.value}
           type="button"
         >
           {option.label}

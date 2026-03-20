@@ -24,6 +24,7 @@ export interface ChoreoCardContextMenuDeps {
   showCreatorName: boolean;
   showNotes: boolean;
   showBirthday: boolean;
+  showQRCode: boolean;
 
   // Callbacks to toggle each setting
   setShowWord: (v: boolean) => void;
@@ -33,6 +34,7 @@ export interface ChoreoCardContextMenuDeps {
   setShowCreatorName: (v: boolean) => void;
   setShowNotes: (v: boolean) => void;
   setShowBirthday: (v: boolean) => void;
+  setShowQRCode: (v: boolean) => void;
 
   // Actions
   onSendTo?: () => void;
@@ -97,6 +99,14 @@ export function buildChoreoCardContextMenuItems(
       checked: deps.showBirthday,
       keepOpen: true,
       action: () => deps.setShowBirthday(!deps.showBirthday),
+    },
+    {
+      id: "toggle-qr-code",
+      label: "QR Code",
+      icon: "fa-qrcode",
+      checked: deps.showQRCode,
+      keepOpen: true,
+      action: () => deps.setShowQRCode(!deps.showQRCode),
     },
   ];
 

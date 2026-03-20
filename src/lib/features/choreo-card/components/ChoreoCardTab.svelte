@@ -21,8 +21,8 @@
   import DeckBrowser from "./DeckBrowser.svelte";
   import CardDesigner from "./CardDesigner.svelte";
 
-  // Difficulty calculator for dynamic level calculation
-  const difficultyCalculator = new SequenceDifficultyCalculator();
+  // Level calculator for dynamic level badge calculation
+  const levelCalculator = new SequenceDifficultyCalculator();
 
   // Services
   let loaderService = $state<IBrowseLoader | null>(null);
@@ -30,7 +30,7 @@
   // Storage keys (migrated from wordCard.* to choreoCard.*)
   const STORAGE_KEY_LENGTH = "choreoCard.selectedLength";
   const STORAGE_KEY_COLUMNS = "choreoCard.columnCount";
-  const STORAGE_KEY_DIFFICULTY = "choreoCard.difficulty";
+  const STORAGE_KEY_LEVEL = "choreoCard.difficulty";
   const STORAGE_KEY_FAVORITES = "choreoCard.favorites";
   const STORAGE_KEY_GRID_MODE = "choreoCard.gridMode";
   const STORAGE_KEY_AUTHOR = "choreoCard.author";
@@ -45,7 +45,7 @@
   const LEGACY_KEYS: Record<string, string> = {
     "wordCard.selectedLength": STORAGE_KEY_LENGTH,
     "wordCard.columnCount": STORAGE_KEY_COLUMNS,
-    "wordCard.difficulty": STORAGE_KEY_DIFFICULTY,
+    "wordCard.difficulty": STORAGE_KEY_LEVEL,
     "wordCard.favorites": STORAGE_KEY_FAVORITES,
     "wordCard.gridMode": STORAGE_KEY_GRID_MODE,
     "wordCard.author": STORAGE_KEY_AUTHOR,
@@ -113,7 +113,7 @@
   let error = $state<string | null>(null);
 
   // Filter state
-  let difficulty = $state<number | null>(getPersistedNullableNumber(STORAGE_KEY_DIFFICULTY));
+  let level = $state<number | null>(getPersistedNullableNumber(STORAGE_KEY_LEVEL));
   let favorites = $state<boolean>(getPersistedBoolean(STORAGE_KEY_FAVORITES, false));
   let gridMode = $state<string | null>(getPersistedString(STORAGE_KEY_GRID_MODE));
   let author = $state<string | null>(getPersistedString(STORAGE_KEY_AUTHOR));
@@ -152,13 +152,13 @@
       result = result.filter((seq) => seq.sequenceLength === selectedLength);
     }
 
-    // Difficulty filter - uses numeric level (1-5)
-    if (difficulty !== null) {
+    // Level badge filter - uses numeric level (1-5)
+    if (level !== null) {
       result = result.filter((seq) => {
-        const level = seq.level ?? (seq.steps?.length > 0
-          ? difficultyCalculator.calculateDifficultyLevel([...seq.steps])
+        const seqLevel = seq.level ?? (seq.steps?.length > 0
+          ? levelCalculator.calculateDifficultyLevel([...seq.steps])
           : undefined);
-        return level === difficulty;
+        return seqLevel === level;
       });
     }
 
@@ -268,9 +268,9 @@
   }
 
   // Filter handlers
-  function handleDifficultyChange(value: number | null) {
-    difficulty = value;
-    persist(STORAGE_KEY_DIFFICULTY, value !== null ? String(value) : null);
+  function handleLevelChange(value: number | null) {
+    level = value;
+    persist(STORAGE_KEY_LEVEL, value !== null ? String(value) : null);
   }
 
   function handleFavoritesChange(value: boolean) {
@@ -428,13 +428,13 @@
           />
           <div class="filter-divider"></div>
           <ChoreoCardFilters
-            {difficulty}
+            {level}
             {favorites}
             {gridMode}
             {author}
             {authors}
             {showQRCodes}
-            onDifficultyChange={handleDifficultyChange}
+            onLevelChange={handleLevelChange}
             onFavoritesChange={handleFavoritesChange}
             onGridModeChange={handleGridModeChange}
             onAuthorChange={handleAuthorChange}

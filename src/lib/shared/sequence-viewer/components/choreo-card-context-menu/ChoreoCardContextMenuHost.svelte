@@ -54,6 +54,7 @@
         showCreatorName: exportOptions.imageShowCreatorName,
         showNotes: exportOptions.imageShowNotes,
         showBirthday: imageComposition.showBirthday, // Always from composition manager
+        showQRCode: exportOptions.imageShowQRCode,
 
         setShowWord: (v) => exportOptions.setImageShowWord(v),
         setShowStepNumbers: (v) => exportOptions.setImageShowStepNumbers(v),
@@ -62,6 +63,7 @@
         setShowCreatorName: (v) => exportOptions.setImageShowCreatorName(v),
         setShowNotes: (v) => exportOptions.setImageShowNotes(v),
         setShowBirthday: (v) => imageComposition.setShowBirthday(v),
+        setShowQRCode: (v) => exportOptions.setImageShowQRCode(v),
 
         onSendTo: onSendTo ? () => { closeContextMenu(); onSendTo(); } : undefined,
       });
@@ -78,6 +80,7 @@
         showCreatorName: comp.showCreatorName,
         showNotes: comp.showNotes,
         showBirthday: comp.showBirthday,
+        showQRCode: comp.showQRCode,
 
         setShowWord: (v) => comp.setAddWord(v),
         setShowStepNumbers: (v) => comp.setAddBeatNumbers(v),
@@ -86,6 +89,7 @@
         setShowCreatorName: (v) => comp.setShowCreatorName(v),
         setShowNotes: (v) => comp.setShowNotes(v),
         setShowBirthday: (v) => comp.setShowBirthday(v),
+        setShowQRCode: (v) => comp.setShowQRCode(v),
 
         onSendTo: onSendTo ? () => { closeContextMenu(); onSendTo(); } : undefined,
       });
