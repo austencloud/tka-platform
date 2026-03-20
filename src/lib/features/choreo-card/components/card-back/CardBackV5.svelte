@@ -183,7 +183,7 @@
     </div>
 
     <!-- URL: pinned to bottom center -->
-    <div class="bottom-url">TKAflowarts.com</div>
+    <div class="bottom-url">tkaflowarts.com</div>
   </div>
 </div>
 
