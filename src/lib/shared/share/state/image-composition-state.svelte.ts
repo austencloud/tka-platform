@@ -32,6 +32,9 @@ export interface ImageCompositionSettings {
   // QR code in empty cell under start position
   showQRCode: boolean;
 
+  // Start position layout: "row" = top row, "column" = left column
+  startPositionLayout: "row" | "column";
+
   // Backwards compatibility - computed from granular controls (always defined in getSettings())
   addUserInfo: boolean; // True if any footer element is shown
 }
@@ -54,6 +57,9 @@ const DEFAULT_SETTINGS: ImageCompositionSettings = {
 
   // QR code - shown by default in the empty cell under start position
   showQRCode: true,
+
+  // Start position layout - default to row (new behavior)
+  startPositionLayout: "row" as const,
 
   // Computed: true when any footer element is shown
   addUserInfo: true,
@@ -216,6 +222,10 @@ class ImageCompositionStateManager {
     return this.settings.showQRCode;
   }
 
+  get startPositionLayout(): "row" | "column" {
+    return this.settings.startPositionLayout;
+  }
+
   // Get all settings (for passing to share service)
   getSettings(): ImageCompositionSettings {
     return {
@@ -283,6 +293,12 @@ class ImageCompositionStateManager {
 
   setShowQRCode(value: boolean): void {
     this.settings.showQRCode = value;
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  setStartPositionLayout(value: "row" | "column"): void {
+    this.settings.startPositionLayout = value;
     this.saveToStorage();
     this.notifyObservers();
   }

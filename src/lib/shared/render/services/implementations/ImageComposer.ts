@@ -235,7 +235,8 @@ export class ImageComposer implements IImageComposer {
     } else {
       [columns, rows] = this.layoutService.calculateLayout(
         stepCount,
-        options.includeStartPosition ?? false
+        options.includeStartPosition ?? false,
+        options.startPositionLayout ?? "row"
       );
     }
 
@@ -359,15 +360,17 @@ export class ImageComposer implements IImageComposer {
     }
 
     // Step 5: Render all steps in the grid
-    // Steps use full width; when start position exists, steps begin at row 1
-    const startRow = options.includeStartPosition ? 1 : 0;
-    const stepsPerRow = columns; // Full width — no column reserved for start
+    // Layout mode determines whether start position uses a row or column offset
+    const layoutMode = options.startPositionLayout ?? "row";
+    const useColumnMode = layoutMode === "column" && options.includeStartPosition;
+    const startRow = (!useColumnMode && options.includeStartPosition) ? 1 : 0;
+    const startColumn = useColumnMode ? 1 : 0;
+    const stepsPerRow = columns - startColumn;
 
     for (let i = 0; i < sequence.steps.length; i++) {
       const beat = sequence.steps[i];
       if (!beat) continue; // Skip if beat is undefined
-      // Steps fill the full row width, offset down by one row when start position is present
-      const col = i % stepsPerRow;
+      const col = startColumn + (i % stepsPerRow);
       const row = startRow + Math.floor(i / stepsPerRow);
       // Only pass beat number if addStepNumbers is true
       const stepNumber = options.addStepNumbers ? i + 1 : undefined;
@@ -914,12 +917,15 @@ export class ImageComposer implements IImageComposer {
       occupied.add("0,0");
     }
 
-    // Steps use full width, offset by start row (same logic as rendering)
-    const startRow = options.includeStartPosition ? 1 : 0;
-    const stepsPerRow = columns;
+    // Match the same layout logic as the rendering loop
+    const layoutMode = options.startPositionLayout ?? "row";
+    const useColumnMode = layoutMode === "column" && !!options.includeStartPosition;
+    const startRow = (!useColumnMode && options.includeStartPosition) ? 1 : 0;
+    const startColumn = useColumnMode ? 1 : 0;
+    const stepsPerRow = columns - startColumn;
 
     for (let i = 0; i < (sequence.steps.length || 0); i++) {
-      const col = i % stepsPerRow;
+      const col = startColumn + (i % stepsPerRow);
       const row = startRow + Math.floor(i / stepsPerRow);
       occupied.add(`${col},${row}`);
     }
@@ -940,8 +946,12 @@ export class ImageComposer implements IImageComposer {
     sequence: SequenceData,
     options: Partial<SequenceExportOptions>
   ): { col: number; row: number } | null {
-    // When start position is a top row, QR code goes in the rightmost cell of row 0
-    if (options.includeStartPosition) {
+    const layoutMode = options.startPositionLayout ?? "row";
+    const useColumnMode = layoutMode === "column" && !!options.includeStartPosition;
+
+    // Row mode: QR in rightmost cell of start row (row 0)
+    // Column mode: scan for empty cell (QR lands in column 0 under start position)
+    if (options.includeStartPosition && !useColumnMode) {
       return { col: columns - 1, row: 0 };
     }
 
@@ -1365,7 +1375,8 @@ export class ImageComposer implements IImageComposer {
     const stepCount = sequence.steps?.length ?? 0;
     const layout = this.layoutService.calculateLayout(
       stepCount,
-      options.includeStartPosition ?? false
+      options.includeStartPosition ?? false,
+      options.startPositionLayout ?? "row"
     );
     const [columns, rows] = layout;
     const baseBeatSize = options.stepSize || 120;

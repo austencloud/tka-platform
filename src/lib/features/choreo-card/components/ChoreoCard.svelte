@@ -30,6 +30,8 @@
     showTKA?: boolean;
     showWord?: boolean;
     includeStartPosition?: boolean;
+    /** "row" = start position as top row, "column" = start position as left column */
+    startPositionLayout?: "row" | "column";
     /** Render as hand path card: HAND props, float arrows, no TKA/reversals */
     handPathMode?: boolean;
     /** Use 5:7 playing card layout for physical card export (different from printMode) */
@@ -48,6 +50,7 @@
     showTKA = true,
     showWord = true,
     includeStartPosition = true,
+    startPositionLayout = "row",
     handPathMode = false,
     cardMode = false,
     onSelect,
@@ -167,6 +170,7 @@
       addWord={showWord}
       addDifficultyLevel={handPathMode ? false : undefined}
       {includeStartPosition}
+      {startPositionLayout}
       {showBirthday}
       visibility={visibilitySettings}
       {cardMode}
