@@ -26,6 +26,13 @@ export interface SequenceAnatomy {
   turns: Set<string>;           // "0" | "0.5" | "1" | "1.5" | "2" | "2.5" | "3"
 }
 
+export interface StartPositionInfo {
+  group: string | null;
+  blueLocation: string | null;
+  redLocation: string | null;
+  gridMode: "box" | "diamond" | "mixed";
+}
+
 export interface LevelBadgeData {
   number: number;
   name: string;
@@ -47,15 +54,15 @@ export interface CardBackData {
   sliceName: string | null;
   sliceDetail: string | null;
   isRotated: boolean;
-  /** Starting position group: "alpha", "beta", "gamma", etc. */
-  startPositionGroup: string | null;
+  /** Starting position info: group, hand locations, and grid mode */
+  startPosition: StartPositionInfo | null;
 }
 
 // Level badge definitions sourced from the canonical difficulty-styles.ts
 const LEVEL_NAMES: Record<number, { name: string; detail: string }> = {
-  1: { name: "Foundation", detail: "No turns" },
-  2: { name: "Turning", detail: "Whole turns" },
-  3: { name: "Precision", detail: "Half turns and float" },
+  1: { name: "Base Motions", detail: "" },
+  2: { name: "Whole Turns", detail: "" },
+  3: { name: "Half Turns, Floats", detail: "" },
 };
 
 const LEVEL_BADGES: Record<number, Omit<LevelBadgeData, "reason">> = Object.fromEntries(
@@ -246,6 +253,73 @@ function deriveGroupFromLocations(blue: string, red: string): string {
   return "gamma";
 }
 
+const CARDINAL = new Set(["n", "s", "e", "w"]);
+const INTERCARDINAL = new Set(["ne", "se", "sw", "nw"]);
+
+function deriveGridMode(blue: string | null, red: string | null): "box" | "diamond" | "mixed" {
+  if (!blue || !red) return "box";
+  const blueIsCardinal = CARDINAL.has(blue);
+  const redIsCardinal = CARDINAL.has(red);
+  const blueIsIntercardinal = INTERCARDINAL.has(blue);
+  const redIsIntercardinal = INTERCARDINAL.has(red);
+
+  if (blueIsCardinal && redIsCardinal) return "box";
+  if (blueIsIntercardinal && redIsIntercardinal) return "diamond";
+  return "mixed";
+}
+
+export function deriveStartPositionInfo(locations: {
+  blueLocation: string | null;
+  redLocation: string | null;
+}): StartPositionInfo {
+  const { blueLocation, redLocation } = locations;
+
+  const group =
+    blueLocation && redLocation
+      ? deriveGroupFromLocations(blueLocation, redLocation)
+      : null;
+
+  return {
+    group,
+    blueLocation,
+    redLocation,
+    gridMode: deriveGridMode(blueLocation, redLocation),
+  };
+}
+
+/**
+ * Derive full starting position info from a sequence, including
+ * hand locations and grid mode for the mini-grid display.
+ */
+function deriveStartPosition(sequence: SequenceData): StartPositionInfo | null {
+  const explicitGroup = sequence.startingPositionGroup ?? null;
+
+  let blueLocation: string | null = null;
+  let redLocation: string | null = null;
+
+  const sp = sequence.startPosition ?? (sequence as any).startingPosition;
+  if (sp?.motions) {
+    blueLocation = (sp.motions as any).blue?.endLocation ?? null;
+    redLocation = (sp.motions as any).red?.endLocation ?? null;
+  }
+
+  if (!blueLocation || !redLocation) {
+    const step1 = sequence.steps?.[0];
+    blueLocation = blueLocation ?? step1?.motions?.blue?.startLocation ?? null;
+    redLocation = redLocation ?? step1?.motions?.red?.startLocation ?? null;
+  }
+
+  if (!blueLocation && !redLocation && !explicitGroup) return null;
+
+  const info = deriveStartPositionInfo({ blueLocation, redLocation });
+
+  if (explicitGroup) {
+    return { ...info, group: explicitGroup };
+  }
+
+  return info;
+}
+
 export function deriveCardBackData(
   sequence: SequenceData,
   converter: ISequenceToEntryConverter | null,
@@ -291,6 +365,6 @@ export function deriveCardBackData(
     isRotated: sequence.loopType
       ? ROTATED_LOOP_TYPES.has(sequence.loopType)
       : false,
-    startPositionGroup: deriveStartPositionGroup(sequence),
+    startPosition: deriveStartPosition(sequence),
   };
 }
