@@ -12,23 +12,13 @@
 
   const theme = $derived(getCardBackThemeVisuals(settingsService.settings.backgroundType));
 
-  // Exact level gradients from card-back-data.ts LEVEL_BADGES
+  import { DIFFICULTY_LEVELS } from "$lib/shared/config/difficulty-styles";
+
+  // Use the canonical level styles from difficulty-styles.ts
   const LEVEL_GRADIENTS = [
-    {
-      num: 1, label: "No turns",
-      gradient: `radial-gradient(ellipse at top left, rgb(186,230,253) 0%, rgb(125,211,252) 30%, rgb(56,189,248) 70%, rgb(14,165,233) 100%)`,
-      textColor: "black",
-    },
-    {
-      num: 2, label: "Whole turns",
-      gradient: `radial-gradient(ellipse at top left, rgb(226,232,240) 0%, rgb(148,163,184) 30%, rgb(100,116,139) 70%, rgb(71,85,105) 100%)`,
-      textColor: "black",
-    },
-    {
-      num: 3, label: "Half turns, float",
-      gradient: `radial-gradient(ellipse at top left, rgb(254,240,138) 0%, rgb(253,224,71) 20%, rgb(250,204,21) 40%, rgb(234,179,8) 60%, rgb(202,138,4) 80%, rgb(161,98,7) 100%)`,
-      textColor: "black",
-    },
+    { num: 1, label: "No turns", gradient: DIFFICULTY_LEVELS[1]!.cssBg, textColor: DIFFICULTY_LEVELS[1]!.text },
+    { num: 2, label: "Whole turns", gradient: DIFFICULTY_LEVELS[2]!.cssBg, textColor: DIFFICULTY_LEVELS[2]!.text },
+    { num: 3, label: "Half turns, float", gradient: DIFFICULTY_LEVELS[3]!.cssBg, textColor: DIFFICULTY_LEVELS[3]!.text },
   ];
 </script>
 
