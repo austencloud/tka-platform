@@ -1224,6 +1224,7 @@ export class ImageComposer implements IImageComposer {
       themeMode,
       bluePropType: visibilitySettings.bluePropType,
       redPropType: visibilitySettings.redPropType,
+      handPathMode: visibilitySettings.handPathMode ?? false,
     });
 
     // Build layer render options
