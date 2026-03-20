@@ -69,13 +69,19 @@
     />
   {/each}
 
-  {#if info.blueLocation}
+  {#if info.blueLocation && info.redLocation && info.blueLocation === info.redLocation}
+    <!-- Beta: both hands at same position — render purple dot -->
     {@const bp = pos(info.blueLocation)}
-    <circle cx={bp.x} cy={bp.y} r={dotR} fill="#2E86DE" />
-  {/if}
+    <circle cx={bp.x} cy={bp.y} r={dotR} fill="#9B59B6" />
+  {:else}
+    {#if info.blueLocation}
+      {@const bp = pos(info.blueLocation)}
+      <circle cx={bp.x} cy={bp.y} r={dotR} fill="#2E86DE" />
+    {/if}
 
-  {#if info.redLocation}
-    {@const rp = pos(info.redLocation)}
-    <circle cx={rp.x} cy={rp.y} r={dotR} fill="#E74C3C" />
+    {#if info.redLocation}
+      {@const rp = pos(info.redLocation)}
+      <circle cx={rp.x} cy={rp.y} r={dotR} fill="#E74C3C" />
+    {/if}
   {/if}
 </svg>
