@@ -162,10 +162,10 @@
     </div>
   {/if}
 
-  <!-- Idle only (no prior content to persist): show placeholder -->
+  <!-- Idle: empty placeholder preserves bar height -->
   {#if showPlaceholder}
     <div class="bar-content bar-placeholder">
-      <span class="bar-label muted">Tap a grid point to begin</span>
+      <span class="bar-label muted">&nbsp;</span>
     </div>
   {/if}
 </div>

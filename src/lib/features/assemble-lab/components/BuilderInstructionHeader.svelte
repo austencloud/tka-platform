@@ -158,9 +158,10 @@
     align-items: center;
     justify-content: center;
     gap: 10px;
-    font-size: 20px;
-    font-weight: 700;
+    font-size: clamp(1rem, 2.5vmin, 1.25rem);
+    font-weight: 500;
     color: var(--theme-text, #fff);
+    letter-spacing: 0.02em;
   }
 
   .hand-dot-glow {
