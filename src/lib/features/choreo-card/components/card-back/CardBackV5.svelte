@@ -253,7 +253,7 @@
   }
 
   .corner-position-img {
-    width: 40px;
+    width: 30px;
     height: auto;
     filter: invert(0.9);
     opacity: 0.7;
