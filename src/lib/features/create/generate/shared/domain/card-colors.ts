@@ -24,6 +24,7 @@ export interface CardColors {
   duration: CardColorSet;
   wordInput: CardColorSet;
   customize: CardColorSet;
+  preset: CardColorSet;
 }
 
 /**
@@ -73,6 +74,10 @@ const DEFAULT_COLORS: CardColors = {
   customize: {
     color: "linear-gradient(135deg, #06b6d4 0%, #0891b2 50%, #0e7490 100%)",
     shadowColor: "190deg 75% 50%",
+  },
+  preset: {
+    color: "linear-gradient(135deg, #e11d48 0%, #be123c 50%, #9f1239 100%)",
+    shadowColor: "350deg 75% 50%",
   },
 };
 
@@ -135,6 +140,10 @@ const BRIGHT_BACKGROUND_COLORS: CardColors = {
     // Deep cyan
     color: "linear-gradient(135deg, #0891b2 0%, #0e7490 50%, #155e75 100%)",
     shadowColor: "195deg 80% 40%",
+  },
+  preset: {
+    color: "linear-gradient(135deg, #be123c 0%, #9f1239 50%, #881337 100%)",
+    shadowColor: "350deg 80% 35%",
   },
 };
 

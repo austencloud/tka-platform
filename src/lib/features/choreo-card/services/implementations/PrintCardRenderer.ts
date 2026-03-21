@@ -84,12 +84,16 @@ export class PrintCardRenderer implements IPrintCardRenderer {
       notes: "",
       loopType: sequence.loopType ?? undefined,
       showLoopGlyph: !!sequence.loopType,
+      ...(options.bluePropType && { bluePropTypeOverride: options.bluePropType }),
+      ...(options.redPropType && { redPropTypeOverride: options.redPropType }),
       visibilityOverrides: {
         showTKA: options.showTKA,
         showGrid: options.showGrid,
         printMode: true,
         darkMode: false,
         handPointVisibility: options.handPointsVisible ? "all" : "none",
+        ...(options.bluePropType && { bluePropType: options.bluePropType }),
+        ...(options.redPropType && { redPropType: options.redPropType }),
       },
     });
 

@@ -15,6 +15,8 @@
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuState, ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
 
@@ -47,8 +49,28 @@
       includeStartPosition,
       handPointsVisible,
       theme: selectedTheme,
+      bluePropType: settingsService.settings.bluePropType as PropType,
+      redPropType: settingsService.settings.redPropType as PropType,
     };
   }
+
+  // Track prop type for reactive re-rendering
+  let lastBlueProp = $state(settingsService.settings.bluePropType);
+  let lastRedProp = $state(settingsService.settings.redPropType);
+
+  // Auto-rerender all cards when prop type changes
+  $effect(() => {
+    const currentBlue = settingsService.settings.bluePropType;
+    const currentRed = settingsService.settings.redPropType;
+    if (
+      (currentBlue !== lastBlueProp || currentRed !== lastRedProp) &&
+      printRenderer && renderedPairs.length > 0
+    ) {
+      lastBlueProp = currentBlue;
+      lastRedProp = currentRed;
+      renderAllCards();
+    }
+  });
 
   // ── Render state ────────────────────────────────────────────────────
   // Store data URL strings (not canvases) so Svelte can detect changes for <img> reactivity
@@ -1070,7 +1092,7 @@
 
   .pair-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: 16px;
   }
 
