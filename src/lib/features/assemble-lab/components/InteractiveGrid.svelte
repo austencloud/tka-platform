@@ -42,7 +42,7 @@
   const ghostAnimator = new SvgPropAnimator();
 
   // Grid hit targets derived from current grid mode
-  const hitTargets = $derived(calculator.getHitTargets(builderState.gridMode));
+  const hitTargets = $derived(calculator.getHitTargets(builderState.gridMode, builderState.showCenter));
   const hitRadius = calculator.getHitTargetRadius();
 
   // Fallback circle radius (shown while SVG loads)
