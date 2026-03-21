@@ -291,8 +291,8 @@ Description: ${typeInfo.description}`;
 				alpha: 'Hands at opposite grid points (180° apart)',
 				beta: 'Hands at the same grid point',
 				gamma: 'Hands form a right angle (90°, adjacent points)',
-				zeta: 'Hands form an obtuse angle (Level 4, skewed)',
-				eta: 'Hands form an acute angle (Level 4, skewed)'
+				zeta: 'Hands form an obtuse angle (Level 5, skewed)',
+				eta: 'Hands form an acute angle (Level 5, skewed)'
 			};
 			return positions[pos] || `Position "${pos}" not recognized.`;
 		}

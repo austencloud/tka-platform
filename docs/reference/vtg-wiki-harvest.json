@@ -291,7 +291,7 @@
         {"heading": "Turns", "keyContent": "One turn = 180deg additional rotation. 0 turns pro = isolation. 1 turn anti = basic antispin petal."},
         {"heading": "Letter types", "keyContent": "6 types: Type 1 (dual-shift, A-V), Type 2 (shift, W-Z+Greek), Type 3 (cross-shift, dash suffix), Type 4 (dash), Type 5 (dual-dash), Type 6 (static)."},
         {"heading": "LOOPs", "keyContent": "Circular sequences returning to start. 6 transformations: rotated, mirrored, flipped, swapped, inverted, rewound. Can be combined."},
-        {"heading": "Levels", "keyContent": "L1: 0 turns, diamond. L2: whole turns. L3: half turns + float. L4: skewed grid. L5: centric. L6: conjoined grids. L7: interradials (8 orientations). L8: atomics (3D). L9: Rubik's cube."},
+        {"heading": "Levels", "keyContent": "L1: 0 turns, diamond. L2: whole turns. L3: half turns + float. L4: centric. L5: skewed grid. L6: interradials (8 orientations). L7: conjoined grids. L8: atomics (3D). L9: Rubik's cube."},
         {"heading": "Reversals", "keyContent": "Hand reversal (= mixed type 1), Prop reversal (= mixed type 2), Full reversal (= hard transition)."},
         {"heading": "Relationship to other frameworks", "keyContent": "Preserves VTG timing/direction. Alpha=split, beta=together. VTG is ground-referenced; TKA is center-referenced. LOOPs relate to CAPs. Grid parallels 9-Square."}
       ],

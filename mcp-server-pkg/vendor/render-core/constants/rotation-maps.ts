@@ -103,7 +103,7 @@ export const DIAMOND_PROP_ANGLES: Record<Orientation, Record<GridLocation, numbe
     nw: 0,
     c: 0,
   },
-  // Centric orientations (Level 5 - prop at center, pointing toward compass direction)
+  // Centric orientations (Level 4 - prop at center, pointing toward compass direction)
   // SVG convention: 0=east, 90=south, 180=west, 270=north (clockwise)
   centerN: { n: 0, s: 0, w: 0, e: 0, ne: 0, se: 0, sw: 0, nw: 0, c: 270 },
   centerNE: { n: 0, s: 0, w: 0, e: 0, ne: 0, se: 0, sw: 0, nw: 0, c: 315 },
@@ -208,7 +208,7 @@ export const BOX_PROP_ANGLES: Record<Orientation, Record<GridLocation, number>> 
     w: 0,
     c: 0,
   },
-  // Centric orientations (Level 5 - prop at center, pointing toward compass direction)
+  // Centric orientations (Level 4 - prop at center, pointing toward compass direction)
   // SVG convention: 0=east, 90=south, 180=west, 270=north (clockwise)
   centerN: { n: 0, s: 0, w: 0, e: 0, ne: 0, se: 0, sw: 0, nw: 0, c: 270 },
   centerNE: { n: 0, s: 0, w: 0, e: 0, ne: 0, se: 0, sw: 0, nw: 0, c: 315 },
