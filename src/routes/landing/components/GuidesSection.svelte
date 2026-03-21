@@ -2,16 +2,16 @@
   const guides = [
     {
       level: 1,
-      title: "Positions & Letters",
+      title: "Base Motions",
       description:
-        "Zero turns. The grid, all 6 letter types, basic words.",
+        "The grid, all 6 letter types, basic words. No turns.",
       image: "/images/level_images/level_1.png",
       href: "/guides/level-1.pdf",
       accent: "#4CAF50",
     },
     {
       level: 2,
-      title: "Turns",
+      title: "Whole Turns",
       description:
         "Whole turns. Shifts get rotation, combos get harder.",
       image: "/images/level_images/level_2.png",
@@ -20,9 +20,9 @@
     },
     {
       level: 3,
-      title: "Half Turns & Float",
+      title: "Half Turns, Floats",
       description:
-        "Half turns, float state. The full vocabulary.",
+        "Half turns, floats. The full vocabulary.",
       image: "/images/level_images/level_3.png",
       href: "/guides/level-3.pdf",
       accent: "#9C27B0",

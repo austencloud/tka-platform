@@ -176,7 +176,7 @@
         <div class="card">
           {#if selectedSequence.steps && selectedSequence.steps.length > 0}
             <div class="choreo-preview">
-              <PropAwareThumbnail sequence={selectedSequence} variant="gallery" eager suppressContextMenu />
+              <PropAwareThumbnail sequence={selectedSequence} variant="gallery" eager />
             </div>
           {/if}
           <div class="card-footer">

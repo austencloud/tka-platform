@@ -42,7 +42,9 @@ export function initPostHog(): void {
     capture_pageview: true,
     capture_pageleave: true,
 
-    disable_session_recording: false,
+    // Session recording sends large payloads that trigger 413 errors on
+    // localhost (CORS + Content Too Large). Only record in production.
+    disable_session_recording: import.meta.env.DEV,
 
     // Autocapture clicks, form submissions, etc.
     autocapture: true,

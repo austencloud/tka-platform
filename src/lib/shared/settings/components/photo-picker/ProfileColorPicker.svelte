@@ -38,7 +38,8 @@
   ];
 
   let showCustomInput = $state(false);
-  let customHex = $state(selectedColor);
+  let customHex = $state("");
+  $effect(() => { customHex = selectedColor; });
 
   // Whether the current selection matches a preset
   const isPreset = $derived(

@@ -112,7 +112,7 @@
   {/if}
 
   <!-- Scrollable family grid — clicking the dimmed backdrop collapses variants -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
   <div
     class="grid-scroll themed-scrollbar"
     class:dimmed={expandedFamily !== null}
@@ -121,6 +121,12 @@
         collapseVariants();
       }
     }}
+    onkeydown={(e) => {
+      if (expandedFamily !== null && e.key === "Escape") {
+        collapseVariants();
+      }
+    }}
+    role="presentation"
   >
     <div class="grid-content">
       {#each PROP_FAMILIES as section, i}

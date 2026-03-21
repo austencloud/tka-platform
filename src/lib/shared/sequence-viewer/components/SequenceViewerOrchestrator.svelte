@@ -370,9 +370,14 @@
     );
   });
 
-  const activeBlueProp = $derived(presentation.bluePropType);
-  const activeRedProp = $derived(presentation.redPropType);
-  const activeCatDog = $derived(presentation.catDogMode);
+  // Hand path sequences always use HAND prop type — they represent pure spatial
+  // paths, not prop-based sequences. Detected by metadata.handPathId set in
+  // DeckFamilySection when building synthetic hand path sequences.
+  const isHandPath = $derived(Boolean(sequence?.metadata?.handPathId));
+
+  const activeBlueProp = $derived(isHandPath ? PropType.HAND : presentation.bluePropType);
+  const activeRedProp = $derived(isHandPath ? PropType.HAND : presentation.redPropType);
+  const activeCatDog = $derived(isHandPath ? false : presentation.catDogMode);
 
   // Toggle between creator-intent and viewer-settings prop contexts
   function togglePropContext() {
@@ -1587,12 +1592,13 @@
     splitPaneImageComposition: {
       showWord: imgShowWord,
       showStepNumbers: imgShowStepNumbers,
-      showDifficulty: imgShowDifficulty,
+      showDifficulty: isHandPath ? false : imgShowDifficulty,
       showStartPos: imgShowStartPos,
       showCreatorName: imgShowCreatorName,
       showNotes: imgShowNotes,
       showBirthday: imgShowBirthday,
       showQRCode: imgShowQRCode,
+      showLoopGlyph: !isHandPath,
       darkMode: imgDarkMode,
       columnCount: imgColumnCount,
       forceContain: false,

@@ -473,7 +473,7 @@
       return 5;
     }
     // Use the layout service directly for an instant column count
-    const [cols] = layoutCalculator.calculateLayout(stepCount, includeStartPosition);
+    const [cols] = layoutCalculator.calculateLayout(stepCount, includeStartPosition, "column");
     return cols;
   });
 
@@ -506,7 +506,7 @@
       return 1 + Math.ceil(remainingSteps / stepsPerRow);
     }
 
-    const [, rws] = layoutCalculator.calculateLayout(stepCount, includeStartPosition);
+    const [, rws] = layoutCalculator.calculateLayout(stepCount, includeStartPosition, "column");
     return rws;
   });
 
@@ -802,8 +802,11 @@
       hasMixedDurations = mixed;
 
       if (columnCount !== null && columnCount > 0) {
-        // Manual column override (e.g., export mode)
-        cols = columnCount;
+        // Manual column override (e.g., export mode).
+        // columnCount is the number of *beat* columns (see effectiveColumns comment).
+        // Convert to total columns (including start position) to match the
+        // convention used by the layout table and isLongSequence paths.
+        cols = includeStartPosition ? columnCount + 1 : columnCount;
         const stepsPerRow = includeStartPosition ? cols - 1 : cols;
         const firstRowSteps = Math.min(stepsPerRow, stepCount);
         const remainingSteps = stepCount - firstRowSteps;
@@ -816,7 +819,7 @@
         const remainingSteps = stepCount - firstRowSteps;
         rws = 1 + Math.ceil(remainingSteps / stepsPerRow);
       } else {
-        [cols, rws] = layoutService.calculateLayout(stepCount, includeStartPosition);
+        [cols, rws] = layoutService.calculateLayout(stepCount, includeStartPosition, "column");
       }
 
       columns = cols;
