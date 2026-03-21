@@ -138,9 +138,9 @@
   });
 
   const difficultyDescriptions: Record<number, string> = {
-    1: "Hands move between positions. Props don't spin.",
-    2: "Props spin in whole turns. Orientations point in or out.",
-    3: "Props spin in half turns. Orientations can face any direction.",
+    1: "Base Motions",
+    2: "Whole Turns",
+    3: "Half Turns, Floats",
   };
 
   // Convert selectedStartPosition (PictographData) to StepData format for StepGrid
@@ -275,7 +275,7 @@
     onClose={() => (showDifficultyInfo = false)}
   />
   <div class="info-modal-body">
-    <p>TKA sequences are classified by the complexity of their turns and orientations.</p>
+    <p>Each level introduces new concepts.</p>
     <div class="level-list">
       {#each [1, 2, 3] as level}
         {@const style = DIFFICULTY_LEVELS[level] ?? DEFAULT_DIFFICULTY_STYLE}

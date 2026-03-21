@@ -108,8 +108,12 @@ export function calculateGridLayout(
   if (sizing.manualColumnCount !== null && sizing.manualColumnCount > 0) {
     // Manual override: manualColumnCount is the number of *beat* columns,
     // not including the start position column (added separately as totalColumns).
-    maxColumns = sizing.manualColumnCount;
-    columns = Math.min(stepCount, sizing.manualColumnCount);
+    // Cap to the mobile column limit (4) on narrow screens so LOOP-aligned
+    // column counts don't spill off the edge of small devices.
+    const mobileCap = isNarrowContainer ? 4 : 8;
+    const cappedManual = Math.min(sizing.manualColumnCount, mobileCap);
+    maxColumns = cappedManual;
+    columns = Math.min(stepCount, cappedManual);
   } else {
     // Automatic: determine max columns based on container width
     maxColumns = getMaxColumnsForBeatCount(

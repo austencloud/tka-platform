@@ -183,7 +183,11 @@
 
   .step-grid {
     display: grid;
-    grid-template-columns: repeat(var(--grid-cols), var(--cell-size));
+    /* Use minmax so columns shrink to fit container instead of overflowing.
+       This prevents the grid from spilling off-screen when the calculated
+       cell size is larger than what fits (e.g., initial render before
+       container width is measured). */
+    grid-template-columns: repeat(var(--grid-cols), minmax(0, var(--cell-size)));
     grid-auto-rows: var(--cell-size);
     gap: 1px;
     max-width: 100%;

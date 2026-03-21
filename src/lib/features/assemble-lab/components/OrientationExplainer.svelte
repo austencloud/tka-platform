@@ -1,7 +1,7 @@
 <!--
   OrientationExplainer.svelte - Bottom sheet explaining the orientation concept.
-  Interactive SVG demo with a staff prop (including gold reference-end markers)
-  that rotates to show each orientation relative to center.
+  Interactive SVG demo using the actual staff.svg prop shape, positioned at the
+  south hand point with correct proportional distance from center (950x950 scene).
 -->
 <script lang="ts">
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
@@ -19,14 +19,15 @@
   ] as const;
 
   // Rotation angle for the demo prop at "south" position.
-  // "In" points toward center (up), others rotate from there.
+  // Values match DIAMOND_PROP_ANGLES from rotation-maps.ts for location "s".
+  // CSS rotate: 0°=right, 90°=down, 180°=left, -90°=up.
   const demoRotation = $derived.by(() => {
     switch (demoOrientation) {
-      case Orientation.IN: return 0;
-      case Orientation.OUT: return 180;
-      case Orientation.CLOCK: return 90;
-      case Orientation.COUNTER: return -90;
-      default: return 0;
+      case Orientation.IN: return -90;      // reference end points UP (toward center)
+      case Orientation.OUT: return 90;      // reference end points DOWN (away from center)
+      case Orientation.CLOCK: return 180;   // reference end points LEFT (clockwise tangent)
+      case Orientation.COUNTER: return 0;   // reference end points RIGHT (counter-clockwise tangent)
+      default: return -90;
     }
   });
 
@@ -47,36 +48,41 @@
     <h3 class="explainer-title">Orientation</h3>
     <p class="explainer-desc">
       Orientation is which direction the prop faces relative to the center of the grid.
-      The gold bands mark the reference end. Tap each option to see the prop rotate.
+      The crossbar marks the thumb (reference) end. Tap each option to see the prop rotate.
     </p>
 
-    <!-- Interactive demo -->
+    <!-- Interactive demo: uses actual staff.svg path at real grid proportions.
+         Coordinates from the 950x950 pictograph scene:
+         - Center: (475, 475)
+         - South hand point: (475, 618.1)
+         - Staff viewBox: 0 0 252.8 77.8, center at (126.4, 38.9)
+         - Staff origin: hand point minus staff center = (348.6, 579.2) -->
     <div class="demo-area">
-      <svg viewBox="0 0 200 180" class="demo-svg">
+      <svg viewBox="300 410 350 360" class="demo-svg">
         <!-- Center dot + label -->
-        <circle cx="100" cy="45" r="4" fill="rgba(255,255,255,0.3)" />
-        <text x="100" y="36" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="11">
+        <circle cx="475" cy="475" r="10" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
+        <circle cx="475" cy="475" r="3" fill="rgba(255,255,255,0.7)" />
+        <text x="475" y="455" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="18" font-weight="600">
           center
         </text>
 
-        <!-- Dashed line from center to grid point -->
+        <!-- Dashed line from center to hand point -->
         <line
-          x1="100" y1="50" x2="100" y2="115"
+          x1="475" y1="482" x2="475" y2="610"
           stroke="rgba(255,255,255,0.08)"
-          stroke-width="1"
-          stroke-dasharray="4 4"
+          stroke-width="1.5"
+          stroke-dasharray="6 6"
         />
 
-        <!-- Grid point dot -->
-        <circle cx="100" cy="125" r="4" fill="rgba(255,255,255,0.35)" />
+        <!-- Hand point dot (south position) -->
+        <circle cx="475" cy="618.1" r="6" fill="rgba(255,255,255,0.35)" />
 
-        <!-- Staff prop with gold reference bands -->
-        <g class="demo-prop" style="transform-origin: 100px 125px; transform: rotate({demoRotation}deg)">
-          <!-- Staff body -->
-          <rect x="64" y="121" width="72" height="8" rx="4" fill="#2e3192" />
-          <!-- Gold reference-end double bands (on one end) -->
-          <rect x="123" y="119" width="2.5" height="12" rx="1.25" fill="#c9ac68" />
-          <rect x="128" y="119" width="2.5" height="12" rx="1.25" fill="#c9ac68" />
+        <!-- Staff prop: actual staff.svg path from static/images/props/pictograph/staff.svg.
+             The T-shaped crossbar at the right end is the thumb reference indicator. -->
+        <g class="demo-prop" style="transform-origin: 475px 618.1px; transform: rotate({demoRotation}deg)">
+          <g transform="translate(348.6, 579.2)">
+            <path d="M251.4 67.7V10.1c0-4.8-4.1-8.7-9.1-8.7s-9.1 3.9-9.1 8.7v19.2H10.3c-4.9 0-8.9 3.8-8.9 8.5V41c0 4.6 4 8.5 8.9 8.5h222.9v18.2c0 4.8 4.1 8.7 9.1 8.7s9.1-3.9 9.1-8.7z" fill="#2e3192"/>
+          </g>
         </g>
       </svg>
     </div>
@@ -135,7 +141,7 @@
 
   .demo-area {
     width: 100%;
-    max-width: 200px;
+    max-width: 240px;
   }
 
   .demo-svg {
