@@ -47,6 +47,9 @@ interface PictographKeyInput {
     darkMode: boolean;
     bluePropType: string | undefined;
     redPropType: string | undefined;
+    handPathMode: boolean;
+    handPointVisibility: string;
+    printMode: boolean;
   };
 }
 
@@ -83,6 +86,9 @@ export class PictographKeyHasher implements IPictographKeyHasher {
         darkMode: visibility.darkMode ?? false,
         bluePropType: visibility.bluePropType ?? undefined,
         redPropType: visibility.redPropType ?? undefined,
+        handPathMode: visibility.handPathMode ?? false,
+        handPointVisibility: visibility.handPointVisibility ?? "all",
+        printMode: visibility.printMode ?? false,
       },
     };
   }

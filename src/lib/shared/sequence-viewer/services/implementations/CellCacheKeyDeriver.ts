@@ -6,10 +6,16 @@
  * CellPreWarmer generate identical keys, guaranteeing cache hits when
  * the pre-warmer has already rendered a cell.
  *
- * Key format: "lsp4-{pipe-delimited rendering parameters}"
- * Uses the full key string as the IndexedDB key instead of a hash.
- * IndexedDB handles string keys natively and this eliminates the
- * collision risk that existed with the 32-bit djb2 hash (lsp3).
+ * Key format: "lsp8-{pictographHash}:{cell-specific dimensions}"
+ *
+ * The pictograph hash is produced by PictographKeyHasher, which is the
+ * single source of truth for all properties that affect the rendered
+ * pictograph image (motion fields, visibility settings, prop types).
+ * CellCacheKeyDeriver appends cell-specific dimensions (size, step number,
+ * browseViewMode) that PictographKeyHasher intentionally excludes.
+ *
+ * This composition guarantees that any new field added to PictographKeyHasher
+ * automatically flows through to cell cache keys. No second place to update.
  *
  * Version history:
  * - lsp-: Original format. Contaminated by ImageComposer write-through
@@ -23,64 +29,84 @@
  *   and orientations from base layer cache key, causing CW/CCW collisions).
  * - lsp6-: Added browseViewMode (subject/granularity/color) so the same
  *   sequence caches separate blobs for props vs hands vs solo views.
+ * - lsp7-: Added motion-intrinsic propType to key. Without this, a start
+ *   position rendered with PropType.HAND (hand path mode) and one rendered
+ *   with PropType.STAFF (normal mode) shared the same key when the user's
+ *   settings prop type was "staff" for both — causing wrong-prop cache hits.
+ * - lsp8-: Composition refactor. Delegates pictograph identity to
+ *   PictographKeyHasher instead of independently enumerating motion fields.
+ *   Also adds handPathMode, handPointVisibility, printMode, and gridMode
+ *   (all previously missing from the flat key). Single source of truth.
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { PictographVisibilityOptions } from "$lib/shared/render/utils/pictograph-to-svg";
 import type { PreviewCellRenderOptions } from "../contracts/IPreviewCellRenderer";
 import type { ICellCacheKeyDeriver } from "../contracts/ICellCacheKeyDeriver";
-// BrowseViewMode type is referenced via PreviewCellRenderOptions.browseViewMode
+import type { IPictographKeyHasher } from "$lib/shared/render/services/contracts/IPictographKeyHasher";
+import { pictographKeyHasher } from "$lib/shared/render/services/implementations/PictographKeyHasher";
 
 export class CellCacheKeyDeriver implements ICellCacheKeyDeriver {
+  constructor(private readonly keyHasher: IPictographKeyHasher) {}
+
   deriveCacheKey(
     pictographData: PictographData,
     stepNumber: number | undefined,
     isDark: boolean,
     options: PreviewCellRenderOptions
   ): string {
-    // Build a deterministic key from ALL rendering parameters.
-    // Every setting that affects the final pixel output MUST be in this key,
-    // otherwise the IndexedDB blob cache returns stale images.
-    const blue = pictographData.motions?.blue;
-    const red = pictographData.motions?.red;
-    const keyParts = [
-      pictographData.letter || "start",
-      blue?.motionType || "none",
-      blue?.startLocation || "",
-      blue?.endLocation || "",
-      blue?.turns ?? 0,
-      blue?.startOrientation ?? "",
-      blue?.endOrientation ?? "",
-      blue?.rotationDirection ?? "",
-      red?.motionType || "none",
-      red?.startLocation || "",
-      red?.endLocation || "",
-      red?.turns ?? 0,
-      red?.startOrientation ?? "",
-      red?.endOrientation ?? "",
-      red?.rotationDirection ?? "",
-      options.bluePropType || "staff",
-      options.catDogModeEnabled
-        ? (options.redPropType || "staff")
-        : (options.bluePropType || "staff"),
-      isDark ? "dark" : "light",
+    // Delegate pictograph identity to the single source of truth.
+    // PictographKeyHasher captures: letter, all motion fields (motionType,
+    // locations, turns, orientations, rotationDirection, propType, gridMode),
+    // and all visibility settings (showTKA, darkMode, bluePropType, etc.).
+    const visibility = this.mapToVisibility(options, isDark);
+    const pictographHash = this.keyHasher.deriveKey(pictographData, visibility);
+
+    // Append cell-specific dimensions that PictographKeyHasher intentionally
+    // excludes (size, step number, browseViewMode affect presentation, not
+    // the pictograph image itself).
+    const cellParts = [
       options.showStepNumbers ? (stepNumber ?? "none") : "nonum",
       options.size,
-      // Visibility settings that change the rendered output
-      options.showNonRadialPoints ? "nr1" : "nr0",
-      options.handPointVisibility ?? "all",
-      options.showTKA ? "tka1" : "tka0",
-      options.showReversals ? "rev1" : "rev0",
-      // Hand path mode renders completely different pictographs (float arrows, HAND props)
-      options.handPathMode ? "hp1" : "",
-      // Width multiplier for duration-expanded cells
       options.widthMultiplier && options.widthMultiplier !== 1 ? `wm${options.widthMultiplier}` : "",
-      // Browse view mode: different subject/granularity/color renders different pictographs
       options.browseViewMode ? `vm-${options.browseViewMode.subject}-${options.browseViewMode.granularity}-${options.browseViewMode.color}` : "",
     ];
 
-    return `lsp6-${keyParts.join("|")}`;
+    return `lsp8-${pictographHash}:${cellParts.join("|")}`;
+  }
+
+  /**
+   * Maps PreviewCellRenderOptions + isDark to PictographVisibilityOptions.
+   *
+   * Resolves catDogMode (the hasher receives an already-resolved redPropType).
+   * Hardcodes VTG, elemental, and positions to false (preview cells never show them).
+   * printMode is always false (preview cells are never print mode).
+   *
+   * Note: PreviewCellRenderOptions.handPointVisibility is narrowed to "all" | "active".
+   * The value "none" only exists in PictographVisibilityOptions and never appears here.
+   */
+  private mapToVisibility(
+    options: PreviewCellRenderOptions,
+    isDark: boolean
+  ): PictographVisibilityOptions {
+    return {
+      showTKA: options.showTKA ?? true,
+      showVTG: false,
+      showElemental: false,
+      showPositions: false,
+      showReversals: options.showReversals ?? true,
+      showNonRadialPoints: options.showNonRadialPoints ?? true,
+      darkMode: isDark,
+      bluePropType: options.bluePropType,
+      redPropType: options.catDogModeEnabled
+        ? options.redPropType
+        : options.bluePropType,
+      handPointVisibility: options.handPointVisibility,
+      handPathMode: options.handPathMode,
+      printMode: false,
+    };
   }
 }
 
-// Singleton — no state, pure function, safe to share
-export const cellCacheKeyDeriver = new CellCacheKeyDeriver();
+// Singleton — composes the shared PictographKeyHasher instance
+export const cellCacheKeyDeriver = new CellCacheKeyDeriver(pictographKeyHasher);
