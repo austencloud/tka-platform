@@ -40,6 +40,7 @@ export function createAssembleState() {
   let phase = $state<BuilderPhase>("idle");
   let activeHand = $state<MotionColor>(MotionColor.BLUE);
   let gridMode = $state<GridMode>(GridMode.DIAMOND);
+  let showCenter = $state<boolean>(false);
 
   // Per-hand completed steps
   let blueSteps = $state<BuilderStep[]>([]);
@@ -79,6 +80,7 @@ export function createAssembleState() {
     redSteps.length > 0 &&
     blueSteps.length === redSteps.length
   );
+  const canChangeGridMode = $derived(blueSteps.length === 0 && redSteps.length === 0);
 
   /** First click — place prop at a grid point */
   function placeFirstPoint(location: GridLocation): void {
@@ -263,6 +265,8 @@ export function createAssembleState() {
     currentOrientation = Orientation.IN;
     rotationDirection = RotationDirection.CLOCKWISE;
     turnCount = 0;
+    gridMode = GridMode.DIAMOND;
+    showCenter = false;
   }
 
   function setRotationDirection(dir: RotationDirection): void {
@@ -291,6 +295,24 @@ export function createAssembleState() {
         arrowTimeout = null;
       }, 1000);
     }
+  }
+
+  function setGridMode(mode: GridMode): void {
+    if (blueSteps.length > 0 || redSteps.length > 0) return;
+    if (currentPosition !== null && !isLocationValidForMode(currentPosition, mode, showCenter)) {
+      currentPosition = null;
+      phase = "idle";
+    }
+    gridMode = mode;
+  }
+
+  function setShowCenter(show: boolean): void {
+    if (blueSteps.length > 0 || redSteps.length > 0) return;
+    if (!show && currentPosition === GridLocation.CENTER) {
+      currentPosition = null;
+      phase = "idle";
+    }
+    showCenter = show;
   }
 
   /** Switch to a specific hand, restoring that hand's last position */
@@ -338,6 +360,8 @@ export function createAssembleState() {
     get isBlueComplete() { return isBlueComplete; },
     get canUndo() { return canUndo; },
     get canFinishHand() { return canFinishHand; },
+    get showCenter() { return showCenter; },
+    get canChangeGridMode() { return canChangeGridMode; },
 
     // Actions
     handlePointClick,
@@ -348,6 +372,8 @@ export function createAssembleState() {
     setRotationDirection,
     setTurnCount,
     setOrientation,
+    setGridMode,
+    setShowCenter,
     switchToHand,
     setAnimationCallback,
     setUndoAnimationCallback,
@@ -439,6 +465,18 @@ function calculateEndOrientation(
 
   const endStaffAngle = normPos(startStaffAngle + staffRotationDelta);
   return staffAngleToOrientation(endStaffAngle, endCenterAngle);
+}
+
+function isLocationValidForMode(location: GridLocation, mode: GridMode, centerEnabled: boolean): boolean {
+  if (location === GridLocation.CENTER) return centerEnabled;
+  const CARDINAL = [GridLocation.NORTH, GridLocation.EAST, GridLocation.SOUTH, GridLocation.WEST];
+  const INTERCARDINAL = [GridLocation.NORTHEAST, GridLocation.SOUTHEAST, GridLocation.SOUTHWEST, GridLocation.NORTHWEST];
+  switch (mode) {
+    case GridMode.DIAMOND: return CARDINAL.includes(location);
+    case GridMode.BOX: return INTERCARDINAL.includes(location);
+    case GridMode.SKEWED: return CARDINAL.includes(location) || INTERCARDINAL.includes(location);
+    default: return true;
+  }
 }
 
 export type AssembleState = ReturnType<typeof createAssembleState>;
