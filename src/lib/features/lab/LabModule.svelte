@@ -16,8 +16,8 @@
   // Dynamic tab imports - add new experiments here
   const tabComponents: Record<string, () => Promise<{ default: any }>> = {
     attribution: () => import("./tabs/AttributionLab.svelte"),
-    level4: () => import("$lib/features/skewlab/SkewLabModule.svelte"),
-    level5: () => import("$lib/features/level5-lab/Level5LabModule.svelte"),
+    level4: () => import("$lib/features/level5-lab/Level5LabModule.svelte"),
+    level5: () => import("$lib/features/skewlab/SkewLabModule.svelte"),
     level7: () => import("$lib/features/conjoined-lab/ConjoinedLabModule.svelte"),
     poi: () => import("$lib/features/poi-lab/PoiLabModule.svelte"),
     avatar: () => import("./tabs/ProfileAvatarLab.svelte"),

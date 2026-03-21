@@ -110,6 +110,13 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Prop geometry adjustments - arrow positioning offsets for pictograph rendering
+    // Readable by all (needed pre-auth for rendering), writable by admins
+    match /prop_geometry_adjustments/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Feature flag audit log - append-only for admins
     match /audit/featureFlags/entries/{entryId} {
       allow read: if isAdmin();

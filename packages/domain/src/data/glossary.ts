@@ -20,25 +20,25 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "position"
   },
   "zeta": {
-    definition: "A position where the hands form an obtuse angle (greater than 90 degrees). Introduced in Level 4 with skewed grid mode.",
+    definition: "A position where the hands form an obtuse angle (greater than 90 degrees). Introduced in Level 5 with skewed grid mode.",
     examples: ["One hand cardinal, one intercardinal, forming ~135 degree angle"],
     relatedTerms: ["eta", "skewed", "position"],
     category: "position"
   },
   "eta": {
-    definition: "A position where the hands form an acute angle (less than 90 degrees). Introduced in Level 4 with skewed grid mode.",
+    definition: "A position where the hands form an acute angle (less than 90 degrees). Introduced in Level 5 with skewed grid mode.",
     examples: ["One hand cardinal, one intercardinal, forming ~45 degree angle"],
     relatedTerms: ["zeta", "skewed", "position"],
     category: "position"
   },
   "tau": {
-    definition: "A position where one hand is at the center grid point and the other is at a non-center point. Introduced in Level 5 with centric grid mode.",
+    definition: "A position where one hand is at the center grid point and the other is at a non-center point. Introduced in Level 4 with centric grid mode.",
     examples: ["One hand at center, one hand at N", "One hand at center, one hand at NE"],
     relatedTerms: ["terra", "centric", "position"],
     category: "position"
   },
   "terra": {
-    definition: "A position where both hands are at the center grid point. Introduced in Level 5 with centric grid mode.",
+    definition: "A position where both hands are at the center grid point. Introduced in Level 4 with centric grid mode.",
     examples: ["Both hands stacked at the center of the grid"],
     relatedTerms: ["tau", "centric", "position"],
     category: "position"
@@ -80,8 +80,8 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "general"
   },
   "level": {
-    definition: "A progressive difficulty tier that unlocks new positions, grid modes, turn counts, and orientations. Level 1: 0 turns only. Level 2: whole turns (0-3). Level 3: half turns and float. Level 4: skewed grid (zeta, eta positions). Level 5: centric grid with center point (tau, terra positions, not yet implemented). Level 6: interradial orientations (clockIn, clockOut, counterIn, counterOut — completes single-grid orientation freedom). Level 7: conjoined grids (dual grids sharing a junction point, new position combinations, bridges to 3D). Level 8: atomics (two props on different spinning planes simultaneously). Level 9: Rubik's cube tech (in-between points across intersecting planes, same expansion skewed brought to single-plane).",
-    examples: ["Level 1: alpha, beta, gamma positions with 0 turns only", "Level 4: introduces zeta, eta positions with skewed grid", "Level 6: interradial orientations double angular precision (completes single-grid 2D)", "Level 7: conjoined grids expand the spatial canvas with dual grids, bridging to 3D", "Level 8: one prop on wall plane, one on wheel plane (atomics)", "Level 9: skewed-equivalent access to in-between points across multiple planes"],
+    definition: "A progressive difficulty tier that unlocks new positions, grid modes, turn counts, and orientations. Level 1: 0 turns only. Level 2: whole turns (0-3). Level 3: half turns and float. Level 4: centric grid with center point (tau, terra positions, not yet implemented). Level 5: skewed grid (zeta, eta positions). Level 6: interradial orientations (clockIn, clockOut, counterIn, counterOut — completes single-grid orientation freedom). Level 7: conjoined grids (dual grids sharing a junction point, new position combinations, bridges to 3D). Level 8: atomics (two props on different spinning planes simultaneously). Level 9: Rubik's cube tech (in-between points across intersecting planes, same expansion skewed brought to single-plane).",
+    examples: ["Level 1: alpha, beta, gamma positions with 0 turns only", "Level 4: introduces center point with centric grid", "Level 5: introduces zeta, eta positions with skewed grid", "Level 6: interradial orientations double angular precision (completes single-grid 2D)", "Level 7: conjoined grids expand the spatial canvas with dual grids, bridging to 3D", "Level 8: one prop on wall plane, one on wheel plane (atomics)", "Level 9: skewed-equivalent access to in-between points across multiple planes"],
     relatedTerms: ["turns", "position", "orientation", "spinning-plane", "atomic", "rubiks-cube", "conjoined-grid"],
     category: "general"
   },
@@ -224,19 +224,19 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "grid"
   },
   "skewed": {
-    definition: "A grid mode introduced in Level 4 where one hand is on a cardinal point and one is on an intercardinal point. Creates zeta and eta positions.",
+    definition: "A grid mode introduced in Level 5 where one hand is on a cardinal point and one is on an intercardinal point. Creates zeta and eta positions.",
     examples: ["Hand at N and hand at NE", "Creates zeta and eta positions"],
     relatedTerms: ["diamond", "box", "centric", "zeta", "eta"],
     category: "grid"
   },
   "centric": {
-    definition: "A grid mode introduced in Level 5 where at least one hand is at the center grid point. Creates tau and terra positions. Not yet implemented in TKA Scribe.",
+    definition: "A grid mode introduced in Level 4 where at least one hand is at the center grid point. Creates tau and terra positions. Not yet implemented in TKA Scribe.",
     examples: ["One hand at center, one at N (tau position)", "Both hands at center (terra position)"],
     relatedTerms: ["diamond", "box", "skewed", "tau", "terra"],
     category: "grid"
   },
   "center": {
-    definition: "The 9th grid point, located at the center of the grid. Introduced in Level 5 with centric grid mode. Not yet implemented in TKA Scribe.",
+    definition: "The 9th grid point, located at the center of the grid. Introduced in Level 4 with centric grid mode. Not yet implemented in TKA Scribe.",
     examples: ["Tau position: one hand at center", "Terra position: both hands at center"],
     relatedTerms: ["centric", "tau", "terra", "cardinal", "intercardinal"],
     category: "grid"
@@ -503,19 +503,19 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "grid"
   },
   "atomic": {
-    definition: "A Level 8 concept where two props operate on different spinning planes simultaneously. One prop might be on the wall plane while the other is on the wheel plane. Analogous to how Level 4 expanded from single-grid (diamond or box) to mixed-grid (skewed), Level 8 expands from single-plane to mixed-plane. By this level, the full 2D system (including interradial orientations from Level 6 and conjoined grids from Level 7) is complete, so all 2D knowledge carries into 3D. Not yet implemented.",
+    definition: "A Level 8 concept where two props operate on different spinning planes simultaneously. One prop might be on the wall plane while the other is on the wheel plane. Analogous to how Level 5 expanded from single-grid (diamond or box) to mixed-grid (skewed), Level 8 expands from single-plane to mixed-plane. By this level, the full 2D system (including interradial orientations from Level 6 and conjoined grids from Level 7) is complete, so all 2D knowledge carries into 3D. Not yet implemented.",
     examples: ["Left hand doing a wall-plane pattern while right hand does a wheel-plane pattern", "Intersecting two planes creates 3D motion even though each individual prop traces a 2D circle"],
     relatedTerms: ["spinning-plane", "level", "skewed", "rubiks-cube"],
     category: "general"
   },
   "rubiks-cube": {
-    definition: "Level 9 concept. Within the multi-plane context of Level 8 (atomics), the points between the relative cardinal points on each plane become individually accessible. The same expansion that Level 4 (skewed) brought to single-plane grid work, Level 9 brings to multi-plane work. Named for the Rubik's cube geometry that emerges when three intersecting planes each have their in-between points addressed. Completes 3D mastery the same way Level 6 (interradials) completes 2D orientation freedom. Not yet implemented.",
-    examples: ["Level 4 mixed cardinal and intercardinal on one plane (skewed). Level 9 mixes equivalent points across two intersecting planes.", "The 3D grid formed by wall + wheel + overhead planes with in-between access resembles a Rubik's cube"],
+    definition: "Level 9 concept. Within the multi-plane context of Level 8 (atomics), the points between the relative cardinal points on each plane become individually accessible. The same expansion that Level 5 (skewed) brought to single-plane grid work, Level 9 brings to multi-plane work. Named for the Rubik's cube geometry that emerges when three intersecting planes each have their in-between points addressed. Completes 3D mastery the same way Level 6 (interradials) completes 2D orientation freedom. Not yet implemented.",
+    examples: ["Level 5 mixed cardinal and intercardinal on one plane (skewed). Level 9 mixes equivalent points across two intersecting planes.", "The 3D grid formed by wall + wheel + overhead planes with in-between access resembles a Rubik's cube"],
     relatedTerms: ["atomic", "spinning-plane", "skewed", "level"],
     category: "general"
   },
   "hash": {
-    definition: "A hand motion type where the hand moves in a straight line to or from the center grid point. Hash is **dash-** (dash with a minus modifier) — the same straight-line traverse as a dash, but covering half the distance (center to perimeter or perimeter to center). 'Hash' is the official name for dash-, just as 'skew' is the official name for shift+/-. Introduced in Level 5 with centric grid mode. Same rotation physics as dash: at 0 turns, no rotation (1 state); at 1+ turns, CW or CCW (2 states per turn count). Pro/anti/float distinctions do not apply (straight line, not curved arc).",
+    definition: "A hand motion type where the hand moves in a straight line to or from the center grid point. Hash is **dash-** (dash with a minus modifier) — the same straight-line traverse as a dash, but covering half the distance (center to perimeter or perimeter to center). 'Hash' is the official name for dash-, just as 'skew' is the official name for shift+/-. Introduced in Level 4 with centric grid mode. Same rotation physics as dash: at 0 turns, no rotation (1 state); at 1+ turns, CW or CCW (2 states per turn count). Pro/anti/float distinctions do not apply (straight line, not curved arc).",
     examples: ["N to center is a hash (dash-)", "Center to E is a hash", "Hash = dash- = half-dash, same physics as dash"],
     relatedTerms: ["dash", "shift", "static", "centric", "tau", "motion", "hand-path-modifier"],
     category: "motion"
@@ -539,7 +539,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "motion"
   },
   "skew": {
-    definition: "A shift with a +/- path length modifier (Level 4+, 8-point grid). Skew+ extends the arc beyond a single segment (e.g., S to NE spanning 3 segments). Skew- shortens the arc to less than one segment. Skews support all three shift motion types (pro, anti, float) and are theoretically unbounded in arc length. For enumeration, the standard single-segment shift is counted; skews are extensions.",
+    definition: "A shift with a +/- path length modifier (Level 5+, 8-point grid). Skew+ extends the arc beyond a single segment (e.g., S to NE spanning 3 segments). Skew- shortens the arc to less than one segment. Skews support all three shift motion types (pro, anti, float) and are theoretically unbounded in arc length. For enumeration, the standard single-segment shift is counted; skews are extensions.",
     examples: ["Skew+ (shift+): extended arc, e.g. S to NE", "Skew- (shift-): shortened arc", "Skew++ (shift++): double-extended arc"],
     relatedTerms: ["shift", "hand-path-modifier", "hand-path"],
     category: "motion"
