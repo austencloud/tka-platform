@@ -17,6 +17,7 @@ import { LocationSharingOrchestrator } from "$lib/features/community/services/im
 import { PropPreferencePersister } from "$lib/shared/community/services/implementations/PropPreferencePersister";
 import { PresentationResolver } from "$lib/shared/sequence-viewer/services/implementations/PresentationResolver";
 import { CreatorPropFilter } from "$lib/features/browse/creators/services/implementations/CreatorPropFilter";
+import { FavoriteConfigRepository } from "$lib/features/create/generate/services/implementations/FavoriteConfigRepository";
 import { env } from "$env/dynamic/public";
 
 export const communityContainer = createContainer()
@@ -30,6 +31,7 @@ export const communityContainer = createContainer()
     userLocationRepository: () => new UserLocationRepository(),
     geocodingService: () => new GeocodingService(env.PUBLIC_GOOGLE_MAPS_API_KEY ?? ""),
     propPreferencePersister: () => new PropPreferencePersister(),
+    favoriteConfigRepository: () => new FavoriteConfigRepository(),
 presentationResolver: () => new PresentationResolver(),
     creatorPropFilter: () => new CreatorPropFilter(),
   })
