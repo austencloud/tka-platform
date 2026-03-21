@@ -9,6 +9,12 @@
 <script lang="ts">
   import type { DeckFamily } from "../domain/models/Deck";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import { container } from "$lib/shared/di";
+  import type { IHandPathDataBuilder } from "../services/contracts/IHandPathDataBuilder";
+  import type { IArrowCollisionResolver } from "../services/contracts/IArrowCollisionResolver";
   import ChoreoCard from "./ChoreoCard.svelte";
 
   interface Props {
@@ -22,6 +28,7 @@
     /** Start expanded (used for the first family in a deck) */
     initiallyExpanded?: boolean;
     onSelectSequence?: (sequence: SequenceData) => void;
+    onContextMenu?: (x: number, y: number, rerender: () => void) => void;
   }
 
   let {
@@ -34,18 +41,75 @@
     includeStartPosition = true,
     initiallyExpanded = false,
     onSelectSequence,
+    onContextMenu,
   }: Props = $props();
 
-  let expanded = $state(initiallyExpanded);
+  let expanded = $state((() => initiallyExpanded)());
+
+  // Resolve DI services once — these are cheap singletons.
+  const handPathBuilder = container.items.handPathDataBuilder as IHandPathDataBuilder;
+  const collisionResolver = container.items.arrowCollisionResolver as IArrowCollisionResolver;
+
+  /**
+   * Converts PictographData[] (from HandPathDataBuilder) into StepData[].
+   *
+   * StepData extends PictographData with beat-context fields. The hand path
+   * builder only knows about spatial data — it doesn't set stepNumber, duration,
+   * or reversal flags. We add those here so the render pipeline accepts the beats
+   * as a valid sequence.
+   */
+  function toStepData(beats: PictographData[]): StepData[] {
+    return beats.map((beat, i) => ({
+      ...beat,
+      stepNumber: i + 1,
+      duration: 1,
+      blueReversal: false,
+      redReversal: false,
+      isBlank: false,
+    }));
+  }
+
+  /**
+   * Builds a synthetic SequenceData from a hand path ID.
+   *
+   * The resulting sequence has purpose-built PictographData beats (HAND props,
+   * float arrows, no TKA glyphs) derived from the raw hand path trace. It does
+   * NOT look up sequence data from Firestore — the beats ARE the data.
+   *
+   * The name is set to the handPathId so the thumbnail cache key is unique per
+   * hand path pattern. These thumbnails are not cloud-cached (handPathMode is a
+   * non-default visibility override) but they do land in IndexedDB for instant
+   * subsequent loads.
+   */
+  function buildHandPathSequence(handPathId: string, representative: SequenceData): SequenceData {
+    const rawBeats = handPathBuilder.buildFromHandPathId(handPathId, representative);
+    const resolvedBeats = collisionResolver.resolveCollisions(rawBeats);
+    const steps = toStepData(resolvedBeats);
+
+    return createSequenceData({
+      id: `hand-path-${handPathId}`,
+      name: handPathId,
+      word: handPathId,
+      steps,
+      thumbnails: [],
+      metadata: { handPathId },
+    });
+  }
 
   // Group sequences by handPathId and pick one representative per unique hand path.
-  // Each representative renders as a hand path card showing the spatial pattern.
-  const handPathRepresentatives = $derived.by(() => {
+  // For each representative, build a synthetic sequence with purpose-built beat data
+  // so the render pipeline receives pre-constructed PictographData, not a raw SequenceData
+  // that would be transformed at render time (which caused multi-layer caching failures).
+  const handPathSequences = $derived.by(() => {
     const seen = new Map<string, SequenceData>();
     for (const seq of sequences) {
       const hpId = (seq.metadata?.handPathId as string) ?? "";
       if (hpId && !seen.has(hpId)) {
-        seen.set(hpId, seq);
+        try {
+          seen.set(hpId, buildHandPathSequence(hpId, seq));
+        } catch {
+          // If the hand path ID is malformed, skip it — don't break the whole section.
+        }
       }
     }
     return Array.from(seen.values());
@@ -109,16 +173,16 @@
   </button>
 
   {#if expanded}
-    <!-- Hand path cards -->
-    {#if handPathRepresentatives.length > 0}
+    <!-- Hand path cards — each backed by purpose-built PictographData (HAND props, float arrows) -->
+    {#if handPathSequences.length > 0}
       <span class="section-label">
-        {handPathRepresentatives.length} hand {handPathRepresentatives.length === 1 ? "path" : "paths"}
+        {handPathSequences.length} hand {handPathSequences.length === 1 ? "path" : "paths"}
       </span>
       <div class="card-grid">
-        {#each handPathRepresentatives as rep (`hp-${rep.metadata?.handPathId}`)}
+        {#each handPathSequences as hpSeq (hpSeq.id)}
           <div class="playing-card" use:detectOrientation>
             <ChoreoCard
-              sequence={rep}
+              sequence={hpSeq}
               printMode={true}
               handPathMode={true}
               {handPointsVisible}
@@ -127,6 +191,7 @@
               showWord={false}
               {includeStartPosition}
               onSelect={onSelectSequence}
+              {onContextMenu}
             />
           </div>
         {/each}
@@ -147,6 +212,7 @@
             {showWord}
             {includeStartPosition}
             onSelect={onSelectSequence}
+            {onContextMenu}
           />
         </div>
       {/each}

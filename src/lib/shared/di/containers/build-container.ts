@@ -65,6 +65,8 @@ import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/
 import { SequenceToEntryConverter } from "$lib/features/choreo-card/services/implementations/SequenceToEntryConverter";
 import { DeckLoader } from "$lib/features/choreo-card/services/implementations/DeckLoader";
 import { LOOPExplainer } from "$lib/features/choreo-card/services/implementations/LOOPExplainer";
+import { HandPathDataBuilder } from "$lib/features/choreo-card/services/implementations/HandPathDataBuilder";
+import { ArrowCollisionResolver } from "$lib/features/choreo-card/services/implementations/ArrowCollisionResolver";
 import { LOOPDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
 import { OrientationCycleDetector } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleDetector";
 import { OrientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
@@ -277,6 +279,8 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
         sequenceToEntryConverter: () => new SequenceToEntryConverter(),
         deckLoader: () => new DeckLoader(),
         loopExplainer: () => new LOOPExplainer(),
+        handPathDataBuilder: () => new HandPathDataBuilder(),
+        arrowCollisionResolver: () => new ArrowCollisionResolver(),
         rotatedEndPositionSelector: () => new RotatedEndPositionSelector(),
         orientationCycleDetector: () => new OrientationCycleDetector(deps.orientationCalculator),
       })
