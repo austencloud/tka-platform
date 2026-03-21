@@ -13,6 +13,8 @@ import {
 } from "../shared/domain/models/generate-models";
 import { LOOPType, SliceSize } from "../circular/domain/models/circular-models";
 import type { UIGenerationConfig } from "../shared/utils/config-mapper";
+import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
+import { getBlockedPositionsForPreset, StartPositionPreset } from "../shared/domain/start-position-presets";
 
 // ===== Types =====
 
@@ -21,13 +23,15 @@ export interface GenerationPreset {
   name: string;
   icon?: string;
   config: UIGenerationConfig;
+  startEndOptions?: StartEndOptions | null;
+  author?: string;
   createdAt: number;
   updatedAt: number;
 }
 
 // ===== Persistence =====
 const STORAGE_KEY = "tka-generate-presets";
-const DEFAULT_PRESET_ID = "default-diamond-16";
+const DEFAULT_PRESET_ID = "austens-favorite";
 const INIT_FLAG_KEY = "tka-presets-initialized";
 
 /**
@@ -72,7 +76,7 @@ function generatePresetId(): string {
 }
 
 /**
- * Create default "Diamond 16" preset
+ * Create default "Austen's Favorite" preset
  */
 function createDefaultPreset(): GenerationPreset {
   const now = Date.now();
@@ -81,11 +85,11 @@ function createDefaultPreset(): GenerationPreset {
     mode: GenerationMode.FREEFORM,
     loopEnabled: true,
     length: 16,
-    level: 1,
-    turnIntensity: 0,
+    level: 2,
+    turnIntensity: 1,
     gridMode: GridMode.DIAMOND,
     propContinuity: PropContinuity.CONTINUOUS,
-    sliceSize: SliceSize.HALVED,
+    sliceSize: SliceSize.QUARTERED,
     loopType: LOOPType.STRICT_ROTATED,
     constraintPreset: "smooth",
     handPathMode: "mixed",
@@ -95,10 +99,21 @@ function createDefaultPreset(): GenerationPreset {
   };
 
   return {
-    id: DEFAULT_PRESET_ID,
-    name: "Diamond 16",
-    icon: "💎",
+    id: "austens-favorite",
+    name: "Austen's Fav",
+    icon: "⭐",
+    author: "austen",
     config: defaultConfig,
+    startEndOptions: {
+      blockedStartPositions: getBlockedPositionsForPreset(
+        StartPositionPreset.CLASSIC,
+        GridMode.DIAMOND
+      ),
+      startPosition: null,
+      endPosition: null,
+      mustContainLetters: [],
+      mustNotContainLetters: [],
+    },
     createdAt: now,
     updatedAt: now,
   };
@@ -146,6 +161,23 @@ export function createPresetState() {
 
   // Derived
   const hasPresets = $derived(presets.length > 0);
+
+  // Active preset tracking
+  let activePresetId = $state<string | null>(null);
+  const activePreset = $derived(
+    activePresetId ? presets.find((p) => p.id === activePresetId) ?? null : null
+  );
+
+  function activatePreset(id: string): void {
+    const preset = presets.find((p) => p.id === id);
+    if (preset) {
+      activePresetId = id;
+    }
+  }
+
+  function deactivatePreset(): void {
+    activePresetId = null;
+  }
 
   /**
    * Get all presets
@@ -249,6 +281,12 @@ export function createPresetState() {
     get hasPresets() {
       return hasPresets;
     },
+    get activePresetId() {
+      return activePresetId;
+    },
+    get activePreset() {
+      return activePreset;
+    },
 
     // Actions
     getPresets,
@@ -257,5 +295,7 @@ export function createPresetState() {
     updatePreset,
     deletePreset,
     clearAllPresets,
+    activatePreset,
+    deactivatePreset,
   };
 }
