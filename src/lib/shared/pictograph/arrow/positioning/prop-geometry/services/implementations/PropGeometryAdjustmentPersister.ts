@@ -1,0 +1,221 @@
+/**
+ * Prop Geometry Adjustment Persister
+ *
+ * Firestore persistence for prop geometry adjustments.
+ * Collection: prop_geometry_adjustments
+ * Document ID: the full 9-part key string
+ */
+
+import {
+  collection,
+  doc,
+  getDocs,
+  setDoc,
+  onSnapshot,
+  serverTimestamp,
+  type Unsubscribe,
+} from "firebase/firestore";
+import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import {
+  generatePropGeometryKeyString,
+  type PropGeometryAdjustment,
+  type PropGeometryAdjustmentInput,
+} from "../../domain/PropGeometryAdjustment";
+import { createComponentLogger } from "$lib/shared/utils/debug-logger";
+
+const logger = createComponentLogger("PropGeometryAdjustmentPersister");
+
+const COLLECTION_NAME = "prop_geometry_adjustments";
+
+export class PropGeometryAdjustmentPersister {
+  private unsubscribe: Unsubscribe | null = null;
+
+  async loadAll(): Promise<PropGeometryAdjustment[]> {
+    try {
+      const firestore = await getFirestoreInstance();
+      const colRef = collection(firestore, COLLECTION_NAME);
+      const snapshot = await getDocs(colRef);
+
+      const adjustments: PropGeometryAdjustment[] = [];
+
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (
+          data.gridMode &&
+          data.propType &&
+          data.otherPropType &&
+          data.positionType &&
+          data.endOrientation &&
+          data.otherEndOrientation &&
+          data.motionType &&
+          data.turns !== undefined &&
+          data.arrowColor &&
+          typeof data.adjustmentX === "number" &&
+          typeof data.adjustmentY === "number"
+        ) {
+          adjustments.push({
+            gridMode: data.gridMode,
+            propType: data.propType,
+            otherPropType: data.otherPropType,
+            positionType: data.positionType,
+            endOrientation: data.endOrientation,
+            otherEndOrientation: data.otherEndOrientation,
+            motionType: data.motionType,
+            turns: String(data.turns),
+            arrowColor: data.arrowColor,
+            adjustmentX: data.adjustmentX,
+            adjustmentY: data.adjustmentY,
+            updatedAt: data.updatedAt,
+            updatedBy: data.updatedBy ?? "unknown",
+          });
+        } else {
+          logger.warn(`Invalid prop geometry document: ${docSnap.id}`);
+        }
+      });
+
+      logger.success(`Loaded ${adjustments.length} prop geometry adjustments`);
+      return adjustments;
+    } catch (error) {
+      // Permissions errors are expected when Firestore rules don't allow
+      // public reads on this collection. Fall back to empty data gracefully.
+      const isPermissionError =
+        error instanceof Error &&
+        (error.message.includes("Missing or insufficient permissions") ||
+          error.message.includes("permission-denied"));
+
+      if (isPermissionError) {
+        logger.warn(
+          "Prop geometry adjustments not accessible (permissions). Using defaults."
+        );
+        return [];
+      }
+
+      logger.error("Failed to load prop geometry adjustments:", error);
+      throw error;
+    }
+  }
+
+  async save(
+    input: PropGeometryAdjustmentInput,
+    userEmail: string
+  ): Promise<void> {
+    const keyString = generatePropGeometryKeyString({
+      gridMode: input.gridMode,
+      propType: input.propType,
+      otherPropType: input.otherPropType,
+      positionType: input.positionType,
+      endOrientation: input.endOrientation,
+      otherEndOrientation: input.otherEndOrientation,
+      motionType: input.motionType,
+      turns: input.turns,
+      arrowColor: input.arrowColor,
+    });
+
+    try {
+      const firestore = await getFirestoreInstance();
+      const docRef = doc(firestore, COLLECTION_NAME, keyString);
+
+      await setDoc(docRef, {
+        gridMode: input.gridMode,
+        propType: input.propType,
+        otherPropType: input.otherPropType,
+        positionType: input.positionType,
+        endOrientation: input.endOrientation,
+        otherEndOrientation: input.otherEndOrientation,
+        motionType: input.motionType,
+        turns: input.turns,
+        arrowColor: input.arrowColor,
+        adjustmentX: input.adjustmentX,
+        adjustmentY: input.adjustmentY,
+        updatedAt: serverTimestamp(),
+        updatedBy: userEmail,
+      });
+
+      logger.success(
+        `Saved prop geometry: ${keyString} → (${input.adjustmentX}, ${input.adjustmentY})`
+      );
+    } catch (error) {
+      logger.error(`Failed to save prop geometry ${keyString}:`, error);
+      throw error;
+    }
+  }
+
+  subscribe(
+    onAdd: (adjustment: PropGeometryAdjustment) => void,
+    onRemove: (keyString: string) => void
+  ): () => void {
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = null;
+    }
+
+    getFirestoreInstance()
+      .then((firestoreDb) => {
+        const colRef = collection(firestoreDb, COLLECTION_NAME);
+
+        this.unsubscribe = onSnapshot(
+          colRef,
+          (snapshot) => {
+            snapshot.docChanges().forEach((change) => {
+              const data = change.doc.data();
+              const keyString = change.doc.id;
+
+              if (change.type === "added" || change.type === "modified") {
+                if (
+                  data.gridMode &&
+                  data.propType &&
+                  data.positionType &&
+                  typeof data.adjustmentX === "number" &&
+                  typeof data.adjustmentY === "number"
+                ) {
+                  onAdd({
+                    gridMode: data.gridMode,
+                    propType: data.propType,
+                    otherPropType: data.otherPropType ?? "*",
+                    positionType: data.positionType,
+                    endOrientation: data.endOrientation,
+                    otherEndOrientation: data.otherEndOrientation,
+                    motionType: data.motionType,
+                    turns: String(data.turns),
+                    arrowColor: data.arrowColor ?? "*",
+                    adjustmentX: data.adjustmentX,
+                    adjustmentY: data.adjustmentY,
+                    updatedAt: data.updatedAt,
+                    updatedBy: data.updatedBy ?? "unknown",
+                  });
+                }
+              } else if (change.type === "removed") {
+                onRemove(keyString);
+              }
+            });
+          },
+          (subscriptionError: unknown) => {
+            const isPermissionError =
+              subscriptionError instanceof Error &&
+              (subscriptionError.message.includes(
+                "Missing or insufficient permissions"
+              ) ||
+                subscriptionError.message.includes("permission-denied"));
+
+            if (isPermissionError) {
+              logger.warn(
+                "Prop geometry subscription not accessible (permissions). Real-time updates disabled."
+              );
+            } else {
+              logger.error("Subscription error:", subscriptionError);
+            }
+          }
+        );
+      })
+      .catch((initError: unknown) => {
+        logger.error("Failed to initialize subscription:", initError);
+      });
+
+    return () => {
+      if (this.unsubscribe) {
+        this.unsubscribe();
+        this.unsubscribe = null;
+      }
+    };
+  }
+}

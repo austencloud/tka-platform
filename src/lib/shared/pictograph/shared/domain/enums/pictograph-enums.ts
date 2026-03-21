@@ -31,6 +31,8 @@ export enum HandMotionType {
   SHIFT = "shift",
   DASH = "dash",
   STATIC = "static",
+  HASH_IN = "hashIn",   // Perimeter → center
+  HASH_OUT = "hashOut", // Center → perimeter
 }
 
 export enum HandPath {
