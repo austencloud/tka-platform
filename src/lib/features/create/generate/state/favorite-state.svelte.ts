@@ -1,0 +1,113 @@
+/**
+ * Favorite state management for GeneratePanel
+ *
+ * Firebase-backed: each user has one favorite config.
+ * Also loads community favorites for browsing.
+ */
+
+import { container } from "$lib/shared/di";
+import { getEffectiveUserId } from "$lib/shared/auth/state/authState.svelte";
+import type { IFavoriteConfigRepository } from "../services/contracts/IFavoriteConfigRepository";
+import type { FavoriteConfig, CommunityFavorite } from "../domain/models/favorite-config";
+import type { UIGenerationConfig } from "./generate-config.svelte";
+import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
+
+export function createFavoriteState() {
+  let myFavorite = $state<FavoriteConfig | null>(null);
+  let communityFavorites = $state<CommunityFavorite[]>([]);
+  let isLoading = $state(true);
+  let activeFavoriteId = $state<string | null>(null);
+
+  // "mine" = user's own favorite, any other string = a community user's ID
+  const activeFavorite = $derived<FavoriteConfig | CommunityFavorite | null>(
+    activeFavoriteId === "mine"
+      ? myFavorite
+      : activeFavoriteId
+        ? communityFavorites.find((f) => f.userId === activeFavoriteId) ?? null
+        : null
+  );
+
+  const hasMyFavorite = $derived(myFavorite !== null);
+
+  // Load on creation
+  loadFavorites();
+
+  async function loadFavorites() {
+    const userId = getEffectiveUserId();
+    if (!userId) {
+      isLoading = false;
+      return;
+    }
+
+    try {
+      const repo = container.items.favoriteConfigRepository as IFavoriteConfigRepository;
+      const [myFav, community] = await Promise.all([
+        repo.getMyFavorite(userId),
+        repo.getCommunityFavorites(20),
+      ]);
+
+      myFavorite = myFav;
+      // Filter out own favorite from community list
+      communityFavorites = community.filter((f) => f.userId !== userId);
+    } catch (error) {
+      console.error("[FavoriteState] Error loading favorites:", error);
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  async function saveMyFavorite(
+    config: UIGenerationConfig,
+    startEndOptions?: StartEndOptions | null
+  ): Promise<void> {
+    const userId = getEffectiveUserId();
+    if (!userId) return;
+
+    try {
+      const repo = container.items.favoriteConfigRepository as IFavoriteConfigRepository;
+      await repo.setMyFavorite(userId, config, startEndOptions);
+      myFavorite = { config, startEndOptions: startEndOptions ?? null, setAt: new Date() };
+    } catch (error) {
+      console.error("[FavoriteState] Error saving favorite:", error);
+    }
+  }
+
+  async function clearMyFavorite(): Promise<void> {
+    const userId = getEffectiveUserId();
+    if (!userId) return;
+
+    try {
+      const repo = container.items.favoriteConfigRepository as IFavoriteConfigRepository;
+      await repo.clearMyFavorite(userId);
+      myFavorite = null;
+      if (activeFavoriteId === "mine") {
+        activeFavoriteId = null;
+      }
+    } catch (error) {
+      console.error("[FavoriteState] Error clearing favorite:", error);
+    }
+  }
+
+  function activateFavorite(id: string): void {
+    activeFavoriteId = id;
+  }
+
+  function deactivateFavorite(): void {
+    activeFavoriteId = null;
+  }
+
+  return {
+    get myFavorite() { return myFavorite; },
+    get communityFavorites() { return communityFavorites; },
+    get isLoading() { return isLoading; },
+    get activeFavoriteId() { return activeFavoriteId; },
+    get activeFavorite() { return activeFavorite; },
+    get hasMyFavorite() { return hasMyFavorite; },
+
+    loadFavorites,
+    saveMyFavorite,
+    clearMyFavorite,
+    activateFavorite,
+    deactivateFavorite,
+  };
+}
