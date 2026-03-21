@@ -528,17 +528,18 @@ export class TextRenderer implements ITextRenderer {
       ctx.fillText(notes, canvas.width / 2, yPosition);
     }
 
-    // Birthday date (bottom-right) - Georgia Normal, format: 🎂 M-D-YYYY
-    // Use the sequence birthday (from userInfo.birthday or exportDate) instead of current date
-    // Birthday emoji indicates this is when the sequence was originally created
+    // Date (bottom-right) - Georgia Normal
+    // When birthday is set: shows cake emoji + creation date (🎂 M-D-YYYY)
+    // When exportDate is set but no birthday: shows plain date (M-D-YYYY) — used for print cards
     if (showBirthday) {
-      // Canonical fallback: birthday (original creation) → exportDate → current date
       const dateToUse = userInfo.birthday
         ? userInfo.birthday
         : userInfo.exportDate
           ? new Date(userInfo.exportDate)
           : new Date();
-      const dateStr = `🎂 ${dateToUse.getMonth() + 1}-${dateToUse.getDate()}-${dateToUse.getFullYear()}`;
+      const formatted = `${dateToUse.getMonth() + 1}-${dateToUse.getDate()}-${dateToUse.getFullYear()}`;
+      // Only show cake emoji when it's a birthday (creation date), not a print/export date
+      const dateStr = userInfo.birthday ? `🎂 ${formatted}` : formatted;
       ctx.font = `${fontSize}px Georgia, serif`;
       ctx.textAlign = "right";
       ctx.fillText(dateStr, canvas.width - margin, yPosition);
