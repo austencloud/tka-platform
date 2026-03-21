@@ -31,9 +31,9 @@ After the `customize` entry (line 73-76), add:
 
 ```typescript
   preset: {
-    // Warm amber/gold — distinct from other cards, suggests "saved" / "favorite"
-    color: "linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%)",
-    shadowColor: "38deg 75% 50%",
+    // Warm coral/rose — distinct from duration's amber and sliceSize's pink
+    color: "linear-gradient(135deg, #e11d48 0%, #be123c 50%, #9f1239 100%)",
+    shadowColor: "350deg 75% 50%",
   },
 ```
 
@@ -43,9 +43,9 @@ After the `customize` entry (line 134-138), add:
 
 ```typescript
   preset: {
-    // Deep amber/gold — visible on bright backgrounds
-    color: "linear-gradient(135deg, #d97706 0%, #b45309 50%, #92400e 100%)",
-    shadowColor: "38deg 80% 35%",
+    // Deep rose — visible on bright backgrounds
+    color: "linear-gradient(135deg, #be123c 0%, #9f1239 50%, #881337 100%)",
+    shadowColor: "350deg 80% 35%",
   },
 ```
 
@@ -342,16 +342,26 @@ Find where the customize overlay getters are returned (around line 801-818). Add
     },
 ```
 
-- [ ] **Step 4: Add to isAnyPanelOpen derived**
+- [ ] **Step 4: Add to PanelCoordinationState interface**
+
+Find the `PanelCoordinationState` interface (around lines 114-312). Add alongside the other panel getters/methods:
+
+```typescript
+  get isPresetDrawerOpen(): boolean;
+  openPresetDrawer(): void;
+  closePresetDrawer(): void;
+```
+
+- [ ] **Step 5: Add to isAnyPanelOpen derived**
 
 Find the `isAnyPanelOpen` derived getter (around line 934-948). Add `isPresetDrawerOpen ||` to the OR chain.
 
-- [ ] **Step 5: Verify build**
+- [ ] **Step 6: Verify build**
 
 Run: `npm run check`
 Expected: No type errors.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add src/lib/features/create/shared/state/panel-coordination-state.svelte.ts
@@ -391,7 +401,7 @@ PresetCard - Shows active preset name or opens drawer to browse presets
     cardIndex?: number;
   }>();
 
-  const title = $derived(activePreset ? "Preset" : "Preset");
+  const title = "Preset";
   const displayValue = $derived(
     activePreset ? `${activePreset.icon ?? ""} ${activePreset.name}`.trim() : "Browse"
   );
@@ -440,7 +450,7 @@ PresetDrawer - Bottom drawer for browsing and selecting generation presets
   import type { GenerationPreset } from "../../state/preset.svelte";
 
   let {
-    isOpen = $bindable(false),
+    isOpen = false,
     presets = [],
     activePresetId = null,
     onPresetSelect,
@@ -452,15 +462,6 @@ PresetDrawer - Bottom drawer for browsing and selecting generation presets
     onPresetSelect?: (preset: GenerationPreset) => void;
     onClose?: () => void;
   }>();
-
-  function handlePresetTap(preset: GenerationPreset) {
-    if (preset.id === activePresetId) {
-      // Tapping active preset deselects it
-      onPresetSelect?.(preset);
-    } else {
-      onPresetSelect?.(preset);
-    }
-  }
 
   // Build a brief summary string for a preset config
   function summarize(preset: GenerationPreset): string {
@@ -475,11 +476,11 @@ PresetDrawer - Bottom drawer for browsing and selecting generation presets
 </script>
 
 <Drawer
-  bind:isOpen
+  {isOpen}
   placement="bottom"
   respectLayoutMode={true}
   closeOnBackdrop={true}
-  onClose={onClose}
+  onclose={() => onClose?.()}
 >
   <div class="preset-drawer">
     <h3 class="drawer-title">Presets</h3>
@@ -489,7 +490,7 @@ PresetDrawer - Bottom drawer for browsing and selecting generation presets
         <button
           class="preset-item"
           class:active={preset.id === activePresetId}
-          onclick={() => handlePresetTap(preset)}
+          onclick={() => onPresetSelect?.(preset)}
         >
           <span class="preset-icon">{preset.icon ?? "🎯"}</span>
           <div class="preset-info">
@@ -708,12 +709,19 @@ And wrap the card interaction handlers with `withPresetDeselect`. The handlers t
 
 NOT wrapped: `handleGenerateClick`, `handleOpenPresetDrawer`.
 
-Replace each handler reference with its wrapped version. For example:
+Replace each handler reference with its wrapped version. For locally-defined handlers:
 
 ```typescript
         handleLevelChange: withPresetDeselect(handleLevelChange),
         handleLengthChange: withPresetDeselect(handleLengthChange),
-        // ... etc for all handlers listed above
+        // ... etc for all local handlers listed above
+```
+
+For prop-based handlers (which may be undefined), use null guards:
+
+```typescript
+        handleWordInput: onWordInput ? withPresetDeselect(onWordInput) : undefined,
+        handleWordSubmit: onWordSubmit ? withPresetDeselect(onWordSubmit) : undefined,
 ```
 
 - [ ] **Step 6: Add PresetCard to template**
@@ -735,7 +743,7 @@ After the closing `</div>` of card-settings-container (line 419), add:
 
 ```svelte
 <PresetDrawer
-  bind:isOpen={panelState.isPresetDrawerOpen}
+  isOpen={panelState.isPresetDrawerOpen}
   presets={presetState.presets}
   activePresetId={presetState.activePresetId}
   onPresetSelect={handlePresetSelected}
