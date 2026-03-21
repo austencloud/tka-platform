@@ -28,6 +28,9 @@ Card-based architecture with integrated Generate button:
   import DurationRhythmSheet from "./modals/DurationRhythmSheet.svelte";
   import LOOPDrawer from "./modals/LOOPDrawer.svelte";
   import CustomizeDrawer from "./modals/CustomizeDrawer.svelte";
+  import PresetDrawer from "./presets/PresetDrawer.svelte";
+  import { createPresetState } from "../state/preset.svelte";
+  import type { GenerationPreset } from "../state/preset.svelte";
   import type { GeneratorHelpId } from "../domain/generator-help-content";
   import { generateTourState } from "$lib/shared/onboarding/state/generate-tour-state.svelte";
   import GeneratePanelTour from "$lib/shared/onboarding/components/generate-tour/GeneratePanelTour.svelte";
@@ -69,10 +72,31 @@ Card-based architecture with integrated Generate button:
   );
   const deviceState = createDeviceState();
   const startEndState = createStartEndOptionsState();
+  const presetState = createPresetState();
 
   // Spell mode: derived from word presence (if there's a word, it's spell mode)
   const hasWord = $derived(!!spellModeState.inputWord?.trim());
   const isMobile = $derived(deviceState.isMobile);
+
+  function handlePresetSelected(preset: GenerationPreset) {
+    if (preset.id === presetState.activePresetId) {
+      presetState.deactivatePreset();
+      return;
+    }
+
+    presetState.activatePreset(preset.id);
+    configState.updateConfig(preset.config);
+
+    if (preset.startEndOptions) {
+      startEndState.setOptions(preset.startEndOptions);
+    }
+
+    if (spellModeState.inputWord?.trim()) {
+      spellModeState.setInputWord("");
+    }
+
+    panelState?.closePresetDrawer();
+  }
 
   async function handleGenerate(options: any) {
     if (hasWord) {
@@ -204,6 +228,7 @@ Card-based architecture with integrated Generate button:
       onCompleteCycle={() => actionsState.completeCycle()}
       {isMobile}
       onOpenWordInput={() => spellModeState.openWordInput()}
+      {presetState}
     />
   </div>
 </div>
@@ -257,6 +282,14 @@ Card-based architecture with integrated Generate button:
     isOpen={panelState.isCustomizeOverlayOpen}
     overlayProps={panelState.customizeOverlayProps}
     onClose={() => panelState.closeCustomizeOverlay()}
+  />
+
+  <PresetDrawer
+    isOpen={panelState.isPresetDrawerOpen}
+    presets={presetState.presets}
+    activePresetId={presetState.activePresetId}
+    onPresetSelect={handlePresetSelected}
+    onClose={() => panelState.closePresetDrawer()}
   />
 {/if}
 
