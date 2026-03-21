@@ -495,7 +495,7 @@
 
 <!-- Context menu for right-click on any choreo card thumbnail -->
 <ContextMenu menuState={contextMenuState} items={contextMenuItems} onClose={closeCardContextMenu} />
-<CardSettingsModal bind:open={cardSettingsOpen} />
+<CardSettingsModal bind:open={cardSettingsOpen} sequence={filteredSequences[0] ?? null} />
 
 <style>
   .choreo-card-tab {

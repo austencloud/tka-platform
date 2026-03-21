@@ -400,7 +400,7 @@
                     exportOptions={ctx.exportOptions}
                     onSendTo={overlay.sequence ? handleSendTo : undefined}
                   />
-                  <CardSettingsModal bind:open={cardSettingsOpen} />
+                  <CardSettingsModal bind:open={cardSettingsOpen} sequence={overlay.sequence} />
                   {#if isAnyExportActive}
                     <div class="export-panel-container" class:sidebar={!isMobileWidth && (isVideoExportActive || isVideoUploadActive)}>
                       {#if isVideoExportActive}

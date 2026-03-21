@@ -566,7 +566,7 @@
                 exportOptions={ctx.exportOptions}
                 onSendTo={sequence ? handleSendTo : undefined}
               />
-              <CardSettingsModal bind:open={cardSettingsOpen} />
+              <CardSettingsModal bind:open={cardSettingsOpen} {sequence} />
               {#if isAnyExportActive}
                 <div class="export-panel-container" class:sidebar={!isMobile && isVideoExportActive} transition:fade={{ duration: 200 }}>
                   {#if isVideoExportActive}
