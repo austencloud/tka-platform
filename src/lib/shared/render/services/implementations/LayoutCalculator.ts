@@ -199,7 +199,7 @@ export class LayoutCalculator implements ILayoutCalculator {
     5: [3, 3],      // 2 × 3 = 6 (fits 5)
     6: [3, 3],      // 2 × 3 = 6
     7: [3, 4],      // 2 × 4 = 8 (fits 7)
-    8: [3, 4],      // 2 × 4 = 8 ← portrait-friendly for playing cards
+    8: [3, 4],      // 2 × 4 = 8
     9: [4, 3],      // 3 × 3 = 9
     10: [3, 5],     // 2 × 5 = 10
     11: [4, 4],     // 3 × 4 = 12 (fits 11)
@@ -212,6 +212,50 @@ export class LayoutCalculator implements ILayoutCalculator {
     18: [5, 5],
     19: [5, 5],
     20: [5, 5],
+    21: [5, 6],     // 4 × 6 = 24 (fits 21-24)
+    22: [5, 6],
+    23: [5, 6],
+    24: [5, 6],
+    25: [5, 7],     // 4 × 7 = 28 (fits 25-28)
+    26: [5, 7],
+    27: [5, 7],
+    28: [5, 7],
+    29: [5, 8],     // 4 × 8 = 32 (fits 29-32)
+    30: [5, 8],
+    31: [5, 8],
+    32: [5, 8],
+    33: [5, 9],     // 4 × 9 = 36 (fits 33-36)
+    34: [5, 9],
+    35: [5, 9],
+    36: [5, 9],
+    37: [5, 10],    // 4 × 10 = 40 (fits 37-40)
+    38: [5, 10],
+    39: [5, 10],
+    40: [5, 10],
+    41: [5, 11],    // 4 × 11 = 44 (fits 41-44)
+    42: [5, 11],
+    43: [5, 11],
+    44: [5, 11],
+    45: [5, 12],    // 4 × 12 = 48 (fits 45-48)
+    46: [5, 12],
+    47: [5, 12],
+    48: [5, 12],
+    49: [5, 13],    // 4 × 13 = 52 (fits 49-52)
+    50: [5, 13],
+    51: [5, 13],
+    52: [5, 13],
+    53: [5, 14],    // 4 × 14 = 56 (fits 53-56)
+    54: [5, 14],
+    55: [5, 14],
+    56: [5, 14],
+    57: [5, 15],    // 4 × 15 = 60 (fits 57-60)
+    58: [5, 15],
+    59: [5, 15],
+    60: [5, 15],
+    61: [5, 16],    // 4 × 16 = 64 (fits 61-64)
+    62: [5, 16],
+    63: [5, 16],
+    64: [5, 16],
   };
 
   /**
@@ -246,7 +290,7 @@ export class LayoutCalculator implements ILayoutCalculator {
     }
 
     // Fallback for beat counts beyond our tables
-    return this.getFallbackLayout(stepCount, includeStartPosition);
+    return this.getFallbackLayout(stepCount, includeStartPosition, startPositionLayout);
   }
 
   /**
@@ -308,7 +352,8 @@ export class LayoutCalculator implements ILayoutCalculator {
    */
   private getFallbackLayout(
     stepCount: number,
-    includeStartPosition: boolean
+    includeStartPosition: boolean,
+    startPositionLayout: "row" | "column" = "row"
   ): [number, number] {
     if (stepCount === 0) {
       return [1, 1];
@@ -323,6 +368,9 @@ export class LayoutCalculator implements ILayoutCalculator {
     const columns = Math.max(1, Math.ceil(stepCount / rows));
 
     if (includeStartPosition) {
+      if (startPositionLayout === "column") {
+        return [columns + 1, rows];
+      }
       return [columns, rows + 1];
     }
     return [columns, rows];
