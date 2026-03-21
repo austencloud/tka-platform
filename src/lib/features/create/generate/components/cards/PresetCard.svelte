@@ -21,7 +21,7 @@ PresetCard - Shows active favorite name or opens drawer to browse favorites
   }>();
 
   const displayValue = $derived(
-    activeFavoriteName ? activeFavoriteName : "Browse"
+    activeFavoriteName ? activeFavoriteName : "Pick"
   );
 </script>
 
