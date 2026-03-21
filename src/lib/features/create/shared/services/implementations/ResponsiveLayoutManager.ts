@@ -53,6 +53,16 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
   }
 
   shouldUseSideBySideLayout(): boolean {
+    const viewportWidth = this.getViewportWidth();
+
+    // Hard gate: narrow viewports are NEVER side-by-side, regardless of what
+    // the device detector reports. This is the 10-year rule — viewport width
+    // is the only reliable signal. Device detection APIs lie (emulators,
+    // hybrid devices, future form factors).
+    if (viewportWidth < BREAKPOINTS.MOBILE) {
+      return false;
+    }
+
     const isDesktop = this.isDesktop();
     const isLandscapeMobile = this.isLandscapeMobile();
     const hasWideViewport = this.hasWideViewport();
@@ -60,11 +70,6 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
     const aspectRatio = this.getAspectRatio();
     const isSignificantlyLandscape = aspectRatio >= 1.15;
 
-    // Use side-by-side layout for CreateModule panels when:
-    // 1. Desktop with sufficient width for workspace + tool panel
-    // 2. Landscape mobile (phone sideways optimizes horizontal space)
-    // 3. Z Fold unfolded (wide screen perfect for panel arrangement)
-    // 4. Significantly landscape orientation (sequence viewing benefits)
     return (
       (isDesktop && hasWideViewport) ||
       isLandscapeMobile ||
