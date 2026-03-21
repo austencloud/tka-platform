@@ -41,8 +41,6 @@ Delegates ALL logic to services (SRP compliant)
   import CustomizeCard from "./cards/CustomizeCard.svelte";
   import WordInputCard from "./cards/WordInputCard.svelte";
   import PresetCard from "./cards/PresetCard.svelte";
-  import PresetDrawer from "./presets/PresetDrawer.svelte";
-  import { createPresetState } from "../state/preset.svelte";
   import type { GenerationPreset } from "../state/preset.svelte";
   // Props
   let {
@@ -60,6 +58,7 @@ Delegates ALL logic to services (SRP compliant)
     onCompleteCycle,
     isMobile = false,
     onOpenWordInput,
+    presetState,
   } = $props<{
     config: UIGenerationConfig;
     isFreeformMode: boolean;
@@ -71,14 +70,11 @@ Delegates ALL logic to services (SRP compliant)
     wordInputValue?: string;
     onWordInput?: (value: string) => void;
     onWordSubmit?: () => void;
-    /** When true, shows "Complete Cycle" button next to generate */
     needsCycleCompletion?: boolean;
-    /** Called when user clicks "Complete Cycle" */
     onCompleteCycle?: () => void;
-    /** Whether the app is in mobile layout — used to open word input overlay */
     isMobile?: boolean;
-    /** Called when user taps the word card on mobile to open the overlay */
     onOpenWordInput?: () => void;
+    presetState: ReturnType<typeof import("../state/preset.svelte").createPresetState>;
   }>();
 
   // Get panel coordination state from context (for LOOP expanded overlay)
@@ -241,8 +237,6 @@ Delegates ALL logic to services (SRP compliant)
     return () => window.removeEventListener("resize", updateFontSize);
   });
 
-  const presetState = createPresetState();
-
   function updateFontSize() {
     if (!typographyService) return;
     // Desktop gets larger header text (11-18px) for better readability
@@ -335,27 +329,7 @@ Delegates ALL logic to services (SRP compliant)
     startEndState?.setOptions(options);
   }
 
-  // Preset handlers
-  function handlePresetSelected(preset: GenerationPreset) {
-    if (preset.id === presetState.activePresetId) {
-      presetState.deactivatePreset();
-      return;
-    }
-
-    presetState.activatePreset(preset.id);
-    updateConfig(preset.config);
-
-    if (preset.startEndOptions && startEndState) {
-      startEndState.setOptions(preset.startEndOptions);
-    }
-
-    if (wordInputValue && onWordInput) {
-      onWordInput("");
-    }
-
-    panelState.closePresetDrawer();
-  }
-
+  // Preset: open drawer via panel state (drawer rendered in GeneratePanel)
   function handleOpenPresetDrawer() {
     panelState.openPresetDrawer();
   }
@@ -467,13 +441,6 @@ Delegates ALL logic to services (SRP compliant)
   {/each}
 </div>
 
-<PresetDrawer
-  isOpen={panelState.isPresetDrawerOpen}
-  presets={presetState.presets}
-  activePresetId={presetState.activePresetId}
-  onPresetSelect={handlePresetSelected}
-  onClose={() => panelState.closePresetDrawer()}
-/>
 
 <style>
   /* ============================================================ */

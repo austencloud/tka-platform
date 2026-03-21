@@ -1,23 +1,28 @@
 <!--
-PresetDrawer - Bottom drawer for browsing and selecting generation presets
+  PresetDrawer - Preset selection drawer
+  Desktop: right-side panel matching other create module drawers.
+  Mobile: bottom sheet.
+  Follows CustomizeDrawer pattern: portal + Drawer always in DOM.
 -->
 <script lang="ts">
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+  import { portal } from "../modals/portal";
+  import SheetDragHandle from "$lib/shared/foundation/ui/SheetDragHandle.svelte";
   import type { GenerationPreset } from "../../state/preset.svelte";
 
   let {
-    isOpen = false,
+    isOpen,
     presets = [],
     activePresetId = null,
     onPresetSelect,
     onClose,
-  } = $props<{
+  }: {
     isOpen: boolean;
     presets: GenerationPreset[];
     activePresetId?: string | null;
     onPresetSelect?: (preset: GenerationPreset) => void;
     onClose?: () => void;
-  }>();
+  } = $props();
 
   function summarize(preset: GenerationPreset): string {
     const c = preset.config;
@@ -26,51 +31,78 @@ PresetDrawer - Bottom drawer for browsing and selecting generation presets
     parts.push(c.gridMode === "diamond" ? "Diamond" : "Box");
     parts.push(`${c.length}ct`);
     if (c.loopEnabled) parts.push("LOOP");
-    return parts.join(" · ");
+    return parts.join(" \u00B7 ");
   }
 </script>
 
-<Drawer
-  {isOpen}
-  placement="bottom"
-  respectLayoutMode={true}
-  closeOnBackdrop={true}
-  onclose={() => onClose?.()}
->
-  <div class="preset-drawer">
-    <h3 class="drawer-title">Presets</h3>
+<div use:portal>
+  <Drawer
+    {isOpen}
+    placement="right"
+    respectLayoutMode={true}
+    showHandle={false}
+    closeOnBackdrop={true}
+    ariaLabel="Browse presets"
+    class="preset-drawer-sheet"
+    onclose={onClose}
+  >
+    <div class="preset-drawer-content">
+      <SheetDragHandle />
 
-    <div class="preset-list">
-      {#each presets as preset (preset.id)}
-        <button
-          class="preset-item"
-          class:active={preset.id === activePresetId}
-          onclick={() => onPresetSelect?.(preset)}
-        >
-          <span class="preset-icon">{preset.icon ?? "🎯"}</span>
-          <div class="preset-info">
-            <span class="preset-name">{preset.name}</span>
-            <span class="preset-summary">{summarize(preset)}</span>
-          </div>
-          {#if preset.id === activePresetId}
-            <span class="active-badge">Active</span>
-          {/if}
-        </button>
-      {/each}
+      <h3 class="drawer-title">Presets</h3>
+
+      <div class="preset-list">
+        {#each presets as preset (preset.id)}
+          <button
+            class="preset-item"
+            class:active={preset.id === activePresetId}
+            onclick={() => onPresetSelect?.(preset)}
+          >
+            <span class="preset-icon">{preset.icon ?? "🎯"}</span>
+            <div class="preset-info">
+              <span class="preset-name">{preset.name}</span>
+              <span class="preset-summary">{summarize(preset)}</span>
+            </div>
+            {#if preset.id === activePresetId}
+              <span class="active-badge">Active</span>
+            {/if}
+          </button>
+        {/each}
+      </div>
     </div>
-  </div>
-</Drawer>
+  </Drawer>
+</div>
 
 <style>
-  .preset-drawer {
-    padding: 1rem;
+  :global(.drawer-content.preset-drawer-sheet) {
+    --sheet-bg: transparent;
+    --sheet-border: none;
+    --sheet-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
+  }
+
+  :global(.drawer-content.preset-drawer-sheet[data-placement="right"]) {
+    --sheet-width: min(400px, 90vw);
+  }
+
+  .preset-drawer-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, #e11d48 20%, #1a1a2e) 0%,
+      color-mix(in srgb, #be123c 12%, #1a1a2e) 50%,
+      color-mix(in srgb, #e11d48 16%, #1a1a2e) 100%
+    );
+    gap: 12px;
   }
 
   .drawer-title {
-    font-size: var(--font-size-min, 14px);
+    font-size: var(--font-size-base, 16px);
     font-weight: 700;
     color: var(--theme-text, #fff);
-    margin: 0 0 0.75rem;
+    margin: 0;
     text-align: center;
   }
 
@@ -78,6 +110,9 @@ PresetDrawer - Bottom drawer for browsing and selecting generation presets
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
   }
 
   .preset-item {
@@ -85,8 +120,8 @@ PresetDrawer - Bottom drawer for browsing and selecting generation presets
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem 1rem;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: rgba(255, 255, 255, 0.06);
+    border: 1.5px solid rgba(255, 255, 255, 0.12);
     border-radius: var(--radius-md, 8px);
     color: var(--theme-text, #fff);
     cursor: pointer;
@@ -98,12 +133,12 @@ PresetDrawer - Bottom drawer for browsing and selecting generation presets
   }
 
   .preset-item:hover {
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    border-color: rgba(255, 255, 255, 0.25);
   }
 
   .preset-item.active {
     border-color: var(--theme-accent, #3b82f6);
-    background: rgba(59, 130, 246, 0.1);
+    background: rgba(59, 130, 246, 0.15);
   }
 
   .preset-icon {
@@ -134,5 +169,11 @@ PresetDrawer - Bottom drawer for browsing and selecting generation presets
     font-weight: 600;
     color: var(--theme-accent, #3b82f6);
     flex-shrink: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .preset-item {
+      transition: none;
+    }
   }
 </style>
