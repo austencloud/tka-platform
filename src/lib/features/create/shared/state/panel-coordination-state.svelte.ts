@@ -284,6 +284,11 @@ export interface PanelCoordinationState {
   triggerGeneratorHelpMode(): void;
   clearGeneratorHelpModeTrigger(): void;
 
+  // Preset Drawer State
+  get isPresetDrawerOpen(): boolean;
+  openPresetDrawer(): void;
+  closePresetDrawer(): void;
+
   // Customize Overlay State (Style + Rhythm + Start/End in one overlay)
   get isCustomizeOverlayOpen(): boolean;
   get customizeOverlayProps(): CustomizeOverlayProps | null;
@@ -406,6 +411,9 @@ export function createPanelCoordinationState(): PanelCoordinationState {
   let previewSequence = $state<SequenceData | null>(null);
   let originalSequence = $state<SequenceData | null>(null);
 
+  // Preset drawer state
+  let isPresetDrawerOpen = $state(false);
+
   // Customize overlay state (Style + Rhythm + Start/End)
   let isCustomizeOverlayOpen = $state(false);
   let customizeOverlayProps = $state<CustomizeOverlayProps | null>(null);
@@ -465,6 +473,8 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     customizeOverlayProps = null;
 
     isDurationRhythmPanelOpen = false;
+
+    isPresetDrawerOpen = false;
 
     isStartEndPanelOpen = false;
     startEndOptions = null;
@@ -817,6 +827,20 @@ export function createPanelCoordinationState(): PanelCoordinationState {
       customizeOverlayProps = null;
     },
 
+    // Preset Drawer Getters
+    get isPresetDrawerOpen() {
+      return isPresetDrawerOpen;
+    },
+
+    openPresetDrawer() {
+      closeAllPanels();
+      isPresetDrawerOpen = true;
+    },
+
+    closePresetDrawer() {
+      isPresetDrawerOpen = false;
+    },
+
     // Duration Rhythm Panel Getters
     get isDurationRhythmPanelOpen() {
       return isDurationRhythmPanelOpen;
@@ -943,6 +967,7 @@ export function createPanelCoordinationState(): PanelCoordinationState {
         isLOOPPanelOpen ||
         isCustomizeOverlayOpen ||
         isDurationRhythmPanelOpen ||
+        isPresetDrawerOpen ||
         isStartEndPanelOpen ||
         isSequenceViewerOpen
       );
