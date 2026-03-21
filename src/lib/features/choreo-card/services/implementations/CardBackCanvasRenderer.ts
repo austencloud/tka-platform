@@ -421,9 +421,9 @@ export class CardBackCanvasRenderer implements ICardBackCanvasRenderer {
 
     this.drawStepCount(ctx, data, innerX + cornerOffset, innerY + innerH - cornerOffset);
 
-    if (data.startPosition?.group) {
-      this.drawStartPositionGlyph(
-        ctx, data, innerX + innerW - cornerOffset, innerY + innerH - cornerOffset
+    if (data.startPosition) {
+      this.drawStartPositionMiniGrid(
+        ctx, data.startPosition, innerX + innerW - cornerOffset, innerY + innerH - cornerOffset
       );
     }
   }
@@ -547,21 +547,78 @@ export class CardBackCanvasRenderer implements ICardBackCanvasRenderer {
     ctx.restore();
   }
 
-  /** Bottom-right: starting position Greek glyph rendered as text */
-  private drawStartPositionGlyph(
+  /**
+   * Bottom-right: starting position mini-grid.
+   * Matches StartPositionMiniGrid.svelte — draws grid point circles
+   * (box=cardinal, diamond=intercardinal) with blue/red hand dots.
+   */
+  private drawStartPositionMiniGrid(
     ctx: CanvasRenderingContext2D,
-    data: CardBackData,
+    info: import("../../components/card-back/card-back-data").StartPositionInfo,
     rightEdge: number, bottomEdge: number
   ): void {
-    const glyph = POSITION_GLYPHS[data.startPosition?.group!] ?? "α";
-    const fontSize = 30 * SCALE;
+    const size = 40 * SCALE;
+    const cx = rightEdge - size / 2;
+    const cy = bottomEdge - size / 2;
+    const r = size * 0.4;
+    const dotR = size * 0.1;
+    const centerDotR = size * 0.04;
+
+    const ANGLES: Record<string, number> = {
+      n: -Math.PI / 2, ne: -Math.PI / 4, e: 0, se: Math.PI / 4,
+      s: Math.PI / 2, sw: (3 * Math.PI) / 4, w: Math.PI, nw: (-3 * Math.PI) / 4,
+    };
+
+    const gridPoints =
+      info.gridMode === "box" ? ["n", "e", "s", "w"] :
+      info.gridMode === "diamond" ? ["ne", "se", "sw", "nw"] :
+      ["n", "ne", "e", "se", "s", "sw", "w", "nw"];
 
     ctx.save();
-    ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
-    ctx.font = `${fontSize}px Georgia, serif`;
-    ctx.textAlign = "right";
-    ctx.textBaseline = "bottom";
-    ctx.fillText(glyph, rightEdge, bottomEdge);
+
+    // Center dot
+    ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+    ctx.beginPath();
+    ctx.arc(cx, cy, centerDotR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Grid point circles (outline)
+    for (const dir of gridPoints) {
+      const angle = ANGLES[dir] ?? 0;
+      const px = cx + r * Math.cos(angle);
+      const py = cy + r * Math.sin(angle);
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(px, py, dotR, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // Hand position dots
+    if (info.blueLocation && info.redLocation && info.blueLocation === info.redLocation) {
+      // Beta: both hands same position — purple
+      const angle = ANGLES[info.blueLocation] ?? 0;
+      ctx.fillStyle = "#9B59B6";
+      ctx.beginPath();
+      ctx.arc(cx + r * Math.cos(angle), cy + r * Math.sin(angle), dotR, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      if (info.blueLocation) {
+        const angle = ANGLES[info.blueLocation] ?? 0;
+        ctx.fillStyle = "#2E86DE";
+        ctx.beginPath();
+        ctx.arc(cx + r * Math.cos(angle), cy + r * Math.sin(angle), dotR, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      if (info.redLocation) {
+        const angle = ANGLES[info.redLocation] ?? 0;
+        ctx.fillStyle = "#E74C3C";
+        ctx.beginPath();
+        ctx.arc(cx + r * Math.cos(angle), cy + r * Math.sin(angle), dotR, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
     ctx.restore();
   }
 
