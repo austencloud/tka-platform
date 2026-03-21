@@ -14,6 +14,7 @@ import {
   ROTATED_LOOP_TYPES,
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
+import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
 // The anatomy grid shows which elements appear in the sequence.
 // Each field is a set of string values; the card renders present
@@ -345,7 +346,7 @@ export function deriveCardBackData(
   const cycle = sequence.orientationCycleCount;
 
   return {
-    word: sequence.word ?? sequence.name ?? "",
+    word: simplifyRepeatedWord(sequence.word ?? sequence.name ?? ""),
     stepCount: sequence.sequenceLength ?? sequence.steps?.length ?? 0,
     level: { ...badge, reason },
     anatomy,
