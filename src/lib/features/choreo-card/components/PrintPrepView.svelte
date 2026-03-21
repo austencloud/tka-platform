@@ -15,6 +15,8 @@
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+  import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
+  import type { ContextMenuState, ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
 
   interface Props {
     deck: Deck | null;
@@ -35,6 +37,7 @@
     back: HTMLCanvasElement;
     label: string;
     familyId: string;
+    sequence: SequenceData;
   }>>([]);
   let infoCardPair = $state<{ front: HTMLCanvasElement; back: HTMLCanvasElement } | null>(null);
   let isRendering = $state(false);
@@ -46,6 +49,67 @@
   let exportProgress = $state(0);
   let exportTotal = $state(0);
   let exportFormat = $state<"pdf" | "zip">("zip");
+
+  // ── Context menu ───────────────────────────────────────────────────
+  let contextMenuState: ContextMenuState = $state({ open: false });
+  let contextMenuTarget: { index: number } | null = $state(null);
+
+  function openContextMenu(e: MouseEvent, pairIndex: number) {
+    e.preventDefault();
+    contextMenuTarget = { index: pairIndex };
+    contextMenuState = { open: true, x: e.clientX, y: e.clientY };
+  }
+
+  function closeContextMenu() {
+    contextMenuState = { open: false };
+    contextMenuTarget = null;
+  }
+
+  const contextMenuItems: ContextMenuEntry[] = $derived([
+    {
+      id: "rerender",
+      label: "Rerender",
+      icon: "fas fa-sync-alt",
+      action: () => {
+        if (contextMenuTarget !== null) rerenderCard(contextMenuTarget.index);
+        closeContextMenu();
+      },
+    },
+    {
+      id: "rerender-all",
+      label: "Rerender all",
+      icon: "fas fa-redo",
+      action: () => {
+        renderAllCards();
+        closeContextMenu();
+      },
+    },
+  ]);
+
+  async function rerenderCard(index: number) {
+    if (!printRenderer) return;
+    const pair = renderedPairs[index];
+    if (!pair) return;
+
+    const options: PrintRenderOptions = {
+      showGrid: true,
+      showTKA: true,
+      showWord: true,
+      includeStartPosition: true,
+      handPointsVisible: true,
+      theme: selectedTheme,
+    };
+
+    try {
+      const front = await printRenderer.renderFront(pair.sequence, options);
+      const back = await printRenderer.renderBack(pair.sequence, options);
+      renderedPairs = renderedPairs.map((p, i) =>
+        i === index ? { ...p, front, back } : p
+      );
+    } catch (err) {
+      console.error(`Failed to rerender card ${index}:`, err);
+    }
+  }
 
   // ── Services ────────────────────────────────────────────────────────
   let printRenderer: IPrintCardRenderer | null = $state(null);
@@ -185,6 +249,7 @@
             back,
             label: simplifyRepeatedWord(seq.word ?? seq.name ?? `Card ${i + 1}`),
             familyId,
+            sequence: seq,
           },
         ];
       } catch (err) {
@@ -518,8 +583,15 @@
             <div class="family-section">
               <h3 class="family-label">{group.family.label}</h3>
               <div class="pair-grid">
-                {#each group.pairs as pair}
-                  <div class="card-pair">
+                {#each group.pairs as pair, pairIdx}
+                  <!-- svelte-ignore a11y_no_static_element_interactions -->
+                  <div
+                    class="card-pair"
+                    oncontextmenu={(e) => {
+                      const globalIdx = renderedPairs.indexOf(pair);
+                      openContextMenu(e, globalIdx);
+                    }}
+                  >
                     <div class="card-preview" class:show-bleed={showBleedOverlay}>
                       <img
                         class="preview-img"
@@ -574,6 +646,8 @@
     </div>
   {/if}
 </div>
+
+<ContextMenu menuState={contextMenuState} items={contextMenuItems} onClose={closeContextMenu} />
 
 <style>
   .print-prep {
