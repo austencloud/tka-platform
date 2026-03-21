@@ -118,26 +118,29 @@ Replaces the old GenerationModeCard (Freeform/Spell toggle).
   <CardHeader title="Word" {headerFontSize} />
 
   <div class="input-row">
-    <input
-      type="text"
-      class="word-field"
-      placeholder="A-Z"
-      value={wordValue}
-      oninput={handleInput}
-      onkeydown={handleKeydown}
-      onfocus={handleFocus}
-      autocomplete="off"
-      autocapitalize="off"
-      spellcheck="false"
-      {disabled}
-      readonly={isMobile}
-    />
+    <div class="input-wrapper">
+      <input
+        type="text"
+        class="word-field"
+        class:has-clear={hasWord && !disabled}
+        placeholder="A-Z"
+        value={wordValue}
+        oninput={handleInput}
+        onkeydown={handleKeydown}
+        onfocus={handleFocus}
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
+        {disabled}
+        readonly={isMobile}
+      />
 
-    {#if hasWord && !disabled}
-      <button class="clear-btn" onclick={handleClear} aria-label="Clear word" type="button">
-        <FontAwesomeIcon icon="times" style="solid" />
-      </button>
-    {/if}
+      {#if hasWord && !disabled}
+        <button class="clear-btn" onclick={handleClear} aria-label="Clear word" type="button">
+          <FontAwesomeIcon icon="times" style="solid" />
+        </button>
+      {/if}
+    </div>
   </div>
 </div>
 
@@ -183,13 +186,19 @@ Replaces the old GenerationModeCard (Freeform/Spell toggle).
   .input-row {
     display: flex;
     align-items: center;
-    gap: 4px;
     flex: 1;
     min-height: 0;
   }
 
-  .word-field {
+  .input-wrapper {
+    position: relative;
     flex: 1;
+    min-width: 0;
+    height: 100%;
+  }
+
+  .word-field {
+    width: 100%;
     min-width: 0;
     background: rgba(0, 0, 0, 0.2);
     border: 1.5px solid rgba(255, 255, 255, 0.2);
@@ -203,6 +212,11 @@ Replaces the old GenerationModeCard (Freeform/Spell toggle).
     height: 100%;
     font-family: inherit;
     transition: border-color 150ms ease;
+  }
+
+  /* Shift text left to make room for the overlaid clear button */
+  .word-field.has-clear {
+    padding-right: 24px;
   }
 
   .word-field:focus:not(:focus-visible) {
@@ -231,22 +245,26 @@ Replaces the old GenerationModeCard (Freeform/Spell toggle).
   }
 
   .clear-btn {
-    position: relative;
+    position: absolute;
+    right: 3px;
+    top: 50%;
+    transform: translateY(-50%);
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    width: 18px;
+    height: 18px;
     flex-shrink: 0;
-    background: rgba(0, 0, 0, 0.25);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.35);
+    border: none;
+    border-radius: 50%;
     color: rgba(255, 255, 255, 0.7);
     cursor: pointer;
-    font-size: 12px;
+    font-size: 9px;
     transition: all 100ms ease;
   }
 
+  /* Expand touch target without expanding visual size */
   .clear-btn::before {
     content: "";
     position: absolute;
