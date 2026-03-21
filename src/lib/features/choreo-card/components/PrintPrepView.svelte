@@ -31,15 +31,37 @@
   let showBleedOverlay = $state(loadBool("printPrep.showBleed", false));
   let selectedTheme = $state(loadString("printPrep.theme", "nightSky"));
 
+  // ── Visibility settings (shared with other choreo card tabs via localStorage) ──
+  let showGrid = $state(loadBool("choreoCard.showGrid", true));
+  let showTKA = $state(loadBool("choreoCard.showTKA", true));
+  let showWord = $state(loadBool("choreoCard.showWord", true));
+  let includeStartPosition = $state(loadBool("choreoCard.includeStartPosition", true));
+  let handPointsVisible = $state(loadBool("choreoCard.handPointsVisible", true));
+
+  /** Build render options from current settings */
+  function buildRenderOptions(): PrintRenderOptions {
+    return {
+      showGrid,
+      showTKA,
+      showWord,
+      includeStartPosition,
+      handPointsVisible,
+      theme: selectedTheme,
+    };
+  }
+
   // ── Render state ────────────────────────────────────────────────────
+  // Store data URL strings (not canvases) so Svelte can detect changes for <img> reactivity
   let renderedPairs = $state<Array<{
+    frontSrc: string;
+    backSrc: string;
     front: HTMLCanvasElement;
     back: HTMLCanvasElement;
     label: string;
     familyId: string;
     sequence: SequenceData;
   }>>([]);
-  let infoCardPair = $state<{ front: HTMLCanvasElement; back: HTMLCanvasElement } | null>(null);
+  let infoCardPair = $state<{ frontSrc: string; backSrc: string; front: HTMLCanvasElement; back: HTMLCanvasElement } | null>(null);
   let isRendering = $state(false);
   let renderProgress = $state(0);
   let renderTotal = $state(0);
@@ -91,20 +113,15 @@
     const pair = renderedPairs[index];
     if (!pair) return;
 
-    const options: PrintRenderOptions = {
-      showGrid: true,
-      showTKA: true,
-      showWord: true,
-      includeStartPosition: true,
-      handPointsVisible: true,
-      theme: selectedTheme,
-    };
+    const options = buildRenderOptions();
 
     try {
       const front = await printRenderer.renderFront(pair.sequence, options);
       const back = await printRenderer.renderBack(pair.sequence, options);
       renderedPairs = renderedPairs.map((p, i) =>
-        i === index ? { ...p, front, back } : p
+        i === index
+          ? { ...p, front, back, frontSrc: front.toDataURL("image/png"), backSrc: back.toDataURL("image/png") }
+          : p
       );
     } catch (err) {
       console.error(`Failed to rerender card ${index}:`, err);
@@ -218,20 +235,18 @@
 
     renderTotal = orderedSequences.length;
 
-    const options: PrintRenderOptions = {
-      showGrid: true,
-      showTKA: true,
-      showWord: true,
-      includeStartPosition: true,
-      handPointsVisible: true,
-      theme: selectedTheme,
-    };
+    const options = buildRenderOptions();
 
     // Render info cards
     try {
       const infoFront = await printRenderer.renderInfoCardFront(selectedTheme);
       const infoBack = await printRenderer.renderInfoCardBack(selectedTheme);
-      infoCardPair = { front: infoFront, back: infoBack };
+      infoCardPair = {
+        front: infoFront,
+        back: infoBack,
+        frontSrc: infoFront.toDataURL("image/png"),
+        backSrc: infoBack.toDataURL("image/png"),
+      };
     } catch (err) {
       console.error("Failed to render info cards:", err);
     }
@@ -247,6 +262,8 @@
           {
             front,
             back,
+            frontSrc: front.toDataURL("image/png"),
+            backSrc: back.toDataURL("image/png"),
             label: simplifyRepeatedWord(seq.word ?? seq.name ?? `Card ${i + 1}`),
             familyId,
             sequence: seq,
@@ -542,7 +559,7 @@
                   <div class="card-preview" class:show-bleed={showBleedOverlay}>
                     <img
                       class="preview-img"
-                      src={infoCardPair.front.toDataURL("image/png")}
+                      src={infoCardPair.frontSrc}
                       alt="Rules card front"
                     />
                     {#if showBleedOverlay}<div class="bleed-overlay" aria-hidden="true"></div>{/if}
@@ -559,7 +576,7 @@
                   <div class="card-preview" class:show-bleed={showBleedOverlay}>
                     <img
                       class="preview-img"
-                      src={infoCardPair.back.toDataURL("image/png")}
+                      src={infoCardPair.backSrc}
                       alt="Rules card back"
                     />
                     {#if showBleedOverlay}<div class="bleed-overlay" aria-hidden="true"></div>{/if}
@@ -595,7 +612,7 @@
                     <div class="card-preview" class:show-bleed={showBleedOverlay}>
                       <img
                         class="preview-img"
-                        src={pair.front.toDataURL("image/png")}
+                        src={pair.frontSrc}
                         alt="{pair.label} front"
                         loading="lazy"
                       />
@@ -613,7 +630,7 @@
                     <div class="card-preview" class:show-bleed={showBleedOverlay}>
                       <img
                         class="preview-img"
-                        src={pair.back.toDataURL("image/png")}
+                        src={pair.backSrc}
                         alt="{pair.label} back"
                         loading="lazy"
                       />
