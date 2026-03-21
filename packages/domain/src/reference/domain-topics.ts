@@ -129,8 +129,8 @@ Given maximum turn count T (number of distinct turn values) and float availabili
 **L1: 0 turns only, 4-point grid, no float** -> 6 states per perimeter point
 **L2: Whole turns 0-3, 4-point grid, no float** -> 30 states
 **L3: Half-turns (7 values), 4-point grid, float** -> 56 states
-**L4: Same turns as L3, 8-point grid, float** -> 116 states (6 shift destinations)
-**L5: Same turns, 9-point grid** -> 129 from perimeter, 117 from center
+**L4: Same turns as L3, 5-point grid (4 perimeter + center), float** -> 69 from perimeter, 65 from center
+**L5: Same turns, 9-point grid (8 perimeter + center)** -> 129 from perimeter, 117 from center
 **Ceiling (L6+): Quarter-turns (13 values), 9-point grid** -> 237 from perimeter, 225 from center
 
 ### Summary Table
@@ -140,7 +140,7 @@ Given maximum turn count T (number of distinct turn values) and float availabili
 | L1 | 4-pt | 1 (0 only) | No | **6** | -- |
 | L2 | 4-pt | 4 (0,1,2,3) | No | **30** | -- |
 | L3 | 4-pt | 7 (0-3 + halves) | Yes | **56** | -- |
-| L4 | 8-pt | 7 | Yes | **116** | -- |
+| L4 | 5-pt | 7 | Yes | **69** | **65** |
 | L5 | 9-pt | 7 | Yes | **129** | **117** |
 | Ceiling | 9-pt | 13 (0-3 + quarters) | Yes | **237** | **225** |
 
@@ -154,9 +154,10 @@ The original estimate of 214 possibilities was based on incorrect assumptions (0
 
 **L3 (56 states):** T=7. Shift: 2 x (2*7+1) = 30. Dash: 1 x 13 = 13. Static: 13.
 
-**L4 (116 states):** 8-point grid = 6 shift destinations. Shift: 6 x 15 = 90. Dash: 13. Static: 13.
+**L4 from perimeter (69):** 5-point grid (4 perimeter + center). Shift: 2 x 15 = 30. Dash: 13. Hash (to center): 13. Static: 13.
+**L4 from center (65):** Hash (to 4 perimeter): 4 x 13 = 52. Static: 13.
 
-**L5 from perimeter (129):** Shift: 90. Dash: 13. Hash (to center): 13. Static: 13.
+**L5 from perimeter (129):** 9-point grid (8 perimeter + center). Shift: 6 x 15 = 90. Dash: 13. Hash (to center): 13. Static: 13.
 **L5 from center (117):** Hash (to 8 perimeter): 8 x 13 = 104. Static: 13.
 
 **Ceiling from perimeter (237):** T=13. Shift: 6 x 27 = 162. Dash: 25. Hash: 25. Static: 25.
@@ -183,17 +184,17 @@ Three fundamental hand path families, distinguished by geometry:
 
 Both shifts and dashes support **path length modifiers** displayed per-hand in the turns column of the TKA glyph.
 
-**For shifts (L4+, 8-point grid):**
+**For dashes (L4+/L7+):**
+- (none): Standard dash -- perimeter to opposite perimeter (L1+)
+- -: Dash- (hash) -- perimeter to center or center to perimeter (L4+)
+- +: Dash+ -- perimeter to center of *other* grid (L7+)
+- ++: Dash++ -- perimeter to opposite perimeter of *other* grid (L7+)
+
+**For shifts (L5+, 8-point grid):**
 - (none): Standard shift -- arc to adjacent point (1 segment)
 - +: Skew+ -- extended arc (e.g., S to NE, 3 segments)
 - -: Skew- -- shortened arc (less than 1 segment)
 - ++: Skew++ -- double-extended arc
-
-**For dashes (L5+/L7+):**
-- (none): Standard dash -- perimeter to opposite perimeter (L1+)
-- -: Dash- (hash) -- perimeter to center or center to perimeter (L5+)
-- +: Dash+ -- perimeter to center of *other* grid (L7+)
-- ++: Dash++ -- perimeter to opposite perimeter of *other* grid (L7+)
 
 **Dash- is called "hash"** -- a shortened dash to/from center instead of to the opposite perimeter point. Same geometry, same rotation rules, half the distance.
 
@@ -216,9 +217,9 @@ The letter type system classifies by **hand path family** (shift, dash, static):
 
 When two grids share a junction point (Level 7), new straight-line paths emerge crossing the grid boundary. Dash+/++ follow straight-line trajectories (not curved arcs), so they follow dash rotation rules. No new letters needed -- existing letter classification covers all combinations.
 
-**Dash- vs Dash+:** Dash- (L5) goes to center of *same* grid. Dash+ (L7) goes to center of *other* grid. Both are straight-line paths to a center point.
+**Dash- vs Dash+:** Dash- (L4) goes to center of *same* grid. Dash+ (L7) goes to center of *other* grid. Both are straight-line paths to a center point.
 
-### Skews (L4+ only, 8-point grid)
+### Skews (L5+ only, 8-point grid)
 
 When the 8-point grid is available, shifts can traverse arcs longer or shorter than standard:
 - **Skew+** (shift+): Extended arc (e.g., S to NE, spanning 3 segments)
@@ -240,14 +241,20 @@ Skews support all three shift motion types (pro, anti, float). Theoretically unb
 | 1 | Foundation | 0 turns, basic positions | Foundation |
 | 2 | Whole turns | 0-3 whole turns | Foundation |
 | 3 | Half turns + float | Halves, float motion type | Foundation |
-| 4 | Skewed grid | 8-point grid, skew+ and skew- | Grid mixing |
-| 5 | Centric | Center point, hash hand path, tau/terra positions | New grid point |
+| 4 | Centric | Center point, hash hand path, tau/terra positions | New grid point |
+| 5 | Skewed grid | 8-point grid, skew+ and skew- | Grid mixing |
 | 6 | Interradial orientations | 8 orientations, quarter turns, completes single-grid 2D | Orientation freedom |
 | 7 | Conjoined grids | Dual grids sharing a junction point, extended dashes | Canvas expansion |
 | 8 | Atomics | Multi-plane / 3D (wall, wheel, overhead) | New dimension |
 | 9 | Rubik's cube | Skewed across intersecting planes | 3D COMPLETE |
 
 ### Why This Order
+
+**Centric before skewed (L4 before L5):**
+- Center point adds 1 new location and 1 new hand path (hash) -- a +23% state space expansion
+- Skewed grid adds 4 new locations and introduces grid mode mixing -- a +87% expansion
+- Centric motions are intuitive and commonly reached for before skewed positions
+- Skewed grid shares cognitive complexity with interradials (L6), grouping the "hard 2D" together
 
 **Interradials before conjoined (L6 before L7):**
 - Complete all orientation freedom within one grid before expanding beyond one grid
@@ -263,8 +270,8 @@ Skews support all three shift motion types (pro, anti, float). Theoretically unb
   },
 
   "skewed-letters": {
-    title: "Letter Types on the 8-Point Grid (L4 Skewed)",
-    content: `## Letter Types on the 8-Point Grid (L4 Skewed)
+    title: "Letter Types on the 8-Point Grid (L5 Skewed)",
+    content: `## Letter Types on the 8-Point Grid (L5 Skewed)
 
 > **Audit note (Feb 2026):** This section was drafted during a long exploratory conversation. Core conclusions validated by Austen, but details/framing may contain errors.
 
@@ -760,7 +767,7 @@ At 1+ turns: CW or CCW direction (2 states per turn count).
 
 Hash is dash with a **-** modifier -- same rotation physics, shorter distance.
 
-### Skews (L4+ only, 8-point grid)
+### Skews (L5+ only, 8-point grid)
 
 Shifts can traverse arcs longer or shorter than standard:
 - **Skew+** (shift+): Extended arc (e.g., S to NE, spanning 3 segments)

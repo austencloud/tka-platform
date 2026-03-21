@@ -16,9 +16,9 @@
 
   // Use the canonical level styles from difficulty-styles.ts
   const LEVEL_GRADIENTS = [
-    { num: 1, label: "No turns", gradient: DIFFICULTY_LEVELS[1]!.cssBg, textColor: DIFFICULTY_LEVELS[1]!.text },
-    { num: 2, label: "Whole turns", gradient: DIFFICULTY_LEVELS[2]!.cssBg, textColor: DIFFICULTY_LEVELS[2]!.text },
-    { num: 3, label: "Half turns, float", gradient: DIFFICULTY_LEVELS[3]!.cssBg, textColor: DIFFICULTY_LEVELS[3]!.text },
+    { num: 1, label: "Base Motions", gradient: DIFFICULTY_LEVELS[1]!.cssBg, textColor: DIFFICULTY_LEVELS[1]!.text },
+    { num: 2, label: "Whole Turns", gradient: DIFFICULTY_LEVELS[2]!.cssBg, textColor: DIFFICULTY_LEVELS[2]!.text },
+    { num: 3, label: "Half Turns, Floats", gradient: DIFFICULTY_LEVELS[3]!.cssBg, textColor: DIFFICULTY_LEVELS[3]!.text },
   ];
 </script>
 
@@ -165,7 +165,7 @@
   .diagram-card {
     position: relative;
     width: 100%;
-    height: 70px;
+    height: 100px;
     border: 1.5px solid rgba(255, 255, 255, 0.15);
     border-radius: 6px;
     display: flex;
@@ -223,17 +223,19 @@
     font-weight: 600;
   }
 
-  /* Level list with real gradient badges */
+  /* Level list: horizontal row of badge + label */
   .level-list {
     display: flex;
-    flex-direction: column;
-    gap: 6px;
+    justify-content: space-between;
+    gap: 8px;
   }
 
   .level-row {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 4px;
+    flex: 1;
   }
 
   .level-badge {
@@ -250,8 +252,9 @@
   }
 
   .level-desc {
-    font-size: 13px;
+    font-size: 11px;
     color: rgba(255, 255, 255, 0.55);
+    text-align: center;
   }
 
   .body-text {

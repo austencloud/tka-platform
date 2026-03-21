@@ -82,9 +82,9 @@
   });
 
   const levelMeta: Record<number, { name: string; detail: string }> = {
-    1: { name: "Foundation", detail: "No rotation" },
-    2: { name: "Turning", detail: "Whole turns" },
-    3: { name: "Precision", detail: "Half turns" },
+    1: { name: "Base Motions", detail: "" },
+    2: { name: "Whole Turns", detail: "" },
+    3: { name: "Half Turns, Floats", detail: "" },
   };
 </script>
 

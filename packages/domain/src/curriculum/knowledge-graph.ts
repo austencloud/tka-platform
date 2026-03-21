@@ -164,87 +164,87 @@ export const KNOWLEDGE_GRAPH: KnowledgeConcept[] = [
   },
 
   // ═══════════════════════════════════════════════════════════════════
-  // LEVEL 4: Skewed Grid
-  // Mixing grid modes (diamond ↔ box). 8-point grid. Skew categories.
+  // LEVEL 4: Centric
+  // Center grid point. Hash motion. Tau/terra positions.
   // ═══════════════════════════════════════════════════════════════════
 
   {
     id: "4.1",
     level: 4,
     subLevel: 1,
-    name: "Grid Mode Mixing",
+    name: "Center Point",
     prerequisites: ["3.4"],
-    terms: ["skew", "skewed", "mixed grid", "diamond-box", "grid mode", "8-point grid"],
-    description: "Combining diamond and box grid modes into the full 8-point grid",
+    terms: ["center", "center point", "5-point grid", "centric"],
+    description: "The 5th grid location at the center of the grid",
   },
   {
     id: "4.2",
     level: 4,
     subLevel: 2,
-    name: "Zeta and Eta Positions",
+    name: "Hash Motion",
     prerequisites: ["4.1"],
-    terms: ["zeta", "eta", "ζ", "η", "obtuse", "acute"],
-    description: "New positions from mixing grid systems: obtuse (zeta) and acute (eta)",
+    terms: ["hash", "half-dash", "center motion"],
+    description: "Straight-line path to/from the center point",
   },
   {
     id: "4.3",
     level: 4,
     subLevel: 3,
-    name: "Skew Modifiers",
+    name: "Tau and Terra Positions",
     prerequisites: ["4.2"],
-    terms: ["+", "-", "skew+", "skew-", "skew modifier", "extended arc", "shortened arc"],
-    description: "Extended and shortened shift arcs on the 8-point grid",
+    terms: ["tau", "terra", "τ", "center position"],
+    description: "New positions involving the center point",
   },
   {
     id: "4.4",
     level: 4,
     subLevel: 4,
-    name: "Skew Transitions",
+    name: "Center Orientations",
     prerequisites: ["4.3"],
-    terms: ["maintain skew", "resolve skew", "double skew", "dual skew"],
-    description: "Entering, maintaining, and exiting skewed positions",
+    terms: ["centerN", "centerNE", "centerE", "centerSE", "centerS", "centerSW", "centerW", "centerNW"],
+    description: "8 compass-based orientations for the center grid point",
   },
 
   // ═══════════════════════════════════════════════════════════════════
-  // LEVEL 5: Centric
-  // Center grid point. Hash motion. Tau/terra positions.
+  // LEVEL 5: Skewed Grid
+  // Mixing grid modes (diamond ↔ box). 8-point grid. Skew categories.
   // ═══════════════════════════════════════════════════════════════════
 
   {
     id: "5.1",
     level: 5,
     subLevel: 1,
-    name: "Center Point",
+    name: "Grid Mode Mixing",
     prerequisites: ["4.4"],
-    terms: ["center", "center point", "9-point grid", "centric"],
-    description: "The 9th grid location at the center of the grid",
+    terms: ["skew", "skewed", "mixed grid", "diamond-box", "grid mode", "8-point grid"],
+    description: "Combining diamond and box grid modes into the full 8-point grid",
   },
   {
     id: "5.2",
     level: 5,
     subLevel: 2,
-    name: "Hash Motion",
+    name: "Zeta and Eta Positions",
     prerequisites: ["5.1"],
-    terms: ["hash", "half-dash", "center motion"],
-    description: "Straight-line path to/from the center point",
+    terms: ["zeta", "eta", "ζ", "η", "obtuse", "acute"],
+    description: "New positions from mixing grid systems: obtuse (zeta) and acute (eta)",
   },
   {
     id: "5.3",
     level: 5,
     subLevel: 3,
-    name: "Tau and Terra Positions",
+    name: "Skew Modifiers",
     prerequisites: ["5.2"],
-    terms: ["tau", "terra", "τ", "center position"],
-    description: "New positions involving the center point",
+    terms: ["+", "-", "skew+", "skew-", "skew modifier", "extended arc", "shortened arc"],
+    description: "Extended and shortened shift arcs on the 8-point grid",
   },
   {
     id: "5.4",
     level: 5,
     subLevel: 4,
-    name: "Center Orientations",
+    name: "Skew Transitions",
     prerequisites: ["5.3"],
-    terms: ["centerN", "centerNE", "centerE", "centerSE", "centerS", "centerSW", "centerW", "centerNW"],
-    description: "8 compass-based orientations for the center grid point",
+    terms: ["maintain skew", "resolve skew", "double skew", "dual skew"],
+    description: "Entering, maintaining, and exiting skewed positions",
   },
 
   // ═══════════════════════════════════════════════════════════════════

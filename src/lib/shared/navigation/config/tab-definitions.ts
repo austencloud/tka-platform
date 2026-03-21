@@ -585,18 +585,18 @@ export const LAB_TABS: Section[] = [
   {
     id: "level4",
     label: "Level 4",
-    icon: '<i class="fas fa-bezier-curve" aria-hidden="true"></i>',
-    description: "Skewed positions (Zeta & Eta)",
-    color: "#f97316",
-    gradient: "linear-gradient(135deg, #fb923c 0%, #f97316 100%)",
-  },
-  {
-    id: "level5",
-    label: "Level 5",
     icon: '<i class="fas fa-bullseye" aria-hidden="true"></i>',
     description: "Centric positions (Tau & Terra)",
     color: "#06b6d4",
     gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
+  },
+  {
+    id: "level5",
+    label: "Level 5",
+    icon: '<i class="fas fa-bezier-curve" aria-hidden="true"></i>',
+    description: "Skewed positions (Zeta & Eta)",
+    color: "#f97316",
+    gradient: "linear-gradient(135deg, #fb923c 0%, #f97316 100%)",
   },
   {
     id: "level7",
