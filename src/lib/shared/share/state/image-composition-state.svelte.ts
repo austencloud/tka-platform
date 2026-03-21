@@ -125,6 +125,22 @@ class ImageCompositionStateManager {
       // Fall back to localStorage for guests or if no Firebase settings exist
       this.loadFromStorage();
     }
+
+    // Migrate: old persisted "row" default → new "column" default.
+    // Only migrate if there are no per-step-count overrides (user hasn't customized yet).
+    if (
+      this.settings.startPositionLayout === "row" &&
+      (!this.settings.startPositionLayoutOverrides ||
+        Object.keys(this.settings.startPositionLayoutOverrides).length === 0)
+    ) {
+      this.settings.startPositionLayout = "column";
+      this.saveToStorage();
+    }
+
+    // Ensure overrides object exists for older persisted data
+    if (!this.settings.startPositionLayoutOverrides) {
+      this.settings.startPositionLayoutOverrides = {};
+    }
     // Note: darkMode is synced from AnimationVisibilityManager in syncWithAnimationVisibility()
   }
 

@@ -469,8 +469,8 @@ export class LayoutCalculator implements ILayoutCalculator {
    * @returns Aspect ratio (width / height) for the gallery thumbnail
    */
   calculateGalleryAspectRatio(stepCount: number): number {
-    // Gallery variant always includes start position
-    const [columns, rows] = this.calculateLayout(stepCount, true);
+    // Gallery variant always includes start position as a left column
+    const [columns, rows] = this.calculateLayout(stepCount, true, "column");
 
     // Header = stepSize/3, Footer = stepSize/7
     // Total fractional height: 1/3 + 1/7 = 7/21 + 3/21 = 10/21
@@ -502,7 +502,7 @@ export class LayoutCalculator implements ILayoutCalculator {
       hasFooter = true,
     } = options;
 
-    const [columns, rows] = this.calculateLayout(stepCount, includeStartPosition);
+    const [columns, rows] = this.calculateLayout(stepCount, includeStartPosition, "column");
 
     // Calculate additional height fraction relative to stepSize
     let additionalHeightFraction = 0;

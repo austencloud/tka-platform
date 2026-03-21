@@ -54,7 +54,7 @@ export class ThumbnailKeyDeriver implements IThumbnailKeyDeriver {
           mode,
           variant: input.variant,
           loop: input.loopType ?? null,
-          spl: input.startPositionLayout ?? "row",
+          spl: input.startPositionLayout ?? "column",
         }
       : this.buildFullHashInput(input);
 
@@ -117,8 +117,8 @@ export class ThumbnailKeyDeriver implements IThumbnailKeyDeriver {
       input.includeStartPosition !== defaults.includeStartPosition
     )
       return false;
-    // startPositionLayout: "row" is the default, "column" is non-default
-    if (input.startPositionLayout !== undefined && input.startPositionLayout !== "row")
+    // startPositionLayout: "column" is the default, "row" is non-default
+    if (input.startPositionLayout !== undefined && input.startPositionLayout !== "column")
       return false;
     if (
       input.addDifficultyLevel !== undefined &&
@@ -194,7 +194,7 @@ export class ThumbnailKeyDeriver implements IThumbnailKeyDeriver {
       addWord: input.addWord,
       addStepNumbers: input.addStepNumbers,
       includeStartPosition: input.includeStartPosition,
-      startPositionLayout: input.startPositionLayout ?? "row",
+      startPositionLayout: input.startPositionLayout ?? "column",
       addDifficultyLevel: input.addDifficultyLevel,
       addUserInfo: input.addUserInfo,
       showCreatorName: input.showCreatorName,

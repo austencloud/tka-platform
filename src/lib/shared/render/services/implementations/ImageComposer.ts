@@ -236,7 +236,7 @@ export class ImageComposer implements IImageComposer {
       [columns, rows] = this.layoutService.calculateLayout(
         stepCount,
         options.includeStartPosition ?? false,
-        options.startPositionLayout ?? "row"
+        options.startPositionLayout ?? "column"
       );
     }
 
@@ -361,7 +361,7 @@ export class ImageComposer implements IImageComposer {
 
     // Step 5: Render all steps in the grid
     // Layout mode determines whether start position uses a row or column offset
-    const layoutMode = options.startPositionLayout ?? "row";
+    const layoutMode = options.startPositionLayout ?? "column";
     const useColumnMode = layoutMode === "column" && options.includeStartPosition;
     const startRow = (!useColumnMode && options.includeStartPosition) ? 1 : 0;
     const startColumn = useColumnMode ? 1 : 0;
@@ -918,7 +918,7 @@ export class ImageComposer implements IImageComposer {
     }
 
     // Match the same layout logic as the rendering loop
-    const layoutMode = options.startPositionLayout ?? "row";
+    const layoutMode = options.startPositionLayout ?? "column";
     const useColumnMode = layoutMode === "column" && !!options.includeStartPosition;
     const startRow = (!useColumnMode && options.includeStartPosition) ? 1 : 0;
     const startColumn = useColumnMode ? 1 : 0;
@@ -946,7 +946,7 @@ export class ImageComposer implements IImageComposer {
     sequence: SequenceData,
     options: Partial<SequenceExportOptions>
   ): { col: number; row: number } | null {
-    const layoutMode = options.startPositionLayout ?? "row";
+    const layoutMode = options.startPositionLayout ?? "column";
     const useColumnMode = layoutMode === "column" && !!options.includeStartPosition;
 
     // Row mode: QR in rightmost cell of start row (row 0)
@@ -1376,7 +1376,7 @@ export class ImageComposer implements IImageComposer {
     const layout = this.layoutService.calculateLayout(
       stepCount,
       options.includeStartPosition ?? false,
-      options.startPositionLayout ?? "row"
+      options.startPositionLayout ?? "column"
     );
     const [columns, rows] = layout;
     const baseBeatSize = options.stepSize || 120;
