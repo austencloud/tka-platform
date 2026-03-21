@@ -211,9 +211,10 @@ scripts/model-curator/
 # Monorepo remnants
 packages/manifest.json
 
-# Old functions/ dir (Firebase Cloud Functions moved to firebase-functions/)
-# Cloudflare Pages reserves "functions/" for Pages Functions - must not exist in repo
-functions/
+# Cloudflare Pages Functions — only the API routes are committed
+# Ignore build artifacts and dependencies inside functions/
+functions/node_modules/
+functions/.env
 
 # Flow arts transcription pipeline (audio is reproducible via yt-dlp, SRTs are tracked)
 flow-arts-transcripts/audio/
