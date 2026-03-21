@@ -99,9 +99,12 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
     };
 
     // Visibility settings
+    // Suppress TKA glyphs and reversals in hand path mode AND solo view mode.
+    // Letters require both hands — they're meaningless for single-prop rendering.
+    const suppressOverlays = isHandPath || isSoloView;
     const visibility: LayerVisibility = {
-      showTKA: isHandPath ? false : (options.showTKA ?? true),
-      showReversals: isHandPath ? false : (options.showReversals ?? true),
+      showTKA: suppressOverlays ? false : (options.showTKA ?? true),
+      showReversals: suppressOverlays ? false : (options.showReversals ?? true),
     };
 
     // Render via WorkerRenderPool (off-thread when available, main-thread fallback)
