@@ -113,16 +113,21 @@
     { value: 4320, label: "8K" },
   ];
 
-  // Initialize effect overrides from viewer state on first open
+  // Initialize effect overrides from viewer state on first open.
+  // Only one effect can be active at a time (radio behavior).
   $effect(() => {
     if (!exportOptions.videoEffectOverrides && viewerEffects.length > 0) {
+      // Find the first active effect from the viewer state
+      const activeEffect = viewerEffects.find((e) => e.active);
       const overrides = {
-        fire: viewerEffects.find((e) => e.id === "fire")?.active ?? false,
-        led: viewerEffects.find((e) => e.id === "led")?.active ?? false,
-        trails: viewerEffects.find((e) => e.id === "trails")?.active ?? false,
-        charcoal:
-          viewerEffects.find((e) => e.id === "charcoal")?.active ?? false,
+        fire: false,
+        led: false,
+        trails: false,
+        charcoal: false,
       };
+      if (activeEffect) {
+        overrides[activeEffect.id as keyof typeof overrides] = true;
+      }
       exportOptions.setVideoEffectOverrides(overrides);
     }
   });
@@ -130,12 +135,33 @@
   function toggleEffect(id: string) {
     const current = exportOptions.videoEffectOverrides;
     if (!current) return;
-    const newValue = !current[id as keyof typeof current];
-    exportOptions.setVideoEffectOverrides({
-      ...current,
-      [id]: newValue,
-    });
-    onEffectToggle?.(id, newValue);
+    const wasActive = current[id as keyof typeof current];
+
+    if (wasActive) {
+      // Turning off: just disable this effect
+      exportOptions.setVideoEffectOverrides({
+        ...current,
+        [id]: false,
+      });
+      onEffectToggle?.(id, false);
+    } else {
+      // Turning on: disable all others (radio behavior)
+      const newOverrides = {
+        fire: false,
+        led: false,
+        trails: false,
+        charcoal: false,
+        [id]: true,
+      };
+      exportOptions.setVideoEffectOverrides(newOverrides);
+      // Turn off all other effects on the live preview
+      for (const key of ["fire", "led", "trails", "charcoal"] as const) {
+        if (key !== id) {
+          onEffectToggle?.(key, false);
+        }
+      }
+      onEffectToggle?.(id, true);
+    }
   }
 
   const effectChips = $derived(

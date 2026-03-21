@@ -95,6 +95,21 @@ const DEFAULT_IMAGE_OPTIONS: ImageExportOptions = {
   columnCount: null,
 };
 
+/**
+ * Effects are mutually exclusive. If multiple are persisted from an older
+ * version, keep only the first active one.
+ */
+function sanitizeEffectOverrides(overrides: EffectOverride | null): EffectOverride | null {
+  if (!overrides) return null;
+  const keys: (keyof EffectOverride)[] = ["fire", "led", "trails", "charcoal"];
+  const activeKeys = keys.filter((k) => overrides[k]);
+  if (activeKeys.length <= 1) return overrides;
+  // Keep only the first active effect
+  const sanitized: EffectOverride = { fire: false, led: false, trails: false, charcoal: false };
+  sanitized[activeKeys[0]!] = true;
+  return sanitized;
+}
+
 function loadFromStorage(): ExportOptionsState {
   if (typeof localStorage === "undefined") {
     return {
@@ -108,9 +123,14 @@ function loadFromStorage(): ExportOptionsState {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored) as Partial<ExportOptionsState>;
+      const video = { ...DEFAULT_VIDEO_OPTIONS, ...parsed.video };
+      const split = { ...DEFAULT_SPLIT_OPTIONS, ...parsed.split };
+      // Sanitize any stale multi-effect state
+      video.effectOverrides = sanitizeEffectOverrides(video.effectOverrides);
+      split.effectOverrides = sanitizeEffectOverrides(split.effectOverrides);
       return {
-        video: { ...DEFAULT_VIDEO_OPTIONS, ...parsed.video },
-        split: { ...DEFAULT_SPLIT_OPTIONS, ...parsed.split },
+        video,
+        split,
         image: { ...DEFAULT_IMAGE_OPTIONS, ...parsed.image },
       };
     }

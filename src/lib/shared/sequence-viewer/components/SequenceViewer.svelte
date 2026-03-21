@@ -159,9 +159,6 @@
 	function toggleUserInfo() {
 		imageSettings.toggle("addUserInfo");
 	}
-	function toggleDarkMode() {
-		imageSettings.toggle("darkMode");
-	}
 	// Granular footer toggle handlers
 	function toggleShowCreatorName() {
 		imageSettings.toggle("showCreatorName");
@@ -303,20 +300,6 @@
 			>
 				<i class="fas fa-image" aria-hidden="true"></i>
 				<span>View Image</span>
-			</button>
-		{/if}
-
-		<!-- Dark Mode Lamp Button - only shown when visibility settings are enabled (export panel) -->
-		{#if showVisibilitySettings}
-			<button
-				type="button"
-				class="lamp-btn"
-				class:lit={!darkMode}
-				onclick={toggleDarkMode}
-				aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-				title="Toggle dark/light mode"
-			>
-				<i class="fas fa-lightbulb" aria-hidden="true"></i>
 			</button>
 		{/if}
 
@@ -607,61 +590,6 @@
 		outline-offset: 2px;
 	}
 
-	/* Lamp Button for Dark Mode Toggle */
-	.lamp-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 56px;
-		height: 56px;
-		border-radius: 50%;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-		cursor: pointer;
-		transition: all var(--duration-normal) ease;
-	}
-
-	.lamp-btn i {
-		font-size: 22px;
-		transition: all var(--duration-normal) ease;
-	}
-
-	/* Lit state - lamp is "on" (light mode preview) */
-	.lamp-btn.lit {
-		background: linear-gradient(145deg, rgba(255, 220, 100, 0.25), rgba(255, 180, 50, 0.15));
-		border-color: rgba(255, 200, 80, 0.5);
-		color: #ffd966;
-		box-shadow:
-			0 0 20px rgba(255, 200, 80, 0.3),
-			inset 0 0 10px rgba(255, 255, 255, 0.1);
-	}
-
-	.lamp-btn.lit i {
-		filter: drop-shadow(0 0 6px rgba(255, 200, 80, 0.8));
-	}
-
-	.lamp-btn:hover {
-		transform: scale(1.08);
-		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-	}
-
-	.lamp-btn.lit:hover {
-		background: linear-gradient(145deg, rgba(255, 220, 100, 0.35), rgba(255, 180, 50, 0.25));
-		box-shadow:
-			0 0 25px rgba(255, 200, 80, 0.4),
-			inset 0 0 12px rgba(255, 255, 255, 0.15);
-	}
-
-	.lamp-btn:active {
-		transform: scale(0.95);
-	}
-
-	.lamp-btn:focus-visible {
-		outline: 2px solid var(--theme-accent, #6366f1);
-		outline-offset: 2px;
-	}
-
 	/* Copy Button for Clipboard */
 	.copy-btn {
 		display: flex;
@@ -909,7 +837,6 @@
 
 	@media (prefers-reduced-motion: reduce) {
 		.mode-switch-btn,
-		.lamp-btn,
 		.copy-btn,
 		.back-btn,
 		.chip {
@@ -918,8 +845,6 @@
 
 		.mode-switch-btn:hover,
 		.mode-switch-btn:active,
-		.lamp-btn:hover,
-		.lamp-btn:active,
 		.copy-btn:hover,
 		.copy-btn:active {
 			transform: none;

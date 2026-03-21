@@ -226,7 +226,7 @@
           showNotes={imageComposition.showNotes}
           showQRCode={imageComposition.showQRCode}
           showBirthday={imageComposition.showBirthday}
-          showLoopGlyph={true}
+          showLoopGlyph={imageComposition.showLoopGlyph ?? true}
           darkMode={imageComposition.darkMode}
           columnCount={imageComposition.columnCount}
           forceContain={imageComposition.forceContain}
