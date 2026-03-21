@@ -6,7 +6,6 @@ Replaces the old GenerationModeCard (Freeform/Spell toggle).
 <script lang="ts">
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
-  import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
   import CardHeader from "./shared/CardHeader.svelte";
   import type { IGreekKeyMapper } from "$lib/shared/keyboard/services/contracts/IGreekKeyMapper";
   import {
@@ -95,9 +94,6 @@ Replaces the old GenerationModeCard (Freeform/Spell toggle).
     onWordChange?.(uppercased);
   }
 
-  function handleClear() {
-    onWordChange?.("");
-  }
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
@@ -118,29 +114,20 @@ Replaces the old GenerationModeCard (Freeform/Spell toggle).
   <CardHeader title="Word" {headerFontSize} />
 
   <div class="input-row">
-    <div class="input-wrapper">
-      <input
-        type="text"
-        class="word-field"
-        class:has-clear={hasWord && !disabled}
-        placeholder="A-Z"
-        value={wordValue}
-        oninput={handleInput}
-        onkeydown={handleKeydown}
-        onfocus={handleFocus}
-        autocomplete="off"
-        autocapitalize="off"
-        spellcheck="false"
-        {disabled}
-        readonly={isMobile}
-      />
-
-      {#if hasWord && !disabled}
-        <button class="clear-btn" onclick={handleClear} aria-label="Clear word" type="button">
-          <FontAwesomeIcon icon="times" style="solid" />
-        </button>
-      {/if}
-    </div>
+    <input
+      type="text"
+      class="word-field"
+      placeholder="A-Z"
+      value={wordValue}
+      oninput={handleInput}
+      onkeydown={handleKeydown}
+      onfocus={handleFocus}
+      autocomplete="off"
+      autocapitalize="off"
+      spellcheck="false"
+      {disabled}
+      readonly={isMobile}
+    />
   </div>
 </div>
 
@@ -190,15 +177,8 @@ Replaces the old GenerationModeCard (Freeform/Spell toggle).
     min-height: 0;
   }
 
-  .input-wrapper {
-    position: relative;
-    flex: 1;
-    min-width: 0;
-    height: 100%;
-  }
-
   .word-field {
-    width: 100%;
+    flex: 1;
     min-width: 0;
     background: rgba(0, 0, 0, 0.2);
     border: 1.5px solid rgba(255, 255, 255, 0.2);
@@ -212,11 +192,6 @@ Replaces the old GenerationModeCard (Freeform/Spell toggle).
     height: 100%;
     font-family: inherit;
     transition: border-color 150ms ease;
-  }
-
-  /* Shift text left to make room for the overlaid clear button */
-  .word-field.has-clear {
-    padding-right: 24px;
   }
 
   .word-field:focus:not(:focus-visible) {
@@ -244,51 +219,9 @@ Replaces the old GenerationModeCard (Freeform/Spell toggle).
     opacity: 0.5;
   }
 
-  .clear-btn {
-    position: absolute;
-    right: 3px;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
-    background: rgba(0, 0, 0, 0.35);
-    border: none;
-    border-radius: 50%;
-    color: rgba(255, 255, 255, 0.7);
-    cursor: pointer;
-    font-size: 9px;
-    transition: all 100ms ease;
-  }
-
-  /* Expand touch target without expanding visual size */
-  .clear-btn::before {
-    content: "";
-    position: absolute;
-    inset: -12px;
-  }
-
-  .clear-btn:hover {
-    background: rgba(0, 0, 0, 0.4);
-    color: white;
-  }
-
-  .clear-btn:active {
-    transform: scale(0.92);
-  }
-
-  .clear-btn:focus-visible {
-    outline: 2px solid var(--theme-text, white);
-    outline-offset: 2px;
-  }
-
   @media (prefers-reduced-motion: reduce) {
     .word-input-card,
-    .word-field,
-    .clear-btn {
+    .word-field {
       transition: none;
     }
   }
