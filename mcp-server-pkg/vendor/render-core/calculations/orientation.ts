@@ -134,7 +134,7 @@ export function switchOrientation(ori: Orientation): Orientation {
 }
 
 /**
- * Check if an orientation is a center orientation (Level 5).
+ * Check if an orientation is a center orientation (Level 4).
  */
 function isCenterOrientation(ori: string): boolean {
   return ori.startsWith("center");

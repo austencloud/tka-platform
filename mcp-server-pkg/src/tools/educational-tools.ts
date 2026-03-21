@@ -28,15 +28,15 @@ export function registerEducationalTools(server: McpServer): void {
           content: [{
             type: "text" as const,
             text: `TKA Quick Reference:
-- Grid: 8 points (N,E,S,W + NE,SE,SW,NW) + center (Level 5)
+- Grid: 8 points (N,E,S,W + NE,SE,SW,NW) + center (Level 4)
 - Positions: Alpha=opposite, Beta=same, Gamma=right-angle, Zeta=obtuse, Eta=acute, Tau=one-center, Terra=both-center
-- Hand paths: Static=stay, Shift=arc to adjacent, Dash=straight to opposite(180°), Hash=straight to/from center (L5, "half-dash")
+- Hand paths: Static=stay, Shift=arc to adjacent, Dash=straight to opposite(180°), Hash=straight to/from center (L4, "half-dash")
 - Prop rotations: Pro=with hand path (0 turns=isolation, preserves center-relative orientation), Anti=against, Float=holds absolute spatial angle
 - Types: 1=Dual-Shift(A-V), 2=Shift(W-Ω), 3=Cross-Shift(W--Ω-), 4=Dash(Φ,Ψ,Λ), 5=Dual-Dash(Φ-,Ψ-,Λ-), 6=Static(α,β,γ)
 - "[Letter] dash" = Type 3 with "-" suffix (e.g. "Σ dash" = Σ-)
 - Orientations: in, out, clock, counter + Level 6 interradial: clockIn, clockOut, counterIn, counterOut
 - VTG (Vulcan Tech Gospel): Split-Same, Tog-Same, Split-Opp, Tog-Opp
-- Levels: 1=0 turns, 2=whole turns, 3=half turns+float, 4=skewed grid, 5=centric grid, 6=interradials (2D complete), 7=conjoined grids, 8=atomics (3D), 9=Rubik's cube (3D complete)
+- Levels: 1=0 turns, 2=whole turns, 3=half turns+float, 4=centric grid, 5=skewed grid, 6=interradials (2D complete), 7=conjoined grids, 8=atomics (3D), 9=Rubik's cube (3D complete)
 - Compounds: DJ, EK, FL (β↔α cycles), MP, NQ, OR (γ→γ cycles), ΦΨ (dash cycle)`,
           }],
         };
@@ -55,30 +55,30 @@ TKA is a notation system for flow arts with dual wielded props (staff, fans, clu
 Pictographs use a grid with up to 9 points:
 - **Cardinal** (4): North (n), East (e), South (s), West (w)
 - **Intercardinal** (4): Northeast (ne), Southeast (se), Southwest (sw), Northwest (nw)
-- **Center** (1): The center point (Level 5)
+- **Center** (1): The center point (Level 4)
 
 **Grid Modes:**
 - **Diamond**: Cardinal points only (default)
 - **Box**: Intercardinal points only
-- **Skewed**: One cardinal + one intercardinal (Level 4)
-- **Centric**: At least one hand at center (Level 5, not yet implemented)
+- **Centric**: At least one hand at center (Level 4, not yet implemented)
+- **Skewed**: One cardinal + one intercardinal (Level 5)
 
 ## Hand Positions
 
 - **Alpha (α)**: Hands at opposite points (180°)
 - **Beta (β)**: Hands at the same point (0°)
 - **Gamma (γ)**: Hands form a right angle (90°)
-- **Zeta (ζ)**: Hands form an obtuse angle (~135°, Level 4)
-- **Eta (η)**: Hands form an acute angle (~45°, Level 4)
-- **Tau (τ)**: One hand at center, one not (Level 5)
-- **Terra**: Both hands at center (Level 5)
+- **Tau (τ)**: One hand at center, one not (Level 4)
+- **Terra**: Both hands at center (Level 4)
+- **Zeta (ζ)**: Hands form an obtuse angle (~135°, Level 5)
+- **Eta (η)**: Hands form an acute angle (~45°, Level 5)
 
 ## Hand Paths
 
 - **Static**: Hand stays at current grid point
 - **Shift**: Hand arcs along the perimeter to an adjacent grid point (curved path)
 - **Dash**: Hand moves in a straight line to the opposite grid point (180°)
-- **Hash**: Hand moves in a straight line to or from the center point (Level 5). A "half-dash."
+- **Hash**: Hand moves in a straight line to or from the center point (Level 4). A "half-dash."
 
 ## Prop Rotation Types
 
@@ -106,7 +106,7 @@ Props trace circles on a plane in space. Three planes exist:
 - **Wheel**: Vertical, perpendicular to audience (like a bicycle wheel)
 - **Overhead**: Horizontal, above the performer
 
-All levels 1-7 work on a single plane at a time (any of the three). Level 8 (atomics) will introduce patterns where two props are on different planes simultaneously — analogous to how Level 4 expanded from single-grid to mixed-grid.
+All levels 1-7 work on a single plane at a time (any of the three). Level 8 (atomics) will introduce patterns where two props are on different planes simultaneously — analogous to how Level 5 expanded from single-grid to mixed-grid.
 
 ## Conjoined Grids (Level 7)
 
@@ -660,45 +660,45 @@ ${letterCounts.map(({ letter, count }) => `- **${letter}** (${count} variations)
         zeta: {
           name: "Zeta (ζ)",
           angleDegrees: "~135°",
-          description: "Hands form an obtuse angle. Introduced in Level 4 with skewed grid mode.",
+          description: "Hands form an obtuse angle. Introduced in Level 5 with skewed grid mode.",
           gridDescription: "One hand is on a cardinal point, the other on an intercardinal point, forming an angle greater than 90°.",
           examples: [
             "Hands at N and SE (skewed mode, ~135°)",
             "Hands at E and NW (skewed mode)",
           ],
-          level: 4,
+          level: 5,
         },
         eta: {
           name: "Eta (η)",
           angleDegrees: "~45°",
-          description: "Hands form an acute angle. Introduced in Level 4 with skewed grid mode.",
+          description: "Hands form an acute angle. Introduced in Level 5 with skewed grid mode.",
           gridDescription: "One hand is on a cardinal point, the other on an intercardinal point, forming an angle less than 90°.",
           examples: [
             "Hands at N and NE (skewed mode, ~45°)",
             "Hands at E and SE (skewed mode)",
           ],
-          level: 4,
+          level: 5,
         },
         tau: {
           name: "Tau (τ)",
           angleDegrees: "variable",
-          description: "One hand is at the center grid point, the other at a non-center point. Introduced in Level 5 with centric grid mode. Not yet implemented in TKA Scribe.",
+          description: "One hand is at the center grid point, the other at a non-center point. Introduced in Level 4 with centric grid mode. Not yet implemented in TKA Scribe.",
           gridDescription: "The center point is the 9th grid location. Tau positions have one hand there and one at any of the 8 outer points.",
           examples: [
             "One hand at center, one at N",
             "One hand at center, one at NE",
           ],
-          level: 5,
+          level: 4,
         },
         terra: {
           name: "Terra",
           angleDegrees: "0° (both at center)",
-          description: "Both hands are at the center grid point. Introduced in Level 5 with centric grid mode. Not yet implemented in TKA Scribe.",
+          description: "Both hands are at the center grid point. Introduced in Level 4 with centric grid mode. Not yet implemented in TKA Scribe.",
           gridDescription: "Both props stacked at the center of the grid. Similar to beta (both at same point) but at the unique center location.",
           examples: [
             "Both hands at center",
           ],
-          level: 5,
+          level: 4,
         },
       };
 
