@@ -40,110 +40,31 @@
   });
 
   // Reactive reads gated on version so Svelte re-evaluates when anything changes
-  const blueMotion = $derived.by(() => {
-    void version;
-    return vm.getMotionVisibility(MotionColor.BLUE);
-  });
-
-  const redMotion = $derived.by(() => {
-    void version;
-    return vm.getMotionVisibility(MotionColor.RED);
-  });
-
-  const showGrid = $derived.by(() => {
-    void version;
-    return vm.getGridVisibility();
-  });
-
-  const handPointMode = $derived.by(() => {
-    void version;
-    return vm.getHandPointVisibility();
-  });
-
-  const nonRadial = $derived.by(() => {
-    void version;
-    return vm.getNonRadialVisibility();
-  });
-
-  const tkaGlyph = $derived.by(() => {
-    void version;
-    return vm.getRawGlyphVisibility("tkaGlyph");
-  });
-
-  const vtgGlyph = $derived.by(() => {
-    void version;
-    return vm.getRawGlyphVisibility("vtgGlyph");
-  });
-
-  const elementalGlyph = $derived.by(() => {
-    void version;
-    return vm.getRawGlyphVisibility("elementalGlyph");
-  });
-
-  const positionsGlyph = $derived.by(() => {
-    void version;
-    return vm.getRawGlyphVisibility("positionsGlyph");
-  });
-
-  const reversalIndicators = $derived.by(() => {
-    void version;
-    return vm.getRawGlyphVisibility("reversalIndicators");
-  });
-
-  const stepNumbers = $derived.by(() => {
-    void version;
-    return vm.getBeatNumbersVisibility();
-  });
-
-  const allMotionsVisible = $derived.by(() => {
-    void version;
-    return vm.areAllMotionsVisible();
-  });
+  const blueMotion = $derived.by(() => { void version; return vm.getMotionVisibility(MotionColor.BLUE); });
+  const redMotion = $derived.by(() => { void version; return vm.getMotionVisibility(MotionColor.RED); });
+  const showGrid = $derived.by(() => { void version; return vm.getGridVisibility(); });
+  const handPointMode = $derived.by(() => { void version; return vm.getHandPointVisibility(); });
+  const nonRadial = $derived.by(() => { void version; return vm.getNonRadialVisibility(); });
+  const tkaGlyph = $derived.by(() => { void version; return vm.getRawGlyphVisibility("tkaGlyph"); });
+  const vtgGlyph = $derived.by(() => { void version; return vm.getRawGlyphVisibility("vtgGlyph"); });
+  const elementalGlyph = $derived.by(() => { void version; return vm.getRawGlyphVisibility("elementalGlyph"); });
+  const positionsGlyph = $derived.by(() => { void version; return vm.getRawGlyphVisibility("positionsGlyph"); });
+  const reversalIndicators = $derived.by(() => { void version; return vm.getRawGlyphVisibility("reversalIndicators"); });
+  const stepNumbers = $derived.by(() => { void version; return vm.getBeatNumbersVisibility(); });
+  const allMotionsVisible = $derived.by(() => { void version; return vm.areAllMotionsVisible(); });
 
   // Toggle handlers
-  function toggleBlue() {
-    vm.setMotionVisibility(MotionColor.BLUE, !vm.getMotionVisibility(MotionColor.BLUE));
-  }
-
-  function toggleRed() {
-    vm.setMotionVisibility(MotionColor.RED, !vm.getMotionVisibility(MotionColor.RED));
-  }
-
-  function toggleGrid() {
-    vm.setGridVisibility(!vm.getGridVisibility());
-  }
-
-  function setHandPointMode(mode: "all" | "active") {
-    vm.setHandPointVisibility(mode);
-  }
-
-  function toggleNonRadial() {
-    vm.setNonRadialVisibility(!vm.getNonRadialVisibility());
-  }
-
-  function toggleTka() {
-    vm.setGlyphVisibility("tkaGlyph", !vm.getRawGlyphVisibility("tkaGlyph"));
-  }
-
-  function toggleVtg() {
-    vm.setGlyphVisibility("vtgGlyph", !vm.getRawGlyphVisibility("vtgGlyph"));
-  }
-
-  function toggleElemental() {
-    vm.setGlyphVisibility("elementalGlyph", !vm.getRawGlyphVisibility("elementalGlyph"));
-  }
-
-  function togglePositions() {
-    vm.setGlyphVisibility("positionsGlyph", !vm.getRawGlyphVisibility("positionsGlyph"));
-  }
-
-  function toggleReversals() {
-    vm.setGlyphVisibility("reversalIndicators", !vm.getRawGlyphVisibility("reversalIndicators"));
-  }
-
-  function toggleStepNumbers() {
-    vm.setBeatNumbersVisibility(!vm.getBeatNumbersVisibility());
-  }
+  function toggleBlue() { vm.setMotionVisibility(MotionColor.BLUE, !vm.getMotionVisibility(MotionColor.BLUE)); }
+  function toggleRed() { vm.setMotionVisibility(MotionColor.RED, !vm.getMotionVisibility(MotionColor.RED)); }
+  function toggleGrid() { vm.setGridVisibility(!vm.getGridVisibility()); }
+  function toggleHandPoints() { vm.setHandPointVisibility(handPointMode === "all" ? "active" : "all"); }
+  function toggleNonRadial() { vm.setNonRadialVisibility(!vm.getNonRadialVisibility()); }
+  function toggleTka() { vm.setGlyphVisibility("tkaGlyph", !vm.getRawGlyphVisibility("tkaGlyph")); }
+  function toggleVtg() { vm.setGlyphVisibility("vtgGlyph", !vm.getRawGlyphVisibility("vtgGlyph")); }
+  function toggleElemental() { vm.setGlyphVisibility("elementalGlyph", !vm.getRawGlyphVisibility("elementalGlyph")); }
+  function togglePositions() { vm.setGlyphVisibility("positionsGlyph", !vm.getRawGlyphVisibility("positionsGlyph")); }
+  function toggleReversals() { vm.setGlyphVisibility("reversalIndicators", !vm.getRawGlyphVisibility("reversalIndicators")); }
+  function toggleStepNumbers() { vm.setBeatNumbersVisibility(!vm.getBeatNumbersVisibility()); }
 </script>
 
 <SettingsModalLayout
@@ -163,78 +84,31 @@
       <!-- Motions -->
       <div class="section">
         <div class="section-title">Motions</div>
-
-        <label class="toggle-row">
-          <input
-            type="checkbox"
-            checked={blueMotion}
-            onchange={toggleBlue}
-          />
-          <i class="fas fa-circle" style="color: var(--prop-blue, #4fc3f7);" aria-hidden="true"></i>
+        <button class="toggle-row" type="button" aria-pressed={blueMotion} onclick={toggleBlue}>
           <span>Blue Motion</span>
-        </label>
-
-        <label class="toggle-row">
-          <input
-            type="checkbox"
-            checked={redMotion}
-            onchange={toggleRed}
-          />
-          <i class="fas fa-circle" style="color: var(--prop-red, #ef5350);" aria-hidden="true"></i>
+          <span class="toggle-indicator" class:active={blueMotion}></span>
+        </button>
+        <button class="toggle-row" type="button" aria-pressed={redMotion} onclick={toggleRed}>
           <span>Red Motion</span>
-        </label>
+          <span class="toggle-indicator" class:active={redMotion}></span>
+        </button>
       </div>
 
       <!-- Grid & Points -->
       <div class="section">
-        <div class="section-title">Grid &amp; Points</div>
-
-        <label class="toggle-row">
-          <input
-            type="checkbox"
-            checked={showGrid}
-            onchange={toggleGrid}
-          />
-          <i class="fas fa-border-all" aria-hidden="true"></i>
+        <div class="section-title">Grid & Points</div>
+        <button class="toggle-row" type="button" aria-pressed={showGrid} onclick={toggleGrid}>
           <span>Grid</span>
-        </label>
-
-        <div class="toggle-row hand-points-row">
-          <i class="fas fa-hand-dots" aria-hidden="true"></i>
-          <span>Hand Points</span>
-          <div class="hand-point-options">
-            <label class="radio-option">
-              <input
-                type="radio"
-                name="hand-point-mode"
-                value="all"
-                checked={handPointMode === "all"}
-                onchange={() => setHandPointMode("all")}
-              />
-              <span>All</span>
-            </label>
-            <label class="radio-option">
-              <input
-                type="radio"
-                name="hand-point-mode"
-                value="active"
-                checked={handPointMode === "active"}
-                onchange={() => setHandPointMode("active")}
-              />
-              <span>Active</span>
-            </label>
-          </div>
-        </div>
-
-        <label class="toggle-row">
-          <input
-            type="checkbox"
-            checked={nonRadial}
-            onchange={toggleNonRadial}
-          />
-          <i class="fas fa-circle-dot" aria-hidden="true"></i>
+          <span class="toggle-indicator" class:active={showGrid}></span>
+        </button>
+        <button class="toggle-row" type="button" aria-pressed={handPointMode === "all"} onclick={toggleHandPoints}>
+          <span>All Hand Points</span>
+          <span class="toggle-indicator" class:active={handPointMode === "all"}></span>
+        </button>
+        <button class="toggle-row" type="button" aria-pressed={nonRadial} onclick={toggleNonRadial}>
           <span>Non-Radial Points</span>
-        </label>
+          <span class="toggle-indicator" class:active={nonRadial}></span>
+        </button>
       </div>
 
       <!-- Glyphs -->
@@ -245,74 +119,39 @@
           <p class="glyph-hint">Some glyphs require both motions visible</p>
         {/if}
 
-        <label class="toggle-row" class:disabled={vm.isGlyphDependent("tkaGlyph") && !allMotionsVisible}>
-          <input
-            type="checkbox"
-            checked={tkaGlyph}
-            disabled={vm.isGlyphDependent("tkaGlyph") && !allMotionsVisible}
-            onchange={toggleTka}
-          />
-          <i class="fas fa-language" aria-hidden="true"></i>
+        <button class="toggle-row" class:disabled={!allMotionsVisible} type="button"
+          aria-pressed={tkaGlyph} disabled={!allMotionsVisible} onclick={toggleTka}>
           <span>TKA Glyphs</span>
-        </label>
-
-        <label class="toggle-row" class:disabled={vm.isGlyphDependent("vtgGlyph") && !allMotionsVisible}>
-          <input
-            type="checkbox"
-            checked={vtgGlyph}
-            disabled={vm.isGlyphDependent("vtgGlyph") && !allMotionsVisible}
-            onchange={toggleVtg}
-          />
-          <i class="fas fa-v" aria-hidden="true"></i>
+          <span class="toggle-indicator" class:active={tkaGlyph}></span>
+        </button>
+        <button class="toggle-row" class:disabled={!allMotionsVisible} type="button"
+          aria-pressed={vtgGlyph} disabled={!allMotionsVisible} onclick={toggleVtg}>
           <span>VTG Glyphs</span>
-        </label>
-
-        <label class="toggle-row" class:disabled={vm.isGlyphDependent("elementalGlyph") && !allMotionsVisible}>
-          <input
-            type="checkbox"
-            checked={elementalGlyph}
-            disabled={vm.isGlyphDependent("elementalGlyph") && !allMotionsVisible}
-            onchange={toggleElemental}
-          />
-          <i class="fas fa-fire" aria-hidden="true"></i>
+          <span class="toggle-indicator" class:active={vtgGlyph}></span>
+        </button>
+        <button class="toggle-row" class:disabled={!allMotionsVisible} type="button"
+          aria-pressed={elementalGlyph} disabled={!allMotionsVisible} onclick={toggleElemental}>
           <span>Elemental Glyphs</span>
-        </label>
-
-        <label class="toggle-row" class:disabled={vm.isGlyphDependent("positionsGlyph") && !allMotionsVisible}>
-          <input
-            type="checkbox"
-            checked={positionsGlyph}
-            disabled={vm.isGlyphDependent("positionsGlyph") && !allMotionsVisible}
-            onchange={togglePositions}
-          />
-          <i class="fas fa-map-pin" aria-hidden="true"></i>
+          <span class="toggle-indicator" class:active={elementalGlyph}></span>
+        </button>
+        <button class="toggle-row" class:disabled={!allMotionsVisible} type="button"
+          aria-pressed={positionsGlyph} disabled={!allMotionsVisible} onclick={togglePositions}>
           <span>Position Glyphs</span>
-        </label>
-
-        <label class="toggle-row">
-          <input
-            type="checkbox"
-            checked={reversalIndicators}
-            onchange={toggleReversals}
-          />
-          <i class="fas fa-rotate" aria-hidden="true"></i>
+          <span class="toggle-indicator" class:active={positionsGlyph}></span>
+        </button>
+        <button class="toggle-row" type="button" aria-pressed={reversalIndicators} onclick={toggleReversals}>
           <span>Reversal Indicators</span>
-        </label>
+          <span class="toggle-indicator" class:active={reversalIndicators}></span>
+        </button>
       </div>
 
       <!-- Display -->
       <div class="section">
         <div class="section-title">Display</div>
-
-        <label class="toggle-row">
-          <input
-            type="checkbox"
-            checked={stepNumbers}
-            onchange={toggleStepNumbers}
-          />
-          <i class="fas fa-list-ol" aria-hidden="true"></i>
+        <button class="toggle-row" type="button" aria-pressed={stepNumbers} onclick={toggleStepNumbers}>
           <span>Step Numbers</span>
-        </label>
+          <span class="toggle-indicator" class:active={stepNumbers}></span>
+        </button>
       </div>
 
     </div>
@@ -335,7 +174,7 @@
   .section {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 8px;
   }
 
   .section-title {
@@ -351,29 +190,22 @@
 
   .toggle-row {
     display: flex;
-    flex-direction: row;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: space-between;
+    width: 100%;
+    min-height: var(--min-touch-target, 44px);
+    padding: 8px 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    color: var(--theme-text, white);
     font-size: var(--font-size-min, 14px);
-    color: var(--theme-text, #ffffff);
     cursor: pointer;
-    padding: 0.2rem 0;
-    user-select: none;
+    transition: background var(--duration-fast, 100ms) ease;
   }
 
-  .toggle-row input[type="checkbox"] {
-    accent-color: var(--theme-accent, #3b82f6);
-    width: 1rem;
-    height: 1rem;
-    cursor: pointer;
-    flex-shrink: 0;
-  }
-
-  .toggle-row i {
-    width: 1rem;
-    text-align: center;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-    flex-shrink: 0;
+  .toggle-row:hover {
+    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
   }
 
   .toggle-row.disabled {
@@ -381,34 +213,36 @@
     cursor: not-allowed;
   }
 
-  .toggle-row.disabled input[type="checkbox"] {
-    cursor: not-allowed;
+  .toggle-indicator {
+    width: 36px;
+    height: 20px;
+    border-radius: 10px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    position: relative;
+    transition: background var(--duration-fast, 100ms) ease;
+    flex-shrink: 0;
   }
 
-  /* Hand points row: icon + label on left, radio options on right */
-  .hand-points-row {
-    cursor: default;
+  .toggle-indicator::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    transition: transform var(--duration-fast, 100ms) ease,
+      background var(--duration-fast, 100ms) ease;
   }
 
-  .hand-point-options {
-    display: flex;
-    gap: 0.75rem;
-    margin-left: auto;
+  .toggle-indicator.active {
+    background: var(--theme-accent, #8b5cf6);
   }
 
-  .radio-option {
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-    font-size: var(--font-size-min, 14px);
-    color: var(--theme-text, #ffffff);
-    cursor: pointer;
-    user-select: none;
-  }
-
-  .radio-option input[type="radio"] {
-    accent-color: var(--theme-accent, #3b82f6);
-    cursor: pointer;
+  .toggle-indicator.active::after {
+    transform: translateX(16px);
+    background: white;
   }
 
   .glyph-hint {
@@ -417,5 +251,13 @@
     font-style: italic;
     margin: 0;
     padding: 0.15rem 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .toggle-row,
+    .toggle-indicator,
+    .toggle-indicator::after {
+      transition: none;
+    }
   }
 </style>

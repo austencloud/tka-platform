@@ -28,13 +28,8 @@
   let compositionVersion = $state(0);
   let visibilityVersion = $state(0);
 
-  function onCompositionChange() {
-    compositionVersion++;
-  }
-
-  function onVisibilityChange() {
-    visibilityVersion++;
-  }
+  function onCompositionChange() { compositionVersion++; }
+  function onVisibilityChange() { visibilityVersion++; }
 
   onMount(() => {
     composition.registerObserver(onCompositionChange);
@@ -45,117 +40,35 @@
     };
   });
 
-  // Pictograph visibility — reactive reads gated on version
-  const handPointMode = $derived.by(() => {
-    void visibilityVersion;
-    return visibility.getHandPointVisibility();
-  });
+  // Pictograph visibility
+  const handPointMode = $derived.by(() => { void visibilityVersion; return visibility.getHandPointVisibility(); });
+  const showGrid = $derived.by(() => { void visibilityVersion; return visibility.getGridVisibility(); });
+  const tkaGlyph = $derived.by(() => { void visibilityVersion; return visibility.getRawGlyphVisibility("tkaGlyph"); });
 
-  const showGrid = $derived.by(() => {
-    void visibilityVersion;
-    return visibility.getGridVisibility();
-  });
-
-  const tkaGlyph = $derived.by(() => {
-    void visibilityVersion;
-    return visibility.getRawGlyphVisibility("tkaGlyph");
-  });
-
-  // Card composition — reactive reads gated on version
-  const showWord = $derived.by(() => {
-    void compositionVersion;
-    return composition.addWord;
-  });
-
-  const includeStartPosition = $derived.by(() => {
-    void compositionVersion;
-    return composition.includeStartPosition;
-  });
-
-  const startPositionLayout = $derived.by(() => {
-    void compositionVersion;
-    return composition.startPositionLayout;
-  });
-
-  const showDifficulty = $derived.by(() => {
-    void compositionVersion;
-    return composition.addDifficultyLevel;
-  });
-
-  const showStepNumbers = $derived.by(() => {
-    void compositionVersion;
-    return composition.addStepNumbers;
-  });
-
-  const showCreatorName = $derived.by(() => {
-    void compositionVersion;
-    return composition.showCreatorName;
-  });
-
-  const showNotes = $derived.by(() => {
-    void compositionVersion;
-    return composition.showNotes;
-  });
-
-  const showBirthday = $derived.by(() => {
-    void compositionVersion;
-    return composition.showBirthday;
-  });
-
-  const showQRCode = $derived.by(() => {
-    void compositionVersion;
-    return composition.showQRCode;
-  });
+  // Card composition
+  const showWord = $derived.by(() => { void compositionVersion; return composition.addWord; });
+  const includeStartPosition = $derived.by(() => { void compositionVersion; return composition.includeStartPosition; });
+  const showDifficulty = $derived.by(() => { void compositionVersion; return composition.addDifficultyLevel; });
+  const showStepNumbers = $derived.by(() => { void compositionVersion; return composition.addStepNumbers; });
+  const showCreatorName = $derived.by(() => { void compositionVersion; return composition.showCreatorName; });
+  const showNotes = $derived.by(() => { void compositionVersion; return composition.showNotes; });
+  const showBirthday = $derived.by(() => { void compositionVersion; return composition.showBirthday; });
+  const showQRCode = $derived.by(() => { void compositionVersion; return composition.showQRCode; });
 
   // Toggle handlers — pictograph visibility
-  function setHandPointMode(mode: "all" | "active") {
-    visibility.setHandPointVisibility(mode);
-  }
-
-  function toggleGrid() {
-    visibility.setGridVisibility(!visibility.getGridVisibility());
-  }
-
-  function toggleTka() {
-    visibility.setGlyphVisibility("tkaGlyph", !visibility.getRawGlyphVisibility("tkaGlyph"));
-  }
+  function toggleGrid() { visibility.setGridVisibility(!visibility.getGridVisibility()); }
+  function toggleHandPoints() { visibility.setHandPointVisibility(handPointMode === "all" ? "active" : "all"); }
+  function toggleTka() { visibility.setGlyphVisibility("tkaGlyph", !visibility.getRawGlyphVisibility("tkaGlyph")); }
 
   // Toggle handlers — card composition
-  function toggleWord() {
-    composition.setAddWord(!composition.addWord);
-  }
-
-  function toggleStartPosition() {
-    composition.setIncludeStartPosition(!composition.includeStartPosition);
-  }
-
-  function setStartPositionLayout(layout: "row" | "column") {
-    composition.setStartPositionLayout(layout);
-  }
-
-  function toggleDifficulty() {
-    composition.setAddDifficultyLevel(!composition.addDifficultyLevel);
-  }
-
-  function toggleStepNumbers() {
-    composition.setAddBeatNumbers(!composition.addStepNumbers);
-  }
-
-  function toggleCreatorName() {
-    composition.setShowCreatorName(!composition.showCreatorName);
-  }
-
-  function toggleNotes() {
-    composition.setShowNotes(!composition.showNotes);
-  }
-
-  function toggleBirthday() {
-    composition.setShowBirthday(!composition.showBirthday);
-  }
-
-  function toggleQRCode() {
-    composition.setShowQRCode(!composition.showQRCode);
-  }
+  function toggleWord() { composition.setAddWord(!composition.addWord); }
+  function toggleStartPosition() { composition.setIncludeStartPosition(!composition.includeStartPosition); }
+  function toggleDifficulty() { composition.setAddDifficultyLevel(!composition.addDifficultyLevel); }
+  function toggleStepNumbers() { composition.setAddBeatNumbers(!composition.addStepNumbers); }
+  function toggleCreatorName() { composition.setShowCreatorName(!composition.showCreatorName); }
+  function toggleNotes() { composition.setShowNotes(!composition.showNotes); }
+  function toggleBirthday() { composition.setShowBirthday(!composition.showBirthday); }
+  function toggleQRCode() { composition.setShowQRCode(!composition.showQRCode); }
 </script>
 
 <SettingsModalLayout
@@ -165,7 +78,6 @@
 >
   {#snippet preview()}
     <div class="preview-placeholder">
-      <i class="fas fa-id-card" aria-hidden="true"></i>
       <span>Card Preview</span>
     </div>
   {/snippet}
@@ -176,135 +88,55 @@
       <!-- Pictograph Visibility -->
       <div class="section">
         <div class="section-title">Pictograph Visibility</div>
-
-        <div class="toggle-row hand-points-row">
-          <i class="fas fa-hand-dots" aria-hidden="true"></i>
-          <span>Hand Points</span>
-          <div class="hand-point-options">
-            <label class="radio-option">
-              <input
-                type="radio"
-                name="card-hand-point-mode"
-                value="all"
-                checked={handPointMode === "all"}
-                onchange={() => setHandPointMode("all")}
-              />
-              <span>All</span>
-            </label>
-            <label class="radio-option">
-              <input
-                type="radio"
-                name="card-hand-point-mode"
-                value="active"
-                checked={handPointMode === "active"}
-                onchange={() => setHandPointMode("active")}
-              />
-              <span>Active</span>
-            </label>
-          </div>
-        </div>
-
-        <label class="toggle-row">
-          <input
-            type="checkbox"
-            checked={showGrid}
-            onchange={toggleGrid}
-          />
-          <i class="fas fa-border-all" aria-hidden="true"></i>
+        <button class="toggle-row" type="button" aria-pressed={showGrid} onclick={toggleGrid}>
           <span>Grid</span>
-        </label>
-
-        <label class="toggle-row">
-          <input
-            type="checkbox"
-            checked={tkaGlyph}
-            onchange={toggleTka}
-          />
-          <i class="fas fa-language" aria-hidden="true"></i>
+          <span class="toggle-indicator" class:active={showGrid}></span>
+        </button>
+        <button class="toggle-row" type="button" aria-pressed={handPointMode === "all"} onclick={toggleHandPoints}>
+          <span>All Hand Points</span>
+          <span class="toggle-indicator" class:active={handPointMode === "all"}></span>
+        </button>
+        <button class="toggle-row" type="button" aria-pressed={tkaGlyph} onclick={toggleTka}>
           <span>TKA Glyphs</span>
-        </label>
+          <span class="toggle-indicator" class:active={tkaGlyph}></span>
+        </button>
       </div>
 
       <!-- Card Composition -->
       <div class="section">
         <div class="section-title">Card Composition</div>
-
-        <label class="toggle-row">
-          <input type="checkbox" checked={showWord} onchange={toggleWord} />
-          <i class="fas fa-font" aria-hidden="true"></i>
+        <button class="toggle-row" type="button" aria-pressed={showWord} onclick={toggleWord}>
           <span>Word</span>
-        </label>
-
-        <label class="toggle-row">
-          <input type="checkbox" checked={includeStartPosition} onchange={toggleStartPosition} />
-          <i class="fas fa-play" aria-hidden="true"></i>
+          <span class="toggle-indicator" class:active={showWord}></span>
+        </button>
+        <button class="toggle-row" type="button" aria-pressed={includeStartPosition} onclick={toggleStartPosition}>
           <span>Start Position</span>
-        </label>
-
-        {#if includeStartPosition}
-          <div class="toggle-row start-layout-row">
-            <i class="fas fa-grip-lines" aria-hidden="true"></i>
-            <span>Layout</span>
-            <div class="start-layout-options">
-              <label class="radio-option">
-                <input
-                  type="radio"
-                  name="start-position-layout"
-                  value="row"
-                  checked={startPositionLayout === "row"}
-                  onchange={() => setStartPositionLayout("row")}
-                />
-                <span>Top Row</span>
-              </label>
-              <label class="radio-option">
-                <input
-                  type="radio"
-                  name="start-position-layout"
-                  value="column"
-                  checked={startPositionLayout === "column"}
-                  onchange={() => setStartPositionLayout("column")}
-                />
-                <span>Left Column</span>
-              </label>
-            </div>
-          </div>
-        {/if}
-
-        <label class="toggle-row">
-          <input type="checkbox" checked={showDifficulty} onchange={toggleDifficulty} />
-          <i class="fas fa-signal" aria-hidden="true"></i>
+          <span class="toggle-indicator" class:active={includeStartPosition}></span>
+        </button>
+        <button class="toggle-row" type="button" aria-pressed={showDifficulty} onclick={toggleDifficulty}>
           <span>Difficulty</span>
-        </label>
-
-        <label class="toggle-row">
-          <input type="checkbox" checked={showStepNumbers} onchange={toggleStepNumbers} />
-          <i class="fas fa-list-ol" aria-hidden="true"></i>
+          <span class="toggle-indicator" class:active={showDifficulty}></span>
+        </button>
+        <button class="toggle-row" type="button" aria-pressed={showStepNumbers} onclick={toggleStepNumbers}>
           <span>Step Numbers</span>
-        </label>
-
-        <label class="toggle-row">
-          <input type="checkbox" checked={showCreatorName} onchange={toggleCreatorName} />
-          <i class="fas fa-user" aria-hidden="true"></i>
+          <span class="toggle-indicator" class:active={showStepNumbers}></span>
+        </button>
+        <button class="toggle-row" type="button" aria-pressed={showCreatorName} onclick={toggleCreatorName}>
           <span>Creator Name</span>
-        </label>
-
-        <label class="toggle-row">
-          <input type="checkbox" checked={showNotes} onchange={toggleNotes} />
-          <i class="fas fa-sticky-note" aria-hidden="true"></i>
+          <span class="toggle-indicator" class:active={showCreatorName}></span>
+        </button>
+        <button class="toggle-row" type="button" aria-pressed={showNotes} onclick={toggleNotes}>
           <span>Notes</span>
-        </label>
-
-        <label class="toggle-row">
-          <input type="checkbox" checked={showBirthday} onchange={toggleBirthday} />
-          <i class="fas fa-cake-candles" aria-hidden="true"></i>
+          <span class="toggle-indicator" class:active={showNotes}></span>
+        </button>
+        <button class="toggle-row" type="button" aria-pressed={showBirthday} onclick={toggleBirthday}>
           <span>Birthday</span>
-        </label>
-
-        <label class="toggle-row">
-          <input type="checkbox" checked={showQRCode} onchange={toggleQRCode} />
-          <i class="fas fa-qrcode" aria-hidden="true"></i>
+          <span class="toggle-indicator" class:active={showBirthday}></span>
+        </button>
+        <button class="toggle-row" type="button" aria-pressed={showQRCode} onclick={toggleQRCode}>
           <span>QR Code</span>
-        </label>
+          <span class="toggle-indicator" class:active={showQRCode}></span>
+        </button>
       </div>
 
     </div>
@@ -317,20 +149,13 @@
     max-width: 300px;
     aspect-ratio: 5 / 7;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.75rem;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px dashed var(--theme-stroke, rgba(255, 255, 255, 0.15));
     border-radius: 8px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
     font-size: var(--font-size-sm, 14px);
-  }
-
-  .preview-placeholder i {
-    font-size: 2rem;
-    opacity: 0.5;
   }
 
   .toggle-sections {
@@ -342,7 +167,7 @@
   .section {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 8px;
   }
 
   .section-title {
@@ -358,56 +183,61 @@
 
   .toggle-row {
     display: flex;
-    flex-direction: row;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: space-between;
+    width: 100%;
+    min-height: var(--min-touch-target, 44px);
+    padding: 8px 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    color: var(--theme-text, white);
     font-size: var(--font-size-min, 14px);
-    color: var(--theme-text, #ffffff);
     cursor: pointer;
-    padding: 0.2rem 0;
-    user-select: none;
+    transition: background var(--duration-fast, 100ms) ease;
   }
 
-  .toggle-row input[type="checkbox"] {
-    accent-color: var(--theme-accent, #3b82f6);
-    width: 1rem;
-    height: 1rem;
-    cursor: pointer;
+  .toggle-row:hover {
+    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
+  }
+
+  .toggle-indicator {
+    width: 36px;
+    height: 20px;
+    border-radius: 10px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    position: relative;
+    transition: background var(--duration-fast, 100ms) ease;
     flex-shrink: 0;
   }
 
-  .toggle-row i {
-    width: 1rem;
-    text-align: center;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-    flex-shrink: 0;
+  .toggle-indicator::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    transition: transform var(--duration-fast, 100ms) ease,
+      background var(--duration-fast, 100ms) ease;
   }
 
-  /* Hand points row and start layout row: icon + label on left, radio options on right */
-  .hand-points-row,
-  .start-layout-row {
-    cursor: default;
+  .toggle-indicator.active {
+    background: var(--theme-accent, #8b5cf6);
   }
 
-  .hand-point-options,
-  .start-layout-options {
-    display: flex;
-    gap: 0.75rem;
-    margin-left: auto;
+  .toggle-indicator.active::after {
+    transform: translateX(16px);
+    background: white;
   }
 
-  .radio-option {
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-    font-size: var(--font-size-min, 14px);
-    color: var(--theme-text, #ffffff);
-    cursor: pointer;
-    user-select: none;
-  }
-
-  .radio-option input[type="radio"] {
-    accent-color: var(--theme-accent, #3b82f6);
-    cursor: pointer;
+  @media (prefers-reduced-motion: reduce) {
+    .toggle-row,
+    .toggle-indicator,
+    .toggle-indicator::after {
+      transition: none;
+    }
   }
 </style>
