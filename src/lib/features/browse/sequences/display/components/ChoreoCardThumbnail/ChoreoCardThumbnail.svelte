@@ -255,7 +255,6 @@ Variation support:
       {catDogModeEnabled}
       {lightMode}
       {eager}
-      suppressContextMenu={true}
       userName={displayedSequence.ownerDisplayName}
     />
   </div>

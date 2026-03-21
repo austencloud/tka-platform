@@ -13,18 +13,19 @@
 	import FuseLayout from "./components/FuseLayout.svelte";
 	import FuseResultView from "./components/FuseResultView.svelte";
 
-	let initError: string | null = $state(null);
-
-	let state: ReturnType<typeof createFuseState> | null = $state(null);
-
-	try {
-		const sequenceFuser = container.items.sequenceFuser;
-		state = createFuseState({ sequenceFuser });
-		setFuseContext({ state });
-	} catch (err) {
-		console.error("[FuseTab] Failed to initialize:", err);
-		initError = err instanceof Error ? err.message : String(err);
+	function init(): { state: ReturnType<typeof createFuseState>; error: null } | { state: null; error: string } {
+		try {
+			const sequenceFuser = container.items.sequenceFuser;
+			const state = createFuseState({ sequenceFuser });
+			setFuseContext({ state });
+			return { state, error: null };
+		} catch (err) {
+			console.error("[FuseTab] Failed to initialize:", err);
+			return { state: null, error: err instanceof Error ? err.message : String(err) };
+		}
 	}
+
+	const { state: fuseState, error: initError } = init();
 </script>
 
 {#if initError}
@@ -32,8 +33,8 @@
 		<p>Fuse tab failed to load</p>
 		<p class="error-detail">{initError}</p>
 	</div>
-{:else if state}
-	{#if state.phase === "result"}
+{:else if fuseState}
+	{#if fuseState.phase === "result"}
 		<FuseResultView />
 	{:else}
 		<FuseLayout />

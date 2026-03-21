@@ -72,7 +72,6 @@
     word: null as string | null,
     fireConfig,
     ledConfig,
-    disableContextMenu: true,
     hideProgressBar: true,
     fillContainer: true,
   });

@@ -53,7 +53,6 @@
       {isPlaying}
       backgroundAlpha={0}
       focused={false}
-      disableContextMenu={true}
       hideTkaGlyph={false}
       hideStepNumbers={true}
       hideProgressBar={true}

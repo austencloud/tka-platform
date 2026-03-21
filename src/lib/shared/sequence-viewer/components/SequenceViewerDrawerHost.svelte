@@ -148,8 +148,12 @@
     ];
   }
 
-  /** Apply effect toggles from the export panel to the live animation preview */
+  /** Apply effect toggles from the export panel to the live animation preview.
+   *  Effects are mutually exclusive — enabling one disables all others. */
   function handleExportEffectToggle(id: string, active: boolean) {
+    // The ExportVideoDrawer already sends individual toggle calls for each
+    // effect (turning off others before turning on the selected one), so
+    // we just apply what we're told.
     switch (id) {
       case "fire":
         animationVisibility.setFireEffect(active);

@@ -4,9 +4,9 @@
  * Calculates the difficulty level of a sequence based on turn values and orientations.
  *
  * Level Logic:
- * - Level 1 (Beginner): Zero turns, only radial orientations (IN/OUT)
- * - Level 2 (Intermediate): Has turns, only radial orientations (IN/OUT)
- * - Level 3 (Advanced): Non-radial orientations (CLOCK/COUNTER) or half-turns or floats
+ * - Level 1: Base Motions
+ * - Level 2: Whole Turns
+ * - Level 3: Half Turns, Floats
  */
 
 import type { StepData } from "../../../../../create/shared/domain/models/StepData";

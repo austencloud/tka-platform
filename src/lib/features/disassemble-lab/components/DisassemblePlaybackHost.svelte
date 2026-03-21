@@ -597,7 +597,6 @@
       fireConfig: activeEffectMode === "fire" || activeEffectMode === "charcoal" ? fireConfig : undefined,
       ledConfig: activeEffectMode === "led" ? ledConfig : undefined,
       backgroundAlpha: 0,
-      disableContextMenu: true,
       fillContainer: true,
       // In hand path mode, swap props for hand SVGs
       bluePropType: isHandPath ? "hand" : null,

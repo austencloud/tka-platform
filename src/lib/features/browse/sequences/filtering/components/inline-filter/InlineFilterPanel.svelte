@@ -65,10 +65,10 @@ Orchestrates the chip row and active filter bar.
   // | Letter   | Show          | Hide       | Show          | Hide       |
   // | Position | Show          | Show       | Show          | Show       |
   // | Length   | Show          | Show       | Show          | Show       |
-  const isSolo = viewMode.granularity === "solo";
-  const isHands = viewMode.subject === "hands";
-  const showLevel = !(isHands && isSolo);
-  const showLetter = !isSolo;
+  const isSolo = $derived(viewMode.granularity === "solo");
+  const isHands = $derived(viewMode.subject === "hands");
+  const showLevel = $derived(!(isHands && isSolo));
+  const showLetter = $derived(!isSolo);
 
   function handleLevelSelect(level: number | null) {
     if (level === null) {

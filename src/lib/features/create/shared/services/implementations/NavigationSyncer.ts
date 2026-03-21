@@ -37,7 +37,7 @@ export class NavigationSyncer implements INavigationSyncer {
     });
 
     // Skip if navigation is to a non-Create tab (e.g., "browse", "library")
-    const validCreateTabs = ["construct", "generate", "spell", "assemble"];
+    const validCreateTabs = ["construct", "generate", "spell", "assemble", "fuse"];
     if (!validCreateTabs.includes(currentMode)) {
       return;
     }

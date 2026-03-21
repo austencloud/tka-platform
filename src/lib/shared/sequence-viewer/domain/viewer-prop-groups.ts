@@ -23,6 +23,7 @@ export interface ImageCompositionProps {
   showNotes: boolean;
   showBirthday: boolean;
   showQRCode: boolean;
+  showLoopGlyph?: boolean;
   darkMode: boolean;
   columnCount: number | null;
   forceContain: boolean;
