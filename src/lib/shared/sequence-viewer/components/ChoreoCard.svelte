@@ -619,8 +619,8 @@
       showStepNumbers: false,
       showNonRadialPoints: showNonRadial,
       handPointVisibility: handPointVis,
-      showTKA,
-      showReversals,
+      showTKA: isSoloMode ? false : showTKA,
+      showReversals: isSoloMode ? false : showReversals,
       handPathMode,
       browseViewMode,
     };
