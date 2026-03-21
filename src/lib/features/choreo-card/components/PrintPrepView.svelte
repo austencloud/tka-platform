@@ -18,7 +18,7 @@
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import RenderingOverlay from "$lib/shared/components/loading/RenderingOverlay.svelte";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuState, ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
 
@@ -686,10 +686,7 @@
                     oncontextmenu={(e) => openContextMenu(e, globalIdx)}
                   >
                     {#if isRerendering}
-                      <div class="rerender-overlay" aria-label="Rendering {pair.label}">
-                        <ProgressRing percent={-1} size={28} strokeWidth={2} />
-                        <span class="rerender-status">Rendering</span>
-                      </div>
+                      <RenderingOverlay label="Rendering" />
                     {/if}
                     <div class="card-preview" class:show-bleed={showBleedOverlay}>
                       <img
@@ -1169,27 +1166,7 @@
     position: relative;
   }
 
-  /* ── Rerender loading overlay ────────────────────────────────────── */
-  .rerender-overlay {
-    position: absolute;
-    inset: 0;
-    z-index: 5;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    background: rgba(0, 0, 0, 0.5);
-    border-radius: 8px;
-    pointer-events: none;
-  }
-
-  .rerender-status {
-    font-size: var(--font-size-compact, 12px);
-    color: rgba(255, 255, 255, 0.8);
-    font-weight: 500;
-  }
-
+  /* ── Rerender loading state ──────────────────────────────────────── */
   .preview-img.dimmed {
     opacity: 0.3;
   }
