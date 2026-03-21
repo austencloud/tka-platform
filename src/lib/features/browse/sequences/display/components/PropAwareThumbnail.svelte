@@ -16,6 +16,7 @@
   import { onMount, onDestroy } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import RenderingOverlay from "$lib/shared/components/loading/RenderingOverlay.svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { ThumbnailVariant } from "../services/contracts/ICloudThumbnailCache";
   import { container } from "$lib/shared/di";
@@ -467,21 +468,7 @@
     />
     <!-- Loading overlay during re-renders (e.g., prop change) -->
     {#if isLoading}
-      <div class="loading-overlay" aria-label={statusLabel}>
-        <div class="overlay-content">
-          <ProgressRing percent={-1} size={24} strokeWidth={2} />
-          <span class="overlay-status">{statusLabel}</span>
-        </div>
-        <div
-          class="progress-bar"
-          role="progressbar"
-          aria-valuenow={progressPercent}
-          aria-valuemin={0}
-          aria-valuemax={100}
-        >
-          <div class="progress-fill" style:width="{progressPercent}%"></div>
-        </div>
-      </div>
+      <RenderingOverlay label={statusLabel} progress={progressPercent} showProgressBar={true} />
     {/if}
   {:else if hasError}
     <div class="error-placeholder" aria-label="Failed to load">
@@ -672,46 +659,6 @@
     border-radius: 0 2px 2px 0;
   }
 
-  /* Loading overlay on top of existing image */
-  .loading-overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 10;
-  }
-
-  .overlay-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .overlay-status {
-    font-size: var(--font-size-compact, 12px);
-    color: white;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-    opacity: 0.9;
-  }
-
-  .loading-overlay .progress-bar {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 6px;
-    background: rgba(255, 255, 255, 0.2);
-  }
-
-  .loading-overlay .progress-fill {
-    background: var(--theme-accent, #6366f1);
-    box-shadow: 0 0 8px var(--theme-accent, #6366f1);
-  }
-
   /* Container query responsive sizing */
   @container choreo-card (max-width: 249px) {
     .placeholder-word {
@@ -725,12 +672,6 @@
     }
     .progress-bar {
       height: 3px;
-    }
-    .overlay-status {
-      font-size: 10px;
-    }
-    .loading-overlay .progress-bar {
-      height: 4px;
     }
   }
 
