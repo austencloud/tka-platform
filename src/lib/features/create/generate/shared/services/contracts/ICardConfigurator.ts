@@ -10,7 +10,6 @@ import type {
 } from "../../../circular/domain/models/circular-models";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
-import type { GenerationPreset } from "../../../state/preset.svelte";
 
 /**
  * Card descriptor for rendering in the UI
@@ -75,8 +74,9 @@ export interface CardHandlers {
   // Orientation cycle completion
   needsCycleCompletion?: boolean;
   handleCompleteCycle?: () => void;
-  // Preset card
-  activePreset?: GenerationPreset | null;
+  // Favorite card
+  activeFavoriteId?: string | null;
+  activeFavoriteName?: string | null;
   handleOpenPresetDrawer?: () => void;
 }
 

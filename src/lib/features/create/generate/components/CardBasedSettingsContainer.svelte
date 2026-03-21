@@ -41,7 +41,7 @@ Delegates ALL logic to services (SRP compliant)
   import CustomizeCard from "./cards/CustomizeCard.svelte";
   import WordInputCard from "./cards/WordInputCard.svelte";
   import PresetCard from "./cards/PresetCard.svelte";
-  import type { GenerationPreset } from "../state/preset.svelte";
+  import type { createFavoriteState } from "../state/favorite-state.svelte";
   // Props
   let {
     config,
@@ -58,7 +58,7 @@ Delegates ALL logic to services (SRP compliant)
     onCompleteCycle,
     isMobile = false,
     onOpenWordInput,
-    presetState,
+    favoriteState,
   } = $props<{
     config: UIGenerationConfig;
     isFreeformMode: boolean;
@@ -74,7 +74,7 @@ Delegates ALL logic to services (SRP compliant)
     onCompleteCycle?: () => void;
     isMobile?: boolean;
     onOpenWordInput?: () => void;
-    presetState: ReturnType<typeof import("../state/preset.svelte").createPresetState>;
+    favoriteState: ReturnType<typeof createFavoriteState>;
   }>();
 
   // Get panel coordination state from context (for LOOP expanded overlay)
@@ -334,10 +334,10 @@ Delegates ALL logic to services (SRP compliant)
     panelState.openPresetDrawer();
   }
 
-  function withPresetDeselect<T extends (...args: any[]) => any>(handler: T): T {
+  function withFavoriteDeselect<T extends (...args: any[]) => any>(handler: T): T {
     return ((...args: any[]) => {
-      if (presetState.activePreset) {
-        presetState.deactivatePreset();
+      if (favoriteState.activeFavoriteId) {
+        favoriteState.deactivateFavorite();
       }
       return handler(...args);
     }) as T;
@@ -352,22 +352,22 @@ Delegates ALL logic to services (SRP compliant)
       currentLevel,
       isFreeformMode,
       {
-        handleLevelChange: withPresetDeselect(handleLevelChange),
-        handleLengthChange: withPresetDeselect(handleLengthChange),
-        handleTurnIntensityChange: withPresetDeselect(handleTurnIntensityChange),
-        handlePropContinuityChange: withPresetDeselect(handlePropContinuityChange),
-        handleGridModeChange: withPresetDeselect(handleGridModeChange),
+        handleLevelChange: withFavoriteDeselect(handleLevelChange),
+        handleLengthChange: withFavoriteDeselect(handleLengthChange),
+        handleTurnIntensityChange: withFavoriteDeselect(handleTurnIntensityChange),
+        handlePropContinuityChange: withFavoriteDeselect(handlePropContinuityChange),
+        handleGridModeChange: withFavoriteDeselect(handleGridModeChange),
         handleGenerationModeChange: () => {}, // No-op: mode is now derived from word presence
-        handleLOOPTypeChange: withPresetDeselect(handleLOOPTypeChange),
-        handleSliceSizeChange: withPresetDeselect((sliceSize: any) => updateConfig({ sliceSize })),
-        handleConstraintPresetChange: withPresetDeselect(handleConstraintPresetChange),
-        handleHandPathModeChange: withPresetDeselect(handleHandPathModeChange),
-        handleMotionTypeFilterChange: withPresetDeselect(handleMotionTypeFilterChange),
-        handleDurationTemplateSelect: withPresetDeselect(handleDurationTemplateSelect),
-        handleLoopToggle: withPresetDeselect(handleLoopToggle),
+        handleLOOPTypeChange: withFavoriteDeselect(handleLOOPTypeChange),
+        handleSliceSizeChange: withFavoriteDeselect((sliceSize: any) => updateConfig({ sliceSize })),
+        handleConstraintPresetChange: withFavoriteDeselect(handleConstraintPresetChange),
+        handleHandPathModeChange: withFavoriteDeselect(handleHandPathModeChange),
+        handleMotionTypeFilterChange: withFavoriteDeselect(handleMotionTypeFilterChange),
+        handleDurationTemplateSelect: withFavoriteDeselect(handleDurationTemplateSelect),
+        handleLoopToggle: withFavoriteDeselect(handleLoopToggle),
         wordInputValue,
         computedWordLength,
-        handleSpellLengthChange: withPresetDeselect(handleSpellLengthChange),
+        handleSpellLengthChange: withFavoriteDeselect(handleSpellLengthChange),
         bridgeInfo: wordInputValue?.trim() ? {
           requiredBridges: requiredBridgeCount,
           extraBridges: Math.max(0, (config.spellTargetLength ?? 0) - naturalLength),
@@ -375,10 +375,10 @@ Delegates ALL logic to services (SRP compliant)
           naturalLength,
           naturalDisplayLength,
         } : undefined,
-        handleWordInput: onWordInput ? withPresetDeselect(onWordInput) : undefined,
-        handleWordSubmit: onWordSubmit ? withPresetDeselect(onWordSubmit) : undefined,
+        handleWordInput: onWordInput ? withFavoriteDeselect(onWordInput) : undefined,
+        handleWordSubmit: onWordSubmit ? withFavoriteDeselect(onWordSubmit) : undefined,
         handleStartEndChange: startEndState
-          ? withPresetDeselect(handleStartEndChange)
+          ? withFavoriteDeselect(handleStartEndChange)
           : undefined,
         startEndOptions: startEndState?.options,
         positionsResetTrigger,
@@ -386,7 +386,12 @@ Delegates ALL logic to services (SRP compliant)
         handleGenerateClick: onGenerateClicked,
         needsCycleCompletion,
         handleCompleteCycle: onCompleteCycle,
-        activePreset: presetState.activePreset,
+        activeFavoriteId: favoriteState.activeFavoriteId,
+        activeFavoriteName: favoriteState.activeFavoriteId === "mine"
+          ? "My Fav"
+          : favoriteState.activeFavoriteId
+            ? favoriteState.communityFavorites.find((f: { userId: string }) => f.userId === favoriteState.activeFavoriteId)?.displayName ?? null
+            : null,
         handleOpenPresetDrawer,
       },
       allowedIntensityValues,
@@ -431,8 +436,8 @@ Delegates ALL logic to services (SRP compliant)
       {:else if card.id === "preset"}
         <PresetCard
           {...card.props as any}
-          color={cardColors.preset.color}
-          shadowColor={cardColors.preset.shadowColor}
+          color={cardColors.favorite.color}
+          shadowColor={cardColors.favorite.shadowColor}
         />
       {:else if card.id === "generate-button"}
         <GenerateButtonCard {...card.props as any} />

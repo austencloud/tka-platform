@@ -29,8 +29,7 @@ Card-based architecture with integrated Generate button:
   import LOOPDrawer from "./modals/LOOPDrawer.svelte";
   import CustomizeDrawer from "./modals/CustomizeDrawer.svelte";
   import PresetDrawer from "./presets/PresetDrawer.svelte";
-  import { createPresetState } from "../state/preset.svelte";
-  import type { GenerationPreset } from "../state/preset.svelte";
+  import { createFavoriteState } from "../state/favorite-state.svelte";
   import type { GeneratorHelpId } from "../domain/generator-help-content";
   import { generateTourState } from "$lib/shared/onboarding/state/generate-tour-state.svelte";
   import GeneratePanelTour from "$lib/shared/onboarding/components/generate-tour/GeneratePanelTour.svelte";
@@ -72,29 +71,45 @@ Card-based architecture with integrated Generate button:
   );
   const deviceState = createDeviceState();
   const startEndState = createStartEndOptionsState();
-  const presetState = createPresetState();
+  const favoriteState = createFavoriteState();
 
   // Spell mode: derived from word presence (if there's a word, it's spell mode)
   const hasWord = $derived(!!spellModeState.inputWord?.trim());
   const isMobile = $derived(deviceState.isMobile);
 
-  function handlePresetSelected(preset: GenerationPreset) {
-    if (preset.id === presetState.activePresetId) {
-      presetState.deactivatePreset();
+  function handleFavoriteActivated(id: string) {
+    if (id === favoriteState.activeFavoriteId) {
+      favoriteState.deactivateFavorite();
       return;
     }
 
-    presetState.activatePreset(preset.id);
-    configState.updateConfig(preset.config);
+    favoriteState.activateFavorite(id);
 
-    if (preset.startEndOptions) {
-      startEndState.setOptions(preset.startEndOptions);
+    // Get the config from either "mine" or a community favorite
+    const fav =
+      id === "mine"
+        ? favoriteState.myFavorite
+        : favoriteState.communityFavorites.find((f) => f.userId === id);
+
+    if (fav) {
+      configState.updateConfig(fav.config);
+      if (fav.startEndOptions) {
+        startEndState.setOptions(fav.startEndOptions);
+      }
     }
 
     if (spellModeState.inputWord?.trim()) {
       spellModeState.setInputWord("");
     }
 
+    panelState?.closePresetDrawer();
+  }
+
+  async function handleSaveAsFavorite() {
+    await favoriteState.saveMyFavorite(
+      configState.config,
+      startEndState.options
+    );
     panelState?.closePresetDrawer();
   }
 
@@ -228,7 +243,7 @@ Card-based architecture with integrated Generate button:
       onCompleteCycle={() => actionsState.completeCycle()}
       {isMobile}
       onOpenWordInput={() => spellModeState.openWordInput()}
-      {presetState}
+      favoriteState={favoriteState}
     />
   </div>
 </div>
@@ -286,9 +301,13 @@ Card-based architecture with integrated Generate button:
 
   <PresetDrawer
     isOpen={panelState.isPresetDrawerOpen}
-    presets={presetState.presets}
-    activePresetId={presetState.activePresetId}
-    onPresetSelect={handlePresetSelected}
+    myFavorite={favoriteState.myFavorite}
+    communityFavorites={favoriteState.communityFavorites}
+    activeFavoriteId={favoriteState.activeFavoriteId}
+    isLoading={favoriteState.isLoading}
+    onActivateMine={() => handleFavoriteActivated("mine")}
+    onActivateCommunity={(userId) => handleFavoriteActivated(userId)}
+    onSaveAsFavorite={handleSaveAsFavorite}
     onClose={() => panelState.closePresetDrawer()}
   />
 {/if}
