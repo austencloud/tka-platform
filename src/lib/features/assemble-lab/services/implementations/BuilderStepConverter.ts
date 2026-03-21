@@ -38,6 +38,10 @@ export class BuilderStepConverter implements IBuilderStepConverter {
         return MotionType.STATIC;
       case HandMotionType.DASH:
         return MotionType.DASH;
+      // Hash motions use the same rotation behavior as dash (straight line, no arc)
+      case HandMotionType.HASH_IN:
+      case HandMotionType.HASH_OUT:
+        return MotionType.DASH;
       case HandMotionType.SHIFT: {
         // Float: -0.5 turns cancels the arc rotation so the prop appears to float
         if (step.turnCount === -0.5) return MotionType.FLOAT;

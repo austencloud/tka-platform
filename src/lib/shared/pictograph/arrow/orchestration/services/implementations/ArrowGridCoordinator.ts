@@ -90,6 +90,9 @@ export class ArrowGridCoordinator implements IArrowGridCoordinator {
       }
     });
 
+    // Center is always at the scene center (475, 475) regardless of grid mode
+    handPoints[GridLocation.CENTER] = new Point(this.CENTER_X, this.CENTER_Y);
+
     return handPoints;
   }
 

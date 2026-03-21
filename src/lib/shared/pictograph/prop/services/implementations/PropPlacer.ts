@@ -52,15 +52,16 @@ export class PropPlacer implements IPropPlacer {
   ): Promise<PropPlacementData> {
     // DEBUG: Log motion data
 
-    // ALWAYS derive gridMode from pictograph data - don't trust stored motionData.gridMode
-    // This ensures correct calculations even after rotations or when loading saved sequences
+    // Derive gridMode from both motions when available. For single-motion pictographs
+    // (e.g. orientation explainer, start position), use the pictograph's explicit gridMode
+    // before falling back to DIAMOND.
     const gridMode =
       pictographData.motions.blue && pictographData.motions.red
         ? this.gridModeService.deriveGridMode(
             pictographData.motions.blue,
             pictographData.motions.red
           )
-        : GridMode.DIAMOND; // Fallback for single-motion pictographs (rare edge case)
+        : pictographData.gridMode ?? GridMode.DIAMOND;
 
     const position = await this.calculatePosition(
       pictographData,
