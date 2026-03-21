@@ -1,6 +1,6 @@
 // src/lib/features/assemble-lab/services/implementations/SvgPropAnimator.ts
 
-import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   Orientation,
   RotationDirection,
@@ -61,10 +61,17 @@ function applyEasing(t: number): number {
 
 /** Determine if motion is a dash (opposite points) vs shift (adjacent) vs static (same) */
 function isOpposite(a: GridLocation, b: GridLocation): boolean {
+  // Center is never opposite to anything
+  if (a === GridLocation.CENTER || b === GridLocation.CENTER) return false;
   const angleA = locToAngle(a);
   const angleB = locToAngle(b);
   const delta = Math.abs(normSigned(angleB - angleA));
   return Math.abs(delta - PI) < 0.01;
+}
+
+/** Check if a location is the center point */
+function isCenter(loc: GridLocation): boolean {
+  return loc === GridLocation.CENTER;
 }
 
 export class SvgPropAnimator implements ISvgPropAnimator {
@@ -91,6 +98,8 @@ export class SvgPropAnimator implements ISvgPropAnimator {
 
     const isSamePoint = startPosition === endPosition;
     const isDash = !isSamePoint && isOpposite(startPosition, endPosition);
+    // Hash motions: one end is center, the other is on the perimeter
+    const isHash = !isSamePoint && (isCenter(startPosition) || isCenter(endPosition));
 
     // Calculate staff rotation delta
     // For shifts: staff moves with (pro) or against (anti) the arc
@@ -103,8 +112,8 @@ export class SvgPropAnimator implements ISvgPropAnimator {
     if (isSamePoint) {
       // Static: just turn rotation
       staffRotationDelta = turnRotation;
-    } else if (isDash) {
-      // Dash: only turn rotation (no arc component)
+    } else if (isDash || isHash) {
+      // Dash/hash: only turn rotation (no arc component)
       staffRotationDelta = turnRotation;
     } else {
       // Shift: arc component + turn rotation
@@ -118,15 +127,18 @@ export class SvgPropAnimator implements ISvgPropAnimator {
       staffRotationDelta = staffArcComponent + turnRotation;
     }
 
-    // For dash: use Cartesian interpolation
-    const startX = isDash ? Math.cos(startCenterAngle) : 0;
-    const startY = isDash ? Math.sin(startCenterAngle) : 0;
-    const endX = isDash ? Math.cos(endCenterAngle) : 0;
-    const endY = isDash ? Math.sin(endCenterAngle) : 0;
+    // For dash or hash: use Cartesian interpolation (straight line)
+    const useCartesian = isDash || isHash;
+    const startRadius = isCenter(startPosition) ? 0 : 1;
+    const endRadius = isCenter(endPosition) ? 0 : 1;
+    const startX = useCartesian ? Math.cos(startCenterAngle) * startRadius : 0;
+    const startY = useCartesian ? Math.sin(startCenterAngle) * startRadius : 0;
+    const endX = useCartesian ? Math.cos(endCenterAngle) * endRadius : 0;
+    const endY = useCartesian ? Math.sin(endCenterAngle) * endRadius : 0;
 
     // Instant jump for 0 duration
     if (duration <= 0) {
-      this.applyTransform(element, endCenterAngle, isDash, endX, endY,
+      this.applyTransform(element, endCenterAngle, useCartesian, endX, endY,
         normPos(startStaffAngle + staffRotationDelta), propCenter);
       return;
     }
@@ -145,8 +157,8 @@ export class SvgPropAnimator implements ISvgPropAnimator {
         let cartX = 0;
         let cartY = 0;
 
-        if (isDash) {
-          // Cartesian lerp (straight line through center)
+        if (useCartesian) {
+          // Cartesian lerp (straight line — for dashes and hash motions)
           cartX = startX + (endX - startX) * t;
           cartY = startY + (endY - startY) * t;
           displayAngle = Math.atan2(cartY, cartX);
@@ -160,7 +172,7 @@ export class SvgPropAnimator implements ISvgPropAnimator {
         // Interpolate staff rotation
         const staffAngle = normPos(startStaffAngle + staffRotationDelta * t);
 
-        this.applyTransform(element, displayAngle, isDash, cartX, cartY,
+        this.applyTransform(element, displayAngle, useCartesian, cartX, cartY,
           staffAngle, propCenter);
 
         if (rawProgress < 1) {

@@ -420,10 +420,43 @@ function staffAngleToOrientation(staffAngle: number, centerAngle: number): Orien
 
 /** Check if two grid locations are diametrically opposite (dash) */
 function isOpposite(a: GridLocation, b: GridLocation): boolean {
+  // Center is never opposite to anything — center motions are hash-in/hash-out
+  if (a === GridLocation.CENTER || b === GridLocation.CENTER) return false;
   const angleA = LOCATION_ANGLES[a];
   const angleB = LOCATION_ANGLES[b];
   const delta = Math.abs(normSigned(angleB - angleA));
   return Math.abs(delta - PI) < 0.01;
+}
+
+// ─── Hash orientation translation ─────────────────────────────────────────────
+// When hashing between perimeter and center, the prop's absolute direction
+// stays the same — we translate between radial (in/out/clock/counter) and
+// compass (centerN/centerE/etc.) orientation systems.
+//
+// Map: [perimeterLocation][radialOrientation] → centerOrientation
+// Built from the DIAMOND_PROP_ANGLES/BOX_PROP_ANGLES: the SVG angle at each
+// (location, orientation) pair maps to the center orientation with that same angle.
+
+const RADIAL_TO_CENTER: Record<string, Record<string, Orientation>> = {
+  // Diamond (cardinal) locations
+  [GridLocation.NORTH]:  { in: Orientation.CENTER_S,  out: Orientation.CENTER_N,  clock: Orientation.CENTER_E,  counter: Orientation.CENTER_W },
+  [GridLocation.SOUTH]:  { in: Orientation.CENTER_N,  out: Orientation.CENTER_S,  clock: Orientation.CENTER_W,  counter: Orientation.CENTER_E },
+  [GridLocation.EAST]:   { in: Orientation.CENTER_W,  out: Orientation.CENTER_E,  clock: Orientation.CENTER_S,  counter: Orientation.CENTER_N },
+  [GridLocation.WEST]:   { in: Orientation.CENTER_E,  out: Orientation.CENTER_W,  clock: Orientation.CENTER_N,  counter: Orientation.CENTER_S },
+  // Box (intercardinal) locations
+  [GridLocation.NORTHEAST]: { in: Orientation.CENTER_SW, out: Orientation.CENTER_NE, clock: Orientation.CENTER_SE, counter: Orientation.CENTER_NW },
+  [GridLocation.SOUTHEAST]: { in: Orientation.CENTER_NW, out: Orientation.CENTER_SE, clock: Orientation.CENTER_SW, counter: Orientation.CENTER_NE },
+  [GridLocation.SOUTHWEST]: { in: Orientation.CENTER_NE, out: Orientation.CENTER_SW, clock: Orientation.CENTER_NW, counter: Orientation.CENTER_SE },
+  [GridLocation.NORTHWEST]: { in: Orientation.CENTER_SE, out: Orientation.CENTER_NW, clock: Orientation.CENTER_NE, counter: Orientation.CENTER_SW },
+};
+
+// Reverse map: [perimeterLocation][centerOrientation] → radialOrientation
+const CENTER_TO_RADIAL: Record<string, Record<string, Orientation>> = {};
+for (const [loc, oriMap] of Object.entries(RADIAL_TO_CENTER)) {
+  CENTER_TO_RADIAL[loc] = {};
+  for (const [radial, center] of Object.entries(oriMap)) {
+    CENTER_TO_RADIAL[loc]![center] = radial as Orientation;
+  }
 }
 
 /**
@@ -432,6 +465,10 @@ function isOpposite(a: GridLocation, b: GridLocation): boolean {
  * For shifts, the arc itself rotates the staff — pro shifts preserve orientation,
  * anti shifts reverse it (even at 0 turns). For dashes and statics, only turn
  * count matters. This mirrors the exact math in SvgPropAnimator.
+ *
+ * For hash motions (perimeter ↔ center), translates between radial and compass
+ * orientation systems. The prop's absolute direction is preserved, then turns
+ * are applied using the dash rule (even=switch, odd=same).
  */
 function calculateEndOrientation(
   startOrientation: Orientation,
@@ -440,6 +477,50 @@ function calculateEndOrientation(
   rotationDirection: RotationDirection,
   turnCount: number,
 ): Orientation {
+  const isHashIn = startLocation !== GridLocation.CENTER && endLocation === GridLocation.CENTER;
+  const isHashOut = startLocation === GridLocation.CENTER && endLocation !== GridLocation.CENTER;
+
+  if (isHashIn) {
+    // Perimeter → center: translate radial orientation to center orientation
+    const perimeterLoc = startLocation as string;
+    const radialOri = startOrientation as string;
+    let centerOri = RADIAL_TO_CENTER[perimeterLoc]?.[radialOri] ?? ("centerN" as Orientation);
+
+    // Apply dash-rule turns: even=switch, odd=same (hash uses dash rotation rules)
+    const wholeTurns = Math.floor(turnCount);
+    if (wholeTurns % 2 !== 0) {
+      // Switch = opposite compass direction (e.g. centerN → centerS)
+      const switchMap: Record<string, Orientation> = {
+        [Orientation.CENTER_N]: Orientation.CENTER_S, [Orientation.CENTER_S]: Orientation.CENTER_N,
+        [Orientation.CENTER_E]: Orientation.CENTER_W, [Orientation.CENTER_W]: Orientation.CENTER_E,
+        [Orientation.CENTER_NE]: Orientation.CENTER_SW, [Orientation.CENTER_SW]: Orientation.CENTER_NE,
+        [Orientation.CENTER_SE]: Orientation.CENTER_NW, [Orientation.CENTER_NW]: Orientation.CENTER_SE,
+      };
+      centerOri = switchMap[centerOri] ?? centerOri;
+    }
+    return centerOri;
+  }
+
+  if (isHashOut) {
+    // Center → perimeter: translate center orientation to radial orientation
+    const perimeterLoc = endLocation as string;
+    const centerOri = startOrientation as string;
+    let radialOri = CENTER_TO_RADIAL[perimeterLoc]?.[centerOri] ?? Orientation.IN;
+
+    // Apply dash-rule turns: even=switch, odd=same
+    const wholeTurns = Math.floor(turnCount);
+    if (wholeTurns % 2 !== 0) {
+      // Switch radial orientation (in↔out, clock↔counter)
+      const switchMap: Record<string, Orientation> = {
+        [Orientation.IN]: Orientation.OUT, [Orientation.OUT]: Orientation.IN,
+        [Orientation.CLOCK]: Orientation.COUNTER, [Orientation.COUNTER]: Orientation.CLOCK,
+      };
+      radialOri = switchMap[radialOri] ?? radialOri;
+    }
+    return radialOri;
+  }
+
+  // Standard perimeter-to-perimeter calculation
   const startCenterAngle = LOCATION_ANGLES[startLocation];
   const endCenterAngle = LOCATION_ANGLES[endLocation];
   const startStaffAngle = oriToStaffAngle(startOrientation, startCenterAngle);

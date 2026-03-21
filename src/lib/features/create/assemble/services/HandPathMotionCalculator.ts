@@ -45,6 +45,14 @@ export class HandPathMotionCalculator {
       return HandMotionType.STATIC;
     }
 
+    // Hash motions: one end is center, the other is on the perimeter
+    if (from === GridLocation.CENTER) {
+      return HandMotionType.HASH_OUT;
+    }
+    if (to === GridLocation.CENTER) {
+      return HandMotionType.HASH_IN;
+    }
+
     const positions = this.getActivePositions(gridMode);
 
     // Validate that both positions are in the active set
@@ -56,19 +64,25 @@ export class HandPathMotionCalculator {
 
     const fromIndex = positions.indexOf(from);
     const toIndex = positions.indexOf(to);
+    const count = positions.length; // 4 for diamond/box, 8 for skewed
 
     // Check if adjacent (1 step clockwise or counter-clockwise)
-    const isAdjacentCW = (fromIndex + 1) % 4 === toIndex;
-    const isAdjacentCCW = (fromIndex - 1 + 4) % 4 === toIndex;
+    const isAdjacentCW = (fromIndex + 1) % count === toIndex;
+    const isAdjacentCCW = (fromIndex - 1 + count) % count === toIndex;
 
     if (isAdjacentCW || isAdjacentCCW) {
       return HandMotionType.SHIFT;
     }
 
-    // Opposite position (2 steps away)
-    const isOpposite = (fromIndex + 2) % 4 === toIndex;
+    // Opposite position (halfway around the ring)
+    const isOpposite = (fromIndex + count / 2) % count === toIndex;
     if (isOpposite) {
       return HandMotionType.DASH;
+    }
+
+    // For 8-point grid: non-adjacent, non-opposite = still a shift (just wider arc)
+    if (count === 8) {
+      return HandMotionType.SHIFT;
     }
 
     throw new Error(`Unexpected position relationship: from=${from}, to=${to}`);
@@ -93,9 +107,10 @@ export class HandPathMotionCalculator {
     const positions = this.getActivePositions(gridMode);
     const fromIndex = positions.indexOf(from);
     const toIndex = positions.indexOf(to);
+    const count = positions.length;
 
     // Clockwise if moving forward in the array
-    const isClockwise = (fromIndex + 1) % 4 === toIndex;
+    const isClockwise = (fromIndex + 1) % count === toIndex;
 
     return isClockwise
       ? RotationDirection.CLOCKWISE
@@ -118,6 +133,8 @@ export class HandPathMotionCalculator {
       return [...this.diamondClockwise];
     } else if (gridMode === GridMode.BOX) {
       return [...this.boxClockwise];
+    } else if (gridMode === GridMode.SKEWED) {
+      return [...this.diamondClockwise, ...this.boxClockwise];
     }
 
     throw new Error(`Unsupported grid mode: ${gridMode}`);
