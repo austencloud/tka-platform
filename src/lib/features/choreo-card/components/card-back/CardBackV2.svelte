@@ -45,7 +45,7 @@
       <!-- Word bar -->
       <div class="word-bar">
         <span class="word">{d.word}</span>
-        <span class="beats">{d.beats}</span>
+        <span class="beats">{d.stepCount}</span>
       </div>
 
       <!-- Stats row -->

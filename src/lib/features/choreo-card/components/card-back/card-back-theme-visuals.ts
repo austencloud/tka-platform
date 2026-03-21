@@ -73,6 +73,6 @@ const THEMES: Record<string, CardBackThemeVisuals> = {
   },
 };
 
-export function getCardBackThemeVisuals(backgroundType: string): CardBackThemeVisuals {
-  return THEMES[backgroundType] ?? THEMES.nightSky!;
+export function getCardBackThemeVisuals(backgroundType: string | undefined): CardBackThemeVisuals {
+  return (backgroundType ? THEMES[backgroundType] : undefined) ?? THEMES.nightSky!;
 }

@@ -23,6 +23,7 @@
     onSelectDeck: (deckId: string) => void;
     onBackToList: () => void;
     onSelectSequence: (sequence: SequenceData) => void;
+    onContextMenu?: (x: number, y: number, rerender: () => void) => void;
   }
 
   let {
@@ -38,6 +39,7 @@
     onSelectDeck,
     onBackToList,
     onSelectSequence,
+    onContextMenu,
   }: Props = $props();
 
   let selectedDeck = $derived(decks.find((d) => d.id === selectedDeckId) ?? null);
@@ -47,7 +49,7 @@
   // When there's only one deck, skip the list view and go straight to it
   $effect(() => {
     if (decks.length === 1 && !selectedDeckId && !isLoading) {
-      onSelectDeck(decks[0].id);
+      onSelectDeck(decks[0]!.id);
     }
   });
 
@@ -99,6 +101,7 @@
               {showWord}
               {includeStartPosition}
               {onSelectSequence}
+              {onContextMenu}
             />
           {/each}
         </div>

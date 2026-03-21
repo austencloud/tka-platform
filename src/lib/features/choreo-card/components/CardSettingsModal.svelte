@@ -51,7 +51,18 @@
   const showNotes = $derived.by(() => { void compositionVersion; return composition.showNotes; });
   const showBirthday = $derived.by(() => { void compositionVersion; return composition.showBirthday; });
   const showQRCode = $derived.by(() => { void compositionVersion; return composition.showQRCode; });
-  const startPositionLayout = $derived.by(() => { void compositionVersion; return composition.startPositionLayout; });
+  const currentStepCount = $derived(sequence?.steps?.length ?? 0);
+  const startPositionLayout = $derived.by(() => {
+    void compositionVersion;
+    if (currentStepCount > 0) {
+      return composition.getStartPositionLayoutForStepCount(currentStepCount);
+    }
+    return composition.startPositionLayout;
+  });
+  const hasLayoutOverride = $derived.by(() => {
+    void compositionVersion;
+    return currentStepCount > 0 && composition.hasStartPositionLayoutOverride(currentStepCount);
+  });
 
   // Pictograph visibility toggles
   function toggleGrid() { visibility.setGridVisibility(!visibility.getGridVisibility()); }
@@ -67,7 +78,19 @@
   function toggleNotes() { composition.setShowNotes(!composition.showNotes); }
   function toggleBirthday() { composition.setShowBirthday(!composition.showBirthday); }
   function toggleQRCode() { composition.setShowQRCode(!composition.showQRCode); }
-  function toggleStartLayout() { composition.setStartPositionLayout(startPositionLayout === "row" ? "column" : "row"); }
+  function toggleStartLayout() {
+    const newValue = startPositionLayout === "row" ? "column" : "row";
+    if (currentStepCount > 0) {
+      composition.setStartPositionLayoutForStepCount(currentStepCount, newValue);
+    } else {
+      composition.setStartPositionLayout(newValue);
+    }
+  }
+  function clearLayoutOverride() {
+    if (currentStepCount > 0) {
+      composition.clearStartPositionLayoutOverride(currentStepCount);
+    }
+  }
 </script>
 
 <SettingsModalLayout title="Card Settings" icon="fa-id-card" bind:open>
@@ -120,8 +143,13 @@
           </button>
           {#if includeStartPosition}
             <button class="chip layout-toggle" onclick={toggleStartLayout}>
-              {startPositionLayout === "row" ? "Top Row" : "Left Column"}
+              {startPositionLayout === "row" ? "Top Row" : "Left Column"}{currentStepCount > 0 ? ` (${currentStepCount}-beat)` : ""}
             </button>
+            {#if hasLayoutOverride}
+              <button class="chip reset-chip" onclick={clearLayoutOverride} title="Reset to global default">
+                <i class="fas fa-undo" aria-hidden="true"></i>
+              </button>
+            {/if}
           {/if}
           <button class="chip" class:active={showDifficulty} aria-pressed={showDifficulty} onclick={toggleDifficulty}>
             Difficulty

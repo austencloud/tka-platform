@@ -35,6 +35,11 @@ export interface ImageCompositionSettings {
   // Start position layout: "row" = top row, "column" = left column
   startPositionLayout: "row" | "column";
 
+  // Per-step-count overrides for start position layout.
+  // Keys are step counts as strings (for JSON serialization).
+  // When a step count has an override, it takes precedence over the global startPositionLayout.
+  startPositionLayoutOverrides: Record<string, "row" | "column">;
+
   // Backwards compatibility - computed from granular controls (always defined in getSettings())
   addUserInfo: boolean; // True if any footer element is shown
 }
@@ -58,8 +63,11 @@ const DEFAULT_SETTINGS: ImageCompositionSettings = {
   // QR code - shown by default in the empty cell under start position
   showQRCode: true,
 
-  // Start position layout - default to row (new behavior)
-  startPositionLayout: "row" as const,
+  // Start position layout - default to column (start as left column, beats fill remaining columns)
+  startPositionLayout: "column" as const,
+
+  // No per-step-count overrides by default
+  startPositionLayoutOverrides: {},
 
   // Computed: true when any footer element is shown
   addUserInfo: true,
@@ -226,6 +234,22 @@ class ImageCompositionStateManager {
     return this.settings.startPositionLayout;
   }
 
+  /**
+   * Resolve start position layout for a specific step count.
+   * Checks per-step-count overrides first, then falls back to the global setting.
+   */
+  getStartPositionLayoutForStepCount(stepCount: number): "row" | "column" {
+    const override = this.settings.startPositionLayoutOverrides[String(stepCount)];
+    return override ?? this.settings.startPositionLayout;
+  }
+
+  /**
+   * Check if a specific step count has a per-step-count override.
+   */
+  hasStartPositionLayoutOverride(stepCount: number): boolean {
+    return String(stepCount) in this.settings.startPositionLayoutOverrides;
+  }
+
   // Get all settings (for passing to share service)
   getSettings(): ImageCompositionSettings {
     return {
@@ -299,6 +323,30 @@ class ImageCompositionStateManager {
 
   setStartPositionLayout(value: "row" | "column"): void {
     this.settings.startPositionLayout = value;
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  /**
+   * Set start position layout for a specific step count.
+   * If the value matches the global default, removes the override instead.
+   */
+  setStartPositionLayoutForStepCount(stepCount: number, value: "row" | "column"): void {
+    if (value === this.settings.startPositionLayout) {
+      // Matches global default — remove override to keep storage clean
+      delete this.settings.startPositionLayoutOverrides[String(stepCount)];
+    } else {
+      this.settings.startPositionLayoutOverrides[String(stepCount)] = value;
+    }
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  /**
+   * Remove the per-step-count override so it falls back to global default.
+   */
+  clearStartPositionLayoutOverride(stepCount: number): void {
+    delete this.settings.startPositionLayoutOverrides[String(stepCount)];
     this.saveToStorage();
     this.notifyObservers();
   }
