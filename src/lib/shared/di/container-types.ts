@@ -165,6 +165,7 @@ interface StandaloneItems {
 	cardBackCanvasRenderer: import("$lib/features/choreo-card/services/contracts/ICardBackCanvasRenderer").ICardBackCanvasRenderer;
 	infoCardCanvasRenderer: import("$lib/features/choreo-card/services/contracts/IInfoCardCanvasRenderer").IInfoCardCanvasRenderer;
 	printPDFExporter: import("$lib/features/choreo-card/services/contracts/IPrintPDFExporter").IPrintPDFExporter;
+	printZipExporter: import("$lib/features/choreo-card/services/contracts/IPrintZipExporter").IPrintZipExporter;
 }
 
 // ============================================================================
