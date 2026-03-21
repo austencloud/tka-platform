@@ -613,10 +613,6 @@
     50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.35); }
   }
 
-  .practice-btn i {
-    font-size: 14px;
-  }
-
   @media (hover: hover) and (pointer: fine) {
     .practice-btn:hover:not(.active) {
       background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
