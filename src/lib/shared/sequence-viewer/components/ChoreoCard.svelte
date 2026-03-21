@@ -1628,7 +1628,7 @@
       alt={cell.label}
       draggable="false"
     />
-    {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={activeDarkMode} style="font-size: {stepNumFontSize}px;" transition:fade|local={{ duration: 150 }}>{cell.label}</span>{/if}
+    {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={activeDarkMode} class:solo-location={isSoloMode} style="font-size: {isSoloMode ? Math.round(stepNumFontSize * 0.75) : stepNumFontSize}px;" transition:fade|local={{ duration: 150 }}>{cell.label}</span>{/if}
     {#if showDurBadge && hasMixedDurations && cell.duration !== 1}<span class="duration-badge" class:dark-mode={activeDarkMode}>{formatDuration(cell.duration)}</span>{/if}
   {:else}
     <div class="cell-spinner-container">
@@ -2369,6 +2369,16 @@
 
   .step-number-overlay.dark-mode {
     color: #ffffff;
+  }
+
+  /* Solo mode location labels — subtle, bottom-center instead of top-left */
+  .step-number-overlay.solo-location {
+    top: auto;
+    left: 50%;
+    bottom: 3%;
+    transform: translateX(-50%);
+    opacity: 0.5;
+    font-weight: 500;
   }
 
   /* Duration badge — bottom-center, matches DurationGlyph.svelte positioning

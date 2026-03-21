@@ -29,6 +29,10 @@
 
 	const propColor = $derived<"blue" | "red">(side === "left" ? "blue" : "red");
 
+	// Beat columns for the choreo card grid (start position column added automatically).
+	// Half the beat count gives a compact 2-row layout: 8 beats → 4 cols, 4 beats → 2 cols.
+	const beatColumns = $derived(Math.max(2, Math.min(4, Math.ceil(length / 2))));
+
 	// Build the view mode for single-prop rendering
 	const viewMode = $derived<BrowseViewMode>({
 		subject: mode === "handPaths" ? "hands" : "props",
@@ -60,7 +64,7 @@
 			// Shuffle
 			for (let i = filtered.length - 1; i > 0; i--) {
 				const j = Math.floor(Math.random() * (i + 1));
-				[filtered[i], filtered[j]] = [filtered[j], filtered[i]];
+				[filtered[i], filtered[j]] = [filtered[j]!, filtered[i]!];
 			}
 
 			pool = filtered;
@@ -144,6 +148,7 @@
 							showBirthday={false}
 							showLoopGlyph={false}
 							darkMode={true}
+							columnCount={beatColumns}
 						/>
 					</div>
 				{:else}
