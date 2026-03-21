@@ -40,6 +40,10 @@ Delegates ALL logic to services (SRP compliant)
   import SliceSizeCard from "./cards/SliceSizeCard.svelte";
   import CustomizeCard from "./cards/CustomizeCard.svelte";
   import WordInputCard from "./cards/WordInputCard.svelte";
+  import PresetCard from "./cards/PresetCard.svelte";
+  import PresetDrawer from "./presets/PresetDrawer.svelte";
+  import { createPresetState } from "../state/preset.svelte";
+  import type { GenerationPreset } from "../state/preset.svelte";
   // Props
   let {
     config,
@@ -173,16 +177,17 @@ Delegates ALL logic to services (SRP compliant)
       requiredBridgeCount = bridgeCount;
       naturalLength = originalLetters.length + bridgeCount;
 
-      // Helper to apply LOOP multiplication to a pre-LOOP beat count
+      // Helper to apply LOOP multiplication to a pre-LOOP beat count.
+      // Does NOT add +1 for a LOOP bridge beat — a bridge is only inserted
+      // when the sequence can't directly connect back to start, and we
+      // can't know that until actual generation runs. The displayed count
+      // should match the most common case (direct extension, no bridge).
       function applyLoopMultiplier(beats: number): number {
         if (!loopEnabled) return beats;
-        let total = beats + 1; // LOOP adds 1 bridge beat
-        if (ROTATED_LOOP_TYPES.has(loopType as LOOPType)) {
-          total *= sliceSize === SliceSize.QUARTERED ? 4 : 2;
-        } else {
-          total *= 2;
-        }
-        return total;
+        const multiplier = ROTATED_LOOP_TYPES.has(loopType as LOOPType)
+          ? (sliceSize === SliceSize.QUARTERED ? 4 : 2)
+          : 2;
+        return beats * multiplier;
       }
 
       // Natural display length = LOOP-multiplied natural (the floor for the stepper)
@@ -235,6 +240,8 @@ Delegates ALL logic to services (SRP compliant)
 
     return () => window.removeEventListener("resize", updateFontSize);
   });
+
+  const presetState = createPresetState();
 
   function updateFontSize() {
     if (!typographyService) return;
@@ -328,6 +335,40 @@ Delegates ALL logic to services (SRP compliant)
     startEndState?.setOptions(options);
   }
 
+  // Preset handlers
+  function handlePresetSelected(preset: GenerationPreset) {
+    if (preset.id === presetState.activePresetId) {
+      presetState.deactivatePreset();
+      return;
+    }
+
+    presetState.activatePreset(preset.id);
+    updateConfig(preset.config);
+
+    if (preset.startEndOptions && startEndState) {
+      startEndState.setOptions(preset.startEndOptions);
+    }
+
+    if (wordInputValue && onWordInput) {
+      onWordInput("");
+    }
+
+    panelState.closePresetDrawer();
+  }
+
+  function handleOpenPresetDrawer() {
+    panelState.openPresetDrawer();
+  }
+
+  function withPresetDeselect<T extends (...args: any[]) => any>(handler: T): T {
+    return ((...args: any[]) => {
+      if (presetState.activePreset) {
+        presetState.deactivatePreset();
+      }
+      return handler(...args);
+    }) as T;
+  }
+
   // Build cards using service - reactive to all dependencies
   let cards = $derived.by((): CardDescriptor[] => {
     if (!cardConfigService || !currentLevel) return [];
@@ -337,22 +378,22 @@ Delegates ALL logic to services (SRP compliant)
       currentLevel,
       isFreeformMode,
       {
-        handleLevelChange,
-        handleLengthChange,
-        handleTurnIntensityChange,
-        handlePropContinuityChange,
-        handleGridModeChange,
+        handleLevelChange: withPresetDeselect(handleLevelChange),
+        handleLengthChange: withPresetDeselect(handleLengthChange),
+        handleTurnIntensityChange: withPresetDeselect(handleTurnIntensityChange),
+        handlePropContinuityChange: withPresetDeselect(handlePropContinuityChange),
+        handleGridModeChange: withPresetDeselect(handleGridModeChange),
         handleGenerationModeChange: () => {}, // No-op: mode is now derived from word presence
-        handleLOOPTypeChange,
-        handleSliceSizeChange: (sliceSize: any) => updateConfig({ sliceSize }),
-        handleConstraintPresetChange,
-        handleHandPathModeChange,
-        handleMotionTypeFilterChange,
-        handleDurationTemplateSelect,
-        handleLoopToggle,
+        handleLOOPTypeChange: withPresetDeselect(handleLOOPTypeChange),
+        handleSliceSizeChange: withPresetDeselect((sliceSize: any) => updateConfig({ sliceSize })),
+        handleConstraintPresetChange: withPresetDeselect(handleConstraintPresetChange),
+        handleHandPathModeChange: withPresetDeselect(handleHandPathModeChange),
+        handleMotionTypeFilterChange: withPresetDeselect(handleMotionTypeFilterChange),
+        handleDurationTemplateSelect: withPresetDeselect(handleDurationTemplateSelect),
+        handleLoopToggle: withPresetDeselect(handleLoopToggle),
         wordInputValue,
         computedWordLength,
-        handleSpellLengthChange,
+        handleSpellLengthChange: withPresetDeselect(handleSpellLengthChange),
         bridgeInfo: wordInputValue?.trim() ? {
           requiredBridges: requiredBridgeCount,
           extraBridges: Math.max(0, (config.spellTargetLength ?? 0) - naturalLength),
@@ -360,10 +401,10 @@ Delegates ALL logic to services (SRP compliant)
           naturalLength,
           naturalDisplayLength,
         } : undefined,
-        handleWordInput: onWordInput,
-        handleWordSubmit: onWordSubmit,
+        handleWordInput: onWordInput ? withPresetDeselect(onWordInput) : undefined,
+        handleWordSubmit: onWordSubmit ? withPresetDeselect(onWordSubmit) : undefined,
         handleStartEndChange: startEndState
-          ? handleStartEndChange
+          ? withPresetDeselect(handleStartEndChange)
           : undefined,
         startEndOptions: startEndState?.options,
         positionsResetTrigger,
@@ -371,6 +412,8 @@ Delegates ALL logic to services (SRP compliant)
         handleGenerateClick: onGenerateClicked,
         needsCycleCompletion,
         handleCompleteCycle: onCompleteCycle,
+        activePreset: presetState.activePreset,
+        handleOpenPresetDrawer,
       },
       allowedIntensityValues,
       isGenerating,
@@ -411,12 +454,26 @@ Delegates ALL logic to services (SRP compliant)
         <ConsolidatedLOOPCard {...card.props as any} />
       {:else if card.id === "slice-size"}
         <SliceSizeCard {...card.props as any} color={cardColors.sliceSize.color} shadowColor={cardColors.sliceSize.shadowColor} />
+      {:else if card.id === "preset"}
+        <PresetCard
+          {...card.props as any}
+          color={cardColors.preset.color}
+          shadowColor={cardColors.preset.shadowColor}
+        />
       {:else if card.id === "generate-button"}
         <GenerateButtonCard {...card.props as any} />
       {/if}
     </div>
   {/each}
 </div>
+
+<PresetDrawer
+  isOpen={panelState.isPresetDrawerOpen}
+  presets={presetState.presets}
+  activePresetId={presetState.activePresetId}
+  onPresetSelect={handlePresetSelected}
+  onClose={() => panelState.closePresetDrawer()}
+/>
 
 <style>
   /* ============================================================ */
