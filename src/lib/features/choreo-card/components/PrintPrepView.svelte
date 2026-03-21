@@ -63,7 +63,7 @@
   let lastBlueProp = $state(settingsService.settings.bluePropType);
   let lastRedProp = $state(settingsService.settings.redPropType);
 
-  // Auto-rerender all cards when prop type changes
+  // Auto-rerender all cards in-place when prop type changes (no DOM teardown)
   $effect(() => {
     const currentBlue = settingsService.settings.bluePropType;
     const currentRed = settingsService.settings.redPropType;
@@ -73,9 +73,32 @@
     ) {
       lastBlueProp = currentBlue;
       lastRedProp = currentRed;
-      renderAllCards();
+      rerenderAllInPlace();
     }
   });
+
+  /** Re-render every card's images in-place without tearing down the grid */
+  async function rerenderAllInPlace() {
+    if (!printRenderer) return;
+    const options = buildRenderOptions();
+
+    for (let i = 0; i < renderedPairs.length; i++) {
+      const pair = renderedPairs[i]!;
+      try {
+        const front = await printRenderer.renderFront(pair.sequence, options);
+        const back = await printRenderer.renderBack(pair.sequence, options);
+        renderedPairs[i] = {
+          ...pair,
+          front,
+          back,
+          frontSrc: front.toDataURL("image/png"),
+          backSrc: back.toDataURL("image/png"),
+        };
+      } catch (err) {
+        console.error(`Failed to rerender card ${i}:`, err);
+      }
+    }
+  }
 
   // ── Render state ────────────────────────────────────────────────────
   // Store data URL strings (not canvases) so Svelte can detect changes for <img> reactivity
@@ -129,7 +152,7 @@
       label: "Rerender all",
       icon: "fas fa-redo",
       action: () => {
-        renderAllCards();
+        rerenderAllInPlace();
         closeContextMenu();
       },
     },
@@ -223,9 +246,9 @@
   function handleThemeChange(themeId: string) {
     selectedTheme = themeId;
     persistString("printPrep.theme", themeId);
-    // Re-render with new theme
-    if (deck && deckSequences.length > 0 && printRenderer) {
-      renderAllCards();
+    // Re-render with new theme (in-place, no DOM teardown)
+    if (renderedPairs.length > 0 && printRenderer) {
+      rerenderAllInPlace();
     }
   }
 
@@ -236,10 +259,19 @@
     zipExporter = container.items.printZipExporter as IPrintZipExporter;
   });
 
-  // Re-render when deck changes
+  // Re-render when deck changes (not when settings change)
+  let lastDeckId: string | null = null;
+  let lastSeqCount = 0;
   $effect(() => {
-    if (deck && deckSequences.length > 0 && printRenderer) {
-      renderAllCards();
+    const deckId = deck?.id ?? null;
+    const seqCount = deckSequences.length;
+    // Only trigger on actual deck/sequence changes, not settings
+    if (deckId !== lastDeckId || seqCount !== lastSeqCount) {
+      lastDeckId = deckId;
+      lastSeqCount = seqCount;
+      if (deck && seqCount > 0 && printRenderer) {
+        renderAllCards();
+      }
     }
   });
 
