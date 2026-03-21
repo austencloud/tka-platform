@@ -13,7 +13,7 @@ import type {
  *
  * Grid is 6 columns. Cards auto-wrap to new rows when a row fills up.
  *
- *   Row 1: Word(4) + Length(2) = 6
+ *   Row 1: Word(2) + Preset(2) + Length(2) = 6
  *   Row 2 (beginner): Level(3) + GridMode(3) = 6
  *   Row 2 (non-beginner): Level(2) + GridMode(2) + TurnIntensity(2) = 6
  *   Row 3 (no slice): Customize(3) + LOOP(3) = 6
@@ -37,7 +37,7 @@ export class CardConfigurator implements ICardConfigurator {
     const isBeginnerLevel = currentLevel === DifficultyLevel.BEGINNER;
     const shouldShowTurnIntensity = currentLevel !== DifficultyLevel.BEGINNER;
 
-    // ─── Row 1: Word(4) + Length(2) = 6 ───
+    // ─── Row 1: Word(2) + Preset(2) + Length(2) = 6 ───
 
     cardList.push({
       id: "word-input",
@@ -48,8 +48,21 @@ export class CardConfigurator implements ICardConfigurator {
         disabled: isGenerating,
         cardIndex: cardIndex++,
       },
-      gridColumnSpan: 4,
+      gridColumnSpan: 2,
     });
+
+    // Preset card
+    if (handlers.handleOpenPresetDrawer) {
+      cardList.push({
+        id: "preset",
+        props: {
+          activePreset: handlers.activePreset ?? null,
+          onOpenDrawer: handlers.handleOpenPresetDrawer,
+          cardIndex: cardIndex++,
+        },
+        gridColumnSpan: 2,
+      });
+    }
 
     // Length card — always interactive, with constrained bounds in spell mode
     const hasWord = !!(handlers.wordInputValue?.trim());
