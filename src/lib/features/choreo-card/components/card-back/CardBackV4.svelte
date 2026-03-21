@@ -47,7 +47,7 @@
       <!-- Word and beats: elegant baseline alignment -->
       <div class="identity-row">
         <span class="word">{d.word}</span>
-        <span class="beats">{d.beats}</span>
+        <span class="beats">{d.stepCount}</span>
       </div>
 
       <!-- LOOP: just the icons, minimal text -->

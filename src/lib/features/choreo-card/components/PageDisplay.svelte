@@ -27,6 +27,7 @@
     onRetry: () => void;
     onColumnCountChanged?: (count: number) => void;
     onSelectSequence?: (sequence: SequenceData) => void;
+    onContextMenu?: (x: number, y: number, rerender: () => void) => void;
   }
 
   const MIN_COLUMNS = 1;
@@ -47,6 +48,7 @@
     onRetry,
     onColumnCountChanged,
     onSelectSequence,
+    onContextMenu,
   }: Props = $props();
 
   let hapticService: IHapticFeedback;
@@ -141,6 +143,7 @@
                   {showWord}
                   {includeStartPosition}
                   onSelect={onSelectSequence}
+                  {onContextMenu}
                 />
               {/each}
             </div>

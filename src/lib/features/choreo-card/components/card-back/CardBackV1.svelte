@@ -39,7 +39,7 @@
       <div class="entry">
         <span class="entry-label">Sequence</span>
         <span class="entry-word">{d.word}</span>
-        <span class="entry-beats">{d.beats} beats</span>
+        <span class="entry-beats">{d.stepCount} beats</span>
       </div>
 
       <hr class="rule" />

@@ -140,7 +140,7 @@ These are separate flags. `printMode` does NOT trigger `composeCardImage`. Only 
 - If both are intercardinal (ne, se, sw, nw) → diamond mode
 - If mixed (one cardinal, one intercardinal) → render all 8 points and place dots at their actual locations. This handles edge cases without special logic.
 
-**Skewed mode:** Skewed positions (Level 4+) are out of scope for v1. The mini-grid handles box and diamond. If a skewed sequence is encountered, fall back to rendering all 8 grid points with dots at actual locations (same as mixed mode).
+**Skewed mode:** Skewed positions (Level 5+) are out of scope for v1. The mini-grid handles box and diamond. If a skewed sequence is encountered, fall back to rendering all 8 grid points with dots at actual locations (same as mixed mode).
 
 **What it communicates at a glance:**
 - Grid mode (shape of the dot arrangement)
@@ -194,4 +194,4 @@ Grid point positions in the SVG viewbox (e.g., 40x40):
 - Changes to how the tight image looks in browse/viewer/export (other than start-as-row)
 - Level badge redundancy between front and back (noted as a future consideration)
 - Hand path arrows on cards (separate project)
-- Skewed grid mode in mini-grid (Level 4+, future enhancement)
+- Skewed grid mode in mini-grid (Level 5+, future enhancement)

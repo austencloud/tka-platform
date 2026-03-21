@@ -36,7 +36,7 @@
     <div class="info-card">
       <div class="info-top">
         <span class="info-word">{d.word}</span>
-        <span class="info-badge">{d.beats}</span>
+        <span class="info-badge">{d.stepCount}</span>
       </div>
 
       <!-- Level progress -->

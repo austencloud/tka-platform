@@ -77,7 +77,14 @@
   const showTKA = $derived.by(() => { void visibilityVersion; return visibilityManager.getGlyphVisibility("tkaGlyph"); });
   const showWord = $derived.by(() => { void compositionVersion; return imageComposition.addWord; });
   const includeStartPosition = $derived.by(() => { void compositionVersion; return imageComposition.includeStartPosition; });
-  const startPositionLayout = $derived.by(() => { void compositionVersion; return imageComposition.startPositionLayout; });
+  const startPositionLayout = $derived.by(() => {
+    void compositionVersion;
+    const stepCount = seq?.steps?.length ?? 0;
+    if (stepCount > 0) {
+      return imageComposition.getStartPositionLayoutForStepCount(stepCount);
+    }
+    return imageComposition.startPositionLayout;
+  });
   const showBirthday = $derived.by(() => { void compositionVersion; return imageComposition.showBirthday; });
   const showQRCode = $derived.by(() => { void compositionVersion; return imageComposition.showQRCode; });
 
