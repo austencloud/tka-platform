@@ -51,6 +51,7 @@
   const showNotes = $derived.by(() => { void compositionVersion; return composition.showNotes; });
   const showBirthday = $derived.by(() => { void compositionVersion; return composition.showBirthday; });
   const showQRCode = $derived.by(() => { void compositionVersion; return composition.showQRCode; });
+  const startPositionLayout = $derived.by(() => { void compositionVersion; return composition.startPositionLayout; });
 
   // Pictograph visibility toggles
   function toggleGrid() { visibility.setGridVisibility(!visibility.getGridVisibility()); }
@@ -66,6 +67,7 @@
   function toggleNotes() { composition.setShowNotes(!composition.showNotes); }
   function toggleBirthday() { composition.setShowBirthday(!composition.showBirthday); }
   function toggleQRCode() { composition.setShowQRCode(!composition.showQRCode); }
+  function toggleStartLayout() { composition.setStartPositionLayout(startPositionLayout === "row" ? "column" : "row"); }
 </script>
 
 <SettingsModalLayout title="Card Settings" icon="fa-id-card" bind:open>
@@ -79,6 +81,7 @@
           showTKA={tkaGlyph}
           {showWord}
           {includeStartPosition}
+          {startPositionLayout}
           {showBirthday}
           showQRCodes={showQRCode}
         />
@@ -115,6 +118,11 @@
           <button class="chip" class:active={includeStartPosition} aria-pressed={includeStartPosition} onclick={toggleStartPosition}>
             Start Position
           </button>
+          {#if includeStartPosition}
+            <button class="chip layout-toggle" onclick={toggleStartLayout}>
+              {startPositionLayout === "row" ? "Top Row" : "Left Column"}
+            </button>
+          {/if}
           <button class="chip" class:active={showDifficulty} aria-pressed={showDifficulty} onclick={toggleDifficulty}>
             Difficulty
           </button>
