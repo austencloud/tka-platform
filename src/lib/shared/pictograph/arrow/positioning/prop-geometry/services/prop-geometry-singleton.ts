@@ -1,0 +1,55 @@
+/**
+ * Prop Geometry Adjustment Singleton
+ *
+ * Same lifecycle pattern as global-adjustment-singleton.ts.
+ * Initialized after Firebase auth is ready, accessed by the
+ * arrow adjustment pipeline without requiring DI reconstruction.
+ */
+
+import type { IPropGeometryAdjustmentRepository } from "./contracts/IPropGeometryAdjustmentRepository";
+import { PropGeometryAdjustmentRepository } from "./implementations/PropGeometryAdjustmentRepository";
+import { PropGeometryAdjustmentPersister } from "./implementations/PropGeometryAdjustmentPersister";
+import { createComponentLogger } from "$lib/shared/utils/debug-logger";
+
+const logger = createComponentLogger("PropGeometrySingleton");
+
+let repositoryInstance: IPropGeometryAdjustmentRepository | null = null;
+let initializationPromise: Promise<void> | null = null;
+
+export function getPropGeometryRepository(): IPropGeometryAdjustmentRepository | null {
+  return repositoryInstance;
+}
+
+export async function initializePropGeometryAdjustments(): Promise<void> {
+  if (initializationPromise) return initializationPromise;
+  if (repositoryInstance?.isInitialized) return;
+
+  initializationPromise = doInitialize();
+  return initializationPromise;
+}
+
+async function doInitialize(): Promise<void> {
+  try {
+    logger.info("Initializing prop geometry adjustment system...");
+
+    const persister = new PropGeometryAdjustmentPersister();
+    const repository = new PropGeometryAdjustmentRepository(persister);
+
+    await repository.initialize();
+    repositoryInstance = repository;
+
+    logger.success("Prop geometry adjustment system initialized");
+  } catch (error) {
+    logger.error("Failed to initialize prop geometry adjustments:", error);
+  } finally {
+    initializationPromise = null;
+  }
+}
+
+export function disposePropGeometryAdjustments(): void {
+  if (repositoryInstance) {
+    repositoryInstance.dispose();
+    repositoryInstance = null;
+    logger.info("Prop geometry adjustment system disposed");
+  }
+}

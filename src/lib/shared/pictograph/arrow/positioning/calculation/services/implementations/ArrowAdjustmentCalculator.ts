@@ -26,6 +26,8 @@ import type { ISpecialPlacer } from "../../../placement/services/contracts/ISpec
 import type { ITurnsTupleKeyGenerator } from "../../../key-generation/services/contracts/ITurnsTupleKeyGenerator";
 import { GridMode } from "../../../../../grid/domain/enums/grid-enums";
 import { Point } from "fabric";
+import { getPropGeometryRepository } from "../../../prop-geometry/services/prop-geometry-singleton";
+import type { PropGeometryKey } from "../../../prop-geometry/domain/PropGeometryAdjustment";
 
 export class ArrowAdjustmentCalculator implements IArrowAdjustmentCalculator {
   /**
@@ -150,7 +152,7 @@ export class ArrowAdjustmentCalculator implements IArrowAdjustmentCalculator {
     try {
       // Special placement lookup requires a letter for key generation.
       // Some beats (e.g., the starting position) have no letter assigned,
-      // so we skip special placement and go straight to the default.
+      // so we skip special placement and go straight to prop geometry / default.
       if (letter) {
         // Generate required keys for special placement lookup
         const [, , attrKey] = this.generateLookupKeys(pictographData, motionData);
@@ -169,6 +171,19 @@ export class ArrowAdjustmentCalculator implements IArrowAdjustmentCalculator {
         } catch (error) {
           console.warn(`Error in special placement lookup for ${letter}:`, error);
         }
+      }
+
+      // Prop geometry tier: letter-free, prop-aware adjustments.
+      // When a prop's physical shape (triad arms, fan spread) extends into
+      // the arrow's default position, this tier provides a better default
+      // than the motion-type-only default placement.
+      const propGeometryAdjustment = this.lookupPropGeometryAdjustment(
+        pictographData,
+        motionData,
+        arrowColor
+      );
+      if (propGeometryAdjustment) {
+        return propGeometryAdjustment;
       }
 
       // Fall back to default calculation
@@ -250,6 +265,65 @@ export class ArrowAdjustmentCalculator implements IArrowAdjustmentCalculator {
       console.error("Error in special placement lookup:", error);
       return null;
     }
+  }
+
+  /**
+   * Look up a prop geometry adjustment for the current scenario.
+   *
+   * Derives the key dimensions from the pictograph and motion data:
+   * - gridMode, propType, otherPropType, positionType
+   * - endOrientation of both hands, motionType, turns, arrowColor
+   *
+   * Returns null if no prop geometry adjustment is registered for
+   * this scenario, letting the pipeline fall through to the default.
+   */
+  private lookupPropGeometryAdjustment(
+    pictographData: PictographData,
+    motionData: MotionData,
+    arrowColor?: string
+  ): Point | null {
+    const repo = getPropGeometryRepository();
+    if (!repo?.isInitialized) return null;
+
+    // Need both motions to determine the full scenario
+    const blueMotion = pictographData.motions.blue;
+    const redMotion = pictographData.motions.red;
+    if (!blueMotion || !redMotion) return null;
+
+    // Derive grid mode
+    const gridMode =
+      motionData.gridMode ||
+      this.gridModeService.deriveGridMode(blueMotion, redMotion);
+
+    // Derive position type from endPosition (e.g., "beta7" → "beta")
+    const endPosition = pictographData.endPosition;
+    if (!endPosition) return null;
+    const positionType = endPosition.replace(/\d+$/, "");
+
+    // Determine which motion is "ours" and which is "other"
+    const color = arrowColor || motionData.color || "blue";
+    const isBlue = color === "blue";
+    const thisMotion = isBlue ? blueMotion : redMotion;
+    const otherMotion = isBlue ? redMotion : blueMotion;
+
+    const propGeometryKey: PropGeometryKey = {
+      gridMode,
+      propType: thisMotion.propType?.toLowerCase() || "staff",
+      otherPropType: otherMotion.propType?.toLowerCase() || "staff",
+      positionType,
+      endOrientation: thisMotion.endOrientation?.toLowerCase() || "in",
+      otherEndOrientation: otherMotion.endOrientation?.toLowerCase() || "in",
+      motionType: motionData.motionType?.toLowerCase() || "static",
+      turns: String(motionData.turns ?? 0),
+      arrowColor: color,
+    };
+
+    const result = repo.getAdjustmentCascading(propGeometryKey);
+    if (result) {
+      return result.adjustment;
+    }
+
+    return null;
   }
 
   private async calculateDefaultAdjustment(

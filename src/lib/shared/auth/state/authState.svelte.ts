@@ -462,6 +462,24 @@ export async function initializeAuthListener() {
             );
           });
 
+        // Initialize prop geometry adjustments (non-blocking)
+        // Letter-free, prop-aware arrow adjustments for props like triads/fans
+        import(
+          "$lib/shared/pictograph/arrow/positioning/prop-geometry/services/prop-geometry-singleton"
+        )
+          .then(async ({ initializePropGeometryAdjustments }) => {
+            const { getFirestoreInstance } =
+              await import("$lib/shared/auth/firebase");
+            await getFirestoreInstance();
+            await initializePropGeometryAdjustments();
+          })
+          .catch((error) => {
+            console.warn(
+              "⚠️ [authState] Prop geometry adjustments initialization failed:",
+              error
+            );
+          });
+
         // Sync first-run status FROM cloud (critical - must happen before UI renders)
         // This ensures returning users on new devices don't see the wizard again
         import("$lib/shared/onboarding/state/first-run-state.svelte")
