@@ -125,6 +125,11 @@ export class FirebaseHMRManager {
    * Get the singleton instance
    */
   static getInstance(config?: Partial<FirebaseHMRConfig>): FirebaseHMRManager {
+    // Check globalThis first to survive HMR module re-evaluation
+    if (!FirebaseHMRManager.instance && typeof globalThis !== "undefined" && globalThis.__FIREBASE_HMR_MANAGER__) {
+      FirebaseHMRManager.instance = globalThis.__FIREBASE_HMR_MANAGER__;
+    }
+
     if (!FirebaseHMRManager.instance) {
       FirebaseHMRManager.instance = new FirebaseHMRManager(config);
 
@@ -490,13 +495,8 @@ export class FirebaseHMRManager {
     this.log(`Transferring auth state for user: ${this.cachedUser.uid}`);
 
     try {
-      const { signInWithCustomToken } = await import("firebase/auth");
-
-      // Note: This requires a custom token. In practice, Firebase Auth
-      // maintains its own persistence (IndexedDB/localStorage) and will
-      // auto-restore the user on the new auth instance. We just need to wait.
-
-      // Wait for auth state to be restored from persistence
+      // Firebase Auth maintains its own persistence (IndexedDB/localStorage)
+      // and auto-restores the user on the new auth instance. We just wait for it.
       await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => {
           reject(new Error("Auth state transfer timeout"));

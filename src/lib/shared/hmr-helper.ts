@@ -99,13 +99,15 @@ export function handleHMRInit() {
  * Callback registry for module cache clearing
  * Modules can register their cache clear functions here
  */
-const moduleCacheClearCallbacks: Array<() => void> = [];
+const moduleCacheClearCallbacks = new Set<() => void>();
 
 /**
- * Register a callback to clear a module's cache when HMR updates happen
+ * Register a callback to clear a module's cache when HMR updates happen.
+ * Returns a deregister function to prevent leaks across HMR cycles.
  */
-export function registerModuleCacheClear(callback: () => void) {
-  moduleCacheClearCallbacks.push(callback);
+export function registerModuleCacheClear(callback: () => void): () => void {
+  moduleCacheClearCallbacks.add(callback);
+  return () => { moduleCacheClearCallbacks.delete(callback); };
 }
 
 /**

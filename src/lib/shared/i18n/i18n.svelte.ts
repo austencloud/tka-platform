@@ -68,50 +68,32 @@ let currentLocale = $state<Locale>(getInitialLocale());
 let messages = $state<Messages>(enMessages);
 let i18nInitialized = true;
 
-/**
- * Reload English messages dynamically (for HMR only)
- */
-async function reloadEnglishMessages(): Promise<void> {
-  const module = await import("../../../../messages/en.json");
-  enMessages = module.default as Messages;
-  localeCache.set("en", enMessages);
-  if (currentLocale === "en") {
-    messages = enMessages;
-  }
-}
-
-// HMR support - reload messages when any locale JSON changes
+// HMR support - reload messages when locale JSON files change.
+// The i18nHmrPlugin reads the changed file on the server and sends
+// the full message object via a custom HMR event, so no fetch or
+// dynamic import is needed (both would hit Vite's module cache).
 if (import.meta.hot) {
-  import.meta.hot.on("vite:beforeUpdate", async (payload) => {
-    for (const update of payload.updates) {
-      // Check if this is a messages/*.json file
-      const match = update.path.match(/messages\/(\w+(?:-\w+)?)\.json/);
-      if (match) {
-        const locale = match[1] as Locale;
-        console.log(`[i18n] Reloading ${locale} messages...`);
+  import.meta.hot.on(
+    "i18n-update",
+    (data: { locale: string; messages: Messages }) => {
+      const locale = data.locale as Locale;
+      const fresh = data.messages;
 
-        if (locale === "en") {
-          await reloadEnglishMessages();
-        } else if (localeCache.has(locale)) {
-          // Reload this locale - clear cache and re-fetch
-          localeCache.delete(locale);
-          try {
-            const freshMessages = await loadLocaleMessages(locale);
-            localeCache.set(locale, freshMessages);
-
-            // Update active messages if this is the current locale
-            if (currentLocale === locale) {
-              messages = freshMessages;
-            }
-          } catch (e) {
-            console.error(`[i18n] Failed to reload ${locale}:`, e);
-          }
-        }
-
-        console.log(`[i18n] ${locale} messages hot-reloaded ✓`);
+      if (locale === "en") {
+        enMessages = fresh;
       }
+
+      localeCache.set(locale, fresh);
+
+      if (currentLocale === locale) {
+        messages = fresh;
+      }
+
+      console.log(
+        `[i18n] ${locale} messages hot-reloaded ✓ (${Object.keys(fresh).length} keys)`
+      );
     }
-  });
+  );
 }
 
 /**

@@ -14,7 +14,7 @@
   import { isModuleActive } from "../application/state/ui/ui-state.svelte";
   import { registerModuleCacheClear } from "../hmr-helper";
   import type { Component } from "svelte";
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   interface Props {
@@ -38,10 +38,14 @@
 
   // Register cache clearing callback for HMR
   // When Vite does an HMR update, clear our cache to prevent stale chunk issues
+  let deregisterCacheClear: (() => void) | undefined;
   onMount(() => {
-    registerModuleCacheClear(() => {
+    deregisterCacheClear = registerModuleCacheClear(() => {
       moduleCache.clear();
     });
+  });
+  onDestroy(() => {
+    deregisterCacheClear?.();
   });
 
   // Dynamic import functions for each module (enables code-splitting)
