@@ -14,6 +14,7 @@
   import type { IPrintZipExporter } from "../services/contracts/IPrintZipExporter";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
+  import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
   interface Props {
     deck: Deck | null;
@@ -182,7 +183,7 @@
           {
             front,
             back,
-            label: seq.word ?? seq.name ?? `Card ${i + 1}`,
+            label: simplifyRepeatedWord(seq.word ?? seq.name ?? `Card ${i + 1}`),
             familyId,
           },
         ];
@@ -206,11 +207,11 @@
     exportTotal = pairs.length;
 
     try {
-      const blob = await pdfExporter.exportDeckPDF(pairs, deck.name, (current, total) => {
+      const blob = await pdfExporter.exportHomePrintPDF(pairs, deck.name, (current, total) => {
         exportProgress = current;
         exportTotal = total;
       });
-      triggerDownload(blob, `${sanitizeName(deck.name)}_print.pdf`);
+      triggerDownload(blob, `${sanitizeName(deck.name)}_home_print.pdf`);
     } catch (err) {
       console.error("Failed to export PDF:", err);
     }
