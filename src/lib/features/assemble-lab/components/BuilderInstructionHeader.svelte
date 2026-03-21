@@ -10,6 +10,7 @@
 <script lang="ts">
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { AssembleState } from "../state/assemble-state.svelte";
+  import GridModePicker from "./GridModePicker.svelte";
 
   let { builderState }: { builderState: AssembleState } = $props();
 
@@ -88,6 +89,16 @@
   <span class="other-hand-hint" class:hint-hidden={!otherHandHint}>
     {otherHandHint || "\u00A0"}
   </span>
+
+  {#if builderState.canChangeGridMode}
+    <GridModePicker
+      gridMode={builderState.gridMode}
+      showCenter={builderState.showCenter}
+      disabled={!builderState.canChangeGridMode}
+      onGridModeChange={(mode) => builderState.setGridMode(mode)}
+      onCenterChange={(show) => builderState.setShowCenter(show)}
+    />
+  {/if}
 
   <div
     class="hand-switcher"

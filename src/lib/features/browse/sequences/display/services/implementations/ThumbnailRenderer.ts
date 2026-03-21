@@ -204,7 +204,7 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
 
       // Composition settings (use input or fall back to variant defaults)
       includeStartPosition: input.includeStartPosition ?? defaults.includeStartPosition,
-      startPositionLayout: input.startPositionLayout ?? "row",
+      startPositionLayout: input.startPositionLayout ?? "column",
       addStepNumbers: input.addStepNumbers ?? defaults.addStepNumbers,
       addWord: input.addWord ?? defaults.addWord,
       addDifficultyLevel: input.addDifficultyLevel ?? defaults.addDifficultyLevel,

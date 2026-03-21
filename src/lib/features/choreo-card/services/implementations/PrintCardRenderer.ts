@@ -48,7 +48,7 @@ export class PrintCardRenderer implements IPrintCardRenderer {
 
     const sequenceCanvas = await this.imageComposer.composeSequenceImage(sequence, {
       includeStartPosition: options.includeStartPosition,
-      startPositionLayout: options.startPositionLayout ?? "row",
+      startPositionLayout: options.startPositionLayout ?? "column",
       addStepNumbers: true,
       addWord: options.showWord,
       addDifficultyLevel: true,

@@ -19,6 +19,7 @@
   import type { ISoloPropSaveOrchestrator } from "$lib/features/library/services/contracts/ISoloPropSaveOrchestrator";
   import { container } from "$lib/shared/di";
   import OrientationExplainer from "./OrientationExplainer.svelte";
+  import GridModePicker from "./GridModePicker.svelte";
 
   let { builderState }: { builderState: AssembleState } = $props();
 
@@ -233,6 +234,15 @@
   <!-- Top-center: instruction text only (mobile only) -->
   <div class="top-status-area">
     <span class="instruction-text">{phaseInstruction}</span>
+    {#if builderState.canChangeGridMode}
+      <GridModePicker
+        gridMode={builderState.gridMode}
+        showCenter={builderState.showCenter}
+        disabled={!builderState.canChangeGridMode}
+        onGridModeChange={(mode) => builderState.setGridMode(mode)}
+        onCenterChange={(show) => builderState.setShowCenter(show)}
+      />
+    {/if}
   </div>
 
   <!-- Top-left: turn/orientation trigger (mobile only) -->
