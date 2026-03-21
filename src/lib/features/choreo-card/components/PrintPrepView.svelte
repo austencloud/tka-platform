@@ -18,6 +18,7 @@
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuState, ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
 
@@ -82,6 +83,9 @@
     if (!printRenderer) return;
     const options = buildRenderOptions();
 
+    // Mark all cards as re-rendering
+    rerenderingCards = new Set(renderedPairs.map((_, i) => i));
+
     for (let i = 0; i < renderedPairs.length; i++) {
       const pair = renderedPairs[i]!;
       try {
@@ -97,6 +101,10 @@
       } catch (err) {
         console.error(`Failed to rerender card ${i}:`, err);
       }
+      // Remove from loading set as each card completes
+      const next = new Set(rerenderingCards);
+      next.delete(i);
+      rerenderingCards = next;
     }
   }
 
@@ -115,6 +123,8 @@
   let isRendering = $state(false);
   let renderProgress = $state(0);
   let renderTotal = $state(0);
+  /** Tracks which card indices are currently re-rendering (for loading overlays) */
+  let rerenderingCards = $state(new Set<number>());
 
   // ── Export state ────────────────────────────────────────────────────
   let isExporting = $state(false);
@@ -163,19 +173,26 @@
     const pair = renderedPairs[index];
     if (!pair) return;
 
+    rerenderingCards = new Set([...rerenderingCards, index]);
     const options = buildRenderOptions();
 
     try {
       const front = await printRenderer.renderFront(pair.sequence, options);
       const back = await printRenderer.renderBack(pair.sequence, options);
-      renderedPairs = renderedPairs.map((p, i) =>
-        i === index
-          ? { ...p, front, back, frontSrc: front.toDataURL("image/png"), backSrc: back.toDataURL("image/png") }
-          : p
-      );
+      renderedPairs[index] = {
+        ...pair,
+        front,
+        back,
+        frontSrc: front.toDataURL("image/png"),
+        backSrc: back.toDataURL("image/png"),
+      };
     } catch (err) {
       console.error(`Failed to rerender card ${index}:`, err);
     }
+
+    const next = new Set(rerenderingCards);
+    next.delete(index);
+    rerenderingCards = next;
   }
 
   // ── Services ────────────────────────────────────────────────────────
@@ -660,17 +677,24 @@
               <h3 class="family-label">{group.family.label}</h3>
               <div class="pair-grid">
                 {#each group.pairs as pair, pairIdx}
+                  {@const globalIdx = renderedPairs.indexOf(pair)}
+                  {@const isRerendering = rerenderingCards.has(globalIdx)}
                   <!-- svelte-ignore a11y_no_static_element_interactions -->
                   <div
                     class="card-pair"
-                    oncontextmenu={(e) => {
-                      const globalIdx = renderedPairs.indexOf(pair);
-                      openContextMenu(e, globalIdx);
-                    }}
+                    class:rerendering={isRerendering}
+                    oncontextmenu={(e) => openContextMenu(e, globalIdx)}
                   >
+                    {#if isRerendering}
+                      <div class="rerender-overlay" aria-label="Rendering {pair.label}">
+                        <ProgressRing percent={-1} size={28} strokeWidth={2} />
+                        <span class="rerender-status">Rendering</span>
+                      </div>
+                    {/if}
                     <div class="card-preview" class:show-bleed={showBleedOverlay}>
                       <img
                         class="preview-img"
+                        class:dimmed={isRerendering}
                         src={pair.frontSrc}
                         alt="{pair.label} front"
                         loading="lazy"
@@ -689,6 +713,7 @@
                     <div class="card-preview" class:show-bleed={showBleedOverlay}>
                       <img
                         class="preview-img"
+                        class:dimmed={isRerendering}
                         src={pair.backSrc}
                         alt="{pair.label} back"
                         loading="lazy"
@@ -1142,6 +1167,31 @@
     border-radius: 8px;
     padding: 8px;
     position: relative;
+  }
+
+  /* ── Rerender loading overlay ────────────────────────────────────── */
+  .rerender-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    pointer-events: none;
+  }
+
+  .rerender-status {
+    font-size: var(--font-size-compact, 12px);
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 500;
+  }
+
+  .preview-img.dimmed {
+    opacity: 0.3;
   }
 
   .card-preview {
