@@ -45,10 +45,16 @@ export class PrintCardRenderer implements IPrintCardRenderer {
     const contentW = canvasW - bleed * 2;
     const contentH = canvasH - bleed * 2;
 
-    // Render the sequence at content dimensions via ImageComposer.
-    // We calculate stepSize to fill the content area based on the sequence layout.
+    // Quartered LOOP 8-beat sequences get portrait column layout:
+    // start position in left column, 2 beat columns, 4 rows.
+    // This shows the 4 quarter-rotations stacked vertically.
+    const stepCount = sequence.sequenceLength ?? sequence.steps?.length ?? 0;
+    const isQuarteredLoop = sequence.orientationCycleCount === 4;
+    const useColumnLayout = isQuarteredLoop && stepCount === 8;
+
     const sequenceCanvas = await this.imageComposer.composeSequenceImage(sequence, {
       includeStartPosition: options.includeStartPosition,
+      startPositionLayout: useColumnLayout ? "column" : "row",
       addStepNumbers: true,
       addWord: options.showWord,
       addDifficultyLevel: true,
