@@ -199,8 +199,9 @@ export function getBeatFrameLayout(
     return { rows, columns };
   } else {
     // Narrow layout: 4 columns, expanding rows
-    const columns = Math.ceil(stepCount / 4);
-    return { rows: 4, columns };
+    const columns = 4;
+    const rows = Math.ceil(stepCount / columns);
+    return { rows, columns };
   }
 }
 

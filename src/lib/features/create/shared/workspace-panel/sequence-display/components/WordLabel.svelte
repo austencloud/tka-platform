@@ -80,7 +80,8 @@
     // Only scale down if content actually overflows available space
     // Use a small buffer (95% of available) to prevent edge-case jitter
     if (contentWidth > availableWidth * 0.95) {
-      const newScale = Math.max(0.65, (availableWidth * 0.95) / contentWidth);
+      // Allow more aggressive scaling (down to 0.45) for very long words
+      const newScale = Math.max(0.45, (availableWidth * 0.95) / contentWidth);
       scaleFactor = newScale;
     } else {
       scaleFactor = 1;
@@ -277,13 +278,14 @@
     border-radius: 8px;
     text-align: center;
     white-space: nowrap;
-    /* Constrain to container and show ellipsis if needed */
+    /* Constrain to container and show ellipsis if needed.
+       Using inline-block (not inline-flex) so text-overflow: ellipsis works
+       and centering via text-align doesn't clip both sides. */
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    display: inline-block;
+    vertical-align: middle;
     padding: 0 8px;
     margin: 0;
   }
@@ -423,9 +425,10 @@
     opacity: 0.6;
   }
 
-  /* When has letter sources, adjust container for inline flex */
+  /* When has letter sources, no extra spacing between letter spans */
   .word-label.has-letter-sources {
-    gap: 0;
+    word-spacing: 0;
+    letter-spacing: 0;
   }
 
   /* Playback mode - non-active letters are dimmed during animation */
