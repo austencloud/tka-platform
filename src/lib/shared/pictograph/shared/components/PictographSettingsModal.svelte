@@ -1,7 +1,7 @@
 <!--
   PictographSettingsModal.svelte - Visibility settings for pictographs
 
-  Shows a live preview of a specific beat alongside toggles for all visibility
+  Shows a live preview of a specific beat alongside chip toggles for all visibility
   settings. Changes are global and persist to localStorage/Firebase.
 
   Uses SettingsModalLayout for responsive shell (desktop: side-by-side, mobile: stacked).
@@ -25,21 +25,15 @@
 
   const vm = getVisibilityStateManager();
 
-  // Version counter incremented by the observer — drives $derived.by re-reads
   let version = $state(0);
-
-  function onVisibilityChange() {
-    version++;
-  }
+  function onVisibilityChange() { version++; }
 
   onMount(() => {
     vm.registerObserver(onVisibilityChange, ["all"]);
-    return () => {
-      vm.unregisterObserver(onVisibilityChange);
-    };
+    return () => vm.unregisterObserver(onVisibilityChange);
   });
 
-  // Reactive reads gated on version so Svelte re-evaluates when anything changes
+  // Reactive reads
   const blueMotion = $derived.by(() => { void version; return vm.getMotionVisibility(MotionColor.BLUE); });
   const redMotion = $derived.by(() => { void version; return vm.getMotionVisibility(MotionColor.RED); });
   const showGrid = $derived.by(() => { void version; return vm.getGridVisibility(); });
@@ -67,11 +61,7 @@
   function toggleStepNumbers() { vm.setBeatNumbersVisibility(!vm.getBeatNumbersVisibility()); }
 </script>
 
-<SettingsModalLayout
-  title="Pictograph Settings"
-  icon="fa-eye"
-  bind:open
->
+<SettingsModalLayout title="Pictograph Settings" icon="fa-eye" bind:open>
   {#snippet preview()}
     <div class="preview-container">
       <PictographContainer pictographData={stepData} disableTransitions={true} />
@@ -79,79 +69,70 @@
   {/snippet}
 
   {#snippet controls()}
-    <div class="toggle-sections">
+    <div class="chip-sections">
 
-      <!-- Motions -->
       <div class="section">
         <div class="section-title">Motions</div>
-        <button class="toggle-row" type="button" aria-pressed={blueMotion} onclick={toggleBlue}>
-          <span>Blue Motion</span>
-          <span class="toggle-indicator" class:active={blueMotion}></span>
-        </button>
-        <button class="toggle-row" type="button" aria-pressed={redMotion} onclick={toggleRed}>
-          <span>Red Motion</span>
-          <span class="toggle-indicator" class:active={redMotion}></span>
-        </button>
+        <div class="chip-group">
+          <button class="chip" class:active={blueMotion} aria-pressed={blueMotion} onclick={toggleBlue}>
+            Blue Motion
+          </button>
+          <button class="chip" class:active={redMotion} aria-pressed={redMotion} onclick={toggleRed}>
+            Red Motion
+          </button>
+        </div>
       </div>
 
-      <!-- Grid & Points -->
       <div class="section">
         <div class="section-title">Grid & Points</div>
-        <button class="toggle-row" type="button" aria-pressed={showGrid} onclick={toggleGrid}>
-          <span>Grid</span>
-          <span class="toggle-indicator" class:active={showGrid}></span>
-        </button>
-        <button class="toggle-row" type="button" aria-pressed={handPointMode === "all"} onclick={toggleHandPoints}>
-          <span>All Hand Points</span>
-          <span class="toggle-indicator" class:active={handPointMode === "all"}></span>
-        </button>
-        <button class="toggle-row" type="button" aria-pressed={nonRadial} onclick={toggleNonRadial}>
-          <span>Non-Radial Points</span>
-          <span class="toggle-indicator" class:active={nonRadial}></span>
-        </button>
+        <div class="chip-group">
+          <button class="chip" class:active={showGrid} aria-pressed={showGrid} onclick={toggleGrid}>
+            Grid
+          </button>
+          <button class="chip" class:active={handPointMode === "all"} aria-pressed={handPointMode === "all"} onclick={toggleHandPoints}>
+            All Hand Points
+          </button>
+          <button class="chip" class:active={nonRadial} aria-pressed={nonRadial} onclick={toggleNonRadial}>
+            Non-Radial Points
+          </button>
+        </div>
       </div>
 
-      <!-- Glyphs -->
       <div class="section">
         <div class="section-title">Glyphs</div>
-
         {#if !allMotionsVisible}
           <p class="glyph-hint">Some glyphs require both motions visible</p>
         {/if}
-
-        <button class="toggle-row" class:disabled={!allMotionsVisible} type="button"
-          aria-pressed={tkaGlyph} disabled={!allMotionsVisible} onclick={toggleTka}>
-          <span>TKA Glyphs</span>
-          <span class="toggle-indicator" class:active={tkaGlyph}></span>
-        </button>
-        <button class="toggle-row" class:disabled={!allMotionsVisible} type="button"
-          aria-pressed={vtgGlyph} disabled={!allMotionsVisible} onclick={toggleVtg}>
-          <span>VTG Glyphs</span>
-          <span class="toggle-indicator" class:active={vtgGlyph}></span>
-        </button>
-        <button class="toggle-row" class:disabled={!allMotionsVisible} type="button"
-          aria-pressed={elementalGlyph} disabled={!allMotionsVisible} onclick={toggleElemental}>
-          <span>Elemental Glyphs</span>
-          <span class="toggle-indicator" class:active={elementalGlyph}></span>
-        </button>
-        <button class="toggle-row" class:disabled={!allMotionsVisible} type="button"
-          aria-pressed={positionsGlyph} disabled={!allMotionsVisible} onclick={togglePositions}>
-          <span>Position Glyphs</span>
-          <span class="toggle-indicator" class:active={positionsGlyph}></span>
-        </button>
-        <button class="toggle-row" type="button" aria-pressed={reversalIndicators} onclick={toggleReversals}>
-          <span>Reversal Indicators</span>
-          <span class="toggle-indicator" class:active={reversalIndicators}></span>
-        </button>
+        <div class="chip-group">
+          <button class="chip" class:active={tkaGlyph} class:disabled={!allMotionsVisible}
+            aria-pressed={tkaGlyph} disabled={!allMotionsVisible} onclick={toggleTka}>
+            TKA
+          </button>
+          <button class="chip" class:active={vtgGlyph} class:disabled={!allMotionsVisible}
+            aria-pressed={vtgGlyph} disabled={!allMotionsVisible} onclick={toggleVtg}>
+            VTG
+          </button>
+          <button class="chip" class:active={elementalGlyph} class:disabled={!allMotionsVisible}
+            aria-pressed={elementalGlyph} disabled={!allMotionsVisible} onclick={toggleElemental}>
+            Elemental
+          </button>
+          <button class="chip" class:active={positionsGlyph} class:disabled={!allMotionsVisible}
+            aria-pressed={positionsGlyph} disabled={!allMotionsVisible} onclick={togglePositions}>
+            Positions
+          </button>
+          <button class="chip" class:active={reversalIndicators} aria-pressed={reversalIndicators} onclick={toggleReversals}>
+            Reversals
+          </button>
+        </div>
       </div>
 
-      <!-- Display -->
       <div class="section">
         <div class="section-title">Display</div>
-        <button class="toggle-row" type="button" aria-pressed={stepNumbers} onclick={toggleStepNumbers}>
-          <span>Step Numbers</span>
-          <span class="toggle-indicator" class:active={stepNumbers}></span>
-        </button>
+        <div class="chip-group">
+          <button class="chip" class:active={stepNumbers} aria-pressed={stepNumbers} onclick={toggleStepNumbers}>
+            Step Numbers
+          </button>
+        </div>
       </div>
 
     </div>
@@ -165,7 +146,7 @@
     aspect-ratio: 1;
   }
 
-  .toggle-sections {
+  .chip-sections {
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
@@ -185,64 +166,57 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     padding-bottom: 0.25rem;
-    margin-bottom: 0.25rem;
   }
 
-  .toggle-row {
+  .chip-group {
     display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .chip {
+    display: inline-flex;
     align-items: center;
-    justify-content: space-between;
-    width: 100%;
+    gap: 6px;
+    padding: 10px 16px;
     min-height: var(--min-touch-target, 44px);
-    padding: 8px 12px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 8px;
-    color: var(--theme-text, white);
-    font-size: var(--font-size-min, 14px);
+    border-radius: 100px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 500;
     cursor: pointer;
-    transition: background var(--duration-fast, 100ms) ease;
-  }
-
-  .toggle-row:hover {
-    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
-  }
-
-  .toggle-row.disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  .toggle-indicator {
-    width: 36px;
-    height: 20px;
-    border-radius: 10px;
-    background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    position: relative;
-    transition: background var(--duration-fast, 100ms) ease;
+    transition: all var(--duration-normal, 300ms) cubic-bezier(0.4, 0, 0.2, 1);
     flex-shrink: 0;
   }
 
-  .toggle-indicator::after {
-    content: "";
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    transition: transform var(--duration-fast, 100ms) ease,
-      background var(--duration-fast, 100ms) ease;
+  .chip.active {
+    background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
+    color: var(--theme-text, white);
+    box-shadow:
+      0 0 12px color-mix(in srgb, var(--theme-accent) 15%, transparent),
+      inset 0 1px 0 var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
-  .toggle-indicator.active {
-    background: var(--theme-accent, #8b5cf6);
+  .chip:hover:not(.active):not(.disabled) {
+    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
+    color: var(--theme-text, white);
   }
 
-  .toggle-indicator.active::after {
-    transform: translateX(16px);
-    background: white;
+  .chip:active:not(.disabled) {
+    transform: scale(0.97);
+  }
+
+  .chip.disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .chip:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
   }
 
   .glyph-hint {
@@ -250,13 +224,10 @@
     color: var(--semantic-warning, #f59e0b);
     font-style: italic;
     margin: 0;
-    padding: 0.15rem 0;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .toggle-row,
-    .toggle-indicator,
-    .toggle-indicator::after {
+    .chip {
       transition: none;
     }
   }

@@ -1,30 +1,27 @@
 <!--
   CardSettingsModal.svelte - Settings for choreo card visibility and composition
 
-  Shows toggles for pictograph visibility (hand points, grid, TKA glyphs) and
-  card composition (word, start position, difficulty, step numbers, creator name,
-  notes, birthday, QR code). Changes are global and persist via the state managers.
-
-  Uses SettingsModalLayout for responsive shell (desktop: side-by-side, mobile: stacked).
-  Subscribes to both ImageCompositionStateManager and VisibilityStateManager via
-  observer pattern for reactive state.
+  Shows a live ChoreoCard preview alongside chip toggles for pictograph visibility
+  and card composition. Changes are global and persist via the state managers.
 -->
 <script lang="ts">
   import { onMount } from "svelte";
   import SettingsModalLayout from "$lib/shared/foundation/ui/settings-modal/SettingsModalLayout.svelte";
+  import ChoreoCard from "./ChoreoCard.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
   interface Props {
     open: boolean;
+    sequence?: SequenceData | null;
   }
 
-  let { open = $bindable() }: Props = $props();
+  let { open = $bindable(), sequence = null }: Props = $props();
 
   const composition = getImageCompositionManager();
   const visibility = getVisibilityStateManager();
 
-  // Version counters incremented by observers — drive $derived.by re-reads
   let compositionVersion = $state(0);
   let visibilityVersion = $state(0);
 
@@ -55,12 +52,12 @@
   const showBirthday = $derived.by(() => { void compositionVersion; return composition.showBirthday; });
   const showQRCode = $derived.by(() => { void compositionVersion; return composition.showQRCode; });
 
-  // Toggle handlers — pictograph visibility
+  // Pictograph visibility toggles
   function toggleGrid() { visibility.setGridVisibility(!visibility.getGridVisibility()); }
   function toggleHandPoints() { visibility.setHandPointVisibility(handPointMode === "all" ? "active" : "all"); }
   function toggleTka() { visibility.setGlyphVisibility("tkaGlyph", !visibility.getRawGlyphVisibility("tkaGlyph")); }
 
-  // Toggle handlers — card composition
+  // Card composition toggles
   function toggleWord() { composition.setAddWord(!composition.addWord); }
   function toggleStartPosition() { composition.setIncludeStartPosition(!composition.includeStartPosition); }
   function toggleDifficulty() { composition.setAddDifficultyLevel(!composition.addDifficultyLevel); }
@@ -71,72 +68,72 @@
   function toggleQRCode() { composition.setShowQRCode(!composition.showQRCode); }
 </script>
 
-<SettingsModalLayout
-  title="Card Settings"
-  icon="fa-id-card"
-  bind:open
->
+<SettingsModalLayout title="Card Settings" icon="fa-id-card" bind:open>
   {#snippet preview()}
-    <div class="preview-placeholder">
-      <span>Card Preview</span>
+    <div class="preview-container">
+      {#if sequence}
+        <ChoreoCard
+          {sequence}
+          handPointsVisible={handPointMode === "all"}
+          {showGrid}
+          showTKA={tkaGlyph}
+          {showWord}
+          {includeStartPosition}
+          {showBirthday}
+          showQRCodes={showQRCode}
+        />
+      {:else}
+        <span class="no-sequence">No sequence selected</span>
+      {/if}
     </div>
   {/snippet}
 
   {#snippet controls()}
-    <div class="toggle-sections">
+    <div class="chip-sections">
 
-      <!-- Pictograph Visibility -->
       <div class="section">
         <div class="section-title">Pictograph Visibility</div>
-        <button class="toggle-row" type="button" aria-pressed={showGrid} onclick={toggleGrid}>
-          <span>Grid</span>
-          <span class="toggle-indicator" class:active={showGrid}></span>
-        </button>
-        <button class="toggle-row" type="button" aria-pressed={handPointMode === "all"} onclick={toggleHandPoints}>
-          <span>All Hand Points</span>
-          <span class="toggle-indicator" class:active={handPointMode === "all"}></span>
-        </button>
-        <button class="toggle-row" type="button" aria-pressed={tkaGlyph} onclick={toggleTka}>
-          <span>TKA Glyphs</span>
-          <span class="toggle-indicator" class:active={tkaGlyph}></span>
-        </button>
+        <div class="chip-group">
+          <button class="chip" class:active={showGrid} aria-pressed={showGrid} onclick={toggleGrid}>
+            Grid
+          </button>
+          <button class="chip" class:active={handPointMode === "all"} aria-pressed={handPointMode === "all"} onclick={toggleHandPoints}>
+            All Hand Points
+          </button>
+          <button class="chip" class:active={tkaGlyph} aria-pressed={tkaGlyph} onclick={toggleTka}>
+            TKA Glyphs
+          </button>
+        </div>
       </div>
 
-      <!-- Card Composition -->
       <div class="section">
         <div class="section-title">Card Composition</div>
-        <button class="toggle-row" type="button" aria-pressed={showWord} onclick={toggleWord}>
-          <span>Word</span>
-          <span class="toggle-indicator" class:active={showWord}></span>
-        </button>
-        <button class="toggle-row" type="button" aria-pressed={includeStartPosition} onclick={toggleStartPosition}>
-          <span>Start Position</span>
-          <span class="toggle-indicator" class:active={includeStartPosition}></span>
-        </button>
-        <button class="toggle-row" type="button" aria-pressed={showDifficulty} onclick={toggleDifficulty}>
-          <span>Difficulty</span>
-          <span class="toggle-indicator" class:active={showDifficulty}></span>
-        </button>
-        <button class="toggle-row" type="button" aria-pressed={showStepNumbers} onclick={toggleStepNumbers}>
-          <span>Step Numbers</span>
-          <span class="toggle-indicator" class:active={showStepNumbers}></span>
-        </button>
-        <button class="toggle-row" type="button" aria-pressed={showCreatorName} onclick={toggleCreatorName}>
-          <span>Creator Name</span>
-          <span class="toggle-indicator" class:active={showCreatorName}></span>
-        </button>
-        <button class="toggle-row" type="button" aria-pressed={showNotes} onclick={toggleNotes}>
-          <span>Notes</span>
-          <span class="toggle-indicator" class:active={showNotes}></span>
-        </button>
-        <button class="toggle-row" type="button" aria-pressed={showBirthday} onclick={toggleBirthday}>
-          <span>Birthday</span>
-          <span class="toggle-indicator" class:active={showBirthday}></span>
-        </button>
-        <button class="toggle-row" type="button" aria-pressed={showQRCode} onclick={toggleQRCode}>
-          <span>QR Code</span>
-          <span class="toggle-indicator" class:active={showQRCode}></span>
-        </button>
+        <div class="chip-group">
+          <button class="chip" class:active={showWord} aria-pressed={showWord} onclick={toggleWord}>
+            Word
+          </button>
+          <button class="chip" class:active={includeStartPosition} aria-pressed={includeStartPosition} onclick={toggleStartPosition}>
+            Start Position
+          </button>
+          <button class="chip" class:active={showDifficulty} aria-pressed={showDifficulty} onclick={toggleDifficulty}>
+            Difficulty
+          </button>
+          <button class="chip" class:active={showStepNumbers} aria-pressed={showStepNumbers} onclick={toggleStepNumbers}>
+            Step Numbers
+          </button>
+          <button class="chip" class:active={showCreatorName} aria-pressed={showCreatorName} onclick={toggleCreatorName}>
+            Creator Name
+          </button>
+          <button class="chip" class:active={showNotes} aria-pressed={showNotes} onclick={toggleNotes}>
+            Notes
+          </button>
+          <button class="chip" class:active={showBirthday} aria-pressed={showBirthday} onclick={toggleBirthday}>
+            Birthday
+          </button>
+          <button class="chip" class:active={showQRCode} aria-pressed={showQRCode} onclick={toggleQRCode}>
+            QR Code
+          </button>
+        </div>
       </div>
 
     </div>
@@ -144,21 +141,18 @@
 </SettingsModalLayout>
 
 <style>
-  .preview-placeholder {
+  .preview-container {
     width: 100%;
     max-width: 300px;
-    aspect-ratio: 5 / 7;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px dashed var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: 8px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-    font-size: var(--font-size-sm, 14px);
   }
 
-  .toggle-sections {
+  .no-sequence {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    font-size: var(--font-size-sm, 14px);
+    font-style: italic;
+  }
+
+  .chip-sections {
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
@@ -178,65 +172,56 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     padding-bottom: 0.25rem;
-    margin-bottom: 0.25rem;
   }
 
-  .toggle-row {
+  .chip-group {
     display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .chip {
+    display: inline-flex;
     align-items: center;
-    justify-content: space-between;
-    width: 100%;
+    gap: 6px;
+    padding: 10px 16px;
     min-height: var(--min-touch-target, 44px);
-    padding: 8px 12px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 8px;
-    color: var(--theme-text, white);
-    font-size: var(--font-size-min, 14px);
+    border-radius: 100px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 500;
     cursor: pointer;
-    transition: background var(--duration-fast, 100ms) ease;
-  }
-
-  .toggle-row:hover {
-    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
-  }
-
-  .toggle-indicator {
-    width: 36px;
-    height: 20px;
-    border-radius: 10px;
-    background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    position: relative;
-    transition: background var(--duration-fast, 100ms) ease;
+    transition: all var(--duration-normal, 300ms) cubic-bezier(0.4, 0, 0.2, 1);
     flex-shrink: 0;
   }
 
-  .toggle-indicator::after {
-    content: "";
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    transition: transform var(--duration-fast, 100ms) ease,
-      background var(--duration-fast, 100ms) ease;
+  .chip.active {
+    background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
+    color: var(--theme-text, white);
+    box-shadow:
+      0 0 12px color-mix(in srgb, var(--theme-accent) 15%, transparent),
+      inset 0 1px 0 var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
-  .toggle-indicator.active {
-    background: var(--theme-accent, #8b5cf6);
+  .chip:hover:not(.active) {
+    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
+    color: var(--theme-text, white);
   }
 
-  .toggle-indicator.active::after {
-    transform: translateX(16px);
-    background: white;
+  .chip:active {
+    transform: scale(0.97);
+  }
+
+  .chip:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .toggle-row,
-    .toggle-indicator,
-    .toggle-indicator::after {
+    .chip {
       transition: none;
     }
   }

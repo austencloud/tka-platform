@@ -507,7 +507,7 @@
     onOpenSettings={() => { cardSettingsOpen = true; }}
     onRerender={() => choreoCardRef?.rerender()}
   />
-  <CardSettingsModal bind:open={cardSettingsOpen} />
+  <CardSettingsModal bind:open={cardSettingsOpen} sequence={seq} />
 </div>
 
 <style>
