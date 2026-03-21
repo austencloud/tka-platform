@@ -45,11 +45,11 @@ export const generatorHelpContent: GeneratorHelpItem[] = [
     fullDesc:
       "Controls how many additional turns your props can do during each step.",
     bullets: [
-      "Level 1: No additional turns — just hand paths",
-      "Level 2: Whole turns added",
-      "Level 3: All turns including float",
+      "Level 1: Base Motions",
+      "Level 2: Whole Turns",
+      "Level 3: Half Turns, Floats",
     ],
-    tip: "Start at Level 1 to learn the foundation, then progress to Level 3 for full variety.",
+    tip: "Start at Level 1 to learn the base motions, then progress to Level 3 for the full vocabulary.",
   },
   {
     id: "length",

@@ -4,9 +4,35 @@ Three collapsible sections: Style, Rhythm, Start Position
 Only one section open at a time. All content renders inline (no drawer-hopping).
 -->
 <script module lang="ts">
-  // Module-level: persists across component mounts so reopening the drawer
-  // remembers which section was last open
-  let persistedSection: "style" | "rhythm" | "startEnd" | null = "style";
+  // Persist which accordion section was last open across sessions.
+  // Without this, reopening the customize panel in a new session always
+  // defaults to "style" even if the user's last change was to rhythm.
+  const SECTION_STORAGE_KEY = "tka-customize-active-section";
+  type AccordionSectionPersisted = "style" | "rhythm" | "startEnd" | null;
+
+  function loadPersistedSection(): AccordionSectionPersisted {
+    try {
+      const raw = localStorage.getItem(SECTION_STORAGE_KEY);
+      if (raw === "style" || raw === "rhythm" || raw === "startEnd") return raw;
+      return "style";
+    } catch {
+      return "style";
+    }
+  }
+
+  function savePersistedSection(section: AccordionSectionPersisted): void {
+    try {
+      if (section) {
+        localStorage.setItem(SECTION_STORAGE_KEY, section);
+      } else {
+        localStorage.removeItem(SECTION_STORAGE_KEY);
+      }
+    } catch {
+      // Silently ignore storage errors (private browsing, quota exceeded)
+    }
+  }
+
+  let persistedSection: AccordionSectionPersisted = loadPersistedSection();
 </script>
 
 <script lang="ts">
@@ -83,6 +109,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     hapticService?.trigger("selection");
     activeSection = activeSection === section ? null : section;
     persistedSection = activeSection;
+    savePersistedSection(activeSection);
   }
 
   // ─── Local state for style (instant UI feedback) ───

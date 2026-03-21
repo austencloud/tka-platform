@@ -61,6 +61,7 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
       startPosition: options.startPosition?.startPosition
         ? String(options.startPosition.startPosition)
         : undefined,
+      blockedStartPositions: options.blockedStartPositions?.map(String),
       maxTurnIntensity: options.turnIntensity,
     });
 
@@ -100,6 +101,7 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
       startPosition: options.startPosition?.startPosition
         ? String(options.startPosition.startPosition)
         : undefined,
+      blockedStartPositions: options.blockedStartPositions?.map(String),
       maxTurnIntensity: options.turnIntensity,
       loop: {
         type: engineLoopType,

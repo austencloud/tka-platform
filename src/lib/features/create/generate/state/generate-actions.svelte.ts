@@ -128,7 +128,19 @@ export function createGenerationActionsState(
               mode: options.mode,
               length: options.length,
               gridMode: options.gridMode,
+              difficulty: options.difficulty,
               loopType: options.loopType,
+              sliceSize: options.sliceSize,
+              constraintPreset: options.constraintPreset,
+              handPathMode: options.handPathMode,
+              motionTypeFilter: options.motionTypeFilter,
+              turnIntensity: options.turnIntensity,
+              startPosition: options.startPosition?.startPosition ?? null,
+              endPosition: options.endPosition?.startPosition ?? null,
+              blockedStartPositions: options.blockedStartPositions,
+              mustContainLetters: options.mustContainLetters,
+              mustNotContainLetters: options.mustNotContainLetters,
+              propType: options.propType,
             },
           },
         });
@@ -400,7 +412,21 @@ export function createGenerationActionsState(
             module: "create",
             tab: "generate",
             action: "spellGenerate",
-            additionalData: { word: spellState.inputWord },
+            additionalData: (() => {
+              const cfg = getConfig?.();
+              return {
+                word: spellState.inputWord,
+                gridMode: cfg?.gridMode,
+                difficulty: cfg?.level,
+                constraintPreset: cfg?.constraintPreset,
+                handPathMode: cfg?.handPathMode,
+                motionTypeFilter: cfg?.motionTypeFilter,
+                turnIntensity: cfg?.turnIntensity,
+                loopEnabled: cfg?.loopEnabled,
+                loopType: cfg?.loopType,
+                sliceSize: cfg?.sliceSize,
+              };
+            })(),
           },
         });
       }
