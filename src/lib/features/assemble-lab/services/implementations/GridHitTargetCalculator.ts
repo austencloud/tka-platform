@@ -44,18 +44,27 @@ const SKEWED_TARGETS: GridHitTarget[] = [
 	...BOX_TARGETS,
 ];
 
+const CENTER_TARGET: GridHitTarget = {
+	location: GridLocation.CENTER, x: 475, y: 475, label: "Center"
+};
+
 export class GridHitTargetCalculator implements IGridHitTargetCalculator {
-	getHitTargets(gridMode: GridMode): GridHitTarget[] {
+	getHitTargets(gridMode: GridMode, showCenter: boolean = false): GridHitTarget[] {
+		let targets: GridHitTarget[];
 		switch (gridMode) {
 			case GridMode.DIAMOND:
-				return DIAMOND_TARGETS;
+				targets = DIAMOND_TARGETS;
+				break;
 			case GridMode.BOX:
-				return BOX_TARGETS;
+				targets = BOX_TARGETS;
+				break;
 			case GridMode.SKEWED:
-				return SKEWED_TARGETS;
+				targets = SKEWED_TARGETS;
+				break;
 			default:
-				return DIAMOND_TARGETS;
+				targets = DIAMOND_TARGETS;
 		}
+		return showCenter ? [...targets, CENTER_TARGET] : targets;
 	}
 
 	getHitTargetRadius(): number {
