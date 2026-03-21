@@ -58,18 +58,43 @@ function activatePreset(id: string): void { ... }
 function deactivatePreset(): void { activePresetId = null; }
 ```
 
-#### 3. Preset activation flow
+#### 3. Preset activation orchestration
 
-When a preset is activated:
-1. `activePresetId` is set
-2. Parent calls `updateConfig(preset.config)` to fill all cards
-3. If the preset has `startEndOptions`, those are applied too
-4. All cards display the preset's values
+**Orchestrator:** `CardBasedSettingsContainer.svelte` coordinates all three state objects during activation. It already has references to the generation config state, start-end options state, and the preset state. No new coordinator needed.
 
-When any card is tapped while a preset is active:
-1. `deactivatePreset()` is called
-2. The card opens normally for editing
-3. The preset card shows "None" or empty state
+**Activation flow** (triggered when user taps a preset in the drawer):
+
+```typescript
+function handlePresetSelected(preset: GenerationPreset): void {
+  // 1. Mark preset as active
+  presetState.activatePreset(preset.id);
+
+  // 2. Apply preset config to all cards
+  updateConfig(preset.config);
+
+  // 3. Apply start/end options if present
+  if (preset.startEndOptions) {
+    startEndState.setOptions(preset.startEndOptions);
+  }
+
+  // 4. Clear word input (preset is freeform, word would override length)
+  if (wordInputValue) {
+    handleWordInput("");
+  }
+
+  // 5. Close the drawer
+  panelState.closePresetDrawer();
+}
+```
+
+**Word input behavior:** Activating a preset always clears the word input. Rationale: the preset specifies an exact length (e.g. 16), but spell mode overrides length with word length + bridges. Keeping a stale word would break the preset's config. If users want word-based presets, that's a future feature (spell mode presets).
+
+**Deactivation flow** (triggered when any non-preset card is tapped):
+
+1. `presetState.deactivatePreset()` is called
+2. The card's normal handler executes
+3. The preset card shows the empty/"Presets" state
+4. All config values remain as-is (the user's edit is the first divergence)
 
 ### Component Changes
 
@@ -130,12 +155,14 @@ cardList.push({
 
 ### Deselection Mechanism
 
-The cleanest approach: wrap each card's `onClick` handler. In `CardBasedSettingsContainer`, when building handlers for `CardConfigurator`, if `activePresetId` is non-null, each handler first calls `deactivatePreset()` before executing the original handler. This keeps deselection logic centralized rather than scattered across every card.
+Wrap each card's handler in `CardBasedSettingsContainer`. When a preset is active and any card is interacted with, deselect first, then proceed.
 
 ```typescript
 // In CardBasedSettingsContainer, when building handlers:
-function wrapWithPresetDeselect<T extends (...args: any[]) => any>(handler: T): T {
-  return ((...args: any[]) => {
+function wrapWithPresetDeselect<T extends (...args: unknown[]) => unknown>(
+  handler: T
+): T {
+  return ((...args: unknown[]) => {
     if (presetState.activePreset) {
       presetState.deactivatePreset();
     }
@@ -143,6 +170,10 @@ function wrapWithPresetDeselect<T extends (...args: any[]) => any>(handler: T): 
   }) as T;
 }
 ```
+
+**Which handlers get wrapped:** All card interaction handlers EXCEPT:
+- `handleOpenPresetDrawer` — the preset card's own tap should open the drawer, not deselect
+- `handleGenerateClick` — generating should work with the preset active (that's the point)
 
 This means opening the Word input, changing Length, toggling LOOP, etc. all deselect the preset naturally.
 
@@ -206,8 +237,10 @@ Key config notes:
 |------|--------|
 | `state/preset.svelte.ts` | Add `activePresetId`, `activatePreset()`, `deactivatePreset()`, extend `GenerationPreset` interface, update seed preset |
 | `shared/services/implementations/CardConfigurator.ts` | Row 1 rebalance: Word(2) + Preset(2) + Length(2), add preset card descriptor |
-| `shared/services/contracts/ICardConfigurator.ts` | Add preset-related fields to `CardHandlers` |
-| `components/CardBasedSettingsContainer.svelte` | Add PresetCard to component map, wire drawer, wrap handlers with preset deselect |
+| `shared/services/contracts/ICardConfigurator.ts` | Add `activePreset?: GenerationPreset \| null` and `handleOpenPresetDrawer?: () => void` to `CardHandlers` |
+| `components/CardBasedSettingsContainer.svelte` | Add PresetCard to component map, wire drawer, wrap handlers with preset deselect, orchestrate activation |
+| `shared/domain/card-colors.ts` | Add `preset: CardColorSet` entry |
+| `panel-coordination-state.svelte.ts` | Add `isPresetDrawerOpen`, `openPresetDrawer()`, `closePresetDrawer()` for panel mutual exclusivity |
 
 ### Future Considerations (not in this scope)
 
