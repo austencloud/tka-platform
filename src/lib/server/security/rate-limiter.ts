@@ -141,4 +141,9 @@ export const RATE_LIMITS = {
     maxRequests: 30,
     windowMs: 60 * 1000, // 1 minute
   },
+  /** Agent feedback ingest: 20 requests per 15 minutes */
+  FEEDBACK_INGEST: {
+    maxRequests: 20,
+    windowMs: 15 * 60 * 1000, // 15 minutes
+  },
 } as const;

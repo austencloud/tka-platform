@@ -82,8 +82,9 @@ export function isFeedbackStatus(value: unknown): value is FeedbackStatus {
  * Feedback source - where the feedback originated
  * - "app": Submitted through the in-app feedback form
  * - "terminal": Created via CLI/Claude Code (dev work log)
+ * - "agent": Submitted via the ingest endpoint by an LLM agent
  */
-export type FeedbackSource = "app" | "terminal";
+export type FeedbackSource = "app" | "terminal" | "agent";
 
 /**
  * Archive reason - why feedback was archived
@@ -170,7 +171,8 @@ export interface FeedbackItem {
   deviceContext?: DeviceContext; // Browser/device info for debugging
 
   // Source tracking
-  source?: FeedbackSource; // "app" = in-app form, "terminal" = CLI/dev log
+  source?: FeedbackSource; // "app" = in-app form, "terminal" = CLI/dev log, "agent" = ingest endpoint
+  sourceAgent?: string; // Agent identifier when source is "agent" (e.g., "claude-chat")
 
   // Assignment
   assignedTo?: string; // userId of assigned developer (from contributors)
