@@ -113,24 +113,15 @@ const devCachePlugin = () => ({
         res: ServerResponse,
         next: (err?: unknown) => void
       ) => {
-        const url = req.url || "";
-
         // Skip WebSocket upgrade requests - critical for HMR
         if (req.headers.upgrade === "websocket") {
           next();
           return;
         }
 
-        // Disable caching for ALL HTML, CSS, JS files during dev (aggressive approach)
-        if (
-          url.includes(".css") ||
-          url.includes(".js") ||
-          url.includes(".svelte") ||
-          url.includes(".html") ||
-          url.includes("@vite") ||
-          url.includes("@fs") ||
-          url.includes("/")
-        ) {
+        // Disable caching for ALL dev server responses (aggressive approach)
+        // Every request goes through here — no-store ensures HMR always gets fresh modules
+        {
           const originalWriteHead = res.writeHead;
           res.writeHead = function (...args: any[]) {
             res.setHeader(
@@ -177,6 +168,42 @@ const arrowSpriteHmrPlugin = () => ({
           event: "arrow-sprite-update",
           data: { timestamp: Date.now() },
         });
+      }
+    });
+  },
+});
+
+/**
+ * 🌐 I18N HMR: Auto-reload translations when locale JSON files change
+ * - Watches messages/*.json (excluded from global watcher to save handles)
+ * - Reads the changed file and sends its contents via custom HMR event
+ * - i18n.svelte.ts receives the new messages and hot-swaps without page reload
+ */
+const i18nHmrPlugin = () => ({
+  name: "i18n-hmr",
+  configureServer(server: ViteDevServer) {
+    const messagesDir = path.resolve(dirname, "messages");
+
+    server.watcher.add(messagesDir);
+
+    server.watcher.on("change", (changedPath: string) => {
+      const normalized = changedPath.replace(/\\/g, "/");
+      const match = normalized.match(/messages\/(\w+(?:-\w+)?)\.json$/);
+      if (match) {
+        const locale = match[1];
+        try {
+          const content = JSON.parse(fs.readFileSync(changedPath, "utf-8"));
+          console.log(
+            `🌐 Translation changed: ${locale} (${Object.keys(content).length} keys) - sending HMR update`
+          );
+          server.ws.send({
+            type: "custom",
+            event: "i18n-update",
+            data: { locale, messages: content },
+          });
+        } catch (e) {
+          console.error(`🌐 Failed to read ${locale} translations:`, e);
+        }
       }
     });
   },
@@ -787,6 +814,7 @@ export default defineConfig({
     fontCorsPlugin(), // 📱 CORS headers for fonts (mobile debugging)
     devCachePlugin(), // 🚀 2025: Smart caching (no-cache for CSS/JS, cache for SVGs)
     arrowSpriteHmrPlugin(), // 🎯 Auto-reload arrows when sprite is edited in Illustrator
+    i18nHmrPlugin(), // 🌐 Auto-reload translations when locale JSON changes
     webpWasmDevPlugin(),
     webpStaticCopyPlugin(),
     // 📊 Bundle analyzer - generates stats.html when ANALYZE=true
@@ -1013,7 +1041,7 @@ export default defineConfig({
         "**/deployment/**",
         "**/docs/**",
         "**/feedback-images/**",
-        "**/messages/**",
+        // "**/messages/**" — NOT ignored: i18nHmrPlugin watches these for live translation reload
         "**/scripts/**",
         "**/tests/**",
         "**/.netlify/**",

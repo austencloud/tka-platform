@@ -11,7 +11,7 @@
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import { createHMRState } from "$lib/shared/utils/hmr-state-backup";
+
 import { createSimplifiedStartPositionState } from "../../construct/start-position-picker/state/start-position-state.svelte";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -665,45 +665,5 @@ export function createConstructTabState(
  * Type for ConstructTabState - the return type of createConstructTabState
  */
 export type ConstructTabState = ReturnType<typeof createConstructTabState>;
-
-// ============================================================================
-// HMR STATE PERSISTENCE EFFECT
-// ============================================================================
-
-/**
- * Add this effect to any component using ConstructTabState to enable HMR backup
- * IMPORTANT: This must be called from within a component's script context, not from
- * an async callback or after a setTimeout, to avoid effect_orphan errors
- *
- * Example usage in a component:
- * ```svelte
- * <script lang="ts">
- *   import { createConstructTabState, addHMRBackupEffect } from "../state";
- *
- *   let constructTabState = createConstructTabState(...);
- *
- *   // Call this directly in component script, NOT in onMount or async context
- *   addHMRBackupEffect(constructTabState);
- * </script>
- * ```
- */
-export function addHMRBackupEffect(
-  constructTabState: ReturnType<typeof createConstructTabState>
-) {
-  // Auto-save critical state changes for HMR persistence
-  $effect(() => {
-    const stateToBackup = {
-      showStartPositionPicker: constructTabState.showStartPositionPicker,
-      selectedStartPosition: constructTabState.selectedStartPosition,
-      isInitialized: constructTabState.isInitialized,
-    };
-
-    // Only save if initialized to avoid saving empty initial state
-    if (constructTabState.isInitialized) {
-      const hmrBackup = createHMRState("construct-tab-state", stateToBackup);
-      hmrBackup.saveState(stateToBackup);
-    }
-  });
-}
 
 // Import required state factories
