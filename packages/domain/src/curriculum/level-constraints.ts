@@ -16,10 +16,10 @@ export function getLevelConstraints(majorLevel: MajorLevel): string {
     constraints.push("Level 3 terms: half turn, 90°, non-radial, clock, counter, cw, ccw, float");
   }
   if (majorLevel >= 4) {
-    constraints.push("Level 4 terms: skew, skewed, mixed grid, +/-, double skew, zeta, eta, 8-point grid");
+    constraints.push("Level 4 terms: center, center point, 5-point grid, centric, hash, half-dash, tau, terra");
   }
   if (majorLevel >= 5) {
-    constraints.push("Level 5 terms: center, center point, 9-point grid, centric, hash, half-dash, tau, terra");
+    constraints.push("Level 5 terms: skew, skewed, mixed grid, +/-, double skew, zeta, eta, 8-point grid, 9-point grid");
   }
   if (majorLevel >= 6) {
     constraints.push("Level 6 terms: interradial, clockIn, clockOut, counterIn, counterOut, quarter turn, 45°, 8-point radial cycle");
@@ -67,23 +67,23 @@ DO NOT use concepts from Level 3+ (half turns, float, clock/counter, skews, etc.
 - Float motion type (prop holds absolute spatial angle)
 - Expanded position variations
 
-DO NOT use concepts from Level 4+ (skews, center point, etc.).`;
+DO NOT use concepts from Level 4+ (center point, skews, etc.).`;
 
     case 4:
-      return `The user is at Level 4 (Skewed Grid). They know Levels 1-3 plus:
-- 8-point grid (mixing diamond/box)
-- Zeta and eta positions
-- Skew modifiers (+/-)
-- Extended and shortened shift arcs
-
-DO NOT use concepts from Level 5+ (center point, hash, conjoined, etc.).`;
-
-    case 5:
-      return `The user is at Level 5 (Centric). They know Levels 1-4 plus:
-- Center grid point (9-point grid)
+      return `The user is at Level 4 (Centric). They know Levels 1-3 plus:
+- Center grid point (5-point grid)
 - Hash hand path (straight line to/from center)
 - Tau and terra positions
 - Center orientations (compass-based)
+
+DO NOT use concepts from Level 5+ (skewed grid, zeta/eta, conjoined, etc.).`;
+
+    case 5:
+      return `The user is at Level 5 (Skewed Grid). They know Levels 1-4 plus:
+- 8-point grid (mixing diamond/box), now 9-point with center
+- Zeta and eta positions
+- Skew modifiers (+/-)
+- Extended and shortened shift arcs
 
 DO NOT use concepts from Level 6+ (interradials, conjoined grids, etc.).`;
 

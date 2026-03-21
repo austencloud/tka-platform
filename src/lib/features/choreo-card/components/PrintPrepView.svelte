@@ -45,14 +45,16 @@
   // Read startPositionLayout from the shared composition manager
   const imageComposition = getImageCompositionManager();
 
-  /** Build render options from current settings */
-  function buildRenderOptions(): PrintRenderOptions {
+  /** Build render options from current settings, resolving per-step-count layout */
+  function buildRenderOptions(stepCount?: number): PrintRenderOptions {
     return {
       showGrid,
       showTKA,
       showWord,
       includeStartPosition,
-      startPositionLayout: imageComposition.startPositionLayout,
+      startPositionLayout: stepCount != null
+        ? imageComposition.getStartPositionLayoutForStepCount(stepCount)
+        : imageComposition.startPositionLayout,
       handPointsVisible,
       theme: selectedTheme,
       bluePropType: settingsService.settings.bluePropType as PropType,
@@ -81,13 +83,13 @@
   /** Re-render every card's images in-place without tearing down the grid */
   async function rerenderAllInPlace() {
     if (!printRenderer) return;
-    const options = buildRenderOptions();
 
     // Mark all cards as re-rendering
     rerenderingCards = new Set(renderedPairs.map((_, i) => i));
 
     for (let i = 0; i < renderedPairs.length; i++) {
       const pair = renderedPairs[i]!;
+      const options = buildRenderOptions(pair.sequence.steps?.length ?? 0);
       try {
         const front = await printRenderer.renderFront(pair.sequence, options);
         const back = await printRenderer.renderBack(pair.sequence, options);
@@ -194,7 +196,7 @@
     if (!pair) return;
 
     rerenderingCards = new Set([...rerenderingCards, index]);
-    const options = buildRenderOptions();
+    const options = buildRenderOptions(pair.sequence.steps?.length ?? 0);
 
     try {
       const front = await printRenderer.renderFront(pair.sequence, options);
@@ -331,8 +333,6 @@
 
     renderTotal = orderedSequences.length;
 
-    const options = buildRenderOptions();
-
     // Render info cards
     try {
       const infoFront = await printRenderer.renderInfoCardFront(selectedTheme);
@@ -350,6 +350,7 @@
     // Render sequence cards progressively
     for (let i = 0; i < orderedSequences.length; i++) {
       const { seq, familyId } = orderedSequences[i]!;
+      const options = buildRenderOptions(seq.steps?.length ?? 0);
       try {
         const front = await printRenderer.renderFront(seq, options);
         const back = await printRenderer.renderBack(seq, options);
@@ -662,7 +663,7 @@
                     <span class="face-label">Front</span>
                     <button
                       class="download-overlay"
-                      onclick={() => downloadCard(infoCardPair!.front, "rules_card_front.png")}
+                      onclick={(e) => { e.stopPropagation(); downloadCard(infoCardPair!.front, "rules_card_front.png"); }}
                       title="Download front PNG"
                       aria-label="Download rules card front"
                     >
@@ -679,7 +680,7 @@
                     <span class="face-label">Back</span>
                     <button
                       class="download-overlay"
-                      onclick={() => downloadCard(infoCardPair!.back, "rules_card_back.png")}
+                      onclick={(e) => { e.stopPropagation(); downloadCard(infoCardPair!.back, "rules_card_back.png"); }}
                       title="Download back PNG"
                       aria-label="Download rules card back"
                     >
@@ -724,7 +725,7 @@
                       <span class="face-label">Front</span>
                       <button
                         class="download-overlay"
-                        onclick={() => downloadCard(pair.front, `${sanitizeName(pair.label)}_front.png`)}
+                        onclick={(e) => { e.stopPropagation(); downloadCard(pair.front, `${sanitizeName(pair.label)}_front.png`); }}
                         title="Download front PNG"
                         aria-label="Download {pair.label} front"
                       >
@@ -743,7 +744,7 @@
                       <span class="face-label">Back</span>
                       <button
                         class="download-overlay"
-                        onclick={() => downloadCard(pair.back, `${sanitizeName(pair.label)}_back.png`)}
+                        onclick={(e) => { e.stopPropagation(); downloadCard(pair.back, `${sanitizeName(pair.label)}_back.png`); }}
                         title="Download back PNG"
                         aria-label="Download {pair.label} back"
                       >
@@ -1225,6 +1226,17 @@
     border-radius: 8px;
     padding: 8px;
     position: relative;
+    cursor: pointer;
+  }
+
+  .card-pair:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .card-pair:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
   }
 
   /* ── Rerender loading state ──────────────────────────────────────── */
@@ -1303,7 +1315,7 @@
     transition: opacity 0.15s ease;
   }
 
-  .card-preview:hover .download-overlay {
+  .card-pair:hover .download-overlay {
     opacity: 1;
   }
 

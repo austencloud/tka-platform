@@ -28,7 +28,7 @@ export const DIFFICULTY_LEVELS: Record<DifficultyLevel, DifficultyLevelConfig> =
   {
     1: {
       level: 1,
-      name: "No Turns",
+      name: "Base Motions",
       description: "Sky blue",
       gradient: `radial-gradient(ellipse at top left,
       rgb(186, 230, 253) 0%,
@@ -55,7 +55,7 @@ export const DIFFICULTY_LEVELS: Record<DifficultyLevel, DifficultyLevelConfig> =
     },
     3: {
       level: 3,
-      name: "Half Turns",
+      name: "Half Turns, Floats",
       description: "Warm gold",
       gradient: `radial-gradient(ellipse at top left,
       rgb(254, 240, 138) 0%,
