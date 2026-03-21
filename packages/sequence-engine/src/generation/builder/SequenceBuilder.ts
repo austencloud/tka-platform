@@ -350,15 +350,18 @@ export class SequenceBuilder {
     // Stage 2: Assemble constraints
     const constraintSet = this.assembleConstraints(options);
 
-    // Length-based generation has unlimited letter choice, so there's always
-    // a non-reversing variation available. Promote the soft ContinuityConstraint
-    // to a hard "enforce" constraint so the beam search never accepts reversals.
+    // When the user wants smooth continuity, try promoting the constraint to
+    // hard first (no reversals allowed). If the beam dies — which can happen
+    // when all variations at a position reverse the established rotation —
+    // fall back to soft continuity so the search still produces a result.
     const effectivePropContinuity = this.resolveEffectivePropContinuity(options);
+    let promotedContinuity = false;
     if (effectivePropContinuity === "maximize") {
       constraintSet.soft = constraintSet.soft.filter(
         (c) => c.type !== ConstraintType.CONTINUITY,
       );
       constraintSet.hard.push(new ContinuityConstraint("enforce"));
+      promotedContinuity = true;
     }
 
     // Stage 3: Allocate turns
@@ -465,6 +468,66 @@ export class SequenceBuilder {
         break;
       }
       lastError = result.error;
+    }
+
+    // If hard continuity killed the beam, demote to soft and retry once.
+    // Some positions only have variations that reverse the established rotation,
+    // so enforcing continuity as a hard constraint is too strict.
+    if (
+      (!searchResult || (!searchResult.success && searchResult.steps.length === 0)) &&
+      promotedContinuity
+    ) {
+      constraintSet.hard = constraintSet.hard.filter(
+        (c) => c.type !== ConstraintType.CONTINUITY,
+      );
+      constraintSet.soft.push(new ContinuityConstraint("maximize"));
+
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        let requiredEndPositions: Set<string> | undefined;
+        let loopPositionMap: Record<string, string[]> | undefined;
+
+        if (needsLoopTargeting && effectiveStartPosition) {
+          requiredEndPositions = this.getAllValidEndPositions(
+            options.loop!.type,
+            effectiveStartPosition,
+            options.loop!.sliceSize,
+          );
+        } else if (needsLoopTargeting) {
+          loopPositionMap = this.buildLoopPositionMap(options.loop!);
+        }
+
+        if (options.endPosition && !needsLoopTargeting) {
+          requiredEndPositions = new Set([options.endPosition]);
+        }
+
+        const beamSearch = new BeamSearch(this.variationProvider, options.gridMode);
+        const propContinuity = this.resolveEffectivePropContinuity(options);
+        const result = beamSearch.searchByLength(
+          length,
+          effectiveStartPosition,
+          constraintSet,
+          options.beamWidth ?? 10,
+          requiredEndPositions,
+          loopPositionMap,
+          searchOptions,
+          turnAllocation,
+          propContinuity,
+        );
+
+        if (result.success || result.steps.length > 0) {
+          if (searchOptions.mustContainLetters && searchOptions.mustContainLetters.size > 0) {
+            const presentLetters = new Set(result.steps.slice(1).map((s) => s.letter));
+            const missing = [...searchOptions.mustContainLetters].filter((l) => !presentLetters.has(l));
+            if (missing.length > 0) {
+              lastError = `Required letters [${missing.join(", ")}] not present in generated sequence`;
+              continue;
+            }
+          }
+          searchResult = result;
+          break;
+        }
+        lastError = result.error;
+      }
     }
 
     if (!searchResult || (!searchResult.success && searchResult.steps.length === 0)) {
