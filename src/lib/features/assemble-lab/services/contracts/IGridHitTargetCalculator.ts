@@ -15,6 +15,6 @@ export interface GridHitTarget {
 }
 
 export interface IGridHitTargetCalculator {
-	getHitTargets(gridMode: GridMode): GridHitTarget[];
+	getHitTargets(gridMode: GridMode, showCenter?: boolean): GridHitTarget[];
 	getHitTargetRadius(): number;
 }
