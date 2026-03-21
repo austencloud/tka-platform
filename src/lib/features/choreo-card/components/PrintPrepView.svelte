@@ -16,6 +16,7 @@
   import { onMount } from "svelte";
   import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuState, ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
@@ -40,6 +41,9 @@
   let includeStartPosition = $state(loadBool("choreoCard.includeStartPosition", true));
   let handPointsVisible = $state(loadBool("choreoCard.handPointsVisible", true));
 
+  // Read startPositionLayout from the shared composition manager
+  const imageComposition = getImageCompositionManager();
+
   /** Build render options from current settings */
   function buildRenderOptions(): PrintRenderOptions {
     return {
@@ -47,6 +51,7 @@
       showTKA,
       showWord,
       includeStartPosition,
+      startPositionLayout: imageComposition.startPositionLayout,
       handPointsVisible,
       theme: selectedTheme,
       bluePropType: settingsService.settings.bluePropType as PropType,

@@ -9,6 +9,7 @@ export interface PrintRenderOptions {
   showTKA: boolean;
   showWord: boolean;
   includeStartPosition: boolean;
+  startPositionLayout?: "row" | "column";
   handPointsVisible: boolean;
   /** Override the default card back theme (e.g. "nightSky", "deepOcean") */
   theme?: string;

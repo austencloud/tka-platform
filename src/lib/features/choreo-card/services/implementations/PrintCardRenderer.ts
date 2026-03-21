@@ -17,7 +17,7 @@ import type { IInfoCardCanvasRenderer } from "../contracts/IInfoCardCanvasRender
 import type { ISequenceToEntryConverter } from "../contracts/ISequenceToEntryConverter";
 import type { ILOOPExplainer } from "../contracts/ILOOPExplainer";
 import { deriveCardBackData } from "../../components/card-back/card-back-data";
-import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+
 
 // MPC poker card defaults
 const MPC_WIDTH = 822;
@@ -46,26 +46,9 @@ export class PrintCardRenderer implements IPrintCardRenderer {
     const contentW = canvasW - bleed * 2;
     const contentH = canvasH - bleed * 2;
 
-    // Quartered LOOP 8-beat sequences get portrait column layout:
-    // start position in left column, 2 beat columns, 4 rows.
-    // This shows the 4 quarter-rotations stacked vertically.
-    //
-    // Detection: 8 beats where the word is a 2-letter pattern repeated 4x
-    // (e.g., "JΦJΦJΦJΦ" simplifies to "JΦ"). This is the defining property
-    // of quartered LOOPs — the sequence is 4 repetitions of a 2-beat core.
-    const stepCount = sequence.sequenceLength ?? sequence.steps?.length ?? 0;
-    const word = sequence.word ?? "";
-    const simplified = simplifyRepeatedWord(word);
-    const isQuarteredRepeat =
-      word.length > 0 && simplified.length < word.length &&
-      word.length / simplified.length === 4;
-    const isQuarteredLoop =
-      sequence.orientationCycleCount === 4 || (stepCount === 8 && isQuarteredRepeat);
-    const useColumnLayout = isQuarteredLoop && stepCount === 8;
-
     const sequenceCanvas = await this.imageComposer.composeSequenceImage(sequence, {
       includeStartPosition: options.includeStartPosition,
-      startPositionLayout: useColumnLayout ? "column" : "row",
+      startPositionLayout: options.startPositionLayout ?? "row",
       addStepNumbers: true,
       addWord: options.showWord,
       addDifficultyLevel: true,
