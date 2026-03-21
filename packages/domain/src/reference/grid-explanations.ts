@@ -20,16 +20,16 @@ export const GRID_MODE_DEFINITIONS: Record<string, GridModeDefinition> = {
     description: "Mixes cardinal (diamond) and intercardinal (box) points.",
     points: ["One hand on cardinal (N/E/S/W)", "One hand on intercardinal (NE/SE/SW/NW)"],
     positions: ["Zeta (~135° angle)", "Eta (~45° angle)"],
-    keyFact: "Skewed positions are Level 4. They bridge the two grid systems.",
-    level: 4,
+    keyFact: "Skewed positions are Level 5. They bridge the two grid systems.",
+    level: 5,
   },
   centric: {
     name: "Centric Grid",
     description: "Uses the center point of the grid. At least one hand at the center.",
     points: ["Center point", "Any of the 8 outer points (cardinal or intercardinal)"],
     positions: ["Tau (one hand at center, one elsewhere)", "Terra (both hands at center)"],
-    keyFact: "Centric is Level 5. Introduces the 9th grid point and the hash hand path.",
-    level: 5,
+    keyFact: "Centric is Level 4. Introduces the 9th grid point and the hash hand path.",
+    level: 4,
   },
 };
 

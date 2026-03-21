@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Level 4 Lab Module
+   * Level 5 Lab Module
    *
    * Admin-only experimental sandbox for validating skewed position rendering.
    * Has two tabs:
@@ -170,7 +170,7 @@
 <div class="level4-lab">
   <header class="header">
     <div class="title-row">
-      <h1>Level 4</h1>
+      <h1>Level 5</h1>
       <span class="badge">Admin</span>
     </div>
     <nav class="tabs">

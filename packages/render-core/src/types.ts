@@ -65,7 +65,7 @@ export type Orientation =
   | "clockOut"
   | "counterIn"
   | "counterOut"
-  // Centric orientations (Level 5 - prop at center, points toward compass direction)
+  // Centric orientations (Level 4 - prop at center, points toward compass direction)
   | "centerN"
   | "centerNE"
   | "centerE"

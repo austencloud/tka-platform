@@ -54,7 +54,7 @@ export const POSITION_DEFINITIONS: Record<PositionName, PositionDefinition> = {
       "Hands at N and SE (skewed mode, 135°)",
       "Hands at E and NW (skewed mode)",
     ],
-    level: 4,
+    level: 5,
     keyFact: "Asymmetric like gamma but interconverts with Eta like alpha/beta. A genuinely third kind of position.",
   },
   eta: {
@@ -67,32 +67,32 @@ export const POSITION_DEFINITIONS: Record<PositionName, PositionDefinition> = {
       "Hands at N and NE (skewed mode, 45°)",
       "Hands at E and SE (skewed mode)",
     ],
-    level: 4,
+    level: 5,
     keyFact: "Asymmetric like gamma but interconverts with Zeta like beta/alpha. A genuinely third kind of position.",
   },
   tau: {
     name: "Tau (τ)",
     symbol: "τ",
     angle: "variable",
-    description: "One hand is at the center grid point, the other at a non-center point. Introduced in Level 5 with centric grid mode. Not yet implemented in TKA Scribe.",
+    description: "One hand is at the center grid point, the other at a non-center point. Introduced in Level 4 with centric grid mode. Not yet implemented in TKA Scribe.",
     gridDescription: "The center point is the 9th grid location. Tau positions have one hand there and one at any of the 8 outer points.",
     examples: [
       "One hand at center, one at N",
       "One hand at center, one at NE",
     ],
-    level: 5,
+    level: 4,
     keyFact: "Introduces the center grid point. One hand anchored at center.",
   },
   terra: {
     name: "Terra",
     symbol: "⊕",
     angle: "0° (both at center)",
-    description: "Both hands are at the center grid point. Introduced in Level 5 with centric grid mode. Not yet implemented in TKA Scribe.",
+    description: "Both hands are at the center grid point. Introduced in Level 4 with centric grid mode. Not yet implemented in TKA Scribe.",
     gridDescription: "Both props stacked at the center of the grid. Similar to beta (both at same point) but at the unique center location.",
     examples: [
       "Both hands at center",
     ],
-    level: 5,
+    level: 4,
     keyFact: "Like beta, but at center. Both hands at the unique center point.",
   },
 } as const;
@@ -100,10 +100,10 @@ export const POSITION_DEFINITIONS: Record<PositionName, PositionDefinition> = {
 /** Positions available at Level 1-3 (diamond/box grid) */
 export const FOUNDATION_POSITIONS: PositionName[] = ["alpha", "beta", "gamma"];
 
-/** Positions introduced at Level 4 (skewed grid) */
+/** Positions introduced at Level 5 (skewed grid) */
 export const SKEWED_POSITIONS: PositionName[] = ["zeta", "eta"];
 
-/** Positions introduced at Level 5 (centric grid) */
+/** Positions introduced at Level 4 (centric grid) */
 export const CENTRIC_POSITIONS: PositionName[] = ["tau", "terra"];
 
 /** All position names */
@@ -116,7 +116,7 @@ export const ALL_POSITIONS: PositionName[] = [
 /** Get positions available at a given level */
 export function getPositionsAtLevel(level: number): PositionName[] {
   const positions: PositionName[] = [...FOUNDATION_POSITIONS];
-  if (level >= 4) positions.push(...SKEWED_POSITIONS);
-  if (level >= 5) positions.push(...CENTRIC_POSITIONS);
+  if (level >= 4) positions.push(...CENTRIC_POSITIONS);
+  if (level >= 5) positions.push(...SKEWED_POSITIONS);
   return positions;
 }

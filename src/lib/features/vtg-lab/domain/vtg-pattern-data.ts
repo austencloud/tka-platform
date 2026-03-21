@@ -470,18 +470,18 @@ export const BEYOND_VTG_ITEMS: BeyondVtgItem[] = [
 		tkaFeature: "Letter Types 2\u20136",
 	},
 	{
-		title: "Skewed Positions (Level 4)",
-		description:
-			"One hand on a cardinal point, one on an intercardinal point. Creates Zeta (obtuse angle) and Eta (acute angle) positions that VTG has no classification for.",
-		icon: "fa-bezier-curve",
-		tkaFeature: "Level 4: Zeta & Eta",
-	},
-	{
-		title: "Centric Positions (Level 5)",
+		title: "Centric Positions (Level 4)",
 		description:
 			"At least one hand at the center of the grid. Creates Tau (one hand center) and Terra (both hands center) positions.",
 		icon: "fa-bullseye",
-		tkaFeature: "Level 5: Tau & Terra",
+		tkaFeature: "Level 4: Tau & Terra",
+	},
+	{
+		title: "Skewed Positions (Level 5)",
+		description:
+			"One hand on a cardinal point, one on an intercardinal point. Creates Zeta (obtuse angle) and Eta (acute angle) positions that VTG has no classification for.",
+		icon: "fa-bezier-curve",
+		tkaFeature: "Level 5: Zeta & Eta",
 	},
 	{
 		title: "Interradial Orientations (Level 6)",
