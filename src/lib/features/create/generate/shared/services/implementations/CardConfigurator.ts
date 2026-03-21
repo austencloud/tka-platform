@@ -51,12 +51,13 @@ export class CardConfigurator implements ICardConfigurator {
       gridColumnSpan: 2,
     });
 
-    // Preset card
+    // Favorite card
     if (handlers.handleOpenPresetDrawer) {
       cardList.push({
         id: "preset",
         props: {
-          activePreset: handlers.activePreset ?? null,
+          activeFavoriteId: handlers.activeFavoriteId ?? null,
+          activeFavoriteName: handlers.activeFavoriteName ?? null,
           onOpenDrawer: handlers.handleOpenPresetDrawer,
           cardIndex: cardIndex++,
         },

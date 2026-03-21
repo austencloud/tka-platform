@@ -1,32 +1,32 @@
 <!--
-PresetCard - Shows active preset name or opens drawer to browse presets
+PresetCard - Shows active favorite name or opens drawer to browse favorites
 -->
 <script lang="ts">
   import BaseCard from "./BaseCard.svelte";
-  import type { GenerationPreset } from "../../state/preset.svelte";
 
   let {
-    activePreset = null,
+    activeFavoriteId = null,
+    activeFavoriteName = null,
     onOpenDrawer,
     color = "",
     shadowColor = "",
     cardIndex = 0,
   } = $props<{
-    activePreset?: GenerationPreset | null;
+    activeFavoriteId?: string | null;
+    activeFavoriteName?: string | null;
     onOpenDrawer?: () => void;
     color?: string;
     shadowColor?: string;
     cardIndex?: number;
   }>();
 
-  const title = "Preset";
   const displayValue = $derived(
-    activePreset ? `${activePreset.icon ?? ""} ${activePreset.name}`.trim() : "Browse"
+    activeFavoriteName ? activeFavoriteName : "Browse"
   );
 </script>
 
 <BaseCard
-  {title}
+  title="Favorite"
   currentValue={displayValue}
   {color}
   {shadowColor}
