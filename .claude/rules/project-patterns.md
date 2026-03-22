@@ -2,7 +2,7 @@
 
 ## Tech Stack Overview
 
-- TKA Scribe is a Svelte 5 + TypeScript application
+- TKA Composer is a Svelte 5 + TypeScript application
 - Uses ITI (Isomorphic Type-safe IoC) for dependency injection
 - Firebase for persistence and auth
 - Focus on animation and interactive pictograph rendering
