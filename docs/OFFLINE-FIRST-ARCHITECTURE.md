@@ -4,7 +4,7 @@
 
 ## Goal
 
-Transform TKA Scribe into the gold standard for offline-first web apps - users should never know or care whether they're online.
+Transform TKA Composer into the gold standard for offline-first web apps - users should never know or care whether they're online.
 
 ---
 

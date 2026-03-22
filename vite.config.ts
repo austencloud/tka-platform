@@ -639,7 +639,7 @@ export default defineConfig({
     }),
     // ============================================================================
     // PWA CONFIGURATION (Google Play Store / Installable Web App)
-    // Enabled by default for TKA Scribe. Set DISABLE_PWA=true for landing page builds.
+    // Enabled by default for TKA Composer. Set DISABLE_PWA=true for landing page builds.
     // ============================================================================
     process.env.DISABLE_PWA !== "true" &&
       SvelteKitPWA({
