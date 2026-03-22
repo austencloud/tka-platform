@@ -57,7 +57,7 @@ const LOCALE_COOKIE_NAME = "PARAGLIDE_LOCALE";
 const LOCALE_COOKIE_MAX_AGE = 34560000; // ~400 days
 
 // English messages - loaded synchronously to prevent missing-key warnings on first render
-// Note: TKA Scribe brand name changed to TKA Composer
+// Note: TKA Composer (formerly TKA Scribe)
 let enMessages: Messages = enMessagesStatic as Messages;
 
 // Cache for loaded locales
@@ -300,7 +300,7 @@ async function loadLocaleMessages(locale: Locale): Promise<Messages> {
  *                 Current usage is safe (module IDs, Firebase Auth usernames).
  *
  * @example
- * t("app_name") // "TKA Scribe"
+ * t("app_name") // "TKA Composer"
  * t("dashboard_viewing_as", { name: "John" }) // "Viewing as John"
  * t("invalid_key") // TypeScript error!
  */

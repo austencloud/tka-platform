@@ -27,7 +27,7 @@ export interface ImageCompositionSettings {
   showCreatorName: boolean; // Bottom-left: creator name
   showNotes: boolean; // Bottom-center: notes text
   showBirthday: boolean; // Bottom-right: birthday date
-  customNotesText: string; // Custom text for notes (default: "Created using TKA Scribe")
+  customNotesText: string; // Custom text for notes (default: "Created using TKA Composer")
 
   // QR code in empty cell under start position
   showQRCode: boolean;
@@ -58,7 +58,7 @@ const DEFAULT_SETTINGS: ImageCompositionSettings = {
   showCreatorName: true,
   showNotes: true,
   showBirthday: true,
-  customNotesText: "Created using TKA Scribe",
+  customNotesText: "Created using TKA Composer",
 
   // QR code - shown by default in the empty cell under start position
   showQRCode: true,

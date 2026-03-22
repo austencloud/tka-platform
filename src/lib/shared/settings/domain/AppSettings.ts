@@ -134,7 +134,7 @@ export interface AppSettings {
     showCreatorName?: boolean; // Bottom-left: creator name
     showNotes?: boolean; // Bottom-center: notes text
     showBirthday?: boolean; // Bottom-right: birthday date
-    customNotesText?: string; // Custom text for notes (default: "Created using TKA Scribe")
+    customNotesText?: string; // Custom text for notes (default: "Created using TKA Composer")
     showLoopGlyph?: boolean; // Show LOOP glyph indicator
   };
 }

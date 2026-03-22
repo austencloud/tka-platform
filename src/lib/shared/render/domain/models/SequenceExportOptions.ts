@@ -34,7 +34,7 @@ export interface SequenceExportOptions {
   showCreatorName?: boolean; // Bottom-left: creator name
   showNotes?: boolean; // Bottom-center: notes text
   showBirthday?: boolean; // Bottom-right: birthday date
-  customNotesText?: string; // Custom text for notes (default: "Created using TKA Scribe")
+  customNotesText?: string; // Custom text for notes (default: "Created using TKA Composer")
 
   // Prop type override (optional)
   // If provided, overrides the prop type for all steps in the sequence
