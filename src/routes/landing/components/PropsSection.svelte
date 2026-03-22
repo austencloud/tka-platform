@@ -6,7 +6,7 @@
   <div class="container">
     <h2>30+ Supported Props</h2>
     <p class="section-intro">
-      TKA Scribe works with virtually every flow prop — both unilateral
+      TKA Composer works with virtually every flow prop — both unilateral
       (one-handed) and bilateral (two-handed).
     </p>
 

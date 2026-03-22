@@ -41,7 +41,7 @@
 
   // Play Store URL
   const PLAY_STORE_URL =
-    "https://play.google.com/store/apps/details?id=com.tkascribe.app";
+    "https://play.google.com/store/apps/details?id=com.tkacomposer.app";
 
   onMount(async () => {
     const platformService = container.items.platformDetector;
@@ -110,7 +110,7 @@
         <span>App Installed!</span>
       </div>
       <p class="installed-instruction">
-        Open <strong>TKA Scribe</strong> from your home screen
+        Open <strong>TKA Composer</strong> from your home screen
       </p>
       <a href={APP_DOMAIN} class="link-secondary"> Or continue in browser → </a>
     </div>
@@ -136,7 +136,7 @@
       rel="noopener"
     >
       <i class="fab fa-google-play" aria-hidden="true"></i>
-      <span>Get TKA Scribe</span>
+      <span>Get TKA Composer</span>
     </a>
   {:else if installState === "ios-non-safari"}
     <!-- iOS but not Safari -->

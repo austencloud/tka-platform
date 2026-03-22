@@ -41,7 +41,7 @@
     </ul>
 
     <a href={APP_DOMAIN} class="btn btn-primary">
-      Open TKA Scribe
+      Open TKA Composer
       <span class="arrow">→</span>
     </a>
 
