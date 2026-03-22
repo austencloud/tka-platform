@@ -2,7 +2,7 @@
   AttributionPrompt - Deferred slide-up attribution question
 
   Appears after users have engaged with the app for a while,
-  asking how they discovered TKA Scribe. Non-intrusive and dismissible.
+  asking how they discovered TKA Composer. Non-intrusive and dismissible.
 -->
 <script lang="ts">
   import { t } from "$lib/shared/i18n/i18n.svelte";

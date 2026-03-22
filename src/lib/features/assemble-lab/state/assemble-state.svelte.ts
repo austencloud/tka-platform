@@ -85,7 +85,10 @@ export function createAssembleState() {
   /** First click — place prop at a grid point */
   function placeFirstPoint(location: GridLocation): void {
     currentPosition = location;
-    currentOrientation = Orientation.IN;
+    // Center uses compass orientations, perimeter uses radial orientations
+    currentOrientation = location === GridLocation.CENTER
+      ? Orientation.CENTER_N
+      : Orientation.IN;
     phase = "placing";
   }
 
@@ -283,6 +286,21 @@ export function createAssembleState() {
   let arrowTimeout: ReturnType<typeof setTimeout> | null = null;
 
   function setOrientation(ori: Orientation): void {
+    // When at center, translate radial orientations to center orientations.
+    // The UI shows in/out/clock/counter but center needs centerN/centerE/etc.
+    // Use NORTH as the reference: in→centerS, out→centerN, clock→centerE, counter→centerW
+    if (currentPosition === GridLocation.CENTER) {
+      const radialToCenterAtNorth: Record<string, Orientation> = {
+        [Orientation.IN]: Orientation.CENTER_S,
+        [Orientation.OUT]: Orientation.CENTER_N,
+        [Orientation.CLOCK]: Orientation.CENTER_E,
+        [Orientation.COUNTER]: Orientation.CENTER_W,
+      };
+      const translated = radialToCenterAtNorth[ori];
+      if (translated) {
+        ori = translated;
+      }
+    }
     currentOrientation = ori;
 
     // Show directional arrow only when prop is placed

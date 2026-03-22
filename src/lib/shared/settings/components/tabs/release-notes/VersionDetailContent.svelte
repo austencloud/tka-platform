@@ -270,7 +270,7 @@
     if (!version) return "";
     const lines: string[] = [];
 
-    lines.push(`TKA Scribe v${version.version}`);
+    lines.push(`TKA Composer v${version.version}`);
     lines.push(
       `Released ${version.releasedAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`
     );

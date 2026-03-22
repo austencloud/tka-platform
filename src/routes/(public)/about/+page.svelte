@@ -99,7 +99,7 @@
 </script>
 
 <svelte:head>
-  <title>About The Kinetic Alphabet | TKA Scribe</title>
+  <title>About The Kinetic Alphabet | TKA Composer</title>
   <meta
     name="description"
     content="The Kinetic Alphabet brings something novel to flow arts. Learn about the origin, mission, and vision behind TKA."
@@ -198,9 +198,9 @@
     <footer class="about-footer">
       <div class="cta-card">
         <h3>Ready to browse?</h3>
-        <p>TKA Scribe is free to use. No download required.</p>
+        <p>TKA Composer is free to use. No download required.</p>
         <a href={APP_DOMAIN} class="cta-button">
-          <span>Open TKA Scribe</span>
+          <span>Open TKA Composer</span>
           <i class="fas fa-arrow-right" aria-hidden="true"></i>
         </a>
       </div>

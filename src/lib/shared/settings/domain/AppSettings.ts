@@ -114,6 +114,10 @@ export interface AppSettings {
   // Prop Composition Recipes (lab-tuned overrides per family)
   compositionRecipeOverrides?: Record<string, CompositionRecipe>;
 
+  // Assemble Grid Preferences (persisted from wizard)
+  preferredGridMode?: GridMode; // Last-used grid mode in assemble
+  preferredShowCenter?: boolean; // Last-used center toggle in assemble
+
   // Browse Grid Settings
   gridZoomLevel?: number; // Mobile pinch-to-zoom: columns 2-6, default 2
 

@@ -82,7 +82,7 @@
           working
         </span>
       {:else}
-        <span class="deadline urgent">Update now to keep using TKA Scribe</span>
+        <span class="deadline urgent">Update now to keep using TKA Composer</span>
       {/if}
     </div>
 

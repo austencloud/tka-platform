@@ -125,7 +125,7 @@ export const ACTION_CATALOG: ActionDefinition[] = [
       "propContinuity", "turnIntensity", "loopType", "sliceSize",
     ],
     validArgs: {
-      value: "The value to set. level: 1-4, length: 1-64, mode: freeform|circular, gridMode: diamond|box, propContinuity: continuous|random, turnIntensity: 0-3, loopType: strict_rotated|strict_mirrored|etc., sliceSize: halved|quartered",
+      value: "The value to set. level: 1-5, length: 1-64, mode: freeform|circular, gridMode: diamond|box, propContinuity: continuous|random, turnIntensity: 0-3, loopType: strict_rotated|strict_mirrored|etc., sliceSize: halved|quartered",
     },
     activeInModules: ["create"],
     activeInTabs: ["generate"],

@@ -674,9 +674,10 @@
     box-shadow: 0 8px 32px var(--theme-shadow, rgba(0, 0, 0, 0.3)), inset 0 1px 0 var(--theme-card-bg, rgba(255, 255, 255, 0.04));
   }
 
-  /* Semi-transparent background on all viewports */
+  /* Semi-transparent background — lets the app background bleed through */
   .interactive-grid :global(.grid-bg) {
-    opacity: 0.9;
+    opacity: 0.75;
+    transition: opacity 0.3s ease;
   }
 
   /* Slightly more transparent on mobile */
@@ -688,7 +689,7 @@
     }
 
     .interactive-grid :global(.grid-bg) {
-      opacity: 0.85;
+      opacity: 0.7;
     }
   }
 
@@ -899,6 +900,10 @@
     }
 
     .active-prop-group {
+      transition: none;
+    }
+
+    .interactive-grid :global(.grid-bg) {
       transition: none;
     }
 

@@ -1,5 +1,5 @@
 <!-- Sidebar Header Component -->
-<!-- Shows "TKA Scribe" branding that doubles as collapse/expand toggle -->
+<!-- Shows "TKA Composer" branding that doubles as collapse/expand toggle -->
 <script lang="ts">
   let { isCollapsed, onLogoClick, onToggleCollapse } = $props<{
     isCollapsed: boolean;
@@ -18,7 +18,7 @@
     {#if isCollapsed}
       <span class="brand-icon">TKA</span>
     {:else}
-      <span class="brand-text">TKA Scribe</span>
+      <span class="brand-text">TKA Composer</span>
       <i class="fas fa-chevron-left toggle-icon" aria-hidden="true"></i>
     {/if}
   </button>

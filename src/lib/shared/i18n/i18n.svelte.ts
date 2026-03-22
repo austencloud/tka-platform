@@ -57,6 +57,7 @@ const LOCALE_COOKIE_NAME = "PARAGLIDE_LOCALE";
 const LOCALE_COOKIE_MAX_AGE = 34560000; // ~400 days
 
 // English messages - loaded synchronously to prevent missing-key warnings on first render
+// Note: TKA Scribe brand name changed to TKA Composer
 let enMessages: Messages = enMessagesStatic as Messages;
 
 // Cache for loaded locales

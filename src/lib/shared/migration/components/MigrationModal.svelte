@@ -1,7 +1,7 @@
 <!--
   MigrationModal.svelte
 
-  Simple, friendly announcement about the TKA Studio → TKA Scribe rebrand.
+  Simple, friendly announcement about the TKA Studio → TKA Composer rebrand.
 -->
 <script lang="ts">
   import { fade, fly } from "svelte/transition";
@@ -50,7 +50,7 @@
       <h2 id="migration-title">New Name, New Home</h2>
 
       <p class="announcement">
-        <strong>TKA Studio</strong> is now <strong>TKA Scribe</strong>
+        <strong>TKA Studio</strong> is now <strong>TKA Composer</strong>
       </p>
 
       <div class="domain-change">

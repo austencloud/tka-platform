@@ -3,7 +3,7 @@
 </script>
 
 <svelte:head>
-  <title>Promo Generator | TKA Scribe</title>
+  <title>Promo Generator | TKA Composer</title>
 </svelte:head>
 
 <PromoGeneratorModule />

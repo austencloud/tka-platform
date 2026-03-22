@@ -1,7 +1,7 @@
 <!--
   WelcomeStep - First screen of the first-run wizard
 
-  Shows the TKA Scribe logo and welcome message.
+  Shows the TKA Composer logo and welcome message.
   Simple, clean introduction to the app.
 -->
 <script lang="ts">
@@ -18,12 +18,12 @@
     <i class="fas fa-infinity" aria-hidden="true"></i>
   </div>
 
-  <h1 class="title">Welcome to TKA Scribe</h1>
+  <h1 class="title">Welcome to TKA Composer</h1>
 
   <p class="subtitle">The visual language for flow arts</p>
 
   <p class="description">
-    TKA Scribe helps you <strong>create</strong>, <strong>learn</strong>, and
+    TKA Composer helps you <strong>create</strong>, <strong>learn</strong>, and
     <strong>share</strong> flow arts choreography using the Kinetic Alphabet notation
     system.
   </p>

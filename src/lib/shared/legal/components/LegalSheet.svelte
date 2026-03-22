@@ -73,7 +73,7 @@
           <section>
             <h3>2. Description of Service</h3>
             <p>
-              TKA Scribe is an educational platform that provides tools for
+              TKA Composer is an educational platform that provides tools for
               learning, creating, and sharing TKA (The Kinetic Alphabet) sequences. The
               service includes sequence building tools, learning modules, and
               community features.
@@ -114,8 +114,8 @@
           <section>
             <h3>6. Intellectual Property</h3>
             <p>
-              The TKA Scribe application, including its design, features, and
-              underlying technology, is owned by TKA Scribe and protected by
+              The TKA Composer application, including its design, features, and
+              underlying technology, is owned by TKA Composer and protected by
               intellectual property laws. The Kinetic Alphabet system and
               methodology remain the intellectual property of their respective
               creators.
@@ -125,7 +125,7 @@
           <section>
             <h3>7. Disclaimers</h3>
             <p>
-              TKA Scribe is provided "as is" without warranties of any kind. We
+              TKA Composer is provided "as is" without warranties of any kind. We
               do not guarantee that the service will be uninterrupted, secure,
               or error-free.
             </p>
@@ -159,7 +159,7 @@
           <section>
             <h3>1. Information We Collect</h3>
             <p>
-              When you use TKA Scribe, we may collect the following types of
+              When you use TKA Composer, we may collect the following types of
               information:
             </p>
             <ul>
@@ -186,7 +186,7 @@
             <h3>2. How We Use Your Information</h3>
             <p>We use the information we collect to:</p>
             <ul>
-              <li>Provide and maintain the TKA Scribe service</li>
+              <li>Provide and maintain the TKA Composer service</li>
               <li>Personalize your experience and save your preferences</li>
               <li>Enable community features like sharing sequences</li>
               <li>Improve and optimize the application</li>
@@ -246,7 +246,7 @@
           <section>
             <h3>7. Cookies and Local Storage</h3>
             <p>
-              TKA Scribe uses local storage and cookies to maintain your
+              TKA Composer uses local storage and cookies to maintain your
               session, remember your preferences, and provide a seamless
               experience. These are essential for the application to function
               properly.
@@ -273,7 +273,7 @@
           <section>
             <h3>9. Children's Privacy</h3>
             <p>
-              TKA Scribe is not intended for children under 13 years of age. We
+              TKA Composer is not intended for children under 13 years of age. We
               do not knowingly collect personal information from children under
               13.
             </p>
