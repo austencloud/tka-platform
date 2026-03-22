@@ -2,7 +2,7 @@
 /**
  * Firebase Cloud Functions Entry Point
  *
- * Exports all Cloud Functions for the TKA Scribe application.
+ * Exports all Cloud Functions for the TKA Composer application.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.broadcastGetServerTime = exports.broadcastForceGenerate = exports.broadcastConductor = void 0;

@@ -12,9 +12,9 @@ import functionsTest from 'firebase-functions-test';
 const testEnv = functionsTest();
 
 // Set required environment variables
-process.env.GCLOUD_PROJECT = 'tka-scribe-test';
+process.env.GCLOUD_PROJECT = 'tka-composer-test';
 process.env.FIREBASE_CONFIG = JSON.stringify({
-  projectId: 'tka-scribe-test',
+  projectId: 'tka-composer-test',
 });
 
 // Clean up after all tests
