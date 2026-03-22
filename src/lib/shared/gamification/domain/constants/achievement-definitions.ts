@@ -1,7 +1,7 @@
 /**
  * Achievement Definitions
  *
- * All available achievements in TKA Scribe.
+ * All available achievements in TKA Composer.
  * These are the "templates" that users can unlock.
  */
 

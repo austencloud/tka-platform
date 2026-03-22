@@ -2,7 +2,7 @@
  * Username Validation Domain Models
  *
  * Defines validation rules, reserved usernames, and helper functions
- * for enforcing unique usernames across TKA Scribe.
+ * for enforcing unique usernames across TKA Composer.
  */
 
 export interface UsernameValidationResult {
