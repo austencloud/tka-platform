@@ -1,4 +1,4 @@
-# TKA Scribe
+# TKA Composer
 
 Sequence editor and notation platform for two-handed prop manipulation. Think sheet music, but for flow arts.
 

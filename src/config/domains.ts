@@ -3,7 +3,7 @@
  *
  * Multi-domain architecture:
  * - tkaflowarts.com: Brand home, landing page, marketing content
- * - tkascribe.com: The app (TKA Scribe product)
+ * - tkascribe.com: The app (TKA Composer product)
  * - Future: embed.tkascribe.com, kiosk.tkascribe.com, edu.tkascribe.com, etc.
  */
 
@@ -150,11 +150,11 @@ export const LANDING_SEO_CONFIG = {
  * App SEO config
  */
 export const APP_SEO_CONFIG = {
-  siteName: "TKA Scribe",
+  siteName: "TKA Composer",
   description:
-    "Create, animate, and share flow arts sequences with TKA Scribe - the free choreography app for staff, clubs, fans, hoops, buugeng, and swords.",
+    "Create, animate, and share flow arts sequences with TKA Composer - the free choreography app for staff, clubs, fans, hoops, buugeng, and swords.",
   keywords:
-    "TKA Scribe, TKA app, TKA flow arts, flow arts app, sequence creator, staff choreography, club manipulation, fan spinning, buugeng patterns",
+    "TKA Composer, TKA app, TKA flow arts, flow arts app, sequence creator, staff choreography, club manipulation, fan spinning, buugeng patterns",
   author: "Austen Cloud",
   language: "en",
   type: "website",
