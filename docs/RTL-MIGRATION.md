@@ -2,7 +2,7 @@
 
 ## Overview
 
-TKA Scribe supports RTL languages like Arabic. When a user switches to an RTL locale, the entire interface automatically flips to right-to-left layout.
+TKA Composer supports RTL languages like Arabic. When a user switches to an RTL locale, the entire interface automatically flips to right-to-left layout.
 
 **Key mechanism:**
 - `<html dir="rtl">` attribute is automatically set by the i18n system

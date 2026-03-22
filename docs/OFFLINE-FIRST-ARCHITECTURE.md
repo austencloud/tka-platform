@@ -1,4 +1,4 @@
-# World-Class Offline-First Architecture for TKA Scribe
+# World-Class Offline-First Architecture for TKA Composer
 
 **Feedback ID:** `HrimAyPGCzzbz1yIazCt`
 

@@ -2,7 +2,7 @@
 
 ## 🎉 What We Built
 
-A complete **Progressive Learning System** for TKA Scribe (The Kinetic Alphabet) with 2026-style modern UX patterns.
+A complete **Progressive Learning System** for TKA Composer (The Kinetic Alphabet) with 2026-style modern UX patterns.
 
 ### Architecture Decision: Bottom Navigation ✅
 
