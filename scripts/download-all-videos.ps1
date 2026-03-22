@@ -5,7 +5,7 @@ $videos = @(
     @{name="video-4-G-Omega-WL"; word="GΩWL"; url="https://scontent-det1-1.cdninstagram.com/o1/v/t2/f2/m367/AQN4pWVYhgl7CissZwx9-TJT7L0TySvZd9Xu61xLYerKxrTYvvJ2qiMMua7rbSCnqmLRzJM8moZFGDgPiLJkivPd3V26E5ZHSiww_10.mp4?_nc_cat=108&_nc_sid=9ca052&_nc_ht=scontent-det1-1.cdninstagram.com&_nc_ohc=eCAtS3X-ye8Q7kNvwFL5qSp&efg=eyJ2ZW5jb2RlX3RhZyI6ImlnLXhwdmRzLmNsaXBzLmMyLUMzLmRhc2hfYmFzZWxpbmVfMV92MSIsInZpZGVvX2lkIjpudWxsLCJvaWxfdXJsZ2VuX2FwcF9pZCI6OTM2NjE5NzQzMzkyNDU5LCJjbGllbnRfbmFtZSI6ImlnIiwieHB2X2Fzc2V0X2lkIjo1ODE3MDAxNDEzNjQxMjMsImFzc2V0X2FnZV9kYXlzIjozNTYsInZpX3VzZWNhc2VfaWQiOjEwMDk5LCJkdXJhdGlvbl9zIjo0MSwiYml0cmF0ZSI6Nzc5NDYwLCJ1cmxnZW5fc291cmNlIjoid3d3In0%3D&ccb=17-1&_nc_gid=lHAztsXHFboxL2xqEGjGGQ&_nc_zt=28&oh=00_AfroYyFaAUd_REfiBKfDOkpnwNTRtn5ECdwaTrlOBjTBvw&oe=6974B649"}
 )
 
-$basePath = "F:\_THE KINETIC ALPHABET\_TKA-SCRIBE"
+$basePath = "F:\tka-platform"
 $downloaded = @()
 
 foreach ($video in $videos) {

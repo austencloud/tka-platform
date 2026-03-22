@@ -26,7 +26,7 @@ The PremiumShowcase component looks for:
 Which maps to:
 
 ```
-F:\_THE KINETIC ALPHABET\_TKA-SCRIBE\static\images\austen.jpg
+F:\tka-platform\static\images\austen.jpg
 ```
 
 ## To Change the Filename
