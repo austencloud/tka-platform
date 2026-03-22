@@ -88,7 +88,7 @@
 </script>
 
 <svelte:head>
-  <title>Segmented Progress Bar Variants - TKA Scribe</title>
+  <title>Segmented Progress Bar Variants - TKA Composer</title>
 </svelte:head>
 
 <div class="page" class:dark={darkMode}>

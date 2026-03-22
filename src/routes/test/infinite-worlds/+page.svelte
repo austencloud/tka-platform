@@ -24,7 +24,7 @@
 </script>
 
 <svelte:head>
-  <title>Infinite Worlds | TKA Scribe</title>
+  <title>Infinite Worlds | TKA Composer</title>
 </svelte:head>
 
 <WorldScene {seed} showDebug={true} />

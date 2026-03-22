@@ -273,18 +273,18 @@
 			},
 			{
 				"@type": "Question",
-				"name": "What props does TKA Scribe support?",
+				"name": "What props does TKA Composer support?",
 				"acceptedAnswer": {
 					"@type": "Answer",
-					"text": "TKA Scribe is built for dual-wielded static props: staff, clubs, fans, hoops, mini hoops, buugeng, triads, and swords. Each prop is rendered with proper rotations and hand positions."
+					"text": "TKA Composer is built for dual-wielded static props: staff, clubs, fans, hoops, mini hoops, buugeng, triads, and swords. Each prop is rendered with proper rotations and hand positions."
 				}
 			},
 			{
 				"@type": "Question",
-				"name": "Is TKA Scribe free to use?",
+				"name": "Is TKA Composer free to use?",
 				"acceptedAnswer": {
 					"@type": "Answer",
-					"text": "Yes, TKA Scribe is completely free. You can create sequences, animate them, export to various formats, and browse the community library at no cost. The app is open and accessible to all flow artists."
+					"text": "Yes, TKA Composer is completely free. You can create sequences, animate them, export to various formats, and browse the community library at no cost. The app is open and accessible to all flow artists."
 				}
 			},
 			{
@@ -292,7 +292,7 @@
 				"name": "How do I learn flow arts with TKA?",
 				"acceptedAnswer": {
 					"@type": "Answer",
-					"text": "TKA Scribe includes progressive lessons from grid basics to advanced LOOPs. Interactive quizzes help reinforce understanding, and the Train module offers daily challenges to track your progress."
+					"text": "TKA Composer includes progressive lessons from grid basics to advanced LOOPs. Interactive quizzes help reinforce understanding, and the Train module offers daily challenges to track your progress."
 				}
 			},
 			{
@@ -325,7 +325,7 @@
 			{
 				"@type": "HowToStep",
 				"position": 1,
-				"name": "Open TKA Scribe",
+				"name": "Open TKA Composer",
 				"text": "Visit tkascribe.com to launch the free web application.",
 				"url": "https://tkascribe.com/"
 			},

@@ -10,7 +10,7 @@
 </script>
 
 <svelte:head>
-  <title>3D Animation Test | TKA Scribe</title>
+  <title>3D Animation Test | TKA Composer</title>
 </svelte:head>
 
 <div class="page">
