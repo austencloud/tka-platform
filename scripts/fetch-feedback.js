@@ -588,7 +588,7 @@ async function notifyUserFeedbackResolved(
       createdAt: FieldValue.serverTimestamp(),
       read: false,
       fromUserId: "system",
-      fromUserName: "TKA Scribe",
+      fromUserName: "TKA Composer",
     };
 
     const docRef = await notificationRef.add(notification);
@@ -1592,7 +1592,7 @@ async function updateFeedbackById(docId, status, resolutionNotes, userFacingNote
         // Check if there's a version tag
         const version = item.fixedInVersion || null;
         if (version) {
-          messageContent = `Your feedback was included in version ${version}! Thank you for helping improve TKA Scribe.`;
+          messageContent = `Your feedback was included in version ${version}! Thank you for helping improve TKA Composer.`;
         } else {
           const userMessage = userFacingNotes || resolutionNotes;
           messageContent = userMessage
