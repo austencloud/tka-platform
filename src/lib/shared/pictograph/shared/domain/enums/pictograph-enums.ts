@@ -48,11 +48,11 @@ export enum HandPath {
 /**
  * Path length modifier for shifts and dashes.
  *
- * For shifts (L4+): modifies arc length on 8-point grid.
+ * For dashes (L4+): modifies straight-line distance.
+ *
+ * For shifts (L5+): modifies arc length on 8-point grid.
  *   - PLUS (skew+): Extended arc (e.g., S to NE, spanning 3 segments)
  *   - MINUS (skew-): Shortened arc (less than one standard segment)
- *
- * For dashes (L5+): modifies straight-line distance.
  *   - PLUS (dash+, L6): Extended to cross-grid destination
  *   - MINUS (dash-): Shortened to center = hash
  *

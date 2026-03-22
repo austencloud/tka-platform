@@ -443,10 +443,10 @@
 </script>
 
 <svelte:head>
-  <title>TKA Scribe - A flow arts choreography Toolbox</title>
+  <title>TKA Composer - A flow arts choreography Toolbox</title>
   <meta
     name="description"
-    content="TKA Scribe is a revolutionary flow arts choreography toolbox for staffs, fans, and other flow arts. Create, learn, and share movement sequences using The Kinetic Alphabet notation system."
+    content="TKA Composer is a revolutionary flow arts choreography toolbox for staffs, fans, and other flow arts. Create, learn, and share movement sequences using The Kinetic Alphabet notation system."
   />
 </svelte:head>
 

@@ -26,7 +26,7 @@
   });
 
   const steps = [
-    "Sign in to TKA Scribe",
+    "Sign in to TKA Composer",
     "Tap profile icon → Settings",
     "Account → Delete Account",
     "Confirm deletion",
@@ -50,10 +50,10 @@
 </script>
 
 <svelte:head>
-  <title>Delete Account - TKA Scribe</title>
+  <title>Delete Account - TKA Composer</title>
   <meta
     name="description"
-    content="How to delete your TKA Scribe account and data"
+    content="How to delete your TKA Composer account and data"
   />
 </svelte:head>
 
@@ -71,7 +71,7 @@
       <div class="header-content">
         <div class="logo">TKA</div>
         <h1>Delete Your Account</h1>
-        <p class="subtitle">Account deletion for TKA Scribe</p>
+        <p class="subtitle">Account deletion for TKA Composer</p>
       </div>
     </header>
 
@@ -123,7 +123,7 @@
 
     <footer>
       <a href="/" class="cta-button">
-        <span>Open TKA Scribe</span>
+        <span>Open TKA Composer</span>
         <i class="fas fa-arrow-right" aria-hidden="true"></i>
       </a>
       <p class="help">

@@ -177,7 +177,7 @@
           title: "Leveled Complexity",
           icon: "fa-layer-group",
           paragraphs: [
-            "TKA is structured as a progressive system with nine levels. Levels 1-3 introduce turns on a four-point grid. Level 4 expands to eight points. Level 5 adds a center point. Level 6 completes two-dimensional movement with eight prop orientations. Level 7 introduces conjoined grids for dual performers. Levels 8-9 extend into three dimensions.",
+            "TKA is structured as a progressive system with nine levels. Levels 1-3 introduce turns on a four-point grid. Level 4 adds a center point. Level 5 expands to nine points with grid mode mixing. Level 6 completes two-dimensional movement with eight prop orientations. Level 7 introduces conjoined grids for dual performers. Levels 8-9 extend into three dimensions.",
             "A beginner at Level 1 works with 6 possible single-hand motions from any grid point. By Level 5, that number grows to 129. The ceiling reaches 237 distinct single-hand motions per grid point. The combinatorial space sustains years of practice without repetition, and every motion within it is documented and indexable.",
           ],
         },

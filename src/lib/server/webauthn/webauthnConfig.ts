@@ -7,7 +7,7 @@ export function getWebAuthnRP(event: RequestEvent): {
 } {
   const origin = event.url.origin;
   const rpID = event.url.hostname;
-  const rpName = process.env.PUBLIC_APP_NAME?.trim() || "TKA Scribe";
+  const rpName = process.env.PUBLIC_APP_NAME?.trim() || "TKA Composer";
 
   return { rpID, rpName, origin };
 }

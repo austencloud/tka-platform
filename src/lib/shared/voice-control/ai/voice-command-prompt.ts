@@ -31,7 +31,7 @@ export function buildVoiceCommandPrompt(
   const actions = getAllActionsWithContext(currentModule, currentTab);
   const actionBlock = formatActions(actions);
 
-  let prompt = `You are a voice command interpreter for TKA Scribe, a flow arts choreography notation app.
+  let prompt = `You are a voice command interpreter for TKA Composer, a flow arts choreography notation app.
 Convert the user's spoken command into one or more structured actions.
 
 ## Current State
@@ -81,7 +81,7 @@ If truly unrecognizable, return category "system", action "unknown".
 ## Domain Vocabulary
 - Modules: create, browse, compose, learn, train, watch, settings, tika, lab
 - Props: staff, poi, fan, club, hoop, buugeng, triad, sword, hand
-- Generator params: level (1-4), length (1-64), mode (freeform/circular), gridMode (diamond/box), propContinuity (continuous/random), turnIntensity (0-3)
+- Generator params: level (1-5), length (1-64), mode (freeform/circular), gridMode (diamond/box), propContinuity (continuous/random), turnIntensity (0-3)
 - "smooth" or "continuous" → propContinuity: "continuous"
 - "practice" or "I want to practice" → navigate to train module
 - "generate" or "make a sequence" → generator generate (navigate to create/generate first if not there)

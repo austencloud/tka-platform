@@ -52,7 +52,7 @@ export const FIRST_RUN_STEPS: FirstRunStepConfig[] = [
   },
   {
     id: "welcome",
-    title: "Welcome to TKA Scribe",
+    title: "Welcome to TKA Composer",
     subtitle: "The visual language for flow arts",
     canSkip: false,
   },

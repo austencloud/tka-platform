@@ -404,16 +404,16 @@
 
 <svelte:head>
   {#if sequence}
-    <title>{sequence.word || sequence.name || "Sequence"} - TKA Scribe</title>
+    <title>{sequence.word || sequence.name || "Sequence"} - TKA Composer</title>
     <meta
       name="description"
       content={sequence.word
-        ? `View the "${sequence.word}" flow sequence in TKA Scribe`
-        : "View this flow sequence in TKA Scribe"}
+        ? `View the "${sequence.word}" flow sequence in TKA Composer`
+        : "View this flow sequence in TKA Composer"}
     />
   {:else}
-    <title>Loading... - TKA Scribe</title>
-    <meta name="description" content="Loading a flow sequence in TKA Scribe" />
+    <title>Loading... - TKA Composer</title>
+    <meta name="description" content="Loading a flow sequence in TKA Composer" />
   {/if}
   <meta name="theme-color" content="#0f0f1a" />
 </svelte:head>

@@ -476,12 +476,12 @@
 </script>
 
 <svelte:head>
-  <title>{sequence?.word || sequence?.name || "Sequence"} - TKA Scribe</title>
+  <title>{sequence?.word || sequence?.name || "Sequence"} - TKA Composer</title>
   <meta
     name="description"
     content={sequence?.word
-      ? `View the "${sequence.word}" flow sequence in TKA Scribe`
-      : "View this flow sequence in TKA Scribe"}
+      ? `View the "${sequence.word}" flow sequence in TKA Composer`
+      : "View this flow sequence in TKA Composer"}
   />
 </svelte:head>
 

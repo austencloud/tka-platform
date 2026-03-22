@@ -30,7 +30,7 @@
 </script>
 
 <svelte:head>
-  <title>Privacy Policy | TKA Scribe</title>
+  <title>Privacy Policy | TKA Composer</title>
   <meta
     name="description"
     content="Privacy Policy for The Kinetic Alphabet (TKA) application."
@@ -61,7 +61,7 @@
       <div class="summary-box">
         <h2>Quick Summary</h2>
         <ul>
-          <li>TKA Scribe collects only what's needed to provide the service</li>
+          <li>TKA Composer collects only what's needed to provide the service</li>
           <li>Your data is stored on Firebase servers (US and other regions)</li>
           <li>Your data is never sold or used for ML training</li>
           <li>You can export or delete your data anytime</li>
@@ -72,7 +72,7 @@
       <section id="information-collected">
         <h2>1. Information Collected</h2>
         <p>
-          When you use TKA Scribe, the following types of information are collected:
+          When you use TKA Composer, the following types of information are collected:
         </p>
         <ul>
           <li>
@@ -98,7 +98,7 @@
         <h2>2. How Your Information Is Used</h2>
         <p>The information collected is used to:</p>
         <ul>
-          <li>Provide and maintain the TKA Scribe service</li>
+          <li>Provide and maintain the TKA Composer service</li>
           <li>Personalize your experience and save your preferences</li>
           <li>Enable community features like sharing sequences</li>
           <li>Improve and optimize the application</li>
@@ -129,7 +129,7 @@
           history.
         </p>
         <p>
-          <strong>When messages may be reviewed:</strong> Messages may be reviewed by the developer only to respond to abuse reports or to provide support when you contact TKA Scribe about a conversation issue.
+          <strong>When messages may be reviewed:</strong> Messages may be reviewed by the developer only to respond to abuse reports or to provide support when you contact TKA Composer about a conversation issue.
         </p>
         <p>
           <strong>Your messages are not:</strong> Sold, shared with third parties, or used for machine learning training. Your conversations are not used to train AI models.
@@ -221,7 +221,7 @@
       <section id="childrens-privacy">
         <h2>10. Children's Privacy</h2>
         <p>
-          TKA Scribe is not intended for children under 13 years of age. Personal
+          TKA Composer is not intended for children under 13 years of age. Personal
           information is not knowingly collected from children under 13. If
           you believe a child has provided personal information, please
           get in touch so it can be deleted.

@@ -70,7 +70,7 @@
 
 <svelte:head>
   {#if siteMode === "app"}
-    <title>TKA Scribe - Create, record, and share flow arts choreography</title>
+    <title>TKA Composer - Create, record, and share flow arts choreography</title>
   {:else}
     <title
       >TKA - The Kinetic Alphabet | Flow Arts Notation for Staff, Clubs, Fans,
@@ -94,7 +94,7 @@
     content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
   />
   <meta name="author" content="The Kinetic Alphabet" />
-  <meta name="application-name" content="TKA Scribe" />
+  <meta name="application-name" content="TKA Composer" />
   <meta name="generator" content="SvelteKit" />
 
   <!-- Geographic targeting (global, but origin matters for trust) -->
@@ -116,7 +116,7 @@
   />
   <meta
     property="og:image:alt"
-    content="TKA Scribe - Flow arts choreography app showing staff sequence animation"
+    content="TKA Composer - Flow arts choreography app showing staff sequence animation"
   />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
@@ -137,7 +137,7 @@
   />
   <meta
     name="twitter:image:alt"
-    content="TKA Scribe - Flow arts notation app showing staff sequence animation"
+    content="TKA Composer - Flow arts notation app showing staff sequence animation"
   />
 
   <!-- Canonical URL -->
@@ -149,7 +149,7 @@
 		"@context": "https://schema.org",
 		"@type": "WebSite",
 		"name": "TKA - The Kinetic Alphabet",
-		"alternateName": ["The Kinetic Alphabet", "TKA Scribe", "Kinetic Alphabet", "TKA", "Flow Arts Notation"],
+		"alternateName": ["The Kinetic Alphabet", "TKA Composer", "Kinetic Alphabet", "TKA", "Flow Arts Notation"],
 		"url": "https://tkaflowarts.com/",
 		"description": "TKA is a notation system for flow arts. Document and share staff, fans, hoop, club, fan, and buugeng choreography.",
 		"inLanguage": "en-US",
@@ -192,8 +192,8 @@
 	{
 		"@context": "https://schema.org",
 		"@type": "SoftwareApplication",
-		"name": "TKA Scribe",
-		"alternateName": "The Kinetic Alphabet Scribe",
+		"name": "TKA Composer",
+		"alternateName": "The Kinetic Alphabet Composer",
 		"description": "Create, animate, and share staff, clubs, fans, hoops, buugeng, and sword sequences. A notation system for flow arts.",
 		"url": "https://tkascribe.com/",
 		"applicationCategory": ["EducationalApplication", "EntertainmentApplication", "DesignApplication"],
@@ -312,7 +312,7 @@
 	{
 		"@context": "https://schema.org",
 		"@type": "HowTo",
-		"name": "How to Create Flow Arts Choreography with TKA Scribe",
+		"name": "How to Create Flow Arts Choreography with TKA Composer",
 		"description": "Learn to create, animate, and share staff, clubs, fans, and hoop sequences using TKA notation.",
 		"totalTime": "PT10M",
 		"tool": [

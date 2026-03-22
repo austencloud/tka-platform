@@ -30,7 +30,7 @@
 </script>
 
 <svelte:head>
-  <title>Terms of Service | TKA Scribe</title>
+  <title>Terms of Service | TKA Composer</title>
   <meta
     name="description"
     content="Terms of Service for The Kinetic Alphabet (TKA) application."
@@ -69,7 +69,7 @@
       <section id="description">
         <h2>2. Description of Service</h2>
         <p>
-          TKA Scribe is an educational platform that provides tools for
+          TKA Composer is an educational platform that provides tools for
           learning, creating, and sharing TKA (The Kinetic Alphabet) sequences. The
           service includes sequence building tools, learning modules, and
           community features.
@@ -89,7 +89,7 @@
         <h2>4. User Content</h2>
         <p>
           You retain ownership of any sequences, content, or materials you
-          create using TKA Scribe. By sharing content publicly, you grant TKA Scribe a
+          create using TKA Composer. By sharing content publicly, you grant TKA Composer a
           non-exclusive license to display and distribute that content within
           the application for the purpose of providing the service.
         </p>
@@ -110,7 +110,7 @@
       <section id="intellectual-property">
         <h2>6. Intellectual Property</h2>
         <p>
-          The TKA Scribe application, including its design, features, and
+          The TKA Composer application, including its design, features, and
           underlying technology, is protected by applicable intellectual property
           laws. The Kinetic Alphabet notation system is an original work
           created to represent flow arts movements in written form.
@@ -120,9 +120,9 @@
       <section id="disclaimers">
         <h2>7. Disclaimers</h2>
         <p>
-          TKA Scribe is provided "as is" without warranties of any kind. There is
+          TKA Composer is provided "as is" without warranties of any kind. There is
           no guarantee that the service will be uninterrupted, secure, or
-          error-free. TKA Scribe is an independent project maintained outside of
+          error-free. TKA Composer is an independent project maintained outside of
           regular business hours.
         </p>
       </section>
@@ -130,7 +130,7 @@
       <section id="liability">
         <h2>8. Limitation of Liability</h2>
         <p>
-          TKA Scribe and its developer shall not be liable for any indirect,
+          TKA Composer and its developer shall not be liable for any indirect,
           incidental, special, or consequential damages arising from your use
           of the service. To the maximum extent permitted by law, total liability
           for any claims shall not exceed the amount you paid to use the service
