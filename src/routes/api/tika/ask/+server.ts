@@ -496,7 +496,7 @@ function createTikaTools(userId: string, completedConcepts: string[], masteryCtx
 
     find_app_feature: tool({
       description:
-        'Find how to do something in TKA Scribe. Use for "How do I...?", "Where do I...?", "How to..." questions about app features. Returns step-by-step instructions for the matching capability. Do NOT use for TKA domain questions (letters, positions, motions) - those use other tools.',
+        'Find how to do something in TKA Composer. Use for "How do I...?", "Where do I...?", "How to..." questions about app features. Returns step-by-step instructions for the matching capability. Do NOT use for TKA domain questions (letters, positions, motions) - those use other tools.',
       inputSchema: jsonSchema<{ query: string }>({
         type: "object",
         properties: {

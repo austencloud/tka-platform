@@ -82,7 +82,7 @@
 </script>
 
 <svelte:head>
-  <title>Progress Bar in Context - TKA Scribe</title>
+  <title>Progress Bar in Context - TKA Composer</title>
 </svelte:head>
 
 <div class="page">
