@@ -1,5 +1,5 @@
 {
-  "packageId": "com.tkascribe.app",
+  "packageId": "com.tkacomposer.app",
   "host": "tkascribe.com",
   "name": "TKA Composer",
   "launcherName": "TKA Composer",
@@ -17,8 +17,8 @@
   "maskableIconUrl": "https://tkascribe.com/pwa/icons/maskable-icon-512x512.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
-    "path": "./tka-scribe-keystore.jks",
-    "alias": "tka-scribe"
+    "path": "./tka-composer-keystore.jks",
+    "alias": "tka-composer"
   },
   "appVersionName": "1",
   "appVersionCode": 1,

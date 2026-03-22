@@ -69,7 +69,7 @@ const LORE_ENTRIES: Record<RetroEra, Partial<Record<LoreContext, string[]>>> = {
 
 	win98: {
 		about: [
-			"TKA Scribe 98 — Free Scribe Collective Edition",
+			"TKA Composer 98 — Free Scribe Collective Edition",
 			"Maintained by the Free Scribe Collective.",
 			"The Order doesn't want you to have this.",
 		],
@@ -97,12 +97,12 @@ const LORE_ENTRIES: Record<RetroEra, Partial<Record<LoreContext, string[]>>> = {
 
 	winxp: {
 		about: [
-			"TKA Scribe XP — Open Source Community Edition v3.2.1",
+			"TKA Composer XP — Open Source Community Edition v3.2.1",
 			"Contributors: 47 | Downloads: 12,841 | Forks: 23",
 			"Licensed under the Free Notation Public License (FNPL)",
 		],
 		readme: [
-			"Welcome to the TKA Scribe project.",
+			"Welcome to the TKA Composer project.",
 			"This started as a leaked Bellweather utility in 1997.",
 			"Six years and 47 contributors later, the notation is free.",
 		],

@@ -301,7 +301,7 @@
         title: "Shut Down TKA-OS",
         message: "What do you want the computer to do?",
         type: "question",
-        buttons: ["Return to TKA Scribe", "Restart", "Cancel"],
+        buttons: ["Return to TKA Composer", "Restart", "Cancel"],
       },
     ];
   }

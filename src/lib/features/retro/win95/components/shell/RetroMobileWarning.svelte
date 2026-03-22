@@ -53,7 +53,7 @@
         Try Anyway
       </button>
       <button class="retro-button" type="button" onclick={handleReturn}>
-        Return to TKA Scribe
+        Return to TKA Composer
       </button>
     </div>
   </div>
