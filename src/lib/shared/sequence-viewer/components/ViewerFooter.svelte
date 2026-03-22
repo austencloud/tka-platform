@@ -408,7 +408,7 @@
               type="button"
               class="action-btn get-app"
               onclick={onGetApp}
-              aria-label="Get TKA Scribe"
+              aria-label="Get TKA Composer"
             >
               <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
               <span>Get App</span>

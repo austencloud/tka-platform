@@ -79,7 +79,7 @@ export const SHARE_PRESETS: Record<string, SharePreset> = {
       backgroundColor: "#ffffff",
       darkMode: false,
       userName: "", // Will be populated from auth state
-      notes: "Created with TKA Scribe",
+      notes: "Created with TKA Composer",
     },
   },
 
@@ -127,5 +127,5 @@ export const DEFAULT_SHARE_OPTIONS: ShareOptions = {
   showCreatorName: true,
   showNotes: true,
   showBirthday: true,
-  customNotesText: "Created using TKA Scribe",
+  customNotesText: "Created using TKA Composer",
 };

@@ -151,7 +151,7 @@
     browseViewMode,
     darkMode = false,
     userName = "",
-    customNotesText = "Created using TKA Scribe",
+    customNotesText = "Created using TKA Composer",
     bluePropType,
     redPropType,
     catDogModeEnabled = false,

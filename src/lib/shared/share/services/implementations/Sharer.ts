@@ -226,7 +226,7 @@ export class Sharer implements ISharer {
       },
 
       // User information
-      userName: shareOptions.userName || "TKA Scribe User",
+      userName: shareOptions.userName || "TKA Composer User",
       exportDate: dateToUse
         .toLocaleDateString("en-US", {
           year: "numeric",
@@ -234,7 +234,7 @@ export class Sharer implements ISharer {
           day: "numeric",
         })
         .replace(/\//g, "-"),
-      notes: shareOptions.customNotesText || shareOptions.notes || "Created with TKA Scribe",
+      notes: shareOptions.customNotesText || shareOptions.notes || "Created with TKA Composer",
 
       // Granular footer controls
       showCreatorName: shareOptions.showCreatorName,
@@ -274,7 +274,7 @@ export class Sharer implements ISharer {
       },
 
       // User information
-      userName: shareOptions.userName || "TKA Scribe User",
+      userName: shareOptions.userName || "TKA Composer User",
       exportDate: new Date()
         .toLocaleDateString("en-US", {
           year: "numeric",
@@ -282,7 +282,7 @@ export class Sharer implements ISharer {
           day: "numeric",
         })
         .replace(/\//g, "-"),
-      notes: shareOptions.customNotesText || shareOptions.notes || "Created with TKA Scribe",
+      notes: shareOptions.customNotesText || shareOptions.notes || "Created with TKA Composer",
 
       // Granular footer controls
       showCreatorName: shareOptions.showCreatorName,
