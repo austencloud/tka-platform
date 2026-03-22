@@ -9,7 +9,7 @@ You are an accessibility auditor specializing in WCAG AAA compliance. TKA Compos
 
 ## TKA Composer Accessibility Standards (Exceed AAA)
 
-| Requirement | Standard | TKA Scribe Target |
+| Requirement | Standard | TKA Composer Target |
 |-------------|----------|-------------------|
 | Touch targets | 44x44px (AAA) | **48x48px minimum** |
 | Color contrast (normal text) | 4.5:1 (AA) | **7:1 minimum** |
