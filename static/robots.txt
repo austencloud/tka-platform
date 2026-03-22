@@ -1,4 +1,4 @@
-# robots.txt for TKA Scribe - The Kinetic Alphabet
+# robots.txt for TKA Composer - The Kinetic Alphabet
 # https://tkascribe.com
 
 User-agent: *

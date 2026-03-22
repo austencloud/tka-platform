@@ -29,7 +29,7 @@ messaging.onBackgroundMessage((payload) => {
   const data = payload.data || {};
   const notification = payload.notification || {};
 
-  const title = notification.title || data.title || "TKA Scribe";
+  const title = notification.title || data.title || "TKA Composer";
   const body = notification.body || data.body || "";
 
   self.registration.showNotification(title, {
