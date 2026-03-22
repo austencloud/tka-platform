@@ -24,8 +24,8 @@ def twaManifest = [
     applicationId: 'com.tkascribe.app',
     hostName: 'tkascribe.com', // The domain being opened in the TWA.
     launchUrl: '/app', // The start path for the TWA. Must be relative to the domain.
-    name: 'TKA Scribe', // The application name.
-    launcherName: 'TKA Scribe', // The name shown on the Android Launcher.
+    name: 'TKA Composer', // The application name.
+    launcherName: 'TKA Composer', // The name shown on the Android Launcher.
     themeColor: '#0A0A0A', // The color used for the status bar.
     themeColorDark: '#000000', // The color used for the dark status bar.
     navigationColor: '#000000', // The color used for the navigation bar.

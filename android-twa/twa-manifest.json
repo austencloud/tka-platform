@@ -1,8 +1,8 @@
 {
   "packageId": "com.tkascribe.app",
   "host": "tkascribe.com",
-  "name": "TKA Scribe",
-  "launcherName": "TKA Scribe",
+  "name": "TKA Composer",
+  "launcherName": "TKA Composer",
   "display": "standalone",
   "themeColor": "#0A0A0A",
   "themeColorDark": "#000000",
