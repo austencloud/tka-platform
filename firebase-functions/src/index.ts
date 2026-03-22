@@ -1,5 +1,5 @@
 /**
- * Firebase Cloud Functions for TKA Scribe
+ * Firebase Cloud Functions for TKA Composer
  *
  * Handles subscription-related background tasks like role sync,
  * custom email delivery via Resend, and feedback claim management.

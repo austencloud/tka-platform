@@ -1,7 +1,7 @@
 /**
  * Firebase Cloud Functions Entry Point
  *
- * Exports all Cloud Functions for the TKA Scribe application.
+ * Exports all Cloud Functions for the TKA Composer application.
  */
 
 // Live Broadcast System
