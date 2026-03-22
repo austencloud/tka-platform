@@ -1,4 +1,4 @@
-# TKA Scribe i18n System: Complete Guide
+# TKA Composer i18n System: Complete Guide
 
 ## Table of Contents
 
@@ -19,7 +19,7 @@
 
 ## Overview
 
-**TKA Scribe uses a lightweight, JSON-based i18n system that replaced Paraglide in January 2025.**
+**TKA Composer uses a lightweight, JSON-based i18n system that replaced Paraglide in January 2025.**
 
 **Key features:**
 - Type-safe translations with IDE autocomplete

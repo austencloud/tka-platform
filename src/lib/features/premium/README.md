@@ -2,7 +2,7 @@
 
 **Status:** Admin-only preview (features in development, ~2-3 months from public launch)
 
-**Purpose:** Subscription conversion flow for TKA Scribe premium features
+**Purpose:** Subscription conversion flow for TKA Composer premium features
 
 ## Architecture
 

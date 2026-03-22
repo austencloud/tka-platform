@@ -2,14 +2,14 @@
 
 ## Executive Summary
 
-Extract the public-facing landing page from TKA Scribe (tkascribe.com) into a standalone SvelteKit project deployed to tkaflowarts.com. The admin tools (LandingPreviewModule, VideoCurator) stay in Scribe. The animation demo embeds via iframe from Scribe.
+Extract the public-facing landing page from TKA Composer (tkacomposer.com) into a standalone SvelteKit project deployed to tkaflowarts.com. The admin tools (LandingPreviewModule, VideoCurator) stay in Composer. The animation demo embeds via iframe from Composer.
 
 ---
 
 ## Current Architecture
 
 The root `+page.svelte` uses domain detection (`detectSiteMode`) to render either:
-- **"app" mode** → MainApplication (tkascribe.com)
+- **"app" mode** → MainApplication (tkacomposer.com)
 - **"landing" mode** → Landing page sections (tkaflowarts.com)
 
 Both are bundled in the same codebase, sharing imports from `$lib/`.

@@ -1,6 +1,6 @@
 # Feedback & Release Workflow
 
-Complete guide to the feedback-to-release pipeline in TKA Scribe.
+Complete guide to the feedback-to-release pipeline in TKA Composer.
 
 ---
 

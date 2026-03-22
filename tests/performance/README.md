@@ -1,6 +1,6 @@
 # Performance Tests
 
-Performance and memory leak tests for TKA Scribe.
+Performance and memory leak tests for TKA Composer.
 
 ## Tests
 
