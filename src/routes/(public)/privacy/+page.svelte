@@ -176,7 +176,7 @@
 
         <h3>California Users (CCPA)</h3>
         <p>
-          TKA Scribe is a small independent project that falls below CCPA revenue thresholds. However, California users are afforded the same rights: you can request to know what data is held, request deletion, and will not face discrimination for exercising these rights.
+          TKA Composer is a small independent project that falls below CCPA revenue thresholds. However, California users are afforded the same rights: you can request to know what data is held, request deletion, and will not face discrimination for exercising these rights.
         </p>
       </section>
 
@@ -198,7 +198,7 @@
       <section id="cookies">
         <h2>8. Cookies and Local Storage</h2>
         <p>
-          TKA Scribe uses local storage and cookies to maintain your session,
+          TKA Composer uses local storage and cookies to maintain your session,
           remember your preferences, and provide a seamless experience. These
           are essential for the application to function properly. Cookies are not used
           for advertising or cross-site tracking.
@@ -207,7 +207,7 @@
 
       <section id="third-party">
         <h2>9. Third-Party Services</h2>
-        <p>TKA Scribe uses the following third-party services:</p>
+        <p>TKA Composer uses the following third-party services:</p>
         <ul>
           <li>
             <strong>Firebase:</strong> Authentication, database, and storage (<a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener noreferrer">privacy policy</a>)
