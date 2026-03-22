@@ -1,5 +1,5 @@
 {
-  "projectName": "TKA Scribe",
+  "projectName": "TKA Composer",
   "projectDescription": "Choreography platform for flow artists",
   "srcRoot": "src/lib",
   "srcFeatures": "src/lib/features",

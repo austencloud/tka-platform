@@ -1,4 +1,4 @@
-# GitHub Copilot Instructions - TKA Scribe
+# GitHub Copilot Instructions - TKA Composer
 
 > Movement notation software for flow artists. Creates visual "pictographs" showing dance/flow art sequences - think musical notation for physical movement with props, grid positions, arrows, timing, and orientations.
 

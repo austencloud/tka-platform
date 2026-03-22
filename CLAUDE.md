@@ -1,4 +1,4 @@
-# TKA Scribe - Claude Code Guidelines
+# TKA Composer - Claude Code Guidelines
 
 ## Windows Git Bash: onecmd Fix Applied
 
