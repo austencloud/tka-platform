@@ -483,7 +483,7 @@ export function renderUserInfo(
   const contextualCaption = userInfo.word ? getContextualCaption(userInfo.word) : null;
 
   // Default when no contextual caption matches
-  const defaultNote = "Created with TKA Scribe";
+  const defaultNote = "Created with TKA Composer";
   const notes = userInfo.notes && userInfo.notes.trim() !== ""
     ? userInfo.notes
     : contextualCaption ?? defaultNote;

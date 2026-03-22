@@ -132,7 +132,7 @@ export async function renderSequenceToImage(
 
   // Check if we need header and footer
   const hasHeader = !!(opts.showWord || opts.showDifficulty);
-  // Footer always shows (with defaults) - "Created with TKA Scribe" center text is always present
+  // Footer always shows (with defaults) - "Created with TKA Composer" center text is always present
   const hasFooter = true;
 
   // Calculate layout dimensions
