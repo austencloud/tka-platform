@@ -584,7 +584,7 @@ function buildTools(container: TikaServerContainer) {
     }),
 
     find_app_feature: tool({
-      description: "Find how to do something in TKA Scribe.",
+      description: "Find how to do something in TKA Composer.",
       inputSchema: jsonSchema<{ query: string }>({
         type: "object",
         properties: { query: { type: "string" } },
