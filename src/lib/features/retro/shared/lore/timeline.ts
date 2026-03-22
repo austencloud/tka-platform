@@ -34,7 +34,7 @@ export const TIMELINE: TimelineEvent[] = [
 	},
 	{
 		year: 1998,
-		title: "TKA Scribe 98",
+		title: "TKA Composer 98",
 		description:
 			"The Free Scribe Collective reverse-engineers and modernizes the leaked source. The underground begins.",
 		tone: "rebellious",
@@ -43,7 +43,7 @@ export const TIMELINE: TimelineEvent[] = [
 		year: 2001,
 		title: "Open source release",
 		description:
-			"TKA Scribe goes open source. SourceForge project. Growing community. The Order begins countermeasures.",
+			"TKA Composer goes open source. SourceForge project. Growing community. The Order begins countermeasures.",
 		tone: "confident",
 	},
 	{

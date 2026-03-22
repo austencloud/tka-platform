@@ -21,7 +21,7 @@ export const GET: RequestHandler = async () => {
       relation: ["delegate_permission/common.handle_all_urls"],
       target: {
         namespace: "android_app",
-        package_name: "com.tkascribe.app",
+        package_name: "com.tkacomposer.app",
         sha256_cert_fingerprints: [SHA256_FINGERPRINT],
       },
     },
