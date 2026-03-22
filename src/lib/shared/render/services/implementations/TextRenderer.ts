@@ -522,7 +522,7 @@ export class TextRenderer implements ITextRenderer {
           ? customNotesText
           : userInfo.notes && userInfo.notes.trim() !== ""
             ? userInfo.notes
-            : "Created using TKA Scribe";
+            : "Created using TKA Composer";
       ctx.font = `${fontSize}px Georgia, serif`;
       ctx.textAlign = "center";
       ctx.fillText(notes, canvas.width / 2, yPosition);

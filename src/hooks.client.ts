@@ -2,7 +2,7 @@
  * Client-side hooks for PWA service worker registration
  * This enables the app to be installed on Android (via TWA) and iOS (Add to Home Screen)
  *
- * PWA is enabled by default for TKA Scribe.
+ * PWA is enabled by default for TKA Composer.
  * Set DISABLE_PWA=true when building for tkaflowarts.com (landing page).
  */
 

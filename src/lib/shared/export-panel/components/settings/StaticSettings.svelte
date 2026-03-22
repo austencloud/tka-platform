@@ -165,7 +165,7 @@
       type="text"
       class="notes-input"
       value={customNotesText}
-      placeholder="Created using TKA Scribe"
+      placeholder="Created using TKA Composer"
       oninput={handleNotesInput}
     />
   </div>
