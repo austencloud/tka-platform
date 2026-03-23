@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { detectSiteMode, type SiteMode } from "../config/domains";
   import BackgroundHost from "$lib/shared/background/shared/components/BackgroundHost.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
@@ -9,50 +8,24 @@
   import GuidesSection from "./landing/components/GuidesSection.svelte";
   import LandingFooter from "./landing/components/LandingFooter.svelte";
   import LandingBackgroundPicker from "./landing/components/LandingBackgroundPicker.svelte";
-  import type { Component } from "svelte";
-  import LoadingGate from "$lib/shared/components/loading/LoadingGate.svelte";
   import { prefetchTreeImages } from "$lib/shared/background/shared/prefetch-tree-images";
 
   const STORAGE_KEY = "tka-landing-theme";
   const DEFAULT_BACKGROUND = BackgroundType.NIGHT_SKY;
 
-  /**
-   * Site mode determines which experience to render based on domain.
-   * Extensible for future portals (embed, kiosk, edu, etc.)
-   */
-  let siteMode = $state<SiteMode>("loading");
   let currentBackground = $state<BackgroundType>(DEFAULT_BACKGROUND);
   let mounted = $state(false);
 
-  // Dynamic import: MainApplication is only loaded for app mode
-  // This keeps the entire app bundle out of the landing page's initial load
-  let MainApp = $state<Component | null>(null);
-
   onMount(() => {
-    siteMode = detectSiteMode();
-
-    if (siteMode === "app") {
-      (window as any).__tkaLoadProgress?.(84, "Resolving services...");
-      // Dynamic import — only pulls in the app bundle when actually needed
-      import("$lib/shared/application/components/MainApplication.svelte").then(
-        (mod) => {
-          MainApp = mod.default;
-        }
-      );
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved && Object.values(BackgroundType).includes(saved as BackgroundType)) {
+      currentBackground = saved as BackgroundType;
     }
+    applyThemeForBackground(currentBackground);
 
-    // For landing mode, load saved background preference
-    if (siteMode === "landing") {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved && Object.values(BackgroundType).includes(saved as BackgroundType)) {
-        currentBackground = saved as BackgroundType;
-      }
-      applyThemeForBackground(currentBackground);
-
-      // If user's saved background is Firefly Forest, prefetch tree images now
-      if (currentBackground === BackgroundType.FIREFLY_FOREST) {
-        prefetchTreeImages();
-      }
+    // If user's saved background is Firefly Forest, prefetch tree images now
+    if (currentBackground === BackgroundType.FIREFLY_FOREST) {
+      prefetchTreeImages();
     }
     mounted = true;
   });
@@ -69,14 +42,10 @@
 </script>
 
 <svelte:head>
-  {#if siteMode === "app"}
-    <title>TKA Composer - Create, record, and share flow arts choreography</title>
-  {:else}
-    <title
-      >TKA - The Kinetic Alphabet | Flow Arts Notation for Staff, Clubs, Fans,
-      Hoops & More</title
-    >
-  {/if}
+  <title
+    >TKA - The Kinetic Alphabet | Flow Arts Notation for Staff, Clubs, Fans,
+    Hoops & More</title
+  >
   <meta
     name="description"
     content="TKA is a notation system for flow arts. Document and share staff, fans, hoop, club, fan, and buugeng choreography. Create sequences, animate them, share with other flow artists."
@@ -358,65 +327,36 @@
 	</script>`}
 </svelte:head>
 
-{#if siteMode === "loading"}
-  <!-- Brief loading state while determining domain -->
-  <div class="loading-screen">
-    <LoadingGate variant="card" message="Loading..." />
-  </div>
-{:else if siteMode === "app"}
-  <!-- App domain: render the application (dynamically loaded) -->
-  {#if MainApp}
-    <MainApp />
-  {/if}
-{:else if siteMode === "landing"}
-  <!-- Landing domain: render the marketing page -->
-  <div class="landing-page">
-    <!-- Background layer -->
-    {#if mounted}
-      <div class="background-layer">
-        <BackgroundHost
-          backgroundType={currentBackground}
-        />
-      </div>
-    {/if}
-
-    <!-- Content layer -->
-    <a href="#main-content" class="skip-link">Skip to main content</a>
-
-    <div class="content-layer">
-      <HeroSection />
-      <main id="main-content">
-        <NotationShowcaseSection />
-        <GuidesSection />
-      </main>
-      <LandingFooter />
+<div class="landing-page">
+  <!-- Background layer -->
+  {#if mounted}
+    <div class="background-layer">
+      <BackgroundHost
+        backgroundType={currentBackground}
+      />
     </div>
-
-    <!-- Background picker -->
-    <LandingBackgroundPicker
-      {currentBackground}
-      onSelect={handleBackgroundChange}
-    />
-  </div>
-{:else}
-  <!-- Future: other site modes (embed, kiosk, edu, etc.) -->
-  {#if MainApp}
-    <MainApp />
   {/if}
-{/if}
+
+  <!-- Content layer -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <div class="content-layer">
+    <HeroSection />
+    <main id="main-content">
+      <NotationShowcaseSection />
+      <GuidesSection />
+    </main>
+    <LandingFooter />
+  </div>
+
+  <!-- Background picker -->
+  <LandingBackgroundPicker
+    {currentBackground}
+    onSelect={handleBackgroundChange}
+  />
+</div>
 
 <style>
-  /* Loading screen - brief flash while determining domain */
-  .loading-screen {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #0a0a0f;
-  }
-
-
   /* Skip link - visible only on focus for keyboard users */
   .skip-link {
     position: absolute;
@@ -458,5 +398,4 @@
     position: relative;
     z-index: 1;
   }
-
 </style>

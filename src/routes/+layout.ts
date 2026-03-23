@@ -1,4 +1,4 @@
-// Disable SSR to avoid Type1 module loading issues during server-side rendering
-// The InversifyJS container and Type1 generators have dependencies that don't work well with SSR
-export const ssr = false;
+// Root: SSR enabled for landing/public pages
+// App routes override with their own +layout.ts (ssr: false)
+export const ssr = true;
 export const prerender = false;
