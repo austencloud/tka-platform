@@ -24,7 +24,7 @@ Note: This file must stay in sync with src/routes/+page.svelte
   let siteMode = $state<SiteMode>("loading");
 
   onMount(() => {
-    siteMode = detectSiteMode(window.location.origin);
+    siteMode = detectSiteMode();
   });
 </script>
 

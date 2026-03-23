@@ -29,7 +29,7 @@
   let MainApp = $state<Component | null>(null);
 
   onMount(() => {
-    siteMode = detectSiteMode(window.location.origin);
+    siteMode = detectSiteMode();
 
     if (siteMode === "app") {
       (window as any).__tkaLoadProgress?.(84, "Resolving services...");
