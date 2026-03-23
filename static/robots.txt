@@ -1,5 +1,5 @@
 # robots.txt for TKA Composer - The Kinetic Alphabet
-# https://tkascribe.com
+# https://tkaflowarts.com
 
 User-agent: *
 Allow: /
@@ -42,7 +42,7 @@ Disallow: /admin/
 Disallow: /_app/
 
 # Sitemap location
-Sitemap: https://tkascribe.com/sitemap.xml
+Sitemap: https://tkaflowarts.com/sitemap.xml
 
 # Crawl-delay for polite crawling (optional, mainly for less sophisticated bots)
 Crawl-delay: 1

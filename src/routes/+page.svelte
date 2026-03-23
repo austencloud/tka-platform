@@ -126,7 +126,7 @@
 			"@type": "SearchAction",
 			"target": {
 				"@type": "EntryPoint",
-				"urlTemplate": "https://tkascribe.com/?search={search_term_string}"
+				"urlTemplate": "https://tkaflowarts.com/app?search={search_term_string}"
 			},
 			"query-input": "required name=search_term_string"
 		}
@@ -151,7 +151,7 @@
 		"contactPoint": {
 			"@type": "ContactPoint",
 			"contactType": "customer support",
-			"email": "support@tkascribe.com"
+			"email": "support@tkaflowarts.com"
 		}
 	}
 	</script>`}
@@ -164,12 +164,12 @@
 		"name": "TKA Composer",
 		"alternateName": "The Kinetic Alphabet Composer",
 		"description": "Create, animate, and share staff, clubs, fans, hoops, buugeng, and sword sequences. A notation system for flow arts.",
-		"url": "https://tkascribe.com/",
+		"url": "https://tkaflowarts.com/app",
 		"applicationCategory": ["EducationalApplication", "EntertainmentApplication", "DesignApplication"],
 		"operatingSystem": "Any (Web Browser)",
 		"browserRequirements": "Requires JavaScript. Works on Chrome, Firefox, Safari, Edge.",
 		"softwareVersion": "1.0",
-		"releaseNotes": "https://tkascribe.com/changelog",
+		"releaseNotes": "https://tkaflowarts.com/changelog",
 		"screenshot": "https://tkaflowarts.com/branding/og-image.png",
 		"featureList": [
 			"Create sequences by hand or generate them automatically",
@@ -295,8 +295,8 @@
 				"@type": "HowToStep",
 				"position": 1,
 				"name": "Open TKA Composer",
-				"text": "Visit tkascribe.com to launch the free web application.",
-				"url": "https://tkascribe.com/"
+				"text": "Visit tkaflowarts.com/app to launch the free web application.",
+				"url": "https://tkaflowarts.com/app"
 			},
 			{
 				"@type": "HowToStep",

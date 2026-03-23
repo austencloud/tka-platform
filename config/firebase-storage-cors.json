@@ -3,8 +3,8 @@
     "origin": [
       "http://localhost:5173",
       "http://localhost:4173",
-      "https://tkascribe.com",
-      "https://www.tkascribe.com"
+      "https://tkaflowarts.com",
+      "https://www.tkaflowarts.com"
     ],
     "method": ["GET", "POST", "PUT", "DELETE", "HEAD"],
     "maxAgeSeconds": 3600,

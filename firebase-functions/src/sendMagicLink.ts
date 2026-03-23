@@ -86,7 +86,7 @@ export const sendMagicLink = functions.https.onCall(
     try {
       // Generate the magic link using Firebase Admin SDK
       const actionCodeSettings = {
-        url: continueUrl || "https://tkascribe.com/",
+        url: continueUrl || "https://tkaflowarts.com/app",
         handleCodeInApp: true,
       };
 
