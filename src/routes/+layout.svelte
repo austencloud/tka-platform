@@ -304,7 +304,7 @@
   }
 
   onMount(() => {
-    siteMode = detectSiteMode(window.location.origin);
+    siteMode = detectSiteMode();
 
     // Standalone routes that bypass the full app bootstrap.
     // The /1995 retro route has its own boot sequence and doesn't need

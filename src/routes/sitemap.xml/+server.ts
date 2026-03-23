@@ -1,7 +1,7 @@
-import { APP_DOMAIN, LANDING_DOMAIN, isAppDomain } from "../../config/domains";
+import { APP_DOMAIN, LANDING_DOMAIN } from "../../config/domains";
 import type { RequestHandler } from "./$types";
 
-// Pages for the app domain (tkascribe.com)
+// Pages for the app (tkaflowarts.com/app)
 const appPages = [
   // Main Application - Home/Dashboard
   {
@@ -40,9 +40,9 @@ const landingPages = [
 ];
 
 export const GET: RequestHandler = async ({ request }) => {
-  // Detect which domain we're serving from
-  const origin = new URL(request.url).origin;
-  const isApp = isAppDomain(origin);
+  // Detect which context we're serving from based on path
+  const url = new URL(request.url);
+  const isApp = url.pathname.startsWith("/app");
   const domain = isApp ? APP_DOMAIN : LANDING_DOMAIN;
   const pages = isApp ? appPages : landingPages;
 

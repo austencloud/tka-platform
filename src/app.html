@@ -11,8 +11,7 @@
     <!-- Landing visitors don't need Firebase/Google APIs — skip these to save ~500ms -->
     <script>
       (function() {
-        var h = window.location.hostname;
-        var isLanding = (h === 'tkaflowarts.com' || h === 'www.tkaflowarts.com');
+        var isLanding = !window.location.pathname.startsWith('/app');
         if (isLanding) {
           // Mark landing mode early for loading bar skip below
           window.__tkaIsLanding = true;

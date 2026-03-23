@@ -1,10 +1,10 @@
-import { APP_DOMAIN, LANDING_DOMAIN, isAppDomain } from "../../config/domains";
+import { APP_DOMAIN, LANDING_DOMAIN } from "../../config/domains";
 import type { RequestHandler } from "./$types";
 
 export const GET: RequestHandler = async ({ request }) => {
-  // Detect which domain we're serving from
-  const origin = new URL(request.url).origin;
-  const isApp = isAppDomain(origin);
+  // Detect which context we're serving from based on path
+  const url = new URL(request.url);
+  const isApp = url.pathname.startsWith("/app");
   const domain = isApp ? APP_DOMAIN : LANDING_DOMAIN;
 
   // Different robots.txt content based on domain

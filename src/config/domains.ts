@@ -1,10 +1,10 @@
 /**
  * Domain Config for TKA
  *
- * Multi-domain architecture:
+ * Single-domain architecture:
  * - tkaflowarts.com: Brand home, landing page, marketing content
- * - tkascribe.com: The app (TKA Composer product)
- * - Future: embed.tkascribe.com, kiosk.tkascribe.com, edu.tkascribe.com, etc.
+ * - tkaflowarts.com/app: The app (TKA Composer product)
+ * - Future: tkaflowarts.com/embed, tkaflowarts.com/kiosk, etc.
  */
 
 /**
@@ -16,80 +16,27 @@ export type SiteMode = "loading" | "app" | "landing" | "embed" | "kiosk" | "edu"
 // Landing/brand domain
 export const LANDING_DOMAIN = "https://tkaflowarts.com";
 
-// App domain
-export const APP_DOMAIN = "https://tkascribe.com";
-
-// Domain-to-mode mapping (extensible for future portals)
-const DOMAIN_MODE_MAP: Record<string, SiteMode> = {
-  "tkascribe.com": "app",
-  "www.tkascribe.com": "app",
-  "tkaflowarts.com": "landing",
-  "www.tkaflowarts.com": "landing",
-  // Future portals:
-  // "embed.tkascribe.com": "embed",
-  // "kiosk.tkascribe.com": "kiosk",
-  // "edu.tkascribe.com": "edu",
-};
+// App base URL
+export const APP_DOMAIN = "https://tkaflowarts.com/app";
 
 /**
- * Detect site mode from current origin.
- * Returns the appropriate mode for rendering.
+ * Detect site mode from current pathname.
+ * Returns "app" when under /app, "landing" otherwise.
+ * Supports ?mode= override for local dev testing.
  */
-export function detectSiteMode(origin: string): SiteMode {
-  try {
-    const hostname = new URL(origin).hostname;
-
-    // Dev only: Allow ?mode=landing query param for local testing
-    if (typeof window !== "undefined") {
-      const urlParams = new URLSearchParams(window.location.search);
-      const modeParam = urlParams.get("mode");
-      if (modeParam === "landing" || modeParam === "app") {
-        return modeParam;
-      }
+export function detectSiteMode(): SiteMode {
+  if (typeof window !== "undefined") {
+    const params = new URLSearchParams(window.location.search);
+    const modeOverride = params.get("mode") as SiteMode | null;
+    if (modeOverride && ["app", "landing"].includes(modeOverride)) {
+      return modeOverride;
     }
-
-    // Check direct mapping
-    if (hostname in DOMAIN_MODE_MAP) {
-      return DOMAIN_MODE_MAP[hostname] as SiteMode;
-    }
-
-    // Localhost/dev defaults to app mode
-    if (hostname === "localhost" || hostname === "127.0.0.1") {
+    if (window.location.pathname.startsWith("/app")) {
       return "app";
     }
-
-    // Netlify preview deploys
-    if (hostname.endsWith(".netlify.app")) {
-      // tkaflowarts.netlify.app → landing, otherwise app
-      return hostname.includes("tkaflowarts") ? "landing" : "app";
-    }
-
-    // Cloudflare Pages preview deploys
-    if (hostname.endsWith(".pages.dev")) {
-      return "landing";
-    }
-
-    // Unknown domain defaults to app
-    return "app";
-  } catch {
-    return "app";
   }
+  return "landing";
 }
-
-// Legacy aliases (will redirect)
-export const LEGACY_DOMAINS = [
-  "https://kineticalphabet.com",
-  "https://www.kineticalphabet.com",
-];
-
-// All valid domains
-export const ALL_DOMAINS = [
-  LANDING_DOMAIN,
-  APP_DOMAIN,
-  `https://www.tkaflowarts.com`,
-  `https://www.tkascribe.com`,
-  ...LEGACY_DOMAINS,
-];
 
 /**
  * Get the canonical URL for landing pages
@@ -105,26 +52,6 @@ export function getLandingCanonicalURL(path: string = ""): string {
 export function getAppCanonicalURL(path: string = ""): string {
   const cleanPath = path.startsWith("/") ? path.slice(1) : path;
   return cleanPath ? `${APP_DOMAIN}/${cleanPath}` : APP_DOMAIN;
-}
-
-/**
- * Check if current domain is the landing domain
- */
-export function isLandingDomain(currentOrigin: string): boolean {
-  return (
-    currentOrigin === new URL(LANDING_DOMAIN).origin ||
-    currentOrigin === "https://www.tkaflowarts.com"
-  );
-}
-
-/**
- * Check if current domain is the app domain
- */
-export function isAppDomain(currentOrigin: string): boolean {
-  return (
-    currentOrigin === new URL(APP_DOMAIN).origin ||
-    currentOrigin === "https://www.tkascribe.com"
-  );
 }
 
 /**
