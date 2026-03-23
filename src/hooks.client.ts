@@ -29,7 +29,7 @@ declare const __PWA_ENABLED__: boolean;
 // This doesn't use the full PWA/Workbox SW — just the Firebase messaging handler
 if (browser && dev) {
   navigator.serviceWorker
-    .register("/firebase-messaging-sw.js", { scope: "/" })
+    .register("/firebase-messaging-sw.js", { scope: "/app" })
     .then((reg) => {
       console.log("[FCM-Dev] Messaging service worker registered", reg.scope);
     })

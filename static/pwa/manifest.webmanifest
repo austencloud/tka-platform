@@ -7,7 +7,7 @@
   "display": "fullscreen",
   "display_override": ["fullscreen", "standalone"],
   "orientation": "any",
-  "scope": "/",
+  "scope": "/app",
   "start_url": "/app",
   "id": "tka-composer-2025",
   "related_applications": [
