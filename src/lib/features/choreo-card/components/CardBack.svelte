@@ -158,7 +158,7 @@
 
       <!-- ── Footer ── -->
       <footer class="foot">
-        <span>tkascribe.com</span>
+        <span>tkaflowarts.com</span>
         <span>Build your own deck</span>
       </footer>
     </div>
