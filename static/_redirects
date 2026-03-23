@@ -1,0 +1,11 @@
+# Redirects for tkascribe.com → tkaflowarts.com
+# Public routes — preserve path (no /app prefix)
+/sequence/*  https://tkaflowarts.com/sequence/:splat  301
+/p/*         https://tkaflowarts.com/p/:splat  301
+/about       https://tkaflowarts.com/about  301
+/terms       https://tkaflowarts.com/terms  301
+/privacy     https://tkaflowarts.com/privacy  301
+
+# App routes — redirect to /app
+/            https://tkaflowarts.com/app  301
+/*           https://tkaflowarts.com/app/:splat  301
