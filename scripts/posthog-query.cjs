@@ -5,7 +5,7 @@
  * Usage:
  *   node scripts/posthog-query.cjs overview
  *   node scripts/posthog-query.cjs visitors --host tkaflowarts.com --period 30d
- *   node scripts/posthog-query.cjs geo --host tkascribe.com
+ *   node scripts/posthog-query.cjs geo --host tkaflowarts.com
  *   node scripts/posthog-query.cjs "SELECT count() FROM events WHERE ..."
  *
  * Templates: overview, visitors, geo, sources, devices, pages, funnel, events, sessions
@@ -185,7 +185,7 @@ const templates = {
       count(DISTINCT person_id) AS users
     FROM events
     WHERE event = '$pageview'
-      AND properties.$host = 'tkascribe.com'
+      AND properties.$host = 'tkaflowarts.com'
       AND timestamp >= ${dateExpr}
   `,
 
@@ -306,7 +306,7 @@ Flags:
 Examples:
   node scripts/posthog-query.cjs overview
   node scripts/posthog-query.cjs visitors --period 30d
-  node scripts/posthog-query.cjs geo --host tkascribe.com
+  node scripts/posthog-query.cjs geo --host tkaflowarts.com
   node scripts/posthog-query.cjs "SELECT count() FROM events"
 `);
 }

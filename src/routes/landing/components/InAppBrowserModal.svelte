@@ -28,12 +28,12 @@
 
   async function copyUrl() {
     try {
-      await navigator.clipboard.writeText("https://tkascribe.com");
+      await navigator.clipboard.writeText("https://tkaflowarts.com/app");
       copied = true;
       setTimeout(() => (copied = false), 2000);
     } catch {
       const input = document.createElement("input");
-      input.value = "https://tkascribe.com";
+      input.value = "https://tkaflowarts.com/app";
       document.body.appendChild(input);
       input.select();
       document.execCommand("copy");
@@ -110,7 +110,7 @@
       </button>
 
       <div class="url-preview">
-        <span>tkascribe.com</span>
+        <span>tkaflowarts.com/app</span>
       </div>
 
       <button class="dismiss-btn" onclick={onClose}> Continue anyway </button>

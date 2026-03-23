@@ -1,6 +1,6 @@
 {
   "packageId": "com.tkacomposer.app",
-  "host": "tkascribe.com",
+  "host": "tkaflowarts.com",
   "name": "TKA Composer",
   "launcherName": "TKA Composer",
   "display": "standalone",
@@ -13,8 +13,8 @@
   "backgroundColor": "#0A0A0A",
   "enableNotifications": true,
   "startUrl": "/app",
-  "iconUrl": "https://tkascribe.com/pwa/icons/icon-512x512.png",
-  "maskableIconUrl": "https://tkascribe.com/pwa/icons/maskable-icon-512x512.png",
+  "iconUrl": "https://tkaflowarts.com/pwa/icons/icon-512x512.png",
+  "maskableIconUrl": "https://tkaflowarts.com/pwa/icons/maskable-icon-512x512.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "./tka-composer-keystore.jks",
@@ -24,7 +24,7 @@
   "appVersionCode": 1,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
-  "webManifestUrl": "https://tkascribe.com/pwa/manifest.webmanifest",
+  "webManifestUrl": "https://tkaflowarts.com/pwa/manifest.webmanifest",
   "fallbackType": "customtabs",
   "features": {},
   "alphaDependencies": {
@@ -33,7 +33,7 @@
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
   "isMetaQuest": false,
-  "fullScopeUrl": "https://tkascribe.com/",
+  "fullScopeUrl": "https://tkaflowarts.com/app/",
   "minSdkVersion": 21,
   "orientation": "any",
   "fingerprints": [],
