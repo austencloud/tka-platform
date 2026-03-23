@@ -83,7 +83,7 @@
       <hr class="rule" />
 
       <div class="colophon">
-        <span>tkascribe.com</span>
+        <span>tkaflowarts.com</span>
         <span>Build your own deck</span>
       </div>
     </div>

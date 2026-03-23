@@ -89,7 +89,7 @@
 
       <!-- Footer -->
       <div class="foot">
-        <span>tkascribe.com</span>
+        <span>tkaflowarts.com</span>
         <span>YOUR DECK. YOUR NAME.</span>
       </div>
     </div>

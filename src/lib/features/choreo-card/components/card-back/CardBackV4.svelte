@@ -69,7 +69,7 @@
 
       <!-- Footer -->
       <div class="foot">
-        <span>tkascribe.com</span>
+        <span>tkaflowarts.com</span>
       </div>
     </div>
   </div>

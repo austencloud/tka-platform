@@ -95,7 +95,7 @@
 
     <!-- Footer -->
     <div class="foot">
-      <span class="foot-url">tkascribe.com</span>
+      <span class="foot-url">tkaflowarts.com</span>
       <span class="foot-cta">Build your own deck</span>
     </div>
   </div>
