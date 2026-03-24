@@ -252,6 +252,7 @@
     "ai": "^6.0.0",
     "animate-css-grid": "^1.5.1",
     "bits-ui": "^2.14.4",
+    "date-fns": "^4.1.0",
     "dexie": "^4.2.1",
     "dom-to-image-more": "^3.7.2",
     "dompurify": "^3.3.3",

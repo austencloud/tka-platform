@@ -4,6 +4,7 @@
   import { setFestivalContext } from "./context/festival-context";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { auth } from "$lib/shared/auth/firebase";
+  import DiscoverTab from "./components/discover/DiscoverTab.svelte";
 
   const state = createFestivalState(
     container.items.festivalLoader,
@@ -53,7 +54,7 @@
         <p>Loading festivals...</p>
       </div>
     {:else if state.activeTab === "discover"}
-      <p style="padding: 24px; text-align: center; opacity: 0.5;">Discover tab — coming next</p>
+      <DiscoverTab />
     {:else if state.activeTab === "map"}
       <p style="padding: 24px; text-align: center; opacity: 0.5;">Map tab — coming next</p>
     {:else if state.activeTab === "calendar"}
