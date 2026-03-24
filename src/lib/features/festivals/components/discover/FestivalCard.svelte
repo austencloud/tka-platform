@@ -2,6 +2,7 @@
   import { format, differenceInDays } from "date-fns";
   import type { Festival } from "../../domain/models/festival";
   import type { UserFestivalTracker } from "../../domain/models/festival-tracker";
+  import { toDate } from "../../domain/models/timestamp-utils";
   import AttendanceBadge from "./AttendanceBadge.svelte";
 
   interface Props {
@@ -13,8 +14,8 @@
   }
   let { festival, tracker, attendanceCount, onselect, onbookmark }: Props = $props();
 
-  const startDate = $derived(festival.dates.start.toDate());
-  const endDate = $derived(festival.dates.end.toDate());
+  const startDate = $derived(toDate(festival.dates.start));
+  const endDate = $derived(toDate(festival.dates.end));
 
   const dateRange = $derived(
     `${format(startDate, "MMM d")} – ${format(endDate, "MMM d")}`
@@ -24,13 +25,13 @@
 
   const applicationsOpen = $derived(
     festival.applicationDeadline != null &&
-    festival.applicationDeadline.toDate() > now &&
+    toDate(festival.applicationDeadline) > now &&
     (festival.seekingInstructors || festival.seekingPerformers)
   );
 
   const daysLeft = $derived(
     festival.applicationDeadline != null
-      ? differenceInDays(festival.applicationDeadline.toDate(), now)
+      ? differenceInDays(toDate(festival.applicationDeadline), now)
       : null
   );
 

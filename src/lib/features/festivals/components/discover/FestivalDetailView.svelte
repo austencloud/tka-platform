@@ -2,6 +2,7 @@
   import { format } from "date-fns";
   import type { Festival } from "../../domain/models/festival";
   import type { UserFestivalTracker } from "../../domain/models/festival-tracker";
+  import { toDate } from "../../domain/models/timestamp-utils";
   import { getFestivalContext } from "../../context/festival-context";
   import TrackerControls from "./TrackerControls.svelte";
   import FestivalMaterialsPanel from "./FestivalMaterialsPanel.svelte";
@@ -15,8 +16,8 @@
 
   const { state } = getFestivalContext();
 
-  const startDate = $derived(festival.dates.start.toDate());
-  const endDate = $derived(festival.dates.end.toDate());
+  const startDate = $derived(toDate(festival.dates.start));
+  const endDate = $derived(toDate(festival.dates.end));
 
   const dateRange = $derived(
     `${format(startDate, "MMMM d")} – ${format(endDate, "MMMM d, yyyy")}`
@@ -24,7 +25,7 @@
 
   const deadlineFormatted = $derived(
     festival.applicationDeadline
-      ? format(festival.applicationDeadline.toDate(), "MMMM d, yyyy")
+      ? format(toDate(festival.applicationDeadline), "MMMM d, yyyy")
       : null
   );
 
