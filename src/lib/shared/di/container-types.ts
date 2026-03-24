@@ -71,6 +71,7 @@ import type { DeviceSyncContainer } from "./containers/device-sync-container";
 import type { MuseumContainer } from "./containers/museum-container";
 import type { PushContainer } from "./containers/push-container";
 import type { OfflineContainer } from "./containers/offline-container";
+import type { FestivalContainer } from "./containers/festival-container";
 // Containers that already export items types directly (["items"])
 import type { NavigationContainerItems } from "./containers/navigation-container";
 import type { AnimatorContainerItems } from "./containers/animator-container";
@@ -145,6 +146,7 @@ type DeviceSyncItems = ItemsOf<DeviceSyncContainer>;
 type MuseumItems = ItemsOf<MuseumContainer>;
 type PushItems = ItemsOf<PushContainer>;
 type OfflineItems = ItemsOf<OfflineContainer>;
+type FestivalItems = ItemsOf<FestivalContainer>;
 // ============================================================================
 // Upsert conflict handling
 //
@@ -238,5 +240,7 @@ export type IAppContainerItems =
 	VideoTrailsItems &
 	// Shared video infrastructure (source provider, training data, frame extraction)
 	VideoInfraItems &
+	// Festival Hub (discovery, attendance, tracker, portfolio, submissions)
+	FestivalItems &
 	// Standalone services
 	StandaloneItems;
