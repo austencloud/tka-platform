@@ -8,7 +8,7 @@ export const AUSTEN_PORTFOLIO_SEED: Omit<TeachingPortfolio, "userId" | "createdA
       level: "beginner",
       props: ["double-staves", "clubs"],
       description:
-        "Foundations of antispins and isolations using negative space and body turns. Strict focus on thumb and prop orientation without finger-spinning. Letters A-B-C comprising split-same 1:1 motions. First three TKA words tunneled into 6 partner patterns.",
+        "In this beginner class, we'll learn the foundations of antispins and isolations, focusing on using negative space and body turns to move through sequences. We will place a strict focus on thumb and prop orientation in order to learn motions without finger-spinning. We will learn the first letters in The Kinetic Alphabet - ABC, comprising split-same 1:1 motions. This will prepare use to learn our first three words in The Kinetic Alphabet. which we will tunnel to create 6 unique partner patterns.",
       themes: ["doubles", "clubs"],
       solo: true,
     },
@@ -18,7 +18,7 @@ export const AUSTEN_PORTFOLIO_SEED: Omit<TeachingPortfolio, "userId" | "createdA
       level: "intermediate",
       props: ["mixed-static-props"],
       description:
-        "Dive into The Kinetic Alphabet pictographs to create and communicate sequences. Students receive laminated sheets of pictograph sequences to practice and share. Construct 19 unique starter sequences using letters A-V.",
+        "In this intermediate class, we'll dive into The Kinetic Alphabet and learn how to use pictographs to create and communicate sequences. Students will be provided with reading material and laminated sheets of pictograph sequences to practice and share outside of class. Over the class, we'll construct these 19 unique starter sequences using the letters AV.",
       themes: ["mixed-prop-concepts", "static-prop-choreography"],
       solo: true,
     },
@@ -28,17 +28,17 @@ export const AUSTEN_PORTFOLIO_SEED: Omit<TeachingPortfolio, "userId" | "createdA
       level: "advanced",
       props: ["double-staves", "mixed-static-props"],
       description:
-        "Builds on previous classes with complex variations using turns at different points. Integrates dash and static motions with 3 new sequences. Construct circular words using higher-level sequence cards for intermediate and advanced practitioners.",
+        "In this class, we'll build on the previous classes, exploring more complex variations of the same sequences that we practiced in the first class by adding turns at different points. Then we'll integrate the dash and the static motion, learning 3 sequences that use them. We'll learn how to construct a circular word using higher-level sequences cards that students will keep. This will provide both intermediate and advanced practicioners with fresh material and a broader understanding.",
       themes: ["doubles", "mixed-prop-concepts", "static-prop-choreography"],
       solo: true,
     },
     {
       id: "intro-contact-juggling",
-      title: "Intro to Contact Juggling: The Walking Halfpipe",
+      title: "Intro to Contact Juggling - The Walking Halfpipe",
       level: "beginner",
       props: ["contact-ball"],
       description:
-        "Three steps to unlocking a balance point using the cradle. Palm transfers and simple forearm rolls. Expand the folding line on both sides: lotus, waterfall, butterfly.",
+        "In this beginner-level class, we will disillusion the mysteries of contact juggling. We will learn the three steps to unlocking a balance point, using the cradle as an example. Then will explore palm transfers and simple forearm rolls. We will focus on the folding line and expand it on both sides with additional moves to create a long form sequence, covering a variety of transfers such as the lotus, the waterfall, and the butterfly.",
       themes: ["contact-juggling"],
       solo: true,
     },
@@ -48,7 +48,7 @@ export const AUSTEN_PORTFOLIO_SEED: Omit<TeachingPortfolio, "userId" | "createdA
       level: "beginner",
       props: ["balloons"],
       description:
-        "Balloon sculpting fundamentals: dog, cat, flower, hat, sword, giraffe, rhino, bear, monkey, tiger. Materials and pumps provided. MOOP cleanup encouraged.",
+        "In this beginner-level class, we will learn the fundamentals of balloon sculpting, leaving you with the skills to twist yourself a friend wherever you go! We will learn simple designs like the dog, cat, flower, hat, sword, giraffe, rhino, bear, monkey, tiger. Balloons and pumps will be provided, and attendees will be given a bag of balloons to practice. Trash bags will be provided for MOOP and cleaning up balloon bits will be strongly encouraged!",
       themes: ["balloon-art"],
       solo: true,
     },
@@ -58,7 +58,7 @@ export const AUSTEN_PORTFOLIO_SEED: Omit<TeachingPortfolio, "userId" | "createdA
       level: "beginner",
       props: ["clubs"],
       description:
-        "Target practice drills progressing to 4-count, 3-count, 2-count, doubles, doctors, tomahawks, and intermediate trick throws.",
+        "We will learn how to throw clubs at each other without flinching! We'll begin with simple target practice drills and work our way slowly into 4-count. For the students who can do 4-count, we'll move on to 3-count, 2-count, doubles, doctors, tomahawks, and other intermediate trick throws.",
       themes: ["clubs", "partner-prop-concepts"],
       solo: false,
     },
@@ -68,7 +68,7 @@ export const AUSTEN_PORTFOLIO_SEED: Omit<TeachingPortfolio, "userId" | "createdA
       level: "mixed",
       props: ["poi"],
       description:
-        "Toss and catch points: grabbing poi head, under-leg/behind-back tosses, sideways, no beats. Combine tosses into two-poi sequences through different spinning modes.",
+        "In this class, we will conquer the fear of letting go of your poi! We will learn many types of toss and catch points, including ones that involve grabbing the poi head, tossing underneath the legs or behind the back, tossing sideways, and no beats. We will combine these tosses to create two-poi sequences that pass through different modes of spinning.",
       themes: ["poi"],
       solo: true,
     },
