@@ -2,6 +2,7 @@
   import { container } from "$lib/shared/di";
   import { createFestivalState, type FestivalTab } from "./state/festival-state.svelte";
   import { setFestivalContext } from "./context/festival-context";
+  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { auth } from "$lib/shared/auth/firebase";
   import DiscoverTab from "./components/discover/DiscoverTab.svelte";
@@ -19,12 +20,28 @@
 
   setFestivalContext({ state: festivalState });
 
+  const VALID_TABS: FestivalTab[] = ["discover", "map", "calendar", "workshops"];
+
   const tabs: { id: FestivalTab; label: string; icon: string }[] = [
     { id: "discover", label: "Discover", icon: "fas fa-compass" },
     { id: "map", label: "Map", icon: "fas fa-globe" },
     { id: "calendar", label: "Calendar", icon: "fas fa-calendar-alt" },
     { id: "workshops", label: "My Workshops", icon: "fas fa-chalkboard-teacher" },
   ];
+
+  // Sync sidebar navigation state → internal festival tab state
+  $effect(() => {
+    const navTab = navigationState.activeTab;
+    if (VALID_TABS.includes(navTab as FestivalTab)) {
+      festivalState.activeTab = navTab as FestivalTab;
+    }
+  });
+
+  // When clicking internal tab buttons, also update global navigation state
+  function switchTab(tabId: FestivalTab) {
+    festivalState.activeTab = tabId;
+    navigationState.setActiveTab(tabId);
+  }
 
   $effect(() => {
     const uid = auth.currentUser?.uid;
@@ -41,7 +58,7 @@
       <button
         class="tab-button"
         class:active={festivalState.activeTab === tab.id}
-        onclick={() => (festivalState.activeTab = tab.id)}
+        onclick={() => switchTab(tab.id)}
         role="tab"
         aria-selected={festivalState.activeTab === tab.id}
       >
