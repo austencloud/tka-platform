@@ -51,8 +51,8 @@ export const handle: Handle = async ({ event, resolve }) => {
   // PostHog's replay loads fonts/CSS from their domain to reconstruct the page.
   // Without these headers, fonts don't render and CSS rules can't be read.
   // =========================================================================
-  const pathname = event.url.pathname;
 
+  const pathname = event.url.pathname;
   if (isFontRequest(pathname) || isCssRequest(pathname)) {
     // Allow PostHog replay domains to load these resources
     response.headers.set("Access-Control-Allow-Origin", "*");
@@ -83,7 +83,7 @@ export const handle: Handle = async ({ event, resolve }) => {
     "Content-Security-Policy",
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://accounts.google.com https://apis.google.com https://us-assets.i.posthog.com https://*.posthog.com https://*.firebaseio.com https://cdn.jsdelivr.net",
+      "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://accounts.google.com https://apis.google.com https://us-assets.i.posthog.com https://*.posthog.com https://*.firebaseio.com https://cdn.jsdelivr.net https://maps.googleapis.com",
       "worker-src 'self' blob:",
       "style-src 'self' 'unsafe-inline'",
       "connect-src 'self' blob: https://*.firebaseio.com https://*.googleapis.com https://*.google.com https://*.cloudfunctions.net https://firestore.googleapis.com https://firebasestorage.googleapis.com https://us.i.posthog.com https://*.posthog.com https://pub-f5505ed75927471cb198c54336317370.r2.dev https://*.r2.cloudflarestorage.com https://cdn.jsdelivr.net wss://*.firebaseio.com wss://*.peerjs.com ws://localhost:*",
