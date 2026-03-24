@@ -1,0 +1,254 @@
+<!--
+  FestivalMap.svelte
+
+  Google Maps display with clustered festival location markers.
+  Orange pins, MarkerClusterer grouping, popup on click.
+-->
+<script lang="ts">
+  import { onMount } from "svelte";
+  import { PUBLIC_GOOGLE_MAPS_API_KEY } from "$env/static/public";
+  import { MarkerClusterer } from "@googlemaps/markerclusterer";
+  import { getFestivalContext } from "../../context/festival-context";
+  import FestivalMapPopup from "./FestivalMapPopup.svelte";
+  import type { Festival } from "../../domain/models/festival";
+
+  const { state: festivalState } = getFestivalContext();
+
+  let mapContainer: HTMLDivElement;
+  let map: google.maps.Map | null = null;
+  let markers: google.maps.marker.AdvancedMarkerElement[] = [];
+  let clusterer: MarkerClusterer | null = null;
+  let selectedFestival: Festival | null = $state(null);
+
+  onMount(async () => {
+    await loadGoogleMapsScript();
+    initializeMap();
+  });
+
+  async function loadGoogleMapsScript() {
+    if (typeof google !== "undefined" && google.maps) {
+      return;
+    }
+
+    return new Promise<void>((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=marker`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error("Failed to load Google Maps"));
+      document.head.appendChild(script);
+    });
+  }
+
+  async function initializeMap() {
+    const { Map } = (await google.maps.importLibrary(
+      "maps"
+    )) as google.maps.MapsLibrary;
+
+    map = new Map(mapContainer, {
+      center: { lat: 20, lng: 0 },
+      zoom: 2,
+      mapId: "tka-festival-map",
+      disableDefaultUI: false,
+      zoomControl: true,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: true,
+    });
+
+    // Give festivals a moment to load, then pin them
+    setTimeout(() => {
+      createMarkers();
+    }, 100);
+  }
+
+  async function createMarkers() {
+    if (!map) return;
+
+    // Clear existing markers and clusterer
+    markers.forEach((m) => {
+      m.map = null;
+    });
+    markers.length = 0;
+
+    if (clusterer) {
+      clusterer.clearMarkers();
+    }
+
+    if (festivalState.festivals.length === 0) return;
+
+    const { AdvancedMarkerElement, PinElement } =
+      (await google.maps.importLibrary(
+        "marker"
+      )) as google.maps.MarkerLibrary;
+
+    for (const festival of festivalState.festivals) {
+      const { lat, lng } = festival.location.coordinates;
+
+      const pin = new PinElement({
+        background: "#f97316",
+        borderColor: "#ffffff",
+        glyphColor: "#ffffff",
+      });
+
+      const marker = new AdvancedMarkerElement({
+        map,
+        position: { lat, lng },
+        content: pin.element,
+        title: `${festival.name} — ${festival.location.city}, ${festival.location.country}`,
+      });
+
+      marker.addListener("click", () => {
+        selectedFestival = festival;
+        map?.panTo({ lat, lng });
+      });
+
+      markers.push(marker);
+    }
+
+    // Hand all markers to the clusterer so nearby pins collapse into groups
+    if (clusterer) {
+      clusterer.clearMarkers();
+    }
+    clusterer = new MarkerClusterer({ map, markers });
+  }
+
+  function handleViewDetails() {
+    if (selectedFestival) {
+      festivalState.selectedFestival = selectedFestival;
+    }
+    selectedFestival = null;
+  }
+
+  function closePopup() {
+    selectedFestival = null;
+  }
+
+  // Rebuild markers whenever the festivals list changes
+  $effect(() => {
+    // Explicitly reference festivals so Svelte tracks this dependency
+    const _festivals = festivalState.festivals;
+    if (map) {
+      createMarkers();
+    }
+  });
+</script>
+
+<div class="map-wrapper">
+  <div bind:this={mapContainer} class="map-container"></div>
+
+  {#if selectedFestival}
+    <button
+      class="popup-overlay"
+      onclick={closePopup}
+      aria-label="Close festival popup"
+      type="button"
+    ></button>
+    <div class="popup-wrapper">
+      <FestivalMapPopup
+        festival={selectedFestival}
+        onviewdetails={handleViewDetails}
+        onclose={closePopup}
+      />
+    </div>
+  {/if}
+
+  {#if festivalState.festivals.length === 0 && !festivalState.isLoading}
+    <div class="empty-state">
+      <i class="fas fa-globe" aria-hidden="true"></i>
+      <p>No festivals to show</p>
+      <p class="subtext">Try adjusting your filters</p>
+    </div>
+  {/if}
+</div>
+
+<style>
+  .map-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .map-container {
+    width: 100%;
+    height: 100%;
+  }
+
+  .popup-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 10;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .popup-overlay:hover {
+    background: rgba(0, 0, 0, 0.4);
+  }
+
+  .popup-overlay:focus-visible {
+    outline: 2px solid #f97316;
+    outline-offset: -2px;
+  }
+
+  .popup-wrapper {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 11;
+    animation: popupAppear 0.2s ease;
+  }
+
+  @keyframes popupAppear {
+    from {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .popup-wrapper {
+      animation: none;
+    }
+  }
+
+  .empty-state {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  .empty-state i {
+    font-size: 64px;
+    color: #f97316;
+    opacity: 0.3;
+    margin-bottom: 16px;
+  }
+
+  .empty-state p {
+    font-size: var(--font-size-sm, 16px);
+    margin: 8px 0;
+  }
+
+  .empty-state .subtext {
+    font-size: var(--font-size-compact, 12px);
+    opacity: 0.7;
+  }
+</style>
