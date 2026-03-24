@@ -29,9 +29,17 @@ export class WorkshopPortfolioRepository implements IWorkshopPortfolioRepository
   async set(userId: string, portfolio: TeachingPortfolio): Promise<void> {
     const db = await getFirestoreInstance();
     const ref = doc(db, "userProfiles", userId, "workshopPortfolio", "data");
+    // Strip any Timestamp objects with non-serializable .toDate methods,
+    // then re-add timestamps via serverTimestamp()
+    const cleaned = JSON.parse(JSON.stringify(portfolio));
+    delete cleaned.createdAt;
+    delete cleaned.updatedAt;
+    // Preserve createdAt on updates by checking if doc exists
+    const existing = await getDoc(ref);
     await setDoc(ref, {
-      ...portfolio,
+      ...cleaned,
       userId,
+      createdAt: existing.exists() ? existing.data()?.createdAt ?? serverTimestamp() : serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
   }
