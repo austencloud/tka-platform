@@ -3,24 +3,31 @@
   import { auth } from "$lib/shared/auth/firebase";
   import FestivalFilterBar from "./FestivalFilterBar.svelte";
   import FestivalCard from "./FestivalCard.svelte";
+  import FestivalSubmissionForm from "../submit/FestivalSubmissionForm.svelte";
+  import ModerationQueue from "../moderation/ModerationQueue.svelte";
 
-  const { state } = getFestivalContext();
+  // Destructure as festivalState to avoid conflict with Svelte 5 $state rune
+  const { state: festivalState } = getFestivalContext();
+
+  let showSubmitForm = $state(false);
 
   async function handleBookmark(festivalId: string) {
     const uid = auth.currentUser?.uid;
     if (!uid) return;
-    await state.updateTracker(uid, festivalId, { status: "interested" });
+    await festivalState.updateTracker(uid, festivalId, { status: "interested" });
   }
 
   async function handleLoadMore() {
-    await state.loadMore();
+    await festivalState.loadMore();
   }
 </script>
 
 <div class="discover-tab">
+  <ModerationQueue />
+
   <FestivalFilterBar />
 
-  {#if state.festivals.length === 0}
+  {#if festivalState.festivals.length === 0}
     <div class="empty-state">
       <i class="fas fa-compass" aria-hidden="true"></i>
       <p>No festivals match your filters.</p>
@@ -28,20 +35,20 @@
     </div>
   {:else}
     <div class="festival-list" role="list" aria-label="Festival results">
-      {#each state.festivals as festival (festival.id)}
+      {#each festivalState.festivals as festival (festival.id)}
         <div role="listitem">
           <FestivalCard
             {festival}
-            tracker={state.trackers.get(festival.id)}
-            attendanceCount={state.attendanceCounts.get(festival.id) ?? 0}
-            onselect={() => (state.selectedFestival = festival)}
+            tracker={festivalState.trackers.get(festival.id)}
+            attendanceCount={festivalState.attendanceCounts.get(festival.id) ?? 0}
+            onselect={() => (festivalState.selectedFestival = festival)}
             onbookmark={() => handleBookmark(festival.id)}
           />
         </div>
       {/each}
     </div>
 
-    {#if state.hasMore}
+    {#if festivalState.hasMore}
       <div class="load-more-row">
         <button class="load-more-btn" onclick={handleLoadMore}>
           Load more
@@ -49,7 +56,22 @@
       </div>
     {/if}
   {/if}
+
+  <div class="submit-row">
+    <button
+      type="button"
+      class="submit-festival-btn"
+      onclick={() => (showSubmitForm = true)}
+    >
+      <i class="fas fa-plus" aria-hidden="true"></i>
+      Submit a festival
+    </button>
+  </div>
 </div>
+
+{#if showSubmitForm}
+  <FestivalSubmissionForm onclose={() => (showSubmitForm = false)} />
+{/if}
 
 <style>
   .discover-tab {
@@ -132,5 +154,39 @@
   .load-more-btn:hover {
     background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.1));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+  }
+
+  .submit-row {
+    padding: 16px;
+    display: flex;
+    justify-content: center;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    flex-shrink: 0;
+  }
+
+  .submit-festival-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 8px;
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.6));
+    cursor: pointer;
+    font-size: var(--font-size-min, 14px);
+    padding: 10px 24px;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  }
+
+  .submit-festival-btn:hover {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
+    color: var(--theme-text, #ffffff);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .submit-festival-btn {
+      transition: none;
+    }
   }
 </style>

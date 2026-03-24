@@ -21,4 +21,10 @@ export interface IGeocodingService {
    * @returns City name, country, and city center coordinates
    */
   reverseGeocode(lat: number, lng: number): Promise<CityLocation>;
+
+  /**
+   * Forward geocode a city + country string into coordinates.
+   * Returns the city center lat/lng, or null if the place can't be resolved.
+   */
+  forwardGeocode(city: string, country: string): Promise<{ lat: number; lng: number } | null>;
 }

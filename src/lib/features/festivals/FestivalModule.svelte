@@ -8,6 +8,7 @@
   import FestivalMap from "./components/map/FestivalMap.svelte";
   import FestivalDetailView from "./components/discover/FestivalDetailView.svelte";
   import FestivalCalendar from "./components/calendar/FestivalCalendar.svelte";
+  import WorkshopPortfolioEditor from "./components/portfolio/WorkshopPortfolioEditor.svelte";
 
   const state = createFestivalState(
     container.items.festivalLoader,
@@ -63,7 +64,7 @@
     {:else if state.activeTab === "calendar"}
       <FestivalCalendar />
     {:else if state.activeTab === "workshops"}
-      <p style="padding: 24px; text-align: center; opacity: 0.5;">My Workshops tab — coming next</p>
+      <WorkshopPortfolioEditor />
     {/if}
   </div>
 </div>
