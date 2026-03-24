@@ -37,6 +37,9 @@ export const USERNAME_RULES = {
 		'alphabet',
 		'scribe',
 		'tkascribe',
+		'composer',
+		'tkacomposer',
+		'tkaflowarts',
 		// Technical
 		'api',
 		'null',
