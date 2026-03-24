@@ -1,0 +1,1277 @@
+[
+  {
+    "name": "FireDrums 2026",
+    "organization": "FireDrums",
+    "location": {
+      "venue": "Blue Mountain Event Center",
+      "city": "Wilseyville",
+      "state": "California",
+      "country": "USA"
+    },
+    "typicalDates": "Early June",
+    "confirmedDates2026": "June 4-7, 2026",
+    "websiteUrl": "https://firedrums.org",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "large",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": "@firedrumsfestival",
+      "facebook": "https://www.facebook.com/FireDrumsFestival/"
+    },
+    "tags": ["fire", "flow", "workshops", "camping", "performance", "fire-circle"],
+    "description": "One of the longest-running fire arts festivals in North America, now in its 22nd year. Features ~100 workshops, instructor showcase, firewalk, and nightly fire-dancing circles. Tickets almost always sell out."
+  },
+  {
+    "name": "FLAME Festival",
+    "organization": "Flow Arts Movement Exchange",
+    "location": {
+      "venue": "Skull Shoals Park and Campground",
+      "city": "Washington",
+      "state": "Georgia",
+      "country": "USA"
+    },
+    "typicalDates": "Second weekend of April",
+    "confirmedDates2026": "April 9-12, 2026",
+    "websiteUrl": "https://flamefestival.com",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "large",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["fire", "flow", "workshops", "camping", "southeast"],
+    "description": "The largest fire festival in the Southeast US. Over 100 workshops covering a wide variety of props and skill levels, vendors, performances, and fire circles."
+  },
+  {
+    "name": "Kinetic Fire Retreat 2026",
+    "organization": "Kinetic Fire",
+    "location": {
+      "venue": null,
+      "city": "College Corner",
+      "state": "Ohio",
+      "country": "USA"
+    },
+    "typicalDates": "Mid May",
+    "confirmedDates2026": "May 14-17, 2026",
+    "websiteUrl": "https://kineticfire.org",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "medium",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": "@kineticfireretreat",
+      "facebook": "https://www.facebook.com/kineticfire/"
+    },
+    "tags": ["fire", "flow", "workshops", "camping", "midwest"],
+    "description": "Four-day fire and flow artist festival and retreat in the heart of the Midwest. Over 400 individual classes with workshop selection informed by community polling. Open-share communal environment."
+  },
+  {
+    "name": "WildFire Retreat (Spring)",
+    "organization": "WildFire Spinning Arts",
+    "location": {
+      "venue": null,
+      "city": "Ashford",
+      "state": "Connecticut",
+      "country": "USA"
+    },
+    "typicalDates": "Late May",
+    "confirmedDates2026": "May 22-25, 2026",
+    "websiteUrl": "https://www.wildfireretreat.org",
+    "seekingInstructors": true,
+    "seekingPerformers": false,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "medium",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": "https://www.facebook.com/WildFireRetreat/"
+    },
+    "tags": ["fire", "flow", "workshops", "camping", "east-coast", "meals-included"],
+    "description": "The East Coast's premier spinning and fire arts training camp. 100+ classes on poi, hoop, staves, dance, fire safety, and performance. Participation-based skill-share philosophy. Meals included with ticket."
+  },
+  {
+    "name": "WildFire Retreat (Fall)",
+    "organization": "WildFire Spinning Arts",
+    "location": {
+      "venue": null,
+      "city": "Ashford",
+      "state": "Connecticut",
+      "country": "USA"
+    },
+    "typicalDates": "Late September",
+    "confirmedDates2026": "September 18-22, 2026",
+    "websiteUrl": "https://www.wildfireretreat.org",
+    "seekingInstructors": true,
+    "seekingPerformers": false,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "medium",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": "https://www.facebook.com/WildFireRetreat/"
+    },
+    "tags": ["fire", "flow", "workshops", "camping", "east-coast", "meals-included"],
+    "description": "Fall edition of the East Coast's premier spinning and fire arts training camp. Same format as spring: 100+ classes, camping, meals included."
+  },
+  {
+    "name": "Flowstorm Revival 2026",
+    "organization": "Flowstorm",
+    "location": {
+      "venue": "Sustainable farm/eco-village",
+      "city": "Austin",
+      "state": "Texas",
+      "country": "USA"
+    },
+    "typicalDates": "Late March",
+    "confirmedDates2026": "March 26-30, 2026",
+    "websiteUrl": "https://flowstormtx.com",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "medium",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": "@flowstormtx",
+      "facebook": "https://www.facebook.com/FlowstormTx/"
+    },
+    "tags": ["fire", "flow", "workshops", "camping", "sustainability", "permaculture"],
+    "description": "Billed as the world's first Flow Arts and Sustainability festival. Held on a sustainable farm with flow workshops, permaculture classes, organic gardening, natural building, live music, and performances."
+  },
+  {
+    "name": "Pacific Fire Gathering",
+    "organization": "Pacific Fire Gathering",
+    "location": {
+      "venue": null,
+      "city": "Oregon Coast",
+      "state": "Oregon",
+      "country": "USA"
+    },
+    "typicalDates": "Early September",
+    "confirmedDates2026": null,
+    "websiteUrl": "https://www.pacificfiregathering.com",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": "info@pacificfiregathering.com",
+    "estimatedSize": "medium",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": "@pacificfiregathering",
+      "facebook": "https://www.facebook.com/PacificFireGathering/"
+    },
+    "tags": ["fire", "flow", "workshops", "camping", "oregon-coast"],
+    "description": "One of the longest running flow and fire festivals in the US, established 2010. Classes include poi, staffs, hoops, clubs, buugeng, whips, fans, flow wand, fire breathing, fire safety, dance, aerials, stilts."
+  },
+  {
+    "name": "Kindle Northwest 2026",
+    "organization": "Kindle NW",
+    "location": {
+      "venue": "Camp Meriwether",
+      "city": "Oregon Coast",
+      "state": "Oregon",
+      "country": "USA"
+    },
+    "typicalDates": "Mid September",
+    "confirmedDates2026": "September 10-13, 2026",
+    "websiteUrl": "https://kindlenw.org",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "medium",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": "@kindle_nw",
+      "facebook": "https://www.facebook.com/KindleNW/"
+    },
+    "tags": ["fire", "flow", "circus", "workshops", "camping", "pacific-northwest"],
+    "description": "Annual fire and flow arts community gathering on the Oregon coast. 4 days and 3 nights of workshops, fire dancing, live music, and community building in a temperate rainforest campground at the edge of the Pacific."
+  },
+  {
+    "name": "Great Lakes Flow Festival 2026",
+    "organization": "GLF Productions",
+    "location": {
+      "venue": "Hi-Way Drive-In",
+      "city": "Carsonville",
+      "state": "Michigan",
+      "country": "USA"
+    },
+    "typicalDates": "Mid August",
+    "confirmedDates2026": "August 13-16, 2026",
+    "websiteUrl": "https://www.greatlakesflow.com",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "medium",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": "@glfproductions",
+      "facebook": "https://www.facebook.com/greatlakesflow/"
+    },
+    "tags": ["fire", "flow", "workshops", "camping", "midwest", "live-music"],
+    "description": "Michigan's premier multi-disciplinary fire and flow arts retreat. Now in its sixth installment. Four-day camping event with workshops, music, performances, art, nightly stage performances, and fire circles."
+  },
+  {
+    "name": "Fahrenheit Flow Arts Festival",
+    "organization": "Fahrenheit Flow Arts",
+    "location": {
+      "venue": "Camp Pioneer",
+      "city": "Elkins area",
+      "state": "West Virginia",
+      "country": "USA"
+    },
+    "typicalDates": "Varies",
+    "confirmedDates2026": null,
+    "websiteUrl": "https://flow-arts.com",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "medium",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": "@fahrenheitflowarts",
+      "facebook": "https://www.facebook.com/fahrenheit.flowarts.9/"
+    },
+    "tags": ["fire", "flow", "workshops", "camping", "mid-atlantic", "meals-included", "effigy"],
+    "description": "4-day annual Mid-Atlantic fire and flow arts retreat. Unique workshops by day, curated live fire performance by night. Features effigy construction and destruction. Meals included."
+  },
+  {
+    "name": "PlayThink Movement and Flow Arts Festival 2026",
+    "organization": "PlayThink",
+    "location": {
+      "venue": null,
+      "city": "Edmonton",
+      "state": "Kentucky",
+      "country": "USA"
+    },
+    "typicalDates": "Mid to Late June",
+    "confirmedDates2026": "June 17-21, 2026",
+    "websiteUrl": "https://playthinkfestival.com",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "medium",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": "https://www.facebook.com/playthinkfest/"
+    },
+    "tags": ["flow", "workshops", "camping", "family-friendly", "alcohol-free", "movement", "music", "healing"],
+    "description": "Transformational movement, music, and arts festival. 200+ playshops on movement, music, and healing. Alcohol- and substance-free, truly family-centric. Covers yoga, poi, hoops, staff, capoeira, aerials, dance, meditation, fire dancing, and more."
+  },
+  {
+    "name": "Southwest Flow Festival",
+    "organization": "Southwest Flow Festival",
+    "location": {
+      "venue": "Gateway Ranch",
+      "city": "Flagstaff",
+      "state": "Arizona",
+      "country": "USA"
+    },
+    "typicalDates": "Late September",
+    "confirmedDates2026": null,
+    "websiteUrl": "https://thesouthwestflowfestival.com",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "medium",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": "https://www.facebook.com/southwestflowfestival/"
+    },
+    "tags": ["fire", "flow", "workshops", "camping", "family-friendly", "live-music", "aerial"],
+    "description": "Family-friendly multi-day camping festival on 60 enchanted acres near Flagstaff. Features fire spinning, skill-sharing workshops, live music, aerial performances, and a geodesic dome venue. Workshops cover poi, juggling, dance, acrobatics, aerial, hoop, contact staff, yoga."
+  },
+  {
+    "name": "IgNight Flow Retreat 2026",
+    "organization": "SkyFire Arts / StormLight Dream Foundation",
+    "location": {
+      "venue": "Vacation Isle",
+      "city": "San Diego",
+      "state": "California",
+      "country": "USA"
+    },
+    "typicalDates": "Late March",
+    "confirmedDates2026": "March 28, 2026",
+    "websiteUrl": "https://stormlightdreamfoundation.org/home/programs/",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "medium",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": "https://www.facebook.com/Ignightflow/"
+    },
+    "tags": ["fire", "flow", "flow-science", "workshops", "lightning-performance", "glamping"],
+    "description": "3-day flow retreat blending workshops on prop skills with the science of flow states. Produced by SkyFire Arts, a 501c3 nonprofit. Includes fire and lightning performances, meals, community vendors, and VIP glamping options."
+  },
+  {
+    "name": "ZenFlow Retreat",
+    "organization": "Third Eye Art Collective",
+    "location": {
+      "venue": null,
+      "city": "Homestead",
+      "state": "Florida",
+      "country": "USA"
+    },
+    "typicalDates": "October",
+    "confirmedDates2026": null,
+    "websiteUrl": "https://thirdeyeartcollective.com/zenflowhome",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "small",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["fire", "flow", "wellness", "yoga", "sound-bath", "camping"],
+    "description": "Three-night fire, flow, and wellness retreat in South Florida. Flow and fire workshops on various props, holistic wellness classes (breathwork, yoga, sound baths), and evening fire performances over the lagoon."
+  },
+  {
+    "name": "AR Flowdown 2026",
+    "organization": "Arkansas Flow Arts",
+    "location": {
+      "venue": null,
+      "city": null,
+      "state": "Arkansas",
+      "country": "USA"
+    },
+    "typicalDates": null,
+    "confirmedDates2026": null,
+    "websiteUrl": null,
+    "seekingInstructors": null,
+    "seekingPerformers": null,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "small",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": "@arflowarts",
+      "facebook": null
+    },
+    "tags": ["flow", "juggling", "workshops", "camping", "fire-jam"],
+    "description": "3-day camping festival highlighting juggling and various flow arts. Features workshops, indoor toss juggling space, festival showcase with guest performers, and late-night fire jams."
+  },
+  {
+    "name": "Flow Fest Dallas 2026",
+    "organization": "Flow Fests (Casandra Tanenbaum)",
+    "location": {
+      "venue": "Exall Park",
+      "city": "Dallas",
+      "state": "Texas",
+      "country": "USA"
+    },
+    "typicalDates": "April",
+    "confirmedDates2026": "April 12, 2026",
+    "websiteUrl": "https://flowfests.com/dallas-2026/",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "medium",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["flow", "workshops", "free", "family-friendly", "circus-arts", "yoga"],
+    "description": "Free public festival with 20+ workshops in circus arts, dance, and yoga. Part of the Flow Fests touring series celebrating 15 years."
+  },
+  {
+    "name": "Flow Fest Denver 2026",
+    "organization": "Flow Fests (Casandra Tanenbaum)",
+    "location": {
+      "venue": null,
+      "city": "Westminster",
+      "state": "Colorado",
+      "country": "USA"
+    },
+    "typicalDates": "May",
+    "confirmedDates2026": "May 9, 2026",
+    "websiteUrl": "https://flowfests.com",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "medium",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["flow", "workshops", "free", "family-friendly", "object-manipulation", "yoga", "acro-yoga"],
+    "description": "Free public festival with simultaneous workshops offering up to 8 flow arts opportunities at any given time. Object manipulation (hoop, juggling, poi, staff), yoga, acro yoga, and slackline."
+  },
+  {
+    "name": "Flow Fest Indianapolis 2026",
+    "organization": "Flow Fests (Casandra Tanenbaum)",
+    "location": {
+      "venue": "White River State Park",
+      "city": "Indianapolis",
+      "state": "Indiana",
+      "country": "USA"
+    },
+    "typicalDates": "Late May",
+    "confirmedDates2026": "May 31, 2026",
+    "websiteUrl": "https://flowfests.com/indy_2026/",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "medium",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["flow", "workshops", "free", "family-friendly"],
+    "description": "Free public festival with master artist workshops by day, performances by night. Part of the Flow Fests touring series."
+  },
+  {
+    "name": "Flow Fest Seattle 2026",
+    "organization": "Flow Fests (Casandra Tanenbaum) / Seattle Flow Arts Collective",
+    "location": {
+      "venue": "Volunteer Park",
+      "city": "Seattle",
+      "state": "Washington",
+      "country": "USA"
+    },
+    "typicalDates": "Mid June",
+    "confirmedDates2026": "June 13, 2026",
+    "websiteUrl": "https://flowfests.com/flow-fest-seattle-2026/",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "medium",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["flow", "workshops", "free", "family-friendly", "fire-jam"],
+    "description": "Full-day community fire jam and festival with 40+ workshops. Friday night features participatory fire jam."
+  },
+  {
+    "name": "Flow Fest Fort Lauderdale 2026",
+    "organization": "Flow Fests (Casandra Tanenbaum)",
+    "location": {
+      "venue": null,
+      "city": "Fort Lauderdale",
+      "state": "Florida",
+      "country": "USA"
+    },
+    "typicalDates": "January",
+    "confirmedDates2026": "January 18, 2026",
+    "websiteUrl": "https://flowfests.com/ftl-2026/",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "medium",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["flow", "workshops", "free", "family-friendly", "circus-arts"],
+    "description": "Free public festival celebrating 15 years. 50+ workshops in circus arts, dance, and yoga. Theme: Whimsy."
+  },
+  {
+    "name": "Flow Fest Chicago 2026",
+    "organization": "Flow Fests (Casandra Tanenbaum)",
+    "location": {
+      "venue": null,
+      "city": "Chicago",
+      "state": "Illinois",
+      "country": "USA"
+    },
+    "typicalDates": "Early September",
+    "confirmedDates2026": "September 5, 2026",
+    "websiteUrl": "https://flowfests.com",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "medium",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["flow", "workshops", "free", "hoop", "juggling", "poi", "staff", "yoga"],
+    "description": "Free public participation festival with workshops in hoop, juggling, poi, staff, yoga and more. Part of the Flow Fests touring series."
+  },
+  {
+    "name": "Flow Fest Philadelphia 2026",
+    "organization": "Flow Fests (Casandra Tanenbaum)",
+    "location": {
+      "venue": null,
+      "city": "Philadelphia",
+      "state": "Pennsylvania",
+      "country": "USA"
+    },
+    "typicalDates": "Early October",
+    "confirmedDates2026": "October 4, 2026",
+    "websiteUrl": "https://flowfests.com/philly-2026/",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "medium",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["flow", "workshops", "free", "family-friendly"],
+    "description": "Free public festival with optional master workshops for newcomers and experienced movers. Part of the Flow Fests touring series."
+  },
+  {
+    "name": "IJA Festival 2026",
+    "organization": "International Jugglers' Association",
+    "location": {
+      "venue": null,
+      "city": "Fort Wayne",
+      "state": "Indiana",
+      "country": "USA"
+    },
+    "typicalDates": "Late July to Early August",
+    "confirmedDates2026": "July 27 - August 2, 2026",
+    "websiteUrl": "https://festival.juggle.org",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "large",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": "https://www.facebook.com/ijajugglers"
+    },
+    "tags": ["juggling", "flow", "workshops", "competition", "shows"],
+    "description": "79th annual festival of the International Jugglers' Association, founded 1947. Week-long event with shows, workshops, games, and competitions. Requires IJA membership for registration."
+  },
+  {
+    "name": "Tucson Juggling Festival 2026",
+    "organization": "Tucson Juggling",
+    "location": {
+      "venue": "Catalina State Park",
+      "city": "Tucson",
+      "state": "Arizona",
+      "country": "USA"
+    },
+    "typicalDates": "Early April",
+    "confirmedDates2026": "April 2-5, 2026",
+    "websiteUrl": "http://www.tucsonjuggling.org/festival",
+    "seekingInstructors": false,
+    "seekingPerformers": false,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "small",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["juggling", "flow", "camping", "donation-based"],
+    "description": "16th annual informal 3-day event at Catalina State Park. Camping-focused, operates by donation."
+  },
+  {
+    "name": "MONDO Juggling and Unicycle Festival 2026",
+    "organization": "MONDO Juggling and Unicycle Arts",
+    "location": {
+      "venue": "Central High Theater",
+      "city": "St. Paul",
+      "state": "Minnesota",
+      "country": "USA"
+    },
+    "typicalDates": "Mid February",
+    "confirmedDates2026": "February 13-15, 2026",
+    "websiteUrl": "https://www.mondofest.org",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "large",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["juggling", "unicycle", "workshops", "shows", "midwest"],
+    "description": "37th annual festival. Largest annual Midwest gathering of jugglers, unicyclists, and yo-yo enthusiasts. Averages 500-700 participants with a public show."
+  },
+  {
+    "name": "Cascade Juggling Festival 2026",
+    "organization": "Cascade Jugglers of Seattle / Bellingham Circus Guild",
+    "location": {
+      "venue": null,
+      "city": "Bellingham",
+      "state": "Washington",
+      "country": "USA"
+    },
+    "typicalDates": "Early May",
+    "confirmedDates2026": "May 8-10, 2026",
+    "websiteUrl": null,
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "small",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["juggling", "flow", "workshops", "shows"],
+    "description": "All-levels gathering with workshops on various props. Saturday evening features an invitational revue. Supported by Fund the Flow Arts seed grant."
+  },
+  {
+    "name": "Portland Juggling Festival 2026",
+    "organization": "Portland Jugglers",
+    "location": {
+      "venue": null,
+      "city": "Portland",
+      "state": "Oregon",
+      "country": "USA"
+    },
+    "typicalDates": "Late September",
+    "confirmedDates2026": "September 25-27, 2026",
+    "websiteUrl": "https://www.portlandjugglers.org",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "medium",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["juggling", "flow", "workshops", "shows", "renegade"],
+    "description": "34th annual festival spanning 30+ years. Features workshops, big show, renegade performances, and games."
+  },
+  {
+    "name": "The Hoop Jawn",
+    "organization": "The Hoop Jawn",
+    "location": {
+      "venue": null,
+      "city": "Philadelphia",
+      "state": "Pennsylvania",
+      "country": "USA"
+    },
+    "typicalDates": "Early February",
+    "confirmedDates2026": null,
+    "websiteUrl": null,
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "small",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["hoop", "workshops", "contests", "performance"],
+    "description": "The Mid-Atlantic's biggest hula hoop festival. Workshops, contests, performances, and raffles."
+  },
+  {
+    "name": "The Cheeslandia Hoop Affair 2026",
+    "organization": "Cheeslandia Hoop Affair / Madison Circus Space",
+    "location": {
+      "venue": null,
+      "city": "Madison",
+      "state": "Wisconsin",
+      "country": "USA"
+    },
+    "typicalDates": "Late February",
+    "confirmedDates2026": "February 20-21, 2026",
+    "websiteUrl": "https://www.cheeselandiahoopaffair.com",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "small",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["hoop", "workshops", "midwest"],
+    "description": "Hoop convention founded by Madison Circus Space co-founder. First year drew participants from 30 states plus Canada and Germany."
+  },
+  {
+    "name": "The Flow Show",
+    "organization": "Fund the Flow Arts",
+    "location": {
+      "venue": "Dance Mission Theater",
+      "city": "San Francisco",
+      "state": "California",
+      "country": "USA"
+    },
+    "typicalDates": "Late March",
+    "confirmedDates2026": null,
+    "websiteUrl": "https://fundtheflowarts.org",
+    "seekingInstructors": false,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "small",
+    "region": "north-america",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["flow", "performance", "theater", "dance"],
+    "description": "13th year presenting flow arts in a dance-theater setting. Produced by Fund the Flow Arts nonprofit in San Francisco's Mission District."
+  },
+  {
+    "name": "European Juggling Convention (EJC) 2026",
+    "organization": "European Juggling Association",
+    "location": {
+      "venue": null,
+      "city": "Ptuj",
+      "state": null,
+      "country": "Slovenia"
+    },
+    "typicalDates": "Early August",
+    "confirmedDates2026": "August 1-9, 2026",
+    "websiteUrl": "https://ejc2026.org",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "large",
+    "region": "europe",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": "https://www.facebook.com/p/EJC-2026-PTUJ-61568400657093/"
+    },
+    "tags": ["juggling", "circus", "fire", "flow", "workshops", "shows", "unicycling", "acrobatics"],
+    "description": "The largest juggling convention in the world, regularly attracting several thousand participants. 48th edition. Embraces the full spectrum of contemporary circus: juggling, unicycling, acrobatics, fire, hula hooping, magic, and more. Includes open fire stage in the city center."
+  },
+  {
+    "name": "Ostflimmern 2026",
+    "organization": "FlowArts e.V.",
+    "location": {
+      "venue": null,
+      "city": "Near Berlin",
+      "state": null,
+      "country": "Germany"
+    },
+    "typicalDates": "Late May",
+    "confirmedDates2026": "May 22-25, 2026",
+    "websiteUrl": "https://ostflimmern.org/en/",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "medium",
+    "region": "europe",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["fire", "flow", "workshops", "camping", "community-driven", "nonprofit", "healing", "acro-yoga"],
+    "description": "Community-driven, strictly non-profit flow arts and fire convention near Berlin. 14+ years running. Workshops, music, healing spaces, meditation, acro-yoga, OpenStage show, firejams from dusk till dawn, and a FlowMarkt. All participants pay the same price."
+  },
+  {
+    "name": "Phoenix Fire Convention 2026",
+    "organization": "Phoenix Fire Convention (community-owned)",
+    "location": {
+      "venue": null,
+      "city": "Hildburghausen",
+      "state": "Thuringia",
+      "country": "Germany"
+    },
+    "typicalDates": "Mid July",
+    "confirmedDates2026": "July 16-19, 2026",
+    "websiteUrl": "https://phoenix-convention.com",
+    "seekingInstructors": false,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "large",
+    "region": "europe",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": "https://www.facebook.com/phoenixfireconvention/"
+    },
+    "tags": ["fire", "flow", "community", "camping", "volunteer-based"],
+    "description": "Billed as the largest fire gathering in the world. Community-owned (not a company or agency). Every ticket-holder commits to at least one volunteer shift. Dancing flames, community performances, music, storytelling. Camping with tents or caravans."
+  },
+  {
+    "name": "Artemisia Fire Gathering",
+    "organization": "Artemisia",
+    "location": {
+      "venue": "Agriturismo Costa San Bernardo",
+      "city": "Basilicata",
+      "state": null,
+      "country": "Italy"
+    },
+    "typicalDates": "Mid to Late June",
+    "confirmedDates2026": null,
+    "websiteUrl": "https://www.artemisiagathering.org",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "intimate",
+    "region": "europe",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": "https://www.facebook.com/artemisiagathering/"
+    },
+    "tags": ["fire", "flow", "workshops", "camping", "intimate", "food"],
+    "description": "Intimate gathering (70-80 participants) for fire performers and flow artists in the wild green heart of southern Italy. Since 2017. International masters in flow arts, circus, juggling, and aerials. Fire playground from dusk till dawn. Family-like atmosphere."
+  },
+  {
+    "name": "Roztoč Fest",
+    "organization": "Roztoč",
+    "location": {
+      "venue": "Soviet-era missile base Bratronice",
+      "city": "Near Prague",
+      "state": null,
+      "country": "Czech Republic"
+    },
+    "typicalDates": "Mid August",
+    "confirmedDates2026": null,
+    "websiteUrl": "https://roztocfest.com",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "large",
+    "region": "europe",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": "https://www.facebook.com/roztocfest/"
+    },
+    "tags": ["fire", "flow", "circus", "music", "workshops", "shows", "DJs", "live-bands"],
+    "description": "International festival of circus and performance arts on a repurposed Soviet-era missile base. Founded 2013, up to 1200 visitors. 5-day festival with ~40 workshops daily, multiple full-length shows, 25+ DJs at 4 stages, 15+ live bands, and all-night fire jams."
+  },
+  {
+    "name": "Flow in the Forest",
+    "organization": "Flow in the Forest",
+    "location": {
+      "venue": "The Glade, Horseheath Race Course",
+      "city": "Linton",
+      "state": null,
+      "country": "United Kingdom"
+    },
+    "typicalDates": "TBD (Year Two)",
+    "confirmedDates2026": null,
+    "websiteUrl": "https://flowintheforest.com",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "medium",
+    "region": "europe",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": "https://www.facebook.com/people/Flow-in-the-Forest/61573130670439/"
+    },
+    "tags": ["fire", "flow", "aerial", "workshops", "gala-show", "hot-tubs", "sauna", "renegade"],
+    "description": "The UK's first-ever festival designed specifically for the fire and flow arts community. Multiple themed areas: ground workshops (acrostaff, hand-to-hand, clowning, choreography), aerial/slackline space, fire gala show, renegade stage, and chill zone with hot tubs, saunas, and healing sessions."
+  },
+  {
+    "name": "Ab 'in Pott Convention",
+    "organization": "Ab 'in Pott",
+    "location": {
+      "venue": null,
+      "city": null,
+      "state": null,
+      "country": "Germany"
+    },
+    "typicalDates": "Late March",
+    "confirmedDates2026": null,
+    "websiteUrl": null,
+    "seekingInstructors": null,
+    "seekingPerformers": null,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "medium",
+    "region": "europe",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["juggling", "flow", "workshops", "fire"],
+    "description": "Four fun and flaming days dedicated to creativity, movement, juggling, and play."
+  },
+  {
+    "name": "Salzburger Jonglierconvention",
+    "organization": "Salzburger Jonglierconvention",
+    "location": {
+      "venue": null,
+      "city": "Salzburg",
+      "state": null,
+      "country": "Austria"
+    },
+    "typicalDates": "Early June",
+    "confirmedDates2026": null,
+    "websiteUrl": null,
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "medium",
+    "region": "europe",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["juggling", "flow", "fire-jam", "gala-show", "workshops"],
+    "description": "Four days filled with many workshops, fire jam, gala show, and open stage in Salzburg."
+  },
+  {
+    "name": "Circulos Hoop Retreat",
+    "organization": "Circulos",
+    "location": {
+      "venue": null,
+      "city": "Lagos",
+      "state": null,
+      "country": "Portugal"
+    },
+    "typicalDates": "Early May",
+    "confirmedDates2026": null,
+    "websiteUrl": null,
+    "seekingInstructors": true,
+    "seekingPerformers": false,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "intimate",
+    "region": "europe",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["hoop", "workshops", "retreat", "yoga", "meditation"],
+    "description": "Hoop retreat in Portugal featuring workshops, silk veil fans, yoga, meditation, pool/sauna time, and vegetarian meals."
+  },
+  {
+    "name": "Eat, Play, Love Gathering",
+    "organization": "Eat, Play, Love",
+    "location": {
+      "venue": "Permaculture farm",
+      "city": "Sardinia",
+      "state": null,
+      "country": "Italy"
+    },
+    "typicalDates": "October",
+    "confirmedDates2026": null,
+    "websiteUrl": "https://eatplaylove-it.my.canva.site/en",
+    "seekingInstructors": null,
+    "seekingPerformers": null,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "intimate",
+    "region": "europe",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["flow", "workshops", "family-friendly", "organic-food", "permaculture"],
+    "description": "Family-friendly weekend at a permaculture farm in Sardinia with workshops, games, organic food, and evening entertainment."
+  },
+  {
+    "name": "Get the Ring: Hulahoop Convention",
+    "organization": "Get the Ring",
+    "location": {
+      "venue": null,
+      "city": "Near Zurich",
+      "state": null,
+      "country": "Switzerland"
+    },
+    "typicalDates": "Late September",
+    "confirmedDates2026": null,
+    "websiteUrl": null,
+    "seekingInstructors": true,
+    "seekingPerformers": false,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "small",
+    "region": "europe",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["hoop", "workshops", "convention"],
+    "description": "Gathering of hula hoopers near Zurich, Switzerland."
+  },
+  {
+    "name": "SWhoop (South West Hoop Conference)",
+    "organization": "SWhoop",
+    "location": {
+      "venue": null,
+      "city": "Bristol",
+      "state": null,
+      "country": "United Kingdom"
+    },
+    "typicalDates": "Early October",
+    "confirmedDates2026": null,
+    "websiteUrl": null,
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "small",
+    "region": "europe",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["hoop", "workshops", "crafting", "shows"],
+    "description": "South West Hoop Conference in Bristol. Hoop workshops, crafting, and shows."
+  },
+  {
+    "name": "TADAH Hoop Intensive",
+    "organization": "TADAH",
+    "location": {
+      "venue": null,
+      "city": null,
+      "state": null,
+      "country": "Turkey"
+    },
+    "typicalDates": "Late October",
+    "confirmedDates2026": null,
+    "websiteUrl": null,
+    "seekingInstructors": true,
+    "seekingPerformers": false,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "intimate",
+    "region": "europe",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["hoop", "intensive", "retreat", "all-inclusive"],
+    "description": "All-inclusive week-long hoop intensive in Turkey."
+  },
+  {
+    "name": "Israeli Juggling Convention (IJC)",
+    "organization": "IJC (volunteer-organized)",
+    "location": {
+      "venue": "Gan HaShlosha National Park",
+      "city": "Near Beit She'an",
+      "state": null,
+      "country": "Israel"
+    },
+    "typicalDates": "Passover holiday (April)",
+    "confirmedDates2026": null,
+    "websiteUrl": null,
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "large",
+    "region": "asia",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["juggling", "circus", "fire-show", "workshops", "camping", "gala"],
+    "description": "The second biggest juggling convention in the world (after EJC) with around 2000 participants. Camping convention with vendors, 220+ workshops, fire show, renegades, juggle jam, and an International Gala with world-class performers. Volunteer-organized."
+  },
+  {
+    "name": "Ignite Fire Hoop & Fans Intensive",
+    "organization": "The Hula Hoop Institute",
+    "location": {
+      "venue": null,
+      "city": "Bali",
+      "state": null,
+      "country": "Indonesia"
+    },
+    "typicalDates": "April",
+    "confirmedDates2026": null,
+    "websiteUrl": "https://thehulahoopinstitute.com/the-hoop-dream-retreat/ignite-2025/",
+    "seekingInstructors": true,
+    "seekingPerformers": false,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "intimate",
+    "region": "asia",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["fire", "hoop", "fans", "retreat", "luxury", "intensive"],
+    "description": "Immersive fire-themed intensive creating comfort and curiosity with the art of fire hooping and fire fans. Luxury retreat setting in Bali with world-class instruction."
+  },
+  {
+    "name": "The Hoop Dream Retreat (Bali)",
+    "organization": "The Hula Hoop Institute",
+    "location": {
+      "venue": null,
+      "city": "Bali",
+      "state": null,
+      "country": "Indonesia"
+    },
+    "typicalDates": "Late April",
+    "confirmedDates2026": null,
+    "websiteUrl": "https://thehulahoopinstitute.com/the-hoop-dream-retreat/bali-2025/",
+    "seekingInstructors": true,
+    "seekingPerformers": false,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "intimate",
+    "region": "asia",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["hoop", "retreat", "luxury", "bali"],
+    "description": "Luxury hoop gathering in Bali with terrific instructors, infinity pool overlooking the sea, and delicious cuisine. 7 or 15-day event."
+  },
+  {
+    "name": "Bali Fire Dance Retreat",
+    "organization": "Flow Arts Retreats / Vojta Stolbenko",
+    "location": {
+      "venue": null,
+      "city": "Bali",
+      "state": null,
+      "country": "Indonesia"
+    },
+    "typicalDates": "March",
+    "confirmedDates2026": null,
+    "websiteUrl": "https://flowartsretreats.com/bali/",
+    "seekingInstructors": true,
+    "seekingPerformers": false,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "intimate",
+    "region": "asia",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["fire", "poi", "staff", "retreat", "bali", "adventure"],
+    "description": "Combines poi and staff with pristine nature and adventure expeditions. 7 or 15-day events suited for all levels. Multiple instructors teaching poi, buugeng, hula hoop, contact staff, and other flow arts."
+  },
+  {
+    "name": "Spinfest 2026",
+    "organization": "Spin Circus",
+    "location": {
+      "venue": "Camp Cooriemungle",
+      "city": "Cooriemungle",
+      "state": "Victoria",
+      "country": "Australia"
+    },
+    "typicalDates": "Early January",
+    "confirmedDates2026": "January 8-12, 2026",
+    "websiteUrl": "https://www.spincircus.com/spin2026",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "medium",
+    "region": "oceania",
+    "socialLinks": {
+      "instagram": "@spin_circus_festival",
+      "facebook": "https://www.facebook.com/spincircusevents/"
+    },
+    "tags": ["fire", "flow", "circus", "workshops", "camping", "gala-show", "renegade"],
+    "description": "Australia's premier flow arts workshop festival, 2.5 hours from Melbourne. World-class teachers from around Australia with international guests. Workshops include acrobatics, aerials, fire spinning, poi, staff, contact staff, dragon staff, juggling, hoops, dance, magic, and more. Fire jams, gala shows, and renegade nights."
+  },
+  {
+    "name": "Circulation Festival",
+    "organization": "Circulation",
+    "location": {
+      "venue": "Whare Flat/Waiora Scout Camp",
+      "city": "Near Dunedin",
+      "state": null,
+      "country": "New Zealand"
+    },
+    "typicalDates": "Varies",
+    "confirmedDates2026": null,
+    "websiteUrl": "https://www.circulation.co.nz",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "medium",
+    "region": "oceania",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["fire", "flow", "circus", "workshops", "music", "family-friendly", "vegan-food"],
+    "description": "One of Aotearoa's best-kept secrets. 4-day workshop-based music, workshop, and circus performance festival. DJs, aerialists, jugglers, fire spinners, acrobats, live music. Nightly fire spinning circle open to anyone after a fire safety briefing. Child-friendly, quality vegan food, renegade show."
+  },
+  {
+    "name": "Animus Flow Arts Festival",
+    "organization": "Animus Flow Fest",
+    "location": {
+      "venue": "Farm on the N7",
+      "city": "Near Cape Town",
+      "state": "Western Cape",
+      "country": "South Africa"
+    },
+    "typicalDates": "Varies (typically spring/autumn in Southern Hemisphere)",
+    "confirmedDates2026": null,
+    "websiteUrl": "https://www.quicket.co.za/events/58931-animus-flow-festival/",
+    "seekingInstructors": true,
+    "seekingPerformers": true,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "small",
+    "region": "africa",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": "https://www.facebook.com/animusflowfest/"
+    },
+    "tags": ["fire", "flow", "workshops", "camping", "family-friendly", "drum-circle", "live-music"],
+    "description": "South Africa's leading flow arts and movement festival. Creativity, community, and fire converge in a family-friendly weekend in nature. Flow workshops in hooping, poi, staff, fans, juggling. Live music, DJs, ecstatic dance, sunset drum circles, fire jams both nights, catered spit-roast dinner."
+  },
+  {
+    "name": "Circle of Fire",
+    "organization": "Circle of Fire",
+    "location": {
+      "venue": "Porcupine Hills",
+      "city": null,
+      "state": null,
+      "country": "South Africa"
+    },
+    "typicalDates": null,
+    "confirmedDates2026": null,
+    "websiteUrl": null,
+    "seekingInstructors": null,
+    "seekingPerformers": null,
+    "applicationUrl": null,
+    "applicationContact": null,
+    "estimatedSize": "intimate",
+    "region": "africa",
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null
+    },
+    "tags": ["fire", "performance", "retreat"],
+    "description": "South Africa's first fire performance retreat at Porcupine Hills. Inspired by fire festivals in Europe and the USA."
+  }
+]
