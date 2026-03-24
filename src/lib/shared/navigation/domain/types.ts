@@ -48,6 +48,7 @@ export type ModuleId =
   | "watch" // Watch videos and performances
   | "moderation" // Content moderation (admin)
   | "arena" // Community pairwise ranking
+  | "festivals" // Festival Hub — discover and apply to flow festivals
   | "lab"; // Experimental features lab (all experiments consolidated here)
   // Consolidated into Lab (Feb 2026): community, ml-training, connect
 

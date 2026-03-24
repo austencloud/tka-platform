@@ -19,6 +19,7 @@ import {
   LAB_TABS,
   ARENA_TABS,
   CHOREO_CARD_TABS,
+  FESTIVAL_TABS,
 } from "./tab-definitions";
 
 /**
@@ -203,6 +204,15 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     description: "System management & configuration",
     isMain: true, // Visibility controlled by getModuleDefinitions() based on admin status
     sections: ADMIN_TABS,
+  },
+  {
+    id: "festivals",
+    label: "Festivals",
+    icon: '<i class="fas fa-fire" style="color: #f97316;" aria-hidden="true"></i>',
+    color: "#f97316",
+    description: "Discover and apply to flow festivals",
+    isMain: true,
+    sections: FESTIVAL_TABS,
   },
   {
     id: "lab",

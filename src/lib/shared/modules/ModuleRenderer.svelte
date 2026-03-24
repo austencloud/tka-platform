@@ -102,6 +102,8 @@
     tika: () => import("../../features/tika/TikaModule.svelte"),
     // Moderation module - user reports dashboard (admin-only)
     moderation: () => import("../../features/moderation/ModerationModule.svelte"),
+    // festivals module - discover and apply to flow festivals
+    festivals: () => import("../../features/festivals/FestivalModule.svelte"),
     // Lab module - ALL experiments consolidated here (Skew, Poi, Realm, Terrain, Mandala, Backgrounds, Landing)
     lab: () => import("../../features/lab/LabModule.svelte"),
     // ========================================================================
