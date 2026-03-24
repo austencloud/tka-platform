@@ -14,6 +14,7 @@
   } from "date-fns";
   import type { Festival } from "../../domain/models/festival";
   import type { UserFestivalTracker } from "../../domain/models/festival-tracker";
+  import { toDate } from "../../domain/models/timestamp-utils";
   import FestivalDayCell from "./FestivalDayCell.svelte";
   import type { CalendarEntry } from "./FestivalDayCell.svelte";
 
@@ -68,8 +69,8 @@
       if (!tracker) continue;
 
       // Festival date range entries
-      const start = festival.dates.start.toDate();
-      const end = festival.dates.end.toDate();
+      const start = toDate(festival.dates.start);
+      const end = toDate(festival.dates.end);
 
       try {
         const festivalDays = eachDayOfInterval({ start, end });
@@ -87,7 +88,7 @@
 
       // Deadline entry
       if (festival.applicationDeadline) {
-        const deadlineDate = festival.applicationDeadline.toDate();
+        const deadlineDate = toDate(festival.applicationDeadline);
         const daysLeft = differenceInCalendarDays(deadlineDate, today);
         push(format(deadlineDate, "yyyy-MM-dd"), {
           type: "deadline",
