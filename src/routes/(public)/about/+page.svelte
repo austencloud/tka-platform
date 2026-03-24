@@ -199,7 +199,7 @@
       <div class="cta-card">
         <h3>Ready to browse?</h3>
         <p>TKA Composer is free to use. No download required.</p>
-        <a href={APP_DOMAIN} class="cta-button">
+        <a href="/app" class="cta-button">
           <span>Open TKA Composer</span>
           <i class="fas fa-arrow-right" aria-hidden="true"></i>
         </a>

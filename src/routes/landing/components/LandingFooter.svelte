@@ -40,7 +40,7 @@
       </li>
     </ul>
 
-    <a href={APP_DOMAIN} class="btn btn-primary">
+    <a href="/app" class="btn btn-primary">
       Open TKA Composer
       <span class="arrow">→</span>
     </a>
