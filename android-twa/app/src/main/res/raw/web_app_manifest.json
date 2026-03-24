@@ -7,7 +7,7 @@
   "display": "standalone",
   "display_override": ["standalone", "fullscreen", "minimal-ui"],
   "orientation": "any",
-  "scope": "/",
+  "scope": "/app",
   "start_url": "/app",
   "id": "tka-kinetic-alphabet",
   "categories": ["entertainment", "education", "productivity"],

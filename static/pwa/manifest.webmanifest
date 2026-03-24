@@ -17,8 +17,8 @@
     },
     {
       "platform": "play",
-      "url": "https://play.google.com/store/apps/details?id=com.tkascribe.app",
-      "id": "com.tkascribe.app"
+      "url": "https://play.google.com/store/apps/details?id=com.tkacomposer.app",
+      "id": "com.tkacomposer.app"
     }
   ],
   "prefer_related_applications": false,
