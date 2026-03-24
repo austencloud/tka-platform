@@ -7,7 +7,7 @@
 
 | Era | Name | Approximate Period | Reason for Change |
 |-----|------|-------------------|-------------------|
-| 1 | **TKA Constructor** | Early development | Original working name. Implied building/assembly, which was accurate for the initial sequence builder. |
+| 1 | **The Kinetic Constructor** | Early development | Original working name. Predated the "TKA" abbreviation. Implied building/assembly, which was accurate for the initial sequence builder. |
 | 2 | **TKA Studio** | Mid development | Broadened the identity beyond just "constructing" sequences. Studio implied a creative workspace with multiple tools. Changed because "Studio" was generic and didn't convey what the tool specifically does. |
 | 3 | **TKA Scribe** | Late 2025 – March 2026 | Centered the notation system — TKA is a written language for movement, and a scribe writes. Changed because the app evolved beyond transcription into a full creation tool. "Scribe" implied recording what already exists, not creating something new. |
 | 4 | **TKA Composer** | March 2026 – present | The app is a creation tool. Users compose sequences, choreographies, animations, and decks. "Composer" captures the creative authorship that "Scribe" missed. The Compose module is the flagship feature — elevating it to the app name makes the hierarchy honest. |
