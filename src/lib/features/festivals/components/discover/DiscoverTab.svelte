@@ -1,15 +1,66 @@
 <script lang="ts">
   import { getFestivalContext } from "../../context/festival-context";
   import { auth } from "$lib/shared/auth/firebase";
+  import { container } from "$lib/shared/di";
+  import { Timestamp } from "firebase/firestore";
   import FestivalFilterBar from "./FestivalFilterBar.svelte";
   import FestivalCard from "./FestivalCard.svelte";
   import FestivalSubmissionForm from "../submit/FestivalSubmissionForm.svelte";
   import ModerationQueue from "../moderation/ModerationQueue.svelte";
+  import { FESTIVAL_SEEDS } from "../../data/festival-seed";
 
   // Destructure as festivalState to avoid conflict with Svelte 5 $state rune
   const { state: festivalState } = getFestivalContext();
 
   let showSubmitForm = $state(false);
+  let isSeeding = $state(false);
+  let seedResult = $state<string | null>(null);
+
+  async function seedDatabase() {
+    isSeeding = true;
+    seedResult = null;
+    try {
+      const repo = container.items.festivalRepository;
+      let count = 0;
+      for (const seed of FESTIVAL_SEEDS) {
+        await repo.create({
+          name: seed.name,
+          organizationId: seed.organizationId,
+          organization: seed.organization,
+          location: seed.location,
+          dates: {
+            start: Timestamp.fromDate(new Date(seed.startDate)),
+            end: Timestamp.fromDate(new Date(seed.endDate)),
+          },
+          applicationDeadline: seed.applicationDeadline
+            ? Timestamp.fromDate(new Date(seed.applicationDeadline))
+            : undefined,
+          applicationUrl: seed.applicationUrl,
+          applicationContact: seed.applicationContact,
+          seekingInstructors: seed.seekingInstructors,
+          seekingPerformers: seed.seekingPerformers,
+          description: seed.description,
+          websiteUrl: seed.websiteUrl,
+          socialLinks: seed.socialLinks,
+          estimatedSize: seed.estimatedSize,
+          region: seed.region,
+          status: "upcoming" as const,
+          tags: seed.tags,
+          source: "curated" as const,
+          moderationStatus: "approved" as const,
+        } as any);
+        count++;
+      }
+      seedResult = `Seeded ${count} festivals`;
+      // Reload
+      const uid = auth.currentUser?.uid;
+      if (uid) await festivalState.loadFestivals(uid);
+    } catch (e) {
+      seedResult = `Error: ${e instanceof Error ? e.message : String(e)}`;
+    } finally {
+      isSeeding = false;
+    }
+  }
 
   async function handleBookmark(festivalId: string) {
     const uid = auth.currentUser?.uid;
@@ -55,6 +106,24 @@
         </button>
       </div>
     {/if}
+  {/if}
+
+  <!-- Admin: Seed database with scraped festival data -->
+  {#if festivalState.festivals.length === 0}
+    <div class="seed-row">
+      <button
+        type="button"
+        class="seed-btn"
+        onclick={seedDatabase}
+        disabled={isSeeding}
+      >
+        <i class="fas fa-database" aria-hidden="true"></i>
+        {isSeeding ? "Seeding..." : "Seed 51 festivals from scraped data"}
+      </button>
+      {#if seedResult}
+        <p class="seed-result">{seedResult}</p>
+      {/if}
+    </div>
   {/if}
 
   <div class="submit-row">
@@ -154,6 +223,42 @@
   .load-more-btn:hover {
     background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.1));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+  }
+
+  .seed-row {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .seed-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--theme-accent, #6366f1);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    font-size: var(--font-size-min, 14px);
+    padding: 12px 24px;
+    font-weight: 600;
+  }
+
+  .seed-btn:hover {
+    opacity: 0.9;
+  }
+
+  .seed-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .seed-result {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--semantic-success, #10b981);
   }
 
   .submit-row {
