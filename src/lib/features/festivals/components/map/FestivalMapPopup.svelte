@@ -1,0 +1,192 @@
+<!--
+  FestivalMapPopup.svelte
+
+  Popup card shown when a festival pin is clicked on the map.
+  Shows key info and a button to open the full detail view.
+-->
+<script lang="ts">
+  import { format } from "date-fns";
+  import type { Festival } from "../../domain/models/festival";
+
+  interface Props {
+    festival: Festival;
+    onviewdetails: () => void;
+    onclose: () => void;
+  }
+
+  let { festival, onviewdetails, onclose }: Props = $props();
+
+  const startDate = $derived(festival.dates.start.toDate());
+  const endDate = $derived(festival.dates.end.toDate());
+
+  const dateRange = $derived(
+    `${format(startDate, "MMM d")} – ${format(endDate, "MMM d, yyyy")}`
+  );
+
+  const locationLabel = $derived(
+    festival.location.city && festival.location.country
+      ? `${festival.location.city}, ${festival.location.country}`
+      : festival.location.city || festival.location.country
+  );
+
+  const now = new Date();
+
+  const applicationsOpen = $derived(
+    festival.applicationDeadline != null &&
+    festival.applicationDeadline.toDate() > now &&
+    (festival.seekingInstructors || festival.seekingPerformers)
+  );
+</script>
+
+<div class="festival-popup">
+  <button class="close-btn" onclick={onclose} aria-label="Close popup" type="button">
+    <i class="fas fa-times" aria-hidden="true"></i>
+  </button>
+
+  <div class="popup-body">
+    <h3 class="festival-name">{festival.name}</h3>
+
+    <div class="meta-row">
+      <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
+      <span>{locationLabel}</span>
+    </div>
+
+    <div class="meta-row">
+      <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+      <span>{dateRange}</span>
+    </div>
+
+    {#if applicationsOpen}
+      <span class="badge-open">Applications Open</span>
+    {/if}
+  </div>
+
+  <button class="view-details-btn" onclick={onviewdetails} type="button">
+    View Details
+    <i class="fas fa-arrow-right" aria-hidden="true"></i>
+  </button>
+</div>
+
+<style>
+  .festival-popup {
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 16px;
+    padding: 20px;
+    min-width: 260px;
+    max-width: 320px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    position: relative;
+  }
+
+  .close-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
+    transition: all 0.2s ease;
+  }
+
+  .close-btn:hover {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    color: var(--theme-text, #ffffff);
+  }
+
+  .close-btn:focus-visible {
+    outline: 2px solid var(--festival-pin-color, #f97316);
+    outline-offset: 2px;
+  }
+
+  .popup-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-right: 36px;
+    margin-bottom: 16px;
+  }
+
+  .festival-name {
+    margin: 0;
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 600;
+    color: var(--theme-text, #ffffff);
+    line-height: 1.3;
+  }
+
+  .meta-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
+  }
+
+  .meta-row i {
+    font-size: 11px;
+    color: var(--festival-pin-color, #f97316);
+    flex-shrink: 0;
+    width: 12px;
+    text-align: center;
+  }
+
+  .badge-open {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: var(--font-size-xs, 11px);
+    font-weight: 500;
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    align-self: flex-start;
+  }
+
+  .view-details-btn {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--festival-pin-color, #f97316);
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .view-details-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+  }
+
+  .view-details-btn:focus-visible {
+    outline: 2px solid var(--festival-pin-color, #f97316);
+    outline-offset: 2px;
+  }
+
+  .view-details-btn i {
+    font-size: 12px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .close-btn,
+    .view-details-btn {
+      transition: none;
+    }
+  }
+</style>

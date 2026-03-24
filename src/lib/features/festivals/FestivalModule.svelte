@@ -5,6 +5,9 @@
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { auth } from "$lib/shared/auth/firebase";
   import DiscoverTab from "./components/discover/DiscoverTab.svelte";
+  import FestivalMap from "./components/map/FestivalMap.svelte";
+  import FestivalDetailView from "./components/discover/FestivalDetailView.svelte";
+  import FestivalCalendar from "./components/calendar/FestivalCalendar.svelte";
 
   const state = createFestivalState(
     container.items.festivalLoader,
@@ -56,14 +59,22 @@
     {:else if state.activeTab === "discover"}
       <DiscoverTab />
     {:else if state.activeTab === "map"}
-      <p style="padding: 24px; text-align: center; opacity: 0.5;">Map tab — coming next</p>
+      <FestivalMap />
     {:else if state.activeTab === "calendar"}
-      <p style="padding: 24px; text-align: center; opacity: 0.5;">Calendar tab — coming next</p>
+      <FestivalCalendar />
     {:else if state.activeTab === "workshops"}
       <p style="padding: 24px; text-align: center; opacity: 0.5;">My Workshops tab — coming next</p>
     {/if}
   </div>
 </div>
+
+{#if state.selectedFestival}
+  <FestivalDetailView
+    festival={state.selectedFestival}
+    tracker={state.trackers.get(state.selectedFestival.id)}
+    onclose={() => (state.selectedFestival = null)}
+  />
+{/if}
 
 <style>
   .festival-module {
