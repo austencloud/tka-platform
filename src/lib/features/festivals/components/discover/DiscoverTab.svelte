@@ -23,7 +23,7 @@
       const repo = container.items.festivalRepository;
       let count = 0;
       for (const seed of FESTIVAL_SEEDS) {
-        await repo.create({
+        const doc: Record<string, any> = {
           name: seed.name,
           organizationId: seed.organizationId,
           organization: seed.organization,
@@ -32,23 +32,24 @@
             start: Timestamp.fromDate(new Date(seed.startDate)),
             end: Timestamp.fromDate(new Date(seed.endDate)),
           },
-          applicationDeadline: seed.applicationDeadline
-            ? Timestamp.fromDate(new Date(seed.applicationDeadline))
-            : undefined,
-          applicationUrl: seed.applicationUrl,
-          applicationContact: seed.applicationContact,
           seekingInstructors: seed.seekingInstructors,
           seekingPerformers: seed.seekingPerformers,
           description: seed.description,
-          websiteUrl: seed.websiteUrl,
-          socialLinks: seed.socialLinks,
-          estimatedSize: seed.estimatedSize,
           region: seed.region,
-          status: "upcoming" as const,
+          status: "upcoming",
           tags: seed.tags,
-          source: "curated" as const,
-          moderationStatus: "approved" as const,
-        } as any);
+          source: "curated",
+          moderationStatus: "approved",
+        };
+        // Only add optional fields if they have values
+        if (seed.applicationDeadline) doc.applicationDeadline = Timestamp.fromDate(new Date(seed.applicationDeadline));
+        if (seed.applicationUrl) doc.applicationUrl = seed.applicationUrl;
+        if (seed.applicationContact) doc.applicationContact = seed.applicationContact;
+        if (seed.websiteUrl) doc.websiteUrl = seed.websiteUrl;
+        if (seed.socialLinks) doc.socialLinks = seed.socialLinks;
+        if (seed.estimatedSize) doc.estimatedSize = seed.estimatedSize;
+
+        await repo.create(doc as any);
         count++;
       }
       seedResult = `Seeded ${count} festivals`;
