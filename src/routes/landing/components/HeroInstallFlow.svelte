@@ -112,7 +112,7 @@
       <p class="installed-instruction">
         Open <strong>TKA Composer</strong> from your home screen
       </p>
-      <a href={APP_DOMAIN} class="link-secondary"> Or continue in browser → </a>
+      <a href="/app" class="link-secondary"> Or continue in browser → </a>
     </div>
   {:else if installState === "in-app-browser"}
     <!-- In-app browser -->
@@ -157,10 +157,10 @@
       bind:isExpanded={showIOSInstructions}
       onToggle={() => (showIOSInstructions = !showIOSInstructions)}
     />
-    <a href={APP_DOMAIN} class="link-secondary"> Or continue in browser → </a>
+    <a href="/app" class="link-secondary"> Or continue in browser → </a>
   {:else}
     <!-- Desktop - just open in browser -->
-    <a href={APP_DOMAIN} class="btn btn-primary">
+    <a href="/app" class="btn btn-primary">
       <i class="fas fa-play-circle" aria-hidden="true"></i>
       <span>Start exploring</span>
       <span class="arrow">→</span>
