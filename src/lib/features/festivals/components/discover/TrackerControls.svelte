@@ -395,6 +395,7 @@
     margin: 0;
   }
   .text-input[type="number"] {
+    appearance: textfield;
     -moz-appearance: textfield;
   }
 </style>
