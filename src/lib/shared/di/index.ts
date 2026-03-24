@@ -99,6 +99,7 @@ import { videoInfraContainer } from "./containers/video-infra-container";
 import { createMuseumContainer } from "./containers/museum-container";
 import { createPushContainer } from "./containers/push-container";
 import { createOfflineContainer } from "./containers/offline-container";
+import { festivalContainer } from "./containers/festival-container";
 // Deep link resolution for cross-tab/cross-user URLs
 import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
 
@@ -475,6 +476,8 @@ function buildAppContainer(): any {
   c = c.add(pushContainer.items);
   // Offline caching (proactive gallery + thumbnail prefetch)
   c = c.add(offlineContainer.items);
+  // Festival Hub (discovery, attendance, tracker, portfolio, submissions)
+  c = c.add(festivalContainer.items);
   // Print Prep services (MPC card export — depend on render + build containers)
   c = c.add({
     cardBackCanvasRenderer: () => new CardBackCanvasRendererImpl(),
