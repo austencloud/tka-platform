@@ -83,6 +83,14 @@ export class GeocodingService implements IGeocodingService {
   }
 
   /**
+   * Forward geocode a city + country into lat/lng coordinates.
+   * Delegates to the private getCityCenter helper and surfaces it as a public API.
+   */
+  async forwardGeocode(city: string, country: string): Promise<{ lat: number; lng: number } | null> {
+    return this.getCityCenter(city, country);
+  }
+
+  /**
    * Get city center coordinates by geocoding the city name
    */
   private async getCityCenter(
