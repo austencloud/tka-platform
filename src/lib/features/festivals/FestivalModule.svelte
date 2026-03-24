@@ -10,14 +10,14 @@
   import FestivalCalendar from "./components/calendar/FestivalCalendar.svelte";
   import WorkshopPortfolioEditor from "./components/portfolio/WorkshopPortfolioEditor.svelte";
 
-  const state = createFestivalState(
+  const festivalState = createFestivalState(
     container.items.festivalLoader,
     container.items.festivalTrackerRepository,
     container.items.festivalAttendanceRepository,
     container.items.workshopPortfolioRepository
   );
 
-  setFestivalContext({ state });
+  setFestivalContext({ state: festivalState });
 
   const tabs: { id: FestivalTab; label: string; icon: string }[] = [
     { id: "discover", label: "Discover", icon: "fas fa-compass" },
@@ -29,8 +29,8 @@
   $effect(() => {
     const uid = auth.currentUser?.uid;
     if (uid) {
-      state.loadFestivals(uid);
-      state.loadPortfolio(uid);
+      festivalState.loadFestivals(uid);
+      festivalState.loadPortfolio(uid);
     }
   });
 </script>
@@ -40,10 +40,10 @@
     {#each tabs as tab}
       <button
         class="tab-button"
-        class:active={state.activeTab === tab.id}
-        onclick={() => (state.activeTab = tab.id)}
+        class:active={festivalState.activeTab === tab.id}
+        onclick={() => (festivalState.activeTab = tab.id)}
         role="tab"
-        aria-selected={state.activeTab === tab.id}
+        aria-selected={festivalState.activeTab === tab.id}
       >
         <i class={tab.icon} aria-hidden="true"></i>
         <span>{tab.label}</span>
@@ -52,28 +52,28 @@
   </div>
 
   <div class="tab-content" role="tabpanel">
-    {#if state.isLoading}
+    {#if festivalState.isLoading}
       <div class="loading-state">
         <ProgressRing percent={-1} size={32} strokeWidth={3} />
         <p>Loading festivals...</p>
       </div>
-    {:else if state.activeTab === "discover"}
+    {:else if festivalState.activeTab === "discover"}
       <DiscoverTab />
-    {:else if state.activeTab === "map"}
+    {:else if festivalState.activeTab === "map"}
       <FestivalMap />
-    {:else if state.activeTab === "calendar"}
+    {:else if festivalState.activeTab === "calendar"}
       <FestivalCalendar />
-    {:else if state.activeTab === "workshops"}
+    {:else if festivalState.activeTab === "workshops"}
       <WorkshopPortfolioEditor />
     {/if}
   </div>
 </div>
 
-{#if state.selectedFestival}
+{#if festivalState.selectedFestival}
   <FestivalDetailView
-    festival={state.selectedFestival}
-    tracker={state.trackers.get(state.selectedFestival.id)}
-    onclose={() => (state.selectedFestival = null)}
+    festival={festivalState.selectedFestival}
+    tracker={festivalState.trackers.get(festivalState.selectedFestival.id)}
+    onclose={() => (festivalState.selectedFestival = null)}
   />
 {/if}
 
