@@ -1187,6 +1187,44 @@ service cloud.firestore {
     }
 
     // ============================================================================
+    // FESTIVAL HUB
+    // ============================================================================
+
+    // Festival directory — public read, admin write
+    match /festivals/{festivalId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+
+      // Public attendance badges per festival
+      match /attendance/{uid} {
+        allow read: if isAuthenticated();
+        allow create, update: if isOwner(uid);
+        allow delete: if isOwner(uid) || isAdmin();
+      }
+    }
+
+    // Private application tracking per user
+    match /userFestivalTracking/{userId}/tracked/{festivalId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId);
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    // Teaching portfolio (single doc per user)
+    match /userProfiles/{userId}/workshopPortfolio {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId);
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    // Festival submissions (moderation queue)
+    match /festivalSubmissions/{submissionId} {
+      allow create: if isAuthenticated();
+      allow read: if isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    // ============================================================================
     // EXPLICIT DENY FOR UNMATCHED PATHS
     // Any collection not explicitly defined above is denied by default
     // ============================================================================
