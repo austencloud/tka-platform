@@ -284,7 +284,7 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
       params.currentTime
     );
 
-    if (trailsFadeState.alpha > 0) {
+    if (trailsFadeState.alpha > 0 && !params.skipTrailRendering) {
       ctx.save();
       ctx.globalAlpha = trailsFadeState.alpha;
       this.trailRenderer.renderTrails(

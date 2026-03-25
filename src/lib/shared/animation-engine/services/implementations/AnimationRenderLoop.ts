@@ -36,6 +36,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private ledTipTracker: ILedTipTracker | null = null;
   private trailOverlay: ITrailOverlayCanvas | null = null;
   private canvasSize: number = 950;
+  private lastTrailFrameTime: number = 0;
   private rafId: number | null = null;
   private needsRender: boolean = false;
   private getFrameParamsCallback: (() => RenderFrameParams) | null = null;
@@ -354,6 +355,26 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       };
     });
 
+    // Route trail rendering through the overlay canvas
+    if (this.trailOverlay && effectiveTrailsVisible) {
+      const now = performance.now();
+      const dt = this.lastTrailFrameTime > 0
+        ? (now - this.lastTrailFrameTime) / 1000
+        : 1 / 60;
+      this.lastTrailFrameTime = now;
+
+      this.trailOverlay.renderFrame({
+        blueTrailPoints: effectiveBlueMotionVisible ? trailPoints.blue : [],
+        redTrailPoints: effectiveRedMotionVisible ? trailPoints.red : [],
+        trailSettings,
+        deltaTime: dt,
+        canvasSize: this.canvasSize,
+        hasBlue: !!params.props.blueProp && effectiveBlueMotionVisible,
+        hasRed: !!params.props.redProp && effectiveRedMotionVisible,
+        additionalLayers: additionalLayerRenderData.length > 0 ? additionalLayerRenderData : undefined,
+      });
+    }
+
     // Render scene
     // NOTE: Props are passed regardless of visibility so the renderer can fade them out.
     // The renderer's fade managers handle visibility transition animations for:
@@ -381,6 +402,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
           ? additionalLayerRenderData
           : undefined,
       trailSettings,
+      skipTrailRendering: !!this.trailOverlay,
       currentTime,
       visibility: {
         gridVisible: effectiveGridVisible,

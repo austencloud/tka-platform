@@ -64,6 +64,8 @@ export interface RenderSceneParams {
   redPropType?: string;
   // Quality hints for adaptive rendering (optional - full quality when absent)
   qualityHints?: QualityHints;
+  /** When true, trails are rendered by the overlay canvas, not the main renderer */
+  skipTrailRendering?: boolean;
 }
 
 import type { RenderedPropTransform } from "$lib/shared/animation-engine/domain/types/FireTypes";
