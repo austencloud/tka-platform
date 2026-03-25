@@ -203,6 +203,7 @@
         onOpenOptionsSheet={handleOpenOptionsSheet}
         getFilteredCount={galleryState.getFilteredCount}
         viewMode={galleryState.viewMode}
+        sequenceSections={galleryState.sequenceSections}
       />
     </div>
   {/snippet}

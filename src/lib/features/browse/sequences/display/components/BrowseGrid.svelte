@@ -8,7 +8,9 @@
   import type { IVariationGrouper } from "../services/contracts/IVariationGrouper";
   import ChoreoCardThumbnail from "./ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
   import SectionHeader from "./SectionHeader.svelte";
-  import VirtualizedSequenceGrid from "./VirtualizedSequenceGrid.svelte";
+  import VirtualizedSequenceGrid, {
+    type VirtualGridApi,
+  } from "./VirtualizedSequenceGrid.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { isCatDogMode } from "../utils/prop-mode-helpers";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
@@ -35,6 +37,7 @@
     isTransitioning = false,
     disableVirtualization = false,
     eager = false,
+    onGridReady,
   } = $props<{
     sequences?: SequenceData[];
     sections?: SequenceData[];
@@ -50,10 +53,13 @@
     disableVirtualization?: boolean;
     /** Skip lazy loading - load thumbnails immediately (use in modals/pickers) */
     eager?: boolean;
+    /** Callback when the virtualized grid is ready (exposes scroll API for sidebar) */
+    onGridReady?: (api: VirtualGridApi) => void;
   }>();
 
-  // Determine if we should use virtualization
-  // Only virtualize flat grids (not sections) with many items
+  // Virtualize only flat (non-sectioned) grids with many items.
+  // When showSections is true, use the section-based layout which
+  // renders proper section headers and doesn't need virtualization.
   const useVirtualization = $derived(
     !disableVirtualization &&
       !showSections &&
@@ -110,9 +116,10 @@
     visibilityManager.unregisterObserver(handleVisibilityChange);
   });
 
-  // Grid element refs for animate-css-grid
+  // Grid element refs
   let sectionGridRefs = $state<HTMLElement[]>([]);
   let flatGridRef = $state<HTMLElement | undefined>(undefined);
+  let containerRef = $state<HTMLElement | undefined>(undefined);
 
   // Track container width to control column count
   let containerWidth = $state(0);
@@ -134,44 +141,41 @@
     return 2;
   });
 
-  // Initialize ResizeObserver for responsive column count
-  onMount(() => {
-    // ResizeObserver to track container width changes
-    const targetElement = flatGridRef || sectionGridRefs[0];
-    const resizeObserver = targetElement
-      ? new ResizeObserver((entries) => {
-          for (const entry of entries) {
-            const newWidth = entry.contentRect.width;
-            if (newWidth > 0) {
-              containerWidth = newWidth;
-              // Feed container width to zoom manager so it clamps
-              // the column count to what fits this screen size
-              gridZoomManager.updateContainerWidth(newWidth);
-            }
-          }
-        })
-      : null;
+  // Reactive ResizeObserver — re-creates when containerRef becomes available.
+  // This solves the timing issue where onMount fires before bind:this populates the ref.
+  $effect(() => {
+    const target = containerRef;
+    if (!target) return;
 
-    if (targetElement && resizeObserver) {
-      resizeObserver.observe(targetElement);
-
-      // Initial width measurement
-      requestAnimationFrame(() => {
-        const width = targetElement.getBoundingClientRect().width;
-        if (width > 0) {
-          containerWidth = width;
-          gridZoomManager.updateContainerWidth(width);
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const newWidth = entry.contentRect.width;
+        if (newWidth > 0) {
+          containerWidth = newWidth;
         }
-      });
-    }
+      }
+    });
 
-    // Re-measure on window resize
+    resizeObserver.observe(target);
+
+    // Initial measurement
+    requestAnimationFrame(() => {
+      const width = target.getBoundingClientRect().width;
+      if (width > 0) {
+        containerWidth = width;
+      }
+    });
+
+    return () => resizeObserver.disconnect();
+  });
+
+  onMount(() => {
+    // Window resize fallback
     const handleResize = () => {
-      if (targetElement) {
-        const width = targetElement.getBoundingClientRect().width;
+      if (containerRef) {
+        const width = containerRef.getBoundingClientRect().width;
         if (width > 0) {
           containerWidth = width;
-          gridZoomManager.updateContainerWidth(width);
         }
       }
     };
@@ -179,7 +183,6 @@
 
     return () => {
       window.removeEventListener("resize", handleResize);
-      resizeObserver?.disconnect();
     };
   });
 
@@ -201,9 +204,10 @@
 
 </script>
 
+<div bind:this={containerRef}>
 {#if useVirtualization}
   <!-- 🚀 VIRTUALIZED: Large flat list with 50+ items -->
-  <VirtualizedSequenceGrid {sequences} {thumbnailService} {onAction} {pinchColumnOverride} />
+  <VirtualizedSequenceGrid {sequences} {thumbnailService} {onAction} {pinchColumnOverride} {onGridReady} />
 {:else if showSections && sections.length > 0}
   <!-- Section-based organization (desktop app style) -->
   <div class="sections-container">
@@ -272,6 +276,7 @@
     {/each}
   </div>
 {/if}
+</div>
 
 <style>
   /* Sections container for organized display */
