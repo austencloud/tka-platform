@@ -16,6 +16,7 @@ import type { ICharcoalRenderer } from "../contracts/ICharcoalRenderer";
 import type { IFireTipTracker, FireTipTrackerConfig } from "../contracts/IFireTipTracker";
 import type { ILedOverlayRenderer } from "../contracts/ILedOverlayRenderer";
 import type { ILedTipTracker, LedTipTrackerConfig } from "../contracts/ILedTipTracker";
+import type { ITrailOverlayCanvas } from "../contracts/ITrailOverlayCanvas";
 import type {
   IAnimationRenderLoop,
   RenderLoopConfig,
@@ -33,6 +34,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private fireTipTracker: IFireTipTracker | null = null;
   private ledRenderer: ILedOverlayRenderer | null = null;
   private ledTipTracker: ILedTipTracker | null = null;
+  private trailOverlay: ITrailOverlayCanvas | null = null;
   private canvasSize: number = 950;
   private rafId: number | null = null;
   private needsRender: boolean = false;
@@ -91,6 +93,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.fireTipTracker = config.fireTipTracker ?? null;
     this.ledRenderer = config.ledRenderer ?? null;
     this.ledTipTracker = config.ledTipTracker ?? null;
+    this.trailOverlay = config.trailOverlay ?? null;
   }
 
   updateConfig(config: Partial<RenderLoopConfig>): void {
@@ -111,6 +114,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.ledRenderer = config.ledRenderer ?? null;
     if (config.ledTipTracker !== undefined)
       this.ledTipTracker = config.ledTipTracker ?? null;
+    if (config.trailOverlay !== undefined)
+      this.trailOverlay = config.trailOverlay ?? null;
   }
 
   start(getFrameParams: () => RenderFrameParams): void {
@@ -179,6 +184,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.ledRenderer?.dispose();
     this.ledRenderer = null;
     this.ledTipTracker = null;
+    // Clean up trail overlay
+    this.trailOverlay = null;
     // Clear reusable arrays to free memory
     this.reusableBlueTrailPoints.length = 0;
     this.reusableRedTrailPoints.length = 0;
