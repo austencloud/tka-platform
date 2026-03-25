@@ -312,8 +312,14 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.loopStartTime = currentTime;
     }
 
-    // Gather trail points
-    const trailPoints = this.gatherTrailPoints(currentStep, trailSettings, params.isSeamlesslyLoopable ?? false);
+    // Gather trail points. When the trail overlay is active (chaining mode),
+    // disable seamless loop wrap-around — the overlay accumulates pixels
+    // across sequences, so wrap-around would draw the loop-back path on
+    // top of the next sequence's trail.
+    const effectiveLoopable = this.trailOverlay
+      ? false
+      : (params.isSeamlesslyLoopable ?? false);
+    const trailPoints = this.gatherTrailPoints(currentStep, trailSettings, effectiveLoopable);
 
     // Update loopStartTime when a loop is detected (set inside gatherTrailPoints)
     if (this.loopDetectedThisFrame) {
