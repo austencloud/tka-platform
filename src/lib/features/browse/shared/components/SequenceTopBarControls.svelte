@@ -15,24 +15,15 @@
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
-  import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
-  import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
-  import type { SequenceFilterType } from "../state/sequence-controls-state.svelte";
   import { BrowseSortMethod } from "../domain/enums/browse-enums";
   import ExpandableSearchBar from "./ExpandableSearchBar.svelte";
   import SortPopover from "./SortPopover.svelte";
   import SegmentedControl from "$lib/shared/3d-animation/components/controls/SegmentedControl.svelte";
-  import LevelFilterChip from "../../sequences/filtering/components/inline-filter/chips/LevelFilterChip.svelte";
-  import FavoritesFilterChip from "../../sequences/filtering/components/inline-filter/chips/FavoritesFilterChip.svelte";
-  import LetterFilterChip from "../../sequences/filtering/components/inline-filter/chips/LetterFilterChip.svelte";
-  import LengthFilterChip from "../../sequences/filtering/components/inline-filter/chips/LengthFilterChip.svelte";
-  import PatternFilterChip from "../../sequences/filtering/components/inline-filter/chips/PatternFilterChip.svelte";
-  import GridModeFilterChip from "../../sequences/filtering/components/inline-filter/chips/GridModeFilterChip.svelte";
-  import PositionFilterChip from "../../sequences/filtering/components/inline-filter/chips/PositionFilterChip.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
   interface Props {
     onSourceChange?: (source: SequenceSource) => void;
+    // These props are accepted for compatibility but filters are in the collapsible panel now
     activeLevel?: number | null;
     activeLetter?: string | null;
     activeLength?: number | null;
@@ -42,29 +33,30 @@
     hasActivePositions?: boolean;
     availableLengths?: number[];
     loopTypeCounts?: Record<string, number>;
-    onFilterChange?: (type: SequenceFilterType, value?: BrowseFilterValue) => void;
-    onRemoveFilter?: (type: string) => void;
-    onOpenLetterSheet?: () => void;
-    onOpenOptionsSheet?: () => void;
-    getFilteredCount?: (candidateType: BrowseFilterType, candidateValue: BrowseFilterValue) => number;
+    onFilterChange?: unknown;
+    onRemoveFilter?: unknown;
+    onOpenLetterSheet?: unknown;
+    onOpenOptionsSheet?: unknown;
+    getFilteredCount?: unknown;
   }
 
   let {
     onSourceChange,
-    activeLevel = null,
-    activeLetter = null,
-    activeLength = null,
-    activeLoopType = null,
-    activeGridMode = null,
-    isFavoritesActive = false,
-    hasActivePositions = false,
-    availableLengths = [],
-    loopTypeCounts = {},
-    onFilterChange,
-    onRemoveFilter,
-    onOpenLetterSheet,
-    onOpenOptionsSheet,
-    getFilteredCount,
+    // Destructure to prevent Svelte "unknown prop" warnings
+    activeLevel: _activeLevel,
+    activeLetter: _activeLetter,
+    activeLength: _activeLength,
+    activeLoopType: _activeLoopType,
+    activeGridMode: _activeGridMode,
+    isFavoritesActive: _isFavoritesActive,
+    hasActivePositions: _hasActivePositions,
+    availableLengths: _availableLengths,
+    loopTypeCounts: _loopTypeCounts,
+    onFilterChange: _onFilterChange,
+    onRemoveFilter: _onRemoveFilter,
+    onOpenLetterSheet: _onOpenLetterSheet,
+    onOpenOptionsSheet: _onOpenOptionsSheet,
+    getFilteredCount: _getFilteredCount,
   }: Props = $props();
 
   // Source state
@@ -151,32 +143,6 @@
     }
   }
 
-  // Inline filter handlers (wide screens — chips render directly in top bar)
-  function handleInlineLevelSelect(level: number | null) {
-    if (level === null) onRemoveFilter?.("difficulty");
-    else onFilterChange?.("difficulty", level);
-  }
-
-  function handleInlineFavoritesToggle(active: boolean) {
-    if (active) onFilterChange?.("favorites");
-    else onRemoveFilter?.("favorites");
-  }
-
-  function handleInlineLengthSelect(length: number | null) {
-    if (length === null) onRemoveFilter?.("length");
-    else onFilterChange?.("length", length);
-  }
-
-  function handleInlinePatternSelect(value: string | null) {
-    if (value === null) onRemoveFilter?.("cap_type");
-    else onFilterChange?.("cap_type", value);
-  }
-
-  function handleInlineGridModeSelect(gridMode: string | null) {
-    if (gridMode === null) onRemoveFilter?.("gridMode");
-    else onFilterChange?.("gridMode", gridMode);
-  }
-
   function handleToggleFilters() {
     hapticService?.trigger("selection");
     sequencePanelManager.toggleInlineFilters();
@@ -244,79 +210,13 @@
         onSortChange={handleSortChange}
       />
 
-      <!-- Inline filter chips (wide screens only, hidden on narrow via container query) -->
-      {#if onFilterChange}
-        <div class="inline-divider" aria-hidden="true"></div>
-        <div class="inline-filters">
-          <LevelFilterChip
-            activeLevel={activeLevel ?? null}
-            onSelect={handleInlineLevelSelect}
-            {getFilteredCount}
-          />
-          <FavoritesFilterChip
-            active={isFavoritesActive ?? false}
-            onToggle={handleInlineFavoritesToggle}
-          />
-          <LetterFilterChip
-            activeLetter={activeLetter ?? null}
-            onOpenSheet={onOpenLetterSheet ?? (() => {})}
-          />
-          <LengthFilterChip
-            activeLength={activeLength ?? null}
-            availableLengths={availableLengths ?? []}
-            onSelect={handleInlineLengthSelect}
-            {getFilteredCount}
-          />
-          <PatternFilterChip
-            activeValue={activeLoopType ?? null}
-            loopTypeCounts={loopTypeCounts ?? {}}
-            onSelect={handleInlinePatternSelect}
-          />
-          <GridModeFilterChip
-            activeGridMode={activeGridMode ?? null}
-            onSelect={handleInlineGridModeSelect}
-            {getFilteredCount}
-          />
-          <PositionFilterChip
-            hasActivePositions={hasActivePositions ?? false}
-            onOpenSheet={onOpenOptionsSheet ?? (() => {})}
-          />
-        </div>
-        <div class="inline-divider" aria-hidden="true"></div>
-      {/if}
-
-      <!-- Right actions: Search + Zoom + Active Filter + Filter Button -->
+      <!-- Right actions: Search + Zoom + Filter Button -->
       <div class="actions-section">
         <ExpandableSearchBar
           onSearch={handleSearch}
           onClear={handleSearchClear}
           placeholder={t('browse_search_placeholder')}
         />
-
-        <!-- Grid Zoom Controls (desktop only) -->
-        <div class="zoom-controls">
-          <button
-            class="zoom-button"
-            onclick={handleZoomOut}
-            disabled={!canZoomOut}
-            type="button"
-            aria-label={t('browse_zoom_out')}
-            title={t('browse_zoom_out_title')}
-          >
-            <i class="fas fa-minus" aria-hidden="true"></i>
-          </button>
-          <span class="zoom-indicator">{currentColumns}</span>
-          <button
-            class="zoom-button"
-            onclick={handleZoomIn}
-            disabled={!canZoomIn}
-            type="button"
-            aria-label={t('browse_zoom_in')}
-            title={t('browse_zoom_in_title')}
-          >
-            <i class="fas fa-plus" aria-hidden="true"></i>
-          </button>
-        </div>
 
         <!-- Filter Toggle Button -->
         <button
@@ -391,109 +291,12 @@
     min-width: 0;
   }
 
-  /* Inline filter chips — visible on wide screens only */
-  .inline-filters {
-    display: none;
-    align-items: center;
-    gap: 6px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    min-width: 0;
-    flex: 1;
-  }
-
-  .inline-filters::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Vertical divider between logical groups */
-  .inline-divider {
-    display: none;
-    width: 1px;
-    height: 24px;
-    background: var(--theme-stroke);
-    flex-shrink: 0;
-  }
-
-  /* Wide screen: show inline filters, hide filter toggle, shrink actions */
-  @container gallery (min-width: 900px) {
-    .inline-filters {
-      display: flex;
-    }
-
-    .inline-divider {
-      display: block;
-    }
-
-    .filter-button {
-      display: none;
-    }
-
-    .actions-section {
-      flex: 0 0 auto;
-    }
-  }
-
   /* Zoom Controls — hidden on mobile where pinch-to-zoom is the
      natural interaction. Stepper buttons on small screens let users
      create unreadably small cards (the problem we're fixing). */
-  .zoom-controls {
-    display: none;
-    align-items: center;
-    gap: 2px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 8px;
-    padding: 2px;
-    flex-shrink: 0;
-  }
-
-  @media (min-width: 800px) {
-    .zoom-controls {
-      display: flex;
-    }
-  }
-
-  .zoom-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    background: transparent;
-    border: none;
-    border-radius: 6px;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-compact, 12px);
-    cursor: pointer;
-    transition:
-      background var(--duration-fast, 150ms) ease,
-      color var(--duration-fast, 150ms) ease,
-      transform var(--duration-fast, 150ms) ease;
-  }
-
-  .zoom-button:hover:not(:disabled) {
-    background: var(--theme-card-hover-bg);
-    color: var(--theme-text);
-  }
-
-  .zoom-button:active:not(:disabled) {
-    transform: scale(0.92);
-  }
-
-  .zoom-button:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-  }
-
-  .zoom-indicator {
-    min-width: 20px;
-    text-align: center;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    color: var(--theme-text-dim);
-    font-variant-numeric: tabular-nums;
-  }
+  /* Zoom controls removed — responsive breakpoints handle column count
+     automatically. Pinch-to-zoom (touch) and Shift+scroll (desktop)
+     remain as hidden power-user overrides. */
 
   /* Filter Button */
   .filter-button {
@@ -590,8 +393,7 @@
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .filter-button,
-    .filter-badge,
-    .zoom-button {
+    .filter-badge {
       transition: none !important;
       animation: none !important;
     }

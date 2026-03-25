@@ -3,11 +3,11 @@
   import {
     createVirtualizer,
     type VirtualItem,
+    type SvelteVirtualizer,
   } from "@tanstack/svelte-virtual";
+  import type { Readable } from "svelte/store";
   import { onMount, onDestroy, untrack } from "svelte";
-  import { get } from "svelte/store";
   import type { IBrowseThumbnailProvider } from "../services/contracts/IBrowseThumbnailProvider";
-  import type { IVariationGrouper } from "../services/contracts/IVariationGrouper";
   import ChoreoCardThumbnail from "./ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { isCatDogMode } from "../utils/prop-mode-helpers";
@@ -17,57 +17,53 @@
   import { gridZoomManager } from "../../../shared/state/grid-zoom-state.svelte";
 
   /**
-   * VirtualizedSequenceGrid - High-performance grid for large sequence lists
-   *
-   * Uses TanStack Virtual to render only visible items, dramatically improving
-   * performance for lists with 100+ sequences.
-   *
-   * Key features:
-   * - Dynamic column count based on container width
-   * - Virtual rows with configurable overscan
-   * - Smooth scrolling with estimated item size
-   * - Prop-aware thumbnails (single-prop or cat-dog mode)
+   * The virtualizer needs to know each row's height before it renders.
+   * The old code sampled ONE sequence and assumed all rows were the same height.
+   * Cards with different beat counts have different aspect ratios, so that
+   * caused overlap. Now we estimate per-row using the tallest card in the row,
+   * then correct with measureElement after the DOM renders.
    */
+
+  export interface VirtualGridApi {
+    scrollToSequenceIndex: (index: number) => void;
+    subscribeToScroll: (callback: () => void) => () => void;
+    getFirstVisibleSequenceIndex: () => number;
+  }
 
   const {
     sequences = [],
     thumbnailService,
     onAction = () => {},
     pinchColumnOverride,
+    onGridReady,
   } = $props<{
     sequences: SequenceData[];
     thumbnailService: IBrowseThumbnailProvider | null;
     onAction?: (action: string, sequence: SequenceData, variations?: SequenceData[]) => void;
-    /** Pinch-to-zoom column override. Mobile: 2-3, Desktop: 2-5. Overrides responsive columns. */
     pinchColumnOverride?: number;
+    onGridReady?: (api: VirtualGridApi) => void;
   }>();
 
-  // Layout calculator for proper aspect ratio estimation
   const layoutCalculator = container.items.layoutCalculator;
-
-  // Variation grouper service for identifying sequences with same word
   const variationGrouper = container.items.variationGrouper;
+  const sequenceDataProvider = container.items.sequenceDataProvider;
 
-  // Build variation map when sequences change
   const variationMap = $derived.by(() => {
     return variationGrouper.buildVariationMap(sequences);
   });
 
-  // Get variations for a specific sequence
   function getVariationsForSequence(sequence: SequenceData): SequenceData[] {
     const word = sequence.word || sequence.name;
     if (!word) return [sequence];
     return variationMap.get(word.trim()) ?? [sequence];
   }
 
-  // Get user's prop settings for prop-aware thumbnails
   const propSettings = $derived({
     bluePropType: settingsService.settings.bluePropType,
     redPropType: settingsService.settings.redPropType,
     catDogMode: settingsService.settings.catDogMode,
   });
 
-  // Determine if we're in cat-dog mode (different props per hand)
   const isCatDog = $derived(
     isCatDogMode(
       propSettings.bluePropType,
@@ -76,11 +72,9 @@
     )
   );
 
-  // Get light mode from visibility state (inverse of darkMode)
   const visibilityManager = getAnimationVisibilityManager();
   let lightMode = $state(!visibilityManager.isDarkMode());
 
-  // Register observer to react to visibility changes (like "L" key toggle)
   function handleVisibilityChange() {
     lightMode = !visibilityManager.isDarkMode();
   }
@@ -91,17 +85,12 @@
     visibilityManager.unregisterObserver(handleVisibilityChange);
   });
 
-  // Container and scroll element refs
   let scrollElement = $state<HTMLDivElement | null>(null);
   let containerWidth = $state(0);
 
-  // Reactive state for virtualizer data
   let virtualRows = $state<VirtualItem[]>([]);
   let totalHeight = $state(0);
 
-  // Dynamic column count based on container width.
-  // Clamps pinchColumnOverride to per-breakpoint max so you can't
-  // get 5 tiny columns on a phone screen.
   const columnCount = $derived.by(() => {
     if (containerWidth === 0) return 2;
 
@@ -115,32 +104,31 @@
     return 2;
   });
 
-  // Calculate row count based on sequences and columns
   const rowCount = $derived(Math.ceil(sequences.length / columnCount));
 
-  // Estimated row height based on actual gallery aspect ratio
-  // Uses the median sequence length to calculate proper card height
-  const estimatedRowHeight = $derived.by(() => {
+  // Per-row height estimation: use the tallest card in each row.
+  // This is the key fix for the overlap bug — the old code used a single
+  // sample which broke when rows had mixed beat counts.
+  // Row height = tallest card in the row. The virtualizer's `gap: 16` option
+  // adds spacing between rows separately, so we don't add it here.
+  function estimateRowHeight(rowIndex: number): number {
     if (containerWidth === 0) return 200;
-    const gap = 16;
-    const cardWidth = (containerWidth - (columnCount - 1) * gap) / columnCount;
+    const colGap = 16;
+    const cardWidth = (containerWidth - (columnCount - 1) * colGap) / columnCount;
 
-    // Sample representative step count from first sequence (filtered lists are usually uniform)
-    const sampleSequence = sequences[0];
-    const stepCount =
-      sampleSequence?.steps?.length ||
-      sampleSequence?.sequenceLength ||
-      4;
+    const startIdx = rowIndex * columnCount;
+    const endIdx = Math.min(startIdx + columnCount, sequences.length);
+    let maxSteps = 4;
+    for (let i = startIdx; i < endIdx; i++) {
+      const seq = sequences[i];
+      const steps = seq?.steps?.length || seq?.sequenceLength || 4;
+      if (steps > maxSteps) maxSteps = steps;
+    }
 
-    // Use LayoutCalculator for exact gallery aspect ratio (width/height)
-    const aspectRatio =
-      layoutCalculator.calculateGalleryAspectRatio(stepCount);
+    const aspectRatio = layoutCalculator.calculateGalleryAspectRatio(maxSteps);
+    return cardWidth / aspectRatio;
+  }
 
-    // Card height = width / aspectRatio
-    return cardWidth / aspectRatio + gap;
-  });
-
-  // Get sequences for a specific row
   function getRowSequences(rowIndex: number): SequenceData[] {
     const startIndex = rowIndex * columnCount;
     const endIndex = Math.min(startIndex + columnCount, sequences.length);
@@ -155,34 +143,70 @@
     onAction(action, sequence, variations);
   }
 
-  // Initialize virtualizer and subscribe to updates
-  onMount(() => {
+  function handleSequenceHover(seq: SequenceData) {
+    cellPreWarmer.preWarmSequence(seq, "user-visible");
+    sequenceDataProvider.prefetch(seq);
+  }
+
+  // Single virtualizer instance — created once, recreated when deps change.
+  // Uses per-row estimateSize for accurate initial layout, plus measureElement
+  // for pixel-perfect correction after render.
+  type VirtualizerInstance = SvelteVirtualizer<HTMLDivElement, Element>;
+  type VirtualizerStore = Readable<VirtualizerInstance>;
+
+  let currentVirtualizer: VirtualizerInstance | null = null;
+  let virtualizerStore: VirtualizerStore | null = null;
+  let storeUnsub: (() => void) | null = null;
+
+  function createAndSubscribe(count: number) {
+    // Clean up previous
+    storeUnsub?.();
+
     if (!scrollElement) return;
 
-    // Create virtualizer store
-    const virtualizerStore = createVirtualizer({
-      count: rowCount,
+    virtualizerStore = createVirtualizer({
+      count,
       getScrollElement: () => scrollElement,
-      estimateSize: () => estimatedRowHeight,
-      overscan: 3, // Render 3 extra rows above/below viewport
+      estimateSize: estimateRowHeight,
+      overscan: 3,
+      gap: 16,
     });
 
-    // Subscribe to virtualizer updates
-    const unsubscribe = virtualizerStore.subscribe((v) => {
+    storeUnsub = virtualizerStore.subscribe((v) => {
+      currentVirtualizer = v;
       virtualRows = v.getVirtualItems();
       totalHeight = v.getTotalSize();
     });
+  }
 
-    // ResizeObserver to track container width
+  // Svelte action: measures each row's actual DOM height after render.
+  // TanStack Virtual reads data-index from the element to know which row it is.
+  function measureRow(node: HTMLElement) {
+    if (currentVirtualizer) {
+      currentVirtualizer.measureElement(node);
+    }
+  }
+
+  // Scroll event listeners for the sidebar
+  let scrollListeners = new Set<() => void>();
+
+  function handleScrollEvent() {
+    for (const cb of scrollListeners) cb();
+  }
+
+  onMount(() => {
+    if (!scrollElement) return;
+
+    createAndSubscribe(rowCount);
+
+    // ResizeObserver for responsive column count
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const width = entry.contentRect.width;
         if (width > 0) {
           containerWidth = width;
           gridZoomManager.updateContainerWidth(width);
-          // Force virtualizer to recalculate
-          const v = get(virtualizerStore);
-          v.measure();
+          if (currentVirtualizer) currentVirtualizer.measure();
         }
       }
     });
@@ -200,14 +224,52 @@
       }
     });
 
+    // Listen for scroll events (for sidebar active tracking)
+    scrollElement.addEventListener("scroll", handleScrollEvent, { passive: true });
+
+    // Expose API for sidebar scroll control
+    if (onGridReady) {
+      onGridReady({
+        scrollToSequenceIndex: (index: number) => {
+          const rowIndex = Math.floor(index / columnCount);
+          if (currentVirtualizer) {
+            currentVirtualizer.scrollToIndex(rowIndex, { align: "start", behavior: "smooth" });
+          }
+        },
+        subscribeToScroll: (callback: () => void) => {
+          scrollListeners.add(callback);
+          return () => scrollListeners.delete(callback);
+        },
+        getFirstVisibleSequenceIndex: () => {
+          const first = virtualRows[0];
+          if (!first) return 0;
+          return first.index * columnCount;
+        },
+      });
+    }
+
     return () => {
-      unsubscribe();
+      storeUnsub?.();
       resizeObserver.disconnect();
+      scrollElement?.removeEventListener("scroll", handleScrollEvent);
+      scrollListeners.clear();
     };
   });
 
-  // Pre-warm pictograph cells for visible sequences at background priority.
-  // Uses scheduler.postTask("background") internally — never competes with gallery rendering.
+  // Recreate virtualizer when row count changes (new filter, new data, etc.)
+  $effect(() => {
+    const count = rowCount;
+    // Also track columnCount so we recreate when zoom changes
+    const _cols = columnCount;
+
+    untrack(() => {
+      if (scrollElement) {
+        createAndSubscribe(count);
+      }
+    });
+  });
+
+  // Pre-warm pictograph cells for visible sequences
   $effect(() => {
     const rows = virtualRows;
     if (!rows.length) return;
@@ -221,50 +283,11 @@
       }
     });
   });
-
-  // Sequence data provider for hover prefetch
-  const sequenceDataProvider = container.items.sequenceDataProvider;
-
-  // Handle hover pre-warming — called by ChoreoCardThumbnail's onHover prop
-  // Prefetches full sequence data from Firestore AND pre-warms cells
-  function handleSequenceHover(seq: SequenceData) {
-    cellPreWarmer.preWarmSequence(seq, "user-visible");
-    sequenceDataProvider.prefetch(seq);
-  }
-
-  // Reconfigure virtualizer when rowCount or estimatedRowHeight changes
-  $effect(() => {
-    // Capture reactive dependencies
-    const count = rowCount;
-    const height = estimatedRowHeight;
-
-    // Run update outside reactive tracking
-    untrack(() => {
-      if (!scrollElement) return;
-
-      // Create new virtualizer with updated config
-      const virtualizerStore = createVirtualizer({
-        count,
-        getScrollElement: () => scrollElement,
-        estimateSize: () => height,
-        overscan: 3,
-      });
-
-      // Subscribe to updates
-      const unsubscribe = virtualizerStore.subscribe((v) => {
-        virtualRows = v.getVirtualItems();
-        totalHeight = v.getTotalSize();
-      });
-
-      // Cleanup previous subscription on next effect run
-      return unsubscribe;
-    });
-  });
 </script>
 
 <div
   bind:this={scrollElement}
-  class="virtual-scroll-container ph-no-capture"
+  class="virtual-scroll-container ph-no-capture themed-scrollbar"
   role="grid"
   aria-rowcount={rowCount}
 >
@@ -272,11 +295,14 @@
     {#each virtualRows as virtualRow (virtualRow.key)}
       <div
         class="virtual-row"
+        data-index={virtualRow.index}
+        use:measureRow
         style:position="absolute"
         style:top="{virtualRow.start}px"
         style:width="100%"
         style:display="grid"
         style:grid-template-columns="repeat({columnCount}, 1fr)"
+        style:align-items="start"
         style:gap="var(--spacing-lg, 16px)"
         role="row"
         aria-rowindex={virtualRow.index + 1}
@@ -307,9 +333,6 @@
     height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
-    /* Smooth scrolling for virtual lists */
-    scroll-behavior: smooth;
-    /* Custom scrollbar styling */
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-accent) var(--scrollbar-track);
   }
@@ -332,7 +355,6 @@
     width: 100%;
   }
 
-  /* Focus styles for keyboard navigation (WCAG AAA) */
   .virtual-row [role="gridcell"]:focus-within {
     outline: 2px solid var(--theme-accent, #6366f1);
     outline-offset: 2px;
@@ -344,7 +366,6 @@
     box-sizing: border-box;
   }
 
-  /* Responsive gap adjustments matching original grid */
   @container (max-width: 480px) {
     .virtual-row {
       gap: 8px !important;
